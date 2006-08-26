@@ -1,0 +1,12 @@
+*.old
+*.dmp
+*.log
+*.csrc
+*.vcd
+csrc
+vcs.key
+*.daidir
+simv
+obj_*
+project
+INCA_libs

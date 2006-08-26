@@ -1,0 +1,247 @@
+# $Id$ -*- Makefile -*-
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator: Makefile for verilog source
+#
+# Code available from: http://www.veripool.com/verilator
+#
+#*****************************************************************************
+#
+# Copyright 2003-2006 by Wilson Snyder.  This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+#
+# Verilator is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#****************************************************************************/
+
+#### Start of system configuration section. ####
+
+srcdir = ..
+incdir = ../../include
+
+PERL = @PERL@
+CC = @CC@
+CXX = @CXX@
+LINK = @CXX@
+
+#### End of system configuration section. ####
+
+VPATH += . $(srcdir)
+TGT = ../../verilator_bin
+
+#################
+ifeq ($(VL_DEBUG),)
+# Optimize
+LDFLAGS = 
+COPT = -O
+else
+# Debug
+LDFLAGS = 
+COPT = -ggdb -DVL_DEBUG
+# Debug & Profile:
+#LDFLAGS = -pg -g
+#COPT = -ggdb -pg -g
+endif
+#################
+
+LEX = flex
+LFLAGS = -d
+YACC = bison -y
+YFLAGS = -d -v
+
+#LIBS += -ldl
+#CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
+
+LIBS = -lm -lfl
+
+CPPFLAGSNOWALL = -MMD
+CPPFLAGSNOWALL += -I. -I$(srcdir) -I$(incdir)
+CPPFLAGSNOWALL += -DYYDEBUG 	# Required to get nice error messages
+#CPPFLAGSNOWALL += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
+CPPFLAGSNOWALL += $(COPT)
+CPPFLAGS = $(CPPFLAGSNOWALL)
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
+#CPPFLAGS += -pedantic-errors
+endif
+
+HEADERS = $(wildcard V*.h v*.h)
+
+ASTGEN = $(srcdir)/astgen
+
+######################################################################
+#### Top level
+
+all: make_info $(TGT)
+
+make_info:
+	@echo "      Compile flags: " $(CXX) ${CPPFLAGS}
+
+clean mostlyclean distclean maintainer-clean::
+	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *__gen*
+	-rm -f *.yy.* y.output y.tab.[cho] *_test
+	-rm -f obj_* .objcache*
+
+distclean maintainer-clean:: clean
+	rm -f Makefile config.h
+
+maintainer-clean::
+
+maintainer-copy::
+
+#### Top executable
+
+RAW_OBJS = \
+	Verilator.o \
+	V3Active.o \
+	V3ActiveTop.o \
+	V3Assert.o \
+	V3AssertPre.o \
+	V3Ast.o	\
+	V3AstNodes.o	\
+	V3Begin.o \
+	V3Branch.o \
+	V3Broken.o \
+	V3Case.o \
+	V3Cast.o \
+	V3Changed.o \
+	V3Clean.o \
+	V3Clock.o \
+	V3Combine.o \
+	V3Const__gen.o \
+	V3Coverage.o \
+	V3Dead.o \
+	V3Delayed.o \
+	V3Depth.o \
+	V3Descope.o \
+	V3EmitC.o \
+	V3EmitCSyms.o \
+	V3EmitMk.o \
+	V3EmitV.o \
+	V3Error.o \
+	V3Expand.o \
+	V3File.o \
+	V3Gate.o \
+	V3GenClk.o \
+	V3Graph.o \
+	V3GraphAlg.o \
+	V3GraphAcyc.o \
+	V3GraphDfa.o \
+	V3GraphTest.o \
+	V3Hashed.o \
+	V3Inline.o \
+	V3Inst.o \
+	V3Life.o \
+	V3LifePost.o \
+	V3Link.o \
+	V3LinkCells.o \
+	V3LinkDot.o \
+	V3LinkLevel.o \
+	V3LinkResolve.o \
+	V3Localize.o \
+	V3Name.o \
+	V3Number.o \
+	V3Options.o \
+	V3Order.o \
+	V3Param.o \
+	V3PreShell.o \
+	V3Premit.o \
+	V3Scope.o \
+	V3Signed.o \
+	V3Split.o \
+	V3Stats.o \
+	V3StatsReport.o \
+	V3Subst.o \
+	V3Table.o \
+	V3Task.o \
+	V3Trace.o \
+	V3TraceDecl.o \
+	V3Unknown.o \
+	V3Unroll.o \
+	V3Width.o \
+
+# Non-concatable
+OBJS += \
+	V3Parse.o \
+	V3PreProc.o \
+	V3Read.o \
+
+#### Linking
+
+ifeq ($(VL_DEBUG),)
+# Building with fewer objects to better optimize
+#OBJS += V3__CONCAT.o
+OBJS += $(RAW_OBJS)
+else
+OBJS += $(RAW_OBJS)
+endif
+
+V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
+	$(PERL) $(srcdir)/../bin/verilator_includer $^ > $@
+
+$(TGT): V3Ast__gen_classes.h $(OBJS)
+	@echo "      Linking $@..."
+	-rm -rf $@ $@.exe
+	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
+	@-cp $@.exe $@
+# ok if cp failes on linux, it's there to insure make works on NT
+
+V3Number_test: V3Number_test.o
+	${LINK} ${LDFLAGS} -o $@ $^ ${LIBS}
+
+#### Modules
+
+%__gen.cpp:	%.cpp $(ASTGEN)
+	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
+
+%.o:	%.cpp
+	$(OBJCACHE) ${CXX} ${CPPFLAGS} -c $<
+%.o:	%.c
+	$(OBJCACHE) ${CC}  ${CPPFLAGS} -c $<
+
+V3Read.o:	V3Read.cpp V3Lexer.yy.cpp
+	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+
+V3Parse.o:	V3Parse.cpp y.tab.c
+	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+
+V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
+	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+
+#### Generated files
+
+# Target rule called before parallel build to make generated files
+serial:: V3Ast__gen_classes.h
+
+V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
+	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
+
+y.tab.c y.tab.h:	verilog.y $(HEADERS)
+	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
+	${YACC} ${YFLAGS} $<
+
+V3Lexer_pregen.yy.cpp:	verilog.l y.tab.h $(HEADERS)
+	${LEX} ${LFLAGS} -o$@ $<
+
+V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp
+	$(PERL) $(srcdir)/flexfix <$< >$@
+
+V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
+	${LEX} ${LFLAGS} -o$@ $<
+
+V3PreLex.yy.cpp:	V3PreLex_pregen.yy.cpp
+	$(PERL) $(srcdir)/flexfix <$< >$@
+
+######################################################################
+######################################################################
+
+DEPS := $(wildcard *.d)
+ifneq ($(DEPS),)
+include $(DEPS)
+endif
+

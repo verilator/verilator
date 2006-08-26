@@ -1,0 +1,7 @@
+*.old
+config.h
+Makefile
+Makefile_obj
+.objcache*
+obj_*
+config_rev.h

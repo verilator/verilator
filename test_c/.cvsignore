@@ -1,0 +1,6 @@
+*.dmp
+*.log
+*.csrc
+*.vcd
+obj_*
+project

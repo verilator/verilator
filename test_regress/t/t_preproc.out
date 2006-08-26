@@ -1,0 +1,151 @@
+
+`line 1 "t/t_preproc.v" 1
+
+
+
+
+
+
+
+
+ 
+`line 9 "t/t_preproc.v" 0
+
+`line 1 "t/t_preproc_inc2.v" 1
+
+
+
+At file t/t_preproc_inc2.v  line 4
+ 
+  
+`line 6 "t/t_preproc_inc2.v" 0
+
+`line 1 "t/t_preproc_inc3.v" 1
+
+
+
+
+ 
+  
+  
+  
+  At file inc3_a_filename_from_line_directive  line 10
+
+   
+
+`line 13 "inc3_a_filename_from_line_directive" 0
+ 
+
+ 
+  
+
+`line 17 "inc3_a_filename_from_line_directive" 0
+
+
+`line 18 "inc3_a_filename_from_line_directive" 2
+
+`line 6 "t/t_preproc_inc2.v" 0
+ 
+
+`line 7 "t/t_preproc_inc2.v" 2
+
+`line 9 "t/t_preproc.v" 0
+
+
+
+
+
+/*verilator pass_thru comment*/
+
+/*verilator pass_thru_comment2*/
+
+
+
+
+ 
+ 
+
+   wire [3:0] q = {
+		     1'b1   
+`line 25 "t/t_preproc.v" 0
+ ,
+		      
+`line 26 "t/t_preproc.v" 0
+ 1'b0  ,
+		     1'b1   
+`line 27 "t/t_preproc.v" 0
+ ,
+		     1'b1   
+`line 28 "t/t_preproc.v" 0
+
+		   };
+
+text.
+
+ 
+ 
+ foo  bar 
+ foobar2 
+
+ 
+
+
+
+ 
+
+
+
+
+
+ first part    		second part    		third part 
+Line_Preproc_Check 49
+
+
+
+ 
+
+ 
+ 
+  deep   deep  
+
+ 
+ 
+"Inside: `nosubst"
+ "`nosubst" 		  
+
+ 
+ x y LLZZ x y 
+  p q LLZZ p q     r   s  LLZZ  r   s   LLZZ  p q LLZZ p q     r   s  LLZZ  r   s   
+
+
+
+ firstline	 	comma","line LLZZ firstline	 	comma","line 
+
+ 
+  x   y LLZZ "a"  y 
+
+ 
+ (a,b) (a,b)
+
+ 
+$display( "left side: \" right side\"" )
+
+ 
+ bar_suffix   
+
+ 
+
+ $c("Zap(\"",bug1,"\");"); ;
+ $c("Zap(\"","bug2","\");"); ;
+
+
+
+
+ 
+ 
+   
+
+`line 95 "t/t_preproc.v" 0
+
+Line_Preproc_Check 96
+

@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
+# $Id$
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# Copyright 2003 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+
+compile (
+	 );
+
+execute (
+	 check_finished=>1,
+	 expect=> quotemeta(
+'[0] %x=0bbccc %x=0bbccc %o=2736314 %b=010111011110011001100 %0d=769228 %d=  769228
+[0] %x=1bbccc %x=1bbccc %o=6736314 %b=110111011110011001100 %0d=-279348 %d= -279348
+[0] %x=000bbbbcccc %x=000bbbbcccc %o=00027356746314 %b=00000000010111011101110111100110011001100 %0d=3149647052 %d=    3149647052
+[0] %x=100bbbbcccc %x=100bbbbcccc %o=20027356746314 %b=10000000010111011101110111100110011001100 %0d=-1096361980724 %d=-1096361980724
+[0] %x=000bc1234567812345678 %x=000bc1234567812345678 %o=000570110642547402215053170 %b=000000000101111000001001000110100010101100111100000010010001101000101011001111000
+[0] %x=000bc1234577812345678 %x=000bc1234577812345678 %o=000570110642567402215053170 %b=000000000101111000001001000110100010101110111100000010010001101000101011001111000
+'),
+     );
+
+ok(1);
+1;

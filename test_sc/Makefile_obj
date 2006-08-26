@@ -1,0 +1,39 @@
+# $Id$ -*- Makefile -*-
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator Example: Makefile for inside object directory
+#
+# This executed in the object directory, and called by ../Makefile
+#
+# Copyright 2003-2006 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+#
+#*****************************************************************************
+
+default: simx
+include Vtop.mk
+
+#######################################################################
+# Use sp_log.cpp, so we can get output in sim.log
+
+CPPFLAGS += -DUTIL_PRINTF=printf
+CPPFLAGS += -Wno-deprecated
+CPPFLAGS += $(SYSTEMC_CXX_FLAGS)
+
+LDFLAGS += $(SYSTEMC_CXX_FLAGS)
+
+#######################################################################
+# Linking final exe -- presumes have a sim_main.cpp
+
+SP_SRCS = verilated.o
+
+SC_LIB = $(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)/libsystemc.a
+
+simx: sc_main.o $(SP_SRCS) \
+	  $(VM_PREFIX)__ALL.a $(SC_LIB)
+	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(SC_LIBS) $(LIBS) 2>&1 | c++filt
+
+VPATH += ../test_sp
+
+sc_main.o: sc_main.cpp $(VM_PREFIX).h

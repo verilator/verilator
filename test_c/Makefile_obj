@@ -1,0 +1,39 @@
+# $Id$ -*- Makefile -*-
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator Example: Makefile for inside object directory
+#
+# This executed in the object directory, and called by ../Makefile
+#
+# Copyright 2003-2006 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+#
+#*****************************************************************************
+
+default: simx
+include Vtop.mk
+
+#######################################################################
+# Compile flags
+
+CPPFLAGS += -DVL_DEBUG=1
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+CPPFLAGS += -DVL_THREADED=1
+CPPFLAGS += -W
+CPPFLAGS += -Werror
+#CPPFLAGS += -pedantic-errors
+endif
+
+#######################################################################
+# Linking final exe -- presumes have a sim_main.cpp
+
+SP_SRCS = verilated.o
+ifeq ($(VM_TRACE),1)
+ SP_SRCS += SpTraceVcdC.o
+endif
+
+simx: sim_main.o $(SP_SRCS) $(VM_PREFIX)__ALL.a
+	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+
+sim_main.o: sim_main.cpp $(VM_PREFIX).h

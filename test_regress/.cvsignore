@@ -1,0 +1,10 @@
+*.old
+obj_dir
+vcs.key
+csrc
+simv*
+simx*
+*.log
+ncverilog.*
+INCA_libs
+logs

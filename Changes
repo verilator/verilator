@@ -1,0 +1,914 @@
+Revision history for Verilator
+
+The contributors that suggested a given feature are shown in [].  [by ...]
+indicates the contributor was also the author of the fix; Thanks!
+
+* Verilator 3.600 08/26/2006
+
+**   Support dotted cross-hierarchy variable and task references.
+
+**** Lint for x's in generate case statements.
+
+**** Fix line numbers being off by one when first file starts with newline.
+
+**** Fix naming of generate for blocks to prevent non-inline name conflict.
+
+* Verilator 3.542 08/11/2006 Stable
+
+**** Fix extraneous UNSIGNED warning when comparing genvars.  [David Hewson]
+
+**** Fix extra whitespace in $display %c.  [by David Addison]
+
+**** vl_finish and vl_fatal now print via VL_PRINTF rather then cerr/cout.
+
+**** Add VL_CONST_W_24X macro.  [Bernard Deadman]
+
+* Verilator 3.541 07/05/2006 Beta
+
+***  Fix "// verilator lint_on" not re-enabling warnings.  [David Hewson]
+
+***  Fix 3.540's multiple memory assignments to same block.  [David Hewson]
+
+**** Add warning on changeDetect to arrayed structures.  [David Hewson]
+
+**** Fix non-zero start number for arrayed instantiations.  [Jae Hossell]
+
+**** Fix GCC 4.0 header file warnings.
+
+* Verilator 3.540 06/27/2006 Beta
+
+**** Optimize combo assignments that are used only once, ~5-25% faster.
+
+**** Optimize delayed assignments to memories inside loops, ~0-5% faster.
+
+**** Fix mis-width warning on bit selects of memories.  [David Hewson]
+
+**** Fix mis-width warning on dead generate-if branches.  [Jae Hossell]
+
+* Verilator 3.533 06/05/2006 Stable
+
+***  Add PDF user manual, verilator.pdf.
+
+**** Fix delayed bit-selected arrayed assignments. [David Hewson]
+
+**** Fix execution path to Perl.  [Shanshan Xu]
+
+**** Fix Bison compile errors in verilog.y.  [by Ben Jackson]
+
+* Verilator 3.531 05/10/2006 Stable
+
+***  Support $c routines which return 64 bit values.
+
+**** Fix `include `DEFINE.
+
+**** Fix Verilator core dump when have empty public function. [David.Hewson]
+
+* Verilator 3.530 04/24/2006 Stable
+
+**   $time is now 64 bits.  The macro VL_TIME_I is now VL_TIME_Q, but calls
+     the same sc_time_stamp() function to get the current time.
+
+* Verilator 3.523 03/06/2006 Stable
+
+**** Fix error line numbers being off due to multi-line defines.  [Mat Zeno]
+
+**** Fix GCC sign extending (uint64_t)(a<b). [David Hewson]
+
+**** Fix `systemc_imp_header "undefined macro" error.
+
+* Verilator 3.522 02/23/2006 Beta
+
+**** Add UNUSED error message, for forward compatibility.
+
+* Verilator 3.521 02/14/2006 Beta
+
+***  Create new --coverage-line and --coverage-user options. [Peter Holmes]
+
+**** Added SystemVerilog 'x,'z,'0,'1, and new string literals.
+
+**** Fix public module's parent still getting inlined.
+
+* Verilator 3.520 01/14/2006 Stable
+
+**   Added support for $fopen, $fclose, $fwrite, $fdisplay.
+     See documentation, as the file descriptors differ from the standard.
+
+* Verilator 3.510 12/17/2005 Stable
+
+**   Improve trace-on performance on large multi-clock designs by 2x or more.
+     This adds a small ~2% performance penalty if traces are compiled in,
+     but not turned on.  For best non-tracing performance, do not use --trace.
+
+**** Fix $'s in specify delays causing bad PLI errors.  [Mat Zeno]
+
+**** Fix public functions not setting up proper symbol table. [Mat Zeno]
+
+**** Fix genvars generating trace compile errors.  [Mat Zeno]
+
+**** Fix VL_MULS_WWW compile error with MSVC++. [Wim Michiels]
+
+* Verilator 3.502 11/30/2005 Stable
+
+**** Fix local non-IO variables in public functions and tasks.
+
+**** Fix bad lifetime optimization when same signal is assigned multiple
+     times in both branch of a if. [Danny Ding]
+
+* Verilator 3.501 11/16/2005 Stable
+
+***  Add --profile-cfuncs for correlating profiles back to Verilog.
+
+**** Fix functions where regs are declared before inputs.  [Danny Ding]
+
+**** Fix bad deep expressions with bitselects and rotate.  [Prabhat Gupta]
+
+* Verilator 3.500 10/30/2005 Stable
+
+**   Support signed numbers, >>>, $signed, $unsigned.  [MANY!]
+
+**   Support multi-dimensional arrays.  [Eugen Fekete]
+
+**   Add very limited support for the Property Specification Language
+     (aka PSL or Sugar).  The format and keywords are now very limited, but will
+     grow with future releases.  The --assert switch enables this feature.
+
+**   With --assert, generate assertions for synthesis parallel_case and full_case.
+
+**** Fix generate if's with empty if/else blocks.  [Mat Zeno]
+
+**** Fix generate for cell instantiations with same name.  [Mat Zeno]
+
+* Verilator 3.481 10/12/2005 Stable
+
+***  Add /*verilator tracing_on/off*/ for waveform control.
+
+**** Fix split optimization reordering $display statements.
+
+* Verilator 3.480 9/27/2005 Beta
+
+**   Allow coverage of flattened modules, and multiple points per line.
+     Coverage analysis requires SystemPerl 1.230 or newer.
+
+**** Add preprocessor changes to support meta-comments.
+
+**** Optimize sequential assignments of different bits of same bus; ~5% faster.
+
+**** Optimize away duplicate lookup tables.
+
+**** Optimize wide concatenates into individual words.  [Ralf Karge]
+
+**** Optimize local variables from delayed array assignments.
+
+* Verilator 3.470 9/6/2005 Stable
+
+***  Optimize staging flops under reset blocks.
+
+***  Add '-Werror-...' to upgrade specific warnings to errors.
+
+**** Add GCC branch prediction hints on generated if statements.
+
+**** Fix bad simulation when same function called twice in same expression.
+
+**** Fix preprocessor substitution of quoted parameterized defines.
+
+* Verilator 3.464 8/24/2005 Stable
+
+***  Add `systemc_imp_header, for use when using --output-split.
+
+***  Add --stats option to dump design statistics.
+
+**** Fix core dump with clock inversion optimizations.
+
+* Verilator 3.463 8/5/2005 Stable
+
+***  Fixed case defaults when not last statement in case list. [Wim Michiels]
+
+* Verilator 3.462 8/3/2005 Stable
+
+***  Fix reordering of delayed assignments to same memory index. [Wim Michiels]
+
+**** Fix compile error with Flex 2.5.1.  [Jens Arm]
+
+**** Fix multiply-instantiated public tasks generating non-compilable code.
+
+* Verilator 3.461 7/28/2005 Beta
+
+**** Fix compile error with older versions of bison.  [Jeff Dutton]
+
+* Verilator 3.460 7/27/2005 Beta
+
+**   Add -output-split option to enable faster parallel GCC compiles.
+     To support --output-split, the makefiles now split VM_CLASSES
+     into VM_CLASSES_FAST and VM_CLASSES_SLOW.  This may require a
+     change to local makefiles.
+
+**   Support -v argument to read library files.
+
+***  When issuing unoptimizable warning, show an example path.
+
+**** Fix false warning when a clock is constant.
+
+**** Fix X/Z in decimal numbers.  [Wim Michiels]
+
+**** Fix genvar statements in non-named generate blocks.
+
+**** Fix core dump when missing newline in `define.  [David van der bokke]
+
+**** Internal tree dumps now indicate edit number that changed the node.
+
+* Verilator 3.450 7/12/2005
+
+**   $finish will no longer exit, but set Verilated::gotFinish().
+     This enables support for final statements, and for other cleanup code.
+     If this is undesired, redefine the vl_user_finish routine.  Top level
+     loops should use Verilated::gotFinish() as a exit condition for their
+     loop, and then call top->final().  To prevent a infinite loop, a
+     double $finish will still exit; this may be removed in future
+     releases.
+
+***  Add support for SystemVerilog keywords $bits, $countones, $isunknown,
+     $onehot, $onehot0, always_comb, always_ff, always_latch, finish.
+
+**** Fix "=== 1'bx" to always be false, instead of random.
+
+* Verilator 3.440 6/28/2005 Stable
+
+**   Add Verilog 2001 generate for/if/case statements.
+
+* Verilator 3.431 6/24/2005 Stable
+
+***  Fix selection bugs introduced in 3.430 beta.
+
+* Verilator 3.430 6/22/2005 Beta
+
+**   Add Verilog 2001 variable part selects [n+:m] and [n-:m].  [Wim Michiels]
+
+* Verilator 3.422 6/10/2005 Stable
+
+***  Added Verilog 2001 power (**) operator.  [Danny Ding]
+
+**** Fixed crash and added error message when assigning to inputs.  [Ralf Karge]
+
+**** Fixed tracing of modules with public functions.
+
+* Verilator 3.421 6/2/2005 Beta
+
+**** Fixed error about reserved word on non-public signals.
+
+**** Fixed missing initialization compile errors in 3.420 beta. [Ralf Karge]
+
+* Verilator 3.420 6/2/2005 Beta
+
+***  Fixed case defaults when not last statement in case list. [Ralf Karge]
+
+**** Added error message when multiple defaults in case statement.
+
+**** Fixed crash when wire self-assigns x=x.
+
+**   Performance improvements worth ~20%
+
+**   Added -x-assign options; ~5% faster if use -x-assign=0.
+
+**** Optimize shifts out of conditionals and if statements.
+
+**** Optimize local 'short' wires.
+
+**** Fixed gate optimization with top-flattened modules. [Mahesh Kumashikar]
+
+* Verilator 3.411 5/30/2005 Stable
+
+**** Fixed compile error in GCC 2.96.  [Jeff Dutton]
+
+* Verilator 3.410 5/25/2005 Beta
+
+**   Allow functions and tasks to be declared public.
+     They will become public C++ functions, with appropriate C++ types.
+     This allows users to make public accessor functions/tasks, instead
+     of having to use public variables and `systemc_header hacks.
+
+***  Skip producing output files if all inputs are identical
+     This uses timestamps, similar to make.  Disable with --no-skip-identical.
+
+**** Improved compile performance with large case statements.
+
+**** Fixed internal error in V3Table.  [Jeff Dutton]
+
+**** Fixed compile error in GCC 2.96, and with SystemC 1.2.  [Jeff Dutton]
+
+* Verilator 3.400 4/29/2005 Beta
+
+**   Internal changes to support future clocking features.
+
+**   Verilog-Perl and SystemPerl are no longer required for C++ or SystemC
+     output.  If you want tracing or coverage analysis, they are still needed.
+
+***  Added --sc to create pure SystemC output not requiring SystemPerl.
+
+***  Added --pins64 to create 64 bit SystemC outputs instead of sc_bv<64>.
+
+***  The --exe flag is now required to produce executables inside the makefile.
+     This was previously the case any time .cpp files were passed on the
+     command line.
+
+***  Added -O3 and --inline-mult for performance tuning.  [Ralf Karge]
+     One experiment regained 5% performance, at a cost of 300% in compile time.
+
+***  Improved performance of large case/always statements with low fanin
+     by converting to internal lookup tables (ROMs).
+
+***  Initialize SystemC port names.  [S Shuba]
+
+**** Added Doxygen comments to Verilated includes.
+
+**** Fixed -cc pins 8 bits wide and less to be uint8_t instead of uint16_t.
+
+**** Fixed crash when Mdir has same name as .v file.  [Gernot Koch]
+
+**** Fixed crash with size mismatches on case items.  [Gernot Koch]
+
+* Verilator 3.340 2/18/2005 Stable
+
+***  Report misconnected pins across all modules, instead of just first error.
+
+**** Fixed over-active inlining, resulting in compile slowness.
+
+**** Improved large netlist compile times.
+
+**** Added additional internal assertions.
+
+* Verilator 3.332 1/27/2005
+
+***  Added -E preprocess only flag, similar to GCC.
+
+***  Added CMPCONSTLR when comparison is constant due to > or < with all ones.
+
+**** Fixed loss of first -f file argument, introduced in 3.331.
+
+* Verilator 3.331 1/18/2005
+
+**   The Verilog::Perl preprocessor is now C++ code inside of Verilator.
+     This improves performance, makes compilation easier, and enables
+     some future features.
+
+***  Support arrays of instantiations (non-primitives only). [Wim Michiels]
+
+**** Fixed unlinked error with defparam.  [Shawn Wang]
+
+* Verilator 3.320 12/10/2004
+
+**   NEWS is now renamed Changes, to support CPAN indexing.
+
+***  If Verilator is passed a C file, create a makefile link rule.
+     This saves several user steps when compiling small projects.
+
+***  Added new COMBDLY warning in place of fatal error.  [Shawn Wang]
+
+***  Fixed mis-simulation with wide-arrays under bit selects.  [Ralf Karge]
+
+**** Added NC Verilog as alternative to VCS for reference tests.
+
+**** Support implicit wire declarations on input-only signals.
+     (Dangerous, as leads to wires without drivers, but allowed by spec.) 
+
+**** Fixed compile warnings on Suse 9.1
+
+* Verilator 3.311 11/29/2004
+
+**   Support implicit wire declarations (as a warning).  [Shawn Wang]
+
+**** Fixed over-shift difference in Verilog vs C++.  [Ralf Karge]
+
+* Verilator 3.310 11/15/2004
+
+**   Support defparam.
+
+**   Support gate primitives: buf, not, and, nand, or, nor, xor, xnor.
+
+***  Ignore all specify blocks.
+
+* Verilator 3.302 11/12/2004
+
+***  Support NAND and NOR operators.
+
+***  Better warnings when port widths don't match.
+
+**** Fixed internal error due to some port width mismatches. [Ralf Karge]
+
+**** Fixed WIDTH warnings on modules that are only used
+     parameterized, not in 'default' state.
+
+**** Fixed selection of SystemC library on cygwin systems. [Shawn Wang]
+
+**** Fixed runtime bit-selection of parameter constants.
+
+* Verilator 3.301 11/04/2004
+
+**** Fixed 64 bit [31:0] = {#{}} mis-simulation.  [Ralf Karge]
+
+**** Fixed shifts greater then word width mis-simulation.  [Ralf Karge]
+
+**** Work around GCC 2.96 negation bug.
+
+* Verilator 3.300 10/21/2004
+
+**   New backend that eliminates most VL_ macros.
+     Improves performance 20%-50%, depending on frequency of use of signals
+     over 64 bits. GCC compile times with -O2 shrink by a factor of 10.
+
+**** Fixed "setting unsigned int from signed value" warning.
+
+* Verilator 3.271 10/21/2004
+
+**** Fixed "loops detected" error with some negedge clocks.
+
+**** Cleaned up some output code spacing issues.
+
+* Verilator 3.270 10/15/2004
+
+***  Support Verilog 2001 parameters in module headers. [Ralf Karge]
+
+**** Suppress numeric fault when dividing by zero.
+
+**** Faster code to support compilers not inlining all Verilated functions.
+
+* Verilator 3.260 10/7/2004
+
+**   Support Verilog 2001 named parameter instantiation. [Ralf Karge]
+
+**** Return 1's when one bit wide extract indexes outside array bounds.
+
+**** Fixed compile warnings on 64-bit operating systems.
+
+**** Fixed incorrect dependency in .d file when setting VERILATOR_BIN.
+
+* Verilator 3.251 9/9/2004
+
+**** Fixed parenthesis overflow in Microsoft Visual C++ [Renga Sundararajan]
+
+* Verilator 3.250 8/30/2004
+
+**   Support Microsoft Visual C++ [Renga Sundararajan]
+
+***  SystemPerl 1.161+ is required.
+
+* Verilator 3.241 8/17/2004
+
+**   Support ,'s to separate multiple assignments. [Paul Nitza]
+
+**** Fixed shift sign extension problem using non-GCC compilers.
+
+* Verilator 3.240 8/13/2004
+
+**   Verilator now uses 64 bit math where appropriate.
+     Inputs and outputs of 33-64 bits wide to the C++ Verilated model must
+     now be uint64_t's; SystemC has not changed, they will remain sc_bv's.
+     This increases performance by ~ 9% on x86 machines, varying with how
+     frequently 33-64 bit signals occur.  Signals 9-16 bits wide are now
+     stored as 16 bit shorts instead of longs, this aids cache packing.
+
+**** Fixed SystemC compile error with feedthrus. [Paul Nitza]
+
+**** Fixed concat value error introduced in 3.230.
+
+* Verilator 3.230 8/10/2004
+
+***  Added coverage output to test_sp example, SystemPerl 1.160+ is required.
+
+**** Fixed time 0 value of signals. [Hans Van Antwerpen]
+     Earlier versions would not evaluate some combinatorial signals
+     until posedge/negedge blocks had been activated.
+
+**** Fixed wide constant inputs to public submodules [Hans Van Antwerpen]
+
+**** Fixed wide signal width extension bug.
+     Only applies when width mismatch warnings were overridden.
+
+* Verilator 3.220 6/22/2004
+
+**   Many waveform tracing changes:
+
+***  Tracing is now supported on C++ standalone simulations. [John Brownlee]
+
+***  When tracing, SystemPerl 1.150 or newer is required.
+
+***  When tracing, Verilator must be called with the --trace switch.
+
+**** Added SystemPerl example to documentation.  [John Brownlee]
+
+**** Various Cygwin compilation fixes.  [John Brownlee]
+
+* Verilator 3.210 4/1/2004
+
+**   Compiler optimization switches have changed
+     See the BENCHMARKING section of the documentation.
+
+***  With Verilog-Perl 2.3 or newer, Verilator supports SystemVerilog
+     preprocessor extensions.
+
+***  Added localparam. [Thomas Hawkins]
+
+***  Added warnings for SystemVerilog reserved words.
+
+* Verilator 3.203 3/10/2004
+
+***  Notes and repairs for Solaris. [Fred Ma]
+
+* Verilator 3.202 1/27/2004
+
+**   The beta version is now the primary release.  See below for many changes.
+     If you have many problems, you may wish to try release 3.125.
+
+***  Verilated::traceEverOn(true) must be called at time 0 if you will ever
+     turn on tracing (waveform dumping) of signals.  Future versions will
+     need this switch to disable trace incompatible optimizations.
+
+**** Fixed several tracing bugs
+
+**** Added optimizations for common replication operations.
+
+* Verilator 3.201-beta 12/10/2003
+
+**   BETA VERSION, USE 3.124 for stable release!
+
+**   Version 3.2XX includes a all new back-end.
+     This includes automatic inlining, flattening of signals between
+     hierarchy, and complete ordering of statements.  This results in
+     60-300% execution speedups, though less pretty C++ output.  Even
+     better results are possible using GCC 3.2.2 (part of Redhat 9.1), as
+     GCC has fixed some optimization problems which Verilator exposes.
+
+     If you are using `systemc_ctor, beware pointers to submodules are now
+     initialized after the constructor is called for a module, to avoid
+     segfaults, move statements that reference subcells into initial
+     statements.
+
+***  C++ Constructor that creates a verilog module may take a char* name.
+     This name will be used to prefix any $display %m arguments, so users may
+     distinguish between multiple Verilated modules in a single executable.
+
+* Verilator 3.125 1/27/2004
+
+**** Optimization of bit replications
+
+* Verilator 3.124 12/05/2003
+
+***  A optimized executable will be made by default, in addition to a debug
+     executable.  Invoking Verilator with --debug will pick the debug version.
+
+**** Many minor invisible changes to support the next version.
+
+* Verilator 3.123 11/10/2003
+
+**** Wide bus performance enhancements.
+
+**** Fixed function call bug when width warning suppressed. [Leon Wildman]
+
+**** Fixed __DOT__ compile problem with funcs in last revision. [Leon Wildman]
+
+* Verilator 3.122 10/29/2003
+
+***  Modules which are accessed from external code now must be marked with
+     /*verilator public_module*/ unless they already contain public signals.
+     To enforce this, private cell names now have a string prepended.
+
+**** Fixed replicated function calls in one statement. [Robert A. Clark]
+
+**** Fixed function call bug when width warning suppressed. [Leon Wildman]
+
+* Verilator 3.121 09/29/2003
+
+***  Support multiplication over 32 bits. [Chris Boumenot]
+     Also improved speed of addition and subtraction over 32 bits.
+
+***  Detect bit selection out of range errors.
+
+***  Detect integer width errors.
+
+**** Fixed width problems on function arguments. [Robert A. Clark]
+
+* Verilator 3.120 09/24/2003
+
+***  $finish now exits the model (via vl_finish function).
+
+***  Support inputs/outputs in tasks.
+
+***  Support V2K "integer int = {INITIAL_VALUE};"
+
+***  Ignore floating point delay values.  [Robert A. Clark]
+
+**** Ignore `celldefine, `endcelldefine, etc. [Robert A. Clark]
+
+**** New optimizations on reduction operators.
+
+**** Fixed converting "\ooo" into octal values.
+
+**** Fixed $display("%x");
+
+* Verilator 3.112 09/16/2003
+
+**** Fixed functions in continuous assignments. [Robert A. Clark]
+
+**** Fixed inlining of modules with 2-level deep outputs.
+
+* Verilator 3.111 09/15/2003
+
+**** Fixed declaration of functions before using that module. [Robert A. Clark]
+
+**** Fixed module inlining bug with outputs.
+
+* Verilator 3.110 09/12/2003
+
+**   Support Verilog 2001 style input/output declarations. [Robert A. Clark]
+
+***  Allow local vars in headers of function/tasks. [Leon Wildman]
+
+* Verilator 3.109 08/28/2003
+
+**   Added support for local variables in named begin blocks. [Leon Wildman]
+
+* Verilator 3.108 08/11/2003
+
+**   Added support for functions.
+
+***  Signals 8 bits and shorter are now stored as chars
+     instead of uint32_t's.  This improves Dcache packing and
+     improves performance by ~7%.
+
+**** $display now usually results in a single VL_PRINT rather then many.
+
+**** Many optimizations involving conditionals (?:)
+
+* Verilator 3.107 07/15/2003
+
+***  --private and --l2name are now the default,
+     as this enables additional optimizations.
+     Use --noprivate or --nol2name to get the older behavior.
+
+***  Now support $display of binary and wide format data.
+
+***  Added detection of incomplete case statements,
+     and added related optimizations worth ~4%.
+
+**** Work around flex bug in Redhat 8.0.  [Eugene Weber]
+
+**** Added some additional C++ reserved words.
+
+**** Additional constant optimizations, ~5% speed improvement.
+
+* Verilator 3.106 06/17/2003
+
+** $c can now take multiple expressions as arguments.
+   For example $c("foo","bar(",32+1,");") will insert "foobar(33);"
+   This makes it easier to pass the values of signals.
+
+** Several changes to support future versions that may have
+   signal-eliminating optimizations.  Users should try to use these switch
+   on designs, they will become the default in later versions.
+
+*** Added --private switch and /*verilator public*/ metacomment.
+    This renames all signals so that compile errors will result if any
+    signals referenced by C++ code are missing a /*verilator public*/
+    metacomment.
+
+*** With --l2name, the second level cell C++ cell is now named "v".
+    Previously it was named based on the name of the verilog code.  This
+    means to get to signals, scope to "{topcell} ->v ->{mysignal}" instead
+    of "{topcell} ->{verilogmod}. {mysignal}".  This allows different
+    modules to be substituted for the cell without requiring source
+    changes.
+
+**** Several cleanups for Redhat 8.0.
+
+* Verilator 3.105 05/08/2003
+
+**** Fixed more GCC 3.2 errors. [David Black]
+
+* Verilator 3.104 04/30/2003
+
+*** Indicate direction of ports with VL_IN and VL_OUT.
+
+*** Allow $c32, etc, to specify width of the $c statement for VCS.
+
+**** Fixed false "indent underflow" error inside `systemc_ctor sections.
+
+**** Fixed missing ordering optimizations when outputs also used internally.
+
+*** Numerous performance improvements, worth about 25%
+
+**** Assign constant cell pins in initial blocks rather then every cycle.
+
+**** Promote subcell's combo logic to sequential evaluation when possible.
+
+**** Fixed GCC 3.2 compile errors.  [Narayan Bhagavatula]
+
+* Verilator 3.103 01/28/2003
+
+**** Fixed missing model evaluation when clock generated several levels of
+     hierarchy across from where it is used as a clock.  [Richard Myers]
+
+**** Fixed sign-extension bug introduced in 3.102.
+
+* Verilator 3.102 01/24/2003
+
+**** Fixed sign-extension of X/Z's ("32'hx")
+
+* Verilator 3.101 01/13/2003
+
+**** Fixed 'parameter FOO=#'bXXXX' [Richard Myers]
+
+**** Allow spaces inside numbers ("32'h 1234") [Sam Gladstone]
+
+* Verilator 3.100 12/23/2002
+
+**   Support for simple tasks w/o vars or I/O.  [Richard Myers]
+
+**** Ignore DOS carriage returns in Linux files. [Richard Myers]
+
+* Verilator 3.012 12/18/2002
+
+**** Fixed parsing bug with casex statements containing case items
+     with bit extracts of parameters. [Richard Myers]
+
+**** Fixed bug which could cause writes of non-power-of-2 sized arrays to
+     corrupt memory beyond the size of the array. [Dan Lussier]
+
+**** Fixed bug which did not detect UNOPT problems caused by
+     submodules.  See the description in the verilator man page. [John Deroo]
+
+**** Fixed compile with threaded Perl.  [Ami Keren]
+
+* Verilator 3.010  11/3/2002
+
+*** Support SystemC 2.0.1.  SystemPerl version 1.130 or newer is required.
+
+**** Fixed bug with inlined modules under other inlined modules.  [Scott
+     Bleiweiss]
+
+* Verilator 3.005  10/21/2002
+
+**** Fixed X's in case (not casex/z) to constant propagate correctly.
+
+**** Fixed missing include. [Kurachi]
+
+* Verilator 3.004  10/10/2002
+
+*** Added /* verilator module_inline */ and associated optimizations.
+
+*** Allow /* verilator coverage_block_off */ in place of `coverage_block_off.
+    This prevents problems with Emacs AUTORESET. [Ray Strouble]
+
+**** Fixed `coverage_block_off also disabling subsequent blocks.
+
+**** Fixed unrolling of loops with multiple simple statements.
+
+**** Fixed compile warnings on newer GCC. [Kurachi]
+
+**** Additional concatenation optimizations.
+
+* Verilator 3.003  09/13/2002
+
+*** Now compiles on Windows 2000 with Cygwin.
+
+**** Fixed bug with pin assignments to wide memories.
+
+**** Optimize wire assignments to constants.
+
+* Verilator 3.002  08/19/2002
+
+** First public release of version 3.
+
+* Verilator 3.000  08/03/2002
+
+** All new code base.  Many changes too numerous to mention.
+
+*** Approximately 4 times faster then Verilator 2.
+*** Supports initial statements
+*** Supports correct blocking/nonblocking assignments
+*** Supports `defines across multiple modules
+*** Optimizes call ordering, constant propagation, and dead code elimination.
+
+* Verilator 2.1.8 04/03/2002
+
+** All applications must now link against include/verilated.cpp
+
+*** Paths specified to verilator_make should be absolute, or be formed
+   to allow for execution in the object directory (prepend ../ to each path.)
+   This allows relative filenames for makes which hash and cache dependencies.
+
+**** Added warning when parameter constants are too large. [John Deroo]
+
+**** Added warning when x/?'s used in non-casez statements.
+
+**** Added warning when blocking assignments used in posedge blocks. [Dan Lussier]
+
+**** Split evaluation function into clocked and non-clocked, 20% perf gain.
+
+* Verilator 2.1.5 12/1/2001
+
+** Added coverage analysis.  In conjunction with SystemC provide line
+   coverage reports, without SystemC, provide a hook to user written
+   accumulation function.  See --coverage option of verilator_make.
+
+*** Relaxed multiply range checking
+
+*** Support for constants up to 128 bits
+
+*** Randomize values used when assigning to X's.
+
+**** Added -guard option of internal testing.
+
+**** Changed indentation in emitted code to be automatically generated.
+
+**** Fixed corruption of assignments of signal over 32 bits with non-0 lsb.
+
+* Verilator 2.1.4 11/16/2001
+
+** Added $c("c_commands();");  for embedding arbitrary C code in Verilog.
+
+* Verilator 2.1.3 11/03/2001
+
+** Support for parameters.
+
+* Verilator 2.1.2 10/25/2001
+
+** Verilog Errors now reference the .v file rather then the .vpp file.
+
+*** Support strings in assignments:  reg [31:0] foo = "STRG";
+
+*** Support %m in format strings.  Ripped out old $info support, use
+    Verilog-Perl's vpm program instead.
+
+*** Convert $stop to call of v_stop() which user can define.
+
+**** Fixed bug where a==b==c would have wrong precedence rule.
+
+**** Fixed bug where XNOR on odd-bit-widths (~^ or ^~) had bad value.
+
+* Verilator 2.1.1 5/17/2001
+
+** New test_sp directory for System-Perl (SystemC) top level instantiation
+of the Verilated code, lower modules are still C++ code.  (Experimental).
+
+** New test_spp directory for Pure System-Perl (SystemC) where every module
+is true SystemC code.  (Experimental)
+
+*** Input ports are now loaded by pointer reference into the sub-cell.
+This is faster on I-386 machines, as the stack must be used when there are
+a large number of parameters.  Also, this simplifies debugging as the value
+of input ports exists for tracing.
+
+**** Many code cleanups towards standard C++ style conventions.
+
+* Verilator 2.1.0 5/8/2001
+
+**** Many code cleanups towards standard C++ style conventions.
+
+* {Version history lost}
+
+* Verilator 1.8 7/8/1996
+
+** [Versions 0 to 1.8 were by Paul Wasson]
+
+****  Fix single bit in concat from instance output incorrect offset bug.
+
+* Verilator 1.7 5/20/1996
+
+****  Mask unused bits of DONTCAREs.
+
+* Verilator 1.6 5/13/1996
+
+*** Added fasttrace script
+
+* Verilator 1.5 1/9/1996
+
+*** Pass structure pointer into translated code,
+    so multiple instances can use same functions.
+
+**** Fix static value concat on casex items.
+
+* Verilator 1.1 3/30/1995
+
+*** Bug fixes, added verimake_partial script, performance improvements.
+
+* Verilator 1.0c 9/30/1994
+
+*** Initial release of Verilator
+
+* Verilator 0.0 7/8/1994
+
+**** First code written.
+
+----------------------------------------------------------------------
+$Id$
+----------------------------------------------------------------------
+
+This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
+
+Copyright 2001-2006 by Wilson Snyder.  This program is free software;
+you can redistribute it and/or modify it under the terms of either the GNU
+General Public License or the Perl Artistic License.
+
+Local variables:
+mode: outline
+paragraph-separate: "[ 	\f\n]*$"
+end:

@@ -1,0 +1,87 @@
+# $Id$ */
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator: Makefile for verilog source
+#
+# Code available from: http://www.veripool.com/verilator
+#
+#*****************************************************************************
+#
+# Copyright 2003-2006 by Wilson Snyder.  This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+#
+# Verilator is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#****************************************************************************/
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+PERL = @PERL@
+
+#### End of system configuration section. ####
+
+
+default: dbg opt
+debug: dbg
+optimize: opt
+
+ifeq ($(OBJCACHE_HOSTS),)
+ ifneq ($(SLCHOOSED_HOST),)
+  ifeq ($(VERILATOR_AUTHOR_SITE),1)
+export OBJCACHE_HOSTS := $(shell rschedule --no-allow-reserved --similar hostnames)
+  endif
+ endif
+endif
+
+ifeq ($(OBJCACHE_HOSTS),)
+export OBJCACHE := 
+else
+export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
+export OBJCACHE := @objcache --read --write
+endif
+
+obj_opt:
+	mkdir $@
+obj_dbg:
+	mkdir $@
+
+.PHONY: ../verilator_bin ../verilator_bin_dbg
+
+opt: ../verilator_bin
+ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
+../verilator_bin: ../verilator_bin_dbg
+	cp -p $< $@
+	@-cp -p $<.exe $@.exe
+else
+../verilator_bin: obj_opt prefiles
+	cd obj_opt && $(MAKE)                  TGT=../$@ -f ../Makefile_obj serial
+	cd obj_opt && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ -f ../Makefile_obj
+endif
+
+dbg: ../verilator_bin_dbg
+../verilator_bin_dbg: obj_dbg prefiles
+	cd obj_dbg && $(MAKE)                  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	cd obj_dbg && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
+
+prefiles::
+
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+prefiles:: config_rev.h
+# This output goes into srcdir, as we need to distribute it as part of the kit.
+config_rev.h:	config_rev.pl .svn/entries
+	$(PERL) config_rev.pl . >$@
+endif
+
+maintainer-copy::
+clean mostlyclean distclean maintainer-clean::
+	-rm -rf obj_* *.log *.dmp *.vpd core
+	-rm -f *.o *.d perlxsi.c *_gen_*
+	-rm -f *__gen*
+	-rm -f *.yy.* y.output y.tab.[cho] *_test
+	-rm -f .objcache*

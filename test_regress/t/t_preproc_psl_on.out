@@ -1,0 +1,77 @@
+
+`line 1 "t/t_preproc_psl.v" 1
+
+
+
+
+
+
+/*verilator metacomment preserved*/
+
+/*verilator metacomment also_preserved*/
+
+Hello in t_preproc_psl.v
+   
+   
+   
+   
+
+    psl  default clock = (posedge clk);
+    psl  fails1: cover {cyc==10};
+    psl  assert always cyc!=10;
+    psl  assert always cyc==3 -> mask==8'h2;
+    psl  failsx: cover {cyc==3 && mask==8'h1};
+    psl  fails2:
+        cover {
+	    cyc==3 && mask==8'h9};
+        
+	fails3: always assert {
+	    cyc==3 && mask==8'h10 };
+    
+ 29
+
+   
+   
+   
+ psl 
+      fails_ml:
+        assert always
+  	    cyc==3 -> mask==8'h21;
+    psl
+      fails_mlalso:  assert always cyc==3 -> mask==8'h21;
+    
+ 41
+
+    psl  assert never (cyc==1 && reset_l);
+
+    psl  fails3: assert always
+    psl 	    cyc==3 -> mask==8'h21;
+   
+
+
+    psl  assert always
+    psl        {[*]; cyc==3;
+    psl         cyc==4; cyc==6};
+   
+
+
+
+ 
+      
+
+`line 59 "t/t_preproc_psl.v" 0
+
+
+
+ 
+    psl  assert always  cyc !=10;
+
+ 
+  `psl
+psl assert always sig!=90;
+  `verilog
+
+
+
+72
+

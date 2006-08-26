@@ -1,0 +1,168 @@
+# $Id$ -*- Makefile -*-
+######################################################################
+# DESCRIPTION: Makefile commands for all verilated target files
+#
+# Copyright 2003-2006 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+######################################################################
+
+PERL = @PERL@
+CXX = @CXX@
+LINK = @CXX@
+AR     = ar
+RANLIB = ranlib
+
+######################################################################
+# Programs
+
+SP_PREPROC	= sp_preproc
+SP_INCLUDER     = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+
+######################################################################
+# C Preprocessor flags
+
+VK_CPPFLAGS_ALWAYS += \
+		-MMD \
+		-I$(VERILATOR_ROOT)/include \
+		-DVL_PRINTF=printf \
+		-DVM_TRACE=$(VM_TRACE) \
+
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+VK_CPPFLAGS_WALL += -Wall \
+		-Wno-char-subscripts \
+		-Wno-sign-compare \
+		-Wno-unused-parameter \
+		-Wno-unused-variable \
+		-Wno-uninitialized \
+		-Werror
+endif
+
+CPPFLAGS += -I. $(VK_CPPFLAGS_ALWAYS) $(VK_CPPFLAGS_WALL)
+
+VPATH += ..
+VPATH += $(VERILATOR_ROOT)/include
+
+#OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE 
+#OPT = -ggdb -DPRINTINITSTR
+CPPFLAGS += $(OPT)
+
+# See the benchmarking section of bin/verilator.
+# Support class optimizations.  This includes the tracing and symbol table.
+# SystemC takes minutes to optimize, thus it is off by default.
+#OPT_SLOW = 
+# Fast path optimizations.  Most time is spent in these classes.
+#OPT_FAST = -O2 -funroll-loops
+#OPT_FAST = -O
+#OPT_FAST = 
+
+#######################################################################
+##### Aggregates
+
+VM_CLASSES += $(VM_CLASSES_FAST) $(VM_CLASSES_SLOW)
+VM_SUPPORT += $(VM_SUPPORT_FAST) $(VM_SUPPORT_SLOW)
+
+#######################################################################
+##### SystemC or SystemPerl builds
+
+ifeq ($(VM_SP_OR_SC),1)
+  CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC)/include
+  LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)
+  LIBS     += -lm -lstdc++
+  SC_LIBS   = -lsystemc
+ ifneq ($(wildcard $(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)/*numeric_bit*),)
+  # Systemc 1.2.1beta
+  SC_LIBS   += -lnumeric_bit -lqt
+ endif
+endif
+
+#######################################################################
+##### SystemPerl builds
+
+ifeq ($(VM_SP),1)
+  CPPFLAGS += -I$(SYSTEMPERL) -I$(SYSTEMPERL)/src -DSYSTEMPERL
+  VPATH    +=   $(SYSTEMPERL)   $(SYSTEMPERL)/src
+
+  VK_CLASSES_SP = $(addsuffix .sp, $(VM_CLASSES))
+
+  # This rule is called manually by the upper level makefile
+  preproc:
+	 @echo "      SP Preprocess" $(basename $(VM_CLASSES)) ...
+	 $(SP_PREPROC) -M sp_preproc.d --tree $(VM_PREFIX).sp_tree \
+		--preproc $(VK_CLASSES_SP)
+else
+  preproc:
+endif
+
+#######################################################################
+##### C/H builds
+
+ifeq ($(VM_PCLI),1)
+  LIBS   += -lm -lstdc++
+ ifeq ($(VM_TRACE),1)
+  CPPFLAGS += -I$(SYSTEMPERL) -I$(SYSTEMPERL)/src
+  VPATH    +=   $(SYSTEMPERL)   $(SYSTEMPERL)/src
+ endif
+endif
+
+#######################################################################
+# Overall Objects Linking
+
+VK_CLASSES_H   = $(addsuffix .h, $(VM_CLASSES))
+VK_CLASSES_CPP = $(addsuffix .cpp, $(VM_CLASSES))
+
+VK_SUPPORT_CPP = $(addsuffix .cpp, $(VM_SUPPORT))
+
+VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
+
+ifneq ($(VM_PARALLEL_BUILDS),1)
+  # Fast building, all .cpp's in one fell swoop
+  # This saves about 5 sec per module, but can be slower if only a little changes
+  VK_OBJS += $(VM_PREFIX)__ALLcls.o   $(VM_PREFIX)__ALLsup.o
+  all_cpp:   $(VM_PREFIX)__ALLcls.cpp $(VM_PREFIX)__ALLsup.cpp
+  $(VM_PREFIX)__ALLcls.cpp: $(VK_CLASSES_CPP)
+	$(SP_INCLUDER) $^ > $@
+  $(VM_PREFIX)__ALLsup.cpp: $(VK_SUPPORT_CPP)
+	$(SP_INCLUDER) $^ > $@
+else
+  #Slow way of building... Each .cpp file by itself
+  VK_OBJS += $(addsuffix .o, $(VM_CLASSES) $(VM_SUPPORT))
+endif
+
+$(VM_PREFIX)__ALL.a: $(VK_OBJS)
+	@echo "      Archiving" $@ ...
+	$(AR) r $@ $^
+	$(RANLIB) $@
+
+######################################################################
+### Compile rules
+
+#Default rule embedded in make:  (Not defined so user makefiles can override it)
+#.cpp.o:
+#	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+$(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+
+$(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+
+######################################################################
+### Debugging
+
+debug::
+	@echo
+	@echo VM_PREFIX:  $(VM_PREFIX)
+	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)
+	@echo VM_CLASSES_SLOW: $(VM_CLASSES_SLOW)
+	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
+	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
+	@echo
+
+######################################################################
+### Detect out of date files and rebuild.
+
+DEPS := $(wildcard *.d)
+ifneq ($(DEPS),)
+include $(DEPS)
+endif

@@ -1,0 +1,77 @@
+
+`line 1 "t/t_preproc_psl.v" 1
+
+
+
+
+
+
+/*verilator metacomment preserved*/
+
+/*verilator metacomment also_preserved*/
+
+Hello in t_preproc_psl.v
+   
+   
+   
+   
+
+   
+   
+   
+   
+   
+   
+
+
+
+
+
+
+ 29
+
+   
+   
+   
+
+
+
+
+
+
+
+ 41
+
+   
+
+   
+   
+   
+
+
+   
+   
+   
+   
+
+
+
+ 
+   
+
+`line 59 "t/t_preproc_psl.v" 0
+
+
+
+ 
+   
+
+ 
+  `psl
+psl assert always sig!=90;
+  `verilog
+
+
+
+72
+

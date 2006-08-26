@@ -1,0 +1,58 @@
+# $Id$ -*- Makefile -*-
+#*****************************************************************************
+#
+# DESCRIPTION: Verilator Example: Makefile for inside object directory
+#
+# This executed in the object directory, and called by ../Makefile
+#
+# Copyright 2003-2005 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+#
+#*****************************************************************************
+
+default: $(VM_PREFIX)
+
+ifneq ($(MAKE_MAIN),0)
+   # Add main to classes rather then SP_SRCS to save a compiler run
+   VM_CLASSES += ${VM_PREFIX}__main
+endif
+
+include $(VM_PREFIX).mk
+
+#######################################################################
+
+ifeq ($(VERILATOR_AUTHOR_SITE),1)
+#OBJCACHE := objcache --read --write
+#OBJCACHE_HOSTS := 
+endif
+
+#######################################################################
+
+# Needed by tracing routines
+CPPFLAGS += -DVL_DEBUG=1
+CPPFLAGS += -DVM_PREFIX=$(VM_PREFIX)
+CPPFLAGS += $(CPPFLAGS_ADD)
+
+#######################################################################
+# Linking final exe
+
+ifeq ($(VM_SP_OR_SC),1)
+   LIBS += $(SC_LIBS)
+endif
+
+#Default compile, using normal make rules
+#$(VM_PREFIX): $(SP_SRCS) $(VK_OBJS)
+#	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+
+#Our own compile rules; Faster compile, all in one file
+$(VM_PREFIX)__ALLboth.cpp: $(VK_CLASSES_CPP) $(VK_SUPPORT_CPP)
+	$(SP_INCLUDER) $^ > $@
+
+$(VM_PREFIX)__ALLboth.o: $(VM_PREFIX)__ALLboth.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+
+ifneq ($(MAKE_MAIN),0)
+   $(VM_PREFIX): $(VM_PREFIX)__ALLboth.o
+	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+endif

@@ -1,0 +1,196 @@
+: # -*-Mode: perl;-*- use perl, wherever it is
+eval 'exec perl -wS $0 ${1+"$@"}'
+  if 0;
+# $Id$
+######################################################################
+#
+# Copyright 2005-2006 by Wilson Snyder <wsnyder@wsnyder.org>.  This
+# program is free software; you can redistribute it and/or modify it under
+# the terms of either the GNU Lesser General Public License or the Perl
+# Artistic License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+require 5.006_001;
+use warnings;
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use strict;
+use vars qw ($Debug);
+
+#======================================================================
+
+
+#======================================================================
+# main
+
+$Debug = 0;
+my $Opt_A;
+my $Opt_B;
+autoflush STDOUT 1;
+autoflush STDERR 1;
+if (! GetOptions (
+		  "help"	=> \&usage,
+		  "debug"	=> \&debug,
+		  "<>"		=> \&parameter,
+		  )) {
+    usage();
+}
+
+defined $Opt_A or die "%Error: No old diff filename\n";
+defined $Opt_B or die "%Error: No new diff filename\n";
+
+if (-d $Opt_A && -d $Opt_B) {
+    diff_dir ($Opt_A, $Opt_B);
+} elsif (-f $Opt_A && -f $Opt_B) {
+    diff_file ($Opt_A, $Opt_B);
+} else {
+    die "%Error: Mix of files and dirs\n";
+}
+
+sub diff_dir {
+    my $a = shift;
+    my $b = shift;
+    # Diff all files under two directories
+    my %files;
+
+    foreach my $fn (glob("$a/*.tree")) {
+	(my $base = $fn) =~ s!.*/!!;
+	$files{$base}{a} = $fn;
+    }
+    foreach my $fn (glob("$b/*.tree")) {
+	(my $base = $fn) =~ s!.*/!!;
+	$files{$base}{b} = $fn;
+    }
+    foreach my $base (sort (keys %files)) {
+	my $a = $files{$base}{a};
+	my $b = $files{$base}{b};
+	next if !$a || !$b;
+	print "="x70,"\n";
+	print "= $a <-> $b\n";
+	diff_file($a,$b);
+    }
+}
+
+sub diff_file {
+    my $a = shift;
+    my $b = shift;
+    # Compare the two tree files
+    my $tmp_a = "/tmp/$$.a";
+    my $tmp_b = "/tmp/$$.b";
+
+    filter ($a, $tmp_a);
+    filter ($b, $tmp_b);
+    system("diff $tmp_a $tmp_b");
+    unlink $tmp_a;
+    unlink $tmp_b;
+}
+
+sub filter {
+    my $fn1 = shift;
+    my $fn2 = shift;
+    # Remove hex numbers before diffing
+    my $f1 = IO::File->new ($fn1) or die "%Error: $! $fn1,";
+    my $f2 = IO::File->new ($fn2,"w") or die "%Error: $! $fn2,";
+    while (defined (my $line=$f1->getline())) {
+	next if $line =~ / This=/;
+	$line =~ s/0x[a-f0-9]+/0x/g;
+	$line =~ s/<e[0-9]+\#?>/<e>/g;
+	print $f2 $line;
+    }
+    $f1->close;
+    $f2->close;
+}
+
+#----------------------------------------------------------------------
+
+sub usage {
+    print '$Id$ ', "\n";
+    pod2usage(-verbose=>2, -exitval => 2);
+    exit (1);
+}
+
+sub debug {
+    $Debug = 1;
+}
+
+sub parameter {
+    my $param = shift;
+    if (!defined $Opt_A) {
+	$Opt_A = $param;
+    } elsif (!defined $Opt_B) {
+	$Opt_B = $param;
+    } else {	
+	die "%Error: Unknown parameter: $param\n";
+    }
+}
+
+#######################################################################
+
+sub run {
+    # Run a system command, check errors
+    my $command = shift;
+    print "\t$command\n";
+    system "$command";
+    my $status = $?;
+    ($status == 0) or die "%Error: Command Failed $command, $status, stopped";
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+verilator_difftree - Compare two Verilator debugging trees
+
+=head1 SYNOPSIS
+
+  verilator_difftree .../a/a.tree  .../b/a.tree
+  verilator_difftree .../a         .../b
+
+=head1 DESCRIPTION
+
+Verilator_difftree is used for debugging Verilator tree output files.  It
+performs a diff between two files, or all files common between two
+directories, ignoring irrelevant pointer differences.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=back
+
+=head1 DISTRIBUTION
+
+The latest version is available from L<http://www.veripool.com/>.
+
+Copyright 2005-2006 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License or the Perl Artistic License.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<verilator>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "$V4/bin/verilator_difftree  ~/SandBox/workwsnyder/verilator/test_c/obj_dir/V*_03_*.tree $V4/test_c/obj_dir/V*_03_*.tree"
+### End:
