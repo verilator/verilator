@@ -156,13 +156,13 @@ private:
     //int debug() { return 9; }
 
     // METHODS
-    AstVarScope* createVarScope(AstVar* invarp, const string& namePrefix) {
+    AstVarScope* createVarScope(AstVar* invarp, const string& name) {
 	// We could create under either the ref's scope or the ftask's scope.
 	// It shouldn't matter, as they are only local variables.
 	// We choose to do it under whichever called this function, which results
 	// in more cache locality.
 	AstVar* newvarp = new AstVar (invarp->fileline(), AstVarType::BLOCKTEMP,
-				      namePrefix+"__"+invarp->shortName(), invarp);
+				      name, invarp);
 	newvarp->funcLocal(false);
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope (newvarp->fileline(), m_scopep, newvarp);
@@ -186,6 +186,8 @@ private:
 	for (AstNode* stmtp = newbodysp; stmtp; pinp=nextpinp, stmtp=nextstmtp) {
 	    nextstmtp = stmtp->nextp();
 	    if (AstVar* portp = stmtp->castVar()) {
+		portp->unlinkFrBack();  // Remove it from the clone (not original)
+		pushDeletep(portp);
 		if (portp->isIO()) {
 		    if (pinp==NULL) {
 			refp->v3error("Too few arguments in function call");
@@ -197,8 +199,6 @@ private:
 		    //
 		    nextpinp = pinp->nextp();
 		    pinp->unlinkFrBack();   // Relinked to assignment below
-		    portp->unlinkFrBack();  // Remove it from the clone (not original)
-		    pushDeletep(portp);
 		    //
 		    if (portp->isTristate()) {
 			refp->v3error("Unsupported: Inouts in functions/tasks");
@@ -347,6 +347,7 @@ private:
 	m_lastStmtp = NULL;
 	m_modNCalls = 0;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	m_scopep = nodep;

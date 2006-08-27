@@ -60,10 +60,9 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
-	//VV*****  We reset all userp() on each module!!!
-	AstNode::userClearTree();
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep, AstNUser*) {
@@ -106,6 +105,7 @@ private:
 			: (nodep->aboveScopep()->name()+"."+nodep->aboveCellp()->name()));
 	    nodep->user(1);
 	}
+	nodep->iterateChildren(*this);
     }
 
     //--------------------

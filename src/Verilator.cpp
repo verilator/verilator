@@ -236,6 +236,7 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("task.tree"));
 
     // Add __PVT's
+    // After V3Task so task internal variables will get renamed
     V3Name::nameAll(v3Global.rootp());
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("name.tree"));
 
