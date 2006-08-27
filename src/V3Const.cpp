@@ -138,6 +138,13 @@ private:
 		);
     }
 
+    AstNode* afterComment(AstNode* nodep) {
+	// Ignore comments, such as to determine if a AstIf is empty.
+	// nodep may be null, if so return null.
+	while (nodep && nodep->castComment()) { nodep = nodep->nextp(); }
+	return nodep;
+    }
+
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
 	AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
@@ -190,7 +197,7 @@ private:
 	AstNodeIf* lowerIfp = nodep->ifsp()->castNodeIf();
 	if (!lowerIfp || lowerIfp->nextp()) return false;
 	if (nodep->type() != lowerIfp->type()) return false;
-	if (lowerIfp->elsesp()) return false;
+	if (afterComment(lowerIfp->elsesp())) return false;
 	return true;
     }
 
@@ -839,17 +846,18 @@ private:
 	    }
 	    nodep->deleteTree(); nodep=NULL;
 	}
-	else if (!nodep->ifsp() && !nodep->elsesp()) {
+	else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
 	    // Empty block, remove it
 	    // Note if we support more C++ then there might be side effects in the condition itself
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
-	else if (!nodep->ifsp()) {
+	else if (!afterComment(nodep->ifsp())) {
 	    UINFO(4,"IF({x}) NULL {...} => IF(NOT{x}}: "<<nodep<<endl);
 	    AstNode* condp = nodep->condp();
 	    AstNode* elsesp = nodep->elsesp();
 	    condp->unlinkFrBackWithNext();
 	    elsesp->unlinkFrBackWithNext();
+	    if (nodep->ifsp()) { nodep->ifsp()->unlinkFrBackWithNext()->deleteTree(); }  // Must have been comment
 	    nodep->condp(new AstLogNot(condp->fileline(), condp));  // LogNot, as C++ optimization also possible
 	    nodep->addIfsp(elsesp);
 	}
