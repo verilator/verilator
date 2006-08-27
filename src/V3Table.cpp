@@ -501,7 +501,7 @@ private:
 	// Link it in.
 	if (AstAlways* nodeap = nodep->castAlways()) {
 	    // Keep sensitivity list, but delete all else
-	    nodeap->bodysp()->unlinkFrBack()->deleteTree();
+	    nodeap->bodysp()->unlinkFrBackWithNext()->deleteTree();
 	    nodeap->addStmtp(stmtsp);
 	    if (debug()>=6) nodeap->dumpTree(cout,"  table_new: ");
 	} else {

@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix naming of generate for blocks to prevent non-inline name conflict.
 
+**** Fix redundant statements remaining after table optimization.
+
 * Verilator 3.542 08/11/2006 Stable
 
 **** Fix extraneous UNSIGNED warning when comparing genvars.  [David Hewson]
