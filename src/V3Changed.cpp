@@ -101,7 +101,7 @@ private:
 	// Clearing
 	AstNode::userClearTree();
 	// Create the change detection function
-	AstScope* scopep = nodep->scopep()->castScope();
+	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
 	m_scopetopp = scopep;
 	// Create change detection function

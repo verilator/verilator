@@ -71,7 +71,7 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
-	m_scopetopp = nodep->scopep()->castScope();
+	m_scopetopp = nodep->scopep();
 	// The container for m_traceFuncp must be made first
 	{
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceInitThis", m_scopetopp);

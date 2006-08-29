@@ -450,7 +450,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode* scopep()		const { return op2p()->castNode(); }	// op1 = AstVarScope's
+    AstScope* scopep()		const { return op2p()->castScope(); }	// op1 = AstVarScope's
 };
 
 struct AstVarScope : public AstNode {

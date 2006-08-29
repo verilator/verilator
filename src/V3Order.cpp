@@ -410,7 +410,7 @@ private:
 	m_graph.clear();
 	m_activep = NULL;
 	m_topScopep = nodep;
-	m_scopetopp = nodep->scopep()->castScope();
+	m_scopetopp = nodep->scopep();
 	// Find sentree's
 	m_finder.main(m_topScopep);
 	// ProcessDomainsIterate will use these when it needs to move

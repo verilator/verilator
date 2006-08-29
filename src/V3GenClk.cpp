@@ -84,7 +84,7 @@ private:
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	AstNode::user2ClearTree();	// userp() used on entire tree
 
-	AstScope* scopep = nodep->scopep()->castScope();
+	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_scopetopp = scopep;
 

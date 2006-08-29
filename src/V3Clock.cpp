@@ -180,7 +180,7 @@ private:
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	UINFO(4," TOPSCOPE   "<<nodep<<endl);
 	m_topScopep=nodep;
-	m_scopep = nodep->scopep()->castScope();
+	m_scopep = nodep->scopep();
 	if (!m_scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
 	//VV*****  We reset all userp()
 	AstNode::userClearTree();

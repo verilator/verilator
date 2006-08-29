@@ -522,7 +522,7 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstTopScope* nodep, AstNUser*) {
-	AstScope* scopep = nodep->scopep()->castScope();
+	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_highScopep = scopep;
 	nodep->iterateChildren(*this);

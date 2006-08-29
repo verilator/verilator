@@ -643,6 +643,7 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser* vup) {
 	// Function hasn't been widthed, so make it so.
+	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
 	if (nodep->taskp()->width()==0) {
 	    if (m_taskDepth > 100) {
 		nodep->v3error("Unsupported: Recursive function or task call\n");

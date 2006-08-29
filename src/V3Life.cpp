@@ -169,7 +169,7 @@ private:
 	AstNode::user3ClearTree();	// userp() used on entire tree
 	AstNode::user4ClearTree();	// userp() used on entire tree
 
-	AstScope* scopep = nodep->scopep()->castScope();
+	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("TopScope has no scope\n");
 	AstCFunc* evalp = NULL;
 	for (AstNode* searchp = scopep->blocksp(); searchp; searchp=searchp->nextp()) {
