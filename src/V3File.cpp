@@ -225,7 +225,7 @@ bool V3File::checkTimes(const string& filename, const string& cmdline) {
 
 V3OutFile::V3OutFile(const string& filename)
     : m_lineno(1), m_column(0), m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
-      , m_declAlign(0), m_declPadNum(0) {
+      , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
     if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
 	v3fatal("Cannot write "<<filename);
     }
@@ -440,19 +440,20 @@ void V3OutFile::putcNoTracking (char chr) {
     fputc (chr, m_fp);
 }
 
-void V3OutFile::putAlign (int align, int size, const char* prefix) {
+void V3OutFile::putAlign (bool/*AlignClass*/ isStatic, int align, int size, const char* prefix) {
     if (size==0) size=align;
     int alignSize = size; if (alignSize>8) alignSize=8;
-    int padsize = alignSize - (m_declAlign % alignSize);
+    int& alignr = isStatic ? m_declSAlign : m_declNSAlign;
+    int padsize = alignSize - (alignr % alignSize);
     if (padsize && padsize!=alignSize) {
 	puts("char\t");
 	puts(prefix);
-	puts("__VpadToAlign"+cvtToStr(m_declPadNum)
+	puts("__VpadToAlign"+cvtToStr(alignr)
 	     +"["+cvtToStr(padsize)+"];\n");
-	m_declAlign += padsize;
+	alignr += padsize;
 	m_declPadNum++;
     }
-    m_declAlign += size;
+    alignr += size;
 }
 
 //----------------------------------------------------------------------

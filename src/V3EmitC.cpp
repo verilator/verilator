@@ -84,7 +84,7 @@ public:
     void displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, char fmtLetter); 
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
-    typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_ALL} EisWhich;
+    typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_STATIC, EVL_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
     void emitVarCtors();
     bool emitSimpleOk(AstNodeMath* nodep);
@@ -597,16 +597,16 @@ class EmitCImp : EmitCStmts {
 	     +"<<endl; );\n");
 
 	if (nodep->initsp()) puts("// Variables\n");
-	ofp()->putAlign(4);
+	ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 	for (AstNode* subnodep=nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
 	    if (AstVar* varp=subnodep->castVar()) {
 		if (varp->isFuncReturn()) emitVarDecl(varp, "");
 	    }
 	}
 	emitVarList(nodep->initsp(), EVL_ALL, "");
-	ofp()->putAlign(4);
+	ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 	emitVarList(nodep->stmtsp(), EVL_ALL, "");
-	ofp()->putAlign(4);
+	ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 
 	nodep->initsp()->iterateAndNext(*this);
 
@@ -693,7 +693,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     if (nodep->isIO()) {
 	if (nodep->isSc()) {
 	    m_ctorVarsVec.push_back(nodep);
-	    ofp()->putAlign(4);	// sc stuff is a structure, so bigger alignment
+	    ofp()->putAlign(nodep->isStatic(), 4);	// sc stuff is a structure, so bigger alignment
 	    if (nodep->attrScClocked() && nodep->isInput()) {
 		puts("sc_in_clk\t");
 	    } else {
@@ -708,7 +708,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    puts(nodep->name());
 	    puts(";\n");
 	} else { // C++ signals
-	    ofp()->putAlign(nodep->widthAlignBytes());
+	    ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes());
 	    if (nodep->isTristate()) puts("VL_INOUT");
 	    else if (nodep->isInput()) puts("VL_IN");
 	    else if (nodep->isOutput()) puts("VL_OUT");
@@ -731,8 +731,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     } else {
 	// Arrays need a small alignment, but may need different padding after.
 	// For example three VL_SIG8's needs alignment 1 but size 3.
-	ofp()->putAlign(nodep->widthAlignBytes(), nodep->arrayElements()*nodep->widthAlignBytes());
-	// if (nodep->isStatic()) puts("static ");  // Need implementation declaration too - prefixIfImp is start in this direction
+	ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes(), nodep->arrayElements()*nodep->widthAlignBytes());
+	if (nodep->isStatic() && prefixIfImp=="") puts("static ");
 	if (nodep->widthMin() <= 8) {
 	    puts("VL_SIG8(");
 	} else if (nodep->widthMin() <= 16) {
@@ -1109,7 +1109,7 @@ void EmitCImp::emitCoverageDecl(AstModule* modp) {
 	ofp()->putsPrivate(true);
 	puts("// Coverage\n");
 	puts("SpZeroed<uint32_t>\t__Vcoverage["); puts(cvtToStr(m_coverIds.size())); puts("];\n");
-	ofp()->putAlign(sizeof(uint32_t)*m_coverIds.size());
+	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint32_t)*m_coverIds.size());
 	// Rather then putting out SP_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments
 	puts("void _vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
@@ -1239,35 +1239,41 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // Put out a list of signal declarations
     // in order of 0:clocks, 1:uint8, 2:uint16, 4:uint32, 5:uint64, 6:wide, 7:arrays
     // This aids cache packing and locality
-    for (int size=0; size<8; size++) {
-	if (size==3) continue;
-	for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
-	    if (AstVar* varp = nodep->castVar()) {
-		bool doit = true;
-		switch (which) {
-		case EVL_ALL:  doit = true; break;
-		case EVL_IO:   doit = varp->isIO(); break;
-		case EVL_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
-		case EVL_TEMP: doit = varp->isTemp(); break;
-		default: v3fatalSrc("Bad Case");
-		}
-		if (doit) {
-		    int sigbytes = varp->widthAlignBytes();
-		    if (varp->isUsedClock() && varp->widthMin()==1) sigbytes = 0;
-		    else if (varp->arraysp()) sigbytes=7;
-		    else if (varp->isScWide()) sigbytes=6;
-		    else if (sigbytes==8) sigbytes=5;
-		    else if (sigbytes==4) sigbytes=4;
-		    else if (sigbytes==2) sigbytes=2;
-		    else if (sigbytes==1) sigbytes=1;
-		    if (size==sigbytes) {
-			emitVarDecl(varp, prefixIfImp);
+    // Largest->smallest reduces the number of pad variables.
+    // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
+    for (int isstatic=1; isstatic>=0; isstatic--) {
+	if (prefixIfImp!="" && !isstatic) continue;
+	for (int size=0; size<8; size++) {
+	    if (size==3) continue;
+	    for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
+		if (AstVar* varp = nodep->castVar()) {
+		    bool doit = true;
+		    switch (which) {
+		    case EVL_ALL:  doit = true; break;
+		    case EVL_IO:   doit = varp->isIO(); break;
+		    case EVL_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
+		    case EVL_TEMP: doit = varp->isTemp(); break;
+		    default: v3fatalSrc("Bad Case");
+		    }
+		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;
+		    if (doit) {
+			int sigbytes = varp->widthAlignBytes();
+			if (varp->isUsedClock() && varp->widthMin()==1) sigbytes = 0;
+			else if (varp->arraysp()) sigbytes=7;
+			else if (varp->isScWide()) sigbytes=6;
+			else if (sigbytes==8) sigbytes=5;
+			else if (sigbytes==4) sigbytes=4;
+			else if (sigbytes==2) sigbytes=2;
+			else if (sigbytes==1) sigbytes=1;
+			if (size==sigbytes) {
+			    emitVarDecl(varp, prefixIfImp);
+			}
 		    }
 		}
 	    }
 	}
+	ofp()->putAlign(isstatic, 4, 0, prefixIfImp.c_str());
     }
-    ofp()->putAlign(4, 0, prefixIfImp.c_str());
 }
 
 struct CmpName {
@@ -1354,22 +1360,22 @@ void EmitCImp::emitInt(AstModule* modp) {
 
     puts("\n// INTERNAL VARIABLES\n");
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
-    ofp()->putAlign(8);
+    ofp()->putAlign(V3OutFile::AL_AUTO, 8);
     puts(symClassName()+"*\t__VlSymsp;\t\t// Symbol table\n");
     ofp()->putsPrivate(false);  // public:
     if (modp->isTop()) {
 	if (v3Global.opt.inhibitSim()) {
-	    ofp()->putAlign(sizeof(bool));
+	    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
 	    puts("bool\t__Vm_inhibitSim;\t///< Set true to disable evaluation of module\n");
 	}
-	ofp()->putAlign(sizeof(bool));
+	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
 	puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
-	ofp()->putAlign(sizeof(bool));
+	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
 	puts("bool\t__Vm_didInit;\n");
     }
-    ofp()->putAlign(8);
+    ofp()->putAlign(V3OutFile::AL_AUTO, 8);
     emitCoverageDecl(modp);	// may flip public/private
-    ofp()->putAlign(8);
+    ofp()->putAlign(V3OutFile::AL_AUTO, 8);
 
     puts("\n// PARAMETERS\n");
     ofp()->putsPrivate(false);  // public:
@@ -1482,6 +1488,13 @@ void EmitCImp::emitImp(AstModule* modp) {
     }
 
     emitTextSection(AstType::SCIMPHDR);
+
+    if (m_slow && m_splitFilenum==0) {
+	puts("\n//--------------------\n");
+	puts("// STATIC VARIABLES\n\n");
+	emitVarList(modp->stmtsp(), EVL_ALL, modClassName(modp));
+    }
+
     if (m_fast && m_splitFilenum==0) {
 	emitTextSection(AstType::SCIMP);
 	emitStaticDecl(modp);
@@ -1770,7 +1783,7 @@ class EmitCTrace : EmitCStmts {
 	    if (nodep->initsp()) puts("// Variables\n");
 	    emitVarList(nodep->initsp(), EVL_ALL, "");
 	    nodep->initsp()->iterateAndNext(*this);
-	    ofp()->putAlign(4);
+	    ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 
 	    puts("// Body\n");
 	    puts("{\n");
