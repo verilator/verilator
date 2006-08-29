@@ -733,16 +733,17 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	// For example three VL_SIG8's needs alignment 1 but size 3.
 	ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes(), nodep->arrayElements()*nodep->widthAlignBytes());
 	if (nodep->isStatic() && prefixIfImp=="") puts("static ");
+	if (nodep->isStatic()) puts("VL_ST_"); else puts("VL_");
 	if (nodep->widthMin() <= 8) {
-	    puts("VL_SIG8(");
+	    puts("SIG8(");
 	} else if (nodep->widthMin() <= 16) {
-	    puts("VL_SIG16(");
+	    puts("SIG16(");
 	} else if (nodep->isQuad()) {
-	    puts("VL_SIG64(");
+	    puts("SIG64(");
 	} else if (!nodep->isWide()) {
-	    puts("VL_SIG(");
+	    puts("SIG(");
 	} else {
-	    puts("VL_SIGW(");
+	    puts("SIGW(");
 	}
 	if (prefixIfImp!="") { puts(prefixIfImp); puts("::"); }
 	puts(nodep->name());
@@ -1298,6 +1299,7 @@ void EmitCImp::emitIntFuncDecls(AstModule* modp) {
     for (vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
 	AstCFunc* funcp = *it;
 	ofp()->putsPrivate(funcp->declPrivate());
+	if (funcp->isStatic()) puts("static ");
 	puts(funcp->rtnTypeVoid()); puts("\t");
 	puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
     }

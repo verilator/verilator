@@ -2762,6 +2762,7 @@ private:
     bool	m_formCallTree:1;	// Make a global function to call entire tree of functions
     bool	m_slow:1;		// Slow routine, called once or just at init time
     bool	m_funcPublic:1;		// From user public task/function
+    bool	m_isStatic:1;		// Function is declared static (no this)
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
@@ -2775,6 +2776,7 @@ public:
 	m_formCallTree = false;
 	m_slow = false;
 	m_funcPublic = false;
+	m_isStatic = false;
     }
     virtual ~AstCFunc() {}
     virtual AstType type() const { return AstType::CFUNC;}
@@ -2804,6 +2806,8 @@ public:
     string	argTypes() const { return m_argTypes; }
     void	funcType(AstCFuncType flag) { m_funcType = flag; }
     AstCFuncType funcType() const { return m_funcType; }
+    bool	isStatic() const { return m_isStatic; }
+    void	isStatic(bool flag) { m_isStatic = flag; }
     //
     // If adding node accessors, see below
     AstNode*	argsp() 	const { return op1p()->castNode(); }

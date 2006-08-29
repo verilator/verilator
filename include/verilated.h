@@ -68,6 +68,13 @@ public:
 //=========================================================================
 // Declare nets
 
+#ifndef VL_ST_SIG
+# define VL_ST_SIG8(name, msb,lsb)	CData name		///< Declare signal, 1-8 bits
+# define VL_ST_SIG16(name, msb,lsb)	SData name		///< Declare signal, 9-16 bits
+# define VL_ST_SIG64(name, msb,lsb)	QData name		///< Declare signal, 33-64 bits
+# define VL_ST_SIG(name, msb,lsb)	IData name		///< Declare signal, 17-32 bits
+# define VL_ST_SIGW(name,msb,lsb,words)	WData name[words]	///< Declare signal, 65+ bits
+#endif
 #ifndef VL_SIG
 # define VL_SIG8(name, msb,lsb)		CData name		///< Declare signal, 1-8 bits
 # define VL_SIG16(name, msb,lsb)	SData name		///< Declare signal, 9-16 bits
