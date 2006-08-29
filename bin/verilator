@@ -297,6 +297,13 @@ the command line that implement the main loop for your simulation.
 
 Displays this message and program version and exits.
 
+=item --inhibit-sim
+
+Create a "inhibitSim(bool)" function to enable and disable evaluation.
+This allows a upper level testbench to disable modules that are not
+important in a given simulation, without needing to recompile or change the
+SystemC modules instantiated.
+
 =item --inline-mult I<value>
 
 Tune the inlining of modules.  The default value of 2000 specifies that up

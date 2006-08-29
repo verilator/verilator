@@ -1017,8 +1017,8 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 
 void EmitCImp::emitVarResets(AstModule* modp) {
     puts("// Reset internal values\n");
-    puts("__Vm_inhibitSim = false;\n");
     if (modp->isTop()) {
+	if (v3Global.opt.inhibitSim()) puts("__Vm_inhibitSim = false;\n");
 	puts("__Vm_activity = false;\n");
 	puts("__Vm_didInit = false;\n");
 	puts("\n");
@@ -1188,6 +1188,9 @@ void EmitCImp::emitWrapEval(AstModule* modp) {
     puts(symClassName()); puts("::init(this);\n");
     puts("// Initialize\n");
     puts("if (!__Vm_didInit) eval_initial_loop();\n");
+    if (v3Global.opt.inhibitSim()) {
+	puts("if (__Vm_inhibitSim) return;\n");
+    }
     puts("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(cout<<\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\"<<endl; );\n");
 #ifndef NEW_ORDERING
@@ -1350,13 +1353,15 @@ void EmitCImp::emitInt(AstModule* modp) {
     emitVarList(modp->stmtsp(), EVL_TEMP, "");
 
     puts("\n// INTERNAL VARIABLES\n");
-    ofp()->putAlign(sizeof(bool));
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
     ofp()->putAlign(8);
     puts(symClassName()+"*\t__VlSymsp;\t\t// Symbol table\n");
     ofp()->putsPrivate(false);  // public:
-    puts("bool\t__Vm_inhibitSim;\t///< Manually set true to disable evaluation of module\n");
     if (modp->isTop()) {
+	if (v3Global.opt.inhibitSim()) {
+	    ofp()->putAlign(sizeof(bool));
+	    puts("bool\t__Vm_inhibitSim;\t///< Set true to disable evaluation of module\n");
+	}
 	ofp()->putAlign(sizeof(bool));
 	puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
 	ofp()->putAlign(sizeof(bool));
@@ -1418,6 +1423,9 @@ void EmitCImp::emitInt(AstModule* modp) {
 	puts("void\tfinal();\t///< Function to call when simulation completed\n");
 	if (optSystemC()) ofp()->putsPrivate(true);	///< eval() is invoked by our sensitive() calls.
 	puts("void\teval();\t///< Main function to call from calling app when inputs change\n");
+	if (v3Global.opt.inhibitSim()) {
+	    puts("void\tinhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
+	}
 	ofp()->putsPrivate(true);  // private:
 	puts("void\teval_initial_loop();\n");
 #ifndef NEW_ORDERING

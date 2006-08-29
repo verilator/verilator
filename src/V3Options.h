@@ -51,6 +51,7 @@ class V3Options {
     bool	m_dumpTree;	// main switch: --dump-tree
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
+    bool	m_inhibitSim;	// main switch: --inhibit-sim
     bool	m_l2Name;	// main switch: --l2name
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
     bool	m_pins64;	// main switch: --pins64
@@ -142,6 +143,7 @@ class V3Options {
     bool allPublic() const { return m_public; }
     bool l2Name() const { return m_l2Name; }
     bool ignc() const { return m_ignc; }
+    bool inhibitSim() const { return m_inhibitSim; }
 
     int	   inlineMult() const { return m_inlineMult; }
     int	   outputSplit() const { return m_outputSplit; }
