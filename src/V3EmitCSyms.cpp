@@ -119,14 +119,23 @@ void EmitCSyms::emitInt() {
 
     puts("\n// SYMS CLASS\n");
     puts((string)"class "+symClassName()+" {\n");
-    puts("public:\n");
+    ofp()->putsPrivate(false);  // public:
 
-    puts("// STATIC STATE\n");
-    puts("static "+symClassName()+"* s_thisp;\n");
+    //puts("\n// STATIC STATE\n");
 
     puts("\n// LOCAL STATE\n");
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint64_t));
     puts("const char* __Vm_namep;\n");	// Must be before subcells, as constructor order needed before _vlCoverInsert.
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
+    puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
+    puts("bool\t__Vm_didInit;\n");
+    if (v3Global.opt.coverage()) {
+	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
+	puts("bool	 __Vm_coverageRequest;\n");
+    }
 
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint64_t));
     puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
@@ -143,15 +152,10 @@ void EmitCSyms::emitInt() {
     puts("\n// CREATORS\n");
     puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
     puts((string)"~"+symClassName()+"() {};\n");
+
     puts("\n// METHODS\n");
-    puts("/// Called at top of each eval to setup global pointer to top-of-symbol table\n");
-    puts((string)"inline static void init ("+symClassName()+"* symsp) {\n");
-    puts("s_thisp = symsp;\n");
-    puts("}\n");
-    puts((string)"inline static void init ("+topClassName()+"* topp) {\n");
-    puts("s_thisp = topp->__VlSymsp;\n");
-    puts("}\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
+    puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r;}\n");
     puts("\n");
     puts("};\n");
     puts("#endif  /*guard*/\n");
@@ -172,13 +176,15 @@ void EmitCSyms::emitImp() {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
-    puts("\n// GLOBALS\n");
-    puts(symClassName()+"* "+symClassName()+"::s_thisp;\n");
+    //puts("\n// GLOBALS\n");
 
     puts("\n// FUNCTIONS\n");
     puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
     puts("\t// Setup locals\n");
     puts("\t: __Vm_namep(namep)\n");	// No leak, as we get destroyed when the top is destroyed
+    puts("\t, __Vm_activity(false)\n");
+    puts("\t, __Vm_didInit(false)\n");
+    if (v3Global.opt.coverage()) puts("\t, __Vm_coverageRequest(false)\n");
     puts("\t// Setup submodule names\n");
     char comma=',';
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {

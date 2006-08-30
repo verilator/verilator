@@ -30,7 +30,6 @@
 //===========================================================================
 // Global variables
 
-uint32_t Verilated::s_coverageRequest = false;
 int  Verilated::s_randReset = false;
 int  Verilated::s_debug = 1;
 bool Verilated::s_calcUnusedSigs = false;

@@ -422,7 +422,7 @@ public:
     virtual string name()	const { return m_name; }		// * = Scope name
     void name(const string& name) 	{ m_name = name; }
     string nameDotless() const;
-    string nameVlSym() const { return (((string)"VlSym->") + nameDotless()); }
+    string nameVlSym() const { return (((string)"vlSymsp->") + nameDotless()); }
     AstModule* modp()		const { return m_modp; }
     void addVarp(AstNode* nodep) { addOp1p(nodep); }
     AstNode* varsp()		const { return op1p()->castNode(); }	// op1 = AstVarScope's
@@ -586,7 +586,6 @@ struct AstModule : public AstNode {
 private:
     string	m_name;		// Name of the module
     string	m_origName;	// Name of the module, ignoring name() changes, for dot lookup
-    bool	m_globalSyms:1;	// References global symbol table
     bool	m_modPublic:1;	// Module has public references
     bool	m_modTrace:1;	// Tracing this module
     bool	m_inLibrary:1;	// From a library, no error if not used, never top level
@@ -596,7 +595,7 @@ private:
 public:
     AstModule(FileLine* fl, const string& name)
 	: AstNode (fl)
-	,m_name(name), m_origName(name), m_globalSyms(false), m_modPublic(false)
+	,m_name(name), m_origName(name), m_modPublic(false)
 	,m_modTrace(false), m_inLibrary(false)
 	,m_level(0), m_varNum(0), m_clkReqVarp(NULL) { }
     virtual ~AstModule() {}
@@ -623,8 +622,6 @@ public:
     int  varNumGetInc() 	{ return ++m_varNum; }
     AstVar* clkReqVarp() const	{ return m_clkReqVarp; }
     void clkReqVarp(AstVar* varp) { m_clkReqVarp = varp; }
-    void globalSyms(bool flag)	{ m_globalSyms = flag; }
-    bool globalSyms() const	{ return m_globalSyms; }
     void modPublic(bool flag) 	{ m_modPublic = flag; }
     bool modPublic() const 	{ return m_modPublic; }
     void modTrace(bool flag) 	{ m_modTrace = flag; }
@@ -2774,6 +2771,7 @@ private:
     bool	m_slow:1;		// Slow routine, called once or just at init time
     bool	m_funcPublic:1;		// From user public task/function
     bool	m_isStatic:1;		// Function is declared static (no this)
+    bool	m_symProlog:1;		// Setup symbol table for later instructions
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
@@ -2788,6 +2786,7 @@ public:
 	m_slow = false;
 	m_funcPublic = false;
 	m_isStatic = false;
+	m_symProlog = false;
     }
     virtual ~AstCFunc() {}
     virtual AstType type() const { return AstType::CFUNC;}
@@ -2795,7 +2794,9 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string name()	const { return m_name; }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode* samep) const { return true; }
+    virtual bool same(AstNode* samep) const { return ((funcType()==samep->castCFunc()->funcType())
+						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())
+						      && (argTypes()==samep->castCFunc()->argTypes())); }
     //
     void	name(const string& flag) { m_name = flag; }
     AstScope*	scopep() const { return m_scopep; }
@@ -2819,6 +2820,8 @@ public:
     AstCFuncType funcType() const { return m_funcType; }
     bool	isStatic() const { return m_isStatic; }
     void	isStatic(bool flag) { m_isStatic = flag; }
+    bool	symProlog() const { return m_symProlog; }
+    void	symProlog(bool flag) { m_symProlog = flag; }
     //
     // If adding node accessors, see below
     AstNode*	argsp() 	const { return op1p()->castNode(); }
@@ -2840,6 +2843,7 @@ struct AstCCall : public AstNodeStmt {
 private:
     AstCFunc*	m_funcp;
     string	m_hiername;
+    string	m_argTypes;
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp=NULL)
 	: AstNodeStmt(fl) {
@@ -2863,7 +2867,8 @@ public:
     virtual int instrCount()	const { return instrCountCall(); }
     virtual V3Hash sameHash() const { return V3Hash(funcp()); }
     virtual bool same(AstNode* samep) const {
-	return funcp()==samep->castCCall()->funcp(); }
+	return (funcp()==samep->castCCall()->funcp()
+		&& argTypes()==samep->castCCall()->argTypes()); }
     AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -2872,6 +2877,8 @@ public:
     AstCFunc*	funcp() const { return m_funcp; }
     string hiername() const { return m_hiername; }
     void hiername(const string& hn) { m_hiername = hn; }
+    void	argTypes(const string& str) { m_argTypes = str; }
+    string	argTypes() const { return m_argTypes; }
     //
     AstNode*	argsp() 	const { return op1p()->castNode(); }
     void addArgsp(AstNode* nodep) { addOp1p(nodep); }

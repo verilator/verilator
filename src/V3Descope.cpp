@@ -36,6 +36,7 @@
 #include "V3Global.h"
 #include "V3Descope.h"
 #include "V3Ast.h"
+#include "V3EmitCBase.h"
 
 //######################################################################
 
@@ -61,13 +62,13 @@ private:
 	hierThisr = true;
 	if (varp && varp->isFuncLocal()) {
 	    return "";  // Relative to function, not in this
-	} else if (scopep == m_scopep) {
-	    if (m_modp->isTop()) {
-		return "";  // Reference to scope we're in, no need to HIER-> it
-	    } else {
-		m_needThis = true;
-		return "thisp->";  // this-> but with restricted aliasing
-	    }
+	} else if (scopep == m_scopep && m_modp->isTop()) {
+	    //return "";  // Reference to scope we're in, no need to HIER-> it
+	    return "vlTOPp->";
+	} else if (scopep == m_scopep && !m_modp->isTop()
+		   && 0) {	// We no longer thisp-> as still get ambiguation problems
+	    m_needThis = true;
+	    return "thisp->";  // this-> but with restricted aliasing
 	} else if (scopep->aboveScopep() && scopep->aboveScopep()==m_scopep
 		   && 0  // DISABLED: GCC considers the pointers ambiguous, so goes ld/store crazy
 	    ) {
@@ -81,13 +82,12 @@ private:
 	    return name+"->";
 	} else {
 	    // Reference to something else, use global variable
-	    m_modp->globalSyms(true);
 	    UINFO(8,"      Descope "<<scopep<<endl);
 	    UINFO(8,"           to "<<scopep->name()<<endl);
 	    UINFO(8,"        under "<<m_scopep->name()<<endl);
 	    hierThisr = false;
 	    if (!scopep->aboveScopep()) { // Top
-		return "VlSym->TOPp->";
+		return "vlTOPp->";	// == "vlSymsp->TOPp->", but GCC would suspect aliases
 	    } else {
 		return scopep->nameVlSym()+".";
 	    }
@@ -111,6 +111,10 @@ private:
 		if (newfuncp->stmtsp())  newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
 		if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
 		newfuncp->name(name);
+		newfuncp->addInitsp(
+		    new AstCStmt(newfuncp->fileline(),
+				 "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+		newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(),"    "+EmitCBaseVisitor::symTopAssign()+"\n"));
 		topFuncp->addNextHere(newfuncp);
 		// In the body, call each function if it matches the given scope
 		for (FuncMmap::iterator eachIt = it; eachIt!=m_modFuncs.end() && eachIt->first==name; ++eachIt) {
@@ -209,6 +213,7 @@ private:
 	    nodep->iterateChildren(*this);
 	    nodep->user(true);
 	    if (m_needThis) {
+		nodep->v3fatalSrc("old code");
 		// Really we should have more node types for backend optimization of this stuff
 		string text = "    "+v3Global.opt.modPrefix() + "_" + m_modp->name()
 		    +"* thisp = &("+m_scopep->nameVlSym()+");\n";

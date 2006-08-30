@@ -393,6 +393,6 @@ void V3Case::caseAll(AstNetlist* nodep) {
     CaseVisitor visitor (nodep);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
+    UINFO(4,__FUNCTION__<<": "<<endl);
     CaseLintVisitor visitor (nodep);
 }

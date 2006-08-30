@@ -94,6 +94,7 @@ public:
 		if (callp->funcp() != oldfuncp) callp->v3fatalSrc("Call list broken, points to call w/different func");
 		if (newfuncp) {
 		    AstCCall* newp = new AstCCall(callp, newfuncp);
+		    newp->argTypes(callp->argTypes());
 		    callp->replaceWith(newp);
 		    addCall(newp); // Fix the table
 		} else { // Just deleting empty function

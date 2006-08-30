@@ -41,6 +41,7 @@
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
+#include "V3EmitCBase.h"
 
 //######################################################################
 // Clock state, as a visitor of each AstNode
@@ -186,30 +187,42 @@ private:
 	AstNode::userClearTree();
 	// Make top functions
 	{
-	    m_evalFuncp = new AstCFunc(nodep->fileline(), "_eval", m_scopep);
-	    m_evalFuncp->dontCombine(true);
-	    m_scopep->addActivep(m_evalFuncp);
+	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval", m_scopep);
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar());
+	    funcp->dontCombine(true);
+	    funcp->symProlog(true);
+	    m_scopep->addActivep(funcp);
+	    m_evalFuncp = funcp;
 	}
 	{
-	    m_initFuncp = new AstCFunc(nodep->fileline(), "_eval_initial", m_scopep);
-	    m_initFuncp->dontCombine(true);
-	    m_initFuncp->slow(true);
-	    m_scopep->addActivep(m_initFuncp);
+	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval_initial", m_scopep);
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar());
+	    funcp->dontCombine(true);
+	    funcp->slow(true);
+	    funcp->symProlog(true);
+	    m_scopep->addActivep(funcp);
+	    m_initFuncp = funcp;
 	}
 	{
-	    m_finalFuncp = new AstCFunc(nodep->fileline(), "final", m_scopep);
-	    m_finalFuncp->skipDecl(true);
-	    m_finalFuncp->dontCombine(true);
-	    m_finalFuncp->slow(true);
-	    m_finalFuncp->addStmtsp(new AstCStmt(nodep->fileline(),
-						 "    "+v3Global.opt.prefix()+"__Syms::init(this);\n"));
-	    m_scopep->addActivep(m_finalFuncp);
+	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "final", m_scopep);
+	    funcp->skipDecl(true);
+	    funcp->dontCombine(true);
+	    funcp->slow(true);
+	    funcp->addInitsp(
+		new AstCStmt(nodep->fileline(),
+			     "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+	    funcp->addInitsp(new AstCStmt(nodep->fileline(),"    "+EmitCBaseVisitor::symTopAssign()+"\n"));
+	    m_scopep->addActivep(funcp);
+	    m_finalFuncp = funcp;
 	}
 	{
-	    m_settleFuncp = new AstCFunc(nodep->fileline(), "_eval_settle", m_scopep);
-	    m_settleFuncp->dontCombine(true);
-	    m_settleFuncp->slow(true);
-	    m_scopep->addActivep(m_settleFuncp);
+	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval_settle", m_scopep);
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar());
+	    funcp->dontCombine(true);
+	    funcp->slow(true);
+	    funcp->symProlog(true);
+	    m_scopep->addActivep(funcp);
+	    m_settleFuncp = funcp;
 	}
 	// Process the activates
 	nodep->iterateChildren(*this);
@@ -273,12 +286,16 @@ private:
 	    if (!m_scopep) nodep->v3fatalSrc("Initial Active not under scope\n");
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_initial__"+m_scopep->nameDotless(),
 					   m_scopep);
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar());
+	    funcp->symProlog(true);
 	    funcp->slow(true);
 	    stmtsp->unlinkFrBackWithNext();
 	    funcp->addStmtsp(stmtsp);
 	    nodep->replaceWith(funcp);
 	    // Add top level call to it
-	    m_initFuncp->addStmtsp(new AstCCall(nodep->fileline(), funcp));
+	    AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
+	    callp->argTypes("vlSymsp");
+	    m_initFuncp->addStmtsp(callp);
 	} else {
 	    nodep->unlinkFrBack();
 	}
@@ -290,7 +307,9 @@ private:
 	if (nodep->formCallTree()) {
 	    if (nodep->name() == "_final") {
 		UINFO(4, "    formCallTree "<<nodep<<endl);
-		m_finalFuncp->addStmtsp(new AstCCall(nodep->fileline(), nodep));
+		AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
+		callp->argTypes("vlSymsp");
+		m_finalFuncp->addStmtsp(callp);
 	    } else {
 		nodep->v3fatalSrc("Unknown CFunc name.  Make code more generic, with a map of func names");
 	    }

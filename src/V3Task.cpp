@@ -38,6 +38,7 @@
 #include "V3Task.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
+#include "V3EmitCBase.h"
 
 //######################################################################
 
@@ -290,8 +291,10 @@ private:
 	funcp->funcPublic(true);
 
 	// We need to get a pointer to all of our variables (may have eval'ed something else earlier)
-	funcp->addInitsp(new AstCStmt(nodep->fileline(),
-				      string("    ")+v3Global.opt.prefix()+"__Syms::init(__VlSymsp);\n"));
+	funcp->addInitsp(
+	    new AstCStmt(nodep->fileline(),
+			 "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+	funcp->addInitsp(new AstCStmt(nodep->fileline(),"    "+EmitCBaseVisitor::symTopAssign()+"\n"));
 
 	// Create list of arguments and move to function
 	for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {

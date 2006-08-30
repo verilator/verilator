@@ -121,7 +121,6 @@ public:
 struct Verilated {
     // Extern Vars
     // Below two are used as bool, but having as uint32_t avoids conversion time
-    static uint32_t	s_coverageRequest;	///< Collect coverage info now
 private:
     static int  	s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
     static int		s_debug;		///< See accessors... only when VL_DEBUG set

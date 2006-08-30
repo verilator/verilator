@@ -76,8 +76,9 @@ private:
 	{
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceInitThis", m_scopetopp);
 	    funcp->slow(true);
-	    funcp->argTypes("SpTraceVcd* vcdp, uint32_t code");
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
 	    funcp->funcType(AstCFuncType::TRACE_INIT);
+	    funcp->symProlog(true);
 	    m_scopetopp->addActivep(funcp);
 	    m_initFuncp = funcp;
 	    UINFO(5,"  Newfunc "<<funcp<<endl);
@@ -85,15 +86,17 @@ private:
 	{
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceFullThis", m_scopetopp);
 	    funcp->slow(true);
-	    funcp->argTypes("SpTraceVcd* vcdp, uint32_t code");
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
 	    funcp->funcType(AstCFuncType::TRACE_FULL);
+	    funcp->symProlog(true);
 	    m_scopetopp->addActivep(funcp);
 	    m_fullFuncp = funcp;
 	}
 	{
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceChgThis", m_scopetopp);
-	    funcp->argTypes("SpTraceVcd* vcdp, uint32_t code");
+	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
 	    funcp->funcType(AstCFuncType::TRACE_CHANGE);
+	    funcp->symProlog(true);
 	    m_scopetopp->addActivep(funcp);
 	    m_chgFuncp = funcp;
 	}

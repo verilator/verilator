@@ -42,6 +42,7 @@
 #include "V3Global.h"
 #include "V3Active.h"
 #include "V3Ast.h"
+#include "V3EmitCBase.h"
 
 //***** See below for main transformation engine
 
@@ -231,6 +232,8 @@ private:
 	}
 	if (!m_scopeFinalp) {
 	    m_scopeFinalp = new AstCFunc(nodep->fileline(), "_final", m_namer.scopep());
+	    m_scopeFinalp->argTypes(EmitCBaseVisitor::symClassVar());
+	    m_scopeFinalp->addInitsp(new AstCStmt(nodep->fileline(),"    "+EmitCBaseVisitor::symTopAssign()+"\n"));
 	    m_scopeFinalp->dontCombine(true);
 	    m_scopeFinalp->formCallTree(true);
 	    m_scopeFinalp->slow(true);

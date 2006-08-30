@@ -182,9 +182,12 @@ public:
 	puts(nodep->hiername());
 	puts(nodep->funcp()->name());
 	puts("(");
+	puts(nodep->argTypes());
+	bool comma = (nodep->argTypes() != "");
 	for (AstNode* subnodep=nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+	    if (comma) puts(", ");
 	    subnodep->accept(*this);
-	    if (subnodep->nextp()) puts(", ");
+	    comma = true;
 	}
 	if (nodep->backp()->castNodeMath() || nodep->backp()->castCReturn()) {
 	    // We should have a separate CCall for math and statement usage, but...
@@ -214,7 +217,7 @@ public:
 	puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
-	puts("if (Verilated::s_coverageRequest)");
+	puts("if (VL_LIKELY(vlSymsp->__Vm_coverageRequest))");
 	puts(" ++__Vcoverage[");
 	puts(cvtToStr(m_coverIds.remap(nodep->declp()))); puts("];\n");
     }
@@ -595,6 +598,8 @@ class EmitCImp : EmitCStmts {
 	     +" \""
 	     +"<<name()"
 	     +"<<endl; );\n");
+
+	if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
 	if (nodep->initsp()) puts("// Variables\n");
 	ofp()->putAlign(V3OutFile::AL_AUTO, 4);
@@ -1023,8 +1028,6 @@ void EmitCImp::emitVarResets(AstModule* modp) {
     puts("// Reset internal values\n");
     if (modp->isTop()) {
 	if (v3Global.opt.inhibitSim()) puts("__Vm_inhibitSim = false;\n");
-	puts("__Vm_activity = false;\n");
-	puts("__Vm_didInit = false;\n");
 	puts("\n");
     }
 
@@ -1201,7 +1204,8 @@ void EmitCImp::emitTextSection(AstType type) {
 void EmitCImp::emitCellCtors(AstModule* modp) {
     if (modp->isTop()) {
 	// Must be before other constructors, as __vlCoverInsert calls it
-	puts("__VlSymsp = new "+symClassName()+"(this, name());\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = __VlSymsp = new "+symClassName()+"(this, name());\n");
+	puts(EmitCBaseVisitor::symTopAssign()+"\n");
     }
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCell* cellp=nodep->castCell()) {
@@ -1229,48 +1233,48 @@ void EmitCImp::emitSensitives() {
 
 void EmitCImp::emitWrapEval(AstModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
-    puts("// Setup global symbol table\n");
-    puts(symClassName()); puts("::init(this);\n");
+    puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp; // Setup global symbol table\n");
+    puts(EmitCBaseVisitor::symTopAssign()+"\n");
     puts("// Initialize\n");
-    puts("if (!__Vm_didInit) eval_initial_loop();\n");
+    puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) _eval_initial_loop(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) {
-	puts("if (__Vm_inhibitSim) return;\n");
+	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
     puts("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(cout<<\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\"<<endl; );\n");
 #ifndef NEW_ORDERING
     puts("int __VclockLoop = 0;\n");
-    puts("IData __Vchange;\n");
-    puts("for (__Vchange=1; __Vchange; ) {\n");
+    puts("IData __Vchange=1;\n");
+    puts("while (VL_LIKELY(__Vchange)) {\n");
     puts(    "VL_DEBUG_IF(cout<<\" Clock loop\"<<endl;);\n");
 #endif
-    // FIX coverage!  w/combo logic interspersed, this is complicated.
+    // Not exactly correct for coverage.  w/combo logic interspersed, this is complicated.  Punt.
     // Perhaps have temp & each _combo_ turn it on or off
-    if (v3Global.opt.coverage()) puts(    "Verilated::s_coverageRequest = true;\n");
-    puts(    "__Vm_activity = true;\n");
-    puts(    "_eval();\n");
-    if (v3Global.opt.coverage()) puts(    "Verilated::s_coverageRequest = false;\n");
+    if (v3Global.opt.coverage()) puts(    "vlSymsp->__Vm_coverageRequest = true;\n");
+    puts(    "vlSymsp->__Vm_activity = true;\n");
+    puts(    "_eval(vlSymsp);\n");
+    if (v3Global.opt.coverage()) puts(    "vlSymsp->__Vm_coverageRequest = false;\n");
 #ifndef NEW_ORDERING
-    puts(    "__Vchange = _change_request();\n");
+    puts(    "__Vchange = _change_request(vlSymsp);\n");
     puts(    "if (++__VclockLoop > 100) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
     puts("}\n");
 #endif
     puts("}\n");
 
     //
-    puts("\nvoid "+modClassName(modp)+"::eval_initial_loop() {\n");
-    puts("__Vm_didInit = true;\n");
-    puts("_eval_initial();\n");
+    puts("\nvoid "+modClassName(modp)+"::_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+") {\n");
+    puts("vlSymsp->__Vm_didInit = true;\n");
+    puts("_eval_initial(vlSymsp);\n");
 #ifndef NEW_ORDERING
-    puts(    "__Vm_activity = true;\n");
+    puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "int __VclockLoop = 0;\n");
-    puts(    "IData __Vchange;\n");
-    puts(    "for (__Vchange=1; __Vchange; ) {\n");
+    puts(    "IData __Vchange=1;\n");
+    puts(    "while (VL_LIKELY(__Vchange)) {\n");
 #endif
-    puts(        "_eval_settle();\n");
-    puts(        "_eval();\n");
+    puts(        "_eval_settle(vlSymsp);\n");
+    puts(        "_eval(vlSymsp);\n");
 #ifndef NEW_ORDERING
-    puts(	 "__Vchange = _change_request();\n");
+    puts(	 "__Vchange = _change_request(vlSymsp);\n");
     puts(        "if (++__VclockLoop > 100) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
     puts(    "}\n");
 #endif
@@ -1414,10 +1418,6 @@ void EmitCImp::emitInt(AstModule* modp) {
 	    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
 	    puts("bool\t__Vm_inhibitSim;\t///< Set true to disable evaluation of module\n");
 	}
-	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
-	puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
-	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
-	puts("bool\t__Vm_didInit;\n");
     }
     ofp()->putAlign(V3OutFile::AL_AUTO, 8);
     emitCoverageDecl(modp);	// may flip public/private
@@ -1449,6 +1449,11 @@ void EmitCImp::emitInt(AstModule* modp) {
 
     puts("\n// METHODS\n");
     ofp()->resetPrivate();
+    // We don't need a private copy constructor, as VerilatedModule has one for us.
+    ofp()->putsPrivate(true);
+    puts(modClassName(modp)+"& operator= (const "+modClassName(modp)+"&);\t///< Copying not allowed\n");
+    puts(modClassName(modp)+"(const "+modClassName(modp)+"&);\t///< Copying not allowed\n");
+
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
 	puts("SC_CTOR("+modClassName(modp)+");\n");
@@ -1466,9 +1471,6 @@ void EmitCImp::emitInt(AstModule* modp) {
     puts("void\t__Vconfigure("+symClassName()+"* symsp);\n");
     if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
 
-    if (modp->isTop()) {
-	puts("inline bool\tgetClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r;}\n");
-    }
     emitTextSection(AstType::SCINT);
 
     puts("\n// Sensitivity blocks\n");
@@ -1480,7 +1482,7 @@ void EmitCImp::emitInt(AstModule* modp) {
 	    puts("void\tinhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
 	}
 	ofp()->putsPrivate(true);  // private:
-	puts("void\teval_initial_loop();\n");
+	puts("void\t_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+");\n");
 #ifndef NEW_ORDERING
 	puts("IData\tchange_request();\n");
 #endif
@@ -1492,7 +1494,7 @@ void EmitCImp::emitInt(AstModule* modp) {
 	ofp()->putsPrivate(false);  // public:
 	puts("static void\ttraceInit (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
 	puts("static void\ttraceFull (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void\ttraceChg (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void\ttraceChg  (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
     }
 
     puts("} VL_ATTR_ALIGNED(8);\n");
@@ -1515,19 +1517,7 @@ void EmitCImp::emitImp(AstModule* modp) {
 		  (modClassName(modp)+".h\"").c_str());
 
     // Us
-    if (modp->globalSyms() || modp->isTop() || 1 /*for thisp*/) {
-	puts("#include \""+ symClassName() +".h\"\n");
-	puts("#define VlSym "+ symClassName() +"::s_thisp\n");
-    } else {
-	// Instantiated modules
-	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	    if (AstCell* cellp=nodep->castCell()) {
-		ofp()->printf("#include \"%-20s",
-			      (modClassName(cellp->modp())+".h\"").c_str());
-		puts(" // For "+cellp->name()+"\n");
-	    }
-	}
-    }
+    puts("#include \""+ symClassName() +".h\"\n");
 
     if (optSystemPerl() && (m_splitFilenum || !m_fast)) {
 	puts("\n");
@@ -1577,9 +1567,6 @@ void EmitCImp::emitImp(AstModule* modp) {
 }
 
 void EmitCImp::emitImpBottom(AstModule* modp) {
-    if (modp->globalSyms()) {
-	puts("#undef VlSym\n");
-    }
 }
 
 //######################################################################
@@ -1660,7 +1647,6 @@ class EmitCTrace : EmitCStmts {
 	}
 	puts("#include \"SpTraceVcdC.h\"\n");
 	puts("#include \""+ symClassName() +".h\"\n");
-	puts("#define VlSym "+ symClassName() +"::s_thisp\n");
 	puts("\n");
     }
 
@@ -1682,16 +1668,16 @@ class EmitCTrace : EmitCStmts {
 	puts("void "+topClassName()+"::traceInit(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts(symClassName()+"::init(t); // Setup global symbol table\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
-	puts("t->traceInitThis (vcdp, code);\n");
+	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
     
 	puts("void "+topClassName()+"::traceFull(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts(symClassName()+"::init(t); // Setup global symbol table\n");
-	puts("t->traceFullThis (vcdp, code);\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
+	puts("t->traceFullThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
 
 	puts("\n//======================\n\n");
@@ -1703,9 +1689,9 @@ class EmitCTrace : EmitCStmts {
 	puts("void "+topClassName()+"::traceChg(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts("if (t->getClearActivity()) {\n");
-	puts(symClassName()+"::init(t); // Setup global symbol table\n");
-	puts("t->traceChgThis (vcdp, code);\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
+	puts("if (vlSymsp->getClearActivity()) {\n");
+	puts("t->traceChgThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
 	puts("}\n");
 
@@ -1879,7 +1865,6 @@ public:
 
 	v3Global.rootp()->accept(*this);
 
-	puts("#undef VlSym\n");
 	m_ofp = NULL;
     }
 };

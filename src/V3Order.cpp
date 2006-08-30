@@ -106,6 +106,7 @@
 #include "V3List.h"
 #include "V3SenTree.h"
 #include "V3Stats.h"
+#include "V3EmitCBase.h"
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
@@ -1380,6 +1381,8 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	if (!m_pomNewFuncp && domainp != m_deleteDomainp) {
 	    string name = cfuncName(modp, domainp, scopep, nodep);
 	    m_pomNewFuncp = new AstCFunc(nodep->fileline(), name, scopep);
+	    m_pomNewFuncp->argTypes(EmitCBaseVisitor::symClassVar());
+	    m_pomNewFuncp->symProlog(true);
 	    if (domainp->hasInitial() || domainp->hasSettle()) m_pomNewFuncp->slow(true);
 	    scopep->addActivep(m_pomNewFuncp);
 	    // Where will we be adding the call?
@@ -1387,6 +1390,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    processMoveLoopStmt(callunderp);
 	    // Add a top call to it
 	    AstCCall* callp = new AstCCall(nodep->fileline(), m_pomNewFuncp);
+	    callp->argTypes("vlSymsp");
 	    callunderp->addStmtsp(callp);
 	    UINFO(6,"      New "<<m_pomNewFuncp<<endl);
 	}
