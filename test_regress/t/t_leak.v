@@ -14,7 +14,8 @@ module t (clk);
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==2) begin
-	 $finish;
+	 // Not $finish; as we don't want a message to scroll by
+	 $c("Verilated::gotFinish(true);");
       end
    end
 endmodule

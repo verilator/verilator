@@ -15,12 +15,6 @@ double sc_time_stamp () {
     return main_time;
 }
 
-void vl_finish (const char* filename, int linenum, const char* hier) {
-    // Define it to not print a message
-    if (0 && filename && linenum && hier) {}
-    Verilated::gotFinish(true);
-}
-
 long long get_memory_usage() {
     // Return memory usage.  Return 0 if the system doesn't look quite right.
 

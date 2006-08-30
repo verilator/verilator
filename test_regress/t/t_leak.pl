@@ -10,7 +10,6 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 compile (
 	 make_top_shell => 0,
 	 make_main => 0,
-	 make_flags => "OPT_FAST=-DVL_USER_FINISH",
 	 v_flags2 => ["--exe t/$Last_Self->{name}.cpp"],
 	 ) if $Last_Self->{v3};
 
