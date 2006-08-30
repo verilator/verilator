@@ -2,11 +2,9 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2003 by Wilson Snyder.
+// without warranty, 2003-2006 by Wilson Snyder.
 
-module t_extend (/*AUTOARG*/
-   // Outputs
-   passed, 
+module t (/*AUTOARG*/
    // Inputs
    clk
    );
@@ -14,7 +12,6 @@ module t_extend (/*AUTOARG*/
    /*verilator public_module*/
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
    // No verilator_public needed, because it's outside the "" in the $c statement
    reg [7:0] cyc; initial cyc=0;
    reg 	  c_worked;
@@ -47,8 +44,7 @@ module t_extend (/*AUTOARG*/
       if (cyc == 8'd3) begin
 	 if (c_worked !== 1'b1) $stop;
 	 if (c_wider !== 9'h10) $stop;
-	 $write("[%0t] t_extend: Passed\n",$time);
-	 passed <= 1'b1;
+	 $finish;
       end
    end
 
@@ -72,6 +68,9 @@ module t_extend (/*AUTOARG*/
 #endif
  `systemc_ctor
    m_did_ctor = 1;  
+ `systemc_dtor
+   printf("In systemc_dtor\n");
+   printf("*-* All Finished *-*\n");
  `verilog
 `endif	 
 

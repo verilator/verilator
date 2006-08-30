@@ -660,9 +660,11 @@ class EmitCImp : EmitCStmts {
     void emitCellCtors(AstModule* modp);
     void emitSensitives();
     // Medium level
-    void emitCoverageCtor(AstModule* modp);
+    void emitCtorImp(AstModule* modp);
+    void emitConfigureImp(AstModule* modp);
     void emitCoverageDecl(AstModule* modp);
     void emitCoverageImp(AstModule* modp);
+    void emitDestructorImp(AstModule* modp);
     void emitTextSection(AstType type);
     void emitIntFuncDecls(AstModule* modp);
     // High level
@@ -1087,19 +1089,6 @@ void EmitCImp::emitVarResets(AstModule* modp) {
     }
 }
 
-void EmitCImp::emitCoverageCtor(AstModule* modp) {
-    bool first=true;
-    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (nodep->castCoverDecl()) {
-	    if (first) {
-		first = false;
-		puts("// Coverage Declarations\n");
-	    }
-	    nodep->accept(*this);
-	}
-    }
-}
-
 void EmitCImp::emitCoverageDecl(AstModule* modp) {
     m_coverIds.clear();
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -1115,6 +1104,42 @@ void EmitCImp::emitCoverageDecl(AstModule* modp) {
 	puts("void __vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
 	puts(  	"const char* hier, const char* type, const char* comment);\n");
     }
+}
+
+void EmitCImp::emitCtorImp(AstModule* modp) {
+    puts("\n");
+    if (optSystemPerl() && modp->isTop()) {
+	puts("SP_CTOR_IMP("+modClassName(modp)+")");
+    } else if (optSystemC() && modp->isTop()) {
+	puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
+    } else {
+	puts("VL_CTOR_IMP("+modClassName(modp)+")");
+    }
+    emitVarCtors();
+    puts(" {\n");
+
+    emitCellCtors(modp);
+    emitSensitives();
+    emitVarResets(modp);
+    emitTextSection(AstType::SCCTOR);
+    if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
+    puts("}\n");
+}
+
+void EmitCImp::emitConfigureImp(AstModule* modp) {
+    puts("\nvoid "+modClassName(modp)+"::__Vconfigure("+symClassName()+"* symsp) {\n");
+    puts(   "__VlSymsp = symsp;\n");  // First, as later stuff needs it.
+    bool first=true;
+    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+	if (nodep->castCoverDecl()) {
+	    if (first) {
+		first = false;
+		puts("// Coverage Declarations\n");
+	    }
+	    nodep->accept(*this);
+	}
+    }
+    puts("}\n");
 }
 
 void EmitCImp::emitCoverageImp(AstModule* modp) {
@@ -1134,6 +1159,14 @@ void EmitCImp::emitCoverageImp(AstModule* modp) {
 	puts(	"  \"comment\",comment);\n");
 	puts("}\n");
     }
+}
+
+void EmitCImp::emitDestructorImp(AstModule* modp) {
+    puts("\n");
+    puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
+    emitTextSection(AstType::SCDTOR);
+    if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
+    puts("}\n");
 }
 
 void EmitCImp::emitStaticDecl(AstModule* modp) {
@@ -1419,10 +1452,13 @@ void EmitCImp::emitInt(AstModule* modp) {
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
 	puts("SC_CTOR("+modClassName(modp)+");\n");
+	puts("virtual ~"+modClassName(modp)+"();\n");
     } else if (optSystemC()) {
 	puts("VL_CTOR("+modClassName(modp)+");\n");
+	puts("~"+modClassName(modp)+"();\n");
     } else {
 	puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
+	puts("~"+modClassName(modp)+"();\n");
 	if (v3Global.opt.trace()) {
 	    puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
 	}
@@ -1511,34 +1547,14 @@ void EmitCImp::emitImp(AstModule* modp) {
 	emitStaticDecl(modp);
     }
 
-    // Constructor
     if (m_slow && m_splitFilenum==0) {
 	puts("\n//--------------------\n");
-	puts("\n");
-	if (optSystemPerl() && modp->isTop()) {
-	    puts("SP_CTOR_IMP("+modClassName(modp)+")");
-	} else if (optSystemC() && modp->isTop()) {
-	    puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
-	} else {
-	    puts("VL_CTOR_IMP("+modClassName(modp)+")");
-	}
-	emitVarCtors();
-	puts(" {\n");
-
-	emitCellCtors(modp);
-	emitSensitives();
-	emitVarResets(modp);
-	emitTextSection(AstType::SCCTOR);
-	if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
-	puts("}\n");
-
-	puts("\nvoid "+modClassName(m_modp)+"::__Vconfigure("+symClassName()+"* symsp) {\n");
-	puts(   "__VlSymsp = symsp;\n");  // First, as later stuff needs it.
-	emitCoverageCtor(modp);
-	puts("}\n");
-
+	emitCtorImp(modp);
+	emitConfigureImp(modp);
+	emitDestructorImp(modp);
 	emitCoverageImp(modp);
     }
+
     if (m_fast && m_splitFilenum==0) {
 	if (modp->isTop()) {
 	    emitStaticDecl(modp);

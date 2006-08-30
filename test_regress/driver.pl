@@ -572,6 +572,7 @@ sub _make_main {
     print $fh "    }\n";
     print $fh "    top->final();\n";
     print $fh "    SpCoverage::write(\"",$self->{coverage_filename},"\");\n" if $self->{coverage};
+    print $fh "    delete top;\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();

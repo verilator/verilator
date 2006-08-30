@@ -22,7 +22,9 @@ Features:
 	Selectable SystemC types based on widths (see notes below)
 	Compile time
 		Inline first level trace routines
-	Expression coverage (see notes)
+	Coverage
+		Points should be per-scope like everything else rather then per-module
+		Expression coverage (see notes)
 	More Verilog 2001 Support
 		C-style function and task arguments.  [Wim Michiels]
 		(* *) Attributes  (just ignore -- preprocessor?)

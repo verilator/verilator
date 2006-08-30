@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -90,16 +90,12 @@ module t (/*AUTOARG*/
       // Inputs
       .clk				(clk),
       .fastclk				(fastclk));
-   t_extend textend
+   t_loop tloop
      (.passed		(passedv[15]),
       /*AUTOINST*/
       // Inputs
       .clk				(clk));
-   t_loop tloop
-     (.passed		(passedv[16]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk));
+   assign passedv[16] = 1'b1;
    assign passedv[17] = 1'b1;
    assign passedv[18] = 1'b1;
    t_task ttask

@@ -357,8 +357,8 @@ C++ file exceeds the specified number of operations, a new file will be
 created.  In addition, any slow routines will be placed into __Slow files.
 This accelerates compilation by as optimization can be disabled on the slow
 routines, and the remaining files can be compiled on parallel machines.
-With GCC 3.3 on Opteron, --output-split 20000 will result in splitting into
-approximately one-minute-compile chunks.
+With GCC 3.3 on a 2GHz Opteron, --output-split 20000 will result in
+splitting into approximately one-minute-compile chunks.
 
 =item --pins64
 
@@ -961,6 +961,12 @@ macro, this also works in pure C++ code.
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
 place it verbatim into the C++ class constructor.  Despite the name of this
+macro, this also works in pure C++ code.
+
+=item `systemc_dtor
+
+Take remaining text up to the next `verilog or `systemc_... mode switch and
+place it verbatim into the C++ class destructor.  Despite the name of this
 macro, this also works in pure C++ code.
 
 =item `systemc_interface

@@ -366,6 +366,11 @@ private:
 	m_modp->modPublic(true);
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstScDtor* nodep, AstNUser*) {
+	// Destructor info means the module must remain public
+	m_modp->modPublic(true);
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstScInt* nodep, AstNUser*) {
 	// Special class info means the module must remain public
 	m_modp->modPublic(true);

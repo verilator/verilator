@@ -88,7 +88,7 @@ void yyerrorf(const char* format, ...) {
 %a 15000
 %o 25000
 
-%s VLG PSL STRING   SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR  IGNORE
+%s VLG PSL STRING   SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR  IGNORE
 
 ws	[ \t\f\r]+
 	/* identifier */
@@ -537,24 +537,28 @@ escid	\\[^ \t\f\r\n]+
   /************************************************************************/
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`verilog"			{ BEGIN VLG; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`systemc_header"		{ BEGIN SYSCHDR; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`systemc_ctor"			{ BEGIN SYSCCTOR; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`systemc_interface"		{ BEGIN SYSCINT; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`systemc_implementation"	{ BEGIN SYSCIMP; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*"`systemc_imp_header"		{ BEGIN SYSCIMPH; }
-<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>"`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
+<VLG,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+  [ \t]*"`verilog"			{ BEGIN VLG; }
+  [ \t]*"`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
+  [ \t]*"`systemc_header"		{ BEGIN SYSCHDR; }
+  [ \t]*"`systemc_ctor"			{ BEGIN SYSCCTOR; }
+  [ \t]*"`systemc_dtor"			{ BEGIN SYSCDTOR; }
+  [ \t]*"`systemc_interface"		{ BEGIN SYSCINT; }
+  [ \t]*"`systemc_implementation"	{ BEGIN SYSCIMP; }
+  [ \t]*"`systemc_imp_header"		{ BEGIN SYSCIMPH; }
+  "`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
+}
 
 <SYSCHDR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCHDR;}
 <SYSCINT>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCINT;}
 <SYSCIMP>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCIMP;}
 <SYSCIMPH>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCIMPH;}
 <SYSCCTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCCTOR;}
+<SYSCDTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCDTOR;}
 <IGNORE>[ \t]*[^` \t\n][^\n]*\n		{ NEXTLINE(); }
 
-<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>[ \t]*\n	{ NEXTLINE(); yymore();}
-<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,IGNORE>\r		;
+<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>[ \t]*\n	{ NEXTLINE(); yymore();}
+<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>\r		;
 
   /************************************************************************/
   /* Default rules - leave last */

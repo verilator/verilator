@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Added --inhibit-sim flag for environments using old __Vm_inhibitSim.
 
+***  Added `systemc_dtor for destructor extentions.  [Allan Cochrane]
+
 **** Declare tables static, to reduce D-Cache miss rate.
 
 **** Fix $display %m name not matching Verilog name inside SystemC modules.

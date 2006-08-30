@@ -2647,6 +2647,17 @@ struct AstScCtor : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
+struct AstScDtor : public AstNodeText {
+    AstScDtor(FileLine* fl, const string& textp)
+	: AstNodeText(fl, textp) {}
+    virtual ~AstScDtor() {}
+    virtual AstType type() const { return AstType::SCDTOR;}
+    virtual AstNode* clone() { return new AstScDtor(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isOutputter() const { return true; }
+};
+
 struct AstScHdr : public AstNodeText {
     AstScHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}

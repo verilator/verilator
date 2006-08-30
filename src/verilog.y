@@ -125,7 +125,7 @@ class AstSenTree;
 %token<nump>		yINTNUM
 %token<cdouble>		yFLOATNUM
 %token<strp>		yID ySTRING
-%token<strp>		ySCHDR ySCINT ySCIMP ySCIMPH ySCCTOR
+%token<strp>		ySCHDR ySCINT ySCIMP ySCIMPH ySCCTOR ySCDTOR
 %token<fileline>	yMODULE yENDMODULE yALWAYS yINITIAL yPOSEDGE yNEGEDGE yBBEGIN yBEND yOR
 %token<fileline>	yINPUT yOUTPUT yINOUT yWIRE yTRI yREG yPARAM yLOCALPARAM yDEFPARAM
 %token<fileline>	yFUNCTION yENDFUNCTION  yTASK yENDTASK
@@ -405,6 +405,7 @@ modItem:	modOrGenItem 				{ $$ = $1; }
 	|	ySCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
 	|	ySCIMPH					{ $$ = new AstScImpHdr(CRELINE(),*$1); }
 	|	ySCCTOR					{ $$ = new AstScCtor(CRELINE(),*$1); }
+	|	ySCDTOR					{ $$ = new AstScDtor(CRELINE(),*$1); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
