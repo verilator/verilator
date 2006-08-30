@@ -23,6 +23,8 @@
 // Each module:
 //	For each wide OP, assign a temporary variable.
 //	For each deep expression, assign expression to temporary.
+// Each CFunc:
+//	Any statements that need "this" are marked non-static
 //
 //*************************************************************************
 
@@ -68,6 +70,7 @@ private:
 				   // though it's one bit wide, needs the mask in the upper bits.
 				   // (Someday we'll have a valid bitmask instead of widths....)
 				   new AstRange(nodep->fileline(), nodep->width()-1, 0));
+	if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
 	m_funcp->addInitsp(varp);
 	// Replace node tree with reference to var
 	AstVarRef* newp = new AstVarRef (nodep->fileline(), varp, false);
@@ -94,13 +97,17 @@ private:
 	m_depth = 0;
 	m_maxdepth = 0;
 	nodep->iterateChildren(*this);
+	m_funcp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    void visitStmt(AstNodeStmt* nodep) {
 	m_depth = 0;
 	m_maxdepth = 0;
 	m_stmtp = nodep;
 	nodep->iterateChildren(*this);
 	m_stmtp = NULL;
+    }
+    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+	visitStmt(nodep);
     }
     // Operators
     virtual void visit(AstNodeTermop* nodep, AstNUser*) {
@@ -118,6 +125,29 @@ private:
 	    m_maxdepth = m_depth;
 	    createDeepTemp(nodep);
 	}
+    }
+
+    //--------------------
+    // Marking of non-static functions (because they might need "this")
+    void needNonStaticFunc(AstNode* nodep) {
+	if (!m_funcp) nodep->v3fatalSrc("Non-static accessor not under a function");
+	if (m_funcp->isStatic()) {
+	    UINFO(5,"Mark non-public due to "<<nodep<<endl);
+	    m_funcp->isStatic(false);
+	}
+    }
+    virtual void visit(AstCoverInc* nodep, AstNUser*) {
+	// OPTIMIZE: For now this needs this->__Vcoverage, but could be globalized
+	needNonStaticFunc(nodep);
+	visitStmt(nodep);
+    }
+    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+	needNonStaticFunc(nodep);
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstUCStmt* nodep, AstNUser*) {
+	needNonStaticFunc(nodep);
+	visitStmt(nodep);
     }
 
     //--------------------

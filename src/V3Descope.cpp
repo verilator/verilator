@@ -111,6 +111,7 @@ private:
 		if (newfuncp->stmtsp())  newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
 		if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
 		newfuncp->name(name);
+		newfuncp->isStatic(false);
 		newfuncp->addInitsp(
 		    new AstCStmt(newfuncp->fileline(),
 				 "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));

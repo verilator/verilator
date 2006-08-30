@@ -2785,7 +2785,7 @@ public:
 	m_formCallTree = false;
 	m_slow = false;
 	m_funcPublic = false;
-	m_isStatic = false;
+	m_isStatic = true;	// Note defaults to static, later we see where thisp is needed
 	m_symProlog = false;
     }
     virtual ~AstCFunc() {}

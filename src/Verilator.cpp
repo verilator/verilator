@@ -413,6 +413,7 @@ void process () {
     }
 
     // Fix very deep expressions
+    // Mark evaluation functions as member functions, if needed.
     V3Depth::depthAll(v3Global.rootp());
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("depth.tree"));
 

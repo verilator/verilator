@@ -218,7 +218,7 @@ public:
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
 	puts("if (VL_LIKELY(vlSymsp->__Vm_coverageRequest))");
-	puts(" ++__Vcoverage[");
+	puts(" ++this->__Vcoverage[");
 	puts(cvtToStr(m_coverIds.remap(nodep->declp()))); puts("];\n");
     }
     virtual void visit(AstCReturn* nodep, AstNUser*) {
@@ -592,12 +592,10 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");
 
-	puts("VL_DEBUG_IF(cout<<\""); 
+	puts("VL_DEBUG_IF(cout<<\"  "); 
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
-	     +" \""
-	     +"<<name()"
-	     +"<<endl; );\n");
+	     +"\"<<endl; );\n");
 
 	if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
@@ -995,7 +993,7 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 		case 't': displayArg(nodep,&elistp,fmt,'u'); break;
 		case 'm': {
 		    emitDispState.pushFormat("%s");
-		    emitDispState.pushArg(NULL, "__VlSymsp->name(");
+		    emitDispState.pushArg(NULL, "vlSymsp->name(");
 		    for (AstText* textp=nodep->scopeTextp(); textp; textp=textp->nextp()->castText()) {
 			emitDispState.pushFormat(textp->text());
 		    }
@@ -1482,22 +1480,19 @@ void EmitCImp::emitInt(AstModule* modp) {
 	    puts("void\tinhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
 	}
 	ofp()->putsPrivate(true);  // private:
-	puts("void\t_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+");\n");
-#ifndef NEW_ORDERING
-	puts("IData\tchange_request();\n");
-#endif
+	puts("static void _eval_initial_loop("+EmitCBaseVisitor::symClassVar()+");\n");
     }
 
     emitIntFuncDecls(modp);
 
     if (!optSystemPerl() && v3Global.opt.trace()) {
 	ofp()->putsPrivate(false);  // public:
-	puts("static void\ttraceInit (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void\ttraceFull (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void\ttraceChg  (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceInit (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceFull (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceChg  (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
     }
 
-    puts("} VL_ATTR_ALIGNED(8);\n");
+    puts("} VL_ATTR_ALIGNED(64);\n");
     puts("\n");
 
     // finish up h-file
@@ -1791,10 +1786,12 @@ class EmitCTrace : EmitCStmts {
 	    puts(topClassName()+"::"+nodep->name()
 		 +"("+cFuncArgs(nodep)+") {\n");
 
+	    if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
+
 	    puts("int c=code;\n");
 	    puts("if (0 && vcdp && c) {}  // Prevent unused\n");
 	    if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
-		puts("vcdp->module(name()); // Setup signal names\n");
+		puts("vcdp->module(vlSymsp->name()); // Setup signal names\n");
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
 	    } else nodep->v3fatalSrc("Bad Case");

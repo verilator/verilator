@@ -157,7 +157,7 @@ void EmitCSyms::emitInt() {
     puts("inline const char* name() { return __Vm_namep; }\n");
     puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r;}\n");
     puts("\n");
-    puts("};\n");
+    puts("} VL_ATTR_ALIGNED(64);\n");
     puts("#endif  /*guard*/\n");
 }
 

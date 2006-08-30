@@ -109,6 +109,7 @@ private:
 	m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "bool");
 	m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
 	m_chgFuncp->symProlog(true);
+	m_chgFuncp->declPrivate(true);
 	m_scopetopp->addActivep(m_chgFuncp);
 	// We need at least one change detect so we know to emit the correct code
 	m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
