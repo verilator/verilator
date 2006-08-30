@@ -359,6 +359,7 @@ sub compile {
 			      "VM_PREFIX=$self->{VM_PREFIX}",
 			      ($param{make_main}?"":"MAKE_MAIN=0"),
 			      "$self->{VM_PREFIX}",  # not default, as we don't need archive
+			      ($param{make_flags}||""),
 			      ]);
 	}
     }
@@ -518,7 +519,7 @@ sub _make_main {
     print $fh "#include \"SpTraceVcdC.cpp\"\n" if $self->{trace};
     print $fh "#include \"SpCoverage.cpp\"\n" if $self->{coverage};
 
-    print $fh "$VM_PREFIX *top;\n";
+    print $fh "$VM_PREFIX * topp;\n";
     if (!$self->sp) {
 	print $fh "unsigned int main_time = false;\n";
 	print $fh "double sc_time_stamp () {\n";
@@ -536,15 +537,15 @@ sub _make_main {
 	print $fh "    double sim_time = 1000;\n";
     }
     print $fh "    Verilated::debug(".($Opt_Verilated_Debug?1:0).");\n";
-    print $fh "    top = new $VM_PREFIX (\"TOP\");\n";
+    print $fh "    topp = new $VM_PREFIX (\"TOP\");\n";
     my $set;
     if ($self->sp) {
-	print $fh "    SP_PIN(top,fastclk,fastclk);\n" if $self->{inputs}{fastclk};
-	print $fh "    SP_PIN(top,clk,clk);\n" if $self->{inputs}{clk};
+	print $fh "    SP_PIN(topp,fastclk,fastclk);\n" if $self->{inputs}{fastclk};
+	print $fh "    SP_PIN(topp,clk,clk);\n" if $self->{inputs}{clk};
 	$set = "";
     } else {
-	print $fh "    top->eval();\n";
-	$set = "top->";
+	print $fh "    topp->eval();\n";
+	$set = "topp->";
     }
     print $fh "    ${set}fastclk = true;\n" if $self->{inputs}{fastclk};
     print $fh "    ${set}clk = true;\n" if $self->{inputs}{clk};
@@ -570,9 +571,9 @@ sub _make_main {
     print $fh "    if (!Verilated::gotFinish()) {\n";
     print $fh '       vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");',"\n";
     print $fh "    }\n";
-    print $fh "    top->final();\n";
+    print $fh "    topp->final();\n";
     print $fh "    SpCoverage::write(\"",$self->{coverage_filename},"\");\n" if $self->{coverage};
-    print $fh "    delete top;\n";
+    print $fh "    delete topp; topp=NULL;\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();

@@ -23,6 +23,7 @@
 //=========================================================================
 
 #include "verilated.h"
+#include <string.h>
 
 #define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
 
@@ -244,17 +245,28 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
 const char* Verilated::catName(const char* n1, const char* n2) {
     // Returns new'ed data
     // Used by symbol table creation to make module names
-    char* str = new char[strlen(n1)+strlen(n2)+2];
-    strcpy(str,n1);
-    strcat(str,n2);
-    return str;
+    static char* strp = NULL;
+    static int   len  = -1;
+    int newlen = strlen(n1)+strlen(n2)+2;    
+    if (newlen > len) {
+	if (strp) delete [] strp;
+	strp = new char[newlen];
+	len = newlen;
+    }
+    strcpy(strp,n1);
+    strcat(strp,n2);
+    return strp;
 }
 
 //===========================================================================
 // VerilatedModule:: Methods
 
-VerilatedModule::VerilatedModule(const char* name)
-    : m_name(name) {
+VerilatedModule::VerilatedModule(const char* namep)
+    : m_namep(strdup(namep)) {
+}
+
+VerilatedModule::~VerilatedModule() {
+    if (m_namep) free((void*)m_namep); m_namep=NULL;
 }
 
 //===========================================================================

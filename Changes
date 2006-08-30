@@ -9,7 +9,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Added `systemc_dtor for destructor extentions.  [Allan Cochrane]
 
-**** Declare tables static, to reduce D-Cache miss rate.
+**** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.
+
+**** Fix memory leak when destroying modules.  [John Stroebel]
 
 **** Fix $display %m name not matching Verilog name inside SystemC modules.
 

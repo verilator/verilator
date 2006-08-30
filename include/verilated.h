@@ -57,12 +57,13 @@ class SpTraceVcdCFile;
 
 class VerilatedModule {
 private:
-    const char*		m_name;	///< Module name
-    VerilatedModule() {}	///< N/A, always use named constructor below
+    const char*		m_namep;	///< Module name
+    VerilatedModule();				///< N/A, always use named constructor below
+    VerilatedModule(const VerilatedModule& );	///< N/A, no copying modules
 public:
-    VerilatedModule(const char* name);	///< Create module with given hierarchy name
-    ~VerilatedModule() {}
-    const char* name() const { return m_name; }	///< Return name of module
+    VerilatedModule(const char* namep);	///< Create module with given hierarchy name
+    ~VerilatedModule();
+    const char* name() const { return m_namep; }	///< Return name of module
 };
 
 //=========================================================================
