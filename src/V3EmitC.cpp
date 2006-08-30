@@ -202,7 +202,7 @@ public:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
-	puts("_vlCoverInsert(");	// As Declared in emitCoverageDecl
+	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
 	puts("&__Vcoverage["); 	
 	puts(cvtToStr(m_coverIds.remap(nodep))); puts("]");
 	puts(", \"");	puts(nodep->fileline()->filebasename()); puts("\"");
@@ -593,7 +593,7 @@ class EmitCImp : EmitCStmts {
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +" \""
-	     +(optSystemC()?"<<name()":"")
+	     +"<<name()"
 	     +"<<endl; );\n");
 
 	if (nodep->initsp()) puts("// Variables\n");
@@ -662,6 +662,7 @@ class EmitCImp : EmitCStmts {
     // Medium level
     void emitCoverageCtor(AstModule* modp);
     void emitCoverageDecl(AstModule* modp);
+    void emitCoverageImp(AstModule* modp);
     void emitTextSection(AstType type);
     void emitIntFuncDecls(AstModule* modp);
     // High level
@@ -987,7 +988,7 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 		case 't': displayArg(nodep,&elistp,fmt,'u'); break;
 		case 'm': {
 		    emitDispState.pushFormat("%s");
-		    emitDispState.pushArg(NULL, "name(");
+		    emitDispState.pushArg(NULL, "__VlSymsp->name(");
 		    for (AstText* textp=nodep->scopeTextp(); textp; textp=textp->nextp()->castText()) {
 			emitDispState.pushFormat(textp->text());
 		    }
@@ -1111,14 +1112,23 @@ void EmitCImp::emitCoverageDecl(AstModule* modp) {
 	puts("// Coverage\n");
 	puts("SpZeroed<uint32_t>\t__Vcoverage["); puts(cvtToStr(m_coverIds.size())); puts("];\n");
 	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint32_t)*m_coverIds.size());
+	puts("void __vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
+	puts(  	"const char* hier, const char* type, const char* comment);\n");
+    }
+}
+
+void EmitCImp::emitCoverageImp(AstModule* modp) {
+    if (m_coverIds.size()) {
+	puts("\n// Coverage\n");
 	// Rather then putting out SP_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments
-	puts("void _vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
+	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
 	puts(  	"const char* hier, const char* type, const char* comment) {\n");
 	puts(   "SP_COVER_INSERT(countp,");
 	puts(	"  \"filename\",filename,");
 	puts(	"  \"lineno\",lineno,");
 	puts(	"  \"column\",column,\n");
+	//puts(	"\"hier\",string(__VlSymsp->name())+hier,");  // Need to move hier into scopes and back out if do this
 	puts(	"\"hier\",string(name())+hier,");
 	puts(	"  \"type\",type,");
 	puts(	"  \"comment\",comment);\n");
@@ -1157,7 +1167,8 @@ void EmitCImp::emitTextSection(AstType type) {
 
 void EmitCImp::emitCellCtors(AstModule* modp) {
     if (modp->isTop()) {
-	puts("__VlSymsp = new "+symClassName()+"(this);\n");
+	// Must be before other constructors, as __vlCoverInsert calls it
+	puts("__VlSymsp = new "+symClassName()+"(this, name());\n");
     }
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCell* cellp=nodep->castCell()) {
@@ -1416,9 +1427,7 @@ void EmitCImp::emitInt(AstModule* modp) {
 	    puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
 	}
     }
-    if (!modp->isTop()) {
-	puts("void\t__Vconfigure("+symClassName()+"*\tsymsp) { __VlSymsp = symsp; }  ///< Internal symbol table construction\n");
-    }
+    puts("void\t__Vconfigure("+symClassName()+"* symsp);\n");
     if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
 
     if (modp->isTop()) {
@@ -1519,10 +1528,16 @@ void EmitCImp::emitImp(AstModule* modp) {
 	emitCellCtors(modp);
 	emitSensitives();
 	emitVarResets(modp);
-	emitCoverageCtor(modp);
 	emitTextSection(AstType::SCCTOR);
 	if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
 	puts("}\n");
+
+	puts("\nvoid "+modClassName(m_modp)+"::__Vconfigure("+symClassName()+"* symsp) {\n");
+	puts(   "__VlSymsp = symsp;\n");  // First, as later stuff needs it.
+	emitCoverageCtor(modp);
+	puts("}\n");
+
+	emitCoverageImp(modp);
     }
     if (m_fast && m_splitFilenum==0) {
 	if (modp->isTop()) {

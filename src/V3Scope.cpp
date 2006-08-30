@@ -197,6 +197,22 @@ private:
 	nodep->taskp(NULL);
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	// If there's a %m in the display text, we add a special node that will contain the name()
+	if (nodep->name().find("%m") != string::npos) {
+	    string prefix = (string)(".")+m_scopep->prettyName();
+	    // TOP and above will be the user's name().
+	    // Note 'TOP.'is stripped by prettyName, but not 'TOP'.
+	    if (prefix != ".TOP") {
+		// To keep correct visual order, must add before other Text's
+		AstNode* afterp = nodep->scopeAttrp();
+		if (afterp) afterp->unlinkFrBackWithNext();
+		nodep->scopeAttrp(new AstText(nodep->fileline(), prefix));
+		if (afterp) nodep->scopeAttrp(afterp);
+	    }
+	}
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	// Scope that was made by this module for different cell;
 	// Want to ignore blocks under it, so just do nothing

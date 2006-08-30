@@ -20,6 +20,7 @@ include Vtop.mk
 CPPFLAGS += -DUTIL_PRINTF=sp_log_printf
 CPPFLAGS += -Wno-deprecated
 CPPFLAGS += $(SYSTEMC_CXX_FLAGS)
+CPPFLAGS += $(OPT)
 
 LDFLAGS += $(SYSTEMC_CXX_FLAGS)
 

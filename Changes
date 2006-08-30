@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Declare tables static, to reduce D-Cache miss rate.
 
+**** Fix $display %m name not matching Verilog name inside SystemC modules.
+
 * Verilator 3.600 08/28/2006
 
 **   Support dotted cross-hierarchy variable and task references.

@@ -123,7 +123,11 @@ void EmitCSyms::emitInt() {
 
     puts("// STATIC STATE\n");
     puts("static "+symClassName()+"* s_thisp;\n");
-    puts("\n// STATE\n");
+
+    puts("\n// LOCAL STATE\n");
+    puts("const char* __Vm_namep;\n");	// Must be before subcells, as constructor order needed before _vlCoverInsert.
+
+    puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
 	if (modp->isTop()) {
@@ -137,9 +141,9 @@ void EmitCSyms::emitInt() {
     }
 
     puts("\n// CREATORS\n");
-    puts(symClassName()+"("+topClassName()+"* topp);\n");
+    puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
     puts((string)"~"+symClassName()+"() {};\n");
-    puts("// METHODS\n");
+    puts("\n// METHODS\n");
     puts("/// Called at top of each eval to setup global pointer to top-of-symbol table\n");
     puts((string)"inline static void init ("+symClassName()+"* symsp) {\n");
     puts("s_thisp = symsp;\n");
@@ -147,6 +151,7 @@ void EmitCSyms::emitInt() {
     puts((string)"inline static void init ("+topClassName()+"* topp) {\n");
     puts("s_thisp = topp->__VlSymsp;\n");
     puts("}\n");
+    puts("inline const char* name() { return __Vm_namep; }\n");
     puts("\n");
     puts("};\n");
     puts("#endif  /*guard*/\n");
@@ -171,9 +176,11 @@ void EmitCSyms::emitImp() {
     puts(symClassName()+"* "+symClassName()+"::s_thisp;\n");
 
     puts("\n// FUNCTIONS\n");
-    puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp)\n");
+    puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
+    puts("\t// Setup locals\n");
+    puts("\t: __Vm_namep(namep)\n");	// No leak, as we get destroyed when the top is destroyed
     puts("\t// Setup submodule names\n");
-    char comma=':';
+    char comma=',';
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
 	if (modp->isTop()) {
@@ -207,7 +214,7 @@ void EmitCSyms::emitImp() {
 	}
     }
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
-    puts("TOPp->__VlSymsp = this;\n");
+    puts("TOPp->__Vconfigure(this);\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
 	if (!modp->isTop()) {

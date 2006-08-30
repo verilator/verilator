@@ -10,9 +10,14 @@ module t;
    reg [31:0] str; initial str = "\000\277\021\n";
    reg [47:0] str2; initial str2 = "\000what!";
    reg [79:0] str3; initial str3 = "\000hmmm!1234";
+
+   sub sub ();
+   sub2 sub2 ();
+
    initial begin
-      $write("[%0t] ", $time);
-      $write("%m: Hi\n");
+      $write("[%0t] In %m: Hi\n", $time);
+      sub.write_m;
+      sub2.write_m;
 
       // Display formatting
       $display("[%0t] %%X=%X %%D=%D %%0X=%0X %%0O=%0O %%B=%B", $time,
@@ -32,8 +37,20 @@ module t;
 `ifndef nc	// NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;
 `endif
-
       $write("*-* All Finished *-*\n");
       $finish;
    end
+endmodule
+
+module sub;
+   task write_m;
+      $write("[%0t] In %m\n", $time);
+   endtask
+endmodule
+
+module sub2;
+   // verilator no_inline_module
+   task write_m;
+      $write("[%0t] In %m\n", $time);
+   endtask
 endmodule

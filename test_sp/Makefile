@@ -20,9 +20,9 @@ PWD := $(shell pwd)
 DEBUG_ON = --debug --trace-dups --output-split 100
 
 ######################################################################
-default:  prep        preproc compile run coverage
-debug:    prep_dbg    preproc compile run coverage
-nopublic: prep_dbg_np preproc compile run coverage
+default:  prep        preproc compile     run coverage
+debug:    prep_dbg    preproc compile_dbg run coverage
+nopublic: prep_dbg_np preproc compile_dbg run coverage
 
 V_FLAGS = -f $(PWD)/../test_v/input.vc
 VERILATOR_FLAGS = --public --sp --coverage --stats --trace $(V_FLAGS) top.v
@@ -38,7 +38,10 @@ preproc:
 	cd obj_dir ; $(MAKE) -j 1 -f ../Makefile_obj preproc
 
 compile:
-	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj
+	cd obj_dir ; $(MAKE)        -j 3 -f ../Makefile_obj
+
+compile_dbg:
+	cd obj_dir ; $(MAKE) OPT=-g -j 3 -f ../Makefile_obj
 
 run:	
 	obj_dir/simx
