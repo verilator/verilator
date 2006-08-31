@@ -22,6 +22,7 @@ SP_INCLUDER     = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
 ######################################################################
 # C Preprocessor flags
 
+# Add -MMD -MP if you're using a recent version of GCC.
 VK_CPPFLAGS_ALWAYS += \
 		-MMD \
 		-I$(VERILATOR_ROOT)/include \

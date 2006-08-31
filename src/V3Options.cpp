@@ -358,7 +358,8 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    // Single switches
 	    else if ( !strcmp (sw, "-E") )			{ m_preprocOnly = true; }
-	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_depend = flag; }
+	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_makeDepend = flag; }
+	    else if ( onoff   (sw, "-MP", flag/*ref*/) )	{ m_makePhony = flag; }
 	    else if ( onoff   (sw, "-assert", flag/*ref*/) )	{ m_assert = flag; m_psl = flag; }
 	    else if ( !strcmp (sw, "-cc") )			{ m_outFormatOk = true; m_systemC = false; m_systemPerl = false; }
 	    else if ( onoff   (sw, "-coverage", flag/*ref*/) )	{ coverage(flag); }
@@ -556,11 +557,12 @@ V3Options::V3Options() {
 
     m_coverageLine = false;
     m_coverageUser = false;
-    m_depend = true;
     m_dumpTree = false;
     m_exe = false;
     m_ignc = false;
     m_l2Name = true;
+    m_makeDepend = true;
+    m_makePhony = false;
     m_outFormatOk = false;
     m_pins64 = false;
     m_profileCFuncs = false;

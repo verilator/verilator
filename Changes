@@ -5,12 +5,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.60**
 
-**   Many changes to the pointers used for internal structures.
-     When used with gcc's -fstrict-aliasing, large models are ~***% faster.
+***  Changed how internal functions are invoked to avoid aliasing in GCC 3.3+.
 
 ***  Added --inhibit-sim flag for environments using old __Vm_inhibitSim.
 
 ***  Added `systemc_dtor for destructor extentions.  [Allan Cochrane]
+
+***  Added -MP to make phony dependencies, ala GCC's.
 
 **** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.
 

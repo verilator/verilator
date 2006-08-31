@@ -122,7 +122,18 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 	    *ofp<<iter->filename()<<" ";
 	}
     }
+
     *ofp<<endl;
+
+    if (v3Global.opt.makePhony()) {
+	*ofp<<endl;
+	for (set<DependFile>::iterator iter=m_filenameList.begin();
+	     iter!=m_filenameList.end(); ++iter) {
+	    if (!iter->target()) {
+		*ofp<<iter->filename()<<":"<<endl;
+	    }
+	}
+    }
 }
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {

@@ -65,6 +65,7 @@ CPPFLAGSNOWALL += -DYYDEBUG 	# Required to get nice error messages
 CPPFLAGSNOWALL += $(COPT)
 CPPFLAGS = $(CPPFLAGSNOWALL)
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+CPPFLAGSNOWALL += -MP	# Only works on recent GCC versions
 CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
 #CPPFLAGS += -pedantic-errors
 endif

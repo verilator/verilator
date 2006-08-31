@@ -44,7 +44,8 @@ class V3Options {
     V3StringSet	m_libraryFiles;	// Verilog -v files
 
     bool	m_preprocOnly;	// main switch: -E
-    bool	m_depend;	// main switch: -MMD
+    bool	m_makeDepend;	// main switch: -MMD
+    bool	m_makePhony;	// main switch: -MP
     bool	m_assert;	// main switch: --assert
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageUser;	// main switch: --coverage-func
@@ -120,7 +121,8 @@ class V3Options {
     // ACCESSORS (options)
     const string& top() const { return m_top; }
     bool preprocOnly() const { return m_preprocOnly; }
-    bool depend() const { return m_depend; }
+    bool makeDepend() const { return m_makeDepend; }
+    bool makePhony() const { return m_makePhony; }
     bool underlineZero() const { return m_underlineZero; }
     string bin() const { return m_bin; }
     string flags() const { return m_flags; }

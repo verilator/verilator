@@ -503,10 +503,10 @@ int main(int argc, char** argv, char** env) {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",99));
     V3Error::abortIfErrors();
 
-    if (v3Global.opt.depend()) {
+    if (v3Global.opt.makeDepend()) {
 	V3File::writeDepend(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__ver.d");
     }
-    if (v3Global.opt.skipIdentical() || v3Global.opt.depend()) { 
+    if (v3Global.opt.skipIdentical() || v3Global.opt.makeDepend()) { 
 	V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__verFiles.dat", argString);
     }
 

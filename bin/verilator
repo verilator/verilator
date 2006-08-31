@@ -318,6 +318,11 @@ modules; they will always be inlined, if allowed.
 Enable creation of .d dependency files, used for make dependency detection,
 similar to gcc -MMD option.  On by default, use --no-MMD to disable.
 
+=item --MP
+
+When creating .d dependency files with --MMD, make phony targets.  Similar
+to gcc -MP option.
+
 =item --Mdir I<directory>
 
 Specifies the name of the Make object directory.  All generated files will
@@ -645,14 +650,11 @@ fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
 optimizations for slow-path files (plus tracing), which execute only
 rarely, yet take a long time to compile with optimization on.  OPT
 specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW affect.  For best results, use OPT="-O2
--fstrict-aliasing".  Nearly the same results can be had with much better
-compile times with OPT_FAST="-O1 -fstrict-aliasing".  Unfortunately, using
-the optimizer with SystemC files can result in compiles taking several
-minutes.  (The SystemC libraries have many little inlined functions that
-drive the compiler nuts.)  Also read the manual as to the effects of
--fstrict-aliasing; you may want to compile only the verilated code with
-this flag.
+OPT_FAST and OPT_SLOW affect.  For best results, use OPT="-O2".  Nearly the
+same results can be had with much better compile times with OPT_FAST="-O1
+-fstrict-aliasing".  Unfortunately, using the optimizer with SystemC files
+can result in compiles taking several minutes.  (The SystemC libraries have
+many little inlined functions that drive the compiler nuts.)
 
 For best results, use GCC 3.3 or newer.  GCC 3.2 and earlier have
 optimization bugs around pointer aliasing detection, which can result in 2x
