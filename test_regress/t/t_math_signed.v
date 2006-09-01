@@ -75,6 +75,7 @@ module t (/*AUTOARG*/
    endfunction
 
    integer cyc; initial cyc=0;
+   wire [31:0] ucyc = cyc;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       $write("%x  %x %x %x %x  %x %x\n", cyc, sr,srs,sl,sls, b_s,b_us);
@@ -88,9 +89,24 @@ module t (/*AUTOARG*/
 	end
 	2: begin
 	   a <= 16'sh8b1b; b <= 5'sh1e;  // shift AMOUNT is really unsigned
+	   if (ucyc / 1 != 32'd2) $stop;
+	   if (ucyc / 2 != 32'd1) $stop;
+	   if (ucyc * 1 != 32'd2) $stop;
+	   if (ucyc * 2 != 32'd4) $stop;
+	   if (ucyc * 3 != 32'd6) $stop;
+	   if (cyc * 32'sd1 != 32'sd2) $stop;
+	   if (cyc * 32'sd2 != 32'sd4) $stop;
+	   if (cyc * 32'sd3 != 32'sd6) $stop;
 	end
 	3: begin
 	   a <= 16'sh0048; b <= 5'sh1f;
+	   if (ucyc * 1 != 32'd3) $stop;
+	   if (ucyc * 2 != 32'd6) $stop;
+	   if (ucyc * 3 != 32'd9) $stop;
+	   if (ucyc * 4 != 32'd12) $stop;
+	   if (cyc * 32'sd1 != 32'sd3) $stop;
+	   if (cyc * 32'sd2 != 32'sd6) $stop;
+	   if (cyc * 32'sd3 != 32'sd9) $stop;
 	end
 	4: begin
 	   a <= 16'sh4154; b <= 5'sh02;

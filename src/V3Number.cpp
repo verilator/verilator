@@ -430,6 +430,12 @@ uint32_t V3Number::countOnes() const {
     return n;
 }
 
+uint32_t V3Number::mostSetBitP1() const {
+    for (int bit=this->width()-1; bit>=0; bit--) {
+	if (bitIs1(bit)) return bit+1;
+    }
+    return 0;
+}
 //======================================================================
 
 V3Number& V3Number::opBitsNonX (const V3Number& lhs) { // 0/1->1, X/Z->0

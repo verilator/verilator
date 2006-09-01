@@ -1,14 +1,8 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//	$write("*-* All Finished *-*\n");
-//	$finish
-// on success, or $stop.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here**
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2005 by Wilson Snyder.
 
 module t (/*AUTOARG*/);
 

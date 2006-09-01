@@ -130,6 +130,7 @@ public:
     uint32_t asHash() const;
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;
+    uint32_t mostSetBitP1() const;	// Highest bit set plus one, IE for 16 return 5, for 0 return 0.
 
     // STATICS
     static int log2b(uint32_t num);

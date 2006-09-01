@@ -87,6 +87,10 @@ private:
 	return (nodep->castConst()
 		&& !nodep->castConst()->num().isFourState());
     }
+    bool operandIsPowTwo(AstNode* nodep) {
+	if (!operandIsTwostate(nodep)) return false;
+	return (1==nodep->castConst()->num().countOnes());
+    }
     bool operandShiftOp(AstNodeBiop* nodep) {
 	if (!nodep->rhsp()->castConst()) return false;
 	AstNodeBiop* lhsp = nodep->lhsp()->castNodeBiop();
@@ -315,6 +319,24 @@ private:
 					rhsp);
 	newp->widthSignedFrom(nodep);
 	newp->lhsp()->widthSignedFrom(nodep);
+	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+    }
+    void replaceMulShift (AstMul* nodep) {  // Mul, but not MulS as not simple shift
+	UINFO(5,"MUL(2^n,b)->SHIFTL(b,n) "<<nodep<<endl);
+	int amount = nodep->lhsp()->castConst()->num().mostSetBitP1()-1;  // 2^n->n+1
+	AstNode* opp = nodep->rhsp()->unlinkFrBack();
+	AstShiftL* newp = new AstShiftL(nodep->fileline(),
+					opp, new AstConst(nodep->fileline(), amount));
+	newp->widthSignedFrom(nodep);
+	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+    }
+    void replaceDivShift (AstDiv* nodep) {  // Mul, but not MulS as not simple shift
+	UINFO(5,"DIV(b,2^n)->SHIFTR(b,n) "<<nodep<<endl);
+	int amount = nodep->rhsp()->castConst()->num().mostSetBitP1()-1;  // 2^n->n+1
+	AstNode* opp = nodep->lhsp()->unlinkFrBack();
+	AstShiftR* newp = new AstShiftR(nodep->fileline(),
+					opp, new AstConst(nodep->fileline(), amount));
+	newp->widthSignedFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
     void replaceShiftOp (AstNodeBiop* nodep) {
@@ -970,8 +992,14 @@ private:
     TREEOP("AstOr    {$lhsp, $rhsp.isAllOnes}",	"replaceWRhs(nodep)"); //->allOnes
     TREEOP("AstLogOr {$lhsp, $rhsp.isNeqZero}",	"replaceNum(nodep,1)");
     TREEOP("AstXor   {$lhsp.isAllOnes, $rhsp}",	"AstNot{$rhsp}");
-    TREEOP("AstPow   {operandIsTwo($lhsp), $rhsp}","replacePowShift(nodep)");  // 2**a == 1<<a
-    TREEOP("AstPowS  {operandIsTwo($lhsp), $rhsp}","replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP("AstMul   {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP("AstMulS  {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP("AstDiv   {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
+    TREEOP("AstDivS  {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
+    TREEOP("AstMul   {operandIsPowTwo($lhsp), $rhsp}",	"replaceMulShift(nodep)");  // a*2^n -> a<<n
+    TREEOP("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}",	"replaceDivShift(nodep)");  // a/2^n -> a>>n
+    TREEOP("AstPow   {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP("AstPowS  {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
