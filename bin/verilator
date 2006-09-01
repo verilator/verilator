@@ -1115,8 +1115,8 @@ always @* to prevent these issues.)
 =head2 Dotted cross-hierarchy references
 
 Verilator supports dotted references to variables, functions and tasks in
-different modules. However, references into named blocks and function-local
-variables are not supported.
+different modules. However, references into named blocks, function-local
+variables, and arrayed instances are not supported.
 
 =head2 Latches
 

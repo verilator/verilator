@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -40,7 +40,14 @@ module t (/*AUTOARG*/
    end
 endmodule
 
+`ifdef USE_INLINE
+ `define INLINE_MODULE /*verilator inline_module*/
+`else
+ `define INLINE_MODULE /*verilator public_module*/
+`endif
+
 module sub (input [7:0] allbits, input [1:0] onebit, output bitout);
+   `INLINE_MODULE
    wire bitout = (^ onebit) ^ (^ allbits);
 endmodule
 

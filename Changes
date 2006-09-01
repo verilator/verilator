@@ -14,9 +14,11 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Changed how internal functions are invoked to reduce aliasing.
      Useful when using GCC's -O2 or -fstrict-aliasing, to gain another ~4%.
 
+**** Fix memory leak when destroying modules.  [John Stroebel]
+
 **** Fix coredump when unused modules have unused cells.  [David Hewson]
 
-**** Fix memory leak when destroying modules.  [John Stroebel]
+**** Fix 3.600 internal error with arrayed instances.  [David Hewson]
 
 **** Fix $display %m name not matching Verilog name inside SystemC modules.
 

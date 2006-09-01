@@ -650,17 +650,18 @@ public:
     virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
     // ACCESSORS
     virtual string name()	const { return m_name; }		// * = Cell name
+    void name(const string& name) 	{ m_name = name; }
     string origName()		const { return m_origName; }		// * = Original name
+    void origName(const string& name) 	{ m_origName = name; }
     string modName()		const { return m_modName; }		// * = Instance name
+    void modName(const string& name)	{ m_modName = name; }
     AstPin* pinsp()		const { return op1p()->castPin(); }	// op1 = List of cell ports
     AstPin* paramsp()		const { return op2p()->castPin(); }	// op2 = List of parameter #(##) values
     AstRange* rangep()		const { return op3p()->castRange(); }	// op3 = Range of arrayed instants (NULL=not ranged)
     AstModule* modp()		const { return m_modp; }		// [AfterLink] = Pointer to module instantiated
-    void addPinsp(AstPin* pinp) { addOp1p(pinp); }
-    void addParamsp(AstPin* pinp) { addOp2p(pinp); }
-    void modp(AstModule* modp)	{ m_modp = modp; }
-    void modName(const string& name)	{ m_modName = name; }
-    void name(const string& name) 	{ m_name = name; }
+    void addPinsp(AstPin* nodep) { addOp1p(nodep); }
+    void addParamsp(AstPin* nodep) { addOp2p(nodep); }
+    void modp(AstModule* nodep)	{ m_modp = nodep; }
 };
 
 struct AstCellInline : public AstNode {
