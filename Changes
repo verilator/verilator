@@ -5,21 +5,24 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.60**
 
-***  Changed how internal functions are invoked to avoid aliasing in GCC 3.3+.
-
 ***  Added --inhibit-sim flag for environments using old __Vm_inhibitSim.
 
 ***  Added `systemc_dtor for destructor extentions.  [Allan Cochrane]
 
 ***  Added -MP to make phony dependencies, ala GCC's.
 
-**** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.
+***  Changed how internal functions are invoked to reduce aliasing.
+     Useful when using GCC's -O2 or -fstrict-aliasing, to gain another ~4%.
+
+**** Fix coredump when unused modules have unused cells.  [David Hewson]
 
 **** Fix memory leak when destroying modules.  [John Stroebel]
 
 **** Fix $display %m name not matching Verilog name inside SystemC modules.
 
-* Verilator 3.600 08/28/2006
+**** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.
+
+* Verilator 3.600 08/28/2006 Beta
 
 **   Support dotted cross-hierarchy variable and task references.
 

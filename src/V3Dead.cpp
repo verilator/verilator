@@ -35,6 +35,31 @@
 #include "V3Ast.h"
 
 //######################################################################
+
+class DeadModVisitor : public AstNVisitor {
+    // In a module that is dead, cleanup the in-use counts of the modules
+private:
+    // NODE STATE
+    // ** Shared with DeadVisitor **
+    // VISITORS
+    virtual void visit(AstCell* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	nodep->modp()->user(nodep->modp()->user() - 1);
+    }
+    //-----
+    virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+public:
+    // CONSTRUCTORS
+    DeadModVisitor(AstModule* nodep) {
+	nodep->accept(*this);
+    }
+    virtual ~DeadModVisitor() {}
+};
+
+//######################################################################
 // Dead state, as a visitor of each AstNode
 
 class DeadVisitor : public AstNVisitor {
@@ -46,8 +71,8 @@ private:
     //  AstVarScope::user()	-> int. Count of number of references
 
     // STATE
-    vector<AstVar*>		m_varsp;	// List of all encountered to avoid another loop through three
-    vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through three
+    vector<AstVar*>		m_varsp;	// List of all encountered to avoid another loop through tree
+    vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
     bool			m_elimUserVars;	// Allow removal of user's vars
     //int debug() { return 9; }
 
@@ -85,6 +110,8 @@ private:
     // METHODS
     void deadCheckMod() {
 	// Kill any unused modules
+	// V3LinkCells has a graph that is capable of this too, but we need to do it
+	// after we've done all the generate blocks
 	for (bool retry=true; retry; ) {
 	    retry=false;
 	    AstModule* nextmodp;
@@ -93,14 +120,11 @@ private:
 		if (modp->level()>2	&& modp->user()==0) {
 		    // > 2 because L1 is the wrapper, L2 is the top user module
 		    UINFO(4,"  Dead module "<<modp<<endl);
-		    // And its children may now be killable too....
-		    for (AstNode* nodep = modp->stmtsp(); nodep; nodep=nodep->nextp()) {
-			if (AstCell* cellp=nodep->castCell()) {
-			    cellp->modp()->user( cellp->modp()->user() - 1);
-			    retry = true;
-			}
-		    }
+		    // And its children may now be killable too; correct counts
+		    // Recurse, as cells may not be directly under the module but in a generate
+		    DeadModVisitor visitor(modp);
 		    modp->unlinkFrBack()->deleteTree(); modp=NULL;
+		    retry = true;
 		}
 	    }
 	}

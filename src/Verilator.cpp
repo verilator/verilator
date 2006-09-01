@@ -286,7 +286,13 @@ void process () {
     if (v3Global.opt.oGate()) {
 	V3Gate::gateAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("gate.tree"));
+	// V3Gate calls constant propagation itself.
     }
+
+    // Remove unused vars
+    V3Const::constifyAll(v3Global.rootp());
+    V3Dead::deadifyAll(v3Global.rootp(), true);
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
     // Reorder assignments in pipelined blocks
     if (v3Global.opt.oReorder()) {
@@ -333,7 +339,7 @@ void process () {
 
     // Remove unused vars
     V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), false);
+    V3Dead::deadifyAll(v3Global.rootp(), true);
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
 #ifndef NEW_ORDERING

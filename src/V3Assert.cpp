@@ -88,7 +88,7 @@ private:
 	    bodysp = newFireAssert(nodep,message);
 	    // We assert the property is always true... so report when it fails
 	    // (Note this is opposite the behavior of coverage statements.)
-//FIX 'never' operator: not hold in current or any future cycle
+	    // Need: 'never' operator: not hold in current or any future cycle
 	    propp = new AstLogNot (nodep->fileline(), propp);
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
