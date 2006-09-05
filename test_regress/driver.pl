@@ -123,7 +123,8 @@ sub one_test {
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
-		 push @fails, "\t\tmake && ( cd test_regress ; "
+		 my $j = ($opt_jobs>1?" -j 2":"");
+		 push @fails, "\t\tmake$j && ( cd test_regress ; "
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)." )\n";
 		 $failcnt++;
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }

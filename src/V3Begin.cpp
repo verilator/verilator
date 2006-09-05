@@ -23,6 +23,7 @@
 // Each module:
 //	Look for BEGINs
 //	    BEGIN(VAR...) -> VAR ... {renamed}
+//	FOR -> WHILEs
 //
 //*************************************************************************
 
@@ -140,6 +141,22 @@ private:
 	    nodep->unlinkFrBack();
 	    m_modp->addStmtp(nodep);
 	}
+    }
+    virtual void visit(AstFor* nodep, AstNUser*) {
+	// So later optimizations don't need to deal with them,
+	//    FOR(init,cond,assign,body) -> init,WHILE(cond) { body, assign }
+	AstNode* initsp = nodep->initsp(); if (initsp) initsp->unlinkFrBackWithNext();
+	AstNode* condp = nodep->condp(); if (condp) condp->unlinkFrBackWithNext();
+	AstNode* incsp = nodep->incsp(); if (incsp) incsp->unlinkFrBackWithNext();
+	AstNode* bodysp = nodep->bodysp(); if (bodysp) bodysp->unlinkFrBackWithNext();
+	bodysp = bodysp->addNext(incsp);
+	AstNode* newp = new AstWhile(nodep->fileline(),
+				     condp,
+				     bodysp);
+	initsp = initsp->addNext(newp);
+	newp = initsp;
+	nodep->replaceWith(newp);
+	nodep->deleteTree(); nodep=NULL;
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

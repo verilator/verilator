@@ -20,6 +20,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix 3.600 internal error with arrayed instances.  [David Hewson]
 
+**** Fix 3.600 internal error with non-unrolled function loops.  [David Hewson]
+
 **** Fix $display %m name not matching Verilog name inside SystemC modules.
 
 **** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.

@@ -492,7 +492,7 @@ private:
 	nodep->initsp()->iterateAndNext(*this);
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	if (!nodep->castGenFor()) nodep->bodysp()->iterateAndNext(*this);
-	nodep->assignsp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like a if() condition.
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {

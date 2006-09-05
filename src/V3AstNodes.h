@@ -1242,8 +1242,8 @@ struct AstFOpen : public AstNodeStmt {
 
 struct AstGenFor : public AstNodeFor {
     AstGenFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
-	   AstNode* assignsp, AstNode* bodysp)
-	: AstNodeFor(fileline, initsp, condp, assignsp, bodysp) {
+	   AstNode* incsp, AstNode* bodysp)
+	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
     }
     virtual ~AstGenFor() {}
     virtual AstType type() const { return AstType::GENFOR;}
@@ -1253,8 +1253,8 @@ struct AstGenFor : public AstNodeFor {
 
 struct AstFor : public AstNodeFor {
     AstFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
-	   AstNode* assignsp, AstNode* bodysp)
-	: AstNodeFor(fileline, initsp, condp, assignsp, bodysp) {
+	   AstNode* incsp, AstNode* bodysp)
+	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
     }
     virtual ~AstFor() {}
     virtual AstType type() const { return AstType::FOR;}

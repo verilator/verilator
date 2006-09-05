@@ -774,14 +774,14 @@ struct AstNodeAssign : public AstNodeStmt {
 
 struct AstNodeFor : public AstNodeStmt {
     AstNodeFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
-	       AstNode* assignsp, AstNode* bodysp)
+	       AstNode* incsp, AstNode* bodysp)
 	: AstNodeStmt(fileline) {
-	addNOp1p(initsp); setOp2p(condp); addNOp3p(assignsp); addNOp4p(bodysp);
+	addNOp1p(initsp); setOp2p(condp); addNOp3p(incsp); addNOp4p(bodysp);
     }
     virtual ~AstNodeFor() {}
-    AstNode*	initsp()	const { return op1p()->castNode(); }	// op1= initial statement
+    AstNode*	initsp()	const { return op1p()->castNode(); }	// op1= initial statements
     AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
-    AstNode*	assignsp()	const { return op3p()->castNode(); }	// op3= final statements
+    AstNode*	incsp()		const { return op3p()->castNode(); }	// op3= increment statements
     AstNode*	bodysp()	const { return op4p()->castNode(); }	// op4= body of loop
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }

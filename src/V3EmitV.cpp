@@ -199,7 +199,7 @@ public:
 	puts(";");
 	nodep->condp()->iterateAndNext(*this);
 	puts(";");
-	nodep->assignsp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	m_suppressSemi = false;
 	puts(") {\n");
 	nodep->bodysp()->iterateAndNext(*this);

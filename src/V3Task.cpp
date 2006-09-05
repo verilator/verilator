@@ -52,6 +52,7 @@ private:
     typedef std::map<pair<AstScope*,AstVar*>,AstVarScope*> VarToScopeMap;
     // MEMBERS
     VarToScopeMap	m_varToScopeMap;	// Map for Var -> VarScope mappings
+    AstAssignW*		m_assignwp;		// Current assignment
 public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
@@ -85,10 +86,25 @@ private:
 		taskp->user3p(nodep);
 	    }
 	}
-	// No iterateChildren for speed
+	nodep->iterateChildren(*this);
     }
-    //--------------------
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}	// Speedup
+    virtual void visit(AstAssignW* nodep, AstNUser*) {
+	m_assignwp = nodep;
+	nodep->iterateChildren(*this);  // May delete nodep.
+	m_assignwp = NULL;
+    }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	if (m_assignwp) {
+	    // Wire assigns must become always statements to deal with insertion
+	    // of multiple statements.  Perhaps someday make all wassigns into always's?
+	    UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
+	    AstNode* lhsp = m_assignwp->lhsp()->unlinkFrBack();
+	    AstNode* rhsp = m_assignwp->rhsp()->unlinkFrBack();
+	    AstNode* assignp = new AstAssign (m_assignwp->fileline(), lhsp, rhsp);
+	    AstNode* alwaysp = new AstAlways (m_assignwp->fileline(), NULL, assignp);
+	    m_assignwp->replaceWith(alwaysp); pushDeletep(m_assignwp); m_assignwp=NULL;
+	}
+    }
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -97,6 +113,7 @@ private:
 public:
     // CONSTUCTORS
     TaskStateVisitor(AstNode* nodep) {
+	m_assignwp = NULL;
 	AstNode::user3ClearTree();
 	nodep->iterateAndNext(*this, NULL);
     }
@@ -148,11 +165,20 @@ private:
     //  AstNodeFTask::user	// True if its been expanded
     // Each funccall
     //  AstVar::user2p		// AstVarScope* to replace varref with
+
+    // TYPES
+    enum  InsertMode {
+	IM_BEFORE,		// Pointing at statement ref is in, insert before this
+	IM_AFTER,		// Pointing at last inserted stmt, insert after
+	IM_WHILE_PRECOND	// Pointing to for loop, add to body end
+    };
+
     // STATE
     TaskStateVisitor* m_statep;	// Common state between visitors
     AstModule*	m_modp;		// Current module
     AstScope*	m_scopep;	// Current scope
-    AstNode*	m_lastStmtp;	// Proceeding statement
+    InsertMode	m_insMode;	// How to insert
+    AstNode*	m_insStmtp;	// Where to insert statement
     int		m_modNCalls;	// Incrementing func # for making symbols
     //int debug() { return 9; }
 
@@ -344,18 +370,46 @@ private:
 	nodep->accept(*this);
 	m_scopep = oldscopep;
     }
+    void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
+	if (debug()>=9) { nodep->dumpTree(cout,"-newstmt:"); }
+	if (!m_insStmtp) nodep->v3fatalSrc("Function not underneath a statement");
+	if (m_insMode == IM_BEFORE) {
+	    // Add the whole thing before insertAt
+	    UINFO(5,"     IM_Before  "<<m_insStmtp<<endl);
+	    AstNRelinker handle;
+	    m_insStmtp->unlinkFrBackWithNext(&handle);
+	    if (debug()>=9) { newp->dumpTree(cout,"-newfunc:"); }
+	    newp->addNext(m_insStmtp);
+	    handle.relink(newp);
+	}
+	else if (m_insMode == IM_AFTER) {
+	    UINFO(5,"     IM_After   "<<m_insStmtp);
+	    m_insStmtp->addNextHere(newp);
+	}
+	else if (m_insMode == IM_WHILE_PRECOND) {
+	    UINFO(5,"     IM_While_Precond "<<m_insStmtp);
+	    AstWhile* whilep = m_insStmtp->castWhile();
+	    if (!whilep) nodep->v3fatalSrc("Insert should be under WHILE");
+	    whilep->addPrecondsp(newp);
+	}
+	else {
+	    nodep->v3fatalSrc("Unknown InsertMode");
+	}
+	m_insMode = IM_AFTER;
+	m_insStmtp = newp;
+    }
 
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
-	m_lastStmtp = NULL;
+	m_insStmtp = NULL;
 	m_modNCalls = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	m_scopep = nodep;
-	m_lastStmtp = NULL;
+	m_insStmtp = NULL;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
@@ -372,27 +426,12 @@ private:
     }
     virtual void visit(AstFuncRef* nodep, AstNUser*) {
 	UINFO(4," Func REF   "<<nodep<<endl);
-	if (debug()>=9) { m_lastStmtp->dumpTree(cout,"-prestmt:"); }
+	if (debug()>=9) { nodep->dumpTree(cout,"-preref:"); }
 	// First, do hierarchical funcs
 	AstFunc* funcp = nodep->taskp()->castFunc();
 	if (!funcp) nodep->v3fatalSrc("unlinked");
-	AstNode* insertAtp = m_lastStmtp;
-	if (AstAssignW* awp = insertAtp->castAssignW()) {
-	    // Wire assigns must become always statements to deal with insertion
-	    // of multiple statements.  Perhaps someday make all wassigns into always's?
-	    AstNode* lhsp = awp->lhsp()->unlinkFrBack();
-	    AstNode* rhsp = awp->rhsp()->unlinkFrBack();
-	    AstNode* assignp = new AstAssign (awp->fileline(), lhsp, rhsp);
-	    AstNode* alwaysp = new AstAlways (awp->fileline(), NULL, assignp);
-	    m_lastStmtp = assignp; insertAtp = assignp;
-	    awp->replaceWith(alwaysp); pushDeletep(awp); awp=NULL;
-	}
 	// Inline func refs in the function
 	iterateIntoFTask(funcp);
-	// Inline this reference
-	if (debug()>=9) { m_lastStmtp->dumpTree(cout,"-inlstmt:"); }
-	if (!insertAtp) nodep->v3fatalSrc("Function not underneath a statement");
-	UINFO(5,"     Under  "<<insertAtp<<endl);
 	// Create output variabls
 	string namePrefix = "__Vfunc_"+funcp->shortName()+"__"+cvtToStr(m_modNCalls++);
 	AstVarScope* outvscp = createVarScope (funcp->fvarp()->castVar(),
@@ -402,22 +441,20 @@ private:
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked?");
 
 	AstNode* beginp = createInlinedFTask(nodep, namePrefix, outvscp);
-	// Add the whole thing before insertAt
-	AstNRelinker handle;
-	insertAtp->unlinkFrBackWithNext(&handle);
-	if (debug()>=9) { beginp->dumpTree(cout,"-newfunc:"); }
-	beginp->addNext(insertAtp);
-	handle.relink(beginp);
 	// Replace the ref
 	AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
 	nodep->replaceWith(outrefp);
+	// Insert new statements
+	insertBeforeStmt(nodep, beginp);
+	// Cleanup
 	nodep->deleteTree(); nodep=NULL;
-	if (debug()>=9) { insertAtp->dumpTree(cout,"-newstmt:"); }
 	UINFO(4,"  Done.\n");
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	AstNode* prevLastStmtp = m_lastStmtp;
-	m_lastStmtp = nodep->stmtsp();
+	InsertMode prevInsMode = m_insMode;
+	AstNode* prevInsStmtp = m_insStmtp;
+	m_insMode = IM_BEFORE;
+	m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
 	if (!nodep->user()) {
 	    // Expand functions in it & Mark for later delete
 	    nodep->user(true);
@@ -452,11 +489,32 @@ private:
 	    // Just push, as other references to func may remain until visitor exits
 	    pushDeletep(nodep); nodep=NULL;
 	}
-	m_lastStmtp = prevLastStmtp;
+	m_insMode = prevInsMode;
+	m_insStmtp = prevInsStmtp;
+    }
+    virtual void visit(AstWhile* nodep, AstNUser*) {
+	// Special, as statements need to be put in different places
+	// Preconditions insert first just before themselves (the normal rule for other statement types)
+	m_insStmtp = NULL;	// First thing should be new statement
+	nodep->precondsp()->iterateAndNext(*this);
+	// Conditions insert first at end of precondsp.
+	m_insMode = IM_WHILE_PRECOND;
+	m_insStmtp = nodep;
+	nodep->condp()->iterateAndNext(*this);
+	// Body insert just before themselves
+	m_insStmtp = NULL;	// First thing should be new statement
+	nodep->bodysp()->iterateAndNext(*this);
+	// Done the loop
+	m_insStmtp = NULL;	// Next thing should be new statement
+    }
+    virtual void visit(AstNodeFor* nodep, AstNUser*) {
+	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp\n");
     }
     virtual void visit(AstNodeStmt* nodep, AstNUser*) {
-	m_lastStmtp = nodep;
+	m_insMode = IM_BEFORE;
+	m_insStmtp = nodep;
 	nodep->iterateChildren(*this);
+	m_insStmtp = NULL;	// Next thing should be new statement
     }
     //--------------------
     // Default: Just iterate
@@ -470,6 +528,7 @@ public:
 	: m_statep(statep) {
 	m_modp = NULL;
 	m_scopep = NULL;
+	m_insStmtp = NULL;
 	AstNode::userClearTree();
 	nodep->accept(*this);
     }
