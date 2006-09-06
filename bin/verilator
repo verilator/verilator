@@ -1115,8 +1115,11 @@ always @* to prevent these issues.)
 =head2 Dotted cross-hierarchy references
 
 Verilator supports dotted references to variables, functions and tasks in
-different modules. However, references into named blocks, function-local
-variables, and arrayed instances are not supported.
+different modules. However, references into named blocks and function-local
+variables are not supported.  References into generate statements and
+arrayed instances are possible, but may use different names from the
+Verilog standard; arrayed instances are named {cellName}__{instanceNumber},
+while for generates, it's genblk{instanceNumber} or genfor{loopCount}.
 
 =head2 Latches
 

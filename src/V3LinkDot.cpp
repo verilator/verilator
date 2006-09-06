@@ -68,12 +68,18 @@ public:
     void insertSubcellName(const string& name, LinkDotBaseVertex* toVertexp) {
 	m_nameToVtxMap.insert(make_pair(name,toVertexp));
     }
-    LinkDotBaseVertex* findSubcell(const string& name) {
+    LinkDotBaseVertex* findSubcell(const string& name, const string& altname) {
 	// Find a vertex under this one by name.
 	// We could walk the edge top() list, but that would be O(n) for large lists of cells
-	NameVtxMap::iterator iter = m_nameToVtxMap.find(name);
-	if (iter == m_nameToVtxMap.end()) return NULL;
-	else return iter->second;
+	{
+	    NameVtxMap::iterator iter = m_nameToVtxMap.find(name);
+	    if (iter != m_nameToVtxMap.end()) return iter->second;
+	}
+	if (altname != "") {
+	    NameVtxMap::iterator iter = m_nameToVtxMap.find(altname);
+	    if (iter != m_nameToVtxMap.end()) return iter->second;
+	}
+	return NULL;
     }
 };
 
@@ -134,18 +140,20 @@ private:
     // MEMBERS
     LinkDotGraph	m_graph;		// Graph of hiearchy
     NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by textual name
+    bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
 public:
     static int debug() { return V3Error::debugDefault(); }
 //    static int debug() { return 9; }
 
     // CONSTRUCTORS
-    LinkDotState(bool forScopeCreation) {
+    LinkDotState(bool forPrearray, bool forScopeCreation) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
+	m_forPrearray = forPrearray;
+	m_forScopeCreation = forScopeCreation;
 	//VV*****  We reset all userp() on each netlist!!!
 	AstNode::userClearTree();
 	AstNode::user2ClearTree();
-	m_forScopeCreation = forScopeCreation;
     }
     ~LinkDotState() {}
     
@@ -234,18 +242,26 @@ public:
 		leftname = "";
 	    }
 	    baddot = ident;   // So user can see where they botched it
+	    string altIdent = "";
+	    if (m_forPrearray) {
+		// Cell foo__[array] before we've expanded arrays is just foo.
+		if ((pos = ident.find("__")) != string::npos) {
+		    altIdent = ident.substr(0,pos);
+		}
+	    }
 	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at "<<cellVxp<<endl);
 	    // Spec says; Look at exiting module (cellnames then modname),
 	    // then look up (inst name or modname)
 	    if (firstId) {
 		// Check this module - subcellnames
-		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident)) {
+		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
 		    cellVxp = findVxp;
 		}
 		// Check this module - cur modname
 		else if (cellVxp->modName() == ident) {}
 		// Check this module - cur cellname
 		else if (cellVxp->cellName() == ident) {}
+		else if (cellVxp->cellName() == altIdent) {}
 		// Move up and check cellname + modname
 		else {
 		    while (cellVxp) {
@@ -253,10 +269,11 @@ public:
 			if (cellVxp) {
 			    UINFO(9,"\t\tUp to "<<cellVxp<<endl);
 			    if (cellVxp->modName() == ident
-				|| cellVxp->cellName() == ident) {
+				|| cellVxp->cellName() == ident
+				|| cellVxp->cellName() == altIdent) {
 				break;
 			    }
-			    else if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident)) {
+			    else if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
 				cellVxp = findVxp;
 				break;
 			    }
@@ -265,7 +282,7 @@ public:
 		    if (!cellVxp) return NULL;  // Not found
 		}
 	    } else { // Searching for middle submodule, must be a cell name
-		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident)) {
+		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
 		    cellVxp = findVxp;
 		} else {
 		    return NULL;  // Not found
@@ -606,22 +623,15 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkDot::linkDot(AstNetlist* rootp) {
+void V3LinkDot::linkDotGuts(AstNetlist* rootp, bool prearray, bool scoped) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     if (LinkDotState::debug()>=5) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
-    LinkDotState state (false);
+    LinkDotState state (prearray,scoped);
     LinkDotFindVisitor visitor(rootp,&state);
-    state.dump();
-    LinkDotResolveVisitor visitorb(rootp,&state);
-}
-
-void V3LinkDot::linkDotScope(AstNetlist* rootp) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    if (LinkDotState::debug()>=5) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
-    LinkDotState state (true);
-    LinkDotFindVisitor visitor(rootp,&state);
-    // Process AstScope's.  This needs to be separate pass after whole hiearchy graph created.
-    LinkDotScopeVisitor visitors(rootp,&state);
+    if (scoped) {
+	// Process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
+	LinkDotScopeVisitor visitors(rootp,&state);
+    }
     state.dump();
     LinkDotResolveVisitor visitorb(rootp,&state);
 }

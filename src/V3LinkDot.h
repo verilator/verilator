@@ -28,9 +28,12 @@
 //============================================================================
 
 class V3LinkDot {
+private:
+    static void linkDotGuts(AstNetlist* nodep, bool preparam, bool scoped);
 public:
-    static void linkDot(AstNetlist* nodep);
-    static void linkDotScope(AstNetlist* nodep);
+    static void linkDotPrearrayed(AstNetlist* nodep)	{ linkDotGuts(nodep,true,false); }
+    static void linkDotArrayed(AstNetlist* nodep)	{ linkDotGuts(nodep,false,false); }
+    static void linkDotScope(AstNetlist* nodep)		{ linkDotGuts(nodep,false,true); }
 };
 
 #endif // Guard

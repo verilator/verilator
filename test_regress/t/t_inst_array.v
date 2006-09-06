@@ -11,12 +11,15 @@ module t (/*AUTOARG*/
 
    input clk;
    integer cyc; initial cyc=1;
+   parameter ONE = 1;
 
    wire [17:10] bitout;
    reg  [7:0] allbits;
    reg  [15:0] onebit;
 
    sub sub [7:0] (allbits, onebit, bitout);
+
+   integer     x;
 
    always @ (posedge clk) begin
       //$write("%x\n", bitout);
@@ -33,6 +36,14 @@ module t (/*AUTOARG*/
 	 end
 	 if (cyc==3) begin
 	    if (bitout !== 8'h41) $stop;
+`ifdef verilator // Hacky array subscripting
+	    if (sub__0.bitout !== 1'b1) $stop;
+	    if (sub__1.bitout !== 1'b0) $stop;
+`else
+	    if (sub[0].bitout !== 1'b1) $stop;
+	    if (sub[1].bitout !== 1'b0) $stop;
+	    if (sub[ONE].bitout !== 1'b0) $stop;
+`endif
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end

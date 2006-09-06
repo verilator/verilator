@@ -109,7 +109,7 @@ void process () {
     // Cross-link signal names
     V3Link::link(v3Global.rootp());
     // Cross-link dotted hierarchical references
-    V3LinkDot::linkDot(v3Global.rootp());
+    V3LinkDot::linkDotPrearrayed(v3Global.rootp());
     // Correct state we couldn't know at parse time, repair SEL's, set lvalue's
     V3LinkResolve::linkResolve(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("link.tree"));
@@ -120,7 +120,7 @@ void process () {
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
-    V3LinkDot::linkDot(v3Global.rootp());	// Cleanup as made new modules
+    V3LinkDot::linkDotPrearrayed(v3Global.rootp());	// Cleanup as made new modules
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param.tree"));
     V3Error::abortIfErrors();
 
@@ -169,7 +169,7 @@ void process () {
     V3Const::constifyAllLint(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
-    // Remove cell arrays (must be between V3Width and tasking)
+    // Remove cell arrays (must be between V3Width and scoping)
     V3Inst::dearrayAll(v3Global.rootp());
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
 
@@ -189,7 +189,7 @@ void process () {
     if (v3Global.opt.oInline()) {
 	V3Inline::inlineAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inline.tree"));
-	V3LinkDot::linkDot(v3Global.rootp());	// Cleanup as made new modules
+	V3LinkDot::linkDotArrayed(v3Global.rootp());	// Cleanup as made new modules
 	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
     }
 
