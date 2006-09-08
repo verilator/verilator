@@ -3,7 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.601 09/06/2006
+* Verilator 3.602 ****
+
+**** Fix function references under top inlined module.  [David Hewson]
+
+* Verilator 3.601 09/06/2006 Beta
 
 ***  Added --inhibit-sim flag for environments using old __Vm_inhibitSim.
 

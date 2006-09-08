@@ -546,7 +546,8 @@ private:
 	    string baddot;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
-		dotVxp = m_statep->findDotted(dotVxp, nodep->inlinedDots(), baddot);
+		string inl = AstNode::prettyName(nodep->inlinedDots());
+		dotVxp = m_statep->findDotted(dotVxp, inl, baddot);
 		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 	    }
 	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot); // Maybe NULL
@@ -589,7 +590,9 @@ private:
 	    string baddot;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
-		dotVxp = m_statep->findDotted(dotVxp, nodep->inlinedDots(), baddot);
+		string inl = AstNode::prettyName(nodep->inlinedDots());
+		UINFO(8,"\t\tInlined "<<inl<<endl);
+		dotVxp = m_statep->findDotted(dotVxp, inl, baddot);
 		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 	    }
 	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot); // Maybe NULL
