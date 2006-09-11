@@ -127,10 +127,14 @@ private:
 	nodep->iterateChildren(*this);
 	// After expanding the generate, all statements under it can be moved
 	// up, and the generate block deleted as it's not relevant
-	AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
-	nodep->replaceWith(stmtsp);
+	if (AstNode* stmtsp = nodep->stmtsp()) {
+	    stmtsp->unlinkFrBackWithNext();
+	    nodep->replaceWith(stmtsp);
+	    if (debug()>=9) stmtsp->dumpTree(cout,"-genout: ");
+	} else {
+	    nodep->unlinkFrBack();
+	}
 	nodep->deleteTree(); nodep=NULL;
-	if (debug()>=9) stmtsp->dumpTree(cout,"-genout: ");
     }
     virtual void visit(AstGenIf* nodep, AstNUser*) {
 	V3Width::widthParams(nodep);  // Param typed widthing will NOT recurse the body

@@ -222,7 +222,7 @@ class AstSenTree;
 %type<nodep>	v2kPort ioDecl varDecl
 %type<nodep>	modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListOrNone modOrGenItem
-%type<nodep>	genItem genItemList genItemBegin genItemBlock genItemsBlock genCaseList
+%type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseList
 %type<nodep>	dterm
 %type<varp>	onesig sigId sigIdRange paramId sigList regsig regsigList regSigId
 %type<varp>	netSig netSigList
@@ -399,7 +399,7 @@ modItemList:	modItem					{ $$ = $1; }
 	;
 
 modItem:	modOrGenItem 				{ $$ = $1; }
-	|	yGENERATE genItemsBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	|	yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
 	|	ySCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
 	|	ySCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
 	|	ySCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
@@ -437,7 +437,7 @@ genItemBlock:	genItem					{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
-genItemsBlock:	genItemList				{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
+genTopBlock:	genItemList				{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
 	|	genItemBegin				{ $$ = $1; }
 	;
 

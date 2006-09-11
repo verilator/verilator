@@ -49,25 +49,6 @@ private:
     string		m_beginScope;	// Name of begin blocks above us
     //int debug() { return 9; }
 
-    bool nameMatchesGen(const char* namep, string& numr) {
-	numr = "";
-	bool needbar = false;
-	for (const char* cp=namep; *cp; ) {
-	    if (0==strncmp(cp,"genblk",6) || 0==strncmp(cp,"genfor",6)) {
-		cp += 6;
-	    } else if (isdigit(*cp)) {
-		if (needbar) { numr += '_'; needbar = false; }
-		numr += *cp++;
-	    } else if (*cp=='_') {
-		cp++;
-		needbar = true;
-	    } else {
-		return false;  // Not exact match
-	    }
-	}
-	return true;
-    }
-
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
@@ -84,15 +65,6 @@ private:
 	UINFO(8,"  "<<nodep<<endl);
 	string oldScope = m_beginScope;
 	{
-	    //string nameNum;
-	    //string oldNum;
-	    //if (nameMatchesGen(oldScope.c_str(), oldNum/*ref*/)
-	    //	&& nameMatchesGen(nodep->name().c_str(), nameNum/*ref*/)
-	    //	&& 0) {  // Messes up V3Link
-	    //	// Need to leave the dot or we mess up later V3LinkDot
-	    //	// gen[blk|for]##_gen[blk|for]##  -> gen[blk|for]##__DOT__##...
-	    //	m_beginScope = oldScope + "__DOT__"+nameNum;
-
 	    //UINFO(8,"nname "<<m_beginScope<<endl);
 	    // Create data for dotted variable resolution
 	    string dottedname = nodep->name() + "__DOT__";  // So always found
@@ -100,7 +72,7 @@ private:
 	    while ((pos=dottedname.find("__DOT__")) != string::npos) {
 		string ident = dottedname.substr(0,pos);
 		dottedname = dottedname.substr(pos+strlen("__DOT__"));
-		if (m_beginScope=="") m_beginScope = nodep->name();
+		if (m_beginScope=="") m_beginScope = ident;
 		else m_beginScope = m_beginScope + "__DOT__"+ident;
 		// Create CellInline for dotted resolution
 		AstCellInline* inlinep = new AstCellInline(nodep->fileline(),

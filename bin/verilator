@@ -1116,10 +1116,25 @@ always @* to prevent these issues.)
 
 Verilator supports dotted references to variables, functions and tasks in
 different modules. However, references into named blocks and function-local
-variables are not supported.  References into generate statements and
-arrayed instances are possible, but may use different names from the
-Verilog standard; arrayed instances are named {cellName}__{instanceNumber},
-while for generates, it's genblk{instanceNumber} or genfor{loopCount}.
+variables are not supported.  References into arrayed and generated
+instances work, but still require some work-arounds in the Verilog code:
+
+References into arrayed instances use different names from the Verilog
+standard; arrayed instances are named {cellName}__{instanceNumber}.  For
+example a[2] is instead a__2.  Thus you cannot use a parameter or variable
+to select the index number; expand it into a case statement manually.
+
+References into generate statements also use different names from the
+Verilog standard; the top level generate, any begin statement, and any
+place where there is a implied begin statement (under each generate-if or
+generate-case) adds a hierarchy level named genblkI<instanceNumber>.  And
+each generate-for adds genforI<loopCount>.  The best bet is to comment out
+the references and run with --debug and look in the at the _begin.tree
+file, and see the hierarchy by looking at the names of all of the CELLs in
+question.  Replace __DOT__ with . in your program.  For example most cells
+under a for loop would be something like
+"genblk__DOT__genfor0__DOT__I<cellname>"; so use genblk.genfor0.I<cellname> to
+see inside that cell.
 
 =head2 Latches
 
@@ -1353,6 +1368,9 @@ For significantly better performance, split this into 2 separate signals:
 
       wire [2:1] x_21 = x[1:0];
       wire [0:0] x_0  = shift_in;
+
+This warning may also be due to clock enables.  To fix these, use the
+clock_enable meta comment described above.
 
 =item UNSIGNED
 
