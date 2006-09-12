@@ -115,6 +115,13 @@ public:
 
 #endif
 
+//=========================================================================
+// Functions overridable by user defines
+
+#ifndef VL_PRINTF
+# define VL_PRINTF printf	///< Print ala printf; may redefine if desired
+#endif
+
 //===========================================================================
 /// Verilator global static information class
 

@@ -130,10 +130,6 @@ void EmitCSyms::emitInt() {
     puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
     puts("bool\t__Vm_didInit;\n");
-    if (v3Global.opt.coverage()) {
-	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
-	puts("bool	 __Vm_coverageRequest;\n");
-    }
 
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint64_t));
     puts("\n// SUBCELL STATE\n");
@@ -184,7 +180,6 @@ void EmitCSyms::emitImp() {
     puts("\t: __Vm_namep(namep)\n");	// No leak, as we get destroyed when the top is destroyed
     puts("\t, __Vm_activity(false)\n");
     puts("\t, __Vm_didInit(false)\n");
-    if (v3Global.opt.coverage()) puts("\t, __Vm_coverageRequest(false)\n");
     puts("\t// Setup submodule names\n");
     char comma=',';
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {

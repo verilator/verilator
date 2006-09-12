@@ -217,8 +217,7 @@ public:
 	puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
-	puts("if (VL_LIKELY(vlSymsp->__Vm_coverageRequest))");
-	puts(" ++this->__Vcoverage[");
+	puts("++this->__Vcoverage[");
 	puts(cvtToStr(m_coverIds.remap(nodep->declp()))); puts("];\n");
     }
     virtual void visit(AstCReturn* nodep, AstNUser*) {
@@ -1246,12 +1245,8 @@ void EmitCImp::emitWrapEval(AstModule* modp) {
     puts("while (VL_LIKELY(__Vchange)) {\n");
     puts(    "VL_DEBUG_IF(cout<<\" Clock loop\"<<endl;);\n");
 #endif
-    // Not exactly correct for coverage.  w/combo logic interspersed, this is complicated.  Punt.
-    // Perhaps have temp & each _combo_ turn it on or off
-    if (v3Global.opt.coverage()) puts(    "vlSymsp->__Vm_coverageRequest = true;\n");
     puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "_eval(vlSymsp);\n");
-    if (v3Global.opt.coverage()) puts(    "vlSymsp->__Vm_coverageRequest = false;\n");
 #ifndef NEW_ORDERING
     puts(    "__Vchange = _change_request(vlSymsp);\n");
     puts(    "if (++__VclockLoop > 100) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");

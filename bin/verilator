@@ -248,9 +248,9 @@ Specifies basic block line coverage analysis code should be inserted.
 
 Coverage analysis adds statements at each code flow change point, which are
 the branches of IF and CASE statements, a superset of normal Verilog Line
-Coverage.  At each such branch a C++ macro is called, which SystemPerl uses
-to increment an array.  At the end of a test, logs/coverage.pl is written
-with the data from the array.
+Coverage.  At each such branch a unique counter is incremented.  At the end
+of a test, the counters along with the filename and line number
+corresponding to each counter are written into logs/coverage.pl.
 
 After running multiple tests, the vcoverage utility (from the SystemPerl
 package) is executed.  Vcoverage reads the logs/coverage.pl file(s), and
@@ -260,6 +260,10 @@ Verilator automatically disables coverage of branches that have a $stop in
 them, as it is assumed $stop branches contain an error check that should
 not occur.  A /*verilator coverage_block_off*/ comment will perform a
 similar function on any code in that block or below.
+
+Note Verilator may over-count combinatorial (non-clocked) blocks when those
+blocks receive signals which have had the UNOPTFLAT warning disabled; for
+most accurate results do not disable this warning when using coverage.
 
 For an example, after running 'make test' in the Verilator distribution,
 see the test_sp/logs/coverage_source directory.  Grep for lines starting
@@ -936,9 +940,9 @@ each different output width.
 
 =item $display, $write, $fdisplay, $fwrite
 
-$display format arguments may use C fprintf sizes after the % escape.  Per
-the Verilog standard, %x prints a number with the natural width, %0x prints
-a number with minimum width, however %5x prints 5 digits per the C standard
+Format arguments may use C fprintf sizes after the % escape.  Per the
+Verilog standard, %x prints a number with the natural width, %0x prints a
+number with minimum width, however %5x prints 5 digits per the C standard
 (it's unspecified in Verilog).
 
 =item $fopen, $fclose, $fdisplay, $fwrite
@@ -1247,6 +1251,11 @@ Reading a memory element that is outside the bounds specified for the array
 will give a width warning and wrap around the power-of-2 size.  For
 non-power-of-2 sizes, it will return a unspecified constant of the
 appropriate width.
+
+=item $display, $write, $fdisplay, $fwrite
+
+$display and friends must have a constant format string as the first
+argument (as with C's printf), you cannot simply list variables standalone.
 
 =head1 ERRORS
 

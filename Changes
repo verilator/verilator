@@ -3,6 +3,12 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.60**
+
+**** Add default define for VL_PRINTF.  [John Stroebel]
+
+**** Removed coverage request variable; see Coverage limitations in docs.
+
 * Verilator 3.602 09/11/2006
 
 **** Fix function references under top inlined module.  [David Hewson]
