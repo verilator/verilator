@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.60**
 
+***  Verilator now works under DJGPP (Pentium GCC).  [John Stroebel]
+
 **** Add default define for VL_PRINTF.  [John Stroebel]
 
 **** Removed coverage request variable; see Coverage limitations in docs.

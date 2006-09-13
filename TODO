@@ -97,6 +97,7 @@ Performance:
 	Track recirculation and convert into clock-enables
 	Clock enables should become new clocking domains for speed
 	If floped(a) & flopped(b) and no other a&b, then instead flop(a&b).
+	Sort by output bitselects so can combine more assignments (see DDP example dx_dm signal)
 
 //**********************************************************************
 //* Detailed notes on 'todo' features
