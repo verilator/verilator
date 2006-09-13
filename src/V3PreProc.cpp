@@ -537,10 +537,12 @@ int V3PreProcImp::getRawToken() {
 	int tok = yylex();
 
 	if (debug()>4) {
-	    char buf[10000]; strncpy(buf, yytext, yyleng);  buf[yyleng] = '\0';
-	    for (char* cp=buf; *cp; cp++) if (*cp=='\n') *cp='$';
+	    string buf = string (yytext, yyleng);
+	    string::size_type pos;
+	    while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
+	    while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
 	    fprintf (stderr, "%d: RAW %d %d:  %-10s: %s\n",
-		     fileline()->lineno(), m_off, m_state, tokenName(tok), buf);
+		     fileline()->lineno(), m_off, m_state, tokenName(tok), buf.c_str());
 	}
     
 	// On EOF, try to pop to upper level includes, as needed.
@@ -867,12 +869,12 @@ string V3PreProcImp::getline() {
     while (NULL==(rtnp=strchr(m_lineChars.c_str(),'\n'))) {
 	int tok = getToken();
 	if (debug()>4) {
-	    char buf[100000];
-	    strncpy(buf, yytext, yyleng);
-	    buf[yyleng] = '\0';
-	    for (char* cp=buf; *cp; cp++) if (*cp=='\n') *cp='$';
+	    string buf = string (yytext, yyleng);
+	    string::size_type pos;
+	    while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
+	    while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
 	    fprintf (stderr,"%d: GETFETC:  %-10s: %s\n",
-		     fileline()->lineno(), tokenName(tok), buf);
+		     fileline()->lineno(), tokenName(tok), buf.c_str());
 	}
 	if (tok==VP_EOF) {
 	    // Add a final newline, in case the user forgot the final \n.

@@ -7,6 +7,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
+$golden_out ||= "t/$Last_Self->{name}.out";
 my $stdout_filename = "obj_dir/$Last_Self->{name}__test.vpp";
 
 if (!$Last_Self->{v3}) {
@@ -17,8 +18,8 @@ if (!$Last_Self->{v3}) {
 	     verilator_make_gcc=>0,
 	     stdout_filename => $stdout_filename,
 	     );
-    ok(preproc_check("t/$Last_Self->{name}.v", $stdout_filename)
-       && files_identical($stdout_filename, "t/$Last_Self->{name}.out"));
+    ok(preproc_check($Last_Self->{top_filename}, $stdout_filename)
+       && files_identical($stdout_filename, $golden_out));
 }
 
 sub preproc_check {

@@ -253,7 +253,7 @@ sub read {
 sub write_status {
     my $self = shift;
     my $filename = $self->{status_filename};
-    my $fh = IO::File->new($filename,"w") or die "%Error: $! $filename,";
+    my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
     print $fh Dumper($self);
     print $fh "1;";
     $fh->close();
@@ -373,7 +373,7 @@ sub execute {
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
     if ($param{vcs}) {
-	#my $fh = IO::File->new("simv.key","w") or die "%Error: $! simv.key,";
+	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"obj_dir/".$self->{name}."_simv.log",
 		    cmd=>["./simv",],
@@ -462,7 +462,7 @@ sub _run {
 	sleep 1 if ($try!=7);
 	my $moretry = $try!=0;
 
-	my $fh = IO::File->new($param{logfile},"r");
+	my $fh = IO::File->new("<$param{logfile}");
 	next if !$fh && $moretry;
 	local $/; undef $/;
 	my $wholefile = <$fh>;
@@ -508,7 +508,7 @@ sub _make_main {
     $self->_read_inputs();
 
     my $filename = "obj_dir/$self->{VM_PREFIX}__main.cpp";
-    my $fh = IO::File->new($filename,"w") or die "%Error: $! $filename,";
+    my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     my $VM_PREFIX = $self->{VM_PREFIX};
     print $fh "#include \"$VM_PREFIX.h\"\n";
@@ -587,7 +587,7 @@ sub _make_top {
 
     $self->_read_inputs();
 
-    my $fh = IO::File->new($self->{top_shell_filename},"w") or die "%Error: $! $self->{top_shell_filename},";
+    my $fh = IO::File->new(">$self->{top_shell_filename}") or die "%Error: $! $self->{top_shell_filename},";
     print $fh "module top;\n";
     foreach my $inp (sort (keys %{$self->{inputs}})) {
 	print $fh "    reg ${inp};\n";
@@ -640,7 +640,7 @@ sub _read_inputs {
     my $self = shift;
     my $filename = $self->{top_filename};
     $filename = "t/$filename" if !-r $filename;
-    my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (defined(my $line = $fh->getline)) {
 	if ($line =~ /^\s*input\s*(\S+)\s*(\/[^\/]+\/|)\s*;/) {
 	    $self->{inputs}{$1} = $1;
@@ -673,8 +673,8 @@ sub verilator_version {
 sub files_identical {
     my $fn1 = shift;
     my $fn2 = shift;
-    my $f1 = IO::File->new ($fn1) or die "%Error: $! $fn1,";
-    my $f2 = IO::File->new ($fn2) or die "%Error: $! $fn2,";
+    my $f1 = IO::File->new ("<$fn1") or die "%Error: $! $fn1,";
+    my $f2 = IO::File->new ("<$fn2") or die "%Error: $! $fn2,";
     my @l1 = $f1->getlines();
     my @l2 = $f2->getlines();
     my $nl = $#l1;  $nl = $#l2 if ($#l2 > $nl);
@@ -720,7 +720,7 @@ sub file_contents {
     my $filename = shift;
 
     if (!$_File_Contents_Cache{$filename}) {
-	my $fh = IO::File->new($filename,"r");
+	my $fh = IO::File->new("<$filename");
 	if (!$fh) {
 	    $_File_Contents_Cache{$filename} = "_Already_Errored_";
 	    $self->error("File_grep file not found: ".$filename."\n");
@@ -733,6 +733,15 @@ sub file_contents {
     }
 
     return $_File_Contents_Cache{$filename};
+}
+
+sub write_wholefile {
+    my $self = (ref $_[0]? shift : $Last_Self);
+    my $filename = shift;
+    my $contents = shift;
+    my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
+    print $fh $contents;
+    $fh->close;
 }
 
 #######################################################################
