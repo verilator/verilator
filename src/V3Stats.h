@@ -36,7 +36,7 @@ public:
     ~V3Double0() {}
 
     // Implicit conversion operators:
-    inline V3Double0 (const uint64_t v) : m_d(v) { };
+    inline V3Double0 (const vluint64_t v) : m_d(v) { };
     inline operator const double () const { return m_d; };
 
     // Explicit operators:

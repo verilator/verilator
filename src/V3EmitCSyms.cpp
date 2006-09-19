@@ -124,14 +124,14 @@ void EmitCSyms::emitInt() {
     //puts("\n// STATIC STATE\n");
 
     puts("\n// LOCAL STATE\n");
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint64_t));
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
     puts("const char* __Vm_namep;\n");	// Must be before subcells, as constructor order needed before _vlCoverInsert.
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
     puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
     puts("bool\t__Vm_didInit;\n");
 
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint64_t));
+    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
     puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;

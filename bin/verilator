@@ -402,11 +402,14 @@ enable functional coverage.
 
 =item --public
 
+This is only for debug, and may result in mis-simulation of generated
+clocks.
+
 Declares all signals and modules public.  This will turn off signal
-optimizations as if all signals had a /*verilator public*/ comments.  This
-will also turn off inlining as if all modules had a /*verilator
-public_module*/, unless the module specifically enabled it with /*verilator
-inline_module*/.
+optimizations as if all signals had a /*verilator public*/ comments and
+inlining.  This will also turn off inlining as if all modules had a
+/*verilator public_module*/, unless the module specifically enabled it with
+/*verilator inline_module*/.
 
 =item --sc
 
@@ -1061,7 +1064,7 @@ Re-enable waveform tracing for all future signals that are declared.
 
 Used after a input, output, register, or wire declaration to indicate the
 signal should be declared so that C code may read or write the value
-of the signal.  Set for all signals when using the --public switch.
+of the signal.
 
 =item /*verilator public*/ (task/function)
 

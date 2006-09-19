@@ -391,9 +391,9 @@ private:
     static int	s_cloneCntGbl;	// Count of which userp is set
 
     FileLine*	m_fileline;	// Where it was declared
-    uint64_t	m_editCount;	// When it was last edited
-    static uint64_t s_editCntGbl;// Global edit counter
-    static uint64_t s_editCntLast;// Global edit counter, last value for printing * near node #s
+    vluint64_t	m_editCount;	// When it was last edited
+    static vluint64_t s_editCntGbl; // Global edit counter
+    static vluint64_t s_editCntLast;// Global edit counter, last value for printing * near node #s
 
     // Attributes
     bool	m_signed;	// Node is signed
@@ -539,10 +539,10 @@ public:
     void	user5(int val) { user5p(AstNUser::fromInt(val)); }
     static void	user5ClearTree() { s_user5CntGbl++; }  // Clear userp()'s across the entire tree
 
-    uint64_t	editCount() const { return m_editCount; }
+    vluint64_t	editCount() const { return m_editCount; }
     void	editCountInc() { m_editCount = s_editCntGbl++; }
-    static uint64_t	editCountLast() { return s_editCntLast; }
-    static uint64_t	editCountGbl() { return s_editCntGbl; }
+    static vluint64_t	editCountLast() { return s_editCntLast; }
+    static vluint64_t	editCountGbl() { return s_editCntGbl; }
     static void		editCountSetLast() { s_editCntLast = editCountGbl(); }
 
     // ACCESSORS for specific types

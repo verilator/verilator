@@ -1279,7 +1279,7 @@ void EmitCImp::emitWrapEval(AstModule* modp) {
 
 void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp) {
     // Put out a list of signal declarations
-    // in order of 0:clocks, 1:uint8, 2:uint16, 4:uint32, 5:uint64, 6:wide, 7:arrays
+    // in order of 0:clocks, 1:vluint8, 2:vluint16, 4:vluint32, 5:vluint64, 6:wide, 7:arrays
     // This aids cache packing and locality
     // Largest->smallest reduces the number of pad variables.
     // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.

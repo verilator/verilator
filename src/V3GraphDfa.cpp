@@ -64,7 +64,7 @@ class GraphNfaToDfa : GraphAlg {
 private:
     // TYPES
     typedef deque<DfaVertex*>		DfaStates;
-    typedef multimap<uint64_t,DfaVertex*>	HashMap;
+    typedef multimap<vluint64_t,DfaVertex*>	HashMap;
 
     // MEMBERS
     uint32_t		m_step;		// Processing step, so we can avoid clearUser all the time

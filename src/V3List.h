@@ -62,7 +62,7 @@ private:
 	// "this" must be a element inside of *basep
 	// Use that to determine a structure offset, then apply to the new base
 	// to get our new pointer information
-	return (V3ListEnt*) ( ((uint8_t*)newbasep) + offset);
+	return (V3ListEnt*) ( ((vluint8_t*)newbasep) + offset);
     }
 public:
     V3ListEnt()
@@ -78,7 +78,7 @@ public:
     // METHODS
     void pushBack (V3List<T>& listr, T newp) {
 	// "this" must be a element inside of *newp
-	uint32_t offset = (uint8_t*)(this) - (uint8_t*)(newp);
+	uint32_t offset = (vluint8_t*)(this) - (vluint8_t*)(newp);
 	m_nextp = NULL;
 	if (!listr.m_headp) listr.m_headp = newp;
 	m_prevp = listr.m_tailp;
@@ -87,7 +87,7 @@ public:
     }
     void pushFront (V3List<T>& listr, T newp) {
 	// "this" must be a element inside of *newp
-	uint32_t offset = (uint8_t*)(this) - (uint8_t*)(newp);
+	uint32_t offset = (vluint8_t*)(this) - (vluint8_t*)(newp);
 	m_nextp = listr.m_headp;
 	if (m_nextp) baseToListEnt(m_nextp,offset)->m_prevp = newp;
 	listr.m_headp = newp;
@@ -97,7 +97,7 @@ public:
     // Unlink from side
     void unlink (V3List<T>& listr, T oldp) {
 	// "this" must be a element inside of *oldp
-	uint32_t offset = (uint8_t*)(this) - (uint8_t*)(oldp);
+	uint32_t offset = (vluint8_t*)(this) - (vluint8_t*)(oldp);
 	if (m_nextp) baseToListEnt(m_nextp,offset)->m_prevp = m_prevp;
 	else listr.m_tailp = m_prevp;
 	if (m_prevp) baseToListEnt(m_prevp,offset)->m_nextp = m_nextp;

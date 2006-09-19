@@ -40,11 +40,11 @@ using namespace std;
 //=========================================================================
 // Basic types
 
-typedef uint8_t  CData;		///< Verilated data, 1-8 bits
-typedef uint16_t SData;		///< Verilated data, 9-16 bits
-typedef uint32_t IData;		///< Verilated data, 17-32 bits
-typedef vluint64_t QData;	///< Verilated data, 33-64 bits
-typedef uint32_t   WData;	///< Verilated data, >64 bits, as an array
+typedef vluint8_t    CData;	///< Verilated data, 1-8 bits
+typedef vluint16_t   SData;	///< Verilated data, 9-16 bits
+typedef vluint32_t   IData;	///< Verilated data, 17-32 bits
+typedef vluint64_t   QData;	///< Verilated data, 33-64 bits
+typedef vluint32_t   WData;	///< Verilated data, >64 bits, as an array
 
 typedef const WData* WDataInP;	///< Array input to a function
 typedef       WData* WDataOutP;	///< Array output from a function
