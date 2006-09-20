@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix DOS carrage returns in multiline defines.  [Ralf Karge]
 
+**** Fix printf format warnings on 64-bit linux.
+
 * Verilator 3.602 09/11/2006
 
 **** Fix function references under top inlined module.  [David Hewson]

@@ -909,7 +909,6 @@ string EmitCStmts::displayFormat(AstNode* widthNodep, string in,
     } else {
 	fmt=in;
     }
-    if (widthNodep->isQuad() && fmtLetter!='c' && fmtLetter!='s' && !reallyString) fmt+="ll";
     return fmt;
 }
 
@@ -940,10 +939,20 @@ void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, cha
 	emitDispState.pushFormat(pfmt);
 	emitDispState.pushArg(*elistp,func);
     } else {
+	string func;
 	string nfmt = displayFormat(*elistp, fmt, fmtLetter, true, false);
+	if ((*elistp)->isQuad() && (fmtLetter=='d')) {
+	    nfmt+="ll";
+	    func="(long long)(";  // Must match %ll to avoid warnings
+	}
+	if ((*elistp)->isQuad() && (fmtLetter=='u'||fmtLetter=='o'||fmtLetter=='x')) {
+	    nfmt+="ll";
+	    func="(unsigned long long)(";  // Must match %ull to avoid warnings
+	}
 	string pfmt = "%"+nfmt+fmtLetter;
+
 	emitDispState.pushFormat(pfmt);
-	emitDispState.pushArg(*elistp,"");
+	emitDispState.pushArg(*elistp,func);
     }
     // Next parameter
     *elistp = (*elistp)->nextp();
