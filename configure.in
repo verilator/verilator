@@ -16,6 +16,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PATH_PROG(PERL,perl)
+AC_PATH_PROG(YACC,bison)
+AC_PATH_PROG(LEX,flex)
 
 dnl Checks for libraries.
 

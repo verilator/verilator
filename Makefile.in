@@ -91,7 +91,7 @@ SUBDIRS = src test_verilated test_c test_sc test_sp test_regress test_vcs
 INFOS = README verilator.txt verilator.html verilator.1 verilator.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
-DISTDEP = $(INFOS) Makefile
+DISTDEP = info Makefile
 # Files to distribute.
 DISTBIN = $(wildcard bin/verilator-*)
 
@@ -126,7 +126,7 @@ INST_PROJ_BIN_FILES = \
 DISTFILES := $(DISTFILES_INC)
 
 all: all_nomsg msg_test
-all_nomsg: verilator_exe info
+all_nomsg: verilator_exe
 
 .PHONY:verilator_exe
 verilator_exe verilator_bin verilator_bin_dbg:
@@ -218,7 +218,7 @@ installman:
 	  $(INSTALL_PROGRAM) $$p $(mandir)/man1/$$p; \
 	done
 
-install: all_nomsg info installdirs installbin installman install-msg
+install: all_nomsg installdirs installbin installman install-msg
 
 install-here: installman ftp
 

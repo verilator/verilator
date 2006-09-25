@@ -85,3 +85,6 @@ clean mostlyclean distclean maintainer-clean::
 	-rm -f *__gen*
 	-rm -f *.yy.* y.output y.tab.[cho] *_test
 	-rm -f .objcache*
+
+distclean maintainer-clean::
+	-rm -f Makefile Makefile_obj

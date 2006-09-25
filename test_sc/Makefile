@@ -17,6 +17,8 @@ VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 PWD := $(shell pwd)
 
+PERL = perl
+
 DEBUG_ON = --debug
 
 ######################################################################
@@ -32,11 +34,11 @@ obj_dir/sc_main.cpp: ../test_sp/sc_main.cpp
 	cp $^ $@
 
 prep:
-	perl $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)
 prep_dbg:
-	perl $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS)
 prep_dbg_np:
-	perl $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS) --nopublic
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS) --nopublic
 
 preproc:
 	cd obj_dir ; $(MAKE) -j 1 -f ../Makefile_obj preproc

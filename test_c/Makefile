@@ -17,6 +17,8 @@ VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 PWD := $(shell pwd)
 
+PERL = perl
+
 DEBUG_ON = --debug --trace-dups 
 #DEBUG = $(DEBUG_ON)
 VALGRIND_ON = $(DEBUG_ON) --gdb "valgrind -v --leak-check=yes"
@@ -31,11 +33,11 @@ VERILATOR_FLAGS = --cc -f $(PWD)/../test_v/input.vc top.v
 #VERILATOR_FLAGS += --trace
 
 prep:
-	perl $(VERILATOR_ROOT)/bin/verilator $(DEBUG)       $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG)       $(VERILATOR_FLAGS)
 prep_dbg:
-	perl $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON)    $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON)    $(VERILATOR_FLAGS)
 prep_vg:
-	perl $(VERILATOR_ROOT)/bin/verilator $(VALGRIND_ON) $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(VALGRIND_ON) $(VERILATOR_FLAGS)
 
 compile:
 	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj

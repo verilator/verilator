@@ -88,7 +88,8 @@ typedef unsigned int            vluint32_t;	///< 32-bit unsigned type
 typedef __int64      		vlsint64_t;	///< 64-bit signed type
 typedef unsigned __int64        vluint64_t;	///< 64-bit unsigned type
 #else // Linux or compliant Unix flavors, -m64
-# include <stdint.h>
+# include <stdint.h>	// Linux and most flavors
+# include <inttypes.h>	// Solaris
 typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
 typedef uint16_t		vluint16_t;	///< 32-bit unsigned type
 typedef int  			vlsint32_t;	///< 32-bit signed type

@@ -48,10 +48,10 @@ COPT = -ggdb -DVL_DEBUG
 endif
 #################
 
-LEX = flex
+LEX = @LEX@
 LFLAGS = -d
-YACC = bison -y
-YFLAGS = -d -v
+YACC = @YACC@
+YFLAGS = -y -d -v
 
 #LIBS += -ldl
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
