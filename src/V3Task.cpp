@@ -227,8 +227,14 @@ private:
 		    nextpinp = pinp->nextp();
 		    pinp->unlinkFrBack();   // Relinked to assignment below
 		    //
-		    if (portp->isTristate()) {
-			refp->v3error("Unsupported: Inouts in functions/tasks");
+		    if (portp->isInout()) {
+			if (AstVarRef* varrefp = pinp->castVarRef()) {
+			    // Connect to this exact variable
+			    AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
+			    portp->user2p(localVscp);
+			} else {
+			    pinp->v3error("Unsupported: Function/task input argument is not simple variable");
+			}
 		    }
 		    else if (portp->isOutput() && outvscp) {
 			refp->v3error("Outputs not allowed in function declarations");

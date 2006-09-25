@@ -702,7 +702,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    if (nodep->attrScClocked() && nodep->isInput()) {
 		puts("sc_in_clk\t");
 	    } else {
-		if (nodep->isTristate()) puts("sc_inout<");
+		if (nodep->isInout()) puts("sc_inout<");
 		else if (nodep->isInput()) puts("sc_in<");
 		else if (nodep->isOutput()) puts("sc_out<");
 		else nodep->v3fatalSrc("Unknown type");
@@ -714,7 +714,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    puts(";\n");
 	} else { // C++ signals
 	    ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes());
-	    if (nodep->isTristate()) puts("VL_INOUT");
+	    if (nodep->isInout()) puts("VL_INOUT");
 	    else if (nodep->isInput()) puts("VL_IN");
 	    else if (nodep->isOutput()) puts("VL_OUT");
 	    else nodep->v3fatalSrc("Unknown type");

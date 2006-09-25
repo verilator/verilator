@@ -314,10 +314,13 @@ public:
     void 	name(const string& name) 	{ m_name = name; }
     bool	isInput() const { return m_input; }
     bool	isOutput() const { return m_output; }
-    bool	isTristate() const  { return (m_tristate); }
+    bool	isInOnly() const { return m_input && !m_output; }
+    bool	isOutOnly() const { return m_output && !m_input; }
+    bool	isInout() const { return m_input && m_output; }
+    bool	isTristate() const  { return m_tristate; }
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
-    bool	isIO() const  { return (m_input||m_output||m_tristate); }
+    bool	isIO() const  { return (m_input||m_output); }
     bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICIT
 					    || varType()==AstVarType::REG || varType()==AstVarType::INTEGER); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP

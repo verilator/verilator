@@ -85,7 +85,7 @@ int AstVar::widthTotalBytes() const {
 }
 
 string AstVar::verilogKwd() const {
-    if (isTristate()) {
+    if (isInout()) {
 	return "inout";
     } else if (isInput()) {
 	return "input";
@@ -93,6 +93,8 @@ string AstVar::verilogKwd() const {
 	return "output";
     } else if (isInteger()) {
 	return "integer";
+    } else if (isTristate()) {
+	return "tri";
     } else if (varType()==AstVarType::WIRE) {
 	return "wire";
     } else {
@@ -325,9 +327,12 @@ void AstVarRef::dump(ostream& str) {
 void AstVar::dump(ostream& str) {
     this->AstNode::dump(str);
     if (isSc()) str<<" [SC]";
-    if (isInput()) str<<" [I]";
-    if (isPrimaryIO()) str<<(isInput()?" [PI]":" [PO]");
-    if (isOutput()) str<<" [O]";
+    if (isPrimaryIO()) str<<(isInout()?" [PIO]":(isInput()?" [PI]":" [PO]"));
+    else {
+	if (isInout()) str<<" [IO]";
+	else if (isInput()) str<<" [I]";
+	else if (isOutput()) str<<" [O]";
+    }
     if (isUsedClock()) str<<" [C]";
     if (isSigPublic()) str<<" [P]";
     if (attrClockEn()) str<<" [aCLKEN]";

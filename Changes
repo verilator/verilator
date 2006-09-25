@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.61*
 
+***  Support simple inout task ports.  [Eugene Weber]
+
 ***  Allow overriding Perl, Flex and Bison versions.  [by Robert Farrell]
 
 **** Default make no longer makes the docs; if you edit the documentation

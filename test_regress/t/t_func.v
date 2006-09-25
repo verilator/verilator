@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -21,6 +21,12 @@ module t;
       incr(global,global,32'h10);
       if (global != 32'h17) $stop;
       nop(32'h11);
+
+      global = 32'h00000001;
+      flipbit(global,5'd8);
+      flipbit(global,5'd16);
+      flipbit(global,5'd24);
+      if (global !== 32'h01010101) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -68,6 +74,12 @@ module t;
       input  [31:0] a;
       begin
       end
+   endtask
+
+   task flipbit;
+      inout [31:0] vector;
+      input [4:0] bitnum;
+      vector[bitnum] = vector[bitnum] ^ 1'b1;
    endtask
 
 endmodule

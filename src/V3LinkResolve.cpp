@@ -111,7 +111,7 @@ private:
 	// VarRef: Resolve its reference
 	if (nodep->varp()) {
 	    nodep->varp()->usedParam(true);
-	    if (nodep->lvalue() && nodep->varp()->isInput()) {
+	    if (nodep->lvalue() && nodep->varp()->isInOnly()) {
 		nodep->v3error("Assigning to input variable: "<<nodep->prettyName());
 	    }
 	}

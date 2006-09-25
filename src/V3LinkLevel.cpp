@@ -140,7 +140,7 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 		AstVar* varp = oldvarp->cloneTree(false)->castVar();
 		newmodp->addStmtp(varp);
 		varp->sigPublic(true);	// User needs to be able to get to it...
-		if (oldvarp->isInput() || oldvarp->isOutput()) {
+		if (oldvarp->isIO()) {
 		    oldvarp->primaryIO(true);
 		    varp->primaryIO(true);
 		}
