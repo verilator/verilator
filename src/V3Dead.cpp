@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <vector>
+#include <map>
 
 #include "V3Global.h"
 #include "V3Dead.h"
@@ -70,10 +71,15 @@ private:
     //  AstVar::user()		-> int. Count of number of references
     //  AstVarScope::user()	-> int. Count of number of references
 
+    // TYPES
+    typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
+
     // STATE
     vector<AstVar*>		m_varsp;	// List of all encountered to avoid another loop through tree
     vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
+    AssignMap			m_assignMap;	// List of all simple assignments for each variable
     bool			m_elimUserVars;	// Allow removal of user's vars
+    bool			m_sideEffect;	// Side effects discovered in assign RHS
     //int debug() { return 9; }
 
     // METHODS
@@ -100,6 +106,25 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	m_varsp.push_back(nodep);
+    }
+
+    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+	// See if simple assignments to variables may be eliminated because that variable is never used.
+	// Similar code in V3Life
+	m_sideEffect = false;
+	nodep->rhsp()->iterateAndNext(*this);
+	// Has to be direct assignment without any EXTRACTing.
+	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
+	if (varrefp && !m_sideEffect
+	    && varrefp->varScopep()) {	// For simplicity, we only remove post-scoping
+	    m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
+	} else {  // Track like any other statement
+	    nodep->lhsp()->iterateAndNext(*this);
+	}
+    }
+    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
+	nodep->iterateChildren(*this);
     }
 
     //-----
@@ -131,14 +156,22 @@ private:
     }
     bool canElim(AstVar* nodep) {
 	return (!nodep->isSigPublic()	// Can't elim publics!
+		&& !nodep->isIO()
 		&& (nodep->isTemp() || nodep->isParam() || m_elimUserVars));
     }
     void deadCheckVar() {
 	// Delete any unused varscopes
 	for (vector<AstVarScope*>::iterator it = m_vscsp.begin(); it!=m_vscsp.end(); ++it) {
-	    if ((*it)->user() == 0 && canElim((*it)->varp())) {
-		UINFO(4,"  Dead "<<(*it)<<endl);
-		(*it)->unlinkFrBack()->deleteTree(); (*it)=NULL;
+	    AstVarScope* vscp = *it;
+	    if (vscp->user() == 0 && canElim(vscp->varp())) {
+		UINFO(4,"  Dead "<<vscp<<endl);
+		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
+		for (AssignMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
+		    AstNodeAssign* assp = it->second;
+		    UINFO(4,"    Dead assign "<<assp<<endl);
+		    assp->unlinkFrBack()->deleteTree(); assp=NULL;
+		}
+		vscp->unlinkFrBack()->deleteTree(); vscp=NULL;
 	    }
 	}
 	for (vector<AstVar*>::iterator it = m_varsp.begin(); it!=m_varsp.end(); ++it) {
@@ -153,6 +186,7 @@ public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars) {
 	m_elimUserVars = elimUserVars;
+	m_sideEffect = false;
 	// Operate on whole netlist
 	AstNode::userClearTree();	// userp() used on entire tree
 	nodep->accept(*this);

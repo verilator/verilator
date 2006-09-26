@@ -264,7 +264,8 @@ public:
 class LifeVisitor : public AstNVisitor {
 private:
     // STATE
-    LifeState* m_statep;	// Current state
+    LifeState*	m_statep;	// Current state
+    bool	m_sideEffect;	// Side effects discovered in assign RHS
     //static int debug() { return 9; }
 
     // LIFE MAP
@@ -289,7 +290,9 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	// Collect any used variables first, as lhs may also be on rhs
+	// Similar code in V3Dead
 	vluint64_t lastEdit = AstNode::editCountGbl();	// When it was last edited
+	m_sideEffect = false;
 	nodep->rhsp()->iterateAndNext(*this);
 	if (lastEdit != AstNode::editCountGbl()) {
 	    // We changed something, try to constant propagate, but don't delete the
@@ -297,7 +300,7 @@ private:
 	    V3Const::constifyTree(nodep->rhsp());
 	}
 	// Has to be direct assignment without any EXTRACTing.
-	if (nodep->lhsp()->castVarRef()) {
+	if (nodep->lhsp()->castVarRef() && !m_sideEffect) {
 	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
 	    if (!vscp) vscp->v3fatalSrc("Scope lost on variable");
 	    m_lifep->simpleAssign(vscp, nodep);
@@ -373,6 +376,10 @@ private:
 	// Enter the function and trace it
 	nodep->funcp()->accept(*this);
     }
+    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
+	nodep->iterateChildren(*this);
+    }
 
     virtual void visit(AstVar*, AstNUser*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -381,9 +388,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    LifeVisitor(AstCFunc* nodep, LifeState* statep) {
+    LifeVisitor(AstNode* nodep, LifeState* statep) {
 	UINFO(4,"  LifeVisitor on "<<nodep<<endl);
 	m_statep = statep;
+	m_sideEffect = false;
 	{
 	    m_lifep = new LifeBlock (NULL, m_statep);
 	    nodep->accept(*this);
@@ -408,6 +416,18 @@ private:
 	    // Usage model 1: Simulate all C code, doing lifetime analysis
 	    LifeVisitor visitor (nodep, m_statep);
 	}
+    }
+    virtual void visit(AstAlways* nodep, AstNUser*) {
+	// Usage model 2: Cleanup basic blocks
+	LifeVisitor visitor (nodep, m_statep);
+    }
+    virtual void visit(AstInitial* nodep, AstNUser*) {
+	// Usage model 2: Cleanup basic blocks
+	LifeVisitor visitor (nodep, m_statep);
+    }
+    virtual void visit(AstFinal* nodep, AstNUser*) {
+	// Usage model 2: Cleanup basic blocks
+	LifeVisitor visitor (nodep, m_statep);
     }
     virtual void visit(AstVar*, AstNUser*) {}		// Accelerate
     virtual void visit(AstNodeStmt*, AstNUser*) {}	// Accelerate

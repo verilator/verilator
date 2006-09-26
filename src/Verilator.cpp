@@ -248,7 +248,13 @@ void process () {
     V3Case::caseAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("case.tree"));
 
+    // Push constants across variables and remove redundant assignments
     V3Const::constifyAll(v3Global.rootp());
+    if (v3Global.opt.oLife()) {
+	V3Life::lifeAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
+    }
+
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
     // Make large low-fanin logic blocks into lookup tables
@@ -329,6 +335,7 @@ void process () {
     // Cleanup any dly vars or other temps that are simple assignments
     // Life must be done before Subst, as it assumes each CFunc under _eval is called only once.
     if (v3Global.opt.oLife()) {
+	V3Const::constifyAll(v3Global.rootp());
 	V3Life::lifeAll(v3Global.rootp());
     }
     if (v3Global.opt.oLifePost()) {
