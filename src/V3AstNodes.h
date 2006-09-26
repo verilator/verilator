@@ -2776,6 +2776,7 @@ private:
     bool	m_funcPublic:1;		// From user public task/function
     bool	m_isStatic:1;		// Function is declared static (no this)
     bool	m_symProlog:1;		// Setup symbol table for later instructions
+    bool	m_entryPoint:1;		// User may call into this top level function
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
@@ -2791,6 +2792,7 @@ public:
 	m_funcPublic = false;
 	m_isStatic = true;	// Note defaults to static, later we see where thisp is needed
 	m_symProlog = false;
+	m_entryPoint = false;
     }
     virtual ~AstCFunc() {}
     virtual AstType type() const { return AstType::CFUNC;}
@@ -2826,6 +2828,8 @@ public:
     void	isStatic(bool flag) { m_isStatic = flag; }
     bool	symProlog() const { return m_symProlog; }
     void	symProlog(bool flag) { m_symProlog = flag; }
+    bool	entryPoint() const { return m_entryPoint; }
+    void	entryPoint(bool flag) { m_entryPoint = flag; }
     //
     // If adding node accessors, see below
     AstNode*	argsp() 	const { return op1p()->castNode(); }

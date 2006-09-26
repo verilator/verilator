@@ -327,6 +327,7 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clock.tree"));
 
     // Cleanup any dly vars or other temps that are simple assignments
+    // Life must be done before Subst, as it assumes each CFunc under _eval is called only once.
     if (v3Global.opt.oLife()) {
 	V3Life::lifeAll(v3Global.rootp());
     }

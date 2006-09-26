@@ -12,7 +12,8 @@ compile (
 	 );
 
 if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+3/i);
+    file_grep ($Last_Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+4/i);
+    file_grep ($Last_Self->{stats}, qr/Optimizations, Lifetime constant prop\s+2/i);
 }
 
 execute (

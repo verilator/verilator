@@ -23,10 +23,9 @@ module t;
       nop(32'h11);
 
       global = 32'h00000001;
-      flipbit(global,5'd8);
-      flipbit(global,5'd16);
-      flipbit(global,5'd24);
-      if (global !== 32'h01010101) $stop;
+      flipupperbit(global,4'd4);
+      flipupperbit(global,4'd12);
+      if (global !== 32'h10100001) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -76,10 +75,14 @@ module t;
       end
    endtask
 
-   task flipbit;
+   task flipupperbit;
       inout [31:0] vector;
-      input [4:0] bitnum;
-      vector[bitnum] = vector[bitnum] ^ 1'b1;
+      input [3:0] bitnum;
+      reg [4:0]   bitnum2;
+      begin
+	 bitnum2 = {1'b1, bitnum};	// A little math to test constant propagation
+	 vector[bitnum2] = vector[bitnum2] ^ 1'b1;
+      end
    endtask
 
 endmodule

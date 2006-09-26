@@ -192,6 +192,7 @@ private:
 	    funcp->dontCombine(true);
 	    funcp->symProlog(true);
 	    funcp->isStatic(true);
+	    funcp->entryPoint(true);
 	    m_scopep->addActivep(funcp);
 	    m_evalFuncp = funcp;
 	}
@@ -202,6 +203,7 @@ private:
 	    funcp->slow(true);
 	    funcp->symProlog(true);
 	    funcp->isStatic(true);
+	    funcp->entryPoint(true);
 	    m_scopep->addActivep(funcp);
 	    m_initFuncp = funcp;
 	}
@@ -211,6 +213,7 @@ private:
 	    funcp->dontCombine(true);
 	    funcp->slow(true);
 	    funcp->isStatic(false);
+	    funcp->entryPoint(true);
 	    funcp->addInitsp(
 		new AstCStmt(nodep->fileline(),
 			     "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
@@ -225,6 +228,7 @@ private:
 	    funcp->slow(true);
 	    funcp->isStatic(true);
 	    funcp->symProlog(true);
+	    funcp->entryPoint(true);
 	    m_scopep->addActivep(funcp);
 	    m_settleFuncp = funcp;
 	}

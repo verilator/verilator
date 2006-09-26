@@ -321,6 +321,7 @@ private:
 	if (rtnvarp) funcp->addArgsp(rtnvarp);
 	funcp->dontCombine(true);
 	funcp->funcPublic(true);
+	funcp->entryPoint(true);
 	funcp->isStatic(false);
 
 	// We need to get a pointer to all of our variables (may have eval'ed something else earlier)
