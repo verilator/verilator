@@ -1597,7 +1597,8 @@ public:
     bool hasClocked() const { return m_sensesp->hasClocked(); }
 };
 
-class AstAttrOf : public AstNode {
+struct AstAttrOf : public AstNode {
+private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     AstAttrType	m_attrType;	// What sort of extraction
     int		m_dimension;	// Dimension number (0 is leftmost), for ARRAY_LSB extractions
@@ -1739,6 +1740,7 @@ struct AstRedXor : public AstNodeUniop {
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
 };
 struct AstRedXnor : public AstNodeUniop {
+    // AstRedXnors are replaced with AstRedXors in V3Const.
     AstRedXnor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
     virtual ~AstRedXnor() {}

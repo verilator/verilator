@@ -170,15 +170,10 @@ private:
     static bool operandsSame(AstNode* node1p, AstNode* node2p) {
 	// For now we just detect constants & simple vars, though it could be more generic
 	if (node1p->castConst() && node2p->castConst()) {
-	    // Match ignoring any X values
-	    V3Number num (node1p->fileline(), 1);
-	    num.opCaseEq(node1p->castConst()->num(), node2p->castConst()->num());
-	    return num.isNeqZero();
+	    return node1p->sameTree(node2p);
 	}
-	else if (node1p->castVarRef() && node2p->castVarRef()
-		 && node1p->sameTree(node2p)) {
-	    // Same variable
-	    return true;
+	else if (node1p->castVarRef() && node2p->castVarRef()) {
+	    return node1p->sameTree(node2p);
 	} else {
 	    return false;
 	}
@@ -238,6 +233,12 @@ private:
     }
     void replaceZero(AstNode* nodep) {
 	replaceNum(nodep, 0); nodep=NULL;
+    }
+    void replaceAllOnes (AstNode* nodep) {
+	V3Number num (nodep->fileline(), nodep->width(), 0);
+	V3Number ones (nodep->fileline(), nodep->width());
+	ones.opNot(num);
+	replaceNum(nodep, ones); nodep=NULL;
     }
     void replaceConst(AstNodeUniop* nodep) {
 	V3Number num (nodep->fileline(), nodep->width());
@@ -945,6 +946,7 @@ private:
     //	             }" 	   # bracket not paren
     //    ,"function to call"
     // or ,"AstREPLACEMENT_TYPE{ $accessor }"
+    // or ,"!   		   # Print line number when matches, so can see operations
 
     // Lint Checks
     //    v--- *1* These ops are always first, as we warn before replacing
@@ -969,6 +971,7 @@ private:
     TREEOP("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
     TREEOP("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
     TREEOP("AstXor   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP("AstXnor  {$lhsp.isZero, $rhsp}",	"AstNot{$rhsp}");
     TREEOP("AstSub   {$lhsp.isZero, $rhsp}",	"AstUnaryMin{$rhsp}");
     TREEOP("AstAdd   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
@@ -982,6 +985,7 @@ private:
     TREEOP("AstShiftRS{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP("AstSub   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP("AstXor   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP("AstXnor  {$lhsp, $rhsp.isZero}",	"AstNot{$lhsp}");
     // Non-zero on one side or the other
     TREEOP("AstAnd   {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP("AstLogAnd{$lhsp.isNeqZero, $rhsp}",	"replaceWRhs(nodep)");
@@ -992,6 +996,7 @@ private:
     TREEOP("AstOr    {$lhsp, $rhsp.isAllOnes}",	"replaceWRhs(nodep)"); //->allOnes
     TREEOP("AstLogOr {$lhsp, $rhsp.isNeqZero}",	"replaceNum(nodep,1)");
     TREEOP("AstXor   {$lhsp.isAllOnes, $rhsp}",	"AstNot{$rhsp}");
+    TREEOP("AstXnor  {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP("AstMul   {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP("AstMulS  {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP("AstDiv   {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
@@ -1058,6 +1063,28 @@ private:
     TREEOP ("AstShiftL{operandShiftShift(nodep)}",	"replaceShiftShift(nodep)");
     TREEOP ("AstShiftR{operandShiftShift(nodep)}",	"replaceShiftShift(nodep)");
     TREEOP ("AstWordSel{operandWordOOB(nodep)}",	"replaceZero(nodep)");
+    // Identical operands on both sides
+    // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
+    // AstAdd->ShiftL(#,1) but uncommon
+    TREEOP("AstAnd    {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
+    TREEOP("AstDiv    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstDivS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstOr     {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
+    TREEOP("AstSub    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstXnor   {operandsSame($lhsp,,$rhsp)}",	"replaceAllOnes(nodep)");
+    TREEOP("AstXor    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstEq     {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
+    TREEOP("AstEqCase {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstGt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstGtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstGte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstGteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstLt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstLtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstLte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     ///=== Verilog operators
     // Comparison against 1'b0/1'b1; must be careful about widths.
     // These use Not, so must be Verilog only
@@ -1075,7 +1102,6 @@ private:
     TREEOPV("AstLte   {$lhsp->width()==$rhsp->width(), $rhsp.isAllOnes}", "replaceNum(nodep,1)");
     // Simplify reduction operators
     // This also gets &{...,0,....} => const 0  (Common for unused_ok signals)
-    TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     TREEOPV("AstRedAnd{$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
     TREEOPV("AstRedOr {$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
     TREEOPV("AstRedXor{$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
@@ -1108,6 +1134,7 @@ private:
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
     // Conversions
+    TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");
     TREEOPV("AstLogIff{$lhsp, $rhsp}",		"AstLogNot{AstXor{$lhsp,$rhsp}}");
 

@@ -324,6 +324,7 @@ sub tree_line {
 	    match_func => "match_${type}_${n}",
 	    match_if => $mif,
 	    exec_func => $exec_func,
+	    uinfo_level => ($to =~ /^!/ ? 0:7),
 	};
 	($typefunc->{uinfo} = $func) =~ s/[ \t\"\{\}]+/ /g;
 	push @{$self->{treeop}{$type}}, $typefunc;
@@ -373,8 +374,11 @@ sub _exec_new_recurse {
 sub treeop_exec_func {
     my $self = shift;
     my $func = shift;
+    my $out = "";
+    $func =~ s/^!//;
     if ($func =~ /^\s*[a-zA-Z0-9]+\s*\(/) {  # Function call
-	$func =~ s/\$([a-zA-Z0-9]+)/nodep->$1()/g;
+	(my $outl = $func) =~ s/\$([a-zA-Z0-9]+)/nodep->$1()/g;
+	$out .= $outl;
     }
     elsif ($func    =~ /^\s*Ast([a-zA-Z0-9]+) \s*\{\s* (.*) \s* \}$/x) {
 
@@ -419,23 +423,22 @@ sub treeop_exec_func {
 	$_Exec_Nsyms = 0;
 	_exec_syms_recurse($aref);
 
-	$func = "";
 	foreach my $sym (sort {$_Exec_Syms{$a} cmp $_Exec_Syms{$b}} (keys %_Exec_Syms)) {
 	    my $argnp = $_Exec_Syms{$sym};
 	    my $arg = add_nodep($sym);
-	    $func .= "AstNode* ${argnp} = ${arg}->unlinkFrBack();\n";
+	    $out .= "AstNode* ${argnp} = ${arg}->unlinkFrBack();\n";
 	}
 
-	$func .= "AstNode* newp = " . _exec_new_recurse($aref).";\n";
-	$func .= "nodep->replaceWith(newp);";
-	$func .= "nodep->deleteTree(); nodep=NULL;";
-	#print "FF $func\n" if $Debug;
+	$out .= "AstNode* newp = " . _exec_new_recurse($aref).";\n";
+	$out .= "nodep->replaceWith(newp);";
+	$out .= "nodep->deleteTree(); nodep=NULL;";
+	#print "FF $out\n" if $Debug;
     } elsif ($func eq "NEVER") {
-	$func = "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";
+	$out .= "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";
     } else {
 	$self->error("Unknown execution function format: $func\n");
     }
-    return $func;
+    return $out;
 }
 
 sub tree_match {
@@ -448,7 +451,7 @@ sub tree_match {
 	    $self->print("    bool $typefunc->{match_func}(Ast${base}* nodep) {\n",
 			 "\t// $typefunc->{comment}\n",);
 	    $self->print(	"\tif ($typefunc->{match_if}) {\n");
-	    $self->print(	"\t    UINFO(7,(void*)(nodep)<<\" $typefunc->{uinfo}\\n\");\n");
+	    $self->print(	"\t    UINFO($typefunc->{uinfo_level},(void*)(nodep)<<\" $typefunc->{uinfo}\\n\");\n");
 	    $self->print(	"\t    $typefunc->{exec_func};\n");
 	    $self->print(	"\t    return true;\n");
 	    $self->print(	"\t}\n");

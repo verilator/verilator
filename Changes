@@ -9,10 +9,12 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Allow overriding Perl, Flex and Bison versions.  [by Robert Farrell]
 
-***  Optimize variables set to constants within basic blocks.
+***  Optimize variables set to constants within basic blocks for ~3%.
 
 **** Default make no longer makes the docs; if you edit the documentation
      sources, run "make info" to get them.
+
+**** Optimize additional boolean identities (a|a = a, etc.)
 
 * Verilator 3.610 09/20/2006
 

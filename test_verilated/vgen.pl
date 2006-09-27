@@ -54,6 +54,7 @@ our $Raise_Weight_Max = 50;
  'VCONST'=>	{weight=>1&&20, width=>0, 	    sc=>1, terminal=>1, v=>'%v', },
  'VIDNEW'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
  'VIDOLD'=>	{weight=>1&&20, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
+ 'VIDSAME'=>	{weight=>1&&200, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
  'VRANGE'=>	{weight=>1&&30, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2:%3]', },
  'VBITSEL'=>	{weight=>1&&10, width=>1, signed=>0,sc=>0, terminal=>0, v=>'%i[%2]', },
  'VBITSELP'=>	{weight=>1&&10, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2+:%3]', },
@@ -119,7 +120,8 @@ my %ops2 =
  'VCONST'=>	{pl=>'', 			rnd=>'rnd_const(%tr);'},
  'VIDNEW'=>	{pl=>'%tv=$Vars{%i}{val};',
 		 rnd=>'%i=next_id(%tw); $Vars{%i}=gen_leaf(width=>%tw,trunc=>1,signed=>%tg); id_commit(%tr,"%i");1;',},
- 'VIDOLD'=>	{pl=>'%tv=$Vars{%i}{val};',	rnd=>'%i=old_id(%tr);',   ok_id_width=>1,},
+ 'VIDOLD'=>	{pl=>'%tv=$Vars{%i}{val};',	rnd=>'%i=id_old(%tr);',   ok_id_width=>1,},
+ 'VIDSAME'=>	{pl=>'%tv=$Vars{%i}{val};',	rnd=>'%i=id_same(%tr);',  ok_id_width=>1,},
  'VRANGE'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%3v);',	rnd=>'%i=next_id(%tw); my $lsb=rnd(128-%tw); my $msb=$lsb+%tw-1;  %2r=val_leaf($msb); %3r=val_leaf($lsb); $Vars{%i}=gen_leaf(width=>($msb+1));'},
  'VBITSEL'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%2v);',	rnd=>'%i=next_id(%tw); my $wid=min(128,rnd_width()|3); %2r=gen_leaf(width=>(log2($wid)-1),signed=>0); $Vars{%i}=gen_leaf(width=>$wid);'},
  'VBITSELP'=>	{pl=>'VBITSELP(%tr,$Vars{%i}{val},%2v,%3v);',	rnd=>'%i=next_id(%tw); my $wid=min(128,(%tw+rnd_width()|3)); %3r=val_leaf(%tw); my $maxval = $wid-%tw; %2r=(($maxval<4)?val_leaf($maxval):gen_leaf(width=>(log2($maxval)-1),signed=>0)); $Vars{%i}=gen_leaf(width=>$wid);'},
@@ -421,7 +423,7 @@ sub id_commit {
     };
 }
 
-sub old_id {
+sub id_old {
     my $treeref = shift;
     my $width = $treeref->{width};
     my $signed = $treeref->{signed};
@@ -429,6 +431,29 @@ sub old_id {
     my $n = $#{$IdWidth{$width}{$signed}} + 1;
     my $idn = rnd($n);
     my $id = $IdWidth{$width}{$signed}[$idn];
+    $VarsBlock{$id}{used} = 1;
+    return $id;
+}
+
+sub id_same {
+    my $treeref = shift;
+    my $width = $treeref->{width};
+    my $signed = $treeref->{signed};
+
+    my @possible;
+    foreach my $id (keys %VarsBlock) {
+	next if !$VarsBlock{$id}{used};
+	my $varref = $Vars{$id};
+	next if $varref->{signed} != $signed;
+	next if $varref->{width} != $width;
+	push @possible, $id;
+    }
+    my $n = $#possible + 1;
+    if ($n<1) { # Nothing, grab another!
+	return id_old($treeref,$width,$signed);
+    }
+    my $idn = rnd($n);
+    my $id = $possible[$idn];
     $VarsBlock{$id}{used} = 1;
     return $id;
 }

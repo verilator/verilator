@@ -1516,6 +1516,11 @@ Call Verilated::assertOn(false) before you first call the model, then turn
 it back on after reset.  It defaults to true.  When false, all assertions
 controlled by --assert are disabled.
 
+=item Why do I get "undefined reference to `sc_time_stamp()'"?
+
+In C++ (non SystemC) code you need to define this function so that the
+simulator knows the current time.  See the "CONNECTING TO C++" examples.
+
 =item Is the PLI supported?
 
 No.
