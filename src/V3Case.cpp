@@ -29,12 +29,12 @@
 //						    (other items))
 //						body
 //		Or, converts to a if/else tree.
-//	Constants:
-//	    RHS, Replace 5'bx_1_x with a module global we init to a random value
-//		CONST(5'bx_1_x) -> VARREF(_{numberedtemp})
-//				-> VAR(_{numberedtemp})
-//				-> INITIAL(VARREF(_{numberedtemp}), OR(5'bx_1_x,AND(random,5'b0_1_x))
-//		OPTIMIZE: Must not collapse this initial back into the equation.
+//	FUTURES:
+//	    Large 16+ bit tables with constants and no masking (address muxes)
+//		Enter all into multimap, sort by value and use a tree of < and == compares.
+//	    "Diagonal" find of {rightmost,leftmost} bit {set,clear}
+//		Ignoring mask, check each value is unique (using multimap as above?)
+//		Each branch is then mask-and-compare operation (IE <000000001_000000000 at midpoint.)
 //
 //*************************************************************************
 
@@ -49,7 +49,8 @@
 #include "V3Ast.h"
 #include "V3Stats.h"
 
-#define CASE_OVERLAP_WIDTH 12	// Maximum width we can check for overlaps in
+#define CASE_OVERLAP_WIDTH 12		// Maximum width we can check for overlaps in
+#define CASE_BARF	   999999	// Magic width when non-constant
 
 //######################################################################
 
@@ -126,22 +127,22 @@ private:
     //int debug() { return 9; }
 
     // METHODS
-    bool checkCaseTree(AstCase* nodep) {
+    bool isCaseTreeFast(AstCase* nodep) {
 	int width = 0;
 	m_caseItems = 0;
 	m_caseNoOverlapsAllCovered = true;
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
 		if (icondp->width() > width) width = icondp->width();
-		if (!icondp->castConst()) width = 999;  // Can't parse; not a constant
+		if (!icondp->castConst()) width = CASE_BARF;  // Can't parse; not a constant
 		m_caseItems++;
 	    }
 	}
+	m_caseWidth = width;
 	if (width==0 || width > CASE_OVERLAP_WIDTH) {
 	    m_caseNoOverlapsAllCovered = false;
 	    return false;	// Too wide for analysis
 	}
-	m_caseWidth = width;
 	UINFO(8,"Simple case statement: "<<nodep<<endl);
 	// Zero list of items for each value
 	for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) m_valueItem[i] = NULL;
@@ -172,7 +173,7 @@ private:
 		}
 	    }
 	    // Defaults were moved to last in the caseitem list by V3Link
-	    if (!itemp->condsp()) {  // Case statement's default... Fill the table
+	    if (itemp->isDefault()) {  // Case statement's default... Fill the table
 		for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
 		    if (!m_valueItem[i]) m_valueItem[i] = itemp;
 		}
@@ -207,7 +208,7 @@ private:
 	    AstNode* tree1p = replaceCaseFastRecurse(cexprp, msb-1, upperValue | (1UL<<msb));
 
 	    if (tree0p == tree1p) {
-		// Same logic on both sides, so we can just return one of em
+		// Same logic on both sides, so we can just return one of 'em
 		return tree0p;
 	    }
 	    // We could have a "checkerboard" with A B A B, we can use the same IF on both edges
@@ -357,7 +358,7 @@ private:
 	V3Case::caseLint(nodep);
 	nodep->iterateChildren(*this);
 	if (debug()>=9) nodep->dumpTree(cout," case_old: ");
-	if (checkCaseTree(nodep) && v3Global.opt.oCase()) {
+	if (isCaseTreeFast(nodep) && v3Global.opt.oCase()) {
 	    // It's a simple priority encoder or complete statement
 	    // we can make a tree of statements to avoid extra comparisons
 	    m_statCaseFast++;
@@ -381,7 +382,7 @@ public:
     }
     virtual ~CaseVisitor() {
 	V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
-	V3Stats::addStat("Optimizations, Cases priority-encoded", m_statCaseSlow);
+	V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
     }
 };
 

@@ -11,7 +11,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Optimize variables set to constants within basic blocks for ~3%.
 
-**** Default make no longer makes the docs; if you edit the documentation
+**** Default make no longer makes the docs; if you edit the documentation.
      sources, run "make info" to get them.
 
 **** Optimize additional boolean identities (a|a = a, etc.)

@@ -115,9 +115,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
     // Otherwise...
     else if (!m_sized) {
 	width(32, false); // Says the spec.
-#ifndef VL_UNSIGNED
 	if (unbased) isSigned(true); // Also says the spec.
-#endif
     }
 
     // Ignore leading blanks

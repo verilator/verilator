@@ -284,9 +284,7 @@ private:
 
     // VISITORS - defaults
     virtual void visit(AstNodeMath* nodep, AstNUser*) {
-#ifndef VL_UNSIGNED
 	nodep->v3fatalSrc("Visit function missing? Signedness unknown for this node: "<<nodep);
-#endif
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -347,12 +345,6 @@ public:
 
 class SignedRemoveVisitor : public AstNVisitor {
 private:
-    // METHODS
-    void	supportCheck(AstNode* nodep) {
-#ifdef VL_UNSIGNED
-	if (nodep->isSigned()) nodep->v3error("Unsupported: signed numbers");
-#endif
-    }
     // VISITORS
     virtual void visit(AstSigned* nodep, AstNUser*) {
 	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); nodep=NULL;
@@ -362,13 +354,11 @@ private:
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	supportCheck(nodep);
     }
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
 	UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	newp->widthSignedFrom(nodep);
-	supportCheck(nodep);
 	pushDeletep(nodep); nodep=NULL;
     }
 public:

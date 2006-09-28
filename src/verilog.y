@@ -1086,9 +1086,7 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 			       rangep->cloneTree(false),
 			       arrayp);
     nodep->isSigned(V3Parse::s_varSigned);
-#ifndef VL_UNSIGNED
     if (type == AstVarType::INTEGER) nodep->isSigned(true);
-#endif
     if (V3Parse::s_varDecl != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varDecl);
     if (V3Parse::s_varIO != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varIO);
 

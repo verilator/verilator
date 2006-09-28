@@ -54,7 +54,7 @@ our $Raise_Weight_Max = 50;
  'VCONST'=>	{weight=>1&&20, width=>0, 	    sc=>1, terminal=>1, v=>'%v', },
  'VIDNEW'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
  'VIDOLD'=>	{weight=>1&&20, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
- 'VIDSAME'=>	{weight=>1&&200, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
+ 'VIDSAME'=>	{weight=>1&&20, width=>0, 	    sc=>1, terminal=>0, v=>'%i', },
  'VRANGE'=>	{weight=>1&&30, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2:%3]', },
  'VBITSEL'=>	{weight=>1&&10, width=>1, signed=>0,sc=>0, terminal=>0, v=>'%i[%2]', },
  'VBITSELP'=>	{weight=>1&&10, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2+:%3]', },

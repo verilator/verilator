@@ -70,6 +70,16 @@ private:
 	if (!rnodep->lhsp()->castConst()) return false;
 	return true;
     }
+    bool operandAsvSame (AstNode* nodep) {
+	// BIASV(SAMEa, BIASV(SAMEb,...)) -> BIASV( BIASV(SAMEa,SAMEb), ...)
+	AstNodeBiComAsv* bnodep = nodep->castNodeBiComAsv();
+	if (!bnodep) return false;
+	AstNodeBiComAsv* rnodep = bnodep->rhsp()->castNodeBiComAsv();
+	if (!rnodep) return false;
+	if (rnodep->type() != bnodep->type()) return false;
+	if (rnodep->width() != bnodep->width()) return false;
+	return operandsSame(bnodep->lhsp(), rnodep->lhsp());
+    }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
 		&& nodep->rhsp()->castConst()->asInt() >= (uint32_t)(nodep->width()));
@@ -284,8 +294,9 @@ private:
 	// Keep RHS, remove LHS
 	replaceWChild(nodep, nodep->rhsp());
     }
-    void replaceAsvConst (AstNodeBiop* nodep) {
+    void replaceAsv (AstNodeBiop* nodep) {
 	// BIASV(CONSTa, BIASV(CONSTb, c)) -> BIASV( BIASV_CONSTED(a,b), c)
+	// BIASV(SAMEa,  BIASV(SAMEb, c))  -> BIASV( BIASV(SAMEa,SAMEb), c)
 	//nodep->dumpTree(cout, "  repAsvConst_old: ");
 	AstNode* ap = nodep->lhsp();
 	AstNodeBiop* rp = nodep->rhsp()->castNodeBiop();
@@ -299,7 +310,7 @@ private:
 	nodep->rhsp(cp);
 	rp->lhsp(ap);
 	rp->rhsp(bp);
-	replaceConst(rp);
+	if (rp->lhsp()->castConst() && rp->rhsp()->castConst()) replaceConst(rp);
 	//nodep->dumpTree(cout, "  repAsvConst_new: ");
     }
     void replaceExtend (AstNode* nodep, AstNode* arg0p) {
@@ -1017,8 +1028,9 @@ private:
     TREEOP("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&b
     TREEOP("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets constant red remove the shift
-    TREEOP("AstNodeBiCom{$lhsp, $rhsp.castConst}",	"swapSides(nodep)");
-    TREEOP("AstNodeBiComAsv{operandAsvConst(nodep)}",	"replaceAsvConst(nodep)");
+    TREEOP("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",	"swapSides(nodep)");
+    TREEOP("AstNodeBiComAsv{operandAsvConst(nodep)}",	"replaceAsv(nodep)");
+    TREEOP("AstNodeBiComAsv{operandAsvSame(nodep)}",	"replaceAsv(nodep)");
     //    v--- *1* as These ops are always first, as we warn before replacing
     TREEOP1("AstLt   {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,0)");
     TREEOP1("AstGte  {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,1)");
@@ -1067,6 +1079,7 @@ private:
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
     TREEOP("AstAnd    {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
+    TREEOP("AstChangeXor{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstDiv    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP("AstDivS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP("AstOr     {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
@@ -1085,6 +1098,8 @@ private:
     TREEOP("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
+    TREEOP("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
     ///=== Verilog operators
     // Comparison against 1'b0/1'b1; must be careful about widths.
     // These use Not, so must be Verilog only
