@@ -181,6 +181,7 @@ class V3Options {
     static string version();
     static string argString(int argc, char** argv);	///< Return list of arguments as simple string
     string allArgsString();	///< Return all passed arguments as simple string
+    void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList (FileLine* fl, int argc, char** argv);
     void parseOptsFile (FileLine* fl, const string& filename);

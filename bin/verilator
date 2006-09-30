@@ -113,7 +113,6 @@ if ($Opt_Sp eq 'sp' || $Opt_Trace) {
 # Determine runtime flags
 my $vcmd =(($opt_gdb?"$opt_gdb ":"")
 	   .verilator_bin()
-	   ." --bin ".verilator_bin()	# So we get binary name into .d file
 	   ." ".join(' ',@Opt_Verilator_Sw)
 	   );
 
@@ -234,6 +233,13 @@ linking with make rules you write yourself.
 Enable all assertions, includes enabling the --psl flag.  (If psl is not
 desired, but other assertions are, use --assert --nopsl.)
 
+=item --bin I<filename>
+
+Rarely needed.  Override the default filename for Verilator itself.  When a
+dependancy (.d) file is created, this filename will become a source
+dependency, such that a change in this binary will have make rebuild the
+output files.
+
 =item --cc
 
 Specifies C++ without SystemC output mode; see also --sc and --sp.
@@ -303,10 +309,10 @@ Displays this message and program version and exits.
 
 =item --inhibit-sim
 
-Create a "inhibitSim(bool)" function to enable and disable evaluation.
-This allows a upper level testbench to disable modules that are not
-important in a given simulation, without needing to recompile or change the
-SystemC modules instantiated.
+Rarely needed.  Create a "inhibitSim(bool)" function to enable and disable
+evaluation.  This allows a upper level testbench to disable modules that
+are not important in a given simulation, without needing to recompile or
+change the SystemC modules instantiated.
 
 =item --inline-mult I<value>
 
@@ -339,8 +345,8 @@ the same as --prefix.
 
 =item --no-skip-identical
 
-Disables skipping execution of Verilator if all source files are identical,
-and all output files exist with newer dates.
+Rarely needed.  Disables skipping execution of Verilator if all source
+files are identical, and all output files exist with newer dates.
 
 =item -O0
 
@@ -353,11 +359,11 @@ cost of compile time.  This currently sets --inline-mult -1.
 
 =item -OI<optimization-letter>
 
-Enables or disables a specific optimizations, with the optimization
-selected based on the letter passed.  A lowercase letter disables an
-optimization, an upper case letter enables it.  This is intended for
-debugging use only; see the source code for version-dependent mappings of
-optimizations to -O letters.
+Rarely needed.  Enables or disables a specific optimizations, with the
+optimization selected based on the letter passed.  A lowercase letter
+disables an optimization, an upper case letter enables it.  This is
+intended for debugging use only; see the source code for version-dependent
+mappings of optimizations to -O letters.
 
 =item --output-split I<bytes>
 
@@ -431,10 +437,10 @@ on during model execution.
 
 =item --underline-zero
 
-Signals starting with a underline should be initialized to zero, as was
-done in Verilator 2.  Default is for all signals including those with
-underlines being randomized.  This option may be depreciated in future
-versions.
+Rarely needed.  Signals starting with a underline should be initialized to
+zero, as was done in Verilator 2.  Default is for all signals including
+those with underlines being randomized.  This option may be depreciated in
+future versions.
 
 =item -Werror-I<message>
 

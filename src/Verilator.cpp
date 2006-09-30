@@ -467,9 +467,11 @@ int main(int argc, char** argv, char** env) {
     srand( (int) randseed);
 
     // Preprocessor
+    // Before command parsing so we can handle -Ds on command line.
     V3PreShell::boot(env);
 
     // Command option parsing
+    v3Global.opt.bin(argv[0]);
     string argString = V3Options::argString(argc-1, argv+1);
     v3Global.opt.parseOpts(new FileLine("COMMAND_LINE",0), argc-1, argv+1);
     if (v3Global.opt.coverage() && !v3Global.opt.systemPerl()) {
