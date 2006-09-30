@@ -353,6 +353,7 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	// Cleanup link until V3LinkDot can correct it
 	nodep->taskp(NULL);
+	nodep->iterateChildren(*this);
     }
     // Nop's to speed up the loop
     virtual void visit(AstAlways* nodep, AstNUser*) {

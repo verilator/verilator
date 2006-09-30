@@ -37,6 +37,11 @@ module t (/*AUTOARG*/
 	 if (ma0.mb0.mc0.getP3(1'b0) !== 32'h0) $stop;
 	 if (ma0.mb0.mc1.getP3(1'b0) !== 32'h1) $stop;
       end
+      if (cyc==5) begin
+	 ma0.        checkName(ma0.        getName(1'b0));
+	 ma0.mb0.    checkName(ma0.mb0.    getName(1'b0));
+	 ma0.mb0.mc0.checkName(ma0.mb0.mc0.getName(1'b0));
+      end
       if (cyc==9) begin
 	 $write("*-* All Finished *-*\n");
 	 $finish;
@@ -72,7 +77,9 @@ module ma ();
    `INLINE_MODULE
 
    mb #(0) mb0 ();
+   reg [31:0] gName; initial gName = "ma  ";
    function [31:0] getName;  input fake;  getName = "ma  "; endfunction
+   task checkName; input [31:0] name;  if (name !== "ma  ") $stop; endtask
 
    initial begin
       if (ma.getName(1'b0) !== "ma  ") $stop;
@@ -89,13 +96,23 @@ module mb ();
    mc #(P2,1) mc1 ();
    global_mod #(32'hf33d) global_cell2 ();
 
+   reg [31:0] gName; initial gName = "mb  ";
    function [31:0] getName;  input fake;  getName = "mb  "; endfunction
    function [31:0] getP2  ;  input fake;  getP2 = P2;       endfunction
+   task checkName; input [31:0] name;  if (name !== "mb  ") $stop; endtask
 
    initial begin
-      if (ma.getName(1'b0) !== "ma  ") $stop;
-      if (getName(1'b0) !== "mb  ") $stop;
+`ifndef verilator #1; `endif
+      if (ma. getName(1'b0) !== "ma  ") $stop;
+      if (    getName(1'b0) !== "mb  ") $stop;
       if (mc1.getName(1'b0) !== "mc  ") $stop;
+
+      ma. checkName (ma. gName);
+      /**/checkName (    gName);
+      mc1.checkName (mc1.gName);
+      ma. checkName (ma. getName(1'b0));
+      /**/checkName (    getName(1'b0));
+      mc1.checkName (mc1.getName(1'b0));
    end
 endmodule
 
@@ -104,12 +121,21 @@ module mc ();
     parameter P2 = 0;
     parameter P3 = 0;
 
+   reg [31:0] gName; initial gName = "mc  ";
    function [31:0] getName;  input fake;  getName = "mc  "; endfunction
    function [31:0] getP3  ;  input fake;  getP3 = P3;       endfunction
+   task checkName; input [31:0] name;  if (name !== "mc  ") $stop; endtask
 
    initial begin
+`ifndef verilator #1; `endif
       if (ma.getName(1'b0) !== "ma  ") $stop;
       if (mb.getName(1'b0) !== "mb  ") $stop;
       if (mc.getName(1'b0) !== "mc  ") $stop;
+      ma.checkName (ma.gName);
+      mb.checkName (mb.gName);
+      mc.checkName (mc.gName);
+      ma.checkName (ma.getName(1'b0));
+      mb.checkName (mb.getName(1'b0));
+      mc.checkName (mc.getName(1'b0));
    end
 endmodule

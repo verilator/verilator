@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Optimize additional boolean identities (a|a = a, etc.)
 
+**** Fix coredump when dotted cross-ref inside task call. [Eugene Weber]
+
 * Verilator 3.610 09/20/2006
 
 ***  Verilator now works under DJGPP (Pentium GCC).  [John Stroebel]

@@ -169,7 +169,7 @@ sub run {
 	    warn "%Error: export VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
 	    warn "%Error: $command\n";
 	}
-	die "%Error: Command Failed $command, $status, stopped";
+	die "%Error: Command Failed $command\n";
     }
 }
 
@@ -283,8 +283,8 @@ the comment "DefaultClock":
 
 =item --debug
 
-Select the debug built image of Verilator (if available), and enable
-debugging messages and intermediate form dump files.
+Select the debug built image of Verilator (if available), and enable more
+internal assertions, debugging messages, and intermediate form dump files.
 
 =item -E
 
@@ -1623,7 +1623,7 @@ outputs.  Now, the following should fail:
     cd test_regress
     t/t_BUG.pl
 
-Finally, Mail the bug report to C<wsnyder@wsnyder.org>
+Finally, Mail the bug report to C<wsnyder@wsnyder.org>.
 
 =head1 HISTORY
 
@@ -1650,8 +1650,8 @@ scratch in C++.  This added many optimizations, yielding about a 2-5x
 performance gain.
 
 Currently, various language features and performance enhancements are added
-as the need arises.  Verilator is now about 2x faster then in 2002, and
-as fast as most popular commercial simulators.
+as the need arises.  Verilator is now about 2x faster then in 2002, and is
+faster then many popular commercial simulators.
 
 =head1 CONTRIBUTORS
 
