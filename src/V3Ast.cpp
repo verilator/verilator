@@ -784,14 +784,16 @@ void AstNode::dumpTreeFile(const string& filename, bool append) {
 		dumpTree(*logsp);
 	    }
 	}
+    }
+    if (v3Global.opt.debugCheck() || v3Global.opt.dumpTree()) {
 	// Error check
 	checkTree();
 	// Broken isn't part of check tree because it can munge iterp's
 	// set by other steps if it is called in the middle of other operations
 	if (AstNetlist* netp=this->castNetlist()) V3Broken::brokenAll(netp);
-	// Next dump can indicate start from here
-	editCountSetLast();
     }
+    // Next dump can indicate start from here
+    editCountSetLast();
 }
 
 void AstNode::v3errorEnd(ostringstream& str) {

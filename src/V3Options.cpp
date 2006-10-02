@@ -366,6 +366,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-coverage-line", flag/*ref*/) ){ m_coverageLine = flag; }
 	    else if ( onoff   (sw, "-coverage-user", flag/*ref*/) ){ m_coverageUser = flag; }
 	    else if ( onoff   (sw, "-covsp", flag/*ref*/) )	{ }  // TBD
+	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag; }
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
@@ -557,6 +558,7 @@ V3Options::V3Options() {
 
     m_coverageLine = false;
     m_coverageUser = false;
+    m_debugCheck = false;
     m_dumpTree = false;
     m_exe = false;
     m_ignc = false;
@@ -603,6 +605,7 @@ void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
     m_dumpTree = true;
     m_stats = true;
+    m_debugCheck = true;
     cout << "Starting "<<version()<<endl;
 }
 

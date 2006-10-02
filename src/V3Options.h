@@ -49,6 +49,7 @@ class V3Options {
     bool	m_assert;	// main switch: --assert
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageUser;	// main switch: --coverage-func
+    bool	m_debugCheck;	// main switch: --debug-check
     bool	m_dumpTree;	// main switch: --dump-tree
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
@@ -134,6 +135,7 @@ class V3Options {
     bool coverage() const { return m_coverageUser || m_coverageLine; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageUser() const { return m_coverageUser; }
+    bool debugCheck() const { return m_debugCheck; }
     bool dumpTree() const { return m_dumpTree; }
     bool exe() const { return m_exe; }
     bool trace() const { return m_trace; }

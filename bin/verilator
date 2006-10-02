@@ -292,6 +292,11 @@ the comment "DefaultClock":
 Select the debug built image of Verilator (if available), and enable more
 internal assertions, debugging messages, and intermediate form dump files.
 
+=item --debug-check
+
+Rarely needed.  Enable internal debugging assertion checks, without
+changing debug verbosity.  Enabled automatically when --debug specified.
+
 =item -E
 
 Preprocess the source code, but do not compile, as with 'gcc -E'.  Output
