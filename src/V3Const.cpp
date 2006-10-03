@@ -815,7 +815,7 @@ private:
 	    }
 	    UINFO(8,"senItem(NOT...) "<<nodep<<" "<<invert<<endl);
 	    if (invert) nodep->edgeType( nodep->edgeType().invert() );
-	    AstVarRef* senvarp = lastSensp->unlinkFrBack()->castVarRef();
+	    AstNodeVarRef* senvarp = lastSensp->unlinkFrBack()->castNodeVarRef();
 	    if (!senvarp) sensp->v3fatalSrc("Non-varref sensitivity variable");
 	    sensp->replaceWith(senvarp);
 	    sensp->deleteTree(); sensp=NULL;

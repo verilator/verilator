@@ -376,7 +376,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CaseVisitor(AstNode* nodep) {
+    CaseVisitor(AstNetlist* nodep) {
 	m_caseNoOverlapsAllCovered = false;
 	nodep->accept(*this);
     }

@@ -627,11 +627,11 @@ senList:	senitem					{ $$ = $1; }
 	;
 
 senitem:	senitemEdge				{ $$ = $1; }
-	|	idVarRef ignoreRangeE			{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
+	|	idVarXRef ignoreRangeE			{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
 	;
 
-senitemEdge:	yPOSEDGE idVarRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
-	|	yNEGEDGE idVarRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
+senitemEdge:	yPOSEDGE idVarXRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
+	|	yNEGEDGE idVarXRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
 	;
 
 ignoreRangeE:	/* empty */				{ $$ = NULL; } /* ignored */

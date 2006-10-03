@@ -809,7 +809,7 @@ public:
     class Initial {};		// for creator type-overload selection
     class Settle {};		// for creator type-overload selection
     class Never {};		// for creator type-overload selection
-    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstVarRef* varrefp)
+    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNodeVarRef* varrefp)
 	: AstNode(fl) {
 	m_edgeType = edgeType;
 	setOp1p(varrefp);
@@ -842,7 +842,7 @@ public:
     AstEdgeType edgeType()	const { return m_edgeType; }		// * = Posedge/negedge
     void edgeType(AstEdgeType type)  { m_edgeType=type; editCountInc(); }// * = Posedge/negedge
     AstNode*	sensp()		const { return op1p(); }		// op1 = Signal sensitized
-    AstVarRef*	varrefp()	const { return op1p()->castVarRef(); }	// op1 = Signal sensitized
+    AstNodeVarRef* varrefp()	const { return op1p()->castNodeVarRef(); }	// op1 = Signal sensitized
     //
     bool isClocked() const { return edgeType().clockedStmt(); }
     bool isCombo() const { return edgeType()==AstEdgeType::COMBO; }

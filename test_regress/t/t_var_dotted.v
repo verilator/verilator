@@ -141,10 +141,9 @@ module mc (output reg [31:0] out);
    end
 
    // Can we look from the top module name down?
-   wire        reach_up_clk = t.clk;
    wire [31:0] reach_up_cyc = t.cyc;
 
-   always @ (posedge reach_up_clk) begin
+   always @ (posedge t.clk) begin
       //$write("[%0t] %m: Got reachup, cyc=%0d\n", $time, reach_up_cyc);
       if (reach_up_cyc==2) begin
 	 if (global_cell.global != 32'hf00d) $stop;

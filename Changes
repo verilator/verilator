@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix coredump when dotted cross-ref inside task call. [Eugene Weber]
 
+**** Fix dotted variables in always sensitivity lists. [Allan Cochrane]
+
 * Verilator 3.610 09/20/2006
 
 ***  Verilator now works under DJGPP (Pentium GCC).  [John Stroebel]
