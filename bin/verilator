@@ -720,7 +720,7 @@ In certain optimization modes, it also creates:
 
 It also creates internal files that can be mostly ignored:
 
-    {each_verilog_module}.vpp		// Post-processed verilog source code
+    {each_verilog_module}.vpp		// Post-processed verilog (--debug)
     {prefix}.flags_vbin			// Verilator dependencies
     {prefix}.flags_vpp			// Pre-processor dependencies
     {prefix}{misc}.d			// Make dependencies (-MMD)

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Don't core dump on errors when not under --debug.  [Allan Cochrane]
 
+**** Remove .vpp intermediate files when not under --debug.
+
 * Verilator 3.620 10/04/2006
 
 ***  Support simple inout task ports.  [Eugene Weber]

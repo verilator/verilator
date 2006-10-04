@@ -91,6 +91,10 @@ void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibr
     if (!v3Global.opt.preprocOnly()) {
 	lexFile (vppfilename, modfilename);
     }
+
+    if (!V3Error::debugDefault()) {
+	unlink (vppfilename.c_str());
+    }
 }
 
 void V3Read::lexFile(const string& vppfilename, const string& modname) {
