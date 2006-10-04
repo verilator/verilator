@@ -268,8 +268,13 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		    }
 #endif
 		}
-		abort();
-//		exit(10);
+
+		if (V3Error::debugDefault()) {
+		    cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
+		    abort();
+		} else {
+		    exit(10);
+		}
 	    }
 	}
     }
