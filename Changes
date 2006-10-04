@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.61*
+* Verilator 3.620 10/04/2006
 
 ***  Support simple inout task ports.  [Eugene Weber]
 
@@ -20,7 +20,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix dotted variables in always sensitivity lists. [Allan Cochrane]
 
-* Verilator 3.610 09/20/2006
+* Verilator 3.610 09/20/2006 Stable
 
 ***  Verilator now works under DJGPP (Pentium GCC).  [John Stroebel]
 
