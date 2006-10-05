@@ -34,9 +34,9 @@ public:
     // Everything that's possible
     static void constifyAll(AstNetlist* nodep);
     // Also, warn
-    static void constifyAllLint(AstNode* nodep);
+    static void constifyAllLint(AstNetlist* nodep);
     // C++ datatypes
-    static void constifyCpp(AstNode* nodep);
+    static void constifyCpp(AstNetlist* nodep);
     // Only the current node and lower
     static void constifyTree(AstNode* nodep);
 };

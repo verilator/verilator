@@ -286,6 +286,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Var name
+    virtual bool maybePointedTo() const { return true; }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
     string	cType()		const;	// Return C type: bool, uint32_t, uint64_t, etc.
     void	combineType(AstVarType type);
@@ -422,6 +423,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void cloneRelink();
     virtual bool broken() const;
+    virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }		// * = Scope name
     void name(const string& name) 	{ m_name = name; }
     string nameDotless() const;
@@ -483,6 +485,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual bool broken() const { return ( (m_varp && !m_varp->brokeExists())
 					   || (m_scopep && !m_scopep->brokeExists())); }
+    virtual bool maybePointedTo() const { return true; }
     virtual string name() const {return scopep()->name()+"->"+varp()->name();}	// * = Var name
     virtual void dump(ostream& str);
     AstVar*	varp() const { return m_varp; }			// [After Link] Pointer to variable
@@ -607,6 +610,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_clkReqVarp && !m_clkReqVarp->brokeExists()); }
+    virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }
     AstNode*	stmtsp() 	const { return op2p()->castNode(); }	// op2 = List of statements
     AstActive*  activesp()	const { return op3p()->castActive(); }	// op3 = List of i/sblocks
@@ -651,6 +655,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
+    virtual bool maybePointedTo() const { return true; }
     // ACCESSORS
     virtual string name()	const { return m_name; }		// * = Cell name
     void name(const string& name) 	{ m_name = name; }
@@ -868,6 +873,7 @@ public:
     virtual AstNode* clone() { return new AstSenTree(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
+    virtual bool maybePointedTo() const { return true; }
     bool isMulti() const { return m_multi; }
     AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
     void addSensesp(AstSenItem* nodep) { addOp1p(nodep); }
@@ -1053,6 +1059,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 1+2*instrCountLd(); }
+    virtual bool maybePointedTo() const { return true; }
     int		column() 	const { return m_column; }
     const string& comment() const { return m_text; }			// text to insert in code
     const string& typeText() const { return m_typeText; }
@@ -1506,6 +1513,7 @@ public:
     virtual AstNode* clone() { return new AstTraceDecl(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string name()	const { return m_showname; }
+    virtual bool maybePointedTo() const { return true; }
     string showname()	const { return m_showname; }		// * = Var name
     virtual bool same(AstNode* samep) const { return false; }
     // Details on what we're tracing
@@ -2801,6 +2809,8 @@ public:
     virtual AstNode* clone() { return new AstCFunc(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string name()	const { return m_name; }
+    virtual bool broken() const { return ( (m_scopep && !m_scopep->brokeExists())); }
+    virtual bool maybePointedTo() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return ((funcType()==samep->castCFunc()->funcType())
 						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())

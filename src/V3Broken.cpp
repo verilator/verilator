@@ -81,13 +81,15 @@ private:
     //			// so userp and friends may not be used
     // VISITORS
     virtual void visit(AstNode* nodep, AstNUser*) {
-	BrokenTable::add(nodep);
+	if (nodep->maybePointedTo()) {
+	    BrokenTable::add(nodep);
+	}
 	nodep->iterateChildren(*this);
     }
 public:
     // CONSTUCTORS
-    BrokenMarkVisitor(AstNode* nodep) {
-	nodep->iterateAndNext(*this, NULL);
+    BrokenMarkVisitor(AstNetlist* nodep) {
+	nodep->accept(*this);
     }
     virtual ~BrokenMarkVisitor() {}
 };
@@ -99,7 +101,7 @@ class BrokenCheckVisitor : public AstNVisitor {
 private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	if (nodep->broken()) {
-	    nodep->v3fatalSrc("Broken link in node\n");
+	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)\n");
 	}
 	if (v3Global.assertWidthsSame()) {
 	    if (nodep->width() != nodep->widthMin()) {

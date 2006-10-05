@@ -1213,12 +1213,14 @@ void V3Const::constifyAll(AstNetlist* nodep) {
     visitor.main(nodep);
 }
 
-void V3Const::constifyAllLint(AstNode* nodep) {
+void V3Const::constifyAllLint(AstNetlist* nodep) {
+    UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,true,false);
     visitor.main(nodep);
 }
 
-void V3Const::constifyCpp(AstNode* nodep) {
+void V3Const::constifyCpp(AstNetlist* nodep) {
+    UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,false,true);
     visitor.main(nodep);
 }

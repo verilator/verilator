@@ -132,7 +132,7 @@ uint32_t AstVar::arrayElements() const {
 bool AstScope::broken() const {
     return ((m_aboveScopep && !m_aboveScopep->brokeExists())
 	    || (m_aboveCellp && !m_aboveCellp->brokeExists())
-	    || !m_modp || !((AstNode*)m_modp)->brokeExists());
+	    || !m_modp || !m_modp->brokeExists());
 }
 
 void AstScope::cloneRelink() {

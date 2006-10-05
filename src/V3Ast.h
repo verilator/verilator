@@ -585,6 +585,7 @@ public:
     virtual int  instrCount() const { return 0; }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash::Illegal()); }  // Not a node that supports it
     virtual bool same(AstNode* otherp) const { return true; }
+    virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool broken() const { return false; }
     virtual bool emitWordForm() { return false; }
 
@@ -922,6 +923,7 @@ public:
     virtual ~AstNodeFTask() {}
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
+    virtual bool maybePointedTo() const { return true; }
     // {AstFunc only} op1 = Range output variable
     // op3 = Statements/Ports/Vars
     void 	name(const string& name) 	{ m_name = name; }
