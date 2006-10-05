@@ -103,8 +103,8 @@ module tpub (
 	    if (24'h11bca != got_long) $stop;
 	    $c("{ uint64_t qq; publicGetQuad(qq); got_quad=qq; }");
 	    if (60'haaaa_bbbb_cccc != got_quad) $stop;
-	    //Unsupported: $c("publicGetWide(got_wide);");
-	    //Unsupported: if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
+	    $c("{ WData gw[3]; publicGetWide(gw); VL_ASSIGN_W(72,got_wide,gw); }");
+	    if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
 	    //Below doesn't work, because we're calling it inside the loop that sets var_flop
 	    // if (12'h321 != var_flop) $stop;
 	 end
@@ -154,7 +154,7 @@ module tpub (
    endtask
 
    task publicSetWide;
-      // Can't be public, as no wide return types in C++
+      // verilator public
       input [71:0] in_wide;
       var_wide = in_wide;
    endtask
@@ -178,7 +178,7 @@ module tpub (
    endtask
 
    task publicGetWide;
-      // Can't be public, as no wide return types in C++
+      // verilator public
       output [71:0] out_wide;
       out_wide = var_wide;
    endtask

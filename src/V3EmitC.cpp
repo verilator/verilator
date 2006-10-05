@@ -102,9 +102,16 @@ public:
 		if (AstVar* portp = stmtp->castVar()) {
 		    if (portp->isIO() && !portp->isFuncReturn()) {
 			if (args != "") args+= ", ";
-			args += portp->cType();
-			if (portp->isOutput()) args += "&";
-			args += " "+portp->name();
+			if (portp->isWide()) {
+			    if (portp->isInOnly()) args += "const ";
+			    args += portp->cType();
+			    args += " (& "+portp->name();
+			    args += ")["+cvtToStr(portp->widthWords())+"]";
+			} else {
+			    args += portp->cType();
+			    if (portp->isOutput()) args += "&";
+			    args += " "+portp->name();
+			}
 		    }
 		}
 	    }
@@ -707,7 +714,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		else if (nodep->isOutput()) puts("sc_out<");
 		else nodep->v3fatalSrc("Unknown type");
 
-		puts(nodep->cType());
+		puts(nodep->scType());
 		puts(">\t");
 	    }
 	    puts(nodep->name());

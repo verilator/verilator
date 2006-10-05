@@ -1088,9 +1088,9 @@ function.  Any output arguments will become C++ reference arguments.  Any
 local registers/integers will become function automatic variables on the
 stack.
 
-Wide variables over 64 bits cannot be I/O to the module, to avoid exposing
-complexities; generally the cleanest technique is to pass a word number to
-the function, and do appropriate bit selection.
+Wide variables over 64 bits cannot be function returns, to avoid exposing
+complexities.  However, wide variables can be input/outputs; they will be
+passed as references to an array of 32 bit numbers.
 
 This feature is still somewhat experimental.  Generally, only the values of
 stored state (flops) should be written, as the model will NOT notice

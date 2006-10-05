@@ -108,6 +108,18 @@ string AstVar::cType() const {
     } else if (widthMin() <= VL_WORDSIZE) {
 	return "uint32_t";
     } else if (isScWide()) {
+	return "uint32_t";  // []'s added later
+    } else {
+	return "uint64_t";
+    }
+}
+
+string AstVar::scType() const {
+    if (widthMin() == 1) {
+	return "bool";
+    } else if (widthMin() <= VL_WORDSIZE) {
+	return "uint32_t";
+    } else if (isScWide()) {
 	return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
     } else {
 	return "uint64_t";

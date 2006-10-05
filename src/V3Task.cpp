@@ -304,7 +304,7 @@ private:
 	    AstVar* portp = NULL;
 	    if (NULL!=(portp = nodep->castFunc()->fvarp()->castVar())) {
 		if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
-		if (portp->isWide()) nodep->v3error("Unsupported: Public functions/tasks with inputs or outputs > 64 bits wide.");
+		if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
 		portp->unlinkFrBack();
 		rtnvarp = portp;
 		rtnvarp->funcLocal(true);
@@ -339,11 +339,6 @@ private:
 		    portp->unlinkFrBack();
 		    portp->funcLocal(true);
 		    funcp->addArgsp(portp);
-		    if (portp->isWide()) {
-			// As we don't want to export our WData arrays to users,
-			// and casting to sc_bv's is ugly, we'll just...
-			nodep->v3error("Unsupported: Public functions/tasks with inputs or outputs > 64 bits wide.");
-		    }
 		} else {
 		    // "Normal" variable, mark inside function
 		    portp->funcLocal(true);

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.62**
 
+**** Public functions now allow > 64 bit arguments.
+
 **** Don't core dump on errors when not under --debug.  [Allan Cochrane]
 
 **** Remove .vpp intermediate files when not under --debug.

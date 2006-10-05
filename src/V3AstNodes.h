@@ -288,7 +288,8 @@ public:
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
-    string	cType()		const;	// Return C type: bool, uint32_t, uint64_t, etc.
+    string	cType()		const;	// Return C type for declaration: bool, uint32_t, uint64_t, etc.
+    string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
     AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
     AstRange*	arraysp() 	const { return op2p()->castRange(); }	// op2 = Array(s) of variable
