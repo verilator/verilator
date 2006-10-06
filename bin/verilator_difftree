@@ -192,5 +192,5 @@ C<verilator>
 
 ######################################################################
 ### Local Variables:
-### compile-command: "$V4/bin/verilator_difftree  ~/SandBox/workwsnyder/verilator/test_c/obj_dir/V*_03_*.tree $V4/test_c/obj_dir/V*_03_*.tree"
+### compile-command: "$V4/bin/verilator_difftree  $V4/test_c/obj_dir/V*_03_*.tree $V4N/test_c/obj_dir/V*_03_*.tree"
 ### End:

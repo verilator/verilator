@@ -236,6 +236,9 @@ void V3Error::v3abort () {
 }
 
 void V3Error::v3errorEnd (ostringstream& sstr) {
+#ifdef __COVERITY__
+    if (s_errorCode==V3ErrorCode::FATAL) __coverity_panic__(x);
+#endif
     if (s_errorCode!=V3ErrorCode::SUPPRESS || debug()) {
 	cerr<<msgPrefix()<<sstr.str();
 	if (sstr.str()[sstr.str().length()-1] != '\n') {

@@ -298,8 +298,10 @@ private:
 	    // OPTIMIZE: We could substitute a constant for things in the sense list, for example
 	    // always (posedge RESET) { if (RESET).... }  we know RESET is true.
 	    // Summarize a long list of combo inputs as just "combo"
+#ifndef __COVERITY__ // Else dead code on next line.
 	    if (combo) nodep->sensesp()->addSensesp
 			   (new AstSenItem(nodep->fileline(),AstSenItem::Combo()));
+#endif
 	    wantactivep = m_namer.getActive(nodep->fileline(), nodep->sensesp());
 	}
 

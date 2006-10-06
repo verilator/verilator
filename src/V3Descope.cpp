@@ -224,12 +224,13 @@ private:
 	    if (m_scopep) {
 		nodep->unlinkFrBack();
 		m_modp->addStmtp(nodep);
-	    }
-	    if (nodep->funcPublic()) {
-		// There may be multiple public functions by the same name;
-		// record for later correction or making of shells
-		m_modFuncs.insert(make_pair(nodep->name(), nodep));
-		nodep->name(m_scopep->nameDotless() +"__" + nodep->name());
+
+		if (nodep->funcPublic()) {
+		    // There may be multiple public functions by the same name;
+		    // record for later correction or making of shells
+		    m_modFuncs.insert(make_pair(nodep->name(), nodep));
+		    nodep->name(m_scopep->nameDotless() +"__" + nodep->name());
+		}
 	    }
 	}
     }

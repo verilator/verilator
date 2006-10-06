@@ -948,10 +948,7 @@ void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, cha
     } else {
 	string func;
 	string nfmt = displayFormat(*elistp, fmt, fmtLetter, true, false);
-	if ((*elistp)->isQuad() && (fmtLetter=='d')) {
-	    nfmt+="ll";
-	    func="(long long)(";  // Must match %ll to avoid warnings
-	}
+	// We don't need to check for fmtLetter=='d', as it is above.
 	if ((*elistp)->isQuad() && (fmtLetter=='u'||fmtLetter=='o'||fmtLetter=='x')) {
 	    nfmt+="ll";
 	    func="(unsigned long long)(";  // Must match %ull to avoid warnings

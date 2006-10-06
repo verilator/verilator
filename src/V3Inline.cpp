@@ -111,7 +111,6 @@ private:
 						       nodep->name(), nodep->modp()->origName());
 	    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
 	    // Create assignments to the pins
-	    AstNode* assignlistsp = NULL;
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		UINFO(6,"     Pin change from "<<pinp->modVarp()<<endl);
 		// First, simplify it
@@ -142,13 +141,11 @@ private:
 	    // Cleanup var names, etc, to not conflict
 	    m_cellp = nodep;
 	    newmodp->iterateAndNext(*this);
-	    if (assignlistsp) assignlistsp->iterateAndNext(*this);  // And cleanup any varrefs under assigns we created...
 	    m_cellp = NULL;
 	    // Move statements to top module
 	    if (debug()>=9) { newmodp->dumpTree(cout,"fixmod:"); }
 	    AstNode* stmtsp = newmodp->stmtsp();
 	    if (stmtsp) stmtsp->unlinkFrBackWithNext();
-	    if (assignlistsp) m_modp->addStmtp(assignlistsp);
 	    if (stmtsp) m_modp->addStmtp(stmtsp);
 	    // Remove the cell
 	    newmodp->deleteTree(); newmodp=NULL; // Clear any leftover ports, etc

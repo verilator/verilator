@@ -298,9 +298,9 @@ private:
 	    initp = NULL; if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
 	    // Grab assignment
 	    AstNode* incp = NULL;  // Should be last statement
-	    for (incp = nodep->bodysp(); incp->nextp(); incp = incp->nextp()) {}
+	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
 	    if (incp) V3Const::constifyTree(incp);
-	    for (incp = nodep->bodysp(); incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
+	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
 	    // And check it
 	    if (forUnrollCheck(nodep, initp,
 			       nodep->precondsp(), nodep->condp(),
