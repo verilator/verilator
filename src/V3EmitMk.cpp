@@ -96,6 +96,9 @@ public:
 	// Imply generating verilated.o
 	if (v3Global.opt.exe()) {
 	    v3Global.opt.addCppFile("verilated.cpp");
+	    if (v3Global.opt.trace()) {
+		v3Global.opt.addCppFile("SpTraceVcdC.cpp");
+	    }
 	}
 
 	V3StringSet dirs;

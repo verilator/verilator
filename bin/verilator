@@ -566,7 +566,7 @@ And we get as output
     Hello World
     - our.v:2: Verilog $finish
 
-Really, you're better off using a Makefile to do all this for you.  Then,
+Really, you're better off writing a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
 the test_c directory in the distribution for an example.
 
@@ -1497,22 +1497,32 @@ so your simulator shouldn't have to be -- and Verilator is closer to the
 synthesis interpretation, so this is a good thing for getting working
 silicon.
 
-=item How do I generate waveforms (traces)?
+=item How do I generate waveforms (traces) in C++?
+
+See the next question for SystemC mode.
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
-is installed (SystemC itself does not need to be installed for C++ only
+is installed. SystemC itself does not need to be installed for C++ only
 tracing.  You do not even need to compile SystemPerl; you may simply untar
-the SystemPerl kit and point the SYSTEMPERL enviornment variable to the
-untarred directory.)
+the SystemPerl kit and point the SYSTEMPERL environment variable to the
+untarred directory.
 
-In your top level C code, call Verilated::traceEverOn(true).
+In your top level C code, call Verilated::traceEverOn(true).  Then create a
+SpTraceVcdC object.  For an example, see the call to SpTraceVcdC in the
+test_c/sc_main.cpp file of the distribution.
 
-Then, in SystemC mode, create a SpTraceFile object.  For an example, see
-the call to SpTraceFile in the test_sp/sc_main.cpp file of the
-distribution.
+You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
+done for you if using the Verilator --exe flag.
 
-Or, in C++ mode, create a SpTraceVcdCFile object, and see
-test_c/sim_main.cpp.
+=item How do I generate waveforms (traces) in SystemC?
+
+Add the --trace switch to Verilator, and make sure the SystemPerl package
+is installed.
+
+In your top level C sc_main code, call Verilated::traceEverOn(true).  Then
+create a SpTraceFile object as you would create a normal SystemC trace
+file.  For an example, see the call to SpTraceFile in the
+test_sp/sc_main.cpp file of the distribution.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)
 
