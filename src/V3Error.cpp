@@ -168,9 +168,8 @@ void FileLine::v3errorEnd(ostringstream& str) {
 void V3Error::init() {
     for (int i=0; i<V3ErrorCode::MAX; i++) {
 	s_describedEachWarn[i] = false;
-	s_pretendError[i] = false;
+	s_pretendError[i] = V3ErrorCode(i).pretendError();
     }
-    pretendError(V3ErrorCode::BLKANDNBLK, true);
 
     if (string(V3ErrorCode(V3ErrorCode::MAX).ascii()) != " MAX") {
 	v3fatalSrc("Enum table in V3ErrorCode::ascii() is munged");

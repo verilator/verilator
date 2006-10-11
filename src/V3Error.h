@@ -45,6 +45,7 @@ public:
 	COMBDLY,	// Combinatorial delayed assignment
 	GENCLK,		// Generated Clock
 	IMPLICIT,	// Implicit wire
+	IMPURE,		// Impure function not being inlined
 	MULTIDRIVEN,	// Driven from multiple blocks
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
@@ -69,7 +70,7 @@ public:
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
-	    "COMBDLY", "GENCLK", "IMPLICIT",
+	    "COMBDLY", "GENCLK", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH",
@@ -79,6 +80,9 @@ public:
     };
     // Warnings that warn about nasty side effects
     bool dangerous() const { return ( m_e==COMBDLY );};
+    // Warnings we'll present to the user as errors
+    // Later -Werror- options may make more of these.
+    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE );};
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }

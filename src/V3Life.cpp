@@ -374,7 +374,9 @@ private:
     	//UINFO(4,"  CCALL "<<nodep<<endl);
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
-	nodep->funcp()->accept(*this);
+	if (!nodep->funcp()->entryPoint()) {  // else is non-inline or public function we optimize separately
+	    nodep->funcp()->accept(*this);
+	}
     }
     virtual void visit(AstUCFunc* nodep, AstNUser*) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment

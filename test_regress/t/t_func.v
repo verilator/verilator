@@ -27,6 +27,10 @@ module t;
       flipupperbit(global,4'd12);
       if (global !== 32'h10100001) $stop;
 
+      if (nil_func(32'h12,32'h12) != 32'h24) $stop;
+      nil_task(32'h012,32'h112,global);
+      if (global !== 32'h124) $stop;
+      
       $write("*-* All Finished *-*\n");
       $finish;
    end
@@ -84,5 +88,20 @@ module t;
 	 vector[bitnum2] = vector[bitnum2] ^ 1'b1;
       end
    endtask
+
+   task nil_task;
+      input [31:0] a;
+      input [31:0] b;
+      output [31:0] q;
+      // verilator no_inline_task
+      q = nil_func(a, b);
+   endtask
+
+   function [31:0] nil_func;
+      input [31:0] fa;
+      input [31:0] fb;
+      // verilator no_inline_task
+      nil_func = fa + fb;
+   endfunction
 
 endmodule

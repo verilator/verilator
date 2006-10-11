@@ -168,6 +168,7 @@ class AstSenTree;
 %token<fileline>	yVL_FULL_CASE		"/*verilator full_case*/"
 %token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
 %token<fileline>	yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
+%token<fileline>	yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
 %token<fileline>	yVL_ONE_COLD		"/*verilator one_cold*/"
 %token<fileline>	yVL_ONE_HOT		"/*verilator one_hot*/"
 %token<fileline>	yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
@@ -729,7 +730,8 @@ funcVarList:	funcVar					{ $$ = $1; }
 
 funcVar: 	ioDecl					{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
-	|	yVL_PUBLIC				{ $$ = new AstPragma ($1,AstPragmaType::PUBLIC_TASK); }
+	|	yVL_PUBLIC				{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_TASK); }
+	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_TASK); }
 	;
 
 constExpr:	expr					{ $$ = $1; }

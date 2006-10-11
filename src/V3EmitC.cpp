@@ -96,22 +96,20 @@ public:
     string cFuncArgs(AstCFunc* nodep) {
 	// Return argument list for given C function
 	string args = nodep->argTypes();
-	if (args=="") {
-	    // Might be a user function with argument list.
-	    for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
-		if (AstVar* portp = stmtp->castVar()) {
-		    if (portp->isIO() && !portp->isFuncReturn()) {
-			if (args != "") args+= ", ";
-			if (portp->isWide()) {
-			    if (portp->isInOnly()) args += "const ";
-			    args += portp->cType();
-			    args += " (& "+portp->name();
-			    args += ")["+cvtToStr(portp->widthWords())+"]";
-			} else {
-			    args += portp->cType();
-			    if (portp->isOutput()) args += "&";
-			    args += " "+portp->name();
-			}
+	// Might be a user function with argument list.
+	for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO() && !portp->isFuncReturn()) {
+		    if (args != "") args+= ", ";
+		    if (portp->isWide()) {
+			if (portp->isInOnly()) args += "const ";
+			args += portp->cType();
+			args += " (& "+portp->name();
+			args += ")["+cvtToStr(portp->widthWords())+"]";
+		    } else {
+			args += portp->cType();
+			if (portp->isOutput()) args += "&";
+			args += " "+portp->name();
 		    }
 		}
 	    }

@@ -1056,6 +1056,14 @@ Disable the specified warning message for any warnings following the comment.
 
 Re-enable the specified warning message for any warnings following the comment.
 
+=item /*verilator no_inline_task*/ 
+
+Used in a function or task variable definition section to specify the
+function or task should not be inlined into where it is used.  This may
+reduce the size of the final executable when a task is used a very large
+number of times.  For this flag to work, the task and tasks below it must
+be pure; they cannot reference any variables outside the task itself.
+
 =item /*verilator sc_clock*/
 
 Used after a input declaration to indicate the signal should be declared in
@@ -1343,6 +1351,12 @@ only work for single bit wide signals (not buses), do not allow using a
 signal before it is implicitly declared by a cell, and can lead to dangling
 nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
 Emacs, available from L<http://www.veripool.com/>
+
+=item IMPURE
+
+Warns that a task or function that has been marked with /*verilator
+no_inline_task*/ references variables that are not local to the task.
+Verilator cannot schedule these variables correctly.
 
 =item MULTIDRIVEN
 

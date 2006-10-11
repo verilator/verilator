@@ -1328,6 +1328,38 @@ static inline WDataOutP VL_CONST_W_16X(int obits, WDataOutP o,
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
     _END(obits,16);  }
+static inline WDataOutP VL_CONST_W_17X(int obits, WDataOutP o, 
+				       I d16,
+				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
+				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
+    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
+    o[16]=d16;
+    _END(obits,17);  }
+static inline WDataOutP VL_CONST_W_18X(int obits, WDataOutP o, 
+				       I d17,I d16,
+				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
+				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
+    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
+    o[16]=d16;  o[17]=d17;
+    _END(obits,18);  }
+static inline WDataOutP VL_CONST_W_19X(int obits, WDataOutP o, 
+				       I d18,I d17,I d16,
+				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
+				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
+    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
+    o[16]=d16;  o[17]=d17;  o[18]=d18;
+    _END(obits,19);  }
+static inline WDataOutP VL_CONST_W_20X(int obits, WDataOutP o, 
+				       I d19,I d18,I d17,I d16,
+				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
+				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
+    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
+    o[16]=d16;  o[17]=d17;  o[18]=d18;  o[19]=d19;
+    _END(obits,20);  }
 static inline WDataOutP VL_CONST_W_24X(int obits, WDataOutP o, 
 				       I d23,I d22,I d21,I d20,I d19,I d18,I d17,I d16,
 				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,

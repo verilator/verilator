@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.62**
 
+**   Add /*verilator no_inline_task*/ to prevent over-expansion. [Eugene Weber]
+
 ***  Public functions now allow > 64 bit arguments.
 
 **** Remove .vpp intermediate files when not under --debug.

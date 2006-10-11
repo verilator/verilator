@@ -429,6 +429,7 @@ escid	\\[^ \t\f\r\n]+
 <VLG,PSL>"/*verilator full_case*/"		{yylval.fileline = CRELINE(); return yVL_FULL_CASE;}
 <VLG,PSL>"/*verilator inline_module*/"		{yylval.fileline = CRELINE(); return yVL_INLINE_MODULE;}
 <VLG,PSL>"/*verilator no_inline_module*/"	{yylval.fileline = CRELINE(); return yVL_NO_INLINE_MODULE;}
+<VLG,PSL>"/*verilator no_inline_task*/"		{yylval.fileline = CRELINE(); return yVL_NO_INLINE_TASK;}
 <VLG,PSL>"/*verilator one_cold*/"		{yylval.fileline = CRELINE(); return yVL_ONE_COLD;}
 <VLG,PSL>"/*verilator one_hot*/"		{yylval.fileline = CRELINE(); return yVL_ONE_HOT;}
 <VLG,PSL>"/*verilator parallel_case*/"		{yylval.fileline = CRELINE(); return yVL_PARALLEL_CASE;}

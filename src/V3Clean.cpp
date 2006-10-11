@@ -239,6 +239,10 @@ private:
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->bodysp());
     }
+    virtual void visit(AstCCall* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	insureCleanAndNext (nodep->argsp());
+    }
 
     //--------------------
     // Default: Just iterate

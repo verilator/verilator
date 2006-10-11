@@ -349,7 +349,8 @@ void AstVar::dump(ostream& str) {
     if (isSigPublic()) str<<" [P]";
     if (attrClockEn()) str<<" [aCLKEN]";
     if (attrFileDescr()) str<<" [aFD]";
-    if (isFuncLocal() || isFuncReturn()) str<<" [FUNC]";
+    if (isFuncReturn()) str<<" [FUNCRTN]";
+    else if (isFuncLocal()) str<<" [FUNC]";
     str<<" "<<varType();
 }
 void AstSenTree::dump(ostream& str) {
@@ -375,6 +376,7 @@ void AstNodeFTaskRef::dump(ostream& str) {
 }
 void AstNodeFTask::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (taskPublic()) str<<" [PUBLIC]";
 }
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);
