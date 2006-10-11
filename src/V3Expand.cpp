@@ -660,6 +660,9 @@ private:
 	// Lhs or Rhs may be word, long, or quad. 
 	// newAstWordSelClone nicely abstracts the difference.
 	int rhsshift = rhsp->rhsp()->widthMin();
+	// Sometimes doing the words backwards is preferrable.
+	// When we have x={x,foo} backwards is better, when x={foo,x} forward is better
+	// However V3Subst tends to rip this up, so not worth optimizing now.
 	for (int w=0; w<rhsp->widthWords(); w++) {
 	    addWordAssign(nodep, w,
 			  new AstOr (rhsp->fileline(),

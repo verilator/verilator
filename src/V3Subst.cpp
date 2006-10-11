@@ -19,10 +19,11 @@
 //
 //*************************************************************************
 // V3Subst's Transformations:
-//		
+//
 // Each module:
 //	Search all ASSIGN(WORDSEL(...)) and build what it's assigned to
-//	Later usages of that word may then be replaced
+//	Later usages of that word may then be replaced as long as
+//	the RHS hasn't changed value.
 //
 //*************************************************************************
 
@@ -44,7 +45,7 @@
 
 class SubstBaseVisitor : public AstNVisitor {
 public:
-    static int debug() { return 0; }
+    static int debug() { return V3Error::debugDefault(); }
 //    static int debug() { return 9; }
 };
 
@@ -52,14 +53,17 @@ public:
 // Class for each word of a multi-word variable
 
 class SubstVarWord {
-private:
+protected:
+    // MEMBERS
     AstNodeAssign*	m_assignp;	// Last assignment to each word of this var
+    int			m_step;		// Step number of last assignment
     bool		m_use;		// True if each word was consumed
     bool		m_complex;	// True if each word is complex
     friend class SubstVarEntry;
     // METHODS
     void clear() {
 	m_assignp = NULL;
+	m_step = 0;
 	m_use = false;
 	m_complex = false;
     }
@@ -69,6 +73,7 @@ private:
 // Class for every variable we may process
 
 class SubstVarEntry {
+    // MEMBERS
     AstVar*		m_varp;		// Variable this tracks
     bool		m_wordAssign;	// True if any word assignments
     bool		m_wordUse;	// True if any individual word usage
@@ -76,6 +81,7 @@ class SubstVarEntry {
     vector<SubstVarWord> m_words;	// Data for every word, if multi word variable
     int debug() { return SubstBaseVisitor::debug(); }
 public:
+    // CONSTRUCTORS
     SubstVarEntry (AstVar* varp) {	// Construction for when a var is used
 	m_varp = varp;
 	m_whole.m_use = false;
@@ -88,27 +94,34 @@ public:
 	}
     }
     ~SubstVarEntry() {}
-    bool wordNumOk(int word) {
+private:
+    // METHODS
+    bool wordNumOk(int word) const {
 	return word < m_varp->widthWords();
     }
-    AstNodeAssign* getWordAssignp(int word) {
+    AstNodeAssign* getWordAssignp(int word) const {
 	if (!wordNumOk(word)) return NULL;
 	else return m_words[word].m_assignp;
     }
-    void assignWhole (AstNodeAssign* assp) {
+public:
+    void assignWhole (int step, AstNodeAssign* assp) {
 	if (m_whole.m_assignp) m_whole.m_complex = true;
 	m_whole.m_assignp = assp;
+	m_whole.m_step = step;
     }
-    void assignWord (int word, AstNodeAssign* assp) {
+    void assignWord (int step, int word, AstNodeAssign* assp) {
 	if (!wordNumOk(word) || getWordAssignp(word) || m_words[word].m_complex) m_whole.m_complex = true;
 	m_wordAssign = true;
-	if (wordNumOk(word)) m_words[word].m_assignp = assp;
+	if (wordNumOk(word)) {
+	    m_words[word].m_assignp = assp;
+	    m_words[word].m_step = step;
+	}
     }
-    void assignWordComplex (int word) {
+    void assignWordComplex (int step, int word) {
 	if (!wordNumOk(word) || getWordAssignp(word) || m_words[word].m_complex) m_whole.m_complex = true;
 	m_words[word].m_complex = true;
     }
-    void assignComplex() {
+    void assignComplex(int step) {
 	m_whole.m_complex = true;
     }
     void consumeWhole() {  //==consumeComplex as we don't know the difference
@@ -138,6 +151,12 @@ public:
 	    return NULL;
 	}
     }
+    int getWholeStep() const {
+	return m_whole.m_step;
+    }
+    int getWordStep(int word) const {
+	if (!wordNumOk(word)) return 0; else return m_words[word].m_step;
+    }
     void deleteAssign (AstNodeAssign* nodep) {
 	UINFO(5, "Delete "<<nodep<<endl);
 	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
@@ -156,17 +175,66 @@ public:
 };
 
 //######################################################################
+// See if any variables have changed value since we determined subst value, as a visitor of each AstNode
+
+class SubstUseVisitor : public SubstBaseVisitor {
+private:
+    // NODE STATE
+    // See SubstVisitor
+    //
+    // STATE
+    int			m_origStep;	// Step number where subst was recorded
+    bool		m_ok;		// No misassignments found
+
+    // METHODS
+    SubstVarEntry* findEntryp(AstVarRef* nodep) {
+	return (SubstVarEntry*)(nodep->varp()->userp());  // Might be NULL
+    }
+    // VISITORS
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	SubstVarEntry* entryp = findEntryp (nodep);
+	if (entryp) {
+	    // Don't sweat it.  We assign a new temp variable for every new assignment,
+	    // so there's no way we'd ever replace a old value.
+	} else {
+	    // A simple variable; needs checking.
+	    if (m_origStep < nodep->varp()->user2()) {
+		if (m_ok) UINFO(9,"   RHS variable changed since subst recorded: "<<nodep<<endl);
+		m_ok = false;
+	    }
+	}
+    }
+    virtual void visit(AstConst* nodep, AstNUser*) {}	// Accelerate
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+public:
+    // CONSTUCTORS
+    SubstUseVisitor(AstNode* nodep, int origStep) {
+	UINFO(9, "        SubstUseVisitor "<<origStep<<" "<<nodep<<endl);
+	m_ok = true;
+	m_origStep = origStep;
+	nodep->accept(*this);
+    }
+    virtual ~SubstUseVisitor() {}
+    // METHODS
+    bool ok() const { return m_ok; }
+};
+
+//######################################################################
 // Subst state, as a visitor of each AstNode
 
 class SubstVisitor : public SubstBaseVisitor {
 private:
     // NODE STATE
-    // Passed to SubstElimVisitor
+    // Passed to SubstUseVisitor
     // AstVar::userp		-> SubstVar* for usage var, 0=not set yet
+    // AstVar::user2		-> int step number for last assignment, 0=not set yet
     //
     // STATE
     vector<SubstVarEntry*>	m_entryps;	// Nodes to delete when we are finished
     int				m_ops;		// Number of operators on assign rhs
+    int				m_assignStep;	// Assignment number to determine var lifetime
     V3Double0			m_statSubsts;	// Statistic tracking
 
     enum { SUBST_MAX_OPS_SUBST = 30,		// Maximum number of ops to substitute in
@@ -188,6 +256,7 @@ private:
     // VISITORS
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	m_ops = 0;
+	m_assignStep++;
 	nodep->rhsp()->iterateAndNext(*this);
 	bool hit=false;
 	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef()) {
@@ -196,10 +265,10 @@ private:
 		hit = true;
 		if (m_ops > SUBST_MAX_OPS_SUBST) {
 		    UINFO(8," ASSIGNtooDeep "<<varrefp<<endl);
-		    entryp->assignComplex();
+		    entryp->assignComplex(m_assignStep);
 		} else {
 		    UINFO(8," ASSIGNwhole "<<varrefp<<endl);
-		    entryp->assignWhole(nodep);
+		    entryp->assignWhole(m_assignStep, nodep);
 		}
 	    }
 	}
@@ -212,10 +281,10 @@ private:
 		    hit = true;
 		    if (m_ops > SUBST_MAX_OPS_SUBST) {
 			UINFO(8," ASSIGNtooDeep "<<varrefp<<endl);
-			entryp->assignWordComplex(word);
+			entryp->assignWordComplex(m_assignStep, word);
 		    } else {
 			UINFO(8," ASSIGNword"<<word<<" "<<varrefp<<endl);
-			entryp->assignWord(word, nodep);
+			entryp->assignWord(m_assignStep, word, nodep);
 		    }
 		}
 	    }
@@ -248,7 +317,13 @@ private:
 	    UINFO(8," USEword"<<word<<" "<<varrefp<<endl);
 	    SubstVarEntry* entryp = getEntryp(varrefp);
 	    if (AstNode* substp = entryp->substWord (nodep, word)) {
-		replaceSubstEtc(nodep, substp); nodep=NULL;
+		// Check that the RHS hasn't changed value since we recorded it.
+		SubstUseVisitor visitor (substp, entryp->getWordStep(word));
+		if (visitor.ok()) {
+		    replaceSubstEtc(nodep, substp); nodep=NULL;
+		} else {
+		    entryp->consumeWord(word);
+		}
 	    } else {
 		entryp->consumeWord(word);
 	    }
@@ -257,14 +332,27 @@ private:
 	}
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
+	// Any variable
+	if (nodep->lvalue()) {
+	    m_assignStep++;
+	    nodep->varp()->user2(m_assignStep);
+	    UINFO(9, " ASSIGNstep u2="<<nodep->varp()->user2()<<" "<<nodep<<endl);
+	}
 	if (nodep->varp()->isStatementTemp()) {
 	    SubstVarEntry* entryp = getEntryp (nodep);
 	    if (nodep->lvalue()) {
 		UINFO(8," ASSIGNcpx "<<nodep<<endl);
-		entryp->assignComplex();
+		entryp->assignComplex(m_assignStep);
 	    } else if (AstNode* substp = entryp->substWhole(nodep)) {
-		UINFO(8," USEwhole "<<nodep<<endl);
-		replaceSubstEtc(nodep, substp); nodep=NULL;
+		// Check that the RHS hasn't changed value since we recorded it.
+		SubstUseVisitor visitor (substp, entryp->getWholeStep());
+		if (visitor.ok()) {
+		    UINFO(8," USEwhole "<<nodep<<endl);
+		    replaceSubstEtc(nodep, substp); nodep=NULL;
+		} else {
+		    UINFO(8," USEwholeButChg "<<nodep<<endl);
+		    entryp->consumeWhole();
+		}
 	    } else {  // Consumed w/o substitute
 		UINFO(8," USEwtf   "<<nodep<<endl);
 		entryp->consumeWhole();
@@ -272,6 +360,7 @@ private:
 	}
     }
     virtual void visit(AstVar* nodep, AstNUser*) {}
+    virtual void visit(AstConst* nodep, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	m_ops++;
 	if (!nodep->isSubstOptimizable()) {
@@ -283,7 +372,9 @@ public:
     // CONSTUCTORS
     SubstVisitor(AstNode* nodep) {
 	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user2ClearTree();	// user2p() used on entire tree
 	m_ops = 0;
+	m_assignStep = 0;
 	nodep->accept(*this);
     }
     virtual ~SubstVisitor() {

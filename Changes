@@ -5,13 +5,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.62**
 
-**** Fix link error when using --exe with --trace.  [Eugene Weber]
-
-**** Public functions now allow > 64 bit arguments.
-
-**** Don't core dump on errors when not under --debug.  [Allan Cochrane]
+***  Public functions now allow > 64 bit arguments.
 
 **** Remove .vpp intermediate files when not under --debug.
+
+**** Fix link error when using --exe with --trace.  [Eugene Weber]
+
+**** Fix mis-optimization of wide concats with constants.
+
+**** Fix core dump on printing error when not under --debug.  [Allan Cochrane]
 
 * Verilator 3.620 10/04/2006
 
@@ -436,7 +438,7 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Added NC Verilog as alternative to VCS for reference tests.
 
 **** Support implicit wire declarations on input-only signals.
-     (Dangerous, as leads to wires without drivers, but allowed by spec.) 
+     (Dangerous, as leads to wires without drivers, but allowed by spec.)
 
 **** Fixed compile warnings on Suse 9.1
 
