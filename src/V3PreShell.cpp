@@ -79,6 +79,8 @@ protected:
 	ostream* osp;
 	if (v3Global.opt.preprocOnly()) {
 	    osp = &cout;
+	} else if (!v3Global.opt.keepTempFiles()) {  // Must match unlink rule in V3Read.cpp
+	    osp = ofp = V3File::new_ofstream_nodepend(vppFilename);
 	} else {
 	    osp = ofp = V3File::new_ofstream(vppFilename);
 	}

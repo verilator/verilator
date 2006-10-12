@@ -92,7 +92,7 @@ void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibr
 	lexFile (vppfilename, modfilename);
     }
 
-    if (!V3Error::debugDefault()) {
+    if (!v3Global.opt.keepTempFiles()) {  // Must match new_ofstream_nodepend rule in V3PreShell.cpp
 	unlink (vppfilename.c_str());
     }
 }

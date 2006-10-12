@@ -141,6 +141,7 @@ class V3Options {
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
     bool outFormatOk() const { return m_outFormatOk; }
+    bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
     bool pins64() const { return m_pins64; }
     bool profileCFuncs() const { return m_profileCFuncs; }
     bool psl() const { return m_psl; }

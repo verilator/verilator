@@ -42,6 +42,9 @@ public:
     }
     static ofstream* new_ofstream(const string& filename, bool append=false) {
 	addTgtDepend(filename);
+	return new_ofstream_nodepend (filename, append);
+    }
+    static ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
 	if (append) {
 	    return new ofstream(filename.c_str(), ios::app);
 	} else {
