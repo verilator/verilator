@@ -34,9 +34,12 @@ public:
     enum en {
 	SUPPRESS,	// Warning suppressed by user
 	FATAL,		// Kill the program
-	ERROR,		// Error out, can't suppress
+	ERROR,		// General error out, can't suppress
+	// Error codes:
+	TASKNSVAR,	// Error: Task I/O not simple
 	// Warning codes:
 	FIRST_WARN,	// Just a code so the program knows where to start warnings
+	//
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	CASEINCOMPLETE,	// Case statement has missing values
 	CASEOVERLAP,	// Case statements overlap
@@ -67,6 +70,7 @@ public:
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
 	    " SUPPRESS", " FATAL", " ERROR",
+	    "TASKNSVAR",
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
@@ -82,7 +86,7 @@ public:
     bool dangerous() const { return ( m_e==COMBDLY );};
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE );};
+    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE); };
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }

@@ -92,7 +92,7 @@ void FileLine::lineDirective(const char* textp) {
 
 bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code (msg.c_str());
-    if (code == V3ErrorCode::ERROR) {
+    if (code < V3ErrorCode::FIRST_WARN) {
 	return false;
     } else {
 	warnOff(code, flag);
@@ -203,8 +203,9 @@ void V3Error::abortIfErrors() {
 string V3Error::msgPrefix(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return "-arning-suppressed: ";
     else if (code==V3ErrorCode::FATAL) return "%Error: ";
-    else if (code==V3ErrorCode::ERROR
-	     || s_pretendError[code]) return "%Error: ";
+    else if (code==V3ErrorCode::ERROR) return "%Error: ";
+    else if (code<V3ErrorCode::FIRST_WARN
+	     || s_pretendError[code]) return "%Error-"+(string)code.ascii()+": ";
     else return "%Warning-"+(string)code.ascii()+": ";
 }
 

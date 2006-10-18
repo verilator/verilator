@@ -348,7 +348,7 @@ private:
 				AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
 				portp->user2p(localVscp);
 			    } else {
-				pinp->v3error("Unsupported: Function/task input argument is not simple variable");
+				pinp->v3warn(TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 			    }
 			}
 			else if (portp->isOutput() && outvscp) {
@@ -360,7 +360,7 @@ private:
 			    if (AstVarRef* varrefp = pinp->castVarRef()) {
 				varrefp->lvalue(true);
 			    } else {
-				pinp->v3error("Unsupported: Task output pin connected to non-variable");
+				pinp->v3warn(TASKNSVAR,"Unsupported: Task output pin connected to non-variable");
 			    }
 			    // Even if it's referencing a varref, we still make a temporary
 			    // Else task(x,x,x) might produce incorrect results
@@ -436,7 +436,7 @@ private:
 			    if (pinp->castVarRef()) {
 				// Connect to this exact variable
 			    } else {
-				pinp->v3error("Unsupported: Function/task input argument is not simple variable");
+				pinp->v3warn(TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 			    }
 			}
 			else if (portp->isOutput()) {
@@ -445,7 +445,7 @@ private:
 			    if (AstVarRef* varrefp = pinp->castVarRef()) {
 				varrefp->lvalue(true);
 			    } else {
-				pinp->v3error("Unsupported: Task output pin connected to non-variable");
+				pinp->v3warn(TASKNSVAR,"Unsupported: Task output pin connected to non-variable");
 			    }
 			}
 		    }

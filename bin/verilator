@@ -407,7 +407,7 @@ compatibility.
 
 =item --psl
 
-Enable PSL parsing.  Without this switch, psl meta-comments are ignored.
+Enable PSL parsing.  Without this switch, PSL meta-comments are ignored.
 See the --assert flag to enable all assertions, and --coverage-user to
 enable functional coverage.
 
@@ -609,7 +609,7 @@ Then we convert the SystemPerl output to SystemC.
     $SYSTEMPERL/sp_preproc --preproc *.sp
 
 (You can also skip the above sp_preproc by getting pure SystemC from
-verilator by replacing the verilator --sp flag in the previous step with
+Verilator by replacing the verilator --sp flag in the previous step with
 -sc.)
 
 We then can compile it
@@ -938,7 +938,7 @@ call C++ functions from your Verilog code.
 String arguments will be put directly into the output C++ code.  Expression
 arguments will have the code to evaluate the expression inserted.  Thus to
 call a C++ function, $c("func(",a,")") will result in 'func(a)' in the
-output C++ code.  For input arguments, rather then hardcoding variable
+output C++ code.  For input arguments, rather then hard-coding variable
 names in the string $c("func(a)"), instead pass the variable as an
 expression $c("func(",a,")").  This will allow the call to work inside
 Verilog functions where the variable is flattened out, and also enable
@@ -1363,6 +1363,29 @@ Verilator cannot schedule these variables correctly.
 Warns that the specified signal comes from multiple always blocks.  This is
 often unsupported by synthesis tools, and is considered bad style.  It will
 also cause longer runtimes due to reduced optimizations.
+
+=item TASKNSVAR
+
+Error when a call to a task or function has a output from that task tied to
+a non-simple signal.  Instead connect the task output to a temporary signal
+of the appropriate width, and use that signal to set the appropriate
+expression as the next statement.  For example:
+
+      task foo; output sig; ... endtask
+      always @* begin
+           foo(bus_we_select_from[2]);   // Will get TASKNSVAR error
+      end
+
+Change this to:
+
+      reg foo_temp_out;
+      always @* begin
+           foo(foo_temp_out);
+           bus_we_select_from[2] = foo_temp_out;
+      end
+
+Verilator doesn't do this conversion for you, as some more complicated
+cases would result in simulator mismatches.
 
 =item UNDRIVEN
 

@@ -39,7 +39,6 @@ module t (/*AUTOARG*/
 	    a <= 256'h0e17c88f3d5fe51a982646c8e2bd68c3e236ddfddddbdad20a48e039c9f395b8;
 	    divisor <= 61'h1238123771;
 	    a[60] <= 1'b0; divisor[60] <= 1'b0;  // Unsigned
-//$display("FIX");
 	    if (qq!==61'h00000403ad81c0da) $stop;
 	    if (rq!==61'h00000000000090ec) $stop;
 	    if (qqs!==61'h00000403ad81c0da) $stop;
