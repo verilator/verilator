@@ -1279,7 +1279,7 @@ appropriate width.
 $display and friends must have a constant format string as the first
 argument (as with C's printf), you cannot simply list variables standalone.
 
-=head1 ERRORS
+=head1 ERRORS AND WARNINGS
 
 Warnings may be disabled in two ways.  First, when the warning is
 printed it will include a warning code.  Simply surround the offending
@@ -1289,13 +1289,13 @@ line with a warn_off/warn_on pair:
 	if (`DEF_THAT_IS_EQ_ZERO <= 3) $stop;
 	// verilator lint_on UNSIGNED
 
-They may also be globally disabled by invoking Verilator with the
-C<-Wno-I<warning>> switch.  This should be avoided, as it removes
-all checking across the designs, and prevents other users from
-compiling your code without knowing the magic set of disables needed
-to successfully compile your design.
+Warnings may also be globally disabled by invoking Verilator with the
+C<-Wno-I<warning>> switch.  This should be avoided, as it removes all
+checking across the designs, and prevents other users from compiling your
+code without knowing the magic set of disables needed to successfully
+compile your design.
 
-Warnings:
+List of all warnings:
 
 =over 4
 
@@ -1389,11 +1389,11 @@ may be only one particular usage of a multiply instantiated block.  The
 construct should be cleaned up to improve runtime; two times better
 performance may be possible by fixing these warnings.
 
-Unlike UNOPT this occurs after netlist flattening, and indicates a more
-basic problem, as the less obvious case described under UNOPT does not
-apply.
+Unlike the UNOPT warning, this occurs after netlist flattening, and
+indicates a more basic problem, as the less obvious case described under
+UNOPT does not apply.
 
-Often this is caused by logic that isn't truly circular as viewed by
+Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
 synthesis which analyzes interconnection per-bit, but is circular to
 simulation which analyzes per-bus:
 
@@ -1401,12 +1401,25 @@ simulation which analyzes per-bus:
 
 This statement needs to be evaluated multiple times, as a change in
 "shift_in" requires "x" to be computed 3 times before it becomes stable.
-For significantly better performance, split this into 2 separate signals:
+For significantly better performance, split this into 2 separate signals,
+and then if necessary generate the original signal:
 
       wire [2:1] x_21 = x[1:0];
       wire [0:0] x_0  = shift_in;
+      wire [2:0] x = {x_21, x_0};
 
-This warning may also be due to clock enables.  To fix these, use the
+This logic needs to be evaluated only once.  These sort of changes may also
+speed up your traditional event driven simulator, as it will result in
+fewer events per cycle.
+
+The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
+being generated from an always statement that consumed high bits of the
+same bus processed by another series of always blocks.  The fix is the
+same; split it into two separate signals, then create the bus from the two
+separate signals.
+
+The UNOPTFLAT warning may also be due to clock enables, identified from the
+reported path going through a clock gating cell.  To fix these, use the
 clock_enable meta comment described above.
 
 =item UNSIGNED
@@ -1464,8 +1477,8 @@ that is not yet supported in Verilator.  See the Limitations chapter.
 =item Verilated model didn't converge
 
 Verilator sometimes has to evaluate combinatorial logic multiple times,
-usually around code where a UNOPT warning was issued, but disabled.  For
-example:
+usually around code where a UNOPTFLAT warning was issued, but disabled.
+For example:
 
    always @ (a)  b=~a;
    always @ (b)  a=b

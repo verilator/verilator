@@ -21,6 +21,9 @@ CPPFLAGS += -DUTIL_PRINTF=sp_log_printf
 CPPFLAGS += -Wno-deprecated
 CPPFLAGS += $(SYSTEMC_CXX_FLAGS)
 CPPFLAGS += $(OPT)
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+CPPFLAGS += -W -Wall -Wno-char-subscripts -Wno-unused-parameter -Wno-unused-variable -Wno-uninitialized -Werror
+endif
 
 LDFLAGS += $(SYSTEMC_CXX_FLAGS)
 

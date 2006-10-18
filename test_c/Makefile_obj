@@ -20,8 +20,8 @@ include Vtop.mk
 CPPFLAGS += -DVL_DEBUG=1
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 CPPFLAGS += -DVL_THREADED=1
-CPPFLAGS += -W
-CPPFLAGS += -Werror
+CPPFLAGS += -W -Werror -Wall
+#CPPFLAGS += -Wno-unused-variable	# Instead, add VL_ATTR_UNUSED in gen'ed code
 #CPPFLAGS += -pedantic-errors
 endif
 
