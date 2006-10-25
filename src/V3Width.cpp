@@ -144,12 +144,15 @@ private:
     virtual void visit(AstMul* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstMulS* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
 
-    // Widths: out width = lhs width
-    void width_Olhs_L(AstNode* nodep, AstNUser* vup);
+    // Widths: out width = lhs width, but upper matters
+    void width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup);
     virtual void visit(AstNot* nodep, AstNUser* vup) {		width_Olhs_L(nodep,vup); }
     virtual void visit(AstUnaryMin* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
-    virtual void visit(AstSigned* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
-    virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
+
+    // Widths: out width = lhs width, upper doesn't matter
+    void width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup);
+    virtual void visit(AstSigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
+    virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
 
     // Widths: Output width from lhs, rhs<33 bits
     void width_Olhs_L_R32(AstNode* nodep, AstNUser* vup);
@@ -924,19 +927,36 @@ void WidthVisitor::width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup) {
     }
 }
 
-void WidthVisitor::width_Olhs_L(AstNode* nodep, AstNUser* vup) {
+void WidthVisitor::width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup) {
     // Widths: out width = lhs width
     // "Interim results shall take the max of operands, including LHS of assignments"
     if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
     if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
     }
-    int width  = max(vup->c()->width(),    nodep->op1p()->width());
-    int ewidth = max(vup->c()->widthMin(), nodep->op1p()->widthMin());
+    int width  = max(vup->c()->width(),    nodep->lhsp()->width());
+    int ewidth = max(vup->c()->widthMin(), nodep->lhsp()->widthMin());
     nodep->width(width,ewidth);
     if (vup->c()->final()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
+    }
+}
+
+void WidthVisitor::width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup) {
+    // Widths: out width = lhs width
+    // It always comes exactly from LHS; ignores any upper operand
+    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+    if (vup->c()->prelim()) {
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+    }
+    int width  = nodep->lhsp()->width();
+    int ewidth = nodep->lhsp()->width();  // Not minWidth; force it.
+    nodep->width(width,ewidth);
+    if (vup->c()->final()) {
+	// Final call, so make sure children check their sizes
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
     }
 }
 

@@ -1424,22 +1424,28 @@ simulation which analyzes per-bus:
 
 This statement needs to be evaluated multiple times, as a change in
 "shift_in" requires "x" to be computed 3 times before it becomes stable.
-For significantly better performance, split this into 2 separate signals,
-and then if necessary generate the original signal:
+This is because a change in "x" requires "x" itself to change value, which
+causes the warning.
 
-      wire [2:1] x_21 = x[1:0];
-      wire [0:0] x_0  = shift_in;
-      wire [2:0] x = {x_21, x_0};
+For significantly better performance, split this into 2 separate signals:
 
-This logic needs to be evaluated only once.  These sort of changes may also
-speed up your traditional event driven simulator, as it will result in
-fewer events per cycle.
+      wire [2:0] xout = {x[1:0],shift_in};
+
+and change all receiving logic to instead receive "xout".  Alternatively,
+change it to
+
+      wire [2:0] x = {xin[1:0],shift_in};
+
+and change all driving logic to instead drive "xin".
+
+With this change this assignment needs to be evaluated only once.  These
+sort of changes may also speed up your traditional event driven simulator,
+as it will result in fewer events per cycle.
 
 The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
-same; split it into two separate signals, then create the bus from the two
-separate signals.
+same; split it into two separate signals generated from each block.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the
