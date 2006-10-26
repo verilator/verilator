@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.6**
 
-***  Add --output-split-cfuncs for accelerating GCC. [Eugene Weber]
+***  Add --output-split-cfuncs for accelerating GCC compile. [Eugene Weber]
 
 **** Fix $signed mis-extending when input has a WIDTH violation. [Eugene Weber]
 

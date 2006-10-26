@@ -364,8 +364,7 @@ private:
 		// Move statements to if
 		m_lastIfp->addIfsp(stmtsp);
 	    } else if (nodep->hasSettle()) {
-		// Settlement
-		clearLastSen();
+		// Don't need to: clearLastSen();, as we're adding it to different cfunc
 		// Move statements to function
 		addToSettleLoop(stmtsp);
 	    } else {
