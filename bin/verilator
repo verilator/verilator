@@ -377,8 +377,17 @@ C++ file exceeds the specified number of operations, a new file will be
 created.  In addition, any slow routines will be placed into __Slow files.
 This accelerates compilation by as optimization can be disabled on the slow
 routines, and the remaining files can be compiled on parallel machines.
+Using --output-split should have only a trivial impact on performance.
 With GCC 3.3 on a 2GHz Opteron, --output-split 20000 will result in
 splitting into approximately one-minute-compile chunks.
+
+=item --output-split-cfuncs I<statements>
+
+Enables splitting functions in the output .cpp/.sp files into multiple
+functions.  When a generated function exceeds the specified number of
+operations, a new function will be created.  With --output-split, this will
+enable GCC to compile faster, at a small loss in performance that increases
+with smaller statement values.
 
 =item --pins64
 

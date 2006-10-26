@@ -271,6 +271,7 @@ private:
     vector<OrderLoopEndVertex*> m_pmlLoopEndps;	// processInsLoop: End vertex for each color
     vector<OrderLoopBeginVertex*> m_pomLoopMoveps;// processMoveLoop: Loops next nodes are under
     AstCFunc*			m_pomNewFuncp;	// Current function being created
+    int				m_pomNewStmts;	// Statements in function being created
     V3Graph			m_pomGraph;	// Graph of logic elements to move
     V3List<OrderMoveVertex*>	m_pomWaiting;	// List of nodes needing inputs to become ready
 protected:
@@ -688,6 +689,7 @@ public:
 	m_settleVxp = NULL;
 	m_inputsVxp = NULL;
 	m_loopIdMax = LOOPID_FIRST;
+	m_pomNewStmts = 0;
 	if (debug()) m_graph.debug(5); // 3 is default if global debug; we want acyc debugging
     }
     virtual ~OrderVisitor() {
@@ -1374,8 +1376,10 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     }
     else {  // Normal logic
 	// Make or borrow a CFunc to contain the new statements
-	if (v3Global.opt.profileCFuncs()) {
-	    // Put every statement into a unique function to ease profiling
+	if (v3Global.opt.profileCFuncs()
+	    || (v3Global.opt.outputSplitCFuncs()
+		&& v3Global.opt.outputSplitCFuncs() < m_pomNewStmts)) {
+	    // Put every statement into a unique function to ease profiling or reduce function size
 	    m_pomNewFuncp = NULL;
 	}
 	if (!m_pomNewFuncp && domainp != m_deleteDomainp) {
@@ -1383,6 +1387,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    m_pomNewFuncp = new AstCFunc(nodep->fileline(), name, scopep);
 	    m_pomNewFuncp->argTypes(EmitCBaseVisitor::symClassVar());
 	    m_pomNewFuncp->symProlog(true);
+	    m_pomNewStmts = 0;
 	    if (domainp->hasInitial() || domainp->hasSettle()) m_pomNewFuncp->slow(true);
 	    scopep->addActivep(m_pomNewFuncp);
 	    // Where will we be adding the call?
@@ -1402,6 +1407,11 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    pushDeletep(nodep); nodep=NULL;
 	} else {
 	    m_pomNewFuncp->addStmtsp(nodep);
+	    if (v3Global.opt.outputSplitCFuncs()) {
+		// Add in the number of nodes we're adding
+		EmitCBaseCounterVisitor visitor(nodep);
+		m_pomNewStmts += visitor.count();
+	    }
 	}
     }
     processMoveDoneOne (vertexp);
