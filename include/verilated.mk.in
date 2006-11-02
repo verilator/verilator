@@ -48,6 +48,9 @@ VPATH += $(VERILATOR_ROOT)/include
 #OPT = -ggdb -DPRINTINITSTR
 CPPFLAGS += $(OPT)
 
+CPPFLAGS += $(M32)
+LDFLAGS += $(M32)
+
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.
 # SystemC takes minutes to optimize, thus it is off by default.

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix $signed mis-extending when input has a WIDTH violation. [Eugene Weber]
 
+**** Add M32 make variable to support -m32 compiles.  [Eugene Weber]
+
 * Verilator 3.622 10/17/2006 Stable
 
 **** Fix --skip-identical without --debug, broken in 3.621.  [Andy Meier]
