@@ -76,8 +76,8 @@ public:
 	m_activityCodeValid = false;
 	m_slow = slow;
     }
-    enum { ACTIVITY_NEVER=(1UL<<31) };
-    enum { ACTIVITY_ALWAYS=-1 };
+    enum { ACTIVITY_NEVER =((1UL<<31) - 1) };
+    enum { ACTIVITY_ALWAYS=((1UL<<31) - 2) };
     enum { ACTIVITY_SLOW=0 };
     class ActivityAlways {};
     TraceActivityVertex(V3Graph* graphp, vlsint32_t code)
