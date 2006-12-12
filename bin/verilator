@@ -1626,6 +1626,12 @@ complex, since Verilator emits standard C++ code, you can simply write your
 own C++ routines that can access and modify signal values without needing
 any PLI interface code, and call it with $c("{any_c++_statement}").
 
+=item How do I make a Verilog module that contain a C++ object?
+
+You need to add the object to the structure that Verilator creates, then
+use $c to call a method inside your object.  The
+test_regress/t/t_extend_class files show an example of how to do this.
+
 =item How do I get faster build times?
 
 Between GCC 3.0 to 3.3, each compiled progressively slower, thus if you can

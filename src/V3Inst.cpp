@@ -200,7 +200,7 @@ private:
     }
 
     // Save some time
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
+    virtual void visit(AstNodeMath*, AstNUser*) {}
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep, AstNUser*) {

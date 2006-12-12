@@ -353,8 +353,11 @@ private:
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(5,"   CELL under "<<m_scope<<" is "<<nodep<<endl);
+	// Process XREFs inside pins
+	nodep->iterateChildren(*this);
 	// Recurse in, preserving state
 	string oldscope = m_scope;
+	AstBegin* oldbeginp = m_beginp;
 	LinkDotCellVertex* oldVxp = m_cellVxp;
 	// Where do we add it?
 	LinkDotBaseVertex* aboveVxp = m_cellVxp;
@@ -371,9 +374,11 @@ private:
 	    m_scope = m_scope+"."+nodep->name();
 	    m_cellVxp = m_statep->insertCell(aboveVxp, m_cellVxp, nodep, m_scope);
 	    m_inlineVxp = m_cellVxp;
+	    m_beginp = NULL;
 	    if (nodep->modp()) nodep->modp()->accept(*this);
 	}
 	m_scope = oldscope;
+	m_beginp = oldbeginp;
 	m_cellVxp = oldVxp;
 	m_inlineVxp = m_cellVxp;
     }
@@ -407,6 +412,8 @@ private:
 	    && !m_beginp	// For now, we don't support xrefs into begin blocks
 	    && !nodep->isFuncLocal()) {
 	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	} else {
+	    UINFO(9,"       Not allowing dot refs to: "<<nodep<<endl);
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
@@ -418,7 +425,7 @@ private:
     }
 
     // For speed, don't recurse things that can't have cells
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
+    // Note we allow AstNodeStmt's as generates may be under them
     virtual void visit(AstNodeMath*, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
@@ -479,9 +486,9 @@ private:
 	nodep->iterateChildren(*this);
     }
     // For speed, don't recurse things that can't have scope
+    // Note we allow AstNodeStmt's as generates may be under them
     virtual void visit(AstCell*, AstNUser*) {}
     virtual void visit(AstVar*, AstNUser*) {}
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
     virtual void visit(AstNodeMath*, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
