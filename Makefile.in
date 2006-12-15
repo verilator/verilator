@@ -270,7 +270,7 @@ IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \
 	*.in */*.in */*.in
 
 ${srcdir}/config.h.in: stamp-h.in
-${srcdir}/stamp-h.in: configure.in $(wildcard $(IN_WILD))
+${srcdir}/stamp-h.in: configure.ac $(wildcard $(IN_WILD))
 	cd ${srcdir} && autoheader
 	echo timestamp > ${srcdir}/stamp-h.in
 config.h: stamp-h
@@ -282,7 +282,7 @@ src/Makefile: src/Makefile.in config.status
 	./config.status
 config.status: configure
 	./config.status --recheck
-configure: configure.in
+configure: configure.ac
 	autoconf
 
 maintainer-clean::
