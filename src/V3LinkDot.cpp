@@ -81,6 +81,26 @@ public:
 	}
 	return NULL;
     }
+    void errorScopes(AstNode* nodep) {
+	if (!this) {  // Silence if we messed it up and aren't debugging
+	    if (debug()) nodep->v3fatalSrc("Void pointer; perhaps used null vxp instead of okVxp?");
+	    return;
+	}
+	{
+	    string scopes;
+	    for (NameVtxMap::iterator it = m_nameToVtxMap.begin(); it!=m_nameToVtxMap.end(); ++it) {
+		if (scopes != "") scopes += ", ";
+		scopes += it->second->cellName();
+	    }
+	    cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<cellName()<<"': "
+		<<scopes<<endl;
+	}
+	if (debug()) {
+	    for (NameVtxMap::iterator it = m_nameToVtxMap.begin(); it!=m_nameToVtxMap.end(); ++it) {
+		UINFO(1,"\t\t      KnownScope: "<<it->second->name()<<endl);
+	    }
+	}
+    }
 };
 
 class LinkDotCellVertex : public LinkDotBaseVertex {
@@ -225,12 +245,14 @@ private:
 	return NULL;
     }
 public:
-    LinkDotBaseVertex* findDotted(LinkDotBaseVertex* cellVxp, const string& dotname, string& baddot) {
+    LinkDotBaseVertex* findDotted(LinkDotBaseVertex* cellVxp, const string& dotname,
+				  string& baddot, LinkDotBaseVertex*& okVxp) {
 	// Given a dotted hiearchy name, return where in scope it is
 	// Note when dotname=="" we just fall through and return cellVxp
 	UINFO(8,"    dottedFind "<<dotname<<endl);
 	bool firstId = true;
 	string leftname = dotname;
+	okVxp = cellVxp;  // So can list bad scopes
 	while (leftname != "") {  // foreach dotted part of xref name
 	    string::size_type pos;
 	    string ident;
@@ -242,6 +264,7 @@ public:
 		leftname = "";
 	    }
 	    baddot = ident;   // So user can see where they botched it
+	    okVxp = cellVxp;
 	    string altIdent = "";
 	    if (m_forPrearray) {
 		// Cell foo__[array] before we've expanded arrays is just foo.
@@ -367,7 +390,8 @@ private:
 	    // Flattened, find what CellInline it should live under
 	    string scope = origname.substr(0,pos);
 	    string baddot;
-	    aboveVxp = m_statep->findDotted(aboveVxp, scope, baddot);
+	    LinkDotBaseVertex* okVxp;
+	    aboveVxp = m_statep->findDotted(aboveVxp, scope, baddot, okVxp);
 	    if (!aboveVxp) nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
 	}
 	{
@@ -392,7 +416,8 @@ private:
 	    string dotted = dottedname.substr(0, pos);
 	    string ident  = dottedname.substr(pos+strlen("__DOT__"));
 	    string baddot;
-	    aboveVxp = m_statep->findDotted(aboveVxp, dotted, baddot);
+	    LinkDotBaseVertex* okVxp;
+	    aboveVxp = m_statep->findDotted(aboveVxp, dotted, baddot, okVxp);
 	    if (!aboveVxp) nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
 	    m_statep->insertInline(aboveVxp, m_cellVxp, nodep, ident);
 	} else {  // No __DOT__, just directly underneath
@@ -551,13 +576,14 @@ private:
 	    nodep->varp(NULL);  // Module that is not in hiearchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
+	    LinkDotBaseVertex* okVxp;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::prettyName(nodep->inlinedDots());
-		dotVxp = m_statep->findDotted(dotVxp, inl, baddot);
+		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
 		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 	    }
-	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot); // Maybe NULL
+	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot, okVxp); // Maybe NULL
 	    if (!m_statep->forScopeCreation()) {
 		AstVar* varp = (m_statep->findSym(dotVxp, nodep->name(), baddot)
 				->castVar());  // maybe NULL
@@ -565,6 +591,7 @@ private:
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
 		if (!nodep->varp()) {
 		    nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
+		    okVxp->errorScopes(nodep);
 		}
 	    } else {
 		string baddot;
@@ -572,6 +599,7 @@ private:
 				     ->castVarScope());  // maybe NULL
 		if (!vscp) {
 		    nodep->v3error("Can't find varpin scope of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
+		    okVxp->errorScopes(nodep);
 		} else {
 		    while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
 			UINFO(7,"         Resolved pre-alias "<<vscp<<endl);  // Also prints taskp
@@ -595,14 +623,15 @@ private:
 	    nodep->taskp(NULL);  // Module that is not in hiearchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
+	    LinkDotBaseVertex* okVxp;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::prettyName(nodep->inlinedDots());
 		UINFO(8,"\t\tInlined "<<inl<<endl);
-		dotVxp = m_statep->findDotted(dotVxp, inl, baddot);
+		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
 		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 	    }
-	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot); // Maybe NULL
+	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot, okVxp); // Maybe NULL
 
 	    AstNodeFTask* taskp = (m_statep->findSym(dotVxp, nodep->name(), baddot)
 				   ->castNodeFTask()); // maybe NULL
@@ -610,6 +639,7 @@ private:
 	    UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
 	    if (!nodep->taskp()) {
 		nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted task/function: "<<nodep->dotted()+"."+nodep->prettyName());
+		okVxp->errorScopes(nodep);
 	    }
 	}
 	nodep->iterateChildren(*this);
