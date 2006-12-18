@@ -12,18 +12,21 @@
 #
 #****************************************************************************/
 
+default: test_default
+
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 
-PERL = perl
+# Pick up PERL and other variable settings
+include $(VERILATOR_ROOT)/include/verilated.mk
 
 DEBUG_ON = --debug
 
 ######################################################################
-default:  precopy prep        preproc compile run
-debug:    precopy prep_dbg    preproc compile run
-nopublic: precopy prep_dbg_np preproc compile run
+test_default:  precopy prep        preproc compile run
+test_debug:    precopy prep_dbg    preproc compile run
+test_nopublic: precopy prep_dbg_np preproc compile run
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --sc $(V_FLAGS) top.v

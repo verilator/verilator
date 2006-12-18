@@ -85,7 +85,7 @@ module example (/*AUTOARG*/
    input [5:0] 	 LowMaskSel_Bot, HighMaskSel_Bot;
    output [63:0] LogicImm;
 
-   output [63:0] 	 LowLogicImm, HighLogicImm; //FIX
+   output [63:0] 	 LowLogicImm, HighLogicImm;
 
 
    wire [63:0] 	 LowLogicImm, HighLogicImm;

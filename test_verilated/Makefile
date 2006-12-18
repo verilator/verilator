@@ -12,10 +12,14 @@
 #
 #****************************************************************************/
 
+default: test
+
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
-PERL = perl
+
+# Pick up PERL and other variable settings
+include $(VERILATOR_ROOT)/include/verilated.mk
 
 VERILATOR_SW += 
 ifeq ($(VERILATOR_NO_DEBUG),)

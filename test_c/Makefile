@@ -12,20 +12,23 @@
 #
 #****************************************************************************/
 
+default: test_default
+
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 
-PERL = perl
+# Pick up PERL and other variable settings
+include $(VERILATOR_ROOT)/include/verilated.mk
 
 DEBUG_ON = --debug --trace-dups 
 #DEBUG = $(DEBUG_ON)
 VALGRIND_ON = $(DEBUG_ON) --gdb "valgrind -v --leak-check=yes"
 
 ######################################################################
-default: prep compile run
-debug:   prep_dbg compile run
-valgrind:   prep_vg compile run
+test_default:   prep     compile run
+test_debug:     prep_dbg compile run
+test_valgrind:  prep_vg  compile run
 
 VERILATOR_FLAGS = --cc -f $(VERILATOR_ROOT)/test_v/input.vc top.v
 #Note turning on traces requires SystemPerl to be installed

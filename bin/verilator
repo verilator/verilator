@@ -879,6 +879,10 @@ disadvantage of this approach is that include/verilatedos.h must
 self-detect the requirements of the target system, rather then using
 configure.
 
+The target system may also require edits to the Makefiles, the simple
+Makefiles produced by Verilator presume the target system is the same type
+as the build system.
+
 =head1 VERILOG 2001 SUPPORT
 
 Verilator supports the more common Verilog 2001 language features.  This

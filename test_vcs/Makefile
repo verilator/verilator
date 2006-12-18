@@ -12,16 +12,20 @@
 #
 #****************************************************************************/
 
+default: test
+
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
+
+# Pick up PERL and other variable settings
+include $(VERILATOR_ROOT)/include/verilated.mk
 
 ######################################################################
 
 V_FILES := $(wildcard *.v ../test_v/*.v)
 
 ######################################################################
-default: test
 
 ifneq ($(VCS_HOME),)
 test::	vcs
