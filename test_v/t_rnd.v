@@ -56,7 +56,3 @@ module t_rnd(/*AUTOARG*/
    // verilator lint_on  UNUSED
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

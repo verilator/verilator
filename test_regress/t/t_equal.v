@@ -1,18 +1,15 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_equal(/*AUTOARG*/
-   // Outputs
-   passed, 
+module t (/*AUTOARG*/
    // Inputs
    clk
    );
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
 
    integer _mode;
    
@@ -61,13 +58,9 @@ module t_equal(/*AUTOARG*/
 	    $write("Guard error %x %x %x %x %x\n",_guard1,_guard2,_guard3,_guard4,_guard5);
 	    $stop;
 	 end
-	 $write("[%0t] t_equal: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

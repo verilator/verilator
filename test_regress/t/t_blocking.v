@@ -1,19 +1,15 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_blocking(/*AUTOARG*/
-   // Outputs
-   passed, 
+module t (/*AUTOARG*/
    // Inputs
-   clk, reset_l
+   clk
    );
 
    input clk;
-   input reset_l;
-   output passed;  reg passed; initial passed = 0;
 
    integer _mode;  initial _mode=0;
    reg [7:0] a;
@@ -28,10 +24,9 @@ module t_blocking(/*AUTOARG*/
    // surefire lint_off STMINI
    // surefire lint_off NBAJAM
 
-   always @ (posedge clk or negedge reset_l) begin	// filp-flops with asynchronous reset
-      if (!reset_l) begin
+   always @ (posedge clk) begin	// filp-flops with asynchronous reset
+      if (0) begin
 	 _mode <= 0;
-	 passed <= 0;
       end
       else begin
 	 _mode <= _mode + 1;
@@ -42,7 +37,6 @@ module t_blocking(/*AUTOARG*/
 	    c <= 8'd0;
 	 end
 	 else if (_mode==1) begin
-	    $write("[%0t] t_blocking: Running\n", $time);
 	    if (a !== 8'd0) $stop;
 	    if (b !== 8'd0) $stop;
 	    if (c !== 8'd0) $stop;
@@ -54,7 +48,6 @@ module t_blocking(/*AUTOARG*/
 	    if (c !== 8'd0) $stop;
 	 end
 	 else if (_mode==2) begin
-	    $write("[%0t] t_blocking: Running\n", $time);
 	    if (a !== 8'd0) $stop;
 	    if (b !== 8'd1) $stop;
 	    if (c !== 8'd0) $stop;
@@ -73,7 +66,8 @@ module t_blocking(/*AUTOARG*/
 	 else if (_mode==4) begin
 	    if (mode_d3r != 8'd1) $stop;
 	    $write("[%0t] t_blocking: Passed\n", $time);
-	    passed <= 1'b1;
+	    $write("*-* All Finished *-*\n");
+	    $finish;
 	 end
       end
    end
@@ -101,7 +95,3 @@ module t_blocking(/*AUTOARG*/
    end
    
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

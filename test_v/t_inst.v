@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -127,7 +127,3 @@ module t_inst(/*AUTOARG*/
    wire _unused_ok = |{1'b1, r_wide0, r_wide1,r_wide2,r_wide3,r_wide};
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

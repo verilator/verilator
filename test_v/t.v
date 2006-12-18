@@ -33,11 +33,7 @@ module t (/*AUTOARG*/
       // Inputs
       .clk				(clk));
    assign passedv[2] = 1'b1;
-   t_equal tequal
-     (.passed		(passedv[3]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk));
+   assign passedv[3] = 1'b1;
    assign passedv[4] = 1'b1;
    t_initial tinitial
      (.passed		(passedv[5]),
@@ -65,12 +61,7 @@ module t (/*AUTOARG*/
       /*AUTOINST*/
       // Inputs
       .clk				(clk));
-   t_blocking tblocking
-     (.passed		(passedv[10]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk),
-      .reset_l				(reset_l));
+   assign passedv[10] = 1'b1;
    t_clk tclk
      (.passed		(passedv[11]),
       /*AUTOINST*/
@@ -111,7 +102,3 @@ module t (/*AUTOARG*/
       .fastclk				(fastclk));
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

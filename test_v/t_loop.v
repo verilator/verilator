@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -60,7 +60,3 @@ module t_loop (/*AUTOARG*/
    end
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

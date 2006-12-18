@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -36,7 +36,3 @@ module t_inst_b (/*AUTOARG*/
    wire       o_com = ~i_com;
 
 endmodule
-
-// Local Variables:
-// compile-seqmand: "./vlint t_inst_b.v"
-// End:

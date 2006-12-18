@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -20,7 +20,3 @@ module t_param_b (/*AUTOARG*/
    wire [X:0] 	varwidth = (FIVE==5)?TWO:0;
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -23,7 +23,3 @@ module t_clk_flop (/*AUTOARG*/
    always @ (posedge clk) q<=a;
    always @ (posedge clk2) q2<=a;
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

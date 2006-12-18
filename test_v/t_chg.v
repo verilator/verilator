@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -73,7 +73,3 @@ module t_chg_a (/*AUTOARG*/
    input [31:0] c;   output [31:0] c_p1;  wire [31:0] c_p1 = c + 1;
    input [31:0] d;   output [31:0] d_p1;  wire [31:0] d_p1 = d + 1;
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:
