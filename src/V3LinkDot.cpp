@@ -90,7 +90,7 @@ public:
 	    string scopes;
 	    for (NameVtxMap::iterator it = m_nameToVtxMap.begin(); it!=m_nameToVtxMap.end(); ++it) {
 		if (scopes != "") scopes += ", ";
-		scopes += it->second->cellName();
+		scopes += AstNode::prettyName(it->second->cellName());
 	    }
 	    cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<cellName()<<"': "
 		<<scopes<<endl;
@@ -143,6 +143,27 @@ public:
     virtual string cellName() const { return m_basename; }
     virtual string name() const { return (string)("INL C:")+cellName()+" M:"+modName()+" P:"+symPrefix(); }
     virtual string dotColor() const { return "yellow"; }
+};
+
+class LinkDotBeginVertex : public LinkDotBaseVertex {
+    // A fake point in the hierarchy, corresponding to a begin block
+    // After we remove begins these will go away
+    // Note we use the symbol table of the parent, as we want to find variables there
+    // However, cells walk the graph, so cells will appear under the begin itself
+    AstBegin*	m_nodep; 		// Relevant node
+    LinkDotCellVertex* m_symVxp;	// Above cell so we can find real symbol table
+    //					// (Could walk graph to find it, but that's much slower.)
+public:
+    LinkDotBeginVertex(V3Graph* graphp, AstBegin* nodep, LinkDotCellVertex* symVxp)
+	: LinkDotBaseVertex(graphp, nodep->name()+"__DOT__")
+	, m_nodep(nodep), m_symVxp(symVxp) {}
+    virtual ~LinkDotBeginVertex() {}
+    // Search up through tree to find the real symbol table.
+    virtual V3SymTable& syms() { return m_symVxp->syms(); }
+    virtual string modName() const { return m_nodep->name(); }
+    virtual string cellName() const { return m_nodep->name(); }
+    virtual string name() const { return (string)("BEG C:")+cellName(); }
+    virtual string dotColor() const { return "blue"; }
 };
 
 //######################################################################
@@ -212,6 +233,14 @@ public:
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
 	    cellVxp->insertSubcellName(nodep->name(), vxp);
 	}
+	return vxp;
+    }
+    LinkDotBeginVertex* insertBegin(LinkDotBaseVertex* abovep, LinkDotCellVertex* cellVxp,
+				    AstBegin* nodep) {
+	UINFO(9,"      INSERTbeg "<<nodep<<endl);
+	LinkDotBeginVertex* vxp = new LinkDotBeginVertex(&m_graph, nodep, cellVxp);
+	new V3GraphEdge(&m_graph, abovep, vxp, 1, false);
+	abovep->insertSubcellName(nodep->name(), vxp);
 	return vxp;
     }
     void insertSym(LinkDotCellVertex* abovep, const string& name, AstNode* nodep) {
@@ -382,8 +411,9 @@ private:
 	string oldscope = m_scope;
 	AstBegin* oldbeginp = m_beginp;
 	LinkDotCellVertex* oldVxp = m_cellVxp;
+	LinkDotBaseVertex* oldInlineVxp = m_inlineVxp;
 	// Where do we add it?
-	LinkDotBaseVertex* aboveVxp = m_cellVxp;
+	LinkDotBaseVertex* aboveVxp = m_inlineVxp;
 	string origname = nodep->prettyName();
 	string::size_type pos;
 	if ((pos = origname.rfind(".")) != string::npos) {
@@ -404,7 +434,7 @@ private:
 	m_scope = oldscope;
 	m_beginp = oldbeginp;
 	m_cellVxp = oldVxp;
-	m_inlineVxp = m_cellVxp;
+	m_inlineVxp = oldInlineVxp;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	UINFO(5,"   CELLINLINE under "<<m_scope<<" is "<<nodep<<endl);
@@ -426,10 +456,16 @@ private:
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
-	// We don't pickup variables, but do need to find cells
 	AstBegin* oldbegin = m_beginp;
-	m_beginp = nodep;
-	nodep->iterateChildren(*this);
+	LinkDotBaseVertex* oldVxp = m_inlineVxp;
+	{
+	    m_beginp = nodep;
+	    // Ignore begin names
+	    m_inlineVxp = m_statep->insertBegin(m_inlineVxp, m_cellVxp, nodep);
+	    // We don't pickup variables, but do need to find cells
+	    nodep->iterateChildren(*this);
+	}
+	m_inlineVxp = oldVxp;
 	m_beginp = oldbegin;
     }
     virtual void visit(AstVar* nodep, AstNUser*) {

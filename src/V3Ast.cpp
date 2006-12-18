@@ -98,6 +98,12 @@ string AstNode::prettyName(const string& namein) {
     while ((pos=pretty.find("__DOT__")) != string::npos) {
 	pretty.replace(pos, 7, ".");
     }
+    while ((pos=pretty.find("__BRA__")) != string::npos) {
+	pretty.replace(pos, 7, "[");
+    }
+    while ((pos=pretty.find("__KET__")) != string::npos) {
+	pretty.replace(pos, 7, "]");
+    }
     while ((pos=pretty.find("__PVT__")) != string::npos) {
 	pretty.replace(pos, 7, "");
     }

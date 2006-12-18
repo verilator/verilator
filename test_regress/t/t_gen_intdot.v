@@ -38,6 +38,14 @@ module t (/*AUTOARG*/
       end
    end
 
+//`define WAVES
+`ifdef WAVES
+   initial begin
+      $dumpfile("obj_dir/t_gen_intdot.vcd");
+      $dumpvars(12, t);
+   end
+`endif
+
 endmodule
 
 module Generate (clk, value, result);
@@ -82,12 +90,22 @@ module Genit (clk, value, result);
    genvar i;
    generate
       for (i = 0; i < 1; i = i + 1)
-	begin : gen
-	   Test t (clk, value, result);
+	begin : foo
+	   Test tt (clk, value, result);
 	end
    endgenerate
 `else
-   Test t (clk, value, result);
+   Test tt (clk, value, result);
 `endif
+
+`ifdef verilator
+   wire Result2 = t.g.genblk.foo__0.tt.gen.Internal;
+`else
+   wire Result2 = t.g.foo[0].tt.gen.Internal;  // Works - Do not change!
+`endif
+   always @ (posedge clk) begin
+      $write("[%0t] Result2 = %x\n", $time, Result2);
+   end
+
 endmodule
 
