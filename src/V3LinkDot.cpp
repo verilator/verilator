@@ -29,7 +29,8 @@
 //		Find appropriate named cell and link to var they reference
 //*************************************************************************
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>

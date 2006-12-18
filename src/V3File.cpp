@@ -19,7 +19,8 @@
 //
 //*************************************************************************
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include <stdarg.h>
 #include <sys/stat.h>
 #include <unistd.h>

@@ -34,7 +34,8 @@
 #ifndef _V3SENTREE_H_
 #define _V3SENTREE_H_
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>

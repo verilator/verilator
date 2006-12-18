@@ -87,4 +87,4 @@ clean mostlyclean distclean maintainer-clean::
 	-rm -f .objcache*
 
 distclean maintainer-clean::
-	-rm -f Makefile Makefile_obj
+	-rm -f Makefile Makefile_obj config_build.h

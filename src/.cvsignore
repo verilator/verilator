@@ -1,5 +1,5 @@
 *.old
-config.h
+config_build.h
 Makefile
 Makefile_obj
 .objcache*

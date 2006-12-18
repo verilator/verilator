@@ -19,7 +19,8 @@
 //
 //*************************************************************************
 
-#include <config.h>
+#include <config_build.h>
+#include "verilatedos.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdarg.h>

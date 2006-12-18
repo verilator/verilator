@@ -22,7 +22,8 @@
 #ifndef _V3PRESHELL_H_
 #define _V3PRESHELL_H_ 1
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include "V3Error.h"
 
 //============================================================================

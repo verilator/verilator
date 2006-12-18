@@ -6,7 +6,7 @@ dnl General Public License or the Perl Artistic License.
 
 AC_REVISION($Revision$)dnl
 AC_INIT(src/Verilator.cpp)
-AC_CONFIG_HEADER(src/config.h)
+AC_CONFIG_HEADER(src/config_build.h)
 
 dnl Special Substitutions
 
@@ -24,7 +24,7 @@ dnl Checks for libraries.
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(fcntl.h unistd.h sys/file.h sys/time.h sys/un.h math.h stdint.h mingw/stdint.h)
+AC_CHECK_HEADERS(fcntl.h unistd.h inttypes.h sys/file.h sys/time.h sys/un.h math.h stdint.h mingw/stdint.h)
 
 dnl Checks for typedefs, structures
 AC_CHECK_TYPE(size_t,unsigned int)

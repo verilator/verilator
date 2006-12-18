@@ -22,7 +22,8 @@
 #ifndef _V3EMITCBASE_H_
 #define _V3EMITCBASE_H_ 1
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>

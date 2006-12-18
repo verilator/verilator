@@ -855,6 +855,30 @@ Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an
 order of magnitude.
 
+=head1 CROSS COMPILATION
+
+Verilator supports cross-compling Verilated code.  This is generally used
+to run Verilator on a Linux system and produce C++ code that is then compiled
+on Windows.
+
+Cross compilation involves up to three different OSes.  The build system is
+where you configured and compiled Verilator, the host system where you run
+Verilator, and the target system where you compile the Verilated code and
+run the simulation.
+
+Currently, Verilator requires the build and host system type to be the
+same, though the target system type may be different.  To support this,
+./configure and make Verilator on the build system.  Then, run Verilator on
+the host system.  Finally, the output of Verilator may be compiled on the
+different target system.
+
+To support this, none of the files that Verilator produces will reference
+any configure generated build-system specific files, such as config.h
+(which is renamed in Verilator to config_build.h to reduce confusion.)  The
+disadvantage of this approach is that include/verilatedos.h must
+self-detect the requirements of the target system, rather then using
+configure.
+
 =head1 VERILOG 2001 SUPPORT
 
 Verilator supports the more common Verilog 2001 language features.  This

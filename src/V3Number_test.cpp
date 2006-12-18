@@ -25,7 +25,8 @@
 #include "V3Error.cpp"
 #include "V3Number.cpp"
 
-#include <config.h>
+#include <config_build.h>
+#include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <algorithm>

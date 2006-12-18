@@ -15,9 +15,11 @@
 /// \file
 /// \brief Verilator: Common include for OS portability (verilated & verilator)
 ///
-///	This header is used by both verilated code, and the verilator
-///	program itself Code needed by only one goes into verilated.h or
-///	config.h.in respectively.
+///	This header is used by both the Verilator source code (run on the
+///	build and host system), and the Verilated output (run on the target
+///	system).  Code needed by only the host system goes into
+///	config_build.h.in, code needed by Verilated code only goes into
+///	verilated.h, and code needed by both goes here (verilatedos.h).
 ///
 /// Code available from: http://www.veripool.com/verilator
 ///

@@ -21,7 +21,8 @@
 
 #ifndef _V3GRAPHALG_H_
 #define _V3GRAPHALG_H_ 1
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 
 #include "V3Global.h"
 #include "V3Graph.h"

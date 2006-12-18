@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.62***
 
+***  Fixed configure and compiling under Solaris.  [Bob Farrell]
+
 ***  When dotted signal lookup fails, help the user by showing known scopes.
 
 **** Fix dotted references inside generated cells.  [David Hewson]

@@ -28,6 +28,8 @@ CC = @CC@
 CXX = @CXX@
 LINK = @CXX@
 
+LDFLAGS += @LDFLAGS@
+
 #### End of system configuration section. ####
 
 VPATH += . $(srcdir)
@@ -36,14 +38,12 @@ TGT = ../../verilator_bin
 #################
 ifeq ($(VL_DEBUG),)
 # Optimize
-LDFLAGS = 
 COPT = -O
 else
 # Debug
-LDFLAGS = 
 COPT = -ggdb -DVL_DEBUG
 # Debug & Profile:
-#LDFLAGS = -pg -g
+#LDFLAGS += -pg -g
 #COPT = -ggdb -pg -g
 endif
 #################
@@ -89,7 +89,6 @@ clean mostlyclean distclean maintainer-clean::
 	-rm -f obj_* .objcache*
 
 distclean maintainer-clean:: clean
-	rm -f Makefile config.h
 
 maintainer-clean::
 

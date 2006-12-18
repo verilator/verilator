@@ -78,7 +78,6 @@ datadir = @datadir@
 infodir = @infodir@
 
 # Directory in which to install package specific files
-# Note this gets coded into v3c/config.h also
 pkgdatadir = @pkgdatadir@
 
 #### End of system configuration section. ####
@@ -265,16 +264,16 @@ uninstall:
 	-cd $(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
 	-cd $(bindir) && rm -f $(VL_INST_BIN_FILES)
 
-# autoheader might not change config.h.in, so touch a stamp file.
+# autoheader might not change config_build.h.in, so touch a stamp file.
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \
 	*.in */*.in */*.in
 
-${srcdir}/config.h.in: stamp-h.in
+${srcdir}/config_build.h.in: stamp-h.in
 ${srcdir}/stamp-h.in: configure.ac $(wildcard $(IN_WILD))
 	cd ${srcdir} && autoheader
 	echo timestamp > ${srcdir}/stamp-h.in
-config.h: stamp-h
-stamp-h: config.h.in config.status
+config_build.h: stamp-h
+stamp-h: config_build.h.in config.status
 	./config.status
 Makefile: Makefile.in config.status
 	./config.status
@@ -317,7 +316,7 @@ TAGS:	$(TAGFILES)
 ######################################################################
 # Distributions
 
-DISTCONFIG = src/config.h.in
+DISTCONFIG = src/config_build.h.in
 
 DISTTITLE := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
 DISTNAME := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))

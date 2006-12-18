@@ -35,7 +35,8 @@
 //		
 //*************************************************************************
 
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>

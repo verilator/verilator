@@ -21,7 +21,8 @@
 
 #ifndef _V3GRAPH_H_
 #define _V3GRAPH_H_ 1
-#include "config.h"
+#include "config_build.h"
+#include "verilatedos.h"
 #include "V3Error.h"
 #include "V3List.h"
 #include <vector>

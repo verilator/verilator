@@ -54,6 +54,9 @@
 // Set define if we have header: <mingw/stdint.h>
 #define HAVE_MINGW_STDINT_H 0
 
+// Set define if we have header: <inttypes.h>
+#define HAVE_INTTYPES_H 0
+
 //**********************************************************************
 //**** Compile options
 
