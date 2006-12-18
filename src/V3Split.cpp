@@ -83,6 +83,8 @@ protected:
 	: V3GraphVertex(graphp), m_nodep(nodep) {}
     virtual ~SplitNodeVertex() {}
     // Accessors
+    // Do not make accessor for nodep(),  It may change due to
+    // reordering a lower block, but we don't repair it
     virtual string name() const {
 	if (m_nodep->name() == "") {
 	    return cvtToStr((void*)m_nodep);
@@ -344,7 +346,8 @@ private:
 
 	// And a real ordering to get the statements into something reasonable
 	// We don't care if there's cutable violations here...
-	//if (debug()>=9) m_graph.dumpDotFilePrefixed((string)"splitg_preo", false);
+	// Non-cutable violations should be impossible; as those edges are program-order
+	if (debug()>=9) m_graph.dumpDotFilePrefixed((string)"splitg_preo", false);
 	m_graph.acyclic(&SplitEdge::followCyclic);
 	m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
 	if (debug()>=9) m_graph.dumpDotFilePrefixed((string)"splitg_opt", false);
@@ -421,8 +424,10 @@ private:
 	// Pass the first node in a list of block items, we'll process them
 	// Check there's >= 2 sub statements, else nothing to analyze
 	// Save recursion state
+	AstNode* firstp = nodep;   // We may reorder, and nodep is no longer first.
 	void* oldBlockUser3 = nodep->user3p();   // May be overloaded in below loop, save it
 	nodep->user3p(NULL);
+	if (nodep->backp()->nextp()==nodep) nodep->v3fatalSrc("Node passed is in next list; should have processed all list at oncen");
 	// Process it
 	if (!nodep->nextp()) {
 	    // Just one, so can't reorder.  Just look for more blocks/statements.
@@ -435,12 +440,14 @@ private:
 	    cleanupBlockGraph(nodep);
 	    reorderBlock(nodep);
 	    // Delete old vertexes and edges only applying to this block
-	    for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
+	    while (firstp->backp()->nextp()==firstp) firstp = firstp->backp();  // Walk back to first in list
+	    for (AstNode* nextp=firstp; nextp; nextp=nextp->nextp()) {
 		SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
 		vvertexp->unlinkDelete(&m_graph);
 	    }
 	}
-	nodep->user3p(oldBlockUser3);
+	// Again, nodep may no longer be first.
+	firstp->user3p(oldBlockUser3);
     }
 
     // VISITORS

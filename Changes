@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix dotted references inside generated cells.  [David Hewson]
 
+**** Fix missed split optimization points underneath other re-split blocks.
+
 * Verilator 3.623 12/05/2006
 
 ***  Add --output-split-cfuncs for accelerating GCC compile. [Eugene Weber]
