@@ -15,7 +15,6 @@
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
-PWD := $(shell pwd)
 
 PERL = perl
 
@@ -26,7 +25,7 @@ default:  prep        preproc compile     run coverage
 debug:    prep_dbg    preproc compile_dbg run coverage
 nopublic: prep_dbg_np preproc compile_dbg run coverage
 
-V_FLAGS = -f $(PWD)/../test_v/input.vc
+V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --public --sp --coverage --stats --trace $(V_FLAGS) top.v
 
 prep:

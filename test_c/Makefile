@@ -15,7 +15,6 @@
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
-PWD := $(shell pwd)
 
 PERL = perl
 
@@ -28,7 +27,7 @@ default: prep compile run
 debug:   prep_dbg compile run
 valgrind:   prep_vg compile run
 
-VERILATOR_FLAGS = --cc -f $(PWD)/../test_v/input.vc top.v
+VERILATOR_FLAGS = --cc -f $(VERILATOR_ROOT)/test_v/input.vc top.v
 #Note turning on traces requires SystemPerl to be installed
 #VERILATOR_FLAGS += --trace
 

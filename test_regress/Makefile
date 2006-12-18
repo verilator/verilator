@@ -16,7 +16,6 @@
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 PERL = perl
-PWD := $(shell pwd)
 
 ######################################################################
 

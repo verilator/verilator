@@ -1,4 +1,4 @@
-# $Id:$ */
+# $Id$ */
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory
@@ -15,7 +15,6 @@
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
-PWD := $(shell pwd)
 
 ######################################################################
 

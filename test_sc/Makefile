@@ -15,7 +15,6 @@
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
-PWD := $(shell pwd)
 
 PERL = perl
 
@@ -26,7 +25,7 @@ default:  precopy prep        preproc compile run
 debug:    precopy prep_dbg    preproc compile run
 nopublic: precopy prep_dbg_np preproc compile run
 
-V_FLAGS = -f $(PWD)/../test_v/input.vc
+V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --sc $(V_FLAGS) top.v
 
 precopy: obj_dir obj_dir/sc_main.cpp
