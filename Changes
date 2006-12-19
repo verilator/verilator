@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  When dotted signal lookup fails, help the user by showing known scopes.
 
+***  Reduce depth of priority encoded case statements.  [Eugene Weber]
+
 **** Fix dotted references inside generated cells.  [David Hewson]
 
 **** Fix missed split optimization points underneath other re-split blocks.

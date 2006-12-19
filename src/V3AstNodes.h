@@ -1167,6 +1167,7 @@ public:
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
     AstNode*	condsp()		const { return op1p()->castNode(); }	// op1= list of possible matching expressions
     AstNode*	bodysp()	const { return op2p()->castNode(); }	// op2= what to do
+    void	condsp(AstNode* nodep) { setOp1p(nodep); }
     void	addBodysp(AstNode* newp)	{ addOp2p(newp); }
     bool	isDefault() const { return condsp()==NULL; }
     bool	ignoreOverlap() const { return m_ignoreOverlap; }

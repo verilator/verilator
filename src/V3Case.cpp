@@ -52,6 +52,7 @@
 
 #define CASE_OVERLAP_WIDTH 12		// Maximum width we can check for overlaps in
 #define CASE_BARF	   999999	// Magic width when non-constant
+#define CASE_ENCODER_GROUP_DEPTH 8	// Levels of priority to be ORed together in top IF tree
 
 //######################################################################
 
@@ -275,21 +276,15 @@ private:
 	//		         IF((EQ (AND MASK cexpr) (AND MASK icond1)
 	//				,istmts2, istmts3
 	AstNode* cexprp = nodep->exprp()->unlinkFrBack();
-	AstNode* ifrootp = NULL;
-	AstNode* ifnextp = NULL;
+	// We'll do this in two stages.  First stage, convert the conditions to
+	// the appropriate IF AND terms.
+	if (debug()>=9) nodep->dumpTree(cout,"    _comp_IN:   ");
+	bool hadDefault = false;
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
-	    AstNode* istmtsp = itemp->bodysp();   // Maybe null -- no action.
-	    if (istmtsp) istmtsp->unlinkFrBackWithNext();
 	    if (!itemp->condsp()) {
-		// Default clause.  We reordered in link, so default is always last
-		if (ifnextp) {
-		    if (istmtsp) ifnextp->castIf()->addElsesp(istmtsp);
-		} else {   // Just a empty case default: endcase
-		    ifnextp = istmtsp;
-		}
-		if (!ifrootp) ifrootp = istmtsp;
-		ifnextp = istmtsp;
-		itemp = NULL; break;
+		// Default clause.  Just make true, we'll optimize it away later
+		itemp->condsp(new AstConst(itemp->fileline(), V3Number(itemp->fileline(), 1,1)));
+		hadDefault = true;
 	    } else {
 		// Expressioned clause
 		AstNode* icondNextp = NULL;
@@ -324,24 +319,67 @@ private:
 			ifexprp = new AstLogOr(itemp->fileline(), ifexprp, condp);
 		    }
 		}
-
-		// Make the new IF and attach in the tree
-		if (ifexprp) {
-		    AstIf* newp = new AstIf(itemp->fileline(), ifexprp, istmtsp, NULL);
-		    if (ifnextp) {
-			ifnextp->castIf()->addElsesp(newp);
-		    }
-		    if (!ifrootp) ifrootp = newp;
-		    ifnextp = newp;
-		}
+		// Replace expression in tree
+		itemp->condsp(ifexprp);
 	    }
 	}
+	if (!hadDefault) {
+	    // If there was no default, add a empty one, this greatly simplifies below code
+	    // and constant propagation will just eliminate it for us later.
+	    nodep->addItemsp(new AstCaseItem(nodep->fileline(),
+					     new AstConst(nodep->fileline(), V3Number(nodep->fileline(),1,1)),
+					     NULL));
+	}
+	if (debug()>=9) nodep->dumpTree(cout,"    _comp_COND: ");
+	// Now build the IF statement tree
+	// The tree can be quite huge.  Pull ever group of 8 out, and make a OR tree.
+	// This reduces the depth for the bottom elements, at the cost of some of the top elements.
+	// If we ever have profiling data, we should pull out the most common item from here and
+	// instead make it the first IF branch.
+	int depth = 0;
+	AstNode* grouprootp = NULL;
+	AstIf* groupnextp = NULL;
+	AstIf* itemnextp = NULL;
+	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+	    AstNode* istmtsp = itemp->bodysp();   // Maybe null -- no action.
+	    if (istmtsp) istmtsp->unlinkFrBackWithNext();
+	    // Expressioned clause
+	    AstNode* ifexprp = itemp->condsp()->unlinkFrBack();
+	    {   // Prepare for next group
+		if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
+		if (depth == 1) {  // First group or starting new group
+		    itemnextp = NULL;
+		    AstIf* newp = new AstIf(itemp->fileline(), ifexprp->cloneTree(true), NULL, NULL);
+		    if (groupnextp) groupnextp->addElsesp(newp);
+		    else grouprootp = newp;
+		    groupnextp = newp;
+		} else { // Continue group, modify if condition to OR in this new condition
+		    AstNode* condp = groupnextp->condp()->unlinkFrBack();
+		    groupnextp->condp(new AstOr(ifexprp->fileline(),
+						condp,
+						ifexprp->cloneTree(true)));
+		}
+	    }
+	    {   // Make the new lower IF and attach in the tree
+		AstNode* itemexprp = ifexprp;  ifexprp=NULL;
+		if (depth == (CASE_ENCODER_GROUP_DEPTH)) { // End of group - can skip the condition
+		    itemexprp->deleteTree(); itemexprp=NULL;
+		    itemexprp = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,1));
+		}
+		AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, NULL);
+		if (itemnextp) itemnextp->addElsesp(newp);
+		else groupnextp->addIfsp(newp);  // First in a new group
+		itemnextp = newp;
+	    }
+	}
+	if (debug()>=9) nodep->dumpTree(cout,"    _comp_TREE: ");
 	// Handle any assertions
 	replaceCaseParallel(nodep, false);
 	// Replace the CASE... with IF...
-	if (ifrootp) nodep->replaceWith(ifrootp);
+	if (debug()>=9) grouprootp->dumpTree(cout,"     _new: ");
+	if (grouprootp) nodep->replaceWith(grouprootp);
 	else nodep->unlinkFrBack();
-	if (debug()>=9) ifrootp->dumpTree(cout,"     _new: ");
+	nodep->deleteTree(); nodep=NULL;
     }
 
     void replaceCaseParallel(AstCase* nodep, bool noOverlapsAllCovered) {
