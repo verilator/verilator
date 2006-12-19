@@ -10,16 +10,11 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 compile (
 	 );
 
-unlink("obj_dir/t_file_test.log");
-
 execute (
-	 check_finished=>1,
+	 fails=>$Last_Self->{v3},
+	 expect=>
+'%Error: t/t_sys_readmem_bad_end.mem:\d+: \$readmem file ended before specified ending-address',
      );
-
-file_grep ("obj_dir/t_file_test.log",
-qr/\[0\] hello v=12345667
-\[0\] Hello2
-/);
 
 ok(1);
 1;

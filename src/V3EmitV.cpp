@@ -193,6 +193,16 @@ public:
 	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
 	puts(");\n");
     }
+    virtual void visit(AstReadMem* nodep, AstNUser*) {
+	putbs(nodep->verilogKwd());
+	putbs(" (");
+	if (nodep->filenamep()) nodep->filenamep()->iterateChildren(*this);
+	putbs(",");
+	if (nodep->memp()) nodep->memp()->iterateChildren(*this);
+	if (nodep->lsbp()) { putbs(","); nodep->lsbp()->iterateChildren(*this); }
+	if (nodep->msbp()) { putbs(","); nodep->msbp()->iterateChildren(*this); }
+	puts(");\n");
+    }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	puts("for (");
 	m_suppressSemi = true;

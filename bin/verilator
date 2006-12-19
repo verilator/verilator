@@ -996,16 +996,6 @@ Verilog standard, %x prints a number with the natural width, %0x prints a
 number with minimum width, however %5x prints 5 digits per the C standard
 (it's unspecified in Verilog).
 
-=item $fopen, $fclose, $fdisplay, $fwrite
-
-File descriptors passed to the file PLI calls must be file descriptors, not
-MCDs, which includes the mode parameter to $fopen being mandatory.
-Verilator will convert the integer used to hold the file descriptor into a
-internal FILE*. To prevent core dumps due to mis-use, and because integers
-are 32 bits while FILE*s may be 64 bits, the descriptor must be stored in a
-reg [63:0] rather then an integer.  The define `verilator_file_descriptor in
-verilated.v can be used to hide this difference.
-
 =item `coverage_block_off
 
 Specifies the entire begin/end block should be ignored for coverage analysis.
@@ -1315,6 +1305,27 @@ appropriate width.
 
 $display and friends must have a constant format string as the first
 argument (as with C's printf), you cannot simply list variables standalone.
+
+=item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
+
+The sized display functions are rarely used and so not supported.  Replace
+them with a $write with the appropriate format specifier.
+
+=item $fopen, $fclose, $fdisplay, $fwrite
+
+File descriptors passed to the file PLI calls must be file descriptors, not
+MCDs, which includes the mode parameter to $fopen being mandatory.
+Verilator will convert the integer used to hold the file descriptor into a
+internal FILE*. To prevent core dumps due to mis-use, and because integers
+are 32 bits while FILE*s may be 64 bits, the descriptor must be stored in a
+reg [63:0] rather then an integer.  The define `verilator_file_descriptor in
+verilated.v can be used to hide this difference.
+
+=item $readmemb, $readmemh
+
+Read memory commands should work properly.  Note Verilator and the Verilog
+specification does not include support for readmem to multi-dimensional
+arrays.
 
 =head1 ERRORS AND WARNINGS
 

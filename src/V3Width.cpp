@@ -554,6 +554,12 @@ private:
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
     }
+    virtual void visit(AstReadMem* nodep, AstNUser*) {
+	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	// Just let all arguments seek their natural sizes

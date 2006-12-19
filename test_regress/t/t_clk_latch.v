@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -83,7 +83,9 @@ module t (/*AUTOARG*/
 
    always @ (posedge fastclk) begin
       cyc <= cyc+1;
+`ifdef TEST_VERBOSE
       $write("%d  %x %x %x  %x %x %x\n",cyc,data_a,data_a_a,data_b_a,data_b,data_a_b,data_b_b);
+`endif
       if (cyc>=19 && cyc<36) begin
 	 if (compare !== check[cyc]) begin
 	    $write("[%0t] Mismatch, got=%x, exp=%x\n", $time, compare, check[cyc]);

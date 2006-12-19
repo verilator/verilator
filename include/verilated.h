@@ -194,9 +194,17 @@ inline const char* VL_VALUE_FORMATTED_I(int obits, char fmt, bool drop0, IData l
 }
 
 /// File I/O
-extern QData VL_FOPEN_WI(int fnwords, WDataInP filename, IData mode);
-extern QData VL_FOPEN_QI(QData filename, IData mode);
-inline QData VL_FOPEN_II(IData filename, IData mode) { return VL_FOPEN_QI(filename,mode); }
+extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
+extern QData VL_FOPEN_QI(QData ofilename, IData mode);
+inline QData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
+
+extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
+			 WDataInP ofilename, void* memp, IData start, IData end);
+extern void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
+			 QData ofilename,    void* memp, IData start, IData end);
+inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
+			 IData ofilename,    void* memp, IData start, IData end) {
+    VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
 
 //=========================================================================
 // Base macros
@@ -225,6 +233,13 @@ static inline QData  VL_CVT_FP_Q(FILE* fp) { union { FILE* fp; QData q; } u; u.q
 // Optimization bug in GCC 3.3 returns different bitmasks to later states for
 static inline IData  VL_EXTENDSIGN_I(int lbits, IData lhs) { return (-((lhs)&(1UL<<(lbits-1)))); }
 static inline QData  VL_EXTENDSIGN_Q(int lbits, QData lhs) { return (-((lhs)&(VL_ULL(1)<<(lbits-1)))); }
+
+// Debugging prints
+static inline void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
+    printf("  Data: w%d: ", lbits); 
+    for (int i=VL_WORDS_I(lbits)-1; i>=0; i--) { printf("%08x ",iwp[i]); }
+    printf("\n");
+}
 
 //=========================================================================
 // Pli macros
@@ -1034,6 +1049,18 @@ static inline WDataOutP VL_CONCAT_WWW(int obits,int lbits,int rbits,WDataOutP ow
 
 //===================================================================
 // Shifts
+
+// Static shift, used by internal functions
+// The output is the same as the input - it overlaps!
+static inline void _VL_SHIFTL_INPLACE_W(int obits,WDataOutP iowp,IData rd/*1 or 4*/) {
+    int words = VL_WORDS_I(obits);
+    IData linsmask = VL_MASK_I(rd);
+    for (int i=words-1; i>=1; i--) {
+	iowp[i] = ((iowp[i]<<rd) & ~linsmask) | ((iowp[i-1] >> (32-rd)) & linsmask);
+    }
+    iowp[0] = ((iowp[0]<<rd) & ~linsmask);
+    iowp[VL_WORDS_I(obits)-1] &= VL_MASK_I(obits);
+}
 
 // EMIT_RULE: VL_SHIFTL:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed

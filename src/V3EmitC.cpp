@@ -249,6 +249,39 @@ public:
 	nodep->modep()->iterateAndNext(*this);
 	puts(");\n");
     }
+    virtual void visit(AstReadMem* nodep, AstNUser*) {
+	puts("VL_READMEM_");
+	emitIQW(nodep->filenamep());
+	puts(" (");  // We take a void* rather then emitIQW(nodep->memp());
+	puts(nodep->isHex()?"true":"false");
+	putbs(",");
+	puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
+	putbs(",");
+	uint32_t array_lsb = 0;
+	{
+	    AstVarRef* varrefp = nodep->memp()->castVarRef();
+	    if (!varrefp || !varrefp->varp()->arrayp(0)) { nodep->v3error("Readmem loading non-arrayed variable"); }
+	    else {
+		puts(cvtToStr(varrefp->varp()->arrayElements()));
+		array_lsb = varrefp->varp()->arrayp(0)->lsbConst();
+	    }
+	}
+	putbs(", ");
+	puts(cvtToStr(array_lsb));
+	putbs(",");
+	puts(cvtToStr(nodep->filenamep()->widthWords()));
+	if (nodep->filenamep()->widthWords() > VL_TO_STRING_MAX_WORDS) {
+	    nodep->v3error("String of "<<nodep->filenamep()->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
+	}
+	putbs(", ");
+	nodep->filenamep()->iterateAndNext(*this);
+	putbs(", ");
+	nodep->memp()->iterateAndNext(*this);
+	putbs(","); if (nodep->lsbp()) { nodep->lsbp()->iterateAndNext(*this); }
+	else puts(cvtToStr(array_lsb));
+	putbs(","); if (nodep->msbp()) { nodep->msbp()->iterateAndNext(*this); } else puts("~0");
+	puts(");\n");
+    }
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	puts("if (");
 	nodep->filep()->iterateAndNext(*this);

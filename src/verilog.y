@@ -136,31 +136,33 @@ class AstSenTree;
 %token<fileline>	yBUF yNOT yAND yNAND yNOR yXOR yXNOR
 %token<fileline>	ySCALARED yVECTORED
 
-%token<fileline>	yASSERT "assert"
-%token<fileline>	yCLOCK "clock"
-%token<fileline>	yCOVER "cover"
-%token<fileline>	yFINAL "final"
-%token<fileline>	yPSL "psl"
-%token<fileline>	yREPORT "report"
-%token<fileline>	yTRUE "true"
+%token<fileline>	yASSERT		"assert"
+%token<fileline>	yCLOCK		"clock"
+%token<fileline>	yCOVER		"cover"
+%token<fileline>	yFINAL		"final"
+%token<fileline>	yPSL		"psl"
+%token<fileline>	yREPORT		"report"
+%token<fileline>	yTRUE		"true"
 
-%token<fileline>	yD_BITS "$bits"
-%token<fileline>	yD_C "$c"
-%token<fileline>	yD_COUNTONES "$countones"
-%token<fileline>	yD_DISPLAY "$display"
-%token<fileline>	yD_FCLOSE "$fclose"
-%token<fileline>	yD_FDISPLAY "$fdisplay"
-%token<fileline>	yD_FINISH "$finish"
-%token<fileline>	yD_FOPEN "$fopen"
-%token<fileline>	yD_FWRITE "$fwrite"
-%token<fileline>	yD_ISUNKNOWN "$isunknown"
-%token<fileline>	yD_ONEHOT "$onehot"
-%token<fileline>	yD_ONEHOT0 "$onehot0"
-%token<fileline>	yD_SIGNED "$signed"
-%token<fileline>	yD_STOP "$stop"
-%token<fileline>	yD_TIME "$time"
-%token<fileline>	yD_UNSIGNED "$unsigned"
-%token<fileline>	yD_WRITE "$write"
+%token<fileline>	yD_BITS		"$bits"
+%token<fileline>	yD_C		"$c"
+%token<fileline>	yD_COUNTONES	"$countones"
+%token<fileline>	yD_DISPLAY	"$display"
+%token<fileline>	yD_FCLOSE	"$fclose"
+%token<fileline>	yD_FDISPLAY	"$fdisplay"
+%token<fileline>	yD_FINISH	"$finish"
+%token<fileline>	yD_FOPEN	"$fopen"
+%token<fileline>	yD_FWRITE	"$fwrite"
+%token<fileline>	yD_ISUNKNOWN	"$isunknown"
+%token<fileline>	yD_ONEHOT	"$onehot"
+%token<fileline>	yD_ONEHOT0	"$onehot0"
+%token<fileline>	yD_READMEMB	"$readmemb"
+%token<fileline>	yD_READMEMH	"$readmemh"
+%token<fileline>	yD_SIGNED	"$signed"
+%token<fileline>	yD_STOP		"$stop"
+%token<fileline>	yD_TIME		"$time"
+%token<fileline>	yD_UNSIGNED	"$unsigned"
+%token<fileline>	yD_WRITE	"$write"
 
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
@@ -670,15 +672,21 @@ stmt:		';'					{ $$ = NULL; }
 	|	stateCaseForIf				{ $$ = $1; }
 	|	taskRef ';' 				{ $$ = $1; }
 
-	|	yD_DISPLAY  ';'				{ $$ = new AstDisplay($1,'\n',"",NULL,NULL); }
-	|	yD_DISPLAY  '(' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\n',*$3,NULL,NULL); }
-	|	yD_DISPLAY  '(' ySTRING ',' eList ')' ';'  { $$ = new AstDisplay($1,'\n',*$3,NULL,$5); }
-	|	yD_WRITE    '(' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$3,NULL,NULL); }
+	|	yD_DISPLAY  ';'					{ $$ = new AstDisplay($1,'\n',"",NULL,NULL); }
+	|	yD_DISPLAY  '(' ySTRING ')' ';'			{ $$ = new AstDisplay($1,'\n',*$3,NULL,NULL); }
+	|	yD_DISPLAY  '(' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\n',*$3,NULL,$5); }
+	|	yD_WRITE    '(' ySTRING ')' ';'			{ $$ = new AstDisplay($1,'\0',*$3,NULL,NULL); }
 	|	yD_WRITE    '(' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\0',*$3,NULL,$5); }
 	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\n',*$5,$3,NULL); }
-	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ',' eList ')' ';'  { $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
+	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ',' eList ')' ';' { $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
 	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$5,$3,NULL); }
-	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
+	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
+	|	yD_READMEMB '(' expr ',' lhIdArrayed ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
+	|	yD_READMEMB '(' expr ',' lhIdArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
+	|	yD_READMEMB '(' expr ',' lhIdArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
+	|	yD_READMEMH '(' expr ',' lhIdArrayed ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
+	|	yD_READMEMH '(' expr ',' lhIdArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
+	|	yD_READMEMH '(' expr ',' lhIdArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	;
 
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }

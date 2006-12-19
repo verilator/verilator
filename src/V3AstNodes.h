@@ -1251,6 +1251,34 @@ struct AstFOpen : public AstNodeStmt {
     AstNode*	modep() const { return op3p(); }
 };
 
+struct AstReadMem : public AstNodeStmt {
+private:
+    bool	m_isHex;	// readmemh, not readmemb
+public:
+    AstReadMem(FileLine* fileline, bool hex,
+	       AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
+	: AstNodeStmt (fileline), m_isHex(hex) {
+	setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
+    }
+    virtual ~AstReadMem() {}
+    virtual AstType type() const { return AstType::READMEM;}
+    virtual AstNode* clone() { return new AstReadMem(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); };
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return isHex()==samep->castReadMem()->isHex(); }
+    bool	isHex() const { return m_isHex; }
+    AstNode*	filenamep() const { return op1p()->castNode(); }
+    AstNode*	memp() const { return op2p()->castNode(); }
+    AstNode*	lsbp() const { return op3p()->castNode(); }
+    AstNode*	msbp() const { return op4p()->castNode(); }
+};
+
 struct AstGenFor : public AstNodeFor {
     AstGenFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
 	   AstNode* incsp, AstNode* bodysp)

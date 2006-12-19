@@ -57,6 +57,7 @@ my $opt_stop;
 my $opt_optimize;
 my $opt_gdb;
 my $opt_jobs = 1;
+my $opt_verbose;
 my $Opt_Verilated_Debug;
 if (! GetOptions (
 		  "help"	=> \&usage,
@@ -69,6 +70,7 @@ if (! GetOptions (
 		  "gdb!"	=> \$opt_gdb,
 		  "stop!"	=> \$opt_stop,
 		  "optimize:s"	=> \$opt_optimize,
+		  "verbose!"	=> \$opt_verbose,
 		  "<>"		=> \&parameter,
 		  )) {
     usage();
@@ -187,7 +189,9 @@ sub new {
 	make_top_shell => 1,	# Make a default __top.v file
 	make_main => 1,		# Make __main.cpp
 	# All compilers
-	v_flags => [split(/\s+/," -f input.vc --debug-check")],
+	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
+				 .($opt_verbose ? " +define+TEST_VERBOSE+1":"")
+				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
 	# VCS
@@ -826,6 +830,10 @@ Stop on the first error
 =item --vcs
 
 Run using VCS.
+
+=item --verbose
+
+Enable test verbose messages.
 
 =item --v3
 

@@ -16,7 +16,7 @@ module t;
       $fwrite(file, "Never printed, file closed\n");
 `endif
 
-      file = $fopen("obj_dir/t_file_test.log","w");	// The "w" is required so we get a FD not a MFD
+      file = $fopen("obj_dir/t_sys_file_test.log","w");	// The "w" is required so we get a FD not a MFD
 
       $fdisplay(file, "[%0t] hello v=%x", $time, 32'h12345667);
       $fwrite(file, "[%0t] %s\n", $time, "Hello2");
@@ -26,6 +26,11 @@ module t;
       if (file != 0) $stop;
       $fwrite(file, "Never printed, file closed\n");
 `endif
+
+      begin
+	 file = $fopen("obj_dir/DOES_NOT_EXIST","r");	// The "r" is required so we get a FD not a MFD
+	 if (|file) $stop;	// Should not exist, IE must return 0
+      end
 
       $write("*-* All Finished *-*\n");
       $finish;

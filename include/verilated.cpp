@@ -24,6 +24,7 @@
 
 #include "verilated.h"
 #include <string.h>
+#include <ctype.h>
 
 #define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
 
@@ -236,6 +237,113 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
     return VL_CVT_FP_Q(fopen(filenamez,modez));
+}
+
+void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
+		  QData ofilename, void* memp, IData start, IData end) {
+    IData fnw[2];  VL_SET_WQ(fnw, ofilename);
+    return VL_READMEM_W(hex,2,width,depth,array_lsb, fnw,memp,start,end);
+}
+
+void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
+		  WDataInP ofilenamep, void* memp, IData start, IData end) {
+    char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
+    FILE* fp = fopen(ofilenamez, "r");
+    if (!fp) {
+	// We don't report the Verilog source filename as it slow to have to pass it down
+	vl_fatal (ofilenamez, 0, "", "$readmem file not found");
+	return;
+    }
+    // Prep for reading
+    IData addr = start;
+    int linenum = 0;
+    bool innum = false;
+    bool ignore_to_eol = false;
+    bool ignore_to_cmt = false;
+    bool needinc = false;
+    bool reading_addr = false;
+    int lastc = ' ';
+    // Read the data
+    // We process a character at a time, as then we don't need to deal
+    // with changing buffer sizes dynamically, etc.
+    while (1) {
+	int c = fgetc(fp);
+	if (c==EOF) break;
+	//printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n", linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
+	if (c=='\n') { linenum++; ignore_to_eol=false; if (innum) reading_addr=false; innum=false; }
+	else if (c=='\t' || c==' ' || c=='\r' || c=='\f') { if (innum) reading_addr=false; innum=false; }
+	// Skip // comments and detect /* comments
+	else if (ignore_to_cmt && lastc=='*' && c=='/') {
+	    ignore_to_cmt = false; if (innum) reading_addr=false; innum=false; 
+	} else if (!ignore_to_eol && !ignore_to_cmt) {
+	    if (lastc=='/' && c=='*') { ignore_to_cmt = true; }
+	    else if (lastc=='/' && c=='/') { ignore_to_eol = true; }
+	    else if (c=='/') {}  // Part of /* or //
+	    else if (c=='_') {}
+	    else if (c=='@') { reading_addr = true; innum=false; needinc=false; }
+	    // Check for hex or binary digits as file format requests
+	    else if (isxdigit(c)) {
+		c = tolower(c);
+		int value = (c >= 'a' ? (c-'a'+10) : (c-'0'));
+		if (!innum) {  // Prep for next number
+		    if (needinc) { addr++; needinc=false; }
+		}
+		if (reading_addr) {
+		    // Decode @ addresses
+		    if (!innum) addr=0;
+		    addr = (addr<<4) + value;
+		} else {
+		    needinc = true;
+		    //printf(" Value width=%d  @%x = %c\n", width, addr, c);
+		    if (addr >= (IData)(depth+array_lsb) || addr < (IData)(array_lsb)) {
+			vl_fatal (ofilenamez, linenum, "", "$readmem file address beyond bounds of array");
+		    } else {
+			int entry = addr - array_lsb;
+			QData shift = hex ? VL_ULL(4) : VL_ULL(1);
+			// Shift value in
+			if (width<=8) {
+			    CData* datap = &((CData*)(memp))[entry];
+			    if (!innum) { *datap = 0; }
+			    *datap = ((*datap << shift) + value) & VL_MASK_I(width);
+			} else if (width<=16) {
+			    SData* datap = &((SData*)(memp))[entry];
+			    if (!innum) { *datap = 0; }
+			    *datap = ((*datap << shift) + value) & VL_MASK_I(width);
+			} else if (width<=VL_WORDSIZE) {
+			    IData* datap = &((IData*)(memp))[entry];
+			    if (!innum) { *datap = 0; }
+			    *datap = ((*datap << shift) + value) & VL_MASK_I(width);
+			} else if (width<=VL_QUADSIZE) {
+			    QData* datap = &((QData*)(memp))[entry];
+			    if (!innum) { *datap = 0; }
+			    *datap = ((*datap << (QData)(shift)) + (QData)(value)) & VL_MASK_Q(width);
+			} else {
+			    WDataOutP datap = &((WDataOutP)(memp))[ entry*VL_WORDS_I(width) ];
+			    if (!innum) { VL_ZERO_RESET_W(width, datap); }
+			    _VL_SHIFTL_INPLACE_W(width, datap, shift);
+			    datap[0] |= value;
+			}
+			if (value>=(1<<shift)) {
+			    vl_fatal (ofilenamez, linenum, "", "$readmemb (binary) file contains hex characters");
+			}
+		    }
+		}
+		innum = true;
+	    }
+	    else {
+		vl_fatal (ofilenamez, linenum, "", "$readmem file syntax error");
+	    }
+	}
+	lastc = c;
+    }
+    if (needinc) { addr++; needinc=false; }
+
+    // Final checks
+    fclose(fp);
+    if (end != (IData)(~ VL_ULL(0))  && addr != (end+1)) {
+	vl_fatal (ofilenamez, linenum, "", "$readmem file ended before specified ending-address");
+    }
 }
 
 //===========================================================================

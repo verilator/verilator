@@ -1,0 +1,19 @@
+// $Id$
+// DESCRIPTION: Verilator: Verilog Test data file
+//
+// Copyright 2006 by Wilson Snyder. This program is free software; you can
+// redistribute it and/or modify it under the terms of either the GNU
+// General Public License or the Perl Artistic License.
+
+10000
+10001
+10010
+10011
+/*
+multi line
+ignored
+*/
+10100
+10101
+10110
+10111

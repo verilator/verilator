@@ -174,6 +174,8 @@ escid	\\[^ \t\f\r\n]+
 <VLG,PSL>"$onehot0"	{yylval.fileline = CRELINE(); return yD_ONEHOT0;}
 <VLG,PSL>"$period"	{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
 <VLG,PSL>"$realtime"	{yylval.fileline = CRELINE(); return yD_TIME;}
+<VLG,PSL>"$readmemb"	{yylval.fileline = CRELINE(); return yD_READMEMB;}
+<VLG,PSL>"$readmemh"	{yylval.fileline = CRELINE(); return yD_READMEMH;}
 <VLG,PSL>"$recovery"	{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
 <VLG,PSL>"$recrem"	{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
 <VLG,PSL>"$removal"	{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
