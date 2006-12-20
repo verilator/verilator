@@ -94,7 +94,7 @@ DISTDEP = info Makefile
 # Files to distribute.
 DISTBIN = $(wildcard bin/verilator-*)
 
-DISTFILES_INC = $(INFOS) .cvsignore COPYING *.in \
+DISTFILES_INC = $(INFOS) .cvsignore COPYING *.in *.ac \
 	Changes README TODO \
 	bin/* \
 	install-sh configure mkinstalldirs *.texi \
