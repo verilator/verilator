@@ -189,6 +189,20 @@ escid	\\[^ \t\f\r\n]+
 <VLG,PSL>"$unsigned"	{yylval.fileline = CRELINE(); return yD_UNSIGNED;}
 <VLG,PSL>"$width"	{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
 <VLG,PSL>"$write"	{yylval.fileline = CRELINE(); return yD_WRITE;}
+
+<VLG,PSL>"$displayb"	{yyerrorf("Unsupported: Use $display with %%b format instead: %s",yytext);}
+<VLG,PSL>"$displayh"	{yyerrorf("Unsupported: Use $display with %%x format instead: %s",yytext);}
+<VLG,PSL>"$displayo"	{yyerrorf("Unsupported: Use $display with %%o format instead: %s",yytext);}
+<VLG,PSL>"$fdisplayb"	{yyerrorf("Unsupported: Use $fdisplay with %%b format instead: %s",yytext);}
+<VLG,PSL>"$fdisplayh"	{yyerrorf("Unsupported: Use $fdisplay with %%x format instead: %s",yytext);}
+<VLG,PSL>"$fdisplayo"	{yyerrorf("Unsupported: Use $fdisplay with %%o format instead: %s",yytext);}
+<VLG,PSL>"$fwriteb"	{yyerrorf("Unsupported: Use $fwrite with %%b format instead: %s",yytext);}
+<VLG,PSL>"$fwriteh"	{yyerrorf("Unsupported: Use $fwrite with %%x format instead: %s",yytext);}
+<VLG,PSL>"$fwriteo"	{yyerrorf("Unsupported: Use $fwrite with %%o format instead: %s",yytext);}
+<VLG,PSL>"$writeb"	{yyerrorf("Unsupported: Use $write with %%b format instead: %s",yytext);}
+<VLG,PSL>"$writeh"	{yyerrorf("Unsupported: Use $write with %%x format instead: %s",yytext);}
+<VLG,PSL>"$writeo"	{yyerrorf("Unsupported: Use $write with %%o format instead: %s",yytext);}
+
 <VLG,PSL>"$"[a-zA-Z_$]+ {yyerrorf("Unsupported or unknown PLI call: %s",yytext);}
 
  /*PSL Implemented */
