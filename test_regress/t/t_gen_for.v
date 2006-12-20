@@ -88,14 +88,13 @@ module paramed (/*AUTOARG*/
       // No else
    endgenerate
 
+   genvar 	      i;
    generate
-      genvar 	      i;
       // Empty loop body
       for (i=0; i<3; i=i+1) begin end
    endgenerate
 
    generate
-      genvar 	      i;
       if (MODE==0) begin
 	 // Flip bitorder, direct assign method
 	 for (i=0; i<WIDTH; i=i+1) begin
@@ -105,12 +104,11 @@ module paramed (/*AUTOARG*/
       else if (MODE==1) begin
 	 // Flip using instantiation
 	 for (i=0; i<WIDTH; i=i+1) begin
+	    integer from = WIDTH-i-1;
 	    if (i==0) begin	// Test if's within a for
-	       integer from = WIDTH-i-1;
 	       mbuf m0 (.q(out[i]), .a(in[from]));
 	    end
 	    else begin
-	       integer from = WIDTH-i-1;
 	       mbuf ma (.q(out[i]), .a(in[from]));
 	    end
 	 end

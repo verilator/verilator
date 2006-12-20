@@ -1177,17 +1177,15 @@ standard; arrayed instances are named {cellName}__{instanceNumber}.  For
 example a[2] is instead a__2.  Thus you cannot use a parameter or variable
 to select the index number; expand it into a case statement manually.
 
-References into generate statements also use different names from the
-Verilog standard; the top level generate, any begin statement, and any
-place where there is a implied begin statement (under each generate-if or
-generate-case) adds a hierarchy level named genblkI<instanceNumber>.  And
-each generate-for adds genforI<loopCount>.  The best bet is to comment out
-the references and run with --debug and look in the at the _begin.tree
-file, and see the hierarchy by looking at the names of all of the CELLs in
-question.  Replace __DOT__ with . in your program.  For example most cells
-under a for loop would be something like
-"genblk__DOT__genfor0__DOT__I<cellname>"; so use genblk.genfor0.I<cellname> to
-see inside that cell.
+References into generate statements should match the names from the Verilog
+standard; subject to converting generate-for a[#] to a__# as described
+above.  When a dotted signal cannot be resolved, Verilator will print a
+list of known scopes to help debugging.
+
+Verilator creates numbered "genblk" when a begin: name is not specified
+around a block inside a generate statement.  These numbers may differ
+between other simulators, but the Verilog specification does not allow
+users to use these names, so it should not matter.
 
 =head2 Latches
 

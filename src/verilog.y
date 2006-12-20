@@ -442,7 +442,7 @@ genItemBlock:	genItem					{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
-genTopBlock:	genItemList				{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
+genTopBlock:	genItemList				{ $$ = $1; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 

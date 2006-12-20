@@ -65,6 +65,7 @@ private:
     int		m_paramNum;	// Parameter number, for position based connection
     V3SymTable* m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
     V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
+    int		m_beginNum;	// Begin block number, 0=none seen
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
     //int debug() { return 9; }
@@ -131,6 +132,7 @@ private:
 	if (!m_curVarsp) nodep->v3fatalSrc("NULL");
 	m_cellVarsp = NULL;
 	m_paramNum = 0;
+	m_beginNum = 0;
 	nodep->iterateChildren(*this);
 	// Prep for next
 	m_curVarsp = NULL;
@@ -158,7 +160,7 @@ private:
 			findvarp->combineType(nodep);
 			nodep->unlinkFrBack(); nodep=NULL;
 		    } else {
-			nodep->v3error("Duplicate declaration of signal.");
+			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName());
 			findvarp->v3error("... Location of original declaration");
 		    }
 		} else {
@@ -244,6 +246,16 @@ private:
 	// Link variables underneath blocks
 	// Remember the existing symbol table scope
 	V3SymTable* upperVarsp = m_curVarsp;
+	// Rename "genblk"s to include a number
+	// All blocks are numbered in the standard, IE we start with "genblk1" even if only one.
+	UINFO(8,"   "<<nodep<<endl);
+	if (m_idState==ID_FIND && nodep->name() == "genblk") {
+	    ++m_beginNum;
+	    nodep->name(nodep->name()+cvtToStr(m_beginNum));
+	}
+	// Recurse
+	int oldNum = m_beginNum;
+	m_beginNum = 0;
 	{
 	    // Create symbol table for the task's vars
 	    if (V3SymTable* localVarsp = nodep->userp()->castSymTable()) {
@@ -256,6 +268,7 @@ private:
 	    nodep->iterateChildren(*this);
 	}
 	m_curVarsp = upperVarsp;
+	m_beginNum = oldNum;
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	// NodeFTaskRef: Resolve its reference
@@ -399,6 +412,7 @@ public:
 	m_cellVarsp = NULL;
 	m_modp = NULL;
 	m_paramNum = 0;
+	m_beginNum = 0;
 	//
 	rootp->accept(*this);
     }

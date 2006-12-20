@@ -55,8 +55,6 @@ private:
     AstModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
     bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
-    AstBegin*	m_beginLastp;	// Last begin block seen (not present one)
-    int		m_beginNum;	// Begin block number, 0=none seen
 
     //int debug() { return 9; }
 
@@ -72,32 +70,8 @@ private:
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);
 	m_modp = nodep;
-	m_beginNum = 0;
-	m_beginLastp = NULL;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
-    }
-    virtual void visit(AstBegin* nodep, AstNUser*) {
-	// Rename "genblk"s to include a number if there was more then one per block
-	// This is better then doing it at parse time, because if there's only one, it's named logically.
-	UINFO(8,"   "<<nodep<<endl);
-	++m_beginNum;
-	if (m_beginNum == 2) {  // We didn't know in time to fix the first one.  Do now
-	    if (!m_beginLastp) nodep->v3fatalSrc("Where was first begin?");
-	    m_beginLastp->name(m_beginLastp->name()+"1");
-	}
-	if (m_beginNum > 1) {  // Now us
-	    nodep->name(nodep->name()+cvtToStr(m_beginNum));
-	}
-	// Recurse
-	int oldNum = m_beginNum;
-	m_beginNum = 0;
-	m_beginLastp = NULL;
-	{
-	    nodep->iterateChildren(*this);
-	}
-	m_beginNum = oldNum;
-	m_beginLastp = nodep;  // Us, so 2nd begin can change our name
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -389,8 +363,6 @@ public:
 	m_ftaskp = NULL;
 	m_modp = NULL;
 	m_setRefLvalue = false;
-	m_beginNum = 0;
-	m_beginLastp = NULL;
 	//
 	rootp->accept(*this);
     }

@@ -3,6 +3,12 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.63*
+
+**** Fix again dotted references into generate cells.  [David Hewson]
+     Verilator no longer accepts duplicated variables inside unique
+     generate blocks as this is illegal according to the specification.
+
 * Verilator 3.630 12/19/2006
 
 **   Support $readmemb and $readmemh.  [Eugene Weber, Arthur Kahlich]

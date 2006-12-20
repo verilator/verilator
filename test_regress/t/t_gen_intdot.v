@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
 
    wire 	out;
    reg 		in;
-   
+
    Genit g (.clk(clk), .value(in), .result(out));
 
    always @ (posedge clk) begin
@@ -56,7 +56,7 @@ module Generate (clk, value, result);
    reg Internal;
 
    assign result = Internal ^ clk;
-  
+
    always @(posedge clk)
      Internal <= #1 value;
 endmodule
@@ -99,7 +99,7 @@ module Genit (clk, value, result);
 `endif
 
 `ifdef verilator
-   wire Result2 = t.g.genblk.foo__0.tt.gen.Internal;
+   wire Result2 = t.g.foo__0.tt.gen.Internal;
 `else
    wire Result2 = t.g.foo[0].tt.gen.Internal;  // Works - Do not change!
 `endif
