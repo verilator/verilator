@@ -111,6 +111,7 @@ class AstSenTree;
     AstCase*	casep;
     AstCaseItem* caseitemp;
     AstConst*	constp;
+    AstFuncRef*	funcrefp;
     AstModule*	modulep;
     AstPin*	pinp;
     AstRange*	rangep;
@@ -250,6 +251,7 @@ class AstSenTree;
 %type<varrefp>	lhIdVarRef
 %type<varnodep>	lhIdVarXRef
 %type<taskrefp>	taskRef
+%type<funcrefp>	funcRef
 %type<nodep>	idRanged lhIdRanged
 %type<nodep>	idArrayed lhIdArrayed
 %type<nodep>	strAsInt strAsText lhConcIdList
@@ -800,8 +802,7 @@ exprNoStr:	expr yOROR expr				{ $$ = new AstLogOr	($2,$1,$3); }
 	|	yD_TIME					{ $$ = new AstTime($1); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 
-	|	yID '(' eList ')'			{ $$ = new AstFuncRef($2,*$1,"",$3); }
-	|	pathDotted '.' yID '(' eList ')'	{ $$ = new AstFuncRef($4,*$3,*$1,$5); }
+	|	funcRef					{ $$ = $1; }
 
 	|	yINTNUM					{ $$ = new AstConst(CRELINE(),*$1); }
 
@@ -981,6 +982,10 @@ taskRef:	yID					{ $$ = new AstTaskRef(CRELINE(),*$1,"",NULL);}
 	|	yID '(' eList ')' 	 		{ $$ = new AstTaskRef(CRELINE(),*$1,"",$3);}
 	|	pathDotted '.' yID 		 	{ $$ = new AstTaskRef(CRELINE(),*$3,*$1,NULL);}
 	|	pathDotted '.' yID '(' eList ')'	{ $$ = new AstTaskRef(CRELINE(),*$3,*$1,$5);}
+	;
+
+funcRef:	yID '(' eList ')'			{ $$ = new AstFuncRef($2,*$1,"",$3); }
+	|	pathDotted '.' yID '(' eList ')'	{ $$ = new AstFuncRef($4,*$3,*$1,$5); }
 	;
 
 idArrayed:	idVarXRef				{ $$ = $1; }
