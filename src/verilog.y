@@ -244,11 +244,11 @@ class AstSenTree;
 %type<nodep>	constExpr exprNoStr expr exprPsl exprStrText
 %type<nodep>	eList cateList cStrList
 %type<strp>	pathDotted
-%type<varrefp>	idVarRef
+%type<varrefp>	varRefBase
 %type<varnodep>	idVarXRef
 %type<taskrefp>	taskRef
 %type<funcrefp>	funcRef
-%type<nodep>	idRanged
+%type<nodep>	varRefDotBit
 %type<nodep>	idArrayed
 %type<nodep>	strAsInt strAsText concIdList
 %type<nodep>	taskDecl
@@ -456,7 +456,7 @@ genItem:	modOrGenItem 				{ $$ = $1; }
 	|	yCASE  '(' expr ')' genCaseList yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
 	|	yIF expr genItemBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
 	|	yIF expr genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$2,$3,$5); }
-	|	yFOR '(' idVarRef '=' expr ';' expr ';' idVarRef '=' expr ')' genItemBlock
+	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
 									     ,$7, new AstAssign($10,$9,$11)
 									     ,$13);}
@@ -481,7 +481,7 @@ assignList:	assignOne				{ $$ = $1; }
 	|	assignList ',' assignOne		{ $$ = $1->addNext($3); }
 	;
 
-assignOne:	idRanged '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
+assignOne:	varRefDotBit '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
 	|	'{' concIdList '}' '=' expr		{ $$ = new AstAssignW($1,$2,$5); }
 	;
 
@@ -656,10 +656,10 @@ stmtList:	stmtBlock				{ $$ = $1; }
 	;
 
 stmt:		';'					{ $$ = NULL; }
-	|	idRanged yLTE delayE expr ';'		{ $$ = new AstAssignDly($2,$1,$4); }
-	|	idRanged '=' delayE expr ';'		{ $$ = new AstAssign($2,$1,$4); }
-	|	idRanged '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
-	|	yASSIGN idRanged '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
+	|	varRefDotBit yLTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
+	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
+	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
+	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
 	|	'{' concIdList '}' yLTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
 	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
@@ -690,7 +690,7 @@ stmt:		';'					{ $$ = NULL; }
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
 	|	yIF expr stmtBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
 	|	yIF expr stmtBlock yELSE stmtBlock	{ $$ = new AstIf($1,$2,$3,$5); }
-	|	yFOR '(' idVarRef '=' expr ';' expr ';' idVarRef '=' expr ')' stmtBlock
+	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)
 									  ,$13);}
@@ -802,7 +802,7 @@ exprNoStr:	expr yOROR expr				{ $$ = new AstLogOr	($2,$1,$3); }
 
 	|	yINTNUM					{ $$ = new AstConst(CRELINE(),*$1); }
 
-	|	idRanged	  			{ $$ = $1; }
+	|	varRefDotBit	  			{ $$ = $1; }
 	;
 
 // Generic expressions
@@ -873,21 +873,21 @@ gateIdE:	/*empty*/				{}
 	|	yID					{}
 	;
 
-gateBuf: 	gateIdE '(' idRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateBuf: 	gateIdE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNot:	gateIdE '(' idRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNot:	gateIdE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateAnd:	gateIdE '(' idRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateAnd:	gateIdE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNand:	gateIdE '(' idRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNand:	gateIdE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateOr:		gateIdE '(' idRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateOr:		gateIdE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNor:	gateIdE '(' idRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNor:	gateIdE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateXor:	gateIdE '(' idRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateXor:	gateIdE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateXnor:	gateIdE '(' idRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateXnor:	gateIdE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
 
 gateAndPinList:	expr 					{ $$ = $1; }
@@ -960,10 +960,10 @@ pathDotted:	yID					{ $$ = $1; }
 	|	pathDotted '.' yID			{ $$ = V3Read::newString(*$1+string(".")+*$3); }
 	;
 
-idVarRef:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
+varRefBase:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 
-idVarXRef:	idVarRef				{ $$ = $1; }
+idVarXRef:	varRefBase				{ $$ = $1; }
 	|	pathDotted '.' yID			{ $$ = new AstVarXRef(CRELINE(),*$3,*$1,false);}
 	;
 
@@ -981,7 +981,7 @@ idArrayed:	idVarXRef				{ $$ = $1; }
 	|	idArrayed '[' expr ']' 			{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	;
 
-idRanged:	idArrayed					{ $$ = $1; }
+varRefDotBit:	idArrayed					{ $$ = $1; }
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
 	|	idArrayed '[' expr yPLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
 	|	idArrayed '[' expr yMINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
@@ -993,8 +993,8 @@ strAsInt:	ySTRING					{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogSt
 strAsText:	ySTRING					{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
 	;
 
-concIdList:	idRanged				{ $$ = $1; }
-	|	concIdList ',' idRanged			{ $$ = new AstConcat($2,$1,$3); }
+concIdList:	varRefDotBit				{ $$ = $1; }
+	|	concIdList ',' varRefDotBit		{ $$ = new AstConcat($2,$1,$3); }
 	;
 
 //************************************************
