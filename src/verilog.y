@@ -18,13 +18,6 @@
 //*************************************************************************
 // Original code here by Paul Wasson and Duane Galbi
 //*************************************************************************
-//General Hints
-//-----------------
-//   1) {A,B} <= HI;  -> expands to two DISTINCT assignment nodes in AST tree
-//
-//   2) inv a(in1,out1), b(in2,out2); -> expanded into two AST instance_nodes
-//
-//*************************************************************************
 
 %{
 /* $Id$ */
@@ -121,6 +114,7 @@ class AstSenTree;
     AstVar*	varp;
     AstVarRef*	varrefp;
     AstNodeVarRef*	varnodep;
+    AstParseRef*	parserefp;
 }
 
 %token<nump>		yINTNUM
@@ -233,7 +227,6 @@ class AstSenTree;
 %type<nodep>	instnameList instname
 %type<pinp>	cellpinList cellpinlist2 cellpinitemE instparamListE
 %type<nodep>	defpList defpOne
-%type<nodep>	ignoreRangeE
 %type<sentreep>	sensitivityE
 %type<senitemp>	senList senitem senitemEdge
 %type<nodep>	stmtBlock stmtList stmt stateCaseForIf
@@ -243,13 +236,13 @@ class AstSenTree;
 %type<nodep>	casecondList assignList assignOne
 %type<nodep>	constExpr exprNoStr expr exprPsl exprStrText
 %type<nodep>	eList cateList cStrList
-%type<strp>	pathDotted
 %type<varrefp>	varRefBase
-%type<varnodep>	idVarXRef
+%type<parserefp> varRefMem
+%type<parserefp> varRefDotBit
 %type<taskrefp>	taskRef
 %type<funcrefp>	funcRef
-%type<nodep>	varRefDotBit
 %type<nodep>	idArrayed
+%type<nodep>	idDotted
 %type<nodep>	strAsInt strAsText concIdList
 %type<nodep>	taskDecl
 %type<nodep>	varDeclList funcDecl funcVarList funcVar
@@ -628,16 +621,12 @@ senList:	senitem					{ $$ = $1; }
 	;
 
 senitem:	senitemEdge				{ $$ = $1; }
-	|	idVarXRef ignoreRangeE			{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
+//FIX need range ignoring to be stripped later, this was simple varXRef
+	|	varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
 	;
 
-senitemEdge:	yPOSEDGE idVarXRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
-	|	yNEGEDGE idVarXRef ignoreRangeE		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
-	;
-
-ignoreRangeE:	/* empty */				{ $$ = NULL; } /* ignored */
-	|	'[' expr ']'				{ $$ = NULL; } /* ignored */
-	|	'[' expr ':' expr  ']'			{ $$ = NULL; } /* ignored */
+senitemEdge:	yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
+	|	yNEGEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
 	;
 
 stmtBlock:	stmt					{ $$ = $1; }
@@ -663,7 +652,7 @@ stmt:		';'					{ $$ = NULL; }
 	|	'{' concIdList '}' yLTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
 	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
-	|	yD_FCLOSE '(' idVarXRef ')' ';'		{ $$ = new AstFClose($1, $3); }
+	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
 	|	yD_FINISH ';'				{ $$ = new AstFinish($1); }
 	|	yD_STOP ';'				{ $$ = new AstStop($1); }
 	|	yVL_COVER_OFF				{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
@@ -675,16 +664,16 @@ stmt:		';'					{ $$ = NULL; }
 	|	yD_DISPLAY  '(' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\n',*$3,NULL,$5); }
 	|	yD_WRITE    '(' ySTRING ')' ';'			{ $$ = new AstDisplay($1,'\0',*$3,NULL,NULL); }
 	|	yD_WRITE    '(' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\0',*$3,NULL,$5); }
-	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\n',*$5,$3,NULL); }
-	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ',' eList ')' ';' { $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
-	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$5,$3,NULL); }
-	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
-	|	yD_READMEMB '(' expr ',' idArrayed ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
-	|	yD_READMEMB '(' expr ',' idArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
-	|	yD_READMEMB '(' expr ',' idArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
-	|	yD_READMEMH '(' expr ',' idArrayed ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
-	|	yD_READMEMH '(' expr ',' idArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
-	|	yD_READMEMH '(' expr ',' idArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\n',*$5,$3,NULL); }
+	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
+	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$5,$3,NULL); }
+	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
+	|	yD_READMEMB '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
+	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
+	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
+	|	yD_READMEMH '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
+	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
+	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	;
 
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
@@ -956,35 +945,38 @@ specifyJunk:	dterm 	{} /* ignored */
 
 //************************************************
 // IDs
-pathDotted:	yID					{ $$ = $1; }
-	|	pathDotted '.' yID			{ $$ = V3Read::newString(*$1+string(".")+*$3); }
-	;
 
-varRefBase:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
-	;
-
-idVarXRef:	varRefBase				{ $$ = $1; }
-	|	pathDotted '.' yID			{ $$ = new AstVarXRef(CRELINE(),*$3,*$1,false);}
-	;
-
-taskRef:	yID					{ $$ = new AstTaskRef(CRELINE(),*$1,"",NULL);}
-	|	yID '(' eList ')' 	 		{ $$ = new AstTaskRef(CRELINE(),*$1,"",$3);}
-	|	pathDotted '.' yID 		 	{ $$ = new AstTaskRef(CRELINE(),*$3,*$1,NULL);}
-	|	pathDotted '.' yID '(' eList ')'	{ $$ = new AstTaskRef(CRELINE(),*$3,*$1,$5);}
-	;
-
-funcRef:	yID '(' eList ')'			{ $$ = new AstFuncRef($2,*$1,"",$3); }
-	|	pathDotted '.' yID '(' eList ')'	{ $$ = new AstFuncRef($4,*$3,*$1,$5); }
-	;
-
-idArrayed:	idVarXRef				{ $$ = $1; }
-	|	idArrayed '[' expr ']' 			{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
-	;
-
-varRefDotBit:	idArrayed					{ $$ = $1; }
+// Single component of dotted path, maybe [#].
+// Due to lookahead constraints, we can't know if [:] or [+:] are valid (last dotted part),
+// we'll assume so and cleanup later.
+idArrayed:	yID						{ $$ = new AstText(CRELINE(),*$1); }
+	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
 	|	idArrayed '[' expr yPLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
 	|	idArrayed '[' expr yMINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
+	;
+
+idDotted:	idArrayed 				{ $$ = $1; }
+	|	idDotted '.' idArrayed	 		{ $$ = new AstDot($2,$1,$3); }
+	;
+
+// VarRef without any dots or vectorizaion
+varRefBase:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
+	;
+
+// VarRef to a Memory
+varRefMem:	idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::VAR_MEM, $1); }
+	;
+
+// VarRef to dotted, and/or arrayed, and/or bit-ranged variable
+varRefDotBit:	idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::VAR_ANY, $1); }
+	;
+
+taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),NULL);}
+	|	idDotted '(' eList ')'			{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),$3);}
+	;
+
+funcRef:	idDotted '(' eList ')'			{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
 strAsInt:	ySTRING					{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}

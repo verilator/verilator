@@ -58,6 +58,7 @@
 #include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkLevel.h"
+#include "V3LinkParse.h"
 #include "V3LinkLValue.h"
 #include "V3LinkResolve.h"
 #include "V3Localize.h"
@@ -107,6 +108,8 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cells.tree"));
     V3Error::abortIfErrors();
 
+    // Convert parseref's to varrefs, and other directly post parsing fixups
+    V3LinkParse::linkParse(v3Global.rootp());
     // Cross-link signal names
     V3Link::link(v3Global.rootp());
     // Cross-link dotted hierarchical references

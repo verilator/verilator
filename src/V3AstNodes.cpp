@@ -361,7 +361,11 @@ void AstSenTree::dump(ostream& str) {
 }
 void AstSenItem::dump(ostream& str) {
     this->AstNode::dump(str);
-    str<<" ["<<m_edgeType.ascii()<<"]";
+    str<<" ["<<edgeType().ascii()<<"]";
+}
+void AstParseRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" ["<<expect().ascii()<<"]";
 }
 void AstActive::dump(ostream& str) {
     this->AstNode::dump(str);

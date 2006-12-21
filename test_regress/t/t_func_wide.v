@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -33,7 +33,7 @@ module muxtop (
    output reg [ 31:0 ] o
    );
 
-   always @ ( i )
+   always @ ( i[43:0] )  // Verify we ignore ranges on always statement sense lists
      o = MUX( i[39:0] );
 
    function [31:0] MUX;

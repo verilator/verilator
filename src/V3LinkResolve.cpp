@@ -97,6 +97,18 @@ private:
 	m_ftaskp = NULL;
     }
 
+    virtual void visit(AstSenItem* nodep, AstNUser*) {
+	// Remove bit selects, and bark if it's not a simple variable
+	nodep->iterateChildren(*this);
+	if (AstSel* selp = nodep->sensp()->castSel()) {
+	    AstNode* fromp = selp->fromp()->unlinkFrBack();
+	    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+	}
+	if (!nodep->sensp()->castNodeVarRef()) {
+	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
+	}
+    }
+
     void iterateSelTriop(AstNodePreSel* nodep) {
 	nodep->iterateChildren(*this);
     }
@@ -284,11 +296,15 @@ private:
     }
     virtual void visit(AstFOpen* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep());
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep());
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+    }
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
 
     virtual void visit(AstScCtor* nodep, AstNUser*) {

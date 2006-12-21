@@ -756,6 +756,46 @@ struct AstGenerate : public AstNode {
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
 };
 
+struct AstParseRef : public AstNode {
+    // A reference to a variable, function or task
+    // We don't know which at parse time due to bison constraints
+    // The link stages will replace this with AstVarRef, or AstTaskRef, etc.
+    // Parents: math|stmt
+    // Children: TEXT|DOT|SEL* (or expression under sel)
+private:
+    AstParseRefExp	m_expect;		// Type we think it should resolve to
+public:
+    AstParseRef(FileLine* fl, AstParseRefExp expect, AstNode* lhsp)
+	:AstNode(fl), m_expect(expect) { setOp1p(lhsp); }
+    virtual ~AstParseRef() {}
+    virtual AstType type() const { return AstType::PARSEREF;}
+    virtual AstNode* clone() { return new AstParseRef(*this);}
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void dump(ostream& str);
+    virtual V3Hash sameHash() const { return V3Hash(m_expect); }
+    virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect(); }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    AstParseRefExp expect() const { return m_expect; }
+    // op1 = Components
+    AstNode*	lhsp() 		const { return op1p(); }	// op1 = List of statements
+};
+
+struct AstDot : public AstNode {
+    // A dot separating paths in a AstXRef, AstFuncRef or AstTaskRef
+    // These are elimiated in the link stage
+    AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
+    virtual ~AstDot() {}
+    virtual AstType type() const { return AstType::DOT;}
+    virtual AstNode* clone() { return new AstDot(*this);}
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* rhsp() const { return op2p(); }
+};
+
 //######################################################################
 
 struct AstTask : public AstNodeFTask {
@@ -785,8 +825,8 @@ struct AstFunc : public AstNodeFTask {
 
 struct AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
-    AstTaskRef(FileLine* fl, const string& name, const string& dotted, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, name, dotted, pinsp) {}
+    AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
+	:AstNodeFTaskRef(fl, namep, pinsp) {}
     virtual ~AstTaskRef() {}
     virtual AstType type() const { return AstType::TASKREF;}
     virtual AstNode* clone() { return new AstTaskRef(*this);}
@@ -795,8 +835,8 @@ struct AstTaskRef : public AstNodeFTaskRef {
 
 struct AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
-    AstFuncRef(FileLine* fl, const string& name, const string& dotted, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, name, dotted, pinsp) {}
+    AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
+	:AstNodeFTaskRef(fl, namep, pinsp) {}
     virtual ~AstFuncRef() {}
     virtual AstType type() const { return AstType::FUNCREF;}
     virtual AstNode* clone() { return new AstFuncRef(*this);}
@@ -816,8 +856,11 @@ public:
     class Settle {};		// for creator type-overload selection
     class Never {};		// for creator type-overload selection
     AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNodeVarRef* varrefp)
-	: AstNode(fl) {
-	m_edgeType = edgeType;
+	: AstNode(fl), m_edgeType(edgeType) {
+	setOp1p(varrefp);
+    }
+    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstParseRef* varrefp)
+	: AstNode(fl), m_edgeType(edgeType) {
 	setOp1p(varrefp);
     }
     AstSenItem(FileLine* fl, Combo)
@@ -1175,10 +1218,12 @@ public:
 };
 
 struct AstDisplay : public AstNodePli {
+    // Parents: stmtlist
+    // Children: file which must be a varref, MATH to print
 private:
     char	m_newline;
 public:
-    AstDisplay(FileLine* fileline, char newln, const string& text, AstNodeVarRef* filep, AstNode* exprsp)
+    AstDisplay(FileLine* fileline, char newln, const string& text, AstNode* filep, AstNode* exprsp)
 	: AstNodePli (fileline, text, exprsp) {
 	setNOp2p(filep);
 	m_newline = newln;
@@ -1200,7 +1245,7 @@ public:
 	    && text()==samep->castDisplay()->text(); }
     // op1 used by AstNodePli
     char	newline()	const { return m_newline; }		// * = Add a newline for $display
-    AstNodeVarRef*	filep() const { return op2p()->castVarRef(); }
+    AstNode*	filep() const { return op2p(); }
     void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
     AstNode*	scopeAttrp() const { return op3p(); }
     AstText*	scopeTextp() const { return op3p()->castText(); }
@@ -1208,7 +1253,9 @@ public:
 };
 
 struct AstFClose : public AstNodeStmt {
-    AstFClose(FileLine* fileline, AstNodeVarRef* filep)
+    // Parents: stmtlist
+    // Children: file which must be a varref
+    AstFClose(FileLine* fileline, AstNode* filep)
 	: AstNodeStmt (fileline) {
 	setNOp2p(filep);
     }
@@ -1224,7 +1271,7 @@ struct AstFClose : public AstNodeStmt {
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
-    AstNodeVarRef*	filep() const { return op2p()->castVarRef(); }
+    AstNode*	filep() const { return op2p(); }
     void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
@@ -1247,7 +1294,7 @@ struct AstFOpen : public AstNodeStmt {
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
-    AstNodeVarRef*	filep() const { return op1p()->castVarRef(); }
+    AstNode*	filep() const { return op1p(); }
     AstNode*	filenamep() const { return op2p(); }
     AstNode*	modep() const { return op3p(); }
 };

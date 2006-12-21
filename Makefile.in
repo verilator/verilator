@@ -155,15 +155,15 @@ test_vcs: all_nomsg
 test_c: all_nomsg
 	@(cd test_c && $(MAKE))
 test_c_debug: all_nomsg
-	@(cd test_c && $(MAKE) debug)
+	@(cd test_c && $(MAKE) test_debug)
 test_sc: all_nomsg
 	@(cd test_sc && $(MAKE))
 test_sc_debug: all_nomsg
-	@(cd test_sc && $(MAKE) debug)
+	@(cd test_sc && $(MAKE) test_debug)
 test_sp: all_nomsg
 	@(cd test_sp && $(MAKE))
 test_sp_debug: all_nomsg
-	@(cd test_sp && $(MAKE) debug)
+	@(cd test_sp && $(MAKE) test_debug)
 test_verilated: all_nomsg
 	@(cd test_verilated && $(MAKE))
 test_regress: all_nomsg

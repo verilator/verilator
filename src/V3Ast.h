@@ -249,6 +249,33 @@ public:
   inline ostream& operator<<(ostream& os, AstBranchPred rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
+
+class AstParseRefExp {
+public:
+    enum en {
+	NONE,	// Used in V3LinkParse only
+	VAR_MEM,
+	VAR_ANY,
+	TASK,
+	FUNC,
+	_ENUM_END
+    };
+    enum en m_e;
+    inline AstParseRefExp() : m_e(NONE) {};
+    inline AstParseRefExp (en _e) : m_e(_e) {};
+    explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {};
+    operator en () const { return m_e; };
+    const char* ascii() const {
+	static const char* names[] = {
+	    "","VAR_MEM","VAR_ANY","TASK","FUNC"};
+	return names[m_e];};
+  };
+  inline bool operator== (AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstParseRefExp lhs, AstParseRefExp::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstParseRefExp::en lhs, AstParseRefExp rhs) { return (lhs == rhs.m_e); }
+  inline ostream& operator<<(ostream& os, AstParseRefExp rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
 // AstNUser - Generic pointer base class for AST User nodes.
 //	    - Also used to allow parameter passing up/down iterate calls
 
@@ -943,10 +970,10 @@ private:
     string		m_dotted;	// Dotted part of scope to task or ""
     string		m_inlinedDots;	// Dotted hiearchy flattened out
 public:
-    AstNodeFTaskRef(FileLine* fl, const string& name, const string& dotted, AstNode* pinsp)
+    AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
 	:AstNode(fl)
-	, m_taskp(NULL), m_name(name), m_dotted(dotted) {
-	addNOp1p(pinsp);
+	, m_taskp(NULL) {
+	setOp1p(namep);	addNOp2p(pinsp); 
     }
     virtual ~AstNodeFTaskRef() {}
     virtual bool broken() const { return m_taskp && !m_taskp->brokeExists(); }
@@ -961,9 +988,13 @@ public:
     void	inlinedDots(const string& flag) { m_inlinedDots = flag; }
     AstNodeFTask*	taskp() const { return m_taskp; }		// [After Link] Pointer to variable
     void  	taskp(AstNodeFTask* taskp) { m_taskp=taskp; }
-    // op1 = Pin interconnection list
-    AstNode*	pinsp() 	const { return op1p()->castNode(); }
-    void addPinsp(AstNode* nodep) { addOp1p(nodep); }
+    void	name(const string& name) { m_name = name; }
+    void	dotted(const string& name) { m_dotted = name; }
+    // op1 = namep
+    AstNode*	namep()		const { return op1p(); }
+    // op2 = Pin interconnection list
+    AstNode*	pinsp() 	const { return op2p()->castNode(); }
+    void addPinsp(AstNode* nodep) { addOp2p(nodep); }
 };
 
 //######################################################################
