@@ -172,8 +172,6 @@ class AstSenTree;
 %token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
 %token<fileline>	yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
 %token<fileline>	yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
-%token<fileline>	yVL_ONE_COLD		"/*verilator one_cold*/"
-%token<fileline>	yVL_ONE_HOT		"/*verilator one_hot*/"
 %token<fileline>	yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fileline>	yVL_PUBLIC		"/*verilator public*/"
 %token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
