@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
      Verilator no longer accepts duplicated variables inside unique
      generate blocks as this is illegal according to the specification.
 
+**** Fix $readmem* with filenames < 8 characters.  [Emerson Suguimoto]
+
 * Verilator 3.630 12/19/2006
 
 **   Support $readmemb and $readmemh.  [Eugene Weber, Arthur Kahlich]

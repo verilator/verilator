@@ -242,7 +242,7 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
 		  QData ofilename, void* memp, IData start, IData end) {
     IData fnw[2];  VL_SET_WQ(fnw, ofilename);
-    return VL_READMEM_W(hex,2,width,depth,array_lsb, fnw,memp,start,end);
+    return VL_READMEM_W(hex,width,depth,array_lsb,2, fnw,memp,start,end);
 }
 
 void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
@@ -257,7 +257,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     }
     // Prep for reading
     IData addr = start;
-    int linenum = 0;
+    int linenum = 1;
     bool innum = false;
     bool ignore_to_eol = false;
     bool ignore_to_cmt = false;

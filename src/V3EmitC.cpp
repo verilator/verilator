@@ -239,11 +239,13 @@ public:
 	emitIQW(nodep->modep());
 	if (nodep->modep()->width()>4*8) nodep->modep()->v3error("$fopen mode should be <= 4 characters");
 	puts("(");
-	if (nodep->filenamep()->isWide()) puts(cvtToStr(nodep->filenamep()->widthWords()));
+	if (nodep->filenamep()->isWide()) {
+	    puts(cvtToStr(nodep->filenamep()->widthWords()));
+	    putbs(", ");
+	}
 	if (nodep->filenamep()->widthWords() > VL_TO_STRING_MAX_WORDS) {
 	    nodep->v3error("String of "<<nodep->filenamep()->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
 	}
-	putbs(", ");
 	nodep->filenamep()->iterateAndNext(*this);
 	putbs(", ");
 	nodep->modep()->iterateAndNext(*this);

@@ -32,6 +32,12 @@ module t;
 	 if (|file) $stop;	// Should not exist, IE must return 0
       end
 
+      begin
+	 // Check quadword access; a little strange, but it's legal to open "."
+	 file = $fopen(".","r");
+	 $fclose(file);
+      end
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

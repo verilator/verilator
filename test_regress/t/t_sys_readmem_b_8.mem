@@ -5,6 +5,8 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // General Public License or the Perl Artistic License.
 
+// ** Note this file has DOS CR's so we can test them!
+
 10000
 10001
 10010
