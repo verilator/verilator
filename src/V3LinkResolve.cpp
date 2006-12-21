@@ -54,7 +54,6 @@ private:
     // Below state needs to be preserved between each module call.
     AstModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
-    bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
 
     //int debug() { return 9; }
 
@@ -86,12 +85,6 @@ private:
 	// VarRef: Resolve its reference
 	if (nodep->varp()) {
 	    nodep->varp()->usedParam(true);
-	    if (nodep->lvalue() && nodep->varp()->isInOnly()) {
-		nodep->v3error("Assigning to input variable: "<<nodep->prettyName());
-	    }
-	}
-	if (m_setRefLvalue) {
-	    nodep->lvalue(true);
 	}
 	nodep->iterateChildren(*this);
     }
@@ -104,46 +97,8 @@ private:
 	m_ftaskp = NULL;
     }
 
-    virtual void visit(AstPin* nodep, AstNUser*) {
-	if (nodep->modVarp() && nodep->modVarp()->isOutput()) {
-	    // When the varref's were created, we didn't know the I/O state
-	    // Now that we do, and it's from a output, we know it's a lvalue
-	    m_setRefLvalue = true;
-	    nodep->iterateChildren(*this);
-	    m_setRefLvalue = false;
-	} else {
-	    nodep->iterateChildren(*this);
-	}
-    }
-
-    virtual void visit(AstSel* nodep, AstNUser*) {
-	nodep->lhsp()->iterateAndNext(*this);
-	{   // Only set lvalues on the from
-	    bool last_setRefLvalue = m_setRefLvalue;
-	    m_setRefLvalue = false;
-	    nodep->rhsp()->iterateAndNext(*this);
-	    nodep->thsp()->iterateAndNext(*this);
-	    m_setRefLvalue = last_setRefLvalue;
-	}
-    }
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
-	nodep->lhsp()->iterateAndNext(*this);
-	{   // Only set lvalues on the from
-	    bool last_setRefLvalue = m_setRefLvalue;
-	    m_setRefLvalue = false;
-	    nodep->rhsp()->iterateAndNext(*this);
-	    m_setRefLvalue = last_setRefLvalue;
-	}
-    }
     void iterateSelTriop(AstNodePreSel* nodep) {
-	nodep->lhsp()->iterateAndNext(*this);
-	{   // Only set lvalues on the from
-	    bool last_setRefLvalue = m_setRefLvalue;
-	    m_setRefLvalue = false;
-	    nodep->rhsp()->iterateAndNext(*this);
-	    nodep->thsp()->iterateAndNext(*this);
-	    m_setRefLvalue = last_setRefLvalue;
-	}
+	nodep->iterateChildren(*this);
     }
 
     AstNode* newSubAttrOf(AstNode* underp, AstNode* fromp, AstAttrType attrType) {
@@ -362,7 +317,6 @@ public:
     LinkResolveVisitor(AstNetlist* rootp) {
 	m_ftaskp = NULL;
 	m_modp = NULL;
-	m_setRefLvalue = false;
 	//
 	rootp->accept(*this);
     }

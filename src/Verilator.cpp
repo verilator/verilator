@@ -58,6 +58,7 @@
 #include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkLevel.h"
+#include "V3LinkLValue.h"
 #include "V3LinkResolve.h"
 #include "V3Localize.h"
 #include "V3Name.h"
@@ -110,8 +111,10 @@ void process () {
     V3Link::link(v3Global.rootp());
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrearrayed(v3Global.rootp());
-    // Correct state we couldn't know at parse time, repair SEL's, set lvalue's
+    // Correct state we couldn't know at parse time, repair SEL's
     V3LinkResolve::linkResolve(v3Global.rootp());
+    // Set Lvalue's in variable refs
+    V3LinkLValue::linkLValue(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("link.tree"));
     V3Error::abortIfErrors();
 

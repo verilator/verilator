@@ -248,13 +248,11 @@ class AstSenTree;
 %type<strp>	pathDotted
 %type<varrefp>	idVarRef
 %type<varnodep>	idVarXRef
-%type<varrefp>	lhIdVarRef
-%type<varnodep>	lhIdVarXRef
 %type<taskrefp>	taskRef
 %type<funcrefp>	funcRef
-%type<nodep>	idRanged lhIdRanged
-%type<nodep>	idArrayed lhIdArrayed
-%type<nodep>	strAsInt strAsText lhConcIdList
+%type<nodep>	idRanged
+%type<nodep>	idArrayed
+%type<nodep>	strAsInt strAsText concIdList
 %type<nodep>	taskDecl
 %type<nodep>	varDeclList funcDecl funcVarList funcVar
 %type<rangep>	funcRange
@@ -460,7 +458,7 @@ genItem:	modOrGenItem 				{ $$ = $1; }
 	|	yCASE  '(' expr ')' genCaseList yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
 	|	yIF expr genItemBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
 	|	yIF expr genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$2,$3,$5); }
-	|	yFOR '(' lhIdVarRef '=' expr ';' expr ';' lhIdVarRef '=' expr ')' genItemBlock
+	|	yFOR '(' idVarRef '=' expr ';' expr ';' idVarRef '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
 									     ,$7, new AstAssign($10,$9,$11)
 									     ,$13);}
@@ -485,8 +483,8 @@ assignList:	assignOne				{ $$ = $1; }
 	|	assignList ',' assignOne		{ $$ = $1->addNext($3); }
 	;
 
-assignOne:	lhIdRanged '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
-	|	'{' lhConcIdList '}' '=' expr		{ $$ = new AstAssignW($1,$2,$5); }
+assignOne:	idRanged '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
+	|	'{' concIdList '}' '=' expr		{ $$ = new AstAssignW($1,$2,$5); }
 	;
 
 delayE:		/* empty */
@@ -660,12 +658,12 @@ stmtList:	stmtBlock				{ $$ = $1; }
 	;
 
 stmt:		';'					{ $$ = NULL; }
-	|	lhIdRanged yLTE delayE expr ';'		{ $$ = new AstAssignDly($2,$1,$4); }
-	|	lhIdRanged '=' delayE expr ';'		{ $$ = new AstAssign($2,$1,$4); }
-	|	lhIdRanged '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
-	|	yASSIGN lhIdRanged '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
-	|	'{' lhConcIdList '}' yLTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
-	|	'{' lhConcIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
+	|	idRanged yLTE delayE expr ';'		{ $$ = new AstAssignDly($2,$1,$4); }
+	|	idRanged '=' delayE expr ';'		{ $$ = new AstAssign($2,$1,$4); }
+	|	idRanged '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
+	|	yASSIGN idRanged '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
+	|	'{' concIdList '}' yLTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
+	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idVarXRef ')' ';'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FINISH ';'				{ $$ = new AstFinish($1); }
@@ -683,18 +681,18 @@ stmt:		';'					{ $$ = NULL; }
 	|	yD_FDISPLAY '(' idVarXRef ',' ySTRING ',' eList ')' ';' { $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
 	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$5,$3,NULL); }
 	|	yD_FWRITE   '(' idVarXRef ',' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
-	|	yD_READMEMB '(' expr ',' lhIdArrayed ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
-	|	yD_READMEMB '(' expr ',' lhIdArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
-	|	yD_READMEMB '(' expr ',' lhIdArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
-	|	yD_READMEMH '(' expr ',' lhIdArrayed ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
-	|	yD_READMEMH '(' expr ',' lhIdArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
-	|	yD_READMEMH '(' expr ',' lhIdArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	|	yD_READMEMB '(' expr ',' idArrayed ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
+	|	yD_READMEMB '(' expr ',' idArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
+	|	yD_READMEMB '(' expr ',' idArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
+	|	yD_READMEMH '(' expr ',' idArrayed ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
+	|	yD_READMEMH '(' expr ',' idArrayed ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
+	|	yD_READMEMH '(' expr ',' idArrayed ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	;
 
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
 	|	yIF expr stmtBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
 	|	yIF expr stmtBlock yELSE stmtBlock	{ $$ = new AstIf($1,$2,$3,$5); }
-	|	yFOR '(' lhIdVarRef '=' expr ';' expr ';' lhIdVarRef '=' expr ')' stmtBlock
+	|	yFOR '(' idVarRef '=' expr ';' expr ';' idVarRef '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)
 									  ,$13);}
@@ -877,21 +875,21 @@ gateIdE:	/*empty*/				{}
 	|	yID					{}
 	;
 
-gateBuf: 	gateIdE '(' lhIdRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateBuf: 	gateIdE '(' idRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNot:	gateIdE '(' lhIdRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNot:	gateIdE '(' idRanged ',' expr ')'		{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateAnd:	gateIdE '(' lhIdRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateAnd:	gateIdE '(' idRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNand:	gateIdE '(' lhIdRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNand:	gateIdE '(' idRanged ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateOr:		gateIdE '(' lhIdRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateOr:		gateIdE '(' idRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateNor:	gateIdE '(' lhIdRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNor:	gateIdE '(' idRanged ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
-gateXor:	gateIdE '(' lhIdRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateXor:	gateIdE '(' idRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
 	;
-gateXnor:	gateIdE '(' lhIdRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateXnor:	gateIdE '(' idRanged ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
 	;
 
 gateAndPinList:	expr 					{ $$ = $1; }
@@ -964,13 +962,6 @@ pathDotted:	yID					{ $$ = $1; }
 	|	pathDotted '.' yID			{ $$ = V3Read::newString(*$1+string(".")+*$3); }
 	;
 
-lhIdVarRef:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,true);}
-	;
-
-lhIdVarXRef:	lhIdVarRef				{ $$ = $1; }
-	|	pathDotted '.' yID			{ $$ = new AstVarXRef(CRELINE(),*$3,*$1,true);}
-	;
-
 idVarRef:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 
@@ -992,20 +983,10 @@ idArrayed:	idVarXRef				{ $$ = $1; }
 	|	idArrayed '[' expr ']' 			{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	;
 
-lhIdArrayed:	lhIdVarXRef				{ $$ = $1; }
-	|	lhIdArrayed '[' expr ']' 		{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
-	;
-
 idRanged:	idArrayed					{ $$ = $1; }
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
 	|	idArrayed '[' expr yPLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
 	|	idArrayed '[' expr yMINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
-	;
-
-lhIdRanged:	lhIdArrayed					{ $$ = $1; }
-	|	lhIdArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
-	|	lhIdArrayed '[' expr yPLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
-	|	lhIdArrayed '[' expr yMINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
 	;
 
 strAsInt:	ySTRING					{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}
@@ -1014,8 +995,8 @@ strAsInt:	ySTRING					{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogSt
 strAsText:	ySTRING					{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
 	;
 
-lhConcIdList:	lhIdRanged				{ $$ = $1; }
-	|	lhConcIdList ',' lhIdRanged		{ $$ = new AstConcat($2,$1,$3); }
+concIdList:	idRanged				{ $$ = $1; }
+	|	concIdList ',' idRanged			{ $$ = new AstConcat($2,$1,$3); }
 	;
 
 //************************************************
@@ -1177,3 +1158,7 @@ AstText* V3Parse::createTextQuoted(FileLine* fileline, string text) {
     string newtext = deQuote(fileline, text);
     return new AstText(fileline, newtext);
 }
+
+// Local Variables:
+// compile-command: "cd obj_dbg ; /usr/bin/bison -y -d -v ../verilog.y ; cat y.output"
+// End:
