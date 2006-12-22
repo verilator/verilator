@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.63*
 
+**   Support standard NAME[#] for cells created by arraying or generate for.
+     This replaces the non-standard name__# syntax used in earlier versions.
+
 **** Fix again dotted references into generate cells.  [David Hewson]
      Verilator no longer accepts duplicated variables inside unique
      generate blocks as this is illegal according to the specification.

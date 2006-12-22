@@ -51,13 +51,8 @@ module Genit (
 
    // ARRAY
    One cellarray1[1:0] ();	//cellarray[0..1][0..1]
-`ifdef verilator
-   always @ (posedge clk) if (cellarray1__0.one !== 1'b1) $stop;
-   always @ (posedge clk) if (cellarray1__1.one !== 1'b1) $stop;
-`else
    always @ (posedge clk) if (cellarray1[0].one !== 1'b1) $stop;
    always @ (posedge clk) if (cellarray1[1].one !== 1'b1) $stop;
-`endif
 
    // IF
    generate
@@ -122,8 +117,8 @@ module Genit (
 	One cellfor20 ();	// genblk5[0..1].cellfor20
    endgenerate
 `ifdef verilator
-   always @ (posedge clk) if (genblk4__0.cellfor20.one !== 1'b1) $stop;
-   always @ (posedge clk) if (genblk4__1.cellfor20.one !== 1'b1) $stop;
+   always @ (posedge clk) if (genblk4[0].cellfor20.one !== 1'b1) $stop;
+   always @ (posedge clk) if (genblk4[1].cellfor20.one !== 1'b1) $stop;
 //`else // NOT SUPPORTED accoring to spec - generic block references
 `endif
 
@@ -134,13 +129,8 @@ module Genit (
 	   One cellfor21 ();	// namedfor21[0..1].cellfor21
 	end
    endgenerate
-`ifdef verilator
-   always @ (posedge clk) if (namedfor21__0.cellfor21.one !== 1'b1) $stop;
-   always @ (posedge clk) if (namedfor21__1.cellfor21.one !== 1'b1) $stop;
-`else
    always @ (posedge clk) if (namedfor21[0].cellfor21.one !== 1'b1) $stop;
    always @ (posedge clk) if (namedfor21[1].cellfor21.one !== 1'b1) $stop;
-`endif
 
    generate
       for (i = 0; i < 2; i = i + 1)
@@ -162,15 +152,13 @@ module Genit (
 	     end
 	end
    endgenerate
-`ifdef verilator
-   always @ (posedge clk) if (namedfor30__0.forb30__0.forif30.cellfor30a.one !== 1'b1) $stop;
-   always @ (posedge clk) if (namedfor30__0.forb30__1.forif30b.cellfor30b.one !== 1'b1) $stop;
-   always @ (posedge clk) if (namedfor30__1.forb30__0.forif30.cellfor30a.one !== 1'b1) $stop;
-   always @ (posedge clk) if (namedfor30__1.forb30__1.forif30b.cellfor30b.one !== 1'b1) $stop;
-`else
    always @ (posedge clk) if (namedfor30[0].forb30[0].forif30.cellfor30a.one !== 1'b1) $stop;
-   always @ (posedge clk) if (namedfor30[0].forb30[1].forif30.cellfor30b.one !== 1'b1) $stop;
    always @ (posedge clk) if (namedfor30[1].forb30[0].forif30.cellfor30a.one !== 1'b1) $stop;
+`ifdef verilator
+   always @ (posedge clk) if (namedfor30[0].forb30[1].forif30b.cellfor30b.one !== 1'b1) $stop;
+   always @ (posedge clk) if (namedfor30[1].forb30[1].forif30b.cellfor30b.one !== 1'b1) $stop;
+`else
+   always @ (posedge clk) if (namedfor30[0].forb30[1].forif30.cellfor30b.one !== 1'b1) $stop;
    always @ (posedge clk) if (namedfor30[1].forb30[1].forif30.cellfor30b.one !== 1'b1) $stop;
 `endif
 

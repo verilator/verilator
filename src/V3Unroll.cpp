@@ -348,10 +348,7 @@ private:
 	    // V3Begin sees these DOTs and makes CellInlines for us.
 	    string nname = (string)"genfor"+cvtToStr(m_varValuep->asInt())+"__DOT__"+nodep->name();
 	    // Verilog seems to drop the for loop name and tack on [#]
-	    //nname = nodep->name() + "__BRA__" + cvtToStr(m_varValuep->asInt()) + "__KET__";
-	    // However we don't parse [#]'s correctly, so just use __ for now.
-	    // (Fixing parsing to allow hardcoded numbers then leads to shift/reduce conflicts.)
-	    nname = nodep->name() + "__" + cvtToStr(m_varValuep->asInt());
+	    nname = nodep->name() + "__BRA__" + cvtToStr(m_varValuep->asInt()) + "__KET__";
 	    //UINFO(8,"   Rename begin "<<nname<<" "<<nodep<<endl);
 	    nodep->name(nname);
 	}

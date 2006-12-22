@@ -98,11 +98,7 @@ module Genit (clk, value, result);
    Test tt (clk, value, result);
 `endif
 
-`ifdef verilator
-   wire Result2 = t.g.foo__0.tt.gen.Internal;
-`else
    wire Result2 = t.g.foo[0].tt.gen.Internal;  // Works - Do not change!
-`endif
    always @ (posedge clk) begin
       $write("[%0t] Result2 = %x\n", $time, Result2);
    end

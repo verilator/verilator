@@ -523,6 +523,7 @@ public:
     virtual string name() const { return ""; }
     virtual string verilogKwd() const { return ""; }
     string 	shortName() const;	// Name with __PVT__ removed for concatenating scopes
+    static string dedotName(const string& namein);	// Name with dots removed
     static string prettyName(const string& namein);	// Name for printing out to the user
     string	prettyName() const { return prettyName(name()); }
     FileLine*	fileline() const { return m_fileline; }

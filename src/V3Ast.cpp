@@ -92,12 +92,19 @@ string AstNode::shortName() const {
     return pretty;
 }
 
-string AstNode::prettyName(const string& namein) {
+string AstNode::dedotName(const string& namein) {
     string pretty = namein;
     string::size_type pos;
     while ((pos=pretty.find("__DOT__")) != string::npos) {
 	pretty.replace(pos, 7, ".");
     }
+    if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
+    return pretty;
+}
+
+string AstNode::prettyName(const string& namein) {
+    string pretty = namein;
+    string::size_type pos;
     while ((pos=pretty.find("__BRA__")) != string::npos) {
 	pretty.replace(pos, 7, "[");
     }
@@ -107,8 +114,7 @@ string AstNode::prettyName(const string& namein) {
     while ((pos=pretty.find("__PVT__")) != string::npos) {
 	pretty.replace(pos, 7, "");
     }
-    if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
-    return pretty;
+    return AstNode::dedotName(pretty);
 }
 
 int AstNode::widthPow2() const {

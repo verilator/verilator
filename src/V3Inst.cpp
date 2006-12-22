@@ -163,8 +163,8 @@ private:
 		// Somewhat illogically, we need to rename the orignal name of the cell too.
 		// as that is the name users expect for dotting
 		// The spec says we add [x], but that won't work in C...
-		newp->name(newp->name()+"__"+cvtToStr(m_instNum));
-		newp->origName(newp->origName()+"__"+cvtToStr(m_instNum));
+		newp->name(newp->name()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
+		newp->origName(newp->origName()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
 		// Fixup pins
 		newp->pinsp()->iterateAndNext(*this);
 		if (debug()==9) { newp->dumpTree(cout,"newcell: "); cout<<endl; }

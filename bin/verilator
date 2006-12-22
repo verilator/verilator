@@ -1169,23 +1169,21 @@ always @* to prevent these issues.)
 
 Verilator supports dotted references to variables, functions and tasks in
 different modules. However, references into named blocks and function-local
-variables are not supported.  References into arrayed and generated
-instances work, but still require some work-arounds in the Verilog code:
+variables are not supported.  The portion before the dot must have a
+constant value; for example a[2].b is acceptable, while a[x].b is not.
 
-References into arrayed instances use different names from the Verilog
-standard; arrayed instances are named {cellName}__{instanceNumber}.  For
-example a[2] is instead a__2.  Thus you cannot use a parameter or variable
-to select the index number; expand it into a case statement manually.
-
-References into generate statements should match the names from the Verilog
-standard; subject to converting generate-for a[#] to a__# as described
-above.  When a dotted signal cannot be resolved, Verilator will print a
-list of known scopes to help debugging.
+References into generated and arrayed instances use the instance names
+specified in the Verilog standard; arrayed instances are named
+{cellName}[{instanceNumber}] in Verilog, which becomes
+{cellname}__BRA__{instanceNumber}__KET__ inside the generated C++ code.
 
 Verilator creates numbered "genblk" when a begin: name is not specified
 around a block inside a generate statement.  These numbers may differ
 between other simulators, but the Verilog specification does not allow
 users to use these names, so it should not matter.
+
+If you are having trouble determining where a dotted path goes wrong, note
+that Verilator will print a list of known scopes to help your debugging.
 
 =head2 Latches
 
@@ -1625,6 +1623,12 @@ In your top level C sc_main code, call Verilated::traceEverOn(true).  Then
 create a SpTraceFile object as you would create a normal SystemC trace
 file.  For an example, see the call to SpTraceFile in the
 test_sp/sc_main.cpp file of the distribution.
+
+=item How do I view waveforms (traces)?
+
+Verilator makes standard VCD (Value Change Dump) files.  They are viewable
+with the public domain Dinotrace or GtkWave programs, or any of the many
+commercial offerings.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)
 

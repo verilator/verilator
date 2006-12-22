@@ -36,12 +36,9 @@ module t (/*AUTOARG*/
 	 end
 	 if (cyc==3) begin
 	    if (bitout !== 8'h41) $stop;
-`ifdef verilator // Hacky array subscripting
-	    if (sub__0.bitout !== 1'b1) $stop;
-	    if (sub__1.bitout !== 1'b0) $stop;
-`else
 	    if (sub[0].bitout !== 1'b1) $stop;
 	    if (sub[1].bitout !== 1'b0) $stop;
+`ifndef verilator // Hacky array subscripting
 	    if (sub[ONE].bitout !== 1'b0) $stop;
 `endif
 	    $write("*-* All Finished *-*\n");

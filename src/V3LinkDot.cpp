@@ -181,7 +181,7 @@ private:
     typedef std::multimap<string,LinkDotCellVertex*> NameScopeMap;
     // MEMBERS
     LinkDotGraph	m_graph;		// Graph of hiearchy
-    NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by textual name
+    NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by non-pretty textual name
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
 public:
@@ -298,7 +298,7 @@ public:
 	    string altIdent = "";
 	    if (m_forPrearray) {
 		// Cell foo__[array] before we've expanded arrays is just foo.
-		if ((pos = ident.find("__")) != string::npos) {
+		if ((pos = ident.find("__BRA__")) != string::npos) {
 		    altIdent = ident.substr(0,pos);
 		}
 	    }
@@ -415,7 +415,7 @@ private:
 	LinkDotBaseVertex* oldInlineVxp = m_inlineVxp;
 	// Where do we add it?
 	LinkDotBaseVertex* aboveVxp = m_inlineVxp;
-	string origname = nodep->prettyName();
+	string origname = AstNode::dedotName(nodep->name());
 	string::size_type pos;
 	if ((pos = origname.rfind(".")) != string::npos) {
 	    // Flattened, find what CellInline it should live under
@@ -616,7 +616,7 @@ private:
 	    LinkDotBaseVertex* okVxp;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
-		string inl = AstNode::prettyName(nodep->inlinedDots());
+		string inl = AstNode::dedotName(nodep->inlinedDots());
 		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
 		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 	    }
@@ -663,10 +663,13 @@ private:
 	    LinkDotBaseVertex* okVxp;
 	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
-		string inl = AstNode::prettyName(nodep->inlinedDots());
+		string inl = AstNode::dedotName(nodep->inlinedDots());
 		UINFO(8,"\t\tInlined "<<inl<<endl);
 		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
-		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
+		if (!dotVxp) {
+		    okVxp->errorScopes(nodep);
+		    nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
+		}
 	    }
 	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot, okVxp); // Maybe NULL
 
