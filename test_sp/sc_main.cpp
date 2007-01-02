@@ -1,7 +1,7 @@
 // $Id$ -*- SystemC -*-
 // DESCRIPTION: Verilator Example: Top level main for invoking SystemC model
 //
-// Copyright 2003-2006 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // General Public License or the Perl Artistic License.
 //====================================================================

@@ -4,7 +4,7 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 # $Id$
 ######################################################################
 #
-# Copyright 2003-2006 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 #
@@ -1820,7 +1820,7 @@ Eugene Weber, Leon Wildman, and Mat Zeno.
 
 The latest version is available from L<http://www.veripool.com/>.
 
-Copyright 2003-2006 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2007 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License or the Perl Artistic License.
 

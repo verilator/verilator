@@ -2,7 +2,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2006-2006 by Wilson Snyder.
+// without warranty, 2006-2007 by Wilson Snyder.
 
 class t_extend_class_c {
 public:

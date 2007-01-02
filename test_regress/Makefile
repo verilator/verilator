@@ -6,7 +6,7 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003-2005 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 #
