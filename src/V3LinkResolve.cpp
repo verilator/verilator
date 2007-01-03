@@ -100,11 +100,23 @@ private:
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	// Remove bit selects, and bark if it's not a simple variable
 	nodep->iterateChildren(*this);
-	while (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
-	    AstNode* fromp = selp->fromp()->unlinkFrBack();
-	    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+	bool did=1;
+	while (did) {
+	    did=0;
+	    if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
+		AstNode* fromp = selp->fromp()->unlinkFrBack();
+		selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		did=1;
+	    }
+	    // NodeSel doesn't include AstSel....
+	    if (AstSel* selp = nodep->sensp()->castSel()) {
+		AstNode* fromp = selp->fromp()->unlinkFrBack();
+		selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		did=1;
+	    }
 	}
 	if (!nodep->sensp()->castNodeVarRef()) {
+	    if (debug()) nodep->dumpTree(cout,"-tree: ");
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
 	}
     }

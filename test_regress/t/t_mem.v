@@ -29,7 +29,8 @@ module t (/*AUTOARG*/
    
    reg [7:0] memory8_16_4;
    reg [7:0] memory8_16_5;
-   always @ (memory8_16[4] or memory8_16[5]) begin
+   // Test complicated sensitivity lists
+   always @ (memory8_16[4][7:1] or memory8_16[5]) begin
       memory8_16_4 = memory8_16[4];
       memory8_16_5 = memory8_16[5];
    end
