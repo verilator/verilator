@@ -27,6 +27,13 @@ module t (/*AUTOARG*/
       end
    end
    
+   reg [7:0] memory8_16_4;
+   reg [7:0] memory8_16_5;
+   always @ (memory8_16[4] or memory8_16[5]) begin
+      memory8_16_4 = memory8_16[4];
+      memory8_16_5 = memory8_16[5];
+   end
+
    always @ (posedge clk) begin
       m_we <= 0;
       if (cyc!=0) begin
@@ -47,8 +54,8 @@ module t (/*AUTOARG*/
 	    m_data <= 16'h0bad;
 	 end
 	 if (cyc==5) begin
-	    if (memory8_16[4] != 8'h44) $stop;
-	    if (memory8_16[5] != 8'h55) $stop;
+	    if (memory8_16_4  != 8'h44) $stop;
+	    if (memory8_16_5  != 8'h55) $stop;
 	    if (memory8_16[6] != 8'hfe) $stop;
 	    if (memory8_16[7] != 8'h77) $stop;
 	    $write("*-* All Finished *-*\n");

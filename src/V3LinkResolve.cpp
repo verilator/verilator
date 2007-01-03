@@ -100,7 +100,7 @@ private:
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	// Remove bit selects, and bark if it's not a simple variable
 	nodep->iterateChildren(*this);
-	if (AstSel* selp = nodep->sensp()->castSel()) {
+	while (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
 	    AstNode* fromp = selp->fromp()->unlinkFrBack();
 	    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
 	}
