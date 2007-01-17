@@ -190,7 +190,7 @@ sub new {
 	make_main => 1,		# Make __main.cpp
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
-				 .($opt_verbose ? " +define+TEST_VERBOSE+1":"")
+				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
