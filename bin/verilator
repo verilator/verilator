@@ -1075,27 +1075,6 @@ submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
 allow "." in signal names.  SystemPerl when tracing such signals will
 replace the __DOT__ with the period.
 
-=item /*verilator lint_off I<msg>*/
-
-Disable the specified warning message for any warnings following the comment.
-
-=item /*verilator lint_on I<msg>*/
-
-Re-enable the specified warning message for any warnings following the comment.
-
-=item /*verilator no_inline_task*/ 
-
-Used in a function or task variable definition section to specify the
-function or task should not be inlined into where it is used.  This may
-reduce the size of the final executable when a task is used a very large
-number of times.  For this flag to work, the task and tasks below it must
-be pure; they cannot reference any variables outside the task itself.
-
-=item /*verilator sc_clock*/
-
-Used after a input declaration to indicate the signal should be declared in
-SystemC as a sc_clock instead of a bool.
-
 =item /*verilator isolate_asignments*/
 
 Used after a signal declaration to indicate the assignments to this signal
@@ -1131,15 +1110,21 @@ It would then internally break it into (sort of):
       end
     end
 
-=item /*verilator tracing_off*/
+=item /*verilator lint_off I<msg>*/
 
-Disable waveform tracing for all future signals that are declared in this
-module.  Often this is placed just after a primitive's module statement, so
-that the entire module is not traced.
+Disable the specified warning message for any warnings following the comment.
 
-=item /*verilator tracing_on*/
+=item /*verilator lint_on I<msg>*/
 
-Re-enable waveform tracing for all future signals that are declared.
+Re-enable the specified warning message for any warnings following the comment.
+
+=item /*verilator no_inline_task*/ 
+
+Used in a function or task variable definition section to specify the
+function or task should not be inlined into where it is used.  This may
+reduce the size of the final executable when a task is used a very large
+number of times.  For this flag to work, the task and tasks below it must
+be pure; they cannot reference any variables outside the task itself.
 
 =item /*verilator public*/ (variable)
 
@@ -1174,6 +1159,21 @@ Used after a module statement to indicate the module should not be inlined
 Verilator automatically sets this attribute when the module contains any
 public signals or `systemc_ directives.  Also set for all modules when
 using the --public switch.
+
+=item /*verilator sc_clock*/
+
+Used after a input declaration to indicate the signal should be declared in
+SystemC as a sc_clock instead of a bool.
+
+=item /*verilator tracing_off*/
+
+Disable waveform tracing for all future signals that are declared in this
+module.  Often this is placed just after a primitive's module statement, so
+that the entire module is not traced.
+
+=item /*verilator tracing_on*/
+
+Re-enable waveform tracing for all future signals that are declared.
 
 =back
 
@@ -1462,6 +1462,17 @@ Verilator cannot schedule these variables correctly.
 Warns that the specified signal comes from multiple always blocks.  This is
 often unsupported by synthesis tools, and is considered bad style.  It will
 also cause longer runtimes due to reduced optimizations.
+
+=item MULTITOP
+
+Error that there are multiple top level modules, that is modules not
+instantiated by any other module.  Verilator only supports a single top
+level, if you need more, create a module that wraps all of the top modules.
+
+Often this error is because some low level cell is being read in, but is
+not really needed.  The best solution is to insure that each module is in a
+unique file by the same name.  Otherwise, make sure all library files are
+read in as libraries with -v, instead of automatically with -y.
 
 =item TASKNSVAR
 

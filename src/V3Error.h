@@ -37,6 +37,7 @@ public:
 	FATAL,		// Kill the program
 	ERROR,		// General error out, can't suppress
 	// Error codes:
+	MULTITOP,	// Error: Multiple top level modules
 	TASKNSVAR,	// Error: Task I/O not simple
 	// Warning codes:
 	FIRST_WARN,	// Just a code so the program knows where to start warnings
@@ -71,7 +72,7 @@ public:
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
 	    " SUPPRESS", " FATAL", " ERROR",
-	    "TASKNSVAR",
+	     "MULTITOP", "TASKNSVAR",
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
