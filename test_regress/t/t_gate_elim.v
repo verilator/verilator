@@ -31,7 +31,9 @@ module t (/*AUTOARG*/
    te te (.clk(clk), .b(b), .vconst(vconst), .q(qe));
 
    always @ (posedge clk) begin
+`ifdef TEST_VERBOSE
       $display("%b",{qa,qb,qc,qd,qe});
+`endif
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 	 if (cyc==1) begin

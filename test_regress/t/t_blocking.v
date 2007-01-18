@@ -65,7 +65,6 @@ module t (/*AUTOARG*/
 	 end
 	 else if (_mode==4) begin
 	    if (mode_d3r != 8'd1) $stop;
-	    $write("[%0t] t_blocking: Passed\n", $time);
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end

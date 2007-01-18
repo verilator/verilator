@@ -353,6 +353,10 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		shift;
 		m_outputSplitCFuncs = atoi(argv[i]);
 	    }
+	    else if ( !strcmp (sw, "-trace-depth") ) {
+		shift;
+		m_traceDepth = atoi(argv[i]);
+	    }
 	    else if ( !strcmp (sw, "-unroll-count") ) { // Undocumented optimization tweak
 		shift;
 		m_unrollCount = atoi(argv[i]);
@@ -587,6 +591,7 @@ V3Options::V3Options() {
     m_inlineMult = 2000;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
+    m_traceDepth = 0;
     m_unrollCount = 64;
     m_unrollStmts = 20;
 

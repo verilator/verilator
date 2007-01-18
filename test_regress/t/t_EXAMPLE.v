@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // Use this file as a template for submitting bugs, etc.
@@ -29,7 +29,9 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
+`ifdef TEST_VERBOSE
 	 $write("%d %x %x %x\n", cyc, in_a, in_b, out_x);
+`endif
 	 if (cyc==1) begin
 	    // Assign inputs randomly
 	    in_a  <= 32'h89a14fab;

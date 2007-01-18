@@ -6,7 +6,9 @@ unsigned int Array[3];
 
 unsigned int
 StepSim (Vt_mem_slot *sim, unsigned int slot, unsigned int bit, unsigned int val, unsigned int rslot) {
+#ifdef TEST_VERBOSE
     printf ("StepSim: slot=%d bit=%d val=%d rslot=%d\n", slot, bit, val, rslot);
+#endif
 
     sim->SlotIdx      = slot;
     sim->BitToChange  = bit;

@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -53,7 +53,9 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
+`ifdef TEST_VERBOSE
 	 $write("%x %x %x %x %x\n", rf, rf2, dualasr, sl_mask, sr_mask);
+`endif
 	 if (cyc==1) begin
 	    biu <= 64'h12451282_abadee00;
 	    okidoki <= 1'b0;

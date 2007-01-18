@@ -28,7 +28,9 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
+`ifdef TEST_VERBOSE
 	 $write("%d %x %x %x %x\n", cyc, left, right, qleft, qright);
+`endif
 	 if (cyc==1) begin
 	    amt <= 32'd0;
 	    if (5'b10110>>2  != 5'b00101) $stop;

@@ -95,7 +95,9 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
+`ifdef TEST_VERBOSE
 	 $write("%x %x\n", q1, i);
+`endif
 	 if (cyc==1) begin
 	    i <= 128'hed388e646c843d35de489bab2413d770;
 	 end

@@ -119,9 +119,11 @@ module prover (
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc>2) begin
-	 if (0) $write("results[%d][%d] = 8'b%b_%b_%b_%b_%b_%b_%b_%b;\n",
-      		       index_a, index_b,
-      		       gt, gts, gte, gtes, lt, lts, lte, ltes);
+`ifdef TEST_VERBOSE
+	 $write("results[%d][%d] = 8'b%b_%b_%b_%b_%b_%b_%b_%b;\n",
+      		index_a, index_b,
+      		gt, gts, gte, gtes, lt, lts, lte, ltes);
+`endif
 	 exp = results[index_a][index_b];
 	 got   = {gt, gts, gte, gtes, lt, lts, lte, ltes};
 	 if (exp !== got) begin

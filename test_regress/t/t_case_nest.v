@@ -19,7 +19,9 @@ module t (/*AUTOARG*/
    sub sub (.in(crc[23:0]), .out1(out1));
 
    always @ (posedge clk) begin
+`ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d crc=%x sum=%x out=%x\n",$time, cyc, crc, sum, out1);
+`endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       sum <= {sum[62:0], sum[63]^sum[2]^sum[0]} ^ {63'h0,out1};

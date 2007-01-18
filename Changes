@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.63****
+
+***  Add --trace-depth option for minimizing VCD file size. [Emerson Suguimoto]
+
 * Verilator 3.632 1/17/2007
 
 ***  Add /*verilator isolate_assignments*/ attribute.  [Mike Shinkarovsky]

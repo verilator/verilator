@@ -143,6 +143,13 @@ private:
 	if (!m_curVarsp) nodep->v3fatalSrc("Var not under module??\n");
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_FIND) {
+	    // We used modTrace before leveling, and we may now
+	    // want to turn it off now that we know the levelizations
+	    if (v3Global.opt.traceDepth()
+		&& (m_modp->level()-1) > v3Global.opt.traceDepth()) {
+		m_modp->modTrace(false);
+		nodep->trace(false);
+	    }
 	    // Find under either a task or the module's vars
 	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
 	    AstVar* findvarp = findidp->castVar();

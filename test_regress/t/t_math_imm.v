@@ -47,9 +47,11 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
-      if (0) $write("[%0t] cyc==%0d crc=%b %d.%d,%d.%d -> %x.%x -> %x\n",$time, cyc, crc,
-		    LowMaskSel_Top, HighMaskSel_Top, LowMaskSel_Bot, HighMaskSel_Bot,
-		    LowLogicImm, HighLogicImm, LogicImm);
+`ifdef TEST_VERBOSE
+      $write("[%0t] cyc==%0d crc=%b %d.%d,%d.%d -> %x.%x -> %x\n",$time, cyc, crc,
+	     LowMaskSel_Top, HighMaskSel_Top, LowMaskSel_Bot, HighMaskSel_Bot,
+	     LowLogicImm, HighLogicImm, LogicImm);
+`endif
       if (cyc==0) begin
 	 // Single case
 	 crc <= 8'h0;
