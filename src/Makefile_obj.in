@@ -156,6 +156,7 @@ RAW_OBJS = \
 	V3Scope.o \
 	V3Signed.o \
 	V3Split.o \
+	V3SplitAs.o \
 	V3Stats.o \
 	V3StatsReport.o \
 	V3Subst.o \

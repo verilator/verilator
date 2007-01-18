@@ -241,6 +241,7 @@ private:
     bool	m_funcLocal:1;	// Local variable for a function
     bool	m_funcReturn:1;	// Return variable for a function
     bool	m_attrClockEn:1;// User clock enable attribute
+    bool	m_attrIsolateAssign:1;// User isolate_asignments attribute
     bool	m_fileDescr:1;	// File descriptor
     bool	m_isConst:1;	// Table contains constant data
     bool	m_isStatic:1;	// Static variable
@@ -252,7 +253,8 @@ private:
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false;
 	m_sigPublic=false; m_funcLocal=false; m_funcReturn=false; 
-	m_attrClockEn=false; m_fileDescr=false; m_isConst=false; m_isStatic=false;
+	m_attrClockEn=false; m_attrIsolateAssign=false;
+	m_fileDescr=false; m_isConst=false; m_isStatic=false;
 	m_trace=false;
     }
 public:
@@ -301,6 +303,7 @@ public:
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
+    void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void	usedClock(bool flag) { m_usedClock = flag; }
     void	usedParam(bool flag) { m_usedParam = flag; }
     void	sigPublic(bool flag) { m_sigPublic = flag; }
@@ -348,6 +351,7 @@ public:
     bool	attrClockEn() const { return m_attrClockEn; }
     bool	attrFileDescr() const { return m_fileDescr; }
     bool	attrScClocked() const { return m_scClocked; }
+    bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     int		widthAlignBytes() const;	// Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int		widthTotalBytes() const;	// Width in bytes rounding up 1,2,4,8,12,...
     uint32_t	msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
@@ -359,6 +363,7 @@ public:
 	// Note the method below too
 	if (fromp->attrClockEn()) attrClockEn(true);
 	if (fromp->attrFileDescr()) attrFileDescr(true);
+	if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
     }
     bool	gateMultiInputOptimizable() const {
 	// Ok to gate optimize; must return false if propagateAttrFrom would do anything

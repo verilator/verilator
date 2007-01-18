@@ -69,7 +69,12 @@ module file (/*AUTOARG*/
    );
    
    input [31:0]        crc;
+`ifdef ISOLATE
+   output reg [31:0]   b /* verilator isolate_assignments*/;
+`else
    output reg [31:0]   b;
+`endif
+
    output reg [31:0]   c;
    output reg [31:0]   d;
 

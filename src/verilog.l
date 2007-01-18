@@ -450,6 +450,7 @@ escid	\\[^ \t\f\r\n]+
 <VLG,PSL>"/*verilator public*/"			{yylval.fileline = CRELINE(); return yVL_PUBLIC;}
 <VLG,PSL>"/*verilator public_module*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_MODULE;}
 <VLG,PSL>"/*verilator sc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
+<VLG,PSL>"/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}
 <VLG,PSL>"/*verilator systemc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
 <VLG,PSL>"/*verilator tracing_off*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_OFF;}
 <VLG,PSL>"/*verilator tracing_on*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_ON;}

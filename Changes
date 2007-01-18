@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.63*
+
+***  Add /*verilator isolate_asignments*/ attribute.  [Mike Shinkarovsky]
+
 * Verilator 3.631 1/2/2007
 
 **   Support standard NAME[#] for cells created by arraying or generate for.

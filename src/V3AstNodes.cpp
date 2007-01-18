@@ -350,6 +350,7 @@ void AstVar::dump(ostream& str) {
     if (isUsedClock()) str<<" [C]";
     if (isSigPublic()) str<<" [P]";
     if (attrClockEn()) str<<" [aCLKEN]";
+    if (attrIsolateAssign()) str<<" [aISO]";
     if (attrFileDescr()) str<<" [aFD]";
     if (isFuncReturn()) str<<" [FUNCRTN]";
     else if (isFuncLocal()) str<<" [FUNC]";

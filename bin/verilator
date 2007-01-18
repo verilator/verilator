@@ -236,7 +236,7 @@ desired, but other assertions are, use --assert --nopsl.)
 =item --bin I<filename>
 
 Rarely needed.  Override the default filename for Verilator itself.  When a
-dependancy (.d) file is created, this filename will become a source
+dependency (.d) file is created, this filename will become a source
 dependency, such that a change in this binary will have make rebuild the
 output files.
 
@@ -253,7 +253,7 @@ Enables all forms of coverage, alias for --coverage-line, --coverage-user
 Specifies basic block line coverage analysis code should be inserted.
 
 Coverage analysis adds statements at each code flow change point, which are
-the branches of IF and CASE statements, a superset of normal Verilog Line
+the branches of IF and CASE statements, a super-set of normal Verilog Line
 Coverage.  At each such branch a unique counter is incremented.  At the end
 of a test, the counters along with the filename and line number
 corresponding to each counter are written into logs/coverage.pl.
@@ -857,7 +857,7 @@ order of magnitude.
 
 =head1 CROSS COMPILATION
 
-Verilator supports cross-compling Verilated code.  This is generally used
+Verilator supports cross-compiling Verilated code.  This is generally used
 to run Verilator on a Linux system and produce C++ code that is then compiled
 on Windows.
 
@@ -1095,6 +1095,41 @@ be pure; they cannot reference any variables outside the task itself.
 
 Used after a input declaration to indicate the signal should be declared in
 SystemC as a sc_clock instead of a bool.
+
+=item /*verilator isolate_asignments*/
+
+Used after a signal declaration to indicate the assignments to this signal
+in any blocks should be isolated into new blocks.  When there is a large
+combinatorial block that is resulting in a UNOPTFLAT warning, attaching
+this to the signal causing a false loop may clear up the problem.
+
+IE, with the following
+
+    reg splitme /* verilator isolate_asignments*/;
+    always @* begin
+      if (....) begin
+         splitme = ....;
+         other assignments
+      end
+    end
+
+Verilator will internally split the block that assigns to "splitme" into
+two blocks:
+
+It would then internally break it into (sort of):
+
+    // All assignments excluding those to splitme
+    always @* begin
+      if (....) begin
+         other assignments
+      end
+    end
+    // All assignments to splitme
+    always @* begin
+      if (....) begin
+         splitme = ....;
+      end
+    end
 
 =item /*verilator tracing_off*/
 
@@ -1514,6 +1549,10 @@ same; split it into two separate signals generated from each block.
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the
 clock_enable meta comment described above.
+
+The UNOPTFLAT warning may also occur where outputs from a block of logic
+are independent, but occur in the same always block.  To fix this, use the
+isolate_asignments meta comment described above.
 
 =item UNSIGNED
 

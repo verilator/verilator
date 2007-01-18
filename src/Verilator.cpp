@@ -71,6 +71,7 @@
 #include "V3Scope.h"
 #include "V3Signed.h"
 #include "V3Split.h"
+#include "V3SplitAs.h"
 #include "V3Stats.h"
 #include "V3Subst.h"
 #include "V3Table.h"
@@ -284,8 +285,10 @@ void process () {
     // Split single ALWAYS blocks into multiple blocks for better ordering chances
     if (v3Global.opt.oSplit()) {
 	V3Split::splitAlwaysAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("split.tree"));
+	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("split.tree"));
     }
+    V3SplitAs::splitAsAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("splitas.tree"));
 
     // Create tracing sample points, before we start eliminating signals
     if (v3Global.opt.trace()) {
