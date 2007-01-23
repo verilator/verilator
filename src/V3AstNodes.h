@@ -241,7 +241,7 @@ private:
     bool	m_funcLocal:1;	// Local variable for a function
     bool	m_funcReturn:1;	// Return variable for a function
     bool	m_attrClockEn:1;// User clock enable attribute
-    bool	m_attrIsolateAssign:1;// User isolate_asignments attribute
+    bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_fileDescr:1;	// File descriptor
     bool	m_isConst:1;	// Table contains constant data
     bool	m_isStatic:1;	// Static variable

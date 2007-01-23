@@ -108,6 +108,7 @@ if ($Opt_Sp eq 'sp' || $Opt_Trace) {
 	$ENV{SYSTEMPERL} = $try if -d $try;
     }
     (defined $ENV{SYSTEMPERL}) or die "%Error: verilator: Need \$SYSTEMPERL in environment for --sp or --trace\nProbably System-Perl isn't installed, see http://www.veripool.com/systemperl.html\n";
+    (-d "$ENV{SYSTEMPERL}/src") or die "%Error: verilator: \$SYSTEMPERL environment var doesn't seem to point to System-Perl kit\n";
 }
 
 # Determine runtime flags
@@ -1082,7 +1083,7 @@ submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
 allow "." in signal names.  SystemPerl when tracing such signals will
 replace the __DOT__ with the period.
 
-=item /*verilator isolate_asignments*/
+=item /*verilator isolate_assignments*/
 
 Used after a signal declaration to indicate the assignments to this signal
 in any blocks should be isolated into new blocks.  When there is a large
@@ -1091,7 +1092,7 @@ this to the signal causing a false loop may clear up the problem.
 
 IE, with the following
 
-    reg splitme /* verilator isolate_asignments*/;
+    reg splitme /* verilator isolate_assignments*/;
     always @* begin
       if (....) begin
          splitme = ....;
@@ -1570,7 +1571,7 @@ clock_enable meta comment described above.
 
 The UNOPTFLAT warning may also occur where outputs from a block of logic
 are independent, but occur in the same always block.  To fix this, use the
-isolate_asignments meta comment described above.
+isolate_assignments meta comment described above.
 
 =item UNSIGNED
 

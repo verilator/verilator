@@ -20,7 +20,7 @@
 //*************************************************************************
 // V3SplitAs's Transformations:
 //
-//	Search each ALWAYS for a VARREF lvalue with a /*isolate_asignments*/ attribute
+//	Search each ALWAYS for a VARREF lvalue with a /*isolate_assignments*/ attribute
 //	If found, color statements with both, assignment to that varref, or other assignments.
 //	Replicate the Always, and remove mis-colored duplicate code.
 //
@@ -166,12 +166,23 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	// Are there any lvalue references below this?
 	// There could be more then one.  So, we process the first one found first.
-	if (!nodep->user()) {
+	AstVarScope* lastSplitVscp = NULL;
+	while (!nodep->user()) {
+	    // Find any splittable variables
 	    SplitAsFindVisitor visitor (nodep);
 	    m_splitVscp = visitor.splitVscp();
+	    if (m_splitVscp && m_splitVscp == lastSplitVscp) {
+		// We did this last time!  Something's stuck!
+		nodep->v3fatalSrc("Infinite loop in isolate_assignments removal for: "<<m_splitVscp->prettyName())
+		m_splitVscp = NULL;
+	    }
+	    lastSplitVscp = m_splitVscp;
+	    // Now isolate the always
 	    if (m_splitVscp) {
 		splitAlways(nodep);
 		m_statSplits++;
+	    } else {
+		nodep->user(true);
 	    }
 	}
     }
