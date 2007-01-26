@@ -54,7 +54,7 @@ module t (/*AUTOARG*/
 	 $write("*-* All Finished *-*\n");
 	 $write("[%0t] cyc==%0d crc=%x %x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
-	 if (sum !== 64'he281f003f6dd16b2) $stop;
+	 if (sum !== 64'h649ee1713d624dd9) $stop;
 	 $finish;
       end
    end
@@ -90,15 +90,23 @@ module file (/*AUTOARG*/
 	   d = {crc[15:0],~c[31:16]};
 	end
 	default: begin
-	   b = ~crc;
-	   set_d(~c); // d = ~c;
+	   set_b_d(crc, c);
 	end
       endcase
    end
 
-   task set_d;
-      input [31:0] to;
-      d = to;
+   task set_b_d;
+`ifdef ISOLATE
+      input [31:0] t_crc	/* verilator isolate_assignments*/;
+      input [31:0] t_c		/* verilator isolate_assignments*/;
+`else
+      input [31:0] t_crc;
+      input [31:0] t_c;
+`endif
+      begin
+	 b = {t_crc[31:16],~t_crc[23:8]};
+	 d = {t_crc[31:16],  ~t_c[23:8]};
+      end
    endtask
 
    always @* begin

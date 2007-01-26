@@ -382,6 +382,14 @@ private:
 	    //nodep->v3warn(GENCLK,"Signal unoptimizable: Generated clock: "<<nodep->prettyName());
 	} else if (nodep->varp()->isSigPublic()) {
 	    nodep->v3warn(UNOPT,"Signal unoptimizable: Feedback to public clock or circular logic: "<<nodep->prettyName());
+	    if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
+		nodep->fileline()->warnOff(V3ErrorCode::UNOPT, true);  // Complain just once
+		// Give the user an example.
+		bool tempWeight = (edgep && edgep->weight()==0);
+		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
+		m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
+		if (tempWeight) edgep->weight(0);
+	    }
 	} else {
 	    // We don't use UNOPT, as there are lots of V2 places where it was needed, that aren't any more
 	    // First v3warn not inside warnIsOff so we can see the suppressions with --debug

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix isolate_assignments when many signals per always. [Mike Shinkarovsky]
 
+**** Fix isolate_assignments across task temporaries. [Mike Shinkarovsky]
+
 * Verilator 3.632 1/17/2007
 
 ***  Add /*verilator isolate_assignments*/ attribute.  [Mike Shinkarovsky]

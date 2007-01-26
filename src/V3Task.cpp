@@ -306,6 +306,7 @@ private:
 	AstVar* newvarp = new AstVar (invarp->fileline(), AstVarType::BLOCKTEMP,
 				      name, invarp);
 	newvarp->funcLocal(false);
+	newvarp->propagateAttrFrom(invarp);
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope (newvarp->fileline(), m_scopep, newvarp);
 	m_scopep->addVarp(newvscp);
@@ -628,7 +629,7 @@ private:
 	if (!funcp) nodep->v3fatalSrc("unlinked");
 	// Inline func refs in the function
 	iterateIntoFTask(funcp);
-	// Create output variabls
+	// Create output variable
 	string namePrefix = "__Vfunc_"+funcp->shortName()+"__"+cvtToStr(m_modNCalls++);
 	AstVarScope* outvscp = createVarScope (funcp->fvarp()->castVar(),
 					       namePrefix+"__out");
