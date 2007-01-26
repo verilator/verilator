@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
-	 v_flags2 => ['-DALLOW_UNOPT'],
+	 v_flags2 => ['+define+ALLOW_UNOPT'],
 	 );
 
 execute (

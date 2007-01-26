@@ -91,10 +91,15 @@ module file (/*AUTOARG*/
 	end
 	default: begin
 	   b = ~crc;
-	   d = ~c;
+	   set_d(~c); // d = ~c;
 	end
       endcase
    end
+
+   task set_d;
+      input [31:0] to;
+      d = to;
+   endtask
 
    always @* begin
       // Any complicated equation we can't optimize

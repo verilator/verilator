@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 top_filename("t/t_unopt_combo.v");
 
 compile (
-	 v_flags2 => ['-DISOLATE --stats'],
+	 v_flags2 => ['+define+ISOLATE --stats'],
 	 );
 
 if ($Last_Self->{v3}) {
