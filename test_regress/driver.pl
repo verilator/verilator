@@ -197,9 +197,11 @@ sub new {
 	# VCS
 	vcs => 0,
 	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q +v2k")],
+	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
 	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv31a")],
+	nc_flags2 => [],  # Overridden in some sim files
 	# Verilator
 	'v3' => 0,
 	verilator_flags => [split(/\s+/,"-cc")],
@@ -291,6 +293,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>["vcs",
 			  @{$param{vcs_flags}},
+			  @{$param{vcs_flags2}},
 			  @{$param{v_flags}},
 			  @{$param{v_flags2}},
 			  $param{top_filename},
@@ -304,6 +307,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>["ncverilog",
 			  @{$param{nc_flags}},
+			  @{$param{nc_flags2}},
 			  @{$param{v_flags}},
 			  @{$param{v_flags2}},
 			  $param{top_filename},

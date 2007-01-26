@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -47,8 +47,8 @@ module t (/*AUTOARG*/
       end
       else if (cyc==99) begin
 	 $write("[%0t] cyc==%0d crc=%b %x\n",$time, cyc, crc, sum);
-	 if (crc != 8'b01110000) $stop;
-	 if (sum != 224'h1fdff998855c3c38d467e28124847831f9ad6d4a09f2801098f032a8) $stop;
+	 if (crc !== 8'b01110000) $stop;
+	 if (sum !== 224'h1fdff998855c3c38d467e28124847831f9ad6d4a09f2801098f032a8) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

@@ -104,7 +104,7 @@ if ($Opt_Sp) {
 }
 if ($Opt_Sp eq 'sp' || $Opt_Trace) {
     if (!defined $ENV{SYSTEMPERL}) {
-	my $try = "$ENV{W}/hw/utils/perltools/SystemC/src";
+	my $try = "$ENV{W}/hw/utils/perltools/SystemC";
 	$ENV{SYSTEMPERL} = $try if -d $try;
     }
     (defined $ENV{SYSTEMPERL}) or die "%Error: verilator: Need \$SYSTEMPERL in environment for --sp or --trace\nProbably System-Perl isn't installed, see http://www.veripool.com/systemperl.html\n";

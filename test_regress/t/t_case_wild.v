@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
 	 sum <= 64'h0;
       end
       else if (cyc==90) begin
-	 if (sum != 64'hf0afc2bfa78277c5) $stop;
+	 if (sum !== 64'hf0afc2bfa78277c5) $stop;
       end
       else if (cyc==91) begin
       end

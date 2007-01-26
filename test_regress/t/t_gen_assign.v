@@ -39,7 +39,7 @@ module t (/*AUTOARG*/
 	 sum <= {sum[30:0],sum[31]} ^ {23'h0, crc[8:0]};
       end
       else if (cyc==99) begin
-	 if (sum != 32'he8bbd130) $stop;
+	 if (sum !== 32'he8bbd130) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

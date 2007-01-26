@@ -53,8 +53,8 @@ module t (/*AUTOARG*/
       else if (cyc==99) begin
 	 $write("*-* All Finished *-*\n");
 	 $write("[%0t] cyc==%0d crc=%x %x\n",$time, cyc, crc, sum);
-	 if (crc != 64'hc77bb9b3784ea091) $stop;
-	 if (sum != 64'he281f003f6dd16b2) $stop;
+	 if (crc !== 64'hc77bb9b3784ea091) $stop;
+	 if (sum !== 64'he281f003f6dd16b2) $stop;
 	 $finish;
       end
    end
