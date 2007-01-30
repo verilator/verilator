@@ -82,7 +82,7 @@ module file (/*AUTOARG*/
       // Note that while c and b depend on crc, b doesn't depend on c.
       casez (crc[3:0])
 	4'b??01: begin
-	   b = {crc[15:0],crc[31:16]};
+	   b = {crc[15:0],get_31_16(crc)};
 	   d = c;
 	end
 	4'b??00: begin
@@ -94,6 +94,11 @@ module file (/*AUTOARG*/
 	end
       endcase
    end
+
+   function [31:16] get_31_16	/* verilator isolate_assignments*/;
+      input [31:0] t_crc	/* verilator isolate_assignments*/;
+      get_31_16 = t_crc[31:16];
+   endfunction
 
    task set_b_d;
 `ifdef ISOLATE

@@ -104,6 +104,7 @@ class AstSenTree;
     AstCase*	casep;
     AstCaseItem* caseitemp;
     AstConst*	constp;
+    AstFunc*	funcp;
     AstFuncRef*	funcrefp;
     AstModule*	modulep;
     AstPin*	pinp;
@@ -246,7 +247,9 @@ class AstSenTree;
 %type<nodep>	idDotted
 %type<nodep>	strAsInt strAsText concIdList
 %type<nodep>	taskDecl
-%type<nodep>	varDeclList funcDecl funcVarList funcVar
+%type<nodep>	varDeclList
+%type<funcp>	funcDecl
+%type<nodep>	funcBody funcVarList funcVar
 %type<rangep>	funcRange
 %type<nodep>	gateDecl
 %type<nodep>	gateBufList gateNotList gateAndList gateNandList
@@ -713,8 +716,13 @@ taskDecl: 	yTASK yID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*
 	| 	yTASK yID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4); $4->addNextNull($5); }
 	;
 
-funcDecl: 	yFUNCTION         funcRange yID ';' funcVarList stmtBlock yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); $5->addNextNull($6);}
-	|	yFUNCTION ySIGNED funcRange yID ';' funcVarList stmtBlock yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $6->addNextNull($7); $$->isSigned(true); }
+funcDecl: 	yFUNCTION         funcRange yID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
+	|	yFUNCTION ySIGNED funcRange yID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
+	| 	yFUNCTION         funcRange yID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
+	|	yFUNCTION ySIGNED funcRange yID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
+	;
+
+funcBody:	funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
 	;
 
 funcRange:	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }

@@ -14,7 +14,7 @@ compile (
 	 );
 
 if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+3/i);
+    file_grep ($Last_Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
 }
 
 execute (

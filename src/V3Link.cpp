@@ -220,6 +220,8 @@ private:
 		nodep->userp(m_curVarsp);
 	    }
 	    // Convert the func's range to the output variable
+	    // This should probably be done in the Parser instead, as then we could
+	    // just attact normal signal attributes to it.
 	    if (AstFunc* funcp = nodep->castFunc()) {
 		if (!funcp->fvarp()->castVar()) {
 		    AstRange* rangep = funcp->fvarp()->castRange();
@@ -228,6 +230,7 @@ private:
 		    newvarp->isSigned(funcp->isSigned());
 		    newvarp->funcReturn(true);
 		    newvarp->trace(false);  // Not user visible
+		    newvarp->attrIsolateAssign(funcp->attrIsolateAssign());
 		    funcp->addFvarp(newvarp);
 		    // Explicit insert required, as the var name shadows the upper level's task name
 		    m_curVarsp->insert(newvarp->name(), newvarp);
