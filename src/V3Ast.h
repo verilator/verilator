@@ -505,6 +505,7 @@ public:
     AstNode*	op3p() const { return m_op3p; }
     AstNode*	op4p() const { return m_op4p; }
     AstNode*	clonep() const { return ((m_cloneCnt==s_cloneCntGbl)?m_clonep:NULL); }
+    AstNode*	firstAbovep() const { return ((backp() && backp()->nextp()!=this) ? backp() : NULL); }  // Returns NULL when second or later in list
     bool	brokeExists() const;
 
     // CONSTRUCTORS

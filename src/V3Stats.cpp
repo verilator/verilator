@@ -63,9 +63,8 @@ private:
 	m_instrs += nodep->instrCount();
 	if (m_counting) {
 	    ++m_statTypeCount[nodep->type()];
-	    if (nodep->backp() && nodep->backp()->nextp()!=nodep) {
-		// Grab only those above, not those "back"
-		++m_statAbove[nodep->backp()->type()][nodep->type()];
+	    if (nodep->firstAbovep()) { // Grab only those above, not those "back"
+		++m_statAbove[nodep->firstAbovep()->type()][nodep->type()];
 	    }
 	    m_statInstr += nodep->instrCount();
 	    if (m_cfuncp && !m_cfuncp->slow()) m_statInstrFast += nodep->instrCount();

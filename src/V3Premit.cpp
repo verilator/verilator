@@ -71,14 +71,18 @@ private:
 	//   ASSIGN(CONST*here*, VARREF(!sc))
 	//   ARRAYSEL(*here*, ...)   (No wides can be in any argument but first, so we don't check which arg is wide)
 	//   ASSIGN(x, SEL*HERE*(ARRAYSEL()...)   (m_assignLhs==true handles this.)
+	//UINFO(9, "   Check: "<<nodep<<endl);
+	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user()?"Y":"N")<<" IW "<<(nodep->isWide()?"Y":"N")<<endl);
 	if (m_stmtp
 	    && !nodep->user()) {	// Not already done
 	    if (nodep->isWide()) {		// Else might be cell interconnect or something
 		if (m_assignLhs) {
-		} else if (nodep->backp()->castNodeAssign()
-			   && assignNoTemp(nodep->backp()->castNodeAssign())) {
+		} else if (nodep->firstAbovep()
+			   && nodep->firstAbovep()->castNodeAssign()
+			   && assignNoTemp(nodep->firstAbovep()->castNodeAssign())) {
 		    // Not much point if it's just a direct assignment to a constant
-		} else if (nodep->backp()->castArraySel()) {  // ArraySel's are pointer refs, ignore
+		} else if (nodep->firstAbovep()
+			   && nodep->firstAbovep()->castArraySel()) {  // ArraySel's are pointer refs, ignore
 		} else {
 		    UINFO(4,"Cre Temp: "<<nodep<<endl);
 		    createDeepTemp(nodep);
@@ -140,6 +144,7 @@ private:
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	m_funcp = nodep;
 	nodep->iterateChildren(*this);
+	m_funcp = NULL;
     }
     void startStatement(AstNode* nodep) {
 	m_assignLhs = false;

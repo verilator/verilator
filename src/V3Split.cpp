@@ -428,7 +428,7 @@ private:
 	AstNode* firstp = nodep;   // We may reorder, and nodep is no longer first.
 	void* oldBlockUser3 = nodep->user3p();   // May be overloaded in below loop, save it
 	nodep->user3p(NULL);
-	if (nodep->backp()->nextp()==nodep) nodep->v3fatalSrc("Node passed is in next list; should have processed all list at oncen");
+	if (!nodep->firstAbovep()) nodep->v3fatalSrc("Node passed is in next list; should have processed all list at once");
 	// Process it
 	if (!nodep->nextp()) {
 	    // Just one, so can't reorder.  Just look for more blocks/statements.
