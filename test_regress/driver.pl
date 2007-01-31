@@ -206,6 +206,7 @@ sub new {
 	'v3' => 0,
 	verilator_flags => [split(/\s+/,"-cc")],
 	verilator_make_gcc => 1,
+	verilated_debug => $Opt_Verilated_Debug,
 	stdout_filename => undef,	# Redirect stdout
 	@_};
     bless $self, $class;
@@ -545,7 +546,7 @@ sub _make_main {
 	print $fh "int main(int argc, char **argv, char **env) {\n";
 	print $fh "    double sim_time = 1000;\n";
     }
-    print $fh "    Verilated::debug(".($Opt_Verilated_Debug?1:0).");\n";
+    print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    topp = new $VM_PREFIX (\"TOP\");\n";
     my $set;
     if ($self->sp) {

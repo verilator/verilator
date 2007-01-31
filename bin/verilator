@@ -1635,12 +1635,18 @@ For example:
    always @ (b)  a=b
 
 will toggle forever and thus the executable will give the didn't converge
-error to prevent an infinite loop.  To debug this, compile the Verilated
-.cpp files with -DVL_DEBUG, then call Verilated::debug(1) in your main.cpp.
-This will cause each module to print a message when it's invoked.  From
-that it should be obvious what routine(s) are part of the infinite loop.
-Then in Gdb, add a break point at the routine entry point and "print *this"
-on each loop so you can see what variables are changing each invocation.
+error to prevent an infinite loop.
+
+To debug this, run Verilator with --profile-cfuncs.  Run make on the
+generated files with "CPPFLAGS_ADD=-DVL_DEBUG". Then call
+Verilated::debug(1) in your main.cpp.
+
+This will cause each change in a variable to print a message.  Near the
+bottom you'll see the code and variable that causes the problem.  For the
+program above:
+
+        CHANGE: filename.v:1: b
+        CHANGE: filename.v:2: a
 
 =back
 

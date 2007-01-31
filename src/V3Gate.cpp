@@ -198,9 +198,17 @@ public:
 	m_substTreep = NULL;
 	m_buffersOnly = buffersOnly;
 	m_lhsVarRef = NULL;
+	// Iterate
 	nodep->accept(*this);
+	// Check results
 	if (!m_substTreep) {
 	    clearSimple("No assignment found\n");
+	}
+	for (GateVarRefList::const_iterator it = rhsVarRefs().begin();
+	     it != rhsVarRefs().end(); ++it) {
+	    if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {
+		clearSimple("Circular logic\n");  // Oh my, we'll get a UNOPTFLAT much later.
+	    }
 	}
 	if (debug()>=9 && !m_isSimple) {
 	    nodep->dumpTree(cout,"\tgate!Ok: ");
@@ -224,6 +232,7 @@ private:
     //Entire netlist:
     // AstVarScope::userp	-> GateVarVertex* for usage var, 0=not set yet
     // {statement}Node::userp	-> GateLogicVertex* for this statement
+
     // STATE
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
     GateLogicVertex*	m_logicVertexp;	// Current statement being tracked, NULL=ignored
@@ -458,6 +467,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			    }
 			}
 		    }
+		    // Process it
 		    if (!doit) {
 			if (allowMultiIn && (debug()>=9)) {
 			    UINFO(9, "Not ok simp"<<okVisitor.isSimple()<<" mi"<<multiInputs

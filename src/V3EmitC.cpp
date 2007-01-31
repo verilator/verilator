@@ -687,6 +687,21 @@ class EmitCImp : EmitCStmts {
 	if (gotOne) {
 	    puts(");\n");
 	    //puts("VL_DEBUG_IF( if (__req) cout<<\"\tCLOCKREQ );");
+	    for (vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
+		 it != m_blkChangeDetVec.end(); ++it) {
+		AstChangeDet* nodep = *it;
+		if (nodep->lhsp()) {
+		    puts("VL_DEBUG_IF( if(__req && (");
+		    bool gotOneIgnore = false;
+		    doubleOrDetect(nodep, gotOneIgnore);
+		    string varname;
+		    if (nodep->lhsp()->castVarRef()) {
+			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
+		    }
+		    puts(")) cout<<\"\tCHANGE: "+nodep->fileline()->ascii()
+			 +varname+"\"<<endl; );");
+		}
+	    }
 	}
     }
 

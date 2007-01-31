@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --trace-depth option for minimizing VCD file size. [Emerson Suguimoto]
 
+***  With VL_DEBUG, show wires causing convergance errors. [Mike Shinkarovsky]
+
 **** Fix isolate_assignments when many signals per always. [Mike Shinkarovsky]
 
 **** Fix isolate_assignments across task/func temporaries. [Mike Shinkarovsky]
