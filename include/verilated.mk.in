@@ -84,8 +84,8 @@ endif
 ##### SystemPerl builds
 
 ifeq ($(VM_SP),1)
-  CPPFLAGS += -I$(SYSTEMPERL) -I$(SYSTEMPERL)/src -DSYSTEMPERL
-  VPATH    +=   $(SYSTEMPERL)   $(SYSTEMPERL)/src
+  CPPFLAGS += -I$(SYSTEMPERL)/src -DSYSTEMPERL
+  VPATH    +=   $(SYSTEMPERL)/src
 
   VK_CLASSES_SP = $(addsuffix .sp, $(VM_CLASSES))
 
@@ -104,8 +104,8 @@ endif
 ifeq ($(VM_PCLI),1)
   LIBS   += -lm -lstdc++
  ifeq ($(VM_TRACE),1)
-  CPPFLAGS += -I$(SYSTEMPERL) -I$(SYSTEMPERL)/src
-  VPATH    +=   $(SYSTEMPERL)   $(SYSTEMPERL)/src
+  CPPFLAGS += -I$(SYSTEMPERL)/src
+  VPATH    +=   $(SYSTEMPERL)/src
  endif
 endif
 

@@ -1638,8 +1638,8 @@ will toggle forever and thus the executable will give the didn't converge
 error to prevent an infinite loop.
 
 To debug this, run Verilator with --profile-cfuncs.  Run make on the
-generated files with "CPPFLAGS_ADD=-DVL_DEBUG". Then call
-Verilated::debug(1) in your main.cpp.
+generated files with "OPT=-DVL_DEBUG". Then call Verilated::debug(1) in
+your main.cpp.
 
 This will cause each change in a variable to print a message.  Near the
 bottom you'll see the code and variable that causes the problem.  For the

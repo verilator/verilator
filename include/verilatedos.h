@@ -39,6 +39,8 @@
 # define VL_ATTR_UNUSED __attribute__ ((unused))
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)
 # define VL_UNLIKELY(x)	__builtin_expect(!!(x), 0)
+# define VL_PREFETCH_RD(p) __builtin_prefetch((p),0)
+# define VL_PREFETCH_RW(p) __builtin_prefetch((p),1)
 #else
 # define VL_ATTR_PRINTF(fmtArgNum)	///< Function with printf format checking
 # define VL_ATTR_ALIGNED(alignment)	///< Align structure to specified byte alignment
@@ -46,6 +48,8 @@
 # define VL_ATTR_UNUSED			///< Function that may be never used
 # define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true then false
 # define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false then true
+# define VL_PREFETCH_RD(p)		///< Prefetch data with read intent
+# define VL_PREFETCH_RW(p)		///< Prefetch data with read/write intent
 #endif
 
 #ifdef VL_THREADED
