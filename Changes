@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.63**
 
+**** Try all +libext's in the exact order given.  [Michael Shinkarovsky]
+
 **** Fix internal error when public for loop has empty body.  [David Addison]
 
 * Verilator 3.633 2/7/2007

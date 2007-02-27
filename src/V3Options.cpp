@@ -48,7 +48,8 @@ struct V3OptionsImp {
     list<string>	m_allArgs;	// List of every argument encountered
     list<string>	m_incDirs;	// Include directories (ordered)
     set<string>		m_incDirSet;	// Include directories (for removing duplicates)
-    set<string>		m_libExts;	// Library extensions
+    list<string>	m_libExts;	// Library extensions (ordered)
+    set<string>		m_libExtSet;	// Library extensions (for removing duplicates)
     DirMap		m_dirMap;	// Directory listing
 
     // ACCESSOR METHODS
@@ -59,8 +60,9 @@ struct V3OptionsImp {
 	}
     }
     void addLibExt(const string& libext) {
-	if (m_libExts.find(libext) == m_libExts.end()) {
-	    m_libExts.insert(libext);
+	if (m_libExtSet.find(libext) == m_libExtSet.end()) {
+	    m_libExtSet.insert(libext);
+	    m_libExts.push_back(libext);
 	}
     }
     V3OptionsImp() {}
@@ -193,7 +195,7 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& e
     // using the incdir and libext's.
     // Return "" if not found.
     for (list<string>::iterator dirIter=m_impp->m_incDirs.begin(); dirIter!=m_impp->m_incDirs.end(); ++dirIter) {
-	for (set<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+	for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
 	    string fn = filenameFromDirBase(*dirIter,modname+*extIter);
 	    string exists = fileExists(fn);
 	    if (exists!="") {
@@ -214,7 +216,7 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& e
 	} else {
 	    fl->v3error("Looked in:"<<endl);
 	    for (list<string>::iterator dirIter=m_impp->m_incDirs.begin(); dirIter!=m_impp->m_incDirs.end(); ++dirIter) {
-		for (set<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+		for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
 		    string fn = filenameFromDirBase(*dirIter,modname+*extIter);
 		    fl->v3error("      "<<fn<<endl);
 		}
