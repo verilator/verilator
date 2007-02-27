@@ -252,7 +252,12 @@ private:
 			if (clonedIncsp) {
 			    // Previous iteration of loop set the variable.
 			    // This set is redundant with this next iteration and can be removed.
-			    clonedIncsp->unlinkFrBack()->deleteTree();
+			    if (clonedIncsp == newbodysp) {  // Increment was only thing in list
+				newbodysp = NULL;
+			    } else {
+				clonedIncsp->unlinkFrBack();
+			    }
+			    clonedIncsp->deleteTree();
 			}
 			clonedIncsp = incp->clonep(); if (!clonedIncsp) nodep->v3fatalSrc("inc failed");
 		    }

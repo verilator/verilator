@@ -11,6 +11,17 @@ module t (/*AUTOARG*/
 
    input clk;
 
+   // Check empty blocks
+   task EmptyFor;
+      /* verilator public */
+      integer i;
+      begin
+         for (i = 0; i < 2; i = i+1)
+           begin
+           end
+      end
+   endtask
+
    // Check look unroller
    reg signed	   signed_tests_only = 1'sb1;
    integer 	   total;

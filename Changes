@@ -3,11 +3,15 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.63**
+
+**** Fix internal error when public for loop has empty body.  [David Addison]
+
 * Verilator 3.633 2/7/2007
 
 ***  Add --trace-depth option for minimizing VCD file size. [Emerson Suguimoto]
 
-***  With VL_DEBUG, show wires causing convergance errors. [Mike Shinkarovsky]
+***  With VL_DEBUG, show wires causing convergence errors. [Mike Shinkarovsky]
 
 **** Fix isolate_assignments when many signals per always. [Mike Shinkarovsky]
 
@@ -95,7 +99,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Removed coverage request variable; see Coverage limitations in docs.
 
-**** Fix DOS carrage returns in multiline defines.  [Ralf Karge]
+**** Fix DOS carriage returns in multiline defines.  [Ralf Karge]
 
 **** Fix printf format warnings on 64-bit linux.
 
@@ -107,7 +111,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Added --inhibit-sim flag for environments using old __Vm_inhibitSim.
 
-***  Added `systemc_dtor for destructor extentions.  [Allan Cochrane]
+***  Added `systemc_dtor for destructor extensions.  [Allan Cochrane]
 
 ***  Added -MP to make phony dependencies, ala GCC's.
 
@@ -142,7 +146,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix extraneous UNSIGNED warning when comparing genvars.  [David Hewson]
 
-**** Fix extra whitespace in $display %c.  [by David Addison]
+**** Fix extra white space in $display %c.  [by David Addison]
 
 **** vl_finish and vl_fatal now print via VL_PRINTF rather then cerr/cout.
 
@@ -245,7 +249,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix functions where regs are declared before inputs.  [Danny Ding]
 
-**** Fix bad deep expressions with bitselects and rotate.  [Prabhat Gupta]
+**** Fix bad deep expressions with bit-selects and rotate.  [Prabhat Gupta]
 
 * Verilator 3.500 10/30/2005 Stable
 
