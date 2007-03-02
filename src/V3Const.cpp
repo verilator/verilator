@@ -757,7 +757,8 @@ private:
 	    nodep->varp()->initp()->iterateAndNext(*this);
 	    if (operandConst(nodep->varp()->initp())
 		&& !nodep->lvalue()
-		&& ((v3Global.opt.oConst() && !m_params) // Can reduce constant wires into equations
+		&& ((v3Global.opt.oConst() && !m_params // Can reduce constant wires into equations
+		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
 		AstConst* constp = nodep->varp()->initp()->castConst();
 		const V3Number& num = constp->num();

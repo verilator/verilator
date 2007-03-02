@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Try all +libext's in the exact order given.  [Michael Shinkarovsky]
 
+**** Fix elimination of public signals assigned to constants.  [Eugene Weber]
+
 **** Fix internal error when public for loop has empty body.  [David Addison]
 
 * Verilator 3.633 2/7/2007

@@ -301,12 +301,12 @@ void V3PreProcImp::comment(const string& text) {
 	    if (commentTokenMatch(cmd/*ref*/, "parallel_case")) {
 		insertUnreadback ("/*verilator parallel_case*/");
 	    }
-	    if (commentTokenMatch(cmd/*ref*/, "one_hot")) {
-		insertUnreadback ("/*verilator one_hot*/ "+cmd+";");
-	    }
-	    if (commentTokenMatch(cmd/*ref*/, "one_cold")) {
-		insertUnreadback ("/*verilator one_cold*/ "+cmd+";");
-	    }
+	    //if (commentTokenMatch(cmd/*ref*/, "one_hot")) {
+	    //	insertUnreadback ("/*verilator one_hot*/ "+cmd+";");
+	    //}
+	    //if (commentTokenMatch(cmd/*ref*/, "one_cold")) {
+	    //	insertUnreadback ("/*verilator one_cold*/ "+cmd+";");
+	    //}
 	    // else ignore the comment we don't recognize
 	} // else no assertions
     } else {
