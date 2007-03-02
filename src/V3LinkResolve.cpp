@@ -78,7 +78,10 @@ private:
 	    nodep->v3error("Arrayed variables may not be inputs nor outputs");
 	}
 	if (m_ftaskp) nodep->funcLocal(true);
-	if (nodep->isSigPublic()) m_modp->modPublic(true);	// Avoid flattening if signals are exposed
+	if (nodep->isSigModPublic()) {
+	    nodep->sigModPublic(false);  // We're done with this attribute
+	    m_modp->modPublic(true);	// Avoid flattening if signals are exposed
+	}
     }
 
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {

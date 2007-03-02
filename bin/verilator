@@ -423,8 +423,8 @@ enable functional coverage.
 
 =item --public
 
-This is only for debug, and may result in mis-simulation of generated
-clocks.
+This is only for historical debug use.  Using it may result in
+mis-simulation of generated clocks.
 
 Declares all signals and modules public.  This will turn off signal
 optimizations as if all signals had a /*verilator public*/ comments and
@@ -1138,7 +1138,8 @@ be pure; they cannot reference any variables outside the task itself.
 
 Used after a input, output, register, or wire declaration to indicate the
 signal should be declared so that C code may read or write the value
-of the signal.
+of the signal.  This will also declare this module public, otherwise use
+/*verilator public_flat*/.
 
 =item /*verilator public*/ (task/function)
 
@@ -1159,6 +1160,14 @@ This feature is still somewhat experimental.  Generally, only the values of
 stored state (flops) should be written, as the model will NOT notice
 changes made to variables in these functions.  (Same as when a signal is
 declared public.)
+
+=item /*verilator public_flat*/ (variable)
+
+Used after a input, output, register, or wire declaration to indicate the
+signal should be declared so that C code may read or write the value of the
+signal.  This will not declare this module public, which means the name of
+the signal or path to it may change based upon the module inlining which
+takes place.
 
 =item /*verilator public_module*/
 

@@ -169,6 +169,7 @@ class AstSenTree;
 %token<fileline>	yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
 %token<fileline>	yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fileline>	yVL_PUBLIC		"/*verilator public*/"
+%token<fileline>	yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
 %token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
 %token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
 %token<fileline>	yVL_TRACING_OFF		"/*verilator tracing_off*/"
@@ -522,7 +523,8 @@ sigAttrList:	sigAttr					{}
 
 sigAttr:	yVL_CLOCK				{ V3Parse::s_varAttrp->attrScClocked(true); }
 	|	yVL_CLOCK_ENABLE			{ V3Parse::s_varAttrp->attrClockEn(true); }
-	|	yVL_PUBLIC				{ V3Parse::s_varAttrp->sigPublic(true); }
+	|	yVL_PUBLIC				{ V3Parse::s_varAttrp->sigPublic(true); V3Parse::s_varAttrp->sigModPublic(true); }
+	|	yVL_PUBLIC_FLAT				{ V3Parse::s_varAttrp->sigPublic(true); }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ V3Parse::s_varAttrp->attrIsolateAssign(true); }
 	;
 

@@ -448,6 +448,7 @@ escid	\\[^ \t\f\r\n]+
 <VLG,PSL>"/*verilator no_inline_task*/"		{yylval.fileline = CRELINE(); return yVL_NO_INLINE_TASK;}
 <VLG,PSL>"/*verilator parallel_case*/"		{yylval.fileline = CRELINE(); return yVL_PARALLEL_CASE;}
 <VLG,PSL>"/*verilator public*/"			{yylval.fileline = CRELINE(); return yVL_PUBLIC;}
+<VLG,PSL>"/*verilator public_flat*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_FLAT;}
 <VLG,PSL>"/*verilator public_module*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_MODULE;}
 <VLG,PSL>"/*verilator sc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
 <VLG,PSL>"/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}
