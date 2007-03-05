@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix internal error when public for loop has empty body.  [David Addison]
 
+**** Fix "Loops detected" assertion when model exceeds 4GB.  [David Hewson]
+
 * Verilator 3.633 2/7/2007
 
 ***  Add --trace-depth option for minimizing VCD file size. [Emerson Suguimoto]

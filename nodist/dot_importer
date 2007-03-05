@@ -1,0 +1,174 @@
+#!/usr/bin/perl -w
+# $Id$
+######################################################################
+#
+# Copyright 2005-2007 by Wilson Snyder <wsnyder@wsnyder.org>.  This
+# program is free software; you can redistribute it and/or modify it under
+# the terms of either the GNU Lesser General Public License or the Perl
+# Artistic License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+require 5.006_001;
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use Data::Dumper; $Data::Dumper::Indent=1;
+use strict;
+use vars qw ($Debug);
+
+#======================================================================
+
+our @Header;
+our %Vertexes;
+our @Edges;
+our %Edges;
+
+#======================================================================
+# main
+
+$Debug = 0;
+my $opt_filename;
+autoflush STDOUT 1;
+autoflush STDERR 1;
+if (! GetOptions (
+		  "help"	=> \&usage,
+		  "debug"	=> \&debug,
+		  "<>"		=> \&parameter,
+		  )) {
+    usage();
+}
+
+dotread ($opt_filename);
+cwrite ("graph_export.cpp");
+
+#----------------------------------------------------------------------
+
+sub usage {
+    print '$Id$ ', "\n";
+    pod2usage(-verbose=>2, -exitval => 2);
+    exit (1);
+}
+
+sub debug {
+    $Debug = 1;
+}
+
+sub parameter {
+    my $param = shift;
+    if (!$opt_filename) {
+	$opt_filename = $param;
+    } else {
+	die "%Error: Unknown parameter: $param\n";
+    }
+}
+
+#######################################################################
+
+sub dotread {
+    my $filename = shift;
+
+    my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
+    my $header = 1;
+    my $vnum = 0;
+    while (defined (my $line = $fh->getline)) {
+	if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
+	    next if $1 eq 'nTITLE';
+	    $header = 0;
+	    $Vertexes{$1} = {num => $vnum++,
+			     line => $line,
+			     name => $1,};
+	}
+	elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
+	    my $from=$1; my $to=$2;
+	    my $weight = 1; $weight = $1 if $line =~ /weight=(\d+)/;
+	    my $cutable = undef; $cutable = $1 if $line =~ /style=(\S+)/;
+	    my $edge =  {num => $vnum++,
+			 line => $line,
+			 weight => $weight,
+			 cutable => $cutable,
+			 from => $from,
+			 to => $to,};
+	    push @Edges, $edge;
+	    $Edges{$from}{$to} = $edge;
+	}
+	elsif ($header) {
+	    push @Header, $line;
+	    print "IGNORE: $line";
+	}
+    }
+}
+
+#######################################################################
+
+sub cwrite {
+    my $filename = shift;
+
+    my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
+    $fh->print("void V3GraphTestImport::dotImport() {\n");
+    $fh->print("    DfaGraph* gp = &m_graph;\n");
+    foreach my $ver (sort {$a->{num} <=> $b->{num}} (values %Vertexes)) {
+	$fh->printf("    V3GraphTestVertex* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n",
+		    $ver->{name}, $ver->{name}, $ver->{name});
+    }
+    $fh->print("\n");
+    foreach my $edge (@Edges) {
+	$fh->printf("    new V3GraphEdge(gp, %s, %s, %s, %s);\n",
+		    $edge->{from}, $edge->{to},
+		    $edge->{weight}, $edge->{cutable}?"true":"false");	       
+    }
+    $fh->print("}\n");
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+dot_importer - Take graph .dot file and convert into .cpp file
+
+=head1 SYNOPSIS
+
+  dot_importer a.dot
+
+=head1 DESCRIPTION
+
+Dot_importer takes a graphvis .dot file and converts into .cpp file.  This
+.cpp file is then manually included in V3GraphTest.cpp to verify various
+sub-algorithms.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=back
+
+=head1 DISTRIBUTION
+
+Copyright 2005-2007 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License or the Perl Artistic License.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./dot_importer | tee ~/d/a.dot"
+### End:

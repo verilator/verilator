@@ -1,18 +1,6 @@
 // $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//	$write("*-* All Finished *-*\n");
-//	$finish
-// on success, or $stop.
-//
-// The code as shown applies a random vector to the Test
-// module, then calculates a CRC on the Test module's outputs.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here, otherwise:**
-//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2007 by Wilson Snyder.
 
@@ -28,24 +16,27 @@ module t (/*AUTOARG*/
 
    // Take CRC data and apply to testblock inputs
    wire [31:0]  in = crc[31:0];
+   wire  	noswap = crc[32];
+   wire 	nibble = crc[33];
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [31:0] 		out;			// From test of Test.v
+   wire [31:0] 		swapped;		// From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
 	      // Outputs
 	      .out			(out[31:0]),
+	      .swapped			(swapped[31:0]),
 	      // Inputs
 	      .clk			(clk),
+	      .noswap			(noswap),
+	      .nibble			(nibble),
 	      .in			(in[31:0]));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {32'h0, out};
-
-   // What checksum will we end up with
-`define EXPECTED_SUM 64'h4afe43fb79d7b71e
 
    // Test loop
    always @ (posedge clk) begin
@@ -65,10 +56,10 @@ module t (/*AUTOARG*/
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
+	 $write("*-* All Finished *-*\n");
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
-	 if (sum !== `EXPECTED_SUM) $stop;
-	 $write("*-* All Finished *-*\n");
+	 if (sum !== 64'h89522c3f5e5ca324) $stop;
 	 $finish;
       end
    end
@@ -77,26 +68,43 @@ endmodule
 
 module Test (/*AUTOARG*/
    // Outputs
-   out,
+   out, swapped,
    // Inputs
-   clk, in
+   clk, noswap, nibble, in
    );
-
-   // Replace this module with the device under test.
-   //
-   // Change the code in the t module to apply values to the inputs and
-   // merge the output values into the result vector.
-
    input clk;
+
+   input noswap;
+   input nibble;
+
    input  [31:0] in;   
    output [31:0] out;
+   output [31:0] swapped;
 
-   /*AUTOREG*/
-   // Beginning of automatic regs (for this module's undeclared outputs)
-   reg [31:0] 		out;
-   // End of automatics
-
+   function [7:0] EndianSwap;
+      input Nibble;
+      input [7:0] Data;
+      begin
+         EndianSwap = (Nibble ? { Data[0], Data[1], Data[2], Data[3],
+				  Data[4], Data[5], Data[6], Data[7] }
+                       : { 4'h0, Data[0], Data[1], Data[2], Data[3] });
+      end	
+   endfunction
+   
+   assign out[31:24] = (noswap ? in[31:24]
+			: EndianSwap(nibble, in[31:24]));
+   assign out[23:16] = (noswap ? in[23:16]
+			: EndianSwap(nibble, in[23:16]));
+   assign out[15:8]  = (noswap ? in[15:8]
+			: EndianSwap(nibble, in[15:8]));
+   assign out[7:0]   = (noswap ? in[7:0]
+			: EndianSwap(nibble, in[7:0]));
+   
+   reg [31:0] swapped;
    always @(posedge clk) begin
-      out <= in;
+      swapped[31:24] <= EndianSwap(nibble, in[31:24]);
+      swapped[23:16] <= EndianSwap(nibble, in[23:16]);
+      swapped[15:8]  <= EndianSwap(nibble, in[15:8] );
+      swapped[7:0]   <= EndianSwap(nibble, in[7:0]  );
    end
 endmodule

@@ -180,6 +180,7 @@ void V3Graph::userClearVertices() {
     // the extra code on each read of user() would probably slow things down more then help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertexp->user(0);
+	vertexp->userp(NULL);	 // Its a union, but might be different size then user()
     }
 }
 
@@ -187,7 +188,8 @@ void V3Graph::userClearEdges() {
     // Clear user() in all of tree
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    edgep->userp(NULL);
+	    edgep->user(0);
+	    edgep->userp(NULL);	 // Its a union, but might be different size then user()
 	}
     }
 }
@@ -253,6 +255,8 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) {
     *logp<<"digraph v3graph {\n";
     *logp<<"\trankdir="<<dotRankDir()<<"\n";
     *logp<<"\tsize="<<"\"7.5,10\""<<"\n";
+    *logp<<"\tnTITLE\t[fontsize=20 label=\""<<filename<<"\", shape=box, style=bold, color=black];\n";
+    *logp<<"\n";
 
     // List of all possible subgraphs
     typedef multimap<string,V3GraphVertex*> SubgraphMmap;

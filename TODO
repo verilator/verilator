@@ -47,6 +47,10 @@ Testing:
 	Better graph viewer with search and zoom
 	Port and test against opencores.org code
 
+Usability:
+	Better reporting of unopt problems, including what lines of code
+	Report more errors (all of them?) before exiting [Eugene Weber]	
+
 Performance:
 	Constant propagation
 		Extra cleaning AND:  1 & ((VARREF >> 1) | ((&VARREF >> 1) & VARREF))

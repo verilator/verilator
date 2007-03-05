@@ -37,6 +37,7 @@
 //	Break the minimal number of backward edges to make the graph acyclic
 
 class GraphAcycVertex : public V3GraphVertex {
+    // user() is used for various sub-algorithm pieces
     V3GraphVertex*	m_origVertexp;		// Pointer to first vertex this represents
 protected:
     friend class GraphAcyc;
@@ -308,6 +309,9 @@ void GraphAcyc::simplifyOne (GraphAcycVertex* avertexp) {
 	    avertexp->setDelete();	// Mark so we won't delete it twice
 	    // Make a new edge connecting the two vertices directly
 	    // If both are breakable, we pick the one with less weight, else it's arbitrary
+	    // We can forget about the origEdge list for the "non-selected" set of edges,
+	    // as we need to break only one set or the other set of edges, not both.
+	    // (This is why we must give preference to the cutable set.)
 	    V3GraphEdge* templateEdgep = ( (inEdgep->cutable()
 					    && (!outEdgep->cutable()
 						|| inEdgep->weight()<outEdgep->weight() ))
@@ -353,7 +357,7 @@ void GraphAcyc::simplifyDup (GraphAcycVertex* avertexp) {
     if (avertexp->isDelete()) return;
     // Clear marks
     for (V3GraphEdge* edgep = avertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	edgep->top()->user(false);
+	edgep->top()->userp(NULL);
     }
     // Mark edges and detect duplications
     for (V3GraphEdge* nextp, *edgep = avertexp->outBeginp(); edgep; edgep=nextp) {
@@ -364,16 +368,16 @@ void GraphAcyc::simplifyDup (GraphAcycVertex* avertexp) {
 	    if (!prevEdgep->cutable()) {
 		// !cutable duplicates prev !cutable: we can ignore it, redundant
 		//  cutable duplicates prev !cutable: know it's not a relevant loop, ignore it
-		UINFO(8,"    DelDupEdge "<<avertexp<<endl);
+		UINFO(8,"    DelDupEdge "<<avertexp<<" -> "<<edgep->top()<<endl);
 		edgep->unlinkDelete(); edgep = NULL;
 	    } else if (!edgep->cutable()) {
 		// !cutable duplicates prev  cutable: delete the earlier cutable
-		UINFO(8,"    DelDupPrev "<<avertexp<<endl);
+		UINFO(8,"    DelDupPrev "<<avertexp<<" -> "<<prevEdgep->top()<<endl);
 		prevEdgep->unlinkDelete(); prevEdgep = NULL;
 		outVertexp->userp(edgep);
 	    } else {
 		//  cutable duplicates prev  cutable: combine weights
-		UINFO(8,"    DelDupComb "<<avertexp<<endl);
+		UINFO(8,"    DelDupComb "<<avertexp<<" -> "<<edgep->top()<<endl);
 		prevEdgep->weight (prevEdgep->weight() + edgep->weight());
 		addOrigEdgep (prevEdgep, edgep);
 		edgep->unlinkDelete(); edgep = NULL;

@@ -311,6 +311,34 @@ public:
 	gp->dfaReduce();
     }
 };
+
+//======================================================================
+
+class V3GraphTestImport : public V3GraphTest {
+
+    void dotImport();
+
+public:
+    virtual string name() { return "import"; }
+    virtual void runTest() {
+	DfaGraph* gp = &m_graph;
+	if (V3GraphTest::debug()) gp->debug(9);
+	dotImport();
+	dump();
+	gp->acyclic(&V3GraphEdge::followAlwaysTrue);
+	dump();
+	gp->rank(&V3GraphEdge::followAlwaysTrue);
+	dump();
+    }
+};
+
+#if 0
+# include "graph_export.cpp"
+#else 
+void V3GraphTestImport::dotImport() {
+}
+#endif
+
 //======================================================================
 
 void V3Graph::test() {
@@ -320,5 +348,6 @@ void V3Graph::test() {
     { V3GraphTestAcyc test; test.run(); }
     { V3GraphTestVars test; test.run(); }
     { V3GraphTestDfa test; test.run(); }
+    { V3GraphTestImport test; test.run(); }
     if (V3GraphTest::debug()) v3fatalSrc("Exiting due to graph testing enabled");
 }
