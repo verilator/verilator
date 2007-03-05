@@ -62,10 +62,10 @@ public:
     // METHODS
     void stateExitPsl() {
 	if (YY_START != PSL) yyerror("Internal error: Exiting PSL state when not in PSL state");
-	BEGIN VLG;
+	BEGIN S05;
     }
     void statePushVlg() {
-	yy_push_state(VLG);
+	yy_push_state(S05);
     }
     void statePop() {
 	yy_pop_state();

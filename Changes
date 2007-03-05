@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.63**
 
+***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2005.
+
 ***  Add /*verilator public_flat*/.  [Eugene Weber]
 
 **** Try all +libext's in the exact order given.  [Michael Shinkarovsky]
