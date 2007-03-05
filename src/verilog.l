@@ -31,6 +31,8 @@
 extern void yyerror(char*);
 extern void yyerrorf(const char* format, ...);
 
+#define STATE_VERILOG_RECENT  S05		// State name for most recent Verilog Version
+
 //======================================================================
 
 #define NEXTLINE() {V3Read::incLineno();}
@@ -101,7 +103,7 @@ escid	\\[^ \t\f\r\n]+
 
 %%
 
-<INITIAL>.|\n 		{BEGIN S05; yyless(0); }
+<INITIAL>.|\n 		{BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
 <V95,V01,V05,S05,PSL>{
   {ws}			;			/* ignore white-space */
@@ -160,6 +162,10 @@ escid	\\[^ \t\f\r\n]+
   "genvar"		{yylval.fileline = CRELINE(); return yGENVAR;}
   "localparam"		{yylval.fileline = CRELINE(); return yLOCALPARAM;}
   "signed"		{yylval.fileline = CRELINE(); return ySIGNED;}
+}
+
+<V05,S05,PSL>{
+  "uwire"		{yylval.fileline = CRELINE(); return yWIRE;}
 }
 
 <S05,PSL>{
@@ -228,7 +234,7 @@ escid	\\[^ \t\f\r\n]+
 
  /*Entry into PSL; mode change */
 <V95,V01,V05,S05>{
-  "psl"			{ BEGIN PSL; yylval.fileline = CRELINE(); return yPSL; }
+  "psl"			{ yy_push_state(PSL); yylval.fileline = CRELINE(); return yPSL; }
 }
 
 <PSL>{
@@ -328,11 +334,6 @@ escid	\\[^ \t\f\r\n]+
   "showcancelled"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "unsigned"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "use"			{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-}
-
-  /* Verilog 2005 */
-<V05,S05,PSL>{
-  "uwire"		{yyerrorf("Unsupported: Verilog 2005 reserved word not implemented: %s",yytext);}
 }
 
   /* System Verilog */
@@ -643,6 +644,14 @@ escid	\\[^ \t\f\r\n]+
   [ \t]*"`systemc_interface"		{ BEGIN SYSCINT; }
   [ \t]*"`systemc_implementation"	{ BEGIN SYSCIMP; }
   [ \t]*"`systemc_imp_header"		{ BEGIN SYSCIMPH; }
+
+  [ \t]*"`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords();}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords();}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords();}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords();}
+  [ \t]*"`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords();}
+  [ \t]*"`end_keywords"					{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+
   "`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
 }
 

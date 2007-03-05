@@ -39,6 +39,7 @@ class V3Read {
     static V3Read*	s_readp;	// Current THIS, bison() isn't class based
     FileLine*	m_fileline;	// Filename/linenumber currently active
     bool	m_inLibrary;	// Currently reading a library vs. regular file
+    int		m_inBeginKwd;		// Inside a `begin_keywords
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
     //int debug() { return 9; }
@@ -54,6 +55,8 @@ protected:
     static void incLineno() { s_readp->fileline()->incLineno(); }
     static void verilatorCmtLint(const char* text, bool on);
     static void verilatorCmtBad(const char* text);
+    static void pushBeginKeywords() { s_readp->m_inBeginKwd++; }
+    static bool popBeginKeywords() { if (s_readp->m_inBeginKwd) { s_readp->m_inBeginKwd--; return true; } else return false; }
 
 public: // But for internal use only
     static string* newString(const string& text) {
@@ -94,6 +97,7 @@ public:
     V3Read(AstNetlist* rootp) {
 	m_rootp = rootp; m_lexerp = NULL;
 	m_inLibrary = false;
+	m_inBeginKwd = 0;
     }
     ~V3Read() {
 	for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {

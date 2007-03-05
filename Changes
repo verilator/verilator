@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.63**
 
+***  Support Verilog 2005 `begin_keywords and `end_keywords.
+
 ***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2005.
 
 ***  Add /*verilator public_flat*/.  [Eugene Weber]

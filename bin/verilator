@@ -891,18 +891,25 @@ The target system may also require edits to the Makefiles, the simple
 Makefiles produced by Verilator presume the target system is the same type
 as the build system.
 
-=head1 VERILOG 2001 SUPPORT
+=head1 VERILOG 2001 (IEEE 1364-2001) SUPPORT
 
 Verilator supports the more common Verilog 2001 language features.  This
 includes signed numbers, "always @*", comma separated sensitivity lists,
 generate statements, multidimensional arrays, localparam, and C-style
 declarations inside port lists.
 
-=head1 SYSTEMVERILOG 3.1 SUPPORT
+=head1 VERILOG 2005 (IEEE 1364-2005) SUPPORT
+
+Verilator supports the `begin_keywords and `end_keywords compiler
+directives.
+
+Verilator treats the uwire keyword as if it were the normal wire keyword.
+
+=head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
 
 Verilator currently has very minimal support for SystemVerilog.
 
-Verilator implement the full SystemVerilog 3.1 preprocessor subset,
+Verilator implements the full SystemVerilog 1800-2005 preprocessor subset,
 including function call-like preprocessor defines.  Verilator also
 implements $bits, $countones, $isunknown, $onehot, and $onehot0,
 always_comb, always_ff, always_latch, and final.
