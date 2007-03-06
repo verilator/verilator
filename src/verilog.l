@@ -105,9 +105,38 @@ escid	\\[^ \t\f\r\n]+
 
 <INITIAL>.|\n 		{BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
+  /* Verilog 1995 */
 <V95,V01,V05,S05,PSL>{
   {ws}			;			/* ignore white-space */
   \n			{NEXTLINE();}		/* Count line numbers */
+  /*     Extensions to Verilog set, some specified by PSL */
+  "$c"[0-9]*		{yylval.fileline = CRELINE(); return yD_C;}		/*Verilator only*/
+  /*     System Tasks */
+  "$display"		{yylval.fileline = CRELINE(); return yD_DISPLAY;}
+  "$fclose"		{yylval.fileline = CRELINE(); return yD_FCLOSE;}
+  "$fdisplay"		{yylval.fileline = CRELINE(); return yD_FDISPLAY;}
+  "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
+  "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
+  "$fullskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$fwrite"		{yylval.fileline = CRELINE(); return yD_FWRITE;}
+  "$hold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$nochange"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$period"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$readmemb"		{yylval.fileline = CRELINE(); return yD_READMEMB;}
+  "$readmemh"		{yylval.fileline = CRELINE(); return yD_READMEMH;}
+  "$realtime"		{yylval.fileline = CRELINE(); return yD_TIME;}
+  "$recovery"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$recrem"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$removal"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$setup"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$setuphold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$skew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$stop"		{yylval.fileline = CRELINE(); return yD_STOP;}
+  "$time"		{yylval.fileline = CRELINE(); return yD_TIME;}
+  "$timeskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$width"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$write"		{yylval.fileline = CRELINE(); return yD_WRITE;}
+  /*     Keywords */
   "always"		{yylval.fileline = CRELINE(); return yALWAYS;}
   "and"			{yylval.fileline = CRELINE(); return yAND;}
   "assign"		{yylval.fileline = CRELINE(); return yASSIGN;}
@@ -154,61 +183,7 @@ escid	\\[^ \t\f\r\n]+
   "wire"		{yylval.fileline = CRELINE(); return yWIRE;}
   "xnor"		{yylval.fileline = CRELINE(); return yXNOR;}
   "xor"			{yylval.fileline = CRELINE(); return yXOR;}
-}
-
-<V01,V05,S05,PSL>{
-  "endgenerate"		{yylval.fileline = CRELINE(); return yENDGENERATE;}
-  "generate"		{yylval.fileline = CRELINE(); return yGENERATE;}
-  "genvar"		{yylval.fileline = CRELINE(); return yGENVAR;}
-  "localparam"		{yylval.fileline = CRELINE(); return yLOCALPARAM;}
-  "signed"		{yylval.fileline = CRELINE(); return ySIGNED;}
-}
-
-<V05,S05,PSL>{
-  "uwire"		{yylval.fileline = CRELINE(); return yWIRE;}
-}
-
-<S05,PSL>{
-  "always_comb"		{yylval.fileline = CRELINE(); return yALWAYS;}
-  "always_ff"		{yylval.fileline = CRELINE(); return yALWAYS;}
-  "always_latch"	{yylval.fileline = CRELINE(); return yALWAYS;}
-  "final"		{yylval.fileline = CRELINE(); return yFINAL;}
-}
-
-<V95,V01,V05,S05,PSL>{
-    /* Extensions to Verilog set, some specified by PSL */
-  "$bits"		{yylval.fileline = CRELINE(); return yD_BITS;}		/*Verilator only*/
-  "$c"[0-9]*		{yylval.fileline = CRELINE(); return yD_C;}		/*Verilator only*/
-  "$countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}	/*Verilator only*/
-  "$isunknown"		{yylval.fileline = CRELINE(); return yD_ISUNKNOWN;}	/*Verilator only*/
-  "$onehot"		{yylval.fileline = CRELINE(); return yD_ONEHOT;}	/*Verilator only*/
-  "$onehot0"		{yylval.fileline = CRELINE(); return yD_ONEHOT0;}	/*Verilator only*/
-    /* Standard ones */
-  "$display"		{yylval.fileline = CRELINE(); return yD_DISPLAY;}
-  "$fclose"		{yylval.fileline = CRELINE(); return yD_FCLOSE;}
-  "$fdisplay"		{yylval.fileline = CRELINE(); return yD_FDISPLAY;}
-  "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
-  "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
-  "$fullskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$fwrite"		{yylval.fileline = CRELINE(); return yD_FWRITE;}
-  "$hold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$nochange"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$period"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$readmemb"		{yylval.fileline = CRELINE(); return yD_READMEMB;}
-  "$readmemh"		{yylval.fileline = CRELINE(); return yD_READMEMH;}
-  "$realtime"		{yylval.fileline = CRELINE(); return yD_TIME;}
-  "$recovery"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$recrem"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$removal"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$setup"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$setuphold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$skew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$stop"		{yylval.fileline = CRELINE(); return yD_STOP;}
-  "$time"		{yylval.fileline = CRELINE(); return yD_TIME;}
-  "$timeskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$width"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$write"		{yylval.fileline = CRELINE(); return yD_WRITE;}
-    /* Special errors */
+  /*     Special errors */
   "$displayb"		{yyerrorf("Unsupported: Use $display with %%b format instead: %s",yytext);}
   "$displayh"		{yyerrorf("Unsupported: Use $display with %%x format instead: %s",yytext);}
   "$displayo"		{yyerrorf("Unsupported: Use $display with %%o format instead: %s",yytext);}
@@ -221,41 +196,7 @@ escid	\\[^ \t\f\r\n]+
   "$writeb"		{yyerrorf("Unsupported: Use $write with %%b format instead: %s",yytext);}
   "$writeh"		{yyerrorf("Unsupported: Use $write with %%x format instead: %s",yytext);}
   "$writeo"		{yyerrorf("Unsupported: Use $write with %%o format instead: %s",yytext);}
-}
-
-<V01,V05,S05,PSL>{
-  "$signed"		{yylval.fileline = CRELINE(); return yD_SIGNED;}
-  "$unsigned"		{yylval.fileline = CRELINE(); return yD_UNSIGNED;}
-}
-
-<V95,V01,V05,S05,PSL>{
-  "$"[a-zA-Z_$]+	{yyerrorf("Unsupported or unknown PLI call: %s",yytext);}
-}
-
- /*Entry into PSL; mode change */
-<V95,V01,V05,S05>{
-  "psl"			{ yy_push_state(PSL); yylval.fileline = CRELINE(); return yPSL; }
-}
-
-<PSL>{
-  "psl"			{ ; }	// 'psl' may occur in middle of statement, so easier just to suppress
-
-  "assert"		{yylval.fileline = CRELINE(); return yASSERT;}
-  "assume"		{yylval.fileline = CRELINE(); return yASSERT;} //==assert
-  "before_!"		{yyerrorf("Illegal syntax, use before!_ instead of %s",yytext);}
-  "clock"		{yylval.fileline = CRELINE(); return yCLOCK;}
-  "countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}
-  "cover"		{yylval.fileline = CRELINE(); return yCOVER;}
-  "isunknown"		{yylval.fileline = CRELINE(); return yD_ISUNKNOWN;}
-  "onehot"		{yylval.fileline = CRELINE(); return yD_ONEHOT; }
-  "onehot0"		{yylval.fileline = CRELINE(); return yD_ONEHOT0; }
-  "until_!"		{yyerrorf("Illegal syntax, use until!_ instead of %s",yytext);}
-  "report"		{yylval.fileline = CRELINE(); return yREPORT; }
-  "true"		{yylval.fileline = CRELINE(); return yTRUE; }
-}
-
- /*Verilog Reserved*/
-<V95,V01,V05,S05,PSL>{
+  /*     Generic unsupported warnings */
   "bufif0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "bufif1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "cmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
@@ -315,9 +256,18 @@ escid	\\[^ \t\f\r\n]+
 
   /* Verilog 2001 */
 <V01,V05,S05,PSL>{
-  /*     Special hints */
+  /*     System Tasks */
+  "$signed"		{yylval.fileline = CRELINE(); return yD_SIGNED;}
+  "$unsigned"		{yylval.fileline = CRELINE(); return yD_UNSIGNED;}
+  /*     Keywords */
+  "endgenerate"		{yylval.fileline = CRELINE(); return yENDGENERATE;}
+  "generate"		{yylval.fileline = CRELINE(); return yGENERATE;}
+  "genvar"		{yylval.fileline = CRELINE(); return yGENVAR;}
+  "localparam"		{yylval.fileline = CRELINE(); return yLOCALPARAM;}
+  "signed"		{yylval.fileline = CRELINE(); return ySIGNED;}
+  /*     Special errors */
   "include"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented; probably you want `include instead: %s",yytext);}
-  /*     Generic warnings */
+  /*     Generic unsupported warnings */
   "automatic"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "cell"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "config"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
@@ -336,8 +286,26 @@ escid	\\[^ \t\f\r\n]+
   "use"			{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
 }
 
-  /* System Verilog */
+  /* Verilog 2005 */
+<V05,S05,PSL>{
+  /*     Keywords */
+  "uwire"		{yylval.fileline = CRELINE(); return yWIRE;}
+}
+
+  /* System Verilog 2005 */
 <S05,PSL>{
+  /*     System Tasks */
+  "$bits"		{yylval.fileline = CRELINE(); return yD_BITS;}
+  "$countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}
+  "$isunknown"		{yylval.fileline = CRELINE(); return yD_ISUNKNOWN;}
+  "$onehot"		{yylval.fileline = CRELINE(); return yD_ONEHOT;}
+  "$onehot0"		{yylval.fileline = CRELINE(); return yD_ONEHOT0;}
+  /*     Keywords */
+  "always_comb"		{yylval.fileline = CRELINE(); return yALWAYS;}
+  "always_ff"		{yylval.fileline = CRELINE(); return yALWAYS;}
+  "always_latch"	{yylval.fileline = CRELINE(); return yALWAYS;}
+  "final"		{yylval.fileline = CRELINE(); return yFINAL;}
+  /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "alias"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "bind"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
@@ -425,8 +393,9 @@ escid	\\[^ \t\f\r\n]+
   "with"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
 }
 
+  /* SystemVerilog ONLY not PSL; different rules for PSL as specified below */
 <S05>{
-  /* Verilog ONLY not PSL; different rules for PSL as specified below */
+  /*     Generic unsupported warnings */
   "assert"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
   "assume"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
   "before"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
@@ -438,8 +407,36 @@ escid	\\[^ \t\f\r\n]+
   "within"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
 }
 
+  /* Default PLI rule */
+<V95,V01,V05,S05,PSL>{
+  "$"[a-zA-Z_$]+	{yyerrorf("Unsupported or unknown PLI call: %s",yytext);}
+}
+
+  /************************************************************************/
+  /* PSL */
+
+  /*Entry into PSL; mode change */
+<V95,V01,V05,S05>{
+  "psl"			{ yy_push_state(PSL); yylval.fileline = CRELINE(); return yPSL; }
+}
+
 <PSL>{
-  /* PSL reserved */
+  /*     Special things */
+  "psl"			{ ; }	// 'psl' may occur in middle of statement, so easier just to suppress
+  /*     Keywords */
+  "assert"		{yylval.fileline = CRELINE(); return yASSERT;}
+  "assume"		{yylval.fileline = CRELINE(); return yASSERT;} //==assert
+  "before_!"		{yyerrorf("Illegal syntax, use before!_ instead of %s",yytext);}
+  "clock"		{yylval.fileline = CRELINE(); return yCLOCK;}
+  "countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}
+  "cover"		{yylval.fileline = CRELINE(); return yCOVER;}
+  "isunknown"		{yylval.fileline = CRELINE(); return yD_ISUNKNOWN;}
+  "onehot"		{yylval.fileline = CRELINE(); return yD_ONEHOT; }
+  "onehot0"		{yylval.fileline = CRELINE(); return yD_ONEHOT0; }
+  "until_!"		{yyerrorf("Illegal syntax, use until!_ instead of %s",yytext);}
+  "report"		{yylval.fileline = CRELINE(); return yREPORT; }
+  "true"		{yylval.fileline = CRELINE(); return yTRUE; }
+  /*     Generic unsupported warnings */
   /*"A"			{yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext);} */
   /*"AF"		{yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext);} */
   /*"AG"		{yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext);} */
@@ -504,6 +501,9 @@ escid	\\[^ \t\f\r\n]+
   "within"		{yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext);}
 }
 
+  /************************************************************************/
+  /* Meta comments */
+
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
 <V95,V01,V05,S05,PSL>{
   "/*verilator clock_enable*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK_ENABLE;}
@@ -526,6 +526,9 @@ escid	\\[^ \t\f\r\n]+
 
   "/*"[^*]*"*/"				{V3Read::verilatorCmtBad(yytext); }
 }
+
+  /************************************************************************/
+  /* Operators */
 
   /* Verilog 1995 Operators */
 <V95,V01,V05,S05,PSL>{
