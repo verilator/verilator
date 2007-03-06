@@ -60,6 +60,11 @@ public:
     static AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp);
     static AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
     static AstText* createTextQuoted(FileLine* fileline, string text);
+    static AstDisplay* createDisplayError(FileLine* fileline) {
+	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::ERROR,  "", NULL,NULL);
+	nodep->addNext(new AstStop(fileline)); 
+	return nodep;
+    }
     static string   deQuote(FileLine* fileline, string text);
 };
 
@@ -140,15 +145,20 @@ class AstSenTree;
 %token<fileline>	yREPORT		"report"
 %token<fileline>	yTRUE		"true"
 
+%token<fileline>	yPSL_ASSERT	"PSL assert"
+
 %token<fileline>	yD_BITS		"$bits"
 %token<fileline>	yD_C		"$c"
 %token<fileline>	yD_COUNTONES	"$countones"
 %token<fileline>	yD_DISPLAY	"$display"
+%token<fileline>	yD_ERROR	"$error"
+%token<fileline>	yD_FATAL	"$fatal"
 %token<fileline>	yD_FCLOSE	"$fclose"
 %token<fileline>	yD_FDISPLAY	"$fdisplay"
 %token<fileline>	yD_FINISH	"$finish"
 %token<fileline>	yD_FOPEN	"$fopen"
 %token<fileline>	yD_FWRITE	"$fwrite"
+%token<fileline>	yD_INFO		"$info"
 %token<fileline>	yD_ISUNKNOWN	"$isunknown"
 %token<fileline>	yD_ONEHOT	"$onehot"
 %token<fileline>	yD_ONEHOT0	"$onehot0"
@@ -158,6 +168,7 @@ class AstSenTree;
 %token<fileline>	yD_STOP		"$stop"
 %token<fileline>	yD_TIME		"$time"
 %token<fileline>	yD_UNSIGNED	"$unsigned"
+%token<fileline>	yD_WARNING	"$warning"
 %token<fileline>	yD_WRITE	"$write"
 
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
@@ -232,7 +243,8 @@ class AstSenTree;
 %type<nodep>	defpList defpOne
 %type<sentreep>	sensitivityE
 %type<senitemp>	senList senitem senitemEdge
-%type<nodep>	stmtBlock stmtList stmt stateCaseForIf
+%type<nodep>	stmtBlock stmtList stmt labeledStmt stateCaseForIf
+%type<nodep>	assertStmt
 %type<beginp>	beginNamed
 %type<casep>	caseStmt
 %type<caseitemp> caseList
@@ -257,6 +269,7 @@ class AstSenTree;
 %type<nodep>	gateOrList gateNorList gateXorList gateXnorList
 %type<assignwp>	gateBuf gateNot gateAnd gateNand gateOr gateNor gateXor gateXnor
 %type<nodep>	gateAndPinList gateOrPinList gateXorPinList
+%type<nodep>	commaEListE
 
 %type<nodep>	pslStmt pslDir pslDirOne pslProp
 %type<nodep>	pslDecl
@@ -652,6 +665,9 @@ stmtList:	stmtBlock				{ $$ = $1; }
 	;
 
 stmt:		';'					{ $$ = NULL; }
+	|	labeledStmt				{ $$ = $1; }
+	|	yID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
+
 	|	varRefDotBit yLTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
 	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
@@ -666,21 +682,31 @@ stmt:		';'					{ $$ = NULL; }
 	|	stateCaseForIf				{ $$ = $1; }
 	|	taskRef ';' 				{ $$ = $1; }
 
-	|	yD_DISPLAY  ';'					{ $$ = new AstDisplay($1,'\n',"",NULL,NULL); }
-	|	yD_DISPLAY  '(' ySTRING ')' ';'			{ $$ = new AstDisplay($1,'\n',*$3,NULL,NULL); }
-	|	yD_DISPLAY  '(' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\n',*$3,NULL,$5); }
-	|	yD_WRITE    '(' ySTRING ')' ';'			{ $$ = new AstDisplay($1,'\0',*$3,NULL,NULL); }
-	|	yD_WRITE    '(' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\0',*$3,NULL,$5); }
-	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\n',*$5,$3,NULL); }
-	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING ',' eList ')' ';' 	{ $$ = new AstDisplay($1,'\n',*$5,$3,$7); }
-	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING ')' ';'		{ $$ = new AstDisplay($1,'\0',*$5,$3,NULL); }
-	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING ',' eList ')' ';'	{ $$ = new AstDisplay($1,'\0',*$5,$3,$7); }
+	|	yD_DISPLAY  ';'							{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
+	|	yD_DISPLAY  '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
+	|	yD_WRITE    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
+	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING commaEListE ')' ';' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
+	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING commaEListE ')' ';'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
+	|	yD_INFO	    ';'							{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
+	|	yD_INFO	    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
+	|	yD_WARNING  ';'							{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
+	|	yD_WARNING  '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
+	|	yD_ERROR    ';'							{ $$ = V3Parse::createDisplayError($1); }
+	|	yD_ERROR    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    ';'							{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ',' ySTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); }
+
 	|	yD_READMEMB '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
 	|	yD_READMEMH '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+
+	;
+
+labeledStmt:	assertStmt				{ $$ = $1; }
 	;
 
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
@@ -690,6 +716,11 @@ stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)
 									  ,$13);}
+	;
+
+assertStmt:	yASSERT '(' expr ')' stmtBlock %prec yLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
+	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
+	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
 	;
 
 caseStmt: 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,false,$3,NULL); }
@@ -833,6 +864,11 @@ cateList:	expr					{ $$ = $1; }
 eList:		expr					{ $$ = $1; }
 	|	eList ',' expr				{ $$ = $1;$1->addNext($3); }
 	;
+
+commaEListE:	/* empty */				{ $$ = NULL; }
+	|	',' eList				{ $$ = $2; }
+	;
+
 
 // Gate declarations
 gateDecl: 	yBUF  gateBufList ';'			{ $$ = $2; }
@@ -1013,8 +1049,8 @@ pslDir:		yID ':' pslDirOne			{ $$ = $3; }  // ADD: Create label on $1
 	;
 
 //ADD:	|	yRESTRICT pslSequence ';'		{ $$ = PSLUNSUP(new AstPslRestrict($1,$2)); }
-pslDirOne:	yASSERT pslProp ';'			{ $$ = new AstPslAssert($1,$2); }
-	|	yASSERT pslProp yREPORT ySTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
+pslDirOne:	yPSL_ASSERT pslProp ';'			{ $$ = new AstPslAssert($1,$2); }
+	|	yPSL_ASSERT pslProp yREPORT ySTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
 	|	yCOVER  pslProp ';'			{ $$ = new AstPslCover($1,$2); }
 	|	yCOVER  pslProp yREPORT ySTRING ';'	{ $$ = new AstPslCover($1,$2,*$4); }
 	;

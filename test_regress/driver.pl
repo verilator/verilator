@@ -200,7 +200,7 @@ sub new {
 	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
-	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv31a")],
+	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv")],
 	nc_flags2 => [],  # Overridden in some sim files
 	# Verilator
 	'v3' => 0,

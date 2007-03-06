@@ -47,28 +47,58 @@ private:
     V3Double0	m_statAsCover;	// Statistic tracking
     V3Double0	m_statAsPsl;	// Statistic tracking
     V3Double0	m_statAsFull;	// Statistic tracking
+    V3Double0	m_statAsSV;	// Statistic tracking
 
     // METHODS
-    AstNode* newFireAssert(AstNode* nodep, const string& message) {
-	AstNode* bodysp = new AstDisplay
-	    (nodep->fileline(), '\0',
-	     (string("[%0t] %%Error: ")+nodep->fileline()->filebasename()
-	      +":"+cvtToStr(nodep->fileline()->lineno())
-	      +": Assertion failed in %m"
-	      +((message != "")?": ":"")+message
-	      +"\\n"),
-	     NULL,
-	     new AstTime(nodep->fileline()));
-	bodysp->addNext(new AstStop (nodep->fileline()));
+    string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
+	return (string("[%0t] "+prefix+": ")+nodep->fileline()->filebasename()
+		+":"+cvtToStr(nodep->fileline()->lineno())
+		+": Assertion failed in %m"
+		+((message != "")?": ":"")+message
+		+"\\n");
+    }
+    void replaceDisplay(AstDisplay* nodep, const string& prefix) {
+	nodep->displayType(AstDisplayType::WRITE);
+	nodep->text(assertDisplayMessage(nodep, prefix, nodep->text()));
+	AstNode* timesp = nodep->exprsp(); if (timesp) timesp->unlinkFrBack();
+	timesp = timesp->addNext(new AstTime(nodep->fileline()));
+	nodep->exprsp(timesp);
+    }
+
+    AstNode* newIfAssertOn(AstNode* nodep) {
 	// Add a internal if to check assertions are on.
 	// Don't make this a AND term, as it's unlikely to need to test this.
-	bodysp = new AstIf (nodep->fileline(),
-			    new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1),
-			    bodysp, NULL);
+	return new AstIf (nodep->fileline(),
+			  // If assertions are off, have constant propagation rip them out later
+			  // This allows syntax errors and such to be detected normally.
+			  (v3Global.opt.assertOn()
+			   ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
+			   : (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 0)))),
+			  nodep, NULL);
+    }
+
+    AstNode* newIfCoverageOn(AstNode* nodep) {
+	// Add a internal if to check coverage is on
+	// Don't make this a AND term, as it's unlikely to need to test this.
+	return new AstIf (nodep->fileline(),
+			  // If assertions are off, have constant propagation rip them out later
+			  // This allows syntax errors and such to be detected normally.
+			  (v3Global.opt.coverage()
+			   ? (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 1)))
+			   : (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 0)))),
+			  nodep, NULL);
+    }
+
+    AstNode* newFireAssert(AstNode* nodep, const string& message) {
+	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::ERROR, message, NULL, NULL);
+	AstNode* bodysp = dispp;
+	replaceDisplay(dispp, "%%Error");   // Convert to standard DISPLAY format
+	bodysp->addNext(new AstStop (nodep->fileline()));
+	bodysp = newIfAssertOn(bodysp);
 	return bodysp;
     }
 
-    void newAssertion(AstNode* nodep, AstNode* propp, AstSenTree* sentreep, const string& message) {
+    void newPslAssertion(AstNode* nodep, AstNode* propp, AstSenTree* sentreep, const string& message) {
 	propp->unlinkFrBack();
 	sentreep->unlinkFrBack();
 	//
@@ -110,6 +140,28 @@ private:
 	} else {
 	    nodep->replaceWith(newp);
 	}
+	// Bye
+	pushDeletep(nodep); nodep=NULL;
+    }
+
+    void newVAssertion(AstVAssert* nodep, AstNode* propp) {
+	propp->unlinkFrBackWithNext();
+	AstNode* passsp = nodep->passsp(); if (passsp) passsp->unlinkFrBackWithNext();
+	AstNode* failsp = nodep->failsp(); if (failsp) failsp->unlinkFrBackWithNext();
+	//
+	if (nodep->castVAssert()) {
+	    if (passsp) passsp = newIfAssertOn(passsp);
+	    if (failsp) failsp = newIfAssertOn(failsp);
+	} else {
+	    nodep->v3fatalSrc("Unknown node type");
+	}
+
+	AstIf* ifp = new AstIf (nodep->fileline(), propp, passsp, failsp);
+	AstNode* newp = ifp;
+	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::UNLIKELY);
+	//
+	// Install it
+	nodep->replaceWith(newp);
 	// Bye
 	pushDeletep(nodep); nodep=NULL;
     }
@@ -163,15 +215,33 @@ private:
     }
 
     // VISITORS  //========== Statements
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	// Replace the special types with standard text
+	if (nodep->displayType()==AstDisplayType::INFO) {
+	    replaceDisplay(nodep, "-Info");
+	} else if (nodep->displayType()==AstDisplayType::WARNING) {
+	    replaceDisplay(nodep, "%%Warning");
+	} else if (nodep->displayType()==AstDisplayType::ERROR
+		   || nodep->displayType()==AstDisplayType::FATAL) {
+	    replaceDisplay(nodep, "%%Error");
+	}
+    }
+
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	newAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
+	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
 	m_statAsCover++;
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	newAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
+	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
 	m_statAsPsl++;
+    }
+    virtual void visit(AstVAssert* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	newVAssertion(nodep, nodep->propp()); nodep=NULL;
+	m_statAsSV++;
     }
 
     virtual void visit(AstModule* nodep, AstNUser*) {
@@ -203,6 +273,7 @@ public:
     }
     virtual ~AssertVisitor() {
 	V3Stats::addStat("Assertions, PSL asserts", m_statAsPsl);
+	V3Stats::addStat("Assertions, SystemVerilog asserts", m_statAsSV);
 	V3Stats::addStat("Assertions, cover statements", m_statAsCover);
 	V3Stats::addStat("Assertions, full/parallel case", m_statAsFull);
     }

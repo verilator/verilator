@@ -1236,19 +1236,19 @@ struct AstDisplay : public AstNodePli {
     // Parents: stmtlist
     // Children: file which must be a varref, MATH to print
 private:
-    char	m_newline;
+    AstDisplayType	m_displayType;
 public:
-    AstDisplay(FileLine* fileline, char newln, const string& text, AstNode* filep, AstNode* exprsp)
+    AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
 	: AstNodePli (fileline, text, exprsp) {
 	setNOp2p(filep);
-	m_newline = newln;
+	m_displayType = dispType;
     }
     virtual ~AstDisplay() {}
     virtual AstType type() const { return AstType::DISPLAY;}
     virtual AstNode* clone() { return new AstDisplay(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
-    virtual string verilogKwd() const { return (filep() ? ((newline() == '\n')?"$fdisplay":"$fwrite")
-						: ((newline() == '\n')?"$display":"$write")); };
+    virtual string verilogKwd() const { return (filep() ? (string)"$f"+(string)displayType().ascii()
+						: (string)"$"+(string)displayType().ascii()); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
@@ -1256,16 +1256,19 @@ public:
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
-	return newline()==samep->castDisplay()->newline()
+	return displayType()==samep->castDisplay()->displayType()
 	    && text()==samep->castDisplay()->text(); }
     // op1 used by AstNodePli
-    char	newline()	const { return m_newline; }		// * = Add a newline for $display
+    AstDisplayType	displayType()	const { return m_displayType; }
+    void	displayType(AstDisplayType type) { m_displayType = type; }
+    bool	addNewline() const { return displayType().addNewline(); }  // * = Add a newline for $display
     AstNode*	filep() const { return op2p(); }
     void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
     AstNode*	scopeAttrp() const { return op3p(); }
     AstText*	scopeTextp() const { return op3p()->castText(); }
     void scopeAttrp(AstNode* nodep) { addOp3p(nodep); }
-    bool	needScopeTracking() { return name().find("%m") != string::npos; }
+    bool	needScopeTracking() { return (displayType().needScopeTracking()
+					      || name().find("%m") != string::npos); }
 };
 
 struct AstFClose : public AstNodeStmt {
@@ -2615,6 +2618,30 @@ struct AstReplicate : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
+};
+
+//======================================================================
+// SysVerilog assertions
+
+struct AstVAssert : public AstNodeStmt {
+    // Verilog Assertion
+    // Parents:  {statement list}
+    // Children: expression, if pass statements, if fail statements
+    AstVAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp)
+	: AstNodeStmt(fl) {
+	addOp1p(propp);
+	addNOp2p(passsp);
+	addNOp3p(failsp);
+    }
+    virtual ~AstVAssert() {}
+    virtual AstType type() const { return AstType::VASSERT;}
+    virtual AstNode* clone() { return new AstVAssert(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstNode*	propp()		const { return op1p(); }	// op1 = property
+    AstNode*	passsp()	const { return op2p(); }	// op2 = if passes
+    AstNode*	failsp()	const { return op3p(); }	// op3 = if fails
 };
 
 //======================================================================

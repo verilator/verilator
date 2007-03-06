@@ -297,9 +297,13 @@ escid	\\[^ \t\f\r\n]+
   /*     System Tasks */
   "$bits"		{yylval.fileline = CRELINE(); return yD_BITS;}
   "$countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}
+  "$error"		{yylval.fileline = CRELINE(); return yD_ERROR;}
+  "$fatal"		{yylval.fileline = CRELINE(); return yD_FATAL;}
+  "$info"		{yylval.fileline = CRELINE(); return yD_INFO;}
   "$isunknown"		{yylval.fileline = CRELINE(); return yD_ISUNKNOWN;}
   "$onehot"		{yylval.fileline = CRELINE(); return yD_ONEHOT;}
   "$onehot0"		{yylval.fileline = CRELINE(); return yD_ONEHOT0;}
+  "$warning"		{yylval.fileline = CRELINE(); return yD_WARNING;}
   /*     Keywords */
   "always_comb"		{yylval.fileline = CRELINE(); return yALWAYS;}
   "always_ff"		{yylval.fileline = CRELINE(); return yALWAYS;}
@@ -395,8 +399,9 @@ escid	\\[^ \t\f\r\n]+
 
   /* SystemVerilog ONLY not PSL; different rules for PSL as specified below */
 <S05>{
+  /*     Keywords */
+  "assert"		{yylval.fileline = CRELINE(); return yASSERT;}
   /*     Generic unsupported warnings */
-  "assert"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
   "assume"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
   "before"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
   "const"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext);}
@@ -424,8 +429,8 @@ escid	\\[^ \t\f\r\n]+
   /*     Special things */
   "psl"			{ ; }	// 'psl' may occur in middle of statement, so easier just to suppress
   /*     Keywords */
-  "assert"		{yylval.fileline = CRELINE(); return yASSERT;}
-  "assume"		{yylval.fileline = CRELINE(); return yASSERT;} //==assert
+  "assert"		{yylval.fileline = CRELINE(); return yPSL_ASSERT;}
+  "assume"		{yylval.fileline = CRELINE(); return yPSL_ASSERT;} //==assert
   "before_!"		{yyerrorf("Illegal syntax, use before!_ instead of %s",yytext);}
   "clock"		{yylval.fileline = CRELINE(); return yCLOCK;}
   "countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}

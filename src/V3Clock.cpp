@@ -472,7 +472,8 @@ private:
 	ifstmtp->addNext(new AstIf(fl,
 				   new AstLt (fl, new AstConst(fl, 100),
 					      new AstVarRef(fl, countVarp, false)),
-				   (new AstDisplay (fl, '\n', "%%Error: Verilated model didn't converge", NULL, NULL))
+				   (new AstDisplay (fl, AstDisplayType::DISPLAY,
+						    "%%Error: Verilated model didn't converge", NULL, NULL))
 				   ->addNext(new AstStop (fl)),
 				   NULL));
 	untilp->addBodysp(new AstIf(fl, new AstNeq(fl, new AstConst(fl, 0),

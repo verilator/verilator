@@ -575,6 +575,13 @@ private:
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
     }
+    virtual void visit(AstVAssert* nodep, AstNUser*) {
+	// TOP LEVEL NODE
+	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
+	nodep->passsp()->iterateAndNext(*this);
+	nodep->failsp()->iterateAndNext(*this);
+	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
+    }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	//if (debug()) nodep->dumpTree(cout,"-  PinPre: ");
 	// TOP LEVEL NODE

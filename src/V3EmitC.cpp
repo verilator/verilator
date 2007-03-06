@@ -1013,7 +1013,6 @@ void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, cha
 
 void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
     string vformat = nodep->text();
-    bool addNewline = (nodep->newline() == '\n');
     AstNode* elistp = nodep->exprsp();
 
     // Convert Verilog display to C printf formats
@@ -1076,7 +1075,7 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
     if (elistp != NULL) {
 	nodep->v3error("Extra arguments for $display format\n");
     }
-    if (addNewline) emitDispState.pushFormat("\\n");
+    if (nodep->addNewline()) emitDispState.pushFormat("\\n");
     displayEmit(nodep);
 }
 

@@ -159,13 +159,11 @@ void process () {
 
     // Assertion insertion
     //    After we've added block coverage, but before other nasty transforms
-    if (v3Global.opt.assertOn() || v3Global.opt.psl()) {
-	V3AssertPre::assertPreAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("assertpre.tree"));
-	//
-	V3Assert::assertAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("assert.tree"));
-    }
+    V3AssertPre::assertPreAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("assertpre.tree"));
+    //
+    V3Assert::assertAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("assert.tree"));
 
     // Add top level wrapper with instance pointing to old top
     // Must do this after we know the width of any parameters

@@ -789,7 +789,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append) {
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
 	    *logsp<<"Tree Dump from <e"<<dec<<editCountLast()<<">";
 	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;
-	    if (editCountGbl()==editCountLast() && 0) {  // Off, as messes up tree diffing
+	    if (editCountGbl()==editCountLast() && 1) {  // Off, as messes up tree diffing
 		*logsp<<endl;
 		*logsp<<"No changes since last dump!\n";
 	    } else {

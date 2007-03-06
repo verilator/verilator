@@ -250,6 +250,34 @@ public:
 
 //######################################################################
 
+class AstDisplayType {
+public:
+    enum en {
+	DISPLAY,
+	WRITE,
+	INFO,
+	ERROR,
+	WARNING,
+	FATAL
+    };
+    enum en m_e;
+    inline AstDisplayType () {};
+    inline AstDisplayType (en _e) : m_e(_e) {};
+    explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {};
+    operator en () const { return m_e; };
+    bool addNewline() const { return m_e!=WRITE; }
+    bool needScopeTracking() const { return m_e!=DISPLAY && m_e!=WRITE; }
+    const char* ascii() const {
+	static const char* names[] = {
+	    "display","write","info","error","warning","fatal"};
+	return names[m_e];};
+  };
+  inline bool operator== (AstDisplayType lhs, AstDisplayType rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstDisplayType lhs, AstDisplayType::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstDisplayType::en lhs, AstDisplayType rhs) { return (lhs == rhs.m_e); }
+
+//######################################################################
+
 class AstParseRefExp {
 public:
     enum en {
@@ -906,6 +934,7 @@ public:
     virtual ~AstNodePli() {}
     virtual string name()	const { return m_text; }
     virtual int instrCount()	const { return instrCountPli(); }
+    void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
     AstNode* exprsp()		const { return op1p()->castNode(); }	// op1 = Expressions to output
     string 	text()		const { return m_text; }		// * = Text to display
     void text(const string& text) { m_text=text; }

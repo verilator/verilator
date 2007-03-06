@@ -903,17 +903,21 @@ declarations inside port lists.
 Verilator supports the `begin_keywords and `end_keywords compiler
 directives.
 
-Verilator supports the uwire, $countones, $isunknown, $onehot and $onehot0
-keywords.  Verilator partially supports the uwire keyword.
+Verilator partially supports the uwire keyword.
 
 =head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
 
-Verilator currently has very minimal support for SystemVerilog.
+Verilator currently has very minimal support for SystemVerilog as they
+become more common, contact the author if a feature you need is missing.
 
 Verilator implements the full SystemVerilog 1800-2005 preprocessor subset,
-including function call-like preprocessor defines.  Verilator also
-implements $bits, $countones, $isunknown, $onehot, and $onehot0,
-always_comb, always_ff, always_latch, and final.
+including function call-like preprocessor defines.
+
+Verilator supports $bits, $countones, $error, $fatal, $info, $isunknown,
+$onehot, $onehot0, $warning, always_comb, always_ff, always_latch, and
+final.
+
+Verilator partially supports assert.
 
 =head1 SUGAR/PSL SUPPORT
 
@@ -934,18 +938,16 @@ report, true.
 Verilator implements these operators: -> (logical if).
 
 Verilator does not support SEREs yet.  All assertion and coverage
-statements must be simple expressions that complete in one cycle.
-(Arguably SEREs are the whole point of PSL, but one must start somewhere.)
-
-PSL vmode/vprop/vunits are not supported.  PSL statements must be in the
-module they reference, at the module level where you would put an
+statements must be simple expressions that complete in one cycle.  PSL
+vmode/vprop/vunits are not supported.  PSL statements must be in the module
+they reference, at the module level where you would put an
 initial... statement.
 
 Verilator only supports (posedge CLK) or (negedge CLK), where CLK is the
 name of a one bit signal.  You may not use arbitrary expressions as
 assertion clocks.
 
-=head1 SYNTHESIS DIRECTIVE ASSERTIONS
+=head1 SYNTHESIS DIRECTIVE ASSERTION SUPPORT
 
 With the --assert switch, Verilator reads any "//synopsys full_case" or "//
 synopsys parallel_case" directives.  The same applies to any "//cadence" or
@@ -1353,6 +1355,17 @@ Reading a memory element that is outside the bounds specified for the array
 will give a width warning and wrap around the power-of-2 size.  For
 non-power-of-2 sizes, it will return a unspecified constant of the
 appropriate width.
+
+=head2 Assertions
+
+Verilator is beginning to add support for assertions.  Verilator currently
+only converts assertions to simple "if (...) error" statements, and
+coverage statements to increment the line counters described in the
+coverage section.
+
+Verilator does not support SEREs yet.  All assertion and coverage
+statements must be simple expressions that complete in one cycle.
+(Arguably SEREs are much of the point, but one must start somewhere.)
 
 =head1 LANGUAGE KEYWORD LIMITATIONS
 

@@ -54,6 +54,7 @@ private:
     // Below state needs to be preserved between each module call.
     AstModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
+    AstVAssert*	m_assertp;	// Current assertion
 
     //int debug() { return 9; }
 
@@ -72,6 +73,13 @@ private:
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
+    virtual void visit(AstVAssert* nodep, AstNUser*) {
+	if (m_assertp) nodep->v3error("Assert not allowed under another assert");
+	m_assertp = nodep;
+	nodep->iterateChildren(*this);
+	m_assertp = NULL;
+    }
+
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->arraysp() && nodep->isIO()) {
@@ -320,6 +328,13 @@ private:
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+	if (!m_assertp
+	    && (nodep->displayType() == AstDisplayType::INFO
+		|| nodep->displayType() == AstDisplayType::WARNING
+		|| nodep->displayType() == AstDisplayType::ERROR
+		|| nodep->displayType() == AstDisplayType::FATAL)) {
+	    nodep->v3error(nodep->verilogKwd()+" only allowed under a assertion.");
+	}
     }
 
     virtual void visit(AstScCtor* nodep, AstNUser*) {
@@ -348,6 +363,7 @@ public:
     LinkResolveVisitor(AstNetlist* rootp) {
 	m_ftaskp = NULL;
 	m_modp = NULL;
+	m_assertp = NULL;
 	//
 	rootp->accept(*this);
     }
