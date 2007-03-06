@@ -235,8 +235,8 @@ private:
     }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
-	if (m_cellp
-	    && nodep->name().find("%m") != string::npos) {
+	// Similar code in V3Begin
+	if (m_cellp && nodep->needScopeTracking()) {
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();

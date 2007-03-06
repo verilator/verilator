@@ -44,13 +44,23 @@ endmodule
 
 module sub;
    task write_m;
-      $write("[%0t] In %m\n", $time);
+      begin
+	 $write("[%0t] In %m\n", $time);
+	 begin : subblock
+	    $write("[%0t] In %m\n", $time);
+	 end
+      end
    endtask
 endmodule
 
 module sub2;
    // verilator no_inline_module
    task write_m;
-      $write("[%0t] In %m\n", $time);
+      begin
+	 $write("[%0t] In %m\n", $time);
+	 begin : subblock2
+	    $write("[%0t] In %m\n", $time);
+	 end
+      end
    endtask
 endmodule

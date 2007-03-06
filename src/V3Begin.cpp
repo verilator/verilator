@@ -131,6 +131,18 @@ private:
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); nodep=NULL;
     }
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	// If there's a %m in the display text, we add a special node that will contain the name()
+	// Similar code in V3Inline
+	if (m_beginScope != "" && nodep->needScopeTracking()) {
+	    // To keep correct visual order, must add before other Text's
+	    AstNode* afterp = nodep->scopeAttrp();
+	    if (afterp) afterp->unlinkFrBackWithNext();
+	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"."+AstNode::prettyName(m_beginScope)));
+	    if (afterp) nodep->scopeAttrp(afterp);
+	}
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }

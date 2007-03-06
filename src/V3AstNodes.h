@@ -1265,6 +1265,7 @@ public:
     AstNode*	scopeAttrp() const { return op3p(); }
     AstText*	scopeTextp() const { return op3p()->castText(); }
     void scopeAttrp(AstNode* nodep) { addOp3p(nodep); }
+    bool	needScopeTracking() { return name().find("%m") != string::npos; }
 };
 
 struct AstFClose : public AstNodeStmt {
