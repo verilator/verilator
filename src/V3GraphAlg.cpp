@@ -86,7 +86,7 @@ private:
     void vertexIterate(V3GraphVertex* vertexp) {
 	// Clear marks
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    edgep->top()->user(false);
+	    edgep->top()->userp(NULL);
 	}
 	// Mark edges and detect duplications
 	for (V3GraphEdge* nextp, *edgep = vertexp->outBeginp(); edgep; edgep=nextp) {
