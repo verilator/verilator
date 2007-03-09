@@ -246,9 +246,8 @@ private:
 	replaceNum(nodep, 0); nodep=NULL;
     }
     void replaceAllOnes (AstNode* nodep) {
-	V3Number num (nodep->fileline(), nodep->width(), 0);
-	V3Number ones (nodep->fileline(), nodep->width());
-	ones.opNot(num);
+	V3Number ones (nodep->fileline(), nodep->width(), 0);
+	ones.setMask(nodep->width());
 	replaceNum(nodep, ones); nodep=NULL;
     }
     void replaceConst(AstNodeUniop* nodep) {
@@ -388,7 +387,7 @@ private:
 	    AstNode* newp;
 	    V3Number mask1 (nodep->fileline(), nodep->width());
 	    V3Number ones (nodep->fileline(), nodep->width());
-	    ones.opNot(mask1);
+	    ones.setMask(nodep->width());
 	    if (shift1<0) {
 		mask1.opShiftR(ones,V3Number(nodep->fileline(),VL_WORDSIZE,-shift1));
 	    } else {

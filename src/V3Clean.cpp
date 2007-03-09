@@ -104,11 +104,8 @@ private:
 	nodep->unlinkFrBack(&relinkHandle);
 	//
 	computeCppWidth(nodep);
-	V3Number zero (nodep->fileline(), nodep->widthMin(),0);
-	V3Number masksmall (nodep->fileline(), nodep->widthMin());
-	masksmall.opNot(zero);
 	V3Number mask (nodep->fileline(), cppWidth(nodep));
-	mask.opAssign(masksmall);
+	mask.setMask(nodep->widthMin());
 	AstNode* cleanp = new AstAnd (nodep->fileline(),
 				      new AstConst (nodep->fileline(), mask),
 				      nodep);

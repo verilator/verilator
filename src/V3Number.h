@@ -108,6 +108,7 @@ public:
     // SETTERS
     V3Number& setAllBitsX();
     V3Number& setAllBitsZ();
+    V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;

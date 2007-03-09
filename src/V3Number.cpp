@@ -296,6 +296,11 @@ V3Number& V3Number::setAllBitsZ() {
     for (int i=0; i<words(); i++) { m_value[i]=0; m_valueX[i] = ~0; }
     return *this;
 }
+V3Number& V3Number::setMask(int nbits) {
+    setZero();
+    for (int bit=0; bit<nbits; bit++) { setBit(bit,1); }
+    return *this;
+}
 
 //======================================================================
 // ACCESSORS

@@ -65,11 +65,8 @@ private:
 	if (nodep->isWide()) {
 	    return V3Number (nodep->fileline(), VL_WORDSIZE, VL_MASK_I(nodep->widthMin()));
 	} else {
-	    V3Number zero (nodep->fileline(), nodep->widthMin(),0);
-	    V3Number masksmall (nodep->fileline(), nodep->widthMin());
-	    masksmall.opNot(zero);
 	    V3Number mask (nodep->fileline(), longOrQuadWidth(nodep));
-	    mask.opAssign(masksmall);
+	    mask.setMask(nodep->widthMin());
 	    return mask;
 	}
     }
