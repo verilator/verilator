@@ -16,6 +16,8 @@ module t (/*AUTOARG*/
    wire [31:0] outb1c0;
    wire [31:0] outb1c1;
 
+   reg [7:0]   lclmem [7:0];
+
    ma ma0 (.outb0c0(outb0c0), .outb0c1(outb0c1),
 	   .outb1c0(outb1c0), .outb1c1(outb1c1)
 	   );
@@ -25,7 +27,6 @@ module t (/*AUTOARG*/
 
    input clk;
    integer cyc=1;
-
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       //$write("[%0t] cyc%0d: %0x %0x %0x %0x\n", $time, cyc, outb0c0, outb0c1, outb1c0, outb1c1);
@@ -45,12 +46,17 @@ module t (/*AUTOARG*/
 	 ma0.mb1.mc1.out <= ma0.mb1.mc1.out + 32'h100;
       end
       if (cyc==4) begin
+	 // Can we do dotted's inside array sels?
+	 ma0.rmtmem[ma0.mb0.mc0.out[2:0]] = 8'h12;
+	 lclmem[ma0.mb0.mc0.out[2:0]] = 8'h24;
 	 if (outb0c0 != 32'h100) $stop;
 	 if (outb0c1 != 32'h101) $stop;
 	 if (outb1c0 != 32'h110) $stop;
 	 if (outb1c1 != 32'h111) $stop;
       end
       if (cyc==5) begin
+	 if (ma0.rmtmem[ma0.mb0.mc0.out[2:0]] != 8'h12) $stop;
+	 if (lclmem[ma0.mb0.mc0.out[2:0]] != 8'h24) $stop;
 	 if (outb0c0 != 32'h1100) $stop;
 	 if (outb0c1 != 32'h2101) $stop;
 	 if (outb1c0 != 32'h2110) $stop;
@@ -97,6 +103,9 @@ module ma (
     output wire [31:0] outb1c1
 	   );
    `INLINE_MODULE
+
+     reg [7:0] rmtmem [7:0];
+
    mb #(0) mb0 (.outc0(outb0c0), .outc1(outb0c1));
    mb #(1) mb1 (.outc0(outb1c0), .outc1(outb1c1));
 endmodule

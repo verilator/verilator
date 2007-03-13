@@ -292,7 +292,7 @@ sub compile {
 	$self->_make_top();
 	$self->_run(logfile=>"obj_dir/".$self->{name}."_vcs_compile.log",
 		    fails=>$param{fails},
-		    cmd=>["vcs",
+		    cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
 			  @{$param{vcs_flags}},
 			  @{$param{vcs_flags2}},
 			  @{$param{v_flags}},
@@ -306,7 +306,7 @@ sub compile {
 	$self->_make_top();
 	$self->_run(logfile=>"obj_dir/".$self->{name}."_nc_compile.log",
 		    fails=>$param{fails},
-		    cmd=>["ncverilog",
+		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{nc_flags}},
 			  @{$param{nc_flags2}},
 			  @{$param{v_flags}},
@@ -843,6 +843,24 @@ Enable test verbose messages.
 =item --v3
 
 Run using Verilator.
+
+=back
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item SYSTEMC
+
+Root directory name of SystemC kit.
+
+=item VERILATOR_NCVERILOG
+
+Command to use to invoke ncverilog.
+
+=item VERILATOR_VCS
+
+Command to use to invoke VCS.
 
 =back
 

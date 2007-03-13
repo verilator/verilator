@@ -1,0 +1,70 @@
+#!/usr/bin/perl -w
+# $Id$
+######################################################################
+#
+# Copyright 2007-2007 by Wilson Snyder <wsnyder@wsnyder.org>.  This
+# program is free software; you can redistribute it and/or modify it under
+# the terms of either the GNU Lesser General Public License or the Perl
+# Artistic License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+require 5.006_001;
+use strict;
+
+#======================================================================
+# main
+
+delete $ENV{MODULE_VERSION};
+_setup_modules();
+module('add','cadence_verif');
+exec('ncverilog',@ARGV);
+
+#######################################################################
+# Modules package
+
+sub _setup_modules {
+    # Load the 'module' command into the environment
+    my $init = "/sicortex/$ENV{DIRPROJECT_ARCH}/lib/Modules/default/init/perl";
+    (-f $init) or die "%Error: Script not found: $init,";
+    require $init;
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+invoke_ncverilog - Invoke tool under "modules" command
+
+=head1 SYNOPSIS
+
+  invoke_ncverilog  {ncv arguments}
+
+=head1 DESCRIPTION
+
+=head1 DISTRIBUTION
+
+Copyright 2007-2007 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License or the Perl Artistic License.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./invoke_ncverilog -help"
+### End:

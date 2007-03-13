@@ -89,6 +89,10 @@ private:
 	// VarRef: Parse its reference
 	UINFO(5,"   "<<nodep<<endl);
 	// May be a varref inside a select, etc, so save state and recurse
+	string		oldText = m_dotText;
+	bool		oldDot = m_inModDot;
+	AstParseRefExp  oldExp = m_exp;
+	AstText*	oldBasep = m_baseTextp;
 	{
 	    // Replace the parsed item with its child IE the selection tree down to the varref itself
 	    // Do this before iterating, so we don't have to process the edited tree twice
@@ -117,8 +121,14 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Unknown ParseRefExp type\n");
 	    }
+	    nodep->deleteTree(); nodep=NULL;
 	}
-	nodep->deleteTree(); nodep=NULL;
+	if (m_exp != AstParseRefExp::FUNC) {  // Fuctions need to look at the name themself
+	    m_dotText = oldText;
+	    m_inModDot = oldDot;
+	    m_exp = oldExp;
+	    m_baseTextp = oldBasep;
+	}
     }
     virtual void visit(AstDot* nodep, AstNUser*) {
 	UINFO(5,"     "<<nodep<<endl);
