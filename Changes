@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.64**
 
+***  Support while and do-while loops.
+
 **** Fix dotted bit reference to local memory.  [Eugene Weber]
 
 * Verilator 3.640 3/12/2007

@@ -1373,12 +1373,13 @@ This section describes specific limitations for each language keyword.
 
 =over 4
 
-=item always always_comb always_ff always_latch and assign begin buf case
-casex casez default defparam else end endcase endfunction endgenerate
-endmodule endspecify endtask final for function generate genvar if initial
-inout input integer localparam macromodule module nand negedge nor not or
-output parameter posedge reg scalared signed supply0 supply1 task tri
-vectored wire xnor xor
+=item always, always_comb, always_ff, always_latch, and, assign, begin,
+buf, case, casex, casez, default, defparam, do-while, else, end, endcase,
+endfunction, endgenerate, endmodule, endspecify, endtask, final, for,
+function, generate, genvar, if, initial, inout, input, integer, localparam,
+macromodule, module, nand, negedge, nor, not, or, output, parameter,
+posedge, reg, scalared, signed, supply0, supply1, task, tri, vectored,
+while, wire, xnor, xor
 
 Generally supported.
 

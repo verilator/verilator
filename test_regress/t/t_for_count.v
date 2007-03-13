@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -34,6 +34,27 @@ module t (/*AUTOARG*/
       end
    end
 
+   // While loop
+   integer w;
+   initial begin
+      while (w<10) w=w+1;
+      if (w!=10) $stop;
+      while (w<20) begin w=w+2; end
+      while (w<20) begin w=w+99999; end  // NEVER
+      if (w!=20) $stop;
+   end
+
+   // Do-While loop
+   integer dw;
+   initial begin
+      do dw=dw+1; while (dw<10);
+      if (dw!=10) $stop;
+      do dw=dw+2; while (dw<20);
+      if (dw!=20) $stop;
+      do dw=dw+5; while (dw<20);  // Once
+      if (dw!=25) $stop;
+   end
+
    always @ (posedge clk) begin
       cam_lookup_hit_vector <= 0;
       if (cyc!=0) begin
@@ -49,7 +70,7 @@ module t (/*AUTOARG*/
 	    if (hit_count != 32'd5) $stop;
 	    if (wide_for_count != 32'h80) $stop;
 	 end
-	 if (cyc==4) begin
+	 if (cyc==9) begin
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end

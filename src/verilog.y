@@ -140,10 +140,12 @@ class AstSenTree;
 %token<fileline>	yASSERT		"assert"
 %token<fileline>	yCLOCK		"clock"
 %token<fileline>	yCOVER		"cover"
+%token<fileline>	yDO		"do"
 %token<fileline>	yFINAL		"final"
 %token<fileline>	yPSL		"psl"
 %token<fileline>	yREPORT		"report"
 %token<fileline>	yTRUE		"true"
+%token<fileline>	yWHILE		"while"
 
 %token<fileline>	yPSL_ASSERT	"PSL assert"
 
@@ -716,6 +718,8 @@ stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)
 									  ,$13);}
+	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
+	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	;
 
 assertStmt:	yASSERT '(' expr ')' stmtBlock %prec yLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
