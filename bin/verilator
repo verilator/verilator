@@ -893,7 +893,7 @@ as the build system.
 
 =head1 VERILOG 2001 (IEEE 1364-2001) SUPPORT
 
-Verilator supports the more common Verilog 2001 language features.  This
+Verilator supports almost all Verilog 2001 language features.  This
 includes signed numbers, "always @*", comma separated sensitivity lists,
 generate statements, multidimensional arrays, localparam, and C-style
 declarations inside port lists.
@@ -907,15 +907,16 @@ Verilator partially supports the uwire keyword.
 
 =head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
 
-Verilator currently has very minimal support for SystemVerilog as they
-become more common, contact the author if a feature you need is missing.
+Verilator currently has very minimal support for SystemVerilog. As
+SystemVerilog features enter common usage they will be added.  Contact the
+author if a feature you need is missing.
 
 Verilator implements the full SystemVerilog 1800-2005 preprocessor subset,
 including function call-like preprocessor defines.
 
 Verilator supports $bits, $countones, $error, $fatal, $info, $isunknown,
-$onehot, $onehot0, $warning, always_comb, always_ff, always_latch, and
-final.
+$onehot, $onehot0, $warning, always_comb, always_ff, always_latch,
+do-while, and final.  It also supports .name and .* interconnection.
 
 Verilator partially supports assert.
 

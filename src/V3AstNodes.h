@@ -576,10 +576,11 @@ private:
     int		m_pinNum;	// Pin number
     string	m_name;		// Pin name, or "" for number based interconnect
     AstVar*	m_modVarp;	// Input/output this pin connects to on submodule.
+    bool	m_svImplicit;	// Pin is SystemVerilog .name'ed
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
 	:AstNode(fl)
-	,m_name(name) {
+	,m_name(name), m_svImplicit(false) {
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	setNOp1p(exprp); }
@@ -596,6 +597,8 @@ public:
     AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin
     AstVar*	modVarp()	const { return m_modVarp; }		// [After Link] Pointer to variable
     void  	modVarp(AstVar* varp) { m_modVarp=varp; }
+    bool	svImplicit()	const { return m_svImplicit; }
+    void        svImplicit(bool flag) { m_svImplicit=flag; }
 };
 
 struct AstModule : public AstNode {
@@ -652,12 +655,14 @@ private:
     string	m_name;		// Cell name
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
+    bool	m_pinStar;	// Pin list has .*
     AstModule*	m_modp;		// [AfterLink] Pointer to module instanced
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
 	: AstNode(fl)
-	  , m_name(instName), m_origName(instName), m_modName(modName), m_modp(NULL) {
+	, m_name(instName), m_origName(instName), m_modName(modName)
+	, m_pinStar(false), m_modp(NULL) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     virtual ~AstCell() {}
     virtual AstType type() const { return AstType::CELL;}
@@ -674,6 +679,8 @@ public:
     void origName(const string& name) 	{ m_origName = name; }
     string modName()		const { return m_modName; }		// * = Instance name
     void modName(const string& name)	{ m_modName = name; }
+    bool pinStar()		const { return m_pinStar; }
+    void pinStar(bool flag)		{ m_pinStar = flag; }
     AstPin* pinsp()		const { return op1p()->castPin(); }	// op1 = List of cell ports
     AstPin* paramsp()		const { return op2p()->castPin(); }	// op2 = List of parameter #(##) values
     AstRange* rangep()		const { return op3p()->castRange(); }	// op3 = Range of arrayed instants (NULL=not ranged)

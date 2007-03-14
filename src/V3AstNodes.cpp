@@ -298,6 +298,7 @@ void AstCell::dump(ostream& str) {
     this->AstNode::dump(str);
     if (modp()) { str<<" -> "; modp()->dump(str); }
     else { str<<" ->UNLINKED:"<<modName(); }
+    if (pinStar()) str<<" [.*]";
 }
 void AstCellInline::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -307,6 +308,7 @@ void AstPin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (modVarp()) { str<<" -> "; modVarp()->dump(str); }
     else { str<<" ->UNLINKED"; }
+    if (svImplicit()) str<<" [.SV]";
 }
 void AstVarXRef::dump(ostream& str) {
     this->AstNode::dump(str);

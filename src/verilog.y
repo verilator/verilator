@@ -53,6 +53,7 @@ public:
     static AstCase*	s_caseAttrp;	// Current case statement for attribute adding
     static AstRange*	s_varRangep;	// Pointer to range for next signal declaration
     static int		s_pinNum;	// Pin number currently parsing
+    static bool		s_pinStar;	// Encountered SystemVerilog .*
     static string	s_instModule;	// Name of module referenced for instantiations
     static AstPin*	s_instParamp;	// Parameters for instantiations
     static bool		s_trace;	// Tracing is turned on
@@ -75,6 +76,7 @@ AstVarType	V3Parse::s_varIO = AstVarType::UNKNOWN;
 bool		V3Parse::s_varSigned = false;
 AstRange*	V3Parse::s_varRangep = NULL;
 int 		V3Parse::s_pinNum = -1;
+bool		V3Parse::s_pinStar = false;
 string		V3Parse::s_instModule;
 AstPin*		V3Parse::s_instParamp = NULL;
 AstVar*		V3Parse::s_varAttrp = NULL;
@@ -108,6 +110,7 @@ class AstSenTree;
     AstBegin*	beginp;
     AstCase*	casep;
     AstCaseItem* caseitemp;
+    AstCell*	cellp;
     AstConst*	constp;
     AstFunc*	funcp;
     AstFuncRef*	funcrefp;
@@ -240,7 +243,8 @@ class AstSenTree;
 %type<varp>	netSig netSigList
 %type<rangep>	rangeListE regrangeE anyrange rangeList delayrange portrangeE
 %type<varp>	param paramList
-%type<nodep>	instnameList instname
+%type<nodep>	instnameList
+%type<cellp>	instname
 %type<pinp>	cellpinList cellpinlist2 cellpinitemE instparamListE
 %type<nodep>	defpList defpOne
 %type<sentreep>	sensitivityE
@@ -614,10 +618,10 @@ instnameList:	instname				{ $$ = $1; }
 	|	instnameList ',' instname		{ $$ = $1->addNext($3); }
 	;
 
-instname:	yID funcRange '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); }
+instname:	yID funcRange '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
 	;
 
-cellpinList:	{V3Parse::s_pinNum=1;} cellpinlist2	{ $$ = $2; }
+cellpinList:	{V3Parse::s_pinNum=1; V3Parse::s_pinStar=false; } cellpinlist2	{ $$ = $2; }
 	;
 
 cellpinlist2:	cellpinitemE				{ $$ = $1; }
@@ -625,6 +629,8 @@ cellpinlist2:	cellpinitemE				{ $$ = $1; }
 	;
 
 cellpinitemE:	/* empty */				{ $$ = NULL; V3Parse::s_pinNum++; }
+	|	'.' '*'					{ $$ = NULL; if (V3Parse::s_pinStar) $1->v3error("Duplicate .* in a cell"); V3Parse::s_pinStar=true; }
+	|	'.' yID					{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' yID '(' ')'				{ $$ = NULL; V3Parse::s_pinNum++; }
 	|	'.' yID '(' expr ')'			{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,$4); }
 	|	expr					{ $$ = new AstPin(CRELINE(),V3Parse::s_pinNum++,"",$1); }

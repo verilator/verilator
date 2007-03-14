@@ -372,7 +372,8 @@ private:
 	    }
 	}
 	// Deal with implicit definitions
-	if (m_idState==ID_RESOLVE && nodep->modVarp()) {
+	if (m_idState==ID_RESOLVE && nodep->modVarp()
+	    && !nodep->svImplicit()) {   // SV 19.11.3: .name pins don't allow implicit decls
 	    pinImplicitExprRecurse(nodep->exprp());
 	}
 	nodep->iterateChildren(*this);
