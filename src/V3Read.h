@@ -40,6 +40,7 @@ class V3Read {
     FileLine*	m_fileline;	// Filename/linenumber currently active
     bool	m_inLibrary;	// Currently reading a library vs. regular file
     int		m_inBeginKwd;		// Inside a `begin_keywords
+    int		m_lastVerilogState;	// Last LEX state in `begin_keywords
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
     //int debug() { return 9; }
@@ -55,8 +56,9 @@ protected:
     static void incLineno() { s_readp->fileline()->incLineno(); }
     static void verilatorCmtLint(const char* text, bool on);
     static void verilatorCmtBad(const char* text);
-    static void pushBeginKeywords() { s_readp->m_inBeginKwd++; }
+    static void pushBeginKeywords(int state) { s_readp->m_inBeginKwd++; s_readp->m_lastVerilogState=state; }
     static bool popBeginKeywords() { if (s_readp->m_inBeginKwd) { s_readp->m_inBeginKwd--; return true; } else return false; }
+    static int lastVerilogState() { return s_readp->m_lastVerilogState; }
 
 public: // But for internal use only
     static string* newString(const string& text) {
@@ -91,6 +93,7 @@ public: // But for internal use only
     static void stateExitPsl();	// Parser -> lexer communication
     static void statePushVlg();	// Parser -> lexer communication
     static void statePop();	// Parser -> lexer communication
+    static int stateVerilogRecent();	// Parser -> lexer communication
 
 public:
     // CREATORS
@@ -98,6 +101,7 @@ public:
 	m_rootp = rootp; m_lexerp = NULL;
 	m_inLibrary = false;
 	m_inBeginKwd = 0;
+	m_lastVerilogState = stateVerilogRecent();
     }
     ~V3Read() {
 	for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {

@@ -325,9 +325,9 @@ change the SystemC modules instantiated.
 Tune the inlining of modules.  The default value of 2000 specifies that up
 to 2000 new operations may be added to the model by inlining, if more then
 this number of operations would result, the module is not inlined.  Larger
-values, or -1 to inline everything, will lead to longer compile times, but
-potentially faster runtimes.  This setting is ignored for very small
-modules; they will always be inlined, if allowed.
+values, or a value <= 1 will inline everything, will lead to longer compile
+times, but potentially faster runtimes.  This setting is ignored for very
+small modules; they will always be inlined, if allowed.
 
 =item --MMD
 
@@ -1074,7 +1074,9 @@ around compiler specific constructs.
 
 =item `verilog
 
-Switch back to processing Verilog code, after a `systemc_... mode switch.
+Switch back to processing Verilog code after a `systemc_... mode switch.
+The Verilog code returns to the last language mode specified with
+`begin_keywords, or SystemVerilog if none were specified.
 
 =item /*verilator clock_enable*/
 

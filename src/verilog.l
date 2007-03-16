@@ -644,7 +644,7 @@ escid	\\[^ \t\f\r\n]+
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
 <V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  [ \t]*"`verilog"			{ BEGIN V95; }
+  [ \t]*"`verilog"			{ BEGIN V3Read::lastVerilogState(); }
   [ \t]*"`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
   [ \t]*"`systemc_header"		{ BEGIN SYSCHDR; }
   [ \t]*"`systemc_ctor"			{ BEGIN SYSCCTOR; }
@@ -653,11 +653,11 @@ escid	\\[^ \t\f\r\n]+
   [ \t]*"`systemc_implementation"	{ BEGIN SYSCIMP; }
   [ \t]*"`systemc_imp_header"		{ BEGIN SYSCIMPH; }
 
-  [ \t]*"`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords();}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords();}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords();}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords();}
-  [ \t]*"`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords();}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START);}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
+  [ \t]*"`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords(YY_START);}
+  [ \t]*"`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords(YY_START);}
   [ \t]*"`end_keywords"					{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 
   "`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
@@ -691,4 +691,4 @@ escid	\\[^ \t\f\r\n]+
   /* Catch all - absolutely last */
 <*>.|\n     		{ yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); }
 %%
-
+int V3Read::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
