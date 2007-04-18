@@ -551,6 +551,7 @@ We'll compile this example into C++.
       int main(int argc, char **argv, char **env) {
           Vour* top = new Vour;
           while (!Verilated::gotFinish()) { top->eval(); }
+          exit(0);	
       }
     EOF
 
@@ -604,13 +605,13 @@ This is an example similar to the above, but using SystemPerl.
 
     cat <<EOF >sc_main.cpp
       #include "Vour.h"
-      #include "systemperl.h"
       int sc_main(int argc, char **argv) {
           sc_clock clk ("clk",10, 0.5, 3, true);
           Vour* top;
-          SP_CELL (top, Vour);
-          SP_PIN  (top, clk, clk);
+          top = new Vour("top");   // SP_CELL (top, Vour);
+          top->clk(clk);           // SP_PIN  (top, clk, clk);
           while (!Verilated::gotFinish()) { sc_start(1); }
+          exit(0);	
       }
     EOF
 
@@ -710,7 +711,10 @@ how Verilator compares, and may be able to suggest additional improvements.
 
 =head1 FILES
 
-Verilator creates the following files:
+All output files are placed in the output directory name specified with the
+-Mdir option, or "obj_dir" if not specified.
+
+Verilator creates the following files in the output directory:
 
     {prefix}.mk				// Make include file for compiling
     {prefix}_classes.mk			// Make include file with class names
@@ -722,7 +726,7 @@ For -cc and -sc mode, it also creates:
     {prefix}{each_verilog_module}.cpp	// Lower level internal C++ files
     {prefix}{each_verilog_module}.h	// Lower level internal header files
 
-For -sp mode, it also creates:
+For -sp mode, instead of .cpp and .h it creates:
 
     {prefix}.sp				// Top level SystemC file
     {prefix}{each_verilog_module}.sp	// Lower level internal SC files
@@ -744,7 +748,8 @@ It also creates internal files that can be mostly ignored:
     {prefix}{misc}.dot			// Debugging graph files (--debug)
     {prefix}{misc}.tree			// Debugging files (--debug)
 
-After running Make, the compiler will produce the following:
+After running Make, the C++ compiler should produce the following:
+
     {prefix}				// Final executable (w/--exe argument)
     {prefix}__ALL.a			// Library of all Verilated objects
     {prefix}{misc}.o			// Intermediate objects
@@ -1253,6 +1258,10 @@ users to use these names, so it should not matter.
 If you are having trouble determining where a dotted path goes wrong, note
 that Verilator will print a list of known scopes to help your debugging.
 
+=head2 Floating Point
+
+Floating Point numbers are not synthesizable, and so not supported.
+
 =head2 Latches
 
 Verilator is optimized for edge sensitive (flop based) designs.  It will
@@ -1309,7 +1318,8 @@ different.)
 
 Verilator attempts to deal with generated clocks correctly, however new
 cases may turn up bugs in the scheduling algorithm.  The safest option is
-to have all clocks as primary inputs to the model.
+to have all clocks as primary inputs to the model, or wires directly
+attached to primary inputs.
 
 =head2 Ranges must be big-bit-endian
 
@@ -1459,9 +1469,9 @@ List of all warnings:
 
 =item BLKANDNBLK
 
-Error that a variable comes from a mix of blocked and non-blocking
-assignments.  Generally, this is caused by a register driven by both combo
-logic and a flop:
+BLKANDNBLK is an error that a variable comes from a mix of blocked and
+non-blocking assignments.  Generally, this is caused by a register driven
+by both combo logic and a flop:
 
       always @ (posedge clk)  foo[0] <= ...
       always @* foo[1] = ...
@@ -1477,12 +1487,18 @@ This is good coding practice anyways.
 It is also possible to disable this error when one of the assignments is
 inside a public task.
 
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
+
 =item CASEINCOMPLETE
 
 Warns that inside a case statement there is a stimulus pattern for which
 there is no case item specified.  This is bad style, if a case is
 impossible, it's better to have a "default: $stop;" or just "default: ;" so
 that any design assumption violations will be discovered in simulation.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item CASEOVERLAP
 
@@ -1491,16 +1507,25 @@ to be overlapping.  This is bad style, as moving the order of case values
 will cause different behavior.  Generally the values can be respecified to
 not overlap.
 
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item CASEX
 
 Warns that it is simply better style to use casez, and C<?> in place of
 C<x>'s.  See
 L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
 
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item CMPCONST
 
 Warns that you are comparing a value in a way that will always be constant.
 For example "X > 1" will always be true when X is a single bit wide.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item COMBDLY
 
@@ -1510,6 +1535,9 @@ to the simulator not matching synthesis.  If this message is suppressed,
 Verilator, like synthesis, will convert this to a non-delayed assignment,
 which may result in logic races or other nasties.  See
 L<http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
 
 =item GENCLK
 
@@ -1521,6 +1549,9 @@ generate ALL clocks outside in C++/SystemC and make them primary inputs to
 your Verilog model.  (However once need to you have even one, don't sweat
 additional ones.)
 
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
+
 =item IMPLICIT
 
 Warns that a wire is being implicitly declared (it is a single bit wide
@@ -1530,17 +1561,26 @@ signal before it is implicitly declared by a cell, and can lead to dangling
 nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
 Emacs, available from L<http://www.veripool.com/>
 
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item IMPURE
 
 Warns that a task or function that has been marked with /*verilator
 no_inline_task*/ references variables that are not local to the task.
 Verilator cannot schedule these variables correctly.
 
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
+
 =item MULTIDRIVEN
 
 Warns that the specified signal comes from multiple always blocks.  This is
 often unsupported by synthesis tools, and is considered bad style.  It will
 also cause longer runtimes due to reduced optimizations.
+
+Ignoring this warning will only slow simulations, it will simulate
+correctly.
 
 =item MULTITOP
 
@@ -1580,6 +1620,9 @@ cases would result in simulator mismatches.
 
 Warns that the specified signal is never sourced.
 
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item UNOPT
 
 Warns that due to some construct, optimization of the specified signal or
@@ -1592,6 +1635,9 @@ UNOPT warning will result if AI & AO both come from and go to combinatorial
 blocks in both submodules, even if they are unrelated always blocks.  This
 affects performance because Verilator would have to evaluate each submodule
 multiple times to stabilize the signals crossing between the modules.
+
+Ignoring this warning will only slow simulations, it will simulate
+correctly.
 
 =item UNOPTFLAT
 
@@ -1644,15 +1690,24 @@ The UNOPTFLAT warning may also occur where outputs from a block of logic
 are independent, but occur in the same always block.  To fix this, use the
 isolate_assignments meta comment described above.
 
+Ignoring this warning will only slow simulations, it will simulate
+correctly.
+
 =item UNSIGNED
 
 Warns that you are comparing a unsigned value in a way that implies it is
 signed, for example "X < 0" will always be true when X is unsigned.
 
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item UNUSED
 
 Warns that the specified signal is never sinked.  This is a future message,
 currently Verilator will not produce this warning.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item VARHIDDEN
 
@@ -1660,6 +1715,9 @@ Warns that a task, function, or begin/end block is declaring a variable by
 the same name as a variable in the upper level module or begin/end block
 (thus hiding the upper variable from being able to be used.)  Rename the
 variable to avoid confusion when reading the code.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item WIDTH
 
@@ -1678,6 +1736,9 @@ Concatenate leading zeros when doing arithmetic.  In the statement
 The best fix, which clarifies intent and will also make all tools happy is:
 
 	wire [5:0] plus_one = from[5:0] + 6'd1 + {5'd0,carry[0]};
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =back
 

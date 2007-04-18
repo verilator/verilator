@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support while and do-while loops.
 
+**** Fix compile errors under Windows MINGW compiler.  [Gerald Williams]
+
 **** Fix dotted bit reference to local memory.  [Eugene Weber]
 
 **** Fix 3.640 `verilog forcing IEEE 1364-1995 only.  [David Hewson]
