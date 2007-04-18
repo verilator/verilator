@@ -513,10 +513,10 @@ static inline IData VL_COUNTONES_W(int words, WDataInP lwp) {
 }
 
 static inline IData VL_ONEHOT_I(IData lhs) {
-    return ((lhs & (lhs-1))==0 & lhs!=0);
+    return (((lhs & (lhs-1))==0) & (lhs!=0));
 }
 static inline IData VL_ONEHOT_Q(QData lhs) {
-    return ((lhs & (lhs-1))==0 & lhs!=0);
+    return (((lhs & (lhs-1))==0) & (lhs!=0));
 }
 static inline IData VL_ONEHOT_W(int words, WDataInP lwp) {
     IData one=0;
