@@ -191,6 +191,7 @@ Verilator - Convert Verilog code to C++/SystemC
     verilator --cc [options] [top_level.v] [opt_c_files.cpp/c/cc]
     verilator --sc [options] [top_level.v] [opt_c_files.cpp/c/cc]
     verilator --sp [options] [top_level.v] [opt_c_files.cpp/c/cc]
+    verilator --lint-only ...
 
 =head1 DESCRIPTION
 
@@ -328,6 +329,10 @@ this number of operations would result, the module is not inlined.  Larger
 values, or a value <= 1 will inline everything, will lead to longer compile
 times, but potentially faster runtimes.  This setting is ignored for very
 small modules; they will always be inlined, if allowed.
+
+=item --lint-only
+
+Check the files for lint violations only, do not create any other output.
 
 =item --MMD
 

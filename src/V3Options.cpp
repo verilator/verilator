@@ -383,6 +383,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
 	    else if ( onoff   (sw, "-inhibit-sim", flag/*ref*/)){ m_inhibitSim = flag; }
 	    else if ( onoff   (sw, "-l2name", flag/*ref*/) )	{ m_l2Name = flag; }
+	    else if ( onoff   (sw, "-lint-only", flag/*ref*/) )	{ m_lintOnly = flag; }
 	    else if ( onoff   (sw, "-pins64", flag/*ref*/) )	{ m_pins64 = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
@@ -574,6 +575,7 @@ V3Options::V3Options() {
     m_exe = false;
     m_ignc = false;
     m_l2Name = true;
+    m_lintOnly = true;
     m_makeDepend = true;
     m_makePhony = false;
     m_outFormatOk = false;

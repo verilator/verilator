@@ -594,7 +594,14 @@ class EmitCImp : EmitCStmts {
 	if (filenum) filenameNoExt += "__"+cvtToStr(filenum);
 	filenameNoExt += (slow ? "__Slow":"");
 	V3OutCFile* ofp = NULL;
-	if (optSystemPerl()) {
+	if (v3Global.opt.lintOnly()) {
+	    // Unfortunately we have some lint checks here, so we can't just skip processing.
+	    // We should move them to a different stage.
+	    string filename = "/dev/null";
+	    newCFile(filename, slow, source);
+	    ofp = new V3OutSpFile (filename);
+	}
+	else if (optSystemPerl()) {
 	    string filename = filenameNoExt+".sp";
 	    newCFile(filename, slow, source);
 	    ofp = new V3OutSpFile (filename);

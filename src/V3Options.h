@@ -56,6 +56,7 @@ class V3Options {
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
     bool	m_l2Name;	// main switch: --l2name
+    bool	m_lintOnly;	// main switch: --lint-only
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
     bool	m_pins64;	// main switch: --pins64
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
@@ -150,6 +151,7 @@ class V3Options {
     bool psl() const { return m_psl; }
     bool allPublic() const { return m_public; }
     bool l2Name() const { return m_l2Name; }
+    bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
 

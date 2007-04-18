@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.64**
 
+**   Add --lint-only option.
+
 ***  Support SystemVerilog .name and .* interconnect.
 
 ***  Support while and do-while loops.
