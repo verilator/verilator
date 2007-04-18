@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 top_filename("t/t_flag_werror.v");
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 fails=>$Last_Self->{v3},
 	 verilator_flags=> [qw(-sp -Werror-WIDTH)],
 	 expect=>

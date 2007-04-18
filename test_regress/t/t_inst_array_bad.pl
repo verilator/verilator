@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
 '%Error: t/t_inst_array_bad.v:19: Port connection __pinNumber2 as part of a module instance array  requires 1 or 8 bits, but connection\'s VARREF generates 9 bits.

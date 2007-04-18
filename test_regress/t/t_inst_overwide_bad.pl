@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
-# $Id:$
+# $Id$
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2004 by Wilson Snyder. This program is free software; you can
@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 top_filename("t/t_inst_overwide.v");
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 make_top_shell=>0,
 	 verilator_flags=> [qw(-sp)],
 	 verilator_make_gcc=>0,

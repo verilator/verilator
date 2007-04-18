@@ -433,18 +433,20 @@ void process () {
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dead.tree"));
     }
 
-    // Fix very deep expressions
-    // Mark evaluation functions as member functions, if needed.
-    V3Depth::depthAll(v3Global.rootp());
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("depth.tree"));
+    if (!v3Global.opt.lintOnly()) {
+	// Fix very deep expressions
+	// Mark evaluation functions as member functions, if needed.
+	V3Depth::depthAll(v3Global.rootp());
+	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("depth.tree"));
 
-    // Branch prediction
-    V3Branch::branchAll(v3Global.rootp());
+	// Branch prediction
+	V3Branch::branchAll(v3Global.rootp());
 
-    // Add C casts when longs need to become long-long and vice-versa
-    // Note depth may insert something needing a cast, so this must be last.
-    V3Cast::castAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cast.tree"));
+	// Add C casts when longs need to become long-long and vice-versa
+	// Note depth may insert something needing a cast, so this must be last.
+	V3Cast::castAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cast.tree"));	
+    }
 
     V3Error::abortIfErrors();
 
@@ -488,8 +490,8 @@ int main(int argc, char** argv, char** env) {
     if (v3Global.opt.coverage() && !v3Global.opt.systemPerl() && !v3Global.opt.lintOnly()) {
 	v3fatal("Unsupported: Coverage analysis requires --sp output.");
     }
-    if (!v3Global.opt.outFormatOk() && !v3Global.opt.preprocOnly()) {
-	v3fatal("verilator: Need --cc, --sc, --sp or --E option");
+    if (!v3Global.opt.outFormatOk() && !v3Global.opt.preprocOnly() && !v3Global.opt.lintOnly()) {
+	v3fatal("verilator: Need --cc, --sc, --sp, --lint-only or --E option");
     }
 
     V3Error::abortIfErrors();

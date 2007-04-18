@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 fails=>$Last_Self->{v3},
 	 expect=>
 '%Warning-VARHIDDEN: t/t_var_bad_hide.v:\d+: Declaration of signal hides declaration in upper scope: top

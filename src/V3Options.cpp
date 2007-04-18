@@ -575,7 +575,7 @@ V3Options::V3Options() {
     m_exe = false;
     m_ignc = false;
     m_l2Name = true;
-    m_lintOnly = true;
+    m_lintOnly = false;
     m_makeDepend = true;
     m_makePhony = false;
     m_outFormatOk = false;

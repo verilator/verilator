@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 top_filename("t/t_flag_werror.v");
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 fails=>$Last_Self->{v3},
 	 expect=>
 '%Warning-WIDTH: t/t_flag_werror.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST generates 6 bits.

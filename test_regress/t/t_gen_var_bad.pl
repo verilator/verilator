@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
+	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
 '.*%Error: t/t_gen_var_bad.v:\d+: Non-genvar used in generate for: i
