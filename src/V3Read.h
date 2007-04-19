@@ -43,6 +43,7 @@ class V3Read {
     int		m_lastVerilogState;	// Last LEX state in `begin_keywords
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
+    deque<FileLine>  m_lintState;	// Current lint state for save/restore
     //int debug() { return 9; }
 
 protected:
@@ -55,6 +56,8 @@ protected:
     static void ppline (const char* text);
     static void incLineno() { s_readp->fileline()->incLineno(); }
     static void verilatorCmtLint(const char* text, bool on);
+    static void verilatorCmtLintSave();
+    static void verilatorCmtLintRestore();
     static void verilatorCmtBad(const char* text);
     static void pushBeginKeywords(int state) { s_readp->m_inBeginKwd++; s_readp->m_lastVerilogState=state; }
     static bool popBeginKeywords() { if (s_readp->m_inBeginKwd) { s_readp->m_inBeginKwd--; return true; } else return false; }

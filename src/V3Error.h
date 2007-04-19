@@ -198,7 +198,8 @@ public:
     void warnOff(V3ErrorCode code, bool flag) { m_warnOff.set(code,flag); }	// Turn on/off warning messages on this line.
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code);
-    void warnResetDefault() { m_warnOff=s_defaultFileLine.m_warnOff; }
+    void warnStateFrom(const FileLine& from) { m_warnOff=from.m_warnOff; }
+    void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 
     void	v3errorEnd(ostringstream& str);
     inline bool operator==(FileLine rhs) { return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename); }

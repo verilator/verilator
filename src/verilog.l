@@ -54,6 +54,19 @@ void V3Read::verilatorCmtLint(const char* textp, bool warnOff) {
 	yyerrorf("Unknown verilator lint message code: %s, in %s",msg.c_str(), textp);
     }
 }
+
+void V3Read::verilatorCmtLintSave() {
+    s_readp->m_lintState.push_back(*V3Read::fileline());
+}
+void V3Read::verilatorCmtLintRestore() {
+    if (s_readp->m_lintState.empty()) {
+	yyerror("/*verilator lint_restore*/ without matching save.");
+	return;
+    }
+    V3Read::fileline()->warnStateFrom(s_readp->m_lintState.back());
+    s_readp->m_lintState.pop_back();
+}
+
 void V3Read::verilatorCmtBad(const char* textp) {
     yyerrorf("Unknown verilator comment: %s",textp);
 }
@@ -515,6 +528,7 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator coverage_block_off*/"	{yylval.fileline = CRELINE(); return yVL_COVER_OFF;}
   "/*verilator full_case*/"		{yylval.fileline = CRELINE(); return yVL_FULL_CASE;}
   "/*verilator inline_module*/"		{yylval.fileline = CRELINE(); return yVL_INLINE_MODULE;}
+  "/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}
   "/*verilator no_inline_module*/"	{yylval.fileline = CRELINE(); return yVL_NO_INLINE_MODULE;}
   "/*verilator no_inline_task*/"	{yylval.fileline = CRELINE(); return yVL_NO_INLINE_TASK;}
   "/*verilator parallel_case*/"		{yylval.fileline = CRELINE(); return yVL_PARALLEL_CASE;}
@@ -522,12 +536,13 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator public_flat*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_FLAT;}
   "/*verilator public_module*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_MODULE;}
   "/*verilator sc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
-  "/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}
   "/*verilator systemc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
   "/*verilator tracing_off*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_OFF;}
   "/*verilator tracing_on*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_ON;}
   "/*verilator lint_off"[^*]*"*/"	{V3Read::verilatorCmtLint(yytext, true); }
   "/*verilator lint_on"[^*]*"*/"	{V3Read::verilatorCmtLint(yytext, false); }
+  "/*verilator lint_restore*/"		{V3Read::verilatorCmtLintRestore(); }
+  "/*verilator lint_save*/"		{V3Read::verilatorCmtLintSave(); }
 
   "/*"[^*]*"*/"				{V3Read::verilatorCmtBad(yytext); }
 }

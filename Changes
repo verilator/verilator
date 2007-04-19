@@ -7,6 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Add --lint-only option.
 
+***  Add /*verilator lint_save*/ and /*verilator lint_restore*/ to allow
+     friendly control over re-enabling lint messages. [Gerald Williams]
+
 ***  Support SystemVerilog .name and .* interconnect.
 
 ***  Support while and do-while loops.

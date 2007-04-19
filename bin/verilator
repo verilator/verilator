@@ -1152,6 +1152,26 @@ Disable the specified warning message for any warnings following the comment.
 
 Re-enable the specified warning message for any warnings following the comment.
 
+=item /*verilator lint_restore*/
+
+After a /*verilator lint_save*/, pop the stack containing lint message
+state.  Often this is useful at the bottom of include files.
+
+=item /*verilator lint_save*/
+
+Push the current state of what lint messages are turned on or turned off to
+a stack.  Later meta-comments may then lint_on or lint_off specific
+messages, then return to the earlier message state by using /*verilator
+lint_restore*/.  For example:
+
+    // verilator lint_save
+    // verilator lint_off SOME_WARNING
+    ...  // code needing SOME_WARNING turned off
+    // verilator lint_restore
+
+If SOME_WARNING was on before the lint_off, it will now be restored to on,
+and if it was off before the lint_off it will remain off.
+
 =item /*verilator no_inline_task*/ 
 
 Used in a function or task variable definition section to specify the
