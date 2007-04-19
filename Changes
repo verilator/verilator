@@ -3,7 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.64**
+* Verilator 3.65**
+
+**   Add --compiler msvc option.  This is now required when Verilated code
+     is to be run through MSVC++.  This also enables fixing error C1061,
+     blocks nested too deeply.  [Ralf Karge]
 
 **   Add --lint-only option.
 

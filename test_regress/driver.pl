@@ -205,6 +205,7 @@ sub new {
 	# Verilator
 	'v3' => 0,
 	verilator_flags => [split(/\s+/,"-cc")],
+	verilator_flags2 => [],
 	verilator_make_gcc => 1,
 	verilated_debug => $Opt_Verilated_Debug,
 	stdout_filename => undef,	# Redirect stdout
@@ -338,6 +339,7 @@ sub compile {
 	my @v3args = ("perl","../bin/verilator",
 		      "--prefix ".$self->{VM_PREFIX},
 		      @{$param{verilator_flags}},
+		      @{$param{verilator_flags2}},
 		      @{$param{v_flags}},
 		      @{$param{v_flags2}},
 		      $param{top_filename},

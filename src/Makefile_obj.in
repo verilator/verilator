@@ -118,6 +118,7 @@ RAW_OBJS = \
 	V3Dead.o \
 	V3Delayed.o \
 	V3Depth.o \
+	V3DepthBlock.o \
 	V3Descope.o \
 	V3EmitC.o \
 	V3EmitCSyms.o \

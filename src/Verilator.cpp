@@ -41,6 +41,7 @@
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
+#include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3EmitC.h"
 #include "V3EmitMk.h"
@@ -378,6 +379,12 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("descope.tree"));
 
     //--MODULE OPTIMIZATIONS--------------
+
+    // Split deep blocks to appease MSVC++.  Must be before Localize.
+    if (v3Global.opt.compLimitBlocks()) {
+	V3DepthBlock::depthBlockAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("deepblock.tree"));
+    }
 
     // Move BLOCKTEMPS from class to local variables
     if (v3Global.opt.oLocalize()) {

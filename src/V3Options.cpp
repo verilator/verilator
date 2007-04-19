@@ -454,17 +454,19 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		    V3Error::pretendError(code, true);
 		}
 	    }
-	    else if ( !strcmp (sw, "-x-assign") && (i+1)<argc) {
-		shift;
-		if (!strcmp (argv[i], "0")) { m_xAssign="0"; }
-		else if (!strcmp (argv[i], "1")) { m_xAssign="1"; }
-		else if (!strcmp (argv[i], "unique")) { m_xAssign="unique"; }
-		else {
-		    fl->v3fatal("Unknown setting for -x-assign: "<<sw);
-		}
-	    }
 	    else if ( !strcmp (sw, "-bin") && (i+1)<argc ) {
 		shift; m_bin = argv[i];
+	    }
+	    else if ( !strcmp (sw, "-compiler") && (i+1)<argc) {
+		shift;
+		if (!strcmp (argv[i], "gcc")) {
+		    m_compLimitParens = 0;
+		} else if (!strcmp (argv[i], "msvc")) {
+		    m_compLimitParens = 80;   // 128, but allow some room
+		    m_compLimitBlocks = 80;   // 128, but allow some room
+		} else {
+		    fl->v3fatal("Unknown setting for --compiler: "<<argv[i]);
+		}
 	    }
 	    else if ( !strcmp (sw, "-f") && (i+1)<argc ) {
 		shift;
@@ -479,6 +481,15 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-prefix") && (i+1)<argc ) {
 		shift; m_prefix = argv[i];
 		if (m_modPrefix=="") m_modPrefix = m_prefix;
+	    }
+	    else if ( !strcmp (sw, "-x-assign") && (i+1)<argc) {
+		shift;
+		if (!strcmp (argv[i], "0")) { m_xAssign="0"; }
+		else if (!strcmp (argv[i], "1")) { m_xAssign="1"; }
+		else if (!strcmp (argv[i], "unique")) { m_xAssign="unique"; }
+		else {
+		    fl->v3fatal("Unknown setting for --x-assign: "<<argv[i]);
+		}
 	    }
 	    else if ( !strcmp (sw, "-y")) {
 		shift; addIncDir (string (argv[i]));
@@ -598,6 +609,9 @@ V3Options::V3Options() {
     m_traceDepth = 0;
     m_unrollCount = 64;
     m_unrollStmts = 20;
+
+    m_compLimitParens = 0;
+    m_compLimitBlocks = 0;
 
     m_makeDir = "obj_dir";
     m_bin = "";

@@ -40,7 +40,6 @@
 #include "V3Ast.h"
 
 //######################################################################
-// Depth state, as a visitor of each AstNode
 
 class DepthVisitor : public AstNVisitor {
 private:
@@ -54,11 +53,6 @@ private:
     int			m_maxdepth;	// Maximum depth in an expression
 
     //int debug() { return 9; }
-
-    // MSVC++ has a limit of 100 parenthesis.  We have some operator
-    // defines that use 2 parens.  Thus we can't have a expression deeper
-    // then 50 operators.  We'll add some margin though.
-    enum en { MAX_EXPR_DEPTH = 40 };	// Expressions deeper then this need temp
 
     // METHODS
     void createDeepTemp(AstNode* nodep) {
@@ -114,13 +108,15 @@ private:
     virtual void visit(AstNodeTermop* nodep, AstNUser*) {
     }
     virtual void visit(AstNodeMath* nodep, AstNUser*) {
-	m_depth++;
+	// We have some operator defines that use 2 parens, so += 2.
+	m_depth += 2;
 	if (m_depth>m_maxdepth) m_maxdepth=m_depth;
 	nodep->iterateChildren(*this); 
-	m_depth--;
+	m_depth -= 2;
 
-	if ((m_maxdepth-m_depth) > MAX_EXPR_DEPTH
-	    && m_stmtp
+	if (m_stmtp
+	    && (v3Global.opt.compLimitParens() >= 1)	// Else compiler doesn't need it
+	    && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
 	    && !nodep->backp()->castNodeStmt()  // Not much point if we're about to use it
 	    ) {
 	    m_maxdepth = m_depth;
@@ -173,14 +169,10 @@ public:
     virtual ~DepthVisitor() {}
 };
 
-//----------------------------------------------------------------------
-// Top loop
-
 //######################################################################
 // Depth class functions
 
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    // We must do it in bottom-up module
     DepthVisitor visitor (nodep);
 }

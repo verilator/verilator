@@ -77,6 +77,9 @@ class V3Options {
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts
 
+    int		m_compLimitBlocks;	// compiler selection options
+    int		m_compLimitParens;	// compiler selection options
+
     string	m_bin;		// main switch: --bin {binary}
     string	m_flags;	// main switch: -f {name}
     string	m_top;		// main switch: Top .v file name
@@ -162,12 +165,16 @@ class V3Options {
     int	   unrollCount() const { return m_unrollCount; }
     int	   unrollStmts() const { return m_unrollStmts; }
 
+    int    compLimitBlocks() const { return m_compLimitBlocks; }
+    int    compLimitParens() const { return m_compLimitParens; }
+
     string makeDir() const { return m_makeDir; }
     string prefix() const { return m_prefix; }
     string modPrefix() const { return m_modPrefix; }
     string xAssign() const { return m_xAssign; }
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
+
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }

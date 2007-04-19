@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
+	 verilator_flags2 => ["--compiler msvc"],  # We have deep expressions we want to test
 	 );
 
 execute (
