@@ -36,6 +36,6 @@ SC_LIB = $(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)/libsystemc.a
 
 simx: sc_main.o $(SP_SRCS) \
 	  $(VM_PREFIX)__ALL.a $(SC_LIB)
-	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(SC_LIBS) $(LIBS) 2>&1 | c++filt
+	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(SC_LIBS) $(LIBS) 2>&1 | c++filt
 
 sc_main.o: sc_main.cpp $(VM_PREFIX).h

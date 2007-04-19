@@ -49,7 +49,12 @@ VPATH += $(VERILATOR_ROOT)/include
 CPPFLAGS += $(OPT)
 
 CPPFLAGS += $(M32)
-LDFLAGS += $(M32)
+LDFLAGS  += $(M32)
+
+# Allow upper level user makefiles to specify flags they want.
+# These aren't ever set by Verilator, so users are free to override them.
+CPPFLAGS += $(USER_CPPFLAGS)
+LDFLAGS  += $(USER_LDFLAGS)
 
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.

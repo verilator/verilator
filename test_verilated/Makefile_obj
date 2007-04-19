@@ -32,6 +32,6 @@ SP_SRCS = verilated.o
 #SP_SRCS = sp_log.o SpTraceVcd.o
 
 simx: sim_main.o $(SP_SRCS) $(VM_PREFIX)__ALL.a
-	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 
 sim_main.o: sim_main.cpp $(VM_PREFIX).h

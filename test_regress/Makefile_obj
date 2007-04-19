@@ -43,7 +43,7 @@ endif
 
 #Default compile, using normal make rules
 #$(VM_PREFIX): $(SP_SRCS) $(VK_OBJS)
-#	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+#	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 
 #Our own compile rules; Faster compile, all in one file
 $(VM_PREFIX)__ALLboth.cpp: $(VK_CLASSES_CPP) $(VK_SUPPORT_CPP)
@@ -54,5 +54,5 @@ $(VM_PREFIX)__ALLboth.o: $(VM_PREFIX)__ALLboth.cpp
 
 ifneq ($(MAKE_MAIN),0)
    $(VM_PREFIX): $(VM_PREFIX)__ALLboth.o
-	$(CXX) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 endif

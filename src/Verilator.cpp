@@ -381,7 +381,7 @@ void process () {
     //--MODULE OPTIMIZATIONS--------------
 
     // Split deep blocks to appease MSVC++.  Must be before Localize.
-    if (v3Global.opt.compLimitBlocks()) {
+    if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
 	V3DepthBlock::depthBlockAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("deepblock.tree"));
     }
