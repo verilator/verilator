@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.65**
+
+**** Warn if flex is not installed.  [Ralf Karge]
+
 * Verilator 3.650 4/20/2007
 
 **   Add --compiler msvc option.  This is now required when Verilated code

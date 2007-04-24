@@ -16,8 +16,17 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PATH_PROG(PERL,perl)
-AC_PATH_PROG(YACC,bison)
+if test "x$PERL" = "x" ; then
+   AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
+fi
 AC_PATH_PROG(LEX,flex)
+if test "x$LEX" = "x" ; then
+   AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
+fi
+AC_PATH_PROG(YACC,bison)
+if test "x$YACC" = "x" ; then
+   AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
+fi
 
 dnl Checks for libraries.
 
