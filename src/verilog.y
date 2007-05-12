@@ -93,8 +93,6 @@ AstCase*	V3Parse::s_caseAttrp = NULL;
 //======================================================================
 
 class AstSenTree;
-
-# define NEW_SENTREE_BRANCH(a,b) (new AstSenTree((a),(b)))
 %}
 
 %union {
@@ -115,6 +113,8 @@ class AstSenTree;
     AstFunc*	funcp;
     AstFuncRef*	funcrefp;
     AstModule*	modulep;
+    AstNodeVarRef*	varnodep;
+    AstParseRef*	parserefp;
     AstPin*	pinp;
     AstRange*	rangep;
     AstSenItem*	senitemp;
@@ -122,8 +122,6 @@ class AstSenTree;
     AstTaskRef*	taskrefp;
     AstVar*	varp;
     AstVarRef*	varrefp;
-    AstNodeVarRef*	varnodep;
-    AstParseRef*	parserefp;
 }
 
 %token<nump>		yINTNUM
@@ -136,7 +134,7 @@ class AstSenTree;
 %token<fileline>	yGENVAR yGENERATE yENDGENERATE
 %token<fileline>	ySPECIFY yENDSPECIFY yTIMINGSPEC
 %token<fileline>	yCASE yCASEX yCASEZ yDEFAULT yENDCASE yIF yELSE
-%token<fileline>	yASSIGN yINTEGER yFOR ySUPPLY0 ySUPPLY1 ySIGNED
+%token<fileline>	yASSIGN yINTEGER yFOR ySUPPLY0 ySUPPLY1 ySIGNED yUNSIGNED
 %token<fileline>	yBUF yNOT yAND yNAND yNOR yXOR yXNOR
 %token<fileline>	ySCALARED yVECTORED
 
@@ -236,7 +234,7 @@ class AstSenTree;
 %type<nodep>	v2kPortList v2kPortSig
 %type<nodep>	v2kPort ioDecl varDecl
 %type<nodep>	modParDecl modParList modParE
-%type<nodep>	modItem modItemList modItemListOrNone modOrGenItem
+%type<nodep>	modItem modItemList modItemListE modOrGenItem
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseList
 %type<nodep>	dterm
 %type<varp>	onesig sigId sigIdRange paramId sigList regsig regsigList regSigId
@@ -301,11 +299,11 @@ statePop:					 	{ V3Read::statePop(); }
 //**********************************************************************
 // Modules
 
-file:		prog
-	|	file prog
+file:		mod
+	|	file mod
 	;
 
-prog:		mheader modParE modportsE ';' modItemListOrNone yENDMODULE
+mod:		mheader modParE modportsE ';' modItemListE yENDMODULE
 			{ $1->modTrace(V3Parse::s_trace);  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); if ($5) $1->addStmtp($5); }
 	;
@@ -375,6 +373,7 @@ varInout:	yINOUT					{ VARIO(INOUT); }
 
 varSignedE:	/*empty*/ 				{ }
 	|	ySIGNED					{ VARSIGNED(true); }
+	|	yUNSIGNED				{ VARSIGNED(false); }
 	;
 
 v2kNetDeclE:	/*empty*/ 				{ }
@@ -408,7 +407,7 @@ modParDecl:	varRESET varGParam  varSignedE regrangeE   paramList 	{ $$ = $5; }  
 //************************************************
 // modItemList
 
-modItemListOrNone:					{ $$ = NULL; }
+modItemListE:	/* empty */				{ $$ = NULL; }
 	|	modItemList				{ $$ = $1; }
 	;
 
@@ -594,8 +593,7 @@ portrangeE:	/* empty */	                   	{ $$ = NULL; }
 	;
 
 // Parameters
-param:		paramId '=' expr			{ $$ = $1; $$->initp($3); }
-	|	paramId sigAttrList '=' expr		{ $$ = $1; $$->initp($4); }
+param:		paramId sigAttrListE '=' expr		{ $$ = $1; $$->initp($4); }
 	;
 
 paramList:	param					{ $$ = $1; }
@@ -637,8 +635,8 @@ cellpinitemE:	/* empty */				{ $$ = NULL; V3Parse::s_pinNum++; }
 	;
 
 sensitivityE:	/* empty */				{ $$ = NULL; }
-	|	'@' '(' senList ')'			{ $$ = NEW_SENTREE_BRANCH($1,$3); }
-	|	'@' senitem				{ $$ = NEW_SENTREE_BRANCH($1,$2); }
+	|	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
+	|	'@' senitem				{ $$ = new AstSenTree($1,$2); }
 	|	'@' '(' '*' ')'				{ $$ = NULL; $2->v3error("Use @*.  always @ (*) to be depreciated in Verilog 2005.\n"); }
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
 	;

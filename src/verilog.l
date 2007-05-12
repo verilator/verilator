@@ -278,6 +278,7 @@ escid	\\[^ \t\f\r\n]+
   "genvar"		{yylval.fileline = CRELINE(); return yGENVAR;}
   "localparam"		{yylval.fileline = CRELINE(); return yLOCALPARAM;}
   "signed"		{yylval.fileline = CRELINE(); return ySIGNED;}
+  "unsigned"		{yylval.fileline = CRELINE(); return yUNSIGNED;}
   /*     Special errors */
   "include"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented; probably you want `include instead: %s",yytext);}
   /*     Generic unsupported warnings */
@@ -295,7 +296,6 @@ escid	\\[^ \t\f\r\n]+
   "pulsestyle_ondetect"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "pulsestyle_onevent"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "showcancelled"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "unsigned"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
   "use"			{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
 }
 
