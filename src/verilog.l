@@ -130,30 +130,30 @@ escid	\\[^ \t\f\r\n]+
   "$fdisplay"		{yylval.fileline = CRELINE(); return yD_FDISPLAY;}
   "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
   "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
-  "$fullskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$fullskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$fwrite"		{yylval.fileline = CRELINE(); return yD_FWRITE;}
-  "$hold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$nochange"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$period"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$hold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$nochange"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$period"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$readmemb"		{yylval.fileline = CRELINE(); return yD_READMEMB;}
   "$readmemh"		{yylval.fileline = CRELINE(); return yD_READMEMH;}
   "$realtime"		{yylval.fileline = CRELINE(); return yD_TIME;}
-  "$recovery"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$recrem"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$removal"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$setup"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$setuphold"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$skew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$recovery"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$recrem"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$removal"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$setup"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$setuphold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$skew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$stop"		{yylval.fileline = CRELINE(); return yD_STOP;}
   "$time"		{yylval.fileline = CRELINE(); return yD_TIME;}
-  "$timeskew"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
-  "$width"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "$timeskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$width"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$write"		{yylval.fileline = CRELINE(); return yD_WRITE;}
   /*     Keywords */
   "always"		{yylval.fileline = CRELINE(); return yALWAYS;}
   "and"			{yylval.fileline = CRELINE(); return yAND;}
   "assign"		{yylval.fileline = CRELINE(); return yASSIGN;}
-  "begin"		{yylval.fileline = CRELINE(); return yBBEGIN;}
+  "begin"		{yylval.fileline = CRELINE(); return yBEGIN;}
   "buf"			{yylval.fileline = CRELINE(); return yBUF;}
   "case"		{yylval.fileline = CRELINE(); return yCASE;}
   "casex"		{yylval.fileline = CRELINE(); return yCASEX;}
@@ -161,7 +161,7 @@ escid	\\[^ \t\f\r\n]+
   "default"		{yylval.fileline = CRELINE(); return yDEFAULT;}
   "defparam"		{yylval.fileline = CRELINE(); return yDEFPARAM;}
   "else"		{yylval.fileline = CRELINE(); return yELSE;}
-  "end"			{yylval.fileline = CRELINE(); return yBEND;}
+  "end"			{yylval.fileline = CRELINE(); return yEND;}
   "endcase"		{yylval.fileline = CRELINE(); return yENDCASE;}
   "endfunction"		{yylval.fileline = CRELINE(); return yENDFUNCTION;}
   "endmodule"		{yylval.fileline = CRELINE(); return yENDMODULE;}
@@ -187,7 +187,7 @@ escid	\\[^ \t\f\r\n]+
   "reg"			{yylval.fileline = CRELINE(); return yREG;}
   "scalared"		{yylval.fileline = CRELINE(); return ySCALARED;}
   "specify"		{yylval.fileline = CRELINE(); return ySPECIFY;}
-  "specparam"		{yylval.fileline = CRELINE(); return yTIMINGSPEC;}
+  "specparam"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "supply0"		{yylval.fileline = CRELINE(); return ySUPPLY0;}
   "supply1"		{yylval.fileline = CRELINE(); return ySUPPLY1;}
   "task"		{yylval.fileline = CRELINE(); return yTASK;}
@@ -552,45 +552,45 @@ escid	\\[^ \t\f\r\n]+
 
   /* Verilog 1995 Operators */
 <V95,V01,V05,S05,PSL>{
-  "&&"			{yylval.fileline = CRELINE(); return yANDAND;}
-  "||"			{yylval.fileline = CRELINE(); return yOROR;}
-  "<="			{yylval.fileline = CRELINE(); return yLTE;}
-  ">="			{yylval.fileline = CRELINE(); return yGTE;}
-  "<<"			{yylval.fileline = CRELINE(); return ySLEFT;}
-  ">>"			{yylval.fileline = CRELINE(); return ySRIGHT;}
-  "=="			{yylval.fileline = CRELINE(); return yEQUAL;}
-  "!="			{yylval.fileline = CRELINE(); return yNOTEQUAL;}
-  "==="			{yylval.fileline = CRELINE(); return yCASEEQUAL;}
-  "!=="			{yylval.fileline = CRELINE(); return yCASENOTEQUAL;}
-  "^~"			{yylval.fileline = CRELINE(); return yOP_XNOR;}
-  "~^"			{yylval.fileline = CRELINE(); return yOP_XNOR;}
-  "~&"			{yylval.fileline = CRELINE(); return yOP_NAND;}
-  "~|"			{yylval.fileline = CRELINE(); return yOP_NOR;}
+  "&&"			{yylval.fileline = CRELINE(); return yP_ANDAND;}
+  "||"			{yylval.fileline = CRELINE(); return yP_OROR;}
+  "<="			{yylval.fileline = CRELINE(); return yP_LTE;}
+  ">="			{yylval.fileline = CRELINE(); return yP_GTE;}
+  "<<"			{yylval.fileline = CRELINE(); return yP_SLEFT;}
+  ">>"			{yylval.fileline = CRELINE(); return yP_SRIGHT;}
+  "=="			{yylval.fileline = CRELINE(); return yP_EQUAL;}
+  "!="			{yylval.fileline = CRELINE(); return yP_NOTEQUAL;}
+  "==="			{yylval.fileline = CRELINE(); return yP_CASEEQUAL;}
+  "!=="			{yylval.fileline = CRELINE(); return yP_CASENOTEQUAL;}
+  "^~"			{yylval.fileline = CRELINE(); return yP_XNOR;}
+  "~^"			{yylval.fileline = CRELINE(); return yP_XNOR;}
+  "~&"			{yylval.fileline = CRELINE(); return yP_NAND;}
+  "~|"			{yylval.fileline = CRELINE(); return yP_NOR;}
 }
 
   /* Verilog 2001 Operators */
 <V01,V05,S05,PSL>{
-  "<<<"			{yylval.fileline = CRELINE(); return ySLEFT;}
-  ">>>"			{yylval.fileline = CRELINE(); return ySSRIGHT;}
-  "**"			{yylval.fileline = CRELINE(); return yPOW;}
-  "+:"			{yylval.fileline = CRELINE(); return yPLUSCOLON;}
-  "-:"			{yylval.fileline = CRELINE(); return yMINUSCOLON;}
+  "<<<"			{yylval.fileline = CRELINE(); return yP_SLEFT;}
+  ">>>"			{yylval.fileline = CRELINE(); return yP_SSRIGHT;}
+  "**"			{yylval.fileline = CRELINE(); return yP_POW;}
+  "+:"			{yylval.fileline = CRELINE(); return yP_PLUSCOLON;}
+  "-:"			{yylval.fileline = CRELINE(); return yP_MINUSCOLON;}
 }
 
   /* PSL Operators */
 <PSL>{
   "{"			{yylval.fileline = CRELINE(); return yPSL_BRA;}	// Avoid parser hitting concatenate.
   "}"			{yylval.fileline = CRELINE(); return yPSL_KET;}	// Avoid parser hitting concatenate.
-  "->"			{yylval.fileline = CRELINE(); return yOP_LOGIF;}
+  "->"			{yylval.fileline = CRELINE(); return yP_LOGIF;}
   "<->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} //Unsup in other tools
-  "[*"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_STAR
-  "[*]"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_STAR_KET
-  "[+]"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_PLUS_KET
-  "[->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_MINUS_GT
-  "[->]"		{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_MINUS_GT_KET
-  "[="			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yBRA_EQ
-  "|->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yOR_MINUS_GT
-  "|=>"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yOR_EQ_GT
+  "[*"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_STAR
+  "[*]"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_STAR_KET
+  "[+]"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_PLUS_KET
+  "[->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_MINUS_GT
+  "[->]"		{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_MINUS_GT_KET
+  "[="			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_EQ
+  "|->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_OR_MINUS_GT
+  "|=>"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_OR_EQ_GT
 }
 
   /* Identifiers and numbers */
@@ -604,41 +604,41 @@ escid	\\[^ \t\f\r\n]+
 			   } else {
 			       yylval.strp = V3Read::newString(yytext); // Need _ as "6..." isn't legal ID
 			   }
-			   return yID;
+			   return yaID;
 			 }
 
   {id}			{  yylval.strp = V3Read::newString(yytext);
-			   return yID;
+			   return yaID;
 			 }
 
   \"[^\"\\]*\"		{  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
-			   return ySTRING;
+			   return yaSTRING;
 			}
   \" 			{ yy_push_state(STRING); yymore(); }
 
 
   [0-9]*?['']s?[bcodhBCODH][ \t]*[A-Fa-f0-9xXzZ_?]*	{
 			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
-                          return yINTNUM;
+                          return yaINTNUM;
 			}
   [0-9]*?['']s?[01xXzZ]	{	/* SystemVerilog */
 			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
-                          return yINTNUM;
+                          return yaINTNUM;
 			}
   [0-9]+[_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]*	{
 			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
-                          return yINTNUM;
+                          return yaINTNUM;
 			}
   [0-9]*		{ yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
-                          return yINTNUM;
+                          return yaINTNUM;
 			}
   [-+]?[0-9]+(\.[0-9]+)([eE][-+]?[0-9]+)? {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
-                          return yFLOATNUM;
+                          return yaFLOATNUM;
 			}
   [-+]?[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+) {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
-                          return yFLOATNUM;
+                          return yaFLOATNUM;
 			}
 
   "`timescale"{ws}+[^\n]*	{}
@@ -653,7 +653,7 @@ escid	\\[^ \t\f\r\n]+
 <STRING>\\.	 	{ yymore(); }
 <STRING>\" 		{ yy_pop_state();
 			  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
-			  return ySTRING; }
+			  return yaSTRING; }
 
   /************************************************************************/
   /* Common for all SYSC header states */
@@ -678,12 +678,12 @@ escid	\\[^ \t\f\r\n]+
   "`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
 }
 
-<SYSCHDR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCHDR;}
-<SYSCINT>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCINT;}
-<SYSCIMP>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCIMP;}
-<SYSCIMPH>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCIMPH;}
-<SYSCCTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCCTOR;}
-<SYSCDTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return ySCDTOR;}
+<SYSCHDR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR;}
+<SYSCINT>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCINT;}
+<SYSCIMP>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMP;}
+<SYSCIMPH>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMPH;}
+<SYSCCTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCCTOR;}
+<SYSCDTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCDTOR;}
 <IGNORE>[ \t]*[^` \t\n][^\n]*\n		{ NEXTLINE(); }
 
   /* Pick up text-type data */

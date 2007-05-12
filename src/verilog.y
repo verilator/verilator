@@ -63,7 +63,7 @@ public:
     static AstText* createTextQuoted(FileLine* fileline, string text);
     static AstDisplay* createDisplayError(FileLine* fileline) {
 	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::ERROR,  "", NULL,NULL);
-	nodep->addNext(new AstStop(fileline)); 
+	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
     static string   deQuote(FileLine* fileline, string text);
@@ -124,31 +124,83 @@ class AstSenTree;
     AstVarRef*	varrefp;
 }
 
-%token<nump>		yINTNUM
-%token<cdouble>		yFLOATNUM
-%token<strp>		yID ySTRING
-%token<strp>		ySCHDR ySCINT ySCIMP ySCIMPH ySCCTOR ySCDTOR
-%token<fileline>	yMODULE yENDMODULE yALWAYS yINITIAL yPOSEDGE yNEGEDGE yBBEGIN yBEND yOR
-%token<fileline>	yINPUT yOUTPUT yINOUT yWIRE yTRI yREG yPARAM yLOCALPARAM yDEFPARAM
-%token<fileline>	yFUNCTION yENDFUNCTION  yTASK yENDTASK
-%token<fileline>	yGENVAR yGENERATE yENDGENERATE
-%token<fileline>	ySPECIFY yENDSPECIFY yTIMINGSPEC
-%token<fileline>	yCASE yCASEX yCASEZ yDEFAULT yENDCASE yIF yELSE
-%token<fileline>	yASSIGN yINTEGER yFOR ySUPPLY0 ySUPPLY1 ySIGNED yUNSIGNED
-%token<fileline>	yBUF yNOT yAND yNAND yNOR yXOR yXNOR
-%token<fileline>	ySCALARED yVECTORED
+// Generic lexer tokens, for example a number
+%token<cdouble>		yaFLOATNUM	"FLOATING-POINT NUMBER"
+%token<fileline>	yaTIMINGSPEC	"TIMING SPEC ELEMENT"
+%token<nump>		yaINTNUM	"INTEGER NUMBER"
+%token<strp>		yaID		"IDENTIFIER"
+%token<strp>		yaSTRING	"STRING"
 
+%token<strp>		yaSCHDR		"`systemc_header BLOCK"
+%token<strp>		yaSCINT		"`systemc_ctor BLOCK"
+%token<strp>		yaSCIMP		"`systemc_dtor BLOCK"
+%token<strp>		yaSCIMPH	"`systemc_interface BLOCK"
+%token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
+%token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
+
+// Specific keywords
+// yKEYWORD means match "keyword"
+// Other cases are yXX_KEYWORD where XX makes it unique,
+// for example yP_ for punctuation based operators.
+%token<fileline>	yALWAYS		"always"
+%token<fileline>	yAND		"and"
 %token<fileline>	yASSERT		"assert"
+%token<fileline>	yASSIGN		"assign"
+%token<fileline>	yBEGIN		"begin"
+%token<fileline>	yBUF		"buf"
+%token<fileline>	yCASE		"case"
+%token<fileline>	yCASEX		"casex"
+%token<fileline>	yCASEZ		"casez"
 %token<fileline>	yCLOCK		"clock"
 %token<fileline>	yCOVER		"cover"
+%token<fileline>	yDEFAULT	"default"
+%token<fileline>	yDEFPARAM	"defparam"
 %token<fileline>	yDO		"do"
+%token<fileline>	yELSE		"else"
+%token<fileline>	yEND		"bend"
+%token<fileline>	yENDCASE	"endcase"
+%token<fileline>	yENDFUNCTION	"endfunction"
+%token<fileline>	yENDGENERATE	"endgenerate"
+%token<fileline>	yENDMODULE	"endmodule"
+%token<fileline>	yENDSPECIFY	"endspecify"
+%token<fileline>	yENDTASK	"endtask"
 %token<fileline>	yFINAL		"final"
+%token<fileline>	yFOR		"for"
+%token<fileline>	yFUNCTION	"function"
+%token<fileline>	yGENERATE	"generate"
+%token<fileline>	yGENVAR		"genvar"
+%token<fileline>	yIF		"if"
+%token<fileline>	yINITIAL	"initial"
+%token<fileline>	yINOUT		"inout"
+%token<fileline>	yINPUT		"input"
+%token<fileline>	yINTEGER	"integer"
+%token<fileline>	yLOCALPARAM	"localparam"
+%token<fileline>	yMODULE		"module"
+%token<fileline>	yNAND		"nand"
+%token<fileline>	yNEGEDGE	"negedge"
+%token<fileline>	yNOR		"nor"
+%token<fileline>	yNOT		"not"
+%token<fileline>	yOR		"or"
+%token<fileline>	yOUTPUT		"output"
+%token<fileline>	yPARAM		"param"
+%token<fileline>	yPOSEDGE	"posedge"
 %token<fileline>	yPSL		"psl"
+%token<fileline>	yREG		"reg"
 %token<fileline>	yREPORT		"report"
+%token<fileline>	ySCALARED	"scalared"
+%token<fileline>	ySIGNED		"signed"
+%token<fileline>	ySPECIFY	"specify"
+%token<fileline>	ySUPPLY0	"supply0"
+%token<fileline>	ySUPPLY1	"supply1"
+%token<fileline>	yTASK		"task"
+%token<fileline>	yTRI		"tri"
 %token<fileline>	yTRUE		"true"
+%token<fileline>	yUNSIGNED	"unsigned"
+%token<fileline>	yVECTORED	"vectored"
 %token<fileline>	yWHILE		"while"
-
-%token<fileline>	yPSL_ASSERT	"PSL assert"
+%token<fileline>	yWIRE		"wire"
+%token<fileline>	yXNOR		"xnor"
+%token<fileline>	yXOR		"xor"
 
 %token<fileline>	yD_BITS		"$bits"
 %token<fileline>	yD_C		"$c"
@@ -174,56 +226,58 @@ class AstSenTree;
 %token<fileline>	yD_WARNING	"$warning"
 %token<fileline>	yD_WRITE	"$write"
 
+%token<fileline>	yPSL_ASSERT	"PSL assert"
+
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
 %token<fileline>	yVL_COVER_OFF		"/*verilator coverage_block_off*/"
 %token<fileline>	yVL_FULL_CASE		"/*verilator full_case*/"
 %token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
+%token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
 %token<fileline>	yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
 %token<fileline>	yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
 %token<fileline>	yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fileline>	yVL_PUBLIC		"/*verilator public*/"
 %token<fileline>	yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
 %token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
-%token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
 %token<fileline>	yVL_TRACING_OFF		"/*verilator tracing_off*/"
 %token<fileline>	yVL_TRACING_ON		"/*verilator tracing_on*/"
 
-%token<fileline>	yPLUSCOLON "+:"
-%token<fileline>	yMINUSCOLON "-:"
-%token<fileline>	yPSL_BRA "{"
-%token<fileline>	yPSL_KET "}"
+%token<fileline>	yP_PLUSCOLON	"+:"
+%token<fileline>	yP_MINUSCOLON	"-:"
+
+%token<fileline>	yPSL_BRA	"{"
+%token<fileline>	yPSL_KET	"}"
 
 %token<fileline>	';' '=' ',' '(' '.' '!' '~' '[' '@'
 
 //********************
 // PSL op precedence
-%right<fileline> 	yOP_LOGIF  yOP_LOGIFF
-%right<fileline>	yOR_MINUS_GT  yOR_EQ_GT
-%left<fileline>		yBRA_STAR  yBRA_STAR_KET  yBRA_PLUS_KET  yBRA_MINUS_GT  yBRA_MINUS_GT_KET  yBRA_EQ
+%right<fileline> 	yP_LOGIF  yP_LOGIFF
+%right<fileline>	yP_OR_MINUS_GT  yP_OR_EQ_GT
 %left<fileline>		prPSLCLK
 
 // Verilog op precedence
 %left<fileline> ':'
 %left<fileline> '?'
-%left<fileline> yOROR
-%left<fileline> yANDAND
-%left<fileline> '|' yOP_NOR
+%left<fileline> yP_OROR
+%left<fileline> yP_ANDAND
+%left<fileline> '|' yP_NOR
 %left<fileline> '^'
-%left<fileline> yOP_XNOR
-%left<fileline> '&' yOP_NAND
-%left<fileline> yEQUAL yNOTEQUAL yCASEEQUAL yCASENOTEQUAL
-%left<fileline> '>' '<' yGTE yLTE
-%left<fileline> ySLEFT ySRIGHT ySSRIGHT
+%left<fileline> yP_XNOR
+%left<fileline> '&' yP_NAND
+%left<fileline> yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL
+%left<fileline> '>' '<' yP_GTE yP_LTE
+%left<fileline> yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left<fileline> '+' '-'
 %left<fileline> '*' '/' '%'
-%left<fileline> yPOW
+%left<fileline> yP_POW
 %left<fileline> '{' '}'
-%left<fileline> yUNARYARITH
-%left<fileline> yREDUCTION
-%left<fileline> yNEGATION
+%left<fileline> prUNARYARITH
+%left<fileline> prREDUCTION
+%left<fileline> prNEGATION
 
-%nonassoc yLOWER_THAN_ELSE
+%nonassoc prLOWER_THAN_ELSE
 %nonassoc yELSE
 
 // Types are in same order as declarations.
@@ -283,8 +337,6 @@ class AstSenTree;
 
 %%
 //**********************************************************************
-//**********************************************************************
-//**********************************************************************
 // Feedback to the Lexer
 
 stateExitPsl:					 	{ V3Read::stateExitPsl(); }
@@ -294,8 +346,6 @@ statePushVlg:					 	{ V3Read::statePushVlg(); }
 statePop:					 	{ V3Read::statePop(); }
 	;
 
-//**********************************************************************
-//**********************************************************************
 //**********************************************************************
 // Modules
 
@@ -309,7 +359,7 @@ mod:		mheader modParE modportsE ';' modItemListE yENDMODULE
 	;
 
 mheader:	yMODULE { V3Parse::s_trace=v3Global.opt.trace();}
-			yID				{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary());
+			yaID				{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary());
 							  $$->modTrace(v3Global.opt.trace());
 							  V3Read::rootp()->addModulep($$); }
 	;
@@ -334,7 +384,7 @@ portList:	port				       	{ $$ = $1; }
 	|	portList ',' port	  	   	{ $$ = $1->addNext($3); }
 	;
 
-port:		yID portrangeE			       	{ $$ = new AstPort(CRELINE(),V3Parse::s_pinNum++,*$1); }
+port:		yaID portrangeE			       	{ $$ = new AstPort(CRELINE(),V3Parse::s_pinNum++,*$1); }
 	;
 
 v2kPortList:	v2kPort				       	{ $$ = $1; }
@@ -417,12 +467,12 @@ modItemList:	modItem					{ $$ = $1; }
 
 modItem:	modOrGenItem 				{ $$ = $1; }
 	|	yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
-	|	ySCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
-	|	ySCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
-	|	ySCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
-	|	ySCIMPH					{ $$ = new AstScImpHdr(CRELINE(),*$1); }
-	|	ySCCTOR					{ $$ = new AstScCtor(CRELINE(),*$1); }
-	|	ySCDTOR					{ $$ = new AstScDtor(CRELINE(),*$1); }
+	|	yaSCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
+	|	yaSCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
+	|	yaSCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
+	|	yaSCIMPH				{ $$ = new AstScImpHdr(CRELINE(),*$1); }
+	|	yaSCCTOR				{ $$ = new AstScCtor(CRELINE(),*$1); }
+	|	yaSCDTOR				{ $$ = new AstScDtor(CRELINE(),*$1); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
@@ -437,7 +487,7 @@ modOrGenItem:	yALWAYS sensitivityE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
 	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
 	|	yASSIGN delayE assignList ';'		{ $$ = $3; }
 	|	yDEFPARAM defpList ';'			{ $$ = $2; }
-	|	yID instparamListE {INSTPREP(*$1,$2);} instnameList ';'  { $$ = $4; V3Parse::s_impliedDecl=false;}
+	|	yaID instparamListE {INSTPREP(*$1,$2);} instnameList ';'  { $$ = $4; V3Parse::s_impliedDecl=false;}
 	|	taskDecl 				{ $$ = $1; }
 	|	funcDecl 				{ $$ = $1; }
 	|	gateDecl 				{ $$ = $1; }
@@ -458,10 +508,10 @@ genTopBlock:	genItemList				{ $$ = $1; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
-genItemBegin:	yBBEGIN genItemList yBEND		{ $$ = new AstBegin($1,"genblk",$2); }
-	|	yBBEGIN yBEND				{ $$ = NULL; }
-	|	yBBEGIN ':' yID genItemList yBEND	{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBBEGIN ':' yID yBEND			{ $$ = NULL; }
+genItemBegin:	yBEGIN genItemList yEND		{ $$ = new AstBegin($1,"genblk",$2); }
+	|	yBEGIN yEND				{ $$ = NULL; }
+	|	yBEGIN ':' yaID genItemList yEND	{ $$ = new AstBegin($2,*$3,$4); }
+	|	yBEGIN ':' yaID yEND			{ $$ = NULL; }
 	;
 
 genItemList:	genItem					{ $$ = $1; }
@@ -470,7 +520,7 @@ genItemList:	genItem					{ $$ = $1; }
 
 genItem:	modOrGenItem 				{ $$ = $1; }
 	|	yCASE  '(' expr ')' genCaseList yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
-	|	yIF expr genItemBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
+	|	yIF expr genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
 	|	yIF expr genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$2,$3,$5); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
@@ -508,27 +558,27 @@ delayE:		/* empty */
 	|	'#' '(' dterm ',' dterm ',' dterm ')'	{} /* ignored */
 	;
 
-dterm:		yID 					{ $$ = NULL; }
-	|	yINTNUM 				{ $$ = NULL; }
-	|	yFLOATNUM 				{ $$ = NULL; }
+dterm:		yaID 					{ $$ = NULL; }
+	|	yaINTNUM 				{ $$ = NULL; }
+	|	yaFLOATNUM 				{ $$ = NULL; }
 	;
 
 onesig:		sigId					{ $$=$1; }
 	|	sigId sigAttrList			{ $$=$1; }
 	;
 
-sigId:		yID					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
+sigId:		yaID					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
 	;
 
-sigIdRange:	yID rangeList				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2); }
+sigIdRange:	yaID rangeList				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2); }
 	;
 
-regSigId:	yID rangeListE				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2); }
-	|	yID rangeListE '=' constExpr		{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2);
+regSigId:	yaID rangeListE				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2); }
+	|	yaID rangeListE '=' constExpr		{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2);
 							  $$->addNext(new AstInitial($3,new AstAssign($3, new AstVarRef($3, $$, true), $4))); }
 	;
 
-paramId:	yID 					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
+paramId:	yaID 					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
 	;
 
 sigAttrListE:	/*empty*/				{}
@@ -604,7 +654,7 @@ defpList:	defpOne					{ $$ = $1; }
 	|	defpList ',' defpOne			{ $$ = $1->addNext($3); }
 	;
 
-defpOne:	yID '.' yID '=' expr 			{ $$ = new AstDefParam($4,*$1,*$3,$5); }
+defpOne:	yaID '.' yaID '=' expr 			{ $$ = new AstDefParam($4,*$1,*$3,$5); }
 	;
 
 // Instances
@@ -616,7 +666,7 @@ instnameList:	instname				{ $$ = $1; }
 	|	instnameList ',' instname		{ $$ = $1->addNext($3); }
 	;
 
-instname:	yID funcRange '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+instname:	yaID funcRange '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
 	;
 
 cellpinList:	{V3Parse::s_pinNum=1; V3Parse::s_pinStar=false; } cellpinlist2	{ $$ = $2; }
@@ -628,9 +678,9 @@ cellpinlist2:	cellpinitemE				{ $$ = $1; }
 
 cellpinitemE:	/* empty */				{ $$ = NULL; V3Parse::s_pinNum++; }
 	|	'.' '*'					{ $$ = NULL; if (V3Parse::s_pinStar) $1->v3error("Duplicate .* in a cell"); V3Parse::s_pinStar=true; }
-	|	'.' yID					{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
-	|	'.' yID '(' ')'				{ $$ = NULL; V3Parse::s_pinNum++; }
-	|	'.' yID '(' expr ')'			{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,$4); }
+	|	'.' yaID				{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' yaID '(' ')'			{ $$ = NULL; V3Parse::s_pinNum++; }
+	|	'.' yaID '(' expr ')'			{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,$4); }
 	|	expr					{ $$ = new AstPin(CRELINE(),V3Parse::s_pinNum++,"",$1); }
 	;
 
@@ -656,14 +706,14 @@ senitemEdge:	yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSED
 	;
 
 stmtBlock:	stmt					{ $$ = $1; }
-	|	yBBEGIN stmtList yBEND			{ $$ = $2; }
-	|	yBBEGIN yBEND				{ $$ = NULL; }
-	|	beginNamed stmtList yBEND		{ $$ = $1; $1->addStmtp($2); }
-	|	beginNamed yBEND			{ $$ = $1; }
+	|	yBEGIN stmtList yEND			{ $$ = $2; }
+	|	yBEGIN yEND				{ $$ = NULL; }
+	|	beginNamed stmtList yEND		{ $$ = $1; $1->addStmtp($2); }
+	|	beginNamed yEND				{ $$ = $1; }
 	;
 
-beginNamed:	yBBEGIN ':' yID varDeclList		{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBBEGIN ':' yID 			{ $$ = new AstBegin($2,*$3,NULL); }
+beginNamed:	yBEGIN ':' yaID varDeclList		{ $$ = new AstBegin($2,*$3,$4); }
+	|	yBEGIN ':' yaID 			{ $$ = new AstBegin($2,*$3,NULL); }
 	;
 
 stmtList:	stmtBlock				{ $$ = $1; }
@@ -672,13 +722,13 @@ stmtList:	stmtBlock				{ $$ = $1; }
 
 stmt:		';'					{ $$ = NULL; }
 	|	labeledStmt				{ $$ = $1; }
-	|	yID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
+	|	yaID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
 
-	|	varRefDotBit yLTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
+	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
 	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
 	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
-	|	'{' concIdList '}' yLTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
+	|	'{' concIdList '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
 	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
@@ -689,19 +739,19 @@ stmt:		';'					{ $$ = NULL; }
 	|	taskRef ';' 				{ $$ = $1; }
 
 	|	yD_DISPLAY  ';'							{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
-	|	yD_DISPLAY  '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
-	|	yD_WRITE    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
-	|	yD_FDISPLAY '(' varRefDotBit ',' ySTRING commaEListE ')' ';' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
-	|	yD_FWRITE   '(' varRefDotBit ',' ySTRING commaEListE ')' ';'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
+	|	yD_DISPLAY  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
+	|	yD_WRITE    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
+	|	yD_FDISPLAY '(' varRefDotBit ',' yaSTRING commaEListE ')' ';' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
+	|	yD_FWRITE   '(' varRefDotBit ',' yaSTRING commaEListE ')' ';'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
 	|	yD_INFO	    ';'							{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
-	|	yD_INFO	    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
+	|	yD_INFO	    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
 	|	yD_WARNING  ';'							{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
-	|	yD_WARNING  '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
+	|	yD_WARNING  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
 	|	yD_ERROR    ';'							{ $$ = V3Parse::createDisplayError($1); }
-	|	yD_ERROR    '(' ySTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
+	|	yD_ERROR    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    ';'							{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ',' ySTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); }
 
 	|	yD_READMEMB '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -716,7 +766,7 @@ labeledStmt:	assertStmt				{ $$ = $1; }
 	;
 
 stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
-	|	yIF expr stmtBlock	%prec yLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
+	|	yIF expr stmtBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
 	|	yIF expr stmtBlock yELSE stmtBlock	{ $$ = new AstIf($1,$2,$3,$5); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
@@ -726,7 +776,7 @@ stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3
 	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	;
 
-assertStmt:	yASSERT '(' expr ')' stmtBlock %prec yLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
+assertStmt:	yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
 	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
 	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
 	;
@@ -753,14 +803,14 @@ casecondList:	expr 					{ $$ = $1; }
 	|	casecondList ',' expr			{ $$ = $1;$1->addNext($3); }
 	;
 
-taskDecl: 	yTASK yID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4);}
-	| 	yTASK yID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4); $4->addNextNull($5); }
+taskDecl: 	yTASK yaID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4);}
+	| 	yTASK yaID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4); $4->addNextNull($5); }
 	;
 
-funcDecl: 	yFUNCTION         funcRange yID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
-	|	yFUNCTION ySIGNED funcRange yID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
-	| 	yFUNCTION         funcRange yID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
-	|	yFUNCTION ySIGNED funcRange yID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION         funcRange yaID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
+	|	yFUNCTION ySIGNED funcRange yaID				';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
+	| 	yFUNCTION         funcRange yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
+	|	yFUNCTION ySIGNED funcRange yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
 funcBody:	funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
@@ -783,44 +833,44 @@ funcVar: 	ioDecl					{ $$ = $1; }
 constExpr:	expr					{ $$ = $1; }
 	;
 
-exprNoStr:	expr yOROR expr				{ $$ = new AstLogOr	($2,$1,$3); }
-	|	expr yANDAND expr			{ $$ = new AstLogAnd	($2,$1,$3); }
+exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
+	|	expr yP_ANDAND expr			{ $$ = new AstLogAnd	($2,$1,$3); }
 	|	expr '&' expr				{ $$ = new AstAnd	($2,$1,$3); }
 	|	expr '|' expr				{ $$ = new AstOr	($2,$1,$3); }
-	|	expr yOP_NAND expr			{ $$ = new AstNot($2,new AstAnd	($2,$1,$3)); }
-	|	expr yOP_NOR expr			{ $$ = new AstNot($2,new AstOr	($2,$1,$3)); }
+	|	expr yP_NAND expr			{ $$ = new AstNot($2,new AstAnd	($2,$1,$3)); }
+	|	expr yP_NOR expr			{ $$ = new AstNot($2,new AstOr	($2,$1,$3)); }
 	|	expr '^' expr				{ $$ = new AstXor	($2,$1,$3); }
-	|	expr yOP_XNOR expr			{ $$ = new AstXnor	($2,$1,$3); }
-	|	expr yEQUAL expr			{ $$ = new AstEq	($2,$1,$3); }
-	|	expr yNOTEQUAL expr			{ $$ = new AstNeq	($2,$1,$3); }
-	|	expr yCASEEQUAL expr			{ $$ = new AstEqCase	($2,$1,$3); }
-	|	expr yCASENOTEQUAL expr			{ $$ = new AstNeqCase	($2,$1,$3); }
+	|	expr yP_XNOR expr			{ $$ = new AstXnor	($2,$1,$3); }
+	|	expr yP_EQUAL expr			{ $$ = new AstEq	($2,$1,$3); }
+	|	expr yP_NOTEQUAL expr			{ $$ = new AstNeq	($2,$1,$3); }
+	|	expr yP_CASEEQUAL expr			{ $$ = new AstEqCase	($2,$1,$3); }
+	|	expr yP_CASENOTEQUAL expr		{ $$ = new AstNeqCase	($2,$1,$3); }
 	|	expr '>' expr				{ $$ = new AstGt	($2,$1,$3); }
 	|	expr '<' expr				{ $$ = new AstLt	($2,$1,$3); }
-	|	expr yGTE expr				{ $$ = new AstGte	($2,$1,$3); }
-	|	expr yLTE expr				{ $$ = new AstLte	($2,$1,$3); }
-	|	expr ySLEFT expr			{ $$ = new AstShiftL	($2,$1,$3); }
-	|	expr ySRIGHT expr			{ $$ = new AstShiftR	($2,$1,$3); }
-	|	expr ySSRIGHT expr			{ $$ = new AstShiftRS	($2,$1,$3); }
+	|	expr yP_GTE expr			{ $$ = new AstGte	($2,$1,$3); }
+	|	expr yP_LTE expr			{ $$ = new AstLte	($2,$1,$3); }
+	|	expr yP_SLEFT expr			{ $$ = new AstShiftL	($2,$1,$3); }
+	|	expr yP_SRIGHT expr			{ $$ = new AstShiftR	($2,$1,$3); }
+	|	expr yP_SSRIGHT expr			{ $$ = new AstShiftRS	($2,$1,$3); }
 	|	expr '+' expr				{ $$ = new AstAdd	($2,$1,$3); }
 	|	expr '-' expr				{ $$ = new AstSub	($2,$1,$3); }
 	|	expr '*' expr				{ $$ = new AstMul	($2,$1,$3); }
 	|	expr '/' expr				{ $$ = new AstDiv	($2,$1,$3); }
 	|	expr '%' expr				{ $$ = new AstModDiv	($2,$1,$3); }
-	|	expr yPOW expr				{ $$ = new AstPow	($2,$1,$3); }
-	|	expr yOP_LOGIF expr			{ $$ = new AstLogIf	($2,$1,$3); }
-	|	expr yOP_LOGIFF expr			{ $$ = new AstLogIff	($2,$1,$3); }
+	|	expr yP_POW expr			{ $$ = new AstPow	($2,$1,$3); }
+	|	expr yP_LOGIF expr			{ $$ = new AstLogIf	($2,$1,$3); }
+	|	expr yP_LOGIFF expr			{ $$ = new AstLogIff	($2,$1,$3); }
 
-	|	'-' expr	%prec yUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
-	|	'+' expr	%prec yUNARYARITH	{ $$ = $2; }
-	|	'&' expr	%prec yREDUCTION	{ $$ = new AstRedAnd	($1,$2); }
-	|	'|' expr	%prec yREDUCTION	{ $$ = new AstRedOr	($1,$2); }
-	|	'^' expr	%prec yREDUCTION	{ $$ = new AstRedXor	($1,$2); }
-	|	yOP_XNOR expr	%prec yREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
-	|	yOP_NAND expr	%prec yREDUCTION	{ $$ = new AstNot($1,new AstRedAnd($1,$2)); }
-	|	yOP_NOR expr	%prec yREDUCTION	{ $$ = new AstNot($1,new AstRedOr ($1,$2)); }
-	|	'!' expr	%prec yNEGATION		{ $$ = new AstLogNot	($1,$2); }
-	|	'~' expr	%prec yNEGATION		{ $$ = new AstNot	($1,$2); }
+	|	'-' expr	%prec prUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
+	|	'+' expr	%prec prUNARYARITH	{ $$ = $2; }
+	|	'&' expr	%prec prREDUCTION	{ $$ = new AstRedAnd	($1,$2); }
+	|	'|' expr	%prec prREDUCTION	{ $$ = new AstRedOr	($1,$2); }
+	|	'^' expr	%prec prREDUCTION	{ $$ = new AstRedXor	($1,$2); }
+	|	yP_XNOR expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
+	|	yP_NAND expr	%prec prREDUCTION	{ $$ = new AstNot($1,new AstRedAnd($1,$2)); }
+	|	yP_NOR expr	%prec prREDUCTION	{ $$ = new AstNot($1,new AstRedOr ($1,$2)); }
+	|	'!' expr	%prec prNEGATION	{ $$ = new AstLogNot	($1,$2); }
+	|	'~' expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }
 
 	|	expr '?' expr ':' expr			{ $$ = new AstCond($2,$1,$3,$5); }
 	|	'(' expr ')'				{ $$ = $2; }
@@ -840,7 +890,7 @@ exprNoStr:	expr yOROR expr				{ $$ = new AstLogOr	($2,$1,$3); }
 
 	|	funcRef					{ $$ = $1; }
 
-	|	yINTNUM					{ $$ = new AstConst(CRELINE(),*$1); }
+	|	yaINTNUM				{ $$ = new AstConst(CRELINE(),*$1); }
 
 	|	varRefDotBit	  			{ $$ = $1; }
 	;
@@ -876,7 +926,6 @@ eList:		expr					{ $$ = $1; }
 commaEListE:	/* empty */				{ $$ = NULL; }
 	|	',' eList				{ $$ = $2; }
 	;
-
 
 // Gate declarations
 gateDecl: 	yBUF  gateBufList ';'			{ $$ = $2; }
@@ -915,7 +964,7 @@ gateXnorList:	gateXnor 				{ $$ = $1; }
 	;
 
 gateIdE:	/*empty*/				{}
-	|	yID					{}
+	|	yaID					{}
 	;
 
 gateBuf: 	gateIdE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
@@ -952,13 +1001,12 @@ specifyJunkList:	specifyJunk 			/* ignored */
 	;
 
 specifyJunk:	dterm 	{} /* ignored */
-	|	ySTRING {}
 	|	';' {}
 	|	'!' {}
 	|	'&' {}
 	|	'(' {}
 	|	')' {}
-	|	'*' {} | '/' {} | '%' {} | yPOW {}
+	|	'*' {} | '/' {} | '%' {} | yP_POW {}
 	|	'+' {} | '-' {}
 	|	',' {}
 	|	':' {}
@@ -971,32 +1019,27 @@ specifyJunk:	dterm 	{} /* ignored */
 	|	'[' {} | ']' {}
 	|	'|' {}
 	|	'~' {}
-	|	yANDAND {} | yGTE {} | yLTE {}
-	|	yEQUAL {} | yNOTEQUAL {}
-	|	yIF {}
-	|	yNEGATION {}
-	|	yNEGEDGE {}
-	|	yOP_XNOR {} | yOP_NOR {} | yOP_NAND {}
-	|	yOROR {}
-	|	yPOSEDGE {}
-	|	yREDUCTION {}
-	|	ySLEFT {} | ySRIGHT {} | ySSRIGHT {}
-	|	yPLUSCOLON {} | yMINUSCOLON {}
-	|	yUNARYARITH {}
-	|	yTIMINGSPEC {}
 
-	|	yOP_LOGIF {}
-	|	yOP_LOGIFF {}
-	|	yBRA_STAR {}
-	|	yBRA_STAR_KET {}
-	|	yBRA_PLUS_KET {}
-	|	yBRA_MINUS_GT {}
-	|	yBRA_MINUS_GT_KET {}
-	|	yBRA_EQ {}
+	|	yIF {}
+	|	yNEGEDGE {}
+	|	yPOSEDGE {}
+
+	|	yaSTRING {}
+	|	yaTIMINGSPEC {}
+
+	|	yP_ANDAND {} | yP_GTE {} | yP_LTE {}
+	|	yP_EQUAL {} | yP_NOTEQUAL {}
+	|	yP_XNOR {} | yP_NOR {} | yP_NAND {}
+	|	yP_OROR {}
+	|	yP_SLEFT {} | yP_SRIGHT {} | yP_SSRIGHT {}
+	|	yP_PLUSCOLON {} | yP_MINUSCOLON {}
+
+	|	yP_LOGIF {}
+	|	yP_LOGIFF {}
 	|	yPSL_BRA {}
 	|	yPSL_KET {}
-	|	yOR_MINUS_GT {}
-	|	yOR_EQ_GT {}
+	|	yP_OR_MINUS_GT {}
+	|	yP_OR_EQ_GT {}
 	;
 
 //************************************************
@@ -1005,11 +1048,11 @@ specifyJunk:	dterm 	{} /* ignored */
 // Single component of dotted path, maybe [#].
 // Due to lookahead constraints, we can't know if [:] or [+:] are valid (last dotted part),
 // we'll assume so and cleanup later.
-idArrayed:	yID						{ $$ = new AstText(CRELINE(),*$1); }
+idArrayed:	yaID						{ $$ = new AstText(CRELINE(),*$1); }
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
-	|	idArrayed '[' expr yPLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
-	|	idArrayed '[' expr yMINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
+	|	idArrayed '[' expr yP_PLUSCOLON constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
+	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
 	;
 
 idDotted:	idArrayed 				{ $$ = $1; }
@@ -1017,7 +1060,7 @@ idDotted:	idArrayed 				{ $$ = $1; }
 	;
 
 // VarRef without any dots or vectorizaion
-varRefBase:	yID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
+varRefBase:	yaID					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 
 // VarRef to a Memory
@@ -1035,10 +1078,10 @@ taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileli
 funcRef:	idDotted '(' eList ')'			{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-strAsInt:	ySTRING					{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}
+strAsInt:	yaSTRING				{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}
 	;
 
-strAsText:	ySTRING					{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
+strAsText:	yaSTRING				{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
 	;
 
 concIdList:	varRefDotBit				{ $$ = $1; }
@@ -1052,15 +1095,15 @@ pslStmt:	yPSL pslDir  stateExitPsl		{ $$ = $2; }
 	|	yPSL pslDecl stateExitPsl 		{ $$ = $2; }
 	;
 
-pslDir:		yID ':' pslDirOne			{ $$ = $3; }  // ADD: Create label on $1
+pslDir:		yaID ':' pslDirOne			{ $$ = $3; }  // ADD: Create label on $1
 	|	pslDirOne		       		{ $$ = $1; }
 	;
 
 //ADD:	|	yRESTRICT pslSequence ';'		{ $$ = PSLUNSUP(new AstPslRestrict($1,$2)); }
 pslDirOne:	yPSL_ASSERT pslProp ';'			{ $$ = new AstPslAssert($1,$2); }
-	|	yPSL_ASSERT pslProp yREPORT ySTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
+	|	yPSL_ASSERT pslProp yREPORT yaSTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
 	|	yCOVER  pslProp ';'			{ $$ = new AstPslCover($1,$2); }
-	|	yCOVER  pslProp yREPORT ySTRING ';'	{ $$ = new AstPslCover($1,$2,*$4); }
+	|	yCOVER  pslProp yREPORT yaSTRING ';'	{ $$ = new AstPslCover($1,$2,*$4); }
 	;
 
 pslDecl:	yDEFAULT yCLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
@@ -1095,8 +1138,6 @@ pslExpr:	exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
 	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, V3Number($1,1,1))); }
 	;
 
-//**********************************************************************
-//**********************************************************************
 //**********************************************************************
 %%
 
