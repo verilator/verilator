@@ -1,0 +1,67 @@
+#!/usr/bin/perl -w
+#$Id$
+######################################################################
+#
+# Copyright 2007-2007 by Wilson Snyder.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of either the GNU General Public License or the
+# Perl Artistic License.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the Perl Artistic License
+# along with this module; see the file COPYING.  If not, see
+# www.cpan.org
+#                                                                           
+######################################################################
+
+# DESCRIPTION: Debugging of bison output
+
+use strict;
+
+my $Debug;
+
+my %declared;
+my %used;
+
+my $body = 0;
+my $rule = "";
+my $lineno = 0;
+foreach my $line (<STDIN>) {
+    $lineno++;
+    chomp $line;
+    $line =~ s!//.*$!!g;
+    $line =~ s!\s+! !g;
+    next if $line eq '';
+    if ($line =~ m!^\%\%!) {
+	$body++;
+    } elsif ($body == 1) {
+	$rule .= $line;
+	if ($line =~ m!^\s*;\s*$!) {
+	    #print "Rule: $rule\n";
+	    ($rule =~ /^([a-zA-Z0-9_]+):(.*)$/) or die "%Error: No rule name: $1\n";
+	    my $rulename = $1; my $preaction = $2;
+	    $declared{$rulename} = $lineno;
+	    $preaction =~ s/\{[^\}]*\}/ /g;
+	    #print "RULEN $rulename PA $preaction\n" if $Debug;
+	    $rule = '';
+	    foreach my $ref (split /\s+/, $preaction) {
+		next if $ref !~ /^[a-zA-Z]/;
+		next if $ref eq $rulename;
+		if (!$used{$ref} && $declared{$ref}) {
+		    print "   %Warning: $lineno: $ref used by $rulename after declaration\n";
+		}
+		$used{$ref} = $lineno;
+		print "  ref $ref\n" if $Debug;
+	    }
+	}
+    }
+}
+
+# Local Variables:
+# compile-command: "./bisonreader < verilog.y"
+# End:

@@ -26,11 +26,11 @@ Features:
 		Points should be per-scope like everything else rather then per-module
 		Expression coverage (see notes)
 	More Verilog 2001 Support
-		C-style function and task arguments.  [Wim Michiels]
 		(* *) Attributes  (just ignore -- preprocessor?)
 		Real numbers (NEVER)
 		Recursive functions (NEVER)
 		Verilog configuration files (NEVER)
+	DPI to define C/C++ calls from Verilog
 
 Long-term Features
 	Assertions
