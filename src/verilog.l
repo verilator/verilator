@@ -104,7 +104,7 @@ void yyerrorf(const char* format, ...) {
 %o 25000
 
 %s V95 V01 V05 S05
-%s PSL STRING
+%s PSL STRING ATTRMODE
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
@@ -652,6 +652,20 @@ escid	\\[^ \t\f\r\n]+
 <STRING>\" 		{ yy_pop_state();
 			  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
 			  return yaSTRING; }
+
+  /************************************************************************/
+  /* Attributes */
+<ATTRMODE>\n		{ yymore(); NEXTLINE(); }
+<ATTRMODE>"*)"		{ yy_pop_state(); } 
+<ATTRMODE>. 		{ yymore(); }
+<ATTRMODE><<EOF>>	{ yyerror("EOF in (*");
+			  yyleng = 0; }
+
+  /************************************************************************/
+  /* Attributes */
+<V95,V01,V05,S05>{
+    "(*" 		{ yymore(); yy_push_state(ATTRMODE); }
+}
 
   /************************************************************************/
   /* Preprocessor*/

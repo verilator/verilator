@@ -324,7 +324,8 @@ class AstSenTree;
 %type<nodep>	varDeclList
 %type<funcp>	funcDecl
 %type<nodep>	funcBody funcVarList funcVar
-%type<rangep>	funcRangeE
+%type<rangep>	funcTypeE
+%type<rangep>	instRangeE
 %type<nodep>	gateDecl
 %type<nodep>	gateBufList gateNotList gateAndList gateNandList
 %type<nodep>	gateOrList gateNorList gateXorList gateXnorList
@@ -416,9 +417,9 @@ portV2kDecl:	varRESET varInput  varSignedE v2kNetDeclE regrangeE portV2kSig	{ $$
 	|	varRESET varOutput varSignedE v2kVarDecl  regrangeE portV2kSig	{ $$ = $6; }
 	;
 
-ioDecl:		varRESET varInput  varSignedE v2kNetDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varInout  varSignedE v2kNetDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varOutput varSignedE v2kVarDecl  regrangeE  sigList ';'	{ $$ = $6; }
+ioDecl:		varRESET varInput  varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varInout  varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varOutput varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
 	;
 
 varDecl:	varRESET varReg     varSignedE regrangeE  regsigList ';'	{ $$ = $5; }
@@ -562,16 +563,22 @@ assignOne:	varRefDotBit '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
 	|	'{' concIdList '}' '=' expr		{ $$ = new AstAssignW($1,$2,$5); }
 	;
 
-delayE:		/* empty */
-	|	'#' dlyTerm				{} /* ignored */
-	|	'#' '(' dlyTerm ')'			{} /* ignored */
-	|	'#' '(' dlyTerm ',' dlyTerm ')'		{} /* ignored */
-	|	'#' '(' dlyTerm ',' dlyTerm ',' dlyTerm ')'	{} /* ignored */
+delayE:		/* empty */				{ }
+	|	delay					{ } /* ignored */
+	;
+
+delay:		'#' dlyTerm				{ } /* ignored */
+	|	'#' '(' dlyInParen ')'			{ } /* ignored */
+	|	'#' '(' dlyInParen ',' dlyInParen ')'		{ } /* ignored */
+	|	'#' '(' dlyInParen ',' dlyInParen ',' dlyInParen ')'	{ } /* ignored */
 	;
 
 dlyTerm:	yaID 					{ $$ = NULL; }
 	|	yaINTNUM 				{ $$ = NULL; }
 	|	yaFLOATNUM 				{ $$ = NULL; }
+	;
+
+dlyInParen:	dlyTerm					{ } /* ignored */
 	;
 
 sigAndAttr:	sigId sigAttrListE			{ $$ = $1; }
@@ -674,7 +681,11 @@ instnameList:	instnameParen				{ $$ = $1; }
 	|	instnameList ',' instnameParen		{ $$ = $1->addNext($3); }
 	;
 
-instnameParen:	yaID funcRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+instnameParen:	yaID instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+	;
+
+instRangeE:	/* empty */				{ $$ = NULL; }
+	|	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
 cellpinList:	{V3Parse::s_pinNum=1; V3Parse::s_pinStar=false; } cellpinItList	{ $$ = $2; }
@@ -824,16 +835,17 @@ taskDecl: 	yTASK yaID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,
 	| 	yTASK yaID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4); $4->addNextNull($5); }
 	;
 
-funcDecl: 	yFUNCTION         funcRangeE yaID			  ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
-	|	yFUNCTION ySIGNED funcRangeE yaID			  ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
-	| 	yFUNCTION         funcRangeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
-	|	yFUNCTION ySIGNED funcRangeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION         funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
+	|	yFUNCTION ySIGNED funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
+	| 	yFUNCTION         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
+	|	yFUNCTION ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
 funcBody:	funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
 	;
 
-funcRangeE:	/* empty */				{ $$ = NULL; }
+funcTypeE:	/* empty */				{ $$ = NULL; }
+	|	yINTEGER				{ $$ = new AstRange($1,31,0); }
 	|	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
@@ -1186,10 +1198,12 @@ AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
 AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* arrayp) {
     AstVarType type = V3Parse::s_varIO;
     AstRange* rangep = V3Parse::s_varRangep;
+    //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<V3Parse::s_varDecl.ascii()<<" io="<<V3Parse::s_varIO.ascii()<<endl);
     if (type == AstVarType::UNKNOWN) type = V3Parse::s_varDecl;
     if (type == AstVarType::UNKNOWN) fileline->v3fatalSrc("Unknown signal type declared");
     // Linting, because we allow parsing of a superset of the language
-    if (type == AstVarType::INTEGER || type == AstVarType::GENVAR) {
+    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER
+	|| type == AstVarType::GENVAR) {
 	if (rangep) fileline->v3error("Integers may not be ranged: "<<name);
 	rangep = new AstRange(fileline, 31, 0);  // Integer == REG[31:0]
     }
@@ -1200,7 +1214,7 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 			       rangep->cloneTree(false),
 			       arrayp);
     nodep->isSigned(V3Parse::s_varSigned);
-    if (type == AstVarType::INTEGER) nodep->isSigned(true);
+    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER) nodep->isSigned(true);
     if (V3Parse::s_varDecl != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varDecl);
     if (V3Parse::s_varIO != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varIO);
 

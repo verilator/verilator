@@ -16,6 +16,7 @@ module t;
       if (add(add(3'd1)) != 3'd3) $stop;
       if (global != 4) $stop;
       if (munge4(4'b0010) != 4'b1011) $stop;
+      if (toint(2) != 3) $stop;
       if (global != 5) $stop;
       setit;
       incr(global,global,32'h10);
@@ -102,6 +103,11 @@ module t;
       input [31:0] fb;
       // verilator no_inline_task
       nil_func = fa + fb;
+   endfunction
+
+   function integer toint;
+      input integer fa;
+      toint = fa + 32'h1;
    endfunction
 
 endmodule

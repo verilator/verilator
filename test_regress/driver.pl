@@ -32,8 +32,8 @@ use vars qw ($Debug %Vars $Driver $Fork);
 
 $::Driver = 1;
 
-eval "use Parallel::Forker; \$Fork=Parallel::Forker->new();";
-$Fork = Forker->new() if !$Fork;
+eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1);";
+$Fork = Forker->new(use_sig_child=>1) if !$Fork;
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; };
 

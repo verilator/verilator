@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Treat modules within `celldefine and `endcelldefine as if in library.
 
+***  Support functions which return integers.  [Mark Nodine]
+
 **** Warn if flex is not installed.  [Ralf Karge]
 
 * Verilator 3.650 4/20/2007
