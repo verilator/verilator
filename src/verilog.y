@@ -30,7 +30,7 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
-#define YYERROR_VERBOSE
+#define YYERROR_VERBOSE 1
 #define YYMAXDEPTH 500
 
 // Pick up new lexer
@@ -83,11 +83,13 @@ AstVar*		V3Parse::s_varAttrp = NULL;
 AstCase*	V3Parse::s_caseAttrp = NULL;
 
 #define CRELINE() (V3Read::copyOrSameFileLine())
+
 #define VARRESET() { VARDECL(UNKNOWN); VARIO(UNKNOWN); VARSIGNED(false); VARRANGE(NULL); }
 #define VARDECL(type) { V3Parse::s_varDecl = AstVarType::type; }
 #define VARIO(type) { V3Parse::s_varIO = AstVarType::type; }
 #define VARSIGNED(value) { V3Parse::s_varSigned = value; }
 #define VARRANGE(range) { V3Parse::s_varRangep=(range); }
+
 #define INSTPREP(modname,paramsp) { V3Parse::s_impliedDecl = true; V3Parse::s_instModule = modname; V3Parse::s_instParamp = paramsp; }
 
 //======================================================================
@@ -157,7 +159,7 @@ class AstSenTree;
 %token<fileline>	yDEFPARAM	"defparam"
 %token<fileline>	yDO		"do"
 %token<fileline>	yELSE		"else"
-%token<fileline>	yEND		"bend"
+%token<fileline>	yEND		"end"
 %token<fileline>	yENDCASE	"endcase"
 %token<fileline>	yENDFUNCTION	"endfunction"
 %token<fileline>	yENDGENERATE	"endgenerate"
@@ -182,7 +184,7 @@ class AstSenTree;
 %token<fileline>	yNOT		"not"
 %token<fileline>	yOR		"or"
 %token<fileline>	yOUTPUT		"output"
-%token<fileline>	yPARAM		"param"
+%token<fileline>	yPARAMETER	"parameter"
 %token<fileline>	yPOSEDGE	"posedge"
 %token<fileline>	yPSL		"psl"
 %token<fileline>	yREG		"reg"
@@ -295,9 +297,10 @@ class AstSenTree;
 %type<varp>	netSig netSigList
 %type<rangep>	rangeListE regrangeE anyrange rangeList delayrange portRangeE
 %type<varp>	param paramList
+%type<nodep>	instDecl
 %type<nodep>	instnameList
-%type<cellp>	instname
-%type<pinp>	cellpinList cellpinItList cellpinitemE instparamListE
+%type<cellp>	instnameParen
+%type<pinp>	cellpinList cellpinItList cellpinItemE instparamListE
 %type<nodep>	defpList defpOne
 %type<sentreep>	sensitivityE
 %type<senitemp>	senList senitem senitemEdge
@@ -339,18 +342,18 @@ class AstSenTree;
 //**********************************************************************
 // Feedback to the Lexer
 
-stateExitPsl:					 	{ V3Read::stateExitPsl(); }
+stateExitPsl:	/* empty */			 	{ V3Read::stateExitPsl(); }
 	;
-statePushVlg:					 	{ V3Read::statePushVlg(); }
+statePushVlg:	/* empty */			 	{ V3Read::statePushVlg(); }
 	;
-statePop:					 	{ V3Read::statePop(); }
+statePop:	/* empty */			 	{ V3Read::statePop(); }
 	;
 
 //**********************************************************************
 // Files
 
-file:		mod
-	|	file mod
+file:		mod 					{ }
+	|	file mod 				{ }
 	;
 
 //**********************************************************************
@@ -362,19 +365,19 @@ mod:		modHdr modParE modPortsE ';' modItemListE yENDMODULE
 	;
 
 modHdr:		yMODULE { V3Parse::s_trace=v3Global.opt.trace();}
-			yaID				{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary());
+			yaID				{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
 							  $$->modTrace(v3Global.opt.trace());
 							  V3Read::rootp()->addModulep($$); }
 	;
 
-modParE:	/* empty */					{ $$ = NULL; }
-	|	'#' '(' ')'					{ $$ = NULL; }
-	|	'#' '(' modParList ')'				{ $$ = $3; }
-	|	'#' '(' modParList ';' ')'			{ $$ = $3; }
+modParE:	/* empty */				{ $$ = NULL; }
+	|	'#' '(' ')'				{ $$ = NULL; }
+	|	'#' '(' modParList ')'			{ $$ = $3; }
+	|	'#' '(' modParList ';' ')'		{ $$ = $3; }
 	;
 
-modParList:	modParDecl				       	{ $$ = $1; }
-	|	modParList ';' modParDecl 	 	   	{ $$ = $1->addNext($3); }
+modParList:	modParDecl				{ $$ = $1; }
+	|	modParList ';' modParDecl 		{ $$ = $1->addNext($3); }
 	;
 
 modPortsE:	/* empty */					{ $$ = NULL; }
@@ -436,7 +439,7 @@ varNet:		ySUPPLY0				{ VARDECL(SUPPLY0); }
 	|	yWIRE 					{ VARDECL(WIRE); }
 	|	yTRI 					{ VARDECL(TRIWIRE); }
 	;
-varGParam:	yPARAM					{ VARDECL(GPARAM); }
+varGParam:	yPARAMETER				{ VARDECL(GPARAM); }
 	;
 varLParam:	yLOCALPARAM				{ VARDECL(LPARAM); }
 	;
@@ -498,12 +501,13 @@ modOrGenItem:	yALWAYS sensitivityE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
 	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
 	|	yASSIGN delayE assignList ';'		{ $$ = $3; }
 	|	yDEFPARAM defpList ';'			{ $$ = $2; }
-	|	yaID instparamListE {INSTPREP(*$1,$2);} instnameList ';'  { $$ = $4; V3Parse::s_impliedDecl=false;}
+	|	instDecl 				{ $$ = $1; }
 	|	taskDecl 				{ $$ = $1; }
 	|	funcDecl 				{ $$ = $1; }
 	|	gateDecl 				{ $$ = $1; }
 	|	ioDecl	 				{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
+	//No: |	tableDecl				// Unsupported
 	|	pslStmt 				{ $$ = $1; }
 	;
 
@@ -570,8 +574,7 @@ dlyTerm:	yaID 					{ $$ = NULL; }
 	|	yaFLOATNUM 				{ $$ = NULL; }
 	;
 
-sigAndAttr:	sigId					{ $$ = $1; }
-	|	sigId sigAttrList			{ $$ = $1; }
+sigAndAttr:	sigId sigAttrListE			{ $$ = $1; }
 	;
 
 netSigList:	netSig  				{ $$ = $1; }
@@ -598,11 +601,10 @@ sigList:	sigAndAttr				{ $$ = $1; }
 	|	sigList ',' sigAndAttr			{ $$ = $1; $1->addNext($3); }
 	;
 
-regsig:		regSigId				{}
-	|	regSigId sigAttrList			{}
+regsig:		regSigId sigAttrListE			{}
 	;
 
-sigAttrListE:	/*empty*/				{}
+sigAttrListE:	/* empty */				{}
 	|	sigAttrList				{}
 	;
 
@@ -662,25 +664,27 @@ defpOne:	yaID '.' yaID '=' expr 			{ $$ = new AstDefParam($4,*$1,*$3,$5); }
 //************************************************
 // Instances
 
+instDecl:	yaID instparamListE {INSTPREP(*$1,$2);} instnameList ';'  { $$ = $4; V3Parse::s_impliedDecl=false;}
+
 instparamListE:	/* empty */				{ $$ = NULL; }
 	|	'#' '(' cellpinList ')'			{ $$ = $3; }
 	;
 
-instnameList:	instname				{ $$ = $1; }
-	|	instnameList ',' instname		{ $$ = $1->addNext($3); }
+instnameList:	instnameParen				{ $$ = $1; }
+	|	instnameList ',' instnameParen		{ $$ = $1->addNext($3); }
 	;
 
-instname:	yaID funcRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+instnameParen:	yaID funcRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
 	;
 
 cellpinList:	{V3Parse::s_pinNum=1; V3Parse::s_pinStar=false; } cellpinItList	{ $$ = $2; }
 	;
 
-cellpinItList:	cellpinitemE				{ $$ = $1; }
-	|	cellpinItList ',' cellpinitemE		{ $$ = $1->addNextNull($3)->castPin(); }
+cellpinItList:	cellpinItemE				{ $$ = $1; }
+	|	cellpinItList ',' cellpinItemE		{ $$ = $1->addNextNull($3)->castPin(); }
 	;
 
-cellpinitemE:	/* empty */				{ $$ = NULL; V3Parse::s_pinNum++; }
+cellpinItemE:	/* empty: ',,' is legal */		{ $$ = NULL; V3Parse::s_pinNum++; }
 	|	'.' '*'					{ $$ = NULL; if (V3Parse::s_pinStar) $1->v3error("Duplicate .* in a cell"); V3Parse::s_pinStar=true; }
 	|	'.' yaID				{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' yaID '(' ')'			{ $$ = NULL; V3Parse::s_pinNum++; }
@@ -1013,10 +1017,14 @@ gateXorPinList:	expr 					{ $$ = $1; }
 	;
 
 //************************************************
+// Tables
+// Not supported
+
+//************************************************
 // Specify
 
-specifyJunkList:	specifyJunk 			/* ignored */
-	|	specifyJunkList specifyJunk		/* ignored */
+specifyJunkList:	specifyJunk 			{} /* ignored */
+	|	specifyJunkList specifyJunk		{} /* ignored */
 	;
 
 specifyJunk:	dlyTerm 	{} /* ignored */

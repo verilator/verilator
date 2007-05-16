@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.65**
 
+***  Treat modules within `celldefine and `endcelldefine as if in library.
+
 **** Warn if flex is not installed.  [Ralf Karge]
 
 * Verilator 3.650 4/20/2007

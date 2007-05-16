@@ -109,6 +109,7 @@ void yyerrorf(const char* format, ...) {
 %s IGNORE
 
 ws	[ \t\f\r]+
+wsnr	[ \t\f]+
 	/* identifier */
 id	[a-zA-Z_][a-zA-Z0-9_$]*
 	/* escaped identifier */
@@ -182,7 +183,7 @@ escid	\\[^ \t\f\r\n]+
   "not"			{yylval.fileline = CRELINE(); return yNOT;}
   "or"			{yylval.fileline = CRELINE(); return yOR;}
   "output"		{yylval.fileline = CRELINE(); return yOUTPUT;}
-  "parameter"		{yylval.fileline = CRELINE(); return yPARAM;}
+  "parameter"		{yylval.fileline = CRELINE(); return yPARAMETER;}
   "posedge"		{yylval.fileline = CRELINE(); return yPOSEDGE;}
   "reg"			{yylval.fileline = CRELINE(); return yREG;}
   "scalared"		{yylval.fileline = CRELINE(); return ySCALARED;}
@@ -640,9 +641,6 @@ escid	\\[^ \t\f\r\n]+
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
-
-  "`timescale"{ws}+[^\n]*	{}
-  "`line"{ws}+[^\n]*\n		{V3Read::ppline(yytext);}
 }
 
   /************************************************************************/
@@ -656,26 +654,29 @@ escid	\\[^ \t\f\r\n]+
 			  return yaSTRING; }
 
   /************************************************************************/
+  /* Preprocessor*/
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
 <V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  [ \t]*"`verilog"			{ BEGIN V3Read::lastVerilogState(); }
-  [ \t]*"`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
-  [ \t]*"`systemc_header"		{ BEGIN SYSCHDR; }
-  [ \t]*"`systemc_ctor"			{ BEGIN SYSCCTOR; }
-  [ \t]*"`systemc_dtor"			{ BEGIN SYSCDTOR; }
-  [ \t]*"`systemc_interface"		{ BEGIN SYSCINT; }
-  [ \t]*"`systemc_implementation"	{ BEGIN SYSCIMP; }
-  [ \t]*"`systemc_imp_header"		{ BEGIN SYSCIMPH; }
+  "`celldefine"				{ V3Read::inCellDefine(true); }
+  "`endcelldefine"			{ V3Read::inCellDefine(false); }
+  "`line"{ws}+[^\n]*\n			{ V3Read::ppline(yytext); }
+  "`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
+  "`systemc_ctor"			{ BEGIN SYSCCTOR; }
+  "`systemc_dtor"			{ BEGIN SYSCDTOR; }
+  "`systemc_header"			{ BEGIN SYSCHDR; }
+  "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
+  "`systemc_implementation"		{ BEGIN SYSCIMP; }
+  "`systemc_interface"			{ BEGIN SYSCINT; }
+  "`timescale"{ws}+[^\n]*		{}
+  "`verilog"				{ BEGIN V3Read::lastVerilogState(); }
 
-  [ \t]*"`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START);}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
-  [ \t]*"`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords(YY_START);}
-  [ \t]*"`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords(YY_START);}
-  [ \t]*"`end_keywords"					{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
-
-  "`line"[ \t][^\n]*\n			{V3Read::ppline(yytext);}
+  "`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START);}
+  "`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
+  "`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START);}
+  "`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords(YY_START);}
+  "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords(YY_START);}
+  "`end_keywords"					{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 }
 
 <SYSCHDR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR;}
@@ -688,7 +689,8 @@ escid	\\[^ \t\f\r\n]+
 
   /* Pick up text-type data */
 <SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  [ \t]*\n		{ NEXTLINE(); yymore();}
+  {wsnr}*		{ yymore();}
+  \n			{ NEXTLINE(); yymore();}
   \r			;
 }
 
@@ -697,9 +699,7 @@ escid	\\[^ \t\f\r\n]+
 
 <V95,V01,V05,S05,PSL>{
   "`"[a-zA-Z_0-9]+	{ yyerrorf("Define or directive not defined: %s",yytext); }
-
   "//"[^\n]+		{ }  /* throw away single line comments */
-
   .			{yylval.fileline = CRELINE(); return yytext[0];}	/* return single char ops. */
 }
 

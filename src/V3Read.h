@@ -38,7 +38,8 @@ class V3Read {
     V3Lexer*	m_lexerp;	// Current FlexLexer
     static V3Read*	s_readp;	// Current THIS, bison() isn't class based
     FileLine*	m_fileline;	// Filename/linenumber currently active
-    bool	m_inLibrary;	// Currently reading a library vs. regular file
+    bool	m_inCellDefine;		// Inside a `celldefine
+    bool	m_inLibrary;		// Currently reading a library vs. regular file
     int		m_inBeginKwd;		// Inside a `begin_keywords
     int		m_lastVerilogState;	// Last LEX state in `begin_keywords
     deque<string*> m_stringps;		// Created strings for later cleanup
@@ -92,6 +93,8 @@ public: // But for internal use only
     static FileLine* fileline() { return s_readp->m_fileline; }
     static AstNetlist* rootp() { return s_readp->m_rootp; }
     static FileLine* copyOrSameFileLine() { return s_readp->fileline()->copyOrSameFileLine(); }
+    static bool inCellDefine() { return s_readp->m_inCellDefine; }
+    static void inCellDefine(bool flag) { s_readp->m_inCellDefine = flag; }
     static bool inLibrary() { return s_readp->m_inLibrary; }
     static void stateExitPsl();	// Parser -> lexer communication
     static void statePushVlg();	// Parser -> lexer communication
@@ -102,6 +105,7 @@ public:
     // CREATORS
     V3Read(AstNetlist* rootp) {
 	m_rootp = rootp; m_lexerp = NULL;
+	m_inCellDefine = false;
 	m_inLibrary = false;
 	m_inBeginKwd = 0;
 	m_lastVerilogState = stateVerilogRecent();
