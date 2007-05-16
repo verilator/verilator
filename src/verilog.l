@@ -274,30 +274,30 @@ escid	\\[^ \t\f\r\n]+
   "$signed"		{yylval.fileline = CRELINE(); return yD_SIGNED;}
   "$unsigned"		{yylval.fileline = CRELINE(); return yD_UNSIGNED;}
   /*     Keywords */
+  "automatic"		{yylval.fileline = CRELINE(); return yAUTOMATIC;}
   "endgenerate"		{yylval.fileline = CRELINE(); return yENDGENERATE;}
   "generate"		{yylval.fileline = CRELINE(); return yGENERATE;}
   "genvar"		{yylval.fileline = CRELINE(); return yGENVAR;}
+  "ifnone"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "localparam"		{yylval.fileline = CRELINE(); return yLOCALPARAM;}
+  "noshowcancelled"	{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "pulsestyle_ondetect"	{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "pulsestyle_onevent"	{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "showcancelled"	{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "signed"		{yylval.fileline = CRELINE(); return ySIGNED;}
   "unsigned"		{yylval.fileline = CRELINE(); return yUNSIGNED;}
   /*     Special errors */
-  "include"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented; probably you want `include instead: %s",yytext);}
+  "include"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; probably you want `include instead: %s",yytext);}
   /*     Generic unsupported warnings */
-  "automatic"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "cell"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "config"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "design"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "endconfig"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "ifnone"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "incdir"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "instance"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "liblist"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "library"		{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "noshowcancelled"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "pulsestyle_ondetect"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "pulsestyle_onevent"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "showcancelled"	{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
-  "use"			{yyerrorf("Unsupported: Verilog 2001 reserved word not implemented: %s",yytext);}
+  "cell"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "config"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "design"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "endconfig"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "incdir"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "instance"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "liblist"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "library"		{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
+  "use"			{yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext);}
 }
 
   /* Verilog 2005 */

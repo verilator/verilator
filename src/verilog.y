@@ -148,6 +148,7 @@ class AstSenTree;
 %token<fileline>	yAND		"and"
 %token<fileline>	yASSERT		"assert"
 %token<fileline>	yASSIGN		"assign"
+%token<fileline>	yAUTOMATIC	"automatic"
 %token<fileline>	yBEGIN		"begin"
 %token<fileline>	yBUF		"buf"
 %token<fileline>	yCASE		"case"
@@ -302,6 +303,7 @@ class AstSenTree;
 %type<cellp>	instnameParen
 %type<pinp>	cellpinList cellpinItList cellpinItemE instparamListE
 %type<nodep>	defpList defpOne
+%type<sentreep>	sensitivity
 %type<sentreep>	sensitivityE
 %type<senitemp>	senList senitem senitemEdge
 %type<nodep>	stmtBlock stmtList stmt labeledStmt stateCaseForIf
@@ -414,12 +416,12 @@ regsigList:	regsig  				{ $$ = $1; }
 
 portV2kDecl:	varRESET varInput  varSignedE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
 	|	varRESET varInout  varSignedE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varOutput varSignedE v2kVarDecl  regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varOutput varSignedE v2kVarDeclE regrangeE portV2kSig	{ $$ = $6; }
 	;
 
-ioDecl:		varRESET varInput  varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varInout  varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varOutput varSignedE v2kVarDecl regrangeE  sigList ';'	{ $$ = $6; }
+ioDecl:		varRESET varInput  varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varInout  varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varOutput varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
 	;
 
 varDecl:	varRESET varReg     varSignedE regrangeE  regsigList ';'	{ $$ = $5; }
@@ -465,7 +467,7 @@ v2kNetDeclE:	/*empty*/ 				{ }
 	|	varNet 					{ }
 	;
 
-v2kVarDecl:	v2kNetDeclE 				{ }
+v2kVarDeclE:	v2kNetDeclE 				{ }
 	|	varReg 					{ }
 	;
 
@@ -707,7 +709,9 @@ cellpinItemE:	/* empty: ',,' is legal */		{ $$ = NULL; V3Parse::s_pinNum++; }
 // Sensitivity lists
 
 sensitivityE:	/* empty */				{ $$ = NULL; }
-	|	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
+	|	sensitivity				{ $$ = $1; }
+
+sensitivity:	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
 	|	'@' senitem				{ $$ = new AstSenTree($1,$2); }
 	|	'@' '(' '*' ')'				{ $$ = NULL; $2->v3error("Use @*.  always @ (*) to be depreciated in Verilog 2005.\n"); }
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
@@ -831,14 +835,18 @@ taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileli
 funcRef:	idDotted '(' exprList ')'		{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-taskDecl: 	yTASK yaID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4);}
-	| 	yTASK yaID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$2,$4); $4->addNextNull($5); }
+taskDecl: 	yTASK taskAutoE yaID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$3,$5);}
+	| 	yTASK taskAutoE yaID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$3,$5); $5->addNextNull($6); }
 	;
 
-funcDecl: 	yFUNCTION         funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$5,$2); }
-	|	yFUNCTION ySIGNED funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->isSigned(true); }
-	| 	yFUNCTION         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$3,$6,$2); $$->attrIsolateAssign(true);}
-	|	yFUNCTION ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); }
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$5,$7,$4); $$->isSigned(true); }
+	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true);}
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$5,$8,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
+	;
+
+taskAutoE:	/* empty */		 		{ }
+	|	yAUTOMATIC		 		{ }
 	;
 
 funcBody:	funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
