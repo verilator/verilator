@@ -58,12 +58,15 @@ static void pslMoreNeeded(bool flag) { V3PreLex::s_currentLexp->m_pslMoreNeeded 
 %x ARGMODE
 %x INCMODE
 
+/* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
+
 ws		[ \t\f\r]
 wsn		[ \t\f]
 crnl		[\r]*[\n]
 quote		[\"]
 backslash	[\\]
 symb		[a-zA-Z_][a-zA-Z0-9_$]*
+drop		[\032]
 psl		[p]sl
 
 	/**************************************************************/
@@ -113,6 +116,7 @@ psl		[p]sl
 	/* Reading definition */
 <DEFMODE>"/*"		{ yy_push_state(CMTMODE); yymore(); }
 <DEFMODE>"//"[^\n\r]*	{ return (VP_COMMENT);}
+<DEFMODE>{drop}		{ }
 <DEFMODE><<EOF>>	{ linenoInc(); yyerror("EOF (missing return?) in define value"); yyleng=0; yyterminate(); }
 <DEFMODE>{crnl}		{ linenoInc(); yy_pop_state(); yytext="\n"; yyleng=1; return (VP_DEFVALUE); }
 <DEFMODE>[\\]{crnl}	{ linenoInc(); appendDefValue("\n",1); } /* Include return so can maintain output line count */
@@ -123,6 +127,7 @@ psl		[p]sl
 	/* Define arguments */
 <ARGMODE>"/*"		{ yy_push_state(CMTMODE); yymore(); }
 <ARGMODE>"//"[^\n\r]*	{ return (VP_COMMENT);}
+<ARGMODE>{drop}		{ }
 <ARGMODE><<EOF>>	{ yyerror("EOF in define argument list\n"); yyleng = 0; yyterminate(); }
 <ARGMODE>{crnl}		{ linenoInc(); yytext="\n"; yyleng=1; return(VP_WHITE); }
 <ARGMODE>{quote}	{ yy_push_state(STRMODE); yymore(); }
@@ -179,8 +184,9 @@ psl		[p]sl
 	/* Generics */
 <INITIAL,PSLMULM>{crnl}		{ linenoInc(); yytext="\n"; yyleng=1; return(VP_WHITE); }
 <INITIAL,PSLMULM,PSLONEM>{symb}	{ return (VP_SYMBOL); }
-<INITIAL,PSLMULM,PSLONEM>[\r]	{ }
 <INITIAL,PSLMULM,PSLONEM>{wsn}+	{ return (VP_WHITE); }
+<INITIAL,PSLMULM,PSLONEM>{drop}	{ }
+<INITIAL,PSLMULM,PSLONEM>[\r]	{ }
 <INITIAL,PSLMULM,PSLONEM>.	{ return (VP_TEXT); }
 %%
 

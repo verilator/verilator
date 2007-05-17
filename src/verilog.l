@@ -161,6 +161,7 @@ escid	\\[^ \t\f\r\n]+
   "casez"		{yylval.fileline = CRELINE(); return yCASEZ;}
   "default"		{yylval.fileline = CRELINE(); return yDEFAULT;}
   "defparam"		{yylval.fileline = CRELINE(); return yDEFPARAM;}
+  "edge"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "else"		{yylval.fileline = CRELINE(); return yELSE;}
   "end"			{yylval.fileline = CRELINE(); return yEND;}
   "endcase"		{yylval.fileline = CRELINE(); return yENDCASE;}
@@ -217,7 +218,6 @@ escid	\\[^ \t\f\r\n]+
   "cmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "deassign"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "disable"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "edge"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "endprimitive"	{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "endtable"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "event"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
