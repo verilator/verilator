@@ -305,7 +305,7 @@ class AstSenTree;
 %type<nodep>	defpList defpOne
 %type<sentreep>	sensitivity
 %type<sentreep>	sensitivityE
-%type<senitemp>	senList senitem senitemEdge
+%type<senitemp>	senList senitem senitemEdge senitemVar
 %type<nodep>	stmtBlock stmtList stmt labeledStmt stateCaseForIf
 %type<nodep>	assertStmt
 %type<beginp>	beginNamed
@@ -687,7 +687,8 @@ instnameList:	instnameParen				{ $$ = $1; }
 	|	instnameList ',' instnameParen		{ $$ = $1->addNext($3); }
 	;
 
-instnameParen:	yaID instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,*$1,V3Parse::s_instModule,$4,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+instnameParen:	yaID instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,       *$1,V3Parse::s_instModule,$4,  V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
+	|	yaID instRangeE 			{ $$ = new AstCell(CRELINE(),*$1,V3Parse::s_instModule,NULL,V3Parse::s_instParamp,$2); $$->pinStar(V3Parse::s_pinStar); }
 	;
 
 instRangeE:	/* empty */				{ $$ = NULL; }
@@ -715,19 +716,24 @@ cellpinItemE:	/* empty: ',,' is legal */		{ $$ = NULL; V3Parse::s_pinNum++; }
 sensitivityE:	/* empty */				{ $$ = NULL; }
 	|	sensitivity				{ $$ = $1; }
 
+//IEEE: event_control
 sensitivity:	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
-	|	'@' senitem				{ $$ = new AstSenTree($1,$2); }
+	|	'@' senitemVar				{ $$ = new AstSenTree($1,$2); }	/* For events only */
 	|	'@' '(' '*' ')'				{ $$ = NULL; $2->v3error("Use @*.  always @ (*) to be depreciated in Verilog 2005.\n"); }
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
 	;
 
+//IEEE: event_expression - split over several
 senList:	senitem					{ $$ = $1; }
 	|	senList yOR senitem			{ $$ = $1;$1->addNext($3); }
 	|	senList ',' senitem			{ $$ = $1;$1->addNext($3); }	/* Verilog 2001 */
 	;
 
 senitem:	senitemEdge				{ $$ = $1; }
-	|	varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
+	|	senitemVar				{ $$ = $1; }
+	;
+
+senitemVar:	varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
 	;
 
 senitemEdge:	yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
@@ -1097,6 +1103,8 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	yPSL_KET {}
 	|	yP_OR_MINUS_GT {}
 	|	yP_OR_EQ_GT {}
+
+	|	error {}
 	;
 
 //************************************************

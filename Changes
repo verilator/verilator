@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.65**
 
+***  Added verilator_profcfunc utility.  [Gene Weber]
+
 ***  Treat modules within `celldefine and `endcelldefine as if in library.
 
 ***  Support functions which return integers.  [Mark Nodine]

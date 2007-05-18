@@ -633,11 +633,11 @@ escid	\\[^ \t\f\r\n]+
   [0-9][_0-9]*		{ yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
-  [0-9][_0-9]*(\.[0-9]+)([eE][-+]?[0-9]+)? {
+  [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
-  [0-9][_0-9]*(\.[0-9]+)?([eE][-+]?[0-9]+) {
+  [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}

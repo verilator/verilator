@@ -35,12 +35,13 @@ my $Opt_A;
 my $Opt_B;
 autoflush STDOUT 1;
 autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev");
 if (! GetOptions (
 		  "help"	=> \&usage,
 		  "debug"	=> \&debug,
 		  "<>"		=> \&parameter,
 		  )) {
-    usage();
+    die "%Error: Bad usage, try 'verilator_difftree --help'\n";
 }
 
 defined $Opt_A or die "%Error: No old diff filename\n";

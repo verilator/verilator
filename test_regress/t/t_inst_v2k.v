@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -23,6 +23,8 @@ module t (/*AUTOARG*/
 `endif
 
    wire [7:0]		osizedreg;		// From sub of t_inst_v2k_sub.v
+
+   hello hsub;
 
    t_inst_v2k_sub sub
      (
@@ -53,6 +55,10 @@ module t (/*AUTOARG*/
       end
    end
 
+endmodule
+
+module hello;
+   initial $write ("Hello\n");
 endmodule
 
 // Local Variables:

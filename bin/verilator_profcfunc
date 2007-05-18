@@ -1,0 +1,162 @@
+: # -*-Mode: perl;-*- use perl, wherever it is
+eval 'exec perl -wS $0 ${1+"$@"}'
+  if 0;
+# $Id$
+######################################################################
+#
+# Copyright 2007-2007 by Wilson Snyder <wsnyder@wsnyder.org>.  This
+# program is free software; you can redistribute it and/or modify it under
+# the terms of either the GNU Lesser General Public License or the Perl
+# Artistic License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+require 5.006_001;
+use warnings;
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use strict;
+use vars qw ($Debug);
+
+#======================================================================
+
+
+#======================================================================
+# main
+
+$Debug = 0;
+my $Opt_File;
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev");
+if (! GetOptions (
+		  "help"	=> \&usage,
+		  "debug"	=> \&debug,
+		  "<>"		=> \&parameter,
+		  )) {
+    die "%Error: Bad usage, try 'verilator_profcfunc --help'\n";
+}
+
+defined $Opt_File or die "%Error: No filename given\n";
+
+profcfunc($Opt_File);
+
+#----------------------------------------------------------------------
+
+sub usage {
+    print '$Id$ ', "\n";
+    pod2usage(-verbose=>2, -exitval => 2);
+    exit (1);
+}
+
+sub debug {
+    $Debug = 1;
+}
+
+sub parameter {
+    my $param = shift;
+    if (!defined $Opt_File) {
+	$Opt_File = $param;
+    } else {	
+	die "%Error: Unknown parameter: $param\n";
+    }
+}
+
+#######################################################################
+
+sub profcfunc {
+    my $filename = shift;
+    # Remove hex numbers before diffing
+    my $fh = IO::File->new ($filename) or die "%Error: $! $filename,";
+
+    my %funcs;
+
+    while (defined (my $line=$fh->getline())) {
+	if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+.*__PROF__([a-zA-Z_0-9]+)__([0-9]+)\(/) {
+	    my $fileline = sprintf("%s:%d", $4, $5);
+	    $funcs{$fileline}{pct} += $1;
+	    $funcs{$fileline}{sec} += $2;
+	    $funcs{$fileline}{calls} += $3;
+	}
+    }
+    $fh->close;
+
+
+    print("Verilog code profile\n");
+    print("  %   cumulative   self              \n");
+    print(" time   seconds   seconds    calls   filename and line number\n");
+
+    my $cume = 0;
+    foreach my $fileline (sort {$funcs{$b}{sec} <=> $funcs{$a}{sec}
+				|| $a cmp $b}
+			  (keys %funcs)) {
+	$cume += $funcs{$fileline}{sec};
+	printf +("%6.2f %9.2f %8.2f %8d   %s\n", $funcs{$fileline}{pct},
+		 $cume, $funcs{$fileline}{sec},
+		 $funcs{$fileline}{calls},
+		 $fileline);
+    }
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+verilator_profcfunc - Read gprof report created with --profile-cfuncs
+
+=head1 SYNOPSIS
+
+  verilator --profile-cfuncs ....
+  gcc --ggdb -pg ....
+  {run executable}
+  gprof
+  verilator_profcfuncs gprof.out
+
+=head1 DESCRIPTION
+
+Verilator_profcfunc reads a profile report created by gprof.  The names of
+the functions are then transformed, assuming the user used verilator's
+--profile-cfuncs, and a report printed showing the percentage of time, etc,
+in each Verilog block.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=back
+
+=head1 DISTRIBUTION
+
+The latest version is available from L<http://www.veripool.com/>.
+
+Copyright 2007-2007 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License or the Perl Artistic License.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<verilator>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "$V4/bin/verilator_profcfunc  $V4/test_c/obj_dir/V*_03_*.tree $V4N/test_c/obj_dir/V*_03_*.tree"
+### End:

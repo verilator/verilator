@@ -730,9 +730,9 @@ feedback driven compilation.  With GCC, using -fprofile-arcs, then
 
 You may uncover further tuning possibilities by profiling the Verilog code.
 Use Verilator's --profile-cfuncs, then GCC's -g -pg.  You can then run
-either oprofile or gprof to see where in the C++ code, and by looking at
-the mangled function name where in the Verilog code most of the time is
-being spent.
+either oprofile or gprof to see where in the C++ code the time is spent.
+Run the gprof output through verilator_profcfunc and it will tell you what
+Verilog line numbers on which most of the time is being spent.
 
 When done, please let the author know the results.  I like to keep tabs on
 how Verilator compares, and may be able to suggest additional improvements.
@@ -2096,7 +2096,7 @@ Major concepts by Paul Wasson and Duane Galbi.
 
 =head1 SEE ALSO
 
-L<systemperl>, L<vcoverage>, L<make>
+L<verilator_profcfunc>, L<systemperl>, L<vcoverage>, L<make>
 
 =cut
 
