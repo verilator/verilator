@@ -292,7 +292,7 @@ class AstSenTree;
 %type<nodep>	portV2kDecl ioDecl varDecl
 %type<nodep>	modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
-%type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseList
+%type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
 %type<nodep>	dlyTerm
 %type<varp>	sigAndAttr sigId sigIdRange sigList regsig regsigList regSigId
 %type<varp>	netSig netSigList
@@ -310,7 +310,7 @@ class AstSenTree;
 %type<nodep>	assertStmt
 %type<beginp>	beginNamed
 %type<casep>	caseStmt
-%type<caseitemp> caseList
+%type<caseitemp> caseList caseListE
 %type<nodep>	caseCondList assignList assignOne
 %type<nodep>	constExpr exprNoStr expr exprPsl exprStrText
 %type<nodep>	exprList cateList cStrList
@@ -537,13 +537,17 @@ genItemList:	genItem					{ $$ = $1; }
 	;
 
 genItem:	modOrGenItem 				{ $$ = $1; }
-	|	yCASE  '(' expr ')' genCaseList yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
+	|	yCASE  '(' expr ')' genCaseListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
 	|	yIF expr genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
 	|	yIF expr genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$2,$3,$5); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
 									     ,$7, new AstAssign($10,$9,$11)
 									     ,$13);}
+	;
+
+genCaseListE:	/* empty */				{ $$ = NULL; }
+	|	genCaseList				{ $$ = $1; }
 	;
 
 genCaseList:	caseCondList ':' genItemBlock		{ $$ = new AstCaseItem($2,$1,$3); }
@@ -643,9 +647,9 @@ regrangeE:	/* empty */    		               	{ $$ = NULL; VARRANGE($$); }
 anyrange:	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
-delayrange:	delayE regrangeE			{ $$ = $2; }
-	|	ySCALARED delayE regrangeE		{ $$ = $3; }
-	|	yVECTORED delayE regrangeE		{ $$ = $3; }
+delayrange:	regrangeE delayE 			{ $$ = $1; }
+	|	ySCALARED regrangeE delayE 		{ $$ = $2; }
+	|	yVECTORED regrangeE delayE 		{ $$ = $2; }
 	;
 
 portRangeE:	/* empty */	                   	{ $$ = NULL; }
@@ -792,7 +796,7 @@ stmt:		';'					{ $$ = NULL; }
 //************************************************
 // Case/If
 
-stateCaseForIf: caseStmt caseAttrE caseList yENDCASE	{ $$ = $1; $1->addItemsp($3); }
+stateCaseForIf: caseStmt caseAttrE caseListE yENDCASE	{ $$ = $1; if ($3) $1->addItemsp($3); }
 	|	yIF expr stmtBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
 	|	yIF expr stmtBlock yELSE stmtBlock	{ $$ = new AstIf($1,$2,$3,$5); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
@@ -811,6 +815,10 @@ caseStmt: 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,f
 caseAttrE: 	/*empty*/				{ }
 	|	caseAttrE yVL_FULL_CASE			{ V3Parse::s_caseAttrp->fullPragma(true); }
 	|	caseAttrE yVL_PARALLEL_CASE		{ V3Parse::s_caseAttrp->parallelPragma(true); }
+	;
+
+caseListE:	/* empty */				{ $$ = NULL; }
+	|	caseList				{ $$ = $1; }
 	;
 
 caseList:	caseCondList ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
@@ -1053,7 +1061,7 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	'&' {}
 	|	'(' {}
 	|	')' {}
-	|	'*' {} | '/' {} | '%' {} | yP_POW {}
+	|	'*' {} | '/' {} | '%' {}
 	|	'+' {} | '-' {}
 	|	',' {}
 	|	':' {}
@@ -1076,10 +1084,12 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 
 	|	yP_ANDAND {} | yP_GTE {} | yP_LTE {}
 	|	yP_EQUAL {} | yP_NOTEQUAL {}
+	|	yP_CASEEQUAL {} | yP_CASENOTEQUAL {}
 	|	yP_XNOR {} | yP_NOR {} | yP_NAND {}
 	|	yP_OROR {}
 	|	yP_SLEFT {} | yP_SRIGHT {} | yP_SSRIGHT {}
 	|	yP_PLUSCOLON {} | yP_MINUSCOLON {}
+	|	yP_POW {}
 
 	|	yP_LOGIF {}
 	|	yP_LOGIFF {}

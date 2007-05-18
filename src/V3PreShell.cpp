@@ -61,10 +61,6 @@ protected:
 	    s_preprocp->define(prefl,"verilator3", "1");
 	    s_preprocp->define(prefl,"systemc_clock", "/*verilator systemc_clock*/");
 	    s_preprocp->define(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");
-	    // Standards - We ignore
-	    s_preprocp->define(prefl,"resetall", "");
-	    s_preprocp->define(prefl,"portcoerce", "");
-	    s_preprocp->define(prefl,"inline", "");
 	}
     }
 

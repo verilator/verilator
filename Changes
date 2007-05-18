@@ -11,6 +11,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Warn if flex is not installed.  [Ralf Karge]
 
+**** Ignore `protect and `endprotect.
+
+**** Allow empty case/endcase blocks.
+
 * Verilator 3.650 4/20/2007
 
 **   Add --compiler msvc option.  This is now required when Verilated code

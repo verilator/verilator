@@ -626,18 +626,18 @@ escid	\\[^ \t\f\r\n]+
 			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
-  [0-9]+[_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]*	{
+  [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]*	{
 			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
-  [0-9]*		{ yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+  [0-9][_0-9]*		{ yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
-  [-+]?[0-9]+(\.[0-9]+)([eE][-+]?[0-9]+)? {
+  [0-9][_0-9]*(\.[0-9]+)([eE][-+]?[0-9]+)? {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
-  [-+]?[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+) {
+  [0-9][_0-9]*(\.[0-9]+)?([eE][-+]?[0-9]+) {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
@@ -674,8 +674,13 @@ escid	\\[^ \t\f\r\n]+
 <V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`celldefine"				{ V3Read::inCellDefine(true); }
   "`endcelldefine"			{ V3Read::inCellDefine(false); }
+  "`endprotect"				{ }
+  "`inline"				{ }
   "`line"{ws}+[^\n]*\n			{ V3Read::ppline(yytext); }
+  "`portcoerce"				{ }
+  "`protect"				{ }
   "`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
+  "`resetall"				{ }
   "`systemc_ctor"			{ BEGIN SYSCCTOR; }
   "`systemc_dtor"			{ BEGIN SYSCDTOR; }
   "`systemc_header"			{ BEGIN SYSCHDR; }

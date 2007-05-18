@@ -62,9 +62,6 @@ private:
     //int debug() { return 9; }
 
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
-	// We report a syntax error on empty "case (x) endcase" blocks, so never no items at all
-	if (!nodep->itemsp()) nodep->v3fatalSrc("No items (not even default) under case statement?\n");
-
 	// Detect multiple defaults
 	bool hitDefault = false;
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
