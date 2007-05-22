@@ -421,7 +421,7 @@ struct AstScope : public AstNode {
 private:
     string	m_name;		// Name
     AstScope*	m_aboveScopep;	// Scope above this one in the hierarchy (NULL if top)
-    AstCell*	m_aboveCellp;	// Cell above this in the hiearchy (NULL if top)
+    AstCell*	m_aboveCellp;	// Cell above this in the hierarchy (NULL if top)
     AstModule*	m_modp;		// Module scope corresponds to
 public:
     AstScope(FileLine* fl, AstModule* modp, const string& name,
@@ -540,7 +540,7 @@ struct AstVarXRef : public AstNodeVarRef {
     // Includes pin on a cell, as part of a ASSIGN statement to connect I/Os until AstScope
 private:
     string	m_dotted;	// Scope name to connected to
-    string	m_inlinedDots;	// Dotted hiearchy flattened out
+    string	m_inlinedDots;	// Dotted hierarchy flattened out
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, bool lvalue)
 	:AstNodeVarRef(fl, name, NULL, lvalue)

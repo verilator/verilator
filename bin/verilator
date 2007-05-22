@@ -1434,6 +1434,14 @@ This section describes specific limitations for each language keyword.
 
 =over 4
 
+=item `__FILE__, `__LINE__, `begin_keywords, `begin_keywords, `begin_keywords,
+`begin_keywords, `begin_keywords, `define, `else, `elsif, `end_keywords,
+`endif, `error, `ifdef, `ifndef, `include, `line, `systemc_ctor,
+`systemc_dtor, `systemc_header, `systemc_imp_header,
+`systemc_implementation, `systemc_interface, `timescale, `undef, `verilog
+
+Fully supported.
+
 =item always, always_comb, always_ff, always_latch, and, assign, begin,
 buf, case, casex, casez, default, defparam, do-while, else, end, endcase,
 endfunction, endgenerate, endmodule, endspecify, endtask, final, for,
@@ -1453,8 +1461,9 @@ All specify blocks and timing checks are ignored.
 Verilator does not perform warning checking on uwires, it treats the uwire
 keyword as if it were the normal wire keyword.
 
-=item $bits, $countones, $finish, $isunknown, $onehot, $onehot0, $readmemb,
-$readmemh, $signed, $stop, $time, $unsigned
+=item $bits, $countones, $error, $fatal, $finish, $info, $isunknown,
+$onehot, $onehot0, $readmemb, $readmemh, $signed, $stop, $time, $unsigned,
+$warning.
 
 Generally supported.
 
@@ -2069,7 +2078,7 @@ Communications, Sun Microsystems, Nauticus Networks, and SiCortex.
 
 The people who have contributed code or other major functionality are Paul
 Wasson, Duane Galbi, and Wilson Snyder.  Major testers include Jeff Dutton,
-Ralf Karge and Wim Michiels.
+Ralf Karge, David Hewson, Wim Michiels, and Gene Weber.
 
 Some of the people who have provided ideas and feedback for Verilator
 include Hans Van Antwerpen, Jens Arm, David Black, Gregg Bouchard, Chris

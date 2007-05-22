@@ -999,7 +999,7 @@ private:
     AstNodeFTask*	m_taskp;	// [AfterLink] Pointer to task referenced
     string		m_name;		// Name of variable
     string		m_dotted;	// Dotted part of scope to task or ""
-    string		m_inlinedDots;	// Dotted hiearchy flattened out
+    string		m_inlinedDots;	// Dotted hierarchy flattened out
 public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
 	:AstNode(fl)

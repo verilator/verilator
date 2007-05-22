@@ -21,7 +21,7 @@
 // LinkDot TRANSFORMATIONS:
 //	Top-down traversal
 //	    Cells:
-//		Make graph of cell hiearchy
+//		Make graph of cell hierarchy
 //	    Var/Funcs's:
 //		Collect all names into symtable under appropriate cell
 //	Top-down traversal
@@ -180,7 +180,7 @@ private:
     // TYPES
     typedef std::multimap<string,LinkDotCellVertex*> NameScopeMap;
     // MEMBERS
-    LinkDotGraph	m_graph;		// Graph of hiearchy
+    LinkDotGraph	m_graph;		// Graph of hierarchy
     NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by non-pretty textual name
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
@@ -277,7 +277,7 @@ private:
 public:
     LinkDotBaseVertex* findDotted(LinkDotBaseVertex* cellVxp, const string& dotname,
 				  string& baddot, LinkDotBaseVertex*& okVxp) {
-	// Given a dotted hiearchy name, return where in scope it is
+	// Given a dotted hierarchy name, return where in scope it is
 	// Note when dotname=="" we just fall through and return cellVxp
 	UINFO(8,"    dottedFind "<<dotname<<endl);
 	bool firstId = true;
@@ -520,8 +520,8 @@ private:
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(8,"  SCOPE "<<nodep<<endl);
 	if (!m_statep->forScopeCreation()) v3fatalSrc("Scopes should only exist right after V3Scope");
-	// Using the CELL names, we created all hiearchy.  We now need to match this Scope
-	// up with the hiearchy created by the CELL names.
+	// Using the CELL names, we created all hierarchy.  We now need to match this Scope
+	// up with the hierarchy created by the CELL names.
 	m_cellVxp = m_statep->findScope(nodep);
 	nodep->iterateChildren(*this);
 	m_cellVxp = NULL;
@@ -610,7 +610,7 @@ private:
 	UINFO(8,"     "<<nodep<<endl);
 	if (!m_cellVxp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
-	    nodep->varp(NULL);  // Module that is not in hiearchy.  We'll be dead code eliminating it later.
+	    nodep->varp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
 	    LinkDotBaseVertex* okVxp;
@@ -657,7 +657,7 @@ private:
 	UINFO(8,"     "<<nodep<<endl);
 	if (!m_cellVxp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
-	    nodep->taskp(NULL);  // Module that is not in hiearchy.  We'll be dead code eliminating it later.
+	    nodep->taskp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
 	    LinkDotBaseVertex* okVxp;

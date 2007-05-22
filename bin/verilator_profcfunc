@@ -78,29 +78,78 @@ sub profcfunc {
     my %funcs;
 
     while (defined (my $line=$fh->getline())) {
-	if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+.*__PROF__([a-zA-Z_0-9]+)__([0-9]+)\(/) {
-	    my $fileline = sprintf("%s:%d", $4, $5);
-	    $funcs{$fileline}{pct} += $1;
-	    $funcs{$fileline}{sec} += $2;
-	    $funcs{$fileline}{calls} += $3;
+	if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+.*\s+(\S+)\s*$/) {
+	    my $pct=$1; my $sec=$2; my $calls=$3; my $func=$4;
+	    $funcs{$func}{pct} += $pct;
+	    $funcs{$func}{sec} += $sec;
+	    $funcs{$func}{calls} += $calls;
 	}
     }
     $fh->close;
 
+    # Find modules
+    my %verilated_mods;
+    foreach my $func (keys %funcs) {
+	if ($func =~ /(.*)::_eval\(.*__Syms.*\)$/) {
+	    $verilated_mods{$1} = qr/^$1/;
+	}
+    }
 
-    print("Verilog code profile\n");
+    # Resort by Verilog name
+    my %vfuncs;
+    my %groups;
+    foreach my $func (keys %funcs) {
+	my $vfunc = $func;
+	my $design;
+	foreach my $vde (keys %verilated_mods) {
+	    if ($func =~ /$verilated_mods{$vde}/) {
+		$design=$vde;
+		last;
+	    }
+	}
+	if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__([0-9]+)\(/) {
+	    $vfunc     = sprintf("VBlock    %s:%d", $1, $2);
+	    $groups{"Verilog Blocks under $design"} += $funcs{$func}{pct};
+	} else {
+	    if ($design) {
+		$vfunc = sprintf("VCommon   %s", $func);
+		$groups{"Common code under $design"} += $funcs{$func}{pct};
+	    } else {
+		$vfunc = sprintf("C++       %s", $func);
+		$groups{'C++'} += $funcs{$func}{pct};
+	    }
+	}
+	$vfuncs{$vfunc} = $funcs{$func};
+    }
+
+    print("Overall summary:\n");
+    print("  % time\n");
+    foreach (sort (keys %groups)) {
+	printf("  %6.2f  In all %s\n", $groups{$_}, $_);
+    }
+    print("\n");
+
+
+    print("Verilog code profile:\n");
+    print("   These are split into three categories:\n");
+    print("      C++:     Time in non-Verilated C++ code\n");
+    print("      VBlock:  Time attributable to a block in a Verilog file and line\n");
+    print("      VCommon: Time in a Verilated module, due to all parts of the design\n");
+    print("\n");
+
     print("  %   cumulative   self              \n");
-    print(" time   seconds   seconds    calls   filename and line number\n");
+    print(" time   seconds   seconds    calls   type      filename and line number\n");
 
     my $cume = 0;
-    foreach my $fileline (sort {$funcs{$b}{sec} <=> $funcs{$a}{sec}
-				|| $a cmp $b}
-			  (keys %funcs)) {
-	$cume += $funcs{$fileline}{sec};
-	printf +("%6.2f %9.2f %8.2f %8d   %s\n", $funcs{$fileline}{pct},
-		 $cume, $funcs{$fileline}{sec},
-		 $funcs{$fileline}{calls},
-		 $fileline);
+    foreach my $func (sort {$vfuncs{$b}{sec} <=> $vfuncs{$a}{sec}
+			    || $a cmp $b}
+		      (keys %vfuncs)) {
+	$cume += $vfuncs{$func}{sec};
+	printf +("%6.2f %9.2f %8.2f %8d   %s\n",
+		 $vfuncs{$func}{pct},
+		 $cume, $vfuncs{$func}{sec},
+		 $vfuncs{$func}{calls},
+		 $func);
     }
 }
 
