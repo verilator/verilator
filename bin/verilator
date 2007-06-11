@@ -320,6 +320,12 @@ internal assertions, debugging messages, and intermediate form dump files.
 Rarely needed.  Enable internal debugging assertion checks, without
 changing debug verbosity.  Enabled automatically when --debug specified.
 
+=item --dump-tree
+
+Rarely needed.  Enable writing .tree debug files.  This is enabled with
+--debug, so "--debug --no-dump-tree" may be useful if the dump files are
+large and not desired.
+
 =item -E
 
 Preprocess the source code, but do not compile, as with 'gcc -E'.  Output
@@ -1869,6 +1875,25 @@ Non-compliance shouldn't be scary.  Your synthesis program isn't compliant,
 so your simulator shouldn't have to be -- and Verilator is closer to the
 synthesis interpretation, so this is a good thing for getting working
 silicon.
+
+=item May programs I create with Verilator remain under my own copyright?
+
+Yes, it's just like using GCC on your programs.  If you change Verilator
+itself, you must make the source code available under the GNU Public
+License.  However, the include and generated files use the GNU Lesser
+Public License, which means that files using them are NOT required to be released.
+
+You also have the option of using the Perl Artistic License, which again
+does not require you release your Verilog or generated code.
+
+=item Why is running Verilator so slow?
+
+Verilator needs more memory then the resulting simulator will require, as
+Verilator creates internally all of the state of the resulting simulator in
+order to optimize it.  If it takes more then a minute or so (and you're not
+using --debug), see if your machine is paging; most likely you need to run
+it on a machine with more memory.  Verilator is a full 64 bit application
+and may use more then 4GB, but about 1GB is the maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
 

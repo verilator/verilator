@@ -718,7 +718,7 @@ escid	\\[^ \t\f\r\n]+
 
 <V95,V01,V05,S05,PSL>{
   "`"[a-zA-Z_0-9]+	{ yyerrorf("Define or directive not defined: %s",yytext); }
-  "//"[^\n]+		{ }  /* throw away single line comments */
+  "//"[^\n]*		{ }  /* throw away single line comments */
   .			{yylval.fileline = CRELINE(); return yytext[0];}	/* return single char ops. */
 }
 
