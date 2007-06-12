@@ -104,11 +104,13 @@ class V3Error {
     static bool 	s_describedEachWarn[V3ErrorCode::MAX]; // Told user specifics about this warning
     static bool 	s_pretendError[V3ErrorCode::MAX]; // Pretend this warning is an error
     static int		s_debugDefault;		// Default debugging level
-    static int		s_errcnt;		// Error count
+    static int		s_errCount;		// Error count
+    static int		s_warnCount;		// Error count
     static ostringstream s_errorStr;		// Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
     static void	incErrors();
+    static void	incWarnings();
 
     V3Error() { cerr<<("Static class"); abort(); }
 
@@ -118,12 +120,16 @@ class V3Error {
     static void		debugDefault(int level) { s_debugDefault = level; }
     static int		debugDefault() { return s_debugDefault; }
     static string	msgPrefix(V3ErrorCode code=s_errorCode);	// returns %Error/%Warn
-    static int		errorCount() { return s_errcnt; }
+    static int		errorCount() { return s_errCount; }
+    static int		warnCount() { return s_warnCount; }
+    static int		errorOrWarnCount() { return errorCount()+warnCount(); }
     // METHODS
     static void		init();
     static void		abortIfErrors();
+    static void		abortIfWarnings();
     static void		suppressThisWarning();	// Suppress next %Warn if user has it off
     static void		pretendError(V3ErrorCode code, bool flag) { s_pretendError[code]=flag; }
+    static bool		isError(V3ErrorCode code);
     static string 	v3sform (const char* format, ...);
     static string	lineStr (const char* filename, int lineno);
     static V3ErrorCode	errorCode() { return s_errorCode; }

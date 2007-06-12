@@ -34,7 +34,8 @@
 
 FileLine FileLine::s_defaultFileLine = FileLine(EmptySecret());
 
-int V3Error::s_errcnt = 0;
+int V3Error::s_errCount = 0;
+int V3Error::s_warnCount = 0;
 int V3Error::s_debugDefault = 0;
 ostringstream V3Error::s_errorStr;		// Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::FATAL;
@@ -187,25 +188,46 @@ string V3Error::lineStr (const char* filename, int lineno) {
     return out.str();
 }
 
+void V3Error::incWarnings() {
+    s_warnCount++;
+    if (errorOrWarnCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
+	v3fatal ("Exiting due to too many errors encountered\n");
+    }
+}
+
 void V3Error::incErrors() {
-    s_errcnt++;
-    if (errorCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
+    s_errCount++;
+    if (errorOrWarnCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
 	v3fatal ("Exiting due to too many errors encountered\n");
     }
 }
 
 void V3Error::abortIfErrors() {
     if (errorCount()) {
-	v3fatal ("Exiting due to "<<dec<<errorCount()<<" warning(s)\n");
+	v3fatal ("Exiting due to "<<dec<<errorOrWarnCount()<<" warning(s)\n");
     }
+}
+
+void V3Error::abortIfWarnings() {
+    if (errorOrWarnCount()) {
+	v3fatal ("Exiting due to "<<dec<<errorOrWarnCount()<<" warning(s)\n");
+    }
+}
+
+bool V3Error::isError(V3ErrorCode code) {
+    if (code==V3ErrorCode::SUPPRESS) return false;
+    else if (code==V3ErrorCode::FATAL) return true;
+    else if (code==V3ErrorCode::ERROR) return true;
+    else if (code<V3ErrorCode::FIRST_WARN
+	     || s_pretendError[code]) return true;
+    else return false;
 }
 
 string V3Error::msgPrefix(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return "-arning-suppressed: ";
     else if (code==V3ErrorCode::FATAL) return "%Error: ";
     else if (code==V3ErrorCode::ERROR) return "%Error: ";
-    else if (code<V3ErrorCode::FIRST_WARN
-	     || s_pretendError[code]) return "%Error-"+(string)code.ascii()+": ";
+    else if (isError(code)) return "%Error-"+(string)code.ascii()+": ";
     else return "%Warning-"+(string)code.ascii()+": ";
 }
 
@@ -258,7 +280,8 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		    cerr<<msgPrefix()<<"else you may end up with different sim results."<<endl;
 		}
 	    }
-	    incErrors();
+	    if (isError(s_errorCode)) incErrors();
+	    else incWarnings();
 	    if (s_errorCode==V3ErrorCode::FATAL) {
 		static bool inFatal = false;
 		if (!inFatal) {

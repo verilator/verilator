@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.65***
 
+**** Report as many warning types as possible before exiting.
+
 **** Support V2K portlists with "input a,b,...".  [Mark Nodine]
 
 * Verilator 3.651 5/22/2007
