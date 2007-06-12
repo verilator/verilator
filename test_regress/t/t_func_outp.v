@@ -56,7 +56,7 @@ endmodule
 
 module ftest(
              input [ 7:0 ]  a,
-             input [ 7:0 ]  b,
+                            b,   // Test legal syntax
              input clk,
              output  [ 7:0 ]  z
              );
@@ -85,7 +85,7 @@ endmodule // ftest
 
 module mytop ( 
            input [ 7:0 ]  a,
-           input [ 7:0 ]  b,
+                          b,
            input clk,
            output  [ 7:0 ]  z
            );

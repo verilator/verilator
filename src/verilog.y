@@ -288,7 +288,7 @@ class AstSenTree;
 //	Trailing E indicates this type may have empty match
 %type<modulep>	modHdr
 %type<nodep>	modPortsE portList port
-%type<nodep>	portV2kList portV2kSig
+%type<nodep>	portV2kArgs portV2kList portV2kSecond portV2kSig
 %type<nodep>	portV2kDecl ioDecl varDecl
 %type<nodep>	modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
@@ -386,7 +386,7 @@ modParList:	modParDecl				{ $$ = $1; }
 modPortsE:	/* empty */					{ $$ = NULL; }
 	|	'(' ')'						{ $$ = NULL; }
 	|	'(' {V3Parse::s_pinNum=1;} portList ')'		{ $$ = $3; }
-	|	'(' {V3Parse::s_pinNum=1;} portV2kList ')'	{ $$ = $3; }
+	|	'(' {V3Parse::s_pinNum=1;} portV2kArgs ')'	{ $$ = $3; }
 	;
 
 portList:	port				       	{ $$ = $1; }
@@ -396,8 +396,17 @@ portList:	port				       	{ $$ = $1; }
 port:		yaID portRangeE			       	{ $$ = new AstPort(CRELINE(),V3Parse::s_pinNum++,*$1); }
 	;
 
-portV2kList:	portV2kDecl				{ $$ = $1; }
-	|	portV2kList ',' portV2kDecl		{ $$ = $1->addNext($3); }
+portV2kArgs:	portV2kDecl				{ $$ = $1; }
+	|	portV2kDecl ',' portV2kList		{ $$ = $1->addNext($3); }
+ 	;
+
+portV2kList:	portV2kSecond				{ $$ = $1; }
+	|	portV2kList ',' portV2kSecond		{ $$ = $1->addNext($3); }
+	;
+
+// Called only after a comma in a v2k list, to allow parsing "input a,b"
+portV2kSecond:	portV2kDecl				{ $$ = $1; }
+	|	portV2kSig				{ $$ = $1; }
 	;
 
 portV2kSig:	sigAndAttr				{ $$=$1; $$->addNext(new AstPort(CRELINE(),V3Parse::s_pinNum++, V3Parse::s_varAttrp->name())); }
