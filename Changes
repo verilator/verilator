@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support V2K portlists with "input a,b,...".  [Mark Nodine]
 
+**** Fix Preprocessor dropping some `line directives.  [Mark Nodine]
+
 * Verilator 3.651 5/22/2007
 
 ***  Added verilator_profcfunc utility.  [Gene Weber]

@@ -388,7 +388,7 @@ public:
     }
     virtual void visit(AstMulS* nodep, AstNUser* vup) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h\n");
+	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h\n");
 	}
 	visit(nodep->castNodeBiop(), vup);
     }

@@ -22,6 +22,8 @@ At file t/t_preproc_inc2.v  line 4
 
 `line 1 "t/t_preproc_inc3.v" 1
 
+`line 2 "inc3_a_filename_from_line_directive" 0
+
 
 
 

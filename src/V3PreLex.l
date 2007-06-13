@@ -73,7 +73,8 @@ psl		[p]sl
 	/**************************************************************/
 %%
 
-<INITIAL>^{ws}*"`line"{ws}+.*{crnl}	{ V3PreLex::s_currentLexp->lineDirective(yytext); }
+<INITIAL>^{ws}*"`line"{ws}+.*{crnl}	{ V3PreLex::s_currentLexp->lineDirective(yytext);
+					  return(VP_LINE); }
 
 	/* Special directives we recognise */
 <INITIAL>"`include"	{ return(VP_INCLUDE); }

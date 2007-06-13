@@ -328,6 +328,7 @@ const char* V3PreProcImp::tokenName(int tok) {
     case VP_DEFINE	: return("DEFINE");
     case VP_ELSE	: return("ELSE");	
     case VP_ELSIF	: return("ELSIF");	
+    case VP_LINE	: return("LINE");	
     case VP_SYMBOL	: return("SYMBOL");
     case VP_STRING	: return("STRING");
     case VP_DEFVALUE	: return("DEFVALUE");
@@ -581,6 +582,10 @@ int V3PreProcImp::getToken() {
 	    // in it, we also return the newlines as TEXT so that the linenumber
 	    // count is maintained for downstream tools
 	    for (int len=0; len<yyleng; len++) { if (yytext[len]=='\n') m_lineAdd++; }
+	    goto next_tok;
+	}
+	if (tok==VP_LINE) {
+	    addLineComment(0);
 	    goto next_tok;
 	}
 	// Deal with some special parser states
