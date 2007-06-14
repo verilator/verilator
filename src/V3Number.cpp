@@ -357,8 +357,8 @@ string V3Number::displayed(const string& vformat) const {
     switch (code) {
     case 'b': {
 	int bit = width()-1;
-	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
-	for (; bit>0; bit--) {
+	if (fmtsize == "0") while (bit && bitIs0(bit)) bit--;
+	for (; bit>=0; bit--) {
 	    if (bitIs0(bit)) str+='0';
 	    else if (bitIs1(bit)) str+='1';
 	    else if (bitIsZ(bit)) str+='z';
@@ -368,8 +368,8 @@ string V3Number::displayed(const string& vformat) const {
     }
     case 'o': {
 	int bit = width()-1;
-	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
-	while ((bit&2)!=2) bit++;
+	if (fmtsize == "0") while (bit && bitIs0(bit)) bit--;
+	while ((bit%3)!=2) bit++;
 	for (; bit>0; bit -= 3) {
 	    int v = bitsValue(bit-2, 3);
 	    str += (char)('0'+v);
@@ -379,8 +379,8 @@ string V3Number::displayed(const string& vformat) const {
     case 'h':
     case 'x': {
 	int bit = width()-1;
-	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
-	while ((bit&3)!=3) bit++;
+	if (fmtsize == "0") while (bit && bitIs0(bit)) bit--;
+	while ((bit%4)!=3) bit++;
 	for (; bit>0; bit -= 4) {
 	    int v = bitsValue(bit-3, 4);
 	    if (v>=10) str += (char)('a'+v-10);
@@ -395,15 +395,17 @@ string V3Number::displayed(const string& vformat) const {
 	return str;
     }
     case 's': {
-	// Spec says always drop leading zeros
+	// Spec says always drop leading zeros, this isn't quite right, we space pad.
 	int bit=this->width()-1;
 	bool start=true;
-	while ((bit&7)!=7) bit++;
+	while ((bit%8)!=7) bit++;
 	for (; bit>=0; bit -= 8) {
 	    int v = bitsValue(bit-7, 8);
 	    if (!start || v) {
-		str = (char)((v==0)?' ':v);
+		str += (char)((v==0)?' ':v);
 		start = false;	// Drop leading 0s
+	    } else {
+		if (fmtsize != "0") str += ' ';
 	    }
 	}
 	return str;

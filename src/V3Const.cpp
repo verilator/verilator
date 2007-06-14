@@ -938,6 +938,57 @@ private:
 	}
     }
 
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	// Substitute constants into displays.  The main point of this is to
+	// simplify assertion methodologies which call functions with display's.
+	// This eliminates a pile of wide temps, and makes the C a whole lot more readable.
+	nodep->iterateChildren(*this);
+	bool anyconst = false;
+	for (AstNode* argp = nodep->exprsp(); argp; argp=argp->nextp()) {
+	    if (argp->castConst()) { anyconst=true; break; }
+	}
+	if (anyconst) {
+	    //UINFO(9,"  Display in  "<<nodep->text()<<endl);
+	    string dispout = "";
+	    string fmt = "";
+	    bool inPct = false;
+	    AstNode* argp = nodep->exprsp();
+	    for (const char* inp = nodep->text().c_str(); *inp; inp++) {
+		char ch = *inp;   // Breaks with iterators...
+		if (!inPct && ch=='%') {
+		    inPct = true;
+		    fmt = ch;
+		} else if (inPct && isdigit(ch)) {
+		    fmt += ch;
+		} else if (inPct) {
+		    inPct = false;
+		    fmt += ch;
+		    switch (tolower(ch)) {
+		    case '%': break;  // %% - just output a %
+		    case 'm': break;  // %m - auto insert "name"
+		    default:  // Most operators, just move to next argument
+			if (argp) {
+			    AstNode* nextp=argp->nextp();
+			    if (argp && argp->castConst()) { // Convert it
+				string out = argp->castConst()->num().displayed(fmt);
+				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
+				fmt = out;
+				argp->unlinkFrBack()->deleteTree();
+			    }
+			    argp=nextp;
+			}
+			break;
+		    } // switch
+		    dispout += fmt;
+		} else {
+		    dispout += ch;
+		}
+	    }
+	    nodep->text(dispout);
+	    //UINFO(9,"  Display out "<<nodep->text()<<endl);
+	}
+    }
+
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->condp()->isZero()) {
