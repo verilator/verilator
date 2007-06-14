@@ -27,7 +27,7 @@ execute (
 [0] %x=00abc1234567812345678 %0x=abc1234567812345678 %o=012570110642547402215053170 %b=000001010101111000001001000110100010101100111100000010010001101000101011001111000
 
 [0] %s=! %s= what! %s= hmmm!1234
-[0] hello, from a very long string.  This gets substituted in.
+[0] hello, from a very long string. Percent %s are literally substituted in.
 *-* All Finished *-*
 '),
      );

@@ -34,7 +34,7 @@ module t;
 	       str2[7:0], str2, str3);
 
       $display("[%0t] %s%s%s", $time,
-	       "hel", "lo, fr", "om a very long string.  This gets substituted in.");
+	       "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
 
       // Str check
 `ifndef nc	// NC-Verilog 5.3 chokes on this test

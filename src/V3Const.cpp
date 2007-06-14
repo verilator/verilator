@@ -972,7 +972,13 @@ private:
 			    if (argp && argp->castConst()) { // Convert it
 				string out = argp->castConst()->num().displayed(fmt);
 				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
-				fmt = out;
+				{   // fmt = out w/ replace % with %% as it must be literal.
+				    fmt = "";
+				    for (string::iterator pos = out.begin(); pos != out.end(); pos++) {
+					if (*pos == '%') fmt += '%';
+					fmt += *pos;
+				    }
+				}
 				argp->unlinkFrBack()->deleteTree();
 			    }
 			    argp=nextp;
