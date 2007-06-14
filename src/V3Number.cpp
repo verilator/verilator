@@ -464,11 +464,10 @@ vluint64_t V3Number::asQuad() const {
 }
 
 vlsint64_t V3Number::asSQuad() const {
-    if (width()<=32) return ((vlsint64_t)(asSInt()));
     vluint64_t v = asQuad();
-    vluint64_t signExtend = (-(v & (1UL<<(width()-1))));
+    vluint64_t signExtend = (-(v & (VL_ULL(1)<<(width()-1))));
     vluint64_t extended = v | signExtend;
-    return (vlsint32_t)(extended);
+    return (vlsint64_t)(extended);
 }
 
 uint32_t V3Number::asHash() const {
