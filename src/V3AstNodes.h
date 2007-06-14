@@ -1271,11 +1271,8 @@ public:
     bool	addNewline() const { return displayType().addNewline(); }  // * = Add a newline for $display
     AstNode*	filep() const { return op2p(); }
     void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
-    AstNode*	scopeAttrp() const { return op3p(); }
-    AstText*	scopeTextp() const { return op3p()->castText(); }
-    void scopeAttrp(AstNode* nodep) { addOp3p(nodep); }
-    bool	needScopeTracking() { return (displayType().needScopeTracking()
-					      || name().find("%m") != string::npos); }
+    AstScopeName* scopeNamep() const { return op3p()->castScopeName(); }
+    void 	scopeNamep(AstNode* nodep) { setNOp3p(nodep); }
 };
 
 struct AstFClose : public AstNodeStmt {
@@ -1724,6 +1721,22 @@ public:
     AstNode*	fromp() const { return op1p(); }
     AstAttrType	attrType() const { return m_attrType; }
     int		dimension() const { return m_dimension; }
+};
+
+struct AstScopeName : public AstNode {
+    // For display %m
+    // Parents:  DISPLAY
+    // Children: TEXT
+    AstScopeName(FileLine* fl)
+	: AstNode(fl) {}
+    virtual ~AstScopeName() {}
+    virtual AstType type() const { return AstType::SCOPENAME;}
+    virtual AstNode* clone() { return new AstScopeName(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstText*	scopeAttrp() const { return op1p()->castText(); }
+    void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
 };
 
 //======================================================================

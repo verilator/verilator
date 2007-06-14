@@ -385,6 +385,9 @@ private:
     virtual void visit(AstText* nodep, AstNUser* vup) {
 	// Only used in CStmts which don't care....
     }
+    virtual void visit(AstScopeName* nodep, AstNUser* vup) {
+	// Only used in Displays which don't care....
+    }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width

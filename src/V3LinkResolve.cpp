@@ -335,6 +335,10 @@ private:
 		|| nodep->displayType() == AstDisplayType::FATAL)) {
 	    nodep->v3error(nodep->verilogKwd()+" only allowed under a assertion.");
 	}
+	if (nodep->displayType().needScopeTracking()
+	    || nodep->name().find("%m") != string::npos) {
+	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	}
     }
 
     virtual void visit(AstScCtor* nodep, AstNUser*) {

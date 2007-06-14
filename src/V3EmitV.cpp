@@ -246,6 +246,8 @@ public:
     virtual void visit(AstText* nodep, AstNUser*) {
 	ofp()->putsNoTracking(nodep->text());
     }
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
+    }
     virtual void visit(AstCStmt* nodep, AstNUser*) {
 	putbs("$_CSTMT(");
 	nodep->bodysp()->iterateAndNext(*this);

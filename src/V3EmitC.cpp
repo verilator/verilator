@@ -1061,7 +1061,8 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 		case 'm': {
 		    emitDispState.pushFormat("%s");
 		    emitDispState.pushArg(NULL, "vlSymsp->name(");
-		    for (AstText* textp=nodep->scopeTextp(); textp; textp=textp->nextp()->castText()) {
+		    if (!nodep->scopeNamep()) nodep->v3fatalSrc("Display with %m but no AstScopeName");
+		    for (AstText* textp=nodep->scopeNamep()->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
 			emitDispState.pushFormat(textp->text());
 		    }
 		    break;

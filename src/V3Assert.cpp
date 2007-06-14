@@ -63,6 +63,9 @@ private:
 	AstNode* timesp = nodep->exprsp(); if (timesp) timesp->unlinkFrBack();
 	timesp = timesp->addNext(new AstTime(nodep->fileline()));
 	nodep->exprsp(timesp);
+	if (!nodep->scopeNamep() && nodep->name().find("%m") != string::npos) {
+	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	}
     }
 
     AstNode* newIfAssertOn(AstNode* nodep) {

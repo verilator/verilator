@@ -131,10 +131,10 @@ private:
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); nodep=NULL;
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline
-	if (m_beginScope != "" && nodep->needScopeTracking()) {
+	if (m_beginScope != "") {
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();

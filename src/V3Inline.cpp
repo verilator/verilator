@@ -233,10 +233,10 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Begin
-	if (m_cellp && nodep->needScopeTracking()) {
+	if (m_cellp) {
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();

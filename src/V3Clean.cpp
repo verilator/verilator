@@ -196,6 +196,9 @@ private:
     virtual void visit(AstText* nodep, AstNUser*) {
 	setClean (nodep, true);
     }
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
+	setClean (nodep, true);
+    }
     virtual void visit(AstSel* nodep, AstNUser*) {
 	operandTriop(nodep);
         setClean (nodep, nodep->cleanOut());
