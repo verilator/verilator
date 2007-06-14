@@ -94,6 +94,12 @@ private:
     bool bitIsZ (int bit) const {
 	if (bit>=m_width) return bitIsZ(m_width-1);
 	return ( (~m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }
+    uint32_t bitsValue(int lsb, int nbits) const {
+	uint32_t v=0;
+	for (int bitn=0; bitn<nbits; bitn++) { v |= (bitIs1(lsb+bitn)<<bitn); }
+	return v;
+    }
+
     int words() const { return ((width()+31)/32); }
 
 public:
@@ -112,6 +118,7 @@ public:
 
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;
+    string displayed(const string& format) const;
     int width() const { return m_width; }
     int minWidth() const;	// Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
@@ -129,6 +136,7 @@ public:
     uint32_t asInt() const;
     vlsint32_t asSInt() const;
     vluint64_t asQuad() const;
+    vlsint64_t asSQuad() const;
     uint32_t asHash() const;
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;

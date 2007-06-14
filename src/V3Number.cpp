@@ -303,7 +303,7 @@ V3Number& V3Number::setMask(int nbits) {
 }
 
 //======================================================================
-// ACCESSORS
+// ACCESSORS - as strings
 
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     ostringstream out;
@@ -334,33 +334,112 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     
     if (binary) {
 	out<<"b";
-	int bit=width()-1;
-	while (bit && bitIs0(bit)) bit--;
-	for(; bit>=0; --bit) {
-	    if (bitIs0(bit)) out<<'0';
-	    else if (bitIs1(bit)) out<<'1';
-	    else if (bitIsZ(bit)) out<<'z';
-	    else out<<'x';
-	}
+	out<<displayed("%0b");
     }
     else {
 	if (prefixed) out<<"h";
 	// Always deal with 4 bits at once.  Note no 4-state, it's above.
-	int hexStart = width()-1;
-	while (hexStart && bitIs0(hexStart)) hexStart--;
-	while ((hexStart&3)!=3) hexStart++;
-	for(int bit=hexStart; bit>0; ) {
-	    int v = 0;
-	    if (bitIs1(bit)) v |= 8; bit--;
-	    if (bitIs1(bit)) v |= 4; bit--;
-	    if (bitIs1(bit)) v |= 2; bit--;
-	    if (bitIs1(bit)) v |= 1; bit--;
-	    if (v>=10) out<<(char)('a'+v-10);
-	    else out<<(char)('0'+v);
-	}
+	out<<displayed("%0h");
     }
     return out.str();
 }
+
+string V3Number::displayed(const string& vformat) const {
+    string::const_iterator pos = vformat.begin();
+    UASSERT(pos != vformat.end() && pos[0]=='%', "display with non format argument "<<*this);
+    pos++;
+    string fmtsize;
+    for (; pos != vformat.end() && isdigit(pos[0]); pos++) {
+	fmtsize += pos[0];
+    }
+    string str;
+    char code = tolower(pos[0]);
+    switch (code) {
+    case 'b': {
+	int bit = width()-1;
+	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
+	for (; bit>0; bit--) {
+	    if (bitIs0(bit)) str+='0';
+	    else if (bitIs1(bit)) str+='1';
+	    else if (bitIsZ(bit)) str+='z';
+	    else str+='x';
+	}
+	return str;
+    }
+    case 'o': {
+	int bit = width()-1;
+	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
+	while ((bit&2)!=2) bit++;
+	for (; bit>0; bit -= 3) {
+	    int v = bitsValue(bit-2, 3);
+	    str += (char)('0'+v);
+	}
+	return str;
+    }
+    case 'h':
+    case 'x': {
+	int bit = width()-1;
+	if (fmtsize != "0") while (bit && bitIs0(bit)) bit--;
+	while ((bit&3)!=3) bit++;
+	for (; bit>0; bit -= 4) {
+	    int v = bitsValue(bit-3, 4);
+	    if (v>=10) str += (char)('a'+v-10);
+	    else str += (char)('0'+v);
+	}
+	return str;
+    }
+    case 'c': {
+	if (this->width()>8) m_fileline->v3error("$display of char format of > 8 bit value");
+	int v = bitsValue(0, 8);
+	str += (char)(v);
+	return str;
+    }
+    case 's': {
+	// Spec says always drop leading zeros
+	int bit=this->width()-1;
+	bool start=true;
+	while ((bit&7)!=7) bit++;
+	for (; bit>=0; bit -= 8) {
+	    int v = bitsValue(bit-7, 8);
+	    if (!start || v) {
+		str = (char)((v==0)?' ':v);
+		start = false;	// Drop leading 0s
+	    }
+	}
+	return str;
+    }
+    case '~': // Signed decimal
+    case 't':
+    case 'd': { // Unsigned decimal
+	bool issigned = (code == '~');
+	if (fmtsize == "") {
+	    double mantissabits = this->width() - (issigned?1:0);
+	    double maxval = pow(2.0, mantissabits);
+	    double dchars = log10(maxval)+1.0;
+	    if (issigned) dchars++;  // space for sign
+	    fmtsize = cvtToStr(int(dchars));
+	}
+	if (width() > 64) {
+	    m_fileline->v3error("Unsupported: $display of dec format of > 64 bit results (use hex format instead)");
+	    return "ERR";
+	}
+	if (issigned) {
+	    str = cvtToStr(asSQuad());
+	} else {
+	    str = cvtToStr(asQuad());
+	}
+	int intfmtsize = atoi(fmtsize.c_str());
+	while ((int)(str.length()) < intfmtsize) str = " "+str;
+	return str;
+    }
+    default:
+	m_fileline->v3fatalSrc("Unknown $display format code for number: %"<<pos[0]);
+	return "ERR";
+    }
+}
+
+//======================================================================
+// ACCESSORS - as numbers
 
 uint32_t V3Number::asInt() const {
     UASSERT(!isFourState(),"asInt with 4-state "<<*this);
@@ -369,18 +448,25 @@ uint32_t V3Number::asInt() const {
 }
 
 vlsint32_t V3Number::asSInt() const {
-    UASSERT(!isFourState(),"asSInt with 4-state "<<*this);
-    UASSERT((width()<33 || (width()<65 && m_value[1]==0)), "Value too wide "<<*this);
-    uint32_t signExtend = (-((m_value[0]) & (1UL<<(width()-1))));
-    uint32_t extended = m_value[0] | signExtend;
+    uint32_t v = asInt();
+    uint32_t signExtend = (-(v & (1UL<<(width()-1))));
+    uint32_t extended = v | signExtend;
     return (vlsint32_t)(extended);
 }
 
 vluint64_t V3Number::asQuad() const {
     UASSERT(!isFourState(),"asQuad with 4-state "<<*this);
     UASSERT(width()<65, "Value too wide "<<*this);
-    if (width()<=32) return ((vluint64_t)m_value[0]);
-    else return ((vluint64_t)m_value[1]<<VL_ULL(32)) | ((vluint64_t)m_value[0]);
+    if (width()<=32) return ((vluint64_t)(asInt()));
+    return ((vluint64_t)m_value[1]<<VL_ULL(32)) | ((vluint64_t)m_value[0]);
+}
+
+vlsint64_t V3Number::asSQuad() const {
+    if (width()<=32) return ((vlsint64_t)(asSInt()));
+    vluint64_t v = asQuad();
+    vluint64_t signExtend = (-(v & (1UL<<(width()-1))));
+    vluint64_t extended = v | signExtend;
+    return (vlsint32_t)(extended);
 }
 
 uint32_t V3Number::asHash() const {

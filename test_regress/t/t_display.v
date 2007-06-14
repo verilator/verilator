@@ -33,6 +33,9 @@ module t;
       $display("[%0t] %%s=%s %%s=%s %%s=%s", $time,
 	       str2[7:0], str2, str3);
 
+      $display("[%0t] %s%s%s", $time,
+	       "hel", "lo, fr", "om a very long string.  This gets substituted in.");
+
       // Str check
 `ifndef nc	// NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;

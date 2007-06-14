@@ -1052,12 +1052,12 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 		// Spec: h d o b c l
 		case 'b': displayArg(nodep,&elistp,fmt,'b'); break;
 		case 'c': displayArg(nodep,&elistp,fmt,'c'); break;
+		case 't':
 		case 'd': displayArg(nodep,&elistp,fmt,'u'); break;  // Unsigned decimal
 		case 'o': displayArg(nodep,&elistp,fmt,'o'); break;
 		case 'h':
 		case 'x': displayArg(nodep,&elistp,fmt,'x'); break;
 		case 's': displayArg(nodep,&elistp,fmt,'s'); break;
-		case 't': displayArg(nodep,&elistp,fmt,'u'); break;
 		case 'm': {
 		    emitDispState.pushFormat("%s");
 		    emitDispState.pushArg(NULL, "vlSymsp->name(");
