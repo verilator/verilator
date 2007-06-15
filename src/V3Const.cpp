@@ -802,7 +802,12 @@ private:
 	if (nodep->sensp()->castConst()
 	    || (nodep->varrefp() && nodep->varrefp()->varp()->isParam())) {
 	    // Constants in sensitivity lists may be removed (we'll simplify later)
-	    AstSenItem* newp = new AstSenItem(nodep->fileline(), AstSenItem::Never());
+	    AstSenItem* newp;
+	    if (nodep->isClocked()) {  // A constant can never get a pos/negexge
+		newp = new AstSenItem(nodep->fileline(), AstSenItem::Never());
+	    } else {  // Otherwise it may compute a result that needs to settle out
+		newp = new AstSenItem(nodep->fileline(), AstSenItem::Combo());
+	    }
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); nodep=NULL;
 	} else if (nodep->sensp()->castNot()) {

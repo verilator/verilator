@@ -31,7 +31,7 @@
 //===========================================================================
 // Global variables
 
-int  Verilated::s_randReset = false;
+int  Verilated::s_randReset = 0;
 int  Verilated::s_debug = 1;
 bool Verilated::s_calcUnusedSigs = false;
 bool Verilated::s_gotFinish = false;
