@@ -67,10 +67,11 @@ module t;
       end
    endtask
 
-   task incr;
-      output [31:0] z;
-      input [31:0] a;
-      input [31:0] inc;
+   task incr (
+	      // Check a V2K style input/output list
+    output [31:0] z,
+    input [31:0]  a, inc
+	      );
       z = a + inc;
    endtask
 

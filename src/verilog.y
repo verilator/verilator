@@ -325,7 +325,7 @@ class AstSenTree;
 %type<nodep>	taskDecl
 %type<nodep>	varDeclList
 %type<funcp>	funcDecl
-%type<nodep>	funcBody funcVarList funcVar
+%type<nodep>	funcBody funcGuts funcVarList funcVar
 %type<rangep>	funcTypeE
 %type<rangep>	instRangeE
 %type<nodep>	gateDecl
@@ -858,21 +858,25 @@ taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileli
 funcRef:	idDotted '(' exprList ')'		{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-taskDecl: 	yTASK taskAutoE yaID ';'             stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$3,$5);}
-	| 	yTASK taskAutoE yaID ';' funcVarList stmtBlock yENDTASK	{ $$ = new AstTask ($1,*$3,$5); $5->addNextNull($6); }
+taskDecl: 	yTASK taskAutoE yaID funcGuts yENDTASK	{ $$ = new AstTask ($1,*$3,$4);}
 	;
 
-funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); }
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			 ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$5,$7,$4); $$->isSigned(true); }
-	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$4,$7,$3); $$->attrIsolateAssign(true);}
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS ';' funcBody yENDFUNCTION { $$ = new AstFunc ($1,*$5,$8,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			   funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$4,$5,$3); }
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
+	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
 taskAutoE:	/* empty */		 		{ }
 	|	yAUTOMATIC		 		{ }
 	;
 
+funcGuts:	'(' {V3Parse::s_pinNum=1;} portV2kArgs ')' ';' funcBody	{ $$ = $3->addNextNull($6); }
+	|	';' funcBody				{ $$ = $2; }
+	;
+
 funcBody:	funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
+	|	stmtBlock				{ $$ = $1; }
 	;
 
 funcTypeE:	/* empty */				{ $$ = NULL; }

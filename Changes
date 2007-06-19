@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support V2K portlists with "input a,b,...".  [Mark Nodine]
 
+**** Support V2K function/task argument lists.
+
 **** Optimize constant $display arguments.
 
 **** Fix Preprocessor dropping some `line directives.  [Mark Nodine]
