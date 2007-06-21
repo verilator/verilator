@@ -214,6 +214,66 @@ C++, and linked with the Verilated files.
 
 The resulting executable will perform the actual simulation.
 
+=head1 ARGUMENT SUMMARY
+
+This is a short summary of the arguments to Verilator.  See the detailed
+descriptions in the next sections for more information.
+
+    {file.v}                    Verilog top level filenames
+    {file.c/cc/cpp}             Optional C++ files to link in
+
+    --assert                    Enable all assertions
+    --bin <filename>            Override Verilator binary
+    --cc                        Create C++ output
+    --compiler <compiler-name>  Tune for specified C++ compiler
+    --coverage                  Enable all coverage
+    --coverage-line             Enable line coverage
+    --coverage-user             Enable PSL/SVL user coverage
+    -D<var>[=<value>]           Set preprocessor define
+    --debug                     Enable debugging
+    --debug-check               Enable debugging assertions
+    --dump-tree                 Enable dumping .tree files
+    -E                          Preprocess, but do not compile
+    --exe                       Link to create executable
+    -f <file>                   Parse options from a file
+    --help                      Display this help.
+    -I<dir>                     Directory to search for includes
+    --inhibit-sim               Create function to turn off sim
+    --inline-mult <value>       Tune module inlining
+    --lint-only                 Lint, but do not make output
+    --MMD                       Create .d dependency files
+    --MP                        Create phony dependency targets
+    --Mdir <directory>          Name of output object directory
+    --mod-prefix <topname>      Name to prepend to lower classes
+    --no-skip-identical         Disable skipping identical output
+    -O0                         Disable optimizations
+    -O3                         High performance optimizations
+    -O<optimization-letter>     Selectable optimizations
+    --output-split <bytes>      Split .cpp files into pieces
+    --output-split-cfuncs <statements>   Split .ccp functions
+    --pins64                    Use uint64_t's for 33-64 bit sigs
+    --prefix <topname>          Name of top level class
+    --profile-cfuncs            Name functions for profiling
+    --private                   Debugging; see docs
+    --psl                       Enable PSL parsing
+    --public                    Debugging; see docs
+    --sc                        Create SystemC output
+    --sp                        Create SystemPerl output
+    --stats                     Create statistics file
+    --trace                     Enable waveform creation
+    --trace-depth <levels>      Depth of tracing
+    -U<var>                     Undefine preprocessor define
+    --underline-zero            Zero signals with leading _'s
+    -v <filename>               Verilog library
+    -Werror-<message>           Convert warning to error
+    -Wno-<message>              Disable warning
+    -x-assign <mode>            Initially assign Xs to this value
+    -y <dir>                    Directory to search for modules
+
+    +define+<var>+<value>       Set preprocessor define
+    +incdir+<dir>               Directory to search for includes
+    +libext+<ext>+[ext]...      Extensions for finding modules
+
 =head1 ARGUMENTS
 
 =over 4
@@ -583,7 +643,7 @@ We'll compile this example into C++.
       int main(int argc, char **argv, char **env) {
           Vour* top = new Vour;
           while (!Verilated::gotFinish()) { top->eval(); }
-          exit(0);	
+          exit(0);
       }
     EOF
 
@@ -643,7 +703,7 @@ This is an example similar to the above, but using SystemPerl.
           top = new Vour("top");   // SP_CELL (top, Vour);
           top->clk(clk);           // SP_PIN  (top, clk, clk);
           while (!Verilated::gotFinish()) { sc_start(1); }
-          exit(0);	
+          exit(0);
       }
     EOF
 
@@ -1201,7 +1261,7 @@ lint_restore*/.  For example:
 If SOME_WARNING was on before the lint_off, it will now be restored to on,
 and if it was off before the lint_off it will remain off.
 
-=item /*verilator no_inline_task*/ 
+=item /*verilator no_inline_task*/
 
 Used in a function or task variable definition section to specify the
 function or task should not be inlined into where it is used.  This may
