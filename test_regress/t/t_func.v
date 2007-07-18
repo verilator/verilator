@@ -44,7 +44,7 @@ module t;
 	    reg [31:0] flocal;
 	    flocal = 1;
 	    global = global + flocal;
-	 end
+	 end : named	// SystemVerilog end labels
       end
    endfunction
 

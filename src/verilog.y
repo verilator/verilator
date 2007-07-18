@@ -362,7 +362,7 @@ file:		mod 					{ }
 //**********************************************************************
 // Module headers
 
-mod:		modHdr modParE modPortsE ';' modItemListE yENDMODULE
+mod:		modHdr modParE modPortsE ';' modItemListE yENDMODULE endLabelE
 			{ $1->modTrace(V3Parse::s_trace);  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); if ($5) $1->addStmtp($5); }
 	;
@@ -537,8 +537,8 @@ genTopBlock:	genItemList				{ $$ = $1; }
 
 genItemBegin:	yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	yBEGIN ':' yaID genItemList yEND	{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBEGIN ':' yaID yEND			{ $$ = NULL; }
+	|	yBEGIN ':' yaID genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
+	|	yBEGIN ':' yaID 	    yEND endLabelE	{ $$ = NULL; }
 	;
 
 genItemList:	genItem					{ $$ = $1; }
@@ -755,8 +755,8 @@ senitemEdge:	yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSED
 stmtBlock:	stmt					{ $$ = $1; }
 	|	yBEGIN stmtList yEND			{ $$ = $2; }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	beginNamed stmtList yEND		{ $$ = $1; $1->addStmtp($2); }
-	|	beginNamed yEND				{ $$ = $1; }
+	|	beginNamed stmtList yEND endLabelE	{ $$ = $1; $1->addStmtp($2); }
+	|	beginNamed 	    yEND endLabelE	{ $$ = $1; }
 	;
 
 beginNamed:	yBEGIN ':' yaID varDeclList		{ $$ = new AstBegin($2,*$3,$4); }
@@ -858,13 +858,14 @@ taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileli
 funcRef:	idDotted '(' exprList ')'		{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-taskDecl: 	yTASK taskAutoE yaID funcGuts yENDTASK	{ $$ = new AstTask ($1,*$3,$4);}
+taskDecl: 	yTASK taskAutoE yaID funcGuts yENDTASK endLabelE
+			{ $$ = new AstTask ($1,*$3,$4);}
 	;
 
-funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			   funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$4,$5,$3); }
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
-	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
+	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
+	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
 taskAutoE:	/* empty */		 		{ }
@@ -1160,6 +1161,10 @@ strAsText:	yaSTRING				{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
 
 concIdList:	varRefDotBit				{ $$ = $1; }
 	|	concIdList ',' varRefDotBit		{ $$ = new AstConcat($2,$1,$3); }
+	;
+
+endLabelE:	/* empty */				{ }
+	|	':' yaID				{ }
 	;
 
 //************************************************
