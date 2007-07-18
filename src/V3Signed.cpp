@@ -98,8 +98,10 @@ private:
     // ...    (Though they should match.  We don't check.)
     virtual void visit(AstEq* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstEqCase* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
+    virtual void visit(AstEqWild* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstNeq* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstNeqCase* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
+    virtual void visit(AstNeqWild* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
 
     //=======
     // Signed: Output signed iff LHS signed; unary operator

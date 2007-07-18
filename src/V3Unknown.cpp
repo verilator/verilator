@@ -106,12 +106,54 @@ private:
 	    newp->iterateChildren(*this);
 	}
     }
+    void visitEqNeqWild(AstNodeBiop* nodep) {
+	UINFO(4," N/EQWILD->EQ "<<nodep<<endl);
+	V3Const::constifyTree(nodep->lhsp());
+	V3Const::constifyTree(nodep->rhsp());
+	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
+	    // Both sides are constant, node can be constant
+	    V3Const::constifyTree(nodep); nodep=NULL;
+	    return;
+	} else {
+	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+	    AstNode* newp;
+	    if (!rhsp->castConst()) {
+		nodep->v3error("Unsupported: RHS of ==? or !=? must be constant to be synthesizable");  // Says spec.
+		// Replace with anything that won't cause more errors
+		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
+	    } else {
+		// X or Z's become mask, ala case statements.
+		V3Number nummask  (rhsp->fileline(), rhsp->width());
+		nummask.opBitsNonX(rhsp->castConst()->num());
+		V3Number numval   (rhsp->fileline(), rhsp->width());
+		numval.opBitsOne  (rhsp->castConst()->num());
+		AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
+					    new AstConst(nodep->fileline(), nummask));
+		AstNode* and2p = new AstConst(nodep->fileline(), numval);
+		if (nodep->castEqWild())
+		    newp  = new AstEq  (nodep->fileline(), and1p, and2p);
+		else newp = new AstNeq (nodep->fileline(), and1p, and2p);
+		rhsp->deleteTree(); rhsp=NULL;
+	    }
+	    nodep->replaceWith(newp);
+	    nodep->deleteTree(); nodep=NULL;
+	    // Iterate tree now that we may have gotten rid of the compare
+	    newp->iterateChildren(*this);
+	}
+    }
 
     virtual void visit(AstEqCase* nodep, AstNUser*) {
 	visitEqNeqCase(nodep);
     }
     virtual void visit(AstNeqCase* nodep, AstNUser*) {
 	visitEqNeqCase(nodep);
+    }
+    virtual void visit(AstEqWild* nodep, AstNUser*) {
+	visitEqNeqWild(nodep);
+    }
+    virtual void visit(AstNeqWild* nodep, AstNUser*) {
+	visitEqNeqWild(nodep);
     }
     virtual void visit(AstIsUnknown* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

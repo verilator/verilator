@@ -578,6 +578,12 @@ escid	\\[^ \t\f\r\n]+
   "-:"			{yylval.fileline = CRELINE(); return yP_MINUSCOLON;}
 }
 
+  /* SystemVerilog Operators */
+<S05>{
+  "==?"			{yylval.fileline = CRELINE(); return yP_WILDEQUAL;}
+  "!=?"			{yylval.fileline = CRELINE(); return yP_WILDNOTEQUAL;}
+}
+
   /* PSL Operators */
 <PSL>{
   "{"			{yylval.fileline = CRELINE(); return yPSL_BRA;}	// Avoid parser hitting concatenate.
@@ -659,7 +665,7 @@ escid	\\[^ \t\f\r\n]+
 <ATTRMODE>"*)"		{ yy_pop_state(); } 
 <ATTRMODE>. 		{ yymore(); }
 <ATTRMODE><<EOF>>	{ yyerror("EOF in (*");
-			  yyleng = 0; }
+			  yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/
   /* Attributes */

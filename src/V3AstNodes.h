@@ -2606,6 +2606,39 @@ struct AstNeqCase : public AstNodeBiCom {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
+struct AstEqWild : public AstNodeBiop {
+    // Note wildcard operator rhs differs from lhs
+    AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	width(1,1); }
+    virtual ~AstEqWild() {}
+    virtual AstType type() const { return AstType::EQWILD;}
+    virtual AstNode* clone() { return new AstEqWild(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildEq(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %k==? %r)"; }
+    virtual string emitOperator() { return "VL_EQ"; }	// Until have 4 state anyways
+    virtual string emitSimpleOperator() { return "=="; }
+    virtual bool emitWordForm() { return true; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+};
+struct AstNeqWild : public AstNodeBiop {
+    AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	width(1,1); }
+    virtual ~AstNeqWild() {}
+    virtual AstType type() const { return AstType::NEQWILD;}
+    virtual AstNode* clone() { return new AstNeqWild(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %k!=? %r)"; }
+    virtual string emitOperator() { return "VL_NEQ"; }	// Until have 4 state anyways
+    virtual string emitSimpleOperator() { return "!="; }
+    virtual bool emitWordForm() { return true; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+};
 struct AstConcat : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
     AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {

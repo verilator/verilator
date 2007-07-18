@@ -1110,6 +1110,10 @@ private:
     TREEOP ("AstLogNot{$lhsp.castEqCase}",		"AstNeqCase{$lhsp->op1p(),$lhsp->op2p()}");
     TREEOPV("AstNot   {$lhsp.castNeqCase, $lhsp.width1}","AstEqCase {$lhsp->op1p(),$lhsp->op2p()}");
     TREEOP ("AstLogNot{$lhsp.castNeqCase}",		"AstEqCase {$lhsp->op1p(),$lhsp->op2p()}");
+    TREEOPV("AstNot   {$lhsp.castEqWild, $lhsp.width1}","AstNeqWild{$lhsp->op1p(),$lhsp->op2p()}");
+    TREEOP ("AstLogNot{$lhsp.castEqWild}",		"AstNeqWild{$lhsp->op1p(),$lhsp->op2p()}");
+    TREEOPV("AstNot   {$lhsp.castNeqWild, $lhsp.width1}","AstEqWild {$lhsp->op1p(),$lhsp->op2p()}");
+    TREEOP ("AstLogNot{$lhsp.castNeqWild}",		"AstEqWild {$lhsp->op1p(),$lhsp->op2p()}");
     TREEOPV("AstNot   {$lhsp.castEq, $lhsp.width1}",	"AstNeq {$lhsp->op1p(),$lhsp->op2p()}");
     TREEOP ("AstLogNot{$lhsp.castEq}",			"AstNeq {$lhsp->op1p(),$lhsp->op2p()}");
     TREEOPV("AstNot   {$lhsp.castNeq, $lhsp.width1}",	"AstEq  {$lhsp->op1p(),$lhsp->op2p()}");
@@ -1151,6 +1155,7 @@ private:
     TREEOP("AstXor    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstEq     {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP("AstEqCase {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP("AstEqWild {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP("AstGt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstGtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstGte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
@@ -1161,6 +1166,7 @@ private:
     TREEOP("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP("AstNeqWild{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
     TREEOP("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
     ///=== Verilog operators

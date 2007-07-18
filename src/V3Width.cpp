@@ -117,6 +117,7 @@ private:
     void width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstEq* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstEqCase* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
+    virtual void visit(AstEqWild* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstGt* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstGtS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstGte* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
@@ -127,6 +128,7 @@ private:
     virtual void visit(AstLteS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstNeq* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstNeqCase* nodep, AstNUser* vup){	width_O1_L_Rlhs(nodep,vup); }
+    virtual void visit(AstNeqWild* nodep, AstNUser* vup){	width_O1_L_Rlhs(nodep,vup); }
 
     // Widths: out width = lhs width = rhs width
     void width_Omax_L_Rlhs(AstNode* nodep, AstNUser* vup);

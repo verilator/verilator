@@ -65,7 +65,10 @@ void test(string lhss, string op, string rhss, string exps) {
     else if (op=="<<")	 	gotnum.opShiftL		(lhnum,rhnum);
     else if (op=="==")	 	gotnum.opEq		(lhnum,rhnum);
     else if (op=="===")	 	gotnum.opCaseEq		(lhnum,rhnum);
+    else if (op=="==?")	 	gotnum.opWildEq		(lhnum,rhnum);
     else if (op=="!=")	 	gotnum.opNeq		(lhnum,rhnum);
+    else if (op=="!==")	 	gotnum.opCaseNeq	(lhnum,rhnum);
+    else if (op=="!=?")	 	gotnum.opWildNeq	(lhnum,rhnum);
     else if (op=="<=")	 	gotnum.opLte		(lhnum,rhnum);
     else if (op==">=")	 	gotnum.opGte		(lhnum,rhnum);
     else if (op=="&&")	 	gotnum.opLogAnd		(lhnum,rhnum);

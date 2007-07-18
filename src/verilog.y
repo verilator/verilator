@@ -269,7 +269,7 @@ class AstSenTree;
 %left<fileline> '^'
 %left<fileline> yP_XNOR
 %left<fileline> '&' yP_NAND
-%left<fileline> yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL
+%left<fileline> yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
 %left<fileline> '>' '<' yP_GTE yP_LTE
 %left<fileline> yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left<fileline> '+' '-'
@@ -912,6 +912,8 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	expr yP_NOTEQUAL expr			{ $$ = new AstNeq	($2,$1,$3); }
 	|	expr yP_CASEEQUAL expr			{ $$ = new AstEqCase	($2,$1,$3); }
 	|	expr yP_CASENOTEQUAL expr		{ $$ = new AstNeqCase	($2,$1,$3); }
+	|	expr yP_WILDEQUAL expr			{ $$ = new AstEqWild	($2,$1,$3); }
+	|	expr yP_WILDNOTEQUAL expr		{ $$ = new AstNeqWild	($2,$1,$3); }
 	|	expr '>' expr				{ $$ = new AstGt	($2,$1,$3); }
 	|	expr '<' expr				{ $$ = new AstLt	($2,$1,$3); }
 	|	expr yP_GTE expr			{ $$ = new AstGte	($2,$1,$3); }
@@ -1104,6 +1106,7 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	yP_ANDAND {} | yP_GTE {} | yP_LTE {}
 	|	yP_EQUAL {} | yP_NOTEQUAL {}
 	|	yP_CASEEQUAL {} | yP_CASENOTEQUAL {}
+	|	yP_WILDEQUAL {} | yP_WILDNOTEQUAL {}
 	|	yP_XNOR {} | yP_NOR {} | yP_NAND {}
 	|	yP_OROR {}
 	|	yP_SLEFT {} | yP_SRIGHT {} | yP_SSRIGHT {}

@@ -814,6 +814,28 @@ last:
     return setSingleBits(outc);
 }
 
+V3Number& V3Number::opWildEq (const V3Number& lhs, const V3Number& rhs) {
+    char outc = 1;
+    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+	if (!rhs.bitIsXZ(bit)
+	    && lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=0; goto last; }
+	if (lhs.bitIsXZ(bit)) outc='x';
+    }
+last:
+    return setSingleBits(outc);
+}
+
+V3Number& V3Number::opWildNeq (const V3Number& lhs, const V3Number& rhs) {
+    char outc = 0;
+    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+	if (!rhs.bitIsXZ(bit) 
+	    && lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=1; goto last; }
+	if (lhs.bitIsXZ(bit)) outc='x';
+    }
+last:
+    return setSingleBits(outc);
+}
+
 V3Number& V3Number::opGt (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 0;

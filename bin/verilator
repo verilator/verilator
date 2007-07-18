@@ -1010,12 +1010,14 @@ Verilator currently has very minimal support for SystemVerilog. As
 SystemVerilog features enter common usage they will be added.  Contact the
 author if a feature you need is missing.
 
-Verilator implements the full SystemVerilog 1800-2005 preprocessor subset,
+Verilator implements the full SystemVerilog 1800-2005 preprocessor,
 including function call-like preprocessor defines.
 
-Verilator supports $bits, $countones, $error, $fatal, $info, $isunknown,
-$onehot, $onehot0, $warning, always_comb, always_ff, always_latch,
-do-while, and final.  It also supports .name and .* interconnection.
+Verilator supports ==? and !=? operators, $bits, $countones, $error,
+$fatal, $info, $isunknown, $onehot, $onehot0, $warning, always_comb,
+always_ff, always_latch, do-while, and final.
+
+It also supports .name and .* interconnection.
 
 Verilator partially supports assert.
 
