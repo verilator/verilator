@@ -256,7 +256,7 @@ class AstSenTree;
 
 //********************
 // PSL op precedence
-%right<fileline> 	yP_LOGIF  yP_LOGIFF
+%right<fileline> 	yP_MINUSGT  yP_LOGIFF	/* MinusGT == -> == PSL LogIf operator */
 %right<fileline>	yP_OR_MINUS_GT  yP_OR_EQ_GT
 %left<fileline>		prPSLCLK
 
@@ -927,7 +927,7 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	expr '/' expr				{ $$ = new AstDiv	($2,$1,$3); }
 	|	expr '%' expr				{ $$ = new AstModDiv	($2,$1,$3); }
 	|	expr yP_POW expr			{ $$ = new AstPow	($2,$1,$3); }
-	|	expr yP_LOGIF expr			{ $$ = new AstLogIf	($2,$1,$3); }
+	|	expr yP_MINUSGT expr			{ $$ = new AstLogIf	($2,$1,$3); }
 	|	expr yP_LOGIFF expr			{ $$ = new AstLogIff	($2,$1,$3); }
 
 	|	'-' expr	%prec prUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
@@ -1113,7 +1113,7 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	yP_PLUSCOLON {} | yP_MINUSCOLON {}
 	|	yP_POW {}
 
-	|	yP_LOGIF {}
+	|	yP_MINUSGT {}
 	|	yP_LOGIFF {}
 	|	yPSL_BRA {}
 	|	yPSL_KET {}

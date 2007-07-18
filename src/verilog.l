@@ -567,6 +567,7 @@ escid	\\[^ \t\f\r\n]+
   "~^"			{yylval.fileline = CRELINE(); return yP_XNOR;}
   "~&"			{yylval.fileline = CRELINE(); return yP_NAND;}
   "~|"			{yylval.fileline = CRELINE(); return yP_NOR;}
+  "->"			{yylval.fileline = CRELINE(); return yP_MINUSGT;}
 }
 
   /* Verilog 2001 Operators */
@@ -588,7 +589,6 @@ escid	\\[^ \t\f\r\n]+
 <PSL>{
   "{"			{yylval.fileline = CRELINE(); return yPSL_BRA;}	// Avoid parser hitting concatenate.
   "}"			{yylval.fileline = CRELINE(); return yPSL_KET;}	// Avoid parser hitting concatenate.
-  "->"			{yylval.fileline = CRELINE(); return yP_LOGIF;}
   "<->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} //Unsup in other tools
   "[*"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_STAR
   "[*]"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_STAR_KET
