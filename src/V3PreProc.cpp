@@ -83,7 +83,9 @@ struct V3PreProcImp : public V3PreProc {
 
     // For getRawToken/ `line insertion
     string	m_lineCmt;	// Line comment(s) to be returned
-    int		m_lineAdd;	// Empty lines to return to maintain line count
+    bool	m_lineCmtNl;	///< Newline needed before inserting lineCmt
+    int		m_lineAdd;	///< Empty lines to return to maintain line count
+    bool	m_rawAtBol;	///< Last rawToken left us at beginning of line
 
     // For defines
     string	m_defName;	// Define last name being defined
@@ -134,6 +136,7 @@ public:
     virtual bool isEof() const { return (m_lexp==NULL); }
     virtual string getline();
     virtual void insertUnreadback(const string& text) { m_lineCmt += text; }
+    void insertUnreadbackAtBol(const string& text);
 
     // METHODS, callbacks
     virtual void comment(const string& cmt);		// Comment detected (if keepComments==2)
@@ -151,6 +154,8 @@ public:
 	m_lineChars = "";
 	m_lastSym = "";
 	m_lineAdd = 0;
+	m_lineCmtNl = false;
+	m_rawAtBol = true;
 	m_defDepth = 0;
     }
 };
@@ -486,14 +491,24 @@ void V3PreProcImp::openFile(FileLine* fl, const string& filename) {
     yy_switch_to_buffer(m_lexp->m_yyState);
 }
 
+void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
+    // Insert insuring we're at the beginning of line, for `line
+    // We don't always add a leading newline, as it may result in extra unreadback(newlines).
+    if (m_lineCmt == "") { m_lineCmtNl = true; }
+    else if (m_lineCmt[m_lineCmt.length()-1]!='\n') {
+	insertUnreadback("\n");
+    }
+    insertUnreadback(text);
+}
+
 void V3PreProcImp::addLineComment(int enter_exit_level) {
     if (lineDirectives()) {
 	char numbuf[20]; sprintf(numbuf, "%d", m_lexp->m_curFilelinep->lineno());
 	char levelbuf[20]; sprintf(levelbuf, "%d", enter_exit_level);
-	string cmt = ((string)"\n`line "+numbuf
+	string cmt = ((string)"`line "+numbuf
 		      +" \""+m_lexp->m_curFilelinep->filename()+"\" "
 		      +levelbuf+"\n");
-	insertUnreadback(cmt);
+	insertUnreadbackAtBol(cmt);
     }
 }
 
@@ -517,6 +532,7 @@ int V3PreProcImp::getRawToken() {
       next_tok:
 	if (m_lineAdd) {
 	    m_lineAdd--;
+	    m_rawAtBol = true;
 	    yytext="\n"; yyleng=1;
 	    return (VP_TEXT);
 	}
@@ -524,8 +540,13 @@ int V3PreProcImp::getRawToken() {
 	    // We have some `line directive to return to the user.  Do it.
 	    static string rtncmt;  // Keep the c string till next call
 	    rtncmt = m_lineCmt;
+	    if (m_lineCmtNl) {
+		if (!m_rawAtBol) rtncmt = "\n"+rtncmt;
+		m_lineCmtNl = false;
+	    }
 	    yytext=(char*)rtncmt.c_str(); yyleng=rtncmt.length();
 	    m_lineCmt = "";
+	    if (yyleng) m_rawAtBol = (yytext[yyleng-1]=='\n');
 	    if (m_state!=ps_DEFVALUE) return (VP_TEXT);
 	    else {
 		V3PreLex::s_currentLexp->appendDefValue(yytext,yyleng); 
@@ -533,6 +554,7 @@ int V3PreProcImp::getRawToken() {
 	    }
 	}
 	if (isEof()) return (VP_EOF);
+
 	// Snarf next token from the file
 	m_fileline = m_lexp->m_curFilelinep;  // Remember token start location
 	V3PreLex::s_currentLexp = m_lexp;   // Tell parser where to get/put data
@@ -553,6 +575,7 @@ int V3PreProcImp::getRawToken() {
 	    goto next_tok;  // Parse parent, or find the EOF.
 	}
 
+	if (yyleng) m_rawAtBol = (yytext[yyleng-1]=='\n');
 	return tok;
     }
 }
@@ -872,7 +895,8 @@ string V3PreProcImp::getline() {
     // Get a single line from the parse stream.  Buffer unreturned text until the newline.
     if (isEof()) return "";
     char* rtnp;
-    while (NULL==(rtnp=strchr(m_lineChars.c_str(),'\n'))) {
+    bool gotEof = false;
+    while (NULL==(rtnp=strchr(m_lineChars.c_str(),'\n')) && !gotEof) {
 	int tok = getToken();
 	if (debug()>4) {
 	    string buf = string (yytext, yyleng);
@@ -883,8 +907,12 @@ string V3PreProcImp::getline() {
 		     fileline()->lineno(), tokenName(tok), buf.c_str());
 	}
 	if (tok==VP_EOF) {
-	    // Add a final newline, in case the user forgot the final \n.
-	    m_lineChars.append("\n");
+	    // Add a final newline, if the user forgot the final \n.
+	    // Note tok==VP_EOF isn't always seen by us, as isEof() may be set earlier
+	    if (m_lineChars != "" && m_lineChars[m_lineChars.length()-1] != '\n') {
+		m_lineChars.append("\n");
+	    }
+	    gotEof = true;
 	}
 	else if (tok==VP_PSL) {
 	    m_lineChars.append(" psl ");

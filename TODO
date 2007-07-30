@@ -103,6 +103,12 @@ Performance:
 	If floped(a) & flopped(b) and no other a&b, then instead flop(a&b).
 	Sort by output bitselects so can combine more assignments (see DDP example dx_dm signal)
 
+	All of the temp vars that get set, exp pre_ vars and never feedback
+	(not flops) don't need to be stored in the structs, but instead can
+	be per-invocation, and even better register-colored-like to reuse
+	the space.  This will greatly reduce the data footprint.
+
+
 //**********************************************************************
 //* Detailed notes on 'todo' features
 
