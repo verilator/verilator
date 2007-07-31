@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support SystemVerilog ==? and !=? operators.
 
+**** Fix SC_LIBS missing from generated makefiles. [Ding Xiaoliang]
+
 * Verilator 3.652 6/21/2007
 
 **** Report as many warning types as possible before exiting.

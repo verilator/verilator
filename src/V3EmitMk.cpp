@@ -138,7 +138,7 @@ public:
 
 	    of.puts("\n# Link rules...\n");
 	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(SP_SRCS) $(VM_PREFIX)__ALL.a\n");
-	    of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt\n");
+	    of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS) 2>&1 | c++filt\n");
 	    of.puts("\n");
 	}
 
