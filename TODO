@@ -25,6 +25,7 @@ Features:
 	Coverage
 		Points should be per-scope like everything else rather then per-module
 		Expression coverage (see notes)
+	Constant functions for widths, etc, IE   "input [log2(PARAM):0] xx;"
 	More Verilog 2001 Support
 		(* *) Attributes  (just ignore -- preprocessor?)
 		Real numbers (NEVER)

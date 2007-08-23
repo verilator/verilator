@@ -190,14 +190,12 @@ string V3Error::lineStr (const char* filename, int lineno) {
 
 void V3Error::incWarnings() {
     s_warnCount++;
-    if (errorOrWarnCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
-	v3fatal ("Exiting due to too many errors encountered\n");
-    }
+    // We don't exit on a lot of warnings.
 }
 
 void V3Error::incErrors() {
     s_errCount++;
-    if (errorOrWarnCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
+    if (errorCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
 	v3fatal ("Exiting due to too many errors encountered\n");
     }
 }

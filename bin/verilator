@@ -2001,6 +2001,17 @@ the "verilator" define for you, so just wrap the code in a ifndef region:
       Something_Verilator_Dislikes;
    `endif
 
+=item Why do I get "unexpected `do'" or "unexpected `bit'" errors?
+
+Do, bit, ref, and other words are now SystemVerilog keywords.  You should
+change your code to not use them to insure it works with newer tools.
+Alternatively, surround them by the Verilog 2005/SystemVerilog
+begin_keywords pragma to indicate Verilog 2001 code.
+
+   `begin_keywords "1364-2001"
+      integer bit; initial bit = 1;
+   `end_keywords
+
 =item How do I prevent my assertions from firing during reset?
 
 Call Verilated::assertOn(false) before you first call the model, then turn

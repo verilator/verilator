@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.65***
+
+**** Don't exit early if many warnings but no errors are found. [Stan Mayer]
+
 * Verilator 3.653 8/1/2007
 
 **** Support SystemVerilog ==? and !=? operators.
