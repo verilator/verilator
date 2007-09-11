@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Don't exit early if many warnings but no errors are found. [Stan Mayer]
 
+**** Fix parsing module #(parameter x,y) declarations. [Oleg Rodionov]
+
 * Verilator 3.653 8/1/2007
 
 **** Support SystemVerilog ==? and !=? operators.

@@ -290,7 +290,7 @@ class AstSenTree;
 %type<nodep>	modPortsE portList port
 %type<nodep>	portV2kArgs portV2kList portV2kSecond portV2kSig
 %type<nodep>	portV2kDecl ioDecl varDecl
-%type<nodep>	modParDecl modParList modParE
+%type<nodep>	modParArgs modParSecond modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
 %type<nodep>	dlyTerm
@@ -375,12 +375,20 @@ modHdr:		yMODULE { V3Parse::s_trace=v3Global.opt.trace();}
 
 modParE:	/* empty */				{ $$ = NULL; }
 	|	'#' '(' ')'				{ $$ = NULL; }
-	|	'#' '(' modParList ')'			{ $$ = $3; }
-	|	'#' '(' modParList ';' ')'		{ $$ = $3; }
+	|	'#' '(' modParArgs ')'			{ $$ = $3; }
 	;
 
-modParList:	modParDecl				{ $$ = $1; }
-	|	modParList ';' modParDecl 		{ $$ = $1->addNext($3); }
+modParArgs:	modParDecl				{ $$ = $1; }
+	|	modParDecl ',' modParList		{ $$ = $1->addNext($3); }
+	;
+
+modParList:	modParSecond				{ $$ = $1; }
+	|	modParList ',' modParSecond 		{ $$ = $1->addNext($3); }
+	;
+
+// Called only after a comma in a v2k list, to allow parsing "parameter a,b, parameter x"
+modParSecond:	modParDecl				{ $$ = $1; }
+	|	param					{ $$ = $1; }
 	;
 
 modPortsE:	/* empty */					{ $$ = NULL; }
@@ -440,7 +448,7 @@ varDecl:	varRESET varReg     varSignedE regrangeE  regsigList ';'	{ $$ = $5; }
 	|	varRESET varGenVar  varSignedE            regsigList ';'	{ $$ = $4; }
 	;
 
-modParDecl:	varRESET varGParam  varSignedE regrangeE   paramList 	{ $$ = $5; }  /* No semicolon*/
+modParDecl:	varRESET varGParam  varSignedE regrangeE   param 	{ $$ = $5; }
 	;
 
 varRESET:	/* empty */ 				{ VARRESET(); }

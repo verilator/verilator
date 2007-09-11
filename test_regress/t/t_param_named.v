@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -11,7 +11,10 @@ module t (/*AUTOARG*/
    parameter PAR = 3;
    input clk;
 
+`ifdef verilator
+   // Else it becomes a localparam, per IEEE 4.10.1, but we don't check it
    defparam m3.FROMDEFP = 19;
+`endif
 
    m3 #(.P3(PAR),
 	.P2(2))
@@ -29,27 +32,18 @@ module t (/*AUTOARG*/
 endmodule
 
 module m3
-`ifdef verilator
   #(
-    parameter  UNCH = 99;
-    parameter  P1 = 10;
+    parameter  UNCH = 99,
+    parameter  P1 = 10,
     parameter  P2 = 20,
-               P3 = 30;
+               P3 = 30
     )
-`endif
     (/*AUTOARG*/
      // Inputs
      clk
      );
    input       clk;
    localparam  LOC = 13;
-
-`ifndef verilator   // Vcs not compliant yet
-   parameter   UNCH = 99;
-   parameter   P1 = 10;
-   parameter   P2 = 20;
-   parameter   P3 = 30;
-`endif
 
    parameter   FROMDEFP = 11;
 
@@ -61,6 +55,8 @@ module m3
       if (P1 !== 10) $stop;
       if (P2 !== 2) $stop;
       if (P3 !== 3) $stop;
+`ifdef verilator
       if (FROMDEFP !== 19) $stop;
+`endif
    end
 endmodule
