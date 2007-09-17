@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix parsing module #(parameter x,y) declarations. [Oleg Rodionov]
 
+**** Fix parsing system functions with empty parens. [Oleg Rodionov]
+
 * Verilator 3.653 8/1/2007
 
 **** Support SystemVerilog ==? and !=? operators.

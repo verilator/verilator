@@ -787,24 +787,24 @@ stmt:		';'					{ $$ = NULL; }
 	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
-	|	yD_FINISH ';'				{ $$ = new AstFinish($1); }
-	|	yD_STOP ';'				{ $$ = new AstStop($1); }
+	|	yD_FINISH parenE ';'			{ $$ = new AstFinish($1); }
+	|	yD_STOP parenE ';'			{ $$ = new AstStop($1); }
 	|	yVL_COVER_OFF				{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
 	|	stateCaseForIf				{ $$ = $1; }
 	|	taskRef ';' 				{ $$ = $1; }
 
-	|	yD_DISPLAY  ';'							{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
+	|	yD_DISPLAY  parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
 	|	yD_WRITE    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
 	|	yD_FDISPLAY '(' varRefDotBit ',' yaSTRING commaEListE ')' ';' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
 	|	yD_FWRITE   '(' varRefDotBit ',' yaSTRING commaEListE ')' ';'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
-	|	yD_INFO	    ';'							{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
+	|	yD_INFO	    parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
 	|	yD_INFO	    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
-	|	yD_WARNING  ';'							{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
+	|	yD_WARNING  parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
 	|	yD_WARNING  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
-	|	yD_ERROR    ';'							{ $$ = V3Parse::createDisplayError($1); }
+	|	yD_ERROR    parenE ';'						{ $$ = V3Parse::createDisplayError($1); }
 	|	yD_ERROR    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    ';'							{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); }
 
@@ -901,6 +901,10 @@ funcVar: 	ioDecl					{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
 	|	yVL_PUBLIC				{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_TASK); }
 	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_TASK); }
+	;
+
+parenE:		/* empty */				{ }
+	|	'(' ')'					{ }
 	;
 
 //************************************************
