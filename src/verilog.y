@@ -248,6 +248,12 @@ class AstSenTree;
 
 %token<fileline>	yP_PLUSCOLON	"+:"
 %token<fileline>	yP_MINUSCOLON	"-:"
+%token<fileline>	yP_EQGT		"=>"
+%token<fileline>	yP_ASTGT	"*>"
+%token<fileline>	yP_PLUSEQGT	"+=>"
+%token<fileline>	yP_PLUSASTGT	"+*>"
+%token<fileline>	yP_MINUSEQGT	"-=>"
+%token<fileline>	yP_MINUSASTGT	"-*>"
 
 %token<fileline>	yPSL_BRA	"{"
 %token<fileline>	yPSL_KET	"}"
@@ -1132,6 +1138,9 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	yPSL_KET {}
 	|	yP_OR_MINUS_GT {}
 	|	yP_OR_EQ_GT {}
+	|	yP_EQGT {}	| yP_ASTGT {}
+	|	yP_PLUSEQGT {}	| yP_PLUSASTGT {}
+	|	yP_MINUSEQGT {} | yP_MINUSASTGT {}
 
 	|	error {}
 	;

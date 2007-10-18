@@ -568,6 +568,12 @@ escid	\\[^ \t\f\r\n]+
   "~&"			{yylval.fileline = CRELINE(); return yP_NAND;}
   "~|"			{yylval.fileline = CRELINE(); return yP_NOR;}
   "->"			{yylval.fileline = CRELINE(); return yP_MINUSGT;}
+  "=>"                  {yylval.fileline = CRELINE(); return yP_EQGT; }
+  "*>"                  {yylval.fileline = CRELINE(); return yP_ASTGT; }
+  "+=>"                 {yylval.fileline = CRELINE(); return yP_PLUSEQGT; }
+  "+*>"                 {yylval.fileline = CRELINE(); return yP_PLUSASTGT; }
+  "-=>"                 {yylval.fileline = CRELINE(); return yP_MINUSEQGT; }
+  "-*>"                 {yylval.fileline = CRELINE(); return yP_MINUSASTGT; }
 }
 
   /* Verilog 2001 Operators */
