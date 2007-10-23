@@ -248,22 +248,44 @@ class AstSenTree;
 
 %token<fileline>	yP_PLUSCOLON	"+:"
 %token<fileline>	yP_MINUSCOLON	"-:"
+%token<fileline>	yP_MINUSGTGT	"->>"
 %token<fileline>	yP_EQGT		"=>"
 %token<fileline>	yP_ASTGT	"*>"
-%token<fileline>	yP_PLUSEQGT	"+=>"
-%token<fileline>	yP_PLUSASTGT	"+*>"
-%token<fileline>	yP_MINUSEQGT	"-=>"
-%token<fileline>	yP_MINUSASTGT	"-*>"
+%token<fileline>	yP_ANDANDAND	"&&&"
+%token<fileline>	yP_POUNDPOUND	"##"
+%token<fileline>	yP_DOTSTAR	".*"
+
+%token<fileline>	yP_ATAT		"@@"
+%token<fileline>	yP_COLONCOLON	"::"
+%token<fileline>	yP_COLONEQ	":="
+%token<fileline>	yP_COLONDIV	":/"
+
+%token<fileline>	yP_PLUSEQ	"+="
+%token<fileline>	yP_MINUSEQ	"-="
+%token<fileline>	yP_TIMESEQ	"*="
+%token<fileline>	yP_DIVEQ	"/="
+%token<fileline>	yP_MODEQ	"%="
+%token<fileline>	yP_ANDEQ	"&="
+%token<fileline>	yP_OREQ		"|="
+%token<fileline>	yP_XOREQ	"^="
+%token<fileline>	yP_SLEFTEQ	"<<="
+%token<fileline>	yP_SRIGHTEQ	">>="
+%token<fileline>	yP_SSRIGHTEQ	">>>="
 
 %token<fileline>	yPSL_BRA	"{"
 %token<fileline>	yPSL_KET	"}"
 
 %token<fileline>	';' '=' ',' '(' '.' '!' '~' '[' '@'
 
+// [* is not a operator, as "[ * ]" is legal
+// [= and [-> could be repitition operators, but to match [* we don't add them.
+// '( is not a operator, as "' (" is legal
+// '{ could be an operator.  More research needed.
+
 //********************
 // PSL op precedence
 %right<fileline> 	yP_MINUSGT  yP_LOGIFF	/* MinusGT == -> == PSL LogIf operator */
-%right<fileline>	yP_OR_MINUS_GT  yP_OR_EQ_GT
+%right<fileline>	yP_ORMINUSGT  yP_OREQGT
 %left<fileline>		prPSLCLK
 
 // Verilog op precedence
@@ -726,7 +748,7 @@ cellpinItList:	cellpinItemE				{ $$ = $1; }
 	;
 
 cellpinItemE:	/* empty: ',,' is legal */		{ $$ = NULL; V3Parse::s_pinNum++; }
-	|	'.' '*'					{ $$ = NULL; if (V3Parse::s_pinStar) $1->v3error("Duplicate .* in a cell"); V3Parse::s_pinStar=true; }
+	|	yP_DOTSTAR				{ $$ = NULL; if (V3Parse::s_pinStar) $1->v3error("Duplicate .* in a cell"); V3Parse::s_pinStar=true; }
 	|	'.' yaID				{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' yaID '(' ')'			{ $$ = NULL; V3Parse::s_pinNum++; }
 	|	'.' yaID '(' expr ')'			{ $$ = new AstPin($1,V3Parse::s_pinNum++,*$2,$4); }
@@ -1136,11 +1158,24 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	yP_LOGIFF {}
 	|	yPSL_BRA {}
 	|	yPSL_KET {}
-	|	yP_OR_MINUS_GT {}
-	|	yP_OR_EQ_GT {}
+	|	yP_ORMINUSGT {}
+	|	yP_OREQGT {}
 	|	yP_EQGT {}	| yP_ASTGT {}
-	|	yP_PLUSEQGT {}	| yP_PLUSASTGT {}
-	|	yP_MINUSEQGT {} | yP_MINUSASTGT {}
+	|	yP_ANDANDAND {}
+	|	yP_MINUSGTGT {}
+	|	yP_POUNDPOUND {}
+	|	yP_DOTSTAR {}
+	|	yP_ATAT {}
+	|	yP_COLONCOLON {}
+	|	yP_COLONEQ {}
+	|	yP_COLONDIV {}
+
+	|	yP_PLUSEQ {}	| yP_MINUSEQ {}
+	|	yP_TIMESEQ {}
+	|	yP_DIVEQ {}	| yP_MODEQ {}
+	|	yP_ANDEQ {}	| yP_OREQ {}
+	|	yP_XOREQ {}
+	|	yP_SLEFTEQ {}	| yP_SRIGHTEQ {} | yP_SSRIGHTEQ {}
 
 	|	error {}
 	;

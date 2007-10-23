@@ -570,10 +570,7 @@ escid	\\[^ \t\f\r\n]+
   "->"			{yylval.fileline = CRELINE(); return yP_MINUSGT;}
   "=>"                  {yylval.fileline = CRELINE(); return yP_EQGT; }
   "*>"                  {yylval.fileline = CRELINE(); return yP_ASTGT; }
-  "+=>"                 {yylval.fileline = CRELINE(); return yP_PLUSEQGT; }
-  "+*>"                 {yylval.fileline = CRELINE(); return yP_PLUSASTGT; }
-  "-=>"                 {yylval.fileline = CRELINE(); return yP_MINUSEQGT; }
-  "-*>"                 {yylval.fileline = CRELINE(); return yP_MINUSASTGT; }
+  "&&&"			{yylval.fileline = CRELINE(); return yP_ANDANDAND; }
 }
 
   /* Verilog 2001 Operators */
@@ -583,12 +580,33 @@ escid	\\[^ \t\f\r\n]+
   "**"			{yylval.fileline = CRELINE(); return yP_POW;}
   "+:"			{yylval.fileline = CRELINE(); return yP_PLUSCOLON;}
   "-:"			{yylval.fileline = CRELINE(); return yP_MINUSCOLON;}
+  ".*"			{yylval.fileline = CRELINE(); return yP_DOTSTAR;}
 }
 
   /* SystemVerilog Operators */
 <S05>{
   "==?"			{yylval.fileline = CRELINE(); return yP_WILDEQUAL;}
   "!=?"			{yylval.fileline = CRELINE(); return yP_WILDNOTEQUAL;}
+  "+="			{yylval.fileline = CRELINE(); return yP_PLUSEQ; }
+  "-="			{yylval.fileline = CRELINE(); return yP_MINUSEQ; }
+  "*="			{yylval.fileline = CRELINE(); return yP_TIMESEQ; }
+  "/="			{yylval.fileline = CRELINE(); return yP_DIVEQ; }
+  "%="			{yylval.fileline = CRELINE(); return yP_MODEQ; }
+  "&="			{yylval.fileline = CRELINE(); return yP_ANDEQ; }
+  "|="			{yylval.fileline = CRELINE(); return yP_OREQ; }
+  "^="			{yylval.fileline = CRELINE(); return yP_XOREQ; }
+  "<<="			{yylval.fileline = CRELINE(); return yP_SLEFTEQ; }
+  ">>="			{yylval.fileline = CRELINE(); return yP_SRIGHTEQ; }
+  "<<<="		{yylval.fileline = CRELINE(); return yP_SLEFTEQ; }
+  ">>>="		{yylval.fileline = CRELINE(); return yP_SSRIGHTEQ; }
+  "->>"			{yylval.fileline = CRELINE(); return yP_MINUSGTGT; }
+  "##"			{yylval.fileline = CRELINE(); return yP_POUNDPOUND; }
+  "@@"			{yylval.fileline = CRELINE(); return yP_ATAT; }
+  "::"			{yylval.fileline = CRELINE(); return yP_COLONCOLON; }
+  ":="			{yylval.fileline = CRELINE(); return yP_COLONEQ; }
+  ":/"			{yylval.fileline = CRELINE(); return yP_COLONDIV; }
+  "|->"			{yylval.fileline = CRELINE(); return yP_ORMINUSGT; }
+  "|=>"			{yylval.fileline = CRELINE(); return yP_OREQGT; }
 }
 
   /* PSL Operators */
@@ -602,8 +620,8 @@ escid	\\[^ \t\f\r\n]+
   "[->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_MINUS_GT
   "[->]"		{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_MINUS_GT_KET
   "[="			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_BRA_EQ
-  "|->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_OR_MINUS_GT
-  "|=>"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_OR_EQ_GT
+  "|->"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_ORMINUSGT
+  "|=>"			{yyerrorf("Unsupported: PSL operator not implemented: %s",yytext);} // yP_OREQGT
 }
 
   /* Identifiers and numbers */
@@ -651,6 +669,10 @@ escid	\\[^ \t\f\r\n]+
 			}
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
     			  yylval.cdouble = 0;  /* Only for delays, not used yet */
+                          return yaFLOATNUM;
+			}
+  [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
+    			  yylval.cdouble = 0;  /* Only for times, not used yet */
                           return yaFLOATNUM;
 			}
 }
