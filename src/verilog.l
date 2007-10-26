@@ -324,6 +324,7 @@ escid	\\[^ \t\f\r\n]+
   "always_latch"	{yylval.fileline = CRELINE(); return yALWAYS;}
   "do"			{yylval.fileline = CRELINE(); return yDO;}
   "final"		{yylval.fileline = CRELINE(); return yFINAL;}
+  "static"		{yylval.fileline = CRELINE(); return ySTATIC;}
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "alias"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
@@ -391,7 +392,6 @@ escid	\\[^ \t\f\r\n]+
   "shortint"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "shortreal"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "solve"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
-  "static"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "string"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "struct"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "super"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}

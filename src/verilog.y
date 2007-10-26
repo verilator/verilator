@@ -127,11 +127,19 @@ class AstSenTree;
 }
 
 // Generic lexer tokens, for example a number
+// IEEE: real_number
 %token<cdouble>		yaFLOATNUM	"FLOATING-POINT NUMBER"
-%token<fileline>	yaTIMINGSPEC	"TIMING SPEC ELEMENT"
-%token<nump>		yaINTNUM	"INTEGER NUMBER"
+// IEEE: identifier, class_identifier, class_variable_identifier,
+// covergroup_variable_identifier, dynamic_array_variable_identifier,
+// enum_identifier, interface_identifier, interface_instance_identifier,
+// package_identifier, type_identifier, variable_identifier,
 %token<strp>		yaID		"IDENTIFIER"
+
+// IEEE: integral_number
+%token<nump>		yaINTNUM	"INTEGER NUMBER"
+// IEEE: string_literal
 %token<strp>		yaSTRING	"STRING"
+%token<fileline>	yaTIMINGSPEC	"TIMING SPEC ELEMENT"
 
 %token<strp>		yaSCHDR		"`systemc_header BLOCK"
 %token<strp>		yaSCINT		"`systemc_ctor BLOCK"
@@ -193,6 +201,7 @@ class AstSenTree;
 %token<fileline>	ySCALARED	"scalared"
 %token<fileline>	ySIGNED		"signed"
 %token<fileline>	ySPECIFY	"specify"
+%token<fileline>	ySTATIC		"static"
 %token<fileline>	ySUPPLY0	"supply0"
 %token<fileline>	ySUPPLY1	"supply1"
 %token<fileline>	yTASK		"task"
@@ -331,8 +340,8 @@ class AstSenTree;
 %type<cellp>	instnameParen
 %type<pinp>	cellpinList cellpinItList cellpinItemE instparamListE
 %type<nodep>	defpList defpOne
-%type<sentreep>	sensitivity
-%type<sentreep>	sensitivityE
+%type<sentreep>	eventControl
+%type<sentreep>	eventControlE
 %type<senitemp>	senList senitem senitemEdge senitemVar
 %type<nodep>	stmtBlock stmtList stmt labeledStmt stateCaseForIf
 %type<nodep>	assertStmt
@@ -459,24 +468,24 @@ regsigList:	regsig  				{ $$ = $1; }
 	|	regsigList ',' regsig		       	{ $$ = $1;$1->addNext($3); }
 	;
 
-portV2kDecl:	varRESET varInput  varSignedE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varInout  varSignedE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varOutput varSignedE v2kVarDeclE regrangeE portV2kSig	{ $$ = $6; }
+portV2kDecl:	varRESET varInput  signingE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varInout  signingE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varOutput signingE v2kVarDeclE regrangeE portV2kSig	{ $$ = $6; }
 	;
 
-ioDecl:		varRESET varInput  varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varInout  varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varOutput varSignedE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+ioDecl:		varRESET varInput  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varInout  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varOutput signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
 	;
 
-varDecl:	varRESET varReg     varSignedE regrangeE  regsigList ';'	{ $$ = $5; }
-	|	varRESET varGParam  varSignedE regrangeE  paramList ';'		{ $$ = $5; }
-	|	varRESET varLParam  varSignedE regrangeE  paramList ';'		{ $$ = $5; }
-	|	varRESET varNet     varSignedE delayrange netSigList ';'	{ $$ = $5; }
-	|	varRESET varGenVar  varSignedE            regsigList ';'	{ $$ = $4; }
+varDecl:	varRESET varReg     signingE regrangeE  regsigList ';'	{ $$ = $5; }
+	|	varRESET varGParam  signingE regrangeE  paramList ';'		{ $$ = $5; }
+	|	varRESET varLParam  signingE regrangeE  paramList ';'		{ $$ = $5; }
+	|	varRESET varNet     signingE delayrange netSigList ';'	{ $$ = $5; }
+	|	varRESET varGenVar  signingE            regsigList ';'	{ $$ = $4; }
 	;
 
-modParDecl:	varRESET varGParam  varSignedE regrangeE   param 	{ $$ = $5; }
+modParDecl:	varRESET varGParam  signingE regrangeE   param 	{ $$ = $5; }
 	;
 
 varRESET:	/* empty */ 				{ VARRESET(); }
@@ -503,7 +512,8 @@ varOutput:	yOUTPUT					{ VARIO(OUTPUT); }
 varInout:	yINOUT					{ VARIO(INOUT); }
 	;
 
-varSignedE:	/*empty*/ 				{ }
+// IEEE: signing - plus empty
+signingE:	/*empty*/ 				{ }
 	|	ySIGNED					{ VARSIGNED(true); }
 	|	yUNSIGNED				{ VARSIGNED(false); }
 	;
@@ -544,7 +554,7 @@ modItem:	modOrGenItem 				{ $$ = $1; }
 	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
 	;
 
-modOrGenItem:	yALWAYS sensitivityE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
+modOrGenItem:	yALWAYS eventControlE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
 	|	yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
 	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
 	|	yASSIGN delayE assignList ';'		{ $$ = $3; }
@@ -712,6 +722,7 @@ paramList:	param					{ $$ = $1; }
 	|	paramList ',' param			{ $$ = $1; $1->addNext($3); }
 	;
 
+// IEEE: list_of_defparam_assignments
 defpList:	defpOne					{ $$ = $1; }
 	|	defpList ',' defpOne			{ $$ = $1->addNext($3); }
 	;
@@ -756,19 +767,19 @@ cellpinItemE:	/* empty: ',,' is legal */		{ $$ = NULL; V3Parse::s_pinNum++; }
 	;
 
 //************************************************
-// Sensitivity lists
+// EventControl lists
 
-sensitivityE:	/* empty */				{ $$ = NULL; }
-	|	sensitivity				{ $$ = $1; }
+eventControlE:	/* empty */				{ $$ = NULL; }
+	|	eventControl				{ $$ = $1; }
 
-//IEEE: event_control
-sensitivity:	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
+// IEEE: event_control
+eventControl:	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
 	|	'@' senitemVar				{ $$ = new AstSenTree($1,$2); }	/* For events only */
 	|	'@' '(' '*' ')'				{ $$ = NULL; $2->v3error("Use @*.  always @ (*) to be depreciated in Verilog 2005.\n"); }
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
 	;
 
-//IEEE: event_expression - split over several
+// IEEE: event_expression - split over several
 senList:	senitem					{ $$ = $1; }
 	|	senList yOR senitem			{ $$ = $1;$1->addNext($3); }
 	|	senList ',' senitem			{ $$ = $1;$1->addNext($3); }	/* Verilog 2001 */
@@ -894,17 +905,19 @@ taskRef:	idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileli
 funcRef:	idDotted '(' exprList ')'		{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-taskDecl: 	yTASK taskAutoE yaID funcGuts yENDTASK endLabelE
+taskDecl: 	yTASK lifetimeE yaID funcGuts yENDTASK endLabelE
 			{ $$ = new AstTask ($1,*$3,$4);}
 	;
 
-funcDecl: 	yFUNCTION taskAutoE         funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
-	| 	yFUNCTION taskAutoE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
-	|	yFUNCTION taskAutoE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
+funcDecl: 	yFUNCTION lifetimeE         funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
+	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
+	| 	yFUNCTION lifetimeE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
+	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
-taskAutoE:	/* empty */		 		{ }
+// IEEE: lifetime - plus empty
+lifetimeE:	/* empty */		 		{ }
+	|	ySTATIC			 		{ $1->v3error("Unsupported: Static in this context\n"); }
 	|	yAUTOMATIC		 		{ }
 	;
 
