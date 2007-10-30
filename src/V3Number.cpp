@@ -1007,6 +1007,7 @@ V3Number& V3Number::opMulS (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opDiv (const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsX();
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
     setQuad(lhs.asQuad() / rhs.asQuad());
@@ -1015,6 +1016,7 @@ V3Number& V3Number::opDiv (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed divide
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsX();
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
     V3Number qNoSign = opDiv(lhsNoSign,rhsNoSign);
@@ -1029,6 +1031,7 @@ V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsX();
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
     setQuad(lhs.asQuad() % rhs.asQuad());
@@ -1037,6 +1040,7 @@ V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed moddiv
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsX();
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
     V3Number qNoSign = opModDiv(lhsNoSign,rhsNoSign);

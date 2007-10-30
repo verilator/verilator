@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.65****
+
+**** Fix divide-by-zero errors in constant propagator.  [Rodney Sinclair]
+
 * Verilator 3.654 10/18/2007
 
 **** Don't exit early if many warnings but no errors are found. [Stan Mayer]

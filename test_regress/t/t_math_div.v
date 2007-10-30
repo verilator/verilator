@@ -85,6 +85,8 @@ module t (/*AUTOARG*/
 	    if (qq !== {61{1'bx}}) $stop;
 	    if (rq !== {61{1'bx}}) $stop;
 `endif
+	    if ({16{1'bx}} !== 16'd1/16'd0) $stop;  // No div by zero errors
+	    if ({16{1'bx}} !== 16'd1%16'd0) $stop;  // No div by zero errors
 	 end
 	 if (cyc==19) begin
 	    $write("*-* All Finished *-*\n");
