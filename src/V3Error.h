@@ -90,6 +90,13 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE); };
+    // Warnings that are lint only
+    bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
+				      || m_e==CASEX || m_e==CMPCONST
+				      || m_e==IMPLICIT
+				      || m_e==UNDRIVEN || m_e==UNSIGNED
+				      || m_e==UNUSED || m_e==VARHIDDEN
+				      || m_e==WIDTH); };
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
@@ -205,6 +212,7 @@ public:
     void warnOff(V3ErrorCode code, bool flag) { m_warnOff.set(code,flag); }	// Turn on/off warning messages on this line.
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code);
+    void warnLintOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOff=from.m_warnOff; }
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 

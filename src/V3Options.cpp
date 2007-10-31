@@ -440,9 +440,14 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		V3PreShell::undef (string (sw+strlen("-U")));
 	    }
 	    else if ( !strncmp (sw, "-Wno-",5) )	{
-		string msg = sw+strlen("-Wno-");
-		if (!(FileLine::defaultFileLine().warnOff(msg, true))) {
-		    fl->v3fatal("Unknown warning disabled: "<<sw);
+		if (!strcmp (sw, "-Wno-lint")) {
+		    FileLine::defaultFileLine().warnLintOff(true);
+		}
+		else {
+		    string msg = sw+strlen("-Wno-");
+		    if (!(FileLine::defaultFileLine().warnOff(msg, true))) {
+			fl->v3fatal("Unknown warning disabled: "<<sw);
+		    }
 		}
 	    }
 	    else if ( !strncmp (sw, "-Werror-",strlen("-Werror-")) )	{

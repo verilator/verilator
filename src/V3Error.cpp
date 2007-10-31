@@ -101,6 +101,13 @@ bool FileLine::warnOff(const string& msg, bool flag) {
     }
 }
 
+void FileLine::warnLintOff(bool flag) {
+    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (code.lintError()) warnOff(code, flag);
+    }
+}
+
 FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more then one token per line, thus we use the

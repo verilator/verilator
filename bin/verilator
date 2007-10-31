@@ -566,6 +566,17 @@ example C<-Werror-NOUNOPTFLAT>.
 
 Disable the specified warning message.
 
+=item -Wno-lint
+
+Disable all lint related warning messages.  This is equivelent to
+"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CMPCONST
+-Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-VARHIDDEN
+-Wno-WIDTH".
+
+It is strongly recommended you cleanup your code rather then using this
+option, it is only intended to be use when running test-cases of code
+received from third parties.
+
 =item -x-assign 0
 
 =item -x-assign 1
