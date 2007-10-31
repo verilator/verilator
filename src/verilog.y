@@ -326,9 +326,10 @@ class AstSenTree;
 %type<modulep>	modHdr
 %type<nodep>	modPortsE portList port
 %type<nodep>	portV2kArgs portV2kList portV2kSecond portV2kSig
-%type<nodep>	portV2kDecl ioDecl varDecl
+%type<nodep>	portV2kDecl portDecl varDecl
 %type<nodep>	modParArgs modParSecond modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
+%type<nodep>	generateRegion
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
 %type<nodep>	dlyTerm
 %type<varp>	sigAndAttr sigId sigIdRange sigList regsig regsigList regSigId
@@ -392,14 +393,19 @@ statePop:	/* empty */			 	{ V3Read::statePop(); }
 //**********************************************************************
 // Files
 
-file:		mod 					{ }
-	|	file mod 				{ }
+file:		description 				{ }
+	|	file description 			{ }
+	;
+
+// IEEE: description
+description:	moduleDecl				{ }
 	;
 
 //**********************************************************************
 // Module headers
 
-mod:		modHdr modParE modPortsE ';' modItemListE yENDMODULE endLabelE
+// IEEE: module_declaration:
+moduleDecl:	modHdr modParE modPortsE ';' modItemListE yENDMODULE endLabelE
 			{ $1->modTrace(V3Parse::s_trace);  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); if ($5) $1->addStmtp($5); }
 	;
@@ -473,7 +479,8 @@ portV2kDecl:	varRESET varInput  signingE v2kNetDeclE regrangeE portV2kSig	{ $$ =
 	|	varRESET varOutput signingE v2kVarDeclE regrangeE portV2kSig	{ $$ = $6; }
 	;
 
-ioDecl:		varRESET varInput  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+// IEEE: port_declaration - plus ';'
+portDecl:	varRESET varInput  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
      	|	varRESET varInout  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
      	|	varRESET varOutput signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
 	;
@@ -538,7 +545,7 @@ modItemList:	modItem					{ $$ = $1; }
 	;
 
 modItem:	modOrGenItem 				{ $$ = $1; }
-	|	yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	|	generateRegion				{ $$ = $1; }
 	|	yaSCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
 	|	yaSCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
 	|	yaSCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
@@ -554,6 +561,10 @@ modItem:	modOrGenItem 				{ $$ = $1; }
 	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
 	;
 
+// IEEE: generate_region
+generateRegion:	yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	;
+
 modOrGenItem:	yALWAYS eventControlE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
 	|	yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
 	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
@@ -563,7 +574,7 @@ modOrGenItem:	yALWAYS eventControlE stmtBlock		{ $$ = new AstAlways($1,$2,$3); }
 	|	taskDecl 				{ $$ = $1; }
 	|	funcDecl 				{ $$ = $1; }
 	|	gateDecl 				{ $$ = $1; }
-	|	ioDecl	 				{ $$ = $1; }
+	|	portDecl 				{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
 	//No: |	tableDecl				// Unsupported
 	|	pslStmt 				{ $$ = $1; }
@@ -938,7 +949,7 @@ funcVarList:	funcVar					{ $$ = $1; }
 	|	funcVarList funcVar			{ $$ = $1;$1->addNext($2); }
 	;
 
-funcVar: 	ioDecl					{ $$ = $1; }
+funcVar: 	portDecl				{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
 	|	yVL_PUBLIC				{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_TASK); }
 	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_TASK); }
