@@ -48,6 +48,7 @@ public:
 	CASEX,		// Casex
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
+	STMTDLY,	// Delayed statement
 	GENCLK,		// Generated Clock
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
@@ -76,7 +77,7 @@ public:
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
-	    "COMBDLY", "GENCLK", "IMPLICIT", "IMPURE",
+	    "COMBDLY", "STMTDLY", "GENCLK", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH",

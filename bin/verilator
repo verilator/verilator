@@ -1718,6 +1718,16 @@ not really needed.  The best solution is to insure that each module is in a
 unique file by the same name.  Otherwise, make sure all library files are
 read in as libraries with -v, instead of automatically with -y.
 
+=item STMTDLY
+
+Warns that you have a statement with a delayed time in front of it, for
+example:
+
+    #100 $finish;
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
+
 =item TASKNSVAR
 
 Error when a call to a task or function has a output from that task tied to

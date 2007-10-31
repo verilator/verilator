@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.65****
 
+***  Support "#delay <statement>;" with associated STMTDLY warning.
+
 **** Fix divide-by-zero errors in constant propagator.  [Rodney Sinclair]
 
 **** Fix wrong result with obscure signed-shift underneath a "? :".

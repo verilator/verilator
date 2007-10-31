@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
       else if (cyc==3) begin
 	 if (dly0 !== 32'h23) $stop;
 	 $write("*-* All Finished *-*\n");
-	 $finish;
+	 #100 $finish;
       end
    end
 

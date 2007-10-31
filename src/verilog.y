@@ -284,7 +284,7 @@ class AstSenTree;
 %token<fileline>	yPSL_BRA	"{"
 %token<fileline>	yPSL_KET	"}"
 
-%token<fileline>	';' '=' ',' '(' '.' '!' '~' '[' '@'
+%token<fileline>	';' '=' ',' '(' '.' '!' '~' '[' '@' '#'
 
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
@@ -332,6 +332,7 @@ class AstSenTree;
 %type<nodep>	generateRegion
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
 %type<nodep>	dlyTerm
+%type<fileline> delay
 %type<varp>	sigAndAttr sigId sigIdRange sigList regsig regsigList regSigId
 %type<varp>	netSig netSigList
 %type<rangep>	rangeListE regrangeE anyrange rangeList delayrange portRangeE
@@ -639,10 +640,10 @@ delayE:		/* empty */				{ }
 	|	delay					{ } /* ignored */
 	;
 
-delay:		'#' dlyTerm				{ } /* ignored */
-	|	'#' '(' dlyInParen ')'			{ } /* ignored */
-	|	'#' '(' dlyInParen ',' dlyInParen ')'		{ } /* ignored */
-	|	'#' '(' dlyInParen ',' dlyInParen ',' dlyInParen ')'	{ } /* ignored */
+delay:		'#' dlyTerm				{ $$ = $1; } /* ignored */
+	|	'#' '(' dlyInParen ')'			{ $$ = $1; } /* ignored */
+	|	'#' '(' dlyInParen ',' dlyInParen ')'			{ $$ = $1; } /* ignored */
+	|	'#' '(' dlyInParen ',' dlyInParen ',' dlyInParen ')'	{ $$ = $1; } /* ignored */
 	;
 
 dlyTerm:	yaID 					{ $$ = NULL; }
@@ -828,6 +829,8 @@ stmtList:	stmtBlock				{ $$ = $1; }
 stmt:		';'					{ $$ = NULL; }
 	|	labeledStmt				{ $$ = $1; }
 	|	yaID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
+
+	|	delay stmtBlock				{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement.\n"); }
 
 	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
