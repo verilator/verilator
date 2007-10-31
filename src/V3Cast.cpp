@@ -60,6 +60,7 @@ class CastVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
+    //   AstNode::user()		// bool.  Indicates node is of known size
 
     // STATE
     //int debug() { return 9; }
@@ -76,6 +77,7 @@ private:
 	//if (debug()>8) castp->dumpTree(cout,"-castins: ");
 	//
 	insureLower32Cast(castp);
+	nodep->user(1);  // Now must be of known size
     }
     int castSize (AstNode* nodep) {
 	if (nodep->isQuad()) return VL_QUADSIZE;
@@ -84,7 +86,8 @@ private:
 	else return VL_WORDSIZE;
     }
     void insureCast(AstNode* nodep) {
-	if (castSize(nodep->backp()) != castSize(nodep)) {
+	if (castSize(nodep->backp()) != castSize(nodep)
+	    || !nodep->user()) {
 	    insertCast(nodep, castSize(nodep->backp()));
 	}
     }
@@ -102,15 +105,21 @@ private:
     // VISITORS
     virtual void visit(AstNodeUniop* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	nodep->user(nodep->lhsp()->user());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
     }
     virtual void visit(AstNodeBiop* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	nodep->user(nodep->lhsp()->user()
+		    | nodep->rhsp()->user());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
     }
     virtual void visit(AstNodeTriop* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	nodep->user(nodep->lhsp()->user()
+		    | nodep->rhsp()->user()
+		    | nodep->thsp()->user());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
 	if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
@@ -118,9 +127,11 @@ private:
     virtual void visit(AstCast* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	insureLower32Cast(nodep);
+	nodep->user(1);
     }
     virtual void visit(AstUnaryMin* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	nodep->user(nodep->lhsp()->user());
 	if (nodep->lhsp()->widthMin()==1) {
 	    // We want to avoid a GCC "converting of negative value" warning
 	    // from our expansion of
@@ -140,6 +151,13 @@ private:
 	    //  CData x=3;  out = (QData)(x<<30); 
 	    insertCast (nodep, castSize(nodep));
 	}
+	nodep->user(1);
+    }
+    virtual void visit(AstConst* nodep, AstNUser*) {
+	// Constants are of unknown size if smaller then 33 bits, becase
+	// we're too lazy to wrap every constant in the universe in
+	// ((IData)#).
+	nodep->user(nodep->isQuad() || nodep->isWide());
     }
 
     // NOPs
@@ -154,6 +172,7 @@ private:
 public:
     // CONSTUCTORS
     CastVisitor(AstNetlist* nodep) {
+	AstNode::userClearTree();
 	nodep->accept(*this);
     }
     virtual ~CastVisitor() {}

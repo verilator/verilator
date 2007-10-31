@@ -210,9 +210,9 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
 // Base macros
 
 /// Return true if data[bit] set
-#define VL_BITISSET_I(data,bit) (data & (1UL<<VL_BITBIT_I(bit)))
+#define VL_BITISSET_I(data,bit) (data & (VL_UL(1)<<VL_BITBIT_I(bit)))
 #define VL_BITISSET_Q(data,bit) (data & (VL_ULL(1)<<VL_BITBIT_Q(bit)))
-#define VL_BITISSET_W(data,bit) (data[VL_BITWORD_I(bit)] & (1UL<<VL_BITBIT_I(bit)))
+#define VL_BITISSET_W(data,bit) (data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
 /// Create two 32-bit words from quadword
 #define VL_SET_WQ(decl,data)	{ decl[0]=(data); decl[1]=((data)>>VL_WORDSIZE); }
@@ -225,13 +225,13 @@ static inline QData  VL_CVT_FP_Q(FILE* fp) { union { FILE* fp; QData q; } u; u.q
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
-#define VL_SIGN_I(nbits,lhs)      ((lhs) >> VL_BITBIT_I((nbits) - 1UL))
+#define VL_SIGN_I(nbits,lhs)      ((lhs) >> VL_BITBIT_I((nbits) - VL_UL(1)))
 #define VL_SIGN_Q(nbits,lhs)      ((lhs) >> VL_BITBIT_Q((nbits) - VL_ULL(1)))
 #define VL_SIGNONES_I(nbits,lhs)  (-(VL_SIGN_I(nbits,lhs)))
 
 // Sign bit extended up to MSB, doesn't include unsigned portion
 // Optimization bug in GCC 3.3 returns different bitmasks to later states for
-static inline IData  VL_EXTENDSIGN_I(int lbits, IData lhs) { return (-((lhs)&(1UL<<(lbits-1)))); }
+static inline IData  VL_EXTENDSIGN_I(int lbits, IData lhs) { return (-((lhs)&(VL_UL(1)<<(lbits-1)))); }
 static inline QData  VL_EXTENDSIGN_Q(int lbits, QData lhs) { return (-((lhs)&(VL_ULL(1)<<(lbits-1)))); }
 
 // Debugging prints
@@ -304,15 +304,15 @@ static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp,WDataInP lwp){
 
 // EMIT_RULE: VL_ASSIGNBIT:  rclean=clean;
 static inline void VL_ASSIGNBIT_II(int, int bit, CData& lhsr, IData rhs) {
-    lhsr = ((lhsr & ~(1UL<<VL_BITBIT_I(bit)))
+    lhsr = ((lhsr & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
 	    | (rhs<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_II(int, int bit, SData& lhsr, IData rhs) {
-    lhsr = ((lhsr & ~(1UL<<VL_BITBIT_I(bit)))
+    lhsr = ((lhsr & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
 	    | (rhs<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_II(int, int bit, IData& lhsr, IData rhs) {
-    lhsr = ((lhsr & ~(1UL<<VL_BITBIT_I(bit)))
+    lhsr = ((lhsr & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
 	    | (rhs<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) {
@@ -321,25 +321,25 @@ static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) {
 }
 static inline void VL_ASSIGNBIT_WI(int, int bit, WDataOutP owp, IData rhs) {
     IData orig = owp[VL_BITWORD_I(bit)];
-    owp[VL_BITWORD_I(bit)] = (orig & ~(1UL<<VL_BITBIT_I(bit))
+    owp[VL_BITWORD_I(bit)] = (orig & ~(VL_UL(1)<<VL_BITBIT_I(bit))
 			    | (rhs<<VL_BITBIT_I(bit)));
 }
 // Alternative form that is an instruction faster when rhs is constant one.
 static inline void VL_ASSIGNBIT_IO(int, int bit, CData& lhsr, IData) {
-    lhsr = (lhsr | (1UL<<VL_BITBIT_I(bit)));
+    lhsr = (lhsr | (VL_UL(1)<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_IO(int, int bit, SData& lhsr, IData) {
-    lhsr = (lhsr | (1UL<<VL_BITBIT_I(bit)));
+    lhsr = (lhsr | (VL_UL(1)<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_IO(int, int bit, IData& lhsr, IData) {
-    lhsr = (lhsr | (1UL<<VL_BITBIT_I(bit)));
+    lhsr = (lhsr | (VL_UL(1)<<VL_BITBIT_I(bit)));
 }
 static inline void VL_ASSIGNBIT_QO(int, int bit, QData& lhsr, IData) {
     lhsr = (lhsr | (VL_ULL(1)<<VL_BITBIT_Q(bit)));
 }
 static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
     IData orig = owp[VL_BITWORD_I(bit)];
-    owp[VL_BITWORD_I(bit)] = (orig |  (1UL<<VL_BITBIT_I(bit)));
+    owp[VL_BITWORD_I(bit)] = (orig |  (VL_UL(1)<<VL_BITBIT_I(bit)));
 }
 
 //===================================================================

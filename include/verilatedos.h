@@ -68,6 +68,9 @@
 # define VL_ULL(c) (c##ULL)	///< Add appropriate suffix to 64-bit constant
 #endif
 
+// This is not necessarily the same as #UL, depending on what the IData typedef is.
+#define VL_UL(c) ((IData)(c##UL))	///< Add appropriate suffix to 32-bit constant
+
 //=========================================================================
 // Basic integer types
 

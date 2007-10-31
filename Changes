@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix divide-by-zero errors in constant propagator.  [Rodney Sinclair]
 
+**** Fix wrong result with obscure signed-shift underneath a "? :".
+
 * Verilator 3.654 10/18/2007
 
 **** Don't exit early if many warnings but no errors are found. [Stan Mayer]

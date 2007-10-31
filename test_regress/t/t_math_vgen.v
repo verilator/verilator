@@ -263,6 +263,17 @@ module t (/*AUTOARG*/
 
    //============================================================
 
+   reg signed [  5:0] W123_is_3f                     ; //=3F
+
+   always @(posedge clk) begin
+      W123_is_3f <= 6'sh3f;
+   end
+   always @(posedge clk) begin
+      if (((~ ((32'sh088d1bcb) <<< W123_is_3f)) >>> 6'sh3f) != 32'shffffffff) if (check) $stop;
+   end
+
+   //============================================================
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
