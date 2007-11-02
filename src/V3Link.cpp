@@ -165,7 +165,7 @@ private:
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
-			nodep->unlinkFrBack(); nodep=NULL;
+			nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    } else {
 			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName());
 			findvarp->v3error("... Location of original declaration");

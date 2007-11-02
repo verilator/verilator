@@ -95,6 +95,8 @@ private:
 		 || (rhsp->castConst() && rhsp->castConst()->num().isFourState()))) {
 		V3Number num (nodep->fileline(), 1, (nodep->castEqCase()?0:1));
 		newp = new AstConst (nodep->fileline(), num);
+		lhsp->deleteTree(); lhsp=NULL;
+		rhsp->deleteTree(); rhsp=NULL;
 	    } else {
 		if (nodep->castEqCase())
 		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
@@ -221,6 +223,7 @@ private:
 		if (debug()>=9) newref1p->dumpTree(cout,"     _new: ");
 		if (debug()>=9) newvarp->dumpTree(cout,"     _new: ");
 		if (debug()>=9) newinitp->dumpTree(cout,"     _new: ");
+		nodep->deleteTree(); nodep=NULL;
 	    }
 	}
     }

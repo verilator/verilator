@@ -151,7 +151,7 @@ private:
 	    // Remove the cell
 	    newmodp->deleteTree(); newmodp=NULL; // Clear any leftover ports, etc
 	    nodep->unlinkFrBack();
-	    nodep = NULL;
+	    pushDeletep(nodep); nodep = NULL;
 	    if (debug()>=9) { m_modp->dumpTree(cout,"donemod:"); }
 	}
     }
@@ -332,14 +332,14 @@ private:
 	    } else {
 		m_modp->user(1);
 	    }
-	    nodep->unlinkFrBack(); nodep=NULL;  // Remove so don't propagate to upper cell...
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
 	} else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
 	    if (!m_modp) {
 		nodep->v3error("Inline pragma not under a module");
 	    } else {
 		cantInline("Pragma NO_INLINE_MODULE");
 	    }
-	    nodep->unlinkFrBack(); nodep=NULL;  // Remove so don't propagate to upper cell...
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
 	} else {
 	    nodep->iterateChildren(*this);
 	}

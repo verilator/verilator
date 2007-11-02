@@ -117,8 +117,6 @@ class V3Error {
     static ostringstream s_errorStr;		// Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
-    static void	incErrors();
-    static void	incWarnings();
 
     V3Error() { cerr<<("Static class"); abort(); }
 
@@ -132,6 +130,8 @@ class V3Error {
     static int		warnCount() { return s_warnCount; }
     static int		errorOrWarnCount() { return errorCount()+warnCount(); }
     // METHODS
+    static void		incErrors();
+    static void		incWarnings();
     static void		init();
     static void		abortIfErrors();
     static void		abortIfWarnings();
@@ -199,9 +199,14 @@ protected:
     void incLineno() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
-    FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOff=s_defaultFileLine.m_warnOff;}
-    FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOff=fromp->m_warnOff;};
-    FileLine (EmptySecret) { m_lineno=0; m_filename="COMMAND_LINE"; m_warnOff=0; } // Only for static constructor
+    FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOff=s_defaultFileLine.m_warnOff; }
+    FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOff=fromp->m_warnOff; }
+    FileLine (EmptySecret) { m_lineno=0; m_filename="COMMAND_LINE"; m_warnOff=0; }
+    ~FileLine() { }
+#ifdef VL_LEAK_CHECKS
+    static void* operator new(size_t size);
+    static void operator delete(void* obj, size_t size);
+#endif
     static FileLine& defaultFileLine() { return s_defaultFileLine; }
     int lineno () const { return m_lineno; }
     string ascii() const;
@@ -218,6 +223,8 @@ public:
 
     void	v3errorEnd(ostringstream& str);
     inline bool operator==(FileLine rhs) { return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename); }
+
+    static void deleteAllRemaining();
 };
 ostream& operator<<(ostream& os, FileLine* fileline);
 

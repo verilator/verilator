@@ -538,6 +538,10 @@ public:
 
     // CONSTRUCTORS
     virtual ~AstNode();
+#ifdef VL_LEAK_CHECKS
+    static void* operator new(size_t size);
+    static void operator delete(void* obj, size_t size);
+#endif
 
     // CONSTANT ACCESSORS
     static int	instrCountBranch() { return 4; }	///< Instruction cycles to branch

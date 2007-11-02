@@ -134,6 +134,7 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
     // Called on all major tree changers.
     // Only for use for those really nasty bugs relating to internals
     // Note this may be null.
+    //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<": "<<(void*)this<<endl;
     //if (debug()) {
     //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
     //	v3Global.rootp()->dumpTree(cout,"-treeChange: ");
@@ -586,10 +587,28 @@ void AstNode::deleteTree() {
     // unlinkFromBack or unlinkFromBackWithNext as appropriate before calling this.
     if (!this) return;
     UASSERT(m_backp==NULL,"Delete called on node with backlink still set\n");
-    this->debugTreeChange("-delete: ", __LINE__, true);
+    this->debugTreeChange("-delTree:  ", __LINE__, true);
     // MUST be depth first!
     deleteTreeIter();
 }
+
+//======================================================================
+// Memory checks
+
+#ifdef VL_LEAK_CHECKS
+void* AstNode::operator new(size_t size) {
+    AstNode* objp = static_cast<AstNode*>(::operator new(size));
+    V3Broken::addNewed(objp);
+    return objp;
+}
+
+void AstNode::operator delete(void* objp, size_t size) {
+    if (!objp) return;
+    AstNode* nodep = static_cast<AstNode*>(objp);
+    V3Broken::deleted(nodep);
+    ::operator delete(objp);
+}
+#endif
 
 //======================================================================
 // Iterators

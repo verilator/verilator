@@ -349,6 +349,7 @@ private:
 				// Connect to this exact variable
 				AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
 				portp->user2p(localVscp);
+				pushDeletep(pinp);
 			    } else {
 				pinp->v3warn(TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 			    }

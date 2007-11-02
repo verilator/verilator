@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <set>
 #include "V3Error.h"
 #ifndef _V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
@@ -170,6 +171,46 @@ void FileLine::v3errorEnd(ostringstream& str) {
 	V3Error::v3errorEnd(str);
     }
 }
+
+#ifdef VL_LEAK_CHECKS
+typedef set<FileLine*> FileLineCheckSet;
+FileLineCheckSet fileLineLeakChecks;
+
+void* FileLine::operator new(size_t size) {
+    FileLine* objp = static_cast<FileLine*>(::operator new(size));
+    fileLineLeakChecks.insert(objp);
+    return objp;
+}
+
+void FileLine::operator delete(void* objp, size_t size) {
+    if (!objp) return;
+    FileLine* flp = static_cast<FileLine*>(objp);
+    FileLineCheckSet::iterator it = fileLineLeakChecks.find(flp);
+    if (it != fileLineLeakChecks.end()) {
+	fileLineLeakChecks.erase(it);
+    } else {
+	flp->v3fatalSrc("Deleting FileLine object that was never tracked\n");
+    }
+    ::operator delete(objp);
+}
+#endif
+
+void FileLine::deleteAllRemaining() {
+#ifdef VL_LEAK_CHECKS
+    // FileLines are allocated, but never nicely freed, as it's much faster
+    // that way.  Unfortunately this makes our leak checking a big mess, so
+    // only when leak checking we'll track them all and cleanup.
+    while (1) {
+	FileLineCheckSet::iterator it=fileLineLeakChecks.begin();
+	if (it==fileLineLeakChecks.end()) break;
+	delete *it;  
+	// Operator delete will remove the iterated object from the list.
+	// Eventually the list will be empty and terminate the loop.
+    }
+    fileLineLeakChecks.clear();
+#endif
+}
+
 //######################################################################
 // V3Error class functions
 

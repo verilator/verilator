@@ -78,6 +78,19 @@ void V3Read::statePop()	    { s_readp->m_lexerp->statePop(); }
 //######################################################################
 // Read class functions
 
+V3Read::~V3Read() {
+    for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
+	delete (*it);
+    }
+    m_stringps.clear();
+    for (deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
+	delete (*it);
+    }
+    m_numberps.clear();
+    if (m_lexerp) { delete m_lexerp; m_lexerp = NULL; }
+    parserClear();
+}
+
 void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibrary) {
     string modname = V3Options::filenameNonExt(modfilename);
 

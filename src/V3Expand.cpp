@@ -531,6 +531,8 @@ private:
 								  rhsp, lsb)));
 		    }
 		}
+		rhsp->deleteTree(); rhsp=NULL;
+		destp->deleteTree(); destp=NULL;
 	    } else {
 		UINFO(8,"    ASSIGNSEL(const,narrow) "<<nodep<<endl);
 		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep);

@@ -218,7 +218,10 @@ private:
 		 a++, b++) {
 		if (m_valueItem[a] != m_valueItem[b]) { same=false; break; }
 	    }
-	    if (same) return tree0p;
+	    if (same) {
+		tree1p->deleteTree(); tree1p=NULL;
+		return tree0p;
+	    }
 
 	    // Must have differing logic, so make a selection
 
@@ -245,8 +248,7 @@ private:
 	// CASEx(cexpr,....
 	// ->  tree of IF(msb,  IF(msb-1, 11, 10)
 	//                      IF(msb-1, 01, 00))
-	AstNode* cexprp = nodep->exprp();
-	cexprp->unlinkFrBack();
+	AstNode* cexprp = nodep->exprp()->unlinkFrBack();
 
 	if (debug()>=9) {
 	    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
@@ -264,6 +266,8 @@ private:
 
 	if (ifrootp) nodep->replaceWith(ifrootp);
 	else nodep->unlinkFrBack();
+	nodep->deleteTree(); nodep=NULL;
+	cexprp->deleteTree(); cexprp=NULL;
 	if (debug()>=9) ifrootp->dumpTree(cout,"    _simp: ");
     }
 
@@ -304,6 +308,7 @@ private:
 			and2p = new AstAnd(itemp->fileline(), 
 					   new AstConst(itemp->fileline(), numval),
 					   new AstConst(itemp->fileline(), nummask));
+			icondp->deleteTree(); icondp=NULL; iconstp=NULL;
 		    } else {
 			// Not a caseX mask, we can simply build CASEEQ(cexpr icond)
 			and1p = cexprp->cloneTree(false);
@@ -320,6 +325,7 @@ private:
 		itemp->condsp(ifexprp);
 	    }
 	}
+	cexprp->deleteTree(); cexprp=NULL;
 	if (!hadDefault) {
 	    // If there was no default, add a empty one, this greatly simplifies below code
 	    // and constant propagation will just eliminate it for us later.

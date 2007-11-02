@@ -57,10 +57,10 @@ protected:
 	    s_preprocp->debug(debug());
 	    // Default defines
 	    FileLine* prefl = new FileLine("INTERNAL_VERILATOR_DEFINE",0);
-	    s_preprocp->define(prefl,"verilator", "1");
-	    s_preprocp->define(prefl,"verilator3", "1");
-	    s_preprocp->define(prefl,"systemc_clock", "/*verilator systemc_clock*/");
-	    s_preprocp->define(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");
+	    s_preprocp->define(prefl,"verilator", "1");  // LEAK_OK
+	    s_preprocp->define(prefl,"verilator3", "1");  // LEAK_OK
+	    s_preprocp->define(prefl,"systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK
+	    s_preprocp->define(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");  // LEAK_OK
 	}
     }
 

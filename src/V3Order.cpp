@@ -155,6 +155,9 @@ public:
     void movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp);	// Mark one vertex as finished, remove from ready list if done
     // STATIC MEMBERS (for lookup)
     static void clear() {
+	for (DomScopeMap::iterator it=s_dsMap.begin(); it!=s_dsMap.end(); ++it) {
+	    delete it->second;
+	}
 	s_dsMap.clear();
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
@@ -426,15 +429,18 @@ private:
 	m_finder.main(m_topScopep);
 	// ProcessDomainsIterate will use these when it needs to move
 	// something to a combodomain.  This saves a ton of find() operations.
-	AstSenTree comb (nodep->fileline(),  // Gets cloned() so ok if goes out of scope
-			 new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
-	m_comboDomainp = m_finder.getSenTree(nodep->fileline(), &comb);
-	AstSenTree settle (nodep->fileline(),  // Gets cloned() so ok if goes out of scope
-			   new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-	m_settleDomainp = m_finder.getSenTree(nodep->fileline(), &settle);
+	AstSenTree* combp = new AstSenTree (nodep->fileline(),	// Gets cloned() so ok if goes out of scope
+					    new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
+	m_comboDomainp = m_finder.getSenTree(nodep->fileline(), combp);
+	pushDeletep(combp);  // Cleanup when done
+	AstSenTree* settlep = new AstSenTree (nodep->fileline(),  // Gets cloned() so ok if goes out of scope
+					      new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+	m_settleDomainp = m_finder.getSenTree(nodep->fileline(), settlep);
+	pushDeletep(settlep);  // Cleanup when done
 	// Fake AstSenTree we set domainp to indicate needs deletion
 	m_deleteDomainp = new AstSenTree (nodep->fileline(),
 					  new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+	pushDeletep(m_deleteDomainp);  // Cleanup when done
 	UINFO(5,"    DeleteDomain = "<<m_deleteDomainp<<endl);
 	// Base vertices
 	m_activeSenVxp = NULL;

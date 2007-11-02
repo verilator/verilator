@@ -66,6 +66,10 @@ public:
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
+    static void setRange(AstRange* rangep) {
+	if (s_varRangep) { s_varRangep->deleteTree(); s_varRangep=NULL; } // It was cloned, so this is safe.
+	s_varRangep = rangep;
+    }
     static string   deQuote(FileLine* fileline, string text);
 };
 
@@ -88,7 +92,7 @@ AstCase*	V3Parse::s_caseAttrp = NULL;
 #define VARDECL(type) { V3Parse::s_varDecl = AstVarType::type; }
 #define VARIO(type) { V3Parse::s_varIO = AstVarType::type; }
 #define VARSIGNED(value) { V3Parse::s_varSigned = value; }
-#define VARRANGE(range) { V3Parse::s_varRangep=(range); }
+#define VARRANGE(rangep) { V3Parse::setRange(rangep); }
 
 #define INSTPREP(modname,paramsp) { V3Parse::s_impliedDecl = true; V3Parse::s_instModule = modname; V3Parse::s_instParamp = paramsp; }
 
@@ -858,8 +862,8 @@ stmt:		';'					{ $$ = NULL; }
 	|	yD_ERROR    parenE ';'						{ $$ = V3Parse::createDisplayError($1); }
 	|	yD_ERROR    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
 
 	|	yD_READMEMB '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -1314,6 +1318,11 @@ pslExpr:	exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
 //**********************************************************************
 %%
 
+void V3Read::parserClear() {
+    // Clear up any dynamic memory V3Parser required
+    V3Parse::setRange(NULL);
+}
+
 AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
     FileLine* newfl = new FileLine (fileline);
     newfl->warnOff(V3ErrorCode::WIDTH, true);
@@ -1328,6 +1337,7 @@ AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
 AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* arrayp) {
     AstVarType type = V3Parse::s_varIO;
     AstRange* rangep = V3Parse::s_varRangep;
+    AstRange* cleanup_rangep = NULL;
     //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<V3Parse::s_varDecl.ascii()<<" io="<<V3Parse::s_varIO.ascii()<<endl);
     if (type == AstVarType::UNKNOWN) type = V3Parse::s_varDecl;
     if (type == AstVarType::UNKNOWN) fileline->v3fatalSrc("Unknown signal type declared");
@@ -1335,7 +1345,8 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
     if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER
 	|| type == AstVarType::GENVAR) {
 	if (rangep) fileline->v3error("Integers may not be ranged: "<<name);
-	rangep = new AstRange(fileline, 31, 0);  // Integer == REG[31:0]
+	cleanup_rangep = new AstRange(fileline, 31, 0);  // Integer == REG[31:0]
+	rangep = cleanup_rangep;
     }
     if (type == AstVarType::GENVAR) {
 	if (arrayp) fileline->v3error("Genvars may not be arrayed: "<<name);
@@ -1363,6 +1374,7 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     V3Parse::s_varAttrp = nodep;
+    if (cleanup_rangep) { cleanup_rangep->deleteTree(); cleanup_rangep=NULL; }
     return nodep;
 }
 

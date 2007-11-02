@@ -384,6 +384,8 @@ private:
 	    int shift1 = shift1p->castConst()->asInt(); if (lhsp->castShiftR())  shift1=-shift1;
 	    int shift2 = shift2p->castConst()->asInt(); if (nodep->castShiftR()) shift2=-shift2;
 	    int newshift = shift1+shift2;
+	    shift1p->deleteTree(); shift1p=NULL;
+	    shift2p->deleteTree(); shift1p=NULL;
 	    AstNode* newp;
 	    V3Number mask1 (nodep->fileline(), nodep->width());
 	    V3Number ones (nodep->fileline(), nodep->width());
@@ -524,7 +526,8 @@ private:
 	    if (debug()>=9) asn1p->dumpTree(cout,"     _new: ");
 	    if (debug()>=9) asn2p->dumpTree(cout,"     _new: ");
 	    // Cleanup
-	    nodep->unlinkFrBack()->deleteTree();
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    conp->deleteTree(); conp=NULL;
 	    // Further reduce, either node may have more reductions.
 	    return true;
 	}
@@ -637,6 +640,7 @@ private:
 	    // If bp was a concat, then we have this exact same form again!
 	    // Recurse rather then calling node->iterate to prevent 2^n recursion!
 	    if (operandConcatMove(abConcp)) moveConcat(abConcp);
+	    bcConcp->deleteTree(); bcConcp=NULL;
 	} else { 
 	    AstConcat* abConcp = nodep->lhsp()->castConcat(); abConcp->unlinkFrBack();
 	    AstNode* ap = abConcp->lhsp()->unlinkFrBack();
@@ -647,6 +651,7 @@ private:
 	    nodep->lhsp(ap);
 	    nodep->rhsp(bcConcp);
 	    if (operandConcatMove(bcConcp)) moveConcat(bcConcp);
+	    abConcp->deleteTree(); abConcp=NULL;
 	}
     }
 
@@ -677,6 +682,8 @@ private:
 	if (lsb1p->castConst() && lsb2p->castConst()) {
 	    newlsbp = new AstConst(lsb1p->fileline(),
 				   lsb1p->castConst()->asInt() + lsb2p->castConst()->asInt());
+	    lsb1p->deleteTree(); lsb1p=NULL;
+	    lsb2p->deleteTree(); lsb2p=NULL;
 	} else {
 	    // Width is important, we need the width of the fromp's
 	    // expression, not the potentially smaller lsb1p's width
@@ -860,7 +867,7 @@ private:
 				 new AstAssign(nodep->fileline(),
 					       varrefp, exprp));
 	    m_modp->addStmtp(newinitp);
-	    nodep->unlinkFrBack();  nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree();  nodep=NULL;
 	    // Set the initial value right in the variable so we can constant propagate
 	    AstNode* initvaluep = exprp->cloneTree(false);
 	    varrefp->varp()->initp(initvaluep);

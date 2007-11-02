@@ -110,18 +110,6 @@ private:
     }
     AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/) {
 	// Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
-	AstRange* rangep = NULL;
-	if (width==0) {
-	    rangep = new AstRange(oldvarscp->fileline(),
-				  oldvarscp->varp()->msb(),
-				  oldvarscp->varp()->lsb());
-	} else if (width==1) {
-	    rangep = NULL;
-	} else {
-	    rangep = new AstRange(oldvarscp->fileline(),
-				  width-1, 0);
-	}
-
 	if (!oldvarscp->scopep()) oldvarscp->v3fatalSrc("Var unscoped");
 	AstVar* varp;
 	AstModule* addmodp = oldvarscp->scopep()->modp();
@@ -131,6 +119,17 @@ private:
 	    // Created module's AstVar earlier under some other scope
 	    varp = iter->second;
 	} else {
+	    AstRange* rangep = NULL;
+	    if (width==0) {
+		rangep = new AstRange(oldvarscp->fileline(),
+				      oldvarscp->varp()->msb(),
+				      oldvarscp->varp()->lsb());
+	    } else if (width==1) {
+		rangep = NULL;
+	    } else {
+		rangep = new AstRange(oldvarscp->fileline(),
+				      width-1, 0);
+	    }
 	    varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, rangep);
 	    if (width==0) varp->widthSignedFrom(oldvarscp);
 	    addmodp->addStmtp(varp);

@@ -7,23 +7,25 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "#delay <statement>;" with associated STMTDLY warning.
 
-**** Fix divide-by-zero errors in constant propagator.  [Rodney Sinclair]
+**** Fixed divide-by-zero errors in constant propagator.  [Rodney Sinclair]
 
-**** Fix wrong result with obscure signed-shift underneath a "? :".
+**** Fixed wrong result with obscure signed-shift underneath a "? :".
+
+**** Fixed many internal memory leaks, and added leak detector.
 
 * Verilator 3.654 10/18/2007
 
 **** Don't exit early if many warnings but no errors are found. [Stan Mayer]
 
-**** Fix parsing module #(parameter x,y) declarations. [Oleg Rodionov]
+**** Fixed parsing module #(parameter x,y) declarations. [Oleg Rodionov]
 
-**** Fix parsing system functions with empty parens. [Oleg Rodionov]
+**** Fixed parsing system functions with empty parens. [Oleg Rodionov]
 
 * Verilator 3.653 8/1/2007
 
 **** Support SystemVerilog ==? and !=? operators.
 
-**** Fix SC_LIBS missing from generated makefiles. [Ding Xiaoliang]
+**** Fixed SC_LIBS missing from generated makefiles. [Ding Xiaoliang]
 
 * Verilator 3.652 6/21/2007
 
@@ -35,7 +37,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Optimize constant $display arguments.
 
-**** Fix Preprocessor dropping some `line directives.  [Mark Nodine]
+**** Fixed Preprocessor dropping some `line directives.  [Mark Nodine]
 
 * Verilator 3.651 5/22/2007
 
@@ -70,11 +72,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add USER_CPPFLAGS and USER_LDFLAGS to Makefiles.  [Gerald Williams]
 
-**** Fix compile errors under Windows MINGW compiler.  [Gerald Williams]
+**** Fixed compile errors under Windows MINGW compiler.  [Gerald Williams]
 
-**** Fix dotted bit reference to local memory.  [Eugene Weber]
+**** Fixed dotted bit reference to local memory.  [Eugene Weber]
 
-**** Fix 3.640 `verilog forcing IEEE 1364-1995 only.  [David Hewson]
+**** Fixed 3.640 `verilog forcing IEEE 1364-1995 only.  [David Hewson]
 
 * Verilator 3.640 3/12/2007
 
@@ -86,13 +88,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Try all +libext's in the exact order given.  [Michael Shinkarovsky]
 
-**** Fix elimination of public signals assigned to constants.  [Eugene Weber]
+**** Fixed elimination of public signals assigned to constants.  [Eugene Weber]
 
-**** Fix internal error when public for loop has empty body.  [David Addison]
+**** Fixed internal error when public for loop has empty body.  [David Addison]
 
-**** Fix "Loops detected" assertion when model exceeds 4GB.  [David Hewson]
+**** Fixed "Loops detected" assertion when model exceeds 4GB.  [David Hewson]
 
-**** Fix display %m names inside named blocks.
+**** Fixed display %m names inside named blocks.
 
 * Verilator 3.633 2/7/2007
 
@@ -100,11 +102,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  With VL_DEBUG, show wires causing convergence errors. [Mike Shinkarovsky]
 
-**** Fix isolate_assignments when many signals per always. [Mike Shinkarovsky]
+**** Fixed isolate_assignments when many signals per always. [Mike Shinkarovsky]
 
-**** Fix isolate_assignments across task/func temporaries. [Mike Shinkarovsky]
+**** Fixed isolate_assignments across task/func temporaries. [Mike Shinkarovsky]
 
-**** Fix $display's with array select followed by wide AND.  [David Hewson]
+**** Fixed $display's with array select followed by wide AND.  [David Hewson]
 
 * Verilator 3.632 1/17/2007
 
@@ -115,11 +117,11 @@ indicates the contributor was also the author of the fix; Thanks!
 **   Support standard NAME[#] for cells created by arraying or generate for.
      This replaces the non-standard name__# syntax used in earlier versions.
 
-**** Fix again dotted references into generate cells.  [David Hewson]
+**** Fixed again dotted references into generate cells.  [David Hewson]
      Verilator no longer accepts duplicated variables inside unique
      generate blocks as this is illegal according to the specification.
 
-**** Fix $readmem* with filenames < 8 characters.  [Emerson Suguimoto]
+**** Fixed $readmem* with filenames < 8 characters.  [Emerson Suguimoto]
 
 * Verilator 3.630 12/19/2006
 
@@ -131,21 +133,21 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Reduce depth of priority encoded case statements.  [Eugene Weber]
 
-**** Fix dotted references inside generated cells.  [David Hewson]
+**** Fixed dotted references inside generated cells.  [David Hewson]
 
-**** Fix missed split optimization points underneath other re-split blocks.
+**** Fixed missed split optimization points underneath other re-split blocks.
 
 * Verilator 3.623 12/05/2006
 
 ***  Add --output-split-cfuncs for accelerating GCC compile. [Eugene Weber]
 
-**** Fix $signed mis-extending when input has a WIDTH violation. [Eugene Weber]
+**** Fixed $signed mis-extending when input has a WIDTH violation. [Eugene Weber]
 
 **** Add M32 make variable to support -m32 compiles.  [Eugene Weber]
 
 * Verilator 3.622 10/17/2006 Stable
 
-**** Fix --skip-identical without --debug, broken in 3.621.  [Andy Meier]
+**** Fixed --skip-identical without --debug, broken in 3.621.  [Andy Meier]
 
 * Verilator 3.621 10/11/2006 Beta
 
@@ -155,11 +157,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Remove .vpp intermediate files when not under --debug.
 
-**** Fix link error when using --exe with --trace.  [Eugene Weber]
+**** Fixed link error when using --exe with --trace.  [Eugene Weber]
 
-**** Fix mis-optimization of wide concats with constants.
+**** Fixed mis-optimization of wide concats with constants.
 
-**** Fix core dump on printing error when not under --debug.  [Allan Cochrane]
+**** Fixed core dump on printing error when not under --debug.  [Allan Cochrane]
 
 * Verilator 3.620 10/04/2006 Stable
 
@@ -174,9 +176,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Optimize additional boolean identities (a|a = a, etc.)
 
-**** Fix coredump when dotted cross-ref inside task call. [Eugene Weber]
+**** Fixed coredump when dotted cross-ref inside task call. [Eugene Weber]
 
-**** Fix dotted variables in always sensitivity lists. [Allan Cochrane]
+**** Fixed dotted variables in always sensitivity lists. [Allan Cochrane]
 
 * Verilator 3.610 09/20/2006 Stable
 
@@ -186,13 +188,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Removed coverage request variable; see Coverage limitations in docs.
 
-**** Fix DOS carriage returns in multiline defines.  [Ralf Karge]
+**** Fixed DOS carriage returns in multiline defines.  [Ralf Karge]
 
-**** Fix printf format warnings on 64-bit linux.
+**** Fixed printf format warnings on 64-bit linux.
 
 * Verilator 3.602 09/11/2006 Stable
 
-**** Fix function references under top inlined module.  [David Hewson]
+**** Fixed function references under top inlined module.  [David Hewson]
 
 * Verilator 3.601 09/06/2006 Beta
 
@@ -205,15 +207,15 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Changed how internal functions are invoked to reduce aliasing.
      Useful when using GCC's -O2 or -fstrict-aliasing, to gain another ~4%.
 
-**** Fix memory leak when destroying modules.  [John Stroebel]
+**** Fixed memory leak when destroying modules.  [John Stroebel]
 
-**** Fix coredump when unused modules have unused cells.  [David Hewson]
+**** Fixed coredump when unused modules have unused cells.  [David Hewson]
 
-**** Fix 3.600 internal error with arrayed instances.  [David Hewson]
+**** Fixed 3.600 internal error with arrayed instances.  [David Hewson]
 
-**** Fix 3.600 internal error with non-unrolled function loops.  [David Hewson]
+**** Fixed 3.600 internal error with non-unrolled function loops.  [David Hewson]
 
-**** Fix $display %m name not matching Verilog name inside SystemC modules.
+**** Fixed $display %m name not matching Verilog name inside SystemC modules.
 
 **** Declare optimized lookup tables as 'static', to reduce D-Cache miss rate.
 
@@ -223,17 +225,17 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Lint for x's in generate case statements.
 
-**** Fix line numbers being off by one when first file starts with newline.
+**** Fixed line numbers being off by one when first file starts with newline.
 
-**** Fix naming of generate for blocks to prevent non-inline name conflict.
+**** Fixed naming of generate for blocks to prevent non-inline name conflict.
 
-**** Fix redundant statements remaining after table optimization.
+**** Fixed redundant statements remaining after table optimization.
 
 * Verilator 3.542 08/11/2006 Stable
 
-**** Fix extraneous UNSIGNED warning when comparing genvars.  [David Hewson]
+**** Fixed extraneous UNSIGNED warning when comparing genvars.  [David Hewson]
 
-**** Fix extra white space in $display %c.  [by David Addison]
+**** Fixed extra white space in $display %c.  [by David Addison]
 
 **** vl_finish and vl_fatal now print via VL_PRINTF rather then cerr/cout.
 
@@ -241,15 +243,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.541 07/05/2006 Beta
 
-***  Fix "// verilator lint_on" not re-enabling warnings.  [David Hewson]
+***  Fixed "// verilator lint_on" not re-enabling warnings.  [David Hewson]
 
-***  Fix 3.540's multiple memory assignments to same block.  [David Hewson]
+***  Fixed 3.540's multiple memory assignments to same block.  [David Hewson]
 
 **** Add warning on changeDetect to arrayed structures.  [David Hewson]
 
-**** Fix non-zero start number for arrayed instantiations.  [Jae Hossell]
+**** Fixed non-zero start number for arrayed instantiations.  [Jae Hossell]
 
-**** Fix GCC 4.0 header file warnings.
+**** Fixed GCC 4.0 header file warnings.
 
 * Verilator 3.540 06/27/2006 Beta
 
@@ -257,27 +259,27 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Optimize delayed assignments to memories inside loops, ~0-5% faster.
 
-**** Fix mis-width warning on bit selects of memories.  [David Hewson]
+**** Fixed mis-width warning on bit selects of memories.  [David Hewson]
 
-**** Fix mis-width warning on dead generate-if branches.  [Jae Hossell]
+**** Fixed mis-width warning on dead generate-if branches.  [Jae Hossell]
 
 * Verilator 3.533 06/05/2006 Stable
 
 ***  Add PDF user manual, verilator.pdf.
 
-**** Fix delayed bit-selected arrayed assignments. [David Hewson]
+**** Fixed delayed bit-selected arrayed assignments. [David Hewson]
 
-**** Fix execution path to Perl.  [Shanshan Xu]
+**** Fixed execution path to Perl.  [Shanshan Xu]
 
-**** Fix Bison compile errors in verilog.y.  [by Ben Jackson]
+**** Fixed Bison compile errors in verilog.y.  [by Ben Jackson]
 
 * Verilator 3.531 05/10/2006 Stable
 
 ***  Support $c routines which return 64 bit values.
 
-**** Fix `include `DEFINE.
+**** Fixed `include `DEFINE.
 
-**** Fix Verilator core dump when have empty public function. [David.Hewson]
+**** Fixed Verilator core dump when have empty public function. [David.Hewson]
 
 * Verilator 3.530 04/24/2006 Stable
 
@@ -286,11 +288,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.523 03/06/2006 Stable
 
-**** Fix error line numbers being off due to multi-line defines.  [Mat Zeno]
+**** Fixed error line numbers being off due to multi-line defines.  [Mat Zeno]
 
-**** Fix GCC sign extending (uint64_t)(a<b). [David Hewson]
+**** Fixed GCC sign extending (uint64_t)(a<b). [David Hewson]
 
-**** Fix `systemc_imp_header "undefined macro" error.
+**** Fixed `systemc_imp_header "undefined macro" error.
 
 * Verilator 3.522 02/23/2006 Beta
 
@@ -302,7 +304,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Added SystemVerilog 'x,'z,'0,'1, and new string literals.
 
-**** Fix public module's parent still getting inlined.
+**** Fixed public module's parent still getting inlined.
 
 * Verilator 3.520 01/14/2006 Stable
 
@@ -315,28 +317,28 @@ indicates the contributor was also the author of the fix; Thanks!
      This adds a small ~2% performance penalty if traces are compiled in,
      but not turned on.  For best non-tracing performance, do not use --trace.
 
-**** Fix $'s in specify delays causing bad PLI errors.  [Mat Zeno]
+**** Fixed $'s in specify delays causing bad PLI errors.  [Mat Zeno]
 
-**** Fix public functions not setting up proper symbol table. [Mat Zeno]
+**** Fixed public functions not setting up proper symbol table. [Mat Zeno]
 
-**** Fix genvars generating trace compile errors.  [Mat Zeno]
+**** Fixed genvars generating trace compile errors.  [Mat Zeno]
 
-**** Fix VL_MULS_WWW compile error with MSVC++. [Wim Michiels]
+**** Fixed VL_MULS_WWW compile error with MSVC++. [Wim Michiels]
 
 * Verilator 3.502 11/30/2005 Stable
 
-**** Fix local non-IO variables in public functions and tasks.
+**** Fixed local non-IO variables in public functions and tasks.
 
-**** Fix bad lifetime optimization when same signal is assigned multiple
+**** Fixed bad lifetime optimization when same signal is assigned multiple
      times in both branch of a if. [Danny Ding]
 
 * Verilator 3.501 11/16/2005 Stable
 
 ***  Add --profile-cfuncs for correlating profiles back to Verilog.
 
-**** Fix functions where regs are declared before inputs.  [Danny Ding]
+**** Fixed functions where regs are declared before inputs.  [Danny Ding]
 
-**** Fix bad deep expressions with bit-selects and rotate.  [Prabhat Gupta]
+**** Fixed bad deep expressions with bit-selects and rotate.  [Prabhat Gupta]
 
 * Verilator 3.500 10/30/2005 Stable
 
@@ -350,15 +352,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   With --assert, generate assertions for synthesis parallel_case and full_case.
 
-**** Fix generate if's with empty if/else blocks.  [Mat Zeno]
+**** Fixed generate if's with empty if/else blocks.  [Mat Zeno]
 
-**** Fix generate for cell instantiations with same name.  [Mat Zeno]
+**** Fixed generate for cell instantiations with same name.  [Mat Zeno]
 
 * Verilator 3.481 10/12/2005 Stable
 
 ***  Add /*verilator tracing_on/off*/ for waveform control.
 
-**** Fix split optimization reordering $display statements.
+**** Fixed split optimization reordering $display statements.
 
 * Verilator 3.480 9/27/2005 Beta
 
@@ -383,9 +385,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add GCC branch prediction hints on generated if statements.
 
-**** Fix bad simulation when same function called twice in same expression.
+**** Fixed bad simulation when same function called twice in same expression.
 
-**** Fix preprocessor substitution of quoted parameterized defines.
+**** Fixed preprocessor substitution of quoted parameterized defines.
 
 * Verilator 3.464 8/24/2005 Stable
 
@@ -393,7 +395,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --stats option to dump design statistics.
 
-**** Fix core dump with clock inversion optimizations.
+**** Fixed core dump with clock inversion optimizations.
 
 * Verilator 3.463 8/5/2005 Stable
 
@@ -401,15 +403,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.462 8/3/2005 Stable
 
-***  Fix reordering of delayed assignments to same memory index. [Wim Michiels]
+***  Fixed reordering of delayed assignments to same memory index. [Wim Michiels]
 
-**** Fix compile error with Flex 2.5.1.  [Jens Arm]
+**** Fixed compile error with Flex 2.5.1.  [Jens Arm]
 
-**** Fix multiply-instantiated public tasks generating non-compilable code.
+**** Fixed multiply-instantiated public tasks generating non-compilable code.
 
 * Verilator 3.461 7/28/2005 Beta
 
-**** Fix compile error with older versions of bison.  [Jeff Dutton]
+**** Fixed compile error with older versions of bison.  [Jeff Dutton]
 
 * Verilator 3.460 7/27/2005 Beta
 
@@ -422,13 +424,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  When issuing unoptimizable warning, show an example path.
 
-**** Fix false warning when a clock is constant.
+**** Fixed false warning when a clock is constant.
 
-**** Fix X/Z in decimal numbers.  [Wim Michiels]
+**** Fixed X/Z in decimal numbers.  [Wim Michiels]
 
-**** Fix genvar statements in non-named generate blocks.
+**** Fixed genvar statements in non-named generate blocks.
 
-**** Fix core dump when missing newline in `define.  [David van der bokke]
+**** Fixed core dump when missing newline in `define.  [David van der bokke]
 
 **** Internal tree dumps now indicate edit number that changed the node.
 
@@ -445,7 +447,7 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Add support for SystemVerilog keywords $bits, $countones, $isunknown,
      $onehot, $onehot0, always_comb, always_ff, always_latch, finish.
 
-**** Fix "=== 1'bx" to always be false, instead of random.
+**** Fixed "=== 1'bx" to always be false, instead of random.
 
 * Verilator 3.440 6/28/2005 Stable
 
@@ -453,7 +455,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.431 6/24/2005 Stable
 
-***  Fix selection bugs introduced in 3.430 beta.
+***  Fixed selection bugs introduced in 3.430 beta.
 
 * Verilator 3.430 6/22/2005 Beta
 
@@ -1085,7 +1087,7 @@ of input ports exists for tracing.
 
 ** [Versions 0 to 1.8 were by Paul Wasson]
 
-****  Fix single bit in concat from instance output incorrect offset bug.
+****  Fixed single bit in concat from instance output incorrect offset bug.
 
 * Verilator 1.7 5/20/1996
 
@@ -1100,7 +1102,7 @@ of input ports exists for tracing.
 *** Pass structure pointer into translated code,
     so multiple instances can use same functions.
 
-**** Fix static value concat on casex items.
+**** Fixed static value concat on casex items.
 
 * Verilator 1.1 3/30/1995
 

@@ -110,16 +110,8 @@ public:
 	m_inBeginKwd = 0;
 	m_lastVerilogState = stateVerilogRecent();
     }
-    ~V3Read() {
-	for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
-	    delete (*it);
-	}
-	m_stringps.clear();
-	for (deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
-	    delete (*it);
-	}
-	m_numberps.clear();
-    }
+    ~V3Read();
+    void parserClear();
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database

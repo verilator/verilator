@@ -552,6 +552,7 @@ int main(int argc, char** argv, char** env) {
     // Cleanup memory for valgrind leak analysis
     v3Global.clear();
 #endif
+    FileLine::deleteAllRemaining();
     
     UINFO(1,"Done, Exiting...\n");
 }

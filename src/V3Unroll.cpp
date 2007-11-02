@@ -198,6 +198,7 @@ private:
 		    constInitp->num(),
 		    condBip, constStopp->num(),
 		    incInstrp, constIncp->num()); nodep = NULL;
+	// Cleanup
 	return true;
     }
 
@@ -229,7 +230,6 @@ private:
 	loopValue.opAssign(numInit);
 
 	AstNode* newbodysp = NULL;
-	AstNode* clonedIncsp = NULL;	// Last cloned incp() statements
 	m_statLoops++;
 	if (stmtsp) {
 	    int times = 0;
@@ -244,25 +244,8 @@ private:
 		    // Replace iterator values with constant.
 		    AstNode* oneloopp = stmtsp->cloneTree(true);
 
-		    // A nicer way to propage the loop constant would be to set the variable to the value
-		    // and call a constant-propagator like V3Table, so temp values
-		    // that are calculated propagate down.
-		    // If we do this, we can remove the below
-		    if (nodep->castWhile() && incp) {
-			if (clonedIncsp) {
-			    // Previous iteration of loop set the variable.
-			    // This set is redundant with this next iteration and can be removed.
-			    if (clonedIncsp == newbodysp) {  // Increment was only thing in list
-				newbodysp = NULL;
-			    } else {
-				clonedIncsp->unlinkFrBack();
-			    }
-			    clonedIncsp->deleteTree();
-			}
-			clonedIncsp = incp->clonep(); if (!clonedIncsp) nodep->v3fatalSrc("inc failed");
-		    }
-
 		    m_varValuep = new AstConst(nodep->fileline(), loopValue);
+
 		    m_varModeReplace = true;
 		    oneloopp->iterateAndNext(*this);
 		    m_varModeReplace = false;
@@ -280,6 +263,8 @@ private:
 		    V3Number newnum(nodep->fileline(), m_forVarp->width());  // Can't increment in-place
 		    incInstrp->numberOperate(newnum, loopValue, numInc);
 		    loopValue.opAssign(newnum);
+
+		    pushDeletep(m_varValuep); m_varValuep=NULL;
 		}
 	    }
 	}
@@ -287,6 +272,9 @@ private:
 	// Replace the FOR()
 	if (newbodysp) nodep->replaceWith(newbodysp);
 	else nodep->unlinkFrBack();
+	if (bodysp) { pushDeletep(bodysp); bodysp=NULL; }
+	if (precondsp) { pushDeletep(precondsp); precondsp=NULL; }
+	if (initp) { pushDeletep(initp); initp=NULL; }
 	if (debug()>=9) newbodysp->dumpTree(cout,"-  _new: ");
     }
 
@@ -311,7 +299,7 @@ private:
 	    if (forUnrollCheck(nodep, initp,
 			       nodep->precondsp(), nodep->condp(),
 			       incp, nodep->bodysp())) {
-		nodep=NULL; // Did replacement
+		pushDeletep(nodep); nodep=NULL; // Did replacement
 	    }
 	}
     }
@@ -328,7 +316,7 @@ private:
 	    if (forUnrollCheck(nodep, nodep->initsp(),
 			       NULL, nodep->condp(),
 			       nodep->incsp(), nodep->bodysp())) {
-		nodep=NULL; // Did replacement
+		pushDeletep(nodep); nodep=NULL; // Did replacement
 	    } else {
 		nodep->v3error("For loop doesn't have genvar index, or is misformed");
 	    }
@@ -373,6 +361,7 @@ private:
 	    && !nodep->lvalue()) {
 	    AstNode* newconstp = m_varValuep->cloneTree(false);
 	    nodep->replaceWith(newconstp);
+	    pushDeletep(nodep);
 	}
     }
 

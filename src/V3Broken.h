@@ -31,6 +31,8 @@
 class V3Broken {
 public:
     static void brokenAll(AstNetlist* nodep);
+    static void addNewed(AstNode* nodep);
+    static void deleted(AstNode* nodep);
 };
 
 #endif // Guard

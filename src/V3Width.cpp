@@ -760,6 +760,7 @@ void WidthVisitor::fixWidthExtend (AstNode* nodep, int expWidth) {
 	AstNode* newp = new AstConst(nodep->fileline(), num);
 	newp->signedFrom(constp);
 	constp->replaceWith(newp);
+	pushDeletep(constp); constp=NULL;
 	nodep=newp;
     } else if (expWidth<nodep->width()) {
 	// Trunc - Extract
