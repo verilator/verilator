@@ -313,9 +313,18 @@ private:
 	    if (nodep->initsp()) V3Const::constifyTree(nodep->initsp());
 	    if (nodep->condp()) V3Const::constifyTree(nodep->condp());
 	    if (nodep->incsp()) V3Const::constifyTree(nodep->incsp());
-	    if (forUnrollCheck(nodep, nodep->initsp(),
-			       NULL, nodep->condp(),
-			       nodep->incsp(), nodep->bodysp())) {
+	    if (nodep->condp()->isZero()) {
+		// We don't need to do any loops.  Remove the GenFor,
+		// Genvar's don't care about any initial assignments.
+		//
+		// Note normal For's can't do exactly this deletion, as
+		// we'd need to initialize the variable to the initial
+		// condition, but they'll become while's which can be
+		// deleted by V3Const.
+		nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    } else if (forUnrollCheck(nodep, nodep->initsp(),
+				      NULL, nodep->condp(),
+				      nodep->incsp(), nodep->bodysp())) {
 		pushDeletep(nodep); nodep=NULL; // Did replacement
 	    } else {
 		nodep->v3error("For loop doesn't have genvar index, or is misformed");

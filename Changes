@@ -7,7 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "#delay <statement>;" with associated STMTDLY warning.
 
-**** Fixed divide-by-zero errors in constant propagator.  [Rodney Sinclair]
+**** Fixed generate for loops with constant zero conditions. [Rodney Sinclair]
+
+**** Fixed divide-by-zero errors in constant propagator. [Rodney Sinclair]
 
 **** Fixed wrong result with obscure signed-shift underneath a "? :".
 
