@@ -259,8 +259,27 @@ class AstSenTree;
 %token<fileline>	yVL_TRACING_OFF		"/*verilator tracing_off*/"
 %token<fileline>	yVL_TRACING_ON		"/*verilator tracing_on*/"
 
+%token<fileline>	yP_OROR		"||"
+%token<fileline>	yP_ANDAND	"&&"
+%token<fileline>	yP_NOR		"~|"
+%token<fileline>	yP_XNOR		"^~"
+%token<fileline>	yP_NAND		"~&"
+%token<fileline>	yP_EQUAL	"=="
+%token<fileline>	yP_NOTEQUAL	"!="
+%token<fileline>	yP_CASEEQUAL	"==="
+%token<fileline>	yP_CASENOTEQUAL	"!=="
+%token<fileline>	yP_WILDEQUAL	"==?"
+%token<fileline>	yP_WILDNOTEQUAL	"!=?"
+%token<fileline>	yP_GTE		">="
+%token<fileline>	yP_LTE		"<="
+%token<fileline>	yP_SLEFT	"<<"
+%token<fileline>	yP_SRIGHT	">>"
+%token<fileline>	yP_SSRIGHT	">>>"
+%token<fileline>	yP_POW		"**"
+
 %token<fileline>	yP_PLUSCOLON	"+:"
 %token<fileline>	yP_MINUSCOLON	"-:"
+%token<fileline>	yP_MINUSGT	"->"
 %token<fileline>	yP_MINUSGTGT	"->>"
 %token<fileline>	yP_EQGT		"=>"
 %token<fileline>	yP_ASTGT	"*>"
@@ -272,6 +291,8 @@ class AstSenTree;
 %token<fileline>	yP_COLONCOLON	"::"
 %token<fileline>	yP_COLONEQ	":="
 %token<fileline>	yP_COLONDIV	":/"
+%token<fileline>	yP_ORMINUSGT	"|->"
+%token<fileline>	yP_OREQGT	"|=>"
 
 %token<fileline>	yP_PLUSEQ	"+="
 %token<fileline>	yP_MINUSEQ	"-="
@@ -287,8 +308,34 @@ class AstSenTree;
 
 %token<fileline>	yPSL_BRA	"{"
 %token<fileline>	yPSL_KET	"}"
+%token<fileline> 	yP_LOGIFF
 
-%token<fileline>	';' '=' ',' '(' '.' '!' '~' '[' '@' '#'
+%token<fileline>	'!'
+%token<fileline>	'#'
+%token<fileline>	'%'
+%token<fileline>	'&'
+%token<fileline>	'('
+%token<fileline>	')'
+%token<fileline>	'*'
+%token<fileline>	'+'
+%token<fileline>	','
+%token<fileline>	'-'
+%token<fileline>	'.'
+%token<fileline>	'/'
+%token<fileline>	':'
+%token<fileline>	';'
+%token<fileline>	'<'
+%token<fileline>	'='
+%token<fileline>	'>'
+%token<fileline>	'?'
+%token<fileline>	'@'
+%token<fileline>	'['
+%token<fileline>	']'
+%token<fileline>	'^'
+%token<fileline>	'{'
+%token<fileline>	'|'
+%token<fileline>	'}'
+%token<fileline>	'~'
 
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
@@ -297,29 +344,29 @@ class AstSenTree;
 
 //********************
 // PSL op precedence
-%right<fileline> 	yP_MINUSGT  yP_LOGIFF	/* MinusGT == -> == PSL LogIf operator */
-%right<fileline>	yP_ORMINUSGT  yP_OREQGT
-%left<fileline>		prPSLCLK
+%right	 	yP_MINUSGT  yP_LOGIFF
+%right		yP_ORMINUSGT  yP_OREQGT
+%left<fileline>	prPSLCLK
 
 // Verilog op precedence
-%left<fileline> ':'
-%left<fileline> '?'
-%left<fileline> yP_OROR
-%left<fileline> yP_ANDAND
-%left<fileline> '|' yP_NOR
-%left<fileline> '^'
-%left<fileline> yP_XNOR
-%left<fileline> '&' yP_NAND
-%left<fileline> yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
-%left<fileline> '>' '<' yP_GTE yP_LTE
-%left<fileline> yP_SLEFT yP_SRIGHT yP_SSRIGHT
-%left<fileline> '+' '-'
-%left<fileline> '*' '/' '%'
-%left<fileline> yP_POW
-%left<fileline> '{' '}'
-%left<fileline> prUNARYARITH
-%left<fileline> prREDUCTION
-%left<fileline> prNEGATION
+%left		':'
+%left		'?'
+%left		yP_OROR
+%left		yP_ANDAND
+%left		'|' yP_NOR
+%left		'^'
+%left		yP_XNOR
+%left		'&' yP_NAND
+%left		yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
+%left		'>' '<' yP_GTE yP_LTE
+%left		yP_SLEFT yP_SRIGHT yP_SSRIGHT
+%left		'+' '-'
+%left		'*' '/' '%'
+%left		yP_POW
+%left		'{' '}'
+%left<fileline>	prUNARYARITH
+%left<fileline>	prREDUCTION
+%left<fileline>	prNEGATION
 
 %nonassoc prLOWER_THAN_ELSE
 %nonassoc yELSE
@@ -1167,6 +1214,7 @@ specifyJunk:	dlyTerm 	{} /* ignored */
 	|	'[' {} | ']' {}
 	|	'|' {}
 	|	'~' {}
+	|	'@' {}
 
 	|	yIF {}
 	|	yNEGEDGE {}
