@@ -13,13 +13,29 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
 
    integer j;
-   integer hit_count;
    reg [63:0] cam_lookup_hit_vector;
 
+   integer hit_count;
    always @(/*AUTOSENSE*/cam_lookup_hit_vector) begin
       hit_count = 0;
       for (j=0; j < 64; j=j+1) begin
 	 hit_count = hit_count + {31'h0, cam_lookup_hit_vector[j]};
+      end
+   end
+
+   integer hit_count2;
+   always @(/*AUTOSENSE*/cam_lookup_hit_vector) begin
+      hit_count2 = 0;
+      for (j=63; j >= 0; j=j-1) begin
+	 hit_count2 = hit_count2 + {31'h0, cam_lookup_hit_vector[j]};
+      end
+   end
+
+   integer hit_count3;
+   always @(/*AUTOSENSE*/cam_lookup_hit_vector) begin
+      hit_count3 = 0;
+      for (j=63; j > 0; j=j-1) begin
+	 if (cam_lookup_hit_vector[j]) hit_count3 = hit_count3 + 32'd1;
       end
    end
 
@@ -64,10 +80,14 @@ module t (/*AUTOARG*/
 	 end
 	 if (cyc==2) begin
 	    if (hit_count != 32'd2) $stop;
+	    if (hit_count2 != 32'd2) $stop;
+	    if (hit_count3 != 32'd2) $stop;
 	    cam_lookup_hit_vector <= 64'h01010010_00010001;
 	 end
 	 if (cyc==3) begin
 	    if (hit_count != 32'd5) $stop;
+	    if (hit_count2 != 32'd5) $stop;
+	    if (hit_count3 != 32'd4) $stop;
 	    if (wide_for_count != 32'h80) $stop;
 	 end
 	 if (cyc==9) begin

@@ -1980,7 +1980,7 @@ and may use more then 4GB, but about 1GB is the maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
 
-See the next question for SystemC mode.
+See the next question for tracing in SystemC mode.
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
 is installed. SystemC itself does not need to be installed for C++ only
@@ -1989,8 +1989,10 @@ the SystemPerl kit and point the SYSTEMPERL environment variable to the
 untarred directory.
 
 In your top level C code, call Verilated::traceEverOn(true).  Then create a
-SpTraceVcdC object.  For an example, see the call to SpTraceVcdC in the
-test_c/sc_main.cpp file of the distribution.
+SpTraceVcdC object, and in your main loop call "trace_object->dump(time)"
+every time step, and finally call "trace_object->close()".  For an example,
+see the call to SpTraceVcdC in the test_c/sim_main.cpp file of the
+distribution.
 
 You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
 done for you if using the Verilator --exe flag.

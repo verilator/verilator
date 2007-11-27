@@ -18,6 +18,7 @@ execute (
 if ($Last_Self->{v3}) {
     file_grep     ("obj_dir/Vt_trace_ena__Trace__Slow.cpp", qr/c_trace_on\"/x);
     file_grep_not ("obj_dir/Vt_trace_ena__Trace__Slow.cpp", qr/_trace_off\"/x);
+    file_grep     ("obj_dir/t_trace_ena_simx.vcd", qr/\$enddefinitions/x);
 }
 
 ok(1);

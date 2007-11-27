@@ -560,6 +560,18 @@ sub _make_main {
 	print $fh "    topp->eval();\n";
 	$set = "topp->";
     }
+
+    my $traceit = ($self->{trace} && !$self->{sp} && !$self->{sc});
+    if ($traceit) {
+	$fh->print("\n");
+	$fh->print("#if VM_TRACE\n");
+	$fh->print("    Verilated::traceEverOn(true);\n");
+	$fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
+	$fh->print("    topp->trace (tfp, 99);\n");
+	$fh->print("    tfp->open (\"obj_dir/".$self->{name}."_simx.vcd\");\n");
+	$fh->print("#endif\n");
+    }
+
     print $fh "    ${set}fastclk = true;\n" if $self->{inputs}{fastclk};
     print $fh "    ${set}clk = true;\n" if $self->{inputs}{clk};
     print $fh "    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {\n";
@@ -578,6 +590,11 @@ sub _make_main {
 	} else {
 	    print $fh "	main_time+=1;\n";
 	    print $fh "	${set}eval();\n" if $action;
+	    if ($traceit) {
+		$fh->print("#if VM_TRACE\n");
+		$fh->print("	tfp->dump (main_time);\n");
+		$fh->print("#endif //VM_TRACE\n");
+	    }
 	}
     }
     print $fh "    }\n";
@@ -586,6 +603,14 @@ sub _make_main {
     print $fh "    }\n";
     print $fh "    topp->final();\n";
     print $fh "    SpCoverage::write(\"",$self->{coverage_filename},"\");\n" if $self->{coverage};
+
+    if ($traceit) {
+	$fh->print("#if VM_TRACE\n");
+	$fh->print("	tfp->close();\n");
+	$fh->print("#endif //VM_TRACE\n");
+    }
+    $fh->print("\n");
+
     print $fh "    delete topp; topp=NULL;\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
