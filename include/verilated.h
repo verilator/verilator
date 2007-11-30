@@ -1288,123 +1288,60 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
 // VL_CONST_W_#X(int obits, WDataOutP owp, IData data0, .... IData data(#-1))
 // Sets wide vector words to specified constant words, zeros upper data.
 
+// If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
+
 #define I IData
 #define _END(obits,wordsSet) \
     for(int i=(wordsSet);i<VL_WORDS_I(obits);i++) o[i] = (IData)0x0; \
     return o
 
+#define VL_HAVE_CONST_W_1X
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o,
 				      I d0) {
     o[0]=d0;
     _END(obits,1);  }
+#define VL_HAVE_CONST_W_2X
 static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o,
 				      I d1,I d0) {
     o[0]=d0;  o[1]=d1;
     _END(obits,2);  }
+#define VL_HAVE_CONST_W_3X
 static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o,
 				      I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;
     _END(obits,3);  }
+#define VL_HAVE_CONST_W_4X
 static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o, 
 				      I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;
     _END(obits,4);  }
+#define VL_HAVE_CONST_W_5X
 static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o, 
 				      I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;
     _END(obits,5);  }
+#define VL_HAVE_CONST_W_6X
 static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o, 
 				      I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;
     _END(obits,6);  }
+#define VL_HAVE_CONST_W_7X
 static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o, 
 				      I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;
     _END(obits,7);  }
+#define VL_HAVE_CONST_W_8X
 static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o, 
 				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     _END(obits,8);  }
+#define VL_HAVE_CONST_W_9X
 static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o, 
 				      I d8,
 				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     o[8]=d8;
     _END(obits,9);  }
-static inline WDataOutP VL_CONST_W_10X(int obits, WDataOutP o, 
-				       I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;
-    _END(obits,10);  }
-static inline WDataOutP VL_CONST_W_11X(int obits, WDataOutP o, 
-				       I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;
-    _END(obits,11);  }
-static inline WDataOutP VL_CONST_W_12X(int obits, WDataOutP o, 
-				       I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10; o[11]=d11;
-    _END(obits,12);  }
-static inline WDataOutP VL_CONST_W_16X(int obits, WDataOutP o, 
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    _END(obits,16);  }
-static inline WDataOutP VL_CONST_W_17X(int obits, WDataOutP o, 
-				       I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;
-    _END(obits,17);  }
-static inline WDataOutP VL_CONST_W_18X(int obits, WDataOutP o, 
-				       I d17,I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;  o[17]=d17;
-    _END(obits,18);  }
-static inline WDataOutP VL_CONST_W_19X(int obits, WDataOutP o, 
-				       I d18,I d17,I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;  o[17]=d17;  o[18]=d18;
-    _END(obits,19);  }
-static inline WDataOutP VL_CONST_W_20X(int obits, WDataOutP o, 
-				       I d19,I d18,I d17,I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;  o[17]=d17;  o[18]=d18;  o[19]=d19;
-    _END(obits,20);  }
-static inline WDataOutP VL_CONST_W_24X(int obits, WDataOutP o, 
-				       I d23,I d22,I d21,I d20,I d19,I d18,I d17,I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;  o[17]=d17;  o[18]=d18;  o[19]=d19;  o[20]=d20;  o[21]=d21;  o[22]=d22;  o[23]=d23;
-    _END(obits,24);  }
-static inline WDataOutP VL_CONST_W_28X(int obits, WDataOutP o, 
-				       I d27,I d26,I d25,I d24,
-				       I d23,I d22,I d21,I d20,I d19,I d18,I d17,I d16,
-				       I d15,I d14,I d13,I d12,I d11,I d10,I d9,I d8,
-				       I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
-    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;  o[9]=d9;  o[10]=d10;  o[11]=d11;  o[12]=d12;  o[13]=d13;  o[14]=d14;  o[15]=d15;
-    o[16]=d16;  o[17]=d17;  o[18]=d18;  o[19]=d19;  o[20]=d20;  o[21]=d21;  o[22]=d22;  o[23]=d23;
-    o[24]=d24;  o[25]=d25;  o[26]=d26;  o[27]=d27;
-    _END(obits,28);  }
 
 #undef _END
 #undef I

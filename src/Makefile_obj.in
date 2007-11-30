@@ -121,6 +121,7 @@ RAW_OBJS = \
 	V3DepthBlock.o \
 	V3Descope.o \
 	V3EmitC.o \
+	V3EmitCInlines.o \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
 	V3EmitV.o \

@@ -459,6 +459,8 @@ void process () {
 
     // Output the text
     if (!v3Global.opt.lintOnly()) {
+	// emitcInlines is first, as it may set needHInlines which other emitters read
+	V3EmitC::emitcInlines();
 	V3EmitC::emitcSyms();
 	V3EmitC::emitcTrace();
     }

@@ -1428,6 +1428,9 @@ void EmitCImp::emitInt(AstModule* modp) {
     if (v3Global.opt.coverage()) {
 	puts("#include \"SpCoverage.h\"\n");
     }
+    if (v3Global.needHInlines()) {   // Set by V3EmitCInlines; should have been called before us
+	puts("#include \""+topClassName()+"__Inlines.h\"\n");
+    }
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");

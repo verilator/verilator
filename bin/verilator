@@ -838,6 +838,7 @@ For -sp mode, instead of .cpp and .h it creates:
 
 In certain optimization modes, it also creates:
 
+    {prefix}__Inlines.h			// Inline support functions
     {prefix}__Slow.cpp			// Constructors and infrequent routines
     {prefix}__Syms.cpp			// Global symbol table C++
     {prefix}__Syms.h			// Global symbol table header

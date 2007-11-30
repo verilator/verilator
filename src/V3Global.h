@@ -42,8 +42,10 @@ class V3Global {
     AstNetlist*	m_rootp;	// Root of entire netlist
     int		m_debugFileNumber;	// Number to append to debug files created
     bool	m_assertWidthsSame;	// Tree should have width()==widthMin()
-    // Options
+    bool	m_needHInlines;		// Need a __Inlines file
+
 public:
+    // Options
     V3Options	opt;		// All options; let user see them directly
 
   public:
@@ -52,6 +54,7 @@ public:
 	m_rootp = new AstNetlist;
 	m_debugFileNumber = 0;
 	m_assertWidthsSame = false;
+	m_needHInlines = false;
     }
     void clear() {
 	if (m_rootp) m_rootp->deleteTree(); m_rootp=NULL;
@@ -70,6 +73,8 @@ public:
 	char digits[100]; sprintf(digits, "%02d", m_debugFileNumber);
 	return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
     }
+    bool needHInlines() const { return m_needHInlines; }
+    void needHInlines(bool flag) { m_needHInlines=flag; }
 };
 
 extern V3Global v3Global;
