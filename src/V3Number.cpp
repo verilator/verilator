@@ -721,7 +721,7 @@ V3Number& V3Number::opRepl (const V3Number& lhs, const V3Number& rhs) {	// rhs i
 V3Number& V3Number::opRepl (const V3Number& lhs, uint32_t rhsval) {	// rhs is # of times to replicate
     // i op repl, L(i)*value(rhs) bit return
     setZero();
-    if (rhsval>8192) m_fileline->v3fatal("More then a 8k bit replication is probably wrong: "<<rhsval);
+    if (rhsval>8192) m_fileline->v3fatal("More than a 8k bit replication is probably wrong: "<<rhsval);
     int obit = 0;
     for (unsigned times=0; times<rhsval; times++) {
 	for(int bit=0; bit<lhs.width(); bit++) {

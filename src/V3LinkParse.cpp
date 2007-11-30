@@ -72,7 +72,7 @@ private:
 	    UINFO(5,"   "<<nodep<<endl);
 	    checkExpected(nodep);
 	    // Due to a need to get the arguments, the ParseRefs are under here,
-	    // rather then the NodeFTaskRef under the ParseRef.
+	    // rather than the NodeFTaskRef under the ParseRef.
 	    if (nodep->namep()) {
 		m_exp = AstParseRefExp::FUNC;
 		nodep->namep()->accept(*this);  // No next, we don't want to do the edit

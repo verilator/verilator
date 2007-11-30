@@ -411,7 +411,7 @@ change the SystemC modules instantiated.
 =item --inline-mult I<value>
 
 Tune the inlining of modules.  The default value of 2000 specifies that up
-to 2000 new operations may be added to the model by inlining, if more then
+to 2000 new operations may be added to the model by inlining, if more than
 this number of operations would result, the module is not inlined.  Larger
 values, or a value <= 1 will inline everything, will lead to longer compile
 times, but potentially faster runtimes.  This setting is ignored for very
@@ -573,7 +573,7 @@ Disable all lint related warning messages.  This is equivelent to
 -Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-VARHIDDEN
 -Wno-WIDTH".
 
-It is strongly recommended you cleanup your code rather then using this
+It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
 received from third parties.
 
@@ -994,7 +994,7 @@ To support this, none of the files that Verilator produces will reference
 any configure generated build-system specific files, such as config.h
 (which is renamed in Verilator to config_build.h to reduce confusion.)  The
 disadvantage of this approach is that include/verilatedos.h must
-self-detect the requirements of the target system, rather then using
+self-detect the requirements of the target system, rather than using
 configure.
 
 The target system may also require edits to the Makefiles, the simple
@@ -1109,7 +1109,7 @@ call C++ functions from your Verilog code.
 String arguments will be put directly into the output C++ code.  Expression
 arguments will have the code to evaluate the expression inserted.  Thus to
 call a C++ function, $c("func(",a,")") will result in 'func(a)' in the
-output C++ code.  For input arguments, rather then hard-coding variable
+output C++ code.  For input arguments, rather than hard-coding variable
 names in the string $c("func(a)"), instead pass the variable as an
 expression $c("func(",a,")").  This will allow the call to work inside
 Verilog functions where the variable is flattened out, and also enable
@@ -1476,7 +1476,7 @@ When initializing an array, you need to use non-delayed assignments.  This
 is done in the interest of speed; if delayed assignments were used, the
 simulator would have to copy large arrays every cycle.  (In smaller loops,
 loop unrolling allows the delayed assignment to work, though it's a bit
-slower then a non-delayed assignment.)  Here's an example
+slower than a non-delayed assignment.)  Here's an example
 
 	always @ (posedge clk)
             if (~reset_l) begin
@@ -1563,7 +1563,7 @@ MCDs, which includes the mode parameter to $fopen being mandatory.
 Verilator will convert the integer used to hold the file descriptor into a
 internal FILE*. To prevent core dumps due to mis-use, and because integers
 are 32 bits while FILE*s may be 64 bits, the descriptor must be stored in a
-reg [63:0] rather then an integer.  The define `verilator_file_descriptor in
+reg [63:0] rather than an integer.  The define `verilator_file_descriptor in
 verilated.v can be used to hide this difference.
 
 =item $fullskew, $hold, $nochange, $period, $recovery, $recrem, $removal,
@@ -1870,7 +1870,7 @@ correctly.
 Warns that based on width rules of Verilog, two operands have different
 widths.  Verilator generally can intuit the common usages of widths, and
 you shouldn't need to disable this message like you do with most lint
-programs.  Generally other then simple mistakes, you have two solutions:
+programs.  Generally other than simple mistakes, you have two solutions:
 
 If it's a constant 0 that's 32 bits or less, simply leave it
 unwidthed. Verilator considers zero to be any width needed.
@@ -1939,13 +1939,13 @@ Visual C++ Version 7 or newer, but this is not tested by the author.
 
 =item Can you provide binaries?
 
-At this time I'd prefer to get patches out quickly then have to generate
+At this time I'd prefer to get patches out quickly than have to generate
 myriad binaries for many different OS flavors.  People have generally
 requested binaries when they are having problems with their C++
 compiler. Alas, binaries won't help this, as in the end a fully working C++
 compiler is required to compile the output of Verilator.
 
-=item How can it be faster then (name-the-simulator)?
+=item How can it be faster than (name-the-simulator)?
 
 Generally, the implied part of the question is "... with all of their
 manpower they can put into it."
@@ -1971,12 +1971,12 @@ does not require you release your Verilog or generated code.
 
 =item Why is running Verilator so slow?
 
-Verilator needs more memory then the resulting simulator will require, as
+Verilator needs more memory than the resulting simulator will require, as
 Verilator creates internally all of the state of the resulting simulator in
-order to optimize it.  If it takes more then a minute or so (and you're not
+order to optimize it.  If it takes more than a minute or so (and you're not
 using --debug), see if your machine is paging; most likely you need to run
 it on a machine with more memory.  Verilator is a full 64 bit application
-and may use more then 4GB, but about 1GB is the maximum typically needed.
+and may use more than 4GB, but about 1GB is the maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
 
@@ -2095,7 +2095,7 @@ bit long longs that fits the width of the signal.  Generally, you can use
 just uint32_t's for 1 to 32 bits, or uint64_t for 1 to 64 bits, and the
 compiler will properly up-convert smaller entities.
 
-Signals wider then 64 bits are stored as an array of 32-bit uint32_t's.
+Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.
 Thus to read bits 31:0, access signal[0], and for bits 63:32, access
 signal[1].  Unused bits (for example bit numbers 65-96 of a 65 bit vector)
 will always be zero.  if you change the value you must make sure to pack
@@ -2186,8 +2186,8 @@ scratch in C++.  This added many optimizations, yielding about a 2-5x
 performance gain.
 
 Currently, various language features and performance enhancements are added
-as the need arises.  Verilator is now about 2x faster then in 2002, and is
-faster then many popular commercial simulators.
+as the need arises.  Verilator is now about 2x faster than in 2002, and is
+faster than many popular commercial simulators.
 
 =head1 CONTRIBUTORS
 

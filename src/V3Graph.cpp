@@ -177,10 +177,10 @@ void V3Graph::clear() {
 void V3Graph::userClearVertices() {
     // Clear user() in all of tree
     // We may use the userCnt trick in V3Ast later... For now we don't call this often, and
-    // the extra code on each read of user() would probably slow things down more then help.
+    // the extra code on each read of user() would probably slow things down more than help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertexp->user(0);
-	vertexp->userp(NULL);	 // Its a union, but might be different size then user()
+	vertexp->userp(NULL);	 // Its a union, but might be different size than user()
     }
 }
 
@@ -189,7 +189,7 @@ void V3Graph::userClearEdges() {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
 	    edgep->user(0);
-	    edgep->userp(NULL);	 // Its a union, but might be different size then user()
+	    edgep->userp(NULL);	 // Its a union, but might be different size than user()
 	}
     }
 }

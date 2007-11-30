@@ -46,8 +46,8 @@
 # define VL_ATTR_ALIGNED(alignment)	///< Align structure to specified byte alignment
 # define VL_ATTR_NORETURN		///< Function does not ever return
 # define VL_ATTR_UNUSED			///< Function that may be never used
-# define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true then false
-# define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false then true
+# define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true than false
+# define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false than true
 # define VL_PREFETCH_RD(p)		///< Prefetch data with read intent
 # define VL_PREFETCH_RW(p)		///< Prefetch data with read/write intent
 #endif

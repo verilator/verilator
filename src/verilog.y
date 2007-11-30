@@ -1375,7 +1375,7 @@ AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
     FileLine* newfl = new FileLine (fileline);
     newfl->warnOff(V3ErrorCode::WIDTH, true);
     AstNode* nodep = new AstConst(newfl, V3Number(fileline));
-    // Adding a NOT is less work then figuring out how wide to make it
+    // Adding a NOT is less work than figuring out how wide to make it
     if (value) nodep = new AstNot(newfl, nodep);
     nodep = new AstAssignW(newfl, new AstVarRef(fileline, name, true),
 			   nodep);

@@ -341,7 +341,7 @@ private:
 	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
 	    GateVarVertex* varvertexp = makeVarVertex(varscp);
 	    UINFO(5," VARREF to "<<varscp<<endl);
-	    // We use weight of one; if we ref the var more then once, when we simplify,
+	    // We use weight of one; if we ref the var more than once, when we simplify,
 	    // the weight will increase
 	    if (nodep->lvalue()) {	
 		new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
@@ -433,7 +433,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 		}
 	    }
 	    else if (!vvertexp->inSize1()) {
-		vvertexp->clearReducible("size!1");	// Can't deal with more then one src
+		vvertexp->clearReducible("size!1");	// Can't deal with more than one src
 	    }
 	    // Reduce it?
 	    if (!vvertexp->reducible()) {

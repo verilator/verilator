@@ -1164,7 +1164,7 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData
     int word = VL_BITWORD_I(rd);
     if ((int)rd>lbits) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
-	// We return all 1's as that's more likely to find bugs (?) then 0's.
+	// We return all 1's as that's more likely to find bugs (?) than 0's.
     } else {
 	return (lwp[word]>>VL_BITBIT_I(rd));
     }

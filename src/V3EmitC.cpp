@@ -254,7 +254,7 @@ public:
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	puts("VL_READMEM_");
 	emitIQW(nodep->filenamep());
-	puts(" (");  // We take a void* rather then emitIQW(nodep->memp());
+	puts(" (");  // We take a void* rather than emitIQW(nodep->memp());
 	puts(nodep->isHex()?"true":"false");
 	putbs(",");
 	puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
@@ -1214,7 +1214,7 @@ void EmitCImp::emitConfigureImp(AstModule* modp) {
 void EmitCImp::emitCoverageImp(AstModule* modp) {
     if (m_coverIds.size()) {
 	puts("\n// Coverage\n");
-	// Rather then putting out SP_COVER_INSERT calls directly, we do it via this function
+	// Rather than putting out SP_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments
 	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
 	puts(  	"const char* hier, const char* type, const char* comment) {\n");

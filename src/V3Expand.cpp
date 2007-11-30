@@ -805,7 +805,7 @@ private:
 	    for (int w=0; w<nodep->lhsp()->widthWords(); w++) {
 		AstNode* eqp = newAstWordSelClone (nodep->lhsp(), w);
 		if (w==nodep->lhsp()->widthWords()-1) {
-		    // Rather then doing a (slowish) ==##, we OR in the bits that aren't part of the mask
+		    // Rather than doing a (slowish) ==##, we OR in the bits that aren't part of the mask
 		    eqp = new AstOr (nodep->fileline(),
 				     new AstConst (nodep->fileline(), notWideMask(nodep->lhsp())),
 				     eqp);

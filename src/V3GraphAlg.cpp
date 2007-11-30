@@ -58,7 +58,7 @@ void V3Graph::deleteCutableOnlyEdges() {
     }
 
     // Pass 2, delete those marked
-    // Rather then doing a delete() we set the weight to 0 which disconnects the edge.
+    // Rather than doing a delete() we set the weight to 0 which disconnects the edge.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	if (vertexp->user()) {
 	    //UINFO(7,"Disconnect "<<vertexp->name()<<endl);
@@ -99,9 +99,9 @@ private:
 		} else { // Duplicate
 		    bool saveOld = true;
 		    if (prevEdgep->cutable() && !edgep->cutable()) {
-			saveOld = false;  // new !cutable more important then old
+			saveOld = false;  // new !cutable more important than old
 		    } else if (!prevEdgep->cutable() && edgep->cutable()) {
-			saveOld = true;  // old !cutable more important then new
+			saveOld = true;  // old !cutable more important than new
 		    } else {
 			saveOld = true;
 			if (!m_sumWeights && (prevEdgep->weight() < edgep->weight())) {  // Keep max weight

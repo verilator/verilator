@@ -367,7 +367,7 @@ private:
 	}
 	if (vup->c()->final()) {
 	    nodep->width(vup->c()->width(),vup->c()->widthMin());  // We don't care
-	    if (nodep->width()>64) nodep->v3error("Unsupported: $c can't generate wider then 64 bits");
+	    if (nodep->width()>64) nodep->v3error("Unsupported: $c can't generate wider than 64 bits");
 	}
 	// Just let all arguments seek their natural sizes
 	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -535,7 +535,7 @@ private:
 	nodep->rhsp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
 	nodep->width(awidth,awidth);  // We know the assign will truncate, so rather
 	//UINFO(0,"aw "<<awidth<<" w"<<nodep->rhsp()->width()<<" m"<<nodep->rhsp()->widthMin()<<endl);
-	// then using "width" and have the optimizer truncate the result, we do
+	// than using "width" and have the optimizer truncate the result, we do
 	// it using the normal width reduction checks.
 	widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
 	//if (debug()) nodep->dumpTree(cout,"  AssignPos: ");

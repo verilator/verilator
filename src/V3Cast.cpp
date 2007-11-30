@@ -154,7 +154,7 @@ private:
 	nodep->user(1);
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
-	// Constants are of unknown size if smaller then 33 bits, becase
+	// Constants are of unknown size if smaller than 33 bits, becase
 	// we're too lazy to wrap every constant in the universe in
 	// ((IData)#).
 	nodep->user(nodep->isQuad() || nodep->isWide());

@@ -1023,7 +1023,7 @@ private:
     // Below lines are magic expressions processed by astgen
     //  "AstNODETYPE {             # bracket not paren
     //                $accessor_name, ...
-    //                             # ,, gets replaced with a , rather then &&
+    //                             # ,, gets replaced with a , rather than &&
     //	             }" 	   # bracket not paren
     //    ,"function to call"
     // or ,"AstREPLACEMENT_TYPE{ $accessor }"
@@ -1204,7 +1204,7 @@ private:
     TREEOPV("AstRedXor{$lhsp->castExtend()}",	"AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstOneHot{$lhsp.width1}",		"replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",		"replaceNum(nodep,1)");
-    // Binary AND/OR is faster then logical and/or (usually)
+    // Binary AND/OR is faster than logical and/or (usually)
     TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1}", "AstAnd{$lhsp,$rhsp}");
     TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1}",		    "AstNot{$lhsp}");

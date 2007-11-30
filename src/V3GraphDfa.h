@@ -83,7 +83,7 @@ public:
 
 class DfaVertex : public V3GraphVertex {
     // Each DFA state is captured in this vertex.  
-    // Start and accepting are members, rather then the more intuitive
+    // Start and accepting are members, rather than the more intuitive
     // subclasses, as subclassing them would make it harder to inherit from here.
     bool	m_start;	// Start state
     bool	m_accepting;	// Accepting state?

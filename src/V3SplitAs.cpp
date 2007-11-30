@@ -165,7 +165,7 @@ private:
 
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	// Are there any lvalue references below this?
-	// There could be more then one.  So, we process the first one found first.
+	// There could be more than one.  So, we process the first one found first.
 	AstVarScope* lastSplitVscp = NULL;
 	while (!nodep->user()) {
 	    // Find any splittable variables

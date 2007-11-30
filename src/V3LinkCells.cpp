@@ -174,8 +174,8 @@ private:
 		    ports.insert(pinp->name(), pinp);
 		}
 	    }
-	    // We search ports, rather then in/out declarations as they aren't resolved yet,
-	    // and it's easier to do it now then in V3Link when we'd need to repeat steps.
+	    // We search ports, rather than in/out declarations as they aren't resolved yet,
+	    // and it's easier to do it now than in V3Link when we'd need to repeat steps.
 	    for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep; portnodep=portnodep->nextp()) {
 		if (AstPort* portp = portnodep->castPort()) {
 		    if (!ports.findIdName(portp->name())) {

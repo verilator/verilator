@@ -120,14 +120,14 @@ public:
 	if (!nodep->user3p()) {
 	    // Save time - kept a list of allocated but unused V3Numbers
 	    // It would be more efficient to do this by size, but the extra accounting
-	    // slows things down more then we gain.
+	    // slows things down more than we gain.
 	    V3Number* nump;
 	    if (!m_numFreeps.empty()) {
 		//UINFO(7,"Num Reuse "<<nodep->width()<<endl);
 		nump = m_numFreeps.back(); m_numFreeps.pop_back();
 		nump->width(nodep->width());
 		nump->fileline(nodep->fileline());
-		nump->setLong(value);  // We do support more then 32 bit numbers, just valuep=0 in that case
+		nump->setLong(value);  // We do support more than 32 bit numbers, just valuep=0 in that case
 	    } else {
 		//UINFO(7,"Num New "<<nodep->width()<<endl);
 		nump = new V3Number (nodep->fileline(), nodep->width(), value);

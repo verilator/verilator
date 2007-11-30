@@ -440,7 +440,7 @@ void GraphAcyc::place() {
     UINFO(4, "    Cutable edges = "<<numEdges<<endl);
 
     vector<V3GraphEdge*>	edges;	// List of all edges to be processed
-    edges.reserve(numEdges+1); // Make the vector properly sized right off the bat -- faster then reallocating
+    edges.reserve(numEdges+1); // Make the vector properly sized right off the bat -- faster than reallocating
     for (V3GraphVertex* vertexp = m_breakGraph.verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertexp->user(0);	// Clear in prep of next step
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {

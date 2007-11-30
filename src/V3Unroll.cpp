@@ -171,7 +171,7 @@ private:
 	    if (((valStop - valInit)/valInc) > v3Global.opt.unrollCount())
 		return cantUnroll(nodep, "too many iterations");
 
-	    // Less then 10 statements in the body?
+	    // Less than 10 statements in the body?
 	    int bodySize = 0;
 	    for (AstNode* bodp = precondsp; bodp; bodp=bodp->nextp()) {
 		bodySize++;

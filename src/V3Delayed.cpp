@@ -225,7 +225,7 @@ private:
 
 	if (nodep->user5p()) {
 	    // Simplistic optimization.  If the previous statement in same scope was also a =>,
-	    // then we told this nodep->user5 we can use its Vdlyvset rather then making a new one.
+	    // then we told this nodep->user5 we can use its Vdlyvset rather than making a new one.
 	    // This is good for code like:
 	    //    for (i=0; i<5; i++)  vector[i] <= something;
 	    sharedVset = true;

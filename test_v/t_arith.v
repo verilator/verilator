@@ -58,7 +58,7 @@ module t_arith(/*AUTOARG*/
 	 if (( 1'b0 ? 3'h3 : 1'b0 ? 3'h2 : 1'b1 ? 3'h1 : 3'h0) !== 3'h1) $stop;
 	 // verilator lint_off WIDTH
 	 // surefire lint_off CNDWID
-	 if (( 8'h10 + 1'b0 ? 8'he : 8'hf) !== 8'he) $stop;  // + is higher then ?
+	 if (( 8'h10 + 1'b0 ? 8'he : 8'hf) !== 8'he) $stop;  // + is higher than ?
 	 // surefire lint_on CNDWID
 	 // verilator lint_on WIDTH
 

@@ -37,7 +37,7 @@
 //	For each CFUNC in graph
 //		Add ASSIGN(SEL(__Vm_funcActivity,activityNumber++),1)
 //	Create 	__Vm_funcActivity vector
-//	Sort TRACEs by activityNumber(s) they come from (may be more then one)
+//	Sort TRACEs by activityNumber(s) they come from (may be more than one)
 //	Each set of activityNumbers
 //		Add IF (SEL(__Vm_funcActivity,activityNumber),1)
 //		Add traces under that activity number.

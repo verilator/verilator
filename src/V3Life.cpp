@@ -134,7 +134,7 @@ public:
 	AstVar* varp = it->first->varp();
 	LifeVarEntry* entp = &(it->second);
 	if (!varp->isSigPublic()) {
-	    // Rather then track what sigs AstUCFunc/AstUCStmt may change,
+	    // Rather than track what sigs AstUCFunc/AstUCStmt may change,
 	    // we just don't optimize any public sigs
 	    // Check the var entry, and remove if appropriate
 	    if (AstNode* oldassp = entp->assignp()) {

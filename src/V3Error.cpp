@@ -111,7 +111,7 @@ void FileLine::warnLintOff(bool flag) {
 
 FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
-    // There are often more then one token per line, thus we use the
+    // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line.
     static FileLine* lastNewp = NULL;
     if (lastNewp && *lastNewp == *this) {

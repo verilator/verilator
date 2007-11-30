@@ -459,7 +459,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
     if (linkerp->m_iterpp) {
 	// If we're iterating over a next() link, we need to follow links off the
 	// NEW node.  Thus we pass iteration information via a pointer in the node.
-	// This adds a unfortunate 4 bytes to every AstNode, but is faster then passing
+	// This adds a unfortunate 4 bytes to every AstNode, but is faster than passing
 	// across every function.
 	// If anyone has a cleaner way, I'd be grateful.
 	*(linkerp->m_iterpp) = newp;

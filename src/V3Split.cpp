@@ -337,7 +337,7 @@ private:
 	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
 	    vvertexp->splitColor(vvertexp->color());
 	    uint32_t color = vvertexp->splitColor();
-	    if (color >= numVertexes) nextp->v3fatalSrc("More colors then vertexes!\n");
+	    if (color >= numVertexes) nextp->v3fatalSrc("More colors than vertexes!\n");
 	    if (!color) nextp->v3fatalSrc("No node color assigned\n");
 	    if (lastOfColor[color]) {
 		new SplitStrictEdge(&m_graph, lastOfColor[color], vvertexp);

@@ -21,7 +21,7 @@
 // BRANCH TRANSFORMATIONS:
 //	At each IF/(IF else).
 //	   Count underneath $display/$stop statements.
-//	   If more on if then else, this branch is unlikely, or vice-versa.
+//	   If more on if than else, this branch is unlikely, or vice-versa.
 //
 //*************************************************************************
 
