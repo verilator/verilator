@@ -7,8 +7,10 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
+top_filename("t/t_trace_ena.v");
+
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'-trace':''],
+	 v_flags2 => [$Last_Self->{v3}?'-notrace':''],
 	 );
 
 execute (
@@ -16,9 +18,7 @@ execute (
 	 );
 
 if ($Last_Self->{v3}) {
-    file_grep     ("obj_dir/Vt_trace_ena__Trace__Slow.cpp", qr/c_trace_on\"/x);
-    file_grep_not ("obj_dir/Vt_trace_ena__Trace__Slow.cpp", qr/_trace_off\"/x);
-    file_grep     ("obj_dir/t_trace_ena_simx.vcd", qr/\$enddefinitions/x);
+    !-r "obj_dir/$Last_Self->{name}_simx.vcd" or $Last_Self->error("Tracing should be off\n");
 }
 
 ok(1);

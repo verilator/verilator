@@ -538,9 +538,12 @@ Creates a dump file with statistics on the design in {prefix}__stats.txt.
 
 =item --trace
 
-Adds waveform tracing code to the model.  Having tracing compiled in may
-result in some small performance losses, even when waveforms are not turned
-on during model execution.
+Adds waveform tracing code to the model, this will create additional
+{prefix}__Trace*.cpp files you will need to add to your Makefiles, if
+you're not using the ones generated for you.
+
+Having tracing compiled in may result in some small performance losses,
+even when waveforms are not turned on during model execution.
 
 =item --trace-depth I<levels>
 

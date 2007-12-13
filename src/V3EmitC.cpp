@@ -1529,9 +1529,9 @@ void EmitCImp::emitInt(AstModule* modp) {
     } else {
 	puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
 	puts("~"+modClassName(modp)+"();\n");
-	if (v3Global.opt.trace()) {
-	    puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
-	}
+    }
+    if (v3Global.opt.trace() && !optSystemPerl()) {
+	puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
     }
     puts("void\t__Vconfigure("+symClassName()+"* symsp);\n");
     if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
@@ -1617,7 +1617,7 @@ void EmitCImp::emitImp(AstModule* modp) {
     }
 
     if (m_fast && m_splitFilenum==0) {
-	if (v3Global.opt.trace() && optSystemC() && m_modp->isTop()) {
+	if (v3Global.opt.trace() && optSystemPerl() && m_modp->isTop()) {
 	    puts("\n");
 	    puts("\n/*AUTOTRACE(__MODULE__,recurse,activity,exists)*/\n\n");
 	}
@@ -1704,7 +1704,7 @@ class EmitCTrace : EmitCStmts {
     // METHODS
     void emitTraceHeader() {
 	// Includes
-	if (optSystemC()) {
+	if (optSystemPerl()) {
 	    puts("#include \"SpTraceVcd.h\"\n");
 	}
 	puts("#include \"SpTraceVcdC.h\"\n");
@@ -1716,7 +1716,7 @@ class EmitCTrace : EmitCStmts {
 	puts("\n//======================\n\n");
 
 	puts("void "+topClassName()+"::trace (");
-	if (optSystemC()) {
+	if (optSystemPerl()) {
 	    puts("SpTraceFile* tfp, int, int) {\n");
 	} else {
 	    puts("SpTraceVcdCFile* tfp, int, int) {\n");

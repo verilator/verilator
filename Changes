@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Wide VL_CONST_W_#X functions are now made automatically. [Bernard Deadman]
      In such cases, a new {prefix}__Inlines.h file will be built and included.
 
+**** Fixed tracing of SystemC w/o SystemPerl. [Bernard Deadman]
+
 * Verilator 3.655 11/27/2007
 
 ***  Support "#delay <statement>;" with associated STMTDLY warning.

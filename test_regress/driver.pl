@@ -285,6 +285,7 @@ sub compile {
     return 1 if $self->errors;
     $self->oprint("Compile\n");
 
+    $self->{sc} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-sc\b/);
     $self->{sp} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-sp\b/);
     $self->{trace} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-trace\b/);
     $self->{coverage} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-coverage\b/);
@@ -346,7 +347,7 @@ sub compile {
 		      @{$param{v_other_filenames}},
 		      ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
 		      );
-	if ($self->sp && !defined $ENV{SYSTEMC}) {
+	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
 	    $self->error("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
@@ -427,6 +428,15 @@ sub top_filename {
 sub sp {
     my $self = (ref $_[0]? shift : $Last_Self);
     return $self->{sp};
+}
+
+sub sc {
+    my $self = (ref $_[0]? shift : $Last_Self);
+    return $self->{sc};
+}
+
+sub sc_or_sp {
+    return sc($_[0]) || sp($_[0]);
 }
 
 #----------------------------------------------------------------------
@@ -526,19 +536,19 @@ sub _make_main {
     
     print $fh "// Compile in-place for speed\n";
     print $fh "#include \"verilated.cpp\"\n";
-    print $fh "#include \"systemc.h\"\n" if $self->{sc};
+    print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"systemperl.h\"\n" if $self->sp;
-    print $fh "#include \"SpTraceVcdC.cpp\"\n" if $self->{trace};
-    print $fh "#include \"SpCoverage.cpp\"\n" if $self->{coverage};
+    print $fh "#include \"SpTraceVcdC.cpp\"\n" if $self->{trace} && !$self->sp;
+    print $fh "#include \"Sp.cpp\"\n"  if $self->sp;
 
     print $fh "$VM_PREFIX * topp;\n";
-    if (!$self->sp) {
+    if (!$self->sc_or_sp) {
 	print $fh "unsigned int main_time = false;\n";
 	print $fh "double sc_time_stamp () {\n";
 	print $fh "    return main_time;\n";
 	print $fh "}\n";
     }
-    if ($self->sp) {
+    if ($self->sc_or_sp) {
 	print $fh "extern int sc_main(int argc, char **argv);\n";
 	print $fh "int sc_main(int argc, char **argv) {\n";
 	print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
@@ -556,17 +566,25 @@ sub _make_main {
 	print $fh "    SP_PIN(topp,fastclk,fastclk);\n" if $self->{inputs}{fastclk};
 	print $fh "    SP_PIN(topp,clk,clk);\n" if $self->{inputs}{clk};
 	$set = "";
+    } elsif ($self->sc) {
+	print $fh "    topp->fastclk(fastclk);\n" if $self->{inputs}{fastclk};
+	print $fh "    topp->clk(clk);\n" if $self->{inputs}{clk};
+	$set = "";
     } else {
 	print $fh "    topp->eval();\n";
 	$set = "topp->";
     }
 
-    my $traceit = ($self->{trace} && !$self->{sp} && !$self->{sc});
-    if ($traceit) {
+    my $ctraceit = ($self->{trace} && !$self->{sp});
+    if ($self->{trace}) {
 	$fh->print("\n");
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("    Verilated::traceEverOn(true);\n");
-	$fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
+	if ($self->{sp}) {
+	    $fh->print("    SpTraceFile* tfp = new SpTraceFile;\n");
+	} else {
+	    $fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
+	}
 	$fh->print("    topp->trace (tfp, 99);\n");
 	$fh->print("    tfp->open (\"obj_dir/".$self->{name}."_simx.vcd\");\n");
 	$fh->print("#endif\n");
@@ -585,12 +603,12 @@ sub _make_main {
 	    print $fh "	${set}clk=!${set}clk;\n";
 	    $action = 1;
 	}
-	if ($self->sp) {
+	if ($self->sc_or_sp) {
 	    print $fh "	sc_start(1);\n";
 	} else {
 	    print $fh "	main_time+=1;\n";
 	    print $fh "	${set}eval();\n" if $action;
-	    if ($traceit) {
+	    if ($ctraceit) {
 		$fh->print("#if VM_TRACE\n");
 		$fh->print("	tfp->dump (main_time);\n");
 		$fh->print("#endif //VM_TRACE\n");
@@ -604,7 +622,7 @@ sub _make_main {
     print $fh "    topp->final();\n";
     print $fh "    SpCoverage::write(\"",$self->{coverage_filename},"\");\n" if $self->{coverage};
 
-    if ($traceit) {
+    if ($self->{trace}) {
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("	tfp->close();\n");
 	$fh->print("#endif //VM_TRACE\n");

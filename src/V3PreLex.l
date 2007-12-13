@@ -76,7 +76,7 @@ psl		[p]sl
 <INITIAL>^{ws}*"`line"{ws}+.*{crnl}	{ V3PreLex::s_currentLexp->lineDirective(yytext);
 					  return(VP_LINE); }
 
-	/* Special directives we recognise */
+	/* Special directives we recognize */
 <INITIAL>"`include"	{ return(VP_INCLUDE); }
 <INITIAL>"`ifdef"	{ return(VP_IFDEF); }
 <INITIAL>"`ifndef"	{ return(VP_IFNDEF); }
@@ -86,7 +86,7 @@ psl		[p]sl
 <INITIAL>"`undef"	{ return(VP_UNDEF); }
 <INITIAL>"`define"	{ return(VP_DEFINE); }
 
-	/* Optional directives we recognise */
+	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ if (!pedantic()) {
 	    		     yytext = (char*)V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
 	    		     yyleng = strlen(yytext); return (VP_TEXT);
