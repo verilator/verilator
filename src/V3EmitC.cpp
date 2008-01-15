@@ -1439,6 +1439,13 @@ void EmitCImp::emitInt(AstModule* modp) {
 	    puts("class "+modClassName(cellp->modp())+";\n");
 	}
     }
+    if (v3Global.opt.trace()) {
+	if (optSystemPerl()) {
+	    puts("class SpTraceVcd;\n");
+	} else {
+	    puts("class SpTraceVcdCFile;\n");
+	}
+    }
 
     puts("\n//----------\n\n");
     emitTextSection(AstType::SCHDR);

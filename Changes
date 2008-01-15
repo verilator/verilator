@@ -10,7 +10,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fixed sign error when extracting from signed memory.  [Peter Debacker]
 
-**** Fixed tracing of SystemC w/o SystemPerl. [Bernard Deadman]
+**** Fixed tracing of SystemC w/o SystemPerl. [Bernard Deadman, Johan Wouters]
 
 * Verilator 3.655 2007/11/27
 
