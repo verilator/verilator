@@ -78,7 +78,9 @@ module t (/*AUTOARG*/
    wire [31:0] ucyc = cyc;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
+`ifdef TEST_VERBOSE
       $write("%x  %x %x %x %x  %x %x\n", cyc, sr,srs,sl,sls, b_s,b_us);
+`endif
       case (cyc)
 	0: begin
 	   a <= 16'sh8b1b; b <= 5'sh1f;  // -1

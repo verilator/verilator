@@ -67,7 +67,6 @@ private:
 
     //========
     // Signed: Output unsigned, Operands either
-    virtual void visit(AstArraySel* nodep, AstNUser*) {		signed_Ou_Ix(nodep); } //See backRequiresUnsigned
     virtual void visit(AstSel* nodep, AstNUser*) {		signed_Ou_Ix(nodep); } //See backRequiresUnsigned
     virtual void visit(AstAttrOf* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstCountOnes* nodep, AstNUser*) {	signed_Ou_Ix(nodep); }
@@ -109,6 +108,10 @@ private:
     virtual void visit(AstUnaryMin* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftL* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftR* nodep, AstNUser*) {		signed_Olhs(nodep); }
+
+    // Signed: Output signed iff LHS signed; binary operator
+    // Note by contrast, bit extract selects are unsigned
+    virtual void visit(AstArraySel* nodep, AstNUser*) {		signed_Olhs(nodep); } //See backRequiresUnsigned
 
     //=======
     // Signed: Output signed iff LHS & RHS signed; binary operator
@@ -314,6 +317,11 @@ private:
     void signed_Olhs(AstNodeBiop* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->isSigned(nodep->lhsp()->isSigned());
+    }
+    // Signed: Output signed iff LHS signed; select operator
+    void signed_Olhs(AstSel* nodep) {
+	nodep->iterateChildren(*this);
+	nodep->isSigned(nodep->fromp()->isSigned());
     }
     // Signed: Output signed iff LHS & RHS signed; binary operator
     void signed_OlhsAndRhs(AstNodeBiop* nodep) {

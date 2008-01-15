@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Wide VL_CONST_W_#X functions are now made automatically. [Bernard Deadman]
      In such cases, a new {prefix}__Inlines.h file will be built and included.
 
+**** Fixed sign error when extracting from signed memory.  [Peter Debacker]
+
 **** Fixed tracing of SystemC w/o SystemPerl. [Bernard Deadman]
 
 * Verilator 3.655 11/27/2007
@@ -91,7 +93,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support Verilog 2005 `begin_keywords and `end_keywords.
 
-***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2008.
+***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2005.
 
 ***  Add /*verilator public_flat*/.  [Eugene Weber]
 
