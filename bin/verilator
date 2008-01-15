@@ -1012,20 +1012,20 @@ includes signed numbers, "always @*", comma separated sensitivity lists,
 generate statements, multidimensional arrays, localparam, and C-style
 declarations inside port lists.
 
-=head1 VERILOG 2005 (IEEE 1364-2008) SUPPORT
+=head1 VERILOG 2005 (IEEE 1364-2005) SUPPORT
 
 Verilator supports the `begin_keywords and `end_keywords compiler
 directives.
 
 Verilator partially supports the uwire keyword.
 
-=head1 SYSTEMVERILOG (IEEE 1800-2008) SUPPORT
+=head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
 
 Verilator currently has very minimal support for SystemVerilog. As
 SystemVerilog features enter common usage they will be added.  Contact the
 author if a feature you need is missing.
 
-Verilator implements the full SystemVerilog 1800-2008 preprocessor,
+Verilator implements the full SystemVerilog 1800-2005 preprocessor,
 including function call-like preprocessor defines.
 
 Verilator supports ==? and !=? operators, $bits, $countones, $error,
