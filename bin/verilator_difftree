@@ -4,7 +4,7 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 # $Id$
 ######################################################################
 #
-# Copyright 2005-2007 by Wilson Snyder <wsnyder@wsnyder.org>.  This
+# Copyright 2005-2008 by Wilson Snyder <wsnyder@wsnyder.org>.  This
 # program is free software; you can redistribute it and/or modify it under
 # the terms of either the GNU Lesser General Public License or the Perl
 # Artistic License.
@@ -180,7 +180,7 @@ Displays this message and program version and exits.
 
 The latest version is available from L<http://www.veripool.com/>.
 
-Copyright 2005-2007 by Wilson Snyder.  This package is free software; you
+Copyright 2005-2008 by Wilson Snyder.  This package is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License or the Perl Artistic License.
 

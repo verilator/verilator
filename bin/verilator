@@ -4,7 +4,7 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 # $Id$
 ######################################################################
 #
-# Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 #
@@ -1012,20 +1012,20 @@ includes signed numbers, "always @*", comma separated sensitivity lists,
 generate statements, multidimensional arrays, localparam, and C-style
 declarations inside port lists.
 
-=head1 VERILOG 2005 (IEEE 1364-2005) SUPPORT
+=head1 VERILOG 2005 (IEEE 1364-2008) SUPPORT
 
 Verilator supports the `begin_keywords and `end_keywords compiler
 directives.
 
 Verilator partially supports the uwire keyword.
 
-=head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
+=head1 SYSTEMVERILOG (IEEE 1800-2008) SUPPORT
 
 Verilator currently has very minimal support for SystemVerilog. As
 SystemVerilog features enter common usage they will be added.  Contact the
 author if a feature you need is missing.
 
-Verilator implements the full SystemVerilog 1800-2005 preprocessor,
+Verilator implements the full SystemVerilog 1800-2008 preprocessor,
 including function call-like preprocessor defines.
 
 Verilator supports ==? and !=? operators, $bits, $countones, $error,
@@ -1982,9 +1982,9 @@ using --debug), see if your machine is paging; most likely you need to run
 it on a machine with more memory.  Verilator is a full 64 bit application
 and may use more than 4GB, but about 1GB is the maximum typically needed.
 
-=item How do I generate waveforms (traces) in C++?
+=item How do I generate waveforms (traces) in C++ or SystemC?
 
-See the next question for tracing in SystemC mode.
+See the next question for tracing in SystemPerl mode.
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
 is installed. SystemC itself does not need to be installed for C++ only
@@ -2001,7 +2001,7 @@ distribution.
 You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
 done for you if using the Verilator --exe flag.
 
-=item How do I generate waveforms (traces) in SystemC?
+=item How do I generate waveforms (traces) in SystemPerl?
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
 is installed.
@@ -2218,7 +2218,7 @@ Eugene Weber, Leon Wildman, and Mat Zeno.
 
 The latest version is available from L<http://www.veripool.com/>.
 
-Copyright 2003-2007 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2008 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License or the Perl Artistic License.
 

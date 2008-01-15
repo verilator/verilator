@@ -91,7 +91,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support Verilog 2005 `begin_keywords and `end_keywords.
 
-***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2005.
+***  Updated list of SystemVerilog keywords to correspond to IEEE 1800-2008.
 
 ***  Add /*verilator public_flat*/.  [Eugene Weber]
 
@@ -1131,7 +1131,7 @@ $Id$
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright 2001-2007 by Wilson Snyder.  This program is free software;
+Copyright 2001-2008 by Wilson Snyder.  This program is free software;
 you can redistribute it and/or modify it under the terms of either the GNU
 General Public License or the Perl Artistic License.
 

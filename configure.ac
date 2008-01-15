@@ -1,6 +1,6 @@
 dnl $Id$
 dnl DESCRIPTION: Process this file with autoconf to produce a configure script.
-dnl Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
+dnl Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
 dnl redistribute it and/or modify it under the terms of either the GNU
 dnl General Public License or the Perl Artistic License.
 
