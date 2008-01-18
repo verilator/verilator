@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.656 2008/1/15
+* Verilator 3.656 2008/01/18
 
 **** Wide VL_CONST_W_#X functions are now made automatically. [Bernard Deadman]
      In such cases, a new {prefix}__Inlines.h file will be built and included.
