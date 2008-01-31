@@ -521,13 +521,9 @@ int main(int argc, char** argv, char** env) {
     //--FRONTEND------------------
 
     // Cleanup
-    mkdir(v3Global.opt.makeDir().c_str(), 0777);
-    string cleanFilename = "/bin/rm -rf "+v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_*.tree";
-    system(cleanFilename.c_str());
-    cleanFilename = "/bin/rm -rf "+v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_*.dot";
-    system(cleanFilename.c_str());
-    cleanFilename = "/bin/rm -rf "+v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_*.txt";
-    system(cleanFilename.c_str());
+    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.tree");
+    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.dot");
+    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.txt");
 
     // Read first filename
     v3Global.readFiles();

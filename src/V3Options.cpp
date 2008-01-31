@@ -226,6 +226,55 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& e
     return "";
 }
 
+void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
+    if (DIR* dirp = opendir(dir.c_str())) {
+	while (struct dirent* direntp = readdir(dirp)) {
+	    if (wildmatch(direntp->d_name, regexp.c_str())) {
+		string fullname = dir + "/" + string(direntp->d_name);
+		unlink (fullname.c_str());
+	    }
+	}
+	closedir(dirp);
+    }
+}
+ 
+// Double procedures, inlined, unrolls loop much better
+inline bool V3Options::wildmatchi(const char* s, const char* p) {
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    if (((*s)!=(*p)) && *p != '?')
+		return false;
+	}
+	else {
+	    // Trailing star matches everything.
+	    if (!*++p) return true;
+	    while (wildmatch(s, p) == false)
+		if (*++s == '\0')
+		    return false;
+	    return true;
+	}
+    }
+    return(*s == '\0' || *s == '[');
+}
+
+bool V3Options::wildmatch(const char* s, const char* p) {
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    if (((*s)!=(*p)) && *p != '?')
+		return false;
+	}
+	else {
+	    // Trailing star matches everything.
+	    if (!*++p) return true;
+	    while (wildmatchi(s, p) == false)
+		if (*++s == '\0')
+		    return false;
+	    return true;
+	}
+    }
+    return(*s == '\0' || *s == '[');
+}
+
 //######################################################################
 // V3 Options accessors
 

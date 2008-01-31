@@ -232,6 +232,14 @@ bool V3File::checkTimes(const string& filename, const string& cmdline) {
     return dependImp.checkTimes(filename, cmdline);
 }
 
+void V3File::createMakeDir() {
+    static bool created = false;
+    if (!created) {
+	created = true;
+	mkdir(v3Global.opt.makeDir().c_str(), 0777);
+    }
+}
+
 //######################################################################
 // V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
 

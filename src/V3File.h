@@ -46,6 +46,7 @@ public:
 	return new_ofstream_nodepend (filename, append);
     }
     static ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
+	createMakeDir();
 	if (append) {
 	    return new ofstream(filename.c_str(), ios::app);
 	} else {
@@ -53,15 +54,20 @@ public:
 	}
     }
     static FILE* new_fopen_w(const string& filename) {
+	createMakeDir();
 	addTgtDepend(filename);
 	return fopen(filename.c_str(),"w");
     }
+
     // Dependencies
     static void addSrcDepend(const string& filename);
     static void addTgtDepend(const string& filename);
     static void writeDepend(const string& filename);
     static void writeTimes(const string& filename, const string& cmdline);
     static bool checkTimes(const string& filename, const string& cmdline);
+
+    // Directory utilities
+    static void createMakeDir();
 };
 
 //============================================================================
