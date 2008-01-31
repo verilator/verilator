@@ -23,6 +23,7 @@
 #include "verilatedos.h"
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <iomanip>
 #include <memory>

@@ -26,13 +26,15 @@
 #include "verilatedos.h"
 #include "V3Error.h"
 
+class V3Read;
+
 //============================================================================
 
 class V3PreShell {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);
-    static void preproc(FileLine* fileline, const string& module, const string& vppFilename);
+    static void preproc(FileLine* fileline, const string& module, V3Read* readerp);
     static void preprocInclude(FileLine* fileline, const string& module);
     static string dependFiles() { return ""; }   // Perl only
     static void define(const string& name, const string& value);

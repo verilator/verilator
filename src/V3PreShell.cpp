@@ -33,6 +33,7 @@
 #include "V3PreShell.h"
 #include "V3PreProc.h"
 #include "V3File.h"
+#include "V3Read.h"
 
 //######################################################################
 
@@ -64,38 +65,15 @@ protected:
 	}
     }
 
-    void preproc (FileLine* fl, const string& modname, const string& vppFilename) {
+    void preproc (FileLine* fl, const string& modname, V3Read* readerp) {
 	// Preprocess the given module, putting output in vppFilename
-	unlink(vppFilename.c_str());
 	UINFONL(1,"  Preprocessing "<<modname<<endl);
-
-	// Open
-	ofstream* ofp = NULL;
-	ostream* osp;
-	if (v3Global.opt.preprocOnly()) {
-	    osp = &cout;
-	} else if (!v3Global.opt.keepTempFiles()) {  // Must match unlink rule in V3Read.cpp
-	    osp = ofp = V3File::new_ofstream_nodepend(vppFilename);
-	} else {
-	    osp = ofp = V3File::new_ofstream(vppFilename);
-	}
-	if (osp->fail()) {
-	    fl->v3error("Cannot write preprocessor output: "+vppFilename);
-	    return;
-	}
 
 	// Preprocess
 	preprocOpen(fl, modname, "Cannot find file containing module: ");
 	while (!s_preprocp->isEof()) {
 	    string line = s_preprocp->getline();
-	    *osp << line;
-	}
-
-	// Close
-	if (ofp) {
-	    ofp->close();
-	    delete ofp;
-	    osp = ofp = NULL;
+	    readerp->ppPushText(line);
 	}
     }
 
@@ -129,8 +107,8 @@ V3PreProc* V3PreShellImp::s_preprocp = NULL;
 void V3PreShell::boot(char** env) {
     V3PreShellImp::s_preImp.boot(env);
 }
-void V3PreShell::preproc(FileLine* fl, const string& modname, const string& vppFilename) {
-    V3PreShellImp::s_preImp.preproc(fl, modname, vppFilename);
+void V3PreShell::preproc(FileLine* fl, const string& modname, V3Read* readerp) {
+    V3PreShellImp::s_preImp.preproc(fl, modname, readerp);
 }
 void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);

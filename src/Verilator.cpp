@@ -464,6 +464,7 @@ void process () {
 	V3EmitC::emitcSyms();
 	V3EmitC::emitcTrace();
     }
+    // Unfortunately we have some lint checks in emitc.
     V3EmitC::emitc();
 
     // Statistics

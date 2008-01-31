@@ -91,6 +91,7 @@ if (! GetOptions (
 		  "sp!"		=> sub {$Opt_Sp = 'sp';},
 		  "sc!"		=> sub {$Opt_Sp = 'sc';},
 		  "cc!"		=> sub {$Opt_Sp = 0;},
+		  "lint-only!"	=> sub {$Opt_Sp = 0;},
 		  #"ignc!"	=> ...,		# Undocumented debugging, disable $c but don't complain
 		  # Additional parameters
 		  "<>"		=> sub {},	# Ignored
@@ -434,7 +435,7 @@ to gcc -MP option.
 =item --Mdir I<directory>
 
 Specifies the name of the Make object directory.  All generated files will
-be placed in this directory.
+be placed in this directory.  If not specified, "obj_dir" is used.
 
 =item --mod-prefix I<topname>
 

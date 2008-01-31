@@ -46,7 +46,7 @@ public:
 	return new_ofstream_nodepend (filename, append);
     }
     static ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
-	createMakeDir();
+	if (filename != "/dev/null") createMakeDir();
 	if (append) {
 	    return new ofstream(filename.c_str(), ios::app);
 	} else {
@@ -54,7 +54,7 @@ public:
 	}
     }
     static FILE* new_fopen_w(const string& filename) {
-	createMakeDir();
+	if (filename != "/dev/null") createMakeDir();
 	addTgtDepend(filename);
 	return fopen(filename.c_str(),"w");
     }

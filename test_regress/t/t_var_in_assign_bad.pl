@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
-	 v_flags2 => ["--lint-only"],
+	 v_flags2 => ["--lint-only --Mdir obj_lint_only"],
 	 fails=>1,
 	 expect=>
 '%Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
@@ -16,5 +16,6 @@ compile (
 %Error: Exiting due to.*',
 	 ) if $Last_Self->{v3};
 
+(!-d "obj_lint_only") or $Last_Self->error("%Error: lint-only shouldn't make output directory");
 ok(1);
 1;

@@ -33,6 +33,9 @@ extern void yyerrorf(const char* format, ...);
 
 #define STATE_VERILOG_RECENT  S05		// State name for most recent Verilog Version
 
+#define YY_INPUT(buf,result,max_size) \
+    result = V3Read::flexPpInputToLex(buf,max_size);
+
 //======================================================================
 
 #define NEXTLINE() {V3Read::incLineno();}

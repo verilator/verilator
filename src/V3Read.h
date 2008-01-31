@@ -45,6 +45,7 @@ class V3Read {
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
     deque<FileLine>  m_lintState;	// Current lint state for save/restore
+    deque<string> m_ppBuffers;		// Preprocessor->lex buffer of characters to process
     //int debug() { return 9; }
 
 protected:
@@ -52,6 +53,7 @@ protected:
     friend class V3Lexer;
     friend class V3LexerBase;
     friend class FileLine;
+    friend class V3PreShellImp;
     int yylexThis();
     static bool optPsl();
     static void ppline (const char* text);
@@ -63,6 +65,9 @@ protected:
     static void pushBeginKeywords(int state) { s_readp->m_inBeginKwd++; s_readp->m_lastVerilogState=state; }
     static bool popBeginKeywords() { if (s_readp->m_inBeginKwd) { s_readp->m_inBeginKwd--; return true; } else return false; }
     static int lastVerilogState() { return s_readp->m_lastVerilogState; }
+
+    void ppPushText(const string& text) { m_ppBuffers.push_back(text); }
+    int ppInputToLex(char* buf, int max_size);
 
 public: // But for internal use only
     static string* newString(const string& text) {
@@ -100,6 +105,7 @@ public: // But for internal use only
     static void statePushVlg();	// Parser -> lexer communication
     static void statePop();	// Parser -> lexer communication
     static int stateVerilogRecent();	// Parser -> lexer communication
+    static int flexPpInputToLex(char* buf, int max_size) { return s_readp->ppInputToLex(buf,max_size); }
 
 public:
     // CREATORS
@@ -118,7 +124,7 @@ public:
     void readFile(FileLine* fileline, const string& modname, bool inLibrary);
 
 private:
-    void lexFile(const string& vppfilename, const string& modname);
+    void lexFile(const string& modname);
 };
 
 #endif // Guard
