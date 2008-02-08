@@ -526,15 +526,15 @@ regsigList:	regsig  				{ $$ = $1; }
 	|	regsigList ',' regsig		       	{ $$ = $1;$1->addNext($3); }
 	;
 
-portV2kDecl:	varRESET varInput  signingE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varInout  signingE v2kNetDeclE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varOutput signingE v2kVarDeclE regrangeE portV2kSig	{ $$ = $6; }
+portV2kDecl:	varRESET varInput  v2kNetDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varInout  v2kNetDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varOutput v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
 	;
 
 // IEEE: port_declaration - plus ';'
-portDecl:	varRESET varInput  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varInout  signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varOutput signingE v2kVarDeclE regrangeE  sigList ';'	{ $$ = $6; }
+portDecl:	varRESET varInput  v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varInout  v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
+     	|	varRESET varOutput v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
 	;
 
 varDecl:	varRESET varReg     signingE regrangeE  regsigList ';'	{ $$ = $5; }
