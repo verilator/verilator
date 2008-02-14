@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Avoid creating obj_dir with --lint-only.  [Ding Xiaoliang]
 
+**** Fix parsing of always @(*).  [Patricio Kaplan]
+
 * Verilator 3.656 2008/01/18
 
 **** Wide VL_CONST_W_#X functions are now made automatically. [Bernard Deadman]

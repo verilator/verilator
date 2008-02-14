@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
 
    reg [31:0] a, b, c;
 
-   always @ (/*AS*/a or b) begin
+   always @ (*) begin   // Test Verilog 2001 (*)
       // verilator lint_off COMBDLY
       c <= a | b;
       // verilator lint_on COMBDLY

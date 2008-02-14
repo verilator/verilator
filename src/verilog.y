@@ -838,7 +838,7 @@ eventControlE:	/* empty */				{ $$ = NULL; }
 // IEEE: event_control
 eventControl:	'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
 	|	'@' senitemVar				{ $$ = new AstSenTree($1,$2); }	/* For events only */
-	|	'@' '(' '*' ')'				{ $$ = NULL; $2->v3error("Use @*.  always @ (*) to be depreciated in Verilog 2005.\n"); }
+	|	'@' '(' '*' ')'				{ $$ = NULL; }  /* Verilog 2001 */
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
 	;
 
