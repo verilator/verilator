@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.656 2008/***
+* Verilator 3.657 2008/02/20
 
 **** Fix assignments of {a,b,c} = {c,b,a}.  [Jonathan Kimmitt]
 
