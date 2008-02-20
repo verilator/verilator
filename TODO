@@ -52,6 +52,10 @@ Usability:
 	Better reporting of unopt problems, including what lines of code
 	Report more errors (all of them?) before exiting [Eugene Weber]	
 
+Internal Code:
+	Eliminate the AstNUser* passed to all visitors; its only needed in V3Width,
+	and removing it will speed up and simplify all the other code.
+
 Performance:
 	Constant propagation
 		Extra cleaning AND:  1 & ((VARREF >> 1) | ((&VARREF >> 1) & VARREF))

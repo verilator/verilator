@@ -14,7 +14,7 @@
 // please note it here, otherwise:**
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2007 by Wilson Snyder.
+// without warranty, 2008 by Wilson Snyder.
 
 module t (/*AUTOARG*/
    // Inputs

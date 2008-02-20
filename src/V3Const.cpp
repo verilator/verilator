@@ -40,10 +40,62 @@
 #include "V3Signed.h"
 
 //######################################################################
+// Utilities
+
+class ConstVarMarkVisitor : public AstNVisitor {
+    // NODE STATE
+    // AstVar::userp		-> bool, Var marked, 0=not set yet
+private:
+    // VISITORS
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (nodep->varp()) nodep->varp()->user(1);
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+public:
+    // CONSTUCTORS
+    ConstVarMarkVisitor(AstNode* nodep) {
+	AstNode::userClearTree();
+	nodep->iterateAndNext(*this, NULL);
+    }
+    virtual ~ConstVarMarkVisitor() {}
+};
+
+class ConstVarFindVisitor : public AstNVisitor {
+    // NODE STATE
+    // AstVar::userp		-> bool, input from ConstVarMarkVisitor
+    // MEMBERS
+    bool m_found;
+private:
+    // VISITORS
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (nodep->varp() && nodep->varp()->user()) m_found = true;
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+public:
+    // CONSTUCTORS
+    ConstVarFindVisitor(AstNode* nodep) {
+	m_found = false;
+	nodep->iterateAndNext(*this, NULL);
+    }
+    virtual ~ConstVarFindVisitor() {}
+    // METHODS
+    bool found() const { return m_found; }
+};
+
+//######################################################################
 // Const state, as a visitor of each AstNode
 
 class ConstVisitor : public AstNVisitor {
 private:
+    // NODE STATE
+    // ** only when m_warn is set.  If state is needed other times,
+    // ** must track down everywhere V3Const is called and make sure no overlaps.
+    // AstVar::userp		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
+
     // STATE
     bool	m_params;	// If true, propogate parameterized and true numbers only
     bool	m_required;	// If true, must become a constant
@@ -494,10 +546,26 @@ private:
 	    }
 	}
 	else if (!m_cpp && nodep->lhsp()->castConcat()) {
-	    UINFO(4,"  ASSI "<<nodep<<endl);
+	    bool need_temp = false;
+	    if (m_warn && !nodep->castAssignDly()) {  // Is same var on LHS and RHS?
+		ConstVarMarkVisitor mark(nodep->lhsp());
+		ConstVarFindVisitor find(nodep->rhsp());
+		if (find.found()) need_temp = true;
+	    }
+	    if (need_temp) {
+		// The first time we constify, there may be the same variable on the LHS
+		// and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
+		UINFO(4,"  ASSITEMP "<<nodep<<endl);
+		// ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(temp1,SEL(rhs,{size})),
+		//				  ASSIGN(temp2,SEL(newrhs,{size}))
+		//                                ASSIGN(lc1,temp1),
+		//				  ASSIGN(lc2,temp2)
+	    } else {
+		UINFO(4,"  ASSI "<<nodep<<endl);
+		// ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
+		//				  ASSIGN(lc2,SEL(newrhs,{size}))
+	    }
 	    if (debug()>=9) nodep->dumpTree(cout,"  Ass_old: ");
-	    // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
-	    //				      ASSIGN(lc2,SEL(newrhs,{size}))
 	    // Unlink the stuff
 	    AstNode*   lc1p    = nodep->lhsp()->castConcat()->lhsp()->unlinkFrBack();
 	    AstNode*   lc2p    = nodep->lhsp()->castConcat()->rhsp()->unlinkFrBack();
@@ -517,14 +585,50 @@ private:
 	    sel2p->width(msb2-lsb2+1,msb2-lsb2+1);
 	    // Make new assigns of same flavor as old one
 	    //*** Not cloneTree; just one node.
-	    AstNodeAssign* asn1p=nodep->cloneType(lc1p, sel1p)->castNodeAssign();
-	    AstNodeAssign* asn2p=nodep->cloneType(lc2p, sel2p)->castNodeAssign();
-	    asn1p->width(msb1-lsb1+1,msb1-lsb1+1);
-	    asn2p->width(msb2-lsb2+1,msb2-lsb2+1);
-	    nodep->addNextHere(asn1p);
-	    nodep->addNextHere(asn2p);
-	    if (debug()>=9) asn1p->dumpTree(cout,"     _new: ");
-	    if (debug()>=9) asn2p->dumpTree(cout,"     _new: ");
+	    AstNode* newp = NULL;
+	    if (!need_temp) {
+		AstNodeAssign* asn1ap=nodep->cloneType(lc1p, sel1p)->castNodeAssign();
+		AstNodeAssign* asn2ap=nodep->cloneType(lc2p, sel2p)->castNodeAssign();
+		asn1ap->width(msb1-lsb1+1,msb1-lsb1+1);
+		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
+		newp = newp->addNext(asn1ap);
+		newp = newp->addNext(asn2ap);
+	    } else {
+		if (!m_modp) nodep->v3fatalSrc("Not under module");
+		// We could create just one temp variable, but we'll get better optimization
+		// if we make one per term.
+		string name1 = ((string)"__Vconcswap__"+cvtToStr(m_modp->varNumGetInc()));
+		string name2 = ((string)"__Vconcswap__"+cvtToStr(m_modp->varNumGetInc()));
+		AstVar* temp1p = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP, name1,
+					    new AstRange(sel1p->fileline(), msb1-lsb1, 0));
+		AstVar* temp2p = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP, name2,
+					    new AstRange(sel2p->fileline(), msb2-lsb2, 0));
+		m_modp->addStmtp(temp1p);
+		m_modp->addStmtp(temp2p);
+		AstNodeAssign* asn1ap=nodep->cloneType
+		    (new AstVarRef(sel1p->fileline(), temp1p, true),
+		     sel1p)->castNodeAssign();
+		AstNodeAssign* asn2ap=nodep->cloneType
+		    (new AstVarRef(sel2p->fileline(), temp2p, true),
+		     sel2p)->castNodeAssign();
+		AstNodeAssign* asn1bp=nodep->cloneType
+		    (lc1p, new AstVarRef(sel1p->fileline(), temp1p, false))
+		    ->castNodeAssign();
+		AstNodeAssign* asn2bp=nodep->cloneType
+		    (lc2p, new AstVarRef(sel2p->fileline(), temp2p, false))
+		    ->castNodeAssign();
+		asn1ap->width(msb1-lsb1+1,msb1-lsb1+1);
+		asn1bp->width(msb1-lsb1+1,msb1-lsb1+1);
+		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
+		asn2bp->width(msb2-lsb2+1,msb2-lsb2+1);
+		// This order matters
+		newp = newp->addNext(asn1ap);
+		newp = newp->addNext(asn2ap);
+		newp = newp->addNext(asn1bp);
+		newp = newp->addNext(asn2bp);
+	    }
+	    if (debug()>=9) newp->dumpTreeAndNext(cout,"     _new: ");
+	    nodep->addNextHere(newp);
 	    // Cleanup
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    conp->deleteTree(); conp=NULL;

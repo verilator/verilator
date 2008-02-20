@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.656 2008/***
 
+**** Fix assignments of {a,b,c} = {c,b,a}.  [Jonathan Kimmitt]
+
 **** Fix Perl warning with --lint-only.  [by Ding Xiaoliang]
 
 **** Avoid creating obj_dir with --lint-only.  [Ding Xiaoliang]
