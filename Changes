@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.658 2008/02/25
+
+**** Fix unistd compile error in 3.657.  [Patricio Kaplan, Jonathan Kimmitt]
+
 * Verilator 3.657 2008/02/20
 
 **** Fix assignments of {a,b,c} = {c,b,a}.  [Jonathan Kimmitt]
