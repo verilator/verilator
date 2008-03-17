@@ -1403,7 +1403,10 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 			       rangep->cloneTree(false),
 			       arrayp);
     nodep->isSigned(V3Parse::s_varSigned);
-    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER) nodep->isSigned(true);
+    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER
+	|| type == AstVarType::GENVAR) {
+	nodep->isSigned(true);
+    }
     if (V3Parse::s_varDecl != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varDecl);
     if (V3Parse::s_varIO != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varIO);
 
