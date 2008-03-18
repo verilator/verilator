@@ -217,6 +217,9 @@ class V3Options {
     static string filenameDir (const string& filename);	///< Return directory part of filename
     static void   unlinkRegexp(const string& dir, const string& regexp);
 
+    // METHODS (environment)
+    // Most of these may be built into the executable with --enable-defenv,
+    // see the README.  If adding new variables, also see src/Makefile_obj.in
     static string getenvPERL() { return getenvStr("PERL","perl"); }
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();

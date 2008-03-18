@@ -30,6 +30,14 @@ LINK = @CXX@
 
 LDFLAGS += @LDFLAGS@
 
+CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+
+prefix = @prefix@
+
+# Directory in which to install package specific files
+# Generally ${prefix}/share/verilator
+pkgdatadir = @pkgdatadir@
+
 #### End of system configuration section. ####
 
 VPATH += . $(srcdir)
@@ -68,6 +76,19 @@ ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 CPPFLAGSNOWALL += -MP	# Only works on recent GCC versions
 CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
 #CPPFLAGS += -pedantic-errors
+endif
+
+# Allow RPM builds to specify hardcoded data directories
+# To do this:
+ifneq ($(CFG_WITH_DEFENV),)
+ CPPFLAGS += -DDEFENV_SYSTEMC=\"$(SYSTEMC)\"
+ CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
+ CPPFLAGS += -DDEFENV_SYSTEMPERL=\"$(SYSTEMPERL)\"
+ ifeq ($(VERILATOR_ROOT),)	# Use what we're given, or intuit
+  CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
+ else
+  CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
+ endif
 endif
 
 HEADERS = $(wildcard V*.h v*.h)

@@ -9,6 +9,10 @@ AC_INIT(src/Verilator.cpp)
 AC_CONFIG_HEADER(src/config_build.h)
 
 dnl Special Substitutions
+AC_ARG_ENABLE(defenv,
+   [AS_HELP_STRING([--enable-defenv], [hardcode default environment variables])],
+   CFG_WITH_DEFENV=1,)
+AC_SUBST(CFG_WITH_DEFENV)
 
 dnl Checks for programs.
 CXX=g++

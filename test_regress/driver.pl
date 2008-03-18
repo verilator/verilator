@@ -443,7 +443,8 @@ sub sc_or_sp {
 
 sub _run {
     my $self = (ref $_[0]? shift : $Last_Self);
-    my %param = (@_);
+    my %param = (tee=>1,
+		 @_);
     my $command = join(' ',@{$param{cmd}});
     print "\t$command\n";
 
@@ -451,7 +452,11 @@ sub _run {
 	open(SAVEOUT, ">&STDOUT") or die "%Error: Can't dup stdout";
 	open(SAVEERR, ">&STDERR") or die "%Error: Can't dup stderr";
 	if (0) {close(SAVEOUT); close(SAVEERR);}	# Prevent unused warning
-	open(STDOUT, "|tee $param{logfile}") or die "%Error: Can't redirect stdout";
+	if ($param{tee}) {
+	    open(STDOUT, "|tee $param{logfile}") or die "%Error: Can't redirect stdout";
+	} else {
+	    open(STDOUT, ">$param{logfile}") or die "%Error: Can't open $param{logfile}";
+	}
 	open(STDERR, ">&STDOUT") or die "%Error: Can't dup stdout";
 	autoflush STDOUT 1;
 	autoflush STDERR 1;

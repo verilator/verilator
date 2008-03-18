@@ -78,6 +78,7 @@ datadir = @datadir@
 infodir = @infodir@
 
 # Directory in which to install package specific files
+# Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 
 #### End of system configuration section. ####
@@ -203,21 +204,31 @@ README: readme.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/readme.texi --output=$@ \
 	--no-headers --no-validate
 
-installdirs:
-	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir)
-
 # See uninstall also
-VL_INST_BIN_FILES = verilator
+VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg
 installbin:
+	$(SHELL) ${srcdir}/mkinstalldirs $(bindir)
 	( cd bin ; $(INSTALL_PROGRAM) verilator $(bindir)/verilator )
+	( $(INSTALL_PROGRAM) verilator_bin $(bindir)/verilator_bin )
+	( $(INSTALL_PROGRAM) verilator_bin_dbg $(bindir)/verilator_bin_dbg )
 
 VL_INST_MAN_FILES = verilator.1
 installman:
+	$(SHELL) ${srcdir}/mkinstalldirs $(mandir)
 	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_PROGRAM) $$p $(mandir)/man1/$$p; \
 	done
 
-install: all_nomsg installdirs installbin installman install-msg
+installdata:
+	$(SHELL) ${srcdir}/mkinstalldirs $(pkgdatadir)/examples
+	cp -r include $(pkgdatadir)
+	cp -r src     $(pkgdatadir)
+	cp -r test_c  $(pkgdatadir)/examples
+	cp -r test_sc $(pkgdatadir)/examples
+	cp -r test_sp $(pkgdatadir)/examples
+
+VL_INST_DATA_FILES = verilator.1
+install: all_nomsg installbin installman installdata install-msg
 
 install-here: installman ftp
 
@@ -263,6 +274,7 @@ install-msg:
 uninstall:
 	-cd $(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
 	-cd $(bindir) && rm -f $(VL_INST_BIN_FILES)
+	-rm -f $(pkgdatadir)
 
 # autoheader might not change config_build.h.in, so touch a stamp file.
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \

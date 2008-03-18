@@ -84,7 +84,6 @@ run ($vcmd);
 #----------------------------------------------------------------------
 
 sub usage {
-    bin_version();
     print '$Revision$$Date$ ', "\n";
     pod2usage(-exitstatus=>2, -verbose=>2);
 }
@@ -828,14 +827,16 @@ After running Make, the C++ compiler should produce the following:
 
 Required for SystemC output mode.  If set, specifies the directory
 containing the SystemC distribution.  This is used to find the SystemC
-include files.
+include files.  If not specified, it will come from a default optionally
+specified at configure time (before Verilator was compiled).
 
 =item SYSTEMC_ARCH
 
 Specifies the architecture name used by the SystemC kit.  This is the part
 after the dash in the lib-{...} directory name created by a 'make' in the
 SystemC distribution.  If not set, Verilator will try to intuit the proper
-setting.
+setting, or use the default optionally specified at configure time (before
+Verilator was compiled).  .
 
 =item SYSTEMC_CXX_FLAGS
 
@@ -845,7 +846,9 @@ building the SystemC model.
 =item SYSTEMPERL
 
 Specifies the directory containing the Verilog-Perl distribution kit.  This
-is used to find the Verilog-Perl library and include files.
+is used to find the Verilog-Perl library and include files.  If not
+specified, it will come from a default optionally specified at configure
+time (before Verilator was compiled).
 
 =item VCS_HOME
 
@@ -861,7 +864,9 @@ for debugging and selecting between multiple operating system builds.
 =item VERILATOR_ROOT
 
 Specifies the directory containing the distribution kit.  This is used to
-find the executable, Perl library, and include files.
+find the executable, Perl library, and include files.  If not specified, it
+will come from a default optionally specified at configure time (before
+Verilator was compiled).
 
 =back
 
