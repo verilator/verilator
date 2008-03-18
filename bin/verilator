@@ -34,27 +34,7 @@ use Config;
 use Cwd qw(abs_path getcwd);
 
 use strict;
-use vars qw ($Debug %Vars $Opt $Opt_Make_Dir $Opt_Sp @Opt_Verilator_Sw
-	     $Opt_Trace
-	     %Modules
-	     );
-
-#######################################################################
-# Global constants -- Configuration info
-
-# Where to find real executables
-# We could find it by using $RealBin, but we require this path
-# so that when the user runs make, they will have it and not get strange error.
-$ENV{VERILATOR_ROOT} or die "%Error: verilator: VERILATOR_ROOT needs to be in environment\n";
-print "export VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n" if $Debug;
-
-# Read by verilator for populating makefile
-if (!defined $ENV{SYSTEMC_ARCH}) {
-    $ENV{SYSTEMC_ARCH} ||= (($Config{osname} =~ /solaris/i && "gccsparcOS5")
-			    || ($Config{osname} =~ /cygwin/i && "cygwin")
-			    || "linux");
-    print "export SYSTEMC_ARCH=$ENV{SYSTEMC_ARCH}\n" if $Debug;
-}
+use vars qw ($Debug @Opt_Verilator_Sw);
 
 #######################################################################
 #######################################################################
@@ -65,7 +45,6 @@ autoflush STDERR 1;
 
 $Debug = 0;
 my $opt_gdb;
-$Opt_Sp = undef;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -84,32 +63,13 @@ if (! GetOptions (
 		  # Major operating modes
 		  "help"	=> \&usage,
 		  "debug:s"	=> \&debug,
-		  "version!"	=> \&version,
+		  # "version!"	=> \&version,	# Also passthru'ed
 		  # Switches
 		  "gdb=s"	=> \$opt_gdb,	# Undocumented debugging
-		  "trace!"	=> \$Opt_Trace,
-		  "sp!"		=> sub {$Opt_Sp = 'sp';},
-		  "sc!"		=> sub {$Opt_Sp = 'sc';},
-		  "cc!"		=> sub {$Opt_Sp = 0;},
-		  "lint-only!"	=> sub {$Opt_Sp = 0;},
-		  #"ignc!"	=> ...,		# Undocumented debugging, disable $c but don't complain
 		  # Additional parameters
 		  "<>"		=> sub {},	# Ignored
 		  )) {
     pod2usage(-exitstatus=>2, -verbose=>0);
-}
-
-# Check configuration
-if ($Opt_Sp) {
-    (defined $ENV{SYSTEMC}) or die "%Error: verilator: Need \$SYSTEMC in environment\nProbably System-C isn't installed, see http://www.systemc.org\n";
-}
-if ($Opt_Sp eq 'sp' || $Opt_Trace) {
-    if (!defined $ENV{SYSTEMPERL}) {
-	my $try = "$ENV{W}/hw/utils/perltools/SystemC";
-	$ENV{SYSTEMPERL} = $try if -d $try;
-    }
-    (defined $ENV{SYSTEMPERL}) or die "%Error: verilator: Need \$SYSTEMPERL in environment for --sp or --trace\nProbably System-Perl isn't installed, see http://www.veripool.com/systemperl.html\n";
-    (-d "$ENV{SYSTEMPERL}/src") or die "%Error: verilator: \$SYSTEMPERL environment var doesn't seem to point to System-Perl kit\n";
 }
 
 # Determine runtime flags
@@ -135,23 +95,16 @@ sub debug {
     $Debug = $level||3;
 }
 
-sub version {
-    bin_version();
-    exit (0);
-}
-
-sub bin_version {
-    ($ENV{VERILATOR_ROOT}) or print "%Warning: Unknown rev: VERILATOR_ROOT undefined\n";
-    run (verilator_bin()." --version");
-}
-
 #######################################################################
 #######################################################################
 # Builds
 
 sub verilator_bin {
-    my $bin = "$ENV{VERILATOR_ROOT}/".($ENV{VERILATOR_BIN}||"verilator_bin");
-    if ($Debug && -x "${bin}_dbg") { $bin = "${bin}_dbg"; }
+    my $bin = "";
+    # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
+    $bin .= $ENV{VERILATOR_ROOT}."/" if defined($ENV{VERILATOR_ROOT});
+    $bin .= ($ENV{VERILATOR_BIN}||"verilator_bin");
+    if ($Debug) { $bin = "${bin}_dbg"; }
     return $bin;
 }
 
@@ -166,8 +119,11 @@ sub run {
     system($command);
     my $status = $?;
     if ($status) {
+	if ($! =~ /no such file or directory/i) {
+	    warn "%Error: verilator: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
+	}
 	if ($Debug) {  # For easy rerunning
-	    warn "%Error: export VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
+	    warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
 	    warn "%Error: $command\n";
 	}
 	die "%Error: Command Failed $command\n";
@@ -1944,11 +1900,14 @@ Visual C++ Version 7 or newer, but this is not tested by the author.
 
 =item Can you provide binaries?
 
-At this time I'd prefer to get patches out quickly than have to generate
-myriad binaries for many different OS flavors.  People have generally
-requested binaries when they are having problems with their C++
-compiler. Alas, binaries won't help this, as in the end a fully working C++
-compiler is required to compile the output of Verilator.
+Verilator is available as a RPM for SuSE and perhaps other systems; this is
+done by porters and may slightly lag the primary distribution.  If there
+isn't a binary build for your distribution, how about you set one up?
+Please contact the authors for assistance.
+
+Note people sometimes request binaries when they are having problems with
+their C++ compiler. Alas, binaries won't help this, as in the end a fully
+working C++ compiler is required to compile the output of Verilator.
 
 =item How can it be faster than (name-the-simulator)?
 

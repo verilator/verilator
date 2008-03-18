@@ -116,6 +116,7 @@ class V3Options {
     void coverage(bool flag) { m_coverageLine = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
     static bool wildmatchi(const char* s, const char* p);
+    static string getenvStr(const char* envvar, const char* defaultValue);
 
   public:
     // CREATORS
@@ -206,6 +207,7 @@ class V3Options {
 
     // METHODS (generic string utilities)
     static bool wildmatch(const char* s, const char* p);
+    static string downcase(const string& str);
 
     // METHODS (generic file utilities)
     static string filenameFromDirBase (const string& dir, const string& basename);
@@ -214,17 +216,18 @@ class V3Options {
     static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
     static string filenameDir (const string& filename);	///< Return directory part of filename
     static void   unlinkRegexp(const string& dir, const string& regexp);
-    static string getenvStr(const char* envvar, const char* defaultValue) {
-	if (const char* envvalue = getenv(envvar)) {
-	    return envvalue;
-	} else {
-	    return defaultValue;
-	}
-    }
+
+    static string getenvPERL() { return getenvStr("PERL","perl"); }
+    static string getenvSYSTEMC();
+    static string getenvSYSTEMC_ARCH();
+    static string getenvSYSTEMPERL();
+    static string getenvVERILATOR_ROOT();
+    static string getenvW() { return getenvStr("W",""); }
 
     // METHODS (file utilities using these options)
     string fileExists (const string& filename);
     string filePath (FileLine* fl, const string& modname, const string& errmsg);
+    static bool fileStatDir (const string& filename);
     static bool fileStatNormal (const string& filename);
 };
 

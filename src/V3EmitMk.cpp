@@ -79,16 +79,16 @@ public:
 	    of.puts("default: "+v3Global.opt.prefix()+"__ALL.a\n");
 	}
 	of.puts("\n# Constants...\n");
-	of.puts("PERL = "+V3Options::getenvStr("PERL","perl")+"\n");
-	of.puts("VERILATOR_ROOT = "+V3Options::getenvStr("VERILATOR_ROOT","")+"\n");
-	of.puts("SYSTEMPERL = "+V3Options::getenvStr("SYSTEMPERL","")+"\n");
+	of.puts("PERL = "+V3Options::getenvPERL()+"\n");
+	of.puts("VERILATOR_ROOT = "+V3Options::getenvVERILATOR_ROOT()+"\n");
+	of.puts("SYSTEMPERL = "+V3Options::getenvSYSTEMPERL()+"\n");
 
 	of.puts("\n# Switches...\n");
 	of.puts(string("VM_SP = ")+(v3Global.opt.systemPerl()?"1":"0")+"\n");
 	of.puts(string("VM_SC = ")+((v3Global.opt.systemC()&&!v3Global.opt.systemPerl())?"1":"0")+"\n");
 	of.puts(string("VM_SP_OR_SC = ")+(v3Global.opt.systemC()?"1":"0")+"\n");
 	of.puts(string("VM_PCLI = ")+(v3Global.opt.systemC()?"0":"1")+"\n");
-	of.puts(string("VM_SC_TARGET_ARCH = ")+V3Options::getenvStr("SYSTEMC_ARCH","")+"\n");
+	of.puts(string("VM_SC_TARGET_ARCH = ")+V3Options::getenvSYSTEMC_ARCH()+"\n");
 
 	of.puts("\n# Vars...\n");
 	of.puts(string("VM_PREFIX = ")+v3Global.opt.prefix()+"\n");

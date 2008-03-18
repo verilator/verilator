@@ -503,6 +503,10 @@ int main(int argc, char** argv, char** env) {
     if (!v3Global.opt.outFormatOk() && !v3Global.opt.preprocOnly() && !v3Global.opt.lintOnly()) {
 	v3fatal("verilator: Need --cc, --sc, --sp, --lint-only or --E option");
     }
+    // Check enviornment
+    V3Options::getenvSYSTEMC();
+    V3Options::getenvSYSTEMC_ARCH();
+    V3Options::getenvSYSTEMPERL();
 
     V3Error::abortIfErrors();
 

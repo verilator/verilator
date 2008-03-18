@@ -23,6 +23,8 @@
 #include "verilatedos.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <set>
@@ -147,6 +149,14 @@ string V3Options::filenameNonExt (const string& filename) {
     return base;
 }
 
+bool V3Options::fileStatDir(const string& filename) {
+    struct stat	m_stat;		// Stat information
+    int err = stat(filename.c_str(), &m_stat);
+    if (err!=0) return false;
+    if (!S_ISDIR(m_stat.st_mode)) return false;
+    return true;
+}
+
 bool V3Options::fileStatNormal(const string& filename) {
     struct stat	m_stat;		// Stat information
     int err = stat(filename.c_str(), &m_stat);
@@ -239,6 +249,76 @@ void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
  
+//######################################################################
+// Environment
+
+string V3Options::getenvStr(const char* envvar, const char* defaultValue) {
+	if (const char* envvalue = getenv(envvar)) {
+	    return envvalue;
+	} else {
+	    return defaultValue;
+	}
+    }
+string V3Options::getenvSYSTEMC() {
+    string var = getenvStr("SYSTEMC","");
+    // Only correct or check it if we really need the value
+    if ((v3Global.opt.systemPerl() || v3Global.opt.systemC())
+	&& !v3Global.opt.lintOnly()) {
+	if (var == "") {
+	    v3fatal("Need $SYSTEMC in environment\n"
+		    "Probably System-C isn't installed, see http://www.systemc.org\n");
+	}
+    }
+    return var;
+}
+string V3Options::getenvSYSTEMC_ARCH() {
+    string var = getenvStr("SYSTEMC_ARCH","");
+    if (var == "") {
+	struct utsname uts;
+	uname(&uts);
+	string sysname = downcase(uts.sysname);  // aka  'uname -s'
+	if (wildmatch(sysname.c_str(), "*solaris*")) { var = "gccsparcOS5"; }
+	else if (wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
+	else { var = "linux"; }
+	UINFO(1,"export SYSTEMC_ARCH="<<var<<" # From sysname '"<<sysname<<"'"<<endl);
+	setenv("SYSTEMC_ARCH", var.c_str(), false);
+    }
+    return var;
+}
+string V3Options::getenvSYSTEMPERL() {
+    string var = getenvStr("SYSTEMPERL","");
+    // Only correct or check it if we really need the value
+    if ((v3Global.opt.systemPerl() || v3Global.opt.trace()) && !v3Global.opt.lintOnly()) {
+	if (var == "") {
+	    string testdir = V3Options::getenvW() + "/hw/utils/perltools/SystemC"; // Hack for internal testing
+	    if (V3Options::fileStatDir(testdir)) {
+		var = testdir;
+		UINFO(1,"export SYSTEMPERL="<<var<<endl);
+		setenv ("SYSTEMPERL", var.c_str(), false);
+	    }
+	}
+	if (var == "") {
+	    v3fatal("Need $SYSTEMPERL in environment for --sp or --trace\n"
+		    "Probably System-Perl isn't installed, see http://www.veripool.com/systemperl.html\n");
+	}
+	if (var != ""
+	    && !V3Options::fileStatNormal(var+"/src/systemperl.h")) {
+	    v3fatal("$SYSTEMPERL environment var doesn't seem to point to System-Perl kit\n");
+	}
+    }
+    return var;
+}
+string V3Options::getenvVERILATOR_ROOT() {
+    string var = getenvStr("VERILATOR_ROOT","");
+    if (var == "") {
+	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
+    }
+    return var;
+}
+
+//######################################################################
+// Wildcard
+
 // Double procedures, inlined, unrolls loop much better
 inline bool V3Options::wildmatchi(const char* s, const char* p) {
     for ( ; *p; s++, p++) {
@@ -274,6 +354,14 @@ bool V3Options::wildmatch(const char* s, const char* p) {
 	}
     }
     return(*s == '\0' || *s == '[');
+}
+
+string V3Options::downcase(const string& str) {
+    string out = str;
+    for (string::iterator pos = out.begin(); pos != out.end(); pos++) {
+	*pos = tolower(*pos);
+    }
+    return out;
 }
 
 //######################################################################
