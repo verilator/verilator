@@ -45,6 +45,7 @@ private:
 
     // STATE
     bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
+    AstNodeFTask* m_ftaskp;	// Function or task we're inside
 
     //int debug() { return 9; }
 
@@ -59,7 +60,9 @@ private:
 	}
 	if (nodep->varp()) {
 	    if (nodep->lvalue() && nodep->varp()->isInOnly()) {
-		nodep->v3error("Assigning to input variable: "<<nodep->prettyName());
+		if (!m_ftaskp) {
+		    nodep->v3error("Assigning to input variable: "<<nodep->prettyName());
+		}
 	    }
 	}
 	nodep->iterateChildren(*this);
@@ -150,6 +153,11 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	m_ftaskp = nodep;
+	nodep->iterateChildren(*this);
+	m_ftaskp = NULL;
+    }
 
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
@@ -160,6 +168,7 @@ public:
     // CONSTUCTORS
     LinkLValueVisitor(AstNetlist* rootp) {
 	m_setRefLvalue = false;
+	m_ftaskp = NULL;
 	rootp->accept(*this);
     }
     virtual ~LinkLValueVisitor() {}
