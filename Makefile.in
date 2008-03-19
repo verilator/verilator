@@ -141,6 +141,7 @@ msg_test:
 	@echo "Type 'make test' to test."
 	@echo
 
+.PHONY:test
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 test: test_vcs test_c test_sc test_sp test_verilated test_regress
 else

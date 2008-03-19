@@ -39,6 +39,7 @@ endif
 
 ######################################################################
 
+.PHONY: test
 test:
 	$(PERL) driver.pl $(DRIVER_FLAGS) $(PRODUCTS)
 

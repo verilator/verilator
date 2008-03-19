@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix assignments to inputs inside functions/tasks.  [Patricio Kaplan]
 
+**** Fix definitions in main file.v, referenced in library.  [Stefan Thiede]
+
 * Verilator 3.658 2008/02/25
 
 **** Fix unistd compile error in 3.657.  [Patricio Kaplan, Jonathan Kimmitt]
