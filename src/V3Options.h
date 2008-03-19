@@ -41,8 +41,9 @@ class V3Options {
     // MEMBERS (general options)
     V3OptionsImp*	m_impp;		// Slow hidden options
 
-    V3StringSet	m_cppFiles;	// C++ files to link against
-    V3StringSet	m_libraryFiles;	// Verilog -v files
+    V3StringSet	m_cppFiles;	// argument: C++ files to link against
+    V3StringSet	m_libraryFiles;	// argument: Verilog -v files
+    V3StringSet	m_vFiles;	// argument: Verilog files to read
 
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
@@ -82,7 +83,6 @@ class V3Options {
 
     string	m_bin;		// main switch: --bin {binary}
     string	m_flags;	// main switch: -f {name}
-    string	m_top;		// main switch: Top .v file name
     string	m_makeDir;	// main switch: -Mdir
     string	m_prefix;	// main switch: --prefix
     string	m_modPrefix;	// main switch: --mod-prefix
@@ -127,9 +127,9 @@ class V3Options {
     // METHODS
     void addCppFile(const string& filename);
     void addLibraryFile(const string& filename);
+    void addVFile(const string& filename);
 
     // ACCESSORS (options)
-    const string& top() const { return m_top; }
     bool preprocOnly() const { return m_preprocOnly; }
     bool makeDepend() const { return m_makeDepend; }
     bool makePhony() const { return m_makePhony; }
@@ -176,6 +176,7 @@ class V3Options {
     string xAssign() const { return m_xAssign; }
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
+    const V3StringSet& vFiles() const { return m_vFiles; }
 
 
     // ACCESSORS (optimization options)

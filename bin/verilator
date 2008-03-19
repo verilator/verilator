@@ -445,8 +445,8 @@ the backward-compatible default of sc_bv's.
 
 =item --prefix I<topname>
 
-Specifies the name of the top level class.  Defaults to the name of the top
-level Verilog module.
+Specifies the name of the top level class.  Defaults to the name of the first
+Verilog file passed on the command line.
 
 =item --profile-cfuncs
 
@@ -1995,14 +1995,23 @@ the "verilator" define for you, so just wrap the code in a ifndef region:
 
 =item Why do I get "unexpected `do'" or "unexpected `bit'" errors?
 
-Do, bit, ref, and other words are now SystemVerilog keywords.  You should
-change your code to not use them to insure it works with newer tools.
-Alternatively, surround them by the Verilog 2005/SystemVerilog
+Do, bit, ref, return, and other words are now SystemVerilog keywords.  You
+should change your code to not use them to insure it works with newer
+tools.  Alternatively, surround them by the Verilog 2005/SystemVerilog
 begin_keywords pragma to indicate Verilog 2001 code.
 
    `begin_keywords "1364-2001"
       integer bit; initial bit = 1;
    `end_keywords
+
+If you want the whole file to be parsed as Verilog 2001, just create a
+file with
+
+   `begin_keywords "1364-2001"
+
+and add it before other Verilog files on the command line.  (Note this will
+also change the default for --prefix, so if you're not using --prefix, you
+will now need to.)
 
 =item How do I prevent my assertions from firing during reset?
 

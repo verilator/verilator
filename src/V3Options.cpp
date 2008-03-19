@@ -100,6 +100,11 @@ void V3Options::addLibraryFile(const string& filename) {
 	m_libraryFiles.insert(filename);
     }
 }
+void V3Options::addVFile(const string& filename) {
+    if (m_vFiles.find(filename) == m_vFiles.end()) {
+	m_vFiles.insert(filename);
+    }
+}
 void V3Options::addArg(const string& arg) {
     m_impp->m_allArgs.push_back(arg);
 }
@@ -419,12 +424,12 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
 
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
-    if (top()=="") {
+    if (vFiles().empty()) {
 	v3fatal("verilator: No Input Verilog file specified on command line, see verilator --help for more information\n");
     }
 
     // Default prefix to the filename
-    if (prefix()=="") m_prefix = string("V")+filenameNonExt(top());
+    if (prefix()=="") m_prefix = string("V")+filenameNonExt(*(vFiles().begin()));
     if (modPrefix()=="") m_modPrefix = prefix();
 
     // Find files in makedir
@@ -671,8 +676,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		|| filename.find(".sp") != string::npos) {
 		V3Options::addCppFile(argv[i]);
 	    } else {
-		if (m_top!="") fl->v3fatal ("Top filename specified twice: "<<m_top<<" and "<<filename);
-		m_top = filename;
+		V3Options::addVFile(argv[i]);
 	    }
 	    shift;
 	}

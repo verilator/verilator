@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Add support for hard-coding VERILATOR_ROOT etc in the executables,
      to enable easier use of Verilator RPMs.  [Gunter Dannoritzer]
 
+***  Allow multiple .v files on command line.  [Stefan Thiede]
+
 **** Fix genvar to be signed, so "< 0" works properly.  [Niranjan Prabhu]
 
 **** Fix assignments to inputs inside functions/tasks.  [Patricio Kaplan]
