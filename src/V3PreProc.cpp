@@ -207,8 +207,8 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
     UINFO(4,"DEFINE '"<<name<<"' as '"<<value<<"' params '"<<params<<"'"<<endl);
     if (defExists(name)) {
 	if (!(defValue(name)==value && defParams(name)==params)) {  // Duplicate defs are OK
-	    fl->v3error("Define already exists: "<<name);
-	    defFileline(name)->v3error("Previous definition is here.");
+	    fl->v3warn(REDEFMACRO,"Redefining existing define: "<<name<<", with different value: "<<value<<" "<<params);
+	    defFileline(name)->v3warn(REDEFMACRO,"Previous definition is here, with value: "<<defValue(name)<<" "<<defParams(name));
 	}
 	undef(name);
     }

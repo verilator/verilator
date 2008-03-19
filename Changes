@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Allow multiple .v files on command line.  [Stefan Thiede]
 
+***  Convert re-defining macro error to warning.  [Stefan Thiede]
+
 **** Fix genvar to be signed, so "< 0" works properly.  [Niranjan Prabhu]
 
 **** Fix assignments to inputs inside functions/tasks.  [Patricio Kaplan]

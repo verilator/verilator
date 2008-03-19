@@ -53,6 +53,7 @@ public:
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
 	MULTIDRIVEN,	// Driven from multiple blocks
+	REDEFMACRO,	// Redefining existing define macro
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
@@ -78,7 +79,7 @@ public:
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
 	    "COMBDLY", "STMTDLY", "GENCLK", "IMPLICIT", "IMPURE",
-	    "MULTIDRIVEN",
+	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH",
 	    " MAX"

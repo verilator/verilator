@@ -1695,6 +1695,23 @@ not really needed.  The best solution is to insure that each module is in a
 unique file by the same name.  Otherwise, make sure all library files are
 read in as libraries with -v, instead of automatically with -y.
 
+=item REDEFMACRO
+
+Warns that you have redefined the same macro with a different value, for
+example:
+
+    `define MACRO def1
+    //...
+    `define MACRO otherdef
+
+The best solution is to use a different name for the second macro.  If this
+is not possible, add a undef to indicate the code is overriding the value:
+
+    `define MACRO def1
+    //...
+    `undef MACRO
+    `define MACRO otherdef
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for
