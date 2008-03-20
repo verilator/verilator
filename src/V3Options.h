@@ -71,6 +71,7 @@ class V3Options {
     bool	m_traceDups;	// main switch: --trace-dups
     bool	m_underlineZero;// main switch: --underline-zero
 
+    int		m_errorLimit;	// main switch: --error-limit
     int		m_inlineMult;	// main switch: --inline-mult
     int		m_outputSplit;	// main switch: --output-split
     int		m_outputSplitCFuncs;// main switch: --output-split-cfuncs
@@ -160,6 +161,7 @@ class V3Options {
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
 
+    int	   errorLimit() const { return m_errorLimit; }
     int	   inlineMult() const { return m_inlineMult; }
     int	   outputSplit() const { return m_outputSplit; }
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }

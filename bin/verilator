@@ -190,6 +190,7 @@ descriptions in the next sections for more information.
     --debug-check               Enable debugging assertions
     --dump-tree                 Enable dumping .tree files
     -E                          Preprocess, but do not compile
+    --error-limit <value>	Abort after this number of errors
     --exe                       Link to create executable
     -f <file>                   Parse options from a file
     --help                      Display this help.
@@ -347,6 +348,11 @@ large and not desired.
 Preprocess the source code, but do not compile, as with 'gcc -E'.  Output
 is written to standard out.  Beware of enabling debugging messages, as they
 will also go to standard out.
+
+=item --error-limit <value>
+
+After this number of errors or warnings are encountered, exit.  Defaults to
+50.
 
 =item --exe
 

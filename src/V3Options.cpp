@@ -506,6 +506,10 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		cout <<endl;
 		exit(0);
 	    }
+	    else if ( !strcmp (sw, "-error-limit") ) {
+		shift;
+		m_inlineMult = atoi(argv[i]);
+	    }
 	    else if ( !strcmp (sw, "-inline-mult") ) {
 		shift;
 		m_inlineMult = atoi(argv[i]);
@@ -770,6 +774,7 @@ V3Options::V3Options() {
     m_traceDups = false;
     m_underlineZero = false;
 
+    m_errorLimit = 50;
     m_inlineMult = 2000;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;

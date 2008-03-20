@@ -243,8 +243,8 @@ void V3Error::incWarnings() {
 
 void V3Error::incErrors() {
     s_errCount++;
-    if (errorCount() == MAX_ERRORS) {  // Not >= as would otherwise recurse
-	v3fatal ("Exiting due to too many errors encountered\n");
+    if (errorCount() == v3Global.opt.errorLimit()) {  // Not >= as would otherwise recurse
+	v3fatal ("Exiting due to too many errors encountered; --error-limit="<<errorCount()<<endl);
     }
 }
 
