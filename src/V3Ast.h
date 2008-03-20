@@ -558,6 +558,7 @@ public:
     string 	shortName() const;	// Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);	// Name with dots removed
     static string prettyName(const string& namein);	// Name for printing out to the user
+    static string encodeName(const string& namein);	// Encode user name into internal C representation
     string	prettyName() const { return prettyName(name()); }
     FileLine*	fileline() const { return m_fileline; }
     int		width() const { return m_width; }

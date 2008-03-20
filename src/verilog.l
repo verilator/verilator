@@ -634,14 +634,18 @@ escid	\\[^ \t\f\r\n]+
 			       if (!isalnum(yytext[i]))
 				   yytext[i] = '_';
 			   if (isalpha(yytext[1])) {
-			       yylval.strp = V3Read::newString(yytext+1); // +1 to skip the backslash
+			       yylval.strp = V3Read::newString(
+				   AstNode::encodeName(
+				       string(yytext+1))); // +1 to skip the backslash
 			   } else {
-			       yylval.strp = V3Read::newString(yytext); // Need _ as "6..." isn't legal ID
+			       yylval.strp = V3Read::newString(
+				   AstNode::encodeName(
+				       yytext)); // Need _ as "6..." isn't legal ID
 			   }
 			   return yaID;
 			 }
 
-  {id}			{  yylval.strp = V3Read::newString(yytext);
+  {id}			{  yylval.strp = V3Read::newString(AstNode::encodeName(string(yytext)));
 			   return yaID;
 			 }
 

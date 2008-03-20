@@ -83,6 +83,20 @@ void AstNode::init() {
     m_user5Cnt = 0;
 }
 
+string AstNode::encodeName(const string& namein) {
+    string name2 = namein;
+    string out;
+    for (string::iterator pos = name2.begin(); pos != name2.end(); pos++) {
+	if (pos[0]=='_' && pos[1]=='_') {
+	    out += "__ULUL_";
+	    pos++;
+	} else {
+	    out += pos[0];
+	}
+    }
+    return out;
+}
+
 string AstNode::shortName() const {
     string pretty = name();
     string::size_type pos;
@@ -112,6 +126,9 @@ string AstNode::prettyName(const string& namein) {
 	pretty.replace(pos, 7, "]");
     }
     while ((pos=pretty.find("__PVT__")) != string::npos) {
+	pretty.replace(pos, 7, "");
+    }
+    while ((pos=pretty.find("__ULUL_")) != string::npos) {
 	pretty.replace(pos, 7, "");
     }
     return AstNode::dedotName(pretty);

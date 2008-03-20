@@ -127,9 +127,6 @@ private:
 	// Module: Pick up modnames, so we can resolve cells later
 	m_modp = nodep;
 	UINFO(2,"Link Module: "<<nodep<<endl);
-	if (nodep->name().find("__") != string::npos) {
-	    nodep->v3error("Unsupported: Double underscores (__) in module names reserved for internal use: "<<nodep->prettyName());
-	}
 	if (nodep->inLibrary()) {
 	    if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
 	    new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
