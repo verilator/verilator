@@ -381,10 +381,10 @@ private:
 
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	// Deal with implicit definitions
-	if (nodep->allowImplicit()) {
-	    if (AstVarRef* forrefp = nodep->lhsp()->castVarRef()) {
-		createImplicitVar(forrefp, false);
-	    }
+	// We used to nodep->allowImplicit() here, but it turns out
+	// normal "assigns" can also make implicit wires.  Yuk.
+	if (AstVarRef* forrefp = nodep->lhsp()->castVarRef()) {
+	    createImplicitVar(forrefp, false);
 	}
 	nodep->iterateChildren(*this);
     }
