@@ -526,7 +526,7 @@ private:
 	// Remap edges
 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
-		//UINFO(0, "FIX   on vertex "<<vvertexp->name()<<endl);
+		//UINFO(9, "   on vertex "<<vvertexp->name()<<endl);
 		if (!vvertexp->accepting() && vvertexp != m_tempNewerReject) {
 		    for (V3GraphEdge* nextp, *edgep = vertexp->outBeginp(); edgep; edgep=nextp) {
 			nextp = edgep->outNextp();
