@@ -309,6 +309,12 @@ public:
 	gp->nfaToDfa();
 	dump();
 	gp->dfaReduce();
+	dump();
+
+	gp->dfaComplement();
+	dump();
+	gp->dfaReduce();
+	dump();
     }
 };
 

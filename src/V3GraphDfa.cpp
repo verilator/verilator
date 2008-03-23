@@ -480,3 +480,97 @@ public:
 void DfaGraph::dfaReduce() {
     DfaGraphReduce (this, &V3GraphEdge::followAlwaysTrue);
 }
+
+//######################################################################
+//######################################################################
+// Algorithms - complement a DFA
+//
+// The traditional algorithm is to make a rejecting state, add edges to
+// reject from all missing values, then swap accept and reject.  Rather
+// than swap at the end, it's faster if we swap up front, then do the edge
+// changes.
+//
+// 1. Since we didn't log rejecting states, make a temp state (this will be
+// the old accept, and new reject).
+//
+// 2. All vertexes except start/accept get edges to NEW accept for any
+// non-existing case.  Weedely we don't have a nice way of representing
+// this so we just create a edge for each case and mark it "complemented."
+// 
+// 3. Delete temp vertex (old accept/new reject) and related edges.
+// The user's old accept is now the new accept.  This is imporant as
+// we want the virtual type of it to be intact.
+
+class DfaGraphComplement : GraphAlg {
+private:
+    // MEMBERS
+    DfaVertex* m_tempNewerReject;
+
+    // METHODS
+    int debug() { return 9; }
+    DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
+
+    void add_complement_edges() {
+	// Find accepting vertex
+	DfaVertex* acceptp = NULL;
+ 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+		if (vvertexp->accepting()) {
+		    acceptp = vvertexp;
+		    break;
+		}
+	    }
+	}
+ 	if (!acceptp) v3fatalSrc("No accepting vertex in DFA\n");
+
+	// Remap edges
+	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
+		//UINFO(0, "FIX   on vertex "<<vvertexp->name()<<endl);
+		if (!vvertexp->accepting() && vvertexp != m_tempNewerReject) {
+		    for (V3GraphEdge* nextp, *edgep = vertexp->outBeginp(); edgep; edgep=nextp) {
+			nextp = edgep->outNextp();
+			if (!edgep->user()) { // Not processed
+			    // Old edges to accept now go to new reject
+			    DfaEdge* vedgep = static_cast<DfaEdge*>(edgep);
+			    DfaVertex* tovertexp = static_cast<DfaVertex*>(edgep->top());
+			    if (tovertexp->accepting()) {
+				new DfaEdge(graphp(), vvertexp, m_tempNewerReject, vedgep);
+				edgep->unlinkDelete(); edgep=NULL;
+			    }
+
+			    // NOT of all values goes to accept
+			    // We make a edge for each value to OR, IE
+			    // edge(complemented,a) edge(complemented,b) means !(a | b)
+			    if (!tovertexp->accepting()) {  // Note we must include edges moved above to reject
+				DfaEdge* newp = new DfaEdge (graphp(), vvertexp, acceptp, vedgep);
+				newp->complement(!newp->complement());
+				newp->user(1);
+			    }
+			}
+		    }
+		}
+	    }
+	}
+    }
+public:
+    DfaGraphComplement(V3Graph* dfagraphp, V3EdgeFuncP edgeFuncp)
+	: GraphAlg(dfagraphp, edgeFuncp) {
+	if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_in");
+
+	// Vertex::m_user begin: 1 indicates new edge, no more processing
+	m_graphp->userClearEdges();
+
+	m_tempNewerReject = new DfaVertex(graphp());
+	add_complement_edges();
+	if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_preswap");
+
+	m_tempNewerReject->unlinkDelete(graphp()); m_tempNewerReject=NULL;
+	if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_out");
+    }
+    ~DfaGraphComplement() {}
+};
+
+void DfaGraph::dfaComplement() {
+    DfaGraphComplement (this, &V3GraphEdge::followAlwaysTrue);
+}

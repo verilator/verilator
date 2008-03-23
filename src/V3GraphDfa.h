@@ -43,7 +43,9 @@ class DfaEdge;
 /// or epsilon, represented as a empty list of inputs.
 ///
 /// We're only looking for matches, so the only accepting states are
-/// at the end of the transformations.
+/// at the end of the transformations.  (If we want the complement, we
+/// call complement and the algorithm makes a REJECT state, then flips
+/// accept and reject for you.)
 ///	
 /// Common transforms:
 ///
@@ -51,8 +53,8 @@ class DfaEdge;
 ///
 ///	"L":	...->[ON_L]-->DfaVtx-->[epsilon]-->DfaVtx(ACCEPT)
 ///
-///	"LR":	...->[ON_L]-->DfaVtx-->[epsilon]-->DfaVtx()
-///		   ->[ON_R]-->DfaVtx-->[epsilon]-->DfaVtx(ACCEPT)
+///	"LR":	...->[ON_L]-->DfaVtx-->[epsilon]-->DfaVtx(ACCEPT)
+///		   ->[ON_R]-->DfaVtx-->[epsilon]-/
 ///
 ///	"L|R":	...->DfaVtx-->[epsilon]-->DfaVtx-->[ON_L]-->DfaVtx()->[epsilon]-->DfaVtx(ACCEPT)
 ///			   \->[epsilon]-->DfaVtx-->[ON_R]-->DfaVtx()->[epsilon]-/
@@ -76,6 +78,9 @@ public:
 
     /// Simplify a DFA automata
     void dfaReduce();
+
+    /// Complement result (must already be dfa)
+    void dfaComplement();
 };
 
 //=============================================================================
@@ -113,20 +118,33 @@ typedef AstNUser* DfaInput;
 
 class DfaEdge : public V3GraphEdge {
     DfaInput	m_input;
+    bool	m_complement;	// Invert value when doing compare
 public:
     static DfaInput EPSILON() { return NULL; }
     static DfaInput NA() { return AstNUser::fromInt(1); }	// as in not-applicable
     // CONSTRUCTORS
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, DfaInput input)
 	: V3GraphEdge(graphp, fromp, top, 1)
-	, m_input(input) {}
+	, m_input(input), m_complement(false) {}
+    DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaEdge* copyfrom)
+	: V3GraphEdge(graphp, fromp, top, copyfrom->weight())
+	, m_input(copyfrom->input()), m_complement(copyfrom->complement()) {}
     virtual ~DfaEdge() {}
     // METHODS
-    virtual string dotColor() const { return na()?"yellow":epsilon()?"green":"black"; }
-    virtual string dotLabel() const { return na()?"":epsilon()?"e":cvtToStr((void*)(input())); }
+    virtual string dotColor() const {
+	return (na() ? "yellow"
+		: epsilon() ? "green"
+		: "black"); }
+    virtual string dotLabel() const {
+	return (na() ? ""
+		: epsilon() ? "e"
+		: complement() ? ("not "+cvtToStr((void*)(input())))
+		: cvtToStr((void*)(input()))); }
     virtual string dotStyle() const { return (na()||cutable())?"dashed":""; }
     bool epsilon() const { return input()==EPSILON(); }
     bool na() const { return input()==NA(); }
+    bool complement() const { return m_complement; }
+    void complement(bool value) { m_complement=value; }
     DfaInput	input() const { return m_input; }
 };
 
