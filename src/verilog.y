@@ -429,7 +429,7 @@ class AstSenTree;
 %type<nodep>	pslDecl
 %type<nodep>	pslSequence pslSere pslExpr
 
-%start file
+%start fileE
 
 %%
 //**********************************************************************
@@ -445,8 +445,12 @@ statePop:	/* empty */			 	{ V3Read::statePop(); }
 //**********************************************************************
 // Files
 
-file:		description 				{ }
-	|	file description 			{ }
+fileE:		/* empty */				{ }
+	|	file					{ }
+	;
+
+file:		description				{ }
+	|	file description			{ }
 	;
 
 // IEEE: description

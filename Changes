@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.66***
+
+**** Fix no-module include files on command line.  [Stefan Thiede]
+
 * Verilator 3.660 2008/03/23
 
 ***  Add support for hard-coding VERILATOR_ROOT etc in the executables,

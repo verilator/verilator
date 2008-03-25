@@ -379,17 +379,20 @@ private:
 	// This may not be the module with isTop() set, as early in the steps,
 	// wrapTop may have not been created yet.
 	AstModule* topmodp = nodep->modulesp();
-	if (!topmodp) nodep->v3fatalSrc("No top level module");
-	UINFO(8,"Top Module: "<<topmodp<<endl);
-	m_scope = "TOP";
-	m_cellVxp = m_statep->insertTopCell(topmodp, m_scope);
-	m_inlineVxp = m_cellVxp;
-	{
-	    topmodp->accept(*this);
+	if (!topmodp) {
+	    nodep->v3error("No top level module found");
+	} else {
+	    UINFO(8,"Top Module: "<<topmodp<<endl);
+	    m_scope = "TOP";
+	    m_cellVxp = m_statep->insertTopCell(topmodp, m_scope);
+	    m_inlineVxp = m_cellVxp;
+	    {
+		topmodp->accept(*this);
+	    }
+	    m_scope = "";
+	    m_cellVxp = NULL;
+	    m_inlineVxp = m_cellVxp;
 	}
-	m_scope = "";
-	m_cellVxp = NULL;
-	m_inlineVxp = m_cellVxp;
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	UINFO(8,"   "<<nodep<<endl);
