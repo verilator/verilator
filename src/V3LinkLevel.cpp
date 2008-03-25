@@ -85,6 +85,21 @@ void V3LinkLevel::modSortByLevel() {
     // Sort modules by levels, root down to lowest children
     // Calculate levels again in case we added modules
     UINFO(2,"modSortByLevel()\n");
+
+    if (v3Global.opt.topModule()!="") {
+	bool hit = false;
+	for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+	    if (nodep->name() == v3Global.opt.topModule()) {
+		hit = true;
+	    } else {
+		nodep->level(3);
+	    }
+	}
+	if (!hit) {
+	    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
+	}
+    }
+
     LinkLevelVisitor visitor;
     visitor.main(v3Global.rootp());
 
@@ -92,8 +107,11 @@ void V3LinkLevel::modSortByLevel() {
     AstModule* topp = NULL;
     for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
 	if (nodep->level()<=2) {
-	    if (topp) nodep->v3warn(MULTITOP, "Unsupported: Multiple top level modules: "
-				    <<nodep->prettyName()<<" and "<<topp->prettyName());
+	    if (topp) {
+		nodep->v3warn(MULTITOP, "Unsupported: Multiple top level modules: "
+			      <<nodep->prettyName()<<" and "<<topp->prettyName());
+		nodep->v3warn(MULTITOP, "Fix, or use --top-module option to select which you want.");
+	    }
 	    topp = nodep;
 	}
 	vec.push_back(nodep);

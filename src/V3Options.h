@@ -88,6 +88,7 @@ class V3Options {
     string	m_prefix;	// main switch: --prefix
     string	m_modPrefix;	// main switch: --mod-prefix
     string	m_xAssign;	// main switch: --x-assign
+    string	m_topModule;	// main switch: --top-module
 
     // MEMBERS (optimizations)
     //				// main switch: -Op: --public
@@ -175,6 +176,7 @@ class V3Options {
     string makeDir() const { return m_makeDir; }
     string prefix() const { return m_prefix; }
     string modPrefix() const { return m_modPrefix; }
+    string topModule() const { return m_topModule; }
     string xAssign() const { return m_xAssign; }
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }

@@ -429,6 +429,7 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
     }
 
     // Default prefix to the filename
+    if (prefix()=="") m_prefix = string("V")+topModule();
     if (prefix()=="") m_prefix = string("V")+filenameNonExt(*(vFiles().begin()));
     if (modPrefix()=="") m_modPrefix = prefix();
 
@@ -653,6 +654,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-prefix") && (i+1)<argc ) {
 		shift; m_prefix = argv[i];
 		if (m_modPrefix=="") m_modPrefix = m_prefix;
+	    }
+	    else if ( !strcmp (sw, "-top-module") && (i+1)<argc ) {
+		shift; m_topModule = argv[i];
 	    }
 	    else if ( !strcmp (sw, "-x-assign") && (i+1)<argc) {
 		shift;

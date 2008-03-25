@@ -217,6 +217,7 @@ descriptions in the next sections for more information.
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
+    --top-module <topname>	Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
     -U<var>                     Undefine preprocessor define
@@ -451,8 +452,9 @@ the backward-compatible default of sc_bv's.
 
 =item --prefix I<topname>
 
-Specifies the name of the top level class.  Defaults to the name of the first
-Verilog file passed on the command line.
+Specifies the name of the top level class and makefile.  Defaults to V
+prepended to the name of the --top-module switch, or V prepended to the
+first Verilog filename passed on the command line.
 
 =item --profile-cfuncs
 
@@ -497,6 +499,13 @@ Specifies SystemPerl output mode; see also --cc and -sc.
 =item --stats
 
 Creates a dump file with statistics on the design in {prefix}__stats.txt.
+
+=item --top-module I<topname>
+
+When the input Verilog contains more than one top level module, specifies
+the name of the top level Verilog module to become the top, and sets the
+default for if --prefix is not used.  This is not needed with standard
+designs with only one top.
 
 =item --trace
 

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix no-module include files on command line.  [Stefan Thiede]
 
+***  Add --top-module option to select between multiple tops. [Stefan Thiede]
+
 * Verilator 3.660 2008/03/23
 
 ***  Add support for hard-coding VERILATOR_ROOT etc in the executables,
