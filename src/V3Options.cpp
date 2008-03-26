@@ -429,7 +429,7 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
     }
 
     // Default prefix to the filename
-    if (prefix()=="") m_prefix = string("V")+topModule();
+    if (prefix()=="" && topModule()!="") m_prefix = string("V")+topModule();
     if (prefix()=="") m_prefix = string("V")+filenameNonExt(*(vFiles().begin()));
     if (modPrefix()=="") m_modPrefix = prefix();
 
