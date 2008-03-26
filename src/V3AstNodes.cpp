@@ -304,6 +304,10 @@ void AstCellInline::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<origModName();
 }
+void AstDisplay::dump(ostream& str) {
+    this->AstNode::dump(str);
+    //str<<" "<<displayType().ascii();
+}
 void AstPin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (modVarp()) { str<<" -> "; modVarp()->dump(str); }

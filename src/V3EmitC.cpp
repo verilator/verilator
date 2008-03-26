@@ -1027,10 +1027,8 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
     emitDispState.clear();
     string fmt = "";
     string::iterator pos = vformat.begin();
-    if (*pos == '"') pos++;
     bool inPct = false;
     for (; pos != vformat.end(); ++pos) {
-	if (pos[0]=='"' && (pos+1)==vformat.end()) break;
 	if (inPct && pos[0]=='%') {
 	    emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
 	    inPct = false;

@@ -19,6 +19,9 @@ module t;
       sub.write_m;
       sub2.write_m;
 
+      // Escapes
+      $display("[%0t] Back \\ Quote \"", $time);  // Old bug when \" last on the line.
+
       // Display formatting
       $display("[%0t] %%X=%X %%D=%D %%0X=%0X %%0O=%0O %%B=%B", $time,
 	       quad[5:0], quad[5:0], quad[5:0], quad[5:0], quad[5:0]);

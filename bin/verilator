@@ -217,7 +217,7 @@ descriptions in the next sections for more information.
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
-    --top-module <topname>	Name of top level input module
+    --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
     -U<var>                     Undefine preprocessor define

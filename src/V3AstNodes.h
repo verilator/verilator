@@ -1254,6 +1254,7 @@ public:
     virtual AstType type() const { return AstType::DISPLAY;}
     virtual AstNode* clone() { return new AstDisplay(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void dump(ostream& str);
     virtual string verilogKwd() const { return (filep() ? (string)"$f"+(string)displayType().ascii()
 						: (string)"$"+(string)displayType().ascii()); }
     virtual bool isGateOptimizable() const { return false; }
