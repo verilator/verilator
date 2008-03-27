@@ -62,6 +62,28 @@ public:
 };
 
 //*************************************************************************
+
+class V3DefineRef {
+    // One for each pending define substitution
+    string	m_name;		// Define last name being defined
+    string	m_params;	// Define parameter list for next expansion
+    string	m_nextarg;	// String being built for next argument
+    int		m_parenLevel;	// Parenthesis counting inside def args
+    
+    vector<string> m_args;	// List of define arguments
+public:
+    string name() const { return m_name; }
+    string params() const { return m_params; }
+    string nextarg() const { return m_nextarg; }
+    void nextarg(const string& value) { m_nextarg = value; }
+    int parenLevel() const { return m_parenLevel; }
+    vector<string>& args() { return m_args; }
+    V3DefineRef(const string& name, const string& params, int pl)
+	: m_name(name), m_params(params), m_parenLevel(pl) {}
+    ~V3DefineRef() {}
+};
+
+//*************************************************************************
 // Data for a preprocessor instantiation.
 
 struct V3PreProcImp : public V3PreProc {
@@ -88,14 +110,12 @@ struct V3PreProcImp : public V3PreProc {
     bool	m_rawAtBol;	///< Last rawToken left us at beginning of line
 
     // For defines
-    string	m_defName;	// Define last name being defined
-    string	m_defParams;	// Define parameter list for next expansion
+    stack<V3DefineRef> m_defRefs; // Pending definine substitution
     stack<bool> m_ifdefStack;	// Stack of true/false emitting evaluations
-    vector<string> m_defArgs;	// List of define arguments
     unsigned	m_defDepth;	// How many `defines deep
 
     // Defines list
-    DefinesMap	m_defines;		// Map of defines
+    DefinesMap	m_defines;	// Map of defines
 
     // For getline()
     string	m_lineChars;	// Characters left for next line
@@ -113,7 +133,7 @@ struct V3PreProcImp : public V3PreProc {
 private:
     // Internal methods
     void eof();
-    string defineSubst();
+    string defineSubst(V3DefineRef* refp);
     void addLineComment(int enter_exit_level);
 
     bool defExists(const string& name);
@@ -122,6 +142,7 @@ private:
     FileLine* defFileline(const string& name);
 
     bool commentTokenMatch(string& cmdr, const char* strg);
+    string trimWhitespace(const string& strg);
 
     void parsingOn() {
 	m_off--;
@@ -149,7 +170,6 @@ public:
     V3PreProcImp(FileLine* fl) : V3PreProc(fl) {
 	m_lexp = NULL;	 // Closed.
 	m_state = ps_TOP;
-	m_defName = "";
 	m_off = 0;
 	m_lineChars = "";
 	m_lastSym = "";
@@ -348,7 +368,15 @@ const char* V3PreProcImp::tokenName(int tok) {
     } 
 }
 
-string V3PreProcImp::defineSubst() {
+string V3PreProcImp::trimWhitespace(const string& strg) {
+    string out = strg;
+    while (out.length()>0 && isspace(out[0])) {
+	out.erase(0,1);
+    }
+    return out;
+}
+
+string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     // Substitute out defines in a argumented define reference.
     // We could push the define text back into the lexer, but that's slow
     // and would make recursive definitions and parameter handling nasty.
@@ -356,25 +384,27 @@ string V3PreProcImp::defineSubst() {
     // Note we parse the definition parameters and value here.  If a
     // parameterized define is used many, many times, we could cache the
     // parsed result.
-    UINFO(4,"defineSubstIn  `"<<m_defName<<" "<<m_defParams<<endl);
-    for (unsigned i=0; i<m_defArgs.size(); i++) {
-	UINFO(4,"defineArg["<<i<<"] = "<<m_defArgs[i]<<endl);
+    UINFO(4,"defineSubstIn  `"<<refp->name()<<" "<<refp->params()<<endl);
+    for (unsigned i=0; i<refp->args().size(); i++) {
+	UINFO(4,"defineArg["<<i<<"] = "<<refp->args()[i]<<endl);
     }
     // Grab value
-    string value = defValue(m_defName);
-    UINFO(4,"defineValue    `"<<value<<endl);
+    string value = defValue(refp->name());
+    UINFO(4,"defineValue    '"<<value<<"'"<<endl);
 
     map<string,string> argValueByName;
     {   // Parse argument list into map
 	unsigned numArgs=0;
 	string argName;
-	for (const char* cp=m_defParams.c_str(); *cp; cp++) {
+	for (const char* cp=refp->params().c_str(); *cp; cp++) {
 	    if (*cp=='(') {
 	    } else if (argName=="" && isspace(*cp)) {
 	    } else if (isspace(*cp) || *cp==')' || *cp==',') {
 		if (argName!="") {
-		    if (m_defArgs.size() >= numArgs) {
-			argValueByName[argName] = m_defArgs[numArgs];
+		    if (refp->args().size() > numArgs) {
+			// A call `def( a ) must be equivelent to `def(a ), so trimWhitespace
+			// Note other sims don't trim trailing whitespace, so we don't either.
+			argValueByName[argName] = trimWhitespace(refp->args()[numArgs]);
 		    }
 		    numArgs++;
 		    //cout << "  arg "<<argName<<endl;
@@ -385,13 +415,13 @@ string V3PreProcImp::defineSubst() {
 		argName += *cp;
 	    }
 	}
-	if (m_defArgs.size() != numArgs) {
-	    fileline()->v3error("Define passed wrong number of arguments: "+m_defName+"\n");
-	    return " `"+m_defName+" ";
+	if (refp->args().size() != numArgs) {
+	    fileline()->v3error("Define passed wrong number of arguments: "+refp->name()+"\n");
+	    return " `"+refp->name()+" ";
 	}
     }
 
-    string out = " ";
+    string out = "";
     {   // Parse substitution define using arguments
 	string argName;
 	string prev;
@@ -447,8 +477,7 @@ string V3PreProcImp::defineSubst() {
 	}
     }
 
-    out += " ";
-    UINFO(4,"defineSubstOut "<<out<<endl);
+    UINFO(4,"defineSubstOut '"<<out<<"'"<<endl);
     return out;
 }
 
@@ -565,8 +594,9 @@ int V3PreProcImp::getRawToken() {
 	    string::size_type pos;
 	    while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
 	    while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
-	    fprintf (stderr, "%d: RAW %d %d:  %-10s: %s\n",
-		     fileline()->lineno(), m_off, m_state, tokenName(tok), buf.c_str());
+	    fprintf (stderr, "%d: RAW %s s%d dr%d:  %-10s: %s\n",
+		     fileline()->lineno(), m_off?"of":"on", m_state, m_defRefs.size(),
+		     tokenName(tok), buf.c_str());
 	}
     
 	// On EOF, try to pop to upper level includes, as needed.
@@ -651,7 +681,7 @@ int V3PreProcImp::getToken() {
 		else if (m_stateFor==VP_DEFINE) {
 		    // m_lastSym already set.
 		    m_state = ps_DEFVALUE;
-		    m_lexp->setStateDefValue();
+		    m_lexp->pushStateDefValue();
 		}
 		else fileline()->v3fatalSrc("Bad case\n");
 		goto next_tok;
@@ -698,7 +728,7 @@ int V3PreProcImp::getToken() {
 			   && isspace(m_lexp->m_defValue[m_lexp->m_defValue.length()-1-trailspace])) trailspace++;
 		    if (trailspace) m_lexp->m_defValue.erase(m_lexp->m_defValue.length()-trailspace,trailspace);
 		    // Define it
-		    UINFO(4,"Define "<<m_lastSym<<" = "<<m_lexp->m_defValue<<endl);
+		    UINFO(4,"Define "<<m_lastSym<<" = '"<<m_lexp->m_defValue<<"'"<<endl);
 		    define(fileline(), m_lastSym, m_lexp->m_defValue, params);
 		}
 	    } else {
@@ -712,40 +742,57 @@ int V3PreProcImp::getToken() {
 	}
 	case ps_DEFPAREN: {
 	    if (tok==VP_TEXT && yyleng==1 && yytext[0]=='(') {
-		m_defArgs.clear();
 		m_state = ps_DEFARG;
-		m_lexp->setStateDefArg();
 		goto next_tok;
 	    } else {
 		m_state = ps_TOP;
-		fileline()->v3error("Expecting ( to begin argument list for define reference `"<<m_defName);
+		if (m_defRefs.empty()) v3fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
+		V3DefineRef* refp = &(m_defRefs.top());
+		fileline()->v3error("Expecting ( to begin argument list for define reference `"<<refp->name());
 		goto next_tok;
 	    }
 	}
 	case ps_DEFARG: {
-	    if (tok==VP_DEFARG) {
-		UINFO(4,"   Defarg "<<m_defName<<" arg="<<m_lexp->m_defValue<<endl);
-		goto next_tok;  // Next is a , or )
-	    } else if (tok==VP_TEXT && yyleng==1 && yytext[0]==',') {
-		m_defArgs.push_back(m_lexp->m_defValue);
+	    if (m_defRefs.empty()) v3fatalSrc("Shouldn't be in DEFARG w/o active defref");
+	    V3DefineRef* refp = &(m_defRefs.top());
+	    refp->nextarg(refp->nextarg()+m_lexp->m_defValue); m_lexp->m_defValue="";
+	    if (tok==VP_DEFARG && yyleng==1 && yytext[0]==',') {
+		refp->args().push_back(refp->nextarg());
 		m_state = ps_DEFARG;
-		m_lexp->setStateDefArg();
+		m_lexp->pushStateDefArg();
+		refp->nextarg("");
 		goto next_tok;
-	    } else if (tok==VP_TEXT && yyleng==1 && yytext[0]==')') {
-		m_defArgs.push_back(m_lexp->m_defValue);
-		string out = defineSubst();
-		m_lexp->m_parenLevel = 0;
+	    } else if (tok==VP_DEFARG && yyleng==1 && yytext[0]==')') {
+		refp->args().push_back(refp->nextarg());
+		string out = defineSubst(refp);
+		// Substitute in and prepare for next action
+		// Similar code in non-parenthesized define (Search for END_OF_DEFARG)
+		m_defRefs.pop();
 		m_lexp->unputString(out.c_str());
-		// Prepare for next action
-		m_defArgs.clear();
-		m_state = ps_TOP;
+		if (m_defRefs.empty()) {
+		    m_state = ps_TOP;
+		    m_lexp->m_parenLevel = 0;
+		}
+		else {  // Finished a defref inside a upper defref
+		    refp = &(m_defRefs.top());  // We popped, so new top
+		    m_lexp->m_parenLevel = refp->parenLevel();
+		    m_state = ps_DEFARG;
+		}
+		goto next_tok;
+	    } else if (tok==VP_DEFREF) {
+		// Expand it, then state will come back here
+		// Value of building argument is data before the lower defref
+		// we'll append it when we push the argument.
+		break;
+	    } else if (tok==VP_SYMBOL || tok==VP_STRING || VP_TEXT || VP_WHITE || VP_PSL) {
+		string rtn; rtn.assign(yytext,yyleng);
+		refp->nextarg(refp->nextarg()+rtn);
 		goto next_tok;
 	    } else {
 		fileline()->v3error("Expecting ) or , to end argument list for define reference. Found: "<<tokenName(tok));
 		m_state = ps_TOP;
 		goto next_tok;
 	    }
-	    goto next_tok;
 	}
 	case ps_INCNAME: {
 	    if (tok==VP_STRING) {
@@ -763,7 +810,7 @@ int V3PreProcImp::getToken() {
 	    else if (tok==VP_TEXT && yyleng==1 && yytext[0]=='<') {
 		// include <filename>
 		m_state = ps_INCNAME;  // Still
-		m_lexp->setStateIncFilename();
+		m_lexp->pushStateIncFilename();
 		goto next_tok;
 	    }
 	    else if (tok==VP_DEFREF) {
@@ -844,18 +891,17 @@ int V3PreProcImp::getToken() {
 		else {
 		    string params = defParams(name);
 		    if (params=="0" || params=="") {  // Found, as simple substitution
-			// Pack spaces around the define value, as there must be token boundaries around it.
-			// It also makes it more obvious where defines got substituted.
-			string out = " "+defValue(name)+" ";
-			UINFO(4,"Defref `"<<name<<" => "<<out<<endl);
+			string out = defValue(name);
+			UINFO(4,"Defref `"<<name<<" => '"<<out<<"'"<<endl);
+			// Similar code in parenthesized define (Search for END_OF_DEFARG)
 			m_lexp->unputString(out.c_str());
 			goto next_tok;
 		    }
 		    else {  // Found, with parameters
 			UINFO(4,"Defref `"<<name<<" => parameterized"<<endl);
-			m_defName = name;
-			m_defParams = params;
+			m_defRefs.push(V3DefineRef(name, params, m_lexp->m_parenLevel));
 			m_state = ps_DEFPAREN;  m_stateFor = tok;
+			m_lexp->pushStateDefArg();
 			goto next_tok;
 		    }
 		}

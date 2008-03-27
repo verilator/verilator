@@ -7,6 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --top-module option to select between multiple tops. [Stefan Thiede]
 
+**** Fix SystemVerilog parameterized defines with `` expansion,
+     and fix extra whitespace inserted on substitution.  [Vladimir Matveyenko]
+
 **** Fix no-module include files on command line.  [Stefan Thiede]
 
 **** Fix dropping of backslash quoted-quote at end of $display.

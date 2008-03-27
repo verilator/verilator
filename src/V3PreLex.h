@@ -133,9 +133,9 @@ class V3PreLex {
     void lineDirective(const char* text);
     void incLineno() { m_curFilelinep->incLineno(); }
     // Called by V3PreProc.cpp to inform lexer
-    void setStateDefArg();
-    void setStateDefValue();
-    void setStateIncFilename();
+    void pushStateDefArg();
+    void pushStateDefValue();
+    void pushStateIncFilename();
     void unputString(const char* textp);
 };
 

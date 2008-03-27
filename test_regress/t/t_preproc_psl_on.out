@@ -63,7 +63,7 @@ Hello in t_preproc_psl.v
 
 
  
-    psl  assert always  cyc !=10;
+    psl  assert always cyc!=10;
 
  
   `psl

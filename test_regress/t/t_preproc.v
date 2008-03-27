@@ -86,6 +86,15 @@ $display(`msg(left side, right side))
 `zap(bug1);
 `zap("bug2");
 
+// rt.cpan.org bug34429
+`define ADD_UP(a,c)          \
+wire  tmp_``a = a; \
+wire  tmp_``c = tmp_``a + 1; \
+assign c = tmp_``c ;
+
+`ADD_UP(d1,o1)   // expansion is OK
+`ADD_UP( d2 , o2 )  // expansion is bad
+
 //===========================================================================
 // Ifdef
 

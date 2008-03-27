@@ -15,7 +15,7 @@
 
 At file t/t_preproc_inc2.v  line 4
  
-  
+ 
 `line 6 "t/t_preproc_inc2.v" 0
 `line 1 "t/t_preproc_inc3.v" 1
 `line 2 "inc3_a_filename_from_line_directive" 0
@@ -41,7 +41,7 @@ At file t/t_preproc_inc2.v  line 4
 
 `line 18 "inc3_a_filename_from_line_directive" 2
 `line 6 "t/t_preproc_inc2.v" 0
- 
+
 `line 7 "t/t_preproc_inc2.v" 2
 `line 9 "t/t_preproc.v" 0
 
@@ -78,8 +78,8 @@ text.
 
  
  
- foo  bar 
- foobar2 
+foo  bar
+foobar2
 
  
 
@@ -91,7 +91,7 @@ text.
 
 
 
- first part    		second part    		third part 
+first part    		second part    		third part
 Line_Preproc_Check 49
 
 
@@ -100,37 +100,46 @@ Line_Preproc_Check 49
 
  
  
-  deep   deep  
+deep deep
 
  
  
 "Inside: `nosubst"
- "`nosubst" 		  
+"`nosubst"		  
 
  
- x y LLZZ x y 
-  p q LLZZ p q     r   s  LLZZ  r   s   LLZZ  p q LLZZ p q     r   s  LLZZ  r   s   
+x y LLZZ x y
+p q LLZZ p q r  s  LLZZ r  s  LLZZ p q LLZZ p q r  s  LLZZ r  s 
 
 
 
- firstline	 	comma","line LLZZ firstline	 	comma","line 
-
- 
-  x   y LLZZ "a"  y 
+firstline	 comma","line LLZZ firstline	 comma","line
 
  
- (a,b) (a,b)
+x  y LLZZ "a" y
 
  
-$display( "left side: \" right side\"" )
+(a,b)(a,b)
 
  
- bar_suffix   
+$display("left side: \"right side\"")
+
+ 
+bar_suffix  
 
  
 
- $c("Zap(\"",bug1,"\");"); ;
- $c("Zap(\"","bug2","\");"); ;
+$c("Zap(\"",bug1,"\");");;
+$c("Zap(\"","bug2","\");");;
+
+
+ 
+
+
+
+
+wire  tmp_d1 = d1;  wire  tmp_o1 = tmp_d1 + 1;  assign o1 = tmp_o1 ;   
+wire  tmp_d2  = d2 ;  wire  tmp_o2  = tmp_d2  + 1;  assign o2  = tmp_o2  ;  
 
 
 
@@ -139,7 +148,7 @@ $display( "left side: \" right side\"" )
  
    
 
-`line 95 "t/t_preproc.v" 0
+`line 104 "t/t_preproc.v" 0
 
-Line_Preproc_Check 96
-`line 97 "t/t_preproc.v" 2
+Line_Preproc_Check 105
+`line 106 "t/t_preproc.v" 2
