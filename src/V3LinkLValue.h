@@ -31,6 +31,7 @@
 class V3LinkLValue {
 public:
     static void linkLValue(AstNetlist* nodep);
+    static void linkLValueSet(AstNode* nodep);
 };
 
 #endif // Guard

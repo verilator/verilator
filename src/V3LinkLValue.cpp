@@ -166,10 +166,10 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkLValueVisitor(AstNetlist* rootp) {
-	m_setRefLvalue = false;
+    LinkLValueVisitor(AstNode* nodep, bool start) {
+	m_setRefLvalue = start;
 	m_ftaskp = NULL;
-	rootp->accept(*this);
+	nodep->accept(*this);
     }
     virtual ~LinkLValueVisitor() {}
 };
@@ -179,5 +179,11 @@ public:
 
 void V3LinkLValue::linkLValue(AstNetlist* rootp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkLValueVisitor visitor(rootp);
+    LinkLValueVisitor visitor(rootp, false);
+}
+void V3LinkLValue::linkLValueSet(AstNode* nodep) {
+    // Called by later link functions when it is known a node needs
+    // to be converted to a lvalue.
+    UINFO(9,__FUNCTION__<<": "<<endl);
+    LinkLValueVisitor visitor(nodep, true);
 }

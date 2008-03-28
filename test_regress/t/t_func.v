@@ -7,6 +7,7 @@
 module t;
    reg [2:0] value;
    reg [31:0] global;
+   reg [31:0] vec [1:0];
 
    initial begin
       global = 1;
@@ -32,14 +33,22 @@ module t;
       nil_task(32'h012,32'h112,global);
       if (global !== 32'h124) $stop;
       
+      vec[0] = 32'h333;
+      vec[1] = 32'habc;
+      incr(vec[1],vec[0],vec[1]);
+      if (vec[0] != 32'h333) $stop;
+      if (vec[1] != 32'hdef) $stop;
+
+      incr(vec[2],vec[0],vec[2]);  // Reading/Writing past end of vector!
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
 
    function [2:0] add;
-      input [2:0] from;
+      input [2:0] fromv;
       begin
-	 add = from + 3'd1;
+	 add = fromv + 3'd1;
 	 begin : named
 	    reg [31:0] flocal;
 	    flocal = 1;
@@ -49,13 +58,13 @@ module t;
    endfunction
 
    function [3:0] munge4;
-      input [3:0] from;		// Different from the 'from' signal above
+      input [3:0] fromv; // Different fromv than the 'fromv' signal above
       reg one;
       begin : named
 	 reg [1:0] flocal;
 	 // Function calling a function
 	 one = 1'b1;
-	 munge4 = {one, add(from[2:0])};
+	 munge4 = {one, add(fromv[2:0])};
       end
    endfunction
 

@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix dropping of backslash quoted-quote at end of $display.
 
+**** Fix task output pin connected to non-variables. [Jonathan Kimmitt]
+
 **** Fix missing test_v in install datadir. [Holger Waechtler]
 
 * Verilator 3.660 2008/03/23

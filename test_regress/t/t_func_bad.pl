@@ -14,7 +14,6 @@ compile (
 '%Error: t/t_func_bad.v:\d+: Too few arguments in function call
 %Error: t/t_func_bad.v:\d+: Too many arguments in function call
 %Error: t/t_func_bad.v:\d+: Too few arguments in function call
-%Error-TASKNSVAR: t/t_func_bad.v:\d+: Unsupported: Task output pin connected to non-variable
 %Error: t/t_func_bad.v:\d+: Outputs not allowed in function declarations
 %Error: Exiting due to',
 	 );

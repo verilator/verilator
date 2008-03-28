@@ -41,6 +41,7 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
+#include "V3LinkLValue.h"
 
 //######################################################################
 // Graph subclasses
@@ -360,11 +361,11 @@ private:
 			else if (portp->isOutput()) {
 			    // Make output variables
 			    // Correct lvalue; we didn't know when we linked
-			    if (AstVarRef* varrefp = pinp->castVarRef()) {
-				varrefp->lvalue(true);
-			    } else {
-				pinp->v3warn(TASKNSVAR,"Unsupported: Task output pin connected to non-variable");
-			    }
+			    // This is slightly scary; are we sure no decisions were made
+			    // before here based on this not being a lvalue?
+			    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
+			    V3LinkLValue::linkLValueSet(pinp);
+
 			    // Even if it's referencing a varref, we still make a temporary
 			    // Else task(x,x,x) might produce incorrect results
 			    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
@@ -445,11 +446,21 @@ private:
 			else if (portp->isOutput()) {
 			    // Make output variables
 			    // Correct lvalue; we didn't know when we linked
-			    if (AstVarRef* varrefp = pinp->castVarRef()) {
-				varrefp->lvalue(true);
-			    } else {
-				pinp->v3warn(TASKNSVAR,"Unsupported: Task output pin connected to non-variable");
-			    }
+			    // This is slightly scary; are we sure no decisions were made
+			    // before here based on this not being a lvalue?
+			    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
+			    V3LinkLValue::linkLValueSet(pinp);
+
+			    // Even if it's referencing a varref, we still make a temporary
+			    // Else task(x,x,x) might produce incorrect results
+			    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
+			    portp->user2p(outvscp);
+			    pinp->replaceWith(new AstVarRef(outvscp->fileline(), outvscp, true));
+			    AstAssign* assp = new AstAssign (pinp->fileline(),
+							     pinp,
+							     new AstVarRef(outvscp->fileline(), outvscp, false));
+			    // Put assignment BEHIND of all other statements
+			    beginp->addNext(assp);
 			}
 		    }
 		}
