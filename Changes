@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  The --enable-defenv configure option added in 3.660 is now the default.
      This hard-codes a default for VERILATOR_ROOT etc in the executables.
 
+***  Add --language option for supporting older code. [Stefan Thiede]
+
 ***  Add --top-module option to select between multiple tops. [Stefan Thiede]
 
 **** Fix SystemVerilog parameterized defines with `` expansion,

@@ -121,6 +121,13 @@ void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibr
     m_fileline = new FileLine(fileline);
     m_inLibrary = inLibrary;
 
+    // Set language standard up front
+    if (!v3Global.opt.preprocOnly()) {
+	// Leting lex parse this saves us from having to specially en/decode
+	// from the V3LangCode to the various Lex BEGIN states.
+	ppPushText((string)"`begin_keywords \""+v3Global.opt.language().ascii()+"\"\n");
+    }
+
     // Preprocess into m_ppBuffer
     V3PreShell::preproc(fileline, modfilename, this);
 

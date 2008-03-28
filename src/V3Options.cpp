@@ -119,6 +119,20 @@ string V3Options::allArgsString() {
 }
 
 //######################################################################
+// Language class
+
+V3LangCode::V3LangCode (const char* textp) {
+    // Return code for given string, or ERROR, which is a bad code
+    for (int codei=V3LangCode::ERROR; codei<V3LangCode::MAX; codei++) {
+	V3LangCode code = (V3LangCode)codei;
+	if (0==strcasecmp(textp,code.ascii())) {
+	    m_e = code; return;
+	}
+    }
+    m_e = V3LangCode::ERROR;
+}
+
+//######################################################################
 // File searching
 
 string V3Options::filenameFromDirBase (const string& dir, const string& basename) {
@@ -498,15 +512,6 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		shift;
 		setDebugMode(atoi(argv[i]));
 	    }
-	    else if ( !strcmp (sw, "-v") ) {
-		shift;
-		V3Options::addLibraryFile(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-version") ) {
-		cout <<version();
-		cout <<endl;
-		exit(0);
-	    }
 	    else if ( !strcmp (sw, "-error-limit") ) {
 		shift;
 		m_inlineMult = atoi(argv[i]);
@@ -514,6 +519,15 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-inline-mult") ) {
 		shift;
 		m_inlineMult = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-language") ) {
+		shift;
+		V3LangCode optval = V3LangCode(argv[i]);
+		if (optval.legal()) {
+		    m_language = optval;
+		} else {
+		    fl->v3fatal("Unknown language specified: "<<argv[i]);
+		}
 	    }
 	    else if ( !strcmp (sw, "-output-split") ) {
 		shift;
@@ -534,6 +548,15 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-unroll-stmts") ) {	// Undocumented optimization tweak
 		shift;
 		m_unrollStmts = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-v") ) {
+		shift;
+		V3Options::addLibraryFile(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-version") ) {
+		cout <<version();
+		cout <<endl;
+		exit(0);
 	    }
 	    // Single switches
 	    else if ( !strcmp (sw, "-E") )			{ m_preprocOnly = true; }
@@ -793,6 +816,8 @@ V3Options::V3Options() {
     m_bin = "";
     m_flags = "";
     m_xAssign = "unique";
+
+    m_language = V3LangCode::mostRecent();
 
     optimize(true);
     // Default +libext+

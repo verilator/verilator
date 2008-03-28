@@ -30,6 +30,41 @@
 #include "V3Global.h"
 
 //######################################################################
+
+class V3LangCode {
+public:
+    enum en {
+	ERROR,  // Must be first.
+	L1364_1995,
+	L1364_2001,
+	L1364_2005,
+	L1800_2005,
+	// ***Add new elements below also***
+	MAX
+    };
+    const char* ascii() const {
+	const char* names[] = {
+	    // These must match the `begin_keywords values.
+	    " ERROR",
+	    "1364-1995",
+	    "1364-2001",
+	    "1364-2005",
+	    "1800-2005"
+	};
+	return names[m_e];
+    };
+    static V3LangCode mostRecent() { return V3LangCode(L1800_2005); }
+    bool legal() const { return m_e != ERROR; }
+    //
+    enum en m_e;
+    inline V3LangCode () : m_e(ERROR) {};
+    inline V3LangCode (en _e) : m_e(_e) {};
+    V3LangCode (const char* textp);	// Return matching code or ERROR
+    explicit inline V3LangCode (int _e) : m_e(static_cast<en>(_e)) {};
+    operator en () const { return m_e; };
+};
+
+//######################################################################
 // V3Options - Command line options
 
 class V3OptionsImp;
@@ -89,6 +124,8 @@ class V3Options {
     string	m_modPrefix;	// main switch: --mod-prefix
     string	m_xAssign;	// main switch: --x-assign
     string	m_topModule;	// main switch: --top-module
+
+    V3LangCode	m_language;	// main switch: --language
 
     // MEMBERS (optimizations)
     //				// main switch: -Op: --public
@@ -181,7 +218,7 @@ class V3Options {
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringSet& vFiles() const { return m_vFiles; }
-
+    const V3LangCode& language() const { return m_language; }
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }

@@ -197,6 +197,7 @@ descriptions in the next sections for more information.
     -I<dir>                     Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
+    --language <lang>           Language standard to parse
     --lint-only                 Lint, but do not make output
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -379,6 +380,14 @@ this number of operations would result, the module is not inlined.  Larger
 values, or a value <= 1 will inline everything, will lead to longer compile
 times, but potentially faster runtimes.  This setting is ignored for very
 small modules; they will always be inlined, if allowed.
+
+=item --language I<value>
+
+Select the language to be used when first processing each Verilog file.
+The language value must be "1364-1995", "1364-2001", "1364-2001",
+"1364-2005", or "1800-2005".  This should only be used for legacy code, as
+the preferable option is to edit the code to repair new keywords, or add
+appropriate `begin_keywords.
 
 =item --lint-only
 
