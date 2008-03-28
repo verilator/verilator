@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66***
 
+***  The --enable-defenv configure option added in 3.660 is now the default.
+     This hard-codes a default for VERILATOR_ROOT etc in the executables.
+
 ***  Add --top-module option to select between multiple tops. [Stefan Thiede]
 
 **** Fix SystemVerilog parameterized defines with `` expansion,
@@ -13,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Fix no-module include files on command line.  [Stefan Thiede]
 
 **** Fix dropping of backslash quoted-quote at end of $display.
+
+**** Fix missing test_v in install datadir. [Holger Waechtler]
 
 * Verilator 3.660 2008/03/23
 

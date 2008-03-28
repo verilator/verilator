@@ -80,7 +80,7 @@ endif
 
 # Allow RPM builds to specify hardcoded data directories
 # To do this:
-ifneq ($(CFG_WITH_DEFENV),)
+ifeq ($(CFG_WITH_DEFENV),yes)
  CPPFLAGS += -DDEFENV_SYSTEMC=\"$(SYSTEMC)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
  CPPFLAGS += -DDEFENV_SYSTEMPERL=\"$(SYSTEMPERL)\"

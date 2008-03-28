@@ -10,8 +10,9 @@ AC_CONFIG_HEADER(src/config_build.h)
 
 dnl Special Substitutions
 AC_ARG_ENABLE(defenv,
-   [AS_HELP_STRING([--enable-defenv], [hardcode default environment variables])],
-   CFG_WITH_DEFENV=1,)
+   [AS_HELP_STRING([--disable-defenv], [disable hardcoded default environment variables])],
+   CFG_WITH_DEFENV=$enableval,
+   CFG_WITH_DEFENV=1)
 AC_SUBST(CFG_WITH_DEFENV)
 
 dnl Checks for programs.

@@ -227,6 +227,7 @@ installdata:
 	cp -r test_c  $(pkgdatadir)/examples
 	cp -r test_sc $(pkgdatadir)/examples
 	cp -r test_sp $(pkgdatadir)/examples
+	cp -r test_v  $(pkgdatadir)/examples
 
 VL_INST_DATA_FILES = verilator.1
 install: all_nomsg installbin installman installdata install-msg

@@ -382,7 +382,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     // and would make recursive definitions and parameter handling nasty.
     //
     // Note we parse the definition parameters and value here.  If a
-    // parameterized define is used many, many times, we could cache the
+    // parametrized define is used many, many times, we could cache the
     // parsed result.
     UINFO(4,"defineSubstIn  `"<<refp->name()<<" "<<refp->params()<<endl);
     for (unsigned i=0; i<refp->args().size(); i++) {
@@ -595,7 +595,7 @@ int V3PreProcImp::getRawToken() {
 	    while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
 	    while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
 	    fprintf (stderr, "%d: RAW %s s%d dr%d:  %-10s: %s\n",
-		     fileline()->lineno(), m_off?"of":"on", m_state, m_defRefs.size(),
+		     fileline()->lineno(), m_off?"of":"on", m_state, (int)m_defRefs.size(),
 		     tokenName(tok), buf.c_str());
 	}
     
