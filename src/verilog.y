@@ -382,7 +382,7 @@ class AstSenTree;
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
 %type<nodep>	generateRegion
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
-%type<nodep>	dlyTerm
+%type<nodep>	dlyTerm minTypMax
 %type<fileline> delay
 %type<varp>	sigAndAttr sigId sigIdRange sigList regsig regsigList regSigId
 %type<varp>	netSig netSigList
@@ -696,9 +696,9 @@ delayE:		/* empty */				{ }
 	;
 
 delay:		'#' dlyTerm				{ $$ = $1; } /* ignored */
-	|	'#' '(' dlyInParen ')'			{ $$ = $1; } /* ignored */
-	|	'#' '(' dlyInParen ',' dlyInParen ')'			{ $$ = $1; } /* ignored */
-	|	'#' '(' dlyInParen ',' dlyInParen ',' dlyInParen ')'	{ $$ = $1; } /* ignored */
+	|	'#' '(' minTypMax ')'			{ $$ = $1; } /* ignored */
+	|	'#' '(' minTypMax ',' minTypMax ')'			{ $$ = $1; } /* ignored */
+	|	'#' '(' minTypMax ',' minTypMax ',' minTypMax ')'	{ $$ = $1; } /* ignored */
 	;
 
 dlyTerm:	yaID 					{ $$ = NULL; }
@@ -706,7 +706,9 @@ dlyTerm:	yaID 					{ $$ = NULL; }
 	|	yaFLOATNUM 				{ $$ = NULL; }
 	;
 
-dlyInParen:	dlyTerm					{ } /* ignored */
+// IEEE: mintypmax_expression and constant_mintypmax_expression
+minTypMax:	expr					{ $$ = $1; } /* ignored */
+	|	expr ':' expr ':' expr			{ $$ = $1; } /* ignored */
 	;
 
 sigAndAttr:	sigId sigAttrListE			{ $$ = $1; }

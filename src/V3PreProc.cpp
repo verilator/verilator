@@ -562,7 +562,7 @@ int V3PreProcImp::getRawToken() {
 	if (m_lineAdd) {
 	    m_lineAdd--;
 	    m_rawAtBol = true;
-	    yytext="\n"; yyleng=1;
+	    yytext=(char*)"\n"; yyleng=1;
 	    return (VP_TEXT);
 	}
 	if (m_lineCmt!="") {
