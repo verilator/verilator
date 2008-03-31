@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
-# $Id:$
+# $Id$
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2003 by Wilson Snyder. This program is free software; you can
@@ -10,7 +10,8 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 compile (
 	 fails=>1,
 	 expect=>
-'%Error: t/t_select_bad_msb.v:\d+: Unsupported: MSB < LSB of bit extract.*
+'%Error: t/t_select_bad_msb.v:\d+: Unsupported: MSB < LSB of bit range: 0<22
+%Error: t/t_select_bad_msb.v:\d+: Unsupported: MSB < LSB of bit extract: 1<4
 %Error: Exiting due to.*',
 	 ) if $Last_Self->{v3};
 

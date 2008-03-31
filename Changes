@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix missing test_v in install datadir. [Holger Waechtler]
 
+**** Fix internal error after MSB < LSB error reported to user. [Stefan Thiede]
+
 * Verilator 3.660 2008/03/23
 
 ***  Add support for hard-coding VERILATOR_ROOT etc in the executables,

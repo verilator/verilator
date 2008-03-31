@@ -243,15 +243,11 @@ private:
 		while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
 		if (huntbackp->backp()->castVar()
 		    && huntbackp->backp()->castVar()->arraysp()==huntbackp) {
-		    AstNRelinker msbHandle;
-		    AstNRelinker lsbHandle;
-		    msbConstp->unlinkFrBack(&msbHandle);
-		    lsbConstp->unlinkFrBack(&lsbHandle);
-		    msbHandle.relink(lsbConstp);
-		    lsbHandle.relink(msbConstp);
 		} else {
 		    nodep->v3error("Unsupported: MSB < LSB of bit range: "<<msb<<"<"<<lsb);
 		}
+		// Correct it.
+		swap(msbConstp, lsbConstp);
 		int x=msb; msb=lsb; lsb=x;
 	    }
 	    int width = msb-lsb+1;
@@ -275,6 +271,10 @@ private:
 		&& nodep->msbConst() < nodep->lsbConst()) {
 		nodep->v3error("Unsupported: MSB < LSB of bit extract: "
 			       <<nodep->msbConst()<<"<"<<nodep->lsbConst());
+		width = (nodep->lsbConst() - nodep->msbConst() + 1);
+		nodep->width(width,width);
+		nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), 
+							  width));
 		nodep->lsbp()->replaceWith(new AstConst(nodep->lsbp()->fileline(), 0));
 	    }
 	    // We're extracting, so just make sure the expression is at least wide enough.
@@ -720,6 +720,14 @@ private:
     bool fixAutoExtend (AstNode*& nodepr, int expWidth);
     void fixWidthExtend (AstNode* nodep, int expWidth);
     void fixWidthReduce (AstNode* nodep, int expWidth);
+    void swap (AstNode* ap, AstNode* bp) {
+	AstNRelinker aHandle;
+	AstNRelinker bHandle;
+	ap->unlinkFrBack(&aHandle);
+	bp->unlinkFrBack(&bHandle);
+	aHandle.relink(bp);
+	bHandle.relink(ap);
+    }
 
 public:
     // CONSTUCTORS

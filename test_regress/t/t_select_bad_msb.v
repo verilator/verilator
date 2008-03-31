@@ -9,6 +9,7 @@ module t (clk);
 
    reg [43:0] mi;
    reg [3:0]  sel2;
+   reg [0:22] backwd;
 
    always @ (posedge clk) begin
       mi = 44'h123;
