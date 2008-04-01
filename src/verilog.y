@@ -707,8 +707,8 @@ dlyTerm:	yaID 					{ $$ = NULL; }
 	;
 
 // IEEE: mintypmax_expression and constant_mintypmax_expression
-minTypMax:	expr					{ $$ = $1; } /* ignored */
-	|	expr ':' expr ':' expr			{ $$ = $1; } /* ignored */
+minTypMax:	dlyTerm					{ $$ = $1; } /* ignored */
+	|	dlyTerm ':' dlyTerm ':' dlyTerm		{ $$ = $1; } /* ignored */
 	;
 
 sigAndAttr:	sigId sigAttrListE			{ $$ = $1; }
@@ -1124,14 +1124,14 @@ commaEListE:	/* empty */				{ $$ = NULL; }
 //************************************************
 // Gate declarations
 
-gateDecl: 	yBUF  gateBufList ';'			{ $$ = $2; }
-	|	yNOT  gateNotList ';'			{ $$ = $2; }
-	|	yAND  gateAndList ';'			{ $$ = $2; }
-	|	yNAND gateNandList ';'			{ $$ = $2; }
-	|	yOR   gateOrList ';'			{ $$ = $2; }
-	|	yNOR  gateNorList ';'			{ $$ = $2; }
-	|	yXOR  gateXorList ';'			{ $$ = $2; }
-	|	yXNOR gateXnorList ';'			{ $$ = $2; }
+gateDecl: 	yBUF  delayE gateBufList ';'		{ $$ = $3; }
+	|	yNOT  delayE gateNotList ';'		{ $$ = $3; }
+	|	yAND  delayE gateAndList ';'		{ $$ = $3; }
+	|	yNAND delayE gateNandList ';'		{ $$ = $3; }
+	|	yOR   delayE gateOrList ';'		{ $$ = $3; }
+	|	yNOR  delayE gateNorList ';'		{ $$ = $3; }
+	|	yXOR  delayE gateXorList ';'		{ $$ = $3; }
+	|	yXNOR delayE gateXnorList ';'		{ $$ = $3; }
 	;
 
 gateBufList:	gateBuf 				{ $$ = $1; }

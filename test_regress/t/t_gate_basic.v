@@ -20,8 +20,8 @@ module t (/*AUTOARG*/
 
    // verilator lint_off IMPLICIT
    not   NT0 (nt0, a[0]);
-   and   AN0 (an0, a[0], b[0]);
-   nand  ND0 (nd0, a[0], b[0], b[1]);
+   and   #1       AN0 (an0, a[0], b[0]);
+   nand  #(2,3,4) ND0 (nd0, a[0], b[0], b[1]);
    or    OR0 (or0, a[0], b[0]);
    nor   NR0 (nr0, a[0], b[0], b[2]);
    xor       (xo0, a[0], b[0]);

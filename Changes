@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --top-module option to select between multiple tops. [Stefan Thiede]
 
+**** Ignore delays attached to gate UDPs.  [Stefan Thiede]
+
 **** Fix SystemVerilog parameterized defines with `` expansion,
      and fix extra whitespace inserted on substitution.  [Vladimir Matveyenko]
 
