@@ -698,8 +698,10 @@ V3Number& V3Number::opXnor (const V3Number& lhs, const V3Number& rhs) {
 
 V3Number& V3Number::opConcat (const V3Number& lhs, const V3Number& rhs) {
     setZero();
-    if (!lhs.sized()) m_fileline->v3error("Unsized constants not allowed in concatenations: "<<lhs);
-    if (!rhs.sized()) m_fileline->v3error("Unsized constants not allowed in concatenations: "<<rhs);
+    // See also error in V3Width
+    if (!lhs.sized() || !rhs.sized()) {
+	m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in concatenations.");
+    }
     int obit = 0;
     for(int bit=0; bit<rhs.width(); bit++) {
 	setBit(obit,rhs.bitIs(bit));
@@ -714,7 +716,8 @@ V3Number& V3Number::opConcat (const V3Number& lhs, const V3Number& rhs) {
 
 V3Number& V3Number::opRepl (const V3Number& lhs, const V3Number& rhs) {	// rhs is # of times to replicate
     // Hopefully the using routine has a error check too.
-    if (!lhs.sized()) m_fileline->v3error("Unsized constants not allowed in concatenations: "<<lhs);
+    // See also error in V3Width
+    if (!lhs.sized()) m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in replications.");
     return opRepl(lhs, rhs.asInt());
 }
 

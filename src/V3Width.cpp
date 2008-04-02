@@ -201,7 +201,10 @@ private:
 			 nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin());
 	}
 	if (vup->c()->final()) {
-	    if (!nodep->widthSized()) nodep->v3error("Concat argument must have specific size. (No unsized numbers/parameters).");
+	    if (!nodep->widthSized()) {
+		// See also error in V3Number
+		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in concatenations.");
+	    }
 	}
     }
     virtual void visit(AstReplicate* nodep, AstNUser* vup) {
@@ -217,7 +220,10 @@ private:
 			 (nodep->lhsp()->widthMin() * times));
 	}
 	if (vup->c()->final()) {
-	    if (!nodep->widthSized()) nodep->v3error("Replication expression must have specific size.");
+	    if (!nodep->widthSized()) {
+		// See also error in V3Number
+		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in replications.");
+	    }
 	}
     }
     virtual void visit(AstRange* nodep, AstNUser* vup) {

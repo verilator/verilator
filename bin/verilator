@@ -1893,6 +1893,24 @@ The best fix, which clarifies intent and will also make all tools happy is:
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
+=item WIDTHCONCAT
+
+Warns that based on width rules of Verilog, a concatenate or replication
+has a undeterminate width.  In most cases this violates the Verilog rule
+that widths inside concatenates and replicates must be sized, and should be
+fixed in the code.
+
+    wire [63:0] concat = {1,2};
+
+An example where this is technically legal (though still bad form) is:
+
+    parameter PAR = 1;
+    wire [63:0] concat = {PAR,PAR};
+
+The correct fix is to either size the 1 ("32'h1"), or add the width to the
+parameter definition ("parameter [31:0]"), or add the width to the
+parameter usage ("{PAR[31:0],PAR[31:0]}".
+
 =back
 
 The following describes the less obvious errors:

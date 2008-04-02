@@ -12,6 +12,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --top-module option to select between multiple tops. [Stefan Thiede]
 
+***  Unsized concatenates now give WIDTHCONCAT warnings. [Jonathan Kimmitt]
+     Previously they threw fatal errors, which in most cases is correct
+     according to spec, but can be incorrect in presence of parameter values.
+
 **** Ignore delays attached to gate UDPs.  [Stefan Thiede]
 
 **** Fix SystemVerilog parameterized defines with `` expansion,

@@ -61,6 +61,7 @@ public:
 	UNUSED,		// No receivers
 	VARHIDDEN,	// Hiding variable
 	WIDTH,		// Width mismatch
+	WIDTHCONCAT,	// Unsized numbers/parameters in concatenations
 	MAX
 	// ***Add new elements below also***
     };
@@ -81,7 +82,7 @@ public:
 	    "COMBDLY", "STMTDLY", "GENCLK", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
-	    "VARHIDDEN", "WIDTH",
+	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"
 	};
 	return names[m_e];
