@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.66***
+* Verilator 3.661 2008/04/04
 
 ***  The --enable-defenv configure option added in 3.660 is now the default.
      This hard-codes a default for VERILATOR_ROOT etc in the executables.
