@@ -530,8 +530,8 @@ regsigList:	regsig  				{ $$ = $1; }
 	|	regsigList ',' regsig		       	{ $$ = $1;$1->addNext($3); }
 	;
 
-portV2kDecl:	varRESET varInput  v2kNetDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varInout  v2kNetDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
+portV2kDecl:	varRESET varInput  v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
+	|	varRESET varInout  v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
 	|	varRESET varOutput v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
 	;
 
@@ -581,11 +581,8 @@ signingE:	/*empty*/ 				{ }
 	|	yUNSIGNED				{ VARSIGNED(false); }
 	;
 
-v2kNetDeclE:	/*empty*/ 				{ }
+v2kVarDeclE:	/*empty*/ 				{ }
 	|	varNet 					{ }
-	;
-
-v2kVarDeclE:	v2kNetDeclE 				{ }
 	|	varReg 					{ }
 	;
 
