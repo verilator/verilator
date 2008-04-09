@@ -210,7 +210,11 @@ private:
     void readModNames() {
 	// Look at all modules, and store pointers to all module names
 	for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
-	    if (!m_mods.findIdName(nodep->name())) {
+	    AstNode* foundp = m_mods.findIdName(nodep->name());
+	    if (foundp && foundp != nodep) {
+		nodep->v3error("Duplicate declaration of module: "<<nodep->prettyName());
+		foundp->v3error("... Location of original declaration");
+	    } else if (!foundp) {
 		m_mods.insert(nodep->name(), nodep);
 	    }
 	}
