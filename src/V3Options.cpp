@@ -101,9 +101,9 @@ void V3Options::addLibraryFile(const string& filename) {
     }
 }
 void V3Options::addVFile(const string& filename) {
-    if (m_vFiles.find(filename) == m_vFiles.end()) {
-	m_vFiles.insert(filename);
-    }
+    // We use a list for v files, because it's legal to have includes
+    // in a specific order and multiple of them.
+    m_vFiles.push_back(filename);
 }
 void V3Options::addArg(const string& arg) {
     m_impp->m_allArgs.push_back(arg);

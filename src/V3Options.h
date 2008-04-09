@@ -25,6 +25,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include <string>
+#include <vector>
 #include <set>
 
 #include "V3Global.h"
@@ -70,6 +71,7 @@ public:
 class V3OptionsImp;
 class FileLine;
 
+typedef vector<string> V3StringList;
 typedef set<string> V3StringSet;
 
 class V3Options {
@@ -78,7 +80,7 @@ class V3Options {
 
     V3StringSet	m_cppFiles;	// argument: C++ files to link against
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
-    V3StringSet	m_vFiles;	// argument: Verilog files to read
+    V3StringList m_vFiles;	// argument: Verilog files to read
 
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
@@ -217,7 +219,7 @@ class V3Options {
     string xAssign() const { return m_xAssign; }
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
-    const V3StringSet& vFiles() const { return m_vFiles; }
+    const V3StringList& vFiles() const { return m_vFiles; }
     const V3LangCode& language() const { return m_language; }
 
     // ACCESSORS (optimization options)

@@ -91,7 +91,7 @@ V3Global v3Global;
 void V3Global::readFiles() {
     V3Read reader (m_rootp);
     // Read top module
-    for (V3StringSet::iterator it = v3Global.opt.vFiles().begin();
+    for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
 	 it != v3Global.opt.vFiles().end(); ++it) {
 	string filename = *it;
 	reader.readFile(new FileLine("CommandLine",0), filename, false);
@@ -100,7 +100,7 @@ void V3Global::readFiles() {
     // Read libraries
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
-    for (V3StringSet::iterator it = v3Global.opt.libraryFiles().begin();
+    for (V3StringSet::const_iterator it = v3Global.opt.libraryFiles().begin();
 	 it != v3Global.opt.libraryFiles().end(); ++it) {
 	string filename = *it;
 	reader.readFile(new FileLine("CommandLine",0), filename, true);
