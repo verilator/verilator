@@ -1,4 +1,4 @@
-// $Id:$ -*- Verilog -*-
+// $Id$ -*- Verilog -*-
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -10,7 +10,8 @@ module t_inst_v2k_sub
    output reg [7:0] osizedreg,
    output wire oonewire /*verilator public*/,
    input [7:0] isizedwire,
-   input wire ionewire
+   input wire ionewire,
+   output reg [1:0] tied = 2'b10
    );
 
    assign oonewire = ionewire;

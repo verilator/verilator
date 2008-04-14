@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add error message when modules have duplicate names. [Stefan Thiede]
 
+**** Fix "output reg name=expr;" syntax error.  [Martin Scharrer]
+
 **** Fix multiple .v files being read in random order. [Stefan Thiede]
 
 * Verilator 3.661 2008/04/04

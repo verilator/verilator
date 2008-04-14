@@ -23,8 +23,10 @@ module t (/*AUTOARG*/
 `endif
 
    wire [7:0]		osizedreg;		// From sub of t_inst_v2k_sub.v
+   wire [1:0]		tied;
+   wire [3:0]		tied_also;
 
-   hello hsub;
+   hello hsub (.tied_also);
 
    t_inst_v2k_sub sub
      (
@@ -33,6 +35,7 @@ module t (/*AUTOARG*/
       // verilator lint_off IMPLICIT
       .oonewire				(oonewire),
       // verilator lint_on IMPLICIT
+      .tied				(tied[1:0]),
       // Inputs
       .isizedwire			(isizedwire[7:0]),
       .ionewire				(ionewire));
@@ -49,6 +52,8 @@ module t (/*AUTOARG*/
 	    if (high != 2'b11) $stop;
 	    if (oonewire !== 1'b1) $stop;
 	    if (isizedwire !== 8'd8) $stop;
+	    if (tied != 2'b10) $stop;
+	    if (tied_also != 4'b1010) $stop;
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end
@@ -57,8 +62,10 @@ module t (/*AUTOARG*/
 
 endmodule
 
-module hello;
+module hello(tied_also);
    initial $write ("Hello\n");
+   output reg [3:0] tied_also = 4'b1010;
+
 endmodule
 
 // Local Variables:

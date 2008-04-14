@@ -376,7 +376,7 @@ class AstSenTree;
 //	Trailing E indicates this type may have empty match
 %type<modulep>	modHdr
 %type<nodep>	modPortsE portList port
-%type<nodep>	portV2kArgs portV2kList portV2kSecond portV2kSig
+%type<nodep>	portV2kArgs portV2kList portV2kSecond portV2kInit portV2kSig
 %type<nodep>	portV2kDecl portDecl varDecl
 %type<nodep>	modParArgs modParSecond modParDecl modParList modParE
 %type<nodep>	modItem modItemList modItemListE modOrGenItem
@@ -384,7 +384,7 @@ class AstSenTree;
 %type<nodep>	genItem genItemList genItemBegin genItemBlock genTopBlock genCaseListE genCaseList
 %type<nodep>	dlyTerm minTypMax
 %type<fileline> delay
-%type<varp>	sigAndAttr sigId sigIdRange sigList regsig regsigList regSigId
+%type<varp>	sigAndAttr sigId sigIdRange regsig regsigList regSigId
 %type<varp>	netSig netSigList
 %type<rangep>	rangeListE regrangeE anyrange rangeList delayrange portRangeE
 %type<varp>	param paramList
@@ -513,7 +513,12 @@ portV2kList:	portV2kSecond				{ $$ = $1; }
 
 // Called only after a comma in a v2k list, to allow parsing "input a,b"
 portV2kSecond:	portV2kDecl				{ $$ = $1; }
-	|	portV2kSig				{ $$ = $1; }
+	|	portV2kInit				{ $$ = $1; }
+	;
+
+portV2kInit:	portV2kSig				{ $$=$1; }
+	|	portV2kSig '=' expr			
+			{ $$=$1; $$->addNext(new AstInitial($2,new AstAssign($2, new AstVarRef($2,V3Parse::s_varAttrp->name(),true), $3))); }
 	;
 
 portV2kSig:	sigAndAttr				{ $$=$1; $$->addNext(new AstPort(CRELINE(),V3Parse::s_pinNum++, V3Parse::s_varAttrp->name())); }
@@ -530,15 +535,11 @@ regsigList:	regsig  				{ $$ = $1; }
 	|	regsigList ',' regsig		       	{ $$ = $1;$1->addNext($3); }
 	;
 
-portV2kDecl:	varRESET varInput  v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varInout  v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
-	|	varRESET varOutput v2kVarDeclE signingE regrangeE portV2kSig	{ $$ = $6; }
+portV2kDecl:	varRESET portDirection v2kVarDeclE signingE regrangeE portV2kInit	{ $$ = $6; }
 	;
 
 // IEEE: port_declaration - plus ';'
-portDecl:	varRESET varInput  v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varInout  v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
-     	|	varRESET varOutput v2kVarDeclE signingE regrangeE  sigList ';'	{ $$ = $6; }
+portDecl:	varRESET portDirection v2kVarDeclE signingE regrangeE  regsigList ';'	{ $$ = $6; }
 	;
 
 varDecl:	varRESET varReg     signingE regrangeE  regsigList ';'	{ $$ = $5; }
@@ -568,11 +569,12 @@ varGenVar:	yGENVAR					{ VARDECL(GENVAR); }
 varReg:		yREG					{ VARDECL(REG); }
 	|	yINTEGER				{ VARDECL(INTEGER); }
 	;
-varInput:	yINPUT					{ VARIO(INPUT); }
-	;
-varOutput:	yOUTPUT					{ VARIO(OUTPUT); }
-	;
-varInout:	yINOUT					{ VARIO(INOUT); }
+
+//IEEE: port_direction
+portDirection:	yINPUT					{ VARIO(INPUT); }
+	|	yOUTPUT					{ VARIO(OUTPUT); }
+	|	yINOUT					{ VARIO(INOUT); }
+//	|	yREF					{ VARIO(REF); }
 	;
 
 // IEEE: signing - plus empty
@@ -729,10 +731,6 @@ regSigId:	yaID rangeListE				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2);
 	;
 
 sigId:		yaID					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
-	;
-
-sigList:	sigAndAttr				{ $$ = $1; }
-	|	sigList ',' sigAndAttr			{ $$ = $1; $1->addNext($3); }
 	;
 
 regsig:		regSigId sigAttrListE			{}
