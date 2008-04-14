@@ -12,13 +12,21 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   reg [31:0] a, b, c;
+   reg [31:0] a, b, c, d, e;
 
    always @ (*) begin   // Test Verilog 2001 (*)
       // verilator lint_off COMBDLY
       c <= a | b;
       // verilator lint_on COMBDLY
    end
+
+   always @ (posedge (clk)) begin // always bug 2008/4/18
+      d <= a | b;
+   end
+   always @ ((d)) begin // always bug 2008/4/18
+      e = d;
+   end
+   //always @ ((posedge b) or (a or b)) begin // note both illegal
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
@@ -29,6 +37,9 @@ module t (/*AUTOARG*/
 	 end
 	 if (cyc==2) begin
 	    if (c != 32'hfeedface) $stop;
+	 end
+	 if (cyc==3) begin
+	    if (e != 32'hfeedface) $stop;
 	 end
 	 if (cyc==7) begin
 	    $write("*-* All Finished *-*\n");

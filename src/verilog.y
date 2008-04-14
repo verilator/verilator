@@ -851,6 +851,7 @@ senList:	senitem					{ $$ = $1; }
 
 senitem:	senitemEdge				{ $$ = $1; }
 	|	senitemVar				{ $$ = $1; }
+	|	'(' senitemVar ')'			{ $$ = $2; }
 	;
 
 senitemVar:	varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
@@ -858,6 +859,8 @@ senitemVar:	varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE
 
 senitemEdge:	yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
 	|	yNEGEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
+	|	yPOSEDGE '(' varRefDotBit ')'		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$3); }
+	|	yNEGEDGE '(' varRefDotBit ')'		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$3); }
 	;
 
 //************************************************
