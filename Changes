@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add error message when modules have duplicate names. [Stefan Thiede]
 
+**** Allow defines terminated in EOF, though against spec. [Stefan Thiede]
+
 **** Fix "always @ ((a) or (b))" syntax error. [by Niranjan Prabhu]
 
 **** Fix "output reg name=expr;" syntax error. [Martin Scharrer]
