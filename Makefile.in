@@ -186,6 +186,8 @@ verilator.html: bin/verilator
 verilator.pdf: bin/verilator $(DISTCONFIG)
 	pod2latex --full --out verilator.tex bin/verilator
 	cat < verilator.tex \
+	   | sed 's/\\begin{document}/\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n\\begin{document}/' \
+	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage{fancyhdr} \\pagestyle{fancy}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.com}\n\\begin{document}/' \
@@ -334,7 +336,7 @@ DISTCONFIG = src/config_build.h.in
 
 DISTTITLE := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
 DISTNAME := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
-DISTDATEPRE := $(shell sed -e '/DTVERSION/!d' -e 's/.*\([0-3]\?[0-9].[0-3]\?[0-9].[1-2][0-9][0-9][0-9]\).*/\1/' -e q $(DISTCONFIG))
+DISTDATEPRE := $(shell sed -e '/DTVERSION/!d' -e 's/.*\([1-2][0-9][0-9][0-9].[0-9]*[0-9].[0-9]*[0-9]\).*/\1/' -e q $(DISTCONFIG))
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 DISTDATE := $(subst /,-,$(DISTDATEPRE))
