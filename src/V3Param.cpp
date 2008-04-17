@@ -254,6 +254,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		if (!constp) {
 		    //if (debug()) pinp->dumpTree(cout,"error:");
 		    pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
+		    pinp->exprp()->replaceWith(new AstConst(pinp->fileline(), V3Number(pinp->fileline(), pinp->width(), 0)));
 		} else {
 		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+constp->num().ascii(false);
 		}
