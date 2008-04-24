@@ -313,6 +313,7 @@ escid	\\[^ \t\f\r\n]+
 <S05,PSL>{
   /*     System Tasks */
   "$bits"		{yylval.fileline = CRELINE(); return yD_BITS;}
+  "$clog2"		{yylval.fileline = CRELINE(); return yD_CLOG2;}
   "$countones"		{yylval.fileline = CRELINE(); return yD_COUNTONES;}
   "$error"		{yylval.fileline = CRELINE(); return yD_ERROR;}
   "$fatal"		{yylval.fileline = CRELINE(); return yD_FATAL;}
@@ -431,7 +432,7 @@ escid	\\[^ \t\f\r\n]+
 
   /* Default PLI rule */
 <V95,V01,V05,S05,PSL>{
-  "$"[a-zA-Z_$]+	{yyerrorf("Unsupported or unknown PLI call: %s",yytext);}
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{yyerrorf("Unsupported or unknown PLI call: %s",yytext);}
 }
 
   /************************************************************************/

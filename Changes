@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66***
 
+***  Add Verilog 2005 $clog2() function.
+
 **** Add error message when modules have duplicate names. [Stefan Thiede]
 
 **** Allow defines terminated in EOF, though against spec. [Stefan Thiede]

@@ -259,6 +259,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 // Global
 
 int V3Number::log2b(uint32_t num) {
+    // See also opCLog2
     for (int bit=31; bit>0; bit--) if (num & (VL_ULL(1)<<bit)) return(bit);
     return(0);
 }
@@ -620,6 +621,18 @@ V3Number& V3Number::opOneHot (const V3Number& lhs) {
 V3Number& V3Number::opOneHot0 (const V3Number& lhs) {
     if (lhs.isFourState()) return setAllBitsX();
     return setSingleBits(lhs.countOnes()<=1);
+}
+V3Number& V3Number::opCLog2 (const V3Number& lhs) {
+    if (lhs.isFourState()) return setAllBitsX();
+    int bit;
+    for (bit=lhs.width()-1; bit>=0; bit--) {
+	if (lhs.bitIs1(bit)) {
+	    setLong(bit+1);
+	    return *this;
+	}
+    }
+    setZero();
+    return *this;
 }
 
 V3Number& V3Number::opLogNot (const V3Number& lhs) {

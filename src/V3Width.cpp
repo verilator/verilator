@@ -378,6 +378,12 @@ private:
 	// Just let all arguments seek their natural sizes
 	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
+    virtual void visit(AstCLog2* nodep, AstNUser* vup) {
+	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->width(32,32);
+	}
+    }
     virtual void visit(AstCountOnes* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

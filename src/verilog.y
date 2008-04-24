@@ -220,6 +220,7 @@ class AstSenTree;
 
 %token<fileline>	yD_BITS		"$bits"
 %token<fileline>	yD_C		"$c"
+%token<fileline>	yD_CLOG2	"$clog2"
 %token<fileline>	yD_COUNTONES	"$countones"
 %token<fileline>	yD_DISPLAY	"$display"
 %token<fileline>	yD_ERROR	"$error"
@@ -1072,6 +1073,7 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
+	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }

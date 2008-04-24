@@ -1971,6 +1971,20 @@ struct AstUnsigned : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
     virtual int instrCount()	const { return 0; }
 };
+struct AstCLog2 : public AstNodeUniop {
+    AstCLog2(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
+    virtual ~AstCLog2() {}
+    virtual AstType type() const { return AstType::CLOG2;}
+    virtual AstNode* clone() { return new AstCLog2(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
+    virtual string emitVerilog() { return "%k$clog2(%l)"; }
+    virtual bool emitWordForm() { return true; }
+    virtual string emitOperator() { return "VL_CLOG2"; }
+    virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*16; }
+};
 struct AstCountOnes : public AstNodeUniop {
     // Number of bits set in vector
     AstCountOnes(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}

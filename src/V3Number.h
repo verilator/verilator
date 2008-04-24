@@ -165,6 +165,7 @@ public:
     V3Number& opIsUnknown(const V3Number& lhs);
     V3Number& opOneHot	(const V3Number& lhs);
     V3Number& opOneHot0	(const V3Number& lhs);
+    V3Number& opCLog2	(const V3Number& lhs);
     V3Number& opClean	(const V3Number& lhs, uint32_t bits);
     V3Number& opConcat	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opRepl	(const V3Number& lhs, const V3Number& rhs);

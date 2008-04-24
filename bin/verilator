@@ -1003,6 +1003,8 @@ declarations inside port lists.
 Verilator supports the `begin_keywords and `end_keywords compiler
 directives.
 
+Verilator supports $clog2.
+
 Verilator partially supports the uwire keyword.
 
 =head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT

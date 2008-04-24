@@ -495,6 +495,38 @@ static inline IData VL_REDXOR_64(QData r) {
     return r;
 }
 
+static inline IData VL_CLOG2_I(IData lhs) {
+    // Perhaps can do better using fls GCC4 builtins
+    int n=1;
+    IData chk;
+    if (!lhs) return 0;
+    chk = lhs >> VL_UL(16); if (chk) { n += 16; lhs = chk; }
+    chk = lhs >> VL_UL(8);  if (chk) { n += 8; lhs = chk; }
+    chk = lhs >> VL_UL(4);  if (chk) { n += 4; lhs = chk; }
+    chk = lhs >> VL_UL(2);  if (chk) { n += 2; lhs = chk; }
+    chk = lhs >> VL_UL(1);  if (chk) { n += 1; lhs = chk; }
+    return n;
+}
+static inline IData VL_CLOG2_Q(QData lhs) {
+    // Perhaps can do better using fls GCC4 builtins
+    int n=1;
+    QData chk;
+    if (!lhs) return 0;
+    chk = lhs >> VL_ULL(32); if (chk) { n += 32; lhs = chk; }
+    chk = lhs >> VL_ULL(16); if (chk) { n += 16; lhs = chk; }
+    chk = lhs >> VL_ULL(8);  if (chk) { n += 8; lhs = chk; }
+    chk = lhs >> VL_ULL(4);  if (chk) { n += 4; lhs = chk; }
+    chk = lhs >> VL_ULL(2);  if (chk) { n += 2; lhs = chk; }
+    chk = lhs >> VL_ULL(1);  if (chk) { n += 1; lhs = chk; }
+    return n;
+}
+static inline IData VL_CLOG2_W(int words, WDataInP lwp) {
+    for (int i=words-1; i>=0; i--) {
+	if (lwp[i]) return VL_CLOG2_I(lwp[i])+i*VL_WORDSIZE;
+    }
+    return 0;
+}
+
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 static inline IData VL_COUNTONES_I(IData lhs) {
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);

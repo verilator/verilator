@@ -70,6 +70,7 @@ private:
     virtual void visit(AstSel* nodep, AstNUser*) {		signed_Ou_Ix(nodep); } //See backRequiresUnsigned
     virtual void visit(AstAttrOf* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstCountOnes* nodep, AstNUser*) {	signed_Ou_Ix(nodep); }
+    virtual void visit(AstCLog2* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstPslBool* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstTime* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     //
