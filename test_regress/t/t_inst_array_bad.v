@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -28,7 +28,3 @@ endmodule
 module sub (input [7:0] allbits, input onebit, output bitout);
    wire bitout = onebit ^ (^ allbits);
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -67,7 +67,3 @@ module wide (
    assign zzz = xxx+ { {40{1'b0}},yyy };
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

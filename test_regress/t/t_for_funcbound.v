@@ -75,7 +75,3 @@ module strings;
       end
    endfunction
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

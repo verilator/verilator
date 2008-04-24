@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -17,7 +17,3 @@ module t_order_b (/*AUTOARG*/
    wire [7:0] o_subfrom_clk_lev2 = m_from_clk_lev1_r;
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

@@ -76,7 +76,3 @@ module t (/*AUTOARG*/
 
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

@@ -67,7 +67,3 @@ module hello(tied_also);
    output reg [3:0] tied_also = 4'b1010;
 
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

@@ -53,7 +53,3 @@ module sub (input [7:0] narrow, input [63:0] quad, output [31:0] longout, output
    wire [63:0] quadout = quad + 64'd1;
 `endif
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

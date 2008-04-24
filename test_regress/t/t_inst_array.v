@@ -58,7 +58,3 @@ module sub (input [7:0] allbits, input [1:0] onebit, output bitout);
    `INLINE_MODULE
    wire bitout = (^ onebit) ^ (^ allbits);
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

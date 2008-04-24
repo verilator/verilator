@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -85,7 +85,3 @@ module regfile (
    assign rd_guardsok[1] = rd_data[0];
 
 endmodule // regfile
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:

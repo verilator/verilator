@@ -1,4 +1,4 @@
-// $Id:$
+// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -103,7 +103,3 @@ module l5 (input [7:0] a, output [7:0] z);
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
    wire [7:0] z `PUBLIC; assign z = a;
 endmodule
-
-// Local Variables:
-// compile-command: "./vlint __FILE__"
-// End:
