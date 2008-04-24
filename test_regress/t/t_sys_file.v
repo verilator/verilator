@@ -23,7 +23,7 @@ module t;
 
       $fclose(file);
 `ifdef verilator
-      if (file != 0) $stop;
+      if (file != 0) $stop(1);  // Also test arguments to stop
       $fwrite(file, "Never printed, file closed\n");
 `endif
 
@@ -39,6 +39,6 @@ module t;
       end
 
       $write("*-* All Finished *-*\n");
-      $finish;
+      $finish(0);  // Test arguments to finish
    end
 endmodule

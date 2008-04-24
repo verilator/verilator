@@ -1548,6 +1548,10 @@ argument (as with C's printf), you cannot simply list variables standalone.
 The sized display functions are rarely used and so not supported.  Replace
 them with a $write with the appropriate format specifier.
 
+=item $finish, $stop
+
+The rarely used optional exit code to finish and stop is ignored.
+
 =item $fopen, $fclose, $fdisplay, $fwrite
 
 File descriptors passed to the file PLI calls must be file descriptors, not
