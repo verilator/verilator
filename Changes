@@ -7,11 +7,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add Verilog 2005 $clog2() function.
 
-**** Add error message when modules have duplicate names. [Stefan Thiede]
+***  Add error message when modules have duplicate names. [Stefan Thiede]
 
-**** Allow defines terminated in EOF, though against spec. [Stefan Thiede]
+***  Allow defines terminated in EOF, though against spec. [Stefan Thiede]
 
-**** Support optional argument to $finish and $stop.  [by Stefan Thiede]
+***  Support optional argument to $finish and $stop.  [by Stefan Thiede]
+
+***  Ignore old standard(ish) Verilog-XL defines.  [by Stefan Thiede]
 
 **** Fix "always @ ((a) or (b))" syntax error. [by Niranjan Prabhu]
 

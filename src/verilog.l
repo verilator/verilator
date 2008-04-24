@@ -714,22 +714,41 @@ escid	\\[^ \t\f\r\n]+
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
 <V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+  "`accelerate"				{ } // Verilog-XL compatibility
+  "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ V3Read::inCellDefine(true); }
+  "`default_decay_time"{ws}+[^\n]*	{ } // Verilog spec - delays only
+  "`delay_mode_distributed"		{ } // Verilog spec - delays only
+  "`delay_mode_path"			{ } // Verilog spec - delays only
+  "`delay_mode_unit"			{ } // Verilog spec - delays only
+  "`delay_mode_zero"			{ } // Verilog spec - delays only
+  "`disable_portfaults"			{ } // Verilog-XL compatibility
+  "`enable_portfaults"			{ } // Verilog-XL compatibility
   "`endcelldefine"			{ V3Read::inCellDefine(false); }
   "`endprotect"				{ }
+  "`expand_vectornets"			{ } // Verilog-XL compatibility
   "`inline"				{ }
   "`line"{ws}+[^\n]*\n			{ V3Read::ppline(yytext); }
+  "`noaccelerate"			{ } // Verilog-XL compatibility
+  "`noexpand_vectornets"		{ } // Verilog-XL compatibility
+  "`noremove_gatenames"			{ } // Verilog-XL compatibility
+  "`noremove_netnames"			{ } // Verilog-XL compatibility
+  "`nosuppress_faults"			{ } // Verilog-XL compatibility
+  "`nounconnected_drive"		{ } // Verilog-XL compatibility
   "`portcoerce"				{ }
   "`protect"				{ }
   "`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
+  "`remove_gatenames"			{ } // Verilog-XL compatibility
+  "`remove_netnames"			{ } // Verilog-XL compatibility
   "`resetall"				{ }
+  "`suppress_faults"			{ } // Verilog-XL compatibility
   "`systemc_ctor"			{ BEGIN SYSCCTOR; }
   "`systemc_dtor"			{ BEGIN SYSCDTOR; }
   "`systemc_header"			{ BEGIN SYSCHDR; }
   "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
   "`systemc_implementation"		{ BEGIN SYSCIMP; }
   "`systemc_interface"			{ BEGIN SYSCINT; }
-  "`timescale"{ws}+[^\n]*		{}
+  "`timescale"{ws}+[^\n]*		{ } // Verilog spec - not supported
   "`verilog"				{ BEGIN V3Read::lastVerilogState(); }
 
   "`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START);}
