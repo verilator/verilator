@@ -1,0 +1,10 @@
+
++define+GOT_DEF1
+
+  // -DNON_DEF
+  /*
+   +define+NON_DEF
+   */
+
++define+GOT_DEF2=1
+

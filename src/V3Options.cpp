@@ -729,16 +729,31 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 
     string whole_file;
     string::size_type pos;
+    bool inCmt = false;
     while (!ifp->eof()) {
 	string line;
 	getline(*ifp, line);
 	// Strip simple comments
-	if ((pos=line.find("//")) != string::npos) {
-	    line.erase(pos);
+	string oline;
+	for (string::const_iterator pos = line.begin(); pos != line.end(); pos++) {
+	    if (inCmt) {
+		if (*pos=='*' && *(pos+1)=='/') {
+		    inCmt = false;
+		    pos++;
+		}	
+	    } else if (*pos=='/' && *(pos+1)=='/') {
+		break;  // Ignore to EOL
+	    } else if (*pos=='/' && *(pos+1)=='*') {
+		inCmt = true;
+		pos++;
+	    } else {
+		oline += *pos;
+	    }
 	}
-	whole_file += line + " ";
+	whole_file += oline + " ";
     }
     whole_file += "\n";  // So string match below is simplified
+    if (inCmt) fl->v3error("Unterminated /* comment inside -f file.");
 
     fl = new FileLine(filename, 0);
 
