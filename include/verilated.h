@@ -460,39 +460,55 @@ static inline IData VL_REDOR_W(int words, WDataInP lwp) {
 }
 
 // EMIT_RULE: VL_REDXOR:  oclean=dirty; obits=1;
-static inline IData VL_REDXOR_W(int words, WDataInP lwp) {
-    IData r = lwp[0];
-    for (int i=1; i < words; i++) r ^= lwp[i];
-    r=(r^(r>>1));
-    r=(r^(r>>2));
-    r=(r^(r>>4));
-    r=(r^(r>>8));
-    r=(r^(r>>16));
-    return r;
-}
 static inline IData VL_REDXOR_2(IData r) {
+    // Experiments show VL_REDXOR_2 is faster than __builtin_parityl
     r=(r^(r>>1));
     return r;
 }
 static inline IData VL_REDXOR_4(IData r) {
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return __builtin_parityl(r);
+#else
     r=(r^(r>>1)); r=(r^(r>>2));
     return r;
+#endif
 }
 static inline IData VL_REDXOR_8(IData r) {
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return __builtin_parityl(r);
+#else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4));
     return r;
+#endif
 }
 static inline IData VL_REDXOR_16(IData r) {
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return __builtin_parityl(r);
+#else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4)); r=(r^(r>>8));
     return r;
+#endif
 }
 static inline IData VL_REDXOR_32(IData r) {
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return __builtin_parityl(r);
+#else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4)); r=(r^(r>>8)); r=(r^(r>>16));
     return r;
+#endif
 }
 static inline IData VL_REDXOR_64(QData r) {
+#if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
+    return __builtin_parityll(r);
+#else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4)); r=(r^(r>>8)); r=(r^(r>>16)); r=(r^(r>>32));
     return r;
+#endif
+}
+static inline IData VL_REDXOR_W(int words, WDataInP lwp) {
+    IData r = lwp[0];
+    for (int i=1; i < words; i++) r ^= lwp[i];
+    return VL_REDXOR_32(r);
 }
 
 static inline IData VL_CLOG2_I(IData lhs) {
@@ -529,6 +545,7 @@ static inline IData VL_CLOG2_W(int words, WDataInP lwp) {
 
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 static inline IData VL_COUNTONES_I(IData lhs) {
+    // This is faster than __builtin_popcountl
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r>>3)) & 030707070707;
     r = (r + (r>>6));
