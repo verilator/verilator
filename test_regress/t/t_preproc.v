@@ -95,6 +95,19 @@ assign c = tmp_``c ;
 `ADD_UP(d1,o1)   // expansion is OK
 `ADD_UP( d2 , o2 )  // expansion is bad
 
+ `define check(mod, width, flopname, gate, path) \
+   generate for (i=0; i<(width); i=i+1) begin \
+      psl cover {  path.d[i] & ~path.q[i] & !path.cond & (gate)} report `"fondNoRise: mod.flopname`"; \
+      psl cover { ~path.d[i] &  path.q[i] & !path.cond & (gate)} report `"fondNoFall: mod.flopname`"; \
+   end endgenerate
+
+// parameterized macro with arguments that are macros
+ `define MK		m5k.f
+ `define MF		`MK .ctl
+ `define CK_fr	(`MF.alive & `MF.alive_m1)
+
+   `check(m5kc_fcl, 3, _ctl_mvldx_m1, `CK_fr,	`MF._ctl_mvldx_m1)	// ignorecmt
+
 //===========================================================================
 // Ifdef
 

@@ -141,6 +141,9 @@ psl		[p]sl
 <ARGMODE>{crnl}		{ linenoInc(); yytext="\n"; yyleng=1; return(VP_WHITE); }
 <ARGMODE>{quote}	{ yy_push_state(STRMODE); yymore(); }
 <ARGMODE>[(]		{ V3PreLex::s_currentLexp->m_parenLevel++;
+			  // Note paren level 0 means before "(" of starting args
+			  // Level 1 means "," between arguments
+			  // Level 2+ means one argument's internal () 
 			  if (V3PreLex::s_currentLexp->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
@@ -210,10 +213,10 @@ psl		[p]sl
 <INITIAL,PSLMULM,PSLONEM>.	{ return (VP_TEXT); }
 %%
 
-void V3PreLex::pushStateDefArg() {
+void V3PreLex::pushStateDefArg(int level) {
     // Enter define substitution argument state
     yy_push_state(ARGMODE);
-    m_parenLevel = 0;
+    m_parenLevel = level;
     m_defValue = "";
 }
 

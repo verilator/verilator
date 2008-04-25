@@ -759,7 +759,7 @@ int V3PreProcImp::getToken() {
 	    if (tok==VP_DEFARG && yyleng==1 && yytext[0]==',') {
 		refp->args().push_back(refp->nextarg());
 		m_state = ps_DEFARG;
-		m_lexp->pushStateDefArg();
+		m_lexp->pushStateDefArg(1);
 		refp->nextarg("");
 		goto next_tok;
 	    } else if (tok==VP_DEFARG && yyleng==1 && yytext[0]==')') {
@@ -901,7 +901,7 @@ int V3PreProcImp::getToken() {
 			UINFO(4,"Defref `"<<name<<" => parameterized"<<endl);
 			m_defRefs.push(V3DefineRef(name, params, m_lexp->m_parenLevel));
 			m_state = ps_DEFPAREN;  m_stateFor = tok;
-			m_lexp->pushStateDefArg();
+			m_lexp->pushStateDefArg(0);
 			goto next_tok;
 		    }
 		}
