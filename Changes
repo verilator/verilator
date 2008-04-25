@@ -3,19 +3,22 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.66***
+* Verilator 3.662 2008/04/25
 
 ***  Add Verilog 2005 $clog2() function.
+     This is useful in calculating bus-widths from parameters.
 
-***  Add error message when modules have duplicate names. [Stefan Thiede]
+***  Support /**/ comments in -f option files. [Stefan Thiede]
 
-***  Allow defines terminated in EOF, though against spec. [Stefan Thiede]
+**** Add error message when modules have duplicate names. [Stefan Thiede]
 
-***  Support optional argument to $finish and $stop.  [by Stefan Thiede]
+**** Support defines terminated in EOF, though against spec. [Stefan Thiede]
 
-***  Ignore old standard(ish) Verilog-XL defines.  [by Stefan Thiede]
+**** Support optional argument to $finish and $stop.  [by Stefan Thiede]
 
-***  Allow /**/ comments in -f option files. [Stefan Thiede]
+**** Support ranges on gate primitive instantiations. [Stefan Thiede]
+
+**** Ignore old standard(ish) Verilog-XL defines.  [by Stefan Thiede]
 
 **** Fix "always @ ((a) or (b))" syntax error. [by Niranjan Prabhu]
 
@@ -24,8 +27,6 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Fix multiple .v files being read in random order. [Stefan Thiede]
 
 **** Fix internal error when params get non-constants. [Johan Wouters]
-
-**** Fix ranges on gate primitive instantiations. [Stefan Thiede]
 
 * Verilator 3.661 2008/04/04
 
