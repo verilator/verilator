@@ -300,7 +300,7 @@ configure: configure.ac
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* $(INFOS) faq.html verilator.html configure bin/*
+	rm -f *.info* $(INFOS) faq.html verilator.html configure
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \

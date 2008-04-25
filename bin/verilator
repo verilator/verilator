@@ -161,7 +161,7 @@ code, lints it, and optionally adds coverage and waveform tracing code.
 For C++ and SystemC formats, it outputs .cpp and .h files.  For SystemPerl
 format, it outputs .sp files for the SystemPerl preprocessor, which greatly
 simplifies writing SystemC code and is available at
-L<http://www.veripool.com>.
+L<http://www.veripool.org>.
 
 The files created by Verilator are then compiled with C++.  The user writes
 a little C++ wrapper file, which instantiates the top level module, and
@@ -1691,7 +1691,7 @@ output from a sub-module.)  While legal in Verilog, implicit declarations
 only work for single bit wide signals (not buses), do not allow using a
 signal before it is implicitly declared by a cell, and can lead to dangling
 nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
-Emacs, available from L<http://www.veripool.com/>
+Emacs, available from L<http://www.veripool.org/>
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -2117,7 +2117,7 @@ use GCC 2.95, or GCC 3.4 you'll have faster builds.  Two ways to cheat are
 to compile on parallel machines and avoid compilations altogether.  See the
 --output-split option, and the web for the ccache, distcc and icecream
 packages, and the Make::Cache package available from
-L<http://www.veripool.com/>. Make::Cache will skip GCC runs between
+L<http://www.veripool.org/>. Make::Cache will skip GCC runs between
 identical source builds, even across different users.
 
 =item Why do so many files need to recompile when I add a signal?
@@ -2255,7 +2255,7 @@ Eugene Weber, Leon Wildman, and Mat Zeno.
 
 =head1 DISTRIBUTION
 
-The latest version is available from L<http://www.veripool.com/>.
+The latest version is available from L<http://www.veripool.org/>.
 
 Copyright 2003-2008 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
