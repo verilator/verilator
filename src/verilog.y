@@ -1161,21 +1161,21 @@ gateXnorList:	gateXnor 				{ $$ = $1; }
 	|	gateXnor ',' gateXnor			{ $$ = $1->addNext($3); }
 	;
 
-gateBuf: 	gateIdE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateBuf: 	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
-gateNot:	gateIdE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNot:	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
 	;
-gateAnd:	gateIdE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateAnd:	gateIdE instRangeE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
-gateNand:	gateIdE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNand:	gateIdE instRangeE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
 	;
-gateOr:		gateIdE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateOr:		gateIdE instRangeE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
-gateNor:	gateIdE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateNor:	gateIdE instRangeE '(' varRefDotBit ',' gateOrPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
 	;
-gateXor:	gateIdE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,$5); $$->allowImplicit(true); }
+gateXor:	gateIdE instRangeE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
-gateXnor:	gateIdE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($2,$3,new AstNot($4,$5)); $$->allowImplicit(true); }
+gateXnor:	gateIdE instRangeE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
 	;
 
 gateIdE:	/*empty*/				{}

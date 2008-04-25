@@ -1550,7 +1550,7 @@ them with a $write with the appropriate format specifier.
 
 =item $finish, $stop
 
-The rarely used optional exit code to finish and stop is ignored.
+The rarely used optional parameter to $finish and $stop is ignored.
 
 =item $fopen, $fclose, $fdisplay, $fwrite
 
