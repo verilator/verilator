@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Hash AST trees to find duplicates
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

@@ -45,7 +45,7 @@ Verilator is invoked with parameters similar to GCC or Synopsys's VCS.  It
 reads the specified Verilog code, lints it, and optionally adds coverage
 code.  For C++ format, it outputs .cpp and .h files.  For SystemC format,
 it outputs .sp files for the SystemPerl preprocessor available at
-http://veripool.com.
+http://www.veripool.org.
 
 The resulting files are then compiled with C++.  The user writes a little
 C++ wrapper file, which instantiates the top level module.  This is
@@ -57,7 +57,7 @@ The resulting executable will perform the actual simulation.
 @section Obtaining Distribution
 
 The latest version is available at 
-@uref{http://veripool.com/verilator.htm}
+@uref{http://www.veripool.org/verilator}
 
 Download the latest package from that site, and decompress.
 @samp{gunzip verilator_version.tar.gz ; tar xvf verilator_version.tar}

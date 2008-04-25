@@ -21,7 +21,7 @@
 ///	config_build.h.in, code needed by Verilated code only goes into
 ///	verilated.h, and code needed by both goes here (verilatedos.h).
 ///
-/// Code available from: http://www.veripool.com/verilator
+/// Code available from: http://www.veripool.org/verilator
 ///
 //*************************************************************************
 

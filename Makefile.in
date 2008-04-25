@@ -6,7 +6,7 @@
 # 
 # Author: Wilson Snyder <wsnyder@wsnyder.org>
 # 
-# Code available from: http://www.veripool.com/verilator
+# Code available from: http://www.veripool.org/verilator
 # 
 #*****************************************************************************
 # 
@@ -190,7 +190,7 @@ verilator.pdf: bin/verilator $(DISTCONFIG)
 	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage{fancyhdr} \\pagestyle{fancy}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.com}\n\\begin{document}/' \
+	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\lhead[$(DISTTITLE)]{$(DISTTITLE)}\n\\begin{document}/' \
 	   | sed 's/\\tableofcontents/\\begin{titlepage} \\maketitle \\end{titlepage}\n\\tableofcontents/' \
 	   > verilator2.tex
@@ -261,9 +261,6 @@ install-project-quick:
 endif
 
 ftp: info
-	echo "http://www.veripool.com/verilator3.html"
-	cp verilator.html verilator_man.html
-	ftp_tree --password $(VERIPOOL_PW) --user $(VERIPOOL_USER) verilator_man.html webftp.veripool.com:/web
 
 install-msg:
 	@echo "Installed!"

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for expand nodes
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

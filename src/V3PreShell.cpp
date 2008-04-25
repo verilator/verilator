@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Preprocessing wrapper
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

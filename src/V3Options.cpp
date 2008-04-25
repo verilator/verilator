@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Options parsing
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //
@@ -333,7 +333,7 @@ string V3Options::getenvSYSTEMPERL() {
 	}
 	if (var == "") {
 	    v3fatal("Need $SYSTEMPERL in environment for --sp or --trace\n"
-		    "Probably System-Perl isn't installed, see http://www.veripool.com/systemperl.html\n");
+		    "Probably System-Perl isn't installed, see http://www.veripool.org/systemperl\n");
 	}
 	if (var != ""
 	    && !V3Options::fileStatNormal(var+"/src/systemperl.h")) {

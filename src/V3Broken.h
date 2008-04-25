@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Find broken links in tree
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilog::Preproc: Internal header for lex interfacing
 //
-// Code available from: http://www.veripool.com/verilog-perl
+// Code available from: http://www.veripool.org/verilator
 //
 // Authors: Wilson Snyder
 //

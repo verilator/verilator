@@ -2,7 +2,7 @@
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex input file
  *
- * Code available from: http://www.veripool.com/verilator
+ * Code available from: http://www.veripool.org/verilator
  *
  **************************************************************************
  *

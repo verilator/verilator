@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Rename scope references to module-local references
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

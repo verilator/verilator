@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: File stream wrapper that understands indentation
 //
-// Code available from: http://www.veripool.com/verilator
+// Code available from: http://www.veripool.org/verilator
 //
 // AUTHORS: Wilson Snyder with Paul Wasson, Duane Gabli
 //

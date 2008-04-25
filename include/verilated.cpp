@@ -18,7 +18,7 @@
 ///	This file must be compiled and linked against all objects
 ///	created from Verilator.
 ///
-/// Code available from: http://www.veripool.com/verilator
+/// Code available from: http://www.veripool.org/verilator
 ///
 //=========================================================================
 
