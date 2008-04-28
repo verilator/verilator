@@ -12,7 +12,7 @@ dnl Special Substitutions
 AC_ARG_ENABLE(defenv,
    [AS_HELP_STRING([--disable-defenv], [disable hardcoded default environment variables])],
    CFG_WITH_DEFENV=$enableval,
-   CFG_WITH_DEFENV=1)
+   CFG_WITH_DEFENV=yes)
 AC_SUBST(CFG_WITH_DEFENV)
 
 dnl Checks for programs.
