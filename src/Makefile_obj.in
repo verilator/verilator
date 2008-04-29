@@ -34,6 +34,9 @@ CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 
 prefix = @prefix@
 
+# Directory in which to install data across multiple architectures
+datarootdir = @datarootdir@
+
 # Directory in which to install package specific files
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
@@ -250,6 +253,8 @@ V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
 y.tab.c y.tab.h:	verilog.y $(HEADERS)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
 	${YACC} ${YFLAGS} $<
+	mv y.tab.c y_pregen.tab.c && $(PERL) $(srcdir)/bisonfix < y_pregen.tab.c > y.tab.c
+	mv y.tab.h y_pregen.tab.h && $(PERL) $(srcdir)/bisonfix < y_pregen.tab.h > y.tab.h
 
 V3Lexer_pregen.yy.cpp:	verilog.l y.tab.h $(HEADERS)
 	${LEX} ${LFLAGS} -o$@ $<

@@ -63,7 +63,7 @@ void V3Read::verilatorCmtLintSave() {
 }
 void V3Read::verilatorCmtLintRestore() {
     if (s_readp->m_lintState.empty()) {
-	yyerror("/*verilator lint_restore*/ without matching save.");
+	yyerrorf("/*verilator lint_restore*/ without matching save.");
 	return;
     }
     V3Read::fileline()->warnStateFrom(s_readp->m_lintState.back());
@@ -687,7 +687,7 @@ escid	\\[^ \t\f\r\n]+
 
   /************************************************************************/
   /* STRINGS */
-<STRING>\n 		{ yyerror("Unterminated string\n"); }
+<STRING>\n 		{ yyerrorf("Unterminated string\n"); }
 <STRING>\r		;
 <STRING>[^\"\\]* 	{ yymore(); }
 <STRING>\\.	 	{ yymore(); }
@@ -700,7 +700,7 @@ escid	\\[^ \t\f\r\n]+
 <ATTRMODE>\n		{ yymore(); NEXTLINE(); }
 <ATTRMODE>"*)"		{ yy_pop_state(); } 
 <ATTRMODE>. 		{ yymore(); }
-<ATTRMODE><<EOF>>	{ yyerror("EOF in (*");
+<ATTRMODE><<EOF>>	{ yyerrorf("EOF in (*");
 			  yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/

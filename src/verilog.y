@@ -35,7 +35,7 @@
 
 // Pick up new lexer
 #define yylex V3Read::yylex
-#define PSLUNSUP(what) NULL; yyerror("Unsupported: PSL language feature not implemented");
+#define PSLUNSUP(what) NULL; yyerrorf("Unsupported: PSL language feature not implemented");
 
 extern void yyerror(char* errmsg);
 extern void yyerrorf(const char* format, ...);

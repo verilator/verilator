@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.66***
+
+**** Fix compiler warnings under GCC 4.2.1.
+
 * Verilator 3.662 2008/04/25
 
 ***  Add Verilog 2005 $clog2() function.

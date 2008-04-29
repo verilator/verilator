@@ -81,6 +81,9 @@ infodir = @infodir@
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 
+# Directory in which to install data across multiple architectures
+datarootdir = @datarootdir@
+
 #### End of system configuration section. ####
 ######################################################################
 

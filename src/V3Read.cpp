@@ -61,7 +61,7 @@ public:
     ~V3Lexer() {}
     // METHODS
     void stateExitPsl() {
-	if (YY_START != PSL) yyerror("Internal error: Exiting PSL state when not in PSL state");
+	if (YY_START != PSL) yyerrorf("Internal error: Exiting PSL state when not in PSL state");
 	yy_pop_state();
     }
     void statePushVlg() {
