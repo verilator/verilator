@@ -245,12 +245,15 @@ V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
 #### Generated files
 
 # Target rule called before parallel build to make generated files
-serial:: V3Ast__gen_classes.h
+serial:: V3Ast__gen_classes.h y.tab.c
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
 	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
 
-y.tab.c y.tab.h:	verilog.y $(HEADERS)
+y.tab.h: y.tab.c
+
+# Have only one output file in this rule to prevent parallel make issues
+y.tab.c: verilog.y $(HEADERS)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
 	${YACC} ${YFLAGS} $<
 	mv y.tab.c y_pregen.tab.c && $(PERL) $(srcdir)/bisonfix < y_pregen.tab.c > y.tab.c
