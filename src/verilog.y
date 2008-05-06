@@ -1137,28 +1137,28 @@ gateDecl: 	yBUF  delayE gateBufList ';'		{ $$ = $3; }
 	;
 
 gateBufList:	gateBuf 				{ $$ = $1; }
-	|	gateBuf ',' gateBuf			{ $$ = $1->addNext($3); }
+	|	gateBufList ',' gateBuf			{ $$ = $1->addNext($3); }
 	;
 gateNotList:	gateNot 				{ $$ = $1; }
-	|	gateNot ',' gateNot			{ $$ = $1->addNext($3); }
+	|	gateNotList ',' gateNot			{ $$ = $1->addNext($3); }
 	;
 gateAndList:	gateAnd 				{ $$ = $1; }
-	|	gateAnd ',' gateAnd			{ $$ = $1->addNext($3); }
+	|	gateAndList ',' gateAnd			{ $$ = $1->addNext($3); }
 	;
 gateNandList:	gateNand 				{ $$ = $1; }
-	|	gateNand ',' gateNand			{ $$ = $1->addNext($3); }
+	|	gateNandList ',' gateNand		{ $$ = $1->addNext($3); }
 	;
 gateOrList:	gateOr 					{ $$ = $1; }
-	|	gateOr ',' gateOr			{ $$ = $1->addNext($3); }
+	|	gateOrList ',' gateOr			{ $$ = $1->addNext($3); }
 	;
 gateNorList:	gateNor 				{ $$ = $1; }
-	|	gateNor ',' gateNor			{ $$ = $1->addNext($3); }
+	|	gateNorList ',' gateNor			{ $$ = $1->addNext($3); }
 	;
 gateXorList:	gateXor 				{ $$ = $1; }
-	|	gateXor ',' gateXor			{ $$ = $1->addNext($3); }
+	|	gateXorList ',' gateXor			{ $$ = $1->addNext($3); }
 	;
 gateXnorList:	gateXnor 				{ $$ = $1; }
-	|	gateXnor ',' gateXnor			{ $$ = $1->addNext($3); }
+	|	gateXnorList ',' gateXnor		{ $$ = $1->addNext($3); }
 	;
 
 gateBuf: 	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }

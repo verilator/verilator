@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix parametrized defines calling define with comma.  [Joshua Wise]
 
+**** Fix comma separated list of primitives.  [by Bryan Brady]
+
 * Verilator 3.662 2008/04/25
 
 ***  Add Verilog 2005 $clog2() function.

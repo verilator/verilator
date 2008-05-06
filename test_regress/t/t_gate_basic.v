@@ -15,8 +15,9 @@ module t (/*AUTOARG*/
    reg [31:0] a;
    reg [31:0] b;
    
-   wire [1:0] bf;  buf   BF0 (bf[0], a[0]),
-		         BF1 (bf[1], a[1]);
+   wire [2:0] bf;  buf   BF0 (bf[0], a[0]),
+		         BF1 (bf[1], a[1]),
+		         BF2 (bf[2], a[2]);
 
    // verilator lint_off IMPLICIT
    not   NT0 (nt0, a[0]);
@@ -60,8 +61,7 @@ module t (/*AUTOARG*/
 	 if (cyc==2) begin
 	    a <= 32'h529ab56f;
 	    b <= 32'h7835a237;
-	    if (bf[0] !== 1'b0) $stop;
-	    if (bf[1] !== 1'b0) $stop;
+	    if (bf !== 3'b100) $stop;
 	    if (nt0 !== 1'b1) $stop;
 	    if (an0 !== 1'b0) $stop;
 	    if (nd0 !== 1'b1) $stop;
@@ -72,8 +72,7 @@ module t (/*AUTOARG*/
 	    if (ba != 32'h18f6b034) $stop;
 	 end
 	 if (cyc==3) begin
-	    if (bf[0] !== 1'b1) $stop;
-	    if (bf[1] !== 1'b1) $stop;
+	    if (bf !== 3'b111) $stop;
 	    if (nt0 !== 1'b0) $stop;
 	    if (an0 !== 1'b1) $stop;
 	    if (nd0 !== 1'b0) $stop;
