@@ -13,8 +13,8 @@ module t;
    add2 add2 (d2,o2);
 
 `define ls left_side
-`define rs left_side
-`define noarg  na
+`define rs right_side
+`define noarg  na//note extra space
 `define thru(x) x
 `define thruthru `ls `rs	// Doesn't expand
 `define msg(x,y) `"x: `\`"y`\`"`"
