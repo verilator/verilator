@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix compiler warnings under GCC 4.2.1.
 
+**** Fix preprocessor `else after series of `elsif.  [Mark Nodine]
+
 * Verilator 3.662 2008/04/25
 
 ***  Add Verilog 2005 $clog2() function.
