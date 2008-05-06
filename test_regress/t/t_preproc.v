@@ -108,6 +108,19 @@ assign c = tmp_``c ;
 
    `check(m5kc_fcl, 3, _ctl_mvldx_m1, `CK_fr,	`MF._ctl_mvldx_m1)	// ignorecmt
 
+// macro call with define that has comma
+`define REG_H   6
+`define REG_L   7
+`define _H      regs[`REG_H]
+`define _L      regs[`REG_L]
+`define _HL     {`_H, `_L}
+`define EX_WRITE(ad, da)      begin addr <= (ad); wdata <= (da); wr <= 1; end
+`define EX_READ(ad)           begin addr <= (ad); rd <= 1; end
+
+`EX_READ((`_HL + 1)) and `EX_WRITE((`_HL), rdata)
+`EX_READ(`_HL + 1)
+`EX_WRITE(`_HL, rdata) 
+
 //===========================================================================
 // Ifdef
 
