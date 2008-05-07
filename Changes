@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66***
 
+**** Add DESTDIR to Makefiles to assist RPM construction. [Gunter Dannoritzer]
+
 **** Fix compiler warnings under GCC 4.2.1.
 
 **** Fix preprocessor `else after series of `elsif.  [Mark Nodine]

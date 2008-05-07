@@ -61,6 +61,9 @@ MAKEINFO = makeinfo
 TEXI2DVI = texi2dvi
 PERL = @PERL@
 
+# Destination prefix for RPMs
+DESTDIR = 
+
 #### Don't edit: You're much better using configure switches to set these
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -213,26 +216,26 @@ README: readme.texi
 # See uninstall also
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg
 installbin:
-	$(SHELL) ${srcdir}/mkinstalldirs $(bindir)
-	( cd bin ; $(INSTALL_PROGRAM) verilator $(bindir)/verilator )
-	( $(INSTALL_PROGRAM) verilator_bin $(bindir)/verilator_bin )
-	( $(INSTALL_PROGRAM) verilator_bin_dbg $(bindir)/verilator_bin_dbg )
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
+	( cd bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
+	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
+	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
 
 VL_INST_MAN_FILES = verilator.1
 installman:
-	$(SHELL) ${srcdir}/mkinstalldirs $(mandir)
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(mandir)/man1/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
 installdata:
-	$(SHELL) ${srcdir}/mkinstalldirs $(pkgdatadir)/examples
-	cp -r include $(pkgdatadir)
-	cp -r src     $(pkgdatadir)
-	cp -r test_c  $(pkgdatadir)/examples
-	cp -r test_sc $(pkgdatadir)/examples
-	cp -r test_sp $(pkgdatadir)/examples
-	cp -r test_v  $(pkgdatadir)/examples
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples
+	cp -r include $(DESTDIR)$(pkgdatadir)
+	cp -r src     $(DESTDIR)$(pkgdatadir)
+	cp -r test_c  $(DESTDIR)$(pkgdatadir)/examples
+	cp -r test_sc $(DESTDIR)$(pkgdatadir)/examples
+	cp -r test_sp $(DESTDIR)$(pkgdatadir)/examples
+	cp -r test_v  $(DESTDIR)$(pkgdatadir)/examples
 
 VL_INST_DATA_FILES = verilator.1
 install: all_nomsg installbin installman installdata install-msg
@@ -276,9 +279,9 @@ install-msg:
 	@echo
 
 uninstall:
-	-cd $(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
-	-cd $(bindir) && rm -f $(VL_INST_BIN_FILES)
-	-rm -f $(pkgdatadir)
+	-cd $(DESTDIR)$(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
+	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_BIN_FILES)
+	-rm -f $(DESTDIR)$(pkgdatadir)
 
 # autoheader might not change config_build.h.in, so touch a stamp file.
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \
