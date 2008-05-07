@@ -364,8 +364,7 @@ maintainer-diff:
 	svnorcvs diff $(DISTTAGNAME)
 
 preexist:
-	test ! -r ~/src/kits/$(DISTNAME).tar.gz
+	svnorcvs nexists $(DISTTAGNAME)
 
 maintainer-dist: preexist dist tag
-	cp *.gz ~/backpack
-	cp *.gz ~/src/kits
+	svnorcvs release $(DISTNAME).tar.gz
