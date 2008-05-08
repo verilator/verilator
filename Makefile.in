@@ -103,19 +103,25 @@ DISTBIN = $(wildcard bin/verilator-*)
 
 DISTFILES_INC = $(INFOS) .cvsignore COPYING *.in *.ac \
 	Changes README TODO \
+	MANIFEST.SKIP \
 	bin/* \
 	install-sh configure mkinstalldirs *.texi \
 	include/verilated.[chv]* \
 	include/verilatedos.[chv]* \
 	include/*.in \
-	src/.cvsignore src/*.in src/*.cpp src/*.[chly] src/astgen src/*fix \
+	include/.*ignore \
+	.*attributes */.*attributes  */*/.*attributes \
+	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/*fix \
 	src/*.pl \
-	test_*/.cvsignore test_*/Makefile* test_*/*.cpp \
+	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/vlint \
 	test_verilated/vgen*.pl \
-	test_regress/t/*.v* \
-	test_regress/t/*.pl \
+	test_regress/t/*.cpp \
+	test_regress/t/*.h \
+	test_regress/t/*.mem \
 	test_regress/t/*.out \
+	test_regress/t/*.pl \
+	test_regress/t/*.v* \
 	verilator.* \
 
 INST_PROJ_FILES = \
@@ -203,7 +209,7 @@ verilator.pdf: bin/verilator $(DISTCONFIG)
 	mv verilator2.tex verilator.tex
 	pdflatex verilator.tex
 	pdflatex verilator.tex
-	-rm -f verilator.toc verilator.aux verilator.idx
+	-rm -f verilator.toc verilator.aux verilator.idx verilator.out
 
 INSTALL: install.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
@@ -253,8 +259,8 @@ install-project: dist
 	for p in verilator.1 ; do \
 	  $(INSTALL_PROGRAM) -m 0666 $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
 	done
-	$(INST_PROJ_CVS) $(DISTNAME).tar.gz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
-	rm $(DISTNAME).tar.gz
+	$(INST_PROJ_CVS) $(DISTNAME).tgz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
+	rm $(DISTNAME).tgz
 
 install-project-quick:
 	@echo "Install-project-quick (no strip) to $(DIRPROJECT)"
@@ -331,6 +337,12 @@ TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/[a-z]*.in \
 TAGS:	$(TAGFILES)
 	etags $(TAGFILES)
 
+######################################################################
+# Test targets
+
+dist-file-list:
+	@echo "dist-file-list:";  # Scripts look for this
+	@echo $(wildcard $(DISTFILES))
 
 ######################################################################
 # Distributions
@@ -358,6 +370,7 @@ dist: $(DISTDEP) maintainer-copy
 	chmod -R a+r $(DISTNAME)
 	tar chf $(DISTNAME).tar $(DISTNAME)
 	gzip --force --best $(DISTNAME).tar
+	mv $(DISTNAME).tgz $(DISTNAME).tgz
 	rm -fr $(DISTNAME)
 
 maintainer-diff:
@@ -367,4 +380,4 @@ preexist:
 	svnorcvs nexists $(DISTTAGNAME)
 
 maintainer-dist: preexist dist tag
-	svnorcvs release $(DISTNAME).tar.gz
+	svnorcvs release $(DISTNAME).tgz

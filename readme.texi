@@ -60,7 +60,7 @@ The latest version is available at
 @uref{http://www.veripool.org/verilator}
 
 Download the latest package from that site, and decompress.
-@samp{gunzip verilator_version.tar.gz ; tar xvf verilator_version.tar}
+@samp{tar xvzf verilator_version.tgz}
 
 @node Directory Structure, Supported Systems, Obtaining Distribution, Top
 @section Directory Structure
