@@ -371,7 +371,7 @@ dist: $(DISTDEP) maintainer-copy
 	chmod -R a+r $(DISTNAME)
 	tar chf $(DISTNAME).tar $(DISTNAME)
 	gzip --force --best $(DISTNAME).tar
-	mv $(DISTNAME).tgz $(DISTNAME).tgz
+	mv $(DISTNAME).tar.gz $(DISTNAME).tgz
 	rm -fr $(DISTNAME)
 
 maintainer-diff:
