@@ -108,7 +108,7 @@ DISTFILES_INC = $(INFOS) .cvsignore COPYING *.in *.ac \
 	include/verilated.[chv]* \
 	include/verilatedos.[chv]* \
 	include/*.in \
-	src/.cvsignore src/*.in src/*.cpp src/*.[chly] src/astgen src/flexfix \
+	src/.cvsignore src/*.in src/*.cpp src/*.[chly] src/astgen src/*fix \
 	src/*.pl \
 	test_*/.cvsignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/vlint \
