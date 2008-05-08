@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.663 2008/05/08
+* Verilator 3.664 2008/05/08
 
 **** Fix missing file in kit.
 
