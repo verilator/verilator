@@ -10,11 +10,12 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 my $root = "..";
 my $Debug;
 
-###
-# Call once and ignore to rebuild any targets before we need the output
+### Must trim output before and after our file list
 `cd $root && make dist-file-list`;
 my $manifest_files = `cd $root && make dist-file-list`;
-$manifest_files =~ s!.*dist-file-list:!!sg;
+$manifest_files =~ s!.*begin-dist-file-list:!!sg;
+$manifest_files =~ s!end-dist-file-list:.*$!!sg;
+print "MF $manifest_files\n";
 my %files;
 foreach my $file (split /\s+/,$manifest_files) {
     next if $file eq '';

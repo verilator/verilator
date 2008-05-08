@@ -341,8 +341,9 @@ TAGS:	$(TAGFILES)
 # Test targets
 
 dist-file-list:
-	@echo "dist-file-list:";  # Scripts look for this
+	@echo "begin-dist-file-list:";  # Scripts look for this
 	@echo $(wildcard $(DISTFILES))
+	@echo "end-dist-file-list:";  # Scripts look for this
 
 ######################################################################
 # Distributions
