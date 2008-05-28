@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <cstring>
 #include <algorithm>
 #include <vector>
 

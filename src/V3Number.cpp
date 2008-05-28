@@ -24,6 +24,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <cstring>
 #include <algorithm>
 #include "V3Number.h"
 

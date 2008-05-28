@@ -22,9 +22,9 @@
 %{
 /* $Id$ */
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cstdarg>
-#include <string.h>
+#include <cstring>
 
 #include "V3Read.h"
 #include "V3Ast.h"

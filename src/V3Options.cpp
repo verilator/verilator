@@ -24,7 +24,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
-#include <ctype.h>
+#include <cctype>
+#include <cstring>
 #include <dirent.h>
 #include <unistd.h>
 #include <set>

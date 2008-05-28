@@ -22,8 +22,9 @@
 /* %option nodefault */
 /* $Id$ */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include "V3Read.h"
 #include "V3Number.h"
 #include "y.tab.h"

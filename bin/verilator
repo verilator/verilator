@@ -2202,7 +2202,10 @@ outputs.  Now, the following should fail:
     cd test_regress
     t/t_BUG.pl
 
-Finally, Mail the bug report to C<wsnyder@wsnyder.org>.
+Finally, report the bug using the bug tracker at
+L<http://www.veripool.org/verilator>.  The bug will become publicly
+visible; if this is unacceptable, mail the bug report to
+C<wsnyder@wsnyder.org>.
 
 =head1 HISTORY
 

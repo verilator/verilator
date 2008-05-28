@@ -33,6 +33,7 @@
 #include "verilatedos.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <cstring>
 #include <unistd.h>
 #include <map>
 #include <algorithm>
