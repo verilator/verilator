@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix syntax error when "`include `defname" is ifdefed.  [John Dickol]
 
+**** Fix error when macro call has commas in concatenate. [John Dickol]
+
 **** Fix compile errors under Fedora 9, GCC 4.3.0.  [by Jeremy Bennett]
 
 * Verilator 3.664 2008/05/08
