@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66*
 
+**** Fix syntax error when "`include `defname" is ifdefed.  [John Dickol]
+
 **** Fix compile errors under Fedora 9, GCC 4.3.0.  [by Jeremy Bennett]
 
 * Verilator 3.664 2008/05/08
