@@ -660,8 +660,8 @@ genItemList:	genItem					{ $$ = $1; }
 
 genItem:	modOrGenItem 				{ $$ = $1; }
 	|	yCASE  '(' expr ')' genCaseListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
-	|	yIF expr genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$2,$3,NULL); }
-	|	yIF expr genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$2,$3,$5); }
+	|	yIF '(' expr ')' genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
+	|	yIF '(' expr ')' genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$3,$5,$7); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
 									     ,$7, new AstAssign($10,$9,$11)
@@ -931,8 +931,8 @@ stmt:		';'					{ $$ = NULL; }
 // Case/If
 
 stateCaseForIf: caseStmt caseAttrE caseListE yENDCASE	{ $$ = $1; if ($3) $1->addItemsp($3); }
-	|	yIF expr stmtBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstIf($1,$2,$3,NULL); }
-	|	yIF expr stmtBlock yELSE stmtBlock	{ $$ = new AstIf($1,$2,$3,$5); }
+	|	yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstIf($1,$3,$5,NULL); }
+	|	yIF '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstIf($1,$3,$5,$7); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)
