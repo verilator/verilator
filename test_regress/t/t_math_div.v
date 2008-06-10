@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -24,7 +23,7 @@ module t (/*AUTOARG*/
       qqs = $signed(a[60:0]) / $signed(divisor);
       rqs = $signed(a[60:0]) % $signed(divisor);
    end
-	       
+
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin

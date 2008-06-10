@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 
 module t;

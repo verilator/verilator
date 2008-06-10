@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Removal of named begin blocks
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Begin's Transformations:
-//		
+//
 // Each module:
 //	Look for BEGINs
 //	    BEGIN(VAR...) -> VAR ... {renamed}

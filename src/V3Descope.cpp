@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Rename scope references to module-local references
 //
@@ -24,7 +23,7 @@
 //		Change varref name() to be relative to current module
 //		Remove varScopep()
 //	    This allows for better V3Combine'ing.
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"

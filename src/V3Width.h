@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Node attributes/ expression widths
 //

@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Signed/unsigned resolution
 //
@@ -225,7 +224,7 @@ private:
     }
 
     // These have different node types, as they operate differently
-    // Must add to case statement below, 
+    // Must add to case statement below,
     virtual void visit(AstGt* nodep, AstNUser*) {	checkReplace_Ou_FlavLhsAndRhs(nodep); }
     virtual void visit(AstGtS* nodep, AstNUser*) {	checkReplace_Ou_FlavLhsAndRhs(nodep); }
     virtual void visit(AstGte* nodep, AstNUser*) {	checkReplace_Ou_FlavLhsAndRhs(nodep); }

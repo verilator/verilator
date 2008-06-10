@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -26,7 +25,7 @@ module t (/*AUTOARG*/
       to[bitn +: 4] = cyc[3:0];
       to[bitn -: 4] = cyc[3:0];
    end
-	       
+
    always @ (posedge clk) begin
       //$write("[%0t] cyc==%d nibblep==%b nibblem==%b to^from==%x\n",$time, cyc, nibblep, nibblem, from^to);
       cyc <= cyc + 8'd1;

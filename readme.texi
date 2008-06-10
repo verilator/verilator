@@ -1,6 +1,5 @@
 \input texinfo @c -*-texinfo-*-
 @c %**start of header
-$c $Id$
 @setfilename readme.info
 @settitle Verilator Installation
 @c %**end of header
@@ -15,13 +14,13 @@ $c $Id$
 This is the Verilator Package.
 
 @menu
-* Copyright::                   
-* Description::                 
-* Obtaining Distribution::      
-* Directory Structure::         
-* Supported Systems::           
-* Installation::                
-* Limitations::                 
+* Copyright::
+* Description::
+* Obtaining Distribution::
+* Directory Structure::
+* Supported Systems::
+* Installation::
+* Limitations::
 @end menu
 
 @node Copyright, Description, Top, Top
@@ -56,7 +55,7 @@ The resulting executable will perform the actual simulation.
 @node Obtaining Distribution, Directory Structure, Description, Top
 @section Obtaining Distribution
 
-The latest version is available at 
+The latest version is available at
 @uref{http://www.veripool.org/verilator}
 
 Download the latest package from that site, and decompress.

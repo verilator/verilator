@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Expression width calculations
 //
@@ -41,7 +40,7 @@
 //	    Pass size to sub-expressions if required (+/-* etc)
 //		FINAL = true.
 //		Subexpressions lint and extend as needed
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -279,7 +278,7 @@ private:
 			       <<nodep->msbConst()<<"<"<<nodep->lsbConst());
 		width = (nodep->lsbConst() - nodep->msbConst() + 1);
 		nodep->width(width,width);
-		nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), 
+		nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(),
 							  width));
 		nodep->lsbp()->replaceWith(new AstConst(nodep->lsbp()->fileline(), 0));
 	    }
@@ -327,7 +326,7 @@ private:
 	    int fromlsb;
 	    if (!varrp->varp()->arrayp(dimension)) {
 		nodep->v3fatalSrc("Array reference exceeds dimension of array");
-	    } 
+	    }
 	    if (1) {	// ARRAY slice extraction
 		int outwidth = varrp->width();		// Width of variable
 		frommsb = varrp->varp()->arrayp(dimension)->msbConst();

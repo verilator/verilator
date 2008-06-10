@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Clocking POS/NEGEDGE insertion
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Clock's Transformations:
-//		
+//
 // Top Scope:
 //   Check created ACTIVEs
 //      Compress adjacent ACTIVEs with same sensitivity list
@@ -416,7 +415,7 @@ private:
 					 new AstConst(fl, 1)));
         preUntilp->addNext(new AstAssign(fl, new AstVarRef(fl, countVarp, true),
 					 new AstConst(fl, 0)));
-	
+
 	// Add stable variables & preinits
 	AstNode* setChglastp = NULL;
 	for (AstVarRef* varrefp = nodep->stablesp(); varrefp; varrefp=varrefp->nextp()->castVarRef()) {

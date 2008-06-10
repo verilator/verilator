@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_case_huge_sub2 (/*AUTOARG*/
    // Outputs
-   outa, 
+   outa,
    // Inputs
    index
    );
@@ -30,7 +29,7 @@ module t_case_huge_sub2 (/*AUTOARG*/
 	8'h00: begin outa = $c("0"); end // Makes whole table non-optimizable
 `else
 	8'h00: begin outa = 10'h0; end
-`endif	
+`endif
 	8'h01: begin outa = 10'h318; end
 	8'h02: begin outa = 10'h29f; end
 	8'h03: begin outa = 10'h392; end

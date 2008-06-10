@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_order_b (/*AUTOARG*/
    // Outputs
-   o_subfrom_clk_lev2, 
+   o_subfrom_clk_lev2,
    // Inputs
    m_from_clk_lev1_r
    );

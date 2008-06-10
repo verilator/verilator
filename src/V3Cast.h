@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Add C++ casts across expression size changes
 //

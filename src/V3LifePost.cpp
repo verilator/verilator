@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: AssignPost Variable assignment elimination
 //
@@ -26,7 +25,7 @@
 //	    	... {no reads or writes of a after the first write to Vdly}
 //	 	... {no reads of a after the first write to Vdly}
 //		ASSIGNPOST(Vdly,tmp)
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -118,7 +117,7 @@ private:
     }
 
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	// Consumption/generation of a variable, 
+	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
 	m_sequence++;

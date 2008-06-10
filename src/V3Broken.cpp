@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Find broken links in tree
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Broken's Transformations:
-//		
+//
 // Entire netlist
 //	Mark all nodes
 //	Check all links point to marked nodes

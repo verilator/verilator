@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Expansion of wide operator macros to C operators
 //

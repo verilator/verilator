@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for unroll nodes
 //
@@ -21,7 +20,7 @@
 // V3Unroll's Transformations:
 //	Note is called twice.  Once on modules for GenFor unrolling,
 //	Again after V3Scope for normal for loop unrolling.
-//		
+//
 // Each module:
 //	Look for "FOR" loops and unroll them if <= 32 loops.
 //	(Eventually, a better way would be to simulate the entire loop; ala V3Table.)
@@ -361,7 +360,7 @@ private:
 	    && nodep->varp() == m_forVarp
 	    && nodep->varScopep() == m_forVscp
 	    && nodep->lvalue()) {
-	    UINFO(8,"   Itervar assigned to: "<<nodep<<endl); 
+	    UINFO(8,"   Itervar assigned to: "<<nodep<<endl);
 	    m_varAssignHit = true;
 	}
 	if (m_varModeReplace

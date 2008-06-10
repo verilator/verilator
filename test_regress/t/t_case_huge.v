@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -129,14 +128,14 @@ module t (/*AUTOARG*/
 		       .outc		(outc7),		 // Templated
 		       // Inputs
 		       .index		(index7[7:0]));		 // Templated
-	       
+
    t_case_huge_sub4 q (/*AUTOINST*/
 		       // Outputs
 		       .outq		(outq[9:0]),
 		       // Inputs
 		       .index		(index[7:0]));
-	       
-	       
+
+
    integer cyc; initial cyc=1;
    initial index = 10'h0;
 

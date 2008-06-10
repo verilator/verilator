@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -80,7 +79,7 @@ module file (/*AUTOARG*/
    // Inputs
    clk, r1_en, r1_ad, r2_en, r2_ad, w1_en, w1_a, w1_d, w2_en, w2_a, w2_d
    );
-   
+
    input	   clk;
    input 	   r1_en;
    input [1:0] 	   r1_ad;
@@ -94,7 +93,7 @@ module file (/*AUTOARG*/
    input 	   w2_en;
    input [1:0] 	   w2_a;
    input [63:0]    w2_d;
-   
+
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    // End of automatics
@@ -114,7 +113,7 @@ module file (/*AUTOARG*/
    wire [63:0] 	   rg3_wrdat = m_w1_onehotwe[3] ? w1_d : w2_d;
 
    wire [3:0] 	   m_w_onehotwe = m_w1_onehotwe | m_w2_onehotwe;
-   
+
    // Storage
    reg [63:0] 	   m_rg0_r;
    reg [63:0] 	   m_rg1_r;

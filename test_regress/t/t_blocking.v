@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -92,5 +91,5 @@ module t (/*AUTOARG*/
 	 if (bits !== 5'b10110) $stop;
       end
    end
-   
+
 endmodule

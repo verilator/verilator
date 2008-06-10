@@ -1,10 +1,9 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2005 by Wilson Snyder.
 //
-// Example module to create problem.  
+// Example module to create problem.
 //
 //    generate a 64 bit value with bits
 //      [HighMaskSel_Bot   : LowMaskSel_Bot   ] = 1

@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add C++ casts across expression size changes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Cast's Transformations:
-//		
+//
 // Each module:
 //	For each math operator, if above operator requires 32 bits,
 //	and this isn't, cast to 32 bits.
@@ -148,7 +147,7 @@ private:
 	    && nodep->backp()->width()
 	    && castSize(nodep) != castSize(nodep->varp())) {
 	    // Cast vars to IData first, else below has upper bits wrongly set
-	    //  CData x=3;  out = (QData)(x<<30); 
+	    //  CData x=3;  out = (QData)(x<<30);
 	    insertCast (nodep, castSize(nodep));
 	}
 	nodep->user(1);

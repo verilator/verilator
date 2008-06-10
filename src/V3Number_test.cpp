@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Netlist (top level) functions
 //
@@ -90,7 +89,7 @@ void test(string lhss, string op, string rhss, string exps) {
 
 int main() {
     UINFO(0,"Test starting\n");
-    
+
     test("32'b10","|","32'b10","32'b10");
     test( "2'bx0","|", "2'b10", "2'b10");
     test("32'b0x","|","32'b10","32'b1x");

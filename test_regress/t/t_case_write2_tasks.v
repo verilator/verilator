@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -155,7 +154,7 @@ module t_case_write2_tasks ();
 	   default:$fwrite (fd, " 128");
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonerb;
       input  [5:0] rb;
@@ -170,7 +169,7 @@ module t_case_write2_tasks ();
 	   default: ozonerab({1'b1, rb}, fd);
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef3f4_iext;
       input  [1:0] foo;
@@ -217,7 +216,7 @@ module t_case_write2_tasks ();
              end
 	 endcase
       end
-   endtask 
+   endtask
 
    task skyway;
       input  [ 3:0] hex;
@@ -243,7 +242,7 @@ module t_case_write2_tasks ();
 	   4'hf : $fwrite (fd, " 149");
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonesr;
       input  [  15:0] foo;
@@ -327,7 +326,7 @@ module t_case_write2_tasks ();
 	   3'b110 : $fwrite (fd, " 185");
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef1;
       input [  31:0] foo;
@@ -425,7 +424,7 @@ module t_case_write2_tasks ();
                2'b10 :  $fwrite (fd, " 232");
                2'b11 :  $fwrite (fd, " 233");
              endcase
-	 endcase 
+	 endcase
       end
    endtask
 
@@ -1558,7 +1557,7 @@ module t_case_write2_tasks ();
 	     7'h7e,
 	     7'h7f:
                $fwrite (fd," 676");
-	 endcase 
+	 endcase
       end
    endtask
 
@@ -1678,7 +1677,7 @@ module t_case_write2_tasks ();
              endcase
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef2e;
       input [  31:0] foo;
@@ -1878,7 +1877,7 @@ module t_case_write2_tasks ();
              $fwrite (fd," 794");
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef3e;
       input [  31:0] foo;
@@ -1998,7 +1997,7 @@ module t_case_write2_tasks ();
              $fwrite (fd," 822");
 	 endcase
       end
-   endtask 
+   endtask
    task ozonef3e_te;
       input  [   2:0]   te;
       input [`FD_BITS] 	fd;
@@ -2011,7 +2010,7 @@ module t_case_write2_tasks ();
 	   default: $fwrite (fd, " 826");
 	 endcase
       end
-   endtask 
+   endtask
    task ozonearm;
       input  [   2:0]   ate;
       input [`FD_BITS] 	fd;
@@ -2127,7 +2126,7 @@ module t_case_write2_tasks ();
 		$fwrite (fd, " 867");
 		nacho = 1'b1;
 	     end
-	 endcase 
+	 endcase
 	 if (~nacho)
 	   begin
 	      case (foo[24:21])
@@ -2263,7 +2262,7 @@ module t_case_write2_tasks ();
 	   4'hf:  $fwrite (fd, " 905");
 	 endcase
       end
-   endtask 
+   endtask
    task ozonef1e_hl;
       input  [  2:0] e;
       input           l;
@@ -2459,7 +2458,7 @@ module t_case_write2_tasks ();
       end
    endtask
    task ozoneacc;
-      input            foo;                
+      input            foo;
       input [`FD_BITS]     fd;
       // verilator no_inline_task
       begin
@@ -2470,7 +2469,7 @@ module t_case_write2_tasks ();
       end
    endtask
    task ozonehl;
-      input            foo;                
+      input            foo;
       input [`FD_BITS]     fd;
       // verilator no_inline_task
       begin
@@ -2487,8 +2486,8 @@ module t_case_write2_tasks ();
    endtask
 
    task big_case;
-      input  [  `FD_BITS] fd;      
-      input [  31:0]  foo;          
+      input  [  `FD_BITS] fd;
+      input [  31:0]  foo;
       // verilator no_inline_task
       begin
 	 $fwrite(fd," 1009");
@@ -3009,7 +3008,7 @@ module t_case_write2_tasks ();
 		      $fwrite (fd, " 1176");
 		   end
 		 default: $fwrite (fd, " 1177");
-               endcase 
+               endcase
              17'b00_10??_?_????_?0_110? :
                begin
 		  ozonef1e(foo, fd);
@@ -3768,8 +3767,8 @@ module t_case_write2_tasks ();
                else
 		 $fwrite(fd, " 1409:%x", foo[22:16]);
              default: $fwrite(fd, " 1410");
-	   endcase 
-      end 
+	   endcase
+      end
    endtask
 
    //(query-replace-regexp "\\([a-z0-9_]+\\) *( *\\([][a-z0-9_~': ]+\\) *, *\\([][a-z0-9'~: ]+\\) *, *\\([][a-z0-9'~: ]+\\) *);" "$c(\"\\1(\",\\2,\",\",\\3,\",\",\\4,\");\");" nil nil nil)

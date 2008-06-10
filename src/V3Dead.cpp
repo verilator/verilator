@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Dead code elimination
 //
@@ -21,7 +20,7 @@
 // DEAD TRANSFORMATIONS:
 //	Remove any unreferenced modules
 //	Remove any unreferenced variables
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"

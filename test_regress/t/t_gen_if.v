@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //   simplistic example, should choose 1st conditional generate and assign straight through
 //   the tool also compiles the special case and determines an error (replication value is 0)

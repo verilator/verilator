@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Netlist (top level) functions
 //
@@ -53,7 +52,7 @@ private:
     bool	m_checkBlock;	// Should this block get covered?
     AstModule*	m_modp;		// Current module to add statement to
     FileMap	m_fileps;	// Column counts for each fileline
-   
+
     //int debug() { return 9; }
 
     // METHODS
@@ -66,7 +65,7 @@ private:
 	    column = (it->second)++;
 	}
 
-	AstCoverDecl* declp = new AstCoverDecl(fl, column, type, comment); 
+	AstCoverDecl* declp = new AstCoverDecl(fl, column, type, comment);
 	m_modp->addStmtp(declp);
 
 	return new AstCoverInc(fl, declp);

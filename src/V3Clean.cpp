@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for clean nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Clean's Transformations:
-//		
+//
 // Each module:
 //	For each math operator, if it requires a clean operand,
 //	and the operand is dirty, insert a CLEAN node.
@@ -55,7 +54,7 @@ private:
 
     // ENUMS
     enum CleanState { UNKNOWN, CLEAN, DIRTY };
-    
+
     // METHODS
     // Width resetting
     int  cppWidth(AstNode* nodep) {

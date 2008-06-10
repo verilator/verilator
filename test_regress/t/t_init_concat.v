@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -80,7 +79,7 @@ module regfile (
 		      rd_data[0],
 		      1'b1
 		      };
-   
+
    assign rd_guardsok[0] = 1'b1;
    assign rd_guardsok[1] = rd_data[0];
 

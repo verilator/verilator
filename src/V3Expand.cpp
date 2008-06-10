@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for expand nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Expand's Transformations:
-//		
+//
 // Each module:
 //	Expand verilated.h macros into internal micro optimizations (RTL)
 //	this will enable later optimizations.
@@ -168,7 +167,7 @@ private:
 	}
 	return newp;
     }
-	
+
     AstNode* newSelBitWord(AstNode* lsbp, int wordAdder) {
 	// Return equation to get the VL_BITWORD of a constant or non-constant
 	if (lsbp->castConst()) {
@@ -355,7 +354,7 @@ private:
 	    AstNode* lowwordp = new AstWordSel (nodep->fromp()->fileline(),
 						nodep->fromp()->cloneTree(true),
 						newSelBitWord(nodep->lsbp(), 0));
-	    if (nodep->isQuad() && !lowwordp->isQuad()) lowwordp = new AstCast(nodep->fileline(), lowwordp, nodep); 
+	    if (nodep->isQuad() && !lowwordp->isQuad()) lowwordp = new AstCast(nodep->fileline(), lowwordp, nodep);
 	    AstNode* lowp = new AstShiftR (nodep->fileline(),
 					   lowwordp,
 					   newSelBitBit(nodep->lsbp()),
@@ -368,7 +367,7 @@ private:
 		    new AstWordSel (nodep->fromp()->fileline(),
 				    nodep->fromp()->cloneTree(true),
 				    newSelBitWord(nodep->lsbp(), 1));
-		if (nodep->isQuad() && !midwordp->isQuad()) midwordp = new AstCast(nodep->fileline(), midwordp, nodep); 
+		if (nodep->isQuad() && !midwordp->isQuad()) midwordp = new AstCast(nodep->fileline(), midwordp, nodep);
 		// If we're selecting bit zero, then all 32 bits in word 1 get shifted << by 32 bits
 		// else we need to form the lower word, so we << by 31 or less
 		// nbitsfromlow <= (lsb==0) ? 64-bitbit(lsb) : 32-bitbit(lsb)
@@ -406,7 +405,7 @@ private:
 		    new AstWordSel (nodep->fromp()->fileline(),
 				    nodep->fromp()->cloneTree(true),
 				    newSelBitWord(nodep->lsbp(), 2));
-		if (nodep->isQuad() && !hiwordp->isQuad()) hiwordp = new AstCast(nodep->fileline(), hiwordp, nodep); 
+		if (nodep->isQuad() && !hiwordp->isQuad()) hiwordp = new AstCast(nodep->fileline(), hiwordp, nodep);
 		AstNode* himayp =
 		    new AstShiftL (nodep->fileline(),
 				   hiwordp,
@@ -434,7 +433,7 @@ private:
 	    UINFO(8,"    SEL->SHIFT "<<nodep<<endl);
 	    AstNode* fromp = nodep->fromp()->unlinkFrBack();
 	    AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
-	    if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCast(nodep->fileline(), fromp, nodep); 
+	    if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCast(nodep->fileline(), fromp, nodep);
 	    AstNode* newp = new AstShiftR (nodep->fileline(),
 					   fromp,
 					   dropCondBound(lsbp),
@@ -504,7 +503,7 @@ private:
 	bool destwide = lhsp->fromp()->isWide();
 	bool ones = nodep->rhsp()->isAllOnesV();
 	if (lhsp->lsbp()->castConst()) {
-	    // The code should work without this constant test, but it won't 
+	    // The code should work without this constant test, but it won't
 	    // constify as nicely as we'd like.
 	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    AstNode* destp = lhsp->fromp()->unlinkFrBack();
@@ -592,7 +591,7 @@ private:
 		//   For wide destp, we can either form a equation for every destination word,
 		// with the appropriate long equation of if it's being written or not.
 		//   Or, we can use a LHS variable arraysel with non-constant index to set the vector.
-		// Doing the variable arraysel is better for globals and large arrays, 
+		// Doing the variable arraysel is better for globals and large arrays,
 		// doing every word is better for temporaries and if we're setting most words
 		// since it may result in better substitution optimizations later.
 		//   This results in so much code, we're better off leaving a function call.
@@ -630,7 +629,7 @@ private:
 		//newp->dumpTree(cout,"-  new: ");
 		insertBefore(nodep,newp);
 		return true;
-	    }		
+	    }
 	}
     }
 
@@ -641,10 +640,10 @@ private:
 	} else {
 	    UINFO(8,"    CONCAT "<<nodep<<endl);
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();	
+	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    int rhsshift = rhsp->widthMin();
-	    if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep); 
-	    if (nodep->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep); 
+	    if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep);
+	    if (nodep->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep);
 	    AstNode* newp = new AstOr (nodep->fileline(),
 				       new AstShiftL (nodep->fileline(),
 						      lhsp,
@@ -657,7 +656,7 @@ private:
     }
     bool expandWide (AstNodeAssign* nodep, AstConcat* rhsp) {
 	UINFO(8,"    Wordize ASSIGN(CONCAT) "<<nodep<<endl);
-	// Lhs or Rhs may be word, long, or quad. 
+	// Lhs or Rhs may be word, long, or quad.
 	// newAstWordSelClone nicely abstracts the difference.
 	int rhsshift = rhsp->rhsp()->widthMin();
 	// Sometimes doing the words backwards is preferrable.
@@ -690,7 +689,7 @@ private:
 		AstConst* constp = nodep->rhsp()->castConst();
 		if (!constp) nodep->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
 		uint32_t times = constp->asInt();
-		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep); 
+		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep);
 		newp = lhsp->cloneTree(true);
 		for (unsigned repnum=1; repnum<times; repnum++) {
 		    int rhsshift = repnum*lhswidth;

@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator Test: Top level testbench for VCS or other fully Verilog compliant simulators
 //
 // This file ONLY is placed into the Public Domain, for any use,

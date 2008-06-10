@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Convert BLOCKTEMPs to local variables
 //

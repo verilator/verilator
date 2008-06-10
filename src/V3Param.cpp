@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Replicate modules for parameterization
 //
@@ -230,7 +229,7 @@ public:
 void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
     // Cell: Check for parameters in the instantiation.
     if (!nodep->modp()) { nodep->dumpTree(cout,"error:"); nodep->v3fatalSrc("Not linked?"); }
-    if (nodep->paramsp()) {	
+    if (nodep->paramsp()) {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);
 	// Create new module name with _'s between the constants
 	if (debug()>9) nodep->dumpTree(cout,"cell:\t");
@@ -336,7 +335,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	    nodep->paramsp()->unlinkFrBackWithNext(&delHandle);
 	    delHandle.oldp()->deleteTree();
 	}
-	
+
 	// We need to relink the pins to the new module
 	VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
 	relinkPins(clonemapp, nodep->pinsp());

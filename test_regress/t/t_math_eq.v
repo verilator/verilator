@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -71,7 +70,7 @@ module Test (/*AUTOARG*/
    );
 
    input clk;
-   input  [31:0] in;   
+   input  [31:0] in;
    output [3:0] out;
 
    assign 	out[0] = in[3:0] ==? 4'b1001;

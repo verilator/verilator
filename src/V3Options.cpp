@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Options parsing
 //
@@ -203,7 +202,7 @@ string V3Options::fileExists (const string& filename) {
 
 	if (DIR* dirp = opendir(dir.c_str())) {
 	    while (struct dirent* direntp = readdir(dirp)) {
-		
+
 		setp->insert(direntp->d_name);
 	    }
 	    closedir(dirp);
@@ -268,7 +267,7 @@ void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
 	closedir(dirp);
     }
 }
- 
+
 //######################################################################
 // Environment
 
@@ -409,7 +408,7 @@ string V3Options::downcase(const string& str) {
 
 string V3Options::version() {
     string ver = DTVERSION;
-    ver += " rev"+cvtToStr(DTVERSION_rev);
+    ver += " rev "+cvtToStr(DTVERSION_rev);
 #ifdef NEW_ORDERING
     ver += " (ord)";
 #endif
@@ -741,7 +740,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 		if (*pos=='*' && *(pos+1)=='/') {
 		    inCmt = false;
 		    pos++;
-		}	
+		}
 	    } else if (*pos=='/' && *(pos+1)=='/') {
 		break;  // Ignore to EOL
 	    } else if (*pos=='/' && *(pos+1)=='*') {

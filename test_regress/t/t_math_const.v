@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -48,7 +47,7 @@ module t (/*AUTOARG*/
 	    if (con1[31:0]!== 32'h1000_0010 || con1[39:32]!==0) $stop;
 	    $display("%x  %x %x\n", con2, con2[31:0], con2[39:32]);
 	    if (con2[31:0]!== 32'h10 || con2[39:32]!==8'h10) $stop;
-	    if (con3[31:0]!==32'h2100_0111 || con3[39:32]!==8'h10) $stop; 
+	    if (con3[31:0]!==32'h2100_0111 || con3[39:32]!==8'h10) $stop;
 
 	    // verilator lint_off WIDTH
 	    con1 = 10'h10 + 40'h80_1100_0131;
@@ -60,7 +59,7 @@ module t (/*AUTOARG*/
 	    // verilator lint_off WIDTH
             conw3 = 94'h000a_5010_4020_3030_2040_1050;
 	    // verilator lint_on WIDTH
-	    if (conw3[31:00]!== 32'h2040_1050 || 
+	    if (conw3[31:00]!== 32'h2040_1050 ||
 		conw3[63:32]!== 32'h4020_3030 ||
 		conw3[95:64]!== 32'h000a_5010 ||
 		conw3[128:96]!==33'h0) $stop;
@@ -71,7 +70,7 @@ module t (/*AUTOARG*/
 	    // verilator lint_off WIDTH
             conw4 = 112'h7010_602a_5030_4040_3050_2060_1070;
 	    // verilator lint_on WIDTH
-	    if (conw4[31:00]!== 32'h2060_1070 || 
+	    if (conw4[31:00]!== 32'h2060_1070 ||
 		conw4[63:32]!== 32'h4040_3050 ||
 		conw4[95:64]!== 32'h602a_5030 ||
 		conw4[127:96]!==32'h7010) $stop;

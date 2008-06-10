@@ -1,4 +1,4 @@
-// $Id:$ -*- Verilog -*-
+// -*- Verilog -*-
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -15,11 +15,11 @@
 
 module t_func_grey2bin (/*AUTOARG*/
    // Outputs
-   b, 
+   b,
    // Inputs
    g
    );
-   
+
    // surefire lint_off STMFOR
 
    parameter SZ = 5;
@@ -34,6 +34,6 @@ module t_func_grey2bin (/*AUTOARG*/
    integer 	   i;
    always @(/*AUTOSENSE*/g)
      for (i=0; i<SZ; i=i+1)
-       b[i] = ^(g >> i);  // surefire lint_off_line LATASS 
+       b[i] = ^(g >> i);  // surefire lint_off_line LATASS
 
 endmodule

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_chg (/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    clk, fastclk
    );
@@ -64,7 +63,7 @@ endmodule
 
 module t_chg_a (/*AUTOARG*/
    // Outputs
-   a_p1, b_p1, c_p1, d_p1, 
+   a_p1, b_p1, c_p1, d_p1,
    // Inputs
    a, b, c, d
    );

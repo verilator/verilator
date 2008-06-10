@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // Use this file as a template for submitting bugs, etc.
@@ -88,7 +87,7 @@ module Test (/*AUTOARG*/
    // merge the output values into the result vector.
 
    input clk;
-   input  [31:0] in;   
+   input  [31:0] in;
    output [31:0] out;
 
    /*AUTOREG*/

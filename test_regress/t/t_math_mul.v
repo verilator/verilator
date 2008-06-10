@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -61,12 +60,12 @@ module sub (/*AUTOARG*/
    input      [15:0] in2;
    output reg signed [31:0] out1;
    output reg unsigned [31:0] out2;
-   
+
    always @* begin
       // verilator lint_off WIDTH
       out1 = $signed(in1) * $signed(in2);
       out2 = $unsigned(in1) * $unsigned(in2);
       // verilator lint_on WIDTH
    end
-   
+
 endmodule

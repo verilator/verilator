@@ -1,4 +1,4 @@
-// $Id$  -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilog::Preproc: Internal implementation of default preprocessor
 //
@@ -69,7 +69,7 @@ class V3DefineRef {
     string	m_params;	// Define parameter list for next expansion
     string	m_nextarg;	// String being built for next argument
     int		m_parenLevel;	// Parenthesis counting inside def args
-    
+
     vector<string> m_args;	// List of define arguments
 public:
     string name() const { return m_name; }
@@ -366,21 +366,21 @@ const char* V3PreProcImp::tokenName(int tok) {
     case VP_ENDIF	: return("ENDIF");
     case VP_UNDEF	: return("UNDEF");
     case VP_DEFINE	: return("DEFINE");
-    case VP_ELSE	: return("ELSE");	
-    case VP_ELSIF	: return("ELSIF");	
-    case VP_LINE	: return("LINE");	
+    case VP_ELSE	: return("ELSE");
+    case VP_ELSIF	: return("ELSIF");
+    case VP_LINE	: return("LINE");
     case VP_SYMBOL	: return("SYMBOL");
     case VP_STRING	: return("STRING");
     case VP_DEFVALUE	: return("DEFVALUE");
     case VP_COMMENT	: return("COMMENT");
-    case VP_TEXT	: return("TEXT");	
-    case VP_WHITE	: return("WHITE");	
+    case VP_TEXT	: return("TEXT");
+    case VP_WHITE	: return("WHITE");
     case VP_DEFREF	: return("DEFREF");
     case VP_DEFARG	: return("DEFARG");
     case VP_ERROR	: return("ERROR");
     case VP_PSL		: return("PSL");
     default: return("?");
-    } 
+    }
 }
 
 string V3PreProcImp::trimWhitespace(const string& strg) {
@@ -593,7 +593,7 @@ int V3PreProcImp::getRawToken() {
 	    if (yyleng) m_rawAtBol = (yytext[yyleng-1]=='\n');
 	    if (m_state!=ps_DEFVALUE) return (VP_TEXT);
 	    else {
-		V3PreLex::s_currentLexp->appendDefValue(yytext,yyleng); 
+		V3PreLex::s_currentLexp->appendDefValue(yytext,yyleng);
 		goto next_tok;
 	    }
 	}
@@ -613,7 +613,7 @@ int V3PreProcImp::getRawToken() {
 		     fileline()->lineno(), m_off?"of":"on", m_state, (int)m_defRefs.size(),
 		     tokenName(tok), buf.c_str());
 	}
-    
+
 	// On EOF, try to pop to upper level includes, as needed.
 	if (tok==VP_EOF) {
 	    eof();
@@ -753,7 +753,7 @@ int V3PreProcImp::getToken() {
 	    // DEFVALUE is terminated by a return, but lex can't return both tokens.
 	    // Thus, we emit a return here.
 	    yytext=(char*)(newlines.c_str()); yyleng=newlines.length();
-	    return(VP_WHITE); 
+	    return(VP_WHITE);
 	}
 	case ps_DEFPAREN: {
 	    if (tok==VP_TEXT && yyleng==1 && yytext[0]=='(') {

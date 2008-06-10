@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator Test: Top level main for invoking model
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -7,7 +6,7 @@
 
 module sim_main;
    /*verilator public_module*/
-   
+
    reg  clk;
    reg  check;
    wire done;

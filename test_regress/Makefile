@@ -1,4 +1,3 @@
-# $Id$ */
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory

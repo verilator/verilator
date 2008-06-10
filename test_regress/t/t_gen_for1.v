@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -64,7 +63,7 @@ module Testit (clk, reset, b);
    assign c[0]                 = my_sig;
    assign my_sig               = 1'b1;
 
-endmodule 
+endmodule
 
 module fnxtclk (u, reset, clk, w );
    input                    u;
@@ -79,7 +78,7 @@ module fnxtclk (u, reset, clk, w );
       else begin
          w            <= u;
       end
-   end 
+   end
 
-endmodule 
+endmodule
 

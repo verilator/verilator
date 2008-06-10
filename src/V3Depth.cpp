@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Prevent very deep expressions
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Depth's Transformations:
-//		
+//
 // Each module:
 //	For each wide OP, assign a temporary variable.
 //	For each deep expression, assign expression to temporary.
@@ -111,7 +110,7 @@ private:
 	// We have some operator defines that use 2 parens, so += 2.
 	m_depth += 2;
 	if (m_depth>m_maxdepth) m_maxdepth=m_depth;
-	nodep->iterateChildren(*this); 
+	nodep->iterateChildren(*this);
 	m_depth -= 2;
 
 	if (m_stmtp

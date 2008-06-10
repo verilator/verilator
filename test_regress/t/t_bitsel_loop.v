@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -27,7 +26,7 @@ module t (/*AUTOARG*/
       end
       qq[27:16] = 12'hfed;
    end
-	       
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;

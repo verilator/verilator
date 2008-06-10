@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_clk (/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    fastclk, clk, reset_l
    );
@@ -83,7 +82,7 @@ module t_clk (/*AUTOARG*/
 	 end
       end
    end
-   
+
    reg [7:0] resetted;
    always @ (posedge clk or negedge reset_int_) begin
       //$write("CLK4 %x\n", reset_l);

@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for inst nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Inst's Transformations:
-//		
+//
 // Each module:
 //	Pins:
 //	    Create a wire assign to interconnect to submodule

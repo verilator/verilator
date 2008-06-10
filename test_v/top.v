@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -8,7 +7,7 @@
 
 module top (/*AUTOARG*/
    // Outputs
-   passed, out_small, out_quad, out_wide, 
+   passed, out_small, out_quad, out_wide,
    // Inputs
    clk, fastclk, reset_l, in_small, in_quad, in_wide
    );
@@ -17,7 +16,7 @@ module top (/*AUTOARG*/
    input  clk;
    input  fastclk;
    input  reset_l;
-   
+
    output [1:0] out_small;
    output [39:0] out_quad;
    output [69:0] out_wide;

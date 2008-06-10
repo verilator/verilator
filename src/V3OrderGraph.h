@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Block code ordering
 //
@@ -256,7 +256,7 @@ public:
 //--- Looping constructs
 
 class OrderLoopBeginVertex : public OrderLogicVertex {
-    // A vertex can never be under two loops... 
+    // A vertex can never be under two loops...
     // However, a LoopBeginVertex is not "under" the loop per se, and it may be under another loop.
     OrderLoopId	m_loopId;		// Arbitrary # to ID this loop
     uint32_t	m_loopColor;		// Color # of loop (for debug)
@@ -389,7 +389,7 @@ public:
 class OrderComboCutEdge : public OrderEdge {
     // Edge created from output of combo logic
     // Breakable if the output var is also a input,
-    // in which case we'll need a change detect loop around this var. 
+    // in which case we'll need a change detect loop around this var.
 public:
     OrderComboCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
 	: OrderEdge(graphp, fromp, top, WEIGHT_COMBO, CUTABLE) {}
@@ -406,7 +406,7 @@ public:
 class OrderPostCutEdge : public OrderEdge {
     // Edge created from output of post assignment
     // Breakable if the output var feeds back to input combo logic or another clock pin
-    // in which case we'll need a change detect loop around this var. 
+    // in which case we'll need a change detect loop around this var.
 public:
     OrderPostCutEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
 	: OrderEdge(graphp, fromp, top, WEIGHT_COMBO, CUTABLE) {}

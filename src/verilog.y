@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Bison grammer file
 //
@@ -20,7 +20,6 @@
 //*************************************************************************
 
 %{
-/* $Id$ */
 #include <stdio.h>
 #include <cstdlib>
 #include <cstdarg>
@@ -518,7 +517,7 @@ portV2kSecond:	portV2kDecl				{ $$ = $1; }
 	;
 
 portV2kInit:	portV2kSig				{ $$=$1; }
-	|	portV2kSig '=' expr			
+	|	portV2kSig '=' expr
 			{ $$=$1; $$->addNext(new AstInitial($2,new AstAssign($2, new AstVarRef($2,V3Parse::s_varAttrp->name(),true), $3))); }
 	;
 

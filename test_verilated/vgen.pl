@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-#$Id$
 ######################################################################
 #
 # This program is Copyright 2001-2008 by Wilson Snyder.
@@ -7,12 +6,12 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of either the GNU General Public License or the
 # Perl Artistic License.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 ######################################################################
 
 require 5.006_001;
@@ -38,7 +37,7 @@ use vars qw (@Blocks
 
 #======================================================================
 
-# width=>	Number of bits the output size is, 0=you tell me. 
+# width=>	Number of bits the output size is, 0=you tell me.
 # func=>	What to put in output file
 # signed=>	0=unsigned output, 1=signed output, '%1'=signed if op1 signed
 # em=>		How to calculate emulated return value
@@ -227,7 +226,6 @@ write_output_v("vgen.v") if !$Opt_Sc;
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Id$ ', "\n";
     pod2usage(-verbose=>2, -exitval => 2);
     exit (1);
 }
@@ -240,7 +238,7 @@ sub parameter {
     my $param = shift;
     die "%Error: Unknown parameter: $param\n";
 }
- 
+
 #######################################################################
 #######################################################################
 #######################################################################
@@ -389,7 +387,7 @@ sub rnd_int {
     return 1 if ($v<60);
     return rnd32();
 }
-  
+
 sub rnd {
     return (int(rand($_[0]))) if ($_[0] < (1<<15));
     return (rnd32() % $_[0]);
@@ -1019,7 +1017,7 @@ sub tree_dump {
     my $treeref = shift;
     print Dumper($treeref);
 }
-  
+
 #######################################################################
 __END__
 
@@ -1060,7 +1058,7 @@ down to a NOP.
 
 =item --numops
 
-Number of operations to create. 
+Number of operations to create.
 
 =item --raise
 

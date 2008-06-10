@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test driver/expect definition
 //
 // Copyright 2003-2007 by Wilson Snyder. This program is free software; you can

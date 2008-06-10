@@ -1,4 +1,4 @@
-# $Id$ */
+# -*- Makefile -*-
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator: Makefile for verilog source
@@ -40,7 +40,7 @@ export OBJCACHE_HOSTS := $(shell rschedule --no-allow-reserved --similar hostnam
 endif
 
 ifeq ($(OBJCACHE_HOSTS),)
-export OBJCACHE := 
+export OBJCACHE :=
 else
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
 export OBJCACHE := @objcache --read --write
@@ -74,7 +74,7 @@ prefiles::
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 prefiles:: config_rev.h
 # This output goes into srcdir, as we need to distribute it as part of the kit.
-config_rev.h:	config_rev.pl .svn/entries
+config_rev.h:	config_rev.pl ../.git/index
 	$(PERL) config_rev.pl . >$@
 endif
 

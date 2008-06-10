@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -9,8 +8,8 @@ module t (/*AUTOARG*/
    clk
    );
 
-   // surefire lint_off ASWEBB 
-   // surefire lint_off ASWEMB 
+   // surefire lint_off ASWEBB
+   // surefire lint_off ASWEMB
    // surefire lint_off STMINI
    // surefire lint_off CSEBEQ
 
@@ -56,7 +55,7 @@ module t (/*AUTOARG*/
    reg [7:0]  o_from_com_levs12;
    reg [7:0]  o_from_com_levs13;
    always @ (/*AS*/o_from_com_levs11) begin
-      o_from_com_levs12 = o_from_com_levs11 + 8'h1; 
+      o_from_com_levs12 = o_from_com_levs11 + 8'h1;
       o_from_com_levs12 = o_from_com_levs12 + 8'h1;  // Test we can add to self and optimize
       o_from_com_levs13 = o_from_com_levs12;
    end

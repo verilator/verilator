@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -19,7 +18,7 @@ module t (/*AUTOARG*/
 
   initial begin
     in = 11'b10000001000;
-    for(k=0;k<32;k=k+1) 
+    for(k=0;k<32;k=k+1)
       delay_minmax[k] = 0;
   end
 

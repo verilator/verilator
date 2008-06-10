@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Error handling
 //
@@ -47,7 +46,7 @@ bool V3Error::s_pretendError[V3ErrorCode::MAX];
 struct v3errorIniter {
     v3errorIniter() {  V3Error::init(); };
 };
-v3errorIniter v3errorInit; 
+v3errorIniter v3errorInit;
 
 //######################################################################
 // ErrorCode class functions
@@ -203,7 +202,7 @@ void FileLine::deleteAllRemaining() {
     while (1) {
 	FileLineCheckSet::iterator it=fileLineLeakChecks.begin();
 	if (it==fileLineLeakChecks.end()) break;
-	delete *it;  
+	delete *it;
 	// Operator delete will remove the iterated object from the list.
 	// Eventually the list will be empty and terminate the loop.
     }

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -71,7 +70,7 @@ module ftest(
    always @ ( posedge clk ) begin
       z <= myadd( a, zi );
    end
-   
+
    function [ 7:0 ] myadd;
       input [7:0] ina;
       input [7:0] inb;
@@ -83,7 +82,7 @@ module ftest(
 
 endmodule // ftest
 
-module mytop ( 
+module mytop (
            input [ 7:0 ]  a,
                           b,
            input clk,

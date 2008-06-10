@@ -1,4 +1,4 @@
-# $Id$ -*- Makefile -*-
+# -*- Makefile -*-
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
@@ -44,7 +44,7 @@ CPPFLAGS += -I. $(VK_CPPFLAGS_ALWAYS) $(VK_CPPFLAGS_WALL)
 VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
 
-#OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE 
+#OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE
 #OPT = -ggdb -DPRINTINITSTR
 CPPFLAGS += $(OPT)
 
@@ -59,11 +59,11 @@ LDFLAGS  += $(USER_LDFLAGS)
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.
 # SystemC takes minutes to optimize, thus it is off by default.
-#OPT_SLOW = 
+#OPT_SLOW =
 # Fast path optimizations.  Most time is spent in these classes.
 #OPT_FAST = -O2 -fstrict-aliasing
 #OPT_FAST = -O
-#OPT_FAST = 
+#OPT_FAST =
 
 #######################################################################
 ##### Aggregates

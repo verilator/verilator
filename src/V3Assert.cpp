@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Collect and print statistics
 //
@@ -106,7 +105,7 @@ private:
 	sentreep->unlinkFrBack();
 	//
 	AstNode* bodysp = NULL;
-	bool selfDestruct = false;	
+	bool selfDestruct = false;
 	if (AstPslCover* snodep = nodep->castPslCover()) {
 	    if (!v3Global.opt.coverageUser()) {
 		selfDestruct = true;

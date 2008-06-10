@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 
 // verilator lint_off WIDTH
@@ -42,7 +41,7 @@ module chk (input clk, input rst_l, input expr);
 	 $write("%%Error: %0s\n", msg);
 	 $stop;
       end
-   endtask 
+   endtask
 
    always @(posedge clk) begin
       if (rst_l) begin
@@ -72,4 +71,4 @@ module chk (input clk, input rst_l, input expr);
       end
    end
 
-endmodule 
+endmodule

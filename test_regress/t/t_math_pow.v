@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -20,7 +19,7 @@ module t (/*AUTOARG*/
       p = a[60:0] ** b[20:0];
       shifted = 2 ** b[20:0];
    end
-	       
+
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin

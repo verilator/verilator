@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for delayed nodes
 //
@@ -19,9 +18,9 @@
 //
 //*************************************************************************
 // V3Delayed's Transformations:
-//		
+//
 // Each module:
-//	Replace ASSIGNDLY var, exp 
+//	Replace ASSIGNDLY var, exp
 //	    With   ASSIGNDLY newvar, exp
 //	    At top of block:  VAR  newvar
 //	    At bottom of block: ASSIGNW var newvar
@@ -269,7 +268,7 @@ private:
 	AstAlwaysPost* finalp = varrefp->varScopep()->user4p()->castNode()->castAlwaysPost();
 	if (!finalp) {
 	    finalp = new AstAlwaysPost(nodep->fileline(), NULL/*sens*/, NULL/*body*/);
-	    UINFO(9,"     Created "<<finalp<<endl); 
+	    UINFO(9,"     Created "<<finalp<<endl);
 	    m_activep->addStmtsp(finalp);
 	    varrefp->varScopep()->user4p(finalp);
 	}
@@ -284,7 +283,7 @@ private:
 				    new AstVarRef(nodep->fileline(), setvscp, false),
 				    NULL,
 				    NULL);
-	    UINFO(9,"     Created "<<postLogicp<<endl); 
+	    UINFO(9,"     Created "<<postLogicp<<endl);
 	    finalp->addBodysp(postLogicp);
 	    finalp->user5p(setvscp);	// Remember IF's vset variable
 	    finalp->user4p(postLogicp);	// and the associated IF, as we may be able to reuse it
@@ -347,7 +346,7 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (!nodep->user2()) {  // Not done yet
 	    nodep->user2(true);
-	    
+
 	    if (m_inDly && nodep->lvalue()) {
 		UINFO(4,"AssignDlyVar: "<<nodep<<endl);
 		markVarUsage(nodep->varp(), VU_DLY);
@@ -401,7 +400,7 @@ private:
 							m_activep->sensesp());
 		    newactp->addStmtsp(prep);	// Add to FRONT of statements
 		    newactp->addStmtsp(postp);
-		    m_activep->addNext(newactp);					
+		    m_activep->addNext(newactp);
 		    dlyvscp->user2p(newactp);
 		}
 		AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, true);

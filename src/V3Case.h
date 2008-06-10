@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Break case statements up and add Unknown assigns
 //

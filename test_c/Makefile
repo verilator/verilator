@@ -1,4 +1,3 @@
-# $Id$
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory
@@ -21,7 +20,7 @@ export VERILATOR_ROOT
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk
 
-DEBUG_ON = --debug --trace-dups 
+DEBUG_ON = --debug --trace-dups
 #DEBUG = $(DEBUG_ON)
 VALGRIND_ON = $(DEBUG_ON) --gdb "valgrind -v --leak-check=yes"
 
@@ -44,7 +43,7 @@ prep_vg:
 compile:
 	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj
 
-run:	
+run:
 	obj_dir/simx
 
 ######################################################################

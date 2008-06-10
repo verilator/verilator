@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator Example: Top level main for invoking model
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -11,7 +10,7 @@
 # include <SpTraceVcdC.h>	// Trace file format header (from SystemPerl)
 #endif
 
-Vtop *top;			// Instantiation of module	
+Vtop *top;			// Instantiation of module
 
 unsigned int main_time = 0;	// Current simulation time
 
@@ -42,10 +41,10 @@ int main(int argc, char **argv, char **env) {
 
 	if ((main_time % 10) == 3) {	// Toggle clock
 	    top->clk = 1;
-	} 
+	}
 	if ((main_time % 10) == 8) {
 	    top->clk = 0;
-	} 
+	}
 	if (main_time > 10) {
 	    top->reset_l = 1;	// Deassert reset
 	} else if (main_time > 1) {

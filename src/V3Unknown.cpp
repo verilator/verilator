@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add Unknown assigns
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Unknown's Transformations:
-//		
+//
 // Each module:
 //	TBD: Eliminate tristates by adding __in, __inen, __en wires in parallel
 //	    Need __en in changed list if a signal is on the LHS of a assign
@@ -270,7 +269,7 @@ private:
 		// Link in conditional, can blow away temp xor
 		AstNode* nnp = newp->lhsp()->unlinkFrBack();
 		replaceHandle.relink(nnp); nodep=NULL;
-		newp->deleteTree(); newp=NULL;	
+		newp->deleteTree(); newp=NULL;
 		// Added X's, tristate them too
 		nnp->accept(*this);
 	    }
@@ -341,7 +340,7 @@ private:
 		// Link in conditional, can blow away temp xor
 		AstNode* nnp = newp->lhsp()->unlinkFrBack();
 		replaceHandle.relink(nnp); nodep=NULL;
-		newp->deleteTree(); newp=NULL;	
+		newp->deleteTree(); newp=NULL;
 		// Added X's, tristate them too
 		nnp->accept(*this);
 	    }

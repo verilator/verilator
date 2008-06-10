@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Waves tracing
 //
@@ -44,7 +43,7 @@
 //	Assign trace codes:
 //		If from a VARSCOPE, record the trace->varscope map
 //		Else, assign trace codes to each variable
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -155,7 +154,7 @@ private:
     // NODE STATE
     // V3Hashed
     //  Ast*::user4()			// V3Hashed calculation
-    // Cleared entire netlist	
+    // Cleared entire netlist
     //  AstCFunc::user()		// V3GraphVertex* for this node
     //  AstTraceInc::user()		// V3GraphVertex* for this node
     //  AstVarScope::user()		// V3GraphVertex* for this node

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -32,7 +31,7 @@ module t;
       if (nil_func(32'h12,32'h12) != 32'h24) $stop;
       nil_task(32'h012,32'h112,global);
       if (global !== 32'h124) $stop;
-      
+
       vec[0] = 32'h333;
       vec[1] = 32'habc;
       incr(vec[1],vec[0],vec[1]);

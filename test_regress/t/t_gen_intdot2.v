@@ -1,4 +1,3 @@
-// $Id: t_gen_intdot.v 840 2006-12-18 18:14:53Z wsnyder $
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,

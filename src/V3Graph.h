@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+//-*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph optimizations
 //
@@ -67,7 +67,7 @@ public:
     virtual ~V3Graph();
     static void debug(int level) { s_debug = level; }
     virtual string dotRankDir() { return "TB"; }	// rankdir for dot plotting
-    
+
     // METHODS
     void clear();	// Empty it of all vertices/edges, as if making a new object
 

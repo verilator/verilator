@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-#$Id$
 ######################################################################
 #
 # Copyright 2002-2008 by Wilson Snyder.
@@ -7,16 +6,16 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of either the GNU General Public License or the
 # Perl Artistic License.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the Perl Artistic License
 # along with this module; see the file COPYING.  If not, see
 # www.cpan.org
-#                                                                           
+#
 ######################################################################
 
 #require 5.006_001;
@@ -53,13 +52,12 @@ if ($opt_classes) {
     write_types("V3Ast__gen_types.h");
 }
 foreach my $cpt (@Opt_Cpt) {
-    Cpt::process(in_filename=>"$Opt_I[0]/${cpt}.cpp", out_filename=>"${cpt}__gen.cpp"); 
+    Cpt::process(in_filename=>"$Opt_I[0]/${cpt}.cpp", out_filename=>"${cpt}__gen.cpp");
 }
 
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Id$ ', "\n";
     pod2usage(-verbose=>2, -exitval => 2);
     exit (1);
 }
@@ -78,7 +76,7 @@ sub parameter {
 	die "%Error: Unknown parameter: $param,";
     }
 }
- 
+
 #######################################################################
 
 sub read_types {
@@ -238,7 +236,7 @@ sub process {
     my $fhi = IO::File->new($self->{in_filename}) or die "%Error: $! $self->{in_filename},";
     while (defined(my $line = $fhi->getline)) {
 	if (!$didln) {
-	    $self->print("#line $. \"$self->{in_filename}\"\n"); 
+	    $self->print("#line $. \"$self->{in_filename}\"\n");
 	    $didln = 1;
 	}
 	if ($line =~ /^\s+(TREE.*)$/) {
@@ -259,7 +257,7 @@ sub process {
     }
     $fhi->close;
 
-    # Put out the resultant file, if the list has a reference to a 
+    # Put out the resultant file, if the list has a reference to a
     # function, then call that func to generate output
     my $fho = ::open_file($self->{out_filename});
     my @togen = @{$self->{out_lines}};
@@ -281,7 +279,7 @@ sub process {
 sub tree_line {
     my $self = shift;
     my $func = shift;
-    
+
     $func =~ s!\s*//.*$!!;
     $func =~ s!\s*;\s*$!!;
 
@@ -384,7 +382,7 @@ sub treeop_exec_func {
 
 	my $nargs = 0;
 	my %argnums;  # Number for each argument name
-	
+
 	my $aref = undef;	# Recursive array with structure to form
 	my @astack;
 	my $forming = "";
@@ -468,7 +466,7 @@ sub tree_base {
     foreach my $type (sort (keys %::Classes)) {
 	my $base = $::Classes{$type};
 	my @out_for_type;
-	foreach my $base (::subclasses_of($type), $type) { 
+	foreach my $base (::subclasses_of($type), $type) {
 	    foreach my $typefunc (@{$self->{treeop}{$base}}) {
 		my @lines = ("	if ($typefunc->{match_func}(nodep)) return;\n",);
 		if ($typefunc->{order}) {

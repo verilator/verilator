@@ -1,4 +1,4 @@
-/* $Id$ -*- C++ -*- */
+/* -*- C++ -*- */
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex verilog preprocessor
  *
@@ -148,7 +148,7 @@ psl		[p]sl
 <ARGMODE>[(]		{ V3PreLex::s_currentLexp->m_parenLevel++;
 			  // Note paren level 0 means before "(" of starting args
 			  // Level 1 means "," between arguments
-			  // Level 2+ means one argument's internal () 
+			  // Level 2+ means one argument's internal ()
 			  if (V3PreLex::s_currentLexp->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {

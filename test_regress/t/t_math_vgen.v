@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -79,7 +78,7 @@ module t (/*AUTOARG*/
 	 if ((W0420[(- (W0421[115:110]))]) != (1'h1)) if (check) $stop;
       end
    end
-   
+
    //============================================================
 
    // gcc_2_96_bug
@@ -115,7 +114,7 @@ module t (/*AUTOARG*/
 	if (((W0592[119:9]) >> ((W0593))) != (111'h0000000000000000000000000000)) if (check) $stop;
       end
    end
-   
+
    //============================================================
 
    reg        [127:0] WA1063                     ; //=00000000000000000000000000000001

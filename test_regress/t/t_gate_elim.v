@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -13,7 +12,7 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
 
    reg   b;
-   
+
    wire  vconst1 = 1'b0;
    wire  vconst2 = !(vconst1);
    wire  vconst3 = !vconst2;
@@ -76,7 +75,7 @@ module ta (
       q = vconst | b;
    end
 endmodule
-	  
+
 module tb (
 	   input vconst,
 	   input clk,
@@ -106,7 +105,7 @@ module td (
      q = vconst;
    end
 endmodule
-	  
+
 module te (
 	   input clk,
 	   input vconst,

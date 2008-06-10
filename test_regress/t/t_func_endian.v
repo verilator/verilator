@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -77,7 +76,7 @@ module Test (/*AUTOARG*/
    input noswap;
    input nibble;
 
-   input  [31:0] in;   
+   input  [31:0] in;
    output [31:0] out;
    output [31:0] swapped;
 
@@ -88,9 +87,9 @@ module Test (/*AUTOARG*/
          EndianSwap = (Nibble ? { Data[0], Data[1], Data[2], Data[3],
 				  Data[4], Data[5], Data[6], Data[7] }
                        : { 4'h0, Data[0], Data[1], Data[2], Data[3] });
-      end	
+      end
    endfunction
-   
+
    assign out[31:24] = (noswap ? in[31:24]
 			: EndianSwap(nibble, in[31:24]));
    assign out[23:16] = (noswap ? in[23:16]
@@ -99,7 +98,7 @@ module Test (/*AUTOARG*/
 			: EndianSwap(nibble, in[15:8]));
    assign out[7:0]   = (noswap ? in[7:0]
 			: EndianSwap(nibble, in[7:0]));
-   
+
    reg [31:0] swapped;
    always @(posedge clk) begin
       swapped[31:24] <= EndianSwap(nibble, in[31:24]);

@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Gate optimizations, such as wire elimination
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Gate's Transformations:
-//		
+//
 // Extract a graph of the *entire* netlist with cells expanded
 // Perform constant optimization across the graph
 // Create VARSCOPEs for any variables we can rip out
@@ -170,7 +169,7 @@ private:
 	// V3Const cleans up any NOTs by flipping the edges for us
 	if (m_buffersOnly
 	    && !(nodep->rhsp()->castVarRef()
-		 // Until NEW_ORDERING, avoid making non-clocked logic into clocked, 
+		 // Until NEW_ORDERING, avoid making non-clocked logic into clocked,
 		 // as it slows down the verilator_sim_benchmark
 		 || (nodep->rhsp()->castNot()
 		     && nodep->rhsp()->castNot()->lhsp()->castVarRef()
@@ -343,7 +342,7 @@ private:
 	    UINFO(5," VARREF to "<<varscp<<endl);
 	    // We use weight of one; if we ref the var more than once, when we simplify,
 	    // the weight will increase
-	    if (nodep->lvalue()) {	
+	    if (nodep->lvalue()) {
 		new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
 	    } else {
 		new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, 1);

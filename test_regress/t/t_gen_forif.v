@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -63,7 +62,7 @@ module Test (clk, Value, Result);
    reg Internal;
 
    assign Result = Internal ^ clk;
-  
+
    always @(posedge clk)
      Internal <= #1 Value;
 endmodule
@@ -75,7 +74,7 @@ module Test_wrap1 (clk, Value, Result);
 
    Test t (clk, Value, Result);
 endmodule
-	
+
 module Test_wrap2 (clk, Value, Result);
    input clk;
    input Value;

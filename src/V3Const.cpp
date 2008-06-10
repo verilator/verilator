@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Constant folding
 //
@@ -102,7 +101,7 @@ private:
     bool	m_wremove;	// Inside scope, no assignw removal
     bool	m_warn;		// Output warnings
     bool	m_cpp;		// C++ conversions only
-    AstModule*	m_modp;		// Current module	
+    AstModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
     //int debug() { return 9; }
 
@@ -143,7 +142,7 @@ private:
     }
     bool operandIsTwo(AstNode* nodep) {
 	return (nodep->castConst()
-		&& nodep->width() <= VL_QUADSIZE 
+		&& nodep->width() <= VL_QUADSIZE
 		&& nodep->castConst()->asQuad()==2);
     }
     bool operandIsTwostate(AstNode* nodep) {
@@ -745,7 +744,7 @@ private:
 	    // Recurse rather then calling node->iterate to prevent 2^n recursion!
 	    if (operandConcatMove(abConcp)) moveConcat(abConcp);
 	    bcConcp->deleteTree(); bcConcp=NULL;
-	} else { 
+	} else {
 	    AstConcat* abConcp = nodep->lhsp()->castConcat(); abConcp->unlinkFrBack();
 	    AstNode* ap = abConcp->lhsp()->unlinkFrBack();
 	    AstNode* bp = abConcp->rhsp()->unlinkFrBack();
@@ -1017,7 +1016,7 @@ private:
 		 && nodep->ifsp() && nodep->elsesp()) {
 	    UINFO(4,"IF(NOT {x})  => IF(x) swapped if/else"<<nodep<<endl);
 	    AstNode* condp = nodep->condp()->castNot()->lhsp()->unlinkFrBackWithNext();
-	    AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();	
+	    AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
 	    AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
 	    AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
 	    ifp->branchPred(nodep->branchPred().invert());
@@ -1038,7 +1037,7 @@ private:
 	    nodep->deleteTree(); nodep=NULL;
 	}
 	else if (0	// Disabled, as vpm assertions are faster without due to short-circuiting
-		 && operandIfIf(nodep)) {  
+		 && operandIfIf(nodep)) {
 	    UINFO(0,"IF({a}) IF({b}) => IF({a} && {b})"<<endl);
 	    AstNodeIf* lowerIfp = nodep->ifsp()->castNodeIf();
 	    AstNode* condp = nodep->condp()->unlinkFrBack();

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -17,7 +16,7 @@ module t (/*AUTOARG*/
    reg 	       c1_start; initial c1_start = 0;
    wire [31:0] c1_count;
    comb_loop c1 (.count(c1_count), .start(c1_start));
-	      
+
    wire        s2_start = (c1_count==0 && c1_start);
    wire [31:0] s2_count;
    seq_loop  s2 (.count(s2_count), .start(s2_start));

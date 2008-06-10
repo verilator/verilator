@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -55,7 +54,7 @@ module t;
 	 if (hex['h0b] != 176'h400b37654321276543211765432107654321abcdef12) $stop;
 	 if (hex['h0c] != 176'h400c37654321276543211765432107654321abcdef13) $stop;
       end
-      
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

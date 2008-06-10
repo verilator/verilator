@@ -1,4 +1,4 @@
-// $Id$
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph optimizations
 //
@@ -106,7 +106,7 @@ ostream& operator<<(ostream& os, V3GraphVertex* vertexp) {
 //######################################################################
 // Edges
 
-V3GraphEdge::V3GraphEdge(V3Graph* graphp, 
+V3GraphEdge::V3GraphEdge(V3Graph* graphp,
 			 V3GraphVertex* fromp, V3GraphVertex* top, int weight,
 			 bool cutable) {
     UASSERT(fromp, "Null from pointer\n");

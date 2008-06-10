@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -23,17 +22,17 @@ module t (clk);
       input [`VECTOR_RANGE]   x;          // x[width-1:0] is the input vector
       reg [`VECTOR_RANGE]     flip;
       begin
-	 flip = 'd0;               
-	 func_tree_left = flip; 
+	 flip = 'd0;
+	 func_tree_left = flip;
       end
    endfunction
-    
+
    reg [WIDTH-1:0]     a;                      // value to be shifted
    reg [WIDTH-1:0] 	tree_left;
    always @(a) begin : barrel_shift
       tree_left =  func_tree_left  (a);
    end  // barrel_shift
-    
+
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin

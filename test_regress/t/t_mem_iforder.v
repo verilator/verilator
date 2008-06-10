@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -72,7 +71,7 @@ module fifo (/*AUTOARG*/
 
    output [15:0] out0;
    output [15:0] out1;
-   
+
    reg [15:0] 	 mem [1:0];
    reg [15:0] 	 memtemp2 [1:0];
    reg [15:0] 	 memtemp3 [1:0];

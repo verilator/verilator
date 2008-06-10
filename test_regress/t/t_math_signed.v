@@ -1,4 +1,3 @@
-// $Revision: 1.1 $$Date$$Author$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -40,7 +39,7 @@ module t (/*AUTOARG*/
       b_us = b[4:0]>>>4;	// Unsigned, due to extract
       // verilator lint_on WIDTH
    end
-	       
+
    integer i;
    initial begin
       if ((-1 >>> 3) != -1) $stop;	// Decimals are signed

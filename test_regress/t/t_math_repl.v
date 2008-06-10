@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -32,24 +31,24 @@ module t (/*AUTOARG*/
 		       | (  {{16{src0[31]}}, {16{src0[15]}}}
 			    & {2{~mask[31:16]}})));
 
-   wire [31:0] sl_mask 
+   wire [31:0] sl_mask
 	       = (32'hffffffff << src1[4:0]);
-         
-   wire [31:0] sr_mask   
+
+   wire [31:0] sr_mask
 	       = {sl_mask[0],  sl_mask[1],
-		  sl_mask[2],  sl_mask[3],  sl_mask[4], 
+		  sl_mask[2],  sl_mask[3],  sl_mask[4],
                   sl_mask[5],  sl_mask[6],  sl_mask[7],
-		  sl_mask[8],  sl_mask[9], 
+		  sl_mask[8],  sl_mask[9],
                   sl_mask[10], sl_mask[11],
-		  sl_mask[12], sl_mask[13], sl_mask[14], 
+		  sl_mask[12], sl_mask[13], sl_mask[14],
                   sl_mask[15], sl_mask[16],
-		  sl_mask[17], sl_mask[18], sl_mask[19], 
+		  sl_mask[17], sl_mask[18], sl_mask[19],
                   sl_mask[20], sl_mask[21],
-		  sl_mask[22], sl_mask[23], sl_mask[24], 
+		  sl_mask[22], sl_mask[23], sl_mask[24],
                   sl_mask[25], sl_mask[26],
 		  sl_mask[27], sl_mask[28], sl_mask[29],
                   sl_mask[30], sl_mask[31]};
-   
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;

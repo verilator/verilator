@@ -7,7 +7,7 @@
 *.1
 *.tmp
 *.tex
-Makefile
+/Makefile
 README
 config.cache
 config.status

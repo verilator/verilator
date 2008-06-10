@@ -1,4 +1,3 @@
-// $Id: t_delay.v 965 2007-10-31 20:29:07Z wsnyder $
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,

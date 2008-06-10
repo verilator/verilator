@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Emit C++ for tree
 //
@@ -68,7 +67,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Collect list of scopes
 	nodep->iterateChildren(*this);
-	
+
 	// Sort m_scopes by scope name
 	sort(m_scopes.begin(), m_scopes.end(), CmpName());
 	// Output

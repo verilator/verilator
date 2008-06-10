@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Break always into sensitivity active domains
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Active's Transformations:
-//		
+//
 // Note this can be called multiple times.
 //   Across all ACTIVES
 //	SenTrees are now under each ACTIVE statement, we want them global:

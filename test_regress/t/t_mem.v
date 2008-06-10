@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -26,7 +25,7 @@ module t (/*AUTOARG*/
 	  memory8_16[{m_addr,1'd0}]} <= m_data;
       end
    end
-   
+
    reg [7:0] memory8_16_4;
    reg [7:0] memory8_16_5;
    // Test complicated sensitivity lists

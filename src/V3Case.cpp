@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Break case statements up and add Unknown assigns
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Case's Transformations:
-//		
+//
 // Each module:
 //	TBD: Eliminate tristates by adding __in, __inen, __en wires in parallel
 //	    Need __en in changed list if a signal is on the LHS of a assign
@@ -235,7 +234,7 @@ private:
 	    //                            new AstConst(cexprp->fileline(), nummask));
 	    AstNode* and1p = new AstSel(cexprp->fileline(), cexprp->cloneTree(false),
 					msb, 1);
-	    AstNode* eqp = new AstNeq(cexprp->fileline(), 
+	    AstNode* eqp = new AstNeq(cexprp->fileline(),
 				      new AstConst(cexprp->fileline(), 0),
 				      and1p);
 	    AstIf* ifp = new AstIf(cexprp->fileline(), eqp, tree1p, tree0p);
@@ -293,7 +292,7 @@ private:
 		for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondNextp) {
 		    icondNextp = icondp->nextp();
 		    icondp->unlinkFrBack();
-		    
+
 		    AstNode* and1p;
 		    AstNode* and2p;
 		    AstConst* iconstp = icondp->castConst();
@@ -305,7 +304,7 @@ private:
 			numval.opBitsOne(iconstp->num());
 			and1p = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
 					   new AstConst(itemp->fileline(), nummask));
-			and2p = new AstAnd(itemp->fileline(), 
+			and2p = new AstAnd(itemp->fileline(),
 					   new AstConst(itemp->fileline(), numval),
 					   new AstConst(itemp->fileline(), nummask));
 			icondp->deleteTree(); icondp=NULL; iconstp=NULL;

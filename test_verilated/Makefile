@@ -1,4 +1,3 @@
-# $Id$ */
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory
@@ -21,7 +20,7 @@ export VERILATOR_ROOT
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk
 
-VERILATOR_SW += 
+VERILATOR_SW +=
 ifeq ($(VERILATOR_NO_DEBUG),)
   VERILATOR_SW += --debug
 endif

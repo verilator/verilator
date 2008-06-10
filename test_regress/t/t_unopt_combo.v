@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -67,7 +66,7 @@ module file (/*AUTOARG*/
    // Inputs
    crc
    );
-   
+
    input [31:0]        crc;
 `ifdef ISOLATE
    output reg [31:0]   b /* verilator isolate_assignments*/;

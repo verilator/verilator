@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -9,7 +9,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 //*************************************************************************
 ///
 /// \file
@@ -129,7 +129,7 @@ struct Verilated {
     // Extern Vars
     // Below two are used as bool, but having as uint32_t avoids conversion time
 private:
-    static int  	s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
+    static int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
     static int		s_debug;		///< See accessors... only when VL_DEBUG set
     static bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
     static bool		s_gotFinish;		///< A $finish statement executed
@@ -152,7 +152,7 @@ public:
 #endif
     /// Internal: Create a new module name by concatenating two strings
     static const char* catName(const char* n1, const char* n2); // Returns new'ed data
-    /// Enable calculation of unused signals 
+    /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) { s_calcUnusedSigs=flag; }
     static bool calcUnusedSigs() { return s_calcUnusedSigs; }	///< Return calcUnusedSigs value
     /// Did the simulation $finish?
@@ -165,7 +165,7 @@ public:
     /// Enable/disable assertions
     static void assertOn(bool flag) { s_assertOn=flag; }
     static bool assertOn() { return s_assertOn; }
-};    
+};
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
@@ -236,7 +236,7 @@ static inline QData  VL_EXTENDSIGN_Q(int lbits, QData lhs) { return (-((lhs)&(VL
 
 // Debugging prints
 static inline void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
-    printf("  Data: w%d: ", lbits); 
+    printf("  Data: w%d: ", lbits);
     for (int i=VL_WORDS_I(lbits)-1; i>=0; i--) { printf("%08x ",iwp[i]); }
     printf("\n");
 }
@@ -878,7 +878,7 @@ static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
     return out;
 }
 
-#define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs) 
+#define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
 
 static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
     if (lhs==0) return 0;
@@ -896,23 +896,23 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
 
 // INTERNAL: Stuff LHS bit 0++ into OUTPUT at specified offset
 // ld may be "dirty", output is clean
-static inline void _VL_INSERT_II(int, CData& lhsr, IData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_II(int, CData& lhsr, IData ld, int hbit, int lbit) {
     IData insmask = (VL_MASK_I(hbit-lbit+1))<<lbit;
     lhsr = (lhsr & ~insmask) | ((ld<<lbit) & insmask);
 }
-static inline void _VL_INSERT_II(int, SData& lhsr, IData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_II(int, SData& lhsr, IData ld, int hbit, int lbit) {
     IData insmask = (VL_MASK_I(hbit-lbit+1))<<lbit;
     lhsr = (lhsr & ~insmask) | ((ld<<lbit) & insmask);
 }
-static inline void _VL_INSERT_II(int, IData& lhsr, IData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_II(int, IData& lhsr, IData ld, int hbit, int lbit) {
     IData insmask = (VL_MASK_I(hbit-lbit+1))<<lbit;
     lhsr = (lhsr & ~insmask) | ((ld<<lbit) & insmask);
 }
-static inline void _VL_INSERT_QQ(int, QData& lhsr, QData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_QQ(int, QData& lhsr, QData ld, int hbit, int lbit) {
     QData insmask = (VL_MASK_Q(hbit-lbit+1))<<lbit;
     lhsr = (lhsr & ~insmask) | ((ld<<lbit) & insmask);
 }
-static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbit) {
     int hoffset = VL_BITBIT_I(hbit);
     int loffset = VL_BITBIT_I(lbit);
     if (hoffset==VL_SIZEBITS_I && loffset==0) {
@@ -937,7 +937,7 @@ static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbi
 
 // INTERNAL: Stuff large LHS bit 0++ into OUTPUT at specified offset
 // lwp may be "dirty"
-static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit) { 
+static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int lbit) {
     int hoffset = hbit & VL_SIZEBITS_I;
     int loffset = lbit & VL_SIZEBITS_I;
     int lword = VL_BITWORD_I(lbit);
@@ -983,7 +983,7 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
     }
 }
 
-static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit, int lbit) { 
+static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit, int lbit) {
     WData lwp[2]; VL_SET_WQ(lwp,ld);
     _VL_INSERT_WW(obits,owp,lwp,hbit,lbit);
 }
@@ -1263,7 +1263,7 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP lwp, IData ls
 static inline WDataOutP VL_SEL_WWII(int obits,int lbits,int,int,WDataOutP owp,WDataInP lwp, IData lsb, IData width) {
     int msb = lsb+width-1;
     int word_shift = VL_BITWORD_I(lsb);
-    if (msb>lbits) { // Outside bounds, 
+    if (msb>lbits) { // Outside bounds,
 	for (int i=0; i<VL_WORDS_I(obits)-1; i++) owp[i] = ~0;
 	owp[VL_WORDS_I(obits)-1] = VL_MASK_I(obits);
     } else if (VL_BITBIT_I(lsb)==0) {
@@ -1360,32 +1360,32 @@ static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o,
     o[0]=d0;  o[1]=d1;  o[2]=d2;
     _END(obits,3);  }
 #define VL_HAVE_CONST_W_4X
-static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
 				      I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;
     _END(obits,4);  }
 #define VL_HAVE_CONST_W_5X
-static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
 				      I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;
     _END(obits,5);  }
 #define VL_HAVE_CONST_W_6X
-static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
 				      I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;
     _END(obits,6);  }
 #define VL_HAVE_CONST_W_7X
-static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
 				      I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;
     _END(obits,7);  }
 #define VL_HAVE_CONST_W_8X
-static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
 				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     _END(obits,8);  }
 #define VL_HAVE_CONST_W_9X
-static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o, 
+static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o,
 				      I d8,
 				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;

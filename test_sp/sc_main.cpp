@@ -1,4 +1,4 @@
-// $Id$ -*- SystemC -*-
+// -*- SystemC -*-
 // DESCRIPTION: Verilator Example: Top level main for invoking SystemC model
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -114,7 +114,7 @@ int sc_main(int argc, char* argv[]) {
     // Start of Test
 
     cout <<("Test beginning...\n");
-	
+
     reset_l = 1;
     while (VL_TIME_Q() < 60 && !passed) {
 #if WAVES

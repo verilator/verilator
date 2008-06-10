@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Break always into sensitivity active domains
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Active's Transformations:
-//		
+//
 // Note this can be called multiple times.
 //   Create a IACTIVE(initial), SACTIVE(combo)
 //	ALWAYS: Remove any-edges from sense list

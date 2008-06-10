@@ -1,4 +1,3 @@
-// $Revision: 1.1 $$Date$$Author$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -163,5 +162,5 @@ module prover (
       results[4][3] = 8'b0_0_0_0_1_1_1_1;
       results[4][4] = 8'b0_0_1_1_0_0_1_1;
    end
-   
+
 endmodule

@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -12,14 +11,14 @@ module t (clk);
 `define INT_RANGE     31:0
 `define INT_RANGE_MAX 31
 `define VECTOR_RANGE 63:0
- 
+
    reg [`INT_RANGE] stashb, stasha, stashn, stashm;
 
    function [`VECTOR_RANGE] copy_range;
       input [`VECTOR_RANGE]  y;
       input [`INT_RANGE] b;
       input [`INT_RANGE] a;
-    
+
       input [`VECTOR_RANGE]  x;
       input [`INT_RANGE] n;
       input [`INT_RANGE] m;
@@ -36,7 +35,7 @@ module t (clk);
    parameter DATA_SIZE = 16;
    parameter NUM_OF_REGS = 32;
 
-   reg [NUM_OF_REGS*DATA_SIZE-1 : 0] memread_rf;                     
+   reg [NUM_OF_REGS*DATA_SIZE-1 : 0] memread_rf;
    reg [DATA_SIZE-1:0] 		      memread_rf_reg;
    always @(memread_rf) begin : memread_convert
       memread_rf_reg = copy_range('d0, DATA_SIZE-'d1, DATA_SIZE-'d1,   memread_rf,

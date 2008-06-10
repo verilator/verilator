@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: List of To Do issues.
 //
 // Copyright 2004-2008 by Wilson Snyder. This program is free software; you can
@@ -7,7 +6,7 @@
 
 
 Features:
- 	Finish 3.400 new ordering fixes
+	Finish 3.400 new ordering fixes
 	Latch optimizations {Need here}
 	Task I/Os connecting to non-simple variables.
 	Fix nested casez statements expanding into to huge C++. [JeanPaul Vanitegem]
@@ -50,7 +49,7 @@ Testing:
 
 Usability:
 	Better reporting of unopt problems, including what lines of code
-	Report more errors (all of them?) before exiting [Eugene Weber]	
+	Report more errors (all of them?) before exiting [Eugene Weber]
 
 Internal Code:
 	Eliminate the AstNUser* passed to all visitors; its only needed in V3Width,
@@ -69,7 +68,7 @@ Performance:
 	Multithreaded execution
 	Bit-multiply for faster bit swapping and a=b[1,3,2] random bit reorderings.
 	Move _last sets and all other combo logic inside master
-		if() that triggers on all possible sense items 
+		if() that triggers on all possible sense items
 	Rewrite and combine V3Life, V3Subst
 		If block temp only ever set in one place to constant, propagate it
 			Used in t_mem for array delayed assignments
@@ -139,15 +138,15 @@ Selectable SystemC types based on widths (see notes below)
        c) a conditional whose possible values are (a) or (b)
 
  2) One can lose that fact that a node is a tristate node.  This happens
-    if a tristate node is assigned to a 'standard' node, or is used on 
+    if a tristate node is assigned to a 'standard' node, or is used on
     RHS of a conditional. The following infer tristate signals:
-       a) inout <SIGNAL> 
-       b) tri <SIGNAL> 
+       a) inout <SIGNAL>
+       b) tri <SIGNAL>
        c) assigning to 'Z' (maybe through a conditional)
     Note: tristate-ness of an output port determined only by
           statements in the module (not the instances it calls)
-  
+
  4) Tristate variables can't be multidimensional arrays
- 5) Only check tristate contention between modules (not within!)	
+ 5) Only check tristate contention between modules (not within!)
  6) Only simple compares with 'Z' are allowed (===)
 

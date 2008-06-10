@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_mem (/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    clk
    );
@@ -24,7 +23,7 @@ module t_mem (/*AUTOARG*/
    reg [31:0] wrd0 [15:0];
    wire [3:0] sel = 4'h3;
    wire [31:0] selout = wrd0[sel];
- 
+
    // Must take LSBs into account in bit extract widths.
    wire [15:14] sixt = 2'b10; // surefire lint_off_line ASWCBB
    wire [16:14] sixt2 = 3'b110; // surefire lint_off_line ASWCBB
@@ -38,7 +37,7 @@ module t_mem (/*AUTOARG*/
    reg [2:0] 	np2_guard [7:6] /*verilator public*/;
 
    integer 	 i;
-   
+
    always @ (posedge clk) begin
       if (_mode!=0) begin
 	 $write("[%0t] t_mem: Running\n", $time);

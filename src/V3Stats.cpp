@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Collect and print statistics
 //
@@ -46,7 +45,7 @@ private:
     V3Double0	m_statInstrLong;	// Instruction count
     bool	m_counting;		// Currently counting
     double	m_instrs;		// Current instr count
-    
+
     vector<V3Double0>	m_statTypeCount;	// Nodes of given type
     V3Double0		m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];	// Nodes of given type
     V3Double0		m_statPred[AstBranchPred::_ENUM_END];	// Nodes of given type

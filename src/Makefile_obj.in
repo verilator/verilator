@@ -1,4 +1,4 @@
-# $Id$ -*- Makefile -*-
+# -*- Makefile -*-
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator: Makefile for verilog source

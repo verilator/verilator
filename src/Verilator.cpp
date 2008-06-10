@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: main()
 //
@@ -235,7 +234,7 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("scope.tree"));
     V3LinkDot::linkDotScope(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
-    
+
     //--SCOPE BASED OPTIMIZATIONS--------------
 
     // Cleanup
@@ -459,7 +458,7 @@ void process () {
 	// Add C casts when longs need to become long-long and vice-versa
 	// Note depth may insert something needing a cast, so this must be last.
 	V3Cast::castAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cast.tree"));	
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cast.tree"));
     }
 
     V3Error::abortIfErrors();
@@ -554,7 +553,7 @@ int main(int argc, char** argv, char** env) {
 	V3File::writeDepend(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__ver.d");
     }
     if (!v3Global.opt.lintOnly()
-	&& (v3Global.opt.skipIdentical() || v3Global.opt.makeDepend())) { 
+	&& (v3Global.opt.skipIdentical() || v3Global.opt.makeDepend())) {
 	V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__verFiles.dat", argString);
     }
 
@@ -563,6 +562,6 @@ int main(int argc, char** argv, char** env) {
     v3Global.clear();
 #endif
     FileLine::deleteAllRemaining();
-    
+
     UINFO(1,"Done, Exiting...\n");
 }

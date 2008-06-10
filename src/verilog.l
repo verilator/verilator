@@ -1,4 +1,4 @@
-/* $Id$ -*- C++ -*- */
+/* -*- C++ -*- */
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex input file
  *
@@ -20,7 +20,6 @@
 %option interactive c++ stack noyywrap
 %{
 /* %option nodefault */
-/* $Id$ */
 
 #include <cstdio>
 #include <cstring>
@@ -699,7 +698,7 @@ escid	\\[^ \t\f\r\n]+
   /************************************************************************/
   /* Attributes */
 <ATTRMODE>\n		{ yymore(); NEXTLINE(); }
-<ATTRMODE>"*)"		{ yy_pop_state(); } 
+<ATTRMODE>"*)"		{ yy_pop_state(); }
 <ATTRMODE>. 		{ yymore(); }
 <ATTRMODE><<EOF>>	{ yyerrorf("EOF in (*");
 			  yyleng = 0; yy_pop_state(); }

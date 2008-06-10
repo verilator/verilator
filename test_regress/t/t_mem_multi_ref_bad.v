@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -18,6 +17,6 @@ module t (/*AUTOARG*/);
       dim0nv[1:0] = 0;		// Bad: Not vectored
       dim0nv[1][1] = 0;		// Bad: Not arrayed to right depth
    end
-   
+
 endmodule
 

@@ -1,24 +1,23 @@
-# $Id$
 #*****************************************************************************
 # DESCRIPTION: Verilator top level: Makefile pre-configure version
-# 
-# This file is part of Verilator.  
-# 
+#
+# This file is part of Verilator.
+#
 # Author: Wilson Snyder <wsnyder@wsnyder.org>
-# 
+#
 # Code available from: http://www.veripool.org/verilator
-# 
+#
 #*****************************************************************************
-# 
+#
 # Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
-# 
+#
 # Verilator is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 #****************************************************************************/
 #
 # make all	to compile and build Verilator.
@@ -38,7 +37,7 @@
 #      source and built the program without creating any other files,
 #      `make distclean' should leave only the files that were in the
 #      distribution.
-# 
+#
 # make maintainer-clean
 #      Delete everything from the current directory that can be
 #      reconstructed with this Makefile.  This typically includes
@@ -62,7 +61,7 @@ TEXI2DVI = texi2dvi
 PERL = @PERL@
 
 # Destination prefix for RPMs
-DESTDIR = 
+DESTDIR =
 
 #### Don't edit: You're much better using configure switches to set these
 prefix = @prefix@
@@ -101,7 +100,7 @@ DISTDEP = info Makefile
 # Files to distribute.
 DISTBIN = $(wildcard bin/verilator-*)
 
-DISTFILES_INC = $(INFOS) .cvsignore COPYING *.in *.ac \
+DISTFILES_INC = $(INFOS) .gitignore COPYING *.in *.ac \
 	Changes README TODO \
 	MANIFEST.SKIP \
 	bin/* \
@@ -321,7 +320,7 @@ clean mostlyclean distclean maintainer-clean maintainer-copy::
 	done
 
 clean mostlyclean distclean maintainer-clean::
-	rm -f $(SCRIPTS) *.tmp 
+	rm -f $(SCRIPTS) *.tmp
 	rm -f *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.log
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas

@@ -1,8 +1,8 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Configure source; system configuration
 //
-// This file is part of Verilator.  
+// This file is part of Verilator.
 //
 // Author: Wilson Snyder <wsnyder@wsnyder.org>
 //
@@ -18,7 +18,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 //*************************************************************************
 
 //**********************************************************************

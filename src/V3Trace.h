@@ -1,6 +1,6 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Waves Tracing 
+// DESCRIPTION: Verilator: Waves Tracing
 //
 // Code available from: http://www.veripool.org/verilator
 //

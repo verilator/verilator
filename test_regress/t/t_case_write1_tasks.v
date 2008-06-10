@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -149,7 +148,8 @@ module t_case_write1_tasks ();
 	   default:foobar = {foobar, " 128"};
 	 endcase
       end
-   endtask 
+
+   endtask
 
    task ozonerb;
       input  [5:0] rb;
@@ -164,7 +164,7 @@ module t_case_write1_tasks ();
 	   default: ozonerab({1'b1, rb}, foobar);
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef3f4_iext;
       input  [1:0] foo;
@@ -211,7 +211,7 @@ module t_case_write1_tasks ();
              end
 	 endcase
       end
-   endtask 
+   endtask
 
    task skyway;
       input  [ 3:0] hex;
@@ -237,7 +237,7 @@ module t_case_write1_tasks ();
 	   4'hf : foobar = {foobar, " 149"};
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonesr;
       input  [  15:0] foo;
@@ -321,7 +321,7 @@ module t_case_write1_tasks ();
 	   3'b110 : foobar = {foobar, " 185"};
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef1;
       input [  31:0] foo;
@@ -419,7 +419,7 @@ module t_case_write1_tasks ();
                2'b10 :  foobar = {foobar, " 232"};
                2'b11 :  foobar = {foobar, " 233"};
              endcase
-	 endcase 
+	 endcase
       end
    endtask
 
@@ -1552,7 +1552,7 @@ module t_case_write1_tasks ();
 	     7'h7e,
 	     7'h7f:
                foobar = {foobar," 676"};
-	 endcase 
+	 endcase
       end
    endtask
 
@@ -1672,7 +1672,7 @@ module t_case_write1_tasks ();
              endcase
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef2e;
       input [  31:0] foo;
@@ -1872,7 +1872,7 @@ module t_case_write1_tasks ();
              foobar = {foobar," 794"};
 	 endcase
       end
-   endtask 
+   endtask
 
    task ozonef3e;
       input [  31:0] foo;
@@ -1992,7 +1992,7 @@ module t_case_write1_tasks ();
              foobar = {foobar," 822"};
 	 endcase
       end
-   endtask 
+   endtask
    task ozonef3e_te;
       input  [   2:0]   te;
       inout [STRLEN*8: 1] foobar;
@@ -2005,7 +2005,7 @@ module t_case_write1_tasks ();
 	   default: foobar = {foobar, " 826"};
 	 endcase
       end
-   endtask 
+   endtask
    task ozonearm;
       input  [   2:0]   ate;
       inout [STRLEN*8: 1] foobar;
@@ -2121,7 +2121,7 @@ module t_case_write1_tasks ();
 		foobar = {foobar, " 867"};
 		nacho = 1'b1;
 	     end
-	 endcase 
+	 endcase
 	 if (~nacho)
 	   begin
 	      case (foo[24:21])
@@ -2257,7 +2257,7 @@ module t_case_write1_tasks ();
 	   4'hf:  foobar = {foobar, " 905"};
 	 endcase
       end
-   endtask 
+   endtask
    task ozonef1e_hl;
       input  [  2:0] e;
       input           l;
@@ -2453,7 +2453,7 @@ module t_case_write1_tasks ();
       end
    endtask
    task ozoneacc;
-      input            foo;                
+      input            foo;
       inout [STRLEN*8: 1] foobar;
       // verilator no_inline_task
       begin
@@ -2464,7 +2464,7 @@ module t_case_write1_tasks ();
       end
    endtask
    task ozonehl;
-      input            foo;                
+      input            foo;
       inout [STRLEN*8: 1] foobar;
       // verilator no_inline_task
       begin
@@ -2477,7 +2477,7 @@ module t_case_write1_tasks ();
    task dude;
       inout  [STRLEN*8: 1] foobar;
       reg [   7:0] 	   temp;
-      integer 		   i;               
+      integer 		   i;
       reg 		   nacho;
       // verilator no_inline_task
       begin : justify_block
@@ -2492,17 +2492,17 @@ module t_case_write1_tasks ();
 		   foobar = foobar<<8;
 		   foobar[8:1] = 32;
 		end
-	   end 
+	   end
       end
    endtask
 
    task big_case;
 `ifdef verilator
-      input  [  63:0] fd;      
+      input  [  63:0] fd;
 `else
-      input  [  31:0] fd;      
+      input  [  31:0] fd;
 `endif
-      input [  31:0]  foo;          
+      input [  31:0]  foo;
       reg [STRLEN*8: 1] foobar;
       // verilator no_inline_task
       begin
@@ -3024,7 +3024,7 @@ module t_case_write1_tasks ();
 		      $fwrite (fd, " 1176:%s", foobar);
 		   end
 		 default: foobar = {foobar, " 1177"};
-               endcase 
+               endcase
              17'b00_10??_?_????_?0_110? :
                begin
 		  ozonef1e(foo, foobar);
@@ -3788,8 +3788,8 @@ module t_case_write1_tasks ();
                else
 		 $fwrite(fd, " 1409:%s", foo[22:16]);
              default: $fwrite(fd, " 1410");
-	   endcase 
-      end 
+	   endcase
+      end
    endtask
 
    //(query-replace-regexp "\\([a-z0-9_]+\\) *( *\\([][a-z0-9_~': ]+\\) *, *\\([][a-z0-9'~: ]+\\) *, *\\([][a-z0-9'~: ]+\\) *);" "$c(\"\\1(\",\\2,\",\",\\3,\",\",\\4,\");\");" nil nil nil)

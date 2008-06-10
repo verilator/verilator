@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for inline nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Inline's Transformations:
-//		
+//
 // Each module:
 //	Look for CELL... PRAGMA INLINE_MODULE
 //	    Replicate the cell's module

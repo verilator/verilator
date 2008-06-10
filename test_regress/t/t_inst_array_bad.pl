@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
-# $Id$
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2003-2007 by Wilson Snyder. This program is free software; you can
@@ -11,7 +10,7 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_inst_array_bad.v:19: Port connection __pinNumber2 as part of a module instance array  requires 1 or 8 bits, but connection\'s VARREF generates 9 bits.
+'%Error: t/t_inst_array_bad.v:\d+: Port connection __pinNumber2 as part of a module instance array  requires 1 or 8 bits, but connection\'s VARREF generates 9 bits.
 %Error: Exiting due to.*',
 	 );
 

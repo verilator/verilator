@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 ######################################################################
 #
 # This program is Copyright 2003-2008 by Wilson Snyder.
@@ -7,12 +6,12 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of either the GNU General Public License or the
 # Perl Artistic License.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 ######################################################################
 
 require 5.006_001;
@@ -148,7 +147,6 @@ exit(10) if $failcnt;
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Id$ ', "\n";
     pod2usage(-verbose=>2, -exitval => 2);
     exit (1);
 }
@@ -165,7 +163,7 @@ sub parameter {
 	die "%Error: Unknown parameter: $param\n";
     }
 }
- 
+
 #######################################################################
 #######################################################################
 #######################################################################
@@ -538,7 +536,7 @@ sub _make_main {
 
     my $VM_PREFIX = $self->{VM_PREFIX};
     print $fh "#include \"$VM_PREFIX.h\"\n";
-    
+
     print $fh "// Compile in-place for speed\n";
     print $fh "#include \"verilated.cpp\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;

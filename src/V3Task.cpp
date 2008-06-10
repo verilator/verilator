@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for task nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Task's Transformations:
-//		
+//
 // Each module:
 //	Look for TASKREF
 //	    Insert task's statements into the referrer
@@ -553,7 +552,7 @@ private:
 	AstNode* bodysp = nodep->stmtsp();
 	if (bodysp) { bodysp->unlinkFrBackWithNext(); cfuncp->addStmtsp(bodysp); }
 	// Return statement
-	if (rtnvscp && forUser) { 
+	if (rtnvscp && forUser) {
 	    cfuncp->addFinalsp(new AstCReturn(rtnvscp->fileline(),
 					      new AstVarRef(rtnvscp->fileline(), rtnvscp, false)));
 	}

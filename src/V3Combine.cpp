@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Combine common code into functions
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Combine's Transformations:
-//		
+//
 //	For every function that we spit out
 //	Examine code to find largest common blocks
 //	    Hash each node depth first
@@ -32,7 +31,7 @@
 //		Make new function
 //		Move common block to function
 //		Replace each common block ref with funccall
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_initial(/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    clk
    );
@@ -25,12 +24,12 @@ module t_initial(/*AUTOARG*/
       if (!_ranit) begin
 	 _ranit <= 1;
 	 $write("[%0t] t_initial: Running\n",$time);
-	 
+
 	 // Test $time
 	 // surefire lint_off CWECBB
 	 if ($time<20) $write("time<20\n");
 	 // surefire lint_on  CWECBB
-   
+
 	 // Test $write
 	 $write ("[%0t] %m: User loaded ", $time);
 	 $display ("%b", user_loaded_value);

@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Ast node structure
 //
@@ -254,7 +254,7 @@ private:
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false;
 	m_sigPublic=false; m_sigModPublic=false;
-	m_funcLocal=false; m_funcReturn=false; 
+	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrIsolateAssign=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false;
 	m_trace=false;
@@ -554,7 +554,7 @@ public:
     virtual AstNode* clone() { return new AstVarXRef(*this);}
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
-    string	dotted() const { return m_dotted; }	
+    string	dotted() const { return m_dotted; }
     string	prettyDotted() const { return prettyName(dotted()); }
     string	inlinedDots() const { return m_inlinedDots; }
     void	inlinedDots(const string& flag) { m_inlinedDots = flag; }
@@ -755,7 +755,7 @@ public:
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
 };
-  
+
 struct AstGenerate : public AstNode {
     // A Generate/end block
     // Parents: MODULE
@@ -1117,7 +1117,7 @@ private:
 public:
     AstCoverDecl(FileLine* fl, int column, const string& type, const string& comment)
 	: AstNodeStmt(fl) {
-	m_text = comment; m_typeText = type; m_column = column; 
+	m_text = comment; m_typeText = type; m_column = column;
     }
     virtual ~AstCoverDecl() {}
     virtual AstType type() const { return AstType::COVERDECL;}

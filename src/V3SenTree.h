@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Break always into sensitivity block domains
 //
@@ -19,7 +19,7 @@
 //
 //*************************************************************************
 // V3Block's Transformations:
-//		
+//
 // Note this can be called multiple times.
 //   Create a IBLOCK(initial), SBLOCK(combo)
 //	ALWAYS: Remove any-edges from sense list
@@ -87,7 +87,7 @@ private:
     // METHODS
 public:
     void clear() {
-	m_topscopep = NULL;	
+	m_topscopep = NULL;
 	m_treesp.clear();
     }
     AstSenTree* getSenTree(FileLine* fl, AstSenTree* sensesp) {

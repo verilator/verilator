@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Generated Clock repairs
 //
@@ -21,7 +20,7 @@
 // GENCLK TRANSFORMATIONS:
 //	Follow control-flow graph with assignments and var usages
 //	    ASSIGNDLY to variable later used as clock requires change detect
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -93,7 +92,7 @@ private:
     }
     //----
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	// Consumption/generation of a variable, 
+	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
 	if (m_activep && !nodep->user3()) {
@@ -172,7 +171,7 @@ private:
     //----
 
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	// Consumption/generation of a variable, 
+	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
 	if (m_activep) {

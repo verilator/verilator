@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
@@ -50,7 +49,7 @@ endmodule
 module assigns(Input, Output);
    input  [8:0] Input;
    output [8:0] Output;
-   
+
    genvar 	i;
    generate
       for (i = 0; i < 8; i = i + 1) begin : ap

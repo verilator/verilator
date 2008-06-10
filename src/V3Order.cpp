@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Block code ordering
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Order's Transformations:
-//		
+//
 //  Compute near optimal scheduling of always/wire statements
 //  Make a graph of the entire netlist
 //
@@ -30,8 +29,8 @@
 //
 //	For seq logic
 //	    Add logic_sensitive_vertex for this list of SenItems
-//		Add edge for each sensitive_var->logic_sensitive_vertex	
-//	    For AssignPre's	
+//		Add edge for each sensitive_var->logic_sensitive_vertex
+//	    For AssignPre's
 //		Add vertex for this logic
 //		    Add edge logic_sensitive_vertex->logic_vertex
 //		    Add edge logic_consumed_var_PREVAR->logic_vertex
@@ -189,7 +188,7 @@ inline ostream& operator<< (ostream& lhs, const OrderMoveDomScope& rhs) {
 
 //######################################################################
 // Order information stored under each AstNode::userp()...
- 
+
 // Types of vertex we can create
 enum WhichVertex { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL,
 		   WV_MAX};
@@ -223,7 +222,7 @@ public:
 	return vertexp;
     }
 
-public:    
+public:
     // CONSTRUCTORS
     OrderUser() {
 	for (int i=0; i<WV_MAX; i++) m_vertexp[i]=NULL;
@@ -804,7 +803,7 @@ void OrderVisitor::processInsLoop() {
 	    }
 	    for (V3GraphEdge* nextp,* edgep = vertexp->inBeginp(); edgep; edgep = nextp) {
 		nextp = edgep->inNextp();  // Func may edit the list
-		if (edgep->weight()) { 
+		if (edgep->weight()) {
 		    processInsLoopEdge(edgep);
 		} else {  // No purpose to this edge any longer
 		    edgep->unlinkDelete(); edgep=NULL;	// remove old edge

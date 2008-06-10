@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 //
 // Code available from: http://www.veripool.org/verilator
@@ -13,7 +13,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 //=========================================================================
 //
 // DESCRIPTION: Verilator: Include in verilog files to hide verilator defines
@@ -25,7 +25,7 @@
  `ifdef verilator `else
   `define coverage_block_off
  `endif
- 
+
  // Hide file descriptor difference
  `ifdef verilator
   `define verilator_file_descriptor reg [63:0]

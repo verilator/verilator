@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Resolve module/signal name references
 //
@@ -107,7 +106,7 @@ public:
 
 class LinkDotCellVertex : public LinkDotBaseVertex {
     // A real point in the hierarchy, corresponding to a instantiated module
-    AstModule*	m_modp;		// Module 
+    AstModule*	m_modp;		// Module
     AstCell*	m_cellp;	// Cell creating this vertex **NULL AT TOP**
     V3SymTable  m_syms;		// Symbol table of variable/task names for global lookup
 public:
@@ -199,7 +198,7 @@ public:
 	AstNode::user2ClearTree();
     }
     ~LinkDotState() {}
-    
+
     // ACCESSORS
     bool forScopeCreation() const { return m_forScopeCreation; }
 

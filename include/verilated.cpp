@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -9,7 +9,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 //=========================================================================
 ///
 /// \file
@@ -86,7 +86,7 @@ IData VL_RAND_RESET_I(int outBits) {
     if (Verilated::randReset()!=1) {	// if 2, randomize
 	data = VL_RAND32();
     }
-    if (outBits<32) data &= VL_MASK_I(outBits); 
+    if (outBits<32) data &= VL_MASK_I(outBits);
     return data;
 }
 
@@ -96,7 +96,7 @@ QData VL_RAND_RESET_Q(int outBits) {
     if (Verilated::randReset()!=1) {	// if 2, randomize
 	data = ((QData)VL_RAND32()<<VL_ULL(32)) | (QData)VL_RAND32();
     }
-    if (outBits<64) data &= VL_MASK_Q(outBits); 
+    if (outBits<64) data &= VL_MASK_Q(outBits);
     return data;
 }
 
@@ -276,7 +276,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 	else if (c=='\t' || c==' ' || c=='\r' || c=='\f') { if (innum) reading_addr=false; innum=false; }
 	// Skip // comments and detect /* comments
 	else if (ignore_to_cmt && lastc=='*' && c=='/') {
-	    ignore_to_cmt = false; if (innum) reading_addr=false; innum=false; 
+	    ignore_to_cmt = false; if (innum) reading_addr=false; innum=false;
 	} else if (!ignore_to_eol && !ignore_to_cmt) {
 	    if (lastc=='/' && c=='*') { ignore_to_cmt = true; }
 	    else if (lastc=='/' && c=='/') { ignore_to_eol = true; }
@@ -355,7 +355,7 @@ const char* Verilated::catName(const char* n1, const char* n2) {
     // Used by symbol table creation to make module names
     static char* strp = NULL;
     static int   len  = -1;
-    int newlen = strlen(n1)+strlen(n2)+2;    
+    int newlen = strlen(n1)+strlen(n2)+2;
     if (newlen > len) {
 	if (strp) delete [] strp;
 	strp = new char[newlen];

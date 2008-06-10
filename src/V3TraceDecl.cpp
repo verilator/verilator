@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Waves tracing
 //
@@ -22,7 +21,7 @@
 //	Create trace CFUNCs
 //	For each VARSCOPE
 //	    If appropriate type of signal, create a TRACE
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -42,7 +41,7 @@
 class TraceDeclVisitor : public EmitCBaseVisitor {
 private:
     // NODE STATE
-    // Cleared entire netlist	
+    // Cleared entire netlist
 
     // STATE
     AstModule*		m_modp;		// Current module

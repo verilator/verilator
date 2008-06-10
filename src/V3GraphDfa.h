@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph automata base class
 //
@@ -46,7 +46,7 @@ class DfaEdge;
 /// at the end of the transformations.  (If we want the complement, we
 /// call complement and the algorithm makes a REJECT state, then flips
 /// accept and reject for you.)
-///	
+///
 /// Common transforms:
 ///
 ///	"*":	DfaVertex(START) --> [epsilon] -->DfaVertex(ACCEPT)
@@ -87,7 +87,7 @@ public:
 // Vertex
 
 class DfaVertex : public V3GraphVertex {
-    // Each DFA state is captured in this vertex.  
+    // Each DFA state is captured in this vertex.
     // Start and accepting are members, rather than the more intuitive
     // subclasses, as subclassing them would make it harder to inherit from here.
     bool	m_start;	// Start state

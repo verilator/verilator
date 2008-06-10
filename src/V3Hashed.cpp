@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Hashed common code into functions
 //
@@ -19,11 +18,11 @@
 //
 //*************************************************************************
 // V3Hashed's Transformations:
-//		
+//
 //	    Hash each node depth first
 //		Hash includes varp name and operator type, and constants
 //		Form lookup table based on hash of each statement  w/ nodep and next nodep
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"

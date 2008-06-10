@@ -1,4 +1,4 @@
-# $Id$ -*- Makefile -*-
+# -*- Makefile -*-
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside object directory
@@ -24,7 +24,7 @@ include $(VM_PREFIX).mk
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)
 #OBJCACHE := objcache --read --write
-#OBJCACHE_HOSTS := 
+#OBJCACHE_HOSTS :=
 endif
 
 #######################################################################

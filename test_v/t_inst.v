@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_inst(/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    clk, fastclk
    );
@@ -27,7 +26,7 @@ module t_inst(/*AUTOARG*/
    wire       da,db,dc,dd,de;
    reg	[7:0] wa,wb,wc,wd,we;
    wire	[7:0] qa,qb,qc,qd,qe;
-   
+
    wire	[5:0]  ra;
    wire	[4:0]  rb;
    wire	[29:0] rc;

@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Lifelicate variable assignment elimination
 //
@@ -25,7 +24,7 @@
 //	    We also track across if statements:
 //	    ASSIGN(X,...) IF( ..., ASSIGN(X,...), ASSIGN(X,...)) => deletes first
 //	    We don't do the opposite yet though (remove assigns in if followed by outside if)
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -277,7 +276,7 @@ private:
     // METHODS
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	// Consumption/generation of a variable, 
+	// Consumption/generation of a variable,
 	// it's used so can't elim assignment before this use.
 	if (!nodep->varScopep()) nodep->v3fatalSrc("NULL");
 	//
@@ -314,7 +313,7 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    //---- Track control flow changes 
+    //---- Track control flow changes
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
     	UINFO(4,"   IF "<<nodep<<endl);
 	// Condition is part of PREVIOUS block

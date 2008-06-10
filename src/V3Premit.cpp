@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for premit nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Premit's Transformations:
-//		
+//
 // Each module:
 //	For each wide OP, make a a temporary variable with the wide value
 //	For each deep expression, assign expression to temporary.

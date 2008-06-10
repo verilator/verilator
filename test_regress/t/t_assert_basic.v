@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -23,7 +22,7 @@ module t (/*AUTOARG*/
       // FIX cover {cyc==9} report "DefaultClock,expect=1";
       // FIX cover  {(cyc==5)->toggle} report "ToggleLogIf,expect=1";
    end
-   
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;

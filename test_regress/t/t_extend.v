@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -37,9 +36,9 @@ module t (/*AUTOARG*/
 	 c_worked <= $c("my_function()");
 	 c_wider <= $c9("0x10");
 `else
-	 c_worked <= 1'b1; 
+	 c_worked <= 1'b1;
 	 c_wider <= 9'h10;
-`endif	 
+`endif
       end
       if (cyc == 8'd3) begin
 	 if (c_worked !== 1'b1) $stop;
@@ -67,12 +66,12 @@ module t (/*AUTOARG*/
 #error "`systemc_imp_header didn't work"
 #endif
  `systemc_ctor
-   m_did_ctor = 1;  
+   m_did_ctor = 1;
  `systemc_dtor
    printf("In systemc_dtor\n");
    printf("*-* All Finished *-*\n");
  `verilog
-`endif	 
+`endif
 
 
 endmodule

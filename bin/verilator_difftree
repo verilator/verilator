@@ -1,7 +1,6 @@
 : # -*-Mode: perl;-*- use perl, wherever it is
 eval 'exec perl -wS $0 ${1+"$@"}'
   if 0;
-# $Id$
 ######################################################################
 #
 # Copyright 2005-2008 by Wilson Snyder <wsnyder@wsnyder.org>.  This
@@ -115,7 +114,6 @@ sub filter {
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Id$ ', "\n";
     pod2usage(-verbose=>2, -exitval => 2);
     exit (1);
 }
@@ -130,7 +128,7 @@ sub parameter {
 	$Opt_A = $param;
     } elsif (!defined $Opt_B) {
 	$Opt_B = $param;
-    } else {	
+    } else {
 	die "%Error: Unknown parameter: $param\n";
     }
 }

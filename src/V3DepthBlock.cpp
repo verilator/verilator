@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Prevent very deep expressions
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3DepthBlock's Transformations:
-//		
+//
 // Each module:
 //	For each deep block, create cfunc including that block.
 //

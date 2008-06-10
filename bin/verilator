@@ -1,7 +1,6 @@
 : # -*-Mode: perl;-*- use perl, wherever it is
 eval 'exec perl -wS $0 ${1+"$@"}'
   if 0;
-# $Id$
 ######################################################################
 #
 # Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -84,7 +83,6 @@ run ($vcmd);
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Revision$$Date$ ', "\n";
     pod2usage(-exitstatus=>2, -verbose=>2);
 }
 
@@ -915,7 +913,7 @@ example:
 	unsigned int main_time = 0;	// Current simulation time
 
 	double sc_time_stamp () {	// Called by $time in Verilog
-    	    return main_time;
+	    return main_time;
 	}
 
 	int main() {

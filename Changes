@@ -1244,8 +1244,6 @@ of input ports exists for tracing.
 **** First code written.
 
 ----------------------------------------------------------------------
-$Id$
-----------------------------------------------------------------------
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 

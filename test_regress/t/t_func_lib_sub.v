@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -34,7 +33,7 @@ wire ktsveg = hdsejo[0][6] | (hdsejo[0][37:34] == 4'h1);
 wire smxixw = vrqrih | (ryyjxy & ktsveg);
 
 wire [7:0] grvsrs, kyxrft, uxhkka;
-   
+
 wire [7:0] eianuv = 8'h01 << ofnjjt;
 wire [7:0] jvpnxn = {8{qnpfus}} & eianuv;
 wire [7:0] zlnzlj = {8{fqlkrg}} & eianuv;
@@ -94,7 +93,7 @@ begin
    Xinit;
    if (X(qqibou))
       udbvtl	<= #`zednkw mppedc;
-   
+
    Xcheck(fgzsox);
 end
 

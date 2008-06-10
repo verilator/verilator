@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Emit C++ for tree
 //
@@ -80,9 +79,9 @@ public:
 
     // METHODS
     void displayEmit(AstDisplay* nodep);
-    string displayFormat(AstNode* widthNode, string in, 
+    string displayFormat(AstNode* widthNode, string in,
 			 char fmtLetter, bool padZero, bool reallyString);
-    void displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, char fmtLetter); 
+    void displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_STATIC, EVL_ALL} EisWhich;
@@ -212,7 +211,7 @@ public:
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
-	puts("&__Vcoverage["); 	
+	puts("&__Vcoverage[");
 	puts(cvtToStr(m_coverIds.remap(nodep))); puts("]");
 	puts(", \"");	puts(nodep->fileline()->filebasename()); puts("\"");
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
@@ -639,7 +638,7 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");
 
-	puts("VL_DEBUG_IF(cout<<\"  "); 
+	puts("VL_DEBUG_IF(cout<<\"  ");
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"\"<<endl; );\n");
@@ -1678,7 +1677,7 @@ void EmitCImp::main(AstModule* modp, bool slow, bool fast) {
     }
 
     emitImp (modp);
-	 
+
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCFunc* funcp = nodep->castCFunc()) {
 	    if (v3Global.opt.outputSplit() > 1 && splitSize()
@@ -1739,7 +1738,7 @@ class EmitCTrace : EmitCStmts {
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
-    
+
 	puts("void "+topClassName()+"::traceFull(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
@@ -1909,7 +1908,7 @@ class EmitCTrace : EmitCStmts {
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
     }
-    
+
 public:
     EmitCTrace(bool slow) {
 	m_funcp = NULL;

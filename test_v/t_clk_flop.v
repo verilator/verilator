@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -8,7 +7,7 @@
 
 module t_clk_flop (/*AUTOARG*/
    // Outputs
-   q, q2, 
+   q, q2,
    // Inputs
    clk, clk2, a
    );

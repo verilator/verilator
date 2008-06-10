@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph optimizations
 //
@@ -224,7 +223,7 @@ private:
 	    }
 	}
     }
-	
+
     void main() {
 	UINFO(5,"Dfa to Nfa conversion...\n");
 	// Vertex::color() begin: 1 indicates vertex on DFA graph, 0=NFA graph
@@ -236,7 +235,7 @@ private:
 
 	// Find NFA start
 	DfaVertex* nfaStartp = graphp()->findStart();
-	    
+
 	// Create new DFA State (start state) from the NFA states
 	DfaVertex* dfaStartp = newDfaVertex(nfaStartp);
 
@@ -267,7 +266,7 @@ private:
 	    }
 	}
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("dfa_start");
-	insertDfaOrigins(dfaStartp); 
+	insertDfaOrigins(dfaStartp);
 
 	int i=0;
 	UINFO(5,"Main state conversion...\n");
@@ -293,7 +292,7 @@ private:
 		    }
 		}
 	    }
-	    
+
 	    // Foreach input state (NFA inputs of this DFA state)
 	    for (set<DfaInput>::const_iterator inIt=inputs.begin(); inIt!=inputs.end(); ++inIt) {
 		DfaInput input = *inIt;
@@ -303,7 +302,7 @@ private:
 		// Find all states reachable for given input
 		DfaStates nfasWithInput;
 		findNfasWithInput(dfaStatep, input, nfasWithInput/*ref*/);
-		
+
 		// nfasWithInput now maps to the DFA we want a transition to.
 		// Does a DFA already exist with this, and only this subset of NFA's?
 		DfaVertex* toDfaStatep = findDfaOrigins(nfasWithInput);
@@ -317,7 +316,7 @@ private:
 			new DfaEdge (graphp(), toDfaStatep, *nfaIt, DfaEdge::NA());
 			if ((*nfaIt)->accepting()) toDfaStatep->accepting(true);
 		    }
-		    insertDfaOrigins(toDfaStatep); 
+		    insertDfaOrigins(toDfaStatep);
 		}
 		// Add input transition
 		new DfaEdge (graphp(), dfaStatep, toDfaStatep, input);
@@ -375,7 +374,7 @@ private:
     }
 
     void optimize_accepting_out() {
-	// Delete outbound edges from accepting states 
+	// Delete outbound edges from accepting states
 	// (As once we've accepted, we no longer care about anything else.)
 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
@@ -496,7 +495,7 @@ void DfaGraph::dfaReduce() {
 // 2. All vertexes except start/accept get edges to NEW accept for any
 // non-existing case.  Weedely we don't have a nice way of representing
 // this so we just create a edge for each case and mark it "complemented."
-// 
+//
 // 3. Delete temp vertex (old accept/new reject) and related edges.
 // The user's old accept is now the new accept.  This is imporant as
 // we want the virtual type of it to be intact.

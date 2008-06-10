@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Ast node structures
 //
@@ -255,8 +254,8 @@ void AstNode::addNextHere(AstNode* newp) {
 void AstNode::setOp1p(AstNode* newp) {
     UASSERT(newp,"Null item passed to setOp1p\n");
     UDEBUGONLY(if (m_op1p) this->v3fatalSrc("Adding to non-empty, non-list op1"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node");); 
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op1");); 
+    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
+    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op1"););
     this->debugTreeChange("-setOp1pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp1pNew: ", __LINE__, true);
     m_op1p = newp;
@@ -268,8 +267,8 @@ void AstNode::setOp1p(AstNode* newp) {
 void AstNode::setOp2p(AstNode* newp) {
     UASSERT(newp,"Null item passed to setOp2p\n");
     UDEBUGONLY(if (m_op2p) this->v3fatalSrc("Adding to non-empty, non-list op2"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node");); 
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op2");); 
+    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
+    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op2"););
     this->debugTreeChange("-setOp2pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp2pNew: ", __LINE__, true);
     m_op2p = newp;
@@ -281,8 +280,8 @@ void AstNode::setOp2p(AstNode* newp) {
 void AstNode::setOp3p(AstNode* newp) {
     UASSERT(newp,"Null item passed to setOp3p\n");
     UDEBUGONLY(if (m_op3p) this->v3fatalSrc("Adding to non-empty, non-list op3"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node");); 
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op3");); 
+    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
+    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op3"););
     this->debugTreeChange("-setOp3pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp3pNew: ", __LINE__, true);
     m_op3p = newp;
@@ -294,8 +293,8 @@ void AstNode::setOp3p(AstNode* newp) {
 void AstNode::setOp4p(AstNode* newp) {
     UASSERT(newp,"Null item passed to setOp4p\n");
     UDEBUGONLY(if (m_op4p) this->v3fatalSrc("Adding to non-empty, non-list op4"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node");); 
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op4");); 
+    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
+    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op4"););
     this->debugTreeChange("-setOp4pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp4pNew: ", __LINE__, true);
     m_op4p = newp;

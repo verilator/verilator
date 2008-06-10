@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 ######################################################################
 #
 # Copyright 2005-2008 by Wilson Snyder <wsnyder@wsnyder.org>.  This
@@ -50,7 +49,6 @@ cwrite ("graph_export.cpp");
 #----------------------------------------------------------------------
 
 sub usage {
-    print '$Id$ ', "\n";
     pod2usage(-verbose=>2, -exitval => 2);
     exit (1);
 }
@@ -120,7 +118,7 @@ sub cwrite {
     foreach my $edge (@Edges) {
 	$fh->printf("    new V3GraphEdge(gp, %s, %s, %s, %s);\n",
 		    $edge->{from}, $edge->{to},
-		    $edge->{weight}, $edge->{cutable}?"true":"false");	       
+		    $edge->{weight}, $edge->{cutable}?"true":"false");
     }
     $fh->print("}\n");
 }

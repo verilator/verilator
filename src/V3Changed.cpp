@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for changed nodes
 //
@@ -19,7 +18,7 @@
 //
 //*************************************************************************
 // V3Changed's Transformations:
-//		
+//
 // Each module:
 //	Each combo block
 //	    For each variable that comes from combo block and is generated AFTER a usage

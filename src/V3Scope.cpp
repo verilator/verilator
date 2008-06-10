@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Break always into sensitivity block domains
 //
@@ -19,11 +18,11 @@
 //
 //*************************************************************************
 // V3Scope's Transformations:
-//		
-//	For every CELL that references this module, create a 
+//
+//	For every CELL that references this module, create a
 //		SCOPE
 //			{all blocked statements}
-//		
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -56,7 +55,7 @@ private:
     AstScope*	m_aboveScopep;	// Scope that instantiates this scope
 
     //int debug() { return 9; }
-    
+
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	AstModule* modp = nodep->topModulep();
@@ -74,7 +73,7 @@ private:
 
 	UINFO(4," MOD AT "<<scopename<<"  "<<nodep<<endl);
         AstNode::userClearTree();
-	
+
  	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
 

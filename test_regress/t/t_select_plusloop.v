@@ -1,4 +1,3 @@
-// $Id:$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -44,12 +43,12 @@ module t (/*AUTOARG*/
 	 // verilator lint_on WIDTH
       end
       else if (cyc==90) begin
-	 wide[12 +: 4] <=4'h6;	quad[12 +: 4] <=4'h6;	narrow[12 +: 4] <=4'h6;	 
+	 wide[12 +: 4] <=4'h6;	quad[12 +: 4] <=4'h6;	narrow[12 +: 4] <=4'h6;
 	 wide[42 +: 4] <=4'h6;	quad[42 +: 4] <=4'h6;
 	 wide[82 +: 4] <=4'h6;
       end
       else if (cyc==91) begin
-	 wide[0] <=1'b1;	quad[0] <=1'b1;		narrow[0] <=1'b1;	 
+	 wide[0] <=1'b1;	quad[0] <=1'b1;		narrow[0] <=1'b1;
 	 wide[41] <=1'b1;	quad[41] <=1'b1;
 	 wide[81] <=1'b1;
       end

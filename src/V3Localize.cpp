@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Convert BLOCKTEMPs to local variables
 //
@@ -24,7 +23,7 @@
 //	       if only referenced in a CFUNC, make it local to that CFUNC
 //	    VAR(others
 //	       if non-public, set before used, and in signle CFUNC, make it local
-//	    
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -157,7 +156,7 @@ private:
 	moveVars();
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
-	// Consumption/generation of a variable, 
+	// Consumption/generation of a variable,
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {

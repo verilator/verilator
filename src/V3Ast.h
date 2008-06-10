@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Ast node structure
 //
@@ -1009,7 +1009,7 @@ public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
 	:AstNode(fl)
 	, m_taskp(NULL) {
-	setOp1p(namep);	addNOp2p(pinsp); 
+	setOp1p(namep);	addNOp2p(pinsp);
     }
     virtual ~AstNodeFTaskRef() {}
     virtual bool broken() const { return m_taskp && !m_taskp->brokeExists(); }

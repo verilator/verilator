@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Large 4-state numbers
 //
@@ -97,7 +96,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	unbased = true;
 	base = 'd';
     }
-    
+
     for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
 
     // Special SystemVerilog unsized constructs
@@ -113,7 +112,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
     } else if (tolower(base) == 'x') {
 	setBit(0, 'x'); width(1, false);	// So we extend it
 	m_autoExtend = true;
-    } 
+    }
     // Otherwise...
     else if (!m_sized) {
 	width(32, false); // Says the spec.
@@ -191,7 +190,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		}
 	    break;
 	    }
-	    
+
 	    case 'o':
 	    case 'c': {
 		switch(tolower(*cp)) {
@@ -212,7 +211,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		}
 		break;
 	    }
-	    
+
 	    case 'h': {
 		switch(tolower(*cp)) {
 		case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
@@ -333,7 +332,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 #endif
 	);
     //out<<"-"<<hex<<m_value[0]<<"-";
-    
+
     if (binary) {
 	out<<"b";
 	out<<displayed("%0b");
@@ -518,7 +517,7 @@ int V3Number::minWidth() const {
 uint32_t V3Number::countOnes() const {
     int n=0;
     for(int bit=0; bit<this->width(); bit++) {
-	if (bitIs1(bit)) n++; 
+	if (bitIs1(bit)) n++;
     }
     return n;
 }
@@ -845,7 +844,7 @@ last:
 V3Number& V3Number::opWildNeq (const V3Number& lhs, const V3Number& rhs) {
     char outc = 0;
     for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
-	if (!rhs.bitIsXZ(bit) 
+	if (!rhs.bitIsXZ(bit)
 	    && lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=1; goto last; }
 	if (lhs.bitIsXZ(bit)) outc='x';
     }

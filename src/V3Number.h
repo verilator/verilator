@@ -1,4 +1,4 @@
-// $Id$ //-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Large 4-state numbers
 //
@@ -32,7 +32,7 @@
 class V3Number {
     // Large 4-state number handling
     int		m_width;	// Width as specified/calculated.
-    bool	m_sized:1;	// True if the user specified the width, else we track it. 
+    bool	m_sized:1;	// True if the user specified the width, else we track it.
     bool	m_signed:1;	// True if signed value
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;

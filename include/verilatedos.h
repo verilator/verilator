@@ -1,4 +1,4 @@
-// $Id$ -*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
 //
 // Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
@@ -9,7 +9,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 //*************************************************************************
 ///
 /// \file
@@ -84,7 +84,7 @@ typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
 typedef long  			vlsint32_t;	///< 32-bit signed type
 typedef unsigned long           vluint32_t;	///< 32-bit unsigned type
-typedef long long      		vlsint64_t;	///< 64-bit signed type
+typedef long long		vlsint64_t;	///< 64-bit signed type
 typedef unsigned long long      vluint64_t;	///< 64-bit unsigned type
 #elif defined(_WIN32) && !defined(__MINGW32__)
 typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
@@ -92,18 +92,18 @@ typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward co
 typedef unsigned long           uint32_t;	///< 32-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
-typedef int  			vlsint32_t;	///< 32-bit signed type
+typedef int			vlsint32_t;	///< 32-bit signed type
 typedef unsigned int            vluint32_t;	///< 32-bit unsigned type
-typedef __int64      		vlsint64_t;	///< 64-bit signed type
+typedef __int64			vlsint64_t;	///< 64-bit signed type
 typedef unsigned __int64        vluint64_t;	///< 64-bit unsigned type
 #else // Linux or compliant Unix flavors, -m64
 # include <stdint.h>	// Linux and most flavors
 # include <inttypes.h>	// Solaris
 typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
 typedef uint16_t		vluint16_t;	///< 32-bit unsigned type
-typedef int  			vlsint32_t;	///< 32-bit signed type
+typedef int			vlsint32_t;	///< 32-bit signed type
 typedef uint32_t		vluint32_t;	///< 32-bit signed type
-typedef long long      		vlsint64_t;	///< 64-bit signed type
+typedef long long		vlsint64_t;	///< 64-bit signed type
 typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #endif
 

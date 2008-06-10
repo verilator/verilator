@@ -1,4 +1,3 @@
-// $Id$
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph tests
 //
@@ -112,7 +111,7 @@ public:
 	new V3GraphEdge(gp, g1, q, 2, true);
 	new V3GraphEdge(gp, g2, q, 2, true);
 	new V3GraphEdge(gp, g3, q, 2, true);
-	
+
 	gp->stronglyConnected(&V3GraphEdge::followAlwaysTrue);
 	dump();
 
@@ -143,7 +142,7 @@ public:
 	new V3GraphEdge(gp, g1, a, 2, true);
 	new V3GraphEdge(gp, g2, a, 2, true);
 	new V3GraphEdge(gp, g3, a, 2, true);
-	
+
 	gp->acyclic(&V3GraphEdge::followAlwaysTrue);
 	gp->order();
 	dump();
@@ -157,7 +156,7 @@ public:
 	V3Graph* gp = &m_graph;
 
 	V3GraphTestVertex* clk	= new V3GraphTestVarVertex(gp,"$clk");
-	
+
 	V3GraphTestVertex* a	= new V3GraphTestVarVertex(gp,"$a");
 	V3GraphTestVertex* a_dly	= new V3GraphTestVarVertex(gp,"$a_dly");
 	V3GraphTestVertex* a_dlyblk= new V3GraphTestVarVertex(gp,"$a_dlyblk");
@@ -166,13 +165,13 @@ public:
 	V3GraphTestVertex* b_dlyblk= new V3GraphTestVarVertex(gp,"$b_dlyblk");
 	V3GraphTestVertex* c	= new V3GraphTestVarVertex(gp,"$c");
 	V3GraphTestVertex* i	= new V3GraphTestVarVertex(gp,"$i");
-	
+
 	V3GraphTestVertex* ap	= new V3GraphTestVarVertex(gp,"$a_pre");
 	V3GraphTestVertex* bp	= new V3GraphTestVarVertex(gp,"$b_pre");
 	V3GraphTestVertex* cp	= new V3GraphTestVarVertex(gp,"$c_pre");
-	
+
 	V3GraphTestVertex* n;
-	
+
 	// Logical order between clk, and posedge blocks
 	//   implemented by special CLK prod/cons?
 	// Required order between first x_DLY<=x_pre and final x<=x_DLY
@@ -183,23 +182,23 @@ public:
 	//   implemented by producer/consumer on a_dly signals
 	// Desired order between different _DLY blocks so we can elim temporaries
 	//   implemented by cutable "pre" signal dependencies
-	
-	
+
+
 	n = new V3GraphTestVertex(gp,"*INPUTS*"); {
 	    new V3GraphEdge(gp, n, clk, 2);
 	    new V3GraphEdge(gp, n, i, 2);
 	}
-	
+
 	V3GraphTestVertex* posedge = n = new V3GraphTestVertex(gp,"*posedge clk*"); {
 	    new V3GraphEdge(gp, clk, n, 2);
 	}
-	
+
 	// AssignPre's     VarRefs on LHS:  generate special BLK
 	//    normal:      VarRefs on LHS:  generate normal
 	//    underSBlock: VarRefs on RHS:  consume 'pre' (required to save cutable tests)
 	n = new V3GraphTestVertex(gp,"a_dly<PRE=a"); {
 	    new V3GraphEdge(gp, n, a_dlyblk, 2);  // Block ordering
-	    new V3GraphEdge(gp, n, a_dly, 2); 
+	    new V3GraphEdge(gp, n, a_dly, 2);
 	    new V3GraphEdge(gp, ap, n, 2, true);   // DESIRED delayed ordering (inp is required)
 	    new V3GraphEdge(gp, posedge, n, 2);
 	}
@@ -209,7 +208,7 @@ public:
 	    new V3GraphEdge(gp, bp, n, 2, true);   // DESIRED delayed ordering
 	    new V3GraphEdge(gp, posedge, n, 2);
 	}
-	
+
 	// AssignDly's     VarRefs on LHS:  consume special BLK
 	//    normal:      VarRefs on LHS:  generate normal
 	//    underSBlock: VarRefs on RHS:  generate 'pre' signals (cutable)
@@ -228,7 +227,7 @@ public:
 	    new V3GraphEdge(gp, n, ap, 2);   // DESIRED delayed usage
 	    new V3GraphEdge(gp, posedge, n, 2);
 	}
-	
+
 	// AssignPost's
 	//    normal:      VarRefs on LHS:  generate normal
 	//    underSBlock: VarRefs on RHS:  consume normal
@@ -242,11 +241,11 @@ public:
 	    new V3GraphEdge(gp, b_dly, n, 3);
 	    new V3GraphEdge(gp, posedge, n, 2);
 	}
-	
+
 	// COMBO
 	// Inbound edges are always uncutable, because we must put combo logic after sequential
 	// Outbound are cutable, as we may need to evaluate multiple times
-	
+
 	{
 	    V3GraphTestVertex* n	= new V3GraphTestVertex(gp,"c=a|b|i");
 	    new V3GraphEdge(gp, n, c, 1, true);
@@ -254,7 +253,7 @@ public:
 	    new V3GraphEdge(gp, b, n, 1, false);
 	    new V3GraphEdge(gp, i, n, 1, false);
 	}
-	
+
 	gp->acyclic(&V3GraphEdge::followAlwaysTrue);
 	gp->order();
 
@@ -288,7 +287,7 @@ public:
 	DfaTestVertex*  sr  = new DfaTestVertex(gp,"sR");
 	DfaTestVertex*  sz  = new DfaTestVertex(gp,"sZ");
 	DfaTestVertex*  sac = new DfaTestVertex(gp,"*ACCEPT*");  sac->accepting(true);
-	
+
 	AstNUser* L = AstNUser::fromInt(0xaa);
 	AstNUser* R = AstNUser::fromInt(0xbb);
 	AstNUser* Z = AstNUser::fromInt(0xcc);
@@ -340,7 +339,7 @@ public:
 
 #if 0
 # include "graph_export.cpp"
-#else 
+#else
 void V3GraphTestImport::dotImport() {
 }
 #endif

@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -28,7 +27,7 @@ module t (clk);
 
 endmodule
 
-module muxtop (   
+module muxtop (
    input [ 43:0 ] i,
    output reg [ 31:0 ] o
    );

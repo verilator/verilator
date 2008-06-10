@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
-# $Id:$
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2005 by Wilson Snyder. This program is free software; you can

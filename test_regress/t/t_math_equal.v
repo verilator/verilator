@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -12,7 +11,7 @@ module t (/*AUTOARG*/
    input clk;
 
    integer _mode;
-   
+
    reg	       _guard1;
    reg [127:0] r_wide0;
    reg 	       _guard2;

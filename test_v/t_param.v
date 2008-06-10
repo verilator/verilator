@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -6,7 +5,7 @@
 
 module t_param(/*AUTOARG*/
    // Outputs
-   passed, 
+   passed,
    // Inputs
    clk
    );
@@ -64,7 +63,7 @@ module t_param(/*AUTOARG*/
    parameter THREE_2WIDE = 2'b11;
    parameter ALSO_THREE_WIDE = THREE_BITS_WIDE;
    parameter THREEPP_32_WIDE = 2*8*2+3;
-   parameter THREEPP_3_WIDE = 3'd4*3'd4*3'd2+3'd3;  // Yes folks VCS says 3 bits wide 
+   parameter THREEPP_3_WIDE = 3'd4*3'd4*3'd2+3'd3;  // Yes folks VCS says 3 bits wide
 
    // Width propagation doesn't care about LHS vs RHS
    // But the width of a RHS/LHS on a upper node does affect lower nodes;
@@ -131,7 +130,7 @@ module t_param(/*AUTOARG*/
 	 // verilator lint_off WIDTH
 	 // surefire lint_off ASWCMB
 	 // surefire lint_off ASWCBB
-	 eightb = (4'd8+4'd8)/4'd4;	if (eightb!==8'd4) $stop;  
+	 eightb = (4'd8+4'd8)/4'd4;	if (eightb!==8'd4) $stop;
 	 fourb = (4'd8+4'd8)/4'd4;	if (fourb!==4'd0) $stop;
 	 fourb = (4'd8+8)/4'd4;		if (fourb!==4'd4) $stop;
 	 // verilator lint_on WIDTH

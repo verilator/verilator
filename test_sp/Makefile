@@ -1,4 +1,3 @@
-# $Id$ */
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory
@@ -47,7 +46,7 @@ compile:
 compile_dbg:
 	cd obj_dir ; $(MAKE) OPT=-g -j 3 -f ../Makefile_obj
 
-run:	
+run:
 	obj_dir/simx
 
 coverage:

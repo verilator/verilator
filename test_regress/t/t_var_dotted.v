@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -8,7 +7,7 @@ module t (/*AUTOARG*/
    // Inputs
    clk
    );
-   
+
    // verilator lint_off MULTIDRIVEN
 
    wire [31:0] outb0c0;

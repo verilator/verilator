@@ -1,4 +1,3 @@
-// $Id$
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
@@ -14,7 +13,7 @@ module t (/*AUTOARG*/
 
    reg [31:0] a;
    reg [31:0] b;
-   
+
    wire [2:0] bf;  buf   BF0 (bf[0], a[0]),
 		         BF1 (bf[1], a[1]),
 		         BF2 (bf[2], a[2]);

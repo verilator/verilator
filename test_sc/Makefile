@@ -1,4 +1,3 @@
-# $Id$ */
 #*****************************************************************************
 #
 # DESCRIPTION: Verilator Example: Makefile for inside source directory
@@ -48,7 +47,7 @@ preproc:
 compile:
 	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj
 
-run:	
+run:
 	obj_dir/simx
 
 ######################################################################
