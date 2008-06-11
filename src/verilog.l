@@ -529,6 +529,7 @@ escid	\\[^ \t\f\r\n]+
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
 <V95,V01,V05,S05,PSL>{
+  "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK_ENABLE;}
   "/*verilator coverage_block_off*/"	{yylval.fileline = CRELINE(); return yVL_COVER_OFF;}
   "/*verilator full_case*/"		{yylval.fileline = CRELINE(); return yVL_FULL_CASE;}

@@ -71,7 +71,8 @@ module t (/*AUTOARG*/
    printf("In systemc_dtor\n");
    printf("*-* All Finished *-*\n");
  `verilog
-`endif
 
+// Test verilator comment after a endif
+`endif // verilator
 
 endmodule

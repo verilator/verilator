@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix compile errors under Fedora 9, GCC 4.3.0.  [by Jeremy Bennett]
 
+**** Ignore "// verilator" comments alone on endif lines.  [Rodney Sinclair]
+
 * Verilator 3.664 2008/05/08
 
 **** Fix missing file in kit.
