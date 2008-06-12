@@ -18,6 +18,13 @@ CXX=g++
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
+
+AC_LANG_PUSH(C++)
+AC_MSG_CHECKING([that C++ compiler can compile simple program])
+AC_TRY_RUN([int main() { return 0; }],
+           AC_MSG_RESULT(yes),
+           AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]))
+
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
