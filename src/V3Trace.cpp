@@ -547,7 +547,7 @@ private:
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	UINFO(8,"   CFUNC "<<nodep<<endl);
- 	if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
+	if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
 	    m_initFuncp = nodep;
 	} else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
 	    m_fullFuncp = nodep;

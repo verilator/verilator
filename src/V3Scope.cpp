@@ -74,7 +74,7 @@ private:
 	UINFO(4," MOD AT "<<scopename<<"  "<<nodep<<endl);
         AstNode::userClearTree();
 
- 	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
+	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
 
 	// Now for each child cell, iterate the module this cell points to

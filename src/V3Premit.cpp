@@ -59,7 +59,7 @@ private:
 
     // METHODS
     bool assignNoTemp(AstNodeAssign* nodep) {
- 	return (nodep->lhsp()->castVarRef()
+	return (nodep->lhsp()->castVarRef()
 		&& !nodep->lhsp()->castVarRef()->varp()->isSc()
 		&& nodep->rhsp()->castConst());
     }

@@ -707,7 +707,7 @@ int V3PreProcImp::getToken() {
 	    }
 	}
 	case ps_DEFVALUE: {
- 	    static string newlines;
+	    static string newlines;
 	    newlines = "\n";  // Always start with trailing return
 	    if (tok == VP_DEFVALUE) {
 		// Remove returns
@@ -735,7 +735,7 @@ int V3PreProcImp::getToken() {
 		    // Remove leading whitespace
 		    unsigned leadspace = 0;
 		    while (m_lexp->m_defValue.length() > leadspace
-		    	   && isspace(m_lexp->m_defValue[leadspace])) leadspace++;
+			   && isspace(m_lexp->m_defValue[leadspace])) leadspace++;
 		    if (leadspace) m_lexp->m_defValue.erase(0,leadspace);
 		    // Remove trailing whitespace
 		    unsigned trailspace = 0;

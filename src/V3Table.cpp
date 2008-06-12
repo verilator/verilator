@@ -336,7 +336,7 @@ public:
     void clear() {
 	m_whyNotOptimizable = NULL;
 	m_anyAssignComb = false;
-     	m_anyAssignDly = false;
+	m_anyAssignDly = false;
 	m_inDlyAssign = false;
 	m_instrCount = 0;
 	m_dataCount = 0;

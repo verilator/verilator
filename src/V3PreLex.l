@@ -89,8 +89,8 @@ psl		[p]sl
 
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ if (!pedantic()) {
-	    		     yytext = (char*)V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
-	    		     yyleng = strlen(yytext); return (VP_TEXT);
+			     yytext = (char*)V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
+			     yyleng = strlen(yytext); return (VP_TEXT);
 	                  } else return(VP_DEFREF); }
 <INITIAL>"`__LINE__"	{ if (!pedantic()) {
 	                     static char buf[10];
@@ -153,18 +153,18 @@ psl		[p]sl
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      return (VP_TEXT);
- 			}}
+			}}
 <ARGMODE>[)]		{ V3PreLex::s_currentLexp->m_parenLevel--;
 			  if (V3PreLex::s_currentLexp->m_parenLevel>0) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      yy_pop_state(); return (VP_DEFARG);
- 			}}
+			}}
 <ARGMODE>[,]		{ if (V3PreLex::s_currentLexp->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      yy_pop_state(); return (VP_DEFARG);
- 			}}
+			}}
 <ARGMODE>"`"{symb}	{ return (VP_DEFREF); }  /* defref in defref */
 <ARGMODE>[^\/\*\n\r\\(,){}\[\]\"`]+	|
 <ARGMODE>.		{ appendDefValue(yytext,yyleng); }

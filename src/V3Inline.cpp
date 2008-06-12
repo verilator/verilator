@@ -65,8 +65,8 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-    	// Iterate modules backwards, in bottom-up order.  Required!
-    	nodep->iterateChildrenBackwards(*this);
+	// Iterate modules backwards, in bottom-up order.  Required!
+	nodep->iterateChildrenBackwards(*this);
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	if (m_cellp) {

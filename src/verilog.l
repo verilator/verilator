@@ -673,15 +673,15 @@ escid	\\[^ \t\f\r\n]+
                           return yaINTNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-    			  yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-    			  yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
-    			  yylval.cdouble = 0;  /* Only for times, not used yet */
+			  yylval.cdouble = 0;  /* Only for times, not used yet */
                           return yaFLOATNUM;
 			}
 }

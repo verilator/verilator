@@ -512,7 +512,7 @@ private:
     void add_complement_edges() {
 	// Find accepting vertex
 	DfaVertex* acceptp = NULL;
- 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
 		if (vvertexp->accepting()) {
 		    acceptp = vvertexp;
@@ -520,7 +520,7 @@ private:
 		}
 	    }
 	}
- 	if (!acceptp) v3fatalSrc("No accepting vertex in DFA\n");
+	if (!acceptp) v3fatalSrc("No accepting vertex in DFA\n");
 
 	// Remap edges
 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {

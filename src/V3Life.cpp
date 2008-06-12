@@ -315,7 +315,7 @@ private:
 
     //---- Track control flow changes
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
-    	UINFO(4,"   IF "<<nodep<<endl);
+	UINFO(4,"   IF "<<nodep<<endl);
 	// Condition is part of PREVIOUS block
 	nodep->condp()->iterateAndNext(*this);
 	LifeBlock* prevLifep = m_lifep;
@@ -331,7 +331,7 @@ private:
 	    nodep->elsesp()->iterateAndNext(*this);
 	    m_lifep = prevLifep;
 	}
-    	UINFO(4,"   join "<<endl);
+	UINFO(4,"   join "<<endl);
 	// Find sets on both flows
 	m_lifep->dualBranch (ifLifep, elseLifep);
 	// For the next assignments, clear any variables that were read or written in the block
@@ -363,7 +363,7 @@ private:
 	    nodep->bodysp()->iterateAndNext(*this);
 	    m_lifep = prevLifep;
 	}
-    	UINFO(4,"   joinfor"<<endl);
+	UINFO(4,"   joinfor"<<endl);
 	// For the next assignments, clear any variables that were read or written in the block
 	condLifep->lifeToAbove();
 	bodyLifep->lifeToAbove();
@@ -371,7 +371,7 @@ private:
 	delete bodyLifep;
     }
     virtual void visit(AstCCall* nodep, AstNUser*) {
-    	//UINFO(4,"  CCALL "<<nodep<<endl);
+	//UINFO(4,"  CCALL "<<nodep<<endl);
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
 	if (!nodep->funcp()->entryPoint()) {  // else is non-inline or public function we optimize separately

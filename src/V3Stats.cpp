@@ -109,7 +109,7 @@ private:
 	}
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
-    	UINFO(4,"   IF "<<nodep<<endl);
+	UINFO(4,"   IF "<<nodep<<endl);
 	allNodes(nodep);
 	// Condition is part of PREVIOUS block
 	nodep->condp()->iterateAndNext(*this);
@@ -159,7 +159,7 @@ private:
     //virtual void visit(AstWhile* nodep, AstNUser*) {
 
     virtual void visit(AstCCall* nodep, AstNUser*) {
-    	//UINFO(4,"  CCALL "<<nodep<<endl);
+	//UINFO(4,"  CCALL "<<nodep<<endl);
 	allNodes(nodep);
 	nodep->iterateChildren(*this);
 	if (m_fast) {

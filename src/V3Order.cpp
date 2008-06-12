@@ -1228,13 +1228,13 @@ void OrderVisitor::processMove() {
 	// Recompute the next domScopep to process
 	if (scopeHuntp) {
 	    domScopep = scopeHuntp;
- 	    UINFO(6,"     MoveIt: SameScope "<<*domScopep<<endl);
+	    UINFO(6,"     MoveIt: SameScope "<<*domScopep<<endl);
 	} else if (domHuntp) { // No exact scope matches, try only matching the domain
 	    domScopep = domHuntp;
- 	    UINFO(6,"    MoveIt: SameDomain "<<*domScopep<<endl);
+	    UINFO(6,"    MoveIt: SameDomain "<<*domScopep<<endl);
 	} else if (loopHuntp) { // No exact scope or domain matches, only match the loop
 	    domScopep = loopHuntp;
- 	    UINFO(6,"   MoveIt: SameLoop "<<*domScopep<<endl);
+	    UINFO(6,"   MoveIt: SameLoop "<<*domScopep<<endl);
 	} else { // else we're hopefully all done
 	    if (curLoop != LOOPID_NOTLOOPED)
 		domScopep->domainp()->v3fatalSrc("Can't find more nodes like "<<*domScopep);  // Should be at least a "end loop"
@@ -1250,34 +1250,34 @@ void OrderVisitor::processMove() {
 	}
     }
     if (!m_pomWaiting.empty()) {
- 	OrderMoveVertex* vertexp = m_pomWaiting.begin();
+	OrderMoveVertex* vertexp = m_pomWaiting.begin();
 	vertexp->logicp()->nodep()->v3fatalSrc("Didn't converge; nodes waiting, none ready, perhaps some input activations lost: "<<vertexp<<endl);
     }
 #else
     while (!m_pomReadyDomScope.empty()) {
- 	// Start with top node on ready list's domain & scope
- 	OrderMoveDomScope* domScopep = m_pomReadyDomScope.begin();
- 	OrderMoveVertex* topVertexp = domScopep->readyVertices().begin();
- 	UASSERT(topVertexp, "domScope on ready list without any nodes ready under it");
- 	// Work on all scopes ready inside this domain
- 	while (domScopep) {
- 	    UINFO(6,"   MoveDomain l="<<domScopep->domainp()<<endl);
- 	    // Process all nodes ready under same domain & scope
- 	    m_pomNewFuncp = NULL;
- 	    while (OrderMoveVertex* vertexp = domScopep->readyVertices().begin()) {
- 		processMoveOne(vertexp, domScopep, 1);
- 	    }
- 	    // Done with scope/domain pair, pick new scope under same domain, or NULL if none left
- 	    OrderMoveDomScope* domScopeNextp = NULL;
- 	    for (OrderMoveDomScope* huntp = m_pomReadyDomScope.begin();
- 		 huntp; huntp = huntp->readyDomScopeNextp()) {
- 		if (huntp->domainp() == domScopep->domainp()) {
- 		    domScopeNextp = huntp;
- 		    break;
- 		}
- 	    }
- 	    domScopep = domScopeNextp;
- 	}
+	// Start with top node on ready list's domain & scope
+	OrderMoveDomScope* domScopep = m_pomReadyDomScope.begin();
+	OrderMoveVertex* topVertexp = domScopep->readyVertices().begin();
+	UASSERT(topVertexp, "domScope on ready list without any nodes ready under it");
+	// Work on all scopes ready inside this domain
+	while (domScopep) {
+	    UINFO(6,"   MoveDomain l="<<domScopep->domainp()<<endl);
+	    // Process all nodes ready under same domain & scope
+	    m_pomNewFuncp = NULL;
+	    while (OrderMoveVertex* vertexp = domScopep->readyVertices().begin()) {
+		processMoveOne(vertexp, domScopep, 1);
+	    }
+	    // Done with scope/domain pair, pick new scope under same domain, or NULL if none left
+	    OrderMoveDomScope* domScopeNextp = NULL;
+	    for (OrderMoveDomScope* huntp = m_pomReadyDomScope.begin();
+		 huntp; huntp = huntp->readyDomScopeNextp()) {
+		if (huntp->domainp() == domScopep->domainp()) {
+		    domScopeNextp = huntp;
+		    break;
+		}
+	    }
+	    domScopep = domScopeNextp;
+	}
     }
     UASSERT (m_pomWaiting.empty(), "Didn't converge; nodes waiting, none ready, perhaps some input activations lost.");
 #endif

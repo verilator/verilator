@@ -643,7 +643,7 @@ void AstNode::iterateListBackwards(AstNVisitor& v, AstNUser* vup) {
     while (nodep->m_nextp) nodep=nodep->m_nextp;
     while (nodep) {
 	// Edits not supported: nodep->m_iterpp = &nodep;
-  	nodep->accept(v, vup);
+	nodep->accept(v, vup);
 	if (nodep->backp()->m_nextp == nodep) nodep=nodep->backp();
 	else nodep = NULL;  // else: backp points up the tree.
     }
@@ -664,7 +664,7 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     for (AstNode* nodep=this; nodep;) {
 	AstNode* niterp = nodep;
 	niterp->m_iterpp = &niterp;
-  	niterp->accept(v, vup);
+	niterp->accept(v, vup);
 	// accept may do a replaceNode and change niterp on us...
 	if (!niterp) return;
 	niterp->m_iterpp = NULL;
@@ -681,7 +681,7 @@ void AstNode::iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup) {
     if (!this) return;
     for (AstNode* nodep=this; nodep; ) {
 	AstNode* nnextp = nodep->m_nextp;
-  	nodep->accept(v, vup);
+	nodep->accept(v, vup);
 	nodep = nnextp;
     }
 }

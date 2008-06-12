@@ -669,7 +669,7 @@ private:
 						      rhsp->lhsp(), rhsshift),
 				     newAstWordSelClone (rhsp->rhsp(), w)));
 	}
- 	return true;
+	return true;
     }
 
     virtual void visit(AstReplicate* nodep, AstNUser*) {
@@ -730,7 +730,7 @@ private:
 	    }
 	    addWordAssign(nodep, w, newp);
 	}
- 	return true;
+	return true;
     }
 
     virtual void visit(AstChangeXor* nodep, AstNUser*) {

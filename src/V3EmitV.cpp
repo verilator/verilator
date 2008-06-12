@@ -367,12 +367,12 @@ public:
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	puts(nodep->hiername());
- 	puts(nodep->varp()->name());
+	puts(nodep->varp()->name());
     }
     virtual void visit(AstVarXRef* nodep, AstNUser*) {
 	puts(nodep->dotted());
 	puts(".");
- 	puts(nodep->varp()->name());
+	puts(nodep->varp()->name());
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	puts(nodep->num().ascii(true,true));

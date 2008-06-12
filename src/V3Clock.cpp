@@ -244,12 +244,12 @@ private:
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_stableNum = 0;
-  	nodep->iterateChildren(*this);
+	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	//UINFO(4," SCOPE   "<<nodep<<endl);
 	m_scopep = nodep;
-  	nodep->iterateChildren(*this);
+	nodep->iterateChildren(*this);
 	if (AstNode* movep = nodep->finalClksp()) {
 	    if (!m_topScopep) nodep->v3fatalSrc("Final clocks under non-top scope");
 	    movep->unlinkFrBackWithNext();

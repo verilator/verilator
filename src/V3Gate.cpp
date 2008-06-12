@@ -489,7 +489,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			if (debug()>=5) substp->dumpTree(cout,"\t  subst:  ");
 			m_statSigs++;
 			while (V3GraphEdge* edgep = vvertexp->outBeginp()) {
- 			    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(edgep->top());
+			    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(edgep->top());
 			    AstNode* consumerp = consumeVertexp->nodep();
 			    optimizeElimVar(vvertexp->varScp(), substp, consumerp);
 			    // If the new replacement referred to a signal,

@@ -98,7 +98,7 @@ public:
 	: V3GraphVertex(graphp)
 	, m_start(start), m_accepting(accepting) {}
     virtual DfaVertex* clone(DfaGraph* graphp) {
-    	return new DfaVertex(graphp, start(), accepting()); }
+	return new DfaVertex(graphp, start(), accepting()); }
     virtual ~DfaVertex() {}
     // ACCESSORS
     virtual string dotShape() const { return (accepting()?"doublecircle":""); }

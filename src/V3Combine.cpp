@@ -391,7 +391,7 @@ private:
 	m_hashed.clear();
 	// Compute hash of all statement trees in the function
 	m_state = STATE_HASH;
-  	nodep->iterateChildren(*this);
+	nodep->iterateChildren(*this);
 	m_state = STATE_IDLE;
 	// Walk the hashes removing empty functions
 	if (emptyFunctionDeletion()) {

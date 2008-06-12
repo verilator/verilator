@@ -505,7 +505,7 @@ port:		yaID portRangeE			       	{ $$ = new AstPort(CRELINE(),V3Parse::s_pinNum+
 
 portV2kArgs:	portV2kDecl				{ $$ = $1; }
 	|	portV2kDecl ',' portV2kList		{ $$ = $1->addNext($3); }
- 	;
+	;
 
 portV2kList:	portV2kSecond				{ $$ = $1; }
 	|	portV2kList ',' portV2kSecond		{ $$ = $1->addNext($3); }

@@ -457,7 +457,7 @@ public:
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	puts(nodep->hiername());
- 	puts(nodep->varp()->name());
+	puts(nodep->varp()->name());
     }
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
 	// Put out constant set to the specified variable, or given variable in a string
