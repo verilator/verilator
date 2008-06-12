@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** "Make install" now installs verilator_includer and verilator_profcfunc.
 
+**** Fix tracing missing changes on undriven public wires. [Rodney Sinclair]
+
 **** Fix syntax error when "`include `defname" is ifdefed.  [John Dickol]
 
 **** Fix error when macro call has commas in concatenate. [John Dickol]

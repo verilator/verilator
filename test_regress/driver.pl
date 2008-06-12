@@ -246,6 +246,13 @@ sub error {
     $self->{errors} ||= $msg;
 }
 
+sub skip {
+    my $self = shift;
+    my $msg = join('',@_);
+    warn "%Warning: Skip: $self->{mode}/$self->{name}: ".$msg."\n";
+    $self->{errors} ||= "Skip: ".$msg;
+}
+
 sub read {
     my $self = shift;
     # Read the control file
@@ -743,6 +750,23 @@ sub files_identical {
 		  ."F2: ".($l2[$l]||"*EOF*\n"));
 	    return 0;
 	}
+    }
+    return 1;
+}
+
+sub vcd_identical {
+    my $self = (ref $_[0]? shift : $Last_Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
+    if (!-r $fn2) { $self->error("File does not exist $fn2\n"); return 0; }
+    my $out = `vcddiff --help`;
+    if ($out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
+    $out = `vcddiff "$fn1" "$fn2"`;
+    if ($out ne '') {
+	print $out;
+	$self->error("VCD miscompare $fn1 $fn2\n");
+	return 0;
     }
     return 1;
 }

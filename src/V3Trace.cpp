@@ -554,7 +554,7 @@ private:
 	} else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
 	    m_chgFuncp = nodep;
 	}
-	V3GraphVertex* funcVtxp = new TraceCFuncVertex(&m_graph, nodep);
+	V3GraphVertex* funcVtxp = getCFuncVertexp(nodep);
 	if (!m_finding) {  // If public, we need a unique activity code to allow for sets directly in this func
 	    if (nodep->funcPublic() || nodep->name() == "_eval") {
 		// Need a non-null place to remember to later add a statement; make one
@@ -591,7 +591,8 @@ private:
 	    }
 	    V3GraphVertex* traceVtxp = m_tracep->userp()->castGraphVertex();
 	    new V3GraphEdge(&m_graph, varVtxp, traceVtxp, 1);
-	    if (nodep->varp()->isPrimaryIn()) {   // Always need to trace primary inputs
+	    if (nodep->varp()->isPrimaryIn()   // Always need to trace primary inputs
+		|| nodep->varp()->isSigPublic()) {  // Or ones user can change
 		new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
 	    }
 	}
