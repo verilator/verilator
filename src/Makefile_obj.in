@@ -23,14 +23,15 @@
 srcdir = ..
 incdir = ../../include
 
-PERL = @PERL@
+# Programs
 CC = @CC@
 CXX = @CXX@
 LINK = @CXX@
-
-LDFLAGS += @LDFLAGS@
-
-CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+LEX = @LEX@
+LFLAGS = -d
+PERL = @PERL@
+YACC = @YACC@
+YFLAGS = -y -d -v
 
 prefix = @prefix@
 
@@ -40,6 +41,11 @@ datarootdir = @datarootdir@
 # Directory in which to install package specific files
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
+
+# Compile options
+CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+CPPFLAGSNOWALL += @CPPFLAGS@
+LDFLAGS += @LDFLAGS@
 
 #### End of system configuration section. ####
 
@@ -59,17 +65,12 @@ COPT = -ggdb -DVL_DEBUG
 endif
 #################
 
-LEX = @LEX@
-LFLAGS = -d
-YACC = @YACC@
-YFLAGS = -y -d -v
-
 #LIBS += -ldl
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
 
 LIBS = -lm -lfl
 
-CPPFLAGSNOWALL = -MMD
+CPPFLAGSNOWALL += -MMD
 CPPFLAGSNOWALL += -I. -I$(srcdir) -I$(incdir)
 CPPFLAGSNOWALL += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGSNOWALL += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool

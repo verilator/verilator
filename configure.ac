@@ -13,8 +13,14 @@ AC_ARG_ENABLE(defenv,
    CFG_WITH_DEFENV=yes)
 AC_SUBST(CFG_WITH_DEFENV)
 
-dnl Checks for programs.
+dnl Compiler flags
 CXX=g++
+CFLAGS=-I${includedir}
+CPPFLAGS=-I${includedir}
+CXXFLAGS=-I${includedir}
+LDFLAGS=-L${libdir}
+
+dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL

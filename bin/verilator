@@ -516,9 +516,13 @@ designs with only one top.
 
 =item --trace
 
-Adds waveform tracing code to the model, this will create additional
-{prefix}__Trace*.cpp files you will need to add to your Makefiles, if
-you're not using the ones generated for you.
+Adds waveform tracing code to the model.  Verilator will generate
+additional {prefix}__Trace*.cpp files that will need to be compiled.  In
+addition Sp.cpp (for SystemC traces) or SpTraceVcdC.c (for C++ only) from
+the SystemPerl kit's src directory must be compiled and linked in.  If
+using the Verilator generated Makefiles, these will be added as source
+targets for you.  If you're not using the Verilator makefiles, you will
+need to add these to your Makefile manually.
 
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
