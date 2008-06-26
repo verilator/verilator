@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.66*
+
+***  Support $feof.  [Holger Waechtler]
+
 * Verilator 3.665 2008/06/25
 
 **** Ignore "// verilator" comments alone on endif lines.  [Rodney Sinclair]
@@ -17,7 +21,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix compile errors under Fedora 9, GCC 4.3.0.  [by Jeremy Bennett]
 
-**** Fix Makefile to find headers/libraries under prefix. [by Holger_Waechtler]
+**** Fix Makefile to find headers/libraries under prefix. [by Holger Waechtler]
 
 * Verilator 3.664 2008/05/08
 

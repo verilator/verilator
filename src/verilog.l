@@ -132,6 +132,7 @@ escid	\\[^ \t\f\r\n]+
   "$display"		{yylval.fileline = CRELINE(); return yD_DISPLAY;}
   "$fclose"		{yylval.fileline = CRELINE(); return yD_FCLOSE;}
   "$fdisplay"		{yylval.fileline = CRELINE(); return yD_FDISPLAY;}
+  "$feof"		{yylval.fileline = CRELINE(); return yD_FEOF;}
   "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
   "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
   "$fullskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}

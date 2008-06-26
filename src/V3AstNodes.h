@@ -2076,6 +2076,21 @@ public:
     int size()	const { return m_size; }
 };
 
+struct AstFEof : public AstNodeUniop {
+    AstFEof(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
+    virtual ~AstFEof() {}
+    virtual AstType type() const { return AstType::FEOF;}
+    virtual AstNode* clone() { return new AstFEof(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%k$feof(%l)"; }
+    virtual string emitOperator() { return "VL_FEOF"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*16; }
+    AstNode*	filep() const { return lhsp(); }
+};
+
 //======================================================================
 // Binary ops
 

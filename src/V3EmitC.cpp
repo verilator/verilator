@@ -292,6 +292,13 @@ public:
 	nodep->filep()->iterateAndNext(*this);	// For saftey, so user doesn't later WRITE with it.
 	puts("=0; }\n");
     }
+    virtual void visit(AstFEof* nodep, AstNUser*) {
+	puts("(");
+	nodep->filep()->iterateAndNext(*this);
+	puts("? feof(VL_CVT_Q_FP(");
+	nodep->filep()->iterateAndNext(*this);
+	puts(")) : true)"); // Non-existant filehandle should return EOF
+    }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");

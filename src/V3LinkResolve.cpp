@@ -313,7 +313,7 @@ private:
     }
 
     void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
-	if (!filep) nodep->v3error("Unsupported: $fopen/$fclose descriptor must be a simple variable");
+	if (!filep) nodep->v3error("Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
 	if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
     virtual void visit(AstFOpen* nodep, AstNUser*) {
@@ -321,6 +321,10 @@ private:
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+    }
+    virtual void visit(AstFEof* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }

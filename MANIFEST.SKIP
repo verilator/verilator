@@ -15,6 +15,7 @@
 /obj_dir/
 /obj_dbg/
 /obj_opt/
+/INCA_libs/
 /logs/
 Makefile
 src/Makefile_obj
