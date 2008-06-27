@@ -1463,8 +1463,12 @@ string V3Parse::deQuote(FileLine* fileline, string text) {
 		}
 	    } else {
 		if (octal_digits) {
-		    fileline->v3error("Non-three digit octal escape code (\\###)");
+		    // Spec allows 1-3 digits
 		    octal_digits = 0;
+		    quoted = false;
+		    newtext += octal_val;
+		    --cp;  // Backup to reprocess terminating character as non-escaped
+		    continue;
 		}
 		quoted = false;
 		if (*cp == 'n') newtext += '\n';
