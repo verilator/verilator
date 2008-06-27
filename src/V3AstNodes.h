@@ -1323,6 +1323,29 @@ struct AstFOpen : public AstNodeStmt {
     AstNode*	modep() const { return op3p(); }
 };
 
+struct AstFFlush : public AstNodeStmt {
+    // Parents: stmtlist
+    // Children: file which must be a varref
+    AstFFlush(FileLine* fileline, AstNode* filep)
+	: AstNodeStmt (fileline) {
+	setNOp2p(filep);
+    }
+    virtual ~AstFFlush() {}
+    virtual AstType type() const { return AstType::FFLUSH;}
+    virtual AstNode* clone() { return new AstFFlush(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual string verilogKwd() const { return "$fflush"; };
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstNode*	filep() const { return op2p(); }
+    void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
+};
+
 struct AstReadMem : public AstNodeStmt {
 private:
     bool	m_isHex;	// readmemh, not readmemb

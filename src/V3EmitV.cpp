@@ -192,6 +192,12 @@ public:
 	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
 	puts(");\n");
     }
+    virtual void visit(AstFFlush* nodep, AstNUser*) {
+	putbs(nodep->verilogKwd());
+	putbs(" (");
+	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
+	puts(");\n");
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	putbs(nodep->verilogKwd());
 	putbs(" (");

@@ -299,6 +299,13 @@ public:
 	nodep->filep()->iterateAndNext(*this);
 	puts(")) : true)"); // Non-existant filehandle should return EOF
     }
+    virtual void visit(AstFFlush* nodep, AstNUser*) {
+	puts("if (");
+	nodep->filep()->iterateAndNext(*this);
+	puts(") { fflush (VL_CVT_Q_FP(");
+	nodep->filep()->iterateAndNext(*this);
+	puts(")); ");
+    }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");

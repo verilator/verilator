@@ -574,6 +574,9 @@ private:
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
 	nodep->width(1,1);
     }
+    virtual void visit(AstFFlush* nodep, AstNUser*) {
+	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

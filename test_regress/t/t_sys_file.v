@@ -21,6 +21,7 @@ module t;
 
       $fdisplay(file, "[%0t] hello v=%x", $time, 32'h12345667);
       $fwrite(file, "[%0t] %s\n", $time, "Hello2");
+      $fflush(file);
 
       $fclose(file);
 `ifdef verilator
