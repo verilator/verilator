@@ -103,6 +103,10 @@ private:
     virtual void visit(AstNeqCase* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
     virtual void visit(AstNeqWild* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
 
+    //========
+    // Signed: Output signed
+    virtual void visit(AstRand* nodep, AstNUser*) {		signed_Os_Ix(nodep); }
+
     //=======
     // Signed: Output signed iff LHS signed; unary operator
     virtual void visit(AstNot* nodep, AstNUser*) {		signed_Olhs(nodep); }

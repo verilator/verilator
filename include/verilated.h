@@ -179,8 +179,13 @@ extern void vl_fatal  (const char* filename, int linenum, const char* hier,
 		       const char* msg);
 
 //=========================================================================
-// Extern functions -- Init time only, so slow is fine
+// Extern functions -- Slow path
 
+extern IData  VL_RANDOM_I(int obits);	///< Randomize a signal
+extern QData  VL_RANDOM_Q(int obits);	///< Randomize a signal
+extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);	///< Randomize a signal
+
+/// Init time only, so slow is fine
 extern IData  VL_RAND_RESET_I(int obits);	///< Random reset a signal
 extern QData  VL_RAND_RESET_Q(int obits);	///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);	///< Random reset a signal

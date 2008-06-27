@@ -141,6 +141,7 @@ escid	\\[^ \t\f\r\n]+
   "$hold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$nochange"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$period"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$random"		{yylval.fileline = CRELINE(); return yD_RANDOM;}
   "$readmemb"		{yylval.fileline = CRELINE(); return yD_READMEMB;}
   "$readmemh"		{yylval.fileline = CRELINE(); return yD_READMEMH;}
   "$realtime"		{yylval.fileline = CRELINE(); return yD_TIME;}

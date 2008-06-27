@@ -235,6 +235,7 @@ class AstSenTree;
 %token<fileline>	yD_ISUNKNOWN	"$isunknown"
 %token<fileline>	yD_ONEHOT	"$onehot"
 %token<fileline>	yD_ONEHOT0	"$onehot0"
+%token<fileline>	yD_RANDOM	"$random"
 %token<fileline>	yD_READMEMB	"$readmemb"
 %token<fileline>	yD_READMEMH	"$readmemh"
 %token<fileline>	yD_SIGNED	"$signed"
@@ -1085,6 +1086,9 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
+	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")\n"); }
+	|	yD_RANDOM '(' ')'			{ $$ = new AstRand($1); }
+	|	yD_RANDOM				{ $$ = new AstRand($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_TIME					{ $$ = new AstTime($1); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }

@@ -212,7 +212,7 @@ private:
 				      new AstAnd(nodep->fileline(),
 						 new AstConst(nodep->fileline(),numbx),
 						 new AstRand(nodep->fileline(),
-							     nodep->width())))));
+							     nodep->width(), true)))));
 		// Add inits in front of other statement.
 		// In the future, we should stuff the initp into the module's constructor.
 		AstNode* afterp = m_modp->stmtsp()->unlinkFrBackWithNext();

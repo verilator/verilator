@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $feof, $fflush.  [Holger Waechtler]
 
+***  Support $random.
+
 * Verilator 3.665 2008/06/25
 
 **** Ignore "// verilator" comments alone on endif lines.  [Rodney Sinclair]

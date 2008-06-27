@@ -80,23 +80,43 @@ IData VL_RAND32() {
 #endif
 }
 
-IData VL_RAND_RESET_I(int outBits) {
+IData VL_RANDOM_I(int obits) {
+    return VL_RAND32() & VL_MASK_I(obits);
+}
+
+QData VL_RANDOM_Q(int obits) {
+    QData data = ((QData)VL_RAND32()<<VL_ULL(32)) | (QData)VL_RAND32();
+    return data & VL_MASK_Q(obits);
+}
+
+WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) {
+    for (int i=0; i<VL_WORDS_I(obits); i++) {
+	if (i<(VL_WORDS_I(obits)-1)) {
+	    outwp[i] = VL_RAND32();
+	} else {
+	    outwp[i] = VL_RAND32() & VL_MASK_I(obits);
+	}
+    }
+    return outwp;
+}
+
+IData VL_RAND_RESET_I(int obits) {
     if (Verilated::randReset()==0) return 0;
     IData data = ~0;
     if (Verilated::randReset()!=1) {	// if 2, randomize
-	data = VL_RAND32();
+	data = VL_RANDOM_I(obits);
     }
-    if (outBits<32) data &= VL_MASK_I(outBits);
+    if (obits<32) data &= VL_MASK_I(obits);
     return data;
 }
 
-QData VL_RAND_RESET_Q(int outBits) {
+QData VL_RAND_RESET_Q(int obits) {
     if (Verilated::randReset()==0) return 0;
     QData data = VL_ULL(~0);
     if (Verilated::randReset()!=1) {	// if 2, randomize
-	data = ((QData)VL_RAND32()<<VL_ULL(32)) | (QData)VL_RAND32();
+	data = VL_RANDOM_Q(obits);
     }
-    if (outBits<64) data &= VL_MASK_Q(outBits);
+    if (obits<64) data &= VL_MASK_Q(obits);
     return data;
 }
 

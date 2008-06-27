@@ -362,6 +362,11 @@ private:
 	    }
 	}
     }
+    virtual void visit(AstRand* nodep, AstNUser* vup) {
+	if (vup->c()->prelim()) {
+	    nodep->width(32,32);  // Says the spec
+	}
+    }
     virtual void visit(AstTime* nodep, AstNUser*) {
 	nodep->width(64,64);
     }

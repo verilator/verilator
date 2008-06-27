@@ -1768,14 +1768,18 @@ struct AstScopeName : public AstNode {
 
 struct AstRand : public AstNodeTermop {
     // Return a random number, based upon width()
-    AstRand(FileLine* fl, int wwidth) : AstNodeTermop(fl) {
-	width(wwidth,wwidth); }
+private:
+    bool	m_reset;	// Random reset, versus always random
+public:
+    AstRand(FileLine* fl, int wwidth, bool reset) : AstNodeTermop(fl) {
+	width(wwidth,wwidth); m_reset=reset; }
+    AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
     virtual ~AstRand() {}
     virtual AstType type() const { return AstType::RAND;}
     virtual AstNode* clone() { return new AstRand(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string emitVerilog() { return "$random"; }
-    virtual string emitOperator() { return "VL_RAND_RESET"; }
+    virtual string emitOperator() { return (m_reset ? "VL_RAND_RESET":"VL_RANDOM"); }
     virtual bool cleanOut() { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }

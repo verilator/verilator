@@ -1569,6 +1569,12 @@ $setup, $setuphold, $skew, $timeskew, $width
 
 All specify blocks and timing checks are ignored.
 
+=item $random
+
+$random does not support the optional argument to set the seed.  Use the
+srand function in C to accomplish this, and note there is only one random
+number generator (not one per module).
+
 =item $readmemb, $readmemh
 
 Read memory commands should work properly.  Note Verilator and the Verilog
