@@ -332,6 +332,14 @@ private:
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
+    virtual void visit(AstFGetC* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+    }
+    virtual void visit(AstFGetS* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+    }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());

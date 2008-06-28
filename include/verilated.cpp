@@ -248,6 +248,34 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
     while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
 }
 
+IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq) {
+    FILE* fp = VL_CVT_Q_FP(fpq);
+    if (!fp) return 0;
+
+    // The string needs to be padded with 0's in unused spaces in front of
+    // any read data.  This means we can't know in what location the first
+    // character will finally live, so we need to copy.  Yuk.
+    IData bytes = VL_BYTES_I(sbits);
+    char buffer[bytes];
+
+    // We don't use fgets, as we must read \0s.
+    IData got = 0;
+    char* cp = buffer;
+    while (got < bytes) {
+	int c = getc(fp);
+	if (c==EOF) break;
+	*cp++ = c;  got++;
+	if (c=='\n') break;
+    }
+
+    // Convert to Verilog format
+    char* op = ((char*)(strgp));
+    IData i;
+    for (i=0; i<got; i++) { *op++ = buffer[got-1-i]; }
+    for (; i<bytes; i++) { *op++ = 0; }
+    return got;
+}
+
 QData VL_FOPEN_QI(QData filename, IData mode) {
     IData fnw[2];  VL_SET_WQ(fnw, filename);
     return VL_FOPEN_WI(2, fnw, mode);

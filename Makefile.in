@@ -117,6 +117,7 @@ DISTFILES_INC = $(INFOS) .gitignore COPYING *.in *.ac \
 	test_verilated/vgen*.pl \
 	test_regress/t/*.cpp \
 	test_regress/t/*.h \
+	test_regress/t/*.dat \
 	test_regress/t/*.mem \
 	test_regress/t/*.out \
 	test_regress/t/*.pl \

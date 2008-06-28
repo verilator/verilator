@@ -228,6 +228,8 @@ class AstSenTree;
 %token<fileline>	yD_FDISPLAY	"$fdisplay"
 %token<fileline>	yD_FEOF		"$feof"
 %token<fileline>	yD_FFLUSH	"$fflush"
+%token<fileline>	yD_FGETC	"$fgetc"
+%token<fileline>	yD_FGETS	"$fgets"
 %token<fileline>	yD_FINISH	"$finish"
 %token<fileline>	yD_FOPEN	"$fopen"
 %token<fileline>	yD_FWRITE	"$fwrite"
@@ -1083,6 +1085,8 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
+	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
+	|	yD_FGETS '(' varRefDotBit ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }

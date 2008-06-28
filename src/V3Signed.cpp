@@ -81,6 +81,8 @@ private:
     virtual void visit(AstOneHot* nodep,AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstOneHot0* nodep,AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstFEof* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
+    virtual void visit(AstFGetC* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
+    virtual void visit(AstFGetS* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     //
     virtual void visit(AstConcat* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstReplicate* nodep, AstNUser*) {	signed_Ou_Ix(nodep); }

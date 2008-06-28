@@ -306,6 +306,13 @@ public:
 	nodep->filep()->iterateAndNext(*this);
 	puts(")); ");
     }
+    virtual void visit(AstFGetC* nodep, AstNUser*) {
+	puts("(");
+	nodep->filep()->iterateAndNext(*this);
+	puts("? fgetc(VL_CVT_Q_FP(");
+	nodep->filep()->iterateAndNext(*this);
+	puts(")) : -1)"); // Non-existant filehandle should return EOF
+    }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");

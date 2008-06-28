@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66*
 
-***  Support $feof, $fflush.  [Holger Waechtler]
+***  Support $feof, $fgetc, $fgets, $fflush.  [Holger Waechtler]
 
 ***  Support $random.
 

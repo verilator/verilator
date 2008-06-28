@@ -134,6 +134,8 @@ escid	\\[^ \t\f\r\n]+
   "$fdisplay"		{yylval.fileline = CRELINE(); return yD_FDISPLAY;}
   "$feof"		{yylval.fileline = CRELINE(); return yD_FEOF;}
   "$fflush"		{yylval.fileline = CRELINE(); return yD_FFLUSH;}
+  "$fgetc"		{yylval.fileline = CRELINE(); return yD_FGETC;}
+  "$fgets"		{yylval.fileline = CRELINE(); return yD_FGETS;}
   "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
   "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
   "$fullskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}

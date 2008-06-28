@@ -2118,6 +2118,21 @@ struct AstFEof : public AstNodeUniop {
     AstNode*	filep() const { return lhsp(); }
 };
 
+struct AstFGetC : public AstNodeUniop {
+    AstFGetC(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
+    virtual ~AstFGetC() {}
+    virtual AstType type() const { return AstType::FEOF;}
+    virtual AstNode* clone() { return new AstFGetC(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%k$fgetc(%l)"; }
+    virtual string emitOperator() { return "VL_FGETC"; }
+    virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*64; }
+    AstNode*	filep() const { return lhsp(); }
+};
+
 //======================================================================
 // Binary ops
 
@@ -2728,6 +2743,22 @@ struct AstReplicate : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
+};
+struct AstFGetS : public AstNodeBiop {
+    AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
+    virtual ~AstFGetS() {}
+    virtual AstType type() const { return AstType::FEOF;}
+    virtual AstNode* clone() { return new AstFGetS(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%k$fgets(%l,%r)"; }
+    virtual string emitOperator() { return "VL_FGETS"; }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*64; }
+    AstNode*	strgp() const { return lhsp(); }
+    AstNode*	filep() const { return rhsp(); }
 };
 
 //======================================================================
