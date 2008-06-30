@@ -244,8 +244,9 @@ void V3File::createMakeDir() {
 // V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFile::V3OutFile(const string& filename)
-    : m_lineno(1), m_column(0), m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
-      , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
+    : m_filename(filename), m_lineno(1), m_column(0)
+    , m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
+    , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
     if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
 	v3fatal("Cannot write "<<filename);
     }

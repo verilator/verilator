@@ -79,9 +79,7 @@ public:
 
     // METHODS
     void displayEmit(AstDisplay* nodep);
-    string displayFormat(AstNode* widthNode, string in,
-			 char fmtLetter, bool padZero, bool reallyString);
-    void displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, char fmtLetter);
+    void displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_STATIC, EVL_ALL} EisWhich;
@@ -936,13 +934,11 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
 // We only do one display at once, so can just use static state
 
 struct EmitDispState {
-    bool		m_wide;		// Put out a wide func that needs string buffer
     string		m_format;	// "%s" and text from user
     vector<AstNode*>	m_argsp;	// Each argument to be printed
     vector<string>	m_argsFunc;	// Function before each argument to be printed
     EmitDispState() { clear(); }
     void clear() {
-	m_wide = false;
 	m_format = "";
 	m_argsp.clear();
 	m_argsFunc.clear();
@@ -958,13 +954,11 @@ void EmitCStmts::displayEmit(AstDisplay* nodep) {
     if (emitDispState.m_format != "") {
 	// Format
 	if (nodep->filep()) {
-	    puts("if (");
-	    nodep->filep()->iterate(*this);	// Check if closed, to avoid core dump
-	    puts(") fprintf(VL_CVT_Q_FP(");
+	    puts("VL_FWRITEF(");
 	    nodep->filep()->iterate(*this);
-	    puts("),\"");
+	    puts(",\"");
 	} else {
-	    puts("VL_PRINTF(\"");
+	    puts("VL_WRITEF(\"");
 	}
 	ofp()->putsNoTracking(emitDispState.m_format);
 	puts("\"");
@@ -977,7 +971,6 @@ void EmitCStmts::displayEmit(AstDisplay* nodep) {
 	    ofp()->putbs("");
 	    if (func!="") puts(func);
 	    if (argp) argp->iterate(*this);
-	    if (func!="") puts(")");
 	    ofp()->indentDec();
 	}
         // End
@@ -987,80 +980,43 @@ void EmitCStmts::displayEmit(AstDisplay* nodep) {
     }
 }
 
-string EmitCStmts::displayFormat(AstNode* widthNodep, string in,
-				 char fmtLetter, bool padZero, bool reallyString) {
-    if (fmtLetter=='s') padZero = false;
-    if (widthNodep && widthNodep->isWide()
-	&& (fmtLetter=='d'||fmtLetter=='u')) {
-	widthNodep->v3error("Unsupported: $display of dec format of > 64 bit results (use hex format instead)");
-    }
-    if (widthNodep && widthNodep->widthMin()>8 && fmtLetter=='c') {
-	widthNodep->v3error("$display of char format of > 8 bit result");
-    }
-    string fmt;
-    if (in == "") {
-	// Size naturally
-	if (widthNodep == NULL) fmt="";  // Out of args, will get error
-	if (fmtLetter=='u' || fmtLetter=='d') { // Decimal.  Spec says leading spaces, not zeros
-	    double mantissabits = widthNodep->widthMin() - ((fmtLetter=='d')?1:0);
-	    double maxval = pow(2.0, mantissabits);
-	    double dchars = log10(maxval)+1.0;
-	    if (fmtLetter=='d') dchars++;  // space for sign
-	    int nchars = int(dchars);
-	    fmt=cvtToStr(nchars);
-	} else if (fmtLetter!='s' && fmtLetter!='c') {  // Strings/chars don't get padding
-	    int bitsPerChar = (fmtLetter=='b'?1 : fmtLetter=='o'?3 : 4);
-	    int nchars = (widthNodep->widthMin() + bitsPerChar-1)/bitsPerChar;
-	    if (padZero) fmt=(string)("0")+cvtToStr(nchars);
-	    else fmt=cvtToStr(nchars);
-	}
-    } else if (in == "0") {
-	fmt="";	// No width
-    } else {
-	fmt=in;
-    }
-    return fmt;
-}
-
-void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string fmt, char fmtLetter) {
+void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, char fmtLetter) {
     // Print display argument, edits elistp
-    if (!*elistp) {
-	dispp->v3error("Missing arguments for $display format");
+    AstNode* argp = *elistp;
+    if (!argp) {
+	// expectDisplay() checks this first, so internal error if found here
+	dispp->v3error("Internal: Missing arguments for $display format");
 	return;
     }
-    if ((*elistp)->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
+    if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
 	dispp->v3error("Exceeded limit of 1024 bits for any display arguments");
     }
-
-    if ((*elistp)->isWide()	// Have to use our own function for wide,
-	|| fmtLetter=='s'	// ... Verilog strings
-	|| fmtLetter=='b'	// ... binary, no printf %b in C
-	|| fmtLetter=='d') {	// ... Signed decimal
-	// We use a single static string, so must only have one call per VL_PRINT
-	if (emitDispState.m_wide) { displayEmit(dispp); }
-	emitDispState.m_wide = true;
-	string nfmt = displayFormat(*elistp, fmt, fmtLetter, false, true);
-	string pfmt = "%"+nfmt+"s";
-	string func = "VL_VALUE_FORMATTED_";
-	func += ((*elistp)->isWide()) ? "W(" : ((*elistp)->isQuad()) ? "Q(" : "I(";
-	func += (cvtToStr((*elistp)->widthMin())
-		 +",'"+fmtLetter+"'"
-		 +","+(fmt=="0"?"true":"false")+",");
-	emitDispState.pushFormat(pfmt);
-	emitDispState.pushArg(*elistp,func);
-    } else {
-	string func;
-	string nfmt = displayFormat(*elistp, fmt, fmtLetter, true, false);
-	// We don't need to check for fmtLetter=='d', as it is above.
-	if ((*elistp)->isQuad() && (fmtLetter=='u'||fmtLetter=='o'||fmtLetter=='x')) {
-	    nfmt+="ll";
-	    func="(unsigned long long)(";  // Must match %ull to avoid warnings
-	}
-	string pfmt = "%"+nfmt+fmtLetter;
-
-	emitDispState.pushFormat(pfmt);
-	emitDispState.pushArg(*elistp,func);
+    if (argp && argp->isWide()
+	&& (fmtLetter=='d'||fmtLetter=='u')) {
+	argp->v3error("Unsupported: $display of dec format of > 64 bit results (use hex format instead)");
     }
+    if (argp && argp->widthMin()>8 && fmtLetter=='c') {
+	// Technically legal, but surely not what the user intended.
+	argp->v3error("$display of char format of > 8 bit result");
+    }
+
+    //string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
+    string pfmt;
+    if ((fmtLetter=='u' || fmtLetter=='d')
+	&& vfmt == "") { // Size decimal output.  Spec says leading spaces, not zeros
+	double mantissabits = argp->widthMin() - ((fmtLetter=='d')?1:0);
+	double maxval = pow(2.0, mantissabits);
+	double dchars = log10(maxval)+1.0;
+	if (fmtLetter=='d') dchars++;  // space for sign
+	int nchars = int(dchars);
+	pfmt = string("%") + cvtToStr(nchars) + fmtLetter;
+    } else {
+	pfmt = string("%") + vfmt + fmtLetter;
+    }
+    emitDispState.pushFormat(pfmt);
+    emitDispState.pushArg(NULL,cvtToStr(argp->widthMin()));
+    emitDispState.pushArg(argp,"");
+
     // Next parameter
     *elistp = (*elistp)->nextp();
 }
@@ -1072,61 +1028,63 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
     // Convert Verilog display to C printf formats
     // 		"%0t" becomes "%d"
     emitDispState.clear();
-    string fmt = "";
+    string vfmt = "";
     string::iterator pos = vformat.begin();
     bool inPct = false;
     for (; pos != vformat.end(); ++pos) {
-	if (inPct && pos[0]=='%') {
-	    emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
-	    inPct = false;
-	} else if (pos[0]=='%') {
+	//UINFO(1,"Parse '"<<*pos<<"'  IP"<<inPct<<" List "<<(void*)(elistp)<<endl);
+	if (!inPct && pos[0]=='%') {
 	    inPct = true;
-	    fmt = "";
+	    vfmt = "";
 	} else if (!inPct) {   // Normal text
-	    //char text[2]; text[0]=*pos; text[1]='\0';
 	    emitDispState.pushFormat(*pos);
 	} else { // Format character
-	    if (isdigit(pos[0])) {
+	    inPct = false;
+	    switch (tolower(pos[0])) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
 		// Digits, like %5d, etc.
-		fmt += pos[0];
-	    } else {
-		inPct = false;
-		switch (tolower(pos[0])) {
-		// Special codes
-		case '~': displayArg(nodep,&elistp,fmt,'d'); break;  // Signed decimal
-		// Spec: h d o b c l
-		case 'b': displayArg(nodep,&elistp,fmt,'b'); break;
-		case 'c': displayArg(nodep,&elistp,fmt,'c'); break;
-		case 't':
-		case 'd': displayArg(nodep,&elistp,fmt,'u'); break;  // Unsigned decimal
-		case 'o': displayArg(nodep,&elistp,fmt,'o'); break;
-		case 'h':
-		case 'x': displayArg(nodep,&elistp,fmt,'x'); break;
-		case 's': displayArg(nodep,&elistp,fmt,'s'); break;
-		case 'm': {
-		    emitDispState.pushFormat("%s");
-		    emitDispState.pushArg(NULL, "vlSymsp->name(");
-		    if (!nodep->scopeNamep()) nodep->v3fatalSrc("Display with %m but no AstScopeName");
-		    for (AstText* textp=nodep->scopeNamep()->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
-			emitDispState.pushFormat(textp->text());
-		    }
-		    break;
+		vfmt += pos[0];
+		inPct = true;  // Get more digits
+		break;
+	    case '%':
+		emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
+		break;
+	    // Special codes
+	    case '~': displayArg(nodep,&elistp,vfmt,'d'); break;  // Signed decimal
+	    // Spec: h d o b c l
+	    case 'b': displayArg(nodep,&elistp,vfmt,'b'); break;
+	    case 'c': displayArg(nodep,&elistp,vfmt,'c'); break;
+	    case 't':
+	    case 'd': displayArg(nodep,&elistp,vfmt,'u'); break;  // Unsigned decimal
+	    case 'o': displayArg(nodep,&elistp,vfmt,'o'); break;
+	    case 'h':
+	    case 'x': displayArg(nodep,&elistp,vfmt,'x'); break;
+	    case 's': displayArg(nodep,&elistp,vfmt,'s'); break;
+	    case 'm': {
+		emitDispState.pushFormat("%S");
+		emitDispState.pushArg(NULL, "vlSymsp->name()");
+		if (!nodep->scopeNamep()) nodep->v3fatalSrc("Display with %m but no AstScopeName");
+		for (AstText* textp=nodep->scopeNamep()->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
+		    emitDispState.pushFormat(textp->text());
 		}
-		case 'u':
-		case 'z':
-		case 'l':
-		case 'v':
-		    nodep->v3error("Unsupported: $display format code: %"<<pos[0]);
-		    break;
-		default:
-		    nodep->v3error("Unknown $display format code: %"<<pos[0]);
-		    break;
-		}
+		break;
+	    }
+	    case 'u':
+	    case 'z':
+	    case 'l':
+	    case 'v':
+		nodep->v3error("Unsupported: $display format code: %"<<pos[0]);
+		break;
+	    default:
+		nodep->v3error("Unknown $display format code: %"<<pos[0]);
+		break;
 	    }
 	}
     }
     if (elistp != NULL) {
-	nodep->v3error("Extra arguments for $display format\n");
+	// expectFormat also checks this, and should have found it first, so internal
+	elistp->v3error("Internal: Extra arguments for $display format\n");
     }
     if (nodep->addNewline()) emitDispState.pushFormat("\\n");
     displayEmit(nodep);

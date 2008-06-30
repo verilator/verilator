@@ -345,6 +345,22 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     return out.str();
 }
 
+bool V3Number::displayedFmtLegal(char format) {
+    // Is this a valid format letter?
+    switch (tolower(format)) {
+    case 'b': return true;
+    case 'c': return true;
+    case 'd': return true; // Unsigned decimal
+    case 'h': return true;
+    case 'o': return true;
+    case 's': return true;
+    case 't': return true;
+    case 'x': return true;
+    case '~': return true; // Signed decimal
+    default: return false;
+    }
+}
+
 string V3Number::displayed(const string& vformat) const {
     string::const_iterator pos = vformat.begin();
     UASSERT(pos != vformat.end() && pos[0]=='%', "display with non format argument "<<*this);

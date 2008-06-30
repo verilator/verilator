@@ -191,13 +191,6 @@ extern QData  VL_RAND_RESET_Q(int obits);	///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);	///< Random reset a signal
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a signal
 
-/// Return string with formated Verilog value
-extern const char* VL_VALUE_FORMATTED_W(int obits, char fmt, bool drop0, WDataInP lwp);
-extern const char* VL_VALUE_FORMATTED_Q(int obits, char fmt, bool drop0, QData ld);
-inline const char* VL_VALUE_FORMATTED_I(int obits, char fmt, bool drop0, IData ld) {
-    return VL_VALUE_FORMATTED_Q(obits,fmt,drop0,ld);
-}
-
 /// File I/O
 extern IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq);
 
@@ -213,6 +206,9 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
 			 IData ofilename,    void* memp, IData start, IData end) {
     VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
 
+extern void VL_WRITEF(const char* formatp, ...);
+extern void VL_FWRITEF(QData fpq, const char* formatp, ...);
+
 //=========================================================================
 // Base macros
 
@@ -220,6 +216,7 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
 #define VL_BITISSET_I(data,bit) (data & (VL_UL(1)<<VL_BITBIT_I(bit)))
 #define VL_BITISSET_Q(data,bit) (data & (VL_ULL(1)<<VL_BITBIT_Q(bit)))
 #define VL_BITISSET_W(data,bit) (data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
+#define VL_BITISSETLIMIT_W(data,width,bit) (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
 /// Create two 32-bit words from quadword
 #define VL_SET_WQ(decl,data)	{ decl[0]=(data); decl[1]=((data)>>VL_WORDSIZE); }

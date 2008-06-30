@@ -87,6 +87,7 @@ public:
 private:
     // MEMBERS
     FILE*	m_fp;
+    string	m_filename;
     int		m_lineno;
     int		m_column;
     int		m_nobreak;	// Basic operator or begin paren, don't break next
@@ -120,8 +121,9 @@ public:
     bool tokenStart(const char* cp, const char* cmp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += INDBLK; };
-    void indentDec() { m_indentLevel -= INDBLK;
-       UASSERT(m_indentLevel>=0,"Underflow of indentation\n");
+    void indentDec() {
+	m_indentLevel -= INDBLK;
+	UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation\n");
     }
     void blockInc() { m_parenVec.push(m_indentLevel + INDBLK); }
     void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }

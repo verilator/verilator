@@ -138,94 +138,127 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 //===========================================================================
 // Formatting
 
-const char* VL_VALUE_FORMATTED_Q(int obits, char fmt, bool drop0, QData ld) {
-    // Convert value into %b/%o/%x/%s/%u/%d formatted string
-    // Note uses a single buffer; presumes only one call per printf
-    static VL_THREAD char str[VL_VALUE_STRING_MAX_WIDTH];
-    char* strp = &str[0];
-    int lsb=obits-1;
-    if (drop0) while (lsb && !VL_BITISSET_Q(ld,lsb)) lsb--;
-    switch (fmt) {
-    case 'd':
-	sprintf(str,"%lld",(vlsint64_t)(VL_EXTENDS_QQ(obits,obits,ld)));
-	return str;
-    case 'u':
-	sprintf(str,"%llu",ld);
-	return str;
-    case 's':
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 8) * 8; // Next digit
-	    IData charval = (ld>>VL_BITBIT_Q(lsb)) & 0xff;
-	    *strp++ = (charval==0)?' ':charval;
-	}
-	*strp++ = '\0';
-	return str;
-    case 'b':
-	for (; lsb>=0; lsb--) {
-	    *strp++ = ((ld>>VL_BITBIT_Q(lsb)) & 1) + '0';
-	}
-	*strp++ = '\0';
-	return str;
-    case 'o':
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 3) * 3; // Next digit
-	    *strp++ = ((ld>>VL_BITBIT_Q(lsb)) & 7) + '0';
-	}
-	*strp++ = '\0';
-	return str;
-    default:
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 4) * 4; // Next digit
-	    IData charval = (ld>>VL_BITBIT_Q(lsb)) & 0xf;
-	    *strp++ = (charval + ((charval < 10) ? '0':('a'-10)));
-	}
-	*strp++ = '\0';
-	return str;
-    }
-    *strp++ = '\0';
-    return str;
-}
+// Do a va_arg returning a quad, assuming input argument is anything less than wide
+#define _VL_VA_ARG_Q(ap, bits) (((bits) <= VL_WORDSIZE) ? va_arg(ap,IData) : va_arg(ap,QData))
 
-const char* VL_VALUE_FORMATTED_W(int obits, char fmt, bool drop0, WDataInP lwp) {
-    // Convert value into %b/%o/%x/%s/%u/%d formatted string
-    // Note uses a single buffer; presumes only one call per printf
+void _vl_vsformat(string& output, const char* formatp, va_list ap) {
+    // Format a Verilog $write style format into the output list
+    // The format must be pre-processed (and lower cased) by Verilator
+    // Arguments are in "width, arg-value (or WDataIn* if wide)" form
+    // Note uses a single buffer internally; presumes only one usage per printf
     static VL_THREAD char str[VL_VALUE_STRING_MAX_WIDTH];
-    char* strp = &str[0];
-    int lsb=obits-1;
-    if (drop0) while (lsb && !VL_BITISSET_W(lwp,lsb)) lsb--;
-    switch (fmt) {
-    case 's':
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 8) * 8; // Next digit
-	    IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
-	    *strp++ = (charval==0)?' ':charval;
+    bool inPct = false;
+    bool widthSet = false;
+    int width = 0;
+    const char* pos = formatp;
+    for (; *pos; ++pos) {
+	if (!inPct && pos[0]=='%') {
+	    inPct = true;
+	    widthSet = false;
+	    width = 0;
+	} else if (!inPct) {   // Normal text
+	    // Fast-forward to next escape and add to output
+	    const char *ep = pos;
+	    while (ep[0] && ep[0]!='%') ep++;
+	    if (ep != pos) {
+		output += string(pos, ep-pos);
+		pos += ep-pos-1;
+	    }
+	} else { // Format character
+	    inPct = false;
+	    char fmt = pos[0];
+	    switch (fmt) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+		inPct = true;  // Get more digits
+		widthSet = true;
+		width = width*10 + (fmt - '0');
+		break;
+	    case '%':
+		output += '%';
+		break;
+	    case 'S': { // "C" string
+		const char* cstrp = va_arg(ap, const char*);
+		output += cstrp;
+		break;
+	    }
+	    default: {
+		// Deal with all read-and-print somethings
+		int bits = va_arg(ap, int);
+		QData ld = 0;
+		WDataInP lwp;
+		if (bits <= VL_QUADSIZE) {
+		    WData qlwp[2];
+		    ld = _VL_VA_ARG_Q(ap, bits);
+		    VL_SET_WQ(qlwp,ld);
+		    lwp = qlwp;
+		} else {
+		    lwp = va_arg(ap,WDataInP);
+		    ld = lwp[0];
+		    if (fmt == 'u' || fmt == 'd') fmt = 'x';  // Not supported, but show something
+		}
+		int lsb=bits-1;
+		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) lsb--;
+		switch (fmt) {
+		case 'b':
+		    for (; lsb>=0; lsb--) {
+			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
+		    }
+		    break;
+		case 'c': {
+		    IData charval = ld & 0xff;
+		    output += charval;
+		    break;
+		}
+		case 'd': { // Signed decimal
+		    int digits=sprintf(str,"%lld",(vlsint64_t)(VL_EXTENDS_QQ(bits,bits,ld)));
+		    int needmore = width-digits;
+		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    output += str;
+		    break;
+		}
+		case 'o':
+		    for (; lsb>=0; lsb--) {
+			lsb = (lsb / 3) * 3; // Next digit
+			// Octal numbers may span more than one wide word,
+			// so we need to grab each bit separately and check for overrun
+			// Octal is rare, so we'll do it a slow simple way
+			output += ('0'
+				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+0)) ? 1 : 0)
+				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+1)) ? 2 : 0)
+				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+2)) ? 4 : 0));
+		    }
+		    break;
+		case 's':
+		    for (; lsb>=0; lsb--) {
+			lsb = (lsb / 8) * 8; // Next digit
+			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
+			output += (charval==0)?' ':charval;
+		    }
+		    break;
+		case 'u': { // Unsigned decimal
+		    int digits=sprintf(str,"%llu",ld);
+		    int needmore = width-digits;
+		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    output += str;
+		    break;
+		}
+		case 'x':
+		    for (; lsb>=0; lsb--) {
+			lsb = (lsb / 4) * 4; // Next digit
+			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xf;
+			output += "0123456789abcdef"[charval];
+		    }
+		    break;
+		default:
+		    string msg = string("%%Error: Unknown _vl_vsformat code: ")+pos[0]+"\n";
+		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
+		    break;
+		} // switch
+	    }
+	    } // switch
 	}
-	*strp++ = '\0';
-	return str;
-    case 'b':
-	for (; lsb>=0; lsb--) {
-	    *strp++ = ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
-	}
-	*strp++ = '\0';
-	return str;
-    case 'o':
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 3) * 3; // Next digit
-	    *strp++ = ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 7) + '0';
-	}
-	*strp++ = '\0';
-	return str;
-    default:
-	for (; lsb>=0; lsb--) {
-	    lsb = (lsb / 4) * 4; // Next digit
-	    IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xf;
-	    *strp++ = (charval + ((charval < 10) ? '0':('a'-10)));
-	}
-	*strp++ = '\0';
-	return str;
     }
-    *strp++ = '\0';
-    return str;
 }
 
 //===========================================================================
@@ -259,7 +292,7 @@ void _VL_STRING_TO_VINT(int obits, void* destp, int srclen, const char* srcp) {
 
 IData VL_FGETS_IXQ(int obits, void* destp, QData fpq) {
     FILE* fp = VL_CVT_Q_FP(fpq);
-    if (!fp) return 0;
+    if (VL_UNLIKELY(!fp)) return 0;
 
     // The string needs to be padded with 0's in unused spaces in front of
     // any read data.  This means we can't know in what location the first
@@ -291,6 +324,31 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
     return VL_CVT_FP_Q(fopen(filenamez,modez));
+}
+
+void VL_WRITEF(const char* formatp, ...) {
+
+    va_list ap;
+    va_start(ap,formatp);
+    string output;
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    // Users can redefine VL_PRINTF if they wish.
+    VL_PRINTF("%s", output.c_str());
+}
+
+void VL_FWRITEF(QData fpq, const char* formatp, ...) {
+    FILE* fp = VL_CVT_Q_FP(fpq);
+    if (VL_UNLIKELY(!fp)) return;
+
+    va_list ap;
+    va_start(ap,formatp);
+    string output;
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    fputs(output.c_str(), fp);
 }
 
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
