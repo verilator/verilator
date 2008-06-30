@@ -20,7 +20,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <stdarg.h>
+#include <cstdarg>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

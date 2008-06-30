@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 #include <verilated.h>
 #include "Vt_mem_slot.h"
 

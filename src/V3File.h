@@ -24,7 +24,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
-#include <stdio.h>
+#include <cstdio>
 #include <stack>
 #include <set>
 #include <fstream>

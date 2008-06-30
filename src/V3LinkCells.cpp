@@ -26,8 +26,8 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 #include <unistd.h>
 #include <map>
 #include <algorithm>

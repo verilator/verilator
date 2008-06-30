@@ -24,10 +24,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 #include <unistd.h>
-#include <math.h>
+#include <cmath>
 
 #include "V3Global.h"
 #include "V3File.h"

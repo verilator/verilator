@@ -4,8 +4,8 @@
 // redistribute it and/or modify it under the terms of either the GNU
 // General Public License or the Perl Artistic License.
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <verilated.h>
 #include "Vt_leak.h"
 

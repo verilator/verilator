@@ -20,7 +20,7 @@
 //*************************************************************************
 
 %{
-#include <stdio.h>
+#include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
 #include <cstring>

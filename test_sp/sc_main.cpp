@@ -6,7 +6,7 @@
 // General Public License or the Perl Artistic License.
 //====================================================================
 
-#include <stdio.h>
+#include <cstdio>
 #include <iostream>
 #include <sys/times.h>
 #include <sys/stat.h>

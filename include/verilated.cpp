@@ -23,8 +23,7 @@
 //=========================================================================
 
 #include "verilated.h"
-#include <string.h>
-#include <ctype.h>
+#include <cctype>
 
 #define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
 

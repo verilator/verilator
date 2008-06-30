@@ -18,8 +18,8 @@
 //
 //*************************************************************************
 
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 #include <cstring>
 #include <set>
 #include "V3Error.h"
