@@ -651,7 +651,6 @@ public:
     virtual bool same(AstNode* otherp) const { return true; }
     virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool broken() const { return false; }
-    virtual bool emitWordForm() { return false; }
 
     // INVOKERS
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) = 0;
@@ -682,7 +681,7 @@ struct AstNodeMath : public AstNode {
     virtual ~AstNodeMath() {}
     // METHODS
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
-    virtual string emitOperator() = 0;
+    virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() = 0; // True if output has extra upper bits zero
 };
@@ -784,7 +783,7 @@ struct AstNodeCond : public AstNodeTriop {
     AstNode*	expr1p() 	const { return op2p()->castNode(); }	// op2 = If true...
     AstNode*	expr2p() 	const { return op3p()->castNode(); }	// op3 = If false...
     virtual string emitVerilog() { return "%k(%l %k? %r %k: %t)"; }
-    virtual string emitOperator() { return "VL_COND"; }
+    virtual string emitC() { return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() { return false; } // clean if e1 & e2 clean
     virtual bool cleanLhs() { return true; }
     virtual bool cleanRhs() { return false; } virtual bool cleanThs() { return false; } // Propagates up

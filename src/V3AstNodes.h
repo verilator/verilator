@@ -53,7 +53,7 @@ public:
     uint32_t asInt()  const { return num().asInt(); }
     vluint64_t asQuad() const { return num().asQuad(); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
     virtual V3Hash sameHash() const { return V3Hash(num().asHash()); }
     virtual bool same(AstNode* samep) const {
@@ -81,7 +81,7 @@ struct AstRange : public AstNode {
     int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->asInt():0); }
     int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->asInt():0); }
     int	     elementsConst() const { return msbConst()-lsbConst()+1; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
 };
@@ -100,7 +100,7 @@ struct AstArraySel : public AstNodeSel {
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
 	V3ERROR_NA; /* How can from be a const? */ }
     virtual string emitVerilog() { return "%k(%l%k[%r])"; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { return "%li%k[%ri]"; }
     virtual bool cleanOut() { return true; }
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -133,7 +133,7 @@ struct AstWordSel : public AstNodeSel {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l[%r])"; } // Not %k, as usually it's a small constant rhsp
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { return "%li[%ri]"; } // Not %k, as usually it's a small constant rhsp
     virtual bool cleanOut() { return true; }
     virtual bool cleanLhs() { return true; } virtual bool cleanRhs() { return true; }
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -206,7 +206,10 @@ struct AstSel : public AstNodeTriop {
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
 	out.opRange(from, bit.asInt()+width.asInt()-1, bit.asInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() {
+	return this->widthp()->isOne()
+	    ? "VL_BITSEL_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri)"
+	    : "VL_SEL_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() { return false; }
     virtual bool cleanLhs() { return true;} virtual bool cleanRhs() {return true;}
     virtual bool cleanThs() {return true;}
@@ -531,7 +534,7 @@ public:
 		     && varp()->name()==samep->castVarRef()->varp()->name()); }
     virtual int instrCount() const { return widthInstrs()*(lvalue()?1:instrCountLd()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
 };
 
@@ -559,7 +562,7 @@ public:
     string	inlinedDots() const { return m_inlinedDots; }
     void	inlinedDots(const string& flag) { m_inlinedDots = flag; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
     virtual int instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(varp()),V3Hash(dotted())); }
@@ -792,7 +795,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(m_expect); }
     virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect(); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     AstParseRefExp expect() const { return m_expect; }
     // op1 = Components
     AstNode*	lhsp() 		const { return op1p(); }	// op1 = List of statements
@@ -808,7 +811,7 @@ struct AstDot : public AstNode {
     virtual AstNode* clone() { return new AstDot(*this);}
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
 };
@@ -1474,9 +1477,8 @@ struct AstChangeXor : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opChangeXor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l ^ %r)"; }
-    virtual string emitOperator() { return "VL_CHANGEXOR"; }
+    virtual string emitC() { return "VL_CHANGEXOR_%li(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}  // Lclean && Rclean
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -1779,7 +1781,10 @@ public:
     virtual AstNode* clone() { return new AstRand(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string emitVerilog() { return "$random"; }
-    virtual string emitOperator() { return (m_reset ? "VL_RAND_RESET":"VL_RANDOM"); }
+    virtual string emitC() {
+	return (m_reset ?
+		"VL_RAND_RESET_%nq(%nw, %P)"
+		:"VL_RANDOM_%nq(%nw, %P)"); }
     virtual bool cleanOut() { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1796,7 +1801,7 @@ struct AstTime : public AstNodeTermop {
     virtual AstNode* clone() { return new AstTime(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string emitVerilog() { return "$time"; }
-    virtual string emitOperator() { return "VL_TIME"; }
+    virtual string emitC() { return "VL_TIME_%nq()"; }
     virtual bool cleanOut() { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1818,7 +1823,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual bool cleanOut() { return false; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
@@ -1842,8 +1847,7 @@ struct AstUnaryMin : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opUnaryMin(lhs); }
     virtual string emitVerilog() { return "%k(- %l)"; }
-    virtual string emitOperator() { return "VL_UNARYMIN"; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { return "VL_UNARYMIN_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };
@@ -1856,7 +1860,7 @@ struct AstRedAnd : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedAnd(lhs); }
     virtual string emitVerilog() { return "%k(& %l)"; }
-    virtual string emitOperator() { return "VL_REDAND"; }
+    virtual string emitC() { return "VL_REDAND_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
 };
@@ -1869,8 +1873,7 @@ struct AstRedOr : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedOr(lhs); }
     virtual string emitVerilog() { return "%k(| %l)"; }
-    virtual string emitOperator() { return "VL_REDOR"; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { return "VL_REDOR_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
 };
@@ -1883,8 +1886,7 @@ struct AstRedXor : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXor(lhs); }
     virtual string emitVerilog() { return "%k(^ %l)"; }
-    virtual string emitOperator() { return "VL_REDXOR"; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return (lhsp()->width()!=1 && lhsp()->width()!=2 && lhsp()->width()!=4
 				     && lhsp()->width()!=8 && lhsp()->width()!=16);}
@@ -1901,8 +1903,7 @@ struct AstRedXnor : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXnor(lhs); }
     virtual string emitVerilog() { return "%k(~^ %l)"; }
-    virtual string emitOperator() { v3fatalSrc("REDXNOR should have became REDXOR"); return ""; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { v3fatalSrc("REDXNOR should have became REDXOR"); return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
@@ -1917,7 +1918,7 @@ struct AstLogNot : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLogNot(lhs); }
     virtual string emitVerilog() { return "%k(! %l)"; }
-    virtual string emitOperator() { return "VL_LOGNOT"; }
+    virtual string emitC() { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual string emitSimpleOperator() { return "!"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -1931,9 +1932,8 @@ struct AstNot : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNot(lhs); }
     virtual string emitVerilog() { return "%k(~ %l)"; }
-    virtual string emitOperator() { return "VL_NOT"; }
+    virtual string emitC() { return "VL_NOT_%lq(%lW, %P, %li)"; }
     virtual string emitSimpleOperator() { return "~"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };
@@ -1946,7 +1946,7 @@ struct AstExtend : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%l"; }
-    virtual string emitOperator() { return "VL_EXTEND"; }
+    virtual string emitC() { return "VL_EXTEND_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}  // Because the EXTEND operator self-casts
     virtual int instrCount()	const { return 0; }
@@ -1960,7 +1960,7 @@ struct AstExtendS : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opExtendS(lhs); }
     virtual string emitVerilog() { return "%l"; }
-    virtual string emitOperator() { return "VL_EXTENDS"; }
+    virtual string emitC() { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}  // Because the EXTEND operator self-casts
     virtual int instrCount()	const { return 0; }
@@ -1977,7 +1977,7 @@ struct AstSigned : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%k$signed(%l)"; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}  // Eliminated before matters
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
     virtual int instrCount()	const { return 0; }
@@ -1993,7 +1993,7 @@ struct AstUnsigned : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%k$unsigned(%l)"; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}  // Eliminated before matters
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
     virtual int instrCount()	const { return 0; }
@@ -2006,8 +2006,7 @@ struct AstCLog2 : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
     virtual string emitVerilog() { return "%k$clog2(%l)"; }
-    virtual bool emitWordForm() { return true; }
-    virtual string emitOperator() { return "VL_CLOG2"; }
+    virtual string emitC() { return "VL_CLOG2_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
@@ -2021,8 +2020,7 @@ struct AstCountOnes : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCountOnes(lhs); }
     virtual string emitVerilog() { return "%k$countones(%l)"; }
-    virtual bool emitWordForm() { return true; }
-    virtual string emitOperator() { return "VL_COUNTONES"; }
+    virtual string emitC() { return "VL_COUNTONES_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
@@ -2037,7 +2035,7 @@ struct AstIsUnknown : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%k$isunknown(%l)"; }
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return false;}
 };
@@ -2051,8 +2049,7 @@ struct AstOneHot : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot(lhs); }
     virtual string emitVerilog() { return "%k$onehot(%l)"; }
-    virtual bool emitWordForm() { return true; }
-    virtual string emitOperator() { return "VL_ONEHOT"; }
+    virtual string emitC() { return "VL_ONEHOT_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*4; }
@@ -2067,8 +2064,7 @@ struct AstOneHot0 : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot0(lhs); }
     virtual string emitVerilog() { return "%k$onehot0(%l)"; }
-    virtual bool emitWordForm() { return true; }
-    virtual string emitOperator() { return "VL_ONEHOT0"; }
+    virtual string emitC() { return "VL_ONEHOT0_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*3; }
@@ -2093,7 +2089,7 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%k$_CAST(%l)"; }
-    virtual string emitOperator() { return "VL_CAST"; }
+    virtual string emitC() { return "VL_CAST_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}  // Special cased in V3Cast
     virtual V3Hash sameHash() const { return V3Hash(size()); }
@@ -2111,7 +2107,7 @@ struct AstFEof : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$feof(%l)"; }
-    virtual string emitOperator() { return "VL_FEOF"; }
+    virtual string emitC() { return "(%li ? feof(VL_CVT_Q_FP(%li)) : true)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
@@ -2126,7 +2122,8 @@ struct AstFGetC : public AstNodeUniop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgetc(%l)"; }
-    virtual string emitOperator() { return "VL_FGETC"; }
+    // Non-existant filehandle returns EOF
+    virtual string emitC() { return "(%li ? fgetc(VL_CVT_Q_FP(%li)) : -1)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*64; }
@@ -2145,7 +2142,7 @@ struct AstLogOr : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k|| %r)"; }
-    virtual string emitOperator() { return "VL_LOGOR"; }
+    virtual string emitC() { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "||"; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2161,7 +2158,7 @@ struct AstLogAnd : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k&& %r)"; }
-    virtual string emitOperator() { return "VL_LOGAND"; }
+    virtual string emitC() { return "VL_LOGAND_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "&&"; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2177,7 +2174,7 @@ struct AstLogIf : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %k-> %r)"; }
-    virtual string emitOperator() { return "VL_LOGIF"; }
+    virtual string emitC() { return "VL_LOGIF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "->"; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2193,7 +2190,7 @@ struct AstLogIff : public AstNodeBiCom {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %k<-> %r)"; }
-    virtual string emitOperator() { return "VL_LOGIFF"; }
+    virtual string emitC() { return "VL_LOGIFF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<->"; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2209,9 +2206,8 @@ struct AstOr : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k| %r)"; }
-    virtual string emitOperator() { return "VL_OR"; }
+    virtual string emitC() { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "|"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean && Rclean
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2225,9 +2221,8 @@ struct AstAnd : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k& %r)"; }
-    virtual string emitOperator() { return "VL_AND"; }
+    virtual string emitC() { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "&"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean || Rclean
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2241,9 +2236,8 @@ struct AstXor : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k^ %r)"; }
-    virtual string emitOperator() { return "VL_XOR"; }
+    virtual string emitC() { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}  // Lclean && Rclean
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2257,9 +2251,8 @@ struct AstXnor : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXnor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k^ ~ %r)"; }
-    virtual string emitOperator() { return "VL_XNOR"; }
+    virtual string emitC() { return "VL_XNOR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^ ~"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2273,9 +2266,8 @@ struct AstEq : public AstNodeBiCom {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k== %r)"; }
-    virtual string emitOperator() { return "VL_EQ"; }
+    virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2289,9 +2281,8 @@ struct AstNeq : public AstNodeBiCom {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!= %r)"; }
-    virtual string emitOperator() { return "VL_NEQ"; }
+    virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2305,9 +2296,8 @@ struct AstLt : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k< %r)"; }
-    virtual string emitOperator() { return "VL_LT"; }
+    virtual string emitC() { return "VL_LT_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2321,9 +2311,8 @@ struct AstLtS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k< %r)"; }
-    virtual string emitOperator() { return "VL_LTS"; }
+    virtual string emitC() { return "VL_LTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool emitWordForm() { return false; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2338,9 +2327,8 @@ struct AstGt : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k> %r)"; }
-    virtual string emitOperator() { return "VL_GT"; }
+    virtual string emitC() { return "VL_GT_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2354,9 +2342,8 @@ struct AstGtS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k> %r)"; }
-    virtual string emitOperator() { return "VL_GTS"; }
+    virtual string emitC() { return "VL_GTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool emitWordForm() { return false; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2371,9 +2358,8 @@ struct AstGte : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
-    virtual string emitOperator() { return "VL_GTE"; }
+    virtual string emitC() { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2387,9 +2373,8 @@ struct AstGteS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
-    virtual string emitOperator() { return "VL_GTES"; }
+    virtual string emitC() { return "VL_GTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool emitWordForm() { return false; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2404,9 +2389,8 @@ struct AstLte : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
-    virtual string emitOperator() { return "VL_LTE"; }
+    virtual string emitC() { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2420,9 +2404,8 @@ struct AstLteS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
-    virtual string emitOperator() { return "VL_LTES"; }
+    virtual string emitC() { return "VL_LTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool emitWordForm() { return false; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2439,7 +2422,7 @@ struct AstShiftL : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<< %r)"; }
-    virtual string emitOperator() { return "VL_SHIFTL"; }
+    virtual string emitC() { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<<"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return true;}
@@ -2456,7 +2439,7 @@ struct AstShiftR : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>> %r)"; }
-    virtual string emitOperator() { return "VL_SHIFTR"; }
+    virtual string emitC() { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">>"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2473,7 +2456,7 @@ struct AstShiftRS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>>> %r)"; }
-    virtual string emitOperator() { return "VL_SHIFTRS"; }
+    virtual string emitC() { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2489,9 +2472,8 @@ struct AstAdd : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k+ %r)"; }
-    virtual string emitOperator() { return "VL_ADD"; }
+    virtual string emitC() { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "+"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2505,9 +2487,8 @@ struct AstSub : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k- %r)"; }
-    virtual string emitOperator() { return "VL_SUB"; }
+    virtual string emitC() { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "-"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2521,9 +2502,8 @@ struct AstMul : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k* %r)"; }
-    virtual string emitOperator() { return "VL_MUL"; }
+    virtual string emitC() { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "*"; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2538,9 +2518,8 @@ struct AstMulS : public AstNodeBiComAsv {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k* %r)"; }
-    virtual string emitOperator() { return "VL_MULS"; }
+    virtual string emitC() { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool emitWordForm() { return false; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2556,8 +2535,7 @@ struct AstDiv : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
-    virtual string emitOperator() { return "VL_DIV"; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { return "VL_DIV_%lq(%lW, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2572,8 +2550,7 @@ struct AstDivS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
-    virtual string emitOperator() { return "VL_DIVS"; }
-    virtual bool emitWordForm() { return false; }
+    virtual string emitC() { return "VL_DIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2589,8 +2566,7 @@ struct AstModDiv : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
-    virtual string emitOperator() { return "VL_MODDIV"; }
-    virtual bool emitWordForm() { return true; }
+    virtual string emitC() { return "VL_MODDIV_%lq(%lW, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2605,8 +2581,7 @@ struct AstModDivS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
-    virtual string emitOperator() { return "VL_MODDIVS"; }
-    virtual bool emitWordForm() { return false; }
+    virtual string emitC() { return "VL_MODDIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2622,8 +2597,7 @@ struct AstPow : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k** %r)"; }
-    virtual string emitOperator() { return "VL_POW"; }
-    virtual bool emitWordForm() { return false; }
+    virtual string emitC() { return "VL_POW_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
@@ -2638,8 +2612,7 @@ struct AstPowS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k** %r)"; }
-    virtual string emitOperator() { return "VL_POWS"; }
-    virtual bool emitWordForm() { return false; }
+    virtual string emitC() { return "VL_POWS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
@@ -2655,9 +2628,8 @@ struct AstEqCase : public AstNodeBiCom {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k=== %r)"; }
-    virtual string emitOperator() { return "VL_EQ"; }	// Until have 4 state anyways
+    virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2671,9 +2643,8 @@ struct AstNeqCase : public AstNodeBiCom {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!== %r)"; }
-    virtual string emitOperator() { return "VL_NEQ"; }	// Until have 4 state anyways
+    virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2688,9 +2659,8 @@ struct AstEqWild : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k==? %r)"; }
-    virtual string emitOperator() { return "VL_EQ"; }	// Until have 4 state anyways
+    virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2704,9 +2674,8 @@ struct AstNeqWild : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!=? %r)"; }
-    virtual string emitOperator() { return "VL_NEQ"; }	// Until have 4 state anyways
+    virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
-    virtual bool emitWordForm() { return true; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2722,7 +2691,7 @@ struct AstConcat : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string emitVerilog() { return "%k{%l, %k%r}"; }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opConcat(lhs,rhs); }
-    virtual string emitOperator() { return "VL_CONCAT"; }
+    virtual string emitC() { return "VL_CONCAT_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return true;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2738,7 +2707,7 @@ struct AstReplicate : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs,rhs); }
     virtual string emitVerilog() { return "%k{%l{%k%r}}"; }
-    virtual string emitOperator() { return "VL_REPLICATE"; }
+    virtual string emitC() { return "VL_REPLICATE_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -2752,7 +2721,7 @@ struct AstFGetS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgets(%l,%r)"; }
-    virtual string emitOperator() { return "VL_FGETS"; }
+    virtual string emitC() { return "VL_FGETS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
@@ -3228,7 +3197,7 @@ struct AstCMath : public AstNodeMath {
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() { return true; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitOperator() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
 };

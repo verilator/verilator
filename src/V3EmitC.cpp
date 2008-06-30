@@ -91,7 +91,8 @@ public:
     void emitIQW(AstNode* nodep) {
 	puts (nodep->isWide()?"W":(nodep->isQuad()?"Q":"I"));
     }
-    void emitOpName(AstNode* nodep, const string& name);
+    void emitOpName(AstNode* nodep, const string& format,
+		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
 
     string cFuncArgs(AstCFunc* nodep) {
 	// Return argument list for given C function
@@ -292,26 +293,12 @@ public:
 	nodep->filep()->iterateAndNext(*this);	// For saftey, so user doesn't later WRITE with it.
 	puts("=0; }\n");
     }
-    virtual void visit(AstFEof* nodep, AstNUser*) {
-	puts("(");
-	nodep->filep()->iterateAndNext(*this);
-	puts("? feof(VL_CVT_Q_FP(");
-	nodep->filep()->iterateAndNext(*this);
-	puts(")) : true)"); // Non-existant filehandle should return EOF
-    }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	puts("if (");
 	nodep->filep()->iterateAndNext(*this);
 	puts(") { fflush (VL_CVT_Q_FP(");
 	nodep->filep()->iterateAndNext(*this);
 	puts(")); ");
-    }
-    virtual void visit(AstFGetC* nodep, AstNUser*) {
-	puts("(");
-	nodep->filep()->iterateAndNext(*this);
-	puts("? fgetc(VL_CVT_Q_FP(");
-	nodep->filep()->iterateAndNext(*this);
-	puts(")) : -1)"); // Non-existant filehandle should return EOF
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
@@ -374,26 +361,24 @@ public:
 
     // Operators
     virtual void visit(AstNodeTermop* nodep, AstNUser*) {
-	emitOpName(nodep,nodep->emitOperator());
-	puts(")");
+	emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
     }
     virtual void visit(AstNodeUniop* nodep, AstNUser*) {
 	if (emitSimpleOk(nodep)) {
 	    putbs("("); puts(nodep->emitSimpleOperator()); puts(" ");
+	    nodep->lhsp()->iterateAndNext(*this); puts(")");
 	} else {
-	    emitOpName(nodep,nodep->emitOperator());
+	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), NULL, NULL);
 	}
-	nodep->lhsp()->iterateAndNext(*this); puts(")");
     }
     virtual void visit(AstNodeBiop* nodep, AstNUser*) {
 	if (emitSimpleOk(nodep)) {
 	    putbs("("); nodep->lhsp()->iterateAndNext(*this);
 	    puts(" "); putbs(nodep->emitSimpleOperator()); puts(" ");
+	    nodep->rhsp()->iterateAndNext(*this); puts(")");
 	} else {
-	    emitOpName(nodep,nodep->emitOperator());
-	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
+	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
 	}
-	nodep->rhsp()->iterateAndNext(*this); puts(")");
     }
     virtual void visit(AstRedXor* nodep, AstNUser* vup) {
 	if (nodep->lhsp()->isWide()) {
@@ -425,10 +410,7 @@ public:
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
 	// Widths match up already, so we'll just use C++'s operator w/o any temps.
 	if (nodep->expr1p()->isWide()) {
-	    emitOpName(nodep,nodep->emitOperator());
-	    nodep->condp()->iterateAndNext(*this); puts(", ");
-	    nodep->expr1p()->iterateAndNext(*this); puts(", ");
-	    nodep->expr2p()->iterateAndNext(*this); puts(")");
+	    emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->expr1p(), nodep->expr2p());
 	} else {
 	    putbs("(");
 	    nodep->condp()->iterateAndNext(*this); putbs(" ? ");
@@ -438,16 +420,7 @@ public:
     }
     virtual void visit(AstSel* nodep, AstNUser*) {
 	// Note ASSIGN checks for this on a LHS
-	if (nodep->widthp()->isOne()) {
-	    emitOpName(nodep,"VL_BITSEL");
-	    nodep->fromp()->iterateAndNext(*this); puts(", ");
-	    nodep->lsbp()->iterateAndNext(*this); puts(")");
-	} else {
-	    emitOpName(nodep,"VL_SEL");
-	    nodep->fromp()->iterateAndNext(*this); puts(", ");
-	    nodep->lsbp()->iterateAndNext(*this); puts(", ");
-	    nodep->widthp()->iterateAndNext(*this); puts(")");
-	}
+	emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
     }
     virtual void visit(AstReplicate* nodep, AstNUser*) {
 	if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
@@ -461,19 +434,11 @@ public:
 	    if (nodep->lhsp()) { puts(","+cvtToStr(nodep->lhsp()->widthMin())); }
 	    if (nodep->rhsp()) { puts(","+cvtToStr(nodep->rhsp()->widthMin())); }
 	    puts(",");
+	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
+	    nodep->rhsp()->iterateAndNext(*this); puts(")");
 	} else {
-	    emitOpName(nodep,nodep->emitOperator());
+	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
 	}
-	nodep->lhsp()->iterateAndNext(*this); puts(", ");
-	nodep->rhsp()->iterateAndNext(*this); puts(")");
-    }
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
-	nodep->fromp()->iterateAndNext(*this); putbs("[");
-	nodep->bitp()->iterateAndNext(*this); puts("]");
-    }
-    virtual void visit(AstWordSel* nodep, AstNUser*) {
-	nodep->fromp()->iterateAndNext(*this); puts("["); // Not putbs, as usually it's a small constant next
-	nodep->bitp()->iterateAndNext(*this); puts("]");
     }
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {
@@ -873,33 +838,95 @@ bool EmitCStmts::emitSimpleOk(AstNodeMath* nodep) {
     return true;
 }
 
-void EmitCStmts::emitOpName(AstNode* nodep, const string& opname) {
-    putbs(opname+"_");
-    if (nodep->emitWordForm()) {
-	emitIQW(nodep->op1p());
-	puts("(");
-	if (nodep->op1p()->isWide()) {
-	    puts(cvtToStr(nodep->op1p()->widthWords()));
-	    puts(", ");
+void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
+			    AstNode* lhsp, AstNode* rhsp, AstNode* thsp) {
+    // Look at emitOperator() format for term/uni/dual/triops,
+    // and write out appropriate text.
+    //  %n*	node
+    //   %nq	  emitIQW on the [node]
+    //   %nw	  width in bits
+    //   %nW	  width in words
+    //   %ni	  iterate
+    //	%l*	lhsp - if appropriate, then second char as above
+    //	%r*	rhsp - if appropriate, then second char as above
+    //	%t*	thsp - if appropriate, then second char as above
+    //	%k	Potential line break
+    //  %P	Wide temporary name
+    //	,	Commas suppressed if the previous field is suppressed
+    string nextComma;
+    bool needComma = false;
+#define COMMA { if (nextComma!="") { puts(nextComma); nextComma=""; } }
+
+    putbs("");
+    for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
+	if (pos[0]==',') {
+	    // Remember we need to add one, but don't do yet to avoid ",)"
+	    if (needComma) {
+		if (pos[1]==' ') { nextComma=", "; }
+		else nextComma = ",";
+		needComma = false;
+	    }
+	    if (pos[1]==' ') { ++pos; } // Must do even if no nextComma
 	}
-    } else {
-	emitIQW(nodep);
-	if (nodep->op1p()) { emitIQW(nodep->op1p()); }
-	if (nodep->op2p()) { emitIQW(nodep->op2p()); }
-	if (nodep->op3p()) { emitIQW(nodep->op3p()); }
-	puts("(");
-	puts(cvtToStr(nodep->widthMin()));
-	if (nodep->op1p()) { puts(","+cvtToStr(nodep->op1p()->widthMin())); }
-	if (nodep->op2p()) { puts(","+cvtToStr(nodep->op2p()->widthMin())); }
-	if (nodep->op3p()) { puts(","+cvtToStr(nodep->op3p()->widthMin())); }
-	if (nodep->op1p() || nodep->isWide()) puts(", ");
-    }
-    if (nodep->isWide()) {
-	if (!m_wideTempRefp) nodep->v3fatalSrc("Wide Op w/ no temp, perhaps missing op in V3EmitC?");
-	puts(m_wideTempRefp->hiername());
-	puts(m_wideTempRefp->varp()->name());
-	m_wideTempRefp = NULL;
-	if (nodep->op1p()) puts(", ");
+	else if (pos[0]=='%') {
+	    ++pos;
+	    bool detail = false;
+	    AstNode* detailp = NULL;
+	    switch (pos[0]) {
+	    case '%': puts("%");  break;
+	    case 'k': putbs("");  break;
+	    case 'n': detail = true; detailp = nodep; break;
+	    case 'l': detail = true; detailp = lhsp; break;
+	    case 'r': detail = true; detailp = rhsp; break;
+	    case 't': detail = true; detailp = thsp; break;
+	    case 'P':
+		if (nodep->isWide()) {
+		    if (!m_wideTempRefp) nodep->v3fatalSrc("Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+		    COMMA;
+		    puts(m_wideTempRefp->hiername());
+		    puts(m_wideTempRefp->varp()->name());
+		    m_wideTempRefp = NULL;
+		    needComma = true;
+		}
+		break;
+	    default:
+		nodep->v3fatalSrc("Unknown emitOperator format code: %"<<pos[0]);
+		break;
+	    }
+	    if (detail) {
+		// Get next letter of %[nlrt]
+		++pos;
+		switch (pos[0]) {
+		case 'q': emitIQW(detailp); break;
+		case 'w': 
+		    COMMA;
+		    puts(cvtToStr(detailp->widthMin()));
+		    needComma = true;
+		    break;
+		case 'W':
+		    if (lhsp->isWide()) {
+			COMMA;
+			puts(cvtToStr(lhsp->widthWords()));
+			needComma = true;
+		    }
+		    break;
+		case 'i':
+		    COMMA;
+		    if (!detailp) { nodep->v3fatalSrc("emitOperator() references undef node"); }
+		    else detailp->iterateAndNext(*this);
+		    needComma = true;
+		    break;
+		default:
+		    nodep->v3fatalSrc("Unknown emitOperator format code: %[nlrt]"<<pos[0]);
+		    break;
+		}
+	    }
+	} else {
+	    // Normal text
+	    if (pos[0] == ')') nextComma="";
+	    COMMA;
+	    string s; s+=pos[0]; puts(s);
+	}
     }
 }
 
