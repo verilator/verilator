@@ -200,21 +200,6 @@ inline const char* VL_VALUE_FORMATTED_I(int obits, char fmt, bool drop0, IData l
 
 /// File I/O
 extern IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq);
-inline IData VL_FGETS_IIQ(int, int bits, int, CData& strg, QData fpq) {
-    return VL_FGETS_IXQ(bits, &strg, fpq);
-}
-inline IData VL_FGETS_IIQ(int, int bits, int, SData& strg, QData fpq) {
-    return VL_FGETS_IXQ(bits, &strg, fpq);
-}
-inline IData VL_FGETS_IIQ(int, int bits, int, IData& strg, QData fpq) {
-    return VL_FGETS_IXQ(bits, &strg, fpq);
-}
-inline IData VL_FGETS_IQQ(int, int bits, int, QData& strg, QData fpq) {
-    return VL_FGETS_IXQ(bits, &strg, fpq);
-}
-inline IData VL_FGETS_IWQ(int, int bits, int, WDataOutP strgp, QData fpq) {
-    return VL_FGETS_IXQ(bits, strgp, fpq);
-}
 
 extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
 extern QData VL_FOPEN_QI(QData ofilename, IData mode);

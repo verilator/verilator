@@ -2721,7 +2721,7 @@ struct AstFGetS : public AstNodeBiop {
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgets(%l,%r)"; }
-    virtual string emitC() { return "VL_FGETS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}

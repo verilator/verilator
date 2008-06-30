@@ -248,14 +248,24 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
     while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
 }
 
-IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq) {
+void _VL_STRING_TO_VINT(int obits, void* destp, int srclen, const char* srcp) {
+    // Convert C string to Verilog format
+    int bytes = VL_BYTES_I(obits);
+    char* op = ((char*)(destp));
+    if (srclen > bytes) srclen = bytes;  // Don't overflow destination
+    int i;
+    for (i=0; i<srclen; i++) { *op++ = srcp[srclen-1-i]; }
+    for (; i<bytes; i++) { *op++ = 0; }
+}
+
+IData VL_FGETS_IXQ(int obits, void* destp, QData fpq) {
     FILE* fp = VL_CVT_Q_FP(fpq);
     if (!fp) return 0;
 
     // The string needs to be padded with 0's in unused spaces in front of
     // any read data.  This means we can't know in what location the first
     // character will finally live, so we need to copy.  Yuk.
-    IData bytes = VL_BYTES_I(sbits);
+    IData bytes = VL_BYTES_I(obits);
     char buffer[bytes];
 
     // We don't use fgets, as we must read \0s.
@@ -268,11 +278,7 @@ IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq) {
 	if (c=='\n') break;
     }
 
-    // Convert to Verilog format
-    char* op = ((char*)(strgp));
-    IData i;
-    for (i=0; i<got; i++) { *op++ = buffer[got-1-i]; }
-    for (; i<bytes; i++) { *op++ = 0; }
+    _VL_STRING_TO_VINT(obits, destp, got, buffer);
     return got;
 }
 
