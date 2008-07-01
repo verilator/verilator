@@ -222,6 +222,8 @@ README: readme.texi
 # See uninstall also
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 	verilator_includer verilator_profcfunc
+# Some scripts go into both the search path and pkgdatadir,
+# so they can be found by the user, and under $VERILATOR_ROOT.
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
 	( cd bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
@@ -229,6 +231,8 @@ installbin:
 	( cd bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
 	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
+	( cd bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
 VL_INST_MAN_FILES = verilator.1
 installman:

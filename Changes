@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add $random.
 
+**** Fix verilator_includer not being installed properly.  [Holger Waechtler]
+
 **** Internal changes to how $displays get compiled and executed.
 
 * Verilator 3.665 2008/06/25
