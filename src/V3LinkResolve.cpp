@@ -312,22 +312,24 @@ private:
 	}
     }
 
-    void expectFormat(AstNode* nodep, const string& format, AstNode* argp) {
+    void expectFormat(AstNode* nodep, const string& format, AstNode* argp, bool isScan) {
 	// Check display arguments
 	bool inPct = false;
 	for (const char* inp = format.c_str(); *inp; inp++) {
-	    char ch = *inp;   // Breaks with iterators...
+	    char ch = tolower(*inp);   // Breaks with iterators...
 	    if (!inPct && ch=='%') {
 		inPct = true;
 	    } else if (inPct) {
 		inPct = false;
-		switch (tolower(ch)) {
+		switch (ch) {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 		    inPct = true;
 		    break;
 		case '%': break;  // %% - just output a %
-		case 'm': break;  // %m - auto insert "name"
+		case 'm':  // %m - auto insert "name"
+		    if (isScan) nodep->v3error("Unsupported: %m in $fscanf");
+		    break;
 		default:  // Most operators, just move to next argument
 		    if (!V3Number::displayedFmtLegal(ch)) {
 			nodep->v3error("Unknown $display format code: %"<<ch);
@@ -376,10 +378,19 @@ private:
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
+    virtual void visit(AstFScanF* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
+    }
+    virtual void visit(AstSScanF* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
+    }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
-	expectFormat(nodep, nodep->name(), nodep->exprsp());
+	expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
 	if (!m_assertp
 	    && (nodep->displayType() == AstDisplayType::INFO
 		|| nodep->displayType() == AstDisplayType::WARNING

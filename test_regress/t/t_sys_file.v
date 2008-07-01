@@ -12,6 +12,13 @@ module t;
    reg [1*8:1]	letterl;
    reg [8*8:1]	letterq;
    reg [16*8:1]	letterw;
+   reg [16*8:1]	letterz;
+
+`ifdef TEST_VERBOSE
+ `define verbose 1'b1
+`else
+ `define verbose 1'b0
+`endif
 
    initial begin
       // Display formatting
@@ -55,29 +62,124 @@ module t;
 	 if ($fgetc(file) != "h") $stop;
 	 if ($fgetc(file) != "i") $stop;
 	 if ($fgetc(file) != "\n") $stop;
-	 
+
 	 // $fgets
 	 chars = $fgets(letterl, file);
-	 $write("c=%0d l=%s\n", chars, letterl);
+	 if (`verbose) $write("c=%0d l=%s\n", chars, letterl);
 	 if (chars != 1) $stop;
 	 if (letterl != "l") $stop;
 
 	 chars = $fgets(letterq, file);
-	 $write("c=%0d q=%x=%s", chars, letterq, letterq); // Output includes newline
+	 if (`verbose) $write("c=%0d q=%x=%s", chars, letterq, letterq); // Output includes newline
 	 if (chars != 5) $stop;
 	 if (letterq != "\0\0\0quad\n") $stop;
 
 	 letterw = "5432109876543210";
 	 chars = $fgets(letterw, file);
-	 $write("c=%0d w=%s", chars, letterw); // Output includes newline
+	 if (`verbose) $write("c=%0d w=%s", chars, letterw); // Output includes newline
 	 if (chars != 10) $stop;
 	 if (letterw != "\0\0\0\0\0\0widestuff\n") $stop;
+
+	 // $sscanf
+	 if ($sscanf("x","")!=0) $stop;
+	 if ($sscanf("z","z")!=0) $stop;
+
+	 chars = $sscanf("blabcdefghijklmnop",
+			 "%s", letterq);
+	 if (`verbose) $write("c=%0d sa=%s\n", chars, letterq);
+	 if (chars != 1) $stop;
+	 if (letterq != "ijklmnop") $stop;
+
+	 chars = $sscanf("xa=1f xb=12898971238912389712783490823_237904689_02348923",
+			 "xa=%x xb=%x", letterq, letterw);
+	 if (`verbose) $write("c=%0d xa=%x xb=%x\n", chars, letterq, letterw);
+	 if (chars != 2) $stop;
+	 if (letterq != 64'h1f) $stop;
+	 if (letterw != 128'h38971278349082323790468902348923) $stop;
+
+	 chars = $sscanf("ba=10      bb=110100101010010101012    note_the_two ",
+			 "ba=%b bb=%b%s", letterq, letterw, letterz);
+	 if (`verbose) $write("c=%0d xa=%x xb=%x z=%0s\n", chars, letterq, letterw, letterz);
+	 if (chars != 3) $stop;
+	 if (letterq != 64'h2) $stop;
+	 if (letterw != 128'hd2a55) $stop;
+	 if (letterz != {"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0","2"}) $stop;
+
+	 chars = $sscanf("oa=23 ob=125634123615234123681236",
+			 "oa=%o ob=%o", letterq, letterw);
+	 if (`verbose) $write("c=%0d oa=%x ob=%x\n", chars, letterq, letterw);
+	 if (chars != 2) $stop;
+	 if (letterq != 64'h13) $stop;
+	 if (letterw != 128'h55ce14f1a9c29e) $stop;
+
+	 chars = $sscanf("d=-236123",
+			 "d=%d", letterq);
+	 if (`verbose) $write("c=%0d d=%d\n", chars, letterq);
+	 if (chars != 1) $stop;
+	 if (letterq != 64'hfffffffffffc65a5) $stop;
+
+	 // $fscanf
+	 if ($fscanf(file,"")!=0) $stop;
+
+	 if (!sync("*")) $stop;
+	 chars = $fscanf(file, "xa=%x xb=%x", letterq, letterw);
+	 if (`verbose) $write("c=%0d xa=%0x xb=%0x\n", chars, letterq, letterw);
+	 if (chars != 2) $stop;
+	 if (letterq != 64'h1f) $stop;
+	 if (letterw != 128'h23790468902348923) $stop;
+
+	 if (!sync("\n")) $stop;
+	 if (!sync("*")) $stop;
+	 chars = $fscanf(file, "ba=%b bb=%b %s", letterq, letterw, letterz);
+	 if (`verbose) $write("c=%0d ba=%0x bb=%0x z=%0s\n", chars, letterq, letterw, letterz);
+	 if (chars != 3) $stop;
+	 if (letterq != 64'h2) $stop;
+	 if (letterw != 128'hd2a55) $stop;
+	 if (letterz != "\0\0\0\0note_the_two") $stop;
+
+	 if (!sync("\n")) $stop;
+	 if (!sync("*")) $stop;
+	 chars = $fscanf(file, "oa=%o ob=%o", letterq, letterw);
+	 if (`verbose) $write("c=%0d oa=%0x ob=%0x\n", chars, letterq, letterw);
+	 if (chars != 2) $stop;
+	 if (letterq != 64'h13) $stop;
+	 if (letterw != 128'h1573) $stop;
+
+	 if (!sync("\n")) $stop;
+	 if (!sync("*")) $stop;
+	 chars = $fscanf(file, "d=%d", letterq);
+	 if (`verbose) $write("c=%0d d=%0x\n", chars, letterq);
+	 if (chars != 1) $stop;
+	 if (letterq != 64'hfffffffffffc65a5) $stop;
+
+	 if (!sync("\n")) $stop;
+	 if (!sync("*")) $stop;
+	 chars = $fscanf(file, "%c%s", letterl, letterw);
+	 if (`verbose) $write("c=%0d q=%c s=%s\n", chars, letterl, letterw);
+	 if (chars != 2) $stop;
+	 if (letterl != "f") $stop;
+	 if (letterw != "\0\0\0\0\0redfishblah") $stop;
+
+	 chars = $fscanf(file, "%c", letterl);
+	 if (`verbose) $write("c=%0d l=%x\n", chars, letterl);
+	 if (chars != 1) $stop;
+	 if (letterl != "\n") $stop;
 
 	 $fclose(file);
       end
 
-
       $write("*-* All Finished *-*\n");
       $finish(0);  // Test arguments to finish
    end
+
+   function sync;
+      input [7:0] cexp;
+      reg [7:0] cgot;
+      begin
+	 cgot = $fgetc(file);
+	 if (`verbose) $write("sync=%x='%c'\n", cgot,cgot);
+	 sync = (cgot == cexp);
+      end
+   endfunction
+
 endmodule

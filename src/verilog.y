@@ -232,6 +232,7 @@ class AstSenTree;
 %token<fileline>	yD_FGETS	"$fgets"
 %token<fileline>	yD_FINISH	"$finish"
 %token<fileline>	yD_FOPEN	"$fopen"
+%token<fileline>	yD_FSCANF	"$fscanf"
 %token<fileline>	yD_FWRITE	"$fwrite"
 %token<fileline>	yD_INFO		"$info"
 %token<fileline>	yD_ISUNKNOWN	"$isunknown"
@@ -241,6 +242,7 @@ class AstSenTree;
 %token<fileline>	yD_READMEMB	"$readmemb"
 %token<fileline>	yD_READMEMH	"$readmemh"
 %token<fileline>	yD_SIGNED	"$signed"
+%token<fileline>	yD_SSCANF	"$sscanf"
 %token<fileline>	yD_STOP		"$stop"
 %token<fileline>	yD_TIME		"$time"
 %token<fileline>	yD_UNSIGNED	"$unsigned"
@@ -429,6 +431,7 @@ class AstSenTree;
 %type<assignwp>	gateBuf gateNot gateAnd gateNand gateOr gateNor gateXor gateXnor
 %type<nodep>	gateAndPinList gateOrPinList gateXorPinList
 %type<nodep>	commaEListE
+%type<nodep>	commaVRDListE vrdList
 
 %type<nodep>	pslStmt pslDir pslDirOne pslProp
 %type<nodep>	pslDecl
@@ -1087,6 +1090,8 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
 	|	yD_FGETS '(' varRefDotBit ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
+	|	yD_FSCANF '(' expr ',' yaSTRING commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
+	|	yD_SSCANF '(' expr ',' yaSTRING commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
@@ -1134,6 +1139,14 @@ exprList:	expr					{ $$ = $1; }
 
 commaEListE:	/* empty */				{ $$ = NULL; }
 	|	',' exprList				{ $$ = $2; }
+	;
+
+vrdList:	varRefDotBit				{ $$ = $1; }
+	|	vrdList ',' varRefDotBit		{ $$ = $1;$1->addNext($3); }
+	;
+
+commaVRDListE:	/* empty */				{ $$ = NULL; }
+	|	',' vrdList				{ $$ = $2; }
 	;
 
 //************************************************

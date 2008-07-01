@@ -163,19 +163,30 @@ public:
     virtual void visit(AstCoverInc*, AstNUser*) {
 	// N/A
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+
+    void visitNodeDisplay(AstNode* nodep, AstNode* filep, const string& text, AstNode* exprsp) {
 	putbs(nodep->verilogKwd());
 	putbs(" (");
-	if (nodep->filep()) { nodep->filep()->iterateAndNext(*this); putbs(","); }
+	if (filep) { filep->iterateAndNext(*this); putbs(","); }
 	puts("\"");
-	ofp()->putsNoTracking(nodep->text());
+	ofp()->putsNoTracking(text);
 	puts("\"");
-	for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
+	for (AstNode* expp=exprsp; expp; expp = expp->nextp()) {
 	    puts(",");
 	    expp->iterateAndNext(*this);
 	}
 	puts(");\n");
     }
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
+    }
+    virtual void visit(AstFScanF* nodep, AstNUser*) {
+	visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
+    }
+    virtual void visit(AstSScanF* nodep, AstNUser*) {
+	visitNodeDisplay(nodep, nodep->fromp(), nodep->text(), nodep->exprsp());
+    }
+
     virtual void visit(AstFOpen* nodep, AstNUser*) {
 	putbs(nodep->verilogKwd());
 	putbs(" (");

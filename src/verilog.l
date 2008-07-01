@@ -138,6 +138,7 @@ escid	\\[^ \t\f\r\n]+
   "$fgets"		{yylval.fileline = CRELINE(); return yD_FGETS;}
   "$finish"		{yylval.fileline = CRELINE(); return yD_FINISH;}
   "$fopen"		{yylval.fileline = CRELINE(); return yD_FOPEN;}
+  "$fscanf"		{yylval.fileline = CRELINE(); return yD_FSCANF;}
   "$fullskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$fwrite"		{yylval.fileline = CRELINE(); return yD_FWRITE;}
   "$hold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
@@ -153,6 +154,7 @@ escid	\\[^ \t\f\r\n]+
   "$setup"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$setuphold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$skew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
+  "$sscanf"		{yylval.fileline = CRELINE(); return yD_SSCANF;}
   "$stop"		{yylval.fileline = CRELINE(); return yD_STOP;}
   "$time"		{yylval.fileline = CRELINE(); return yD_TIME;}
   "$timeskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}

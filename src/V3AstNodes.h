@@ -1349,6 +1349,78 @@ struct AstFFlush : public AstNodeStmt {
     void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
+struct AstFScanF : public AstNodeMath {
+    // Parents: expr
+    // Children: file which must be a varref
+    // Children: varrefs to load
+private:
+    string	m_text;
+public:
+    AstFScanF(FileLine* fileline, const string& text, AstNode* filep, AstNode* exprsp)
+	: AstNodeMath (fileline), m_text(text) {
+	addNOp1p(exprsp);
+	setNOp2p(filep);
+    }
+    virtual ~AstFScanF() {}
+    virtual AstType type() const { return AstType::FSCANF;}
+    virtual AstNode* clone() { return new AstFScanF(*this); }
+    virtual string name()	const { return m_text; }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual string verilogKwd() const { return "$fscanf"; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: has 'visual' ordering
+    virtual bool isOutputter() const { return true; }	// SPECIAL: makes output
+    virtual bool cleanOut() { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const {
+	return text()==samep->castFScanF()->text(); }
+    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    void 	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
+    string 	text()		const { return m_text; }		// * = Text to display
+    void 	text(const string& text) { m_text=text; }
+    AstNode*	filep() const { return op2p(); }
+    void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
+};
+
+struct AstSScanF : public AstNodeMath {
+    // Parents: expr
+    // Children: file which must be a varref
+    // Children: varrefs to load
+private:
+    string	m_text;
+public:
+    AstSScanF(FileLine* fileline, const string& text, AstNode* fromp, AstNode* exprsp)
+	: AstNodeMath (fileline), m_text(text) {
+	addNOp1p(exprsp);
+	setOp2p(fromp);
+    }
+    virtual ~AstSScanF() {}
+    virtual AstType type() const { return AstType::SSCANF;}
+    virtual AstNode* clone() { return new AstSScanF(*this); }
+    virtual string name()	const { return m_text; }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    virtual string verilogKwd() const { return "$sscanf"; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: has 'visual' ordering
+    virtual bool isOutputter() const { return true; }	// SPECIAL: makes output
+    virtual bool cleanOut() { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const {
+	return text()==samep->castSScanF()->text(); }
+    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    void	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
+    string 	text()		const { return m_text; }		// * = Text to display
+    void 	text(const string& text) { m_text=text; }
+    AstNode*	fromp() const { return op2p(); }
+    void 	fromp(AstNode* nodep) { setOp2p(nodep); }
+};
+
 struct AstReadMem : public AstNodeStmt {
 private:
     bool	m_isHex;	// readmemh, not readmemb

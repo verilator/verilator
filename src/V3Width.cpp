@@ -595,6 +595,20 @@ private:
 	    nodep->width(32,32);
 	}
     }
+    virtual void visit(AstFScanF* nodep, AstNUser* vup) {
+	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	if (vup->c()->prelim()) {
+	    nodep->width(32,32);
+	}
+    }
+    virtual void visit(AstSScanF* nodep, AstNUser* vup) {
+	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	if (vup->c()->prelim()) {
+	    nodep->width(32,32);
+	}
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

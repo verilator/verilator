@@ -209,6 +209,11 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
 extern void VL_WRITEF(const char* formatp, ...);
 extern void VL_FWRITEF(QData fpq, const char* formatp, ...);
 
+extern IData VL_FSCANF_IX(QData fpq, const char* formatp, ...);
+extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
+extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
+extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
+
 //=========================================================================
 // Base macros
 
@@ -219,7 +224,9 @@ extern void VL_FWRITEF(QData fpq, const char* formatp, ...);
 #define VL_BITISSETLIMIT_W(data,width,bit) (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
 /// Create two 32-bit words from quadword
-#define VL_SET_WQ(decl,data)	{ decl[0]=(data); decl[1]=((data)>>VL_WORDSIZE); }
+#define VL_SET_WQ(owp,data)	{ owp[0]=(data); owp[1]=((data)>>VL_WORDSIZE); }
+#define VL_SET_WI(owp,data)	{ owp[0]=(data); owp[1]=0; }
+#define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
 
 // Use a union to avoid cast-to-different-size warnings
 /// Return FILE* from QData

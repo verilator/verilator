@@ -78,8 +78,10 @@ public:
     //int debug() { return 9; }
 
     // METHODS
-    void displayEmit(AstDisplay* nodep);
-    void displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, char fmtLetter);
+    void displayNode(AstNode* nodep, const string& vformat, AstNode* exprsp, bool isScan);
+    void displayEmit(AstNode* nodep, bool isScan);
+    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
+		    string vfmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_STATIC, EVL_ALL} EisWhich;
@@ -229,7 +231,23 @@ public:
 	nodep->lhsp()->iterateAndNext(*this);
 	puts(");\n");
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*);  // BELOW
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
+	string text = nodep->text();
+	if (nodep->addNewline()) text += "\\n";
+	displayNode(nodep, text, nodep->exprsp(), false);
+    }
+    virtual void visit(AstFScanF* nodep, AstNUser*) {
+	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
+    }
+    virtual void visit(AstSScanF* nodep, AstNUser*) {
+	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
+    }
+
+    void checkMaxWords(AstNode* nodep) {
+	if (nodep->widthWords() > VL_TO_STRING_MAX_WORDS) {
+	    nodep->v3error("String of "<<nodep->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
+	}
+    }
     virtual void visit(AstFOpen* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this);
 	puts(" = VL_FOPEN_");
@@ -241,9 +259,7 @@ public:
 	    puts(cvtToStr(nodep->filenamep()->widthWords()));
 	    putbs(", ");
 	}
-	if (nodep->filenamep()->widthWords() > VL_TO_STRING_MAX_WORDS) {
-	    nodep->v3error("String of "<<nodep->filenamep()->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
-	}
+	checkMaxWords(nodep->filenamep());
 	nodep->filenamep()->iterateAndNext(*this);
 	putbs(", ");
 	nodep->modep()->iterateAndNext(*this);
@@ -270,9 +286,7 @@ public:
 	puts(cvtToStr(array_lsb));
 	putbs(",");
 	puts(cvtToStr(nodep->filenamep()->widthWords()));
-	if (nodep->filenamep()->widthWords() > VL_TO_STRING_MAX_WORDS) {
-	    nodep->v3error("String of "<<nodep->filenamep()->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
-	}
+	checkMaxWords(nodep->filenamep());
 	putbs(", ");
 	nodep->filenamep()->iterateAndNext(*this);
 	putbs(", ");
@@ -950,16 +964,40 @@ struct EmitDispState {
     }
 } emitDispState;
 
-void EmitCStmts::displayEmit(AstDisplay* nodep) {
-    if (emitDispState.m_format != "") {
+void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
+    if (emitDispState.m_format == ""
+	&& nodep->castDisplay()) { // not fscanf etc, as they need to return value
+	// NOP
+    } else {
 	// Format
-	if (nodep->filep()) {
-	    puts("VL_FWRITEF(");
-	    nodep->filep()->iterate(*this);
-	    puts(",\"");
+	bool isStmt;
+	if (AstFScanF* dispp = nodep->castFScanF()) {
+	    isStmt = false;
+	    puts("VL_FSCANF_IX(");
+	    dispp->filep()->iterate(*this);
+	    puts(",");
+	} else if (AstSScanF* dispp = nodep->castSScanF()) {
+	    isStmt = false;
+	    checkMaxWords(dispp->fromp());
+	    puts("VL_SSCANF_I"); emitIQW(dispp->fromp()); puts("X(");
+	    puts(cvtToStr(dispp->fromp()->widthMin()));
+	    puts(",");
+	    dispp->fromp()->iterate(*this);
+	    puts(",");
+	} else if (AstDisplay* dispp = nodep->castDisplay()) {
+	    isStmt = true;
+	    if (dispp->filep()) {
+		puts("VL_FWRITEF(");
+		dispp->filep()->iterate(*this);
+		puts(",");
+	    } else {
+		puts("VL_WRITEF(");
+	    }
 	} else {
-	    puts("VL_WRITEF(\"");
+	    isStmt = true;
+	    nodep->v3fatalSrc("Unknown displayEmit node type");
 	}
+	puts("\"");
 	ofp()->putsNoTracking(emitDispState.m_format);
 	puts("\"");
 	// Arguments
@@ -970,17 +1008,24 @@ void EmitCStmts::displayEmit(AstDisplay* nodep) {
 	    ofp()->indentInc();
 	    ofp()->putbs("");
 	    if (func!="") puts(func);
-	    if (argp) argp->iterate(*this);
+	    if (argp) {
+		if (isScan) puts("&(");
+		argp->iterate(*this);
+		if (isScan) puts(")");
+	    }
 	    ofp()->indentDec();
 	}
         // End
-	puts(");\n");
+	puts(")");
+	if (isStmt) puts(";\n");
+	else puts(" ");
 	// Prep for next
 	emitDispState.clear();
     }
 }
 
-void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, char fmtLetter) {
+void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
+			    string vfmt, char fmtLetter) {
     // Print display argument, edits elistp
     AstNode* argp = *elistp;
     if (!argp) {
@@ -993,16 +1038,17 @@ void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, ch
     }
     if (argp && argp->isWide()
 	&& (fmtLetter=='d'||fmtLetter=='u')) {
-	argp->v3error("Unsupported: $display of dec format of > 64 bit results (use hex format instead)");
+	argp->v3error("Unsupported: "<<dispp->verilogKwd()<<" of dec format of > 64 bit results (use hex format instead)");
     }
     if (argp && argp->widthMin()>8 && fmtLetter=='c') {
 	// Technically legal, but surely not what the user intended.
-	argp->v3error("$display of char format of > 8 bit result");
+	argp->v3error(dispp->verilogKwd()<<" of char format of > 8 bit result");
     }
 
     //string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
     if ((fmtLetter=='u' || fmtLetter=='d')
+	&& !isScan
 	&& vfmt == "") { // Size decimal output.  Spec says leading spaces, not zeros
 	double mantissabits = argp->widthMin() - ((fmtLetter=='d')?1:0);
 	double maxval = pow(2.0, mantissabits);
@@ -1021,15 +1067,15 @@ void EmitCStmts::displayArg(AstDisplay* dispp, AstNode** elistp, string vfmt, ch
     *elistp = (*elistp)->nextp();
 }
 
-void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
-    string vformat = nodep->text();
-    AstNode* elistp = nodep->exprsp();
+void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exprsp,
+			     bool isScan) {
+    AstNode* elistp = exprsp;
 
     // Convert Verilog display to C printf formats
     // 		"%0t" becomes "%d"
     emitDispState.clear();
     string vfmt = "";
-    string::iterator pos = vformat.begin();
+    string::const_iterator pos = vformat.begin();
     bool inPct = false;
     for (; pos != vformat.end(); ++pos) {
 	//UINFO(1,"Parse '"<<*pos<<"'  IP"<<inPct<<" List "<<(void*)(elistp)<<endl);
@@ -1051,21 +1097,23 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 		emitDispState.pushFormat("%%");  // We're printf'ing it, so need to quote the %
 		break;
 	    // Special codes
-	    case '~': displayArg(nodep,&elistp,vfmt,'d'); break;  // Signed decimal
+	    case '~': displayArg(nodep,&elistp,isScan, vfmt,'d'); break;  // Signed decimal
 	    // Spec: h d o b c l
-	    case 'b': displayArg(nodep,&elistp,vfmt,'b'); break;
-	    case 'c': displayArg(nodep,&elistp,vfmt,'c'); break;
+	    case 'b': displayArg(nodep,&elistp,isScan, vfmt,'b'); break;
+	    case 'c': displayArg(nodep,&elistp,isScan, vfmt,'c'); break;
 	    case 't':
-	    case 'd': displayArg(nodep,&elistp,vfmt,'u'); break;  // Unsigned decimal
-	    case 'o': displayArg(nodep,&elistp,vfmt,'o'); break;
+	    case 'd': displayArg(nodep,&elistp,isScan, vfmt,'u'); break;  // Unsigned decimal
+	    case 'o': displayArg(nodep,&elistp,isScan, vfmt,'o'); break;
 	    case 'h':
-	    case 'x': displayArg(nodep,&elistp,vfmt,'x'); break;
-	    case 's': displayArg(nodep,&elistp,vfmt,'s'); break;
+	    case 'x': displayArg(nodep,&elistp,isScan, vfmt,'x'); break;
+	    case 's': displayArg(nodep,&elistp,isScan, vfmt,'s'); break;
 	    case 'm': {
 		emitDispState.pushFormat("%S");
 		emitDispState.pushArg(NULL, "vlSymsp->name()");
-		if (!nodep->scopeNamep()) nodep->v3fatalSrc("Display with %m but no AstScopeName");
-		for (AstText* textp=nodep->scopeNamep()->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
+		if (!nodep->castDisplay()) nodep->v3fatalSrc("Non-Display with %m");
+		AstScopeName* scopenamep = nodep->castDisplay()->scopeNamep();
+		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
+		for (AstText* textp=scopenamep->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
 		    emitDispState.pushFormat(textp->text());
 		}
 		break;
@@ -1086,8 +1134,7 @@ void EmitCStmts::visit(AstDisplay* nodep, AstNUser*) {
 	// expectFormat also checks this, and should have found it first, so internal
 	elistp->v3error("Internal: Extra arguments for $display format\n");
     }
-    if (nodep->addNewline()) emitDispState.pushFormat("\\n");
-    displayEmit(nodep);
+    displayEmit(nodep, isScan);
 }
 
 //######################################################################

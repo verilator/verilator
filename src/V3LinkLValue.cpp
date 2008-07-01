@@ -133,6 +133,23 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstFScanF* nodep, AstNUser*) {
+	bool last_setRefLvalue = m_setRefLvalue;
+	{
+	    m_setRefLvalue = true;
+	    nodep->filep()->iterateAndNext(*this);
+	    nodep->exprsp()->iterateAndNext(*this);
+	}
+	m_setRefLvalue = last_setRefLvalue;
+    }
+    virtual void visit(AstSScanF* nodep, AstNUser*) {
+	bool last_setRefLvalue = m_setRefLvalue;
+	{
+	    m_setRefLvalue = true;
+	    nodep->exprsp()->iterateAndNext(*this);
+	}
+	m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{

@@ -145,8 +145,11 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
     // Format a Verilog $write style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
+    //
     // Note uses a single buffer internally; presumes only one usage per printf
-    static VL_THREAD char str[VL_VALUE_STRING_MAX_WIDTH];
+    // Note also assumes variables < 64 are not wide, this assumption is
+    // sometimes not true in low-level routines written here in verilated.cpp
+    static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
     bool inPct = false;
     bool widthSet = false;
     int width = 0;
@@ -184,12 +187,12 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    }
 	    default: {
 		// Deal with all read-and-print somethings
-		int bits = va_arg(ap, int);
+		const int lbits = va_arg(ap, int);
 		QData ld = 0;
 		WDataInP lwp;
-		if (bits <= VL_QUADSIZE) {
+		if (lbits <= VL_QUADSIZE) {
 		    WData qlwp[2];
-		    ld = _VL_VA_ARG_Q(ap, bits);
+		    ld = _VL_VA_ARG_Q(ap, lbits);
 		    VL_SET_WQ(qlwp,ld);
 		    lwp = qlwp;
 		} else {
@@ -197,38 +200,14 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    ld = lwp[0];
 		    if (fmt == 'u' || fmt == 'd') fmt = 'x';  // Not supported, but show something
 		}
-		int lsb=bits-1;
+		int lsb=lbits-1;
 		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) lsb--;
 		switch (fmt) {
-		case 'b':
-		    for (; lsb>=0; lsb--) {
-			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
-		    }
-		    break;
 		case 'c': {
 		    IData charval = ld & 0xff;
 		    output += charval;
 		    break;
 		}
-		case 'd': { // Signed decimal
-		    int digits=sprintf(str,"%lld",(vlsint64_t)(VL_EXTENDS_QQ(bits,bits,ld)));
-		    int needmore = width-digits;
-		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
-		    output += str;
-		    break;
-		}
-		case 'o':
-		    for (; lsb>=0; lsb--) {
-			lsb = (lsb / 3) * 3; // Next digit
-			// Octal numbers may span more than one wide word,
-			// so we need to grab each bit separately and check for overrun
-			// Octal is rare, so we'll do it a slow simple way
-			output += ('0'
-				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+0)) ? 1 : 0)
-				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+1)) ? 2 : 0)
-				   + ((VL_BITISSETLIMIT_W(lwp, bits, lsb+2)) ? 4 : 0));
-		    }
-		    break;
 		case 's':
 		    for (; lsb>=0; lsb--) {
 			lsb = (lsb / 8) * 8; // Next digit
@@ -236,13 +215,37 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 			output += (charval==0)?' ':charval;
 		    }
 		    break;
-		case 'u': { // Unsigned decimal
-		    int digits=sprintf(str,"%llu",ld);
+		case 'd': { // Signed decimal
+		    int digits=sprintf(tmp,"%lld",(vlsint64_t)(VL_EXTENDS_QQ(lbits,lbits,ld)));
 		    int needmore = width-digits;
 		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
-		    output += str;
+		    output += tmp;
 		    break;
 		}
+		case 'u': { // Unsigned decimal
+		    int digits=sprintf(tmp,"%llu",ld);
+		    int needmore = width-digits;
+		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    output += tmp;
+		    break;
+		}
+		case 'b':
+		    for (; lsb>=0; lsb--) {
+			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
+		    }
+		    break;
+		case 'o':
+		    for (; lsb>=0; lsb--) {
+			lsb = (lsb / 3) * 3; // Next digit
+			// Octal numbers may span more than one wide word,
+			// so we need to grab each bit separately and check for overrun
+			// Octal is rare, so we'll do it a slow simple way
+			output += ('0'
+				   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb+0)) ? 1 : 0)
+				   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb+1)) ? 2 : 0)
+				   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb+2)) ? 4 : 0));
+		    }
+		    break;
 		case 'x':
 		    for (; lsb>=0; lsb--) {
 			lsb = (lsb / 4) * 4; // Next digit
@@ -259,6 +262,227 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    } // switch
 	}
     }
+}
+
+static inline bool _vl_vsss_eof(FILE* fp, int& floc) {
+    return fp ? feof(fp) : (floc<0);
+}
+static inline void _vl_vsss_advance(FILE* fp, int& floc) {
+    if (fp) fgetc(fp);
+    else floc -= 8;
+}
+static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp) {
+    // Get a character without advancing
+    if (fp) {
+	int data = fgetc(fp);
+	if (data == EOF) return EOF;
+	ungetc(data,fp);
+	return data;
+    } else {
+	if (floc < 0) return EOF;
+	floc = floc & ~7;	// Align to closest character
+	int data = (fromp[VL_BITWORD_I(floc)] >> VL_BITBIT_I(floc)) & 0xff;
+	return data;
+    }
+}
+static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp) {
+    while (1) {
+	int c = _vl_vsss_peek(fp, floc, fromp);
+	if (c==EOF || !isspace(c)) return;
+	_vl_vsss_advance(fp, floc);
+    }
+}
+static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp,
+				 char* tmpp, const char* acceptp) {
+    // Read into tmp, consisting of characters from acceptp list
+    char* cp = tmpp;
+    while (1) {
+	int c = _vl_vsss_peek(fp, floc, fromp);
+	if (c==EOF || isspace(c)) break;
+	if (acceptp!=NULL // String - allow anything
+	    && NULL==strchr(acceptp, c)) break;
+	if (acceptp!=NULL) c = tolower(c); // Non-strings we'll simplify
+	*cp++ = c;
+	_vl_vsss_advance(fp, floc);
+    }
+    *cp++ = '\0';
+    //VL_PRINTF("\t_read got='%s'\n", tmpp);
+}
+static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) {
+    for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {
+	VL_ASSIGNBIT_WI(0, lsb, owp, ld & 1);
+    }
+}
+
+IData _vl_vsscanf(FILE* fp,  // If a fscanf
+		  int fbits, WDataInP fromp,  // Else if a sscanf
+		  const char* formatp, va_list ap) {
+    // Read a Verilog $sscanf/$fscanf style format into the output list
+    // The format must be pre-processed (and lower cased) by Verilator
+    // Arguments are in "width, arg-value (or WDataIn* if wide)" form
+    static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
+    int floc = fbits - 1;
+    IData got = 0;
+    bool inPct = false;
+    const char* pos = formatp;
+    for (; *pos && !_vl_vsss_eof(fp,floc); ++pos) {
+	//VL_PRINTF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp));
+	if (!inPct && pos[0]=='%') {
+	    inPct = true;
+	} else if (!inPct && isspace(pos[0])) {   // Format spaces
+	    while (isspace(pos[1])) pos++;
+	    _vl_vsss_skipspace(fp,floc,fromp);
+	} else if (!inPct) {   // Expected Format
+	    _vl_vsss_skipspace(fp,floc,fromp);
+	    int c = _vl_vsss_peek(fp,floc,fromp);
+	    if (c != pos[0]) goto done;
+	    else _vl_vsss_advance(fp,floc);
+	} else { // Format character
+	    // Skip loading spaces
+	    inPct = false;
+	    char fmt = pos[0];
+	    switch (fmt) {
+	    case '%': {
+		int c = _vl_vsss_peek(fp,floc,fromp);
+		if (c != '%') goto done;
+		else _vl_vsss_advance(fp,floc);
+		break;
+	    }
+	    default: {
+		// Deal with all read-and-scan somethings
+		// Note LSBs are preserved if there's an overflow
+		const int obits = va_arg(ap, int);
+		int lsb = 0;
+		WData qowp[2];
+		WDataOutP owp = qowp;
+		if (obits > VL_QUADSIZE) {
+		    owp = va_arg(ap,WDataOutP);
+		}
+		for (int i=0; i<VL_WORDS_I(obits); i++) owp[i] = 0;
+		switch (fmt) {
+		case 'c': {
+		    int c = _vl_vsss_peek(fp,floc,fromp);
+		    if (c==EOF) goto done;
+		    else _vl_vsss_advance(fp,floc);
+		    owp[0] = c;
+		    break;
+		}
+		case 's': {
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, NULL);
+		    if (!tmp[0]) goto done;
+		    int pos = strlen(tmp)-1;
+		    for (int i=0; i<obits && pos>=0; pos--) {
+			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[pos]); lsb+=8;
+		    }
+		    break;
+		}
+		case 'd': { // Signed decimal
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xz?_");
+		    if (!tmp[0]) goto done;
+		    vlsint64_t ld;
+		    sscanf(tmp,"%lld",&ld);
+		    VL_SET_WQ(owp,ld);
+		    break;
+		}
+		case 'u': { // Unsigned decimal
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xz?_");
+		    if (!tmp[0]) goto done;
+		    QData ld;
+		    sscanf(tmp,"%llu",&ld);
+		    VL_SET_WQ(owp,ld);
+		    break;
+		}
+		case 'b': {
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "01xz?_");
+		    if (!tmp[0]) goto done;
+		    int pos = strlen(tmp)-1;
+		    for (int i=0; i<obits && pos>=0; pos--) {
+			switch(tmp[pos]) {
+			case 'x': case 'z': case '?': //FALLTHRU
+			case '0': lsb++; break;
+			case '1': _vl_vsss_setbit(owp,obits,lsb, 1, 1); lsb++; break;
+			case '_': break;
+			}
+		    }
+		    break;
+		}
+		case 'o': {
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "01234567xz?_");
+		    if (!tmp[0]) goto done;
+		    int pos = strlen(tmp)-1;
+		    for (int i=0; i<obits && pos>=0; pos--) {
+			switch(tmp[pos]) {
+			case 'x': case 'z': case '?': //FALLTHRU
+			case '0': lsb+=3; break;
+			case '1': _vl_vsss_setbit(owp,obits,lsb, 3, 1); lsb+=3; break;
+			case '2': _vl_vsss_setbit(owp,obits,lsb, 3, 2); lsb+=3; break;
+			case '3': _vl_vsss_setbit(owp,obits,lsb, 3, 3); lsb+=3; break;
+			case '4': _vl_vsss_setbit(owp,obits,lsb, 3, 4); lsb+=3; break;
+			case '5': _vl_vsss_setbit(owp,obits,lsb, 3, 5); lsb+=3; break;
+			case '6': _vl_vsss_setbit(owp,obits,lsb, 3, 6); lsb+=3; break;
+			case '7': _vl_vsss_setbit(owp,obits,lsb, 3, 7); lsb+=3; break;
+			case '_': break;
+			}
+		    }
+		    break;
+		}
+		case 'x': {
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789abcdefxz?_");
+		    if (!tmp[0]) goto done;
+		    int pos = strlen(tmp)-1;
+		    for (int i=0; i<obits && pos>=0; pos--) {
+			switch(tmp[pos]) {
+			case 'x': case 'z': case '?': //FALLTHRU
+			case '0': lsb+=4; break;
+			case '1': _vl_vsss_setbit(owp,obits,lsb, 4,  1); lsb+=4; break;
+			case '2': _vl_vsss_setbit(owp,obits,lsb, 4,  2); lsb+=4; break;
+			case '3': _vl_vsss_setbit(owp,obits,lsb, 4,  3); lsb+=4; break;
+			case '4': _vl_vsss_setbit(owp,obits,lsb, 4,  4); lsb+=4; break;
+			case '5': _vl_vsss_setbit(owp,obits,lsb, 4,  5); lsb+=4; break;
+			case '6': _vl_vsss_setbit(owp,obits,lsb, 4,  6); lsb+=4; break;
+			case '7': _vl_vsss_setbit(owp,obits,lsb, 4,  7); lsb+=4; break;
+			case '8': _vl_vsss_setbit(owp,obits,lsb, 4,  8); lsb+=4; break;
+			case '9': _vl_vsss_setbit(owp,obits,lsb, 4,  9); lsb+=4; break;
+			case 'a': _vl_vsss_setbit(owp,obits,lsb, 4, 10); lsb+=4; break;
+			case 'b': _vl_vsss_setbit(owp,obits,lsb, 4, 11); lsb+=4; break;
+			case 'c': _vl_vsss_setbit(owp,obits,lsb, 4, 12); lsb+=4; break;
+			case 'd': _vl_vsss_setbit(owp,obits,lsb, 4, 13); lsb+=4; break;
+			case 'e': _vl_vsss_setbit(owp,obits,lsb, 4, 14); lsb+=4; break;
+			case 'f': _vl_vsss_setbit(owp,obits,lsb, 4, 15); lsb+=4; break;
+			case '_': break;
+			}
+		    }
+		    break;
+		}
+		default:
+		    string msg = string("%%Error: Unknown _vl_vsscanf code: ")+pos[0]+"\n";
+		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
+		    break;
+		} // switch
+
+		got++;
+		// Reload data if non-wide (if wide, we put it in the right place directly)
+		if (obits <= VL_BYTESIZE) {
+		    CData* p = va_arg(ap,CData*); *p = owp[0];
+		} else if (obits <= VL_SHORTSIZE) {
+		    SData* p = va_arg(ap,SData*); *p = owp[0];
+		} else if (obits <= VL_WORDSIZE) {
+		    IData* p = va_arg(ap,IData*); *p = owp[0];
+		} else if (obits <= VL_QUADSIZE) {
+		    QData* p = va_arg(ap,QData*); *p = VL_SET_QW(owp);
+		}
+	    }
+	    } // switch
+	}
+    }
+  done:
+    return got;
 }
 
 //===========================================================================
@@ -327,7 +551,6 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
 }
 
 void VL_WRITEF(const char* formatp, ...) {
-
     va_list ap;
     va_start(ap,formatp);
     string output;
@@ -349,6 +572,43 @@ void VL_FWRITEF(QData fpq, const char* formatp, ...) {
     va_end(ap);
 
     fputs(output.c_str(), fp);
+}
+
+IData VL_FSCANF_IX(QData fpq, const char* formatp, ...) {
+    FILE* fp = VL_CVT_Q_FP(fpq);
+    if (VL_UNLIKELY(!fp)) return 0;
+
+    va_list ap;
+    va_start(ap,formatp);
+    IData got = _vl_vsscanf(fp, 0, NULL, formatp, ap);
+    va_end(ap);
+    return got;
+}
+
+IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
+    IData fnw[2];  VL_SET_WI(fnw, ld);
+
+    va_list ap;
+    va_start(ap,formatp);
+    IData got = _vl_vsscanf(NULL, lbits, fnw, formatp, ap);
+    va_end(ap);
+    return got;
+}
+IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) {
+    IData fnw[2];  VL_SET_WQ(fnw, ld);
+
+    va_list ap;
+    va_start(ap,formatp);
+    IData got = _vl_vsscanf(NULL, lbits, fnw, formatp, ap);
+    va_end(ap);
+    return got;
+}
+IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) {
+    va_list ap;
+    va_start(ap,formatp);
+    IData got = _vl_vsscanf(NULL, lbits, lwp, formatp, ap);
+    va_end(ap);
+    return got;
 }
 
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,

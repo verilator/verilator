@@ -5,9 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66*
 
-***  Support $feof, $fgetc, $fgets, $fflush.  [Holger Waechtler]
+***  Add $feof, $fgetc, $fgets, $fflush, $fscanf, $sscanf. [Holger Waechtler]
 
-***  Support $random.
+***  Add $random.
 
 **** Internal changes to how $displays get compiled and executed.
 

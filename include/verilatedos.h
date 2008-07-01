@@ -111,6 +111,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 // Integer size macros
 
 #define VL_BYTESIZE 8			///< Bits in a byte
+#define VL_SHORTSIZE 16			///< Bits in a short
 #define VL_WORDSIZE 32			///< Bits in a word
 #define VL_QUADSIZE 64			///< Bits in a quadword
 #define VL_WORDSIZE_LOG2 5		///< log2(VL_WORDSIZE)
