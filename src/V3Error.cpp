@@ -261,6 +261,7 @@ void V3Error::abortIfWarnings() {
 
 bool V3Error::isError(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return false;
+    else if (code==V3ErrorCode::INFO) return false;
     else if (code==V3ErrorCode::FATAL) return true;
     else if (code==V3ErrorCode::ERROR) return true;
     else if (code<V3ErrorCode::FIRST_WARN
@@ -270,6 +271,7 @@ bool V3Error::isError(V3ErrorCode code) {
 
 string V3Error::msgPrefix(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return "-arning-suppressed: ";
+    else if (code==V3ErrorCode::INFO) return "-Info: ";
     else if (code==V3ErrorCode::FATAL) return "%Error: ";
     else if (code==V3ErrorCode::ERROR) return "%Error: ";
     else if (isError(code)) return "%Error-"+(string)code.ascii()+": ";
@@ -311,7 +313,8 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 	if (sstr.str()[sstr.str().length()-1] != '\n') {
 	    cerr<<endl;
 	}
-	if (s_errorCode!=V3ErrorCode::SUPPRESS) {
+	if (s_errorCode!=V3ErrorCode::SUPPRESS
+	    && s_errorCode!=V3ErrorCode::INFO) {
 	    if (!s_describedEachWarn[s_errorCode]
 		&& !s_pretendError[s_errorCode]) {
 		s_describedEachWarn[s_errorCode] = true;

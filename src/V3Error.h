@@ -34,6 +34,7 @@ class V3ErrorCode {
 public:
     enum en {
 	SUPPRESS,	// Warning suppressed by user
+	INFO,		// General information out
 	FATAL,		// Kill the program
 	ERROR,		// General error out, can't suppress
 	// Error codes:
@@ -74,7 +75,7 @@ public:
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
-	    " SUPPRESS", " FATAL", " ERROR",
+	    " SUPPRESS", " INFO", " FATAL", " ERROR",
 	     "MULTITOP", "TASKNSVAR",
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
@@ -159,6 +160,7 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 
 // These allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
+#define v3info(msg)  v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::INFO)<<msg),V3Error::v3errorStr()));
 #define v3fatal(msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::FATAL)<<msg),V3Error::v3errorStr()));
 #define v3error(msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::ERROR)<<msg),V3Error::v3errorStr()));
 #define v3warn(code,msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::code)<<msg),V3Error::v3errorStr()));

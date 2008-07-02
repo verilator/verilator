@@ -307,6 +307,8 @@ void process () {
 	V3Gate::gateAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("gate.tree"));
 	// V3Gate calls constant propagation itself.
+    } else {
+	v3info("Command Line disabled gate optimization with -Og/-O0.  This may cause ordering problems.");
     }
 
     // Remove unused vars
