@@ -137,8 +137,10 @@ INST_PROJ_BIN_FILES = \
 
 DISTFILES := $(DISTFILES_INC)
 
+VL_INST_MAN_FILES = verilator.1
+
 all: all_nomsg msg_test
-all_nomsg: verilator_exe
+all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 
 .PHONY:verilator_exe
 verilator_exe verilator_bin verilator_bin_dbg:
@@ -234,7 +236,6 @@ installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
-VL_INST_MAN_FILES = verilator.1
 installman:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
