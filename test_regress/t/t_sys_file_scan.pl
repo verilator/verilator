@@ -6,7 +6,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-unlink("obj_dir/t_sys_file_test.log");
+unlink("obj_dir/t_sys_file_scan_test.log");
 
 compile (
 	 );
@@ -15,10 +15,10 @@ execute (
 	 check_finished=>1,
      );
 
-file_grep ("obj_dir/t_sys_file_test.log",
-qr/\[0\] hello v=12345667
-\[0\] Hello2
-/);
+file_grep ("obj_dir/t_sys_file_scan_test.log",
+"# a
+          1
+");
 
 ok(1);
 1;

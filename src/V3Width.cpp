@@ -563,7 +563,10 @@ private:
 	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
-	if (nodep->filep()) nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	if (nodep->filep()) {
+	    nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	    widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
+	}
 	// Just let all arguments seek their natural sizes
 	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
@@ -571,22 +574,27 @@ private:
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->modep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFEof* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
 	nodep->width(1,1);
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFGetC* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
 	if (vup->c()->prelim()) {
 	    nodep->width(32,8);
 	}
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFGetS* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
@@ -594,6 +602,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->width(32,32);
 	}
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFScanF* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
@@ -601,6 +610,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->width(32,32);
 	}
+	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstSScanF* nodep, AstNUser* vup) {
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

@@ -28,7 +28,7 @@ module t;
       if (!$feof(file)) $stop;
 `endif
 
-      file = $fopen("obj_dir/t_sys_file_test.log","w");	// The "w" is required so we get a FD not a MFD
+      file = $fopen("obj_dir/t_sys_file_basic_test.log","w");	// The "w" is required so we get a FD not a MFD
       if ($feof(file)) $stop;
 
       $fdisplay(file, "[%0t] hello v=%x", $time, 32'h12345667);
@@ -55,7 +55,7 @@ module t;
 
       begin
 	 // Check read functions
-	 file = $fopen("t/t_sys_file_input.dat","r");
+	 file = $fopen("t/t_sys_file_basic_input.dat","r");
 	 if ($feof(file)) $stop;
 
 	 // $fgetc
