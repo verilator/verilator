@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix verilator_includer not being installed properly.  [Holger Waechtler]
 
+**** Fix IMPURE errors due to X-assignment temporary variables. [Steve Tong]
+
 **** Internal changes to how $displays get compiled and executed.
 
 * Verilator 3.665 2008/06/25

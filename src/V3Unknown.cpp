@@ -191,10 +191,11 @@ private:
 		UINFO(4,"   -> "<<newp<<endl);
 	    } else {
 		// Make a Vxrand variable
+		// We use the special XTEMP type so it doesn't break pure functions
 		string newvarname = ((string)"__Vxrand__"
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
-		    = new AstVar (nodep->fileline(), AstVarType::MODULETEMP, newvarname,
+		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,
 				  new AstRange(nodep->fileline(), nodep->width()-1, 0));
 		m_statUnkVars++;
 		AstNRelinker replaceHandle;

@@ -208,7 +208,8 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->varp()->user4p() != m_curVxp) {
-	    if (m_curVxp->pure()) {
+	    if (m_curVxp->pure()
+		&& !nodep->varp()->isPure()) {
 		m_curVxp->impure(nodep);
 	    }
 	}

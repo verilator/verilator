@@ -335,9 +335,10 @@ public:
     bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICIT
 					    || varType()==AstVarType::REG || varType()==AstVarType::INTEGER); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
-					 || varType()==AstVarType::STMTTEMP); }
+					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool	isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
+    bool	isPure() const { return (varType()==AstVarType::XTEMP); }
     bool	isParam() const { return (varType()==AstVarType::LPARAM || varType()==AstVarType::GPARAM); }
     bool	isGParam() const { return (varType()==AstVarType::GPARAM); }
     bool	isGenVar() const { return (varType()==AstVarType::GENVAR); }

@@ -197,7 +197,8 @@ public:
 	TRIWIRE,
 	BLOCKTEMP,
 	MODULETEMP,
-	STMTTEMP
+	STMTTEMP,
+	XTEMP
     };
     enum en m_e;
     inline AstVarType () {};
@@ -209,7 +210,7 @@ public:
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "INTEGER","INPUT","OUTPUT","INOUT",
 	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","REG","TRIWIRE",
-	    "BLOCKTEMP","MODULETEMP","STMTTEMP"};
+	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e];};
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
