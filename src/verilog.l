@@ -155,6 +155,7 @@ escid	\\[^ \t\f\r\n]+
   "$setuphold"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$skew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
   "$sscanf"		{yylval.fileline = CRELINE(); return yD_SSCANF;}
+  "$stime"		{yylval.fileline = CRELINE(); return yD_STIME;}
   "$stop"		{yylval.fileline = CRELINE(); return yD_STOP;}
   "$time"		{yylval.fileline = CRELINE(); return yD_TIME;}
   "$timeskew"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}

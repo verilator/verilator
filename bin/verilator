@@ -1535,8 +1535,8 @@ Verilator does not perform warning checking on uwires, it treats the uwire
 keyword as if it were the normal wire keyword.
 
 =item $bits, $countones, $error, $fatal, $finish, $info, $isunknown,
-$onehot, $onehot0, $readmemb, $readmemh, $signed, $stop, $time, $unsigned,
-$warning.
+$onehot, $onehot0, $readmemb, $readmemh, $signed, $stime, $stop, $time,
+$unsigned, $warning.
 
 Generally supported.
 

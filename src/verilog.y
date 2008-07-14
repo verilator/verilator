@@ -243,6 +243,7 @@ class AstSenTree;
 %token<fileline>	yD_READMEMH	"$readmemh"
 %token<fileline>	yD_SIGNED	"$signed"
 %token<fileline>	yD_SSCANF	"$sscanf"
+%token<fileline>	yD_STIME	"$stime"
 %token<fileline>	yD_STOP		"$stop"
 %token<fileline>	yD_TIME		"$time"
 %token<fileline>	yD_UNSIGNED	"$unsigned"
@@ -1099,6 +1100,7 @@ exprNoStr:	expr yP_OROR expr			{ $$ = new AstLogOr	($2,$1,$3); }
 	|	yD_RANDOM '(' ')'			{ $$ = new AstRand($1); }
 	|	yD_RANDOM				{ $$ = new AstRand($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
+	|	yD_STIME				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_TIME					{ $$ = new AstTime($1); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add $feof, $fgetc, $fgets, $fflush, $fscanf, $sscanf. [Holger Waechtler]
 
+***  Add $stime. [Holger Waechtler]
+
 ***  Add $random.
 
 **** Fix verilator_includer not being installed properly.  [Holger Waechtler]
