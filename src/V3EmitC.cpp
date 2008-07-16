@@ -306,11 +306,15 @@ public:
 	puts("=0; }\n");
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
-	puts("if (");
-	nodep->filep()->iterateAndNext(*this);
-	puts(") { fflush (VL_CVT_Q_FP(");
-	nodep->filep()->iterateAndNext(*this);
-	puts(")); ");
+	if (!nodep->filep()) {
+	    puts("fflush (stdout);\n");
+	} else {
+	    puts("if (");
+	    nodep->filep()->iterateAndNext(*this);
+	    puts(") { fflush (VL_CVT_Q_FP(");
+	    nodep->filep()->iterateAndNext(*this);
+	    puts(")); }\n");
+	}
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);

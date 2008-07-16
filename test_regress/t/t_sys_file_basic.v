@@ -28,7 +28,13 @@ module t;
       if (!$feof(file)) $stop;
 `endif
 
-      file = $fopen("obj_dir/t_sys_file_basic_test.log","w");	// The "w" is required so we get a FD not a MFD
+`ifdef AUTOFLUSH
+      // The "w" is required so we get a FD not a MFD
+      file = $fopen("obj_dir/t_sys_file_autoflush.log","w");
+`else
+      // The "w" is required so we get a FD not a MFD
+      file = $fopen("obj_dir/t_sys_file_basic_test.log","w");
+`endif
       if ($feof(file)) $stop;
 
       $fdisplay(file, "[%0t] hello v=%x", $time, 32'h12345667);

@@ -586,8 +586,10 @@ private:
 	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
-	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
-	widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
+	if (nodep->filep()) {
+	    nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());
+	    widthCheck(nodep,"file_descriptor (see docs)",nodep->filep(),64,64);
+	}
     }
     virtual void visit(AstFGetC* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(64,64,BOTH).p());

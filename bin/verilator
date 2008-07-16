@@ -177,6 +177,7 @@ descriptions in the next sections for more information.
     {file.c/cc/cpp}             Optional C++ files to link in
 
     --assert                    Enable all assertions
+    --autoflush                 Flush streams after all $displays
     --bin <filename>            Override Verilator binary
     --cc                        Create C++ output
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -253,6 +254,12 @@ Enable all assertions, includes enabling the --psl flag.  (If psl is not
 desired, but other assertions are, use --assert --nopsl.)
 
 See also --x-assign; setting "--x-assign unique" may be desirable.
+
+=item --autoflush
+
+After every $display or $fdisplay, flush the output stream.  This insures
+that messages will appear immediately but may reduce performance.  Defaults
+off, which will buffer output as provided by the normal C stdio calls.
 
 =item --bin I<filename>
 

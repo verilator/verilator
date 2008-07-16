@@ -563,6 +563,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_makeDepend = flag; }
 	    else if ( onoff   (sw, "-MP", flag/*ref*/) )	{ m_makePhony = flag; }
 	    else if ( onoff   (sw, "-assert", flag/*ref*/) )	{ m_assert = flag; m_psl = flag; }
+	    else if ( onoff   (sw, "-autoflush", flag/*ref*/) )	{ m_autoflush = flag; }
 	    else if ( !strcmp (sw, "-cc") )			{ m_outFormatOk = true; m_systemC = false; m_systemPerl = false; }
 	    else if ( onoff   (sw, "-coverage", flag/*ref*/) )	{ coverage(flag); }
 	    else if ( onoff   (sw, "-coverage-line", flag/*ref*/) ){ m_coverageLine = flag; }
@@ -793,6 +794,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_autoflush = false;
     m_coverageLine = false;
     m_coverageUser = false;
     m_debugCheck = false;

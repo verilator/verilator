@@ -23,6 +23,9 @@
 //	For each wide OP, make a a temporary variable with the wide value
 //	For each deep expression, assign expression to temporary.
 //
+// Each display (independant transformation; here as Premit is a good point)
+//	If autoflush, insert a flush
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -262,6 +265,26 @@ private:
 	    createDeepTemp(nodep->condp());
 	}
 	checkNode(nodep);
+    }
+
+    // Autoflush
+    virtual void visit(AstDisplay* nodep, AstNUser* vup) {
+	startStatement(nodep);
+	nodep->iterateChildren(*this);
+	m_stmtp = NULL;
+	if (v3Global.opt.autoflush()) {
+	    AstNode* searchp = nodep->nextp();
+	    while (searchp && searchp->castComment()) searchp = searchp->nextp();
+	    if (searchp
+		&& searchp->castDisplay()
+		&& nodep->filep()->sameTree(searchp->castDisplay()->filep())) {
+		// There's another display next; we can just wait to flush
+	    } else {
+		UINFO(4,"Autoflush "<<nodep<<endl);
+		nodep->addNextHere(new AstFFlush(nodep->fileline(),
+						 nodep->filep()->cloneTree(true)));
+	    }
+	}
     }
 
     //--------------------

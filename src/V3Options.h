@@ -86,6 +86,7 @@ class V3Options {
     bool	m_makeDepend;	// main switch: -MMD
     bool	m_makePhony;	// main switch: -MP
     bool	m_assert;	// main switch: --assert
+    bool	m_autoflush;	// main switch: --autoflush
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
@@ -182,6 +183,7 @@ class V3Options {
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as "assert" may be defined
+    bool autoflush() const { return m_autoflush; }
     bool coverage() const { return m_coverageUser || m_coverageLine; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageUser() const { return m_coverageUser; }

@@ -368,7 +368,9 @@ private:
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+	if (nodep->filep()) {
+	    expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+	}
     }
     virtual void visit(AstFGetC* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
