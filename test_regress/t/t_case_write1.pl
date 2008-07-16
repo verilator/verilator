@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 $golden_out ||= "t/$Last_Self->{name}.out";
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?"--stats --O3 -x-assign 0":""],
+	 v_flags2 => [$Last_Self->{v3}?"--stats --O3 -x-assign fast":""],
 	 );
 
 execute (

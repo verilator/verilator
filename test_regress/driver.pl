@@ -325,9 +325,11 @@ sub compile {
     }
     if ($param{v3}) {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
-	unshift @{$param{verilator_flags}}, "--gdb $opt_gdb" if $opt_gdb;
-	unshift @{$param{verilator_flags}}, "--debug" if $::Debug;
-#	unshift @{$param{verilator_flags}}, "--trace";
+	my @verilator_flags = @{$param{verilator_flags}};
+	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
+	unshift @verilator_flags, "--debug" if $::Debug;
+	unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
+#	unshift @verilator_flags, "--trace";
 	if (defined $opt_optimize) {
 	    my $letters = "";
 	    if ($opt_optimize =~ /[a-zA-Z]/) {
@@ -336,15 +338,15 @@ sub compile {
 		foreach my $l ('a'..'z') {
 		    $letters .= ((rand() > 0.5) ? $l : uc $l);
 		}
-		unshift @{$param{verilator_flags}}, "--trace" if rand() > 0.5;
-		unshift @{$param{verilator_flags}}, "--coverage" if rand() > 0.5;
+		unshift @verilator_flags, "--trace" if rand() > 0.5;
+		unshift @verilator_flags, "--coverage" if rand() > 0.5;
 	    }
-	    unshift @{$param{verilator_flags}}, "--O".$letters;
+	    unshift @verilator_flags, "--O".$letters;
 	}
 
 	my @v3args = ("perl","../bin/verilator",
 		      "--prefix ".$self->{VM_PREFIX},
-		      @{$param{verilator_flags}},
+		      @verilator_flags,
 		      @{$param{verilator_flags2}},
 		      @{$param{v_flags}},
 		      @{$param{v_flags2}},

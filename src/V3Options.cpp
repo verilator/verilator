@@ -685,6 +685,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		shift;
 		if (!strcmp (argv[i], "0")) { m_xAssign="0"; }
 		else if (!strcmp (argv[i], "1")) { m_xAssign="1"; }
+		else if (!strcmp (argv[i], "fast")) { m_xAssign="fast"; }
 		else if (!strcmp (argv[i], "unique")) { m_xAssign="unique"; }
 		else {
 		    fl->v3fatal("Unknown setting for --x-assign: "<<argv[i]);
@@ -830,7 +831,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
-    m_xAssign = "unique";
+    m_xAssign = "fast";
 
     m_language = V3LangCode::mostRecent();
 

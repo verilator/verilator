@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.66*
 
+**   Add --x-assign=fast option, and make it the default.
+     This chooses performance over reset debugging.  See the manual.
+
 ***  Add $feof, $fgetc, $fgets, $fflush, $fscanf, $sscanf. [Holger Waechtler]
 
 ***  Add $stime. [Holger Waechtler]

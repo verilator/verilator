@@ -252,6 +252,8 @@ linking with make rules you write yourself.
 Enable all assertions, includes enabling the --psl flag.  (If psl is not
 desired, but other assertions are, use --assert --nopsl.)
 
+See also --x-assign; setting "--x-assign unique" may be desirable.
+
 =item --bin I<filename>
 
 Rarely needed.  Override the default filename for Verilator itself.  When a
@@ -566,14 +568,18 @@ received from third parties.
 
 =item -x-assign 1
 
-=item -x-assign unique  (default)
+=item -x-assign fast (default)
+
+=item -x-assign unique
 
 Controls the two-state value that is replaced when an assignment to X is
-encountered.  -x-assign=0 converts all Xs to 0s, this is the fastest.
--x-assign=1 converts all Xs to 1s, this is nearly as fast, but more likely
-to find reset bugs as active high logic will fire.  The default,
--x-assign=func will call a function to determine the value, this allows
-randomization of all Xs and is the slowest, but safest.
+encountered.  -x-assign=fast, the default, converts all Xs to whatever is
+best for performance.  -x-assign=0 converts all Xs to 0s, and is also fast.
+-x-assign=1 converts all Xs to 1s, this is nearly as fast as 0, but more
+likely to find reset bugs as active high logic will fire.  -x-assign=unique
+will call a function to determine the value, this allows randomization of
+all Xs to find reset bugs and is the slowest, but safest for finding reset
+bugs in code.
 
 =back
 
@@ -747,10 +753,10 @@ the test_sp directory in the distribution for an example.
 
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 -x-assign=0 --noassert"
-flags.  The -O3 flag will require longer compile times, and -x-assign=0 may
-increase the risk of reset bugs in trade for performance; see the above
-documentation for these flags.
+For best performance, run Verilator with the "-O3 -x-assign=fast
+--noassert" flags.  The -O3 flag will require longer compile times, and
+-x-assign=fast may increase the risk of reset bugs in trade for
+performance; see the above documentation for these flags.
 
 Minor Verilog code changes can also give big wins.  You should not have any
 UNOPTFLAT warnings from Verilator.  Fixing these warnings can result in
