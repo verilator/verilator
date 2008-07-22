@@ -46,6 +46,7 @@ public:
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	CASEINCOMPLETE,	// Case statement has missing values
 	CASEOVERLAP,	// Case statements overlap
+	CASEWITHX,	// Case with X values
 	CASEX,		// Casex
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
@@ -79,7 +80,7 @@ public:
 	     "MULTITOP", "TASKNSVAR",
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
-	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEX", "CMPCONST",
+	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
 	    "COMBDLY", "STMTDLY", "GENCLK", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
@@ -95,7 +96,8 @@ public:
     bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE); };
     // Warnings that are lint only
     bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
-				      || m_e==CASEX || m_e==CMPCONST
+				      || m_e==CASEWITHX || m_e==CASEX
+				      || m_e==CMPCONST
 				      || m_e==IMPLICIT
 				      || m_e==UNDRIVEN || m_e==UNSIGNED
 				      || m_e==UNUSED || m_e==VARHIDDEN

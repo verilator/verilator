@@ -251,6 +251,25 @@ public:
 
 //######################################################################
 
+class AstCaseType {
+public:
+    enum en {
+	CASE,
+	CASEX,
+	CASEZ
+    };
+    enum en m_e;
+    inline AstCaseType () {};
+    inline AstCaseType (en _e) : m_e(_e) {};
+    explicit inline AstCaseType (int _e) : m_e(static_cast<en>(_e)) {};
+    operator en () const { return m_e; };
+  };
+  inline bool operator== (AstCaseType lhs, AstCaseType rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstCaseType lhs, AstCaseType::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstCaseType::en lhs, AstCaseType rhs) { return (lhs == rhs.m_e); }
+
+//######################################################################
+
 class AstDisplayType {
 public:
     enum en {

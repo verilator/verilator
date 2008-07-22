@@ -73,7 +73,7 @@ private:
 	}
 
 	// Check for X/Z in non-casex statements
-	if (!nodep->castCase() || !nodep->castCase()->casex()) {
+	{
 	    m_caseExprp = nodep;
 	    nodep->exprp()->accept(*this);
 	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
@@ -83,11 +83,18 @@ private:
 	}
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
+	// See also neverItem
 	if (m_caseExprp && nodep->num().isFourState()) {
 	    if (m_caseExprp->castGenCase()) {
 		nodep->v3error("Use of x/? constant in generate case statement, (no such thing as 'generate casez')");
+	    } else if (m_caseExprp->castCase() && m_caseExprp->castCase()->casex()) {
+		// Don't sweat it, we already complained about casex in general
+	    } else if (m_caseExprp->castCase() && m_caseExprp->castCase()->casez()) {
+		if (nodep->num().isUnknown()) {
+		    nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, (perhaps intended ?/z in constant)");
+		}
 	    } else {
-		nodep->v3error("Use of x/? constant in case statement, (perhaps intended casex/casez)");
+		nodep->v3warn(CASEWITHX, "Use of x/? constant in case statement, (perhaps intended casex/casez)");
 	    }
 	}
     }
@@ -152,20 +159,24 @@ private:
 		//if (debug()>=9) icondp->dumpTree(cout," caseitem: ");
 		AstConst* iconstp = icondp->castConst();
 		if (!iconstp) nodep->v3fatalSrc("above 'can't parse' should have caught this\n");
-		V3Number nummask (itemp->fileline(), iconstp->width());
-		nummask.opBitsNonX(iconstp->num());
-		uint32_t mask = nummask.asInt();
-		V3Number numval  (itemp->fileline(), iconstp->width());
-		numval.opBitsOne(iconstp->num());
-		uint32_t val  = numval.asInt();
-		for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
-		    if ((i & mask) == val) {
-			if (!m_valueItem[i]) {
-			    m_valueItem[i] = itemp;
-			} else if (!itemp->ignoreOverlap() && !bitched) {
-			    itemp->v3warn(CASEOVERLAP,"Case values overlap (example pattern 0x"<<hex<<i<<")");
-			    bitched = true;
-			    m_caseNoOverlapsAllCovered = false;
+		if (neverItem(nodep, iconstp)) {
+		    // X in casez can't ever be executed
+		} else {
+		    V3Number nummask (itemp->fileline(), iconstp->width());
+		    nummask.opBitsNonX(iconstp->num());
+		    uint32_t mask = nummask.asInt();
+		    V3Number numval  (itemp->fileline(), iconstp->width());
+		    numval.opBitsOne(iconstp->num());
+		    uint32_t val  = numval.asInt();
+		    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+			if ((i & mask) == val) {
+			    if (!m_valueItem[i]) {
+				m_valueItem[i] = itemp;
+			    } else if (!itemp->ignoreOverlap() && !bitched) {
+				itemp->v3warn(CASEOVERLAP,"Case values overlap (example pattern 0x"<<hex<<i<<")");
+				bitched = true;
+				m_caseNoOverlapsAllCovered = false;
+			    }
 			}
 		    }
 		}
@@ -296,8 +307,15 @@ private:
 		    AstNode* and1p;
 		    AstNode* and2p;
 		    AstConst* iconstp = icondp->castConst();
-		    if (iconstp && iconstp->num().isFourState()
-			&& nodep->casex()) {
+		    if (iconstp && neverItem(nodep, iconstp)) {
+			// X in casez can't ever be executed
+			icondp->deleteTree(); icondp=NULL; iconstp=NULL;
+			// For simplicity, make expression that is not equal, and let later
+			// optimizations remove it
+			and1p = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,0));
+			and2p = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,1));
+		    } else if (iconstp && iconstp->num().isFourState()
+			       && (nodep->casex() || nodep->casez())) {
 			V3Number nummask (itemp->fileline(), iconstp->width());
 			nummask.opBitsNonX(iconstp->num());
 			V3Number numval  (itemp->fileline(), iconstp->width());
@@ -392,6 +410,17 @@ private:
 	    AstNode* parp = nodep->notParallelp()->unlinkFrBackWithNext();
 	    nodep->addNextHere(parp);
 	}
+    }
+
+    bool neverItem(AstCase* casep, AstConst* itemp) {
+	// Xs in case or casez are impossible due to two state simulations
+	if (casep->casex()) {
+	} else if (casep->casez()) {
+	    if (itemp->num().isUnknown()) return true;
+	} else {
+	    if (itemp->num().isFourState()) return true;
+	}
+	return false;
     }
 
     // VISITORS

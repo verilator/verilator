@@ -952,9 +952,9 @@ stateCaseForIf: caseStmt caseAttrE caseListE yENDCASE	{ $$ = $1; if ($3) $1->add
 	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	;
 
-caseStmt: 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,false,$3,NULL); }
-	|	yCASEX '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,true,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
-	|	yCASEZ '(' expr ')'	 		{ $$ = V3Parse::s_caseAttrp = new AstCase($1,true,$3,NULL); }
+caseStmt: 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
+	|	yCASEX '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
+	|	yCASEZ '(' expr ')'	 		{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
 	;
 
 caseAttrE: 	/*empty*/				{ }

@@ -10,7 +10,7 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Warning-CASEWITHX: t/t_case_x_bad.v:\d+: Use of x/\? constant in case statement, \(perhaps intended casex/casez\)
+'%Warning-CASEWITHX: t/t_case_zx_bad.v:\d+: Use of x constant in casez statement, \(perhaps intended \?/z in constant\)
 .*
 %Error: Exiting due to.*',
 	 );

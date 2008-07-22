@@ -143,14 +143,14 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		olen++;
 		break;
 	    }
-	    case 'z': {
+	    case 'z': case '?': {
 		if (olen) m_fileline->v3error("Multi-digit X/Z/? not legal in decimal constant: "<<*cp);
 		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
 		olen++;
 		setAllBitsZ();
 		break;
 	    }
-	    case 'x': case '?': {
+	    case 'x': {
 		if (olen) m_fileline->v3error("Multi-digit X/Z/? not legal in decimal constant: "<<*cp);
 		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
 		olen++;
@@ -181,9 +181,8 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		switch(tolower(*cp)) {
 		case '0': setBit(obit++, 0); break;
 		case '1': setBit(obit++, 1); break;
-		case 'z': setBit(obit++, 'z'); break;
-		case 'x': case '?':
-		    setBit(obit++, 'x'); break;
+		case 'z': case '?': setBit(obit++, 'z'); break;
+		case 'x': setBit(obit++, 'x'); break;
 		case '_': break;
 		default:
 		    m_fileline->v3error("Illegal character in binary constant: "<<*cp);
@@ -202,8 +201,9 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		case '5': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 1);  break;
 		case '6': setBit(obit++, 0); setBit(obit++, 1);  setBit(obit++, 1);  break;
 		case '7': setBit(obit++, 1); setBit(obit++, 1);  setBit(obit++, 1);  break;
-		case 'z': setBit(obit++, 'z'); setBit(obit++, 'z');  setBit(obit++, 'z');  break;
-		case 'x': case '?':
+		case 'z': case '?':
+		    setBit(obit++, 'z'); setBit(obit++, 'z');  setBit(obit++, 'z');  break;
+		case 'x':
 		    setBit(obit++, 'x'); setBit(obit++, 'x');  setBit(obit++, 'x');  break;
 		case '_': break;
 		default:
@@ -230,8 +230,9 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		case 'd': setBit(obit++,1); setBit(obit++,0); setBit(obit++,1); setBit(obit++,1); break;
 		case 'e': setBit(obit++,0); setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); break;
 		case 'f': setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); break;
-		case 'z': setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); break;
-		case 'x': case '?':
+		case 'z': case '?': 
+		    setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); break;
+		case 'x':
 		    setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
 		case '_':  break;
 		default:
@@ -522,6 +523,12 @@ bool V3Number::isEqAllOnes(int optwidth) const {
     }
     return true;
 }
+bool V3Number::isUnknown() const {
+    for(int bit=0; bit<width(); bit++) {
+	if (bitIsX(bit)) return true;
+    }
+    return false;
+}
 
 int V3Number::minWidth() const {
     for(int bit=width()-1; bit>0; bit--) {
@@ -625,10 +632,7 @@ V3Number& V3Number::opCountOnes (const V3Number& lhs) {
     return *this;
 }
 V3Number& V3Number::opIsUnknown (const V3Number& lhs) {
-    for(int bit=0; bit<lhs.width(); bit++) {
-	if (lhs.bitIsX(bit)) return setSingleBits(1);
-    }
-    return setSingleBits(0);
+    return setSingleBits(lhs.isUnknown());
 }
 V3Number& V3Number::opOneHot (const V3Number& lhs) {
     if (lhs.isFourState()) return setAllBitsX();

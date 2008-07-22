@@ -1195,11 +1195,11 @@ struct AstCase : public AstNodeCase {
     // exprp Children:  MATHs
     // casesp Children: CASEITEMs
 private:
-    bool	m_casex;	// True if casex instead of normal case.
+    AstCaseType	m_casex;		// 0=case, 1=casex, 2=casez
     bool	m_fullPragma;		// Synthesis full_case
     bool	m_parallelPragma;	// Synthesis parallel_case
 public:
-    AstCase(FileLine* fileline, bool casex, AstNode* exprp, AstNode* casesp)
+    AstCase(FileLine* fileline, AstCaseType casex, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
 	m_casex=casex;
 	m_fullPragma=false; m_parallelPragma=false;
@@ -1208,11 +1208,14 @@ public:
     virtual AstType type() const { return AstType::CASE;}
     virtual AstNode* clone() { return new AstCase(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
-    virtual string  verilogKwd() const { return casex()?"casex":"case"; }
-    bool	casex()	const { return m_casex; }
+    virtual string  verilogKwd() const { return casez()?"casez":casex()?"casex":"case"; }
+    virtual bool same(AstNode* samep) const {
+	return m_casex==samep->castCase()->m_casex; }
+    bool	casex()	const { return m_casex==AstCaseType::CASEX; }
+    bool	casez()	const { return m_casex==AstCaseType::CASEZ; }
     bool	fullPragma()	const { return m_fullPragma; }
-    bool	parallelPragma()	const { return m_parallelPragma; }
     void	fullPragma(bool flag)	{ m_fullPragma=flag; }
+    bool	parallelPragma()	const { return m_parallelPragma; }
     void	parallelPragma(bool flag) { m_parallelPragma=flag; }
 };
 

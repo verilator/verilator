@@ -563,9 +563,9 @@ Disable the specified warning message.
 =item -Wno-lint
 
 Disable all lint related warning messages.  This is equivelent to
-"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CMPCONST
--Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-VARHIDDEN
--Wno-WIDTH".
+"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEZWITHX
+-Wno-CMPCONST -Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
+-Wno-VARHIDDEN -Wno-WIDTH".
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -1672,6 +1672,16 @@ correctly.
 Warns that it is simply better style to use casez, and C<?> in place of
 C<x>'s.  See
 L<http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item CASEWITHX
+
+Warns that a case statement contains a constant with a C<x>.  Verilator is
+two-state so interpret such items as always false.  Note a common error is
+to use a C<X> in a case or casez statement item; often what the user
+instead insteaded is to use a casez with C<?>.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.

@@ -134,6 +134,7 @@ public:
     bool isCaseEq(const V3Number& rhsp) const;  // operator==
     void width(int width, bool sized=true);
     void isSigned(bool ssigned) { m_signed=ssigned; }
+    bool isUnknown() const;
     uint32_t asInt() const;
     vlsint32_t asSInt() const;
     vluint64_t asQuad() const;
