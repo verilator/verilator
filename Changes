@@ -20,6 +20,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix IMPURE errors due to X-assignment temporary variables. [Steve Tong]
 
+**** Fix "lvalue" errors with public functions; bug25.  [CY Wang]
+
 **** Add WIDTH warning to $fopen etc file descriptors.
 
 **** Internal changes to how $displays get compiled and executed.

@@ -199,6 +199,27 @@ private:
 	nodep->iterateChildren(*this);
 	m_ftaskp = NULL;
     }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	AstNode* pinp = nodep->pinsp();
+	AstNodeFTask* taskp = nodep->taskp();
+	// We'll deal with mismatching pins later
+	if (!taskp) return;
+	for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO()) {
+		    if (portp->isInput()) {
+			pinp->iterateAndNext(*this);
+		    } else {  // Output or Inout
+			m_setRefLvalue = true;
+			pinp->iterateAndNext(*this);
+			m_setRefLvalue = false;
+		    }
+		    // Advance pin
+		    pinp = pinp->nextp();
+		}
+	    }
+	}
+    }
 
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate

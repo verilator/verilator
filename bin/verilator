@@ -1311,10 +1311,9 @@ Wide variables over 64 bits cannot be function returns, to avoid exposing
 complexities.  However, wide variables can be input/outputs; they will be
 passed as references to an array of 32 bit numbers.
 
-This feature is still somewhat experimental.  Generally, only the values of
-stored state (flops) should be written, as the model will NOT notice
-changes made to variables in these functions.  (Same as when a signal is
-declared public.)
+Generally, only the values of stored state (flops) should be written, as
+the model will NOT notice changes made to variables in these functions.
+(Same as when a signal is declared public.)
 
 =item /*verilator public_flat*/ (variable)
 
@@ -2153,11 +2152,49 @@ uses one large symbol table, as that results in 2-3 less assembly
 instructions for each signal access.  This makes the execution time 10-15%
 faster, but can result in more compilations when something changes.
 
+=item How do I access functions/tasks in C?
+
+Write a Verilog function or task with input/outputs that match what you
+want to call in with C.  Then mark that function public.
+
+Verilog inputs of one bit become C++ bool inputs.  Inputs 32 bits or
+smaller become C uint32_t inputs, 64-32 bits become C uint64_t inputs, and
+wider signals become arrays of 32 bits.  Outputs are passed as references
+to bool, uint32_t, uint64_t or uint32_t[] arrays.
+
+Signals wider than 64 bits are passed as an array of 32-bit uint32_t's.
+Thus to read bits 31:0, access signal[0], and for bits 63:32, access
+signal[1].  Unused bits (for example bit numbers 65-96 of a 65 bit vector)
+will always be zero.  if you change the value you must make sure to pack
+zeros in the unused bits or core-dumps may result.  (Because Verilator
+strips array bound checks where it believes them to be unnecessary.)
+
+In the SYSTEMC example above, if you had in our.v:
+
+   task publicSetBool;
+      // verilator public
+      input in_bool;
+      var_bool = in_bool;
+   endtask
+
+From the sc_main.cpp file, you'd then:
+
+    #include "Vour.h"
+    #include "Vour_our.h"
+    top->v.publicSetBool(value);
+
+See additional notes under the /*verilator public*/ section.
+
 =item How do I access signals in C?
 
-First, declare the signals you will be accessing with a /*verilator
-public*/ comment before the closing semicolon.  Then scope into the C++
-class to read the value of the signal, as you would any other member variable.
+The best thing is to make a Verilator public task or function accessor that
+can read or write that signal, as described in the previous FAQ.  This will
+allow Verilator to better optimize the model.
+
+If you really want raw access to the signals, declare the signals you will
+be accessing with a /*verilator public*/ comment before the closing
+semicolon.  Then scope into the C++ class to read the value of the signal,
+as you would any other member variable.
 
 Signals are the smallest of 8 bit chars, 16 bit shorts, 32 bit longs, or 64
 bit long longs that fits the width of the signal.  Generally, you can use
