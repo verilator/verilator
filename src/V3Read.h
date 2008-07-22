@@ -56,6 +56,7 @@ protected:
     friend class V3PreShellImp;
     int yylexThis();
     static bool optPsl();
+    static bool optFuture(const string& flag);
     static void ppline (const char* text);
     static void incLineno() { s_readp->fileline()->incLineno(); }
     static void verilatorCmtLint(const char* text, bool on);

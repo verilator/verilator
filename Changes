@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add $random.
 
+***  Add --Wfuture-, for improving forward compatibility.
+
 **** Fix verilator_includer not being installed properly.  [Holger Waechtler]
 
 **** Fix IMPURE errors due to X-assignment temporary variables. [Steve Tong]

@@ -54,7 +54,9 @@ void V3Read::verilatorCmtLint(const char* textp, bool warnOff) {
     string::size_type pos;
     if ((pos=msg.find("*")) != string::npos) { msg.erase(pos); }
     if (!(V3Read::fileline()->warnOff(msg, warnOff))) {
-	yyerrorf("Unknown verilator lint message code: %s, in %s",msg.c_str(), textp);
+	if (!V3Read::optFuture(msg)) {
+	    yyerrorf("Unknown verilator lint message code: %s, in %s",msg.c_str(), textp);
+	}
     }
 }
 
@@ -71,7 +73,20 @@ void V3Read::verilatorCmtLintRestore() {
 }
 
 void V3Read::verilatorCmtBad(const char* textp) {
-    yyerrorf("Unknown verilator comment: %s",textp);
+    string cmtparse = textp;
+    if (cmtparse.substr(0,strlen("/*verilator")) == "/*verilator") {
+	cmtparse.replace(0,strlen("/*verilator"), "");
+    }
+    while (isspace(cmtparse[0])) {
+	cmtparse.replace(0,1, "");
+    }
+    string cmtname;
+    for (int i=0; isalnum(cmtparse[i]); i++) {
+	cmtname += cmtparse[i];
+    }
+    if (!V3Read::optFuture(cmtname)) {
+	yyerrorf("Unknown verilator comment: %s",textp);
+    }
 }
 
 // See V3Read.cpp

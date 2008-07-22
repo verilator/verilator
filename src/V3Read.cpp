@@ -181,6 +181,9 @@ void V3Read::lexFile(const string& modname) {
 bool V3Read::optPsl() {
     return v3Global.opt.psl();
 }
+bool V3Read::optFuture(const string& flag) {
+    return v3Global.opt.isFuture(flag);
+}
 
 //======================================================================
 // Lex internal functions

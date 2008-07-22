@@ -95,6 +95,15 @@ void V3Options::addCppFile(const string& filename) {
 	m_cppFiles.insert(filename);
     }
 }
+void V3Options::addFuture(const string& flag) {
+    if (m_futures.find(flag) == m_futures.end()) {
+	m_futures.insert(flag);
+    }
+}
+bool V3Options::isFuture(const string& flag) const {
+    return m_futures.find(flag) != m_futures.end();
+}
+
 void V3Options::addLibraryFile(const string& filename) {
     if (m_libraryFiles.find(filename) == m_libraryFiles.end()) {
 	m_libraryFiles.insert(filename);
@@ -646,10 +655,17 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		string msg = sw+strlen("-Werror-");
 		V3ErrorCode code (msg.c_str());
 		if (code == V3ErrorCode::ERROR) {
-		    fl->v3fatal("Unknown warning specified: "<<sw);
+		    if (!isFuture(msg)) {
+			fl->v3fatal("Unknown warning specified: "<<sw);
+		    }
 		} else {
 		    V3Error::pretendError(code, true);
 		}
+	    }
+	    else if ( !strncmp (sw, "-Wfuture-",strlen("-Wfuture-")) )	{
+		string msg = sw+strlen("-Wfuture-");
+		// Note it may not be a future option, but one that is currently implemented.
+		addFuture(msg);
 	    }
 	    else if ( !strcmp (sw, "-bin") && (i+1)<argc ) {
 		shift; m_bin = argv[i];

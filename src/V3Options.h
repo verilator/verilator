@@ -79,6 +79,7 @@ class V3Options {
     V3OptionsImp*	m_impp;		// Slow hidden options
 
     V3StringSet	m_cppFiles;	// argument: C++ files to link against
+    V3StringSet	m_futures;	// argument: -Wfuture- list
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
     V3StringList m_vFiles;	// argument: Verilog files to read
 
@@ -151,9 +152,10 @@ class V3Options {
   private:
     // METHODS
     void addArg(const string& incdir);
+    void addDefine(const string& defline);
+    void addFuture(const string& flag);
     void addIncDir(const string& incdir);
     void addLibExt(const string& libext);
-    void addDefine(const string& defline);
     void optimize(int level);
     void coverage(bool flag) { m_coverageLine = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
@@ -219,10 +221,13 @@ class V3Options {
     string modPrefix() const { return m_modPrefix; }
     string topModule() const { return m_topModule; }
     string xAssign() const { return m_xAssign; }
+
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3LangCode& language() const { return m_language; }
+
+    bool isFuture(const string& flag) const;
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }

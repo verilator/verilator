@@ -224,6 +224,7 @@ descriptions in the next sections for more information.
     --underline-zero            Zero signals with leading _'s
     -v <filename>               Verilog library
     -Werror-<message>           Convert warning to error
+    -Wfuture-<message>          Disable unknown message warnings
     -Wno-<message>              Disable warning
     -x-assign <mode>            Initially assign Xs to this value
     -y <dir>                    Directory to search for modules
@@ -555,6 +556,14 @@ future versions.
 Convert the specified warning message into a error message.  This is
 generally to discourage users from violating important site-wide rules, for
 example C<-Werror-NOUNOPTFLAT>.
+
+=item -Wfuture-I<message>
+
+Suppress unknown Verilator comments or warning messages with the given
+message code.  This is used to allow code written with pragmas for a later
+version of Verilator to run under a older version; add -Wfuture- arguments
+for each message code or comment that the new version supports which the
+older version does not support.
 
 =item -Wno-I<message>
 
