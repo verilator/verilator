@@ -10,7 +10,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Add --autoflush, for flushing streams after $display.  [Steve Tong]
 
-**   Add CASEZWITHX lint warning and if disabled fix handling of casez with Xs.
+**   Add CASEWITHX lint warning and if disabled fix handling of casez with Xs.
 
 ***  Add $feof, $fgetc, $fgets, $fflush, $fscanf, $sscanf. [Holger Waechtler]
 

@@ -572,7 +572,7 @@ Disable the specified warning message.
 =item -Wno-lint
 
 Disable all lint related warning messages.  This is equivelent to
-"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEZWITHX
+"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX
 -Wno-CMPCONST -Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
 -Wno-VARHIDDEN -Wno-WIDTH".
 
