@@ -100,8 +100,8 @@ sub verilator_bin {
     my $bin = "";
     # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     $bin .= $ENV{VERILATOR_ROOT}."/" if defined($ENV{VERILATOR_ROOT});
-    $bin .= ($ENV{VERILATOR_BIN}||"verilator_bin");
-    if ($Debug) { $bin = "${bin}_dbg"; }
+    $bin .= ($ENV{VERILATOR_BIN}
+	     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
     return $bin;
 }
 
