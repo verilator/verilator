@@ -222,9 +222,10 @@ public:
     const string profileFuncname() const;
     void warnOff(V3ErrorCode code, bool flag) { m_warnOff.set(code,flag); }	// Turn on/off warning messages on this line.
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
-    bool warnIsOff(V3ErrorCode code);
+    bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOff=from.m_warnOff; }
+    void warnStateInherit(const FileLine& from);
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 
     void	v3errorEnd(ostringstream& str);

@@ -2,9 +2,11 @@
 obj_dir
 vcs.key
 csrc
+cov_work
 simv*
 simx*
 *.log
+*.key
 ncverilog.*
 INCA_libs
 logs

@@ -16,6 +16,7 @@
 /obj_dbg/
 /obj_opt/
 /INCA_libs/
+/cov_work/
 /logs/
 Makefile
 src/Makefile_obj

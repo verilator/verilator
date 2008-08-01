@@ -172,6 +172,8 @@ private:
 		    m_modp->addStmtp(new AstAssignAlias(nodep->fileline(),
 							new AstVarRef(nodep->fileline(), nodep, true),
 							new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+		    nodep->fileline()->warnStateInherit(exprvarrefp->varp()->fileline());
+		    exprvarrefp->varp()->fileline()->warnStateInherit(nodep->fileline());
 		}
 	    }
 	    // Variable under the inline cell, need to rename to avoid conflicts

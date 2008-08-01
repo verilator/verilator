@@ -70,5 +70,5 @@ random_forever:
 ######################################################################
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_dir simv* simx* csrc INCA_libs *.log logs
+	-rm -rf obj_dir simv* simx* csrc cov_work INCA_libs *.log *.key logs
 

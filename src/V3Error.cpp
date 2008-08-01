@@ -153,11 +153,21 @@ ostream& operator<<(ostream& os, FileLine* fileline) {
     return(os);
 }
 
-bool FileLine::warnIsOff(V3ErrorCode code) {
+bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (m_warnOff.test(code)) return true;
     // UNOPTFLAT implies UNOPT
     if (code==V3ErrorCode::UNOPT && m_warnOff.test(V3ErrorCode::UNOPTFLAT)) return true;
     return false;
+}
+
+void FileLine::warnStateInherit(const FileLine& from) {
+    // Any warnings that are off in "from", become off in "this".
+    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (from.warnIsOff(code)) {
+	    this->warnOff(code, true);
+	}
+    }
 }
 
 void FileLine::v3errorEnd(ostringstream& str) {
