@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  When warnings are disabled on signals that are flattened out, disable
      the warnings on the signal(s) that replace it.
 
+***  Add by-design and by-module subtotals to verilator_profcfunc.
+
 * Verilator 3.670 2008/07/23
 
 **   Add --x-assign=fast option, and make it the default.

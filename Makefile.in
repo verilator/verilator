@@ -127,6 +127,7 @@ DISTFILES_INC = $(INFOS) .gitignore COPYING *.in *.ac \
 INST_PROJ_FILES = \
 	bin/verilator \
 	bin/verilator_includer \
+	bin/verilator_profcfunc \
 	include/verilated.[chv]* \
 	include/verilated.mk \
 	include/verilatedos.[chv]* \
