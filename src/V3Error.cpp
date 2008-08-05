@@ -65,6 +65,17 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 //######################################################################
 // FileLine class functions
 
+FileLine::FileLine(FileLine::EmptySecret) {
+    m_lineno=0;
+    m_filename="COMMAND_LINE";
+
+    m_warnOff=0;
+    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (code.defaultsOff()) warnOff(code, true);
+    }
+}
+
 void FileLine::lineDirective(const char* textp) {
     // Handle `line directive
     // Skip `line
@@ -318,7 +329,9 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 #ifdef __COVERITY__
     if (s_errorCode==V3ErrorCode::FATAL) __coverity_panic__(x);
 #endif
-    if (s_errorCode!=V3ErrorCode::SUPPRESS || debug()) {
+    if (s_errorCode!=V3ErrorCode::SUPPRESS
+	// On debug, show only non default-off warning to prevent pages of warnings
+	|| (debug() && !s_errorCode.defaultsOff())) {
 	cerr<<msgPrefix()<<sstr.str();
 	if (sstr.str()[sstr.str().length()-1] != '\n') {
 	    cerr<<endl;

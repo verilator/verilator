@@ -63,6 +63,7 @@ private:
 	vscp->v3fatalSrc("Not applicable\n");
 #endif
 	AstVar* varp = vscp->varp();
+	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
 	if (varp->arraysp()) {
 	    vscp->v3error("Unsupported: Can't detect changes on arrayed variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
 	} else {

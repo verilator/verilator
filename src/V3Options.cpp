@@ -640,17 +640,6 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strncmp (sw, "-U", 2)) {
 		V3PreShell::undef (string (sw+strlen("-U")));
 	    }
-	    else if ( !strncmp (sw, "-Wno-",5) )	{
-		if (!strcmp (sw, "-Wno-lint")) {
-		    FileLine::defaultFileLine().warnLintOff(true);
-		}
-		else {
-		    string msg = sw+strlen("-Wno-");
-		    if (!(FileLine::defaultFileLine().warnOff(msg, true))) {
-			fl->v3fatal("Unknown warning disabled: "<<sw);
-		    }
-		}
-	    }
 	    else if ( !strncmp (sw, "-Werror-",strlen("-Werror-")) )	{
 		string msg = sw+strlen("-Werror-");
 		V3ErrorCode code (msg.c_str());
@@ -666,6 +655,28 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		string msg = sw+strlen("-Wfuture-");
 		// Note it may not be a future option, but one that is currently implemented.
 		addFuture(msg);
+	    }
+	    else if ( !strncmp (sw, "-Wno-",5) )	{
+		if (!strcmp (sw, "-Wno-lint")) {
+		    FileLine::defaultFileLine().warnLintOff(true);
+		}
+		else {
+		    string msg = sw+strlen("-Wno-");
+		    if (!(FileLine::defaultFileLine().warnOff(msg, true))) {
+			fl->v3fatal("Unknown warning specified: "<<sw);
+		    }
+		}
+	    }
+	    else if ( !strncmp (sw, "-Wwarn-",5) )	{
+		if (!strcmp (sw, "-Wwarn-lint")) {
+		    FileLine::defaultFileLine().warnLintOff(false);
+		}
+		else {
+		    string msg = sw+strlen("-Wwarn-");
+		    if (!(FileLine::defaultFileLine().warnOff(msg, false))) {
+			fl->v3fatal("Unknown warning specified: "<<sw);
+		    }
+		}
 	    }
 	    else if ( !strcmp (sw, "-bin") && (i+1)<argc ) {
 		shift; m_bin = argv[i];

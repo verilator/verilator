@@ -52,6 +52,7 @@ public:
 	COMBDLY,	// Combinatorial delayed assignment
 	STMTDLY,	// Delayed statement
 	GENCLK,		// Generated Clock
+	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
 	MULTIDRIVEN,	// Driven from multiple blocks
@@ -81,7 +82,7 @@ public:
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
-	    "COMBDLY", "STMTDLY", "GENCLK", "IMPLICIT", "IMPURE",
+	    "COMBDLY", "STMTDLY", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
@@ -89,6 +90,8 @@ public:
 	};
 	return names[m_e];
     };
+    // Warnings that default to off
+    bool defaultsOff() const { return ( m_e==IMPERFECTSCH );};
     // Warnings that warn about nasty side effects
     bool dangerous() const { return ( m_e==COMBDLY );};
     // Warnings we'll present to the user as errors
@@ -207,7 +210,7 @@ protected:
 public:
     FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOff=s_defaultFileLine.m_warnOff; }
     FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOff=fromp->m_warnOff; }
-    FileLine (EmptySecret) { m_lineno=0; m_filename="COMMAND_LINE"; m_warnOff=0; }
+    FileLine (EmptySecret);
     ~FileLine() { }
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);

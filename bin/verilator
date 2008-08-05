@@ -580,6 +580,10 @@ It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
 received from third parties.
 
+=item -Wwarn-I<message>
+
+Enables the specified warning message.
+
 =item -x-assign 0
 
 =item -x-assign 1
@@ -1727,6 +1731,13 @@ additional ones.)
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item IMPERFECTSCH
+
+Warns that the scheduling of the model is not absolutely perfect, and some
+manual code edits may result in faster performance.  This warning defaults
+to off, and must be turned on explicitly before the top module statement is
+processed.
 
 =item IMPLICIT
 
