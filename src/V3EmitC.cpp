@@ -1051,7 +1051,7 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 
     //string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
-    if ((fmtLetter=='u' || fmtLetter=='d')
+    if ((fmtLetter=='u' || fmtLetter=='d' || fmtLetter=='t')
 	&& !isScan
 	&& vfmt == "") { // Size decimal output.  Spec says leading spaces, not zeros
 	double mantissabits = argp->widthMin() - ((fmtLetter=='d')?1:0);
@@ -1105,7 +1105,7 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
 	    // Spec: h d o b c l
 	    case 'b': displayArg(nodep,&elistp,isScan, vfmt,'b'); break;
 	    case 'c': displayArg(nodep,&elistp,isScan, vfmt,'c'); break;
-	    case 't':
+	    case 't': displayArg(nodep,&elistp,isScan, vfmt,'t'); break;
 	    case 'd': displayArg(nodep,&elistp,isScan, vfmt,'u'); break;  // Unsigned decimal
 	    case 'o': displayArg(nodep,&elistp,isScan, vfmt,'o'); break;
 	    case 'h':

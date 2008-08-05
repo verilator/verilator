@@ -543,6 +543,10 @@ sub _make_main {
     my $filename = "obj_dir/$self->{VM_PREFIX}__main.cpp";
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
+    print $fh "// Test defines\n";
+    print $fh "#define VL_TIME_MULTIPLIER $self->{vl_time_multiplier}\n" if $self->{vl_time_multiplier};
+
+    print $fh "// Generated header\n";
     my $VM_PREFIX = $self->{VM_PREFIX};
     print $fh "#include \"$VM_PREFIX.h\"\n";
 

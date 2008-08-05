@@ -255,13 +255,17 @@ static inline void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
 //=========================================================================
 // Pli macros
 
+#ifndef VL_TIME_MULTIPLIER
+# define VL_TIME_MULTIPLIER 1
+#endif
+
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION>20011000)
-# define VL_TIME_I(ign) ((IData)sc_time_stamp().to_default_time_units())
-# define VL_TIME_Q(ign) ((QData)sc_time_stamp().to_default_time_units())
+# define VL_TIME_I(ign) ((IData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q(ign) ((QData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
 #else
-# define VL_TIME_I(ign) ((IData)sc_time_stamp())
-# define VL_TIME_Q(ign) ((QData)sc_time_stamp())
+# define VL_TIME_I(ign) ((IData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q(ign) ((QData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
 extern double sc_time_stamp();
 #endif
 

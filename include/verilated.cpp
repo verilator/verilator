@@ -229,6 +229,22 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    output += tmp;
 		    break;
 		}
+		case 't': { // Time
+		    int digits;
+		    if (VL_TIME_MULTIPLIER==1) {
+			digits=sprintf(tmp,"%llu",ld);
+		    } else if (VL_TIME_MULTIPLIER==1000) {
+			digits=sprintf(tmp,"%llu.%03llu",
+				       (QData)(ld/VL_TIME_MULTIPLIER),
+				       (QData)(ld%VL_TIME_MULTIPLIER));
+		    } else {
+			vl_fatal(__FILE__,__LINE__,"","%%Error: Unsupported VL_TIME_MULTIPLIER");
+		    }
+		    int needmore = width-digits;
+		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    output += tmp;
+		    break;
+		}
 		case 'b':
 		    for (; lsb>=0; lsb--) {
 			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
@@ -386,6 +402,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
+		case 't': // FALLTHRU  // Time
 		case 'u': { // Unsigned decimal
 		    _vl_vsss_skipspace(fp,floc,fromp);
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xz?_");

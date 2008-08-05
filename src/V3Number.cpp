@@ -429,7 +429,7 @@ string V3Number::displayed(const string& vformat) const {
 	return str;
     }
     case '~': // Signed decimal
-    case 't':
+    case 't': // Time
     case 'd': { // Unsigned decimal
 	bool issigned = (code == '~');
 	if (fmtsize == "") {
