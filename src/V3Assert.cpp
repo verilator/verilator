@@ -43,6 +43,7 @@ private:
 
     // STATE
     AstModule*	m_modp;		// Last module
+    AstBegin*	m_beginp;	// Last begin
     V3Double0	m_statAsCover;	// Statistic tracking
     V3Double0	m_statAsPsl;	// Statistic tracking
     V3Double0	m_statAsFull;	// Statistic tracking
@@ -100,9 +101,11 @@ private:
 	return bodysp;
     }
 
-    void newPslAssertion(AstNode* nodep, AstNode* propp, AstSenTree* sentreep, const string& message) {
+    void newPslAssertion(AstNode* nodep, AstNode* propp, AstSenTree* sentreep,
+			 AstNode* stmtsp, const string& message) {
 	propp->unlinkFrBack();
 	sentreep->unlinkFrBack();
+	if (stmtsp) stmtsp->unlinkFrBack();
 	//
 	AstNode* bodysp = NULL;
 	bool selfDestruct = false;
@@ -126,6 +129,7 @@ private:
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
 	}
+	if (stmtsp) bodysp = bodysp->addNext(stmtsp);
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
 	bodysp = ifp;
 	if (nodep->castPslAssert()) ifp->branchPred(AstBranchPred::UNLIKELY);
@@ -232,12 +236,15 @@ private:
 
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
+	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
+	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
+			nodep->stmtsp(), nodep->name()); nodep=NULL;
 	m_statAsCover++;
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(), nodep->name()); nodep=NULL;
+	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
+			NULL, nodep->name()); nodep=NULL;
 	m_statAsPsl++;
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
@@ -252,6 +259,16 @@ private:
 	nodep->iterateChildren(*this);
 	// Reset defaults
 	m_modp = NULL;
+    }
+    virtual void visit(AstBegin* nodep, AstNUser*) {
+	// This code is needed rather than a visitor in V3Begin,
+	// because V3Assert is called before V3Begin
+	AstBegin* lastp = m_beginp;
+	{
+	    m_beginp = nodep;
+	    nodep->iterateChildren(*this);
+	}
+	m_beginp = lastp;
     }
 
     // VISITORS  //========== Temporal Layer
@@ -268,6 +285,7 @@ private:
 public:
     // CONSTRUCTORS
     AssertVisitor(AstNetlist* nodep) {
+	m_beginp = NULL;
 	m_modp = NULL;
 	// Process
 	AstNode::userClearTree();	// userp() used on entire tree

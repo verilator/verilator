@@ -163,17 +163,20 @@ class AstSenTree;
 %token<fileline>	yCASE		"case"
 %token<fileline>	yCASEX		"casex"
 %token<fileline>	yCASEZ		"casez"
-%token<fileline>	yCLOCK		"clock"
+%token<fileline>	yCLOCKING	"clocking"
 %token<fileline>	yCOVER		"cover"
 %token<fileline>	yDEFAULT	"default"
 %token<fileline>	yDEFPARAM	"defparam"
+%token<fileline>	yDISABLE	"disable"
 %token<fileline>	yDO		"do"
 %token<fileline>	yELSE		"else"
 %token<fileline>	yEND		"end"
 %token<fileline>	yENDCASE	"endcase"
+%token<fileline>	yENDCLOCKING	"endclocking"
 %token<fileline>	yENDFUNCTION	"endfunction"
 %token<fileline>	yENDGENERATE	"endgenerate"
 %token<fileline>	yENDMODULE	"endmodule"
+%token<fileline>	yENDPROPERTY	"endproperty"
 %token<fileline>	yENDSPECIFY	"endspecify"
 %token<fileline>	yENDTASK	"endtask"
 %token<fileline>	yFINAL		"final"
@@ -182,6 +185,7 @@ class AstSenTree;
 %token<fileline>	yGENERATE	"generate"
 %token<fileline>	yGENVAR		"genvar"
 %token<fileline>	yIF		"if"
+%token<fileline>	yIFF		"iff"
 %token<fileline>	yINITIAL	"initial"
 %token<fileline>	yINOUT		"inout"
 %token<fileline>	yINPUT		"input"
@@ -196,9 +200,8 @@ class AstSenTree;
 %token<fileline>	yOUTPUT		"output"
 %token<fileline>	yPARAMETER	"parameter"
 %token<fileline>	yPOSEDGE	"posedge"
-%token<fileline>	yPSL		"psl"
+%token<fileline>	yPROPERTY	"property"
 %token<fileline>	yREG		"reg"
-%token<fileline>	yREPORT		"report"
 %token<fileline>	ySCALARED	"scalared"
 %token<fileline>	ySIGNED		"signed"
 %token<fileline>	ySPECIFY	"specify"
@@ -248,7 +251,11 @@ class AstSenTree;
 %token<fileline>	yD_WARNING	"$warning"
 %token<fileline>	yD_WRITE	"$write"
 
+%token<fileline>	yPSL		"psl"
 %token<fileline>	yPSL_ASSERT	"PSL assert"
+%token<fileline>	yPSL_CLOCK	"PSL clock"
+%token<fileline>	yPSL_COVER	"PSL cover"
+%token<fileline>	yPSL_REPORT	"PSL report"
 
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
@@ -628,6 +635,8 @@ modOrGenItem<nodep>:
 	|	varDecl 				{ $$ = $1; }
 	//No: |	tableDecl				// Unsupported
 	|	pslStmt 				{ $$ = $1; }
+	|	concurrent_assertion_item		{ $$ = $1; }  // IEEE puts in modItem; seems silly
+	|	clocking_declaration			{ $$ = $1; }
 	;
 
 //************************************************
@@ -1421,6 +1430,39 @@ labeledStmt<nodep>:
 		assertStmt				{ $$ = $1; }
 	;
 
+clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
+		yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' clocking_item yENDCLOCKING
+			{ $$ = new AstClocking($1, $5, $8); }
+	;
+
+clocking_item<nodep>:			// IEEE: clocking_item  (INCOMPLETE)
+		concurrent_assertion_item       	{ $$ = $1; }
+	|	clocking_item concurrent_assertion_item	{ $$ = $1->addNext($2); }
+	;
+
+concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item  (complete)
+		concurrent_assertion_statement		{ $$ = $1; }
+	|	yaID ':' concurrent_assertion_statement	{ $$ = new AstBegin($2,*$1,$3); }
+	;
+
+concurrent_assertion_statement<nodep>:	// IEEE: concurrent_assertion_statement  (INCOMPLETE)
+		cover_property_statement		{ $$ = $1; }
+	;
+
+cover_property_statement<nodep>:	// IEEE: cover_property_statement (complete)
+		yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
+	;
+
+property_spec<nodep>:			// IEEE: property_spec
+		'@' '(' senitemEdge ')' property_spec_disable expr	{ $$ = new AstPslClocked($1,$3,$5,$6); }
+	|	property_spec_disable expr	 			{ $$ = new AstPslClocked(CRELINE(),NULL,$1,$2); }
+	;
+
+property_spec_disable<nodep>:
+		/* empty */				{ $$ = NULL; }
+	|	yDISABLE yIFF '(' expr ')'		{ $$ = $4; }
+	;
+
 assertStmt<nodep>:
 		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
 	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
@@ -1436,21 +1478,20 @@ pslStmt<nodep>:
 	;
 
 pslDir<nodep>:
-		yaID ':' pslDirOne			{ $$ = $3; }  // ADD: Create label on $1
+		yaID ':' pslDirOne			{ $$ = $3; }
 	|	pslDirOne		       		{ $$ = $1; }
 	;
 
-//ADD:	|	yRESTRICT pslSequence ';'		{ $$ = PSLUNSUP(new AstPslRestrict($1,$2)); }
 pslDirOne<nodep>:
-		yPSL_ASSERT pslProp ';'			{ $$ = new AstPslAssert($1,$2); }
-	|	yPSL_ASSERT pslProp yREPORT yaSTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
-	|	yCOVER  pslProp ';'			{ $$ = new AstPslCover($1,$2); }
-	|	yCOVER  pslProp yREPORT yaSTRING ';'	{ $$ = new AstPslCover($1,$2,*$4); }
+		yPSL_ASSERT pslProp ';'				{ $$ = new AstPslAssert($1,$2); }
+	|	yPSL_ASSERT pslProp yPSL_REPORT yaSTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
+	|	yPSL_COVER  pslProp ';'				{ $$ = new AstPslCover($1,$2,NULL); }
+	|	yPSL_COVER  pslProp yPSL_REPORT yaSTRING ';'	{ $$ = new AstPslCover($1,$2,NULL,*$4); }
 	;
 
 pslDecl<nodep>:
-		yDEFAULT yCLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
-	|	yDEFAULT yCLOCK '=' '(' senitemEdge ')' ';'	{ $$ = new AstPslDefClock($3, $5); }
+		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
+	|	yDEFAULT yPSL_CLOCK '=' '(' senitemEdge ')' ';'	{ $$ = new AstPslDefClock($3, $5); }
 	;
 
 //************************************************
@@ -1459,18 +1500,13 @@ pslDecl<nodep>:
 
 pslProp<nodep>:
 		pslSequence				{ $$ = $1; }
-	|	pslSequence '@' %prec prPSLCLK '(' senitemEdge ')' { $$ = new AstPslClocked($2, $4, $1); }  // or pslSequence @ ...?
+	|	pslSequence '@' %prec prPSLCLK '(' senitemEdge ')' { $$ = new AstPslClocked($2,$4,NULL,$1); }  // or pslSequence @ ...?
 	;
 
-//ADD:	|	pslCallSeq				{ $$ = PSLUNSUP($1); }
-//ADD:	|	pslRepeat				{ $$ = PSLUNSUP($1); }
 pslSequence<nodep>:
 		yPSL_BRA pslSere yPSL_KET		{ $$ = $2; }
 	;
 
-//ADD:	|	pslSere ';' pslSere	%prec prPSLCONC	{ $$ = PSLUNSUP(new AstPslSeqConcat($2, $1, $3)); }
-//ADD:	|	pslSere ':' pslSere	%prec prPSLFUS	{ $$ = PSLUNSUP(new AstPslSeqFusion($2, $1, $3)); }
-//ADD:	|	pslSereCpnd				{ $$ = $1; }
 pslSere<nodep>:
 		pslExpr					{ $$ = $1; }
 	|	pslSequence				{ $$ = $1; }  // Sequence containing sequence
@@ -1478,8 +1514,6 @@ pslSere<nodep>:
 
 // Undocumented PSL rule is that {} is always a SERE; concatenation is not allowed.
 // This can be bypassed with the _(...) embedding of any arbitrary expression.
-//ADD:	|	pslFunc					{ $$ = UNSUP($1); }
-//ADD:	|	pslExpr yUNION pslExpr			{ $$ = UNSUP(new AstPslUnion($2, $1, $3)); }
 pslExpr<nodep>:
 		exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
 	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, V3Number($1,1,1))); }

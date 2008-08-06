@@ -11,7 +11,7 @@ use strict;
 delete $ENV{MODULE_VERSION};
 _setup_modules();
 module('add','cadence_verif');
-exec('ncverilog',@ARGV);
+exec('iccr',@ARGV);
 
 #######################################################################
 # Modules package
@@ -30,11 +30,11 @@ __END__
 
 =head1 NAME
 
-invoke_ncverilog - Invoke tool under "modules" command
+invoke_iccr - Invoke tool under "modules" command
 
 =head1 SYNOPSIS
 
-  invoke_ncverilog  {ncv arguments}
+  invoke_iccr  {ncv arguments}
 
 =head1 DESCRIPTION
 
@@ -54,5 +54,5 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 ######################################################################
 ### Local Variables:
-### compile-command: "./invoke_ncverilog -help"
+### compile-command: "./invoke_iccr -help"
 ### End:

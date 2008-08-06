@@ -462,7 +462,11 @@ private:
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	nodep->sensesp()->iterate(*this);
+	nodep->sensesp()->iterateAndNext(*this);
+	if (nodep->disablep()) {
+	    nodep->disablep()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
+	    widthCheckReduce(nodep,"Disable",nodep->disablep(),1,1); // it's like a if() condition.
+	}
 	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
 	nodep->width(1,1);
     }
@@ -635,6 +639,7 @@ private:
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
+	nodep->stmtsp()->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {

@@ -60,6 +60,9 @@ private:
 	if (!senip) nodep->v3error("Unsupported: Unclocked assertion");
 	return newp;
     }
+    void clearAssertInfo() {
+	m_senip = NULL;
+    }
 
     // VISITORS  //========== Statements
     virtual void visit(AstPslDefClock* nodep, AstNUser*) {
@@ -70,28 +73,48 @@ private:
 	nodep->unlinkFrBack();
 	pushDeletep(nodep); nodep=NULL;
     }
+    virtual void visit(AstClocking* nodep, AstNUser*) {
+	UINFO(8,"   CLOCKING"<<nodep<<endl);
+	AstSenItem* lastp = m_seniDefaultp;
+	{
+	    // Store the new default clock only in this scope
+	    m_seniDefaultp = nodep->sensesp();
+	    nodep->iterateChildren(*this);
+	}
+	m_seniDefaultp = lastp;
+	// Trash it
+	nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
+	pushDeletep(nodep); nodep=NULL;
+    }
 
     virtual void visit(AstPslCover* nodep, AstNUser*) {
-	// Prep
-	m_senip = NULL;
+	if (nodep->sentreep()) return;  // Already processed
+	clearAssertInfo();
 	nodep->iterateChildren(*this);
 	nodep->sentreep(newSenTree(nodep));
-	m_senip = NULL;
+	clearAssertInfo();
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
-	// Prep
-	m_senip = NULL;
+	if (nodep->sentreep()) return;  // Already processed
+	clearAssertInfo();
 	nodep->iterateChildren(*this);
 	nodep->sentreep(newSenTree(nodep));
-	m_senip = NULL;
+	clearAssertInfo();
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (m_senip) {
 	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion\n");
 	}
-	// Unlink and just keep a pointer to it, convert to sentree as needed
+	// Block is the new expression to evaluate
 	AstNode* blockp = nodep->propp()->unlinkFrBack();
+	if (nodep->disablep()) {
+	    blockp = new AstAnd(nodep->disablep()->fileline(),
+				new AstNot(nodep->disablep()->fileline(),
+					   nodep->disablep()->unlinkFrBack()),
+				blockp);
+	}
+	// Unlink and just keep a pointer to it, convert to sentree as needed
 	m_senip = nodep->sensesp();
 	nodep->replaceWith(blockp);
 	pushDeletep(nodep); nodep=NULL;
@@ -108,8 +131,8 @@ private:
 public:
     // CONSTRUCTORS
     AssertPreVisitor(AstNetlist* nodep) {
-	m_senip = NULL;
 	m_seniDefaultp = NULL;
+	clearAssertInfo();
 	// Process
 	nodep->accept(*this);
     }

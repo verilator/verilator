@@ -1050,7 +1050,8 @@ always_ff, always_latch, do-while, and final.
 
 It also supports .name and .* interconnection.
 
-Verilator partially supports assert.
+Verilator partially supports concurrent assert and cover statements; see
+the enclosed coverage tests for the syntax which is allowed.
 
 =head1 SUGAR/PSL SUPPORT
 

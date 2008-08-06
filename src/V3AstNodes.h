@@ -2831,6 +2831,27 @@ struct AstVAssert : public AstNodeStmt {
 };
 
 //======================================================================
+// Assertions
+
+struct AstClocking : public AstNode {
+    // Set default clock region
+    // Parents:  MODULE
+    // Children: Assertions
+public:
+    AstClocking(FileLine* fl, AstSenItem* sensesp, AstNode* bodysp)
+	: AstNode(fl) {
+	addOp1p(sensesp);
+	addNOp2p(bodysp);
+    }
+    virtual ~AstClocking() {}
+    virtual AstType type() const { return AstType::CLOCKING;}
+    virtual AstNode* clone() { return new AstClocking(*this); }
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
+    AstNode*	bodysp() 	const { return op2p(); }	// op2 = Body
+};
+
+//======================================================================
 // PSL
 
 struct AstPslDefClock : public AstNode {
@@ -2854,17 +2875,19 @@ struct AstPslClocked : public AstNode {
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
 public:
-    AstPslClocked(FileLine* fl, AstSenItem* sensesp, AstNode* propp)
+    AstPslClocked(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
-	addOp2p(propp);
+	addNOp2p(disablep);
+	addOp3p(propp);
     }
     virtual ~AstPslClocked() {}
     virtual AstType type() const { return AstType::PSLCLOCKED;}
     virtual AstNode* clone() { return new AstPslClocked(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
-    AstNode*	propp()		const { return op2p(); }	// op2 = property
+    AstNode*	disablep()	const { return op2p(); }	// op2 = disable
+    AstNode*	propp()		const { return op3p(); }	// op3 = property
 };
 
 struct AstPslAssert : public AstNodeStmt {
@@ -2898,10 +2921,11 @@ struct AstPslCover : public AstNodeStmt {
 private:
     string	m_name;		// Name to report
 public:
-    AstPslCover(FileLine* fl, AstNode* propp, const string& name="")
+    AstPslCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
 	: AstNodeStmt(fl)
 	, m_name(name) {
 	addOp1p(propp);
+	addNOp4p(stmtsp);
     }
     virtual ~AstPslCover() {}
     virtual AstType type() const { return AstType::PSLCOVER;}
@@ -2910,11 +2934,13 @@ public:
     virtual string name()	const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(AstNode* samep) const { return samep->name() == name(); }
+    void name(const string& flag) { m_name = flag; }
     AstNode*	propp()		const { return op1p(); }	// op1 = property
     AstSenTree*	sentreep()	const { return op2p()->castSenTree(); }	// op2 = clock domain
     void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
     AstNode*	coverincp()	const { return op3p(); }	// op3 = coverage node
     void coverincp(AstCoverInc* nodep)	{ addOp3p(nodep); }	// op3 = coverage node
+    AstNode*	stmtsp()	const { return op4p(); }	// op4 = statements
 };
 
 //======================================================================

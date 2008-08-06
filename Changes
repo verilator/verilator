@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.6***
 
+***  Support SystemVerilog "cover property" statements.
+
 ***  When warnings are disabled on signals that are flattened out, disable
      the warnings on the signal(s) that replace it.
 
