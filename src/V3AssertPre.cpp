@@ -56,8 +56,12 @@ private:
 	// Return NULL for always
 	AstSenTree* newp = NULL;
 	AstSenItem* senip = m_senip ? m_senip : m_seniDefaultp;
-	if (senip) newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
-	if (!senip) nodep->v3error("Unsupported: Unclocked assertion");
+	if (!senip) {
+	    nodep->v3error("Unsupported: Unclocked assertion");
+	    newp = new AstSenTree(nodep->fileline(), NULL);
+	} else {
+	    newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
+	}
 	return newp;
     }
     void clearAssertInfo() {
@@ -75,15 +79,14 @@ private:
     }
     virtual void visit(AstClocking* nodep, AstNUser*) {
 	UINFO(8,"   CLOCKING"<<nodep<<endl);
-	AstSenItem* lastp = m_seniDefaultp;
-	{
-	    // Store the new default clock only in this scope
-	    m_seniDefaultp = nodep->sensesp();
-	    nodep->iterateChildren(*this);
+	// Store the new default clock, reset on new module
+	m_seniDefaultp = nodep->sensesp();
+	// Trash it, keeping children
+	if (nodep->bodysp()) {
+	    nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
+	} else {
+	    nodep->unlinkFrBack();
 	}
-	m_seniDefaultp = lastp;
-	// Trash it
-	nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
 	pushDeletep(nodep); nodep=NULL;
     }
 

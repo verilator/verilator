@@ -54,9 +54,8 @@ module Test
      cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5"); 
 
    // Using default clock
-   default clocking @(posedge clk);
-      cover property (cyc==6) $display("*COVER: Cyc==6"); 
-   endclocking
+   default clocking @(posedge clk); endclocking
+   cover property (cyc==6) $display("*COVER: Cyc==6"); 
 
    // Disable statement
    // Note () after disable are required

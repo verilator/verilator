@@ -1431,13 +1431,8 @@ labeledStmt<nodep>:
 	;
 
 clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
-		yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' clocking_item yENDCLOCKING
-			{ $$ = new AstClocking($1, $5, $8); }
-	;
-
-clocking_item<nodep>:			// IEEE: clocking_item  (INCOMPLETE)
-		concurrent_assertion_item       	{ $$ = $1; }
-	|	clocking_item concurrent_assertion_item	{ $$ = $1->addNext($2); }
+		yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' yENDCLOCKING
+			{ $$ = new AstClocking($1, $5, NULL); }
 	;
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item  (complete)
@@ -1490,7 +1485,7 @@ pslDirOne<nodep>:
 	;
 
 pslDecl<nodep>:
-		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
+		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); UINFO(0,"CRE "<<$$<<endl)}
 	|	yDEFAULT yPSL_CLOCK '=' '(' senitemEdge ')' ';'	{ $$ = new AstPslDefClock($3, $5); }
 	;
 

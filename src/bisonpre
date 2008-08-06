@@ -169,7 +169,7 @@ sub warning_check {
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     while (defined(my $line = $fh->getline)) {
-	if ($line =~ /conflicts/) {
+	if ($line =~ /(conflicts|warning:)/) {
 	    clean_output();
 	    die "%Error: $filename:$.: $line\n";
 	}
