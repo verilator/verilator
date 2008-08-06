@@ -1,0 +1,382 @@
+#!/usr/bin/perl -w
+# See copyright, etc in below POD section.
+######################################################################
+
+require 5.006_001;
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use strict;
+use vars qw ($Debug $VERSION);
+
+$VERSION = '3.035';
+
+#======================================================================
+# main
+
+our $Opt_Debug;
+our $Opt_Definitions;
+our $Opt_File_Prefix;
+our $Opt_Name_Prefix;
+our $Opt_Output;
+our $Opt_Token_Table;
+our $Opt_Verbose;
+our $Opt_Yacc = "bison";
+our $Opt_Input;
+
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev");
+if (! GetOptions (
+	  # Local options
+	  "help"		=> \&usage,
+	  "version"		=> sub { print "Version $VERSION\n"; },
+	  "yacc=s"		=> \$Opt_Yacc,
+	  # Passed to Bison
+	  "t|debug"		=> sub { $Opt_Debug = 1; },
+	  "b|file-prefix=s"	=> \$Opt_File_Prefix,
+	  "d"			=> \$Opt_Definitions,
+	  "k|token-table"	=> \$Opt_Token_Table,
+	  "o=s"			=> \$Opt_Output,
+	  "p|name-prefix=s"	=> \$Opt_Name_Prefix,
+	  "v|verbose"		=> \$Opt_Verbose,
+	  "<>"			=> \&parameter,
+    )) {
+    die "%Error: Bad usage, try 'bisonpre --help'\n";
+}
+
+$Opt_Input or die "bisonpp: %Error: input file not specified\n";
+$Opt_Output or die "bisonpp: %Error: --o option is required\n";
+
+process();
+
+#----------------------------------------------------------------------
+
+sub usage {
+    print "Version $VERSION\n";
+    pod2usage(-verbose=>2, -exitval => 2);
+    exit (1);
+}
+
+sub parameter {
+    my $param = shift;
+    if (!defined $Opt_Input) {
+	$Opt_Input = $param;
+    } else {
+	die "bisonpp: %Error: Unknown parameter: $param\n";
+    }
+}
+
+#######################################################################
+
+sub process {
+    remove_outputs();
+
+    clean_input($Opt_Input, tmp_prefix().".y");
+
+    # Run bison
+    my $command = ($Opt_Yacc
+		   .($Opt_Debug?" -t":"")
+		   .($Opt_Definitions?" -d":"")
+		   .($Opt_Token_Table?" -k":"")
+		   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
+		   .($Opt_Verbose?" -v":"")
+		   ." -b ".tmp_prefix()
+		   ." -o ".tmp_prefix().".c"
+		   ." ".tmp_prefix().".y" );
+
+    print "  $command\n";
+    system $command;
+    my $status = $?;
+    if ($status != 0) {
+	remove_outputs();
+	my $v = bison_version_check();
+	die "bisonpp: %Error: $Opt_Yacc version $v run failed due to errors\n";
+    }
+
+    clean_output(tmp_prefix().".output",output_prefix().".output");
+    warning_check(output_prefix().".output");
+
+    clean_output(tmp_prefix().".c",	output_prefix().".c");
+    clean_output(tmp_prefix().".h",	output_prefix().".h");
+    remove_tmp();
+}
+
+sub tmp_prefix {
+    return output_prefix().".pre";
+}
+
+sub output_prefix {
+    my $o;
+    if ($Opt_Output) {
+	(my $o = $Opt_Output) =~ s!\.[^.]*$!!;
+	return $o;
+    } else {
+	return $Opt_File_Prefix.".tab";
+    }
+}
+
+sub remove_tmp {
+    unlink(tmp_prefix().".c");  # Ok if errors
+    unlink(tmp_prefix().".h");  # Ok if errors
+    unlink(tmp_prefix().".output");  # Ok if errors
+}
+
+sub remove_outputs {
+    remove_tmp();
+    unlink(output_prefix().".c");  # Ok if errors
+    unlink(output_prefix().".h");  # Ok if errors
+    # We don't remove .output file, as it's useful for debugging errors
+}
+
+sub bison_version_check {
+    my $v = `$Opt_Yacc --version`;
+    if ($v && $v =~ /([0-9]+\.[0-9]+)/) {
+	my $v = $1;
+	($v >= 1.875) or die "bisonpp: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
+	return $v;
+    } else {
+	die "bisonpp: %Error: '$Opt_Yacc' is not installed, or not working\n";
+    }
+}
+
+sub clean_output {
+    my $filename = shift;
+    my $outname = shift || $filename;
+    print "  edit $filename $outname\n";
+
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
+    my @lines = $fh->getlines;
+    $fh->close;
+
+    (my $basename = tmp_prefix().".y") =~ s!.*/!!;
+    $basename = quotemeta($basename);
+    (my $newbase = output_prefix().".y") =~ s!.*/!!;
+
+    $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
+    foreach my $line (@lines) {
+	# Fix bison 2.3 and GCC 4.2.1
+	$line =~ s!\(YY_\("!(YY_((char*)"!g;
+	# Fix filename refs
+	$line =~ s!$basename!$newbase!g;
+	$fh->write($line);
+    }
+    $fh->close;
+}
+
+sub warning_check {
+    my $filename = shift;
+
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
+    while (defined(my $line = $fh->getline)) {
+	if ($line =~ /conflicts/) {
+	    clean_output();
+	    die "%Error: $filename:$.: $line\n";
+	}
+    }
+    $fh->close;
+}
+
+#######################################################################
+
+sub clean_input {
+    my $filename = shift;
+    my $outname = shift || $filename;  # Can == filename if desired
+    print "  edit $filename $outname\n";
+
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
+    my @lines = $fh->getlines;
+    $fh->close;
+
+    # Find "rule<type>:"
+    my %types;
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	foreach my $line (@linesin) {
+	    if ($line =~ s/^(\S+)<(\S+)>:/$1:/) {
+		$types{$2}{$1} = 1;
+	    }
+	    push @lines, $line;
+	}
+    }
+
+    # Find "BISONPRE_TYPES"
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	my $needmore = 0;
+	foreach my $line (@linesin) {
+	    $l++;
+	    if ($line =~ m!//BISONPRE_TYPES!) {
+		push @lines, $line;
+		foreach my $type (sort keys %types) {
+		    my $line = "%type<$type>\t";
+		    foreach my $rule (sort keys %{$types{$type}}) {
+			$line.=" ".$rule;
+		    }
+		    $line .= "\n";
+		    push @lines, $line;
+		    $needmore++
+		}
+	    } elsif ($needmore) {
+		# Bison doesn't have a #line directive, so we need somewhere to insert into
+		$line =~ s!^\s*//.*$!!;
+		($line =~ m/^\s*$/) or die "%Error: $filename:$l: Need $needmore more blank lines to insure line numbers are constant\n";
+		$needmore--;
+	    } else {
+		push @lines, $line;
+	    }
+	}
+    }
+
+    $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
+    foreach my $line (@lines) {
+	$fh->write($line);
+    }
+    $fh->close;
+}
+
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+bisonpre - Bison wrapper with pre and post processing
+
+=head1 SYNOPSIS
+
+  bisonpre --yacc bison --debug --verbose --defines X.h -k $< -pX -o X.c
+
+
+=head1 DESCRIPTION
+
+Bisonpre is a wrapper for the Bison YACC replacement.  Input to Bison is
+preprocessed with substitution as described below under EXTENSIONS.  Output
+from Bison is checked for additional errors, and corrected to work around
+various compile warnings.
+
+=head1 EXTENSIONS
+
+=over 4
+
+=item //BISONPRE_TYPES
+
+This is expanded into %type declarations.
+
+=item rule_label<type>:
+
+This allows the label declaring a rule to also specify the type of the
+rule.  The type will be inserted where /*BISONPP_TYPES*/ is encountered.
+
+=back
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item -b file-prefix
+=item --file-prefix=file-prefix
+
+Passed to bison.
+
+Specify a prefix to use for all bison output file names.  The names are
+chosen as if the input file were named file-prefix.c.
+
+=item -d
+
+Passed to bison.
+
+Write an extra output file containing macro definitions for the token type
+names defined in the grammar and the semantic value type YYSTYPE, as well
+as a few extern variable declarations.  If the parser output file is named
+name.c then this file is named name.h.  This output file is essential if
+you wish to put the definition of yylex in a separate source file, because
+yylex needs to be able to refer to token type codes and the variable
+yylval.
+
+=item --help
+
+Displays this message and program version and exits.
+
+=item -k
+=item --token-table
+
+Passed to bison.
+
+This switch causes the name.tab.c output to include a list of token names
+in order by their token numbers; this is defined in the array yytname.
+Also generated are #defines for YYNTOKENS, YYNNTS, YYNRULES, and YYNSTATES.
+
+=item -p prefix
+=item --name-prefix=prefix
+
+Passed to bison.
+
+Rename the external symbols used in the parser so that they start with
+prefix instead of yy.  The precise list of symbols renamed is yyparse,
+yylex, yyerror, yylval, yychar, and yydebug.  For example, if you use -p c,
+the names become cparse, clex, and so on.
+
+==item -t
+==item --debug
+
+Passed to bison.
+
+In the parser file, define the macro YYDEBUG to 1 if it is not already
+defined, so that the debugging facilities are compiled.
+
+==item -v
+==item --verbose
+
+Passed to bison.
+
+Write an extra output file containing verbose descriptions of the parser
+states and what is done for each type of look-ahead token in that state.
+This file also describes all the conflicts, both those resolved by operator
+precedence and the unresolved ones.  The file's name is made by removing
+.tab.c or .c from the parser output file name, and adding .output instead.
+Therefore, if the input file is foo.y, then the parser file is called
+foo.tab.c by default.  As a consequence, the verbose output file is called
+foo.output.
+
+=item --version
+
+Print the version number and exit.
+
+=item --yacc
+
+Specify the name of the bison executable, defaults to "bison."
+
+=back
+
+=head1 DISTRIBUTION
+
+This is part of the L<http://www.veripool.org/> free Verilog EDA software
+tool suite.  The latest version is available from CPAN and from
+L<http://www.veripool.org/>.
+
+Copyright 2008-2008 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License or the Perl Artistic License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<bison>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./bisonpre "
+### End:

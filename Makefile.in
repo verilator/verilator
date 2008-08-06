@@ -110,7 +110,7 @@ DISTFILES_INC = $(INFOS) .gitignore COPYING *.in *.ac \
 	include/*.in \
 	include/.*ignore \
 	.*attributes */.*attributes  */*/.*attributes \
-	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/*fix \
+	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/bisonpre src/*fix \
 	src/*.pl \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/vlint \
