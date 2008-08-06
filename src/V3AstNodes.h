@@ -3143,6 +3143,7 @@ public:
     virtual string name()	const { return m_name; }
     virtual bool broken() const { return ( (m_scopep && !m_scopep->brokeExists())); }
     virtual bool maybePointedTo() const { return true; }
+    virtual void dump(ostream& str=cout);
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return ((funcType()==samep->castCFunc()->funcType())
 						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())

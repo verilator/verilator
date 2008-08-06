@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add by-design and by-module subtotals to verilator_profcfunc.
 
+***  Fix extra evaluation of pure combo blocks in SystemC output.
+
 **** Add IMPERFECTSCH warning, disabled by default.
 
 * Verilator 3.670 2008/07/23

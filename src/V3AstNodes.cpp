@@ -417,3 +417,7 @@ void AstCCall::dump(ostream& str) {
 	funcp()->dump(str);
     }
 }
+void AstCFunc::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (slow()) str<<" [SLOW]";
+}

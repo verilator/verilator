@@ -3,6 +3,9 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
+// Also check that SystemC is ordering properly
+// verilator lint_on IMPERFECTSCH
+
 module t (/*AUTOARG*/
    // Inputs
    clk

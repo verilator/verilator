@@ -256,7 +256,7 @@ private:
     AstSenTree*		m_deleteDomainp;// Delete this from tree
     AstSenTree*		m_settleDomainp;// Initial activation tree
     OrderInputsVertex*	m_inputsVxp;	// Top level vertex all inputs point from
-    OrderSettleVertex*	m_settleVxp;	// Top level vertex all inputs point from
+    OrderSettleVertex*	m_settleVxp;	// Top level vertex all settlement vertexes point from
     OrderLogicVertex*	m_logicVxp;	// Current statement being tracked, NULL=ignored
     AstTopScope*	m_topScopep;	// Current top scope being processed
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
@@ -341,6 +341,8 @@ private:
     OrderVarVertex* processInsLoopNewVar(OrderVarVertex* oldVertexp, bool& createdr);
     void processBrokeLoop();
     void processCircular();
+    void processInputs();
+    void processInputsIterate(OrderEitherVertex* vertexp);
     void processSensitive();
     void processDomains();
     void processDomainsIterate(OrderEitherVertex* vertexp);
@@ -928,6 +930,39 @@ void OrderVisitor::processBrokeLoop() {
 }
 
 //######################################################################
+// Clock propagation
+
+void OrderVisitor::processInputs() {
+    m_graph.userClearVertices();  // Vertex::user()   // true if added as begin/end
+    processInputsIterate(m_inputsVxp);
+}
+
+void OrderVisitor::processInputsIterate(OrderEitherVertex* vertexp) {
+    // Propagate PrimaryIn through simple assignments
+    if (vertexp->user()) return;  // Already processed
+    //UINFO(9," InIt "<<vertexp<<endl);
+    vertexp->user(true);
+    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(vertexp)) {
+	vvertexp->isFromInput(true);
+    }
+    for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+	OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
+	if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
+	    processInputsIterate(vvertexp);
+	}
+	if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
+	    if (AstNodeAssign* nodep = vvertexp->nodep()->castNodeAssign()) {
+		if (nodep->lhsp()->castVarRef()
+		    && nodep->rhsp()->castVarRef()) {
+		    UINFO(9,"   Input reassignment: "<<vvertexp<<endl);
+		    processInputsIterate(vvertexp);
+		}
+	    }
+	}
+    }
+}
+
+//######################################################################
 // Circular detection
 
 #ifndef NEW_ORDERING
@@ -936,7 +971,7 @@ void OrderVisitor::processCircular() {
     // The change detect code will use this to force changedets
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
-	    if (vvertexp->isClock() && !vvertexp->varScp()->varp()->isPrimaryIn()) {
+	    if (vvertexp->isClock() && !vvertexp->isFromInput()) {
 		// If a clock is generated internally, we need to do another loop
 		// through the entire evaluation.  This fixes races; see t_clk_dpulse test.
 		UINFO(5,"Circular Clock "<<vvertexp<<endl);
@@ -947,6 +982,7 @@ void OrderVisitor::processCircular() {
 		if (edgep->weight()==0) { // was cut
 		    OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
 		    if (!oedgep) vvertexp->varScp()->v3fatalSrc("Cuttable edge not of proper type");
+		    UINFO(6,"      CutCircularO: "<<vvertexp->name()<<endl);
 		    nodeMarkCircular(vvertexp, oedgep);
 		}
 	    }
@@ -954,6 +990,7 @@ void OrderVisitor::processCircular() {
 		if (edgep->weight()==0) { // was cut
 		    OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
 		    if (!oedgep) vvertexp->varScp()->v3fatalSrc("Cuttable edge not of proper type");
+		    UINFO(6,"      CutCircularI: "<<vvertexp->name()<<endl);
 		    nodeMarkCircular(vvertexp, oedgep);
 		}
 	    }
@@ -1541,6 +1578,9 @@ void OrderVisitor::process() {
     // Then, sort vertices and edges by that ordering
     m_graph.order();
     m_graph.dumpDotFilePrefixed("orderg_order");
+
+    UINFO(2,"  Process Clocks...\n");
+    processInputs();  // must be before processCircular
 
 #ifndef NEW_ORDERING
     UINFO(2,"  Process Circulars...\n");
