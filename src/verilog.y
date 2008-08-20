@@ -30,7 +30,7 @@
 #include "V3Global.h"
 
 #define YYERROR_VERBOSE 1
-#define YYMAXDEPTH 1000
+#define YYMAXDEPTH 10000
 
 // Pick up new lexer
 #define yylex V3Read::yylex

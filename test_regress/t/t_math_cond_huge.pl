@@ -7,13 +7,7 @@ if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
 # General Public License or the Perl Artistic License.
 
 compile (
-	 verilator_flags2 => ["--stats --profile-cfuncs"],
 	 );
-
-if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Tables created\s+10/i);
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Combined CFuncs\s+10/i);
-}
 
 execute (
 	 check_finished=>1,
