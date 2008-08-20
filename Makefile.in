@@ -246,7 +246,6 @@ installman:
 installdata:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples
 	cp -r include $(DESTDIR)$(pkgdatadir)
-	cp -r src     $(DESTDIR)$(pkgdatadir)
 	cp -r test_c  $(DESTDIR)$(pkgdatadir)/examples
 	cp -r test_sc $(DESTDIR)$(pkgdatadir)/examples
 	cp -r test_sp $(DESTDIR)$(pkgdatadir)/examples
