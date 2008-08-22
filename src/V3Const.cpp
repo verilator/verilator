@@ -517,7 +517,7 @@ private:
 	return true;
     }
 
-    bool varNotReferenced(AstNode* nodep, AstVar* varp, bool level=0) {
+    bool varNotReferenced(AstNode* nodep, AstVar* varp, int level=0) {
 	// Return true if varp never referenced under node.
 	// Return false if referenced, or tree too deep to be worth it
 	if (!nodep) return true;
