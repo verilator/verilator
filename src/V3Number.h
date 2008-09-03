@@ -135,11 +135,12 @@ public:
     void width(int width, bool sized=true);
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
-    uint32_t asInt() const;
-    vlsint32_t asSInt() const;
-    vluint64_t asQuad() const;
-    vlsint64_t asSQuad() const;
-    uint32_t asHash() const;
+    uint32_t asInt() const { return toUInt(); }  // Deprecated, use toUInt/toSInt
+    uint32_t toUInt() const;
+    vlsint32_t toSInt() const;
+    vluint64_t toUQuad() const;
+    vlsint64_t toSQuad() const;
+    uint32_t toHash() const;
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;	// Highest bit set plus one, IE for 16 return 5, for 0 return 0.

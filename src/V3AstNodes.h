@@ -51,11 +51,11 @@ public:
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
     uint32_t asInt()  const { return num().asInt(); }
-    vluint64_t asQuad() const { return num().asQuad(); }
+    vluint64_t toUQuad() const { return num().toUQuad(); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
-    virtual V3Hash sameHash() const { return V3Hash(num().asHash()); }
+    virtual V3Hash sameHash() const { return V3Hash(num().toHash()); }
     virtual bool same(AstNode* samep) const {
 	return num().isCaseEq(samep->castConst()->num()); }
     virtual int instrCount() const { return widthInstrs(); }

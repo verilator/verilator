@@ -444,9 +444,9 @@ string V3Number::displayed(const string& vformat) const {
 	    return "ERR";
 	}
 	if (issigned) {
-	    str = cvtToStr(asSQuad());
+	    str = cvtToStr(toSQuad());
 	} else {
-	    str = cvtToStr(asQuad());
+	    str = cvtToStr(toUQuad());
 	}
 	int intfmtsize = atoi(fmtsize.c_str());
 	while ((int)(str.length()) < intfmtsize) str = " "+str;
@@ -461,34 +461,34 @@ string V3Number::displayed(const string& vformat) const {
 //======================================================================
 // ACCESSORS - as numbers
 
-uint32_t V3Number::asInt() const {
-    UASSERT(!isFourState(),"asInt with 4-state "<<*this);
+uint32_t V3Number::toUInt() const {
+    UASSERT(!isFourState(),"toUInt with 4-state "<<*this);
     UASSERT((width()<33 || (width()<65 && m_value[1]==0)), "Value too wide "<<*this);
     return m_value[0];
 }
 
-vlsint32_t V3Number::asSInt() const {
-    uint32_t v = asInt();
+vlsint32_t V3Number::toSInt() const {
+    uint32_t v = toUInt();
     uint32_t signExtend = (-(v & (1UL<<(width()-1))));
     uint32_t extended = v | signExtend;
     return (vlsint32_t)(extended);
 }
 
-vluint64_t V3Number::asQuad() const {
-    UASSERT(!isFourState(),"asQuad with 4-state "<<*this);
+vluint64_t V3Number::toUQuad() const {
+    UASSERT(!isFourState(),"toUQuad with 4-state "<<*this);
     UASSERT(width()<65, "Value too wide "<<*this);
-    if (width()<=32) return ((vluint64_t)(asInt()));
+    if (width()<=32) return ((vluint64_t)(toUInt()));
     return ((vluint64_t)m_value[1]<<VL_ULL(32)) | ((vluint64_t)m_value[0]);
 }
 
-vlsint64_t V3Number::asSQuad() const {
-    vluint64_t v = asQuad();
+vlsint64_t V3Number::toSQuad() const {
+    vluint64_t v = toUQuad();
     vluint64_t signExtend = (-(v & (VL_ULL(1)<<(width()-1))));
     vluint64_t extended = v | signExtend;
     return (vlsint64_t)(extended);
 }
 
-uint32_t V3Number::asHash() const {
+uint32_t V3Number::toHash() const {
     return m_value[0];
 }
 
@@ -751,7 +751,7 @@ V3Number& V3Number::opRepl (const V3Number& lhs, const V3Number& rhs) {	// rhs i
     // Hopefully the using routine has a error check too.
     // See also error in V3Width
     if (!lhs.sized()) m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in replications.");
-    return opRepl(lhs, rhs.asInt());
+    return opRepl(lhs, rhs.toUInt());
 }
 
 V3Number& V3Number::opRepl (const V3Number& lhs, uint32_t rhsval) {	// rhs is # of times to replicate
@@ -937,7 +937,7 @@ V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
-    uint32_t rhsval = rhs.asInt();
+    uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
 	setBit(bit,lhs.bitIs(bit + rhsval));
     }
@@ -950,7 +950,7 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
     // We presume it is signed; as that's V3Signed's job to convert to opShiftR
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
-    uint32_t rhsval = rhs.asInt();
+    uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
 	setBit(bit,lhs.bitIsExtend(bit + rhsval));
     }
@@ -960,7 +960,7 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opShiftL (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
-    uint32_t rhsval = rhs.asInt();
+    uint32_t rhsval = rhs.toUInt();
     setZero();
     for (int bit=0; bit<this->width(); bit++) {
 	if (bit >= (int)rhsval) {
@@ -1009,7 +1009,7 @@ V3Number& V3Number::opMul (const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     setZero();
     if (width() <= 64) {
-	setQuad(lhs.asQuad() * rhs.asQuad());
+	setQuad(lhs.toUQuad() * rhs.toUQuad());
 	opCleanThis();   // Mult produces extra bits in result
     } else {
 	for (int lword=0; lword<lhs.words(); lword++) {
@@ -1046,7 +1046,7 @@ V3Number& V3Number::opDiv (const V3Number& lhs, const V3Number& rhs) {
     if (rhs.isEqZero()) return setAllBitsX();
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
-    setQuad(lhs.asQuad() / rhs.asQuad());
+    setQuad(lhs.toUQuad() / rhs.toUQuad());
     return *this;
 }
 V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
@@ -1070,7 +1070,7 @@ V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
     if (rhs.isEqZero()) return setAllBitsX();
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
-    setQuad(lhs.asQuad() % rhs.asQuad());
+    setQuad(lhs.toUQuad() % rhs.toUQuad());
     return *this;
 }
 V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
@@ -1151,7 +1151,7 @@ void V3Number::opCleanThis() {
 
 V3Number& V3Number::opRange (const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {
     if (lsb.isFourState() || msb.isFourState()) return setAllBitsX();
-    return opRange(lhs, msb.asInt(), lsb.asInt());
+    return opRange(lhs, msb.toUInt(), lsb.toUInt());
 }
 
 V3Number& V3Number::opRange (const V3Number& lhs, uint32_t msbval, uint32_t lsbval) {

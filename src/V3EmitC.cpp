@@ -484,7 +484,7 @@ public:
 	    }
 	    ofp()->printf(",0x%08x)", nodep->num().dataWord(0));
 	} else if (nodep->isQuad()) {
-	    vluint64_t num = nodep->asQuad();
+	    vluint64_t num = nodep->toUQuad();
 	    if (num<10) ofp()->printf("VL_ULL(%lld)", (long long)num);
 	    else ofp()->printf("VL_ULL(0x%llx)", (long long)num);
 	} else {

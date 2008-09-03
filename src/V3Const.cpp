@@ -143,7 +143,7 @@ private:
     bool operandIsTwo(AstNode* nodep) {
 	return (nodep->castConst()
 		&& nodep->width() <= VL_QUADSIZE
-		&& nodep->castConst()->asQuad()==2);
+		&& nodep->castConst()->toUQuad()==2);
     }
     bool operandIsTwostate(AstNode* nodep) {
 	return (nodep->castConst()

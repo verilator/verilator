@@ -161,7 +161,7 @@ private:
 	vlsint32_t valInit = constInitp->num().asInt();  // Extract as unsigned, then make signed
 	vlsint32_t valStop = constStopp->num().asInt();  // Extract as unsigned, then make signed
 	if (lte) valStop++;  if (gte) valStop--;
-	vlsint32_t valInc  = constIncp->num().asSInt();
+	vlsint32_t valInc  = constIncp->num().toSInt();
 	if (subtract) valInc = -valInc;
 	UINFO(8,"     In Numbers: for (v="<<valInit<<"; v<"<<valStop<<"; v=v+"<<valInc<<")\n");
 	//
