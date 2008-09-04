@@ -46,6 +46,7 @@ public:
 	of.putsHeader();
 	of.puts("\n");
 
+	of.puts("VM_COVERAGE = "); of.puts(v3Global.opt.coverage()?"1":"0"); of.puts("\n");
 	of.puts("VM_TRACE = "); of.puts(v3Global.opt.trace()?"1":"0"); of.puts("\n");
 	of.puts("\n");
 

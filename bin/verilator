@@ -296,7 +296,7 @@ functions to avoid error C1061.
 
 =item --coverage
 
-Enables all forms of coverage, alias for --coverage-line, --coverage-user
+Enables all forms of coverage, alias for --coverage-line, --coverage-user.
 
 =item --coverage-line
 
@@ -308,10 +308,6 @@ Coverage.  At each such branch a unique counter is incremented.  At the end
 of a test, the counters along with the filename and line number
 corresponding to each counter are written into logs/coverage.pl.
 
-After running multiple tests, the vcoverage utility (from the SystemPerl
-package) is executed.  Vcoverage reads the logs/coverage.pl file(s), and
-creates an annotated source code listing showing code coverage details.
-
 Verilator automatically disables coverage of branches that have a $stop in
 them, as it is assumed $stop branches contain an error check that should
 not occur.  A /*verilator coverage_block_off*/ comment will perform a
@@ -320,10 +316,6 @@ similar function on any code in that block or below.
 Note Verilator may over-count combinatorial (non-clocked) blocks when those
 blocks receive signals which have had the UNOPTFLAT warning disabled; for
 most accurate results do not disable this warning when using coverage.
-
-For an example, after running 'make test' in the Verilator distribution,
-see the test_sp/logs/coverage_source directory.  Grep for lines starting
-with '%' to see what lines Verilator believes need more coverage.
 
 =item --coverage-user
 
@@ -2102,6 +2094,24 @@ test_sp/sc_main.cpp file of the distribution.
 Verilator makes standard VCD (Value Change Dump) files.  They are viewable
 with the public domain Dinotrace or GtkWave programs, or any of the many
 commercial offerings.
+
+=item How do I do coverage analysis?
+
+Verilator supports both block (line) coverage and user inserted functional
+coverage.  First, run verilator with the --coverage option.  If you're
+using your own makefile, compile the model with the GCC flag
+-DSP_COVERAGE_ENABLE (if using Verilator's, it will do this for you.)
+
+Run your tests in different directories.  Each test will create a
+logs/coverage.pl file.
+
+After running all of your tests, the vcoverage utility (from the SystemPerl
+package) is executed.  Vcoverage reads the logs/coverage.pl file(s), and
+creates an annotated source code listing showing code coverage details.
+
+For an example, after running 'make test' in the Verilator distribution,
+see the test_sp/logs/coverage_source directory.  Grep for lines starting
+with '%' to see what lines Verilator believes need more coverage.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)
 

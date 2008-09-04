@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add IMPERFECTSCH warning, disabled by default.
 
+**** Support coverage under SystemPerl 1.285 and newer.
+
 **** Fix stack overflow on large ? : trees. [John Sanguinetti]
 
 * Verilator 3.670 2008/07/23
