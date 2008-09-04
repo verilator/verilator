@@ -688,7 +688,7 @@ private:
 		UINFO(8,"    REPLICATE "<<nodep<<endl);
 		AstConst* constp = nodep->rhsp()->castConst();
 		if (!constp) nodep->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
-		uint32_t times = constp->asInt();
+		uint32_t times = constp->toUInt();
 		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep);
 		newp = lhsp->cloneTree(true);
 		for (unsigned repnum=1; repnum<times; repnum++) {
@@ -713,7 +713,7 @@ private:
 	int lhswidth = lhsp->widthMin();
 	AstConst* constp = rhsp->rhsp()->castConst();
 	if (!constp) rhsp->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
-	uint32_t times = constp->asInt();
+	uint32_t times = constp->toUInt();
 	for (int w=0; w<rhsp->widthWords(); w++) {
 	    AstNode* newp;
 	    if (lhswidth==1) {

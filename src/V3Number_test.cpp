@@ -82,7 +82,7 @@ void test(string lhss, string op, string rhss, string exps) {
 
     V3Number ok (new FileLine("ck",__LINE__), 1);
     ok.opCaseEq(expnum,gotnum);
-    if (ok.asInt()!=1) {
+    if (ok.toUInt()!=1) {
 	v3fatalSrc("%Error:Test FAILED\n");
     }
 }

@@ -158,8 +158,8 @@ private:
 	    || constStopp->width()>32 || constStopp->num().isFourState()
 	    || constIncp->width()>32  || constIncp->num().isFourState())
 	    return cantUnroll(nodep, "init/final/increment too large or four state");
-	vlsint32_t valInit = constInitp->num().asInt();  // Extract as unsigned, then make signed
-	vlsint32_t valStop = constStopp->num().asInt();  // Extract as unsigned, then make signed
+	vlsint32_t valInit = constInitp->num().toUInt();  // Extract as unsigned, then make signed
+	vlsint32_t valStop = constStopp->num().toUInt();  // Extract as unsigned, then make signed
 	if (lte) valStop++;  if (gte) valStop--;
 	vlsint32_t valInc  = constIncp->num().toSInt();
 	if (subtract) valInc = -valInc;

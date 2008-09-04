@@ -50,7 +50,8 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
-    uint32_t asInt()  const { return num().asInt(); }
+    uint32_t asInt()  const { return num().asInt(); } // Old, should be removed
+    uint32_t toUInt()  const { return num().toUInt(); }
     vluint64_t toUQuad() const { return num().toUQuad(); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -222,7 +223,7 @@ struct AstSel : public AstNodeTriop {
     AstNode* lsbp()		const { return op2p()->castNode(); }	// op2 = Msb selection expression
     AstNode* widthp()		const { return op3p()->castNode(); }	// op3 = Width
     uint32_t	lsbConst()   const { return lsbp()->castConst()->asInt(); }
-    uint32_t	widthConst() const { return widthp()->castConst()->asInt(); }
+    uint32_t	widthConst() const { return widthp()->castConst()->toUInt(); }
     uint32_t	msbConst()   const { return lsbConst()+widthConst()-1; }
 };
 

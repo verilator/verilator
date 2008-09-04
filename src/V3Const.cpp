@@ -180,7 +180,7 @@ private:
 	return (nodep->rhsp()->castConst()
 		&& nodep->fromp()->castNodeVarRef()
 		&& !nodep->fromp()->castNodeVarRef()->lvalue()
-		&& ((int)(nodep->rhsp()->castConst()->asInt())
+		&& ((int)(nodep->rhsp()->castConst()->toUInt())
 		    >= nodep->fromp()->castNodeVarRef()->varp()->widthWords()));
     }
     bool operandSelFull(AstSel* nodep) {
@@ -494,7 +494,7 @@ private:
 	    &&(con2p->asInt() != con1p->asInt() + sel1p->width())) return false;
 	bool lsbFirstAssign = (con1p->asInt() < con2p->asInt());
 	// If the user already has nice 32-bit divisions, keep them to aid later subdivision
-	//if (VL_BITBIT_I(con1p->asInt()) == 0) return false;
+	//if (VL_BITBIT_I(con1p->toUInt()) == 0) return false;
 	UINFO(4,"replaceAssignMultiSel "<<nodep<<endl);
 	UINFO(4,"                   && "<<nextp<<endl);
 	//nodep->dumpTree(cout, "comb1: ");

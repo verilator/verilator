@@ -213,7 +213,7 @@ private:
 	    V3Const::constifyParam(nodep->rhsp());
 	    AstConst* constp = nodep->rhsp()->castConst();
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
-	    uint32_t times = constp->asInt();
+	    uint32_t times = constp->toUInt();
 	    if (times==0) { nodep->v3error("Replication value is 0."); times=1; }
 	    nodep->width((nodep->lhsp()->width() * times),
 			 (nodep->lhsp()->widthMin() * times));

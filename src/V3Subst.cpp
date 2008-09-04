@@ -276,7 +276,7 @@ private:
 	    if (AstVarRef* varrefp = wordp->lhsp()->castVarRef()) {
 		if (wordp->rhsp()->castConst()
 		    && varrefp->varp()->isStatementTemp()) {
-		    int word = wordp->rhsp()->castConst()->asInt();
+		    int word = wordp->rhsp()->castConst()->toUInt();
 		    SubstVarEntry* entryp = getEntryp(varrefp);
 		    hit = true;
 		    if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -313,7 +313,7 @@ private:
 	    && constp) {
 	    // Nicely formed lvalues handled in NodeAssign
 	    // Other lvalues handled as unknown mess in AstVarRef
-	    int word = constp->asInt();
+	    int word = constp->toUInt();
 	    UINFO(8," USEword"<<word<<" "<<varrefp<<endl);
 	    SubstVarEntry* entryp = getEntryp(varrefp);
 	    if (AstNode* substp = entryp->substWord (nodep, word)) {

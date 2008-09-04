@@ -164,10 +164,10 @@ private:
 		} else {
 		    V3Number nummask (itemp->fileline(), iconstp->width());
 		    nummask.opBitsNonX(iconstp->num());
-		    uint32_t mask = nummask.asInt();
+		    uint32_t mask = nummask.toUInt();
 		    V3Number numval  (itemp->fileline(), iconstp->width());
 		    numval.opBitsOne(iconstp->num());
-		    uint32_t val  = numval.asInt();
+		    uint32_t val  = numval.toUInt();
 		    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
 			if ((i & mask) == val) {
 			    if (!m_valueItem[i]) {

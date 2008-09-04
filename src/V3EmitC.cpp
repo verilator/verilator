@@ -440,7 +440,7 @@ public:
     }
     virtual void visit(AstReplicate* nodep, AstNUser*) {
 	if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-	    if (((int)nodep->rhsp()->castConst()->asInt()
+	    if (((int)nodep->rhsp()->castConst()->toUInt()
 		     * nodep->lhsp()->widthMin()) != nodep->widthMin())
 		nodep->v3fatalSrc("Replicate non-constant or width miscomputed");
 	    puts("VL_REPLICATE_");
@@ -488,7 +488,7 @@ public:
 	    if (num<10) ofp()->printf("VL_ULL(%lld)", (long long)num);
 	    else ofp()->printf("VL_ULL(0x%llx)", (long long)num);
 	} else {
-	    uint32_t num = nodep->asInt();
+	    uint32_t num = nodep->toUInt();
 	    if (num<10) puts(cvtToStr(num));
 	    else ofp()->printf("0x%x", num);
 	    //Unneeded-Causes %lx format warnings:
