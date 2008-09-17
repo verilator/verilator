@@ -30,6 +30,7 @@
 #include "V3Global.h"
 
 #define YYERROR_VERBOSE 1
+#define YYINITDEPTH 10000	// Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
 
 // Pick up new lexer
