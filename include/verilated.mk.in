@@ -28,6 +28,7 @@ VK_CPPFLAGS_ALWAYS += \
 		-I$(VERILATOR_ROOT)/include \
 		-DVL_PRINTF=printf \
 		-DVM_TRACE=$(VM_TRACE) \
+		-DVM_COVERAGE=$(VM_COVERAGE) \
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall \
