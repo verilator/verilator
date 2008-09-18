@@ -17,6 +17,8 @@ default: test
 VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 
+VERILATOR_NCVERILOG ?= ncverilog
+
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk
 
@@ -93,7 +95,7 @@ nonc:
 nc:	nc_passed.log
 
 nc_passed.log:	vgen.v sim_main.v
-	ncverilog +licqueue +define+ncverilog=1 -q vgen.v sim_main.v
+	$(VERILATOR_NCVERILOG) +licqueue +define+ncverilog=1 -q vgen.v sim_main.v
 	-rm -f nc_passed.log
 	grep -q Finished ncverilog.log && grep Finished ncverilog.log > nc_passed.log
 

@@ -43,9 +43,6 @@ module t (/*AUTOARG*/
    // Aggregate outputs into a single result vector
    wire [63:0] result = {32'h0, out};
 
-   // What checksum will we end up with
-`define EXPECTED_SUM 64'h4afe43fb79d7b71e
-
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -66,6 +63,8 @@ module t (/*AUTOARG*/
       else if (cyc==99) begin
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
+	 // What checksum will we end up with (above print should match)
+`define EXPECTED_SUM 64'h4afe43fb79d7b71e
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
