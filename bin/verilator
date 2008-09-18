@@ -202,13 +202,13 @@ descriptions in the next sections for more information.
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
     --mod-prefix <topname>      Name to prepend to lower classes
+    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
     -O0                         Disable optimizations
     -O3                         High performance optimizations
     -O<optimization-letter>     Selectable optimizations
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
-    --pins64                    Use uint64_t's for 33-64 bit sigs
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
@@ -413,6 +413,12 @@ be placed in this directory.  If not specified, "obj_dir" is used.
 Specifies the name to prepend to all lower level classes.  Defaults to
 the same as --prefix.
 
+=item --no-pins64
+
+Specifies SystemC outputs of 33-64 bits wide should use sc_bv's instead of
+uint64_t's.  Uint64's are faster, but sc_bvs were the default until
+Verilator 3.671.
+
 =item --no-skip-identical
 
 Rarely needed.  Disables skipping execution of Verilator if all source
@@ -453,11 +459,6 @@ functions.  When a generated function exceeds the specified number of
 operations, a new function will be created.  With --output-split, this will
 enable GCC to compile faster, at a small loss in performance that increases
 with smaller statement values.
-
-=item --pins64
-
-Specifies SystemC outputs of 33-64 bits wide should use uint64_t instead of
-the backward-compatible default of sc_bv's.
 
 =item --prefix I<topname>
 
@@ -977,7 +978,7 @@ following type conversions: Pins of a single bit become bool, unless they
 are marked with `systemc_clock, in which case they become sc_clock's (for
 SystemC 1.2, not needed in SystemC 2.0).  Pins 2-32 bits wide become
 uint32_t's.  Pins 33-64 bits wide become sc_bv's or uint64_t's depending on
-the -pins64 switch.  Wider pins become sc_bv's.
+the --no-pins64 switch.  Wider pins become sc_bv's.
 
 Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an

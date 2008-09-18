@@ -833,7 +833,7 @@ V3Options::V3Options() {
     m_makeDepend = true;
     m_makePhony = false;
     m_outFormatOk = false;
-    m_pins64 = false;
+    m_pins64 = true;
     m_profileCFuncs = false;
     m_preprocOnly = false;
     m_psl = false;

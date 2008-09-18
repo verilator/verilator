@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.6***
 
+**   SystemC uint64_t pins are now the default instead of sc_bv<64>.
+     Use --no-pins64 for backward compatibility.
+
 ***  Support SystemVerilog "cover property" statements.
 
 ***  When warnings are disabled on signals that are flattened out, disable
