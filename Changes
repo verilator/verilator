@@ -20,6 +20,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix stack overflow on large ? : trees. [John Sanguinetti]
 
+**** Support arbitrary characters in identifiers. [Stephane Laurent]
+
 * Verilator 3.670 2008/07/23
 
 **   Add --x-assign=fast option, and make it the default.

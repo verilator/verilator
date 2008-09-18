@@ -85,12 +85,27 @@ void AstNode::init() {
 string AstNode::encodeName(const string& namein) {
     string name2 = namein;
     string out;
-    for (string::iterator pos = name2.begin(); pos != name2.end(); pos++) {
-	if (pos[0]=='_' && pos[1]=='_') {
-	    out += "__ULUL_";
-	    pos++;
-	} else {
+    const char* start = name2.c_str();
+    for (const char* pos = start; *pos; pos++) {
+	if ((pos==start) ? isalpha(pos[0])  // digits can't lead identifiers
+	    : isalnum(pos[0])) {
 	    out += pos[0];
+	} else if (pos[0]=='_') {
+	    if (pos[1]=='_') {
+		out += "_"; out += "__5F";  // hex(_) = 0x5F
+		pos++;
+	    } else {
+		out += pos[0];
+	    }
+	} else if (pos[0]=='.') {
+	    out += "__DOT__";
+	} else if (pos[0]=='[') {
+	    out += "__BRA__";
+	} else if (pos[0]==']') {
+	    out += "__KET__";
+	} else {
+	    char hex[10]; sprintf(hex,"%02X",pos[0]);
+	    out += "__"; out += hex;
 	}
     }
     return out;
@@ -116,19 +131,37 @@ string AstNode::dedotName(const string& namein) {
 }
 
 string AstNode::prettyName(const string& namein) {
-    string pretty = namein;
-    string::size_type pos;
-    while ((pos=pretty.find("__BRA__")) != string::npos) {
-	pretty.replace(pos, 7, "[");
-    }
-    while ((pos=pretty.find("__KET__")) != string::npos) {
-	pretty.replace(pos, 7, "]");
-    }
-    while ((pos=pretty.find("__PVT__")) != string::npos) {
-	pretty.replace(pos, 7, "");
-    }
-    while ((pos=pretty.find("__ULUL_")) != string::npos) {
-	pretty.replace(pos, 7, "");
+    string pretty;
+    string name2 = namein;
+    pretty = "";
+    for (const char* pos = name2.c_str(); *pos; ) {
+	if (0==strncmp(pos,"__BRA__",7)) {
+	    pretty += "[";
+	    pos += 7;
+	}
+	else if (0==strncmp(pos,"__KET__",7)) {
+	    pretty += "]";
+	    pos += 7;
+	}
+	else if (0==strncmp(pos,"__DOT__",7)) {
+	    pretty += ".";
+	    pos += 7;
+	}
+	else if (0==strncmp(pos,"__PVT__",7)) {
+	    pretty += "";
+	    pos += 7;
+	}
+	else if (pos[0]=='_' && pos[1]=='_' && isxdigit(pos[2]) && isxdigit(pos[3])) {
+	    char value = 0;
+	    value += 16*(isdigit(pos[2]) ? (pos[2]-'0') : (tolower(pos[2])-'a'+10));
+	    value +=    (isdigit(pos[3]) ? (pos[3]-'0') : (tolower(pos[3])-'a'+10));
+	    pretty += value;
+	    pos += 4;
+	}
+	else {
+	    pretty += pos[0];
+	    pos++;
+	}
     }
     return AstNode::dedotName(pretty);
 }

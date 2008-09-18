@@ -654,19 +654,8 @@ escid	\\[^ \t\f\r\n]+
 
   /* Identifiers and numbers */
 <V95,V01,V05,S05,PSL>{
-  {escid}		{  int i;
-			   for (i=0; yytext[i] != 0; i++)
-			       if (!isalnum(yytext[i]))
-				   yytext[i] = '_';
-			   if (isalpha(yytext[1])) {
-			       yylval.strp = V3Read::newString(
-				   AstNode::encodeName(
-				       string(yytext+1))); // +1 to skip the backslash
-			   } else {
-			       yylval.strp = V3Read::newString(
-				   AstNode::encodeName(
-				       yytext)); // Need _ as "6..." isn't legal ID
-			   }
+  {escid}		{  yylval.strp = V3Read::newString
+	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
 			   return yaID;
 			 }
 
