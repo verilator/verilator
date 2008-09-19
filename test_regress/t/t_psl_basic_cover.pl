@@ -16,7 +16,7 @@ execute (
 	 check_finished=>1,
 	 );
 
-file_grep ($Last_Self->{coverage_filename}, qr/t=>'psl_cover',o=>'cover',c=>2\);/);
+file_grep ($Last_Self->{coverage_filename}, qr/,o=>'cover'.*,c=>2\);/);
 file_grep ($Last_Self->{coverage_filename}, qr/DefaultClock.*,c=>1\);/);
 file_grep ($Last_Self->{coverage_filename}, qr/ToggleLogIf.*,c=>9\);/);
 
