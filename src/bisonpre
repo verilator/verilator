@@ -30,7 +30,7 @@ Getopt::Long::config ("no_auto_abbrev");
 if (! GetOptions (
 	  # Local options
 	  "help"		=> \&usage,
-	  "version"		=> sub { print "Version $VERSION\n"; },
+	  "version"		=> sub { print "Version $VERSION\n"; exit(0); },
 	  "yacc=s"		=> \$Opt_Yacc,
 	  # Passed to Bison
 	  "t|debug"		=> sub { $Opt_Debug = 1; },

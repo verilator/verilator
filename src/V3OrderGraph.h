@@ -18,7 +18,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-//  OrderGraph Class Hiearchy:
+//  OrderGraph Class Hierarchy:
 //
 //	V3GraphVertex
 //	  OrderMoveVertex

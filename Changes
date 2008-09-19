@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.6***
+* Verilator 3.671 2008/09/19
 
 **   SystemC uint64_t pins are now the default instead of sc_bv<64>.
      Use --no-pins64 for backward compatibility.
