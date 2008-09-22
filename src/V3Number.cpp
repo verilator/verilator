@@ -45,6 +45,7 @@ void V3Number::init (FileLine* fileline, int swidth) {
     m_fileline = fileline;
     m_signed = false;
     m_autoExtend = false;
+    m_fromString = false;
     width(swidth);
     for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
 }
@@ -52,6 +53,7 @@ void V3Number::init (FileLine* fileline, int swidth) {
 V3Number::V3Number(VerilogString, FileLine* fileline, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
     init(fileline, str.length()*8);
+    m_fromString = true;
     for (unsigned pos=0; pos<str.length(); ++pos) {
 	int topos = str.length()-1-pos;
 	for (int bit=0; bit<8; ++bit) {

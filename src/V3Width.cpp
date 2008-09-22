@@ -911,6 +911,13 @@ void WidthVisitor::widthCheck (AstNode* nodep, const char* side,
     if (expWidthMin==0) expWidthMin = expWidth;
     bool bad = widthBad(underp,expWidth,expWidthMin);
     if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
+    if (underp->castConst() && underp->castConst()->num().isFromString()
+	&& expWidth > underp->width()
+	&& (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
+	// reg [31:0] == "foo" we'll consider probably fine.
+	// Maybe this should be a special warning?  Not for now.
+	ignoreWarn = true;
+    }
     if (bad && !ignoreWarn) {
 	if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 	nodep->v3warn(WIDTH,"Operator "<<nodep->typeName()

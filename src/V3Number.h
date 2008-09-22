@@ -34,6 +34,7 @@ class V3Number {
     int		m_width;	// Width as specified/calculated.
     bool	m_sized:1;	// True if the user specified the width, else we track it.
     bool	m_signed:1;	// True if signed value
+    bool	m_fromString:1;	// True if from string
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;
     vector<uint32_t>	m_value;	// The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
@@ -124,6 +125,7 @@ public:
     int minWidth() const;	// Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
     bool autoExtend() const { return m_autoExtend; }
+    bool isFromString() const { return m_fromString; }
     bool isSigned() const { return m_signed; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     bool isNegative() const { return bitIs1(width()-1); }
     bool isFourState() const { for (int i=0;i<words();i++) {if (m_valueX[i]) return true;} return false; }
