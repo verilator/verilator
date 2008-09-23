@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Suppress width warnings between constant strings and wider vectors.
      [Rodney Sinclair]
 
+**** Report error if port declaration is missing; bug32. [Guy-Armand Kamendje]
+
 * Verilator 3.671 2008/09/19
 
 **   SystemC uint64_t pins are now the default instead of sc_bv<64>.

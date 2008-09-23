@@ -5,7 +5,7 @@
 
 `define zednkw 200
 
-module BreadAddrDP (zfghtn, cjtmau, knquim, kqxkkr);
+module BreadAddrDP (zfghtn, cjtmau, vipmpg, knquim, kqxkkr);
 input zfghtn;
 input [4:0] cjtmau;
 input vipmpg;

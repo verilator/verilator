@@ -50,6 +50,7 @@ private:
     //   AstNodeFTask::userp()	// V3SymTable*    Local Symbol table
     //   AstBegin::userp()	// V3SymTable*    Local Symbol table
     //   AstVar::userp()	// V3SymTable*    Table used to create this variable
+    //   AstVar::user2p()	// bool		  True if port set for this variable
 
     // ENUMS
     enum IdState {		// Which loop through the tree
@@ -60,6 +61,7 @@ private:
     // STATE
     // Below state needs to be preserved between each module call.
     AstModule*	m_modp;		// Current module
+    AstNodeFTask* m_ftaskp;	// Current function/task
     IdState	m_idState;	// Id linking mode (find or resolve)
     int		m_paramNum;	// Parameter number, for position based connection
     V3SymTable* m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
@@ -106,6 +108,7 @@ private:
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	AstNode::userClearTree();
+	AstNode::user2ClearTree();
 	// Look at all modules, and store pointers to all module names
 	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
 	    V3SymTable* symp = new V3SymTable(NULL);
@@ -189,6 +192,11 @@ private:
 		}
 	    }
 	}
+	if (m_idState==ID_RESOLVE) {
+	    if (nodep->isIO() && !m_ftaskp && !nodep->user2()) {
+		nodep->v3error("Input/output/inout does not appear in port list: "<<nodep->prettyName());
+	    }
+	}
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// VarRef: Resolve its reference
@@ -236,7 +244,9 @@ private:
 		    m_curVarsp->insert(newvarp->name(), newvarp);
 		}
 	    }
+	    m_ftaskp = nodep;
 	    nodep->iterateChildren(*this);
+	    m_ftaskp = NULL;
 	}
 	m_curVarsp = upperVarsp;
 	if (m_idState==ID_FIND) {
@@ -336,6 +346,7 @@ private:
 		nodep->v3error("Pin is not a in/out/inout: "<<nodep->prettyName());
 	    } else {
 		m_curVarsp->insert("__pinNumber"+cvtToStr(nodep->pinNum()), refp);
+		refp->user2(true);
 	    }
 	    // Ports not needed any more
 	    nodep->unlinkFrBack()->deleteTree();  nodep=NULL;
@@ -422,6 +433,7 @@ public:
 	m_curVarsp = NULL;
 	m_cellVarsp = NULL;
 	m_modp = NULL;
+	m_ftaskp = NULL;
 	m_paramNum = 0;
 	m_beginNum = 0;
 	//

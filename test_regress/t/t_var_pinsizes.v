@@ -7,8 +7,10 @@
 // verilator lint_on IMPERFECTSCH
 
 module t (/*AUTOARG*/
+   // Outputs
+   o1, o8, o16, o32, o64, o65,
    // Inputs
-   clk
+   clk, i1, i8, i16, i32, i64, i65
    );
 
    input clk;
