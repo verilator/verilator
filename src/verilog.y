@@ -1486,7 +1486,7 @@ pslDirOne<nodep>:
 	;
 
 pslDecl<nodep>:
-		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); UINFO(0,"CRE "<<$$<<endl)}
+		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
 	|	yDEFAULT yPSL_CLOCK '=' '(' senitemEdge ')' ';'	{ $$ = new AstPslDefClock($3, $5); }
 	;
 
