@@ -28,6 +28,7 @@ use Pod::Usage;
 use Data::Dumper;
 use strict;
 use vars qw ($Debug %Vars $Driver $Fork);
+use POSIX qw(strftime);
 
 $::Driver = 1;
 
@@ -74,6 +75,9 @@ if (! GetOptions (
 		  )) {
     usage();
 }
+
+$opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
+
 $Fork->max_proc($opt_jobs);
 
 if (!$opt_vcs && !$opt_nc && !$opt_v3) {
@@ -81,7 +85,7 @@ if (!$opt_vcs && !$opt_nc && !$opt_v3) {
 }
 
 if ($#opt_tests<0) {
-    push @opt_tests, glob ("t/*.pl");
+    push @opt_tests, glob ("t/t_*.pl");
 }
 
 mkdir "obj_dir";
@@ -125,8 +129,8 @@ sub one_test {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
 		 my $j = ($opt_jobs>1?" -j 2":"");
-		 push @fails, "\t\tmake$j && ( cd test_regress ; "
-		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)." )\n";
+		 push @fails, "\t\tmake$j && test_regress/"
+		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
 		 $failcnt++;
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
@@ -134,14 +138,9 @@ sub one_test {
 	 )->ready();
 }
 
-print "\n";
-print "="x70,"\n";
-print "TESTS Passed $okcnt Failed $failcnt\n";
-foreach my $f (@fails) {
-    chomp $f;
-    print "$f\n";
-}
-print "TESTS Passed $okcnt Failed $failcnt\n";
+report(\@fails, undef);
+report(\@fails, "obj_dir/driver_".strftime("%Y%m%d_%H%M%S.log", localtime));
+
 exit(10) if $failcnt;
 
 #----------------------------------------------------------------------
@@ -162,6 +161,35 @@ sub parameter {
     } else {
 	die "%Error: Unknown parameter: $param\n";
     }
+}
+
+sub calc_jobs {
+    my $ok = eval "
+	use Unix::Processors;
+	return Unix::Processors->new->max_online;
+    ";
+    $ok && !$@ or die "%Error: Can't use -j: $@\n";
+    print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n";
+    return $ok + 1;
+}
+
+sub report {
+    my $fails = shift;
+    my $filename = shift;
+
+    my $fh = \*STDOUT;
+    if ($filename) {
+	$fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
+    }
+
+    $fh->print("\n");
+    $fh->print("="x70,"\n");
+    $fh->print("TESTS Passed $okcnt Failed $failcnt\n");
+    foreach my $f (@$fails) {
+	chomp $f;
+	$fh->print("$f\n");
+    }
+    $fh->print("TESTS Passed $okcnt Failed $failcnt\n");
 }
 
 #######################################################################
@@ -896,7 +924,8 @@ Displays this message and program version and exits.
 
 =item --j #
 
-Run number of parallel tests.  Requires Parallel::Forker project.
+Run number of parallel tests, or 0 to determine the count based on the
+number of cores installed.  Requires Parallel::Forker project.
 
 =item --optimize
 

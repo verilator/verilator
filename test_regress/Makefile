@@ -33,7 +33,7 @@ endif
 PRODUCTS += --v3
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)
- DRIVER_FLAGS += -j 4
+ DRIVER_FLAGS += -j 0
 endif
 
 ######################################################################

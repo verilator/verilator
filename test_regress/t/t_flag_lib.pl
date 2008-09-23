@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-if (!$::Driver) { use FindBin; exec("./driver.pl", @ARGV, $0); die; }
+if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 
 compile (
 	 v_flags2 => ['-v', 't/t_flag_libinc.v'],
