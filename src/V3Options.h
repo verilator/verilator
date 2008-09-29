@@ -266,6 +266,7 @@ class V3Options {
     static string filenameNonExt (const string& filename);	///< Return non-extensioned (no .) part of filename
     static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
     static string filenameDir (const string& filename);	///< Return directory part of filename
+    static string filenameSubstitute (const string& filename);	///< Return filename with env vars removed
     static void   unlinkRegexp(const string& dir, const string& regexp);
 
     // METHODS (environment)

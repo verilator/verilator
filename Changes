@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Suppress width warnings between constant strings and wider vectors.
      [Rodney Sinclair]
 
+**** Expand environment variables in -f input files.  [Lawrence Butcher]
+
 **** Report error if port declaration is missing; bug32. [Guy-Armand Kamendje]
 
 * Verilator 3.671 2008/09/19

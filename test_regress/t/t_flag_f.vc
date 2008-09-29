@@ -1,10 +1,2 @@
-
-+define+GOT_DEF1
-
-  // -DNON_DEF
-  /*
-   +define+NON_DEF
-   */
-
-+define+GOT_DEF2=1
-
+// Test that environment substitutions work
+-f $VERILATOR_ROOT/test_regress/t/t_flag_f__2.vc

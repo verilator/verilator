@@ -132,7 +132,7 @@ string V3Options::allArgsString() {
 
 V3LangCode::V3LangCode (const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
-    for (int codei=V3LangCode::ERROR; codei<V3LangCode::MAX; codei++) {
+    for (int codei=V3LangCode::ERROR; codei<V3LangCode::MAX; ++codei) {
 	V3LangCode code = (V3LangCode)codei;
 	if (0==strcasecmp(textp,code.ascii())) {
 	    m_e = code; return;
@@ -175,6 +175,30 @@ string V3Options::filenameNonExt (const string& filename) {
 	base.erase(pos);
     }
     return base;
+}
+
+string V3Options::filenameSubstitute (const string& filename) {
+    string out;
+    for (string::size_type pos = 0; pos < filename.length(); ++pos) {
+	if (filename[pos] == '$') {
+	    string::size_type endpos = pos+1;
+	    while ((endpos+1) < filename.length()
+		   && (isalnum(filename[endpos+1]) || filename[endpos+1]=='_'))
+		++endpos;
+	    string envvar = filename.substr(pos+1,endpos-pos);
+	    const char* envvalue = NULL;
+	    if (envvar != "") envvalue = getenv(envvar.c_str());
+	    if (envvalue) {
+		out += envvalue;
+		pos = endpos;
+	    } else {
+		out += filename[pos];  // *pos == '$'
+	    }
+	} else {
+	    out += filename[pos];
+	}
+    }
+    return out;
 }
 
 bool V3Options::fileStatDir(const string& filename) {
@@ -281,12 +305,12 @@ void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
 // Environment
 
 string V3Options::getenvStr(const char* envvar, const char* defaultValue) {
-	if (const char* envvalue = getenv(envvar)) {
-	    return envvalue;
-	} else {
-	    return defaultValue;
-	}
+    if (const char* envvalue = getenv(envvar)) {
+	return envvalue;
+    } else {
+	return defaultValue;
     }
+}
 string V3Options::getenvSYSTEMC() {
     string var = getenvStr("SYSTEMC","");
     if (var == "" && string(DEFENV_SYSTEMC) != "") {
@@ -406,7 +430,7 @@ bool V3Options::wildmatch(const char* s, const char* p) {
 
 string V3Options::downcase(const string& str) {
     string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); pos++) {
+    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
 	*pos = tolower(*pos);
     }
     return out;
@@ -430,7 +454,7 @@ string V3Options::version() {
 string V3Options::argString (int argc, char** argv) {
     // Return list of arguments as simple string
     string opts;
-    for (int i=0; i<argc; i++)  {
+    for (int i=0; i<argc; ++i)  {
 	if (i!=0) opts += " ";
 	opts += string(argv[i]);
     }
@@ -478,7 +502,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
-    for (int i=0; i<argc; i++)  {
+    for (int i=0; i<argc; ++i)  {
 	addArg(argv[i]);	// -f's really should be inserted in the middle, but this is for debug
     }
 #define shift { ++i; }
@@ -490,7 +514,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		addDefine (string (sw+strlen("+define+")));
 	    }
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
-		addIncDir (string (sw+strlen("+incdir+")));
+		addIncDir (filenameSubstitute(string (sw+strlen("+incdir+"))));
 	    }
 	    else if ( !strncmp (sw, "+libext+", 8)) {
 		string exts = string(sw+strlen("+libext+"));
@@ -512,7 +536,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    char *sw = argv[i];
 	    bool flag = true;
 	    // Allow gnu -- switches
-	    if (sw[0]=='-' && sw[1]=='-') sw++;
+	    if (sw[0]=='-' && sw[1]=='-') ++sw;
 	    // Switch tests
 	    if ( !strcmp (sw, "-debug") ) {
 		setDebugMode(3);
@@ -560,7 +584,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "-v") ) {
 		shift;
-		V3Options::addLibraryFile(argv[i]);
+		V3Options::addLibraryFile(filenameSubstitute(argv[i]));
 	    }
 	    else if ( !strcmp (sw, "-version") ) {
 		cout <<version();
@@ -599,7 +623,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
-		for (char* cp=sw+strlen("-O"); *cp; cp++) {
+		for (char* cp=sw+strlen("-O"); *cp; ++cp) {
 		    flag = isupper(*cp);
 		    switch (tolower(*cp)) {
 		    case '0': optimize(0); break; // 0=all off
@@ -694,7 +718,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "-f") && (i+1)<argc ) {
 		shift;
-		parseOptsFile(fl, argv[i]);
+		parseOptsFile(fl, filenameSubstitute(argv[i]));
 	    }
 	    else if ( !strcmp (sw, "-gdb") && (i+1)<argc ) {
 		shift; // Used only in perl shell
@@ -729,14 +753,14 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	} // - options
 	else {
 	    // Filename
-	    string filename = argv[i];
+	    string filename = filenameSubstitute(argv[i]);
 	    if (filename.find(".cpp") != string::npos
 		|| filename.find(".cxx") != string::npos
 		|| filename.find(".cc") != string::npos
 		|| filename.find(".sp") != string::npos) {
-		V3Options::addCppFile(argv[i]);
+		V3Options::addCppFile(filename);
 	    } else {
-		V3Options::addVFile(argv[i]);
+		V3Options::addVFile(filename);
 	    }
 	    shift;
 	}
@@ -764,17 +788,17 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 	getline(*ifp, line);
 	// Strip simple comments
 	string oline;
-	for (string::const_iterator pos = line.begin(); pos != line.end(); pos++) {
+	for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
 	    if (inCmt) {
 		if (*pos=='*' && *(pos+1)=='/') {
 		    inCmt = false;
-		    pos++;
+		    ++pos;
 		}
 	    } else if (*pos=='/' && *(pos+1)=='/') {
 		break;  // Ignore to EOL
 	    } else if (*pos=='/' && *(pos+1)=='*') {
 		inCmt = true;
-		pos++;
+		++pos;
 	    } else {
 		oline += *pos;
 	    }
@@ -797,9 +821,9 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
     vector<string> args;
     string::size_type startpos = 0;
     while (startpos < whole_file.length()) {
-	while (isspace(whole_file[startpos])) startpos++;
+	while (isspace(whole_file[startpos])) ++startpos;
 	string::size_type endpos = startpos;
-	while (endpos < whole_file.length() && !isspace(whole_file[endpos])) endpos++;
+	while (endpos < whole_file.length() && !isspace(whole_file[endpos])) ++endpos;
 	if (startpos != endpos) {
 	    string arg (whole_file, startpos, endpos-startpos);
 	    args.reserve(args.size()+1);
@@ -810,7 +834,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 
     // Convert to argv style arg list and parse them
     char* argv [args.size()+1];
-    for (unsigned i=0; i<args.size(); i++) {
+    for (unsigned i=0; i<args.size(); ++i) {
 	argv[i] = (char*)args[i].c_str();
     }
     parseOptsList(fl, args.size(), argv);
