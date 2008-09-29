@@ -974,11 +974,10 @@ Verilator will convert the top level module to a SC_MODULE.  This module
 will plug directly into a SystemC netlist.
 
 The SC_MODULE gets the same pinout as the Verilog module, with the
-following type conversions: Pins of a single bit become bool, unless they
-are marked with `systemc_clock, in which case they become sc_clock's (for
-SystemC 1.2, not needed in SystemC 2.0).  Pins 2-32 bits wide become
-uint32_t's.  Pins 33-64 bits wide become sc_bv's or uint64_t's depending on
-the --no-pins64 switch.  Wider pins become sc_bv's.
+following type conversions: Pins of a single bit become bool.  Pins 2-32
+bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
+uint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
+(Uints simulate the fastest so are used where possible.)
 
 Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an
@@ -1341,7 +1340,9 @@ using the --public switch.
 =item /*verilator sc_clock*/
 
 Used after a input declaration to indicate the signal should be declared in
-SystemC as a sc_clock instead of a bool.
+SystemC as a sc_clock instead of a bool.  This was needed in SystemC 1.1
+and 1.2 only; versions 2.0 and later do not require clock pins to be
+sc_clocks and this is no longer needed.
 
 =item /*verilator tracing_off*/
 
