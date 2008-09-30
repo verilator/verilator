@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Report error if port declaration is missing; bug32. [Guy-Armand Kamendje]
 
+**** Fix genvars causing link error when using --public.  [Chris Candler]
+
 * Verilator 3.671 2008/09/19
 
 **   SystemC uint64_t pins are now the default instead of sc_bv<64>.

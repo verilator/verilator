@@ -47,7 +47,7 @@ int AstNodeSel::bitConst() const {
 }
 
 bool AstVar::isSigPublic() const {
-    return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp()));
+    return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
 }
 
 bool AstVar::isScQuad() const {

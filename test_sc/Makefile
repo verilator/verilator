@@ -25,7 +25,6 @@ DEBUG_ON = --debug
 ######################################################################
 test_default:  precopy prep        preproc compile run
 test_debug:    precopy prep_dbg    preproc compile run
-test_nopublic: precopy prep_dbg_np preproc compile run
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --sc $(V_FLAGS) top.v
@@ -39,8 +38,6 @@ prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)
 prep_dbg:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS)
-prep_dbg_np:
-	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS) --nopublic
 
 preproc:
 	cd obj_dir ; $(MAKE) -j 1 -f ../Makefile_obj preproc

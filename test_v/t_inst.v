@@ -14,6 +14,8 @@ module t_inst(/*AUTOARG*/
    input fastclk;
    output passed;  reg passed; initial passed = 0;
 
+   genvar unused;
+
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire			o_com;			// From b of t_inst_b.v
