@@ -160,7 +160,8 @@ private:
 		m_dotText = "";
 		nodep->lhsp()->iterateAndNext(*this);
 		if (AstConst* constp = nodep->rhsp()->castConst()) {
-		    m_dotText = m_dotText+"__BRA__"+cvtToStr(constp->asInt())+"__KET__";
+		    string index = AstNode::encodeNumber(constp->toSInt());
+		    m_dotText = m_dotText+"__BRA__"+index+"__KET__";
 		} else {
 		    nodep->v3error("Unsupported: Non-constant inside []'s in the cell part of a dotted reference");
 		}

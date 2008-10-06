@@ -362,11 +362,11 @@ public:
 	    if (nodep->widthp()->isOne()) {
 		nodep->lsbp()->iterateAndNext(*this);
 	    } else {
-		puts(cvtToStr(nodep->lsbp()->castConst()->asInt()
-			      +nodep->widthp()->castConst()->asInt()
+		puts(cvtToStr(nodep->lsbp()->castConst()->toSInt()
+			      +nodep->widthp()->castConst()->toSInt()
 			      -1));
 		puts(":");
-		nodep->lsbp()->iterateAndNext(*this);
+		puts(cvtToStr(nodep->lsbp()->castConst()->toSInt()));
 	    }
 	} else {
 	    nodep->lsbp()->iterateAndNext(*this); puts("+:");

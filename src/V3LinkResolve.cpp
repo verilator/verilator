@@ -223,7 +223,7 @@ private:
 	AstNode* widthp;
 	if (msbp->castConst() && lsbp->castConst()) {
 	    // Quite common, save V3Const some effort
-	    V3Number widnum (msbp->fileline(),32,msbp->castConst()->asInt() +1-lsbp->castConst()->asInt());
+	    V3Number widnum (msbp->fileline(),32,msbp->castConst()->toSInt() +1-lsbp->castConst()->toSInt());
 	    widnum.width(32,false);  // Unsized so width from user
 	    widthp = new AstConst (msbp->fileline(), widnum);
 	    pushDeletep(msbp);

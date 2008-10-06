@@ -111,6 +111,14 @@ string AstNode::encodeName(const string& namein) {
     return out;
 }
 
+string AstNode::encodeNumber(vlsint64_t num) {
+    if (num < 0) {
+	return "__2D"+cvtToStr(-num);  // 2D=-
+    } else {
+	return cvtToStr(num);
+    }
+}
+
 string AstNode::shortName() const {
     string pretty = name();
     string::size_type pos;

@@ -172,7 +172,7 @@ private:
 	// Return equation to get the VL_BITWORD of a constant or non-constant
 	if (lsbp->castConst()) {
 	    return new AstConst (lsbp->fileline(),
-				 wordAdder + VL_BITWORD_I(lsbp->castConst()->asInt()));
+				 wordAdder + VL_BITWORD_I(lsbp->castConst()->toUInt()));
 	} else {
 	    AstNode* shiftp = new AstShiftR (lsbp->fileline(),
 					     lsbp->cloneTree(true),
@@ -203,7 +203,7 @@ private:
 	// Return equation to get the VL_BITBIT of a constant or non-constant
 	if (lsbp->castConst()) {
 	    return new AstConst (lsbp->fileline(),
-				 VL_BITBIT_I(lsbp->castConst()->asInt()));
+				 VL_BITBIT_I(lsbp->castConst()->toUInt()));
 	} else {
 	    return new AstAnd   (lsbp->fileline(),
 				 new AstConst(lsbp->fileline(), VL_WORDSIZE-1),

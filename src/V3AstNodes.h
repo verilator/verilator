@@ -50,8 +50,8 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
-    uint32_t asInt()  const { return num().asInt(); } // Old, should be removed
     uint32_t toUInt()  const { return num().toUInt(); }
+    vlsint32_t toSInt()  const { return num().toSInt(); }
     vluint64_t toUQuad() const { return num().toUQuad(); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -79,8 +79,8 @@ struct AstRange : public AstNode {
     AstRange*	cloneTree(bool cloneNextLink) { return AstNode::cloneTree(cloneNextLink)->castRange(); }
     AstNode* msbp()		const { return op2p()->castNode(); }	// op2 = Msb expression
     AstNode* lsbp()		const { return op3p()->castNode(); }	// op3 = Lsb expression
-    int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->asInt():0); }
-    int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->asInt():0); }
+    int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
+    int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
     int	     elementsConst() const { return msbConst()-lsbConst()+1; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -193,7 +193,7 @@ struct AstSel : public AstNodeTriop {
     // Children: varref|arraysel, math, constant math
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
-	if (widthp->castConst()) width(widthp->castConst()->asInt(), widthp->castConst()->asInt());
+	if (widthp->castConst()) width(widthp->castConst()->toUInt(), widthp->castConst()->toUInt());
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsbp, int bitwidth)
 	:AstNodeTriop(fl, fromp,
@@ -205,7 +205,7 @@ struct AstSel : public AstNodeTriop {
     virtual AstNode* clone() { return new AstSel(*this); }
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
-	out.opRange(from, bit.asInt()+width.asInt()-1, bit.asInt()); }
+	out.opRange(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() {
 	return this->widthp()->isOne()
@@ -222,9 +222,9 @@ struct AstSel : public AstNodeTriop {
     AstNode* fromp()		const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
     AstNode* lsbp()		const { return op2p()->castNode(); }	// op2 = Msb selection expression
     AstNode* widthp()		const { return op3p()->castNode(); }	// op3 = Width
-    uint32_t	lsbConst()   const { return lsbp()->castConst()->asInt(); }
-    uint32_t	widthConst() const { return widthp()->castConst()->toUInt(); }
-    uint32_t	msbConst()   const { return lsbConst()+widthConst()-1; }
+    int		widthConst() const { return widthp()->castConst()->toSInt(); }
+    int		lsbConst()   const { return lsbp()->castConst()->toSInt(); }
+    int		msbConst()   const { return lsbConst()+widthConst()-1; }
 };
 
 struct AstVar : public AstNode {
@@ -363,8 +363,9 @@ public:
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     int		widthAlignBytes() const;	// Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int		widthTotalBytes() const;	// Width in bytes rounding up 1,2,4,8,12,...
-    uint32_t	msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
-    uint32_t	lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
+    int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
+    int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
+    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
@@ -1694,8 +1695,8 @@ struct AstTraceDecl : public AstNodeStmt {
 private:
     string	m_showname;	// Name of variable
     uint32_t	m_code;		// Trace identifier code; converted to ASCII by trace routines
-    uint32_t	m_lsb;		// Property of var the trace details
-    uint32_t	m_msb;		// Property of var the trace details
+    int		m_lsb;		// Property of var the trace details
+    int		m_msb;		// Property of var the trace details
     uint32_t	m_arrayLsb;	// Property of var the trace details
     uint32_t	m_arrayMsb;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
@@ -1723,8 +1724,8 @@ public:
     uint32_t	code() const { return m_code; }
     void	code(uint32_t code) { m_code=code; }
     uint32_t	codeInc() const { return m_codeInc; }
-    uint32_t	msb() const { return m_msb; }
-    uint32_t	lsb() const { return m_lsb; }
+    int		msb() const { return m_msb; }
+    int		lsb() const { return m_lsb; }
     uint32_t	arrayMsb() const { return m_arrayMsb; }
     uint32_t	arrayLsb() const { return m_arrayLsb; }
     uint32_t	arrayWidth() const { if (!arrayMsb()) return 0; return arrayMsb()-arrayLsb()+1; }

@@ -137,7 +137,6 @@ public:
     void width(int width, bool sized=true);
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
-    uint32_t asInt() const { return toUInt(); }  // Deprecated, use toUInt/toSInt
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;
     vluint64_t toUQuad() const;

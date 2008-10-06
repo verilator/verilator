@@ -43,7 +43,7 @@ void AstNodeVarRef::cloneRelink() {
 }
 
 int AstNodeSel::bitConst() const {
-    AstConst* constp=bitp()->castConst(); return (constp?constp->asInt():0);
+    AstConst* constp=bitp()->castConst(); return (constp?constp->toSInt():0);
 }
 
 bool AstVar::isSigPublic() const {

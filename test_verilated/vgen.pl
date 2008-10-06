@@ -28,6 +28,7 @@ our $Rerun_Args = $0." ".join(' ',@Orig_ARGV);
 
 use vars qw (@Blocks
 	     %Vars
+	     %VarAttrs
 	     %VarsBlock
 	     %Tree
 	     @Commit
@@ -40,6 +41,7 @@ use vars qw (@Blocks
 # width=>	Number of bits the output size is, 0=you tell me.
 # func=>	What to put in output file
 # signed=>	0=unsigned output, 1=signed output, '%1'=signed if op1 signed
+# lsb=>		LSB for variable declarations
 # em=>		How to calculate emulated return value
 #	%w	Width of this output op ($treeref->{width})
 #	%v	Output value ($treeref->{val})
@@ -118,13 +120,31 @@ my %ops2 =
 (
  'VCONST'=>	{pl=>'', 			rnd=>'rnd_const(%tr);'},
  'VIDNEW'=>	{pl=>'%tv=$Vars{%i}{val};',
-		 rnd=>'%i=next_id(%tw); $Vars{%i}=gen_leaf(width=>%tw,trunc=>1,signed=>%tg); id_commit(%tr,"%i");1;',},
+		 rnd=>'%i=next_id(%tw);'
+		     .' $Vars{%i}=gen_leaf(width=>%tw,trunc=>1,signed=>%tg);'
+		     .' $VarAttrs{%i}{lsb} = rnd_lsb();'
+		     .' id_commit(%tr,"%i");1;',},
  'VIDOLD'=>	{pl=>'%tv=$Vars{%i}{val};',	rnd=>'%i=id_old(%tr);',   ok_id_width=>1,},
  'VIDSAME'=>	{pl=>'%tv=$Vars{%i}{val};',	rnd=>'%i=id_same(%tr);',  ok_id_width=>1,},
- 'VRANGE'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%3v);',	rnd=>'%i=next_id(%tw); my $lsb=rnd(128-%tw); my $msb=$lsb+%tw-1;  %2r=val_leaf($msb); %3r=val_leaf($lsb); $Vars{%i}=gen_leaf(width=>($msb+1));'},
- 'VBITSEL'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%2v);',	rnd=>'%i=next_id(%tw); my $wid=min(128,rnd_width()|3); %2r=gen_leaf(width=>(log2($wid)-1),signed=>0); $Vars{%i}=gen_leaf(width=>$wid);'},
- 'VBITSELP'=>	{pl=>'VBITSELP(%tr,$Vars{%i}{val},%2v,%3v);',	rnd=>'%i=next_id(%tw); my $wid=min(128,(%tw+rnd_width()|3)); %3r=val_leaf(%tw); my $maxval = $wid-%tw; %2r=(($maxval<4)?val_leaf($maxval):gen_leaf(width=>(log2($maxval)-1),signed=>0)); $Vars{%i}=gen_leaf(width=>$wid);'},
- 'VBITSELM'=>	{pl=>'VBITSELM(%tr,$Vars{%i}{val},%2v,%3v);',	rnd=>'%i=next_id(%tw); my $wid=min(128,(%tw+rnd_width()|3)); %3r=val_leaf(%tw); my $maxval = $wid-1; my $minval=%tw-1; %2r=val_leaf(rnd($maxval-$minval)+$minval); $Vars{%i}=gen_leaf(width=>$wid);'},  # No easy way to make expr with specified minimum
+ # These create IDs they then extract from
+ 'VRANGE'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%3v,$VarAttrs{%i}{lsb});',
+		 rnd=>'%i=next_id(%tw); $VarAttrs{%i}{lsb} = 0&&rnd_lsb();'
+		     .' my $lsb=rnd(128-%tw); my $msb=$lsb+%tw-1;'
+		     .'  %2r=val_leaf($msb); %3r=val_leaf($lsb);'
+		     .' $Vars{%i}=gen_leaf(width=>($msb+1));'},
+ 'VBITSEL'=>	{pl=>'VRANGE(%tr,$Vars{%i}{val},%2v,%2v,$VarAttrs{%i}{lsb});',
+		 rnd=>'%i=next_id(%tw); $VarAttrs{%i}{lsb} = 0&&rnd_lsb();'
+		     .' my $wid=min(128,rnd_width()|3);'
+		     .' %2r=gen_leaf(width=>(log2($wid)-1),signed=>0);'
+		     .' $Vars{%i}=gen_leaf(width=>$wid);'},
+ 'VBITSELP'=>	{pl=>'VBITSELP(%tr,$Vars{%i}{val},%2v,%3v,$VarAttrs{%i}{lsb});',
+		 rnd=>'%i=next_id(%tw); $VarAttrs{%i}{lsb} = 0&&rnd_lsb();'
+		     .' my $wid=min(128,(%tw+rnd_width()|3)); %3r=val_leaf(%tw); my $maxval = $wid-%tw; %2r=(($maxval<4)?val_leaf($maxval):gen_leaf(width=>(log2($maxval)-1),signed=>0));'
+		     .' $Vars{%i}=gen_leaf(width=>$wid);'},
+ 'VBITSELM'=>	{pl=>'VBITSELM(%tr,$Vars{%i}{val},%2v,%3v,$VarAttrs{%i}{lsb});',
+		 rnd=>'%i=next_id(%tw); $VarAttrs{%i}{lsb} = 0&&rnd_lsb();'
+		     .' my $wid=min(128,(%tw+rnd_width()|3)); %3r=val_leaf(%tw); my $maxval = $wid-1; my $minval=%tw-1; %2r=val_leaf(rnd($maxval-$minval)+$minval);'
+		     .' $Vars{%i}=gen_leaf(width=>$wid);'},  # No easy way to make expr with specified minimum
  # Unary
  'VEXTEND'=>	{pl=>'VRESIZE  (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>rnd_width(%tw-1));'},
  'VLOGNOT'=>	{pl=>'VLOGNOT  (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
@@ -386,6 +406,11 @@ sub rnd_int {
     return ~0 if ($v<50);
     return 1 if ($v<60);
     return rnd32();
+}
+
+sub rnd_lsb {
+    return 0;
+    #return rnd(8)-4;  # Not working yet
 }
 
 sub rnd {
@@ -818,12 +843,14 @@ sub decl_text {
 	return sprintf "  %s<%s> %s; //=%s"
 	    , $decl_with, $type, $var, $varref->{val}->to_Hex;
     } else {
-	return sprintf "   reg %s [%3d:0] %s %s; //=%s"
+	return sprintf "   reg %s [%3d:%3d] %s %s; //=%d'h%s"
 	    , ($varref->{signed}?"signed":"      ")
-	    , ($varref->{val}->Size)-1,
+	    , ($varref->{val}->Size)-1+$VarAttrs{$var}{lsb},
+	    , $VarAttrs{$var}{lsb}
 	    , $var
 	    , (rnd(100)<30 ? "/*verilator public*/":(" "x length("/*verilator public*/")))
-	    , $varref->{val}->to_Hex;
+	    , $varref->{val}->Size
+	    , lc $varref->{val}->to_Hex;
     }
 }
 
@@ -948,29 +975,35 @@ sub VPOW { # Power is a signed operation
     print "VV = $o\n";
 }
 sub VRANGE { #print "RANGE ",$_[1]->to_Hex,' ',$_[2]->to_Hex,' ',$_[3]->to_Hex," \n";
-	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0),$_[3]->Word_Read(0)); }
+	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0),$_[3]->Word_Read(0), $_[4]); }
 sub VBITSELP {
-	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0)+$_[3]->Word_Read(0)-1, $_[2]->Word_Read(0)); }
+	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0)+$_[3]->Word_Read(0)-1, $_[2]->Word_Read(0), $_[4]); }
 sub VBITSELM {
-	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0), $_[2]->Word_Read(0)-$_[3]->Word_Read(0)+1); }
-sub VRANGE_CONST { #print "RANGE ",$_[1]->to_Hex,' ',$_[2],' ',$_[3]," \n";
-             my $size = $_[2] - $_[3] + 1;
-             my $o=Bit::Vector->new($size);
-	     if ($_[3] < $_[1]->Size) {
-		 $o->Interval_Copy($_[1],0,$_[3],$size);
-	     }
-	     $_[0]{val}=$o; }
-sub VCONCAT { my $o=Bit::Vector->new($_[1]->Size + $_[2]->Size);
-	      $o->Interval_Copy($_[1],$_[2]->Size,0,$_[1]->Size);
-	      $o->Interval_Copy($_[2],0,0,$_[2]->Size);
-	      $_[0]{val}=$o; }
-sub VREPLIC { my $o=Bit::Vector->new($_[1]->Word_Read(0) * $_[2]->Size);
-	      my $pos = 0;
-	      for (my $time=0; $time<($_[1]->Word_Read(0)); $time++) {
-		  $o->Interval_Copy($_[2],$pos,0,$_[2]->Size);
-		  $pos += $_[2]->Size;
-	      }
-	      $_[0]{val}=$o; }
+	   return VRANGE_CONST($_[0],$_[1],$_[2]->Word_Read(0), $_[2]->Word_Read(0)-$_[3]->Word_Read(0)+1, $_[4]); }
+sub VRANGE_CONST {
+    # to, from, msb, lsb, variable_lsb_to_subtract
+    #print "RANGE ",$_[1]->to_Hex,' ',$_[2],' ',$_[3],' ',$_[4]," \n";
+    my $size = $_[2] - $_[3] + 1;
+    my $o=Bit::Vector->new($size);
+    if ($_[3] < $_[1]->Size) {
+	$o->Interval_Copy($_[1],0,$_[3]-$_[4],$size);
+    }
+    $_[0]{val}=$o; }
+sub VCONCAT {
+    my $o=Bit::Vector->new($_[1]->Size + $_[2]->Size);
+    $o->Interval_Copy($_[1],$_[2]->Size,0,$_[1]->Size);
+    $o->Interval_Copy($_[2],0,0,$_[2]->Size);
+    $_[0]{val}=$o;
+}
+sub VREPLIC {
+    my $o=Bit::Vector->new($_[1]->Word_Read(0) * $_[2]->Size);
+    my $pos = 0;
+    for (my $time=0; $time<($_[1]->Word_Read(0)); $time++) {
+	$o->Interval_Copy($_[2],$pos,0,$_[2]->Size);
+	$pos += $_[2]->Size;
+    }
+    $_[0]{val}=$o;
+}
 
 #######################################################################
 #######################################################################

@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.67**
 
+**   Support negative bit indexes. [Stephane Laurent]
+     Tracing negative indexes requires latest Verilog-Perl and SystemPerl.
+
 ***  Suppress width warnings between constant strings and wider vectors.
      [Rodney Sinclair]
 

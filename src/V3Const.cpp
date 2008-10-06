@@ -134,11 +134,11 @@ private:
     }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
-		&& nodep->rhsp()->castConst()->asInt() >= (uint32_t)(nodep->width()));
+		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width()));
     }
     bool operandHugeShiftR(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
-		&& nodep->rhsp()->castConst()->asInt() >= (uint32_t)(nodep->lhsp()->width()));
+		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->lhsp()->width()));
     }
     bool operandIsTwo(AstNode* nodep) {
 	return (nodep->castConst()
@@ -215,15 +215,18 @@ private:
     bool warnSelect(AstSel* nodep) {
 	AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
+	    AstVar* varp = varrefp->varp();
 	    if (m_warn
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
-		&& (!varrefp->varp()->rangep() || varrefp->varp()->msb())  // else it's non-resolvable parameterized
-		&& ( (  (nodep->msbConst() > varrefp->varp()->msb())
-			|| (nodep->lsbConst() > varrefp->varp()->msb())))) {
+		&& (!varp->rangep() || varp->msb())  // else it's non-resolvable parameterized
+		&& ( (  (nodep->msbConst() > varp->msbMaxSelect())
+			|| (nodep->lsbConst() > varp->msbMaxSelect())))) {
 		nodep->v3error("Selection index out of range: "
 			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
-			       <<" outside "<<varrefp->varp()->msb()<<":0");
+			       <<" outside "<<varp->msbMaxSelect()<<":0"
+			       <<(varp->lsb()>=0 ? ""
+				  :" (adjusted +"+cvtToStr(-varp->lsb())+" to account for negative lsb)"));
 	    }
 	}
 	return false;  // Not a transform, so NOP
@@ -432,8 +435,8 @@ private:
 	    nodep->accept(*this);	// Further reduce, either node may have more reductions.
 	} else {
 	    // We know shift amounts are constant, but might be a mixed left/right shift
-	    int shift1 = shift1p->castConst()->asInt(); if (lhsp->castShiftR())  shift1=-shift1;
-	    int shift2 = shift2p->castConst()->asInt(); if (nodep->castShiftR()) shift2=-shift2;
+	    int shift1 = shift1p->castConst()->toUInt(); if (lhsp->castShiftR())  shift1=-shift1;
+	    int shift2 = shift2p->castConst()->toUInt(); if (nodep->castShiftR()) shift2=-shift2;
 	    int newshift = shift1+shift2;
 	    shift1p->deleteTree(); shift1p=NULL;
 	    shift2p->deleteTree(); shift1p=NULL;
@@ -490,9 +493,9 @@ private:
 	if (!varNotReferenced(nodep->rhsp(), varref1p->varp())) return false;
 	if (!varNotReferenced(nextp->rhsp(), varref2p->varp())) return false;
 	// Swap?
-	if ((  con1p->asInt() != con2p->asInt() + sel2p->width())
-	    &&(con2p->asInt() != con1p->asInt() + sel1p->width())) return false;
-	bool lsbFirstAssign = (con1p->asInt() < con2p->asInt());
+	if ((  con1p->toSInt() != con2p->toSInt() + sel2p->width())
+	    &&(con2p->toSInt() != con1p->toSInt() + sel1p->width())) return false;
+	bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
 	// If the user already has nice 32-bit divisions, keep them to aid later subdivision
 	//if (VL_BITBIT_I(con1p->toUInt()) == 0) return false;
 	UINFO(4,"replaceAssignMultiSel "<<nodep<<endl);
@@ -648,7 +651,7 @@ private:
 	if (!nodep->castAnd()->rhsp()->castShiftR()) return false;
 	AstShiftR* shiftp = nodep->castAnd()->rhsp()->castShiftR();
 	if (!shiftp->rhsp()->castConst()) return false;
-	if ((uint32_t)(nodep->width()) <= shiftp->rhsp()->castConst()->asInt()) return false;
+	if ((uint32_t)(nodep->width()) <= shiftp->rhsp()->castConst()->toUInt()) return false;
 	return true;
     }
     void replaceBoolShift(AstNode* nodep) {
@@ -784,7 +787,7 @@ private:
 	AstNode* newlsbp;
 	if (lsb1p->castConst() && lsb2p->castConst()) {
 	    newlsbp = new AstConst(lsb1p->fileline(),
-				   lsb1p->castConst()->asInt() + lsb2p->castConst()->asInt());
+				   lsb1p->castConst()->toUInt() + lsb2p->castConst()->toUInt());
 	    lsb1p->deleteTree(); lsb1p=NULL;
 	    lsb2p->deleteTree(); lsb2p=NULL;
 	} else {
@@ -851,7 +854,7 @@ private:
 	AstNode* widthp = nodep->widthp()->unlinkFrBack();
 	AstSel* newp = new AstSel(nodep->fileline(),
 				  fromp,
-				  new AstConst(lsbp->fileline(), lsbp->asInt() % fromp->width()),
+				  new AstConst(lsbp->fileline(), lsbp->toUInt() % fromp->width()),
 				  widthp);
 	newp->widthSignedFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;

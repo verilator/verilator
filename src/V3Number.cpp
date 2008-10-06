@@ -470,10 +470,16 @@ uint32_t V3Number::toUInt() const {
 }
 
 vlsint32_t V3Number::toSInt() const {
-    uint32_t v = toUInt();
-    uint32_t signExtend = (-(v & (1UL<<(width()-1))));
-    uint32_t extended = v | signExtend;
-    return (vlsint32_t)(extended);
+    if (isSigned()) {
+	uint32_t v = toUInt();
+	uint32_t signExtend = (-(v & (1UL<<(width()-1))));
+	uint32_t extended = v | signExtend;
+	return (vlsint32_t)(extended);
+    } else {
+	// Where we use this (widths, etc) and care about signedness,
+	// we can reasonably assume the MSB isn't set on unsigned numbers.
+	return (vlsint32_t)toUInt();
+    }
 }
 
 vluint64_t V3Number::toUQuad() const {

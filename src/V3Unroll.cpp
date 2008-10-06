@@ -76,6 +76,11 @@ private:
 	return false;
     }
 
+    int unrollCount() {
+	return m_generate ? v3Global.opt.unrollCount()*16
+	    : v3Global.opt.unrollCount();
+    }
+
     bool forUnrollCheck(AstNode* nodep,
 			AstNode* initp,	// Maybe under nodep (no nextp), or standalone (ignore nextp)
 			AstNode* precondsp, AstNode* condp,
@@ -158,16 +163,16 @@ private:
 	    || constStopp->width()>32 || constStopp->num().isFourState()
 	    || constIncp->width()>32  || constIncp->num().isFourState())
 	    return cantUnroll(nodep, "init/final/increment too large or four state");
-	vlsint32_t valInit = constInitp->num().toUInt();  // Extract as unsigned, then make signed
-	vlsint32_t valStop = constStopp->num().toUInt();  // Extract as unsigned, then make signed
+	vlsint32_t valInit = constInitp->num().toSInt();
+	vlsint32_t valStop = constStopp->num().toSInt();
 	if (lte) valStop++;  if (gte) valStop--;
 	vlsint32_t valInc  = constIncp->num().toSInt();
 	if (subtract) valInc = -valInc;
 	UINFO(8,"     In Numbers: for (v="<<valInit<<"; v<"<<valStop<<"; v=v+"<<valInc<<")\n");
 	//
 	if (!m_generate) {
-	    UINFO(8, "         ~Iters: "<<((valStop - valInit)/valInc)<<" c="<<v3Global.opt.unrollCount()<<endl);
-	    if (((valStop - valInit)/valInc) > v3Global.opt.unrollCount())
+	    UINFO(8, "         ~Iters: "<<((valStop - valInit)/valInc)<<" c="<<unrollCount()<<endl);
+	    if (((valStop - valInit)/valInc) > unrollCount())
 		return cantUnroll(nodep, "too many iterations");
 
 	    // Less than 10 statements in the body?
@@ -253,8 +258,8 @@ private:
 		    else newbodysp = oneloopp;
 
 		    m_statIters++;
-		    if (++times > v3Global.opt.unrollCount()*3) {
-			nodep->v3error("Loop unrolling took too long; probably this is an infinite loop.");
+		    if (++times > unrollCount()*3) {
+			nodep->v3error("Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "<<unrollCount());
 			break;
 		    }
 
@@ -347,9 +352,10 @@ private:
 	    ) {
 	    // Rename it, as otherwise we may get a conflict
 	    // V3Begin sees these DOTs and makes CellInlines for us.
-	    string nname = (string)"genfor"+cvtToStr(m_varValuep->asInt())+"__DOT__"+nodep->name();
+	    string index = AstNode::encodeNumber(m_varValuep->toSInt());
+	    string nname = (string)"genfor"+index+"__DOT__"+nodep->name();
 	    // Verilog seems to drop the for loop name and tack on [#]
-	    nname = nodep->name() + "__BRA__" + cvtToStr(m_varValuep->asInt()) + "__KET__";
+	    nname = nodep->name() + "__BRA__" + index + "__KET__";
 	    //UINFO(8,"   Rename begin "<<nname<<" "<<nodep<<endl);
 	    nodep->name(nname);
 	}

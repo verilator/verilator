@@ -238,9 +238,9 @@ private:
 		if (!lsbConstp) nodep->v3error("LSB of bit range isn't a constant");
 		nodep->width(1,1); return;
 	    }
-	    uint32_t msb = msbConstp->asInt();
-	    uint32_t lsb = lsbConstp->asInt();
-	    if (msb > (1UL<<28)) nodep->v3error("MSB of bit range is huge; vector of over 1billion bits: 0x"<<hex<<msb);
+	    int msb = msbConstp->toSInt();
+	    int lsb = lsbConstp->toSInt();
+	    if (msb > (1<<28)) nodep->v3error("MSB of bit range is huge; vector of over 1billion bits: 0x"<<hex<<msb);
 	    if (msb<lsb) {
 		// If it's a array, ok to have either ordering, we'll just correct
 		// So, see if we're sitting under a variable's arrayp.
@@ -296,7 +296,7 @@ private:
 	    int fromlsb = 0;
 	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
 	    if (varrp && varrp->varp()->rangep()) {	// Selecting a bit from a multibit register
-		frommsb = varrp->varp()->msb();
+		frommsb = varrp->varp()->msbMaxSelect();  // Corrected for negative lsb
 		fromlsb = varrp->varp()->lsb();
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
@@ -332,6 +332,8 @@ private:
 		frommsb = varrp->varp()->arrayp(dimension)->msbConst();
 		fromlsb = varrp->varp()->arrayp(dimension)->lsbConst();
 		if (fromlsb>frommsb) {int t=frommsb; frommsb=fromlsb; fromlsb=t; }
+		// However, if the lsb<0 we may go negative, so need more bits!
+		if (fromlsb < 0) frommsb += -fromlsb;
 		nodep->width(outwidth,outwidth);		// Width out = width of array
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
