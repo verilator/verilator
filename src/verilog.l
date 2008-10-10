@@ -355,7 +355,9 @@ escid	\\[^ \t\f\r\n]+
   "endproperty"		{yylval.fileline = CRELINE(); return yENDPROPERTY;}
   "final"		{yylval.fileline = CRELINE(); return yFINAL;}
   "iff"			{yylval.fileline = CRELINE(); return yIFF;}
+  "priority"		{yylval.fileline = CRELINE(); return yPRIORITY;}
   "static"		{yylval.fileline = CRELINE(); return ySTATIC;}
+  "unique"		{yylval.fileline = CRELINE(); return yUNIQUE;}
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "alias"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
@@ -406,7 +408,6 @@ escid	\\[^ \t\f\r\n]+
   "null"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "package"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "packed"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
-  "priority"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "program"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "protected"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "pure"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
@@ -429,7 +430,6 @@ escid	\\[^ \t\f\r\n]+
   "timeunit"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "type"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "typedef"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
-  "unique"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "var"			{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "virtual"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "void"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}

@@ -57,6 +57,7 @@ public:
     static string	s_instModule;	// Name of module referenced for instantiations
     static AstPin*	s_instParamp;	// Parameters for instantiations
     static bool		s_trace;	// Tracing is turned on
+    static int		s_uniqueAttr;	// Bitmask of unique/priority keywords
 
     static AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp);
     static AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
@@ -107,6 +108,7 @@ class AstSenTree;
     string*	strp;
     int 	cint;
     double	cdouble;
+    V3UniqState	uniqstate;
 
     AstNode*	nodep;
 
@@ -201,6 +203,7 @@ class AstSenTree;
 %token<fileline>	yOUTPUT		"output"
 %token<fileline>	yPARAMETER	"parameter"
 %token<fileline>	yPOSEDGE	"posedge"
+%token<fileline>	yPRIORITY	"priority"
 %token<fileline>	yPROPERTY	"property"
 %token<fileline>	yREG		"reg"
 %token<fileline>	ySCALARED	"scalared"
@@ -212,6 +215,7 @@ class AstSenTree;
 %token<fileline>	yTASK		"task"
 %token<fileline>	yTRI		"tri"
 %token<fileline>	yTRUE		"true"
+%token<fileline>	yUNIQUE		"unique"
 %token<fileline>	yUNSIGNED	"unsigned"
 %token<fileline>	yVECTORED	"vectored"
 %token<fileline>	yWHILE		"while"
@@ -982,10 +986,20 @@ stmt<nodep>:
 //************************************************
 // Case/If
 
+unique_priorityE<uniqstate>:
+		/*empty*/				{ $$ = uniq_NONE; }
+	|	yPRIORITY				{ $$ = uniq_PRIORITY; }
+	|	yUNIQUE					{ $$ = uniq_UNIQUE; }
+	;
+
 stateCaseForIf<nodep>:
-		caseStmt caseAttrE caseListE yENDCASE	{ $$ = $1; if ($3) $1->addItemsp($3); }
-	|	yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstIf($1,$3,$5,NULL); }
-	|	yIF '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstIf($1,$3,$5,$7); }
+		unique_priorityE caseStmt caseAttrE caseListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
+							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
+							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
+	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
+							{ $$ = new AstIf($2,$4,$6,NULL); }
+	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
+							{ $$ = new AstIf($2,$4,$6,$8); }
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
 									  ,$7, new AstAssign($10,$9,$11)

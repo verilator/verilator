@@ -31,6 +31,11 @@ class V3Lexer;
 class V3Number;
 class AstNode;
 
+//======================================================================
+// Types (between parser & lexer)
+
+typedef enum { uniq_NONE, uniq_UNIQUE, uniq_PRIORITY } V3UniqState;
+
 //============================================================================
 
 class V3Read {

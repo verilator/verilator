@@ -32,6 +32,12 @@ module t (/*AUTOARG*/
 	2'b1_0: ;
 	// Note no default
       endcase
+      priority case ({a,b_fc})
+	2'b0_0: ;
+	2'b0_1: ;
+	2'b1_0: ;
+	// Note no default
+      endcase
    end
 
    always @* begin

@@ -1038,7 +1038,8 @@ including function call-like preprocessor defines.
 
 Verilator supports ==? and !=? operators, $bits, $countones, $error,
 $fatal, $info, $isunknown, $onehot, $onehot0, $warning, always_comb,
-always_ff, always_latch, do-while, and final.
+always_ff, always_latch, do-while, final, priority case/if, and unique
+case/if.
 
 It also supports .name and .* interconnection.
 
@@ -1083,6 +1084,10 @@ When these synthesis directives are discovered, Verilator will either
 formally prove the directive to be true, or failing that, will insert the
 appropriate code to detect failing cases at runtime and print an "Assertion
 failed" error message.
+
+Verilator likewise also asserts any "unique" or "priority" SystemVerilog
+keywords on case statements.  However, "unique if" and "priority if" are
+currently simply ignored.
 
 =head1 LANGUAGE EXTENSIONS
 
@@ -1544,6 +1549,11 @@ posedge, reg, scalared, signed, supply0, supply1, task, tri, vectored,
 while, wire, xnor, xor
 
 Generally supported.
+
+=item priority if, unique if
+
+Priority and unique if's are treated as normal ifs and not asserted to be
+full nor unique.
 
 =item specify specparam
 
