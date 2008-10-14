@@ -214,7 +214,7 @@ public:
 	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
 	puts("&__Vcoverage[");
 	puts(cvtToStr(m_coverIds.remap(nodep))); puts("]");
-	puts(", \"");	puts(nodep->fileline()->filebasename()); puts("\"");
+	puts(", \"");	puts(nodep->fileline()->filename()); puts("\"");
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(", ");	puts(cvtToStr(nodep->column()));
 	puts(", \"");	puts(nodep->hier()); puts("\"");

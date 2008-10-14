@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix genvars causing link error when using --public.  [Chris Candler]
 
+**** Include Verilog file's directory name in coverage reports.
+
 * Verilator 3.671 2008/09/19
 
 **   SystemC uint64_t pins are now the default instead of sc_bv<64>.
