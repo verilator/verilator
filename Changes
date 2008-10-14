@@ -15,6 +15,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Suppress width warnings between constant strings and wider vectors.
      [Rodney Sinclair]
 
+**** Ignore SystemVerilog timeunit and timeprecision.
+
 **** Expand environment variables in -f input files.  [Lawrence Butcher]
 
 **** Report error if port declaration is missing; bug32. [Guy-Armand Kamendje]

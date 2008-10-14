@@ -141,6 +141,8 @@ class AstSenTree;
 
 // IEEE: integral_number
 %token<nump>		yaINTNUM	"INTEGER NUMBER"
+// IEEE: time_literal + time_unit
+%token<cdouble>		yaTIMENUM	"TIME NUMBER"
 // IEEE: string_literal
 %token<strp>		yaSTRING	"STRING"
 %token<fileline>	yaTIMINGSPEC	"TIMING SPEC ELEMENT"
@@ -213,6 +215,8 @@ class AstSenTree;
 %token<fileline>	ySUPPLY0	"supply0"
 %token<fileline>	ySUPPLY1	"supply1"
 %token<fileline>	yTASK		"task"
+%token<fileline>	yTIMEPRECISION	"timeprecision"
+%token<fileline>	yTIMEUNIT	"timeunit"
 %token<fileline>	yTRI		"tri"
 %token<fileline>	yTRUE		"true"
 %token<fileline>	yUNIQUE		"unique"
@@ -429,7 +433,7 @@ statePop:	/* empty */			 	{ V3Read::statePop(); }
 // Files
 
 fileE:		/* empty */				{ }
-	|	file					{ }
+	|       timeunitsDeclE 	file		      	{ }
 	;
 
 file:		description				{ }
@@ -440,13 +444,26 @@ file:		description				{ }
 description:	moduleDecl				{ }
 	;
 
+// IEEE: timeunits_declaration + empty
+timeunitsDeclE: /*empty*/                                                       { }
+        |	yTIMEUNIT  yaTIMENUM ';'					{ }
+	| 	yTIMEPRECISION  yaTIMENUM ';'					{ }
+	| 	yTIMEUNIT  yaTIMENUM ';'  yTIMEPRECISION  yaTIMENUM  ';' 	{ }
+	| 	yTIMEPRECISION yaTIMENUM ';' yTIMEUNIT yaTIMENUM ';'		{ }
+	;
+
 //**********************************************************************
 // Module headers
 
 // IEEE: module_declaration:
-moduleDecl:	modHdr modParE modPortsE ';' modItemListE yENDMODULE endLabelE
+moduleDecl:	modHeader  timeunitsDeclE modItemListE yENDMODULE endLabelE
+			{ if ($3) $1->addStmtp($3); }
+	;
+
+modHeader<modulep>:
+		modHdr modParE modPortsE ';'
 			{ $1->modTrace(V3Parse::s_trace);  // Stash for implicit wires, etc
-			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); if ($5) $1->addStmtp($5); }
+			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); }
 	;
 
 modHdr<modulep>:
@@ -723,6 +740,7 @@ dlyTerm<nodep>:
 		yaID 					{ $$ = NULL; }
 	|	yaINTNUM 				{ $$ = NULL; }
 	|	yaFLOATNUM 				{ $$ = NULL; }
+	|	yaTIMENUM 				{ $$ = NULL; }
 	;
 
 // IEEE: mintypmax_expression and constant_mintypmax_expression

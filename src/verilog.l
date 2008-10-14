@@ -357,6 +357,8 @@ escid	\\[^ \t\f\r\n]+
   "iff"			{yylval.fileline = CRELINE(); return yIFF;}
   "priority"		{yylval.fileline = CRELINE(); return yPRIORITY;}
   "static"		{yylval.fileline = CRELINE(); return ySTATIC;}
+  "timeprecision"	{yylval.fileline = CRELINE(); return yTIMEPRECISION;}
+  "timeunit"		{yylval.fileline = CRELINE(); return yTIMEUNIT;}
   "unique"		{yylval.fileline = CRELINE(); return yUNIQUE;}
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
@@ -426,8 +428,6 @@ escid	\\[^ \t\f\r\n]+
   "tagged"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "this"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "throughout"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
-  "timeprecision"	{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
-  "timeunit"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "type"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "typedef"		{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
   "var"			{yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext);}
@@ -694,7 +694,7 @@ escid	\\[^ \t\f\r\n]+
 			}
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
 			  yylval.cdouble = 0;  /* Only for times, not used yet */
-                          return yaFLOATNUM;
+                          return yaTIMENUM;
 			}
 }
 

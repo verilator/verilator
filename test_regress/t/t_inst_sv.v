@@ -8,6 +8,11 @@ module t (/*AUTOARG*/
    clk
    );
 
+`ifdef verilator   // Otherwise need it in every module, including test, but that'll make a mess
+   timeunit 1ns;
+   timeprecision 1ns;
+`endif
+
    input clk;
    integer cyc; initial cyc=1;
 

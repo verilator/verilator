@@ -1559,6 +1559,10 @@ full nor unique.
 
 All specify blocks and timing checks are ignored.
 
+=item timeunit, timeprecision
+
+All timing control statements are ignored.
+
 =item uwire
 
 Verilator does not perform warning checking on uwires, it treats the uwire
