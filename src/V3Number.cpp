@@ -18,12 +18,11 @@
 //
 //*************************************************************************
 
-#include <config_build.h>
+#include "config_build.h"
 #include "verilatedos.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdarg>
-#include <cstring>
 #include <algorithm>
 #include "V3Number.h"
 

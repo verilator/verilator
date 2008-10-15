@@ -25,6 +25,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Include Verilog file's directory name in coverage reports.
 
+**** Fix GCC 4.3 compile error; bug35.  [Lane Brooks]
+
 * Verilator 3.671 2008/09/19
 
 **   SystemC uint64_t pins are now the default instead of sc_bv<64>.
