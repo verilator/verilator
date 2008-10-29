@@ -336,7 +336,11 @@ private:
 	}
     }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
-	nodep->v3error("V3Task should have removed standard FORs");
+	if (m_generate) {  // Ignore for's when expanding genfor's
+	    nodep->iterateChildren(*this);
+	} else {
+	    nodep->v3error("V3Task should have removed standard FORs");
+	}
     }
 
     virtual void visit(AstBegin* nodep, AstNUser*) {
