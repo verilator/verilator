@@ -7,6 +7,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add SystemVerilog unique and priority case.
 
+**** Include Verilog file's directory name in coverage reports.
+
+**** Fix GCC 4.3 compile error; bug35.  [Lane Brooks]
+
 * Verilator 3.680 2008/10/08
 
 **   Support negative bit indexes. [Stephane Laurent]
@@ -22,10 +26,6 @@ indicates the contributor was also the author of the fix; Thanks!
 **** Report error if port declaration is missing; bug32. [Guy-Armand Kamendje]
 
 **** Fix genvars causing link error when using --public.  [Chris Candler]
-
-**** Include Verilog file's directory name in coverage reports.
-
-**** Fix GCC 4.3 compile error; bug35.  [Lane Brooks]
 
 * Verilator 3.671 2008/09/19
 
