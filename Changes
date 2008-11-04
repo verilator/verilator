@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix 'for' under 'generate-for' causing error; bug38. [Rafael Shirakawa]
 
+**** Fix coverage hierarchy being backwards with inlining.  [Vasu Arasanipalai]
+
 **** Fix GCC 4.3 compile error; bug35.  [Lane Brooks]
 
 * Verilator 3.680 2008/10/08

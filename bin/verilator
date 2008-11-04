@@ -2111,6 +2111,21 @@ Verilator makes standard VCD (Value Change Dump) files.  They are viewable
 with the public domain Dinotrace or GtkWave programs, or any of the many
 commercial offerings.
 
+=item How do I reduce the size of large waveform (trace) files?
+
+First, instead of calling SpTraceVcdCFile->open at the beginning of time,
+delay calling it until the time stamp where you want to tracing to begin.
+Likewise you can also call SpTraceVcdCFile->open before the end of time
+(perhaps a short period after you detect a verification error.)
+
+Next, add /*verilator tracing_off*/ to any very low level modules you never
+want to trace (such as perhaps library cells).  Finally, use the
+--trace-depth option to limit the depth of tracing, for example
+--trace-depth 1 to see only the top level signals.
+
+Also be sure you write your trace files to a local disk, instead of to a
+network disk.  Network disks are generally far slower.
+
 =item How do I do coverage analysis?
 
 Verilator supports both block (line) coverage and user inserted functional

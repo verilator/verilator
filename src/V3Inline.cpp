@@ -249,7 +249,7 @@ private:
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	// Fix path in coverage statements
 	if (m_cellp) {
-	    nodep->hier(nodep->hier()+"."+m_cellp->prettyName());
+	    nodep->hier(m_cellp->prettyName()+"."+nodep->hier());
 	}
 	nodep->iterateChildren(*this);
     }
