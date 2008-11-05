@@ -1,0 +1,60 @@
+=pod
+
+=head1 NAME
+
+Verilator Source Code Notes
+
+=head1 INTRODUCTION
+
+See also the Verilator internals presentation at http://www.veripool.org.
+
+=head1 VISITOR FUNCTIONS
+
+=head2 Passing Variables
+
+There's three ways data is passed between visitor functions.
+
+1. A visitor-class member variable.  This is generally for passing "parent"
+information down to children.  m_modp is a common example.  It's set to
+NULL in the constructor, where that node (AstModule visitor) sets it, then
+the children are iterated, then it's cleared.  Children under an AstModule
+will see it set, while nodes elsewhere will see it clear.  If there can be
+nested items (for example an AstFor under an AstFor) the variable needs to
+be save-set-restored in the AstFor visitor, otherwise exiting the lower for
+will loose the upper for's setting.
+
+2. User() attributes.  Each node has 4 ->user() number or ->userp() pointer
+utility values (a common technique lifted from graph traversal packages).
+A visitor first clears the one it wants to use by calling
+AstNode::user#ClearTree(), then it can mark any node's user() with whatever
+data it wants.  Readers just call nodep->user(), but may need to cast
+appropriately, so you'll often see nodep->userp()->castSOMETYPE().  At the
+top of each visitor are comments describing how the user() stuff applies to
+that visitor class.  For example:
+
+    // NODE STATE
+    // Cleared entire netlist
+    //   AstModule::userp()     // bool. True to inline this module
+
+This says that at the AstNetlist userClearTree() is called.  Each
+AstModule's is user() is used to indicate if we're going to inline it.
+
+These comments are important to make sure a user#() on a given AstNode type
+is never being used for two different purposes.
+
+Note that calling user#ClearTree is fast, it doesn't walk the tree, so it's
+ok to call fairly often.  For example, it's commonly called on every
+module.
+
+3. Parameters can be passed between the visitors in close to the "normal"
+function caller to callee way.  This is the second "vup" parameter that is
+ignored on most of the visitor functions.  V3Width does this, but it proved
+more messy than the above and is deprecated.  (V3Width was nearly the first
+module written.  Someday this scheme may be removed, as it slows the
+program down to have to pass vup everywhere.)
+
+=head1 DISTRIBUTION
+
+Copyright 2008-2008 by Wilson Snyder.  This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+General Public License or the Perl Artistic License.
