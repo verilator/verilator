@@ -217,7 +217,7 @@ public:
 	puts(", \"");	puts(nodep->fileline()->filename()); puts("\"");
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(", ");	puts(cvtToStr(nodep->column()));
-	puts(", \"");	puts(nodep->hier()); puts("\"");
+	puts(", \"");	puts((nodep->hier()!=""?".":"")+nodep->hier()); puts("\"");
 	puts(", \"");	puts(nodep->typeText()); puts("\"");
 	puts(", \"");	puts(nodep->comment()); puts("\"");
 	puts(");\n");

@@ -16,6 +16,8 @@ module t_clk_two (/*AUTOARG*/
    // verilator lint_on GENCLK
    reg [31:0] count;
 
+   t_clk_twob tb (.*);
+
    wire reset_h = ~reset_l;
    always @ (posedge fastclk) begin
       if (reset_h) clk2 <= 0;
@@ -24,5 +26,19 @@ module t_clk_two (/*AUTOARG*/
    always @ (posedge clk2) begin
       if (reset_h) count <= 0;
       else count <= count + 1;
+   end
+endmodule
+
+module t_clk_twob (/*AUTOARG*/
+   // Inputs
+   fastclk, reset_l
+   );
+   input fastclk;
+   input reset_l;
+
+   always @ (posedge fastclk) begin
+      // Extra line coverage point, just to make sure coverage
+      // hierarchy under inlining lands properly
+      if (reset_l) ;
    end
 endmodule
