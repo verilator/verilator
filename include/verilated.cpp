@@ -539,7 +539,11 @@ IData VL_FGETS_IXQ(int obits, void* destp, QData fpq) {
     // any read data.  This means we can't know in what location the first
     // character will finally live, so we need to copy.  Yuk.
     IData bytes = VL_BYTES_I(obits);
-    char buffer[bytes];
+    char buffer[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
+    if (VL_UNLIKELY(bytes > VL_TO_STRING_MAX_WORDS*VL_WORDSIZE)) {
+	vl_fatal(__FILE__,__LINE__,"","Internal: fgets buffer overrun");
+    }
 
     // We don't use fgets, as we must read \0s.
     IData got = 0;

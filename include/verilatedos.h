@@ -86,10 +86,10 @@ typedef long  			vlsint32_t;	///< 32-bit signed type
 typedef unsigned long           vluint32_t;	///< 32-bit unsigned type
 typedef long long		vlsint64_t;	///< 64-bit signed type
 typedef unsigned long long      vluint64_t;	///< 64-bit unsigned type
-#elif defined(_WIN32) && !defined(__MINGW32__)
+#elif defined(_WIN32) && defined(_MSC_VER)
 typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
-typedef unsigned long           uint32_t;	///< 32-bit unsigned type (backward compatibility)
+typedef unsigned int		uint32_t;	///< 32-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
 typedef int			vlsint32_t;	///< 32-bit signed type

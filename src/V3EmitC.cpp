@@ -242,6 +242,10 @@ public:
     virtual void visit(AstSScanF* nodep, AstNUser*) {
 	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
     }
+    virtual void visit(AstFGetS* nodep, AstNUser*) {
+	checkMaxWords(nodep);
+	emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
+    }
 
     void checkMaxWords(AstNode* nodep) {
 	if (nodep->widthWords() > VL_TO_STRING_MAX_WORDS) {
