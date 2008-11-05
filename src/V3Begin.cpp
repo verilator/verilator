@@ -142,6 +142,11 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstCoverDecl* nodep, AstNUser*) {
+	// Don't need to fix path in coverage statements, they're not under
+	// any BEGINs, but V3Coverage adds them all under the module itself.
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }

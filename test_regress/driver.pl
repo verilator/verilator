@@ -481,7 +481,9 @@ sub _run {
     my %param = (tee=>1,
 		 @_);
     my $command = join(' ',@{$param{cmd}});
-    print "\t$command\n";
+    print "\t$command";
+    print "   > $param{logfile}" if $param{logfile};
+    print "\n";
 
     if ($param{logfile}) {
 	open(SAVEOUT, ">&STDOUT") or die "%Error: Can't dup stdout";

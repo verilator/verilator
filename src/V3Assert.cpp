@@ -115,7 +115,7 @@ private:
 	    } else {
 		// V3Coverage assigned us a bucket to increment.
 		AstCoverInc* covincp = snodep->coverincp()->castCoverInc();
-		if (!covincp) snodep->v3fatalSrc("Missing coverage in PSL");
+		if (!covincp) snodep->v3fatalSrc("Missing AstCoverInc under assertion");
 		covincp->unlinkFrBack();
 		if (message!="") covincp->declp()->comment(message);
 		bodysp = covincp;

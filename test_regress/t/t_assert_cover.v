@@ -64,7 +64,22 @@ module Test
    cover property (@(posedge clk) disable iff (!toggle) cyc==8)
      $stop;
 
+   //============================================================
+   // Using a macro and generate
+   wire reset = (cyc < 2);
+
+`define covclk(eqn) cover property (@(posedge clk) disable iff (reset) (eqn))
+
+   genvar i;
+   generate
+      for (i=0; i<32; i=i+1)
+	begin: cycval
+	   CycCover_i: `covclk( cyc[i] );
+	end
+   endgenerate
+
 `ifndef verilator // Unsupported
+   //============================================================
    // Using a more complicated property
    property C1;
       @(posedge clk)

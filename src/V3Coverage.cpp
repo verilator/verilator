@@ -52,11 +52,13 @@ private:
     bool	m_checkBlock;	// Should this block get covered?
     AstModule*	m_modp;		// Current module to add statement to
     FileMap	m_fileps;	// Column counts for each fileline
+    string	m_beginHier;	// AstBegin hier name for user coverage points
 
     //int debug() { return 9; }
 
     // METHODS
-    AstCoverInc* newCoverInc(FileLine* fl, const string& type, const string& comment) {
+    AstCoverInc* newCoverInc(FileLine* fl, const string& hier,
+			     const string& type, const string& comment) {
 	int column = 0;
 	FileMap::iterator it = m_fileps.find(fl);
 	if (it == m_fileps.end()) {
@@ -66,6 +68,7 @@ private:
 	}
 
 	AstCoverDecl* declp = new AstCoverDecl(fl, column, type, comment);
+	declp->hier(hier);
 	m_modp->addStmtp(declp);
 
 	return new AstCoverInc(fl, declp);
@@ -86,7 +89,7 @@ private:
 		if (!nodep->backp()->castIf()
 		    || nodep->backp()->castIf()->elsesp()!=nodep) {  // Ignore if else; did earlier
 		    UINFO(4,"   COVER: "<<nodep<<endl);
-		    nodep->addIfsp(newCoverInc(nodep->fileline(), "block", "if"));
+		    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "block", "if"));
 		}
 	    }
 	    // Don't do empty else's, only empty if/case's
@@ -96,9 +99,9 @@ private:
 		if (m_checkBlock && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
 		    if (nodep->elsesp()->castIf()) {
-			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "block", "elsif"));
+			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "block", "elsif"));
 		    } else {
-			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "block", "else"));
+			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "block", "else"));
 		    }
 		}
 	    }
@@ -111,18 +114,20 @@ private:
 	    nodep->bodysp()->iterateAndNext(*this);
 	    if (m_checkBlock) {	// if the case body didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
-		nodep->addBodysp(newCoverInc(nodep->fileline(), "block", "case"));
+		nodep->addBodysp(newCoverInc(nodep->fileline(), "", "block", "case"));
 	    }
 	    m_checkBlock = true;  // Reset as a child may have cleared it
 	}
     }
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	UINFO(4," PSLCOVER: "<<nodep<<endl);
+	m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
 	nodep->iterateChildren(*this);
 	if (!nodep->coverincp()) {
 	    // Note the name may be overridden by V3Assert processing
-	    nodep->coverincp(newCoverInc(nodep->fileline(), "psl_cover", "cover"));
+	    nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "psl_cover", "cover"));
 	}
+	m_checkBlock = true;  // Reset as a child may have cleared it
     }
     virtual void visit(AstStop* nodep, AstNUser*) {
 	UINFO(4,"  STOP: "<<nodep<<endl);
@@ -134,8 +139,24 @@ private:
 	    UINFO(4,"  OFF: "<<nodep<<endl);
 	    m_checkBlock = false;
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	} else {
+	    if (m_checkBlock) nodep->iterateChildren(*this);
 	}
-	if (m_checkBlock) nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstBegin* nodep, AstNUser*) {
+	// Record the hiearchy of any named begins, so we can apply to user
+	// coverage points.  This is because there may be cov points inside
+	// generate blocks; each point should get separate consideration.
+	// (Currently ignored for line coverage, since any generate iteration
+	// covers the code in that line.)
+	string oldHier = m_beginHier;
+	{
+	    if (nodep->name()!="") {
+		m_beginHier = m_beginHier + (m_beginHier!=""?".":"") + nodep->name();
+	    }
+	    nodep->iterateChildren(*this);
+	}
+	m_beginHier = oldHier;
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
@@ -150,6 +171,7 @@ public:
     CoverageVisitor(AstNetlist* rootp) {
 	// Operate on all modules
 	m_checkBlock = true;
+	m_beginHier = "";
 	rootp->iterateChildren(*this);
     }
     virtual ~CoverageVisitor() {}
