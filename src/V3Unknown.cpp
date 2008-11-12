@@ -70,6 +70,7 @@ private:
 	m_modp = nodep;
 	m_constXCvt = true;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
 	m_constXCvt = false;  // Avoid loosing the X's in casex

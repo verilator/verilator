@@ -77,6 +77,7 @@ private:
 	m_modp = nodep;
 	m_deepNum = 0;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	// We recurse into this.

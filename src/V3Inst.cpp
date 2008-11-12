@@ -61,6 +61,7 @@ private:
 	//if (nodep->name() == "t_chg") m_debug = 9; else m_debug=0;
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(4,"  CELL   "<<nodep<<endl);

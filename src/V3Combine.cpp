@@ -407,6 +407,7 @@ private:
 	    nodep->iterateChildren(*this);
 	    m_state = STATE_IDLE;
 	}
+	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	m_funcp = nodep;

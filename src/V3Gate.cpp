@@ -316,6 +316,7 @@ private:
 	m_modp = nodep;
 	m_activeReducible = true;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(4," SCOPE "<<nodep<<endl);

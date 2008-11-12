@@ -53,6 +53,7 @@ public:
 	putbs("module "+modClassName(nodep)+";\n");
 	nodep->iterateChildren(*this);
 	puts("endmodule\n");
+	m_modp = NULL;
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	putbs(nodep->castTask() ? "task ":"function ");

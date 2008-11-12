@@ -177,6 +177,7 @@ private:
 	m_modFuncs.clear();
 	nodep->iterateChildren(*this);
 	makePublicFuncWrappers();
+	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	m_scopep = nodep;

@@ -461,6 +461,7 @@ private:
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(4," SCOPE "<<nodep<<endl);

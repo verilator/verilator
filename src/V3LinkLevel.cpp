@@ -47,6 +47,7 @@ private:
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Track module depths, so can sort list from parent down to children

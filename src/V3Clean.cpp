@@ -155,6 +155,7 @@ private:
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
     }
     virtual void visit(AstNodeUniop* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
