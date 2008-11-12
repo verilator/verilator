@@ -16,9 +16,10 @@ execute (
 	 check_finished=>1,
 	 );
 
-file_grep ($Last_Self->{coverage_filename}, qr/,o=>'cover'.*,c=>2\);/);
-file_grep ($Last_Self->{coverage_filename}, qr/DefaultClock.*,c=>1\);/);
-file_grep ($Last_Self->{coverage_filename}, qr/ToggleLogIf.*,c=>9\);/);
+# Allow old Perl format dump, or new binary dump
+file_grep ($Last_Self->{coverage_filename}, qr/(,o=>'cover'.*,c=>2\)|o.cover.* 2\n)/);
+file_grep ($Last_Self->{coverage_filename}, qr/(DefaultClock.*,c=>1\)|DefaultClock.* 1\n)/);
+file_grep ($Last_Self->{coverage_filename}, qr/(ToggleLogIf.*,c=>9\)|ToggleLogIf.* 9\n)/);
 
 ok(1);
 1;

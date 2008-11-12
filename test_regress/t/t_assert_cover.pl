@@ -23,8 +23,8 @@ if ($Last_Self->{nc}) {
     {
 	my $fh = IO::File->new(">$cf") or die "%Error: $! writing $cf,";
 	$fh->printf("report_summary -module *\n");
-	$fh->printf("report_detail -both -module *\n");
-	$fh->printf("report_html -both -module * > obj_dir/${name}__nccover.html\n");
+	$fh->printf("report_detail -both -instance *\n");
+	$fh->printf("report_html -both -instance * > obj_dir/${name}__nccover.html\n");
 	$fh->close;
     }
     $Last_Self->_run (logfile=>"obj_dir/${name}__nccover.log",
@@ -36,7 +36,9 @@ if ($Last_Self->{nc}) {
 file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==4/);
 file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==5/);
 file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==6/);
-file_grep ($Last_Self->{coverage_filename}, qr/cyc_eq_5.*,c=>[^0]/);
+
+# Allow old Perl format dump, or new binary dump
+file_grep ($Last_Self->{coverage_filename}, qr/(cyc_eq_5.*,c=>[^0]|cyc_eq_5.* [1-9][0-9]*\n)/);
 
 ok(1);
 1;

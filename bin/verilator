@@ -2034,9 +2034,9 @@ Visual C++ Version 7 or newer, but this is not tested by the author.
 
 =item Can you provide binaries?
 
-Verilator is available as a RPM for SuSE and perhaps other systems; this is
-done by porters and may slightly lag the primary distribution.  If there
-isn't a binary build for your distribution, how about you set one up?
+Verilator is available as a RPM for SuSE, Redhat and perhaps other systems;
+this is done by porters and may slightly lag the primary distribution.  If
+there isn't a binary build for your distribution, how about you set one up?
 Please contact the authors for assistance.
 
 Note people sometimes request binaries when they are having problems with

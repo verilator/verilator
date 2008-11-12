@@ -31,7 +31,7 @@ VERILATOR_FLAGS = --sc $(V_FLAGS) top.v
 
 precopy: obj_dir obj_dir/sc_main.cpp
 obj_dir/sc_main.cpp: ../test_sp/sc_main.cpp
-	mkdir obj_dir
+	mkdir -p obj_dir
 	cp $^ $@
 
 prep:
