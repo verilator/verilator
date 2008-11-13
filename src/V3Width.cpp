@@ -302,13 +302,22 @@ private:
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,BOTH).p());
 	    if (widthBad(nodep->lsbp(),selwidth,selwidth)
-		&& nodep->lsbp()->width()!=32)
+		&& nodep->lsbp()->width()!=32) {
 		nodep->v3warn(WIDTH,"Bit extraction of var["<<frommsb<<":"<<fromlsb<<"] requires "
 			      <<selwidth<<" bit index, not "
 			      <<nodep->lsbp()->width()
 			      <<(nodep->lsbp()->width()!=nodep->lsbp()->widthMin()
 				 ?" or "+cvtToStr(nodep->lsbp()->widthMin()):"")
 			      <<" bits.");
+	    }
+	    if (nodep->lsbp()->castConst() && nodep->msbConst() > frommsb) {
+		// See also warning in V3Const
+		// We need to check here, because the widthCheck may silently
+		// add another SEL which will loose the out-of-range check
+		nodep->v3error("Selection index out of range: "
+ 			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
+			       <<" outside "<<frommsb<<":"<<fromlsb);
+	    }
 	    widthCheck(nodep,"Extract Range",nodep->lsbp(),selwidth,selwidth,true);
 	}
     }
@@ -909,7 +918,7 @@ bool WidthVisitor::fixAutoExtend (AstNode*& nodepr, int expWidth) {
 void WidthVisitor::widthCheck (AstNode* nodep, const char* side,
 			      AstNode* underp, int expWidth, int expWidthMin,
 			      bool ignoreWarn) {
-    //UINFO(0,"wchk "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
+    //UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
     if (expWidthMin==0) expWidthMin = expWidth;
     bool bad = widthBad(underp,expWidth,expWidthMin);
     if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp

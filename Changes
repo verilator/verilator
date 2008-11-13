@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.68***
+
+**** Fix 'bad select range' warning missing some cases, bug43. [Lane Brooks]
+
 * Verilator 3.681 2008/11/12
 
 ***  Add SystemVerilog unique and priority case.

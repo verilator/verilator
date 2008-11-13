@@ -222,6 +222,7 @@ private:
 		&& (!varp->rangep() || varp->msb())  // else it's non-resolvable parameterized
 		&& ( (  (nodep->msbConst() > varp->msbMaxSelect())
 			|| (nodep->lsbConst() > varp->msbMaxSelect())))) {
+		// See also warning in V3Width
 		nodep->v3error("Selection index out of range: "
 			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
 			       <<" outside "<<varp->msbMaxSelect()<<":0"
