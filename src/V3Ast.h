@@ -422,6 +422,7 @@ public:
     uint32_t hshval() const { return m_both & M24; }
     // OPERATORS
     inline bool operator== (const V3Hash& rh) const { return m_both==rh.m_both; };
+    inline bool operator!= (const V3Hash& rh) const { return m_both!=rh.m_both; };
     inline bool operator< (const V3Hash& rh) const { return m_both<rh.m_both; };
     // CREATORS
     class Illegal {};		// for creator type-overload selection

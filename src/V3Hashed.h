@@ -57,6 +57,8 @@ public:
     void erase(iterator it);		// Remove node from structures
     iterator findDuplicate(AstNode* nodep);	// Return duplicate in hash, if any
     AstNode* iteratorNodep(iterator it) { return it->second; }
+    void dumpFile(const string& filename, bool tree);
+    void dumpFilePrefixed(const string& nameComment, bool tree=false);
 };
 
 #endif // Guard

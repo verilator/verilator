@@ -186,7 +186,7 @@ private:
     int			m_modNFuncs;	// Number of functions made
     AstNode*		m_walkLast1p;	// Final node that is the same in duplicate list
     AstNode*		m_walkLast2p;	// Final node that is the same in duplicate list
-    V3Hashed		m_hashed;	// Hash for every node
+    V3Hashed		m_hashed;	// Hash for every node in module
 
     // METHODS
     void hashStatement(AstNode* nodep) {
@@ -393,6 +393,9 @@ private:
 	m_state = STATE_HASH;
 	nodep->iterateChildren(*this);
 	m_state = STATE_IDLE;
+	if (debug()>=9) {
+	    m_hashed.dumpFilePrefixed("combine");
+	}
 	// Walk the hashes removing empty functions
 	if (emptyFunctionDeletion()) {
 	    walkEmptyFuncs();

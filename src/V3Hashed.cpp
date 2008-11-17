@@ -31,10 +31,13 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <algorithm>
+#include <iomanip>
+#include <map>
 
 #include "V3Global.h"
 #include "V3Hashed.h"
 #include "V3Ast.h"
+#include "V3File.h"
 
 //######################################################################
 // Hashed state, as a visitor of each AstNode
@@ -120,6 +123,54 @@ void V3Hashed::erase(iterator it) {
     if (!nodep->user4p()) nodep->v3fatalSrc("Called removeNode on non-hashed node");
     m_hashMmap.erase(it);
     nodep->user4p(NULL);   // So we don't allow removeNode again
+}
+
+void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
+    if (v3Global.opt.dumpTree()) {
+	dumpFile(v3Global.debugFilename(nameComment)+".hash", tree);
+    }
+}
+
+void V3Hashed::dumpFile(const string& filename, bool tree) {
+    const auto_ptr<ofstream> logp (V3File::new_ofstream(filename));
+    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+
+    map<int,int> dist;
+
+    V3Hash lasthash;
+    int num_in_bucket = 0;
+    for (HashMmap::iterator it=begin(); 1; ++it) {
+	if (lasthash != it->first || it==end()) {
+	    if (it!=end()) lasthash = it->first;
+	    if (num_in_bucket) {
+		if (dist.find(num_in_bucket)==dist.end()) {
+		    dist.insert(make_pair(num_in_bucket,1));
+		} else {
+		    ++dist[num_in_bucket];
+		}
+	    }
+	    num_in_bucket = 0;
+	}
+	if (it==end()) break;
+	num_in_bucket++;
+    }
+    *logp <<"\n*** STATS:\n"<<endl;
+    *logp<<"    #InBucket   Occurrences\n";
+    for (map<int,int>::iterator it=dist.begin(); it!=dist.end(); ++it) {
+	*logp<<"    "<<setw(9)<<it->first<<"  "<<setw(12)<<it->second<<endl;
+    }
+
+    *logp <<"\n*** Dump:\n"<<endl;
+    for (HashMmap::iterator it=begin(); it!=end(); ++it) {
+	if (lasthash != it->first) {
+	    lasthash = it->first;
+	    *logp <<"    "<<it->first<<endl;
+	}
+	*logp <<"\t"<<it->second<<endl;
+	// Dumping the entire tree may make nearly N^2 sized dumps,
+	// because the nodes under this one may also be in the hash table!
+	if (tree) it->second->dumpTree(*logp,"\t\t");
+    }
 }
 
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
