@@ -132,6 +132,35 @@ private:
 	if (rnodep->width() != bnodep->width()) return false;
 	return operandsSame(bnodep->lhsp(), rnodep->lhsp());
     }
+    bool operandAsvLUp (AstNode* nodep) {
+	// BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
+	//
+	// Example of how this is useful:
+	// BIASV(BIASV(CONSTa,b...),BIASV(CONSTc,d...))	 // hits operandAsvUp
+	// BIASV(CONSTa,BIASV(b...,BIASV(CONSTc,d...)))	 // hits operandAsvUp
+	// BIASV(CONSTa,BIASV(CONSTc,BIASV(c...,d...)))  // hits operandAsvConst
+	// BIASV(BIASV(CONSTa,CONSTc),BIASV(c...,d...))) // hits normal constant propagation
+	// BIASV(CONST_a_c,BIASV(c...,d...)))	
+	//
+	// Idea for the future: All BiComAsvs could be lists, sorted by if they're constant
+	AstNodeBiComAsv* bnodep = nodep->castNodeBiComAsv();
+	if (!bnodep) return false;
+	AstNodeBiComAsv* lnodep = bnodep->lhsp()->castNodeBiComAsv();
+	if (!lnodep) return false;
+	if (lnodep->type() != bnodep->type()) return false;
+	if (lnodep->width() != bnodep->width()) return false;
+	return lnodep->lhsp()->castConst();
+    }
+    bool operandAsvRUp (AstNode* nodep) {
+	// BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
+	AstNodeBiComAsv* bnodep = nodep->castNodeBiComAsv();
+	if (!bnodep) return false;
+	AstNodeBiComAsv* rnodep = bnodep->rhsp()->castNodeBiComAsv();
+	if (!rnodep) return false;
+	if (rnodep->type() != bnodep->type()) return false;
+	if (rnodep->width() != bnodep->width()) return false;
+	return rnodep->lhsp()->castConst();
+    }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
 		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width()));
@@ -367,6 +396,30 @@ private:
 	rp->rhsp(bp);
 	if (rp->lhsp()->castConst() && rp->rhsp()->castConst()) replaceConst(rp);
 	//nodep->dumpTree(cout, "  repAsvConst_new: ");
+    }
+    void replaceAsvLUp (AstNodeBiop* nodep) {
+	// BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
+	AstNodeBiop* lp = nodep->lhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* llp = lp->lhsp()->unlinkFrBack();
+	AstNode* lrp = lp->rhsp()->unlinkFrBack();
+	AstNode* rp  = nodep->rhsp()->unlinkFrBack();
+	nodep->lhsp(llp);
+	nodep->rhsp(lp);
+	lp->lhsp(lrp);
+	lp->rhsp(rp);
+	//nodep->dumpTree(cout, "  repAsvLUp_new: ");
+    }
+    void replaceAsvRUp (AstNodeBiop* nodep) {
+	// BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
+	AstNode* lp  = nodep->lhsp()->unlinkFrBack();
+	AstNodeBiop* rp = nodep->rhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* rlp = rp->lhsp()->unlinkFrBack();
+	AstNode* rrp = rp->rhsp()->unlinkFrBack();
+	nodep->lhsp(rlp);
+	nodep->rhsp(rp);
+	rp->lhsp(lp);
+	rp->rhsp(rrp);
+	//nodep->dumpTree(cout, "  repAsvRUp_new: ");
     }
     void replaceExtend (AstNode* nodep, AstNode* arg0p) {
 	// -> EXTEND(nodep)
@@ -1208,6 +1261,8 @@ private:
     TREEOP("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",	"swapSides(nodep)");
     TREEOP("AstNodeBiComAsv{operandAsvConst(nodep)}",	"replaceAsv(nodep)");
     TREEOP("AstNodeBiComAsv{operandAsvSame(nodep)}",	"replaceAsv(nodep)");
+    TREEOP("AstNodeBiComAsv{operandAsvLUp(nodep)}",	"replaceAsvLUp(nodep)");
+    TREEOP("AstNodeBiComAsv{operandAsvRUp(nodep)}",	"replaceAsvRUp(nodep)");
     //    v--- *1* as These ops are always first, as we warn before replacing
     TREEOP1("AstLt   {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,0)");
     TREEOP1("AstGte  {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,1)");
