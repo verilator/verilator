@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.68***
 
+***  Optimize two-level shift and and/or trees, +23% on one test.
+
 **** Fix 'bad select range' warning missing some cases, bug43. [Lane Brooks]
 
 * Verilator 3.681 2008/11/12

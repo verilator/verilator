@@ -161,6 +161,37 @@ private:
 	if (rnodep->width() != bnodep->width()) return false;
 	return rnodep->lhsp()->castConst();
     }
+    static bool operandAndOrSame(AstNode* nodep) {
+	AstNodeBiop* np = nodep->castNodeBiop();
+	AstNodeBiop* lp = np->lhsp()->castNodeBiop();
+	AstNodeBiop* rp = np->rhsp()->castNodeBiop();
+	return (lp && rp
+		&& lp->width()==rp->width()
+		&& lp->type()==rp->type()
+		&& operandsSame(lp->lhsp(),rp->lhsp()));
+    }
+    static bool operandShiftSame(AstNode* nodep) {
+	AstNodeBiop* np = nodep->castNodeBiop();
+	{
+	    AstShiftL* lp = np->lhsp()->castShiftL();
+	    AstShiftL* rp = np->rhsp()->castShiftL();
+	    if (lp && rp) {
+		return (lp->width() == rp->width()
+			&& lp->lhsp()->width() == rp->lhsp()->width()
+			&& operandsSame(lp->rhsp(), rp->rhsp()));
+	    }
+	}
+	{
+	    AstShiftR* lp = np->lhsp()->castShiftR();
+	    AstShiftR* rp = np->rhsp()->castShiftR();
+	    if (lp && rp) {
+		return (lp->width() == rp->width()
+			&& lp->lhsp()->width() == rp->lhsp()->width()
+			&& operandsSame(lp->rhsp(), rp->rhsp()));
+	    }
+	}
+	return false;
+    }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
 		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width()));
@@ -420,6 +451,42 @@ private:
 	rp->lhsp(lp);
 	rp->rhsp(rrp);
 	//nodep->dumpTree(cout, "  repAsvRUp_new: ");
+    }
+    void replaceAndOr (AstNodeBiop* nodep) {
+	// Or(And(CONSTll,lr),And(CONSTrl==ll,rr)) -> And(CONSTll,Or(lr,rr))
+	// (Or/And may also be reversed)
+	AstNodeBiop* lp = nodep->lhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* llp = lp->lhsp()->unlinkFrBack();
+	AstNode* lrp = lp->rhsp()->unlinkFrBack();
+	AstNodeBiop* rp = nodep->rhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* rlp = rp->lhsp()->unlinkFrBack();
+	AstNode* rrp = rp->rhsp()->unlinkFrBack();
+	nodep->replaceWith(lp);
+	lp->lhsp(llp);
+	lp->rhsp(nodep);
+	nodep->lhsp(lrp);
+	nodep->rhsp(rrp);
+	rp->deleteTree();
+	rlp->deleteTree();
+	//nodep->dumpTree(cout, "  repAndOr_new: ");
+    }
+    void replaceShiftSame (AstNodeBiop* nodep) {
+	// Or(Shift(ll,CONSTlr),Shift(rl,CONSTrr==lr)) -> Shift(Or(ll,rl),CONSTlr)
+	// (Or/And may also be reversed)
+	AstNodeBiop* lp = nodep->lhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* llp = lp->lhsp()->unlinkFrBack();
+	AstNode* lrp = lp->rhsp()->unlinkFrBack();
+	AstNodeBiop* rp = nodep->rhsp()->unlinkFrBack()->castNodeBiop();
+	AstNode* rlp = rp->lhsp()->unlinkFrBack();
+	AstNode* rrp = rp->rhsp()->unlinkFrBack();
+	nodep->replaceWith(lp);
+	lp->lhsp(nodep);
+	lp->rhsp(lrp);
+	nodep->lhsp(llp);
+	nodep->rhsp(rlp);
+	rp->deleteTree();
+	rrp->deleteTree();
+	//nodep->dumpTree(cout, "  repShiftSame_new: ");
     }
     void replaceExtend (AstNode* nodep, AstNode* arg0p) {
 	// -> EXTEND(nodep)
@@ -1374,6 +1441,13 @@ private:
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
     TREEOPV("AstConcat{operandConcatMove(nodep)}",	"moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",		"replaceExtend(nodep, nodep->rhsp())");
+    // Common two-level operations that can be simplified
+    TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");
+    TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");
+    TREEOP ("AstAnd {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
+    TREEOP ("AstOr  {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
+    TREEOP ("AstXor {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
+    TREEOP ("AstXnor{operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",		"replaceExtend(nodep, nodep->lhsp()->castExtend()->lhsp())");
     TREEOPV("AstExtendS{$lhsp.castExtendS}",		"replaceExtend(nodep, nodep->lhsp()->castExtendS()->lhsp())");
