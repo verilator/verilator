@@ -34,11 +34,11 @@
 //		For each var it sets, make vertex and edge from cfunc vertex
 //
 //	For each CFUNC in graph
-//		Add ASSIGN(SEL(__Vm_funcActivity,activityNumber++),1)
-//	Create 	__Vm_funcActivity vector
+//		Add ASSIGN(SEL(__Vm_traceActivity,activityNumber++),1)
+//	Create 	__Vm_traceActivity vector
 //	Sort TRACEs by activityNumber(s) they come from (may be more than one)
 //	Each set of activityNumbers
-//		Add IF (SEL(__Vm_funcActivity,activityNumber),1)
+//		Add IF (SEL(__Vm_traceActivity,activityNumber),1)
 //		Add traces under that activity number.
 //	Assign trace codes:
 //		If from a VARSCOPE, record the trace->varscope map
