@@ -568,6 +568,14 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-output-split-cfuncs") ) {
 		shift;
 		m_outputSplitCFuncs = atoi(argv[i]);
+		if (m_outputSplitCFuncs && (!m_outputSplitCTrace
+					    || m_outputSplitCTrace>m_outputSplitCFuncs)) {
+		    m_outputSplitCTrace = m_outputSplitCFuncs;
+		}
+	    }
+	    else if ( !strcmp (sw, "-output-split-ctrace") ) { // Undocumented optimization tweak
+		shift;
+		m_outputSplitCTrace = atoi(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-trace-depth") ) {
 		shift;
@@ -873,6 +881,7 @@ V3Options::V3Options() {
     m_inlineMult = 2000;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
+    m_outputSplitCTrace = 0;
     m_traceDepth = 0;
     m_unrollCount = 64;
     m_unrollStmts = 20;

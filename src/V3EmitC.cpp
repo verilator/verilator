@@ -72,10 +72,20 @@ private:
     bool	m_suppressSemi;
     AstVarRef*	m_wideTempRefp;		// Variable that _WW macros should be setting
     vector<AstVar*>		m_ctorVarsVec;		// All variables in constructor order
+    int		m_splitSize;	// # of cfunc nodes placed into output file
+    int		m_splitFilenum;	// File number being created, 0 = primary
 public:
     EmitCoverIds m_coverIds;	// Coverage ID remapping
 public:
     //int debug() { return 9; }
+
+    // ACCESSORS
+    int	splitFilenum() { return m_splitFilenum; }
+    int	splitFilenumInc() { m_splitSize = 0; return ++m_splitFilenum; }
+    int splitSize() { return m_splitSize; }
+    void splitSizeInc(AstNode* nodep) { m_splitSize += EmitCBaseCounterVisitor(nodep).count(); }
+    bool splitNeeded() { return (splitSize() && v3Global.opt.outputSplit() > 1
+				 && v3Global.opt.outputSplit() < splitSize()); }
 
     // METHODS
     void displayNode(AstNode* nodep, const string& vformat, AstNode* exprsp, bool isScan);
@@ -542,6 +552,8 @@ public:
     EmitCStmts() {
 	m_suppressSemi = false;
 	m_wideTempRefp = NULL;
+	m_splitSize = 0;
+	m_splitFilenum = 0;
     }
     virtual ~EmitCStmts() {}
 };
@@ -555,8 +567,6 @@ class EmitCImp : EmitCStmts {
     vector<AstChangeDet*>	m_blkChangeDetVec;	// All encountered changes in block
     bool	m_slow;		// Creating __Slow file
     bool	m_fast;		// Creating non __Slow file (or both)
-    int		m_splitSize;	// # of cfunc nodes placed into output file
-    int		m_splitFilenum;	// File number being created, 0 = primary
 
     //---------------------------------------
     // METHODS
@@ -628,16 +638,14 @@ class EmitCImp : EmitCStmts {
     //---------------------------------------
     // VISITORS
     virtual void visit(AstCFunc* nodep, AstNUser*) {
-	if (nodep->funcType() == AstCFuncType::TRACE_INIT
-	    || nodep->funcType() == AstCFuncType::TRACE_FULL
-	    || nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
-	    return;  // Handled specially
+	if (nodep->funcType().isTrace()) {
+	    return;  // TRACE_* handled specially
 	}
 	if (!(nodep->slow() ? m_slow : m_fast)) return;
 
 	m_blkChangeDetVec.clear();
 
-	m_splitSize += EmitCBaseCounterVisitor(nodep).count();
+	splitSizeInc(nodep);
 
 	puts("\n");
 	puts(nodep->rtnTypeVoid()); puts(" ");
@@ -739,7 +747,6 @@ class EmitCImp : EmitCStmts {
     void emitIntFuncDecls(AstModule* modp);
     // High level
     void emitImp(AstModule* modp);
-    void emitImpBottom(AstModule* modp);
     void emitStaticDecl(AstModule* modp);
     void emitWrapEval(AstModule* modp);
     void emitInt(AstModule* modp);
@@ -748,15 +755,12 @@ class EmitCImp : EmitCStmts {
 public:
     EmitCImp() {
 	m_modp = NULL;
-	m_splitSize = 0;
-	m_splitFilenum = 0;
     }
     virtual ~EmitCImp() {}
     void main(AstModule* modp, bool slow, bool fast);
     void mainDoFunc(AstCFunc* nodep) {
 	nodep->accept(*this);
     }
-    int splitSize() { return m_splitSize; }
 };
 
 //######################################################################
@@ -1646,25 +1650,25 @@ void EmitCImp::emitImp(AstModule* modp) {
     // Us
     puts("#include \""+ symClassName() +".h\"\n");
 
-    if (optSystemPerl() && (m_splitFilenum || !m_fast)) {
+    if (optSystemPerl() && (splitFilenum() || !m_fast)) {
 	puts("\n");
 	puts("SP_MODULE_CONTINUED("+modClassName(modp)+");\n");
     }
 
     emitTextSection(AstType::SCIMPHDR);
 
-    if (m_slow && m_splitFilenum==0) {
+    if (m_slow && splitFilenum()==0) {
 	puts("\n//--------------------\n");
 	puts("// STATIC VARIABLES\n\n");
 	emitVarList(modp->stmtsp(), EVL_ALL, modClassName(modp));
     }
 
-    if (m_fast && m_splitFilenum==0) {
+    if (m_fast && splitFilenum()==0) {
 	emitTextSection(AstType::SCIMP);
 	emitStaticDecl(modp);
     }
 
-    if (m_slow && m_splitFilenum==0) {
+    if (m_slow && splitFilenum()==0) {
 	puts("\n//--------------------\n");
 	emitCtorImp(modp);
 	emitConfigureImp(modp);
@@ -1672,7 +1676,7 @@ void EmitCImp::emitImp(AstModule* modp) {
 	emitCoverageImp(modp);
     }
 
-    if (m_fast && m_splitFilenum==0) {
+    if (m_fast && splitFilenum()==0) {
 	if (modp->isTop()) {
 	    emitStaticDecl(modp);
 	    puts("\n//--------------------\n");
@@ -1681,7 +1685,7 @@ void EmitCImp::emitImp(AstModule* modp) {
 	}
     }
 
-    if (m_fast && m_splitFilenum==0) {
+    if (m_fast && splitFilenum()==0) {
 	if (v3Global.opt.trace() && optSystemPerl() && m_modp->isTop()) {
 	    puts("\n");
 	    puts("\n/*AUTOTRACE(__MODULE__,recurse,activity,exists)*/\n\n");
@@ -1691,9 +1695,6 @@ void EmitCImp::emitImp(AstModule* modp) {
     // Blocks
     puts("\n//--------------------\n");
     puts("// Internal Methods\n");
-}
-
-void EmitCImp::emitImpBottom(AstModule* modp) {
 }
 
 //######################################################################
@@ -1741,22 +1742,17 @@ void EmitCImp::main(AstModule* modp, bool slow, bool fast) {
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCFunc* funcp = nodep->castCFunc()) {
-	    if (v3Global.opt.outputSplit() > 1 && splitSize()
-		&& v3Global.opt.outputSplit() < splitSize()) {
+	    if (splitNeeded()) {
 		// Close old file
-		emitImpBottom (modp);
 		delete m_ofp; m_ofp=NULL;
-
 		// Open a new file
-		m_splitSize = 0;
-		m_ofp = newOutCFile (modp, !m_fast, true/*source*/, ++m_splitFilenum);
+		m_ofp = newOutCFile (modp, !m_fast, true/*source*/, splitFilenumInc());
 		emitImp (modp);
 	    }
 	    mainDoFunc(funcp);
 	}
     }
 
-    emitImpBottom (modp);
     delete m_ofp; m_ofp=NULL;
 }
 
@@ -1766,7 +1762,24 @@ void EmitCImp::main(AstModule* modp, bool slow, bool fast) {
 class EmitCTrace : EmitCStmts {
     AstCFunc*	m_funcp;	// Function we're in now
     bool	m_slow;		// Making slow file
+
     // METHODS
+    void newOutCFile(int filenum) {
+	string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
+			   + (m_slow?"__Trace__Slow":"__Trace"));
+	if (filenum) filename += "__"+cvtToStr(filenum);
+	filename += ".cpp";
+
+	AstCFile* cfilep = newCFile(filename, m_slow, true/*source*/);
+	cfilep->support(true);
+
+	if (m_ofp) v3fatalSrc("Previous file not closed");
+	m_ofp = new V3OutCFile (filename);
+	m_ofp->putsHeader();
+
+	emitTraceHeader();
+    }
+
     void emitTraceHeader() {
 	// Includes
 	if (optSystemPerl()) {
@@ -1857,7 +1870,9 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
 	nodep->precondsp()->iterateAndNext(*this);
-	string full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL) ? "full":"chg";
+	string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
+			|| m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
+		       ? "full":"chg");
 	if (nodep->isWide() || emitTraceIsScWide(nodep)) {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
@@ -1908,10 +1923,17 @@ class EmitCTrace : EmitCStmts {
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	if (nodep->slow() != m_slow) return;
-	if (nodep->funcType() == AstCFuncType::TRACE_INIT
-	    || nodep->funcType() == AstCFuncType::TRACE_FULL
-	    || nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
+	if (nodep->funcType().isTrace()) {   // TRACE_*
 	    m_funcp = nodep;
+
+	    if (splitNeeded()) {
+		// Close old file
+		delete m_ofp; m_ofp=NULL;
+		// Open a new file
+		newOutCFile (splitFilenumInc());
+	    }
+
+	    splitSizeInc(nodep);
 
 	    puts("\n");
 	    puts(nodep->rtnTypeVoid()); puts(" ");
@@ -1924,8 +1946,11 @@ class EmitCTrace : EmitCStmts {
 	    puts("if (0 && vcdp && c) {}  // Prevent unused\n");
 	    if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
 		puts("vcdp->module(vlSymsp->name()); // Setup signal names\n");
+	    } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
+	    } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE) {
+	    } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
 	    } else nodep->v3fatalSrc("Bad Case");
 
 	    if (nodep->initsp()) puts("// Variables\n");
@@ -1935,8 +1960,6 @@ class EmitCTrace : EmitCStmts {
 
 	    puts("// Body\n");
 	    puts("{\n");
-	    // Do the statements  Note not from this node, but the TRACE_INIT's.
-	    // That saved us from having 3 copies of all of the TRACEs
 	    nodep->stmtsp()->iterateAndNext(*this);
 	    puts("}\n");
 	    if (nodep->finalsp()) puts("// Final\n");
@@ -1978,23 +2001,14 @@ public:
     virtual ~EmitCTrace() {}
     void main() {
 	// Put out the file
-	string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
-			   + (m_slow?"__Trace__Slow.cpp":"__Trace.cpp"));
-	AstCFile* cfilep = newCFile(filename, m_slow, true/*source*/);
-	cfilep->support(true);
-
-	V3OutCFile of (filename);
-	of.putsHeader();
-	m_ofp = &of;
-
-	emitTraceHeader();
+	newOutCFile(0);
 
 	if (m_slow) emitTraceSlow();
 	else emitTraceFast();
 
 	v3Global.rootp()->accept(*this);
 
-	m_ofp = NULL;
+	delete m_ofp; m_ofp=NULL;
     }
 };
 

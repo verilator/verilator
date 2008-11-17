@@ -137,7 +137,7 @@ public:
 };
 
 //######################################################################
-// Fileize state, as a visitor of each AstNode
+// Count operations under the given node, as a visitor of each AstNode
 
 class EmitCBaseCounterVisitor : public AstNVisitor {
 private:

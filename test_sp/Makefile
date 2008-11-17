@@ -28,7 +28,11 @@ test_debug:    prep_dbg    preproc compile_dbg run coverage
 test_nopublic: prep_dbg_np preproc compile_dbg run coverage
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
-VERILATOR_FLAGS = --public --sp --coverage --stats --trace $(V_FLAGS) top.v
+
+# Note the --public --output-split-cfunc is here for testing only,
+# Avoid using these settings in real application Makefiles!
+VERILATOR_FLAGS = --public --output-split-cfuncs 100 --output-split 100 \
+	--sp --coverage --stats --trace $(V_FLAGS) top.v
 
 prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)

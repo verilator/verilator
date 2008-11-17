@@ -168,16 +168,23 @@ private:
     AstTraceInc*	m_tracep;	// Trace function adding to graph
     AstCFunc*		m_initFuncp;	// Trace function we add statements to
     AstCFunc*		m_fullFuncp;	// Trace function we add statements to
+    AstCFunc*		m_fullSubFuncp;	// Trace function we add statements to (under full)
+    int			m_fullSubStmts;	// Statements under function being built
     AstCFunc*		m_chgFuncp;	// Trace function we add statements to
+    AstCFunc*		m_chgSubFuncp;	// Trace function we add statements to (under full)
+    AstNode*		m_chgSubParentp;// Which node has call to m_chgSubFuncp
+    int			m_chgSubStmts;	// Statements under function being built
     AstVarScope*	m_activityVscp;	// Activity variable
     uint32_t		m_code;		// Trace ident code# being assigned
     V3Graph		m_graph;	// Var/CFunc tracking
     TraceActivityVertex* m_alwaysVtxp;	// "Always trace" vertex
     bool		m_finding;	// Pass one of algorithm?
+    int			m_funcNum;	// Function number being built
 
     V3Double0		m_statChgSigs;	// Statistic tracking
     V3Double0		m_statUniqSigs;	// Statistic tracking
     V3Double0		m_statUniqCodes;// Statistic tracking
+
     //int debug() { return 9; }
 
     // METHODS
@@ -321,6 +328,50 @@ private:
 	}
     }
 
+    AstCFunc* newCFunc(AstCFuncType type, const string& name, AstCFunc* basep) {
+	AstCFunc* funcp = new AstCFunc(basep->fileline(), name, basep->scopep());
+	funcp->slow(basep->slow());
+	funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
+	funcp->funcType(type);
+	funcp->symProlog(true);
+	basep->addNext(funcp);
+	UINFO(5,"  Newfunc "<<funcp<<endl);
+	return funcp;
+    }
+    AstCFunc* newCFuncSub(AstCFunc* basep, AstNode* callfromp) {
+	string name = basep->name()+"__"+cvtToStr(++m_funcNum);
+	AstCFunc* funcp = NULL;
+	if (basep->funcType()==AstCFuncType::TRACE_FULL) {
+	    funcp = newCFunc(AstCFuncType::TRACE_FULL_SUB, name, basep);
+	} else if (basep->funcType()==AstCFuncType::TRACE_CHANGE) {
+	    funcp = newCFunc(AstCFuncType::TRACE_CHANGE_SUB, name, basep);
+	} else {
+	    basep->v3fatalSrc("Strange base function type");
+	}
+	AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+	callp->argTypes("vlSymsp, vcdp, code");
+	if (callfromp->castCFunc()) {
+	    callfromp->castCFunc()->addStmtsp(callp);
+	} else if (callfromp->castIf()) {
+	    callfromp->castIf()->addIfsp(callp);
+	} else {
+	    callfromp->v3fatalSrc("Unknown caller node type");  // Where to add it??
+	}
+	return funcp;
+    }
+    void addToChgSub(AstNode* underp, AstNode* stmtsp) {
+	if (!m_chgSubFuncp
+	    || (m_chgSubParentp != underp)
+	    || (m_chgSubStmts && v3Global.opt.outputSplitCTrace()
+		&& m_chgSubStmts > v3Global.opt.outputSplitCTrace())) {
+	    m_chgSubFuncp = newCFuncSub(m_chgFuncp, underp);
+	    m_chgSubParentp = underp;
+	    m_chgSubStmts = 0;
+	}
+	m_chgSubFuncp->addStmtsp(stmtsp);
+	m_chgSubStmts += EmitCBaseCounterVisitor(stmtsp).count();
+    }
+
     void putTracesIntoTree() {
 	// Form a sorted list of the traces we are interested in
 	UINFO(9,"Making trees\n");
@@ -365,7 +416,7 @@ private:
 
 	// Put TRACEs back into the tree
 	const ActCodeSet* lastactp = NULL;
-	AstNode* lastnodep = NULL;
+	AstNode* ifnodep = NULL;
 	for (TraceVec::iterator it = traces.begin(); it!=traces.end(); ++it) {
 	    const ActCodeSet& actset = it->first;
 	    TraceTraceVertex* vvertexp = it->second;
@@ -381,11 +432,10 @@ private:
 		    vvertexp->nodep()->v3fatalSrc("If never, needChg=0 and shouldn't need to add.");
 		} else if (actset.find(TraceActivityVertex::ACTIVITY_ALWAYS) != actset.end()) {
 		    // Must always set it; add to base of function
-		    m_chgFuncp->addStmtsp(addp);
-		} else if (lastactp && actset == *lastactp && lastnodep) {
+		    addToChgSub(m_chgFuncp, addp);
+		} else if (lastactp && actset == *lastactp && ifnodep) {
 		    // Add to last statement we built
-		    lastnodep->addNext(addp);
-		    lastnodep = addp;
+		    addToChgSub(ifnodep, addp);
 		} else {
 		    // Build a new IF statement
 		    FileLine* fl = addp->fileline();
@@ -398,11 +448,13 @@ private:
 			if (condp) condp = new AstOr (fl, condp, selp);
 			else condp = selp;
 		    }
-		    AstIf* ifp = new AstIf (fl, condp, addp, NULL);
+		    AstIf* ifp = new AstIf (fl, condp, NULL, NULL);
 		    ifp->branchPred(AstBranchPred::UNLIKELY);
 		    m_chgFuncp->addStmtsp(ifp);
 		    lastactp = &actset;
-		    lastnodep = addp;
+		    ifnodep = ifp;
+
+		    addToChgSub(ifnodep, addp);
 		}
 	    }
 	}
@@ -459,7 +511,16 @@ private:
 		m_statChgSigs++;
 		incAddp = nodep->cloneTree(true);
 	    }
-	    m_fullFuncp->addStmtsp(nodep);
+
+	    if (!m_fullSubFuncp
+		|| (m_fullSubStmts && v3Global.opt.outputSplitCTrace()
+		    && m_fullSubStmts > v3Global.opt.outputSplitCTrace())) {
+		m_fullSubFuncp = newCFuncSub(m_fullFuncp, m_fullFuncp);
+		m_fullSubStmts = 0;
+	    }
+
+	    m_fullSubFuncp->addStmtsp(nodep);
+	    m_fullSubStmts += EmitCBaseCounterVisitor(nodep).count();
 	} else {
 	    // Duplicates don't need a TraceInc
 	    pushDeletep(nodep); nodep=NULL;
@@ -622,7 +683,13 @@ public:
 	m_alwaysVtxp = NULL;
 	m_initFuncp = NULL;
 	m_fullFuncp = NULL;
+	m_fullSubFuncp = NULL;
+	m_fullSubStmts = 0;
 	m_chgFuncp = NULL;
+	m_chgSubFuncp = NULL;
+	m_chgSubParentp = NULL;
+	m_chgSubStmts = 0;
+	m_funcNum = 0;
 	nodep->accept(*this);
     }
     virtual ~TraceVisitor() {

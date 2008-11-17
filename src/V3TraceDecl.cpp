@@ -47,8 +47,12 @@ private:
     AstModule*		m_modp;		// Current module
     AstScope*		m_scopetopp;	// Current top scope
     AstCFunc*		m_initFuncp;	// Trace function being built
+    AstCFunc*		m_initSubFuncp;	// Trace function being built (under m_init)
+    int			m_initSubStmts;	// Number of statements in function
     AstCFunc*		m_fullFuncp;	// Trace function being built
     AstCFunc*		m_chgFuncp;	// Trace function being built
+    int			m_funcNum;	// Function number being built
+
     V3Double0		m_statSigs;	// Statistic tracking
     V3Double0		m_statIgnSigs;	// Statistic tracking
     //int debug() { return 9; }
@@ -69,37 +73,43 @@ private:
 	return NULL;
     }
 
+    AstCFunc* newCFunc(AstCFuncType type, const string& name, bool slow) {
+	AstCFunc* funcp = new AstCFunc(m_scopetopp->fileline(), name, m_scopetopp);
+	funcp->slow(slow);
+	funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
+	funcp->funcType(type);
+	funcp->symProlog(true);
+	m_scopetopp->addActivep(funcp);
+	UINFO(5,"  Newfunc "<<funcp<<endl);
+	return funcp;
+    }
+    AstCFunc* newCFuncSub(AstCFunc* basep) {
+	string name = basep->name()+"__"+cvtToStr(++m_funcNum);
+	AstCFunc* funcp = NULL;
+	if (basep->funcType()==AstCFuncType::TRACE_INIT) {
+	    funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name, basep->slow());
+	} else {
+	    basep->v3fatalSrc("Strange base function type");
+	}
+	AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+	callp->argTypes("vlSymsp, vcdp, code");
+	basep->addStmtsp(callp);
+	return funcp;
+    }
+    void addCFuncStmt(AstCFunc* basep, AstNode* nodep) {
+	basep->addStmtsp(nodep);
+    }
+
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	m_scopetopp = nodep->scopep();
-	// The container for m_traceFuncp must be made first
-	{
-	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceInitThis", m_scopetopp);
-	    funcp->slow(true);
-	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
-	    funcp->funcType(AstCFuncType::TRACE_INIT);
-	    funcp->symProlog(true);
-	    m_scopetopp->addActivep(funcp);
-	    m_initFuncp = funcp;
-	    UINFO(5,"  Newfunc "<<funcp<<endl);
-	}
-	{
-	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceFullThis", m_scopetopp);
-	    funcp->slow(true);
-	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
-	    funcp->funcType(AstCFuncType::TRACE_FULL);
-	    funcp->symProlog(true);
-	    m_scopetopp->addActivep(funcp);
-	    m_fullFuncp = funcp;
-	}
-	{
-	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "traceChgThis", m_scopetopp);
-	    funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
-	    funcp->funcType(AstCFuncType::TRACE_CHANGE);
-	    funcp->symProlog(true);
-	    m_scopetopp->addActivep(funcp);
-	    m_chgFuncp = funcp;
-	}
+	// Make containers for TRACEDECLs first
+	m_initFuncp = newCFunc(AstCFuncType::TRACE_INIT, "traceInitThis", true);
+	m_fullFuncp = newCFunc(AstCFuncType::TRACE_FULL, "traceFullThis", true);
+	m_chgFuncp  = newCFunc(AstCFuncType::TRACE_CHANGE, "traceChgThis", false);
+	//
+	m_initSubFuncp = newCFuncSub(m_initFuncp);
+	// And find variables
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
@@ -111,10 +121,10 @@ private:
 	    // Compute show name
 	    string showname = scopep->prettyName() + "." + varp->prettyName();
 	    if (showname.substr(0,4) == "TOP.") showname.replace(0,4,"");
-	    if (!m_initFuncp) nodep->v3fatalSrc("NULL");
+	    if (!m_initSubFuncp) nodep->v3fatalSrc("NULL");
 	    if (varIgnoreTrace(varp)) {
 		m_statIgnSigs++;
-		m_initFuncp->addStmtsp(
+		m_initSubFuncp->addStmtsp(
 		    new AstComment(nodep->fileline(),
 				   "Tracing: "+showname+" // Ignored: "+varIgnoreTrace(varp)));
 	    } else {
@@ -123,7 +133,16 @@ private:
 		if (nodep->valuep()) valuep=nodep->valuep()->cloneTree(true);
 		else valuep = new AstVarRef(nodep->fileline(), nodep, false);
 		AstTraceDecl* declp = new AstTraceDecl(nodep->fileline(), showname, varp);
-		m_initFuncp->addStmtsp(declp);
+
+		if (m_initSubStmts && v3Global.opt.outputSplitCTrace()
+		    && m_initSubStmts > v3Global.opt.outputSplitCTrace()) {
+		    m_initSubFuncp = newCFuncSub(m_initFuncp);
+		    m_initSubStmts = 0;
+		}
+
+		m_initSubFuncp->addStmtsp(declp);
+		m_initSubStmts += EmitCBaseCounterVisitor(declp).count();
+
 		m_chgFuncp->addStmtsp(new AstTraceInc(nodep->fileline(), declp, valuep));
 		// The full version will get constructed in V3Trace
 	    }
@@ -139,8 +158,11 @@ public:
     TraceDeclVisitor(AstNetlist* nodep) {
 	m_scopetopp = NULL;
 	m_initFuncp = NULL;
+	m_initSubFuncp = NULL;
+	m_initSubStmts = 0;
 	m_fullFuncp = NULL;
 	m_chgFuncp = NULL;
+	m_funcNum = 0;
 	nodep->accept(*this);
     }
     virtual ~TraceDeclVisitor() {

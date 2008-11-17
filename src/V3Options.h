@@ -114,6 +114,7 @@ class V3Options {
     int		m_inlineMult;	// main switch: --inline-mult
     int		m_outputSplit;	// main switch: --output-split
     int		m_outputSplitCFuncs;// main switch: --output-split-cfuncs
+    int		m_outputSplitCTrace;// main switch: --output-split-ctrace
     int		m_traceDepth;	// main switch: --trace-depth
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts
@@ -209,6 +210,7 @@ class V3Options {
     int	   inlineMult() const { return m_inlineMult; }
     int	   outputSplit() const { return m_outputSplit; }
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }
+    int	   outputSplitCTrace() const { return m_outputSplitCTrace; }
     int	   traceDepth() const { return m_traceDepth; }
     int	   unrollCount() const { return m_unrollCount; }
     int	   unrollStmts() const { return m_unrollStmts; }
