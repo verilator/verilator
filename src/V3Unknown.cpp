@@ -193,7 +193,7 @@ private:
 	    } else {
 		// Make a Vxrand variable
 		// We use the special XTEMP type so it doesn't break pure functions
-		string newvarname = ((string)"__Vxrand__"
+		string newvarname = ((string)"__Vxrand"
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
 		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,

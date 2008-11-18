@@ -179,7 +179,7 @@ private:
 		dimreadps.push_front(dimp);
 	    } else {
 		string bitvarname = (string("__Vdlyvdim")+cvtToStr(dimension)
-				     +"__"+oldvarp->shortName()+"__"+cvtToStr(modVecNum));
+				     +"__"+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, dimp->width());
 		AstAssign* bitassignp
 		    = new AstAssign (nodep->fileline(),
@@ -197,7 +197,7 @@ private:
 	    if (bitselp->fromp()->castConst()) {// vlsb = constant, can just push constant into where we use it
 		bitreadp = lsbvaluep;
 	    } else {
-		string bitvarname = (string("__Vdlyvlsb__")+oldvarp->shortName()+"__"+cvtToStr(modVecNum));
+		string bitvarname = (string("__Vdlyvlsb__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width());
 		AstAssign* bitassignp = new AstAssign (nodep->fileline(),
 						       new AstVarRef(nodep->fileline(), bitvscp, true),
@@ -212,7 +212,7 @@ private:
 	if (nodep->rhsp()->castConst()) {	// vval = constant, can just push constant into where we use it
 	    valreadp = nodep->rhsp()->unlinkFrBack();
 	} else {
-	    string valvarname = (string("__Vdlyvval__")+oldvarp->shortName()+"__"+cvtToStr(modVecNum));
+	    string valvarname = (string("__Vdlyvval__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 	    AstVarScope* valvscp = createVarSc(varrefp->varScopep(), valvarname, nodep->rhsp()->width());
 	    newlhsp = new AstVarRef(nodep->fileline(), valvscp, true);
 	    valreadp = new AstVarRef(nodep->fileline(), valvscp, false);
@@ -231,7 +231,7 @@ private:
 	    setvscp = nodep->user5p()->castNode()->castVarScope();
 	    m_statSharedSet++;
 	} else {  // Create new one
-	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__"+cvtToStr(modVecNum));
+	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1);
 	    AstAssignPre* setinitp
 		= new AstAssignPre (nodep->fileline(),

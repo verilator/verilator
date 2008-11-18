@@ -107,7 +107,7 @@ sub profcfunc {
 	    }
 	}
 
-	if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__([0-9]+)\(/) {
+	if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__l?([0-9]+)\(/) {
 	    $vfunc     = sprintf("VBlock    %s:%d", $1, $2);
 	    $groups{type}{"Verilog Blocks under $design"} += $pct;
 	    $groups{design}{$design} += $pct;

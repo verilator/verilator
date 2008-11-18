@@ -152,7 +152,7 @@ const string FileLine::profileFuncname() const {
 	   != string::npos) {
 	name.replace(pos, 1, "_");
     }
-    name += "__"+cvtToStr(lineno());
+    name += "__l"+cvtToStr(lineno());
     return name;
 }
 

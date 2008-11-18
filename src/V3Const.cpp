@@ -720,8 +720,8 @@ private:
 		if (!m_modp) nodep->v3fatalSrc("Not under module");
 		// We could create just one temp variable, but we'll get better optimization
 		// if we make one per term.
-		string name1 = ((string)"__Vconcswap__"+cvtToStr(m_modp->varNumGetInc()));
-		string name2 = ((string)"__Vconcswap__"+cvtToStr(m_modp->varNumGetInc()));
+		string name1 = ((string)"__Vconcswap"+cvtToStr(m_modp->varNumGetInc()));
+		string name2 = ((string)"__Vconcswap"+cvtToStr(m_modp->varNumGetInc()));
 		AstVar* temp1p = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP, name1,
 					    new AstRange(sel1p->fileline(), msb1-lsb1, 0));
 		AstVar* temp2p = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP, name2,

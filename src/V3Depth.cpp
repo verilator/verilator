@@ -58,7 +58,7 @@ private:
 	UINFO(6,"  Deep  "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"deep:");
 
-	string newvarname = ((string)"__Vdeeptemp__"+cvtToStr(m_modp->varNumGetInc()));
+	string newvarname = ((string)"__Vdeeptemp"+cvtToStr(m_modp->varNumGetInc()));
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::STMTTEMP, newvarname,
 				   // Width, not widthMin, as we may be in middle of BITSEL expression which
 				   // though it's one bit wide, needs the mask in the upper bits.

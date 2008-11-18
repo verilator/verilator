@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix 'bad select range' warning missing some cases, bug43. [Lane Brooks]
 
+**** Fix internal signal names containing control characters (broke in 3.680).
+
 * Verilator 3.681 2008/11/12
 
 ***  Add SystemVerilog unique and priority case.

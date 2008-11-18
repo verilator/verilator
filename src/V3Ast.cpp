@@ -92,7 +92,7 @@ string AstNode::encodeName(const string& namein) {
 	    out += pos[0];
 	} else if (pos[0]=='_') {
 	    if (pos[1]=='_') {
-		out += "_"; out += "__5F";  // hex(_) = 0x5F
+		out += "_"; out += "__05F";  // hex(_) = 0x5F
 		pos++;
 	    } else {
 		out += pos[0];
@@ -104,8 +104,10 @@ string AstNode::encodeName(const string& namein) {
 	} else if (pos[0]==']') {
 	    out += "__KET__";
 	} else {
+	    // Need the leading 0 so this will never collide with
+	    // a user identifier nor a temp we create in Verilator.
 	    char hex[10]; sprintf(hex,"%02X",pos[0]);
-	    out += "__"; out += hex;
+	    out += "__0"; out += hex;
 	}
     }
     return out;
@@ -113,7 +115,7 @@ string AstNode::encodeName(const string& namein) {
 
 string AstNode::encodeNumber(vlsint64_t num) {
     if (num < 0) {
-	return "__2D"+cvtToStr(-num);  // 2D=-
+	return "__02D"+cvtToStr(-num);  // 2D=-
     } else {
 	return cvtToStr(num);
     }
@@ -159,12 +161,13 @@ string AstNode::prettyName(const string& namein) {
 	    pretty += "";
 	    pos += 7;
 	}
-	else if (pos[0]=='_' && pos[1]=='_' && isxdigit(pos[2]) && isxdigit(pos[3])) {
+	else if (pos[0]=='_' && pos[1]=='_' && pos[2]=='0'
+		 && isxdigit(pos[3]) && isxdigit(pos[4])) {
 	    char value = 0;
-	    value += 16*(isdigit(pos[2]) ? (pos[2]-'0') : (tolower(pos[2])-'a'+10));
-	    value +=    (isdigit(pos[3]) ? (pos[3]-'0') : (tolower(pos[3])-'a'+10));
+	    value += 16*(isdigit(pos[3]) ? (pos[3]-'0') : (tolower(pos[3])-'a'+10));
+	    value +=    (isdigit(pos[4]) ? (pos[4]-'0') : (tolower(pos[4])-'a'+10));
 	    pretty += value;
-	    pos += 4;
+	    pos += 5;
 	}
 	else {
 	    pretty += pos[0];
