@@ -284,7 +284,11 @@ public:
 	init();
 	combineType(type);
 	if (examplep->rangep()) {
+	    // Creating is faster than cloning; know have constant args
 	    setOp1p(new AstRange(fl, examplep->msb(), examplep->lsb()));
+	}
+	if (examplep->arraysp()) {
+	    setOp2p(examplep->arraysp()->cloneTree(true));
 	}
 	width(msb()-lsb()+1,0);
     }

@@ -1,18 +1,7 @@
 : # -*-Mode: perl;-*- use perl, wherever it is
 eval 'exec perl -wS $0 ${1+"$@"}'
   if 0;
-######################################################################
-#
-# Copyright 2005-2008 by Wilson Snyder <wsnyder@wsnyder.org>.  This
-# program is free software; you can redistribute it and/or modify it under
-# the terms of either the GNU Lesser General Public License or the Perl
-# Artistic License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
+# See copyright, etc in below POD section.
 ######################################################################
 
 require 5.006_001;
@@ -32,14 +21,16 @@ use vars qw ($Debug);
 $Debug = 0;
 my $Opt_A;
 my $Opt_B;
+my $Opt_Lineno = 1;
 autoflush STDOUT 1;
 autoflush STDERR 1;
 Getopt::Long::config ("no_auto_abbrev");
 if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "<>"		=> \&parameter,
-		  )) {
+	  "help"	=> \&usage,
+	  "debug"	=> \&debug,
+	  "<>"		=> \&parameter,
+	  "lineno!"	=> \$Opt_Lineno,
+    )) {
     die "%Error: Bad usage, try 'verilator_difftree --help'\n";
 }
 
@@ -105,6 +96,7 @@ sub filter {
 	next if $line =~ / This=/;
 	$line =~ s/0x[a-f0-9]+/0x/g;
 	$line =~ s/<e[0-9]+\#?>/<e>/g;
+	$line =~ s/{\d+}/{}/g if !$Opt_Lineno;
 	print $f2 $line;
     }
     $f1->close;
@@ -171,6 +163,10 @@ directories, ignoring irrelevant pointer differences.
 =item --help
 
 Displays this message and program version and exits.
+
+=item --nolineno
+
+Do not show differences in line numbering.
 
 =back
 
