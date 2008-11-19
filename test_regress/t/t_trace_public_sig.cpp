@@ -25,7 +25,7 @@ int main(int argc, char **argv, char **env) {
 
     SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
     top->trace(tfp,99);
-    tfp->open("obj_dir/t_trace_public_sig_simx.vcd");
+    tfp->open("obj_dir/t_trace_public_sig__simx.vcd");
 
     while (main_time <= 20) {
 	top->CLK   = (main_time/dt_2)%2;

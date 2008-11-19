@@ -19,7 +19,7 @@ if ($Last_Self->{v3}) {
 	     check_finished=>1,
 	     );
 
-    ok(vcd_identical ("obj_dir/$Last_Self->{name}_simx.vcd",
+    ok(vcd_identical ("obj_dir/$Last_Self->{name}__simx.vcd",
 		      "t/$Last_Self->{name}.out"));
 }
 else {

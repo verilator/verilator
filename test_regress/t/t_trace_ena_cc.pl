@@ -19,7 +19,7 @@ execute (
 if ($Last_Self->{v3}) {
     file_grep     ("obj_dir/V$Last_Self->{name}__Trace__Slow.cpp", qr/c_trace_on\"/x);
     file_grep_not ("obj_dir/V$Last_Self->{name}__Trace__Slow.cpp", qr/_trace_off\"/x);
-    file_grep     ("obj_dir/$Last_Self->{name}_simx.vcd", qr/\$enddefinitions/x);
+    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/\$enddefinitions/x);
 }
 
 ok(1);

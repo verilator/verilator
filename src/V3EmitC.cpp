@@ -719,7 +719,7 @@ class EmitCImp : EmitCStmts {
 			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
 		    }
 		    puts(")) cout<<\"\tCHANGE: "+nodep->fileline()->ascii()
-			 +varname+"\"<<endl; );");
+			 +varname+"\"<<endl; );\n");
 		}
 	    }
 	}

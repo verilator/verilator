@@ -326,7 +326,7 @@ sub compile {
 
     if ($param{vcs}) {
 	$self->_make_top();
-	$self->_run(logfile=>"obj_dir/".$self->{name}."_vcs_compile.log",
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__vcs_compile.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
 			  @{$param{vcs_flags}},
@@ -340,7 +340,7 @@ sub compile {
     }
     if ($param{nc}) {
 	$self->_make_top();
-	$self->_run(logfile=>"obj_dir/".$self->{name}."_nc_compile.log",
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__nc_compile.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{nc_flags}},
@@ -388,7 +388,7 @@ sub compile {
 	    return 1;
 	}
 
-	$self->_run(logfile=>"obj_dir/".$self->{name}."_simx_compile.log",
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__simx_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
 		    cmd=>\@v3args);
@@ -402,7 +402,7 @@ sub compile {
 		$self->_sp_preproc(%param);
 	    }
 	    $self->oprint("GCC\n");
-	    $self->_run(logfile=>"obj_dir/".$self->{name}."_simx_gcc.log",
+	    $self->_run(logfile=>"obj_dir/".$self->{name}."__simx_gcc.log",
 			cmd=>["cd obj_dir && ",
 			      "make", "-f".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
@@ -423,7 +423,7 @@ sub execute {
     if ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
-	$self->_run(logfile=>"obj_dir/".$self->{name}."_simv.log",
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__simv.log",
 		    cmd=>["./simv",],
 		    %param,
 		    expect=>undef,	# vcs expect isn't the same
@@ -432,7 +432,7 @@ sub execute {
     if ($param{v3}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
-	$self->_run(logfile=>"obj_dir/".$self->{name}."_simx.log",
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__simx.log",
 		    cmd=>["obj_dir/$param{VM_PREFIX}",
 			  ],
 		    %param,
@@ -633,7 +633,7 @@ sub _make_main {
 	    $fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
 	}
 	$fh->print("    topp->trace (tfp, 99);\n");
-	$fh->print("    tfp->open (\"obj_dir/".$self->{name}."_simx.vcd\");\n");
+	$fh->print("    tfp->open (\"obj_dir/".$self->{name}."__simx.vcd\");\n");
 	$fh->print("#endif\n");
     }
 

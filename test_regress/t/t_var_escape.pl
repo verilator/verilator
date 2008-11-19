@@ -16,9 +16,9 @@ execute (
 	 );
 
 if ($Last_Self->{v3}) {
-    file_grep     ("obj_dir/$Last_Self->{name}_simx.vcd", qr/\$enddefinitions/x);
+    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/\$enddefinitions/x);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
-    file_grep     ("obj_dir/$Last_Self->{name}_simx.vcd", qr/$sig/);
+    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/$sig/);
 }
 
 ok(1);

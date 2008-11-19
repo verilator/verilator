@@ -18,7 +18,7 @@ execute (
 
 if ($Last_Self->{v3}) {
     # Note more checks in _cc.pl
-    file_grep     ("obj_dir/$Last_Self->{name}_simx.vcd", qr/\$enddefinitions/x);
+    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/\$enddefinitions/x);
 }
 
 ok(1);

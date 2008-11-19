@@ -33,9 +33,9 @@ if ($Last_Self->{nc}) {
 			    "-test ${name} ${cf}"]);
 }
 
-file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==4/);
-file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==5/);
-file_grep ("obj_dir/$Last_Self->{name}_simx.log", qr/COVER: Cyc==6/);
+file_grep ("obj_dir/$Last_Self->{name}__simx.log", qr/COVER: Cyc==4/);
+file_grep ("obj_dir/$Last_Self->{name}__simx.log", qr/COVER: Cyc==5/);
+file_grep ("obj_dir/$Last_Self->{name}__simx.log", qr/COVER: Cyc==6/);
 
 # Allow old Perl format dump, or new binary dump
 file_grep ($Last_Self->{coverage_filename}, qr/(cyc_eq_5.*,c=>[^0]|cyc_eq_5.* [1-9][0-9]*\n)/);

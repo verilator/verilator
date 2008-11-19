@@ -17,7 +17,7 @@ execute (
 	 );
 
 if ($Last_Self->{v3}) {
-    !-r "obj_dir/$Last_Self->{name}_simx.vcd" or $Last_Self->error("Tracing should be off\n");
+    !-r "obj_dir/$Last_Self->{name}__simx.vcd" or $Last_Self->error("Tracing should be off\n");
 }
 
 ok(1);
