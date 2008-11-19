@@ -214,6 +214,7 @@ sub new {
 	pl_filename => undef,	# Name of .pl file to get setup from
 	make_top_shell => 1,	# Make a default __top.v file
 	make_main => 1,		# Make __main.cpp
+	sim_time => 1000,
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
@@ -599,10 +600,10 @@ sub _make_main {
 	print $fh "int sc_main(int argc, char **argv) {\n";
 	print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
 	print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
-	print $fh "    sc_time sim_time (1000, SC_NS);\n";
+	print $fh "    sc_time sim_time ($self->{sim_time}, SC_NS);\n";
     } else {
 	print $fh "int main(int argc, char **argv, char **env) {\n";
-	print $fh "    double sim_time = 1000;\n";
+	print $fh "    double sim_time = $self->{sim_time};\n";
     }
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
@@ -706,7 +707,7 @@ sub _make_top {
     print $fh "    initial begin\n";
     print $fh "        fastclk=1;\n" if $self->{inputs}{fastclk};
     print $fh "        clk=1;\n" if $self->{inputs}{clk};
-    print $fh "        while (\$time < 1000) begin\n";
+    print $fh "        while (\$time < $self->{sim_time}) begin\n";
     for (my $i=0; $i<5; $i++) {
 	print $fh "          #1;\n";
 	print $fh "          fastclk=!fastclk;\n" if $self->{inputs}{fastclk};
