@@ -102,7 +102,7 @@ private:
 	    m_statCells++;
 	    if (debug()>=9) { nodep->dumpTree(cout,"inlcell:"); }
 	    //if (debug()>=9) { nodep->modp()->dumpTree(cout,"oldmod:"); }
-	    AstModule* newmodp = nodep->modp()->cloneTree(false)->castModule();
+	    AstModule* newmodp = nodep->modp()->cloneTree(false);
 	    if (debug()>=9) { newmodp->dumpTree(cout,"newmod:"); }
 	    // Clear var markings
 	    AstNode::user2ClearTree();

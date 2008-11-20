@@ -106,7 +106,7 @@ private:
 	    if (moreOfSame1) {
 		// Multiple functions under this name, need a wrapper function
 		UINFO(6,"  Wrapping "<<name<<" multifuncs\n");
-		AstCFunc* newfuncp = topFuncp->cloneTree(false)->castCFunc();
+		AstCFunc* newfuncp = topFuncp->cloneTree(false);
 		if (newfuncp->initsp())  newfuncp->initsp()->unlinkFrBackWithNext()->deleteTree();
 		if (newfuncp->stmtsp())  newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
 		if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();

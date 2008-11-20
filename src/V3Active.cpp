@@ -129,7 +129,7 @@ public:
       found:
 	// Not found, form a new one
 	if (!activep) {
-	    AstSenTree* newsenp = sensesp->cloneTree(false)->castSenTree();
+	    AstSenTree* newsenp = sensesp->cloneTree(false);
 	    activep = new AstActive(fl, "sequent", newsenp);
 	    activep->sensesStorep(activep->sensesp());
 	    UINFO(8,"    New ACTIVE "<<activep<<endl);

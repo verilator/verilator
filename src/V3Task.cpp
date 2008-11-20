@@ -677,14 +677,14 @@ private:
 	    if (nodep->taskPublic()) {
 		// Clone it first, because we may have later FTaskRef's that still need
 		// the original version.
-		AstNodeFTask* clonedFuncp = nodep->cloneTree(false)->castNodeFTask();
+		AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
 		AstCFunc* cfuncp = makeUserFunc(clonedFuncp, true);
 		nodep->addNextHere(cfuncp);
 		iterateIntoFTask(clonedFuncp);  // Do the clone too
 	    }
 	    if (m_statep->ftaskNoInline(nodep)) {
 		m_statep->checkPurity(nodep);
-		AstNodeFTask* clonedFuncp = nodep->cloneTree(false)->castNodeFTask();
+		AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
 		AstCFunc* cfuncp = makeUserFunc(clonedFuncp, false);
 		nodep->user5p(cfuncp);
 		nodep->addNextHere(cfuncp);

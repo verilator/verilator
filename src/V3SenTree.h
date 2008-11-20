@@ -109,7 +109,7 @@ public:
 	// Not found, form a new one
 	if (!treep) {
 	    UASSERT(m_topscopep,"Never called main()");
-	    treep = sensesp->cloneTree(false)->castSenTree();
+	    treep = sensesp->cloneTree(false);
 	    m_topscopep->addStmtsp(treep);
 	    UINFO(8,"    New SENTREE "<<treep<<endl);
 	    m_treesp.push_back(treep);

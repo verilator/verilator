@@ -703,11 +703,15 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 //######################################################################
 //=== AstNode* : Derived generic node types
 
+#define ASTNODE_BASE_FUNCS(name)	\
+    virtual ~Ast ##name() {} \
+    Ast ##name * cloneTree(bool cloneNext) { return AstNode::cloneTree(cloneNext)->cast ##name(); }
+
 struct AstNodeMath : public AstNode {
     // Math -- anything that's part of an expression tree
     AstNodeMath(FileLine* fl)
 	: AstNode(fl) {}
-    virtual ~AstNodeMath() {}
+    ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     virtual string emitC() = 0;
@@ -719,7 +723,7 @@ struct AstNodeTermop : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
     AstNodeTermop(FileLine* fl)
 	: AstNodeMath(fl) {}
-    virtual ~AstNodeTermop() {}
+    ASTNODE_BASE_FUNCS(NodeTermop)
 };
 
 struct AstNodeUniop : public AstNodeMath {
@@ -728,7 +732,7 @@ struct AstNodeUniop : public AstNodeMath {
 	: AstNodeMath(fl) {
 	if (lhsp) widthSignedFrom(lhsp);
 	setOp1p(lhsp); }
-    virtual ~AstNodeUniop() {}
+    ASTNODE_BASE_FUNCS(NodeUniop)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
     // METHODS
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
@@ -744,7 +748,7 @@ struct AstNodeBiop : public AstNodeMath {
     AstNodeBiop(FileLine* fl, AstNode* lhs, AstNode* rhs)
 	: AstNodeMath(fl) {
 	setOp1p(lhs); setOp2p(rhs); }
-    virtual ~AstNodeBiop() {}
+    ASTNODE_BASE_FUNCS(NodeBiop)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
@@ -766,7 +770,7 @@ struct AstNodeTriop : public AstNodeMath {
     AstNodeTriop(FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
 	: AstNodeMath(fl) {
 	setOp1p(lhs); setOp2p(rhs); setOp3p(ths); }
-    virtual ~AstNodeTriop() {}
+    ASTNODE_BASE_FUNCS(NodeTriop)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     AstNode*	thsp() 	const { return op3p()->castNode(); }
@@ -790,14 +794,14 @@ struct AstNodeBiCom : public AstNodeBiop {
     // Binary math with commutative properties
     AstNodeBiCom(FileLine* fl, AstNode* lhs, AstNode* rhs)
 	: AstNodeBiop(fl, lhs, rhs) {}
-    virtual ~AstNodeBiCom() {}
+    ASTNODE_BASE_FUNCS(NodeBiCom)
 };
 
 struct AstNodeBiComAsv : public AstNodeBiCom {
     // Binary math with commutative & associative properties
     AstNodeBiComAsv(FileLine* fl, AstNode* lhs, AstNode* rhs)
 	: AstNodeBiCom(fl, lhs, rhs) {}
-    virtual ~AstNodeBiComAsv() {}
+    ASTNODE_BASE_FUNCS(NodeBiComAsv)
 };
 struct AstNodeCond : public AstNodeTriop {
     AstNodeCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
@@ -805,7 +809,7 @@ struct AstNodeCond : public AstNodeTriop {
 	if (expr1p) widthSignedFrom(expr1p);
 	else if (expr2p) widthSignedFrom(expr2p);
     }
-    virtual ~AstNodeCond() {}
+    ASTNODE_BASE_FUNCS(NodeCond)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
 	if (lhs.isNeqZero()) out.opAssign(rhs); else out.opAssign(ths); }
     AstNode*	condp() 	const { return op1p()->castNode(); }	// op1 = Condition
@@ -826,7 +830,7 @@ struct AstNodePreSel : public AstNode {
     AstNodePreSel(FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
 	: AstNode(fl) {
 	setOp1p(lhs); setOp2p(rhs); setNOp3p(ths); }
-    virtual ~AstNodePreSel() {}
+    ASTNODE_BASE_FUNCS(NodePreSel)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     AstNode*	thsp() 	const { return op3p()->castNode(); }
@@ -842,7 +846,7 @@ struct AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     AstNodeStmt(FileLine* fl)
 	: AstNode(fl) {}
-    virtual ~AstNodeStmt() {}
+    ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
 };
 
@@ -852,7 +856,7 @@ struct AstNodeAssign : public AstNodeStmt {
 	setOp1p(rhsp); setOp2p(lhsp);
 	if (lhsp) widthSignedFrom(lhsp);
     }
-    virtual ~AstNodeAssign() {}
+    ASTNODE_BASE_FUNCS(NodeAssign)
     virtual AstNode*	cloneType(AstNode* lhsp, AstNode* rhsp)=0;	// Clone single node, just get same type back.
     // So iteration hits the RHS which is "earlier" in execution order, it's op1, not op2
     AstNode* rhsp()		const { return op1p()->castNode(); }	// op1 = Assign from
@@ -871,7 +875,7 @@ struct AstNodeFor : public AstNodeStmt {
 	: AstNodeStmt(fileline) {
 	addNOp1p(initsp); setOp2p(condp); addNOp3p(incsp); addNOp4p(bodysp);
     }
-    virtual ~AstNodeFor() {}
+    ASTNODE_BASE_FUNCS(NodeFor)
     AstNode*	initsp()	const { return op1p()->castNode(); }	// op1= initial statements
     AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
     AstNode*	incsp()		const { return op3p()->castNode(); }	// op3= increment statements
@@ -891,7 +895,7 @@ public:
 	: AstNodeStmt(fl) {
 	setOp1p(condp); addNOp2p(ifsp); addNOp3p(elsesp);
     }
-    virtual ~AstNodeIf() {}
+    ASTNODE_BASE_FUNCS(NodeIf)
     AstNode*	condp()		const { return op1p(); }	// op1 = condition
     AstNode*	ifsp()		const { return op2p(); }	// op2 = list of true statements
     AstNode*	elsesp()	const { return op3p(); }	// op3 = list of false statements
@@ -911,7 +915,7 @@ struct AstNodeCase : public AstNodeStmt {
 	: AstNodeStmt(fl) {
 	setOp1p(exprp); addNOp2p(casesp);
     }
-    virtual ~AstNodeCase() {}
+    ASTNODE_BASE_FUNCS(NodeCase)
     virtual int   instrCount()	const { return instrCountBranch(); }
     AstNode*	  exprp()	const { return op1p()->castNode(); }	// op1 = case condition <expression>
     AstCaseItem*  itemsp()	const { return op2p()->castCaseItem(); }  // op2 = list of case expressions
@@ -940,7 +944,7 @@ public:
 	// May have varp==NULL
 	if (m_varp) widthSignedFrom((AstNode*)m_varp);
     }
-    virtual ~AstNodeVarRef() {}
+    ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool broken() const;
     virtual int instrCount() const { return widthInstrs(); }
     virtual void cloneRelink();
@@ -964,7 +968,7 @@ public:
     AstNodePli(FileLine* fl, const string& text, AstNode* exprsp)
 	: AstNodeStmt(fl), m_text(text) {
 	addNOp1p(exprsp); }
-    virtual ~AstNodePli() {}
+    ASTNODE_BASE_FUNCS(NodePli)
     virtual string name()	const { return m_text; }
     virtual int instrCount()	const { return instrCountPli(); }
     void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
@@ -983,7 +987,7 @@ public:
 	: AstNode(fileline) {
 	m_text = textp;	// Copy it
     }
-    virtual ~AstNodeText() {}
+    ASTNODE_BASE_FUNCS(NodeText)
     const string& text() const { return m_text; }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
@@ -1013,7 +1017,7 @@ public:
 	, m_name(name), m_taskPublic(false) {
 	addNOp3p(stmtsp);
     }
-    virtual ~AstNodeFTask() {}
+    ASTNODE_BASE_FUNCS(NodeFTask)
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
@@ -1039,7 +1043,7 @@ public:
 	, m_taskp(NULL) {
 	setOp1p(namep);	addNOp2p(pinsp);
     }
-    virtual ~AstNodeFTaskRef() {}
+    ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual bool broken() const { return m_taskp && !m_taskp->brokeExists(); }
     virtual void cloneRelink() { if (m_taskp && m_taskp->clonep()) {
 	m_taskp = m_taskp->clonep()->castNodeFTask();

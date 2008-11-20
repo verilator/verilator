@@ -27,6 +27,16 @@
 #endif
 
 //######################################################################
+// Standard defines for all AstNode final classes
+
+#define ASTNODE_NODE_FUNCS(name,ucname)	\
+    virtual ~Ast ##name() {} \
+    virtual AstType type() const { return AstType:: ucname; } \
+    virtual AstNode* clone() { return new Ast ##name (*this); } \
+    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); } \
+    Ast ##name * cloneTree(bool cloneNext) { return AstNode::cloneTree(cloneNext)->cast ##name(); }
+
+//######################################################################
 //=== Ast* : Specific types
 // Netlist interconnect
 
@@ -44,10 +54,7 @@ public:
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
 	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.minWidth()); }
-    virtual ~AstConst() {}
-    virtual AstType type() const { return AstType::CONST;}
-    virtual AstNode* clone() { return new AstConst(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Const, CONST)
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
     uint32_t toUInt()  const { return num().toUInt(); }
@@ -72,11 +79,7 @@ struct AstRange : public AstNode {
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
 	width(msb-lsb+1,msb-lsb+1);
     }
-    virtual ~AstRange() {}
-    virtual AstType type() const { return AstType::RANGE;}
-    virtual AstNode* clone() { return new AstRange(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
-    AstRange*	cloneTree(bool cloneNextLink) { return AstNode::cloneTree(cloneNextLink)->castRange(); }
+    ASTNODE_NODE_FUNCS(Range, RANGE)
     AstNode* msbp()		const { return op2p()->castNode(); }	// op2 = Msb expression
     AstNode* lsbp()		const { return op3p()->castNode(); }	// op3 = Lsb expression
     int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
@@ -94,10 +97,7 @@ struct AstArraySel : public AstNodeSel {
 	:AstNodeSel(fl, fromp, bitp) {
 	if (fromp) widthSignedFrom(fromp);
     }
-    virtual ~AstArraySel() {}
-    virtual AstType type() const { return AstType::ARRAYSEL;}
-    virtual AstNode* clone() { return new AstArraySel(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ArraySel, ARRAYSEL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
 	V3ERROR_NA; /* How can from be a const? */ }
     virtual string emitVerilog() { return "%k(%l%k[%r])"; }
@@ -128,10 +128,7 @@ struct AstWordSel : public AstNodeSel {
 	:AstNodeSel(fl, fromp, bitp) {
 	width(VL_WORDSIZE,VL_WORDSIZE); // Always used on, and returns word entities
     }
-    virtual ~AstWordSel() {}
-    virtual AstType type() const { return AstType::WORDSEL;}
-    virtual AstNode* clone() { return new AstWordSel(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(WordSel, WORDSEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l[%r])"; } // Not %k, as usually it's a small constant rhsp
     virtual string emitC() { return "%li[%ri]"; } // Not %k, as usually it's a small constant rhsp
@@ -146,10 +143,7 @@ struct AstSelExtract : public AstNodePreSel {
     // Range extraction, gets replaced with AstSel
     AstSelExtract(FileLine* fl, AstNode* fromp, AstNode* msbp, AstNode* lsbp)
 	: AstNodePreSel(fl, fromp, msbp, lsbp) {}
-    virtual ~AstSelExtract() {}
-    virtual AstType type() const { return AstType::SELEXTRACT;}
-    virtual AstNode* clone() { return new AstSelExtract(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SelExtract, SELEXTRACT)
 };
 
 struct AstSelBit : public AstNodePreSel {
@@ -159,10 +153,7 @@ struct AstSelBit : public AstNodePreSel {
 	:AstNodePreSel(fl, fromp, bitp, NULL) {
 	width(1,1);
     }
-    virtual ~AstSelBit() {}
-    virtual AstType type() const { return AstType::SELBIT;}
-    virtual AstNode* clone() { return new AstSelBit(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SelBit, SELBIT)
 };
 
 struct AstSelPlus : public AstNodePreSel {
@@ -170,10 +161,7 @@ struct AstSelPlus : public AstNodePreSel {
     // Gets replaced during link with AstSel
     AstSelPlus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
-    virtual ~AstSelPlus() {}
-    virtual AstType type() const { return AstType::SELPLUS;}
-    virtual AstNode* clone() { return new AstSelPlus(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SelPlus, SELPLUS)
 };
 
 struct AstSelMinus : public AstNodePreSel {
@@ -181,10 +169,7 @@ struct AstSelMinus : public AstNodePreSel {
     // Gets replaced during link with AstSel
     AstSelMinus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
-    virtual ~AstSelMinus() {}
-    virtual AstType type() const { return AstType::SELMINUS;}
-    virtual AstNode* clone() { return new AstSelMinus(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SelMinus, SELMINUS)
 };
 
 struct AstSel : public AstNodeTriop {
@@ -200,10 +185,7 @@ struct AstSel : public AstNodeTriop {
 		      new AstConst(fl,lsbp), new AstConst(fl,bitwidth)) {
 	width(bitwidth,bitwidth);
     }
-    virtual ~AstSel() {}
-    virtual AstType type() const { return AstType::SEL;}
-    virtual AstNode* clone() { return new AstSel(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Sel, SEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
 	out.opRange(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
@@ -292,10 +274,7 @@ public:
 	}
 	width(msb()-lsb()+1,0);
     }
-    virtual ~AstVar() {}
-    virtual AstType type() const { return AstType::VAR;}
-    virtual AstNode* clone() { return new AstVar(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Var, VAR)
     virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
@@ -412,11 +391,8 @@ public:
 	m_name = name;
 	m_path = path;
     }
-    virtual ~AstDefParam() {}
-    virtual AstType type() const { return AstType::DEFPARAM;}
     virtual string name()	const { return m_name; }		// * = Scope name
-    virtual AstNode* clone() { return new AstDefParam(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(DefParam, DEFPARAM)
     virtual bool cleanRhs() { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -438,10 +414,7 @@ public:
 	     AstScope* aboveScopep, AstCell* aboveCellp)
 	:AstNode(fl)
 	,m_name(name) ,m_aboveScopep(aboveScopep) ,m_aboveCellp(aboveCellp), m_modp(modp) {}
-    virtual ~AstScope() {}
-    virtual AstType type() const { return AstType::SCOPE;}
-    virtual AstNode* clone() { return new AstScope(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Scope, SCOPE)
     virtual void cloneRelink();
     virtual bool broken() const;
     virtual bool maybePointedTo() const { return true; }
@@ -470,10 +443,7 @@ public:
     AstTopScope(FileLine* fl, AstScope* ascopep)
 	:AstNode(fl)
 	{addNOp2p(ascopep);}
-    virtual ~AstTopScope() {}
-    virtual AstType type() const { return AstType::TOPSCOPE;}
-    virtual AstNode* clone() { return new AstTopScope(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(TopScope, TOPSCOPE)
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
     AstScope* scopep()		const { return op2p()->castScope(); }	// op1 = AstVarScope's
@@ -495,15 +465,12 @@ public:
 	m_circular = false;
 	widthSignedFrom(varp);
     }
-    virtual ~AstVarScope() {}
-    virtual AstType type() const { return AstType::VARSCOPE;}
-    virtual AstNode* clone() { return new AstVarScope(*this);}
+    ASTNODE_NODE_FUNCS(VarScope, VARSCOPE)
     virtual void cloneRelink() { if (m_varp && m_varp->clonep()) {
 	m_varp = m_varp->clonep()->castVar();
 	UASSERT(m_scopep->clonep(), "No clone cross link: "<<this);
 	m_scopep = m_scopep->clonep()->castScope();
     }}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual bool broken() const { return ( (m_varp && !m_varp->brokeExists())
 					   || (m_scopep && !m_scopep->brokeExists())); }
     virtual bool maybePointedTo() const { return true; }
@@ -529,10 +496,7 @@ public:
 	:AstNodeVarRef(fl, varscp->varp()->name(), varscp->varp(), lvalue) {	// because output/wire compression may lead to deletion of AstVar's
 	varScopep(varscp);
     }
-    virtual ~AstVarRef() {}
-    virtual AstType type() const { return AstType::VARREF;}
-    virtual AstNode* clone() { return new AstVarRef(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(VarRef, VARREF)
     virtual void dump(ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(varp()->name()),V3Hash(hiername())); }
     virtual bool same(AstNode* samep) const {
@@ -559,10 +523,7 @@ public:
 	:AstNodeVarRef(fl, varp->name(), varp, lvalue)
 	, m_dotted(dotted) {
     }
-    virtual ~AstVarXRef() {}
-    virtual AstType type() const { return AstType::VARXREF;}
-    virtual AstNode* clone() { return new AstVarXRef(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(VarXRef, VARXREF)
     virtual void dump(ostream& str);
     string	dotted() const { return m_dotted; }
     string	prettyDotted() const { return prettyName(dotted()); }
@@ -594,10 +555,7 @@ public:
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	setNOp1p(exprp); }
-    virtual ~AstPin() {}
-    virtual AstType type() const { return AstType::PIN;}
-    virtual AstNode* clone() { return new AstPin(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Pin, PIN)
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modVarp && !m_modVarp->brokeExists()); }
     virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
@@ -628,10 +586,7 @@ public:
 	,m_name(name), m_origName(name), m_modPublic(false)
 	,m_modTrace(false), m_inLibrary(false)
 	,m_level(0), m_varNum(0), m_clkReqVarp(NULL) { }
-    virtual ~AstModule() {}
-    virtual AstType type() const { return AstType::MODULE;}
-    virtual AstNode* clone() { return new AstModule(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Module, MODULE)
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_clkReqVarp && !m_clkReqVarp->brokeExists()); }
     virtual bool maybePointedTo() const { return true; }
@@ -674,11 +629,8 @@ public:
 	, m_name(instName), m_origName(instName), m_modName(modName)
 	, m_pinStar(false), m_modp(NULL) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
-    virtual ~AstCell() {}
-    virtual AstType type() const { return AstType::CELL;}
-    virtual AstNode* clone() { return new AstCell(*this);}
+    ASTNODE_NODE_FUNCS(Cell, CELL)
     // No cloneRelink, we presume cloneee's want the same module linkages
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
     virtual bool maybePointedTo() const { return true; }
@@ -711,10 +663,7 @@ public:
     AstCellInline(FileLine* fl, const string& name, const string& origModName)
 	: AstNode(fl)
 	, m_name(name), m_origModName(origModName) {}
-    virtual ~AstCellInline() {}
-    virtual AstType type() const { return AstType::CELLINLINE;}
-    virtual AstNode* clone() { return new AstCellInline(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CellInline, CELLINLINE)
     virtual void dump(ostream& str);
     // ACCESSORS
     virtual string name()	const { return m_name; }		// * = Cell name
@@ -731,10 +680,7 @@ public:
     AstPort(FileLine* fl, int pinnum, const string& name)
 	:AstNode(fl)
 	,m_pinNum(pinnum) ,m_name(name) {}
-    virtual ~AstPort() {}
-    virtual AstType type() const { return AstType::PORT;}
-    virtual AstNode* clone() { return new AstPort(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Port, PORT)
     virtual string name()	const { return m_name; }		// * = Port name
     int pinNum()		const { return m_pinNum; }		// * = Pin number, for order based instantiation
     AstNode* exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to port
@@ -755,10 +701,7 @@ public:
 	, m_name(name) {
 	addNOp1p(stmtsp);
     }
-    virtual ~AstBegin() {}
-    virtual AstType type() const { return AstType::BEGIN;}
-    virtual AstNode* clone() { return new AstBegin(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Begin, BEGIN)
     virtual string name()	const { return m_name; }		// * = Block name
     void name(const string& flag) { m_name=flag; }
     // op1 = Statements
@@ -774,10 +717,7 @@ struct AstGenerate : public AstNode {
 	: AstNode(fileline) {
 	addNOp1p(stmtsp);
     }
-    virtual ~AstGenerate() {}
-    virtual AstType type() const { return AstType::GENERATE;}
-    virtual AstNode* clone() { return new AstGenerate(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Generate, GENERATE)
     // op1 = Statements
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
@@ -794,10 +734,7 @@ private:
 public:
     AstParseRef(FileLine* fl, AstParseRefExp expect, AstNode* lhsp)
 	:AstNode(fl), m_expect(expect) { setOp1p(lhsp); }
-    virtual ~AstParseRef() {}
-    virtual AstType type() const { return AstType::PARSEREF;}
-    virtual AstNode* clone() { return new AstParseRef(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ParseRef, PARSEREF)
     virtual void dump(ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(m_expect); }
     virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect(); }
@@ -813,10 +750,7 @@ struct AstDot : public AstNode {
     // These are elimiated in the link stage
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
-    virtual ~AstDot() {}
-    virtual AstType type() const { return AstType::DOT;}
-    virtual AstNode* clone() { return new AstDot(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Dot, DOT)
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
@@ -829,10 +763,7 @@ struct AstTask : public AstNodeFTask {
     // A task inside a module
     AstTask(FileLine* fl, const string& name, AstNode* stmtp)
 	:AstNodeFTask(fl, name, stmtp) {}
-    virtual ~AstTask() {}
-    virtual AstType type() const { return AstType::TASK;}
-    virtual AstNode* clone() { return new AstTask(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Task, TASK)
 };
 
 struct AstFunc : public AstNodeFTask {
@@ -844,10 +775,7 @@ public:
 	addNOp1p(fvarsp);
 	m_attrIsolateAssign = false;
     }
-    virtual ~AstFunc() {}
-    virtual AstType type() const { return AstType::FUNC;}
-    virtual AstNode* clone() { return new AstFunc(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Func, FUNC)
     // op1 = Range output variable (functions only)
     AstNode*	fvarp() 	const { return op1p()->castNode(); }
     void addFvarp(AstNode* nodep) { addOp1p(nodep); }
@@ -859,20 +787,14 @@ struct AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
-    virtual ~AstTaskRef() {}
-    virtual AstType type() const { return AstType::TASKREF;}
-    virtual AstNode* clone() { return new AstTaskRef(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(TaskRef, TASKREF)
 };
 
 struct AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
-    virtual ~AstFuncRef() {}
-    virtual AstType type() const { return AstType::FUNCREF;}
-    virtual AstNode* clone() { return new AstFuncRef(*this);}
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FuncRef, FUNCREF)
 };
 
 //######################################################################
@@ -911,11 +833,7 @@ public:
 	: AstNode(fl) {
 	m_edgeType = AstEdgeType::NEVER;
     }
-    virtual ~AstSenItem() {}
-    virtual AstType type() const { return AstType::SENITEM;}
-    virtual AstNode* clone() { return new AstSenItem(*this); }
-    AstSenItem*	cloneTree(bool cloneNextLink) { return AstNode::cloneTree(cloneNextLink)->castSenItem(); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SenItem, SENITEM)
     virtual void dump(ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(edgeType())); }
     virtual bool same(AstNode* samep) const {
@@ -944,10 +862,7 @@ public:
 	: AstNode(fl), m_multi(false) {
 	addNOp1p(sensesp);
     }
-    virtual ~AstSenTree() {}
-    virtual AstType type() const { return AstType::SENTREE;}
-    virtual AstNode* clone() { return new AstSenTree(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(SenTree, SENTREE)
     virtual void dump(ostream& str);
     virtual bool maybePointedTo() const { return true; }
     bool isMulti() const { return m_multi; }
@@ -967,10 +882,7 @@ struct AstAlways : public AstNode {
 	: AstNode(fl) {
 	addNOp1p(sensesp); addNOp2p(bodysp);
     }
-    virtual ~AstAlways() {}
-    virtual AstType type() const { return AstType::ALWAYS;}
-    virtual AstNode* clone() { return new AstAlways(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Always, ALWAYS)
     //
     AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
@@ -985,10 +897,7 @@ struct AstAlwaysPost : public AstNode {
 	: AstNode(fl) {
 	addNOp1p(sensesp); addNOp2p(bodysp);
     }
-    virtual ~AstAlwaysPost() {}
-    virtual AstType type() const { return AstType::ALWAYSPOST;}
-    virtual AstNode* clone() { return new AstAlwaysPost(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(AlwaysPost, ALWAYSPOST)
     //
     AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
     void	addBodysp(AstNode* newp)	{ addOp2p(newp); }
@@ -999,11 +908,8 @@ struct AstAssign : public AstNodeAssign {
 	: AstNodeAssign(fileline, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp);
     }
-    virtual ~AstAssign() {}
-    virtual AstType type() const { return AstType::ASSIGN;}
-    virtual AstNode* clone() { return new AstAssign(*this); }
+    ASTNODE_NODE_FUNCS(Assign, ASSIGN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string verilogKwd() const { return "="; };
 };
 
@@ -1013,21 +919,15 @@ struct AstAssignAlias : public AstNodeAssign {
 public:
     AstAssignAlias(FileLine* fileline, AstVarRef* lhsp, AstVarRef* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
-    virtual ~AstAssignAlias() {}
-    virtual AstType type() const { return AstType::ASSIGNALIAS;}
-    virtual AstNode* clone() { return new AstAssignAlias(*this); }
+    ASTNODE_NODE_FUNCS(AssignAlias, ASSIGNALIAS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA; return NULL; }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
 };
 
 struct AstAssignDly : public AstNodeAssign {
     AstAssignDly(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
-    virtual ~AstAssignDly() {}
-    virtual AstType type() const { return AstType::ASSIGNDLY;}
-    virtual AstNode* clone() { return new AstAssignDly(*this); }
+    ASTNODE_NODE_FUNCS(AssignDly, ASSIGNDLY)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignDly(this->fileline(), lhsp, rhsp); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual bool isGateOptimizable() const { return false; }
     virtual string verilogKwd() const { return "<="; };
 };
@@ -1041,11 +941,8 @@ public:
 	: AstNodeAssign(fileline, lhsp, rhsp) {
 	m_allowImplicit = false;
     }
-    virtual ~AstAssignW() {}
-    virtual AstType type() const { return AstType::ASSIGNW;}
-    virtual AstNode* clone() { return new AstAssignW(*this); }
+    ASTNODE_NODE_FUNCS(AssignW, ASSIGNW)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignW(this->fileline(), lhsp, rhsp); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     bool allowImplicit() const { return m_allowImplicit; }
     void allowImplicit(bool flag) { m_allowImplicit = flag; }
 };
@@ -1054,22 +951,16 @@ struct AstAssignPre : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
     AstAssignPre(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
-    virtual ~AstAssignPre() {}
-    virtual AstType type() const { return AstType::ASSIGNPRE;}
-    virtual AstNode* clone() { return new AstAssignPre(*this); }
+    ASTNODE_NODE_FUNCS(AssignPre, ASSIGNPRE)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPre(this->fileline(), lhsp, rhsp); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
 };
 
 struct AstAssignPost : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
     AstAssignPost(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
-    virtual ~AstAssignPost() {}
-    virtual AstType type() const { return AstType::ASSIGNPOST;}
-    virtual AstNode* clone() { return new AstAssignPost(*this); }
+    ASTNODE_NODE_FUNCS(AssignPost, ASSIGNPOST)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPost(this->fileline(), lhsp, rhsp); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
 };
 
 struct AstComment : public AstNodeStmt {
@@ -1082,10 +973,7 @@ public:
     AstComment(FileLine* fl, const string& name)
 	: AstNodeStmt(fl)
 	, m_name(name) {}
-    virtual ~AstComment() {}
-    virtual AstType type() const { return AstType::COMMENT;}
-    virtual AstNode* clone() { return new AstComment(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Comment, COMMENT)
     virtual string name()	const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(); }  // Ignore name in comments
     virtual bool same(AstNode* samep) const { return true; }  // Ignore name in comments
@@ -1097,10 +985,7 @@ struct AstCond : public AstNodeCond {
     // Children: MATH
     AstCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
-    virtual ~AstCond() {}
-    virtual AstType type() const { return AstType::COND;}
-    virtual AstNode* clone() { return new AstCond(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Cond, COND)
 };
 
 struct AstCondBound : public AstNodeCond {
@@ -1109,10 +994,7 @@ struct AstCondBound : public AstNodeCond {
     // Children: MATH
     AstCondBound(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
-    virtual ~AstCondBound() {}
-    virtual AstType type() const { return AstType::CONDBOUND;}
-    virtual AstNode* clone() { return new AstCondBound(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CondBound, CONDBOUND)
 };
 
 struct AstCoverDecl : public AstNodeStmt {
@@ -1129,10 +1011,7 @@ public:
 	: AstNodeStmt(fl) {
 	m_text = comment; m_typeText = type; m_column = column;
     }
-    virtual ~AstCoverDecl() {}
-    virtual AstType type() const { return AstType::COVERDECL;}
-    virtual AstNode* clone() { return new AstCoverDecl(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CoverDecl, COVERDECL)
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 1+2*instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
@@ -1162,12 +1041,9 @@ public:
 	: AstNodeStmt(fl) {
 	m_declp = declp;
     }
-    virtual ~AstCoverInc() {}
-    virtual AstType type() const { return AstType::COVERINC;}
-    virtual AstNode* clone() { return new AstCoverInc(*this); }
+    ASTNODE_NODE_FUNCS(CoverInc, COVERINC)
     virtual bool broken() const { return !declp()->brokeExists(); }
     virtual void cloneRelink() { if (m_declp->clonep()) m_declp = m_declp->clonep()->castCoverDecl(); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 1+2*instrCountLd(); }
     virtual V3Hash sameHash() const { return V3Hash(declp()); }
@@ -1189,10 +1065,7 @@ public:
     AstGenCase(FileLine* fileline, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
     }
-    virtual ~AstGenCase() {}
-    virtual AstType type() const { return AstType::GENCASE;}
-    virtual AstNode* clone() { return new AstGenCase(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(GenCase, GENCASE)
 };
 
 struct AstCase : public AstNodeCase {
@@ -1210,10 +1083,7 @@ public:
 	m_casex=casex;
 	m_fullPragma=false; m_parallelPragma=false;
     }
-    virtual ~AstCase() {}
-    virtual AstType type() const { return AstType::CASE;}
-    virtual AstNode* clone() { return new AstCase(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Case, CASE)
     virtual string  verilogKwd() const { return casez()?"casez":casex()?"casex":"case"; }
     virtual bool same(AstNode* samep) const {
 	return m_casex==samep->castCase()->m_casex; }
@@ -1238,10 +1108,7 @@ public:
 	addNOp1p(condsp); addNOp2p(bodysp);
 	m_ignoreOverlap = false;
     }
-    virtual ~AstCaseItem() {}
-    virtual AstType type() const { return AstType::CASEITEM;}
-    virtual AstNode* clone() { return new AstCaseItem(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CaseItem, CASEITEM)
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
     AstNode*	condsp()		const { return op1p()->castNode(); }	// op1= list of possible matching expressions
     AstNode*	bodysp()	const { return op2p()->castNode(); }	// op2= what to do
@@ -1263,10 +1130,7 @@ public:
 	setNOp2p(filep);
 	m_displayType = dispType;
     }
-    virtual ~AstDisplay() {}
-    virtual AstType type() const { return AstType::DISPLAY;}
-    virtual AstNode* clone() { return new AstDisplay(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Display, DISPLAY)
     virtual void dump(ostream& str);
     virtual string verilogKwd() const { return (filep() ? (string)"$f"+(string)displayType().ascii()
 						: (string)"$"+(string)displayType().ascii()); }
@@ -1296,10 +1160,7 @@ struct AstFClose : public AstNodeStmt {
 	: AstNodeStmt (fileline) {
 	setNOp2p(filep);
     }
-    virtual ~AstFClose() {}
-    virtual AstType type() const { return AstType::FCLOSE;}
-    virtual AstNode* clone() { return new AstFClose(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FClose, FCLOSE)
     virtual string verilogKwd() const { return "$fclose"; };
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1319,10 +1180,7 @@ struct AstFOpen : public AstNodeStmt {
 	setOp2p(filenamep);
 	setOp3p(modep);
     }
-    virtual ~AstFOpen() {}
-    virtual AstType type() const { return AstType::FOPEN;}
-    virtual AstNode* clone() { return new AstFOpen(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FOpen, FOPEN)
     virtual string verilogKwd() const { return "$fclose"; };
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1343,10 +1201,7 @@ struct AstFFlush : public AstNodeStmt {
 	: AstNodeStmt (fileline) {
 	setNOp2p(filep);
     }
-    virtual ~AstFFlush() {}
-    virtual AstType type() const { return AstType::FFLUSH;}
-    virtual AstNode* clone() { return new AstFFlush(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FFlush, FFLUSH)
     virtual string verilogKwd() const { return "$fflush"; };
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1371,11 +1226,8 @@ public:
 	addNOp1p(exprsp);
 	setNOp2p(filep);
     }
-    virtual ~AstFScanF() {}
-    virtual AstType type() const { return AstType::FSCANF;}
-    virtual AstNode* clone() { return new AstFScanF(*this); }
+    ASTNODE_NODE_FUNCS(FScanF, FSCANF)
     virtual string name()	const { return m_text; }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string verilogKwd() const { return "$fscanf"; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -1407,11 +1259,8 @@ public:
 	addNOp1p(exprsp);
 	setOp2p(fromp);
     }
-    virtual ~AstSScanF() {}
-    virtual AstType type() const { return AstType::SSCANF;}
-    virtual AstNode* clone() { return new AstSScanF(*this); }
+    ASTNODE_NODE_FUNCS(SScanF, SSCANF)
     virtual string name()	const { return m_text; }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual string verilogKwd() const { return "$sscanf"; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -1440,10 +1289,7 @@ public:
 	: AstNodeStmt (fileline), m_isHex(hex) {
 	setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
     }
-    virtual ~AstReadMem() {}
-    virtual AstType type() const { return AstType::READMEM;}
-    virtual AstNode* clone() { return new AstReadMem(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ReadMem, READMEM)
     virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); };
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1464,10 +1310,7 @@ struct AstGenFor : public AstNodeFor {
 	   AstNode* incsp, AstNode* bodysp)
 	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
     }
-    virtual ~AstGenFor() {}
-    virtual AstType type() const { return AstType::GENFOR;}
-    virtual AstNode* clone() { return new AstGenFor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(GenFor, GENFOR)
 };
 
 struct AstFor : public AstNodeFor {
@@ -1475,10 +1318,7 @@ struct AstFor : public AstNodeFor {
 	   AstNode* incsp, AstNode* bodysp)
 	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
     }
-    virtual ~AstFor() {}
-    virtual AstType type() const { return AstType::FOR;}
-    virtual AstNode* clone() { return new AstFor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(For, FOR)
 };
 
 struct AstWhile : public AstNodeStmt {
@@ -1486,10 +1326,7 @@ struct AstWhile : public AstNodeStmt {
 	: AstNodeStmt(fileline) {
 	setOp2p(condp); addNOp3p(bodysp);
     }
-    virtual ~AstWhile() {}
-    virtual AstType type() const { return AstType::WHILE;}
-    virtual AstNode* clone() { return new AstWhile(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(While, WHILE)
     AstNode*	precondsp()	const { return op1p()->castNode(); }	// op1= prepare statements for condition (exec every loop)
     AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
     AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
@@ -1506,20 +1343,14 @@ struct AstGenIf : public AstNodeIf {
     AstGenIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
     }
-    virtual ~AstGenIf() {}
-    virtual AstType type() const { return AstType::GENIF;}
-    virtual AstNode* clone() { return new AstGenIf(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(GenIf, GENIF)
 };
 
 struct AstIf : public AstNodeIf {
     AstIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
     }
-    virtual ~AstIf() {}
-    virtual AstType type() const { return AstType::IF;}
-    virtual AstNode* clone() { return new AstIf(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(If, IF)
 };
 
 struct AstUntilStable : public AstNodeStmt {
@@ -1530,10 +1361,7 @@ struct AstUntilStable : public AstNodeStmt {
 	: AstNodeStmt(fileline) {
 	addNOp2p(stablesp); addNOp3p(bodysp);
     }
-    virtual ~AstUntilStable() {}
-    virtual AstType type() const { return AstType::UNTILSTABLE;}
-    virtual AstNode* clone() { return new AstUntilStable(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(UntilStable, UNTILSTABLE)
     AstVarRef* stablesp()	const { return op2p()->castVarRef(); } // op2= list of variables that must become stable
     AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
     void	addStablesp(AstVarRef* newp)	{ addOp2p(newp); }
@@ -1553,10 +1381,7 @@ struct AstChangeXor : public AstNodeBiComAsv {
     AstChangeXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeBiComAsv(fl, lhsp, rhsp) {
 	width(32,32); }
-    virtual ~AstChangeXor() {}
-    virtual AstType type() const { return AstType::CHANGEXOR;}
-    virtual AstNode* clone() { return new AstChangeXor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ChangeXor, CHANGEXOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opChangeXor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l ^ %r)"; }
     virtual string emitC() { return "VL_CHANGEXOR_%li(%lw, %P, %li, %ri)"; }
@@ -1577,10 +1402,7 @@ public:
 	: AstNodeStmt(fl) {
 	setNOp1p(lhsp); setNOp2p(rhsp); m_clockReq=clockReq;
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstChangeDet() {}
-    virtual AstType type() const { return AstType::CHANGEDET;}
-    virtual AstNode* clone() { return new AstChangeDet(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ChangeDet, CHANGEDET)
     AstNode*	lhsp() 	const { return op1p(); }
     AstNode*	rhsp() 	const { return op2p(); }
     bool	isClockReq() const { return m_clockReq; }
@@ -1596,10 +1418,7 @@ struct AstInitial : public AstNode {
 	: AstNode(fl) {
 	addNOp1p(bodysp);
     }
-    virtual ~AstInitial() {}
-    virtual AstType type() const { return AstType::INITIAL;}
-    virtual AstNode* clone() { return new AstInitial(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Initial, INITIAL)
     AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -1610,10 +1429,7 @@ struct AstFinal : public AstNode {
 	: AstNode(fl) {
 	addNOp1p(bodysp);
     }
-    virtual ~AstFinal() {}
-    virtual AstType type() const { return AstType::FINAL;}
-    virtual AstNode* clone() { return new AstFinal(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Final, FINAL)
     AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
 };
 
@@ -1626,10 +1442,7 @@ struct AstInitArray : public AstNode {
 	: AstNode(fl) {
 	addNOp1p(initsp);
     }
-    virtual ~AstInitArray() {}
-    virtual AstType type() const { return AstType::INITARRAY;}
-    virtual AstNode* clone() { return new AstInitArray(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(InitArray, INITARRAY)
     AstNode*	initsp() 	const { return op1p()->castNode(); }	// op1 = Initial value expressions
     void	addInitsp(AstNode* newp)	{ addOp1p(newp); }
 };
@@ -1644,10 +1457,7 @@ public:
 	: AstNode(fl) {
 	m_pragType = pragType;
     }
-    virtual ~AstPragma() {}
-    virtual AstType type() const { return AstType::PRAGMA;}
-    virtual AstNode* clone() { return new AstPragma(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Pragma, PRAGMA)
     AstPragmaType	pragType() 	const { return m_pragType; }	// *=type of the pragma
     virtual V3Hash sameHash() const { return V3Hash(pragType()); }
     virtual bool isPredictOptimizable() const { return false; }
@@ -1658,10 +1468,7 @@ public:
 struct AstStop : public AstNodeStmt {
     AstStop(FileLine* fl)
 	: AstNodeStmt(fl) {}
-    virtual ~AstStop() {}
-    virtual AstType type() const { return AstType::STOP;}
-    virtual AstNode* clone() { return new AstStop(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Stop, STOP)
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
@@ -1676,10 +1483,7 @@ struct AstStop : public AstNodeStmt {
 struct AstFinish : public AstNodeStmt {
     AstFinish(FileLine* fl)
 	: AstNodeStmt(fl) {}
-    virtual ~AstFinish() {}
-    virtual AstType type() const { return AstType::FINISH;}
-    virtual AstNode* clone() { return new AstFinish(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Finish, FINISH)
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
@@ -1715,11 +1519,8 @@ public:
 	m_arrayLsb = varp->arrayp(0) ? varp->arrayp(0)->lsbConst() : 0;
 	m_arrayMsb = varp->arrayp(0) ? varp->arrayp(0)->msbConst() : 0;
     }
-    virtual ~AstTraceDecl() {}
     virtual int instrCount()	const { return 100; }  // Large...
-    virtual AstType type() const { return AstType::TRACEDECL;}
-    virtual AstNode* clone() { return new AstTraceDecl(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(TraceDecl, TRACEDECL)
     virtual string name()	const { return m_showname; }
     virtual bool maybePointedTo() const { return true; }
     string showname()	const { return m_showname; }		// * = Var name
@@ -1748,12 +1549,9 @@ public:
 	m_declp = declp;
 	addNOp2p(valuep);
     }
-    virtual ~AstTraceInc() {}
-    virtual AstType type() const { return AstType::TRACEINC;}
-    virtual AstNode* clone() { return new AstTraceInc(*this); }
+    ASTNODE_NODE_FUNCS(TraceInc, TRACEINC)
     virtual bool broken() const { return !declp()->brokeExists(); }
     virtual void cloneRelink() { if (m_declp->clonep()) m_declp = m_declp->clonep()->castTraceDecl(); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 10+2*instrCountLd(); }
     virtual V3Hash sameHash() const { return V3Hash(declp()); }
@@ -1785,10 +1583,7 @@ public:
 	UASSERT(sensesp, "Sensesp required arg");
 	m_sensesp = sensesp;
     }
-    virtual ~AstActive() {}
-    virtual AstType type() const { return AstType::ACTIVE;}
-    virtual AstNode* clone() { return new AstActive(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Active, ACTIVE)
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }
     virtual bool broken() const { return (m_sensesp && !m_sensesp->brokeExists()); }
@@ -1822,10 +1617,7 @@ public:
     AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp, int dimension=0)
 	: AstNode(fl) {
 	setOp1p(fromp); m_attrType = attrtype; m_dimension = dimension; }
-    virtual ~AstAttrOf() {}
-    virtual AstType type() const { return AstType::ATTROF;}
-    virtual AstNode* clone() { return new AstAttrOf(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(AttrOf, ATTROF)
     AstNode*	fromp() const { return op1p(); }
     AstAttrType	attrType() const { return m_attrType; }
     int		dimension() const { return m_dimension; }
@@ -1837,10 +1629,7 @@ struct AstScopeName : public AstNode {
     // Children: TEXT
     AstScopeName(FileLine* fl)
 	: AstNode(fl) {}
-    virtual ~AstScopeName() {}
-    virtual AstType type() const { return AstType::SCOPENAME;}
-    virtual AstNode* clone() { return new AstScopeName(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScopeName, SCOPENAME)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     AstText*	scopeAttrp() const { return op1p()->castText(); }
@@ -1858,10 +1647,7 @@ public:
     AstRand(FileLine* fl, int wwidth, bool reset) : AstNodeTermop(fl) {
 	width(wwidth,wwidth); m_reset=reset; }
     AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
-    virtual ~AstRand() {}
-    virtual AstType type() const { return AstType::RAND;}
-    virtual AstNode* clone() { return new AstRand(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Rand, RAND)
     virtual string emitVerilog() { return "$random"; }
     virtual string emitC() {
 	return (m_reset ?
@@ -1878,10 +1664,7 @@ public:
 struct AstTime : public AstNodeTermop {
     AstTime(FileLine* fl)	: AstNodeTermop(fl) {
 	width(64,64); }
-    virtual ~AstTime() {}
-    virtual AstType type() const { return AstType::TIME;}
-    virtual AstNode* clone() { return new AstTime(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Time, TIME)
     virtual string emitVerilog() { return "$time"; }
     virtual string emitC() { return "VL_TIME_%nq()"; }
     virtual bool cleanOut() { return true; }
@@ -1899,10 +1682,7 @@ public:
 	: AstNodeTermop(fl) {
 	addNOp1p(exprsp);
     }
-    virtual ~AstUCFunc() {}
-    virtual AstType type() const { return AstType::UCFUNC;}
-    virtual AstNode* clone() { return new AstUCFunc(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(UCFunc, UCFUNC)
     virtual bool cleanOut() { return false; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -1923,10 +1703,7 @@ public:
 struct AstUnaryMin : public AstNodeUniop {
     AstUnaryMin(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstUnaryMin() {}
-    virtual AstType type() const { return AstType::UNARYMIN;}
-    virtual AstNode* clone() { return new AstUnaryMin(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(UnaryMin, UNARYMIN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opUnaryMin(lhs); }
     virtual string emitVerilog() { return "%k(- %l)"; }
     virtual string emitC() { return "VL_UNARYMIN_%lq(%lW, %P, %li)"; }
@@ -1936,10 +1713,7 @@ struct AstUnaryMin : public AstNodeUniop {
 struct AstRedAnd : public AstNodeUniop {
     AstRedAnd(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
-    virtual ~AstRedAnd() {}
-    virtual AstType type() const { return AstType::REDAND;}
-    virtual AstNode* clone() { return new AstRedAnd(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(RedAnd, REDAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedAnd(lhs); }
     virtual string emitVerilog() { return "%k(& %l)"; }
     virtual string emitC() { return "VL_REDAND_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -1949,10 +1723,7 @@ struct AstRedAnd : public AstNodeUniop {
 struct AstRedOr : public AstNodeUniop {
     AstRedOr(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
-    virtual ~AstRedOr() {}
-    virtual AstType type() const { return AstType::REDOR;}
-    virtual AstNode* clone() { return new AstRedOr(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(RedOr, REDOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedOr(lhs); }
     virtual string emitVerilog() { return "%k(| %l)"; }
     virtual string emitC() { return "VL_REDOR_%lq(%lW, %P, %li)"; }
@@ -1962,10 +1733,7 @@ struct AstRedOr : public AstNodeUniop {
 struct AstRedXor : public AstNodeUniop {
     AstRedXor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
-    virtual ~AstRedXor() {}
-    virtual AstType type() const { return AstType::REDXOR;}
-    virtual AstNode* clone() { return new AstRedXor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(RedXor, REDXOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXor(lhs); }
     virtual string emitVerilog() { return "%k(^ %l)"; }
     virtual string emitC() { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
@@ -1979,10 +1747,7 @@ struct AstRedXnor : public AstNodeUniop {
     // AstRedXnors are replaced with AstRedXors in V3Const.
     AstRedXnor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
-    virtual ~AstRedXnor() {}
-    virtual AstType type() const { return AstType::REDXNOR;}
-    virtual AstNode* clone() { return new AstRedXnor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(RedXnor, REDXNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXnor(lhs); }
     virtual string emitVerilog() { return "%k(~^ %l)"; }
     virtual string emitC() { v3fatalSrc("REDXNOR should have became REDXOR"); return ""; }
@@ -1994,10 +1759,7 @@ struct AstRedXnor : public AstNodeUniop {
 struct AstLogNot : public AstNodeUniop {
     AstLogNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1); }
-    virtual ~AstLogNot() {}
-    virtual AstType type() const { return AstType::LOGNOT;}
-    virtual AstNode* clone() { return new AstLogNot(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LogNot, LOGNOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLogNot(lhs); }
     virtual string emitVerilog() { return "%k(! %l)"; }
     virtual string emitC() { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -2008,10 +1770,7 @@ struct AstLogNot : public AstNodeUniop {
 struct AstNot : public AstNodeUniop {
     AstNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstNot() {}
-    virtual AstType type() const { return AstType::NOT;}
-    virtual AstNode* clone() { return new AstNot(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Not, NOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNot(lhs); }
     virtual string emitVerilog() { return "%k(~ %l)"; }
     virtual string emitC() { return "VL_NOT_%lq(%lW, %P, %li)"; }
@@ -2022,10 +1781,7 @@ struct AstNot : public AstNodeUniop {
 struct AstExtend : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
     AstExtend(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstExtend() {}
-    virtual AstType type() const { return AstType::EXTEND;}
-    virtual AstNode* clone() { return new AstExtend(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Extend, EXTEND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%l"; }
     virtual string emitC() { return "VL_EXTEND_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -2036,10 +1792,7 @@ struct AstExtend : public AstNodeUniop {
 struct AstExtendS : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
     AstExtendS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstExtendS() {}
-    virtual AstType type() const { return AstType::EXTENDS;}
-    virtual AstNode* clone() { return new AstExtendS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ExtendS, EXTENDS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opExtendS(lhs); }
     virtual string emitVerilog() { return "%l"; }
     virtual string emitC() { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -2053,10 +1806,7 @@ struct AstSigned : public AstNodeUniop {
     AstSigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	isSigned(true);
     }
-    virtual ~AstSigned() {}
-    virtual AstType type() const { return AstType::SIGNED;}
-    virtual AstNode* clone() { return new AstSigned(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Signed, SIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%k$signed(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -2069,10 +1819,7 @@ struct AstUnsigned : public AstNodeUniop {
     AstUnsigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	isSigned(false);
     }
-    virtual ~AstUnsigned() {}
-    virtual AstType type() const { return AstType::UNSIGNED;}
-    virtual AstNode* clone() { return new AstUnsigned(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Unsigned, UNSIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%k$unsigned(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -2082,10 +1829,7 @@ struct AstUnsigned : public AstNodeUniop {
 };
 struct AstCLog2 : public AstNodeUniop {
     AstCLog2(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstCLog2() {}
-    virtual AstType type() const { return AstType::CLOG2;}
-    virtual AstNode* clone() { return new AstCLog2(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CLog2, CLOG2)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
     virtual string emitVerilog() { return "%k$clog2(%l)"; }
     virtual string emitC() { return "VL_CLOG2_%lq(%lW, %P, %li)"; }
@@ -2096,10 +1840,7 @@ struct AstCLog2 : public AstNodeUniop {
 struct AstCountOnes : public AstNodeUniop {
     // Number of bits set in vector
     AstCountOnes(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstCountOnes() {}
-    virtual AstType type() const { return AstType::COUNTONES;}
-    virtual AstNode* clone() { return new AstCountOnes(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CountOnes, COUNTONES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCountOnes(lhs); }
     virtual string emitVerilog() { return "%k$countones(%l)"; }
     virtual string emitC() { return "VL_COUNTONES_%lq(%lW, %P, %li)"; }
@@ -2111,10 +1852,7 @@ struct AstIsUnknown : public AstNodeUniop {
     // True if any unknown bits
     AstIsUnknown(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1);}
-    virtual ~AstIsUnknown() {}
-    virtual AstType type() const { return AstType::ISUNKNOWN;}
-    virtual AstNode* clone() { return new AstIsUnknown(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(IsUnknown, ISUNKNOWN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%k$isunknown(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -2125,10 +1863,7 @@ struct AstOneHot : public AstNodeUniop {
     // True if only single bit set in vector
     AstOneHot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1);}
-    virtual ~AstOneHot() {}
-    virtual AstType type() const { return AstType::ONEHOT;}
-    virtual AstNode* clone() { return new AstOneHot(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(OneHot, ONEHOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot(lhs); }
     virtual string emitVerilog() { return "%k$onehot(%l)"; }
     virtual string emitC() { return "VL_ONEHOT_%lq(%lW, %P, %li)"; }
@@ -2140,10 +1875,7 @@ struct AstOneHot0 : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
     AstOneHot0(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	width(1,1);}
-    virtual ~AstOneHot0() {}
-    virtual AstType type() const { return AstType::ONEHOT0;}
-    virtual AstNode* clone() { return new AstOneHot0(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(OneHot0, ONEHOT0)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot0(lhs); }
     virtual string emitVerilog() { return "%k$onehot0(%l)"; }
     virtual string emitC() { return "VL_ONEHOT0_%lq(%lW, %P, %li)"; }
@@ -2165,10 +1897,7 @@ public:
 	if (widthFromp) { widthSignedFrom(widthFromp); }
 	m_size=width();
     }
-    virtual ~AstCast() {}
-    virtual AstType type() const { return AstType::CAST;}
-    virtual AstNode* clone() { return new AstCast(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Cast, CAST)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%k$_CAST(%l)"; }
     virtual string emitC() { return "VL_CAST_%nq%lq(%nw,%lw, %P, %li)"; }
@@ -2183,10 +1912,7 @@ public:
 
 struct AstFEof : public AstNodeUniop {
     AstFEof(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstFEof() {}
-    virtual AstType type() const { return AstType::FEOF;}
-    virtual AstNode* clone() { return new AstFEof(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FEof, FEOF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$feof(%l)"; }
     virtual string emitC() { return "(%li ? feof(VL_CVT_Q_FP(%li)) : true)"; }
@@ -2198,10 +1924,7 @@ struct AstFEof : public AstNodeUniop {
 
 struct AstFGetC : public AstNodeUniop {
     AstFGetC(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
-    virtual ~AstFGetC() {}
-    virtual AstType type() const { return AstType::FEOF;}
-    virtual AstNode* clone() { return new AstFGetC(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FGetC, FGETC)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgetc(%l)"; }
     // Non-existant filehandle returns EOF
@@ -2218,10 +1941,7 @@ struct AstFGetC : public AstNodeUniop {
 struct AstLogOr : public AstNodeBiComAsv {
     AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLogOr() {}
-    virtual AstType type() const { return AstType::LOGOR;}
-    virtual AstNode* clone() { return new AstLogOr(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LogOr, LOGOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k|| %r)"; }
     virtual string emitC() { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2234,10 +1954,7 @@ struct AstLogOr : public AstNodeBiComAsv {
 struct AstLogAnd : public AstNodeBiComAsv {
     AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLogAnd() {}
-    virtual AstType type() const { return AstType::LOGAND;}
-    virtual AstNode* clone() { return new AstLogAnd(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LogAnd, LOGAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k&& %r)"; }
     virtual string emitC() { return "VL_LOGAND_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2250,10 +1967,7 @@ struct AstLogAnd : public AstNodeBiComAsv {
 struct AstLogIf : public AstNodeBiop {
     AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLogIf() {}
-    virtual AstType type() const { return AstType::LOGIF;}
-    virtual AstNode* clone() { return new AstLogIf(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LogIf, LOGIF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %k-> %r)"; }
     virtual string emitC() { return "VL_LOGIF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2266,10 +1980,7 @@ struct AstLogIf : public AstNodeBiop {
 struct AstLogIff : public AstNodeBiCom {
     AstLogIff(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLogIff() {}
-    virtual AstType type() const { return AstType::LOGIFF;}
-    virtual AstNode* clone() { return new AstLogIff(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LogIff, LOGIFF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %k<-> %r)"; }
     virtual string emitC() { return "VL_LOGIFF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2282,10 +1993,7 @@ struct AstLogIff : public AstNodeBiCom {
 struct AstOr : public AstNodeBiComAsv {
     AstOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstOr() {}
-    virtual AstType type() const { return AstType::OR;}
-    virtual AstNode* clone() { return new AstOr(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Or, OR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k| %r)"; }
     virtual string emitC() { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
@@ -2297,10 +2005,7 @@ struct AstOr : public AstNodeBiComAsv {
 struct AstAnd : public AstNodeBiComAsv {
     AstAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstAnd() {}
-    virtual AstType type() const { return AstType::AND;}
-    virtual AstNode* clone() { return new AstAnd(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(And, AND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k& %r)"; }
     virtual string emitC() { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
@@ -2312,10 +2017,7 @@ struct AstAnd : public AstNodeBiComAsv {
 struct AstXor : public AstNodeBiComAsv {
     AstXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstXor() {}
-    virtual AstType type() const { return AstType::XOR;}
-    virtual AstNode* clone() { return new AstXor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Xor, XOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k^ %r)"; }
     virtual string emitC() { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
@@ -2327,10 +2029,7 @@ struct AstXor : public AstNodeBiComAsv {
 struct AstXnor : public AstNodeBiComAsv {
     AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstXnor() {}
-    virtual AstType type() const { return AstType::XNOR;}
-    virtual AstNode* clone() { return new AstXnor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Xnor, XNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXnor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k^ ~ %r)"; }
     virtual string emitC() { return "VL_XNOR_%lq(%lW, %P, %li, %ri)"; }
@@ -2342,10 +2041,7 @@ struct AstXnor : public AstNodeBiComAsv {
 struct AstEq : public AstNodeBiCom {
     AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstEq() {}
-    virtual AstType type() const { return AstType::EQ;}
-    virtual AstNode* clone() { return new AstEq(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Eq, EQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k== %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2357,10 +2053,7 @@ struct AstEq : public AstNodeBiCom {
 struct AstNeq : public AstNodeBiCom {
     AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstNeq() {}
-    virtual AstType type() const { return AstType::NEQ;}
-    virtual AstNode* clone() { return new AstNeq(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Neq, NEQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!= %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2372,10 +2065,7 @@ struct AstNeq : public AstNodeBiCom {
 struct AstLt : public AstNodeBiop {
     AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLt() {}
-    virtual AstType type() const { return AstType::LT;}
-    virtual AstNode* clone() { return new AstLt(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Lt, LT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k< %r)"; }
     virtual string emitC() { return "VL_LT_%lq(%lW, %P, %li, %ri)"; }
@@ -2387,10 +2077,7 @@ struct AstLt : public AstNodeBiop {
 struct AstLtS : public AstNodeBiop {
     AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLtS() {}
-    virtual AstType type() const { return AstType::LTS;}
-    virtual AstNode* clone() { return new AstLtS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LtS, LTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k< %r)"; }
     virtual string emitC() { return "VL_LTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2403,10 +2090,7 @@ struct AstLtS : public AstNodeBiop {
 struct AstGt : public AstNodeBiop {
     AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstGt() {}
-    virtual AstType type() const { return AstType::GT;}
-    virtual AstNode* clone() { return new AstGt(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Gt, GT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k> %r)"; }
     virtual string emitC() { return "VL_GT_%lq(%lW, %P, %li, %ri)"; }
@@ -2418,10 +2102,7 @@ struct AstGt : public AstNodeBiop {
 struct AstGtS : public AstNodeBiop {
     AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstGtS() {}
-    virtual AstType type() const { return AstType::GTS;}
-    virtual AstNode* clone() { return new AstGtS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(GtS, GTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k> %r)"; }
     virtual string emitC() { return "VL_GTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2434,10 +2115,7 @@ struct AstGtS : public AstNodeBiop {
 struct AstGte : public AstNodeBiop {
     AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstGte() {}
-    virtual AstType type() const { return AstType::GTE;}
-    virtual AstNode* clone() { return new AstGte(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Gte, GTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
     virtual string emitC() { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
@@ -2449,10 +2127,7 @@ struct AstGte : public AstNodeBiop {
 struct AstGteS : public AstNodeBiop {
     AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstGteS() {}
-    virtual AstType type() const { return AstType::GTES;}
-    virtual AstNode* clone() { return new AstGteS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(GteS, GTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
     virtual string emitC() { return "VL_GTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2465,10 +2140,7 @@ struct AstGteS : public AstNodeBiop {
 struct AstLte : public AstNodeBiop {
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLte() {}
-    virtual AstType type() const { return AstType::LTE;}
-    virtual AstNode* clone() { return new AstLte(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Lte, LTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
     virtual string emitC() { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }
@@ -2480,10 +2152,7 @@ struct AstLte : public AstNodeBiop {
 struct AstLteS : public AstNodeBiop {
     AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstLteS() {}
-    virtual AstType type() const { return AstType::LTES;}
-    virtual AstNode* clone() { return new AstLteS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(LteS, LTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
     virtual string emitC() { return "VL_LTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2498,10 +2167,7 @@ struct AstShiftL : public AstNodeBiop {
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    virtual ~AstShiftL() {}
-    virtual AstType type() const { return AstType::SHIFTL;}
-    virtual AstNode* clone() { return new AstShiftL(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ShiftL, SHIFTL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k<< %r)"; }
     virtual string emitC() { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2515,10 +2181,7 @@ struct AstShiftR : public AstNodeBiop {
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    virtual ~AstShiftR() {}
-    virtual AstType type() const { return AstType::SHIFTR;}
-    virtual AstNode* clone() { return new AstShiftR(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ShiftR, SHIFTR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>> %r)"; }
     virtual string emitC() { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2532,10 +2195,7 @@ struct AstShiftRS : public AstNodeBiop {
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    virtual ~AstShiftRS() {}
-    virtual AstType type() const { return AstType::SHIFTRS;}
-    virtual AstNode* clone() { return new AstShiftRS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ShiftRS, SHIFTRS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k>>> %r)"; }
     virtual string emitC() { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2548,10 +2208,7 @@ struct AstShiftRS : public AstNodeBiop {
 struct AstAdd : public AstNodeBiComAsv {
     AstAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstAdd() {}
-    virtual AstType type() const { return AstType::ADD;}
-    virtual AstNode* clone() { return new AstAdd(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Add, ADD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k+ %r)"; }
     virtual string emitC() { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
@@ -2563,10 +2220,7 @@ struct AstAdd : public AstNodeBiComAsv {
 struct AstSub : public AstNodeBiop {
     AstSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstSub() {}
-    virtual AstType type() const { return AstType::SUB;}
-    virtual AstNode* clone() { return new AstSub(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Sub, SUB)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k- %r)"; }
     virtual string emitC() { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
@@ -2578,10 +2232,7 @@ struct AstSub : public AstNodeBiop {
 struct AstMul : public AstNodeBiComAsv {
     AstMul(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstMul() {}
-    virtual AstType type() const { return AstType::MUL;}
-    virtual AstNode* clone() { return new AstMul(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Mul, MUL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k* %r)"; }
     virtual string emitC() { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
@@ -2594,10 +2245,7 @@ struct AstMul : public AstNodeBiComAsv {
 struct AstMulS : public AstNodeBiComAsv {
     AstMulS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstMulS() {}
-    virtual AstType type() const { return AstType::MULS;}
-    virtual AstNode* clone() { return new AstMulS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(MulS, MULS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k* %r)"; }
     virtual string emitC() { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2611,10 +2259,7 @@ struct AstMulS : public AstNodeBiComAsv {
 struct AstDiv : public AstNodeBiop {
     AstDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstDiv() {}
-    virtual AstType type() const { return AstType::DIV;}
-    virtual AstNode* clone() { return new AstDiv(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Div, DIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
     virtual string emitC() { return "VL_DIV_%lq(%lW, %P, %li, %ri)"; }
@@ -2626,10 +2271,7 @@ struct AstDiv : public AstNodeBiop {
 struct AstDivS : public AstNodeBiop {
     AstDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstDivS() {}
-    virtual AstType type() const { return AstType::DIVS;}
-    virtual AstNode* clone() { return new AstDivS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(DivS, DIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
     virtual string emitC() { return "VL_DIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2642,10 +2284,7 @@ struct AstDivS : public AstNodeBiop {
 struct AstModDiv : public AstNodeBiop {
     AstModDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstModDiv() {}
-    virtual AstType type() const { return AstType::MODDIV;}
-    virtual AstNode* clone() { return new AstModDiv(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ModDiv, MODDIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
     virtual string emitC() { return "VL_MODDIV_%lq(%lW, %P, %li, %ri)"; }
@@ -2657,10 +2296,7 @@ struct AstModDiv : public AstNodeBiop {
 struct AstModDivS : public AstNodeBiop {
     AstModDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstModDivS() {}
-    virtual AstType type() const { return AstType::MODDIVS;}
-    virtual AstNode* clone() { return new AstModDivS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ModDivS, MODDIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
     virtual string emitC() { return "VL_MODDIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2673,10 +2309,7 @@ struct AstModDivS : public AstNodeBiop {
 struct AstPow : public AstNodeBiop {
     AstPow(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstPow() {}
-    virtual AstType type() const { return AstType::POW;}
-    virtual AstNode* clone() { return new AstPow(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Pow, POW)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k** %r)"; }
     virtual string emitC() { return "VL_POW_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2688,10 +2321,7 @@ struct AstPow : public AstNodeBiop {
 struct AstPowS : public AstNodeBiop {
     AstPowS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    virtual ~AstPowS() {}
-    virtual AstType type() const { return AstType::POWS;}
-    virtual AstNode* clone() { return new AstPowS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PowS, POWS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k** %r)"; }
     virtual string emitC() { return "VL_POWS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2704,10 +2334,7 @@ struct AstPowS : public AstNodeBiop {
 struct AstEqCase : public AstNodeBiCom {
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstEqCase() {}
-    virtual AstType type() const { return AstType::EQCASE;}
-    virtual AstNode* clone() { return new AstEqCase(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(EqCase, EQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k=== %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2719,10 +2346,7 @@ struct AstEqCase : public AstNodeBiCom {
 struct AstNeqCase : public AstNodeBiCom {
     AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstNeqCase() {}
-    virtual AstType type() const { return AstType::NEQCASE;}
-    virtual AstNode* clone() { return new AstNeqCase(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(NeqCase, NEQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!== %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2735,10 +2359,7 @@ struct AstEqWild : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
     AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstEqWild() {}
-    virtual AstType type() const { return AstType::EQWILD;}
-    virtual AstNode* clone() { return new AstEqWild(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(EqWild, EQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k==? %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2750,10 +2371,7 @@ struct AstEqWild : public AstNodeBiop {
 struct AstNeqWild : public AstNodeBiop {
     AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	width(1,1); }
-    virtual ~AstNeqWild() {}
-    virtual AstType type() const { return AstType::NEQWILD;}
-    virtual AstNode* clone() { return new AstNeqWild(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(NeqWild, NEQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k!=? %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
@@ -2767,10 +2385,7 @@ struct AstConcat : public AstNodeBiop {
     AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp->width() && rhsp->width()) width(lhsp->width()+rhsp->width(),lhsp->width()+rhsp->width());
     }
-    virtual ~AstConcat() {}
-    virtual AstType type() const { return AstType::CONCAT;}
-    virtual AstNode* clone() { return new AstConcat(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Concat, CONCAT)
     virtual string emitVerilog() { return "%k{%l, %k%r}"; }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opConcat(lhs,rhs); }
     virtual string emitC() { return "VL_CONCAT_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2783,10 +2398,7 @@ struct AstReplicate : public AstNodeBiop {
     AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)
 	: AstNodeBiop(fl, lhsp, new AstConst(fl, repCount)) {}
-    virtual ~AstReplicate() {}
-    virtual AstType type() const { return AstType::REPLICATE;}
-    virtual AstNode* clone() { return new AstReplicate(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Replicate, REPLICATE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs,rhs); }
     virtual string emitVerilog() { return "%k{%l{%k%r}}"; }
     virtual string emitC() { return "VL_REPLICATE_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
@@ -2797,10 +2409,7 @@ struct AstReplicate : public AstNodeBiop {
 };
 struct AstFGetS : public AstNodeBiop {
     AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
-    virtual ~AstFGetS() {}
-    virtual AstType type() const { return AstType::FEOF;}
-    virtual AstNode* clone() { return new AstFGetS(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(FGetS, FGETS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgets(%l,%r)"; }
     virtual string emitC() { return "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)"; }
@@ -2825,10 +2434,7 @@ struct AstVAssert : public AstNodeStmt {
 	addNOp2p(passsp);
 	addNOp3p(failsp);
     }
-    virtual ~AstVAssert() {}
-    virtual AstType type() const { return AstType::VASSERT;}
-    virtual AstNode* clone() { return new AstVAssert(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(VAssert, VASSERT)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     AstNode*	propp()		const { return op1p(); }	// op1 = property
@@ -2849,10 +2455,7 @@ public:
 	addOp1p(sensesp);
 	addNOp2p(bodysp);
     }
-    virtual ~AstClocking() {}
-    virtual AstType type() const { return AstType::CLOCKING;}
-    virtual AstNode* clone() { return new AstClocking(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Clocking, CLOCKING)
     AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p(); }	// op2 = Body
 };
@@ -2869,10 +2472,7 @@ public:
 	: AstNode(fl) {
 	addNOp1p(sensesp);
     }
-    virtual ~AstPslDefClock() {}
-    virtual AstType type() const { return AstType::PSLDEFCLOCK;}
-    virtual AstNode* clone() { return new AstPslDefClock(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PslDefClock, PSLDEFCLOCK)
     AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
 };
 
@@ -2887,10 +2487,7 @@ public:
 	addNOp2p(disablep);
 	addOp3p(propp);
     }
-    virtual ~AstPslClocked() {}
-    virtual AstType type() const { return AstType::PSLCLOCKED;}
-    virtual AstNode* clone() { return new AstPslClocked(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PslClocked, PSLCLOCKED)
     AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
     AstNode*	disablep()	const { return op2p(); }	// op2 = disable
     AstNode*	propp()		const { return op3p(); }	// op3 = property
@@ -2908,10 +2505,7 @@ public:
 	, m_name(name) {
 	addOp1p(propp);
     }
-    virtual ~AstPslAssert() {}
-    virtual AstType type() const { return AstType::PSLASSERT;}
-    virtual AstNode* clone() { return new AstPslAssert(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PslAssert, PSLASSERT)
     virtual string name()	const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(AstNode* samep) const { return samep->name() == name(); }
@@ -2933,10 +2527,7 @@ public:
 	addOp1p(propp);
 	addNOp4p(stmtsp);
     }
-    virtual ~AstPslCover() {}
-    virtual AstType type() const { return AstType::PSLCOVER;}
-    virtual AstNode* clone() { return new AstPslCover(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PslCover, PSLCOVER)
     virtual string name()	const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(AstNode* samep) const { return samep->name() == name(); }
@@ -2961,10 +2552,7 @@ struct AstPslBool : public AstNode {
 	: AstNode(fileline) {
 	addOp1p(exprp);
     }
-    virtual ~AstPslBool() {}
-    virtual AstType type() const { return AstType::PSLBOOL;}
-    virtual AstNode* clone() { return new AstPslBool(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(PslBool, PSLBOOL)
     AstNode*	exprp()	const { return op1p()->castNode(); }	// op1= expression
     virtual bool isGateOptimizable() const { return false; }	// Not relevant
     virtual bool isPredictOptimizable() const { return false; }	// Not relevant
@@ -2979,19 +2567,13 @@ struct AstPslBool : public AstNode {
 struct AstText : public AstNodeText {
     AstText(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstText() {}
-    virtual AstType type() const { return AstType::TEXT;}
-    virtual AstNode* clone() { return new AstText(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Text, TEXT)
 };
 
 struct AstScCtor : public AstNodeText {
     AstScCtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScCtor() {}
-    virtual AstType type() const { return AstType::SCCTOR;}
-    virtual AstNode* clone() { return new AstScCtor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScCtor, SCCTOR)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -2999,10 +2581,7 @@ struct AstScCtor : public AstNodeText {
 struct AstScDtor : public AstNodeText {
     AstScDtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScDtor() {}
-    virtual AstType type() const { return AstType::SCDTOR;}
-    virtual AstNode* clone() { return new AstScDtor(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScDtor, SCDTOR)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -3010,10 +2589,7 @@ struct AstScDtor : public AstNodeText {
 struct AstScHdr : public AstNodeText {
     AstScHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScHdr() {}
-    virtual AstType type() const { return AstType::SCHDR;}
-    virtual AstNode* clone() { return new AstScHdr(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScHdr, SCHDR)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -3021,10 +2597,7 @@ struct AstScHdr : public AstNodeText {
 struct AstScImp : public AstNodeText {
     AstScImp(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScImp() {}
-    virtual AstType type() const { return AstType::SCIMP;}
-    virtual AstNode* clone() { return new AstScImp(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScImp, SCIMP)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -3032,10 +2605,7 @@ struct AstScImp : public AstNodeText {
 struct AstScImpHdr : public AstNodeText {
     AstScImpHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScImpHdr() {}
-    virtual AstType type() const { return AstType::SCIMPHDR;}
-    virtual AstNode* clone() { return new AstScImpHdr(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScImpHdr, SCIMPHDR)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -3043,10 +2613,7 @@ struct AstScImpHdr : public AstNodeText {
 struct AstScInt : public AstNodeText {
     AstScInt(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
-    virtual ~AstScInt() {}
-    virtual AstType type() const { return AstType::SCINT;}
-    virtual AstNode* clone() { return new AstScInt(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(ScInt, SCINT)
     virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
@@ -3057,10 +2624,7 @@ struct AstUCStmt : public AstNodeStmt {
 	: AstNodeStmt(fl) {
 	addNOp1p(exprsp);
     }
-    virtual ~AstUCStmt() {}
-    virtual AstType type() const { return AstType::UCSTMT;}
-    virtual AstNode* clone() { return new AstUCStmt(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(UCStmt, UCSTMT)
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -3090,10 +2654,7 @@ public:
 	m_source = false;
 	m_support = false;
     }
-    virtual ~AstCFile() {}
-    virtual AstType type() const { return AstType::CFILE;}
-    virtual AstNode* clone() { return new AstCFile(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CFile, CFILE)
     virtual string name()	const { return m_name; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
@@ -3142,10 +2703,7 @@ public:
 	m_symProlog = false;
 	m_entryPoint = false;
     }
-    virtual ~AstCFunc() {}
-    virtual AstType type() const { return AstType::CFUNC;}
-    virtual AstNode* clone() { return new AstCFunc(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CFunc, CFUNC)
     virtual string name()	const { return m_name; }
     virtual bool broken() const { return ( (m_scopep && !m_scopep->brokeExists())); }
     virtual bool maybePointedTo() const { return true; }
@@ -3214,10 +2772,7 @@ public:
 	m_funcp = funcp;
 	m_hiername = oldp->hiername();
     }
-    virtual ~AstCCall() {}
-    virtual AstType type() const { return AstType::CCALL;}
-    virtual AstNode* clone() { return new AstCCall(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CCall, CCALL)
     virtual void dump(ostream& str=cout);
     virtual void cloneRelink() { if (m_funcp && m_funcp->clonep()) {
 	m_funcp = m_funcp->clonep()->castCFunc();
@@ -3252,10 +2807,7 @@ public:
 	: AstNodeStmt(fl) {
 	setOp1p(lhsp);
     }
-    virtual ~AstCReturn() {}
-    virtual AstType type() const { return AstType::CRETURN;}
-    virtual AstNode* clone() { return new AstCReturn(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CReturn, CRETURN)
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -3274,10 +2826,7 @@ public:
 	: AstNode(fl) {
 	m_modp = modp;
     }
-    virtual ~AstCInclude() {}
-    virtual AstType type() const { return AstType::CINCLUDE;}
-    virtual AstNode* clone() { return new AstCInclude(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CInclude, CINCLUDE)
     virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
     virtual void cloneRelink() { if (m_modp && m_modp->clonep()) {
 	m_modp = m_modp->clonep()->castModule();
@@ -3297,10 +2846,7 @@ struct AstCMath : public AstNodeMath {
 	addNOp1p(new AstText(fl, textStmt));
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    virtual ~AstCMath() {}
-    virtual AstType type() const { return AstType::CMATH;}
-    virtual AstNode* clone() { return new AstCMath(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CMath, CMATH)
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -3322,10 +2868,7 @@ struct AstCStmt : public AstNodeStmt {
 	: AstNodeStmt(fl) {
 	addNOp1p(new AstText(fl, textStmt));
     }
-    virtual ~AstCStmt() {}
-    virtual AstType type() const { return AstType::CSTMT;}
-    virtual AstNode* clone() { return new AstCStmt(*this); }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(CStmt, CSTMT)
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -3341,10 +2884,7 @@ struct AstNetlist : public AstNode {
     // Parents:   none
     // Children:  MODULEs & CFILEs
     AstNetlist() : AstNode(new FileLine("AstRoot",0)) {}
-    virtual ~AstNetlist() {}
-    virtual AstType type() const { return AstType::NETLIST;}
-    virtual AstNode* clone() { v3fatalSrc("Can't clone top-level netlist\n"); return NULL; }
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); }
+    ASTNODE_NODE_FUNCS(Netlist, NETLIST)
     AstModule*	modulesp() 	const { return op1p()->castModule();}	// op1 = List of modules
     AstModule*  topModulep() const { return op1p()->castModule(); }	// * = Top module in hierarchy (first one added, for now)
     void addModulep(AstModule* modulep) { addOp1p(modulep); }

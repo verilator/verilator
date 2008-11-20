@@ -285,7 +285,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	    // Deep clone of new module
 	    // Note all module internal variables will be re-linked to the new modules by clone
 	    // However links outside the module (like on the upper cells) will not.
-	    modp = nodep->modp()->cloneTree(false)->castModule();
+	    modp = nodep->modp()->cloneTree(false);
 	    modp->name(newname);
 	    nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
 

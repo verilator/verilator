@@ -156,7 +156,7 @@ private:
 	    // Make all of the required clones
 	    m_instLsb = m_cellRangep->lsbConst();
 	    for (m_instNum = m_instLsb; m_instNum<=m_cellRangep->msbConst(); m_instNum++) {
-		AstCell* newp = nodep->cloneTree(false)->castCell();
+		AstCell* newp = nodep->cloneTree(false);
 		nodep->addNextHere(newp);
 		// Remove ranging and fix name
 		newp->rangep()->unlinkFrBack()->deleteTree();

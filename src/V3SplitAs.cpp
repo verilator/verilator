@@ -149,7 +149,7 @@ private:
 	UINFO(3,"   For "<<m_splitVscp<<endl);
 	if (debug()>=9) nodep->dumpTree(cout,"-in  : ");
 	// Duplicate it and link in
-	AstAlways* newp = nodep->cloneTree(false)->castAlways();
+	AstAlways* newp = nodep->cloneTree(false);
 	newp->user(true);  // So we don't clone it again
 	nodep->addNextHere(newp);
 	{   // Delete stuff we don't want in old

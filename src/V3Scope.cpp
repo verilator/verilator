@@ -120,14 +120,14 @@ private:
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
-	AstInitial* clonep = nodep->cloneTree(false)->castInitial();
+	AstInitial* clonep = nodep->cloneTree(false);
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
     virtual void visit(AstFinal* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
-	AstFinal* clonep = nodep->cloneTree(false)->castFinal();
+	AstFinal* clonep = nodep->cloneTree(false);
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
@@ -148,14 +148,14 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
-	AstAlways* clonep = nodep->cloneTree(false)->castAlways();
+	AstAlways* clonep = nodep->cloneTree(false);
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    CFUNC "<<nodep<<endl);
-	AstCFunc* clonep = nodep->cloneTree(false)->castCFunc();
+	AstCFunc* clonep = nodep->cloneTree(false);
 	clonep->scopep(m_scopep);
 	m_scopep->addActivep(clonep);
 	// We iterate under the *clone*
@@ -164,7 +164,7 @@ private:
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    FTASK "<<nodep<<endl);
-	AstNodeFTask* clonep = nodep->cloneTree(false)->castNodeFTask();
+	AstNodeFTask* clonep = nodep->cloneTree(false);
 	m_scopep->addActivep(clonep);
 	// We iterate under the *clone*
 	clonep->iterateChildren(*this);

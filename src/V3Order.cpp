@@ -1085,8 +1085,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 			UINFO(0,"         d2   ="<<fromVertexp->domainp()<<endl);
 			fromVertexp->domainp()->dumpTree(cout);
 		    }
-		    AstSenTree* newtreep = domainp->cloneTree(false)->castSenTree();
-		    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true)->castSenItem();
+		    AstSenTree* newtreep = domainp->cloneTree(false);
+		    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
 		    if (!newtree2p) fromVertexp->domainp()->v3fatalSrc("No senitem found under clocked domain");
 		    newtreep->addSensesp(newtree2p);
 		    newtreep->sortSenses();	// Remove duplicates

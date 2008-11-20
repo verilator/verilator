@@ -156,7 +156,7 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 	if (AstVar* oldvarp=subnodep->castVar()) {
 	    UINFO(8,"VARWRAP "<<oldvarp<<endl);
 	    if (oldvarp->isIO()) {
-		AstVar* varp = oldvarp->cloneTree(false)->castVar();
+		AstVar* varp = oldvarp->cloneTree(false);
 		newmodp->addStmtp(varp);
 		varp->sigPublic(true);	// User needs to be able to get to it...
 		if (oldvarp->isIO()) {

@@ -535,7 +535,7 @@ private:
 	AstNode* ap = lhsp->lhsp()->unlinkFrBack();
 	AstNode* bp = lhsp->rhsp()->unlinkFrBack();
 	AstNodeBiop* shift1p = nodep;
-	AstNodeBiop* shift2p = nodep->cloneTree(true)->castNodeBiop();
+	AstNodeBiop* shift2p = nodep->cloneTree(true);
 	shift1p->lhsp(ap); shift1p->rhsp(shiftp->cloneTree(true));
 	shift2p->lhsp(bp); shift2p->rhsp(shiftp);
 	AstNodeBiop* newp = lhsp;
