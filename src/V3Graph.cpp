@@ -94,6 +94,26 @@ bool V3GraphVertex::outSize1() const {
     return !outEmpty() && outBeginp()->outNextp()==NULL;
 }
 
+uint32_t V3GraphVertex::inHash() const {
+    // We want the same hash ignoring the order of edges.
+    // So we need an associative operator, like XOR.
+    // However with XOR multiple edges to the same source will cancel out,
+    // so we use ADD.  (Generally call this only after removing duplicates though)
+    uint32_t hash=0;
+    for (V3GraphEdge* edgep = this->inBeginp(); edgep; edgep=edgep->inNextp()) {
+	hash += cvtToHash(edgep->fromp());
+    }
+    return hash;
+}
+
+uint32_t V3GraphVertex::outHash() const {
+    uint32_t hash=0;
+    for (V3GraphEdge* edgep = this->outBeginp(); edgep; edgep=edgep->outNextp()) {
+	hash += cvtToHash(edgep->top());
+    }
+    return hash;
+}
+
 ostream& operator<<(ostream& os, V3GraphVertex* vertexp) {
     os<<"  VERTEX="<<vertexp->name();
     if (vertexp->rank()) os<<" r"<<vertexp->rank();
@@ -176,8 +196,10 @@ void V3Graph::clear() {
 
 void V3Graph::userClearVertices() {
     // Clear user() in all of tree
-    // We may use the userCnt trick in V3Ast later... For now we don't call this often, and
-    // the extra code on each read of user() would probably slow things down more than help.
+    // We may use the userCnt trick in V3Ast later... (but gblCnt would be
+    // in V3Graph instead of static) For now we don't call this often, and
+    // the extra code on each read of user() would probably slow things
+    // down more than help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertexp->user(0);
 	vertexp->userp(NULL);	 // Its a union, but might be different size than user()

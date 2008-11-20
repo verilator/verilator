@@ -443,13 +443,7 @@ public:
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1,0); }
     V3Hash(uint32_t val) { setBoth(1,val); }
-    V3Hash(void* vp) {
-	// It's just a hash, so we can shove a 64 bit pointer into a 32 bit bucket
-	// On 32 bit systems, lower is always 0, but who cares?
-	union { void* up; struct {uint32_t upper; uint32_t lower;} l;} u;
-	u.l.upper=0; u.l.lower=0; u.up=vp;
-	setBoth(1,u.l.upper^u.l.lower);
-    }
+    V3Hash(void* vp) { setBoth(1,cvtToHash(vp)); }
     V3Hash(const string& name);
     V3Hash(V3Hash lh, V3Hash rh) {
 	setBoth(1,lh.hshval()*31+rh.hshval());
@@ -522,7 +516,7 @@ protected:
     // CONSTUCTORS
     AstNode() {init(); }
     AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
-    virtual AstNode* clone() = 0;	// Generally, cloneTree/cloneNode is what you want
+    virtual AstNode* clone() = 0;	// Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void 	cloneRelinkTree();
 

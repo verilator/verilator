@@ -139,6 +139,7 @@ class V3Options {
     bool	m_oCombine;	// main switch: -Ob: common icode packing
     bool	m_oConst;	// main switch: -Oc: constant folding
     bool	m_oExpand;	// main switch: -Ox: expansion of C macros
+    bool	m_oFlopGater;	// main switch: -Of: flop gater detection
     bool	m_oGate;	// main switch: -Og: gate wire elimination
     bool	m_oLife;	// main switch: -Ol: variable lifetime
     bool	m_oLifePost;	// main switch: -Ot: delayed assignment elimination
@@ -237,6 +238,7 @@ class V3Options {
     bool oCombine() const { return m_oCombine; }
     bool oConst() const { return m_oConst; }
     bool oExpand() const { return m_oExpand; }
+    bool oFlopGater() const { return m_oFlopGater; }
     bool oGate() const { return m_oGate; }
     bool oDup() const { return oLife(); }
     bool oLife() const { return m_oLife; }

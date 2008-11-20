@@ -392,29 +392,62 @@ void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
 
 //######################################################################
 //######################################################################
+// Algorithms - sorting
+
+struct GraphSortVertexCmp {
+    inline bool operator () (const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+	return lhsp->sortCmp(rhsp) < 0;
+    }
+};
+struct GraphSortEdgeCmp {
+    inline bool operator () (const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+	return lhsp->sortCmp(rhsp) < 0;
+    }
+};
+
+void V3Graph::sortVertices() {
+    // Sort list of vertices by rank, then fanout
+    vector<V3GraphVertex*> vertices;
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+	vertices.push_back(vertexp);
+    }
+    std::sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
+    this->verticesUnlink();
+    for (vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
+	(*it)->verticesPushBack(this);
+    }
+}
+
+void V3Graph::sortEdges() {
+    // Sort edges by rank then fanout of node they point to
+    vector<V3GraphEdge*> edges;
+    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
+	// Make a vector
+	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+	    edges.push_back(edgep);
+	}
+	// Sort
+	std::sort(edges.begin(), edges.end(), GraphSortEdgeCmp());
+
+	// Relink edges in specified order
+	// We know the vector contains all of the edges that were
+	// there originally (didn't delete or add)
+	vertexp->outUnlink();
+	for (vector<V3GraphEdge*>::const_iterator it = edges.begin(); it!=edges.end(); ++it) {
+	    (*it)->outPushBack();
+	}
+	// Prep for next
+	edges.clear();
+    }
+}
+
+//######################################################################
+//######################################################################
 // Algorithms - ordering
 //	Compute near optimal ordering of the nodes, where:
 //	    If a required    edge is A->B, rank(A)<rank(B)
 //	    Visit edges and assign ranks to keep minimal crossings
 //		(Results in better dcache packing.)
-
-struct GraphOrderVertexCmp {
-    inline bool operator () (const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-	// LHS goes first if of lower rank, or lower fanout
-	if (lhsp->m_rank < rhsp->m_rank) return 1;
-	if (lhsp->m_rank > rhsp->m_rank) return 0;
-	return (lhsp->m_fanout < rhsp->m_fanout);
-    }
-};
-struct GraphOrderEdgeCmp {
-    inline bool operator () (const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
-	if (!lhsp->m_weight || !rhsp->m_weight) return 0;
-	GraphOrderVertexCmp cmp;
-	return (cmp(lhsp->m_top, rhsp->m_top));
-    }
-};
-
-//--------------------------------------------------------------------
 
 void V3Graph::order() {
     UINFO(2,"Order:\n");
@@ -430,36 +463,11 @@ void V3Graph::order() {
 	    orderDFSIterate(vertexp);
 	}
     }
-    // Speed up subsequent accesses.
-    { // Sort list of vertices by rank, then fanout
-	vector<V3GraphVertex*> vertices;
-	for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	    vertices.push_back(vertexp);
-	}
-	sort(vertices.begin(), vertices.end(), GraphOrderVertexCmp());
-	this->verticesUnlink();
-	for (vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
-	    (*it)->verticesPushBack(this);
-	}
-    }
 
+    // Sort list of vertices by rank, then fanout
+    sortVertices();
     // Sort edges by rank then fanout of node they point to
-    vector<V3GraphEdge*> edges;
-    for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	// Make a vector
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-	    edges.push_back(edgep);
-	}
-	// Sort
-	sort(edges.begin(), edges.end(), GraphOrderEdgeCmp());
-	// Extract
-	vertexp->outUnlink();
-	for (vector<V3GraphEdge*>::iterator it = edges.begin(); it!=edges.end(); ++it) {
-	    (*it)->outPushBack();
-	}
-	// Prep for next
-	edges.clear();
-    }
+    sortEdges();
 }
 
 double V3Graph::orderDFSIterate(V3GraphVertex* vertexp) {

@@ -54,6 +54,7 @@ Usability:
 Internal Code:
 	Eliminate the AstNUser* passed to all visitors; its only needed in V3Width,
 	and removing it will speed up and simplify all the other code.
+	V3Graph should be templated container type, taking in Vertex + Edge types
 
 Performance:
 	Constant propagation

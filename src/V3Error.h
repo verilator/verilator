@@ -188,6 +188,14 @@ template< class T> std::string cvtToStr (const T& t) {
     ostringstream os; os<<t; return os.str();
 }
 
+inline uint32_t cvtToHash(void* vp) {
+    // We can shove a 64 bit pointer into a 32 bit bucket
+    // On 32 bit systems, lower is always 0, but who cares?
+    union { void* up; struct {uint32_t upper; uint32_t lower;} l;} u;
+    u.l.upper=0; u.l.lower=0; u.up=vp;
+    return u.l.upper^u.l.lower;
+}
+
 //######################################################################
 
 class FileLine {

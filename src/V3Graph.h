@@ -31,7 +31,6 @@
 class V3Graph;
 class V3GraphVertex;
 class V3GraphEdge;
-class GraphOrder;
 class GraphAcycEdge;
 class OrderEitherVertex;
 class OrderLogicVertex;
@@ -70,8 +69,11 @@ public:
 
     // METHODS
     void clear();	// Empty it of all vertices/edges, as if making a new object
-
     void clearColors();
+
+    V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
+
+    // METHODS - ALGORITHMS
 
     /// Assign same color to all vertices in the same weakly connected component
     /// Thus different color if there's no edges between the two subgraphs
@@ -82,11 +84,22 @@ public:
     /// (I.E. all loops will occur within each color, not between them.)
     void stronglyConnected(V3EdgeFuncP edgeFuncp);
 
+    /// Assign same color to all destination vertices that have same
+    /// subgraph feeding into them
+    /// (I.E. all "from" nodes are common within each color)
+    /// See V3ClkGater if this is needed again; it got specialized
+
     /// Assign a ordering number to all vertexes in a tree.
     /// All nodes with no inputs will get rank 1
     void rank(V3EdgeFuncP edgeFuncp);
     void rank();
 
+    /// Sort all vertices and edges using the V3GraphVertex::sortCmp() function
+    void sortVertices();
+    /// Sort all edges and edges using the V3GraphEdge::sortCmp() function
+    void sortEdges();
+
+    /// Order all vertices by rank and fanout, lowest first
     /// Sort all vertices by rank and fanout, lowest first
     /// Sort all edges by weight, lowest first
     void order();
@@ -116,8 +129,7 @@ public:
     void userClearVertices();
     void userClearEdges();
     static void test();
-    //
-    V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
+
     // CALLBACKS
     virtual void loopsMessageCb(V3GraphVertex* vertexp) { v3fatalSrc("Loops detected in graph: "<<vertexp); }
     virtual void loopsVertexCb(V3GraphVertex* vertexp);
@@ -129,7 +141,6 @@ class V3GraphVertex : public AstNUser {
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
     friend class V3Graph;    friend class V3GraphEdge;
-    friend class GraphOrderEdgeCmp; friend class GraphOrderVertexCmp;
     friend class GraphAcyc;  friend class GraphAlgRank;
     V3ListEnt<V3GraphVertex*>	m_vertices;// All vertices, linked list
     V3List<V3GraphEdge*> m_outs;	// Outbound edges,linked list
@@ -146,7 +157,8 @@ protected:
     // ACCESSORS
     void fanout(double fanout) { m_fanout = fanout; }
     void rank(uint32_t rank) { m_rank = rank; }
-    void outUnlink() { m_outs.reset(); }
+    void inUnlink() { m_ins.reset(); }	 // Low level; normally unlinkDelete is what you want
+    void outUnlink() { m_outs.reset(); } // Low level; normally unlinkDelete is what you want
 public:
     // CONSTRUCTION
     V3GraphVertex(V3Graph* graphp);
@@ -159,6 +171,14 @@ public:
     virtual string dotShape() const { return ""; }
     virtual string dotStyle() const { return ""; }
     virtual string dotName() const { return ""; }
+    virtual int sortCmp(const V3GraphVertex* rhsp) const {
+	// LHS goes first if of lower rank, or lower fanout
+	if (m_rank < rhsp->m_rank) return -1;
+	if (m_rank > rhsp->m_rank) return 1;
+	if (m_fanout < rhsp->m_fanout) return -1;
+	if (m_fanout > rhsp->m_fanout) return 1;
+	return 0;
+    }
     uint32_t	color() const { return m_color; }
     void	color(uint32_t color) { m_color = color; }
     uint32_t	rank() const { return m_rank; }
@@ -172,9 +192,11 @@ public:
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
     bool 	 inEmpty() const { return inBeginp()==NULL; }
     bool 	 inSize1() const;
+    uint32_t	 inHash() const;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
     bool 	 outEmpty() const { return outBeginp()==NULL; }
     bool 	 outSize1() const;
+    uint32_t	 outHash() const;
     // METHODS
     void	rerouteEdges(V3Graph* graphp);	///< Edges are routed around this vertex to point from "from" directly to "to"
 };
@@ -187,7 +209,6 @@ class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 protected:
     friend class V3Graph;	friend class V3GraphVertex;
-    friend class GraphOrderEdgeCmp; friend class GraphOrderVertexCmp;
     friend class GraphAcyc;	friend class GraphAcycEdge;
     V3ListEnt<V3GraphEdge*> m_outs;	// Next Outbound edge for same vertex (linked list)
     V3ListEnt<V3GraphEdge*> m_ins;	// Next Inbound edge for same vertex (linked list)
@@ -216,6 +237,10 @@ public:
     virtual string dotLabel() const { return ""; }
     virtual string dotColor() const { return cutable()?"yellowGreen":"red"; }
     virtual string dotStyle() const { return cutable()?"dashed":""; }
+    virtual int sortCmp(const V3GraphEdge* rhsp) const {
+	if (!m_weight || !rhsp->m_weight) return 0;
+	return top()->sortCmp(rhsp->top());
+    }
     void	unlinkDelete();
     // ACCESSORS
     int		weight() const { return m_weight; }
