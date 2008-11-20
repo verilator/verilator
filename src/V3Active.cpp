@@ -255,7 +255,10 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    return;
 	}
-	if (nodep->sensesp() && nodep->sensesp()->sensesp() && nodep->sensesp()->sensesp()->isNever()) {
+	if (nodep->sensesp()
+	    && nodep->sensesp()->sensesp()
+	    && nodep->sensesp()->sensesp()->castSenItem()
+	    && nodep->sensesp()->sensesp()->castSenItem()->isNever()) {
 	    // Never executing.  Kill it.
 	    if (nodep->sensesp()->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
@@ -266,18 +269,22 @@ private:
 	bool combo = false;
 	bool sequent = false;
 	if (nodep->sensesp()) {
-	    for (AstSenItem* nextp, *senp = nodep->sensesp()->sensesp(); senp; senp=nextp) {
-		nextp = senp->nextp()->castSenItem();
-		if (senp->edgeType() == AstEdgeType::ANYEDGE) {
-		    combo = true;
-		    // Delete the sensitivity
-		    // We'll add it as a generic COMBO SenItem in a moment.
-		    senp->unlinkFrBack()->deleteTree(); senp=NULL;
-		} else if (senp->varrefp()) {
-		    if (senp->varrefp()->width()>1) senp->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-								  <<senp->varrefp()->prettyName());
-		    sequent = true;
-		    senp->varrefp()->varp()->usedClock(true);
+	    for (AstNodeSenItem* nextp, *senp = nodep->sensesp()->sensesp(); senp; senp=nextp) {
+		nextp = senp->nextp()->castNodeSenItem();
+		if (AstSenItem* itemp = senp->castSenItem()) {
+		    if (itemp->edgeType() == AstEdgeType::ANYEDGE) {
+			combo = true;
+			// Delete the sensitivity
+			// We'll add it as a generic COMBO SenItem in a moment.
+			itemp->unlinkFrBack()->deleteTree(); itemp=NULL; senp=NULL;
+		    } else if (itemp->varrefp()) {
+			if (itemp->varrefp()->width()>1) itemp->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
+								      <<itemp->varrefp()->prettyName());
+			sequent = true;
+			itemp->varrefp()->varp()->usedClock(true);
+		    }
+		} else {
+		    senp->v3fatalSrc("Strange node under sentree");
 		}
 	    }
 	}

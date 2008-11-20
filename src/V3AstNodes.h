@@ -799,7 +799,7 @@ struct AstFuncRef : public AstNodeFTaskRef {
 
 //######################################################################
 
-struct AstSenItem : public AstNode {
+struct AstSenItem : public AstNodeSenItem {
     // Parents:  SENTREE
     // Children: (optional) VARREF
 private:
@@ -810,27 +810,27 @@ public:
     class Settle {};		// for creator type-overload selection
     class Never {};		// for creator type-overload selection
     AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNodeVarRef* varrefp)
-	: AstNode(fl), m_edgeType(edgeType) {
+	: AstNodeSenItem(fl), m_edgeType(edgeType) {
 	setOp1p(varrefp);
     }
     AstSenItem(FileLine* fl, AstEdgeType edgeType, AstParseRef* varrefp)
-	: AstNode(fl), m_edgeType(edgeType) {
+	: AstNodeSenItem(fl), m_edgeType(edgeType) {
 	setOp1p(varrefp);
     }
     AstSenItem(FileLine* fl, Combo)
-	: AstNode(fl) {
+	: AstNodeSenItem(fl) {
 	m_edgeType = AstEdgeType::COMBO;
     }
     AstSenItem(FileLine* fl, Initial)
-	: AstNode(fl) {
+	: AstNodeSenItem(fl) {
 	m_edgeType = AstEdgeType::INITIAL;
     }
     AstSenItem(FileLine* fl, Settle)
-	: AstNode(fl) {
+	: AstNodeSenItem(fl) {
 	m_edgeType = AstEdgeType::SETTLE;
     }
     AstSenItem(FileLine* fl, Never)
-	: AstNode(fl) {
+	: AstNodeSenItem(fl) {
 	m_edgeType = AstEdgeType::NEVER;
     }
     ASTNODE_NODE_FUNCS(SenItem, SENITEM)
@@ -843,11 +843,11 @@ public:
     AstNode*	sensp()		const { return op1p(); }		// op1 = Signal sensitized
     AstNodeVarRef* varrefp()	const { return op1p()->castNodeVarRef(); }	// op1 = Signal sensitized
     //
-    bool isClocked() const { return edgeType().clockedStmt(); }
-    bool isCombo() const { return edgeType()==AstEdgeType::COMBO; }
-    bool isInitial() const { return edgeType()==AstEdgeType::INITIAL; }
-    bool isSettle() const { return edgeType()==AstEdgeType::SETTLE; }
-    bool isNever() const { return edgeType()==AstEdgeType::NEVER; }
+    virtual bool isClocked() const { return edgeType().clockedStmt(); }
+    virtual bool isCombo() const { return edgeType()==AstEdgeType::COMBO; }
+    virtual bool isInitial() const { return edgeType()==AstEdgeType::INITIAL; }
+    virtual bool isSettle() const { return edgeType()==AstEdgeType::SETTLE; }
+    virtual bool isNever() const { return edgeType()==AstEdgeType::NEVER; }
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }
 };
 
@@ -858,7 +858,7 @@ struct AstSenTree : public AstNode {
 private:
     bool	m_multi;	// Created from combo logic by ORing multiple clock domains
 public:
-    AstSenTree(FileLine* fl, AstSenItem* sensesp)
+    AstSenTree(FileLine* fl, AstNodeSenItem* sensesp)
 	: AstNode(fl), m_multi(false) {
 	addNOp1p(sensesp);
     }
@@ -866,8 +866,8 @@ public:
     virtual void dump(ostream& str);
     virtual bool maybePointedTo() const { return true; }
     bool isMulti() const { return m_multi; }
-    AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
-    void addSensesp(AstSenItem* nodep) { addOp1p(nodep); }
+    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
+    void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }
     void multi(bool flag) { m_multi = true; }
     // METHODS
     void sortSenses();	// Sort senitems in standard way
@@ -2450,13 +2450,13 @@ struct AstClocking : public AstNode {
     // Parents:  MODULE
     // Children: Assertions
 public:
-    AstClocking(FileLine* fl, AstSenItem* sensesp, AstNode* bodysp)
+    AstClocking(FileLine* fl, AstNodeSenItem* sensesp, AstNode* bodysp)
 	: AstNode(fl) {
 	addOp1p(sensesp);
 	addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Clocking, CLOCKING)
-    AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p(); }	// op2 = Body
 };
 
@@ -2468,12 +2468,12 @@ struct AstPslDefClock : public AstNode {
     // Parents:  MODULE
     // Children: SENITEM
 public:
-    AstPslDefClock(FileLine* fl, AstSenItem* sensesp)
+    AstPslDefClock(FileLine* fl, AstNodeSenItem* sensesp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
     }
     ASTNODE_NODE_FUNCS(PslDefClock, PSLDEFCLOCK)
-    AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
 };
 
 struct AstPslClocked : public AstNode {
@@ -2481,14 +2481,14 @@ struct AstPslClocked : public AstNode {
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
 public:
-    AstPslClocked(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
+    AstPslClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
 	addNOp2p(disablep);
 	addOp3p(propp);
     }
     ASTNODE_NODE_FUNCS(PslClocked, PSLCLOCKED)
-    AstSenItem*	sensesp() 	const { return op1p()->castSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
     AstNode*	disablep()	const { return op2p(); }	// op2 = disable
     AstNode*	propp()		const { return op3p(); }	// op3 = property
 };

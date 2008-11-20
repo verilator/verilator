@@ -149,8 +149,8 @@ public:
     };
     const char* verilogKwd() const {
 	static const char* names[] = {
-	    "%E-edge", "", "[both]", "posedge", "negedge", "[high]","[low]",
-	    "/*AS*/","[initial]","[settle]","[never]"
+	    "%E-edge", "[any]", "[both]", "posedge", "negedge", "[high]","[low]",
+	    "*","[initial]","[settle]","[never]"
 	};
 	return names[m_e];
     };
@@ -922,6 +922,17 @@ struct AstNodeCase : public AstNodeStmt {
     AstNode*	  notParallelp() const { return op3p()->castNode(); }	// op3 = assertion code for non-full case's
     void addItemsp(AstNode* nodep) { addOp2p(nodep); }
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
+};
+
+struct AstNodeSenItem : public AstNode {
+    // A AstSenItem under
+    AstNodeSenItem(FileLine* fl) : AstNode(fl) {}
+    ASTNODE_BASE_FUNCS(NodeSenItem)
+    virtual bool isClocked() const = 0;
+    virtual bool isCombo() const = 0;
+    virtual bool isInitial() const = 0;
+    virtual bool isSettle() const = 0;
+    virtual bool isNever() const = 0;
 };
 
 class AstNodeVarRef : public AstNodeMath {

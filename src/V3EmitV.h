@@ -31,6 +31,7 @@
 class V3EmitV {
 public:
     static void emitv();
+    static void verilogForTree(AstNode* nodep, ostream& os=cout);
 };
 
 #endif // Guard

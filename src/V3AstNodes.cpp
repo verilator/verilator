@@ -186,15 +186,16 @@ void AstSenTree::sortSenses() {
     // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
     //cout<<endl; this->dumpTree(cout,"ssin: ");
     AstSenItem* nextp;
+    if (sensesp() && !sensesp()->castSenItem()) v3fatalSrc("Unsupported node type under sentree");
     // Make things a little faster; check first if we need a sort
-    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+    for (AstSenItem* senp = sensesp()->castSenItem(); senp; senp=senp->nextp()->castSenItem()) {
 	nextp=senp->nextp()->castSenItem();
 	AstSenItemCmp cmp;
 	if (nextp && !cmp(senp, nextp)) {
 	    // Something's out of order, sort it
 	    senp = NULL;
 	    vector<AstSenItem*> vec;
-	    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+	    for (AstSenItem* senp = sensesp()->castSenItem(); senp; senp=senp->nextp()->castSenItem()) {
 		vec.push_back(senp);
 	    }
 	    sort(vec.begin(), vec.end(), AstSenItemCmp());
@@ -209,7 +210,7 @@ void AstSenTree::sortSenses() {
     }
 
     // Pass2, remove dup edges
-    for (AstSenItem* senp = sensesp(); senp; senp=nextp) {
+    for (AstSenItem* senp = sensesp()->castSenItem(); senp; senp=nextp) {
 	nextp=senp->nextp()->castSenItem();
 	AstSenItem* cmpp = nextp;
 	if (cmpp
@@ -236,7 +237,7 @@ void AstSenTree::sortSenses() {
 
     // Pass3, remove nevers
     if (sensesp()->nextp()) {   // Else only one never, can't remove it
-	for (AstSenItem* senp = sensesp(); senp; senp=nextp) {
+	for (AstSenItem* senp = sensesp()->castSenItem(); senp; senp=nextp) {
 	    nextp=senp->nextp()->castSenItem();
 	    if (senp->isNever()) {
 		senp->unlinkFrBack()->deleteTree(); senp=NULL;
@@ -248,28 +249,28 @@ void AstSenTree::sortSenses() {
 
 bool AstSenTree::hasClocked() {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp=senp->nextp()->castSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isCombo()) return true;
     }
     return false;

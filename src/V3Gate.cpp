@@ -356,7 +356,7 @@ private:
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	iterateNewStmt(nodep, "User C Function", "User C Function");
     }
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstNodeSenItem* nodep, AstNUser*) {
 	m_inSenItem = true;
 	iterateNewStmt(nodep, NULL, NULL);
 	m_inSenItem = false;

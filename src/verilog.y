@@ -124,7 +124,7 @@ class AstSenTree;
     AstParseRef*	parserefp;
     AstPin*	pinp;
     AstRange*	rangep;
-    AstSenItem*	senitemp;
+    AstNodeSenItem*	senitemp;
     AstSenTree*	sentreep;
     AstVar*	varp;
     AstVarRef*	varrefp;

@@ -106,48 +106,57 @@ private:
 	m_scopep->addVarp(newvscp);
 	return newvscp;
     }
+    AstNode* createSenItemEquation(AstSenItem* nodep) {
+	// We know the var is clean, and one bit, so we use binary ops
+	// for speed instead of logical ops.
+	// POSEDGE:  var & ~var_last
+	// NEGEDGE:  ~var & var_last
+	// BOTHEDGE:  var ^ var_last
+	// HIGHEDGE:  var
+	// LOWEDGE:  ~var
+	AstNode* newp = NULL;
+	AstVarScope* clkvscp = nodep->varrefp()->varScopep();
+	if (nodep->edgeType()==AstEdgeType::POSEDGE) {
+	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+	    newp = new AstAnd(nodep->fileline(),
+			      new AstVarRef(nodep->fileline(),
+					    nodep->varrefp()->varScopep(), false),
+			      new AstNot(nodep->fileline(),
+					 new AstVarRef(nodep->fileline(),
+						       lastVscp, false)));
+	} else if (nodep->edgeType()==AstEdgeType::NEGEDGE) {
+	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+	    newp = new AstAnd(nodep->fileline(),
+			      new AstNot(nodep->fileline(),
+					 new AstVarRef(nodep->fileline(),
+						       nodep->varrefp()->varScopep(), false)),
+			      new AstVarRef(nodep->fileline(), lastVscp, false));
+	} else if (nodep->edgeType()==AstEdgeType::BOTHEDGE) {
+	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
+	    newp = new AstXor(nodep->fileline(),
+			      new AstVarRef(nodep->fileline(),
+					    nodep->varrefp()->varScopep(), false),
+			      new AstVarRef(nodep->fileline(), lastVscp, false));
+	} else if (nodep->edgeType()==AstEdgeType::HIGHEDGE) {
+	    newp = new AstVarRef(nodep->fileline(),
+				 clkvscp, false);
+	} else if (nodep->edgeType()==AstEdgeType::LOWEDGE) {
+	    newp = new AstNot(nodep->fileline(),
+			      new AstVarRef(nodep->fileline(),
+					    clkvscp, false));
+	} else {
+	    nodep->v3fatalSrc("Bad edge type");
+	}
+	return newp;
+    }
     AstNode* createSenseEquation(AstSenTree* nodep) {
 	AstNode* senEqnp = NULL;
-	for (AstSenItem* senp = nodep->sensesp(); senp; senp=senp->nextp()->castSenItem()) {
-	    // We know the var is clean, and one bit, so we use binary ops
-	    // for speed instead of logical ops.
-	    // POSEDGE:  var & ~var_last
-	    // NEGEDGE:  ~var & var_last
-	    // BOTHEDGE:  var ^ var_last
-	    // HIGHEDGE:  var
-	    // LOWEDGE:  ~var
-	    AstVarScope* lastVscp = senp->varrefp()->varScopep()->userp()->castNode()->castVarScope();
+	for (AstNodeSenItem* senp = nodep->sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	    AstNode* senOnep = NULL;
-	    if (senp->edgeType()==AstEdgeType::POSEDGE) {
-		if (!lastVscp) senp->v3fatalSrc("No last var ptr?\n");
-		senOnep = new AstAnd(senp->fileline(),
-				     new AstVarRef(senp->fileline(),
-						   senp->varrefp()->varScopep(), false),
-				     new AstNot(senp->fileline(),
-						new AstVarRef(senp->fileline(),
-							      lastVscp, false)));
-	    } else if (senp->edgeType()==AstEdgeType::NEGEDGE) {
-		if (!lastVscp) senp->v3fatalSrc("No last var ptr?\n");
-		senOnep = new AstAnd(senp->fileline(),
-				     new AstNot(senp->fileline(),
-						new AstVarRef(senp->fileline(),
-							      senp->varrefp()->varScopep(), false)),
-				     new AstVarRef(senp->fileline(), lastVscp, false));
-	    } else if (senp->edgeType()==AstEdgeType::BOTHEDGE) {
-		if (!lastVscp) senp->v3fatalSrc("No last var ptr?\n");
-		senOnep = new AstXor(senp->fileline(),
-				     new AstVarRef(senp->fileline(),
-						   senp->varrefp()->varScopep(), false),
-				     new AstVarRef(senp->fileline(), lastVscp, false));
-	    } else if (senp->edgeType()==AstEdgeType::HIGHEDGE) {
-		senOnep = new AstVarRef(senp->fileline(),
-					senp->varrefp()->varScopep(), false);
-	    } else if (senp->edgeType()==AstEdgeType::LOWEDGE) {
-		senOnep = new AstNot(senp->fileline(),
-				     new AstVarRef(senp->fileline(),
-						   senp->varrefp()->varScopep(), false));
+	    if (AstSenItem* itemp = senp->castSenItem()) {
+		senOnep = createSenItemEquation(itemp);
 	    } else {
-		senp->v3fatalSrc("Bad edge type");
+		senp->v3fatalSrc("Strange node under sentree");
 	    }
 	    if (senEqnp) {
 		// Add new OR to the sensitivity list equation
@@ -159,13 +168,6 @@ private:
 	return senEqnp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
-	for (AstSenItem* senp = sensesp->sensesp(); senp; senp=senp->nextp()->castSenItem()) {
-	    if (senp->edgeType() != AstEdgeType::HIGHEDGE
-		&& senp->varrefp()) {
-		AstVarScope* oldvscp = senp->varrefp()->varScopep();
-		getCreateLastClk(oldvscp);
-	    }
-	}
 	AstNode* senEqnp = createSenseEquation(sensesp);
 	if (!senEqnp) sensesp->v3fatalSrc("No sense equation, shouldn't be in sequent activation.");
 	AstIf* newifp = new AstIf (sensesp->fileline(),

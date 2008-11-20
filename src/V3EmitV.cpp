@@ -35,25 +35,24 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitVImp : public EmitCBaseVisitor {
-private:
+class EmitVBaseVisitor : public EmitCBaseVisitor {
+    // MEMBERS
     bool	m_suppressSemi;
-    AstModule*	m_modp;
-public:
     //int debug() { return 9; }
 
     // METHODS
-
+    virtual void puts(const string& str) = 0;
+    virtual void putbs(const string& str) = 0;
+    virtual void putsNoTracking(const string& str) = 0;
+    
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
-	m_modp = nodep;
 	putbs("module "+modClassName(nodep)+";\n");
 	nodep->iterateChildren(*this);
 	puts("endmodule\n");
-	m_modp = NULL;
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	putbs(nodep->castTask() ? "task ":"function ");
@@ -87,7 +86,7 @@ public:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	putbs("always ");
 	nodep->sensesp()->iterateAndNext(*this);
-	putbs("begin\n");
+	putbs(" begin\n");
 	nodep->bodysp()->iterateAndNext(*this);
 	puts("end\n");
     }
@@ -118,17 +117,17 @@ public:
 	if (!m_suppressSemi) puts(";\n");
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
+	// AstSenItem is called for dumping in isolation by V3Order
 	putbs("@(");
 	nodep->iterateChildren(*this);
-	puts(") ");
+	puts(")");
     }
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	putbs("");
-	if (nodep->backp()->castSenItem()) puts(" or ");
+	if (!nodep->backp()->castSenTree()) puts(" or ");
 	puts(nodep->edgeType().verilogKwd());
-	puts(" ");
+	if (nodep->sensp()) puts(" ");
 	nodep->iterateChildren(*this);
-	puts(" ");
     }
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
 	putbs(nodep->verilogKwd());
@@ -170,7 +169,7 @@ public:
 	putbs(" (");
 	if (filep) { filep->iterateAndNext(*this); putbs(","); }
 	puts("\"");
-	ofp()->putsNoTracking(text);
+	putsNoTracking(text);
 	puts("\"");
 	for (AstNode* expp=exprsp; expp; expp = expp->nextp()) {
 	    puts(",");
@@ -261,7 +260,7 @@ public:
 	putbs("$finish;\n");
     }
     virtual void visit(AstText* nodep, AstNUser*) {
-	ofp()->putsNoTracking(nodep->text());
+	putsNoTracking(nodep->text());
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
     }
@@ -434,21 +433,50 @@ public:
     }
 
 public:
-    EmitVImp() {
+    EmitVBaseVisitor() {
 	m_suppressSemi = false;
-	m_modp = NULL;
     }
-    void main(AstNode* nodep, V3OutCFile* ofp);
-    virtual ~EmitVImp() {}
+    virtual ~EmitVBaseVisitor() {}
 };
 
 //######################################################################
+// Emit to an output file
 
-void EmitVImp::main(AstNode* modp, V3OutCFile* ofp) {
-    // Output a module, or overall netlist
-    m_ofp = ofp;
-    modp->accept(*this);
-}
+class EmitVFileVisitor : public EmitVBaseVisitor {
+    // MEMBERS
+    V3OutFile*	m_ofp;
+    // METHODS
+    V3OutFile*	ofp() const { return m_ofp; };
+    void puts(const string& str) { ofp()->puts(str); }
+    void putbs(const string& str) { ofp()->putbs(str); }
+    void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
+    
+public:
+    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp) {
+	m_ofp = ofp;
+	nodep->accept(*this);
+    }
+    virtual ~EmitVFileVisitor() {}
+};
+
+//######################################################################
+// Emit to a stream (perhaps stringstream)
+
+class EmitVStreamVisitor : public EmitVBaseVisitor {
+    // MEMBERS
+    ostream&	m_os;
+    // METHODS
+    void puts(const string& str) { m_os<<str; }
+    void putbs(const string& str) { m_os<<str; }
+    void putsNoTracking(const string& str) { m_os<<str; }
+    
+public:
+    EmitVStreamVisitor(AstNode* nodep, ostream& os)
+	: m_os(os) {
+	nodep->accept(*this);
+    }
+    virtual ~EmitVStreamVisitor() {}
+};
 
 //######################################################################
 // EmitV class functions
@@ -459,15 +487,18 @@ void V3EmitV::emitv() {
 	// All-in-one file
 	V3OutVFile of (v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__Vout.v");
 	of.putsHeader();
-	EmitVImp imp;
-	imp.main(v3Global.rootp(), &of);
+	EmitVFileVisitor visitor (v3Global.rootp(), &of);
     } else {
 	// Process each module in turn
 	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
-	    EmitVImp imp;
-	    V3OutVFile of (v3Global.opt.makeDir()+"/"+imp.modClassName(modp)+"__Vout.v");
+	    V3OutVFile of (v3Global.opt.makeDir()
+			   +"/"+EmitCBaseVisitor::modClassName(modp)+"__Vout.v");
 	    of.putsHeader();
-	    imp.main(modp, &of);
+	    EmitVFileVisitor visitor (modp, &of);
 	}
     }
+}
+
+void V3EmitV::verilogForTree(AstNode* nodep, ostream& os) {
+    EmitVStreamVisitor(nodep, os);
 }

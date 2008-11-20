@@ -66,7 +66,7 @@ private:
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	m_topscopep = nodep;
 	nodep->iterateChildren(*this);
-	// Don't clear scopep, the namer persists beyond this visit
+	// Don't clear topscopep, the namer persists beyond this visit
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	// But no SenTrees under TopScope's scope

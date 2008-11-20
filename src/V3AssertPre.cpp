@@ -44,9 +44,9 @@ private:
     // NODE STATE/TYPES
     // STATE
     // Reset each module:
-    AstSenItem*	m_seniDefaultp;	// Default sensitivity (from AstDefClock)
+    AstNodeSenItem*	m_seniDefaultp;	// Default sensitivity (from AstDefClock)
     // Reset each assertion:
-    AstSenItem*	m_senip;	// Last sensitivity
+    AstNodeSenItem*	m_senip;	// Last sensitivity
 
     int debug() { return 0; }
 
@@ -55,7 +55,7 @@ private:
 	// Create sentree based on clocked or default clock
 	// Return NULL for always
 	AstSenTree* newp = NULL;
-	AstSenItem* senip = m_senip ? m_senip : m_seniDefaultp;
+	AstNodeSenItem* senip = m_senip ? m_senip : m_seniDefaultp;
 	if (!senip) {
 	    nodep->v3error("Unsupported: Unclocked assertion");
 	    newp = new AstSenTree(nodep->fileline(), NULL);

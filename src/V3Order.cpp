@@ -110,6 +110,7 @@
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
+#include "V3EmitV.h"
 
 class OrderMoveDomScope;
 
@@ -239,7 +240,6 @@ private:
     // Forming graph:
     //   Entire Netlist:
     //    AstVarScope::userp	-> OrderUser* for usage var
-    //	  AstActive::user3()	-> uint clocks hash of sensitivity list
     //    {statement}Node::userp-> AstModule* statement is under
     //   USER5 Cleared on each Logic stmt
     //    AstVarScope::user5()	-> VarUsage(gen/con/both).	Where already encountered signal
@@ -480,17 +480,6 @@ private:
 	m_activep = nodep;
 	m_activeSenVxp = NULL;
 	m_inClocked = nodep->hasClocked();
-	// Compute hash of sensitivity list
-	V3Hash clocks;
-	if (nodep->sensesp()) {
-	    for (AstSenItem* senp = nodep->sensesp()->sensesp(); senp; senp=senp->nextp()->castSenItem()) {
-		clocks = V3Hash(clocks, V3Hash(senp->edgeType()));
-		if (senp->varrefp()) {
-		    clocks = V3Hash(clocks, V3Hash(senp->varrefp()->varScopep()));
-		}
-	    }
-	}
-	nodep->user3(clocks.hshval());
 	// Grab the sensitivity list
 	if (nodep->sensesStorep()) nodep->v3fatalSrc("Senses should have been activeTop'ed to be global!");
 	nodep->sensesp()->accept(*this);
@@ -1086,7 +1075,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 			fromVertexp->domainp()->dumpTree(cout);
 		    }
 		    AstSenTree* newtreep = domainp->cloneTree(false);
-		    AstSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
+		    AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
 		    if (!newtree2p) fromVertexp->domainp()->v3fatalSrc("No senitem found under clocked domain");
 		    newtreep->addSensesp(newtree2p);
 		    newtreep->sortSenses();	// Remove duplicates
@@ -1143,18 +1132,7 @@ void OrderVisitor::processEdgeReport() {
 	    os.setf(ios::left);
 	    os<<"  "<<setw(50)<<name<<" ";
 	    AstSenTree* sentreep = vvertexp->domainp();
-	    if (sentreep) {
-		bool first = true;
-		for (AstSenItem* itemp=sentreep->sensesp(); itemp; itemp=itemp->nextp()->castSenItem()) {
-		    if (first) os<<"@( "; else os<<", ";
-		    first = false;
-		    os<<itemp->edgeType().verilogKwd();
-		    if (itemp->varrefp()) {
-			os<<" "+itemp->varrefp()->prettyName();
-		    }
-		}
-		if (!first) os<<" )";
-	    }
+	    if (sentreep) V3EmitV::verilogForTree(sentreep, os);
 	    report.push_back(os.str());
 	}
     }

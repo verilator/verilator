@@ -370,8 +370,8 @@ private:
 			UINFO(4,"  Act: "<<m_activep<<endl);
 			UINFO(4,"  Act: "<<oldactivep<<endl);
 			// Make a new sensitivity list, which is the combination of both blocks
-			AstSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
-			AstSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
+			AstNodeSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
+			AstNodeSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
 			AstSenTree* treep = new AstSenTree(m_activep->fileline(), sena);
 			if (senb) treep->addSensesp(senb);
 			if (AstSenTree* storep = oldactivep->sensesStorep()) {

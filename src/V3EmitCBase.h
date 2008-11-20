@@ -78,9 +78,9 @@ public:
     virtual void putsIntTopInclude() { puts("#include \"systemperl.h\"\n"); }
 };
 
-class V3OutVFile : public V3OutCFile {
+class V3OutVFile : public V3OutFile {
 public:
-    V3OutVFile(const string& filename) : V3OutCFile(filename) {}
+    V3OutVFile(const string& filename) : V3OutFile(filename) {}
     virtual ~V3OutVFile() {};
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
