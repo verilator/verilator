@@ -178,7 +178,7 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 #define UDEBUGONLY(stmts) {stmts}
 #define UASSERT(condition,stmsg) { if (!(condition)) { v3fatalSrc(stmsg); }}
 // For use in V3Ast static functions only
-#define UASSERT_STATIC(condition,stmsg) { if (!(condition)) { cerr<<"Internal Error: "<<__FILE__<<":"<<dec<<__LINE__<<(stmsg)<<endl; abort(); } }
+#define UASSERT_STATIC(condition,stmsg) { if (!(condition)) { cerr<<"Internal Error: "<<__FILE__<<":"<<dec<<__LINE__<<":"<<(stmsg)<<endl; abort(); } }
 
 #define V3ERROR_NA v3error("Internal: Unexpected Call")
 

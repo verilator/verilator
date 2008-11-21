@@ -49,6 +49,7 @@ our @Orig_ARGV = @ARGV;
 our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
 
 $Debug = 0;
+my $opt_benchmark;
 my @opt_tests;
 my $opt_nc;
 my $opt_vcs;
@@ -67,9 +68,10 @@ if (! GetOptions (
 		  "j=i"		=> \$opt_jobs,
 		  "v3!"		=> \$opt_v3,
 		  "nc!"		=> \$opt_nc,
+	  	  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "gdb!"	=> \$opt_gdb,
-		  "stop!"	=> \$opt_stop,
 		  "optimize:s"	=> \$opt_optimize,
+		  "stop!"	=> \$opt_stop,
 		  "verbose!"	=> \$opt_verbose,
 		  "<>"		=> \&parameter,
 		  )) {
@@ -215,9 +217,11 @@ sub new {
 	make_top_shell => 1,	# Make a default __top.v file
 	make_main => 1,		# Make __main.cpp
 	sim_time => 1000,
+	benchmark => $opt_benchmark,
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
+				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
@@ -227,8 +231,9 @@ sub new {
 	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
-	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv")],
+	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv -c")],
 	nc_flags2 => [],  # Overridden in some sim files
+	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
 	'v3' => 0,
 	verilator_flags => [split(/\s+/,"-cc")],
@@ -420,6 +425,13 @@ sub execute {
     return 1 if $self->errors;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
+    if ($param{nc}) {
+	$self->_run(logfile=>"obj_dir/".$self->{name}."__simnc.log",
+		    fails=>$param{fails},
+		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
+			  @{$param{ncrun_flags}},
+			  ]);
+    }
     if ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
@@ -482,6 +494,7 @@ sub _run {
     my %param = (tee=>1,
 		 @_);
     my $command = join(' ',@{$param{cmd}});
+    $command = "time $command" if $opt_benchmark;
     print "\t$command";
     print "   > $param{logfile}" if $param{logfile};
     print "\n";
@@ -916,6 +929,11 @@ driver.pl invokes Verilator or another simulator on each little test file.
 =head1 ARGUMENTS
 
 =over 4
+
+=item --benchmark [<cycles>]
+
+Show execution times of each step.  If an optional number is given,
+specifies the number of simulation cycles (for tests that support it).
 
 =item --gdb
 
