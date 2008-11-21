@@ -47,6 +47,7 @@ private:
     //  AstVar::userp()		-> AstNode*.  Expression connected to given pin
     //  AstVarRef::userp()	-> bool.  True if created senitem for parent's connected signal
     //  AstPin::userp()		-> bool.  True if created assignment already
+    AstUserInUse	m_inuse1;
 
     // STATE
     AstModule*	m_modp;		// Current module

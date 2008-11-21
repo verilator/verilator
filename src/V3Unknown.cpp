@@ -51,6 +51,7 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstArraySel::user()	-> bool.  Set true if already processed
+    AstUserInUse	m_inuse;
 
     // STATE
     AstModule*	m_modp;		// Current module
@@ -60,11 +61,6 @@ private:
     //int debug() { return 9; }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
-	//VV*****  We reset all userp() on the netlist!!!
-	AstNode::userClearTree();
-	nodep->iterateChildren(*this);
-    }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;

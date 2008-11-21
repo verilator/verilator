@@ -118,6 +118,7 @@ private:
     // NODE STATE
     // Cleared each Case
     //  AstIf::user3()		-> bool.  Set true to indicate clone not needed
+    AstUser3InUse	m_inuse3;
 
     // STATE
     V3Double0	m_statCaseFast;	// Statistic tracking

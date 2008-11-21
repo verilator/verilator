@@ -44,6 +44,10 @@
 // Structure for global state
 
 class LifeState {
+    // NODE STATE
+    //   See below
+    AstUserInUse	m_inuse1;
+
     // STATE
 public:
     V3Double0	m_statAssnDel;	// Statistic tracking

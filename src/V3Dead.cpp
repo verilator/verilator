@@ -70,6 +70,7 @@ private:
     //  AstModule::user()	-> int. Count of number of cells referencing this module.
     //  AstVar::user()		-> int. Count of number of references
     //  AstVarScope::user()	-> int. Count of number of references
+    AstUserInUse	m_inuse1;
 
     // TYPES
     typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
@@ -188,7 +189,6 @@ public:
 	m_elimUserVars = elimUserVars;
 	m_sideEffect = false;
 	// Operate on whole netlist
-	AstNode::userClearTree();	// userp() used on entire tree
 	nodep->accept(*this);
 	deadCheckVar();
 	// Modules after vars, because might be vars we delete inside a mod we delete

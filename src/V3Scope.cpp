@@ -46,6 +46,8 @@ private:
     // NODE STATE
     // AstVar::userp		-> AstVarScope replacement for this variable
     // AstVarRef::user2p	-> bool.  True indicates already processed
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
 
     // STATE, inside processing a single module
     AstModule*	m_modp;		// Current module

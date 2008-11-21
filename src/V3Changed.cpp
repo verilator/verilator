@@ -51,6 +51,8 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstVarScope::user()		-> bool.  True indicates processed
+    AstUserInUse	m_inuse1;
+
     // STATE
     AstModule*		m_topModp;	// Top module
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE

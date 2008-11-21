@@ -39,11 +39,17 @@ vluint64_t AstNode::s_editCntLast=0;
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
 int AstNode::s_cloneCntGbl=0;
-int AstNode::s_userCntGbl=0;
-int AstNode::s_user2CntGbl=0;
-int AstNode::s_user3CntGbl=0;
-int AstNode::s_user4CntGbl=0;
-int AstNode::s_user5CntGbl=0;
+int AstUserInUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+int AstUser2InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+int AstUser3InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+int AstUser4InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+int AstUser5InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+
+bool AstUserInUse::s_userBusy=false;
+bool AstUser2InUse::s_userBusy=false;
+bool AstUser3InUse::s_userBusy=false;
+bool AstUser4InUse::s_userBusy=false;
+bool AstUser5InUse::s_userBusy=false;
 
 //######################################################################
 // V3AstType

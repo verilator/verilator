@@ -218,6 +218,10 @@ private:
     // AstVarScope::user2p	-> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p		-> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4		-> Current ordering number (reorderBlock usage)
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
 
     // TYPES
     typedef vector<SplitLogicVertex*> VStack;

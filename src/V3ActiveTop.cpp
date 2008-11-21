@@ -48,6 +48,8 @@ private:
     // NODE STATE
     //  Entire netlist
     //   AstNode::user()		bool. True if processed
+    AstUserInUse	m_inuse1;
+
     // STATE
     AstTopScope*	m_topscopep;	// Top scope for adding sentrees under
     SenTreeFinder	m_finder;	// Find global sentree's and add them
@@ -135,7 +137,6 @@ public:
     // CONSTUCTORS
     ActiveTopVisitor(AstNetlist* nodep) {
 	m_topscopep = NULL;
-	AstNode::userClearTree();
 	nodep->accept(*this);
     }
     virtual ~ActiveTopVisitor() {}

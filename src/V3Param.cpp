@@ -54,6 +54,8 @@ private:
     // NODE STATE
     //	 AstModule::user4()	// bool	  True if parameters numbered
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
+    AstUser4InUse	m_inuse4;
+
     // STATE
     typedef std::map<AstVar*,AstVar*> VarCloneMap;
     struct ModInfo {
@@ -111,7 +113,6 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::user4ClearTree();
 	// Modules must be done in top-down-order
 	nodep->iterateChildren(*this);
     }

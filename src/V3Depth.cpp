@@ -163,7 +163,6 @@ public:
 	m_depth=0;
 	m_maxdepth=0;
 	//
-	AstNode::userClearTree();	// userp() used on entire tree
 	nodep->accept(*this);
     }
     virtual ~DepthVisitor() {}

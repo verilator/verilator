@@ -671,6 +671,7 @@ private:
 	else if (!m_cpp && nodep->lhsp()->castConcat()) {
 	    bool need_temp = false;
 	    if (m_warn && !nodep->castAssignDly()) {  // Is same var on LHS and RHS?
+		AstUserInUse	m_inuse1;
 		ConstVarMarkVisitor mark(nodep->lhsp());
 		ConstVarFindVisitor find(nodep->rhsp());
 		if (find.found()) need_temp = true;

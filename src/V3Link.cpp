@@ -51,6 +51,8 @@ private:
     //   AstBegin::userp()	// V3SymTable*    Local Symbol table
     //   AstVar::userp()	// V3SymTable*    Table used to create this variable
     //   AstVar::user2p()	// bool		  True if port set for this variable
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
 
     // ENUMS
     enum IdState {		// Which loop through the tree
@@ -107,8 +109,6 @@ private:
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::userClearTree();
-	AstNode::user2ClearTree();
 	// Look at all modules, and store pointers to all module names
 	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
 	    V3SymTable* symp = new V3SymTable(NULL);

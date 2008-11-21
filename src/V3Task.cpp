@@ -764,6 +764,11 @@ public:
 
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
+    AstUser5InUse	m_inuse5;
     TaskStateVisitor visitors (nodep);
     TaskVisitor visitor (nodep, &visitors);
 }

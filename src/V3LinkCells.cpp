@@ -87,6 +87,7 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstModule::userp()	// V3GraphVertex*    Vertex describing this module
+    AstUserInUse	m_inuse1;
 
     // STATE
     // Below state needs to be preserved between each module call.

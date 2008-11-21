@@ -160,6 +160,10 @@ private:
     //  AstVarScope::user()		// V3GraphVertex* for this node
     //  AstCCall::user2()		// bool; walked next list for other ccalls
     //  Ast*::user3()			// TraceActivityVertex* for this node
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    //AstUser4InUse	In V3Hashed
 
     // STATE
     AstModule*		m_topModp;	// Module to add variables to
@@ -548,9 +552,6 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::userClearTree();
-	AstNode::user2ClearTree();
-	AstNode::user3ClearTree();
 	m_code = 1; 	// Multiple TopScopes will require fixing how code#s
 	// are assigned as duplicate varscopes must result in the same tracing code#.
 

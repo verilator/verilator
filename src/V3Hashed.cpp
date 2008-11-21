@@ -47,6 +47,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstNodeStmt::user4()	-> V3Hash.  Hash value of this node (hash of 0 is illegal)
+    //AstUser4InUse	in V3Hashed.h
 
     // STATE
     V3Hash		m_lowerHash;	// Hash of the statement we're building

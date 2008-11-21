@@ -45,6 +45,7 @@ private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()		// bool.  Indicates processing completed
+    AstUserInUse	m_inuse1;
 
     // TYPES
     typedef multimap<string,AstCFunc*>	FuncMmap;
@@ -245,7 +246,6 @@ public:
 	m_modp = NULL;
 	m_scopep = NULL;
 	m_needThis = false;
-	AstNode::userClearTree();
 	nodep->accept(*this);
     }
     virtual ~DescopeVisitor() {}

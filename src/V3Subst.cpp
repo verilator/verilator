@@ -230,7 +230,9 @@ private:
     // Passed to SubstUseVisitor
     // AstVar::userp		-> SubstVar* for usage var, 0=not set yet
     // AstVar::user2		-> int step number for last assignment, 0=not set yet
-    //
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+
     // STATE
     vector<SubstVarEntry*>	m_entryps;	// Nodes to delete when we are finished
     int				m_ops;		// Number of operators on assign rhs

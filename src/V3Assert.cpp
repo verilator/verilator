@@ -40,6 +40,7 @@ private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()		-> bool.  True if processed
+    AstUserInUse	m_inuse1;
 
     // STATE
     AstModule*	m_modp;		// Last module
@@ -288,7 +289,6 @@ public:
 	m_beginp = NULL;
 	m_modp = NULL;
 	// Process
-	AstNode::userClearTree();	// userp() used on entire tree
 	nodep->accept(*this);
     }
     virtual ~AssertVisitor() {

@@ -48,6 +48,7 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()	// bool		  Moved default caseitems
+    AstUser2InUse	m_inuse2;
 
     // STATE
     // Below state needs to be preserved between each module call.
@@ -59,12 +60,6 @@ private:
 
     // METHODS
     // VISITs
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::user2ClearTree();
-	// And recurse...
-	nodep->iterateChildren(*this);
-    }
-
     virtual void visit(AstModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);

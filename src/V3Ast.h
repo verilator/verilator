@@ -363,6 +363,93 @@ struct AstNUser {
 };
 
 //######################################################################
+// AstUserResource - Generic pointer base class for tracking usage of user()
+//
+//  Where AstNode->user2() is going to be used, for example, you write:
+//
+//	AstUser2InUse  m_userres;
+//
+//  This will clear the tree, and prevent another visitor from clobering
+//  user2.  When the member goes out of scope it will be automagically
+//  freed up.
+
+class AstUserInUseBase {
+protected:
+    static void	allocate(int& cntGblRef, bool& userBusyRef) {
+	// Perhaps there's still a AstUserInUse in scope for this?
+	UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser*InUse request when under another AstUserInUse");
+	userBusyRef = true;
+	clearcnt(cntGblRef, userBusyRef);
+    }
+    static void	free(int& cntGblRef, bool& userBusyRef) {
+	UASSERT_STATIC(userBusyRef, "Free of User*() not under AstUserInUse");
+	clearcnt(cntGblRef, userBusyRef);  // Includes a checkUse for us
+	userBusyRef = false;
+    }
+    static void clearcnt(int& cntGblRef, bool& userBusyRef) {
+	UASSERT_STATIC(userBusyRef, "Clear of User*() not under AstUserInUse");
+	// If this really fires and is real (after 2^32 edits???)
+	// we could just walk the tree and clear manually
+	++cntGblRef;
+	UASSERT_STATIC(cntGblRef, "User*() overflowed!");
+    }
+};
+
+// For each user() declare the in use structure
+// We let AstNode peek into here, because when under low optimization even
+// an accessor would be way too slow.
+class AstUserInUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static int s_userCntGbl;	// Count of which usage of userp() this is
+    static bool s_userBusy;	// Count is in use
+public:
+    AstUserInUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUserInUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear() { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
+class AstUser2InUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static int s_userCntGbl;	// Count of which usage of userp() this is
+    static bool s_userBusy;	// Count is in use
+public:
+    AstUser2InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser2InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
+class AstUser3InUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static int s_userCntGbl;	// Count of which usage of userp() this is
+    static bool s_userBusy;	// Count is in use
+public:
+    AstUser3InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser3InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
+class AstUser4InUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static int s_userCntGbl;	// Count of which usage of userp() this is
+    static bool s_userBusy;	// Count is in use
+public:
+    AstUser4InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser4InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
+class AstUser5InUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static int s_userCntGbl;	// Count of which usage of userp() this is
+    static bool s_userBusy;	// Count is in use
+public:
+    AstUser5InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser5InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
+
+//######################################################################
 // AstNVisitor -- Allows new functions to be called on each node
 // type without changing the base classes.  See "Modern C++ Design".
 
@@ -480,19 +567,14 @@ private:
     int		m_widthMin;	// If unsized, bitwidth of minimum implementation
     AstNUser*	m_userp;	// Pointer to any information the user iteration routine wants
     int		m_userCnt;	// Mark of when userp was set
-    static int	s_userCntGbl;	// Count of which userp is set
     AstNUser*	m_user2p;	// Pointer to any information the user iteration routine wants
     int		m_user2Cnt;	// Mark of when userp was set
-    static int	s_user2CntGbl;	// Count of which userp is set
     AstNUser*	m_user3p;	// Pointer to any information the user iteration routine wants
     int		m_user3Cnt;	// Mark of when userp was set
-    static int	s_user3CntGbl;	// Count of which userp is set
     AstNUser*	m_user4p;	// Pointer to any information the user iteration routine wants
     int		m_user4Cnt;	// Mark of when userp was set
-    static int	s_user4CntGbl;	// Count of which userp is set
     AstNUser*	m_user5p;	// Pointer to any information the user iteration routine wants
     int		m_user5Cnt;	// Mark of when userp was set
-    static int	s_user5CntGbl;	// Count of which userp is set
 
     // METHODS
     void	op1p(AstNode* nodep) { m_op1p = nodep; if (nodep) nodep->m_backp = this; }
@@ -600,31 +682,47 @@ public:
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
 
+    AstNUser*	userp() const {
+	// Slows things down measurably, so disabled by default
+	//UASSERT_STATIC(AstUserInUse::s_userBusy, "userp set w/o busy");
+	return ((m_userCnt==AstUserInUse::s_userCntGbl)?m_userp:NULL);
+    }
+    void	userp(void* userp) { m_userp=(AstNUser*)(userp); m_userCnt=AstUserInUse::s_userCntGbl; }
     int		user() const { return userp()->castInt(); }
-    AstNUser*	userp() const { return ((m_userCnt==s_userCntGbl)?m_userp:NULL); }
-    void	userp(void* userp) { m_userp=(AstNUser*)(userp); m_userCnt=s_userCntGbl; }
     void	user(int val) { userp(AstNUser::fromInt(val)); }
-    static void	userClearTree() { s_userCntGbl++; UASSERT_STATIC(s_userCntGbl,"Rollover"); }  // Clear userp()'s across the entire tree
+    static void	userClearTree() { AstUserInUse::clear(); }  // Clear userp()'s across the entire tree
+
+    AstNUser*	user2p() const {
+	//UASSERT_STATIC(AstUser2InUse::s_userBusy, "user2p set w/o busy");
+	return ((m_user2Cnt==AstUser2InUse::s_userCntGbl)?m_user2p:NULL); }
+    void	user2p(void* userp) { m_user2p=(AstNUser*)(userp); m_user2Cnt=AstUser2InUse::s_userCntGbl; }
     int		user2() const { return user2p()->castInt(); }
-    AstNUser*	user2p() const { return ((m_user2Cnt==s_user2CntGbl)?m_user2p:NULL); }
-    void	user2p(void* userp) { m_user2p=(AstNUser*)(userp); m_user2Cnt=s_user2CntGbl; }
     void	user2(int val) { user2p(AstNUser::fromInt(val)); }
-    static void	user2ClearTree() { s_user2CntGbl++; }  // Clear userp()'s across the entire tree
+    static void	user2ClearTree() { AstUser2InUse::clear(); }
+
+    AstNUser*	user3p() const {
+	//UASSERT_STATIC(AstUser3InUse::s_userBusy, "user3p set w/o busy");
+	return ((m_user3Cnt==AstUser3InUse::s_userCntGbl)?m_user3p:NULL); }
+    void	user3p(void* userp) { m_user3p=(AstNUser*)(userp); m_user3Cnt=AstUser3InUse::s_userCntGbl; }
     int		user3() const { return user3p()->castInt(); }
-    AstNUser*	user3p() const { return ((m_user3Cnt==s_user3CntGbl)?m_user3p:NULL); }
-    void	user3p(void* userp) { m_user3p=(AstNUser*)(userp); m_user3Cnt=s_user3CntGbl; }
     void	user3(int val) { user3p(AstNUser::fromInt(val)); }
-    static void	user3ClearTree() { s_user3CntGbl++; }  // Clear userp()'s across the entire tree
+    static void	user3ClearTree() { AstUser3InUse::clear(); }
+
+    AstNUser*	user4p() const {
+	//UASSERT_STATIC(AstUser4InUse::s_userBusy, "user4p set w/o busy");
+	return ((m_user4Cnt==AstUser4InUse::s_userCntGbl)?m_user4p:NULL); }
+    void	user4p(void* userp) { m_user4p=(AstNUser*)(userp); m_user4Cnt=AstUser4InUse::s_userCntGbl; }
     int		user4() const { return user4p()->castInt(); }
-    AstNUser*	user4p() const { return ((m_user4Cnt==s_user4CntGbl)?m_user4p:NULL); }
-    void	user4p(void* userp) { m_user4p=(AstNUser*)(userp); m_user4Cnt=s_user4CntGbl; }
     void	user4(int val) { user4p(AstNUser::fromInt(val)); }
-    static void	user4ClearTree() { s_user4CntGbl++; }  // Clear userp()'s across the entire tree
+    static void	user4ClearTree() { AstUser4InUse::clear(); }
+
+    AstNUser*	user5p() const {
+	//UASSERT_STATIC(AstUser5InUse::s_userBusy, "user5p set w/o busy");
+	return ((m_user5Cnt==AstUser5InUse::s_userCntGbl)?m_user5p:NULL); }
+    void	user5p(void* userp) { m_user5p=(AstNUser*)(userp); m_user5Cnt=AstUser5InUse::s_userCntGbl; }
     int		user5() const { return user5p()->castInt(); }
-    AstNUser*	user5p() const { return ((m_user5Cnt==s_user5CntGbl)?m_user5p:NULL); }
-    void	user5p(void* userp) { m_user5p=(AstNUser*)(userp); m_user5Cnt=s_user5CntGbl; }
     void	user5(int val) { user5p(AstNUser::fromInt(val)); }
-    static void	user5ClearTree() { s_user5CntGbl++; }  // Clear userp()'s across the entire tree
+    static void	user5ClearTree() { AstUser5InUse::clear(); }
 
     vluint64_t	editCount() const { return m_editCount; }
     void	editCountInc() { m_editCount = s_editCntGbl++; }

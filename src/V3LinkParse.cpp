@@ -47,6 +47,7 @@ private:
     // NODE STATE
     // Cleared on netlist
     //  AstNode::user()		-> bool.  True if processed
+    AstUserInUse	m_inuse1;
 
     // STATE
     string	m_dotText;	// Dotted module text we are building for a dotted node, passed up
@@ -231,7 +232,6 @@ public:
 	m_inModDot = false;
 	m_exp = AstParseRefExp::NONE;
 	m_baseTextp = NULL;
-	AstNode::userClearTree();	// userp() used on entire tree
 	rootp->accept(*this);
     }
     virtual ~LinkParseVisitor() {}

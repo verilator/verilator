@@ -231,6 +231,7 @@ private:
     //Entire netlist:
     // AstVarScope::userp	-> GateVarVertex* for usage var, 0=not set yet
     // {statement}Node::userp	-> GateLogicVertex* for this statement
+    AstUserInUse	m_inuse1;
 
     // STATE
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
@@ -294,7 +295,6 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	//VV*****  We reset userp() and user2p
-	AstNode::userClearTree();
 	nodep->iterateChildren(*this);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("gate_pre");

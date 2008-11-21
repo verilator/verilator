@@ -138,6 +138,7 @@ class SplitAsVisitor : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()	-> bool.  True if already processed
+    AstUserInUse	m_inuse;
 
     // STATE
     V3Double0	m_statSplits;	// Statistic tracking

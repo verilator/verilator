@@ -49,6 +49,8 @@ private:
     //  AstNodeMath::user()	-> bool.  True if iterated already
     //  AstShiftL::user2()	-> bool.  True if converted to conditional
     //  AstShiftR::user2()	-> bool.  True if converted to conditional
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
 
     // STATE
     AstModule*		m_modp;		// Current module
@@ -306,8 +308,6 @@ public:
     }
     virtual ~PremitVisitor() {}
     void main(AstNode* nodep) {
-	AstNode::userClearTree();	// userp() used on entire tree
-	AstNode::user2ClearTree();	// user2p() used on entire tree
 	nodep->accept(*this);
     }
 };

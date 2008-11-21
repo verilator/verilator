@@ -41,7 +41,6 @@
 class TraceDeclVisitor : public EmitCBaseVisitor {
 private:
     // NODE STATE
-    // Cleared entire netlist
 
     // STATE
     AstModule*		m_modp;		// Current module

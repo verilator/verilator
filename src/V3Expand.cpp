@@ -905,7 +905,6 @@ public:
     }
     virtual ~ExpandVisitor() {}
     void main(AstNode* nodep) {
-	AstNode::userClearTree();	// userp() used on entire tree
 	nodep->accept(*this);
     }
 };

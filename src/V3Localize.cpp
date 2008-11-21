@@ -101,6 +101,9 @@ class LocalizeVisitor : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
+    AstUser4InUse	m_inuse4;
 
     // STATE
     V3Double0	m_statLocVars;	// Statistic tracking
@@ -150,7 +153,6 @@ private:
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	AstNode::userClearTree();	// userp() used on entire tree
 	AstNode::user2ClearTree();	// userp() used on entire tree
-	AstNode::user3ClearTree();	// userp() used on entire tree
 	AstNode::user4ClearTree();	// userp() used on entire tree
 	nodep->iterateChildren(*this);
 	moveVars();

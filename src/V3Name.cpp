@@ -47,6 +47,8 @@ private:
     //
     //  AstCell::user2()	-> bool.  Set true if was privitized
     //  AstVar::user2()		-> bool.  Set true if was privitized
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
 
     // STATE
     AstModule*	m_modp;
@@ -54,11 +56,6 @@ private:
     //int debug() { return 9; }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::userClearTree();
-	AstNode::user2ClearTree();
-	nodep->iterateChildren(*this);
-    }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);

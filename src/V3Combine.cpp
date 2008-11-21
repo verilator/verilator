@@ -174,6 +174,9 @@ private:
     //  AstCFunc::user3p()	-> AstCFunc*, If set, replace ccalls to this func with new func
     //  AstNodeStmt::user3()	-> AstNode*.  True if to ignore this cell
     //  AstNodeStmt::user4()	-> V3Hashed::V3Hash.  Hash value of this node (hash of 0 is illegal)
+    AstUserInUse	m_inuse1;
+    AstUser3InUse	m_inuse3;
+    //AstUser4InUse	part of V3Hashed
 
     // STATE
     typedef enum {STATE_IDLE, STATE_HASH, STATE_DUP} CombineState;

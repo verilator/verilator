@@ -52,6 +52,8 @@ private:
     // Cleared each Module:
     //  AstVarScope::userp()	-> AstVarScope*.  Temporary signal that was created.
     //  AstVarScope::user2p()	-> AstVarScope*.  Temporary signal for change detects
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
 
     // TYPES
     enum {  DOUBLE_OR_RATE = 10 };	// How many | per ||, Determined experimentally as best

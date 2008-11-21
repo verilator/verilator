@@ -52,6 +52,7 @@ class InlineVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared entire netlist
+    //  Input:
     //   AstModule::userp()	// bool. True to inline this module (from InlineMarkVisitor)
     // Cleared each cell
     //   AstVar::user2p()	// AstVarRef*/AstConst*  Points to signal this is a direct connect to
@@ -284,6 +285,9 @@ private:
     //  AstModule::user()	// OUTPUT: bool. User request to inline this module
     //  AstModule::user2()	// bool. Allowed to automatically inline module
     //  AstModule::user3()	// int. Number of cells referencing this module
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
 
     // STATE
     AstModule*	m_modp;		// Current module

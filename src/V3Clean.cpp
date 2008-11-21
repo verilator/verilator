@@ -47,6 +47,8 @@ private:
     // Entire netlist:
     //  AstNode::user()		-> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()	-> bool.  True indicates minWidth has been propagated
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
 
     // STATE
     AstModule* m_modp;
@@ -257,8 +259,6 @@ public:
     CleanVisitor() {}
     virtual ~CleanVisitor() {}
     void main(AstNetlist* nodep) {
-	AstNode::userClearTree();	// userp() used on entire tree
-	AstNode::user2ClearTree();	// userp() used on entire tree
 	nodep->accept(*this);
     }
 };

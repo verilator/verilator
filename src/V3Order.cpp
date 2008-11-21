@@ -246,6 +246,11 @@ private:
     // Ordering (user3/4/5 cleared between forming and ordering)
     //	  AstScope::userp()	-> AstModule*. Module this scope is under
     //    AstModule::user3()    -> Number of routines created
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
+    AstUser5InUse	m_inuse5;
 
     //int debug() { return 9; }
 

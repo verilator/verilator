@@ -50,6 +50,8 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()	-> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()	-> bool.  Signal is replaced activation (already done)
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
 
     // STATE
     AstActive*	m_activep;		// Inside activate statement
@@ -140,6 +142,7 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()	-> bool.  Set when the var has been used as clock
+    AstUserInUse	m_inuse1;
 
     // STATE
     AstActive*	m_activep;		// Inside activate statement

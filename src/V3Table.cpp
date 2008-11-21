@@ -368,6 +368,10 @@ class TableVisitor : public TableBaseVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
 
     // STATE
     double	m_totalBytes;		// Total bytes in tables created

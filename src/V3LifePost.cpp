@@ -98,6 +98,9 @@ private:
     //  AstVarScope::user()	-> Sequence # of first virtex setting this var.
     //  AstVarScope::user2()	-> Sequence # of last consumption of this var
     //  AstVarScope::user4()	-> AstVarScope*: Passed to LifePostElim to substitute this var
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
+    AstUser4InUse	m_inuse4;
 
     // STATE
     uint32_t		m_sequence;	// Sequence number of assignments/varrefs
@@ -107,7 +110,6 @@ private:
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	AstNode::userClearTree();	// userp() used on entire tree
 	AstNode::user2ClearTree();	// userp() used on entire tree
-	AstNode::user3ClearTree();	// userp() used on entire tree
 	AstNode::user4ClearTree();	// userp() used on entire tree
 	m_sequence = 0;
 	nodep->iterateChildren(*this);

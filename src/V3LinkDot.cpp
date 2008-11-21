@@ -175,6 +175,8 @@ private:
     // Cleared on Netlist
     //  AstModule::userp()	-> LinkDotCellVertex*.  Last cell that uses this module
     //  AstVarScope::user2p()	-> AstVarScope*.  Base alias for this signal
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
 
     // TYPES
     typedef std::multimap<string,LinkDotCellVertex*> NameScopeMap;

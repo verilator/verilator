@@ -83,6 +83,11 @@ private:
     // Cleared each scope:
     //  AstAssignDly::user5()	-> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user5()	-> AstVarScope*.  __Vdlyvset__ last referenced in IF
+    AstUserInUse	m_inuse1;
+    AstUser2InUse	m_inuse2;
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
+    AstUser5InUse	m_inuse5;
 
     enum VarUsage { VU_NONE=0, VU_DLY=1, VU_NONDLY=2 };
 
@@ -297,10 +302,6 @@ private:
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	//VV*****  We reset all userp() on the netlist
 	m_modVarMap.clear();
-	AstNode::userClearTree();
-	AstNode::user2ClearTree();
-	AstNode::user3ClearTree();
-	AstNode::user4ClearTree();
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {

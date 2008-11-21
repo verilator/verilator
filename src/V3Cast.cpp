@@ -60,6 +60,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user()		// bool.  Indicates node is of known size
+    AstUserInUse	m_inuse1;
 
     // STATE
     //int debug() { return 9; }
@@ -171,7 +172,6 @@ private:
 public:
     // CONSTUCTORS
     CastVisitor(AstNetlist* nodep) {
-	AstNode::userClearTree();
 	nodep->accept(*this);
     }
     virtual ~CastVisitor() {}
