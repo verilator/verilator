@@ -732,7 +732,7 @@ public:
     static void	user5ClearTree() { AstUser5InUse::clear(); }
 
     vluint64_t	editCount() const { return m_editCount; }
-    void	editCountInc() { m_editCount = s_editCntGbl++; }
+    void	editCountInc() { m_editCount = ++s_editCntGbl; }
     static vluint64_t	editCountLast() { return s_editCntLast; }
     static vluint64_t	editCountGbl() { return s_editCntGbl; }
     static void		editCountSetLast() { s_editCntLast = editCountGbl(); }
@@ -1027,7 +1027,7 @@ struct AstNodeCase : public AstNodeStmt {
 };
 
 struct AstNodeSenItem : public AstNode {
-    // A AstSenItem under
+    // An AstSenItem or AstSenGate
     AstNodeSenItem(FileLine* fl) : AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeSenItem)
     virtual bool isClocked() const = 0;
@@ -1038,7 +1038,7 @@ struct AstNodeSenItem : public AstNode {
 };
 
 class AstNodeVarRef : public AstNodeMath {
-    // A AstVarRef or AstVarXRef
+    // An AstVarRef or AstVarXRef
 private:
     bool	m_lvalue;	// Left hand side assignment
     AstVar*	m_varp;		// [AfterLink] Pointer to variable itself

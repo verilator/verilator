@@ -53,6 +53,16 @@ more messy than the above and is deprecated.  (V3Width was nearly the first
 module written.  Someday this scheme may be removed, as it slows the
 program down to have to pass vup everywhere.)
 
+=head1 DEBUGGING WITH GDB
+
+The test_regress/driver.pl script accepts --gdb to start Verilator under
+gdb.
+
+To break at a specific edit number which changed a node (presumably to find
+what made a <e####> line in the tree dumps):
+
+   watch AstNode::s_editCntGbl==####
+
 =head1 DISTRIBUTION
 
 Copyright 2008-2008 by Wilson Snyder.  This program is free software; you

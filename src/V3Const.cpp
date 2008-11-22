@@ -1255,9 +1255,18 @@ private:
     //                $accessor_name, ...
     //                             # ,, gets replaced with a , rather than &&
     //	             }" 	   # bracket not paren
-    //    ,"function to call"
-    // or ,"AstREPLACEMENT_TYPE{ $accessor }"
-    // or ,"!   		   # Print line number when matches, so can see operations
+    //    ,"what to call"
+    //
+    // Where "what_to_call" is:
+    //		"function to call"
+    //		"AstREPLACEMENT_TYPE{ $accessor }"
+    //		"!   		# Print line number when matches, so can see operations
+    //		"NEVER"		# Print error message
+    //		"DONE"		# Process of matching did the transform already
+
+    // In the future maybe support more complicated match & replace:
+    //   ("AstOr  {%a, AstAnd{AstNot{%b}, %c}} if %a.width1 if %a==%b",	"AstOr{%a,%c}; %b.delete");
+    // Lhs/rhs would be implied; for non math operations you'd need $lhsp etc.
 
     // Lint Checks
     //    v--- *1* These ops are always first, as we warn before replacing

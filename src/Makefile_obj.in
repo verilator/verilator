@@ -226,7 +226,7 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN)
+%__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
 	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
 
 %.o:	%.cpp

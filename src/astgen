@@ -376,7 +376,7 @@ sub treeop_exec_func {
     $func =~ s/^!//;
     if ($func =~ /^\s*[a-zA-Z0-9]+\s*\(/) {  # Function call
 	(my $outl = $func) =~ s/\$([a-zA-Z0-9]+)/nodep->$1()/g;
-	$out .= $outl;
+	$out .= $outl.";";
     }
     elsif ($func    =~ /^\s*Ast([a-zA-Z0-9]+) \s*\{\s* (.*) \s* \}$/x) {
 
@@ -433,6 +433,7 @@ sub treeop_exec_func {
 	#print "FF $out\n" if $Debug;
     } elsif ($func eq "NEVER") {
 	$out .= "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";
+    } elsif ($func eq "DONE") {
     } else {
 	$self->error("Unknown execution function format: $func\n");
     }
@@ -450,7 +451,7 @@ sub tree_match {
 			 "\t// $typefunc->{comment}\n",);
 	    $self->print(	"\tif ($typefunc->{match_if}) {\n");
 	    $self->print(	"\t    UINFO($typefunc->{uinfo_level},(void*)(nodep)<<\" $typefunc->{uinfo}\\n\");\n");
-	    $self->print(	"\t    $typefunc->{exec_func};\n");
+	    $self->print(	"\t    $typefunc->{exec_func}\n");
 	    $self->print(	"\t    return true;\n");
 	    $self->print(	"\t}\n");
 	    $self->print(	"\treturn false;\n");
