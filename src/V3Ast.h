@@ -541,16 +541,23 @@ ostream& operator<<(ostream& os, V3Hash rhs);
 //######################################################################
 // AstNode -- Base type of all Ast types
 
+// Prefetch a node.
+// The if() makes it faster, even though prefetch won't fault on null pointers
+#define ASTNODE_PREFETCH(nodep) \
+    { if (nodep) { VL_PREFETCH_RD(&(nodep->m_nextp)); VL_PREFETCH_RD(&(nodep->m_iterpp)); }}
+
 class AstNode {
-private:
+    // v ASTNODE_PREFETCH depends on below ordering of members
     AstNode*	m_nextp;	// Next peer in the parent's list
     AstNode*	m_backp;	// Node that points to this one (via next/op1/op2/...)
-    AstNode*	m_headtailp;	// When at begin/end of list, the opposite end of the list
     AstNode*	m_op1p;		// Generic pointer 1
     AstNode*	m_op2p;		// Generic pointer 2
     AstNode*	m_op3p;		// Generic pointer 3
     AstNode*	m_op4p;		// Generic pointer 4
     AstNode**	m_iterpp;	// Pointer to node iterating on, change it if we replace this node.
+    // ^ ASTNODE_PREFETCH depends on above ordering of members
+
+    AstNode*	m_headtailp;	// When at begin/end of list, the opposite end of the list
 
     AstNode*	m_clonep;	// Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
     int		m_cloneCnt;	// Mark of when userp was set

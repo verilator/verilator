@@ -680,11 +680,38 @@ void AstNode::operator delete(void* objp, size_t size) {
 // Iterators
 
 void AstNode::iterateChildren(AstNVisitor& v, AstNUser* vup) {
+    // This is a very hot function
     if (!this) return;
-    m_op1p->iterateAndNext(v, vup);
-    m_op2p->iterateAndNext(v, vup);
-    m_op3p->iterateAndNext(v, vup);
-    m_op4p->iterateAndNext(v, vup);
+    ASTNODE_PREFETCH(m_op1p);
+    ASTNODE_PREFETCH(m_op2p);
+    ASTNODE_PREFETCH(m_op3p);
+    ASTNODE_PREFETCH(m_op4p);
+    // if () not needed since iterateAndNext accepts null this, but faster with it.
+    if (m_op1p) m_op1p->iterateAndNext(v, vup);
+    if (m_op2p) m_op2p->iterateAndNext(v, vup);
+    if (m_op3p) m_op3p->iterateAndNext(v, vup);
+    if (m_op4p) m_op4p->iterateAndNext(v, vup);
+}
+
+void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
+    // This is a very hot function
+    // IMPORTANT: If you replace a node that's the target of this iterator,
+    // then the NEW node will be iterated on next, it isn't skipped!
+    // if (!this) return;  // Part of for()
+    for (AstNode* nodep=this; nodep;) {
+	AstNode* niterp = nodep;
+	ASTNODE_PREFETCH(nodep->m_nextp);
+	niterp->m_iterpp = &niterp;
+	niterp->accept(v, vup);
+	// accept may do a replaceNode and change niterp on us...
+	if (!niterp) return;
+	niterp->m_iterpp = NULL;
+	if (niterp!=nodep) { // Edited it
+	    nodep = niterp;
+	} else {  // Same node, just loop
+	    nodep = niterp->m_nextp;
+	}
+    }
 }
 
 void AstNode::iterateListBackwards(AstNVisitor& v, AstNUser* vup) {
@@ -705,25 +732,6 @@ void AstNode::iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup) {
     this->op2p()->iterateListBackwards(v,vup);
     this->op3p()->iterateListBackwards(v,vup);
     this->op4p()->iterateListBackwards(v,vup);
-}
-
-void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
-    // IMPORTANT: If you replace a node that's the target of this iterator,
-    // then the NEW node will be iterated on next, it isn't skipped!
-    // if (!this) return;  // Part of for()
-    for (AstNode* nodep=this; nodep;) {
-	AstNode* niterp = nodep;
-	niterp->m_iterpp = &niterp;
-	niterp->accept(v, vup);
-	// accept may do a replaceNode and change niterp on us...
-	if (!niterp) return;
-	niterp->m_iterpp = NULL;
-	if (niterp!=nodep) { // Edited it
-	    nodep = niterp;
-	} else {  // Same node, just loop
-	    nodep = niterp->m_nextp;
-	}
-    }
 }
 
 void AstNode::iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup) {
@@ -795,6 +803,11 @@ V3Hash::V3Hash(const string& name) {
 void AstNode::checkTreeIter(AstNode* backp) {
     if (backp != this->backp()) {
 	this->v3fatalSrc("Back node inconsistent");
+    }
+    if (castNodeTermop()) {
+	// Termops have a short-circuited iterateChildren, so check usage
+	if (op1p()||op2p()||op3p()||op4p())
+	    this->v3fatalSrc("Terminal operation with non-terminals");
     }
     if (op1p()) op1p()->checkTreeIterList(this);
     if (op2p()) op2p()->checkTreeIterList(this);
