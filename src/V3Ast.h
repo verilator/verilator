@@ -823,6 +823,9 @@ struct AstNodeTermop : public AstNodeMath {
     AstNodeTermop(FileLine* fl)
 	: AstNodeMath(fl) {}
     ASTNODE_BASE_FUNCS(NodeTermop)
+    // Know no children, and hot function, so skip iterator for speed
+    // See checkTreeIter also that asserts no children
+    void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
 };
 
 struct AstNodeUniop : public AstNodeMath {
@@ -1070,6 +1073,9 @@ public:
     void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
+    // Know no children, and hot function, so skip iterator for speed
+    // See checkTreeIter also that asserts no children
+    void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
 };
 
 class AstNodePli : public AstNodeStmt {

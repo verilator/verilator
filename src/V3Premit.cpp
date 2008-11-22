@@ -246,6 +246,8 @@ private:
 	nodep->iterateChildren(*this); checkNode(nodep); }
     virtual void visit(AstNodeBiop* nodep, AstNUser*) {
 	nodep->iterateChildren(*this); checkNode(nodep); }
+    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+	nodep->iterateChildren(*this); checkNode(nodep); }
     virtual void visit(AstSel* nodep, AstNUser*) {
 	nodep->fromp()->iterateAndNext(*this);
 	{   // Only the 'from' is part of the assignment LHS

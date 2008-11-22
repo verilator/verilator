@@ -804,7 +804,7 @@ void AstNode::checkTreeIter(AstNode* backp) {
     if (backp != this->backp()) {
 	this->v3fatalSrc("Back node inconsistent");
     }
-    if (castNodeTermop()) {
+    if (castNodeTermop() || castNodeVarRef()) {
 	// Termops have a short-circuited iterateChildren, so check usage
 	if (op1p()||op2p()||op3p()||op4p())
 	    this->v3fatalSrc("Terminal operation with non-terminals");

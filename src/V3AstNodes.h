@@ -1675,11 +1675,12 @@ struct AstTime : public AstNodeTermop {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstUCFunc : public AstNodeTermop {
+struct AstUCFunc : public AstNodeMath {
     // User's $c function
+    // Perhaps this should be a AstNodeListop; but there's only one list math right now
 public:
     AstUCFunc(FileLine* fl, AstNode* exprsp)
-	: AstNodeTermop(fl) {
+	: AstNodeMath(fl) {
 	addNOp1p(exprsp);
     }
     ASTNODE_NODE_FUNCS(UCFunc, UCFUNC)
