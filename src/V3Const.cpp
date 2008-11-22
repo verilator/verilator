@@ -43,11 +43,11 @@
 
 class ConstVarMarkVisitor : public AstNVisitor {
     // NODE STATE
-    // AstVar::userp		-> bool, Var marked, 0=not set yet
+    // AstVar::user4p		-> bool, Var marked, 0=not set yet
 private:
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	if (nodep->varp()) nodep->varp()->user(1);
+	if (nodep->varp()) nodep->varp()->user4(1);
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -55,7 +55,7 @@ private:
 public:
     // CONSTUCTORS
     ConstVarMarkVisitor(AstNode* nodep) {
-	AstNode::userClearTree();
+	AstNode::user4ClearTree();  // Check marked InUse before we're called
 	nodep->iterateAndNext(*this, NULL);
     }
     virtual ~ConstVarMarkVisitor() {}
@@ -63,13 +63,13 @@ public:
 
 class ConstVarFindVisitor : public AstNVisitor {
     // NODE STATE
-    // AstVar::userp		-> bool, input from ConstVarMarkVisitor
+    // AstVar::user4p		-> bool, input from ConstVarMarkVisitor
     // MEMBERS
     bool m_found;
 private:
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	if (nodep->varp() && nodep->varp()->user()) m_found = true;
+	if (nodep->varp() && nodep->varp()->user4()) m_found = true;
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -93,7 +93,7 @@ private:
     // NODE STATE
     // ** only when m_warn is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
-    // AstVar::userp		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
+    // AstVar::user4p		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
 
     // STATE
     bool	m_params;	// If true, propogate parameterized and true numbers only
@@ -671,7 +671,9 @@ private:
 	else if (!m_cpp && nodep->lhsp()->castConcat()) {
 	    bool need_temp = false;
 	    if (m_warn && !nodep->castAssignDly()) {  // Is same var on LHS and RHS?
-		AstUserInUse	m_inuse1;
+		// Note only do this (need user4) when m_warn, which is
+		// done as unique visitor
+		AstUser4InUse	m_inuse4;
 		ConstVarMarkVisitor mark(nodep->lhsp());
 		ConstVarFindVisitor find(nodep->rhsp());
 		if (find.found()) need_temp = true;
@@ -1521,12 +1523,14 @@ void V3Const::constifyParam(AstNode* nodep) {
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
+    // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,false,false);
     visitor.main(nodep);
 }
 
 void V3Const::constifyAllLint(AstNetlist* nodep) {
+    // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,true,false);
     visitor.main(nodep);
@@ -1542,4 +1546,3 @@ void V3Const::constifyTree(AstNode* nodep) {
     ConstVisitor visitor (false,false,false,false);
     visitor.main(nodep);
 }
-

@@ -38,7 +38,6 @@
 #include "V3Global.h"
 #include "V3Coverage.h"
 #include "V3Ast.h"
-#include "V3Const.h"
 
 //######################################################################
 // Coverage state, as a visitor of each AstNode
