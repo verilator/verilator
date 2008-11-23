@@ -241,7 +241,7 @@ descriptions in the next sections for more information.
 
 Specifies the Verilog file containing the top module to be Verilated.
 
-=item {file.c/cc/cpp}
+=item {file.c/.cc/.cpp/.cxx}
 
 Specifies optional C++ files to be linked in with the Verilog code.  If any
 C++ files are specified in this way, Verilator will include a make rule

@@ -25,6 +25,7 @@
 //		Add SUB so that we subtract off the "base 0-start" of the array
 //	    File operations
 //		Convert normal var to FILE* type
+//	    SenItems: Convert pos/negedge of non-simple signals to temporaries
 //*************************************************************************
 
 #include "config_build.h"
@@ -55,6 +56,7 @@ private:
     AstModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
     AstVAssert*	m_assertp;	// Current assertion
+    int		m_senitemCvtNum; // Temporary signal counter
 
     //int debug() { return 9; }
 
@@ -64,6 +66,7 @@ private:
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);
 	m_modp = nodep;
+	m_senitemCvtNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
@@ -105,19 +108,53 @@ private:
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	// Remove bit selects, and bark if it's not a simple variable
 	nodep->iterateChildren(*this);
-	bool did=1;
-	while (did) {
-	    did=0;
-	    if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
-		AstNode* fromp = selp->fromp()->unlinkFrBack();
-		selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
-		did=1;
+	if (nodep->isClocked()) {
+	    // If it's not a simple variable wrap in a temporary
+	    // This is a bit unfortunate as we haven't done width resolution
+	    // and any width errors will look a bit odd, but it works.
+	    AstNode* sensp = nodep->sensp();
+	    if (sensp
+		&& !sensp->castNodeVarRef()
+		&& !sensp->castConst()) {
+		// Make a new temp wire
+		string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
+		AstVar* newvarp = new AstVar (sensp->fileline(), AstVarType::MODULETEMP, newvarname,
+					      NULL,NULL);
+		// We can't just add under the module, because we may be inside a generate, begin, etc.
+		// We know a SenItem should be under a SenTree/Always etc, we we'll just hunt upwards
+		AstNode* addwherep = nodep;  // Add to this element's next
+		while (addwherep->castSenItem()
+		       || addwherep->castSenTree()) {
+		    addwherep = addwherep->backp();
+		}
+		if (!addwherep->castAlways()) {  // Assertion perhaps?
+		    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under some complicated block");
+		    addwherep = m_modp;
+		}
+		addwherep->addNext(newvarp);
+
+		sensp->replaceWith(new AstVarRef (sensp->fileline(), newvarp, false));
+		AstAssignW* assignp = new AstAssignW
+		    (sensp->fileline(),
+		     new AstVarRef(sensp->fileline(), newvarp, true),
+		     sensp);
+		addwherep->addNext(assignp);
 	    }
-	    // NodeSel doesn't include AstSel....
-	    if (AstSel* selp = nodep->sensp()->castSel()) {
-		AstNode* fromp = selp->fromp()->unlinkFrBack();
-		selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
-		did=1;
+	} else {  // Old V1995 sensitivity list; we'll probably mostly ignore
+	    bool did=1;
+	    while (did) {
+		did=0;
+		if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
+		    AstNode* fromp = selp->fromp()->unlinkFrBack();
+		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    did=1;
+		}
+		// NodeSel doesn't include AstSel....
+		if (AstSel* selp = nodep->sensp()->castSel()) {
+		    AstNode* fromp = selp->fromp()->unlinkFrBack();
+		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    did=1;
+		}
 	    }
 	}
 	if (!nodep->sensp()->castNodeVarRef()) {
@@ -428,6 +465,7 @@ public:
 	m_ftaskp = NULL;
 	m_modp = NULL;
 	m_assertp = NULL;
+	m_senitemCvtNum = 0;
 	//
 	rootp->accept(*this);
     }

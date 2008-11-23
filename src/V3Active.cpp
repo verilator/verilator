@@ -278,8 +278,9 @@ private:
 			// We'll add it as a generic COMBO SenItem in a moment.
 			itemp->unlinkFrBack()->deleteTree(); itemp=NULL; senp=NULL;
 		    } else if (itemp->varrefp()) {
+			// V3LinkResolve should have cleaned most of these up
 			if (itemp->varrefp()->width()>1) itemp->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-								      <<itemp->varrefp()->prettyName());
+									<<itemp->varrefp()->prettyName());
 			sequent = true;
 			itemp->varrefp()->varp()->usedClock(true);
 		    }

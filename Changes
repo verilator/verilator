@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Optimize two-level shift and and/or trees, +23% on one test.
 
+**** Support posedge of bit-selected signals, bug45. [Rodney Sinclair]
+
 **** Fix arrayed variables under function not compiling, bug44. [Ralf Karge]
 
 **** Fix --output-split-cfuncs to also split trace code. [Niranjan Prabhu]
