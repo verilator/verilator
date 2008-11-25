@@ -50,8 +50,8 @@ private:
     // Cleared on top scope
     //  AstVarScope::user2()	-> AstVarScope*.  Signal replacing activation with
     //  AstVarRef::user3()	-> bool.  Signal is replaced activation (already done)
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // STATE
     AstActive*	m_activep;		// Inside activate statement
@@ -84,7 +84,7 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
-	AstNode::user2ClearTree();	// userp() used on entire tree
+	AstNode::user2ClearTree();	// user2p() used on entire tree
 
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
@@ -142,7 +142,7 @@ private:
     // NODE STATE
     // Cleared on top scope
     //  AstVarScope::user()	-> bool.  Set when the var has been used as clock
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstActive*	m_activep;		// Inside activate statement
@@ -151,7 +151,7 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
-	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->iterateChildren(*this);
 	{
 	    // Make the new clock signals and replace any activate references
@@ -179,9 +179,9 @@ private:
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
 	if (m_activep) {
 	    UINFO(8,"  VarAct "<<nodep<<endl);
-	    vscp->user(true);
+	    vscp->user1(true);
 	}
-	if (m_assignp && nodep->lvalue() && vscp->user()) {
+	if (m_assignp && nodep->lvalue() && vscp->user1()) {
 	    // Variable was previously used as a clock, and is now being set
 	    // Thus a unordered generated clock...
 	    UINFO(8,"  VarSetAct "<<nodep<<endl);

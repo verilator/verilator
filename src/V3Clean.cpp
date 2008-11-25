@@ -47,8 +47,8 @@ private:
     // Entire netlist:
     //  AstNode::user()		-> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()	-> bool.  True indicates minWidth has been propagated
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     AstModule* m_modp;
@@ -80,10 +80,10 @@ private:
 
     // Store the clean state in the userp on each node
     void setCleanState(AstNode* nodep, CleanState clean) {
-	nodep->user(clean);
+	nodep->user1(clean);
     }
     CleanState getCleanState(AstNode* nodep) {
-	return ((CleanState)nodep->user());
+	return ((CleanState)nodep->user1());
     }
     bool isClean(AstNode* nodep) {
 	CleanState clstate = getCleanState(nodep);

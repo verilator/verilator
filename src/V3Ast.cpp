@@ -39,12 +39,12 @@ vluint64_t AstNode::s_editCntLast=0;
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
 int AstNode::s_cloneCntGbl=0;
-uint32_t AstUserInUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUser1InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser2InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser3InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser4InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 
-bool AstUserInUse::s_userBusy=false;
+bool AstUser1InUse::s_userBusy=false;
 bool AstUser2InUse::s_userBusy=false;
 bool AstUser3InUse::s_userBusy=false;
 bool AstUser4InUse::s_userBusy=false;
@@ -74,8 +74,8 @@ void AstNode::init() {
     m_signed = false;
     m_width = 0;
     m_widthMin = 0;
-    m_userp = NULL;
-    m_userCnt = 0;
+    m_user1p = NULL;
+    m_user1Cnt = 0;
     m_user2p = NULL;
     m_user2Cnt = 0;
     m_user3p = NULL;
@@ -847,7 +847,10 @@ void AstNode::dumpPtrs(ostream& os) {
     if (op2p()) os<<" op2p="<<(void*)op2p();
     if (op3p()) os<<" op3p="<<(void*)op3p();
     if (op4p()) os<<" op4p="<<(void*)op4p();
-    if (userp()) os<<" user="<<(void*)userp();
+    if (user1p()) os<<" user1p="<<(void*)user1p();
+    if (user2p()) os<<" user2p="<<(void*)user2p();
+    if (user3p()) os<<" user3p="<<(void*)user3p();
+    if (user4p()) os<<" user4p="<<(void*)user4p();
     if (m_iterpp) {
 	os<<" iterpp="<<(void*)m_iterpp;
 	os<<"*="<<(void*)*m_iterpp;

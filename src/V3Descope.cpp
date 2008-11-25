@@ -45,7 +45,7 @@ private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()		// bool.  Indicates processing completed
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // TYPES
     typedef multimap<string,AstCFunc*>	FuncMmap;
@@ -211,10 +211,10 @@ private:
 	// nodep->funcp()->scopep(NULL);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
-	if (!nodep->user()) {
+	if (!nodep->user1()) {
 	    m_needThis = false;
 	    nodep->iterateChildren(*this);
-	    nodep->user(true);
+	    nodep->user1(true);
 	    if (m_needThis) {
 		nodep->v3fatalSrc("old code");
 		// Really we should have more node types for backend optimization of this stuff

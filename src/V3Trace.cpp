@@ -155,14 +155,14 @@ private:
     // V3Hashed
     //  Ast*::user4()			// V3Hashed calculation
     // Cleared entire netlist
-    //  AstCFunc::user()		// V3GraphVertex* for this node
-    //  AstTraceInc::user()		// V3GraphVertex* for this node
-    //  AstVarScope::user()		// V3GraphVertex* for this node
+    //  AstCFunc::user1()		// V3GraphVertex* for this node
+    //  AstTraceInc::user1()		// V3GraphVertex* for this node
+    //  AstVarScope::user1()		// V3GraphVertex* for this node
     //  AstCCall::user2()		// bool; walked next list for other ccalls
     //  Ast*::user3()			// TraceActivityVertex* for this node
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
     //AstUser4InUse	In V3Hashed
 
     // STATE
@@ -216,7 +216,7 @@ private:
 		    if (dupit != hashed.end()) {
 			AstTraceInc* dupincp = hashed.iteratorNodep(dupit)->backp()->castTraceInc();
 			if (!dupincp) nodep->v3fatalSrc("Trace duplicate of wrong type");
-			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->userp()->castGraphVertex());
+			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1p()->castGraphVertex());
 			UINFO(8,"  Orig "<<nodep<<endl);
 			UINFO(8,"   dup "<<dupincp<<endl);
 			// Mark the found node as a duplicate of the first node
@@ -533,10 +533,10 @@ private:
     }
 
     TraceCFuncVertex* getCFuncVertexp(AstCFunc* nodep) {
-	TraceCFuncVertex* vertexp = dynamic_cast<TraceCFuncVertex*>(nodep->userp()->castGraphVertex());
+	TraceCFuncVertex* vertexp = dynamic_cast<TraceCFuncVertex*>(nodep->user1p()->castGraphVertex());
 	if (!vertexp) {
 	    vertexp = new TraceCFuncVertex(&m_graph, nodep);
-	    nodep->userp(vertexp);
+	    nodep->user1p(vertexp);
 	}
 	return vertexp;
     }
@@ -635,7 +635,7 @@ private:
 	nodep->unlinkFrBack();
 
 	V3GraphVertex* vertexp = new TraceTraceVertex(&m_graph, nodep);
-	nodep->userp(vertexp);
+	nodep->user1p(vertexp);
 
 	if (!m_funcp || (!m_chgFuncp || !m_fullFuncp)) nodep->v3fatalSrc("Trace not under func");
 	m_tracep = nodep;
@@ -646,12 +646,12 @@ private:
 	if (m_tracep) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    if (nodep->lvalue()) nodep->v3fatalSrc("Lvalue in trace?  Should be const.");
-	    V3GraphVertex* varVtxp = nodep->varScopep()->userp()->castGraphVertex();
+	    V3GraphVertex* varVtxp = nodep->varScopep()->user1p()->castGraphVertex();
 	    if (!varVtxp) {
 		varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());
-		nodep->varScopep()->userp(varVtxp);
+		nodep->varScopep()->user1p(varVtxp);
 	    }
-	    V3GraphVertex* traceVtxp = m_tracep->userp()->castGraphVertex();
+	    V3GraphVertex* traceVtxp = m_tracep->user1p()->castGraphVertex();
 	    new V3GraphEdge(&m_graph, varVtxp, traceVtxp, 1);
 	    if (nodep->varp()->isPrimaryIn()   // Always need to trace primary inputs
 		|| nodep->varp()->isSigPublic()) {  // Or ones user can change
@@ -661,7 +661,7 @@ private:
 	else if (m_funcp && m_finding && nodep->lvalue()) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    V3GraphVertex* funcVtxp = getCFuncVertexp(m_funcp);
-	    V3GraphVertex* varVtxp = nodep->varScopep()->userp()->castGraphVertex();
+	    V3GraphVertex* varVtxp = nodep->varScopep()->user1p()->castGraphVertex();
 	    if (varVtxp) { // else we're not tracing this signal
 		new V3GraphEdge(&m_graph, funcVtxp, varVtxp, 1);
 	    }

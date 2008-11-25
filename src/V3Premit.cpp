@@ -49,8 +49,8 @@ private:
     //  AstNodeMath::user()	-> bool.  True if iterated already
     //  AstShiftL::user2()	-> bool.  True if converted to conditional
     //  AstShiftR::user2()	-> bool.  True if converted to conditional
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     AstModule*		m_modp;		// Current module
@@ -76,9 +76,9 @@ private:
 	//   ARRAYSEL(*here*, ...)   (No wides can be in any argument but first, so we don't check which arg is wide)
 	//   ASSIGN(x, SEL*HERE*(ARRAYSEL()...)   (m_assignLhs==true handles this.)
 	//UINFO(9, "   Check: "<<nodep<<endl);
-	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user()?"Y":"N")<<" IW "<<(nodep->isWide()?"Y":"N")<<endl);
+	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user1()?"Y":"N")<<" IW "<<(nodep->isWide()?"Y":"N")<<endl);
 	if (m_stmtp
-	    && !nodep->user()) {	// Not already done
+	    && !nodep->user1()) {	// Not already done
 	    if (nodep->isWide()) {		// Else might be cell interconnect or something
 		if (m_assignLhs) {
 		} else if (nodep->firstAbovep()
@@ -135,7 +135,7 @@ private:
 					 nodep);
 	insertBeforeStmt(assp);
 	if (debug()>8) assp->dumpTree(cout,"deepou:");
-	nodep->user(true);  // Don't add another assignment
+	nodep->user1(true);  // Don't add another assignment
     }
 
     // VISITORS

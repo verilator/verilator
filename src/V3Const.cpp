@@ -673,7 +673,7 @@ private:
 	    if (m_warn && !nodep->castAssignDly()) {  // Is same var on LHS and RHS?
 		// Note only do this (need user4) when m_warn, which is
 		// done as unique visitor
-		AstUser4InUse	m_inuse4;
+		AstUser4InUse	m_inuser4;
 		ConstVarMarkVisitor mark(nodep->lhsp());
 		ConstVarFindVisitor find(nodep->rhsp());
 		if (find.found()) need_temp = true;

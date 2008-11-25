@@ -34,10 +34,10 @@ that visitor class.  For example:
 
     // NODE STATE
     // Cleared entire netlist
-    //   AstModule::userp()     // bool. True to inline this module
+    //   AstModule::user1p()     // bool. True to inline this module
 
-This says that at the AstNetlist userClearTree() is called.  Each
-AstModule's is user() is used to indicate if we're going to inline it.
+This says that at the AstNetlist user1ClearTree() is called.  Each
+AstModule's is user1() is used to indicate if we're going to inline it.
 
 These comments are important to make sure a user#() on a given AstNode type
 is never being used for two different purposes.

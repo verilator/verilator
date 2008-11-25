@@ -72,7 +72,7 @@ private:
     // NODE STATE
     // Cleared on each always/assignw
     // Checking:
-    //  AstVarScope::user()	-> VarUsage.  Set true to indicate tracking as lvalue/rvalue
+    //  AstVarScope::user1()	-> VarUsage.  Set true to indicate tracking as lvalue/rvalue
     // Simulating:
     //  AstVarScope::user3()	-> V3Number*. Value of variable or node
     //  AstVarScope::user4()	-> V3Number*. Last value output was set to
@@ -178,21 +178,21 @@ private:
 	    if (nodep->varp()->arraysp()) clearOptimizable(nodep,"Array references");
 	    if (nodep->lvalue()) {
 		if (m_inDlyAssign) {
-		    if (!(vscp->user() & VU_LVDLY)) {
-			vscp->user( vscp->user() | VU_LVDLY);
+		    if (!(vscp->user1() & VU_LVDLY)) {
+			vscp->user1( vscp->user1() | VU_LVDLY);
 			varRefCb (nodep);
 		    }
 		} else { // nondly asn
-		    if (!(vscp->user() & VU_LV)) {
-			if (vscp->user() & VU_RV) clearOptimizable(nodep,"Var read & write");
-			vscp->user( vscp->user() | VU_LV);
+		    if (!(vscp->user1() & VU_LV)) {
+			if (vscp->user1() & VU_RV) clearOptimizable(nodep,"Var read & write");
+			vscp->user1( vscp->user1() | VU_LV);
 			varRefCb (nodep);
 		    }
 		}
 	    } else {
-		if (!(vscp->user() & VU_RV)) {
-		    if (vscp->user() & VU_LV) clearOptimizable(nodep,"Var write & read");
-		    vscp->user( vscp->user() | VU_RV);
+		if (!(vscp->user1() & VU_RV)) {
+		    if (vscp->user1() & VU_LV) clearOptimizable(nodep,"Var write & read");
+		    vscp->user1( vscp->user1() | VU_RV);
 		    varRefCb (nodep);
 		}
 	    }
@@ -341,7 +341,7 @@ public:
 	m_instrCount = 0;
 	m_dataCount = 0;
 
-	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
 	AstNode::user3ClearTree();	// user3p() used on entire tree
 	AstNode::user4ClearTree();	// user4p() used on entire tree
 
@@ -368,10 +368,10 @@ class TableVisitor : public TableBaseVisitor {
 private:
     // NODE STATE
     // Cleared on each always/assignw
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     // STATE
     double	m_totalBytes;		// Total bytes in tables created

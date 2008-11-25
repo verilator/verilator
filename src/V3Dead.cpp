@@ -45,7 +45,7 @@ private:
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	nodep->modp()->user(nodep->modp()->user() - 1);
+	nodep->modp()->user1(nodep->modp()->user1() - 1);
     }
     //-----
     virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
@@ -70,7 +70,7 @@ private:
     //  AstModule::user()	-> int. Count of number of cells referencing this module.
     //  AstVar::user()		-> int. Count of number of references
     //  AstVarScope::user()	-> int. Count of number of references
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // TYPES
     typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
@@ -88,16 +88,16 @@ private:
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	nodep->modp()->user(nodep->modp()->user() + 1);
+	nodep->modp()->user1(nodep->modp()->user1() + 1);
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->varScopep()) {
-	    nodep->varScopep()->user(nodep->varScopep()->user() + 1);
-	    nodep->varScopep()->varp()->user(nodep->varScopep()->varp()->user() + 1);
+	    nodep->varScopep()->user1(nodep->varScopep()->user1() + 1);
+	    nodep->varScopep()->varp()->user1(nodep->varScopep()->varp()->user1() + 1);
 	}
 	if (nodep->varp()) {
-	    nodep->varp()->user(nodep->varp()->user() + 1);
+	    nodep->varp()->user1(nodep->varp()->user1() + 1);
 	}
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
@@ -143,7 +143,7 @@ private:
 	    AstModule* nextmodp;
 	    for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
 		nextmodp = modp->nextp()->castModule();
-		if (modp->level()>2	&& modp->user()==0) {
+		if (modp->level()>2	&& modp->user1()==0) {
 		    // > 2 because L1 is the wrapper, L2 is the top user module
 		    UINFO(4,"  Dead module "<<modp<<endl);
 		    // And its children may now be killable too; correct counts
@@ -164,7 +164,7 @@ private:
 	// Delete any unused varscopes
 	for (vector<AstVarScope*>::iterator it = m_vscsp.begin(); it!=m_vscsp.end(); ++it) {
 	    AstVarScope* vscp = *it;
-	    if (vscp->user() == 0 && canElim(vscp->varp())) {
+	    if (vscp->user1() == 0 && canElim(vscp->varp())) {
 		UINFO(4,"  Dead "<<vscp<<endl);
 		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
 		for (AssignMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
@@ -176,7 +176,7 @@ private:
 	    }
 	}
 	for (vector<AstVar*>::iterator it = m_varsp.begin(); it!=m_varsp.end(); ++it) {
-	    if ((*it)->user() == 0 && canElim((*it))) {
+	    if ((*it)->user1() == 0 && canElim((*it))) {
 		UINFO(4,"  Dead "<<(*it)<<endl);
 		(*it)->unlinkFrBack()->deleteTree(); (*it)=NULL;
 	    }

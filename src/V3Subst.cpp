@@ -188,7 +188,7 @@ private:
 
     // METHODS
     SubstVarEntry* findEntryp(AstVarRef* nodep) {
-	return (SubstVarEntry*)(nodep->varp()->userp());  // Might be NULL
+	return (SubstVarEntry*)(nodep->varp()->user1p());  // Might be NULL
     }
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
@@ -228,10 +228,10 @@ class SubstVisitor : public SubstBaseVisitor {
 private:
     // NODE STATE
     // Passed to SubstUseVisitor
-    // AstVar::userp		-> SubstVar* for usage var, 0=not set yet
+    // AstVar::user1p		-> SubstVar* for usage var, 0=not set yet
     // AstVar::user2		-> int step number for last assignment, 0=not set yet
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     vector<SubstVarEntry*>	m_entryps;	// Nodes to delete when we are finished
@@ -244,13 +244,13 @@ private:
 
     // METHODS
     SubstVarEntry* getEntryp(AstVarRef* nodep) {
-	if (!nodep->varp()->userp()) {
+	if (!nodep->varp()->user1p()) {
 	    SubstVarEntry* entryp = new SubstVarEntry (nodep->varp());
 	    m_entryps.push_back(entryp);
-	    nodep->varp()->userp(entryp);
+	    nodep->varp()->user1p(entryp);
 	    return entryp;
 	} else {
-	    SubstVarEntry* entryp = (SubstVarEntry*)(nodep->varp()->userp());
+	    SubstVarEntry* entryp = (SubstVarEntry*)(nodep->varp()->user1p());
 	    return entryp;
 	}
     }
@@ -373,7 +373,7 @@ private:
 public:
     // CONSTUCTORS
     SubstVisitor(AstNode* nodep) {
-	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	m_ops = 0;
 	m_assignStep = 0;

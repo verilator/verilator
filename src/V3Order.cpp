@@ -188,14 +188,14 @@ inline ostream& operator<< (ostream& lhs, const OrderMoveDomScope& rhs) {
 }
 
 //######################################################################
-// Order information stored under each AstNode::userp()...
+// Order information stored under each AstNode::user1p()...
 
 // Types of vertex we can create
 enum WhichVertex { WV_STD, WV_PRE, WV_PORD, WV_POST, WV_SETL,
 		   WV_MAX};
 
 class OrderUser {
-    // Stored in AstVarScope::userp, a list of all the various vertices
+    // Stored in AstVarScope::user1p, a list of all the various vertices
     // that can exist for one given variable
 private:
     OrderVarVertex*	m_vertexp[WV_MAX];	// Vertex of each type (if non NULL)
@@ -239,17 +239,17 @@ private:
     // NODE STATE
     // Forming graph:
     //   Entire Netlist:
-    //    AstVarScope::userp	-> OrderUser* for usage var
-    //    {statement}Node::userp-> AstModule* statement is under
+    //    AstVarScope::user1p	-> OrderUser* for usage var
+    //    {statement}Node::user1p-> AstModule* statement is under
     //   USER4 Cleared on each Logic stmt
     //    AstVarScope::user4()	-> VarUsage(gen/con/both).	Where already encountered signal
     // Ordering (user3/4/5 cleared between forming and ordering)
-    //	  AstScope::userp()	-> AstModule*. Module this scope is under
+    //	  AstScope::user1p()	-> AstModule*. Module this scope is under
     //    AstModule::user3()    -> Number of routines created
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     //int debug() { return 9; }
 
@@ -308,19 +308,19 @@ private:
 		// Add edge logic_sensitive_vertex->logic_vertex
 		new OrderEdge(&m_graph, m_activeSenVxp, m_logicVxp, WEIGHT_NORMAL);
 	    }
-	    nodep->userp(m_modp);
+	    nodep->user1p(m_modp);
 	    nodep->iterateChildren(*this);
 	    m_logicVxp = NULL;
 	}
     }
 
     OrderVarVertex* newVarUserVertex(AstVarScope* varscp, WhichVertex type, bool* createdp=NULL) {
-	if (!varscp->userp()) {
+	if (!varscp->user1p()) {
 	    OrderUser* newup = new OrderUser();
 	    m_orderUserps.push_back(newup);
-	    varscp->userp(newup);
+	    varscp->user1p(newup);
 	}
-	OrderUser* up = (OrderUser*)(varscp->userp());
+	OrderUser* up = (OrderUser*)(varscp->user1p());
 	return up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
     }
 
@@ -424,7 +424,7 @@ private:
 	if (m_topScopep) { process(); m_topScopep=NULL; }
 	UINFO(2,"  Loading tree...\n");
 	//VV*****  We reset userp()
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	AstNode::user3ClearTree();
 	m_graph.clear();
 	m_activep = NULL;
@@ -458,7 +458,7 @@ private:
 	//
 	nodep->iterateChildren(*this);
 	// Done topscope, erase extra user information
-	// userp passed to next process() operation
+	// user1p passed to next process() operation
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
     }
@@ -472,7 +472,7 @@ private:
 	m_scopep = nodep;
 	m_logicVxp = NULL;
 	m_activeSenVxp = NULL;
-	nodep->userp(m_modp);
+	nodep->user1p(m_modp);
 	// Iterate
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
@@ -1372,7 +1372,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
-    AstModule* modp = scopep->userp()->castNode()->castModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
+    AstModule* modp = scopep->user1p()->castNode()->castModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
     if (nodep->castUntilStable()) {
 #ifdef NEW_ORDERING
 	// Beginning of loop.

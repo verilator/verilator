@@ -104,8 +104,8 @@ private:
     //   AstNodeFTask::user4p	// GraphFTaskVertex* this FTask is under
     //   AstVar::user4p		// GraphFTaskVertex* this variable is declared in
 
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     // TYPES
     typedef std::map<pair<AstScope*,AstVar*>,AstVarScope*> VarToScopeMap;
@@ -297,8 +297,8 @@ private:
     //  to TaskRelinkVisitor:
     //    AstVar::user2p	// AstVarScope* to replace varref with
 
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // TYPES
     enum  InsertMode {
@@ -689,9 +689,9 @@ private:
 	AstNode* prevInsStmtp = m_insStmtp;
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
-	if (!nodep->user()) {
+	if (!nodep->user1()) {
 	    // Expand functions in it
-	    nodep->user(true);
+	    nodep->user1(true);
 	    if (nodep->taskPublic()) {
 		// Clone it first, because we may have later FTaskRef's that still need
 		// the original version.
@@ -771,7 +771,7 @@ public:
 	m_modp = NULL;
 	m_scopep = NULL;
 	m_insStmtp = NULL;
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	nodep->accept(*this);
     }
     virtual ~TaskVisitor() {}

@@ -398,14 +398,14 @@ protected:
 // For each user() declare the in use structure
 // We let AstNode peek into here, because when under low optimization even
 // an accessor would be way too slow.
-class AstUserInUse : AstUserInUseBase {
+class AstUser1InUse : AstUserInUseBase {
 protected:
     friend class AstNode;
     static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
     static bool		s_userBusy;	// Count is in use
 public:
-    AstUserInUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUserInUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    AstUser1InUse()     { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser1InUse()    { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser2InUse : AstUserInUseBase {
@@ -563,8 +563,8 @@ class AstNode {
     int		m_width;	// Bit width of operation
     int		m_widthMin;	// If unsized, bitwidth of minimum implementation
     // This member ordering both allows 64 bit alignment and puts associated data together
-    AstNUser*	m_userp;	// Pointer to any information the user iteration routine wants
-    uint32_t	m_userCnt;	// Mark of when userp was set
+    AstNUser*	m_user1p;	// Pointer to any information the user iteration routine wants
+    uint32_t	m_user1Cnt;	// Mark of when userp was set
     uint32_t	m_user2Cnt;	// Mark of when userp was set
     AstNUser*	m_user2p;	// Pointer to any information the user iteration routine wants
     AstNUser*	m_user3p;	// Pointer to any information the user iteration routine wants
@@ -678,15 +678,15 @@ public:
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
 
-    AstNUser*	userp() const {
+    AstNUser*	user1p() const {
 	// Slows things down measurably, so disabled by default
-	//UASSERT_STATIC(AstUserInUse::s_userBusy, "userp set w/o busy");
-	return ((m_userCnt==AstUserInUse::s_userCntGbl)?m_userp:NULL);
+	//UASSERT_STATIC(AstUser1InUse::s_userBusy, "userp set w/o busy");
+	return ((m_user1Cnt==AstUser1InUse::s_userCntGbl)?m_user1p:NULL);
     }
-    void	userp(void* userp) { m_userp=(AstNUser*)(userp); m_userCnt=AstUserInUse::s_userCntGbl; }
-    int		user() const { return userp()->castInt(); }
-    void	user(int val) { userp(AstNUser::fromInt(val)); }
-    static void	userClearTree() { AstUserInUse::clear(); }  // Clear userp()'s across the entire tree
+    void	user1p(void* userp) { m_user1p=(AstNUser*)(userp); m_user1Cnt=AstUser1InUse::s_userCntGbl; }
+    int		user1() const { return user1p()->castInt(); }
+    void	user1(int val) { user1p(AstNUser::fromInt(val)); }
+    static void	user1ClearTree() { AstUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     AstNUser*	user2p() const {
 	//UASSERT_STATIC(AstUser2InUse::s_userBusy, "user2p set w/o busy");

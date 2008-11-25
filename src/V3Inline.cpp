@@ -53,7 +53,7 @@ private:
     // NODE STATE
     // Cleared entire netlist
     //  Input:
-    //   AstModule::userp()	// bool. True to inline this module (from InlineMarkVisitor)
+    //   AstModule::user1p()	// bool. True to inline this module (from InlineMarkVisitor)
     // Cleared each cell
     //   AstVar::user2p()	// AstVarRef*/AstConst*  Points to signal this is a direct connect to
 
@@ -96,7 +96,7 @@ private:
 	    nodep->name(name);
 	    nodep->iterateChildren(*this);
 	}
-	if (nodep->modp()->userp()) {  // Marked with inline request
+	if (nodep->modp()->user1p()) {  // Marked with inline request
 	    if (m_cellp) nodep->v3error("Cloning should have already been done bottom-up");
 	    UINFO(5," Inline CELL   "<<nodep<<endl);
 	    UINFO(5,"   To MOD      "<<m_modp<<endl);
@@ -282,12 +282,12 @@ class InlineMarkVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist
-    //  AstModule::user()	// OUTPUT: bool. User request to inline this module
+    //  AstModule::user1()	// OUTPUT: bool. User request to inline this module
     //  AstModule::user2()	// bool. Allowed to automatically inline module
     //  AstModule::user3()	// int. Number of cells referencing this module
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // STATE
     AstModule*	m_modp;		// Current module
@@ -310,7 +310,7 @@ private:
 	//
 	nodep->iterateChildren(*this);
 	//
-	bool userinline = nodep->user();
+	bool userinline = nodep->user1();
 	bool allowed = nodep->user2();
 	int refs = nodep->user3();
 	// Should we automatically inline this module?
@@ -323,7 +323,7 @@ private:
 	      <<"  "<<nodep<<endl);
 	if (doit) {
 	    UINFO(4," AutoInline "<<nodep<<endl);
-	    nodep->user(true);
+	    nodep->user1(true);
 	}
 	m_modp = NULL;
     }
@@ -337,7 +337,7 @@ private:
 	    if (!m_modp) {
 		nodep->v3error("Inline pragma not under a module");
 	    } else {
-		m_modp->user(1);
+		m_modp->user1(1);
 	    }
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
 	} else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
@@ -385,7 +385,7 @@ public:
 	m_modp = NULL;
 	m_stmtCnt = 0;
 	//VV*****  We reset all userp() on the whole netlist!!!
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	AstNode::user2ClearTree();
 	AstNode::user3ClearTree();
 	nodep->accept(*this);
@@ -406,7 +406,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     AstModule* nextmodp;
     for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
 	nextmodp = modp->nextp()->castModule();
-	if (modp->userp()) { // Was inlined
+	if (modp->user1p()) { // Was inlined
 	    modp->unlinkFrBack()->deleteTree(); modp=NULL;
 	}
     }

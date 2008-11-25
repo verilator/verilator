@@ -50,10 +50,10 @@ class ClockVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Module:
-    //  AstVarScope::userp()	-> AstVarScope*.  Temporary signal that was created.
+    //  AstVarScope::user1p()	-> AstVarScope*.  Temporary signal that was created.
     //  AstVarScope::user2p()	-> AstVarScope*.  Temporary signal for change detects
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // TYPES
     enum {  DOUBLE_OR_RATE = 10 };	// How many | per ||, Determined experimentally as best
@@ -75,7 +75,7 @@ private:
 
     // METHODS
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
-	if (vscp->userp()) return ((AstVarScope*)vscp->userp());
+	if (vscp->user1p()) return ((AstVarScope*)vscp->user1p());
 	AstVar* varp = vscp->varp();
 	if (varp->width()!=1) varp->v3error("Unsupported: Clock edge on non-single bit signal: "<<varp->prettyName());
 	string newvarname = ((string)"__Vclklast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName());
@@ -84,7 +84,7 @@ private:
 	newvarp->width(1,1);
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
-	vscp->userp(newvscp);
+	vscp->user1p(newvscp);
 	m_scopep->addVarp(newvscp);
 	// At bottom, assign them
 	AstAssign* finalp
@@ -187,8 +187,8 @@ private:
 	m_topScopep=nodep;
 	m_scopep = nodep->scopep();
 	if (!m_scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
-	//VV*****  We reset all userp()
-	AstNode::userClearTree();
+	//VV*****  We reset all user1p()
+	AstNode::user1ClearTree();
 	// Make top functions
 	{
 	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_eval", m_scopep);

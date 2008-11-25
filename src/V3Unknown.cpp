@@ -51,7 +51,7 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstArraySel::user()	-> bool.  Set true if already processed
-    AstUserInUse	m_inuse;
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstModule*	m_modp;		// Current module
@@ -227,8 +227,8 @@ private:
 
     void visit(AstSel* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user()) {
-	    nodep->user(1);
+	if (!nodep->user1()) {
+	    nodep->user1(1);
 	    // Guard against reading/writing past end of bit vector array
 	    int maxmsb = 0;
 	    bool lvalue = false;
@@ -295,8 +295,8 @@ private:
 
     virtual void visit(AstArraySel* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user()) {
-	    nodep->user(1);
+	if (!nodep->user1()) {
+	    nodep->user1(1);
 	    // Guard against reading/writing past end of arrays
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	    int dimension      = AstArraySel::dimension(nodep->fromp());

@@ -33,7 +33,7 @@
 class V3Hashed {
     // NODE STATE
     //  AstNode::user4()	-> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    AstUser4InUse	m_inuse4;
+    AstUser4InUse	m_inuser4;
 
     // TYPES
     typedef multimap<V3Hash,AstNode*> HashMmap;

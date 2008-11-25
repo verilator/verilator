@@ -72,10 +72,10 @@ class DelayedVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each module:
-    //  AstVarScope::userp()	-> AstVarScope*.  Points to temp var created.
+    //  AstVarScope::user1p()	-> AstVarScope*.  Points to temp var created.
     //  AstVarScope::user2p()	-> AstActive*.  Points to activity block of signal
     //  AstVarScope::user4p()	-> AstAlwaysPost*.  Post block for this variable
-    //  AstVar::user()		-> VarUsage. Tracks delayed vs non-delayed usage
+    //  AstVar::user1()		-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user2()		-> bool.  Set true if already made warning
     //  AstVar::user4()		-> int.   Vector number, for assignment creation
     //  AstVarRef::user2()	-> bool.  Set true if already processed
@@ -83,10 +83,10 @@ private:
     // Cleared each scope:
     //  AstAssignDly::user3()	-> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user3()	-> AstVarScope*.  __Vdlyvset__ last referenced in IF
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     enum VarUsage { VU_NONE=0, VU_DLY=1, VU_NONDLY=2 };
 
@@ -106,8 +106,8 @@ private:
     // METHODS
     void markVarUsage(AstVar* nodep, uint32_t flags) {
 	//UINFO(4," MVU "<<flags<<" "<<nodep<<endl);
-	nodep->user( nodep->user() | flags );
-	if ((nodep->user() & VU_DLY) && (nodep->user() & VU_NONDLY)) {
+	nodep->user1( nodep->user1() | flags );
+	if ((nodep->user1() & VU_DLY) && (nodep->user1() & VU_NONDLY)) {
 	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->prettyName());
 	}
     }
@@ -354,7 +354,7 @@ private:
 		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
 		AstVarScope* oldvscp = nodep->varScopep();
 		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
-		AstVarScope* dlyvscp = oldvscp->userp()->castNode()->castVarScope();
+		AstVarScope* dlyvscp = oldvscp->user1p()->castNode()->castVarScope();
 		if (dlyvscp) {  // Multiple use of delayed variable
 		    AstActive* oldactivep = dlyvscp->user2p()->castNode()->castActive();
 		    if (!oldactivep) nodep->v3fatalSrc("<= old dly assignment not put under sensitivity block");
@@ -394,7 +394,7 @@ private:
 					     new AstVarRef(nodep->fileline(), oldvscp, true),
 					     new AstVarRef(nodep->fileline(), dlyvscp, false));
 		    postp->lhsp()->user2(true);	// Don't detect this assignment
-		    oldvscp->userp(dlyvscp);  // So we can find it later
+		    oldvscp->user1p(dlyvscp);  // So we can find it later
 		    // Make new ACTIVE with identical sensitivity tree
 		    AstActive* newactp = new AstActive (nodep->fileline(), "sequentdly",
 							m_activep->sensesp());

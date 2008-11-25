@@ -214,14 +214,14 @@ public:
 class SplitVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // AstVarScope::userp	-> Var SplitNodeVertex* for usage var, 0=not set yet
+    // AstVarScope::user1p	-> Var SplitNodeVertex* for usage var, 0=not set yet
     // AstVarScope::user2p	-> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
     // Ast*::user3p		-> Statement SplitLogicVertex* (temporary only)
     // Ast*::user4		-> Current ordering number (reorderBlock usage)
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     // TYPES
     typedef vector<SplitLogicVertex*> VStack;
@@ -239,12 +239,12 @@ private:
 
     // METHODS
     void scoreboardClear() {
-	//VV*****  We reset userp() and user2p on each block!!!
+	//VV*****  We reset user1p() and user2p on each block!!!
 	m_inDly = false;
 	m_graph.clear();
 	m_stmtStackps.clear();
 	m_pliVertexp = NULL;
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	AstNode::user2ClearTree();
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
@@ -492,11 +492,11 @@ private:
 		}
 
 		// Create vertexes for variable
-		if (!vscp->userp()) {
+		if (!vscp->user1p()) {
 		    SplitVarStdVertex*  vstdp  = new SplitVarStdVertex(&m_graph, vscp);
-		    vscp->userp(vstdp);
+		    vscp->user1p(vstdp);
 		}
-		SplitVarStdVertex*  vstdp  = (SplitVarStdVertex*) vscp->userp();
+		SplitVarStdVertex*  vstdp  = (SplitVarStdVertex*) vscp->user1p();
 
 		// SPEEDUP: We add duplicate edges, that should be fixed
 		if (m_inDly && nodep->lvalue()) {

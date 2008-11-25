@@ -229,9 +229,9 @@ class GateVisitor : public GateBaseVisitor {
 private:
     // NODE STATE
     //Entire netlist:
-    // AstVarScope::userp	-> GateVarVertex* for usage var, 0=not set yet
-    // {statement}Node::userp	-> GateLogicVertex* for this statement
-    AstUserInUse	m_inuse1;
+    // AstVarScope::user1p	-> GateVarVertex* for usage var, 0=not set yet
+    // {statement}Node::user1p	-> GateLogicVertex* for this statement
+    AstUser1InUse	m_inuser1;
 
     // STATE
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
@@ -263,11 +263,11 @@ private:
     }
 
     GateVarVertex* makeVarVertex(AstVarScope* varscp) {
-	GateVarVertex* vertexp = (GateVarVertex*)(varscp->userp());
+	GateVarVertex* vertexp = (GateVarVertex*)(varscp->user1p());
 	if (!vertexp) {
 	    UINFO(6,"New vertex "<<varscp<<endl);
 	    vertexp = new GateVarVertex(&m_graph, m_scopep, varscp);
-	    varscp->userp(vertexp);
+	    varscp->user1p(vertexp);
 	    if (varscp->varp()->isSigPublic()) {
 		// Public signals shouldn't be changed, pli code might be messing with them
 		vertexp->clearReducible("SigPublic");
@@ -294,7 +294,6 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	//VV*****  We reset userp() and user2p
 	nodep->iterateChildren(*this);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("gate_pre");

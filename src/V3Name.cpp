@@ -41,14 +41,14 @@ class NameVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
-    //  AstCell::user()		-> bool.  Set true if already processed
-    //  AstScope::user()	-> bool.  Set true if already processed
-    //  AstVar::user()		-> bool.  Set true if already processed
+    //  AstCell::user1()	-> bool.  Set true if already processed
+    //  AstScope::user1()	-> bool.  Set true if already processed
+    //  AstVar::user1()		-> bool.  Set true if already processed
     //
     //  AstCell::user2()	-> bool.  Set true if was privitized
     //  AstVar::user2()		-> bool.  Set true if was privitized
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     AstModule*	m_modp;
@@ -64,14 +64,14 @@ private:
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Don't iterate... Don't need temps for RANGES under the Var.
-	if (!nodep->user()
+	if (!nodep->user1()
 	    && !m_modp->isTop()
 	    && !nodep->isSigPublic()
 	    && !nodep->isTemp()) {	// Don't bother to rename internal signals
 	    // Change the name to something private...
 	    string newname = (string)"__PVT__"+nodep->name();
 	    nodep->name(newname);
-	    nodep->user(1);
+	    nodep->user1(1);
 	    nodep->user2(1);
 	}
     }
@@ -82,25 +82,25 @@ private:
 	}
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
-	if (!nodep->user()
+	if (!nodep->user1()
 	    && !nodep->modp()->modPublic()) {
 	    // Change the name to something private...
 	    string newname = (string)"__PVT__"+nodep->name();
 	    nodep->name(newname);
-	    nodep->user(1);
+	    nodep->user1(1);
 	    nodep->user2(1);
 	}
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
-	if (!nodep->user()) {
+	if (!nodep->user1()) {
 	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterateChildren(*this);
 	    nodep->aboveCellp()->iterateChildren(*this);
 	    // Always recompute name (as many level above scope may have changed)
 	    // Same formula as V3Scope
 	    nodep->name(nodep->isTop() ? "TOP"
 			: (nodep->aboveScopep()->name()+"."+nodep->aboveCellp()->name()));
-	    nodep->user(1);
+	    nodep->user1(1);
 	}
 	nodep->iterateChildren(*this);
     }

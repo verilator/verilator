@@ -44,10 +44,10 @@ class InstVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Cell:
-    //  AstVar::userp()		-> AstNode*.  Expression connected to given pin
-    //  AstVarRef::userp()	-> bool.  True if created senitem for parent's connected signal
-    //  AstPin::userp()		-> bool.  True if created assignment already
-    AstUserInUse	m_inuse1;
+    //  AstVar::user1p()	-> AstNode*.  Expression connected to given pin
+    //  AstVarRef::user1p()	-> bool.  True if created senitem for parent's connected signal
+    //  AstPin::user1p()	-> bool.  True if created assignment already
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstModule*	m_modp;		// Current module
@@ -67,11 +67,11 @@ private:
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(4,"  CELL   "<<nodep<<endl);
 	m_cellp = nodep;
-	//VV*****  We reset userp() on each cell!!!
-	AstNode::userClearTree();
-	// Collect pin expressions, so submod->varp->userp() points to expression it connects to
+	//VV*****  We reset user1p() on each cell!!!
+	AstNode::user1ClearTree();
+	// Collect pin expressions, so submod->varp->user1p() points to expression it connects to
 	for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
-	    pinp->modVarp()->userp(pinp->exprp());
+	    pinp->modVarp()->user1p(pinp->exprp());
 	}
 	nodep->iterateChildren(*this);
 	m_cellp = NULL;
@@ -83,9 +83,9 @@ private:
 	if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
 	if (nodep->modVarp()->isOutOnly() && nodep->exprp()->castConst())
 	    nodep->v3error("Output pin is assigned to a constant, electrical short");
-	// Use userp on the PIN to indicate we created an assign for this pin
-	if (!nodep->user()) {
-	    nodep->user(1);
+	// Use user1p on the PIN to indicate we created an assign for this pin
+	if (!nodep->user1()) {
+	    nodep->user1(1);
 	    // Simplify it
 	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp);
 	    // Make a ASSIGNW (expr, pin)

@@ -50,8 +50,8 @@ class ChangedVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    //  AstVarScope::user()		-> bool.  True indicates processed
-    AstUserInUse	m_inuse1;
+    //  AstVarScope::user1()		-> bool.  True indicates processed
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstModule*		m_topModp;	// Top module
@@ -103,7 +103,7 @@ private:
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	UINFO(4," TS "<<nodep<<endl);
 	// Clearing
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	// Create the change detection function
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
@@ -122,8 +122,8 @@ private:
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	if (nodep->isCircular()) {
 	    UINFO(8,"  CIRC "<<nodep<<endl);
-	    if (!nodep->user()) {
-		nodep->user(true);
+	    if (!nodep->user1()) {
+		nodep->user1(true);
 		genChangeDet(nodep);
 	    }
 	}

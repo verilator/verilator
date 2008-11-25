@@ -46,7 +46,7 @@
 class LifeState {
     // NODE STATE
     //   See below
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // STATE
 public:
@@ -117,7 +117,7 @@ public:
 class LifeBlock {
     // NODE STATE
     // Cleared each AstIf:
-    //   AstVarScope::user()	-> int.       Used in combining to detect duplicates
+    //   AstVarScope::user1()	-> int.       Used in combining to detect duplicates
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
@@ -229,15 +229,15 @@ public:
 	// Find any common sets on both branches of IF and propagate upwards
 	//life1p->lifeDump();
 	//life2p->lifeDump();
-	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
 	for (LifeMap::iterator it = life1p->m_map.begin(); it!=life1p->m_map.end(); ++it) {
 	    // When the if branch sets a var before it's used, mark that variable
-	    if (it->second.setBeforeUse()) it->first->user(1);
+	    if (it->second.setBeforeUse()) it->first->user1(1);
 	}
 	for (LifeMap::iterator it = life2p->m_map.begin(); it!=life2p->m_map.end(); ++it) {
 	    // When the else branch sets a var before it's used
 	    AstVarScope* nodep = it->first;
-	    if (it->second.setBeforeUse() && nodep->user()) {
+	    if (it->second.setBeforeUse() && nodep->user1()) {
 		// Both branches set the var, we can remove the assignment before the IF.
 		UINFO(4,"DUALBRANCH "<<nodep<<endl);
 		LifeMap::iterator itab = m_map.find(nodep);

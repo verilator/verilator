@@ -138,7 +138,7 @@ class SplitAsVisitor : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()	-> bool.  True if already processed
-    AstUserInUse	m_inuse;
+    AstUser1InUse	m_inuser1;
 
     // STATE
     V3Double0	m_statSplits;	// Statistic tracking
@@ -151,7 +151,7 @@ private:
 	if (debug()>=9) nodep->dumpTree(cout,"-in  : ");
 	// Duplicate it and link in
 	AstAlways* newp = nodep->cloneTree(false);
-	newp->user(true);  // So we don't clone it again
+	newp->user1(true);  // So we don't clone it again
 	nodep->addNextHere(newp);
 	{   // Delete stuff we don't want in old
 	    SplitAsCleanVisitor visitor (nodep, m_splitVscp, false);
@@ -167,7 +167,7 @@ private:
 	// Are there any lvalue references below this?
 	// There could be more than one.  So, we process the first one found first.
 	AstVarScope* lastSplitVscp = NULL;
-	while (!nodep->user()) {
+	while (!nodep->user1()) {
 	    // Find any splittable variables
 	    SplitAsFindVisitor visitor (nodep);
 	    m_splitVscp = visitor.splitVscp();
@@ -182,7 +182,7 @@ private:
 		splitAlways(nodep);
 		m_statSplits++;
 	    } else {
-		nodep->user(true);
+		nodep->user1(true);
 	    }
 	}
     }
@@ -198,7 +198,7 @@ public:
     // CONSTUCTORS
     SplitAsVisitor(AstNetlist* nodep) {
 	m_splitVscp = NULL;
-	AstNode::userClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->accept(*this);
     }
     virtual ~SplitAsVisitor() {

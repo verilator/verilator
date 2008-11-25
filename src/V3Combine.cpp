@@ -174,8 +174,8 @@ private:
     //  AstCFunc::user3p()	-> AstCFunc*, If set, replace ccalls to this func with new func
     //  AstNodeStmt::user3()	-> AstNode*.  True if to ignore this cell
     //  AstNodeStmt::user4()	-> V3Hashed::V3Hash.  Hash value of this node (hash of 0 is illegal)
-    AstUserInUse	m_inuse1;
-    AstUser3InUse	m_inuse3;
+    AstUser1InUse	m_inuser1;
+    AstUser3InUse	m_inuser3;
     //AstUser4InUse	part of V3Hashed
 
     // STATE
@@ -282,7 +282,7 @@ private:
 	    if (node1p==node2p) continue;
 	    //
 	    // We need to mark iteration to prevent matching code inside code (abab matching in ababab)
-	    AstNode::userClearTree();	// userp() used on entire tree
+	    AstNode::user1ClearTree();	// user1p() used on entire tree
 	    m_walkLast1p = NULL;
 	    m_walkLast2p = NULL;
 	    int depth = walkDupCodeNext(node1p, node2p, 1);
@@ -308,7 +308,7 @@ private:
 
     int walkDupCodeNext(AstNode* node1p, AstNode* node2p, int level) {
 	// Find number of common statements between the two node1p_nextp's...
-	if (node1p->userp() || node2p->userp()) return 0;   // Already iterated
+	if (node1p->user1p() || node2p->user1p()) return 0;   // Already iterated
 	if (node1p->user3p() || node2p->user3p()) return 0;   // Already merged
 	if (!m_hashed.sameNodes(node1p,node2p)) return 0; // walk of tree has same comparison
 	V3Hash hashval(node1p->user4p());
@@ -316,8 +316,8 @@ private:
 	//UINFO(9,"        wdup2 "<<level<<" "<<V3Hash(node2p->user4p())<<" "<<node2p<<endl);
 	m_walkLast1p = node1p;
 	m_walkLast2p = node2p;
-	node1p->user(true);
-	node2p->user(true);
+	node1p->user1(true);
+	node2p->user1(true);
 	if (node1p->nextp() && node2p->nextp()) {
 	    return hashval.depth()+walkDupCodeNext(node1p->nextp(), node2p->nextp(), level+1);
 	}
@@ -381,8 +381,7 @@ private:
 	// Track all callers of each function
 	m_call.main(nodep);
 	//
-	AstNode::user3ClearTree();	// userp() used on entire tree
-	//In V3Hashed AstNode::user4ClearTree();	// userp() used on entire tree
+	//In V3Hashed AstNode::user4ClearTree();	// user4p() used on entire tree
 	// Iterate modules backwards, in bottom-up order.
 	// Required so that a module instantiating another can benefit from collapsing.
 	nodep->iterateChildrenBackwards(*this);

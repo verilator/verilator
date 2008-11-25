@@ -49,7 +49,7 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()	// bool		  Moved default caseitems
-    AstUser2InUse	m_inuse2;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     // Below state needs to be preserved between each module call.

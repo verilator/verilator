@@ -98,9 +98,9 @@ private:
     //  AstVarScope::user()	-> Sequence # of first virtex setting this var.
     //  AstVarScope::user2()	-> Sequence # of last consumption of this var
     //  AstVarScope::user4()	-> AstVarScope*: Passed to LifePostElim to substitute this var
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser4InUse	m_inuser4;
 
     // STATE
     uint32_t		m_sequence;	// Sequence number of assignments/varrefs
@@ -108,9 +108,9 @@ private:
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
-	AstNode::userClearTree();	// userp() used on entire tree
-	AstNode::user2ClearTree();	// userp() used on entire tree
-	AstNode::user4ClearTree();	// userp() used on entire tree
+	AstNode::user1ClearTree();	// user1p() used on entire tree
+	AstNode::user2ClearTree();	// user2p() used on entire tree
+	AstNode::user4ClearTree();	// user4p() used on entire tree
 	m_sequence = 0;
 	nodep->iterateChildren(*this);
 
@@ -125,7 +125,7 @@ private:
 	m_sequence++;
 	if (nodep->lvalue()) {
 	    // First generator
-	    if (!vscp->user()) vscp->user(m_sequence);
+	    if (!vscp->user1()) vscp->user1(m_sequence);
 	} else {
 	    // Last consumer
 	    vscp->user2(m_sequence);
@@ -142,7 +142,7 @@ private:
 		UINFO(9,"   POST "<<nodep<<endl);
 		UINFO(9,"     lhs "<<lhsp<<endl);
 		UINFO(9,"     rhs "<<rhsp<<endl);
-		uint32_t firstWrite = rhsp->varScopep()->user();
+		uint32_t firstWrite = rhsp->varScopep()->user1();
 		uint32_t lastRead   = rhsp->varScopep()->user2();
 		uint32_t lastRead2  = lhsp->varScopep()->user2();
 		UINFO(9,"     first "<<firstWrite<<" last "<<lastRead<<" "<<lastRead2<<endl);

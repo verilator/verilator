@@ -44,10 +44,10 @@
 class ScopeVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // AstVar::userp		-> AstVarScope replacement for this variable
+    // AstVar::user1p		-> AstVarScope replacement for this variable
     // AstVarRef::user2p	-> bool.  True indicates already processed
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE, inside processing a single module
     AstModule*	m_modp;		// Current module
@@ -74,7 +74,7 @@ private:
 			    : (m_aboveScopep->name()+"."+m_aboveCellp->name()));
 
 	UINFO(4," MOD AT "<<scopename<<"  "<<nodep<<endl);
-        AstNode::userClearTree();
+        AstNode::user1ClearTree();
 
 	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
@@ -101,7 +101,7 @@ private:
 
 	// Create scope for the current usage of this module
 	UINFO(4," back AT "<<scopename<<"  "<<nodep<<endl);
-        AstNode::userClearTree();
+        AstNode::user1ClearTree();
 	m_modp = nodep;
 	if (m_modp->isTop()) {
 	    AstTopScope* topscp = new AstTopScope(nodep->fileline(), m_scopep);
@@ -173,19 +173,19 @@ private:
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Make new scope variable
-	if (!nodep->userp()) {
+	if (!nodep->user1p()) {
 	    AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
 	    UINFO(6,"   New scope "<<varscp<<endl);
-	    nodep->userp(varscp);
+	    nodep->user1p(varscp);
 	    m_scopep->addVarp(varscp);
 	}
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// VarRef needs to point to VarScope
-	// Make sure variable has made userp.
+	// Make sure variable has made user1p.
 	if (!nodep->user2()) {
 	    nodep->varp()->accept(*this);
-	    AstVarScope* varscp = (AstVarScope*)nodep->varp()->userp();
+	    AstVarScope* varscp = (AstVarScope*)nodep->varp()->user1p();
 	    if (!varscp) nodep->v3fatalSrc("Can't locate varref scope");
 	    nodep->varScopep(varscp);
 	}

@@ -86,8 +86,8 @@ class LinkCellsVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
-    //   AstModule::userp()	// V3GraphVertex*    Vertex describing this module
-    AstUserInUse	m_inuse1;
+    //   AstModule::user1p()	// V3GraphVertex*    Vertex describing this module
+    AstUser1InUse	m_inuser1;
 
     // STATE
     // Below state needs to be preserved between each module call.
@@ -101,15 +101,15 @@ private:
     // METHODS
     V3GraphVertex* vertex(AstModule* nodep) {
 	// Return corresponding vertex for this module
-	if (!nodep->userp()) {
-	    nodep->userp(new LinkCellsVertex(&m_graph, nodep));
+	if (!nodep->user1p()) {
+	    nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
 	}
-	return (nodep->userp()->castGraphVertex());
+	return (nodep->user1p()->castGraphVertex());
     }
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	readModNames();
 	nodep->iterateChildren(*this);
 	// Find levels in graph

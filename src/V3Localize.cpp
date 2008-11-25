@@ -45,7 +45,7 @@ class LocalizeBaseVisitor : public AstNVisitor {
 protected:
     // NODE STATE
     // Cleared on entire tree
-    //  AstVar::userp()		-> CFunc which references the variable
+    //  AstVar::user1p()	-> CFunc which references the variable
     //  AstVar::user2()		-> VarFlags.  Flag state
     //  AstVar::user4()		-> AstVarRef*.  First place signal set; must be first assignment
 
@@ -101,9 +101,9 @@ class LocalizeVisitor : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
-    AstUser4InUse	m_inuse4;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser4InUse	m_inuser4;
 
     // STATE
     V3Double0	m_statLocVars;	// Statistic tracking
@@ -132,11 +132,11 @@ private:
 	    if ((nodep->isMovableToBlock() // Blocktemp
 		 || !flags.m_notStd)	// Or used only in block
 		&& !flags.m_notOpt	// Optimizable
-		&& nodep->userp()) {	// Single cfunc
+		&& nodep->user1p()) {	// Single cfunc
 		// We don't need to test for tracing; it would be in the tracefunc if it was needed
 		UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
 		m_statLocVars++;
-		AstCFunc* newfuncp = nodep->userp()->castNode()->castCFunc();
+		AstCFunc* newfuncp = nodep->user1p()->castNode()->castCFunc();
 		nodep->unlinkFrBack();
 		newfuncp->addInitsp(nodep);
 		// Done
@@ -151,9 +151,6 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstNode::userClearTree();	// userp() used on entire tree
-	AstNode::user2ClearTree();	// userp() used on entire tree
-	AstNode::user4ClearTree();	// userp() used on entire tree
 	nodep->iterateChildren(*this);
 	moveVars();
     }
@@ -210,10 +207,10 @@ private:
 		// If we're scoping down to it, it isn't really in the same block
 		if (!nodep->hierThis()) clearOptimizable(nodep->varp(),"HierRef");
 		// Allow a variable to appear in only a single function
-		AstNode* oldfunc = nodep->varp()->userp()->castNode();
+		AstNode* oldfunc = nodep->varp()->user1p()->castNode();
 		if (!oldfunc) {
 		    UINFO(4,"      BVnewref "<<nodep<<endl);
-		    nodep->varp()->userp(m_cfuncp); // Remember where it was used
+		    nodep->varp()->user1p(m_cfuncp); // Remember where it was used
 		} else if (m_cfuncp == oldfunc) {
 		    // Same usage
 		} else {

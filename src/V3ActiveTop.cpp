@@ -48,7 +48,7 @@ private:
     // NODE STATE
     //  Entire netlist
     //   AstNode::user()		bool. True if processed
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstTopScope*	m_topscopep;	// Top scope for adding sentrees under

@@ -46,13 +46,13 @@ class LinkVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
-    //   AstModule::userp()	// V3SymTable*    Module's Symbol table
-    //   AstNodeFTask::userp()	// V3SymTable*    Local Symbol table
-    //   AstBegin::userp()	// V3SymTable*    Local Symbol table
-    //   AstVar::userp()	// V3SymTable*    Table used to create this variable
+    //   AstModule::user1p()	// V3SymTable*    Module's Symbol table
+    //   AstNodeFTask::user1p()	// V3SymTable*    Local Symbol table
+    //   AstBegin::user1p()	// V3SymTable*    Local Symbol table
+    //   AstVar::user1p()	// V3SymTable*    Table used to create this variable
     //   AstVar::user2p()	// bool		  True if port set for this variable
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // ENUMS
     enum IdState {		// Which loop through the tree
@@ -113,7 +113,7 @@ private:
 	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
 	    V3SymTable* symp = new V3SymTable(NULL);
 	    m_delSymps.push_back(symp);
-	    modp->userp(symp);
+	    modp->user1p(symp);
 	}
 	// And recurse...
 	m_idState = ID_FIND;
@@ -130,7 +130,7 @@ private:
 	UINFO(2,"Link Module: "<<nodep<<endl);
 	m_modp = nodep;
 	// This state must be save/restored in the cell visitor function
-	m_curVarsp = nodep->userp()->castSymTable();
+	m_curVarsp = nodep->user1p()->castSymTable();
 	if (!m_curVarsp) nodep->v3fatalSrc("NULL");
 	m_cellVarsp = NULL;
 	m_paramNum = 0;
@@ -163,7 +163,7 @@ private:
 			       <<varTextType(findidp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<findvarp<<endl);
-		if (findvarp->userp() == m_curVarsp) {  // Only when on same level
+		if (findvarp->user1p() == m_curVarsp) {  // Only when on same level
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
@@ -185,7 +185,7 @@ private:
 	    }
 	    if (ins) {
 		m_curVarsp->insert(nodep->name(), nodep);
-		nodep->userp(m_curVarsp);
+		nodep->user1p(m_curVarsp);
 		if (nodep->isGParam()) {
 		    m_paramNum++;
 		    m_curVarsp->insert("__paramNumber"+cvtToStr(m_paramNum), nodep);
@@ -220,12 +220,12 @@ private:
 	V3SymTable* upperVarsp = m_curVarsp;
 	{
 	    // Create symbol table for the task's vars
-	    if (V3SymTable* localVarsp = nodep->userp()->castSymTable()) {
+	    if (V3SymTable* localVarsp = nodep->user1p()->castSymTable()) {
 		m_curVarsp = localVarsp;
 	    } else {
 		m_curVarsp = new V3SymTable(upperVarsp);
 		m_delSymps.push_back(m_curVarsp);
-		nodep->userp(m_curVarsp);
+		nodep->user1p(m_curVarsp);
 	    }
 	    // Convert the func's range to the output variable
 	    // This should probably be done in the Parser instead, as then we could
@@ -278,12 +278,12 @@ private:
 	m_beginNum = 0;
 	{
 	    // Create symbol table for the task's vars
-	    if (V3SymTable* localVarsp = nodep->userp()->castSymTable()) {
+	    if (V3SymTable* localVarsp = nodep->user1p()->castSymTable()) {
 		m_curVarsp = localVarsp;
 	    } else {
 		m_curVarsp = new V3SymTable(upperVarsp);
 		m_delSymps.push_back(m_curVarsp);
-		nodep->userp(m_curVarsp);
+		nodep->user1p(m_curVarsp);
 	    }
 	    nodep->iterateChildren(*this);
 	}
@@ -322,7 +322,7 @@ private:
 	}
 	else {
 	    // Need to pass the module info to this cell, so we can link up the pin names
-	    m_cellVarsp = nodep->modp()->userp()->castSymTable();
+	    m_cellVarsp = nodep->modp()->user1p()->castSymTable();
 	    UINFO(4,"(Backto) Link Cell: "<<nodep<<endl);
 	    //if (debug()) { nodep->dumpTree(cout,"linkcell:"); }
 	    //if (debug()) { nodep->modp()->dumpTree(cout,"linkcemd:"); }

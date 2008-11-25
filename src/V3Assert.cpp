@@ -40,7 +40,7 @@ private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()		-> bool.  True if processed
-    AstUserInUse	m_inuse1;
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstModule*	m_modp;		// Last module
@@ -176,8 +176,8 @@ private:
     // VISITORS  //========== Case assertions
     virtual void visit(AstCase* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user()) {
-	    nodep->user(true);
+	if (!nodep->user1()) {
+	    nodep->user1(true);
 	    bool has_default=false;
 	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 		if (itemp->isDefault()) has_default=true;

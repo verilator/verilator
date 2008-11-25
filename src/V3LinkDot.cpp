@@ -173,10 +173,10 @@ class LinkDotState {
 private:
     // NODE STATE
     // Cleared on Netlist
-    //  AstModule::userp()	-> LinkDotCellVertex*.  Last cell that uses this module
+    //  AstModule::user1p()	-> LinkDotCellVertex*.  Last cell that uses this module
     //  AstVarScope::user2p()	-> AstVarScope*.  Base alias for this signal
-    AstUserInUse	m_inuse1;
-    AstUser2InUse	m_inuse2;
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // TYPES
     typedef std::multimap<string,LinkDotCellVertex*> NameScopeMap;
@@ -195,7 +195,7 @@ public:
 	m_forPrearray = forPrearray;
 	m_forScopeCreation = forScopeCreation;
 	//VV*****  We reset all userp() on each netlist!!!
-	AstNode::userClearTree();
+	AstNode::user1ClearTree();
 	AstNode::user2ClearTree();
     }
     ~LinkDotState() {}
@@ -207,7 +207,7 @@ public:
     LinkDotCellVertex* insertTopCell(AstModule* nodep, const string& scopename) {
 	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
 	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
-	nodep->userp(vxp);
+	nodep->user1p(vxp);
 	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, vxp));
 	return vxp;
     }
@@ -215,7 +215,7 @@ public:
 				  AstCell* nodep, const string& scopename) {
 	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
 	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
-	if (nodep->modp()) nodep->modp()->userp(vxp);
+	if (nodep->modp()) nodep->modp()->user1p(vxp);
 	new V3GraphEdge(&m_graph, abovep, vxp, 1, false);
 	abovep->insertSubcellName(nodep->origName(), vxp);
 	if (abovep != cellVxp) {
@@ -250,10 +250,10 @@ public:
 	abovep->syms().insert(name, nodep);
     }
     bool existsModScope(AstModule* nodep) {
-	return nodep->userp()!=NULL;
+	return nodep->user1p()!=NULL;
     }
     LinkDotCellVertex* findModScope(AstModule* nodep) {
-	LinkDotCellVertex* vxp = (LinkDotCellVertex*)(nodep->userp());
+	LinkDotCellVertex* vxp = (LinkDotCellVertex*)(nodep->user1p());
 	if (!vxp) nodep->v3fatalSrc("Module never assigned a vertex");
 	return vxp;
     }

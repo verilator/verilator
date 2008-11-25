@@ -100,7 +100,7 @@ public:
 // Hashed class functions
 
 V3Hashed::V3Hashed() {
-    AstNode::user4ClearTree();	// userp() used on entire tree
+    AstNode::user4ClearTree();	// user4p() used on entire tree
 }
 
 void V3Hashed::hashAndInsert(AstNode* nodep) {

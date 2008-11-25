@@ -54,7 +54,7 @@ private:
     // NODE STATE
     //	 AstModule::user4()	// bool	  True if parameters numbered
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
-    AstUser4InUse	m_inuse4;
+    AstUser4InUse	m_inuser4;
 
     // STATE
     typedef std::map<AstVar*,AstVar*> VarCloneMap;
