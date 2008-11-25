@@ -375,18 +375,18 @@ struct AstNUser {
 
 class AstUserInUseBase {
 protected:
-    static void	allocate(int& cntGblRef, bool& userBusyRef) {
+    static void	allocate(uint32_t& cntGblRef, bool& userBusyRef) {
 	// Perhaps there's still a AstUserInUse in scope for this?
 	UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser*InUse request when under another AstUserInUse");
 	userBusyRef = true;
 	clearcnt(cntGblRef, userBusyRef);
     }
-    static void	free(int& cntGblRef, bool& userBusyRef) {
+    static void	free(uint32_t& cntGblRef, bool& userBusyRef) {
 	UASSERT_STATIC(userBusyRef, "Free of User*() not under AstUserInUse");
 	clearcnt(cntGblRef, userBusyRef);  // Includes a checkUse for us
 	userBusyRef = false;
     }
-    static void clearcnt(int& cntGblRef, bool& userBusyRef) {
+    static void clearcnt(uint32_t& cntGblRef, bool& userBusyRef) {
 	UASSERT_STATIC(userBusyRef, "Clear of User*() not under AstUserInUse");
 	// If this really fires and is real (after 2^32 edits???)
 	// we could just walk the tree and clear manually
@@ -401,8 +401,8 @@ protected:
 class AstUserInUse : AstUserInUseBase {
 protected:
     friend class AstNode;
-    static int s_userCntGbl;	// Count of which usage of userp() this is
-    static bool s_userBusy;	// Count is in use
+    static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
+    static bool		s_userBusy;	// Count is in use
 public:
     AstUserInUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUserInUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
@@ -411,8 +411,8 @@ public:
 class AstUser2InUse : AstUserInUseBase {
 protected:
     friend class AstNode;
-    static int s_userCntGbl;	// Count of which usage of userp() this is
-    static bool s_userBusy;	// Count is in use
+    static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
+    static bool		s_userBusy;	// Count is in use
 public:
     AstUser2InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser2InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
@@ -421,8 +421,8 @@ public:
 class AstUser3InUse : AstUserInUseBase {
 protected:
     friend class AstNode;
-    static int s_userCntGbl;	// Count of which usage of userp() this is
-    static bool s_userBusy;	// Count is in use
+    static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
+    static bool		s_userBusy;	// Count is in use
 public:
     AstUser3InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser3InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
@@ -431,21 +431,11 @@ public:
 class AstUser4InUse : AstUserInUseBase {
 protected:
     friend class AstNode;
-    static int s_userCntGbl;	// Count of which usage of userp() this is
-    static bool s_userBusy;	// Count is in use
+    static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
+    static bool		s_userBusy;	// Count is in use
 public:
     AstUser4InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser4InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-};
-class AstUser5InUse : AstUserInUseBase {
-protected:
-    friend class AstNode;
-    static int s_userCntGbl;	// Count of which usage of userp() this is
-    static bool s_userBusy;	// Count is in use
-public:
-    AstUser5InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUser5InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 
@@ -559,27 +549,28 @@ class AstNode {
 
     AstNode*	m_headtailp;	// When at begin/end of list, the opposite end of the list
 
-    AstNode*	m_clonep;	// Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
-    int		m_cloneCnt;	// Mark of when userp was set
-    static int	s_cloneCntGbl;	// Count of which userp is set
-
     FileLine*	m_fileline;	// Where it was declared
     vluint64_t	m_editCount;	// When it was last edited
     static vluint64_t s_editCntGbl; // Global edit counter
     static vluint64_t s_editCntLast;// Global edit counter, last value for printing * near node #s
 
+    AstNode*	m_clonep;	// Pointer to clone of/ source of this module (for *LAST* cloneTree() ONLY)
+    int		m_cloneCnt;	// Mark of when userp was set
+    static int	s_cloneCntGbl;	// Count of which userp is set
+
     // Attributes
     bool	m_signed;	// Node is signed
     int		m_width;	// Bit width of operation
     int		m_widthMin;	// If unsized, bitwidth of minimum implementation
+    // This member ordering both allows 64 bit alignment and puts associated data together
     AstNUser*	m_userp;	// Pointer to any information the user iteration routine wants
-    int		m_userCnt;	// Mark of when userp was set
+    uint32_t	m_userCnt;	// Mark of when userp was set
+    uint32_t	m_user2Cnt;	// Mark of when userp was set
     AstNUser*	m_user2p;	// Pointer to any information the user iteration routine wants
-    int		m_user2Cnt;	// Mark of when userp was set
     AstNUser*	m_user3p;	// Pointer to any information the user iteration routine wants
-    int		m_user3Cnt;	// Mark of when userp was set
+    uint32_t	m_user3Cnt;	// Mark of when userp was set
+    uint32_t	m_user4Cnt;	// Mark of when userp was set
     AstNUser*	m_user4p;	// Pointer to any information the user iteration routine wants
-    int		m_user4Cnt;	// Mark of when userp was set
 
     // METHODS
     void	op1p(AstNode* nodep) { m_op1p = nodep; if (nodep) nodep->m_backp = this; }

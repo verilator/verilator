@@ -39,17 +39,15 @@ vluint64_t AstNode::s_editCntLast=0;
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
 int AstNode::s_cloneCntGbl=0;
-int AstUserInUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
-int AstUser2InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
-int AstUser3InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
-int AstUser4InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
-int AstUser5InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUserInUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUser2InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUser3InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUser4InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 
 bool AstUserInUse::s_userBusy=false;
 bool AstUser2InUse::s_userBusy=false;
 bool AstUser3InUse::s_userBusy=false;
 bool AstUser4InUse::s_userBusy=false;
-bool AstUser5InUse::s_userBusy=false;
 
 //######################################################################
 // V3AstType
@@ -885,7 +883,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append) {
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
 	    *logsp<<"Tree Dump from <e"<<dec<<editCountLast()<<">";
 	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;
-	    if (editCountGbl()==editCountLast() && 1) {  // Off, as messes up tree diffing
+	    if (editCountGbl()==editCountLast()) {
 		*logsp<<endl;
 		*logsp<<"No changes since last dump!\n";
 	    } else {
