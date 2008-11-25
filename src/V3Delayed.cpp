@@ -75,19 +75,18 @@ private:
     //  AstVarScope::userp()	-> AstVarScope*.  Points to temp var created.
     //  AstVarScope::user2p()	-> AstActive*.  Points to activity block of signal
     //  AstVarScope::user4p()	-> AstAlwaysPost*.  Post block for this variable
+    //  AstVar::user()		-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user2()		-> bool.  Set true if already made warning
-    //  AstVar::user3()		-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user4()		-> int.   Vector number, for assignment creation
     //  AstVarRef::user2()	-> bool.  Set true if already processed
     //  AstAlwaysPost::user4()	-> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
     // Cleared each scope:
-    //  AstAssignDly::user5()	-> AstVarScope*.  __Vdlyvset__ created for this assign
-    //  AstAlwaysPost::user5()	-> AstVarScope*.  __Vdlyvset__ last referenced in IF
+    //  AstAssignDly::user3()	-> AstVarScope*.  __Vdlyvset__ created for this assign
+    //  AstAlwaysPost::user3()	-> AstVarScope*.  __Vdlyvset__ last referenced in IF
     AstUserInUse	m_inuse1;
     AstUser2InUse	m_inuse2;
     AstUser3InUse	m_inuse3;
     AstUser4InUse	m_inuse4;
-    AstUser5InUse	m_inuse5;
 
     enum VarUsage { VU_NONE=0, VU_DLY=1, VU_NONDLY=2 };
 
@@ -107,8 +106,8 @@ private:
     // METHODS
     void markVarUsage(AstVar* nodep, uint32_t flags) {
 	//UINFO(4," MVU "<<flags<<" "<<nodep<<endl);
-	nodep->user3( nodep->user3() | flags );
-	if ((nodep->user3() & VU_DLY) && (nodep->user3() & VU_NONDLY)) {
+	nodep->user( nodep->user() | flags );
+	if ((nodep->user() & VU_DLY) && (nodep->user() & VU_NONDLY)) {
 	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->prettyName());
 	}
     }
@@ -227,13 +226,13 @@ private:
 	bool sharedVset = false;
 	AstVarScope* setvscp;
 
-	if (nodep->user5p()) {
+	if (nodep->user3p()) {
 	    // Simplistic optimization.  If the previous statement in same scope was also a =>,
-	    // then we told this nodep->user5 we can use its Vdlyvset rather than making a new one.
+	    // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
 	    // This is good for code like:
 	    //    for (i=0; i<5; i++)  vector[i] <= something;
 	    sharedVset = true;
-	    setvscp = nodep->user5p()->castNode()->castVarScope();
+	    setvscp = nodep->user3p()->castNode()->castVarScope();
 	    m_statSharedSet++;
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
@@ -251,7 +250,7 @@ private:
 	    nodep->addNextHere(setassignp);
 	}
 	if (m_nextDlyp) {  // Tell next assigndly it can share the variable
-	    m_nextDlyp->user5p(setvscp);
+	    m_nextDlyp->user3p(setvscp);
 	}
 	//
 	// Create ALWAYSPOST for delayed variable
@@ -278,7 +277,7 @@ private:
 	    varrefp->varScopep()->user4p(finalp);
 	}
 	AstIf* postLogicp;
-	if (finalp->user5p()->castNode() == setvscp) {
+	if (finalp->user3p()->castNode() == setvscp) {
 	    // Optimize as above; if sharing Vdlyvset *ON SAME VARIABLE*,
 	    // we can share the IF statement too
 	    postLogicp = finalp->user4p()->castNode()->castIf();
@@ -290,7 +289,7 @@ private:
 				    NULL);
 	    UINFO(9,"     Created "<<postLogicp<<endl);
 	    finalp->addBodysp(postLogicp);
-	    finalp->user5p(setvscp);	// Remember IF's vset variable
+	    finalp->user3p(setvscp);	// Remember IF's vset variable
 	    finalp->user4p(postLogicp);	// and the associated IF, as we may be able to reuse it
 	}
 	postLogicp->addIfsp(new AstAssign(nodep->fileline(), selectsp, valreadp));
@@ -306,7 +305,7 @@ private:
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
-	AstNode::user5ClearTree();
+	AstNode::user3ClearTree();
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {

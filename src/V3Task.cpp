@@ -62,13 +62,18 @@ public:
 class TaskFTaskVertex : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* m_nodep;
+    AstCFunc* m_cFuncp;
 public:
     TaskFTaskVertex(V3Graph* graphp, AstNodeFTask* nodep)
-	: TaskBaseVertex(graphp), m_nodep(nodep) {}
+	: TaskBaseVertex(graphp), m_nodep(nodep) {
+	m_cFuncp=NULL;
+    }
     virtual ~TaskFTaskVertex() {}
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return pure() ? "black" : "red"; }
+    AstCFunc* cFuncp() const { return m_cFuncp; }
+    void cFuncp(AstCFunc* nodep) { m_cFuncp=nodep; }
 };
 
 class TaskCodeVertex : public TaskBaseVertex {
@@ -99,6 +104,9 @@ private:
     //   AstNodeFTask::user4p	// GraphFTaskVertex* this FTask is under
     //   AstVar::user4p		// GraphFTaskVertex* this variable is declared in
 
+    AstUser3InUse	m_inuse3;
+    AstUser4InUse	m_inuse4;
+
     // TYPES
     typedef std::map<pair<AstScope*,AstVar*>,AstVarScope*> VarToScopeMap;
     // MEMBERS
@@ -122,6 +130,13 @@ public:
     bool ftaskNoInline(AstNodeFTask* nodep) {
 	return (getFTaskVertex(nodep)->noInline());
     }
+    AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) {
+	return (getFTaskVertex(nodep)->cFuncp());
+    }
+    void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
+	getFTaskVertex(nodep)->cFuncp(cfuncp);
+    }
+	
     void checkPurity(AstNodeFTask* nodep) {
 	checkPurity(nodep, getFTaskVertex(nodep));
     }
@@ -136,11 +151,11 @@ public:
 	}
     }
 private:
-    TaskBaseVertex* getFTaskVertex(AstNodeFTask* nodep) {
+    TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
 	if (!nodep->user4p()) {
 	    nodep->user4p(new TaskFTaskVertex(&m_callGraph, nodep));
 	}
-	return static_cast<TaskBaseVertex*>(nodep->user4p()->castGraphVertex());
+	return static_cast<TaskFTaskVertex*>(nodep->user4p()->castGraphVertex());
     }
 
     // VISITORS
@@ -277,10 +292,13 @@ class TaskVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Each module:
-    //  AstNodeFTask::user	// True if its been expanded
+    //    AstNodeFTask::user	// True if its been expanded
     // Each funccall
-    //  AstVar::user2p		// AstVarScope* to replace varref with
-    //  AstNodeFTask::user5p	// AstCFunc* created for non-inlined tasks
+    //  to TaskRelinkVisitor:
+    //    AstVar::user2p	// AstVarScope* to replace varref with
+
+    AstUserInUse	m_inuse;
+    AstUser2InUse	m_inuse2;
 
     // TYPES
     enum  InsertMode {
@@ -415,7 +433,7 @@ private:
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, string namePrefix, AstVarScope* outvscp) {
 	// outvscp is the variable for functions only, if NULL, it's a task
 	if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
-	AstCFunc* cfuncp = refp->taskp()->user5p()->castNode()->castCFunc();
+	AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
 
 	if (!cfuncp) refp->v3fatalSrc("No non-inline task associated with this task call?");
 	//
@@ -686,7 +704,7 @@ private:
 		m_statep->checkPurity(nodep);
 		AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
 		AstCFunc* cfuncp = makeUserFunc(clonedFuncp, false);
-		nodep->user5p(cfuncp);
+		m_statep->ftaskCFuncp(nodep, cfuncp);
 		nodep->addNextHere(cfuncp);
 		iterateIntoFTask(clonedFuncp);  // Do the clone too
 	    }
@@ -708,7 +726,8 @@ private:
 		    pushDeletep(vscp->unlinkFrBack()); vscp=NULL;
 		}
 	    }
-	    // Just push, as other references to func may remain until visitor exits
+	    // Just push for deletion, as other references to func may
+	    // remain until visitor exits
 	    nodep->unlinkFrBack();
 	    pushDeletep(nodep); nodep=NULL;
 	}
@@ -753,7 +772,6 @@ public:
 	m_scopep = NULL;
 	m_insStmtp = NULL;
 	AstNode::userClearTree();
-	AstNode::user5ClearTree();
 	nodep->accept(*this);
     }
     virtual ~TaskVisitor() {}
@@ -764,11 +782,6 @@ public:
 
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    AstUserInUse	m_inuse;
-    AstUser2InUse	m_inuse2;
-    AstUser3InUse	m_inuse3;
-    AstUser4InUse	m_inuse4;
-    AstUser5InUse	m_inuse5;
     TaskStateVisitor visitors (nodep);
     TaskVisitor visitor (nodep, &visitors);
 }

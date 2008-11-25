@@ -7,7 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Optimize two-level shift and and/or trees, +23% on one test.
 
-**** Support posedge of bit-selected signals, bug45. [Rodney Sinclair]
+***  Support posedge of bit-selected signals, bug45. [Rodney Sinclair]
+
+**** Minor performance improvements of Verilator compiler runtime.
 
 **** Fix arrayed variables under function not compiling, bug44. [Ralf Karge]
 

@@ -84,8 +84,6 @@ void AstNode::init() {
     m_user3Cnt = 0;
     m_user4p = NULL;
     m_user4Cnt = 0;
-    m_user5p = NULL;
-    m_user5Cnt = 0;
 }
 
 string AstNode::encodeName(const string& namein) {

@@ -241,8 +241,8 @@ private:
     //   Entire Netlist:
     //    AstVarScope::userp	-> OrderUser* for usage var
     //    {statement}Node::userp-> AstModule* statement is under
-    //   USER5 Cleared on each Logic stmt
-    //    AstVarScope::user5()	-> VarUsage(gen/con/both).	Where already encountered signal
+    //   USER4 Cleared on each Logic stmt
+    //    AstVarScope::user4()	-> VarUsage(gen/con/both).	Where already encountered signal
     // Ordering (user3/4/5 cleared between forming and ordering)
     //	  AstScope::userp()	-> AstModule*. Module this scope is under
     //    AstModule::user3()    -> Number of routines created
@@ -250,7 +250,6 @@ private:
     AstUser2InUse	m_inuse2;
     AstUser3InUse	m_inuse3;
     AstUser4InUse	m_inuse4;
-    AstUser5InUse	m_inuse5;
 
     //int debug() { return 9; }
 
@@ -297,8 +296,8 @@ private:
     void iterateNewStmt(AstNode* nodep) {
 	if (m_scopep) {
 	    UINFO(4,"   STMT "<<nodep<<endl);
-	    //VV*****  We reset user5p()
-	    AstNode::user5ClearTree();
+	    //VV*****  We reset user4p()
+	    AstNode::user4ClearTree();
 	    if (!m_activep || !m_activep->sensesp()) nodep->v3fatalSrc("NULL");
 	    // If inside combo logic, ignore the domain, we'll assign one based on interconnect
 	    AstSenTree* startDomainp = m_activep->sensesp();
@@ -461,7 +460,7 @@ private:
 	// Done topscope, erase extra user information
 	// userp passed to next process() operation
 	AstNode::user3ClearTree();
-	AstNode::user5ClearTree();
+	AstNode::user4ClearTree();
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
@@ -516,10 +515,10 @@ private:
 		bool gen = false;
 		bool con = false;
 		if (nodep->lvalue()) {
-		    gen = !(varscp->user5() & VU_GEN);
+		    gen = !(varscp->user4() & VU_GEN);
 		} else {
-		    con = !(varscp->user5() & VU_CON);
-		    if ((varscp->user5() & VU_GEN) && !m_inClocked) {
+		    con = !(varscp->user4() & VU_CON);
+		    if ((varscp->user4() & VU_GEN) && !m_inClocked) {
 			// Dangerous assumption:
 			// If a variable is used in the same activation which defines it first,
 			// consider it something like:
@@ -536,8 +535,8 @@ private:
 			con = false;
 		    }
 		}
-		if (gen) varscp->user5(varscp->user5() | VU_GEN);
-		if (con) varscp->user5(varscp->user5() | VU_CON);
+		if (gen) varscp->user4(varscp->user4() | VU_GEN);
+		if (con) varscp->user4(varscp->user4() | VU_CON);
 		// Add edges
 		if (!m_inClocked
 		    || m_inPost
