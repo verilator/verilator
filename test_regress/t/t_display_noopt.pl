@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_display.v");
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?"-O0":""],
+	 v_flags2 => [$Self->{v3}?"-O0":""],
 	 );
 
 execute (

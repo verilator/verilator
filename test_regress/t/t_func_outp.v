@@ -92,4 +92,3 @@ module mytop (
    ftest u0( a, b, clk, z );
 
 endmodule // mytop
-

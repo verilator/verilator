@@ -10,4 +10,3 @@ module t (/*AUTOARG*/
    reg [1:0] dim1 [1:0];
    output dim1;	// Bad, can't output multi-dim
 endmodule
-

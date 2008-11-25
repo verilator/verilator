@@ -10,8 +10,8 @@ compile (
 	 v_flags2 => ["--stats"],
 	 );
 
-if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Delayed shared-sets\s+14/i);
+if ($Self->{v3}) {
+    file_grep ($Self->{stats}, qr/Optimizations, Delayed shared-sets\s+14/i);
 }
 
 execute (

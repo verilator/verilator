@@ -31,8 +31,8 @@ module t (/*AUTOARG*/
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       if (cyc==1) begin
 	 crc <= 64'h00000000_00000097;
-	 $write("Open obj_dir/t_case_write2_logger.log\n");
-	 fd = $fopen("obj_dir/t_case_write2_logger.log", "w");
+	 $write("Open obj_dir/t_case_write2/t_case_write2_logger.log\n");
+	 fd = $fopen("obj_dir/t_case_write2/t_case_write2_logger.log", "w");
       end
       if (cyc==90) begin
 	 $write("*-* All Finished *-*\n");

@@ -111,4 +111,3 @@ module example (/*AUTOARG*/
 
    assign LogicImm = LowLogicImm & HighLogicImm;
 endmodule
-

@@ -9,17 +9,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_trace_ena.v");
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'-trace':''],
+	 v_flags2 => [$Self->{v3}?'-trace':''],
 	 );
 
 execute (
 	 check_finished=>1,
 	 );
 
-if ($Last_Self->{v3}) {
-    file_grep     ("obj_dir/V$Last_Self->{name}__Trace__Slow.cpp", qr/c_trace_on\"/x);
-    file_grep_not ("obj_dir/V$Last_Self->{name}__Trace__Slow.cpp", qr/_trace_off\"/x);
-    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/\$enddefinitions/x);
+if ($Self->{v3}) {
+    file_grep     ("$Self->{obj_dir}/V$Self->{name}__Trace__Slow.cpp", qr/c_trace_on\"/x);
+    file_grep_not ("$Self->{obj_dir}/V$Self->{name}__Trace__Slow.cpp", qr/_trace_off\"/x);
+    file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
 }
 
 ok(1);

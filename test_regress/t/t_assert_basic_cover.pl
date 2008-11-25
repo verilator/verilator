@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_assert_basic.v");
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'--assert --sp --coverage-user':''],
+	 v_flags2 => [$Self->{v3}?'--assert --sp --coverage-user':''],
 	 );
 
 execute (
@@ -18,9 +18,9 @@ execute (
 
 #Needs work
 print "-Info:  NOT checking for coverage\n";
-#file_grep ($Last_Self->{coverage_filename}, qr/t=>'psl_cover',o=>'cover',c=>2\);/);
-#file_grep ($Last_Self->{coverage_filename}, qr/DefaultClock.*,c=>1\);/);
-#file_grep ($Last_Self->{coverage_filename}, qr/ToggleLogIf.*,c=>9\);/);
+#file_grep ($Self->{coverage_filename}, qr/t=>'psl_cover',o=>'cover',c=>2\);/);
+#file_grep ($Self->{coverage_filename}, qr/DefaultClock.*,c=>1\);/);
+#file_grep ($Self->{coverage_filename}, qr/ToggleLogIf.*,c=>9\);/);
 
 ok(1);
 1;

@@ -40,4 +40,3 @@ module t_math_imm2 (/*AUTOARG*/
 
    assign LogicImm = LowLogicImm & HighLogicImm;
 endmodule
-

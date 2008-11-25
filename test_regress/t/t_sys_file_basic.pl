@@ -6,7 +6,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-unlink("obj_dir/t_sys_file_basic_test.log");
+unlink("$Self->{obj_dir}/t_sys_file_basic_test.log");
 
 compile (
 	 v_flags2 => ['+incdir+../include'],
@@ -16,7 +16,7 @@ execute (
 	 check_finished=>1,
      );
 
-file_grep ("obj_dir/t_sys_file_basic_test.log",
+file_grep ("$Self->{obj_dir}/t_sys_file_basic_test.log",
 qr/\[0\] hello v=12345667
 \[0\] Hello2
 /);

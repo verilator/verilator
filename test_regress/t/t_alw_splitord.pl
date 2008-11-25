@@ -10,8 +10,8 @@ compile (
 	 v_flags2 => ["--stats"],
 	 );
 
-if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Split always\s+0/i);
+if ($Self->{v3}) {
+    file_grep ($Self->{stats}, qr/Optimizations, Split always\s+0/i);
 }
 
 execute (

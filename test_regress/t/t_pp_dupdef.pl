@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 v_flags2 => ["-Wno-REDEFMACRO"],
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

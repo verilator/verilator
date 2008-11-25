@@ -13,8 +13,8 @@ compile (
 '%Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
 %Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
 %Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
-(!-d "obj_lint_only") or $Last_Self->error("%Error: lint-only shouldn't make output directory");
+(!-d "obj_lint_only") or $Self->error("%Error: lint-only shouldn't make output directory");
 ok(1);
 1;

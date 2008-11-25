@@ -288,4 +288,3 @@ module t_case_huge_sub (/*AUTOARG*/
       endcase
    end
 endmodule
-

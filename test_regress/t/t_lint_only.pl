@@ -11,11 +11,11 @@ compile (
 	 make_main => 0,
 	 v_flags2 => ["--lint-only"],
 	 verilator_make_gcc => 0,
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
-foreach my $file (glob("obj_dir/*t_lint_only*")) {
+foreach my $file (glob("$Self->{obj_dir}/*t_lint_only*")) {
     next if $file =~ /simx_compile.log/;  # Made by driver.pl, not Verilator
-    $Last_Self->error("%Error: Created $file, but --lint-only shouldn't create files");
+    $Self->error("%Error: Created $file, but --lint-only shouldn't create files");
 }
 
 ok(1);

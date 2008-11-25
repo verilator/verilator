@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 v_flags2 => ["--lint-only"],
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 expect=>
 '%Warning-WIDTH: t/t_func_bad_width.v:\d+: Operator FUNCREF expects 40 bits on the Function Argument, but Function Argument.s VARREF generates 39 bits.
 %Warning-WIDTH: Use [^\n]+

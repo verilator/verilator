@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_assert_synth.v");
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'--assert':($Last_Self->{nc}?'+assert':''),
+	 v_flags2 => [$Self->{v3}?'--assert':($Self->{nc}?'+assert':''),
 		      '+define+FAILING_PARALLEL',],
 	 );
 

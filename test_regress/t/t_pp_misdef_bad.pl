@@ -12,7 +12,7 @@ compile (
 	 expect=>
 '%Error: t/t_pp_misdef_bad.v:\d+: Define or directive not defined: `NOTDEF
 %Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

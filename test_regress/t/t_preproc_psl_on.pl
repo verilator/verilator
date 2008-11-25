@@ -6,11 +6,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-my $stdout_filename = "obj_dir/$Last_Self->{name}__test.vpp";
+my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 top_filename("t/t_preproc_psl.v");
 
-if (!$Last_Self->{v3}) {
+if (!$Self->{v3}) {
     ok(1);
 } else {
     compile (
@@ -18,7 +18,7 @@ if (!$Last_Self->{v3}) {
 	     verilator_make_gcc=>0,
 	     stdout_filename => $stdout_filename,
 	     );
-    ok(files_identical($stdout_filename, "t/$Last_Self->{name}.out"));
+    ok(files_identical($stdout_filename, "t/$Self->{name}.out"));
 }
 
 1;

@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
 
 `ifndef verilator
    initial begin
-      $dumpfile("obj_dir/t_var_escape_dump.vcd");
+      $dumpfile("obj_dir/t_var_escape/t_var_escape_dump.vcd");
       $dumpvars( 0, t );
       $dumpon;
    end

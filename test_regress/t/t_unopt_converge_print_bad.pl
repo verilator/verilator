@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 top_filename("t/t_unopt_converge.v");
-#$Last_Self->{verilated_debug} = 1;
+#$Self->{verilated_debug} = 1;
 
 compile (
 	 v_flags2 => ['+define+ALLOW_UNOPT'],
@@ -17,7 +17,7 @@ compile (
 execute (
 	 fails=>1,
 	 expect=> '%Error: \S+:\d+: Verilated model didn\'t converge',
-     ) if $Last_Self->{v3};
+     ) if $Self->{v3};
 
 ok(1);
 1;

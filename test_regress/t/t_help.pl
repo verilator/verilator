@@ -6,14 +6,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-$Last_Self->_run(fails=>1,
+$Self->_run(fails=>1,
 		 cmd=>["perl","../bin/verilator",
 		       "--help"],
-		 logfile=>"obj_dir/t_help.log",
+		 logfile=>"$Self->{obj_dir}/t_help.log",
 		 tee=>0,
-		 ) if $Last_Self->{v3};
+		 ) if $Self->{v3};
 
-file_grep ("obj_dir/t_help.log", qr/DISTRIBUTION/i);
+file_grep ("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 
 ok(1);
 1;

@@ -119,4 +119,3 @@ module te (
       q <= qmid;
    end
 endmodule
-

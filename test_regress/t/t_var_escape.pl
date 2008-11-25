@@ -8,17 +8,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 # Access is so we can dump waves
-	 v_flags2 => [$Last_Self->{v3}?'-trace':' +access+rwc'],
+	 v_flags2 => [$Self->{v3}?'-trace':' +access+rwc'],
 	 );
 
 execute (
 	 check_finished=>1,
 	 );
 
-if ($Last_Self->{v3}) {
-    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/\$enddefinitions/x);
+if ($Self->{v3}) {
+    file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
-    file_grep     ("obj_dir/$Last_Self->{name}__simx.vcd", qr/$sig/);
+    file_grep     ("$Self->{obj_dir}/simx.vcd", qr/$sig/);
 }
 
 ok(1);

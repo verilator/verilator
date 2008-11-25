@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_psl_basic.v");
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'--psl --sp --coverage-user':''],
+	 v_flags2 => [$Self->{v3}?'--psl --sp --coverage-user':''],
 	 );
 
 execute (
@@ -17,9 +17,9 @@ execute (
 	 );
 
 # Allow old Perl format dump, or new binary dump
-file_grep ($Last_Self->{coverage_filename}, qr/(,o=>'cover'.*,c=>2\)|o.cover.* 2\n)/);
-file_grep ($Last_Self->{coverage_filename}, qr/(DefaultClock.*,c=>1\)|DefaultClock.* 1\n)/);
-file_grep ($Last_Self->{coverage_filename}, qr/(ToggleLogIf.*,c=>9\)|ToggleLogIf.* 9\n)/);
+file_grep ($Self->{coverage_filename}, qr/(,o=>'cover'.*,c=>2\)|o.cover.* 2\n)/);
+file_grep ($Self->{coverage_filename}, qr/(DefaultClock.*,c=>1\)|DefaultClock.* 1\n)/);
+file_grep ($Self->{coverage_filename}, qr/(ToggleLogIf.*,c=>9\)|ToggleLogIf.* 9\n)/);
 
 ok(1);
 1;

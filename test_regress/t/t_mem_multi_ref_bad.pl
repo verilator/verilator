@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 compile (
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 nc=>0,  # Need to get it not to give the prompt
 	 expect=>
 '%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit select; variable already selected, or bad dimension

@@ -60,4 +60,3 @@ module t_case_huge_sub4 (/*AUTOARG*/
       endcase
    end
 endmodule
-

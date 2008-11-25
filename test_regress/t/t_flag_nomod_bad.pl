@@ -8,11 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 v_flags2 => ["--lint-only"],
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 expect=>
 '%Error: No top level module found
 %Error: Exiting due to',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

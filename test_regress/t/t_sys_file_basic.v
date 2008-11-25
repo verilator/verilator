@@ -30,10 +30,10 @@ module t;
 
 `ifdef AUTOFLUSH
       // The "w" is required so we get a FD not a MFD
-      file = $fopen("obj_dir/t_sys_file_autoflush.log","w");
+      file = $fopen("obj_dir/t_sys_file_basic/t_sys_file_autoflush.log","w");
 `else
       // The "w" is required so we get a FD not a MFD
-      file = $fopen("obj_dir/t_sys_file_basic_test.log","w");
+      file = $fopen("obj_dir/t_sys_file_basic/t_sys_file_basic_test.log","w");
 `endif
       if ($feof(file)) $stop;
 
@@ -49,7 +49,8 @@ module t;
 
       begin
 	 // Check for opening errors
-	 file = $fopen("obj_dir/DOES_NOT_EXIST","r");	// The "r" is required so we get a FD not a MFD
+	 // The "r" is required so we get a FD not a MFD
+	 file = $fopen("obj_dir/t_sys_file_basic/DOES_NOT_EXIST","r");
 	 if (|file) $stop;	// Should not exist, IE must return 0
       end
 

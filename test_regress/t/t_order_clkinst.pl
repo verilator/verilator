@@ -6,7 +6,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-my $fail = ($Last_Self->{v3} && verilator_version() !~ /\(ord\)/);
+my $fail = ($Self->{v3} && verilator_version() !~ /\(ord\)/);
 
 compile (
 	 );

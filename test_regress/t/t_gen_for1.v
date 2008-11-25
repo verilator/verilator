@@ -81,4 +81,3 @@ module fnxtclk (u, reset, clk, w );
    end
 
 endmodule
-

@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 compile (
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 nc=>0,
 	 expect=>
 '%Error: t/t_mem_multi_io_bad.v:\d+: Arrayed variables may not be inputs nor outputs

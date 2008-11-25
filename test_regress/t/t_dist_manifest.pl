@@ -48,9 +48,9 @@ foreach my $file (sort keys %files) {
 	    ."  $file\n") if $Debug;
 
     if ($dir && !$tar && !$skip) {
-	$Last_Self->error("File not in manifest or MANIFEST.SKIP: $file");
+	$Self->error("File not in manifest or MANIFEST.SKIP: $file");
     } elsif (!$dir && $tar && !$skip) {
-	$Last_Self->error("File in manifest, but not directory: $file");
+	$Self->error("File in manifest, but not directory: $file");
     }
 }
 

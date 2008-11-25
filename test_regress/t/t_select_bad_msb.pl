@@ -12,7 +12,7 @@ compile (
 '%Error: t/t_select_bad_msb.v:\d+: Unsupported: MSB < LSB of bit range: 0<22
 %Error: t/t_select_bad_msb.v:\d+: Unsupported: MSB < LSB of bit extract: 1<4
 %Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

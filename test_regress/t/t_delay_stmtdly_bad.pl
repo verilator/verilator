@@ -13,7 +13,7 @@ compile (
 	 expect=>
 '%Warning-STMTDLY: t/t_delay.v:\d+: Ignoring delay on this delayed statement.
 .*%Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

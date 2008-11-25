@@ -6,7 +6,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-$Last_Self->{vl_time_multiplier} = 1000;
+$Self->{vl_time_multiplier} = 1000;
 
 compile (
     verilator_flags2 => ['-DVL_TIME_MULTIPLER=1000'],

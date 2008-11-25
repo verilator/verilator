@@ -9,12 +9,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
 	 make_top_shell => 0,
 	 make_main => 0,
-	 v_flags2 => ["--exe t/$Last_Self->{name}.cpp"],
-	 ) if $Last_Self->{v3};
+	 v_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
+	 ) if $Self->{v3};
 
 execute (
 	 check_finished=>1,
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

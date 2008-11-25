@@ -13,7 +13,7 @@ compile (
 '.*%Warning-WIDTH: t/t_lint_restore_bad.v:\d+: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS\'s CONST generates 64 bits.
 %Warning-WIDTH: Use .*
 %Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

@@ -11,7 +11,7 @@ module t;
 
    initial begin
       infile = $fopen("t/t_sys_file_scan_input.dat", "r");
-      outfile = $fopen("obj_dir/t_sys_file_scan_test.log", "w");
+      outfile = $fopen("obj_dir/t_sys_file_scan/t_sys_file_scan_test.log", "w");
 
       count = 1234;
       $display("count == %d, infile %d, outfile %d", count, infile, outfile);

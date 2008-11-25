@@ -12,8 +12,8 @@ compile (
 	 v_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
 	 );
 
-if ($Last_Self->{v3}) {
-    file_grep ($Last_Self->{stats}, qr/Optimizations, Combined CFuncs\s+16/i);
+if ($Self->{v3}) {
+    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+16/i);
 }
 
 execute (

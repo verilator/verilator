@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 compile (
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 expect=>
 '%Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
 ',

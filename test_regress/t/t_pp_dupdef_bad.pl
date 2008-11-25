@@ -18,7 +18,7 @@ compile (
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUPP, with different value: .*
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: .*
 %Error: Exiting due to.*',
-	 ) if $Last_Self->{v3};
+	 ) if $Self->{v3};
 
 ok(1);
 1;

@@ -10,7 +10,7 @@ compile (
 	 );
 
 execute (
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 expect=>
 '%Error: t/t_sys_readmem_bad_digit.mem:\d+: \$readmemb \(binary\) file contains hex characters',
      );

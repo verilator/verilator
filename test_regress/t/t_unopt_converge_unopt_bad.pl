@@ -13,7 +13,7 @@ compile (
 	 expect=> '%Warning-UNOPT: t/t_unopt_converge.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: TOP->x
 .*
 %Error: Exiting due to '
-     ) if $Last_Self->{v3};
+     ) if $Self->{v3};
 
 ok(1);
 1;

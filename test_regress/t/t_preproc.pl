@@ -6,10 +6,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-$golden_out ||= "t/$Last_Self->{name}.out";
-my $stdout_filename = "obj_dir/$Last_Self->{name}__test.vpp";
+$golden_out ||= "t/$Self->{name}.out";
+my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
-if (!$Last_Self->{v3}) {
+if (!$Self->{v3}) {
     ok(1);
 } else {
     compile (
@@ -17,7 +17,7 @@ if (!$Last_Self->{v3}) {
 	     verilator_make_gcc=>0,
 	     stdout_filename => $stdout_filename,
 	     );
-    ok(preproc_check($Last_Self->{top_filename}, $stdout_filename)
+    ok(preproc_check($Self->{top_filename}, $stdout_filename)
        && files_identical($stdout_filename, $golden_out));
 }
 
@@ -46,14 +46,14 @@ sub preproc_check {
 	    if ($line =~ /^Line_Preproc_Check\s+(\d+)/) {
 		my $linecmt = $1;
 		my $check = shift @Line_Checks;
-		if (!$check) { $Last_Self->error("$filename2:$.: Extra Line_Preproc_Check\n"); }
-		if ($linecmt != $check) { $Last_Self->error("$filename2:$.: __LINE__ inserted $linecmt, exp=$check\n"); }
-		if ($lineno != $check)  { $Last_Self->error("$filename2:$.: __LINE__ on `line $lineno, exp=$check\n"); }
+		if (!$check) { $Self->error("$filename2:$.: Extra Line_Preproc_Check\n"); }
+		if ($linecmt != $check) { $Self->error("$filename2:$.: __LINE__ inserted $linecmt, exp=$check\n"); }
+		if ($lineno != $check)  { $Self->error("$filename2:$.: __LINE__ on `line $lineno, exp=$check\n"); }
 	    }
 	}
 	$fh->close;
     }
-    if ($Line_Checks[0]) { $Last_Self->error("$filename2: Missing a Line_Preproc_Check\n"); }
+    if ($Line_Checks[0]) { $Self->error("$filename2: Missing a Line_Preproc_Check\n"); }
     return 1;
 }
 

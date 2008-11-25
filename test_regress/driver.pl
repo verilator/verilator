@@ -113,6 +113,7 @@ sub one_test {
 	     my $test = new VTest(@params);
 	     $test->oprint("="x50,"\n");
 	     unlink $test->{status_filename};
+	     $test->prep;
 	     $test->read;
 	     if ($test->ok) {
 		 $test->oprint("Test PASSED\n");
@@ -205,12 +206,18 @@ use Data::Dumper;
 use Carp;
 use Cwd;
 
-use vars qw ($Last_Self);
+use vars qw ($Self $Self);
 use strict;
 
 sub new {
     my $class = shift;
-    my $self = {
+    my $self = {@_};
+
+    $self->{name} ||= $1 if $self->{pl_filename} =~ m!.*/([^/]*)\.pl$!;
+    $self->{obj_dir} ||= "obj_dir/$self->{name}";
+    $self->{t_dir} ||= cwd()."/t";  # Used both absolutely and under obj_dir
+
+    $self = {
 	name => undef, 		# Set below, name of this test
 	mode => "",
 	pl_filename => undef,	# Name of .pl file to get setup from
@@ -222,6 +229,7 @@ sub new {
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
+				 ." -Mdir $self->{obj_dir}"
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
@@ -241,22 +249,22 @@ sub new {
 	verilator_make_gcc => 1,
 	verilated_debug => $Opt_Verilated_Debug,
 	stdout_filename => undef,	# Redirect stdout
-	@_};
+	%$self};
     bless $self, $class;
 
-    $self->{name} ||= $1 if $self->{pl_filename} =~ m!.*/([^/]*)\.pl$!;
     $self->{mode} ||= "vcs" if $self->{vcs};
     $self->{mode} ||= "v3" if $self->{v3};
     $self->{mode} ||= "nc" if $self->{nc};
     $self->{VM_PREFIX} ||= "V".$self->{name};
-    $self->{stats} ||= "obj_dir/V".$self->{name}."__stats.txt";
-    $self->{status_filename} ||= "obj_dir/V".$self->{name}.".status";
-    $self->{coverage_filename} ||= "obj_dir/V".$self->{name}."_coverage.pl";
+    $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
+    $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
+    $self->{run_log_filename} ||= "$self->{obj_dir}/vl_sim.log";
+    $self->{coverage_filename} ||= "$self->{obj_dir}/V".$self->{name}."_coverage.pl";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
     if (!$self->{make_top_shell}) {
 	$self->{top_shell_filename} = $self->{top_filename};
     } else {
-	$self->{top_shell_filename} = "obj_dir/$self->{VM_PREFIX}__top.v";
+	$self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
     }
     return $self;
 }
@@ -287,12 +295,18 @@ sub skip {
     $self->{errors} ||= "Skip: ".$msg;
 }
 
+sub prep {
+    my $self = shift;
+    mkdir $self->{obj_dir};  # Ok if already exists
+}
+
 sub read {
     my $self = shift;
     # Read the control file
     (-r $self->{pl_filename})
 	or return $self->error("Can't open $self->{pl_filename}\n");
-    $Last_Self = $self;
+    $Self = $self;
+    $Self = $self;
     delete $INC{$self->{pl_filename}};
     require $self->{pl_filename};
 }
@@ -319,7 +333,7 @@ sub read_status {
 # Methods invoked by tests
 
 sub compile {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     return 1 if $self->errors;
     $self->oprint("Compile\n");
@@ -331,7 +345,7 @@ sub compile {
 
     if ($param{vcs}) {
 	$self->_make_top();
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__vcs_compile.log",
+	$self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_VCS}||"vcs"),
 			  @{$param{vcs_flags}},
@@ -345,7 +359,7 @@ sub compile {
     }
     if ($param{nc}) {
 	$self->_make_top();
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__nc_compile.log",
+	$self->_run(logfile=>"$self->{obj_dir}/nc_compile.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{nc_flags}},
@@ -393,7 +407,7 @@ sub compile {
 	    return 1;
 	}
 
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__simx_compile.log",
+	$self->_run(logfile=>"$self->{obj_dir}/vl_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
 		    cmd=>\@v3args);
@@ -407,8 +421,8 @@ sub compile {
 		$self->_sp_preproc(%param);
 	    }
 	    $self->oprint("GCC\n");
-	    $self->_run(logfile=>"obj_dir/".$self->{name}."__simx_gcc.log",
-			cmd=>["cd obj_dir && ",
+	    $self->_run(logfile=>"$self->{obj_dir}/vl_gcc.log",
+			cmd=>["cd $self->{obj_dir} && ",
 			      "make", "-f".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
 			      ($param{make_main}?"":"MAKE_MAIN=0"),
@@ -421,12 +435,12 @@ sub compile {
 }
 
 sub execute {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
     if ($param{nc}) {
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__simnc.log",
+	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{ncrun_flags}},
@@ -435,7 +449,7 @@ sub execute {
     if ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__simv.log",
+	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
 		    cmd=>["./simv",],
 		    %param,
 		    expect=>undef,	# vcs expect isn't the same
@@ -444,8 +458,8 @@ sub execute {
     if ($param{v3}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
-	$self->_run(logfile=>"obj_dir/".$self->{name}."__simx.log",
-		    cmd=>["obj_dir/$param{VM_PREFIX}",
+	$self->_run(logfile=>"$self->{obj_dir}/vl_sim.log",
+		    cmd=>["$self->{obj_dir}/$param{VM_PREFIX}",
 			  ],
 		    %param,
 		    );
@@ -456,30 +470,30 @@ sub execute {
 # Accessors
 
 sub ok {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
     $self->{ok} = 0 if $self->{errors};
     return $self->{ok};
 }
 
 sub errors {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     return $self->{errors};
 }
 
 sub top_filename {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     $self->{top_filename} = shift if defined $_[0];
     return $self->{top_filename};
 }
 
 sub sp {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     return $self->{sp};
 }
 
 sub sc {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     return $self->{sc};
 }
 
@@ -490,7 +504,7 @@ sub sc_or_sp {
 #----------------------------------------------------------------------
 
 sub _run {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my %param = (tee=>1,
 		 @_);
     my $command = join(' ',@{$param{cmd}});
@@ -584,7 +598,7 @@ sub _make_main {
 
     $self->_read_inputs();
 
-    my $filename = "obj_dir/$self->{VM_PREFIX}__main.cpp";
+    my $filename = "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     print $fh "// Test defines\n";
@@ -646,7 +660,7 @@ sub _make_main {
 	    $fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
 	}
 	$fh->print("    topp->trace (tfp, 99);\n");
-	$fh->print("    tfp->open (\"obj_dir/".$self->{name}."__simx.vcd\");\n");
+	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");
 	$fh->print("#endif\n");
     }
 
@@ -743,7 +757,7 @@ sub _sp_preproc {
 
     $self->_run(logfile=>"simx.log",
 		fails=>0,
-		cmd=>["cd obj_dir ; sp_preproc",
+		cmd=>["cd $self->{obj_dir} ; sp_preproc",
 		      "--preproc",
 		      "$self->{VM_PREFIX}.sp",
 		      ]);
@@ -805,7 +819,7 @@ sub files_identical {
 }
 
 sub vcd_identical {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
     if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
@@ -822,7 +836,7 @@ sub vcd_identical {
 }
 
 sub file_grep_not {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
 
@@ -834,7 +848,7 @@ sub file_grep_not {
 }
 
 sub file_grep {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
 
@@ -848,7 +862,7 @@ sub file_grep {
 my %_File_Contents_Cache;
 
 sub file_contents {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
 
     if (!$_File_Contents_Cache{$filename}) {
@@ -868,7 +882,7 @@ sub file_contents {
 }
 
 sub write_wholefile {
-    my $self = (ref $_[0]? shift : $Last_Self);
+    my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $contents = shift;
     my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";

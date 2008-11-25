@@ -8,19 +8,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_trace_public.v");
 
-if ($Last_Self->{v3}) {
+if ($Self->{v3}) {
     compile (
 	     make_top_shell => 0,
 	     make_main => 0,
-	     v_flags2 => ["--trace --exe t/$Last_Self->{name}.cpp"],
+	     v_flags2 => ["--trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
 	     );
 
     execute (
 	     check_finished=>1,
 	     );
 
-    ok(vcd_identical ("obj_dir/$Last_Self->{name}__simx.vcd",
-		      "t/$Last_Self->{name}.out"));
+    ok(vcd_identical ("$Self->{obj_dir}/simx.vcd",
+		      "t/$Self->{name}.out"));
 }
 else {
     ok(1);

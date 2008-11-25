@@ -10,8 +10,8 @@ top_filename("t/t_assert_basic.v");
 
 compile (
 	 v_flags2 => ['+define+FAILING_ASSERTIONS',
-	              $Last_Self->{v3}?'--assert':($Last_Self->{nc}?'+assert':'')],
-	 fails => $Last_Self->{nc},
+	              $Self->{v3}?'--assert':($Self->{nc}?'+assert':'')],
+	 fails => $Self->{nc},
 	 );
 
 execute (

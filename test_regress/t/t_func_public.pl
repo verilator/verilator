@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 compile (
-	 v_flags2 => [$Last_Self->{v3}?'+define+VERILATOR_PUBLIC_TASKS':''],
+	 v_flags2 => [$Self->{v3}?'+define+VERILATOR_PUBLIC_TASKS':''],
 	 fails => $fail,
 	 );
 

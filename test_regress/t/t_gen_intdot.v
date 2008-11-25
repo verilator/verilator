@@ -40,7 +40,7 @@ module t (/*AUTOARG*/
 //`define WAVES
 `ifdef WAVES
    initial begin
-      $dumpfile("obj_dir/t_gen_intdot.vcd");
+      $dumpfile("obj_dir/t_gen_intdot/t_gen_intdot.vcd");
       $dumpvars(12, t);
    end
 `endif
@@ -103,4 +103,3 @@ module Genit (clk, value, result);
    end
 
 endmodule
-

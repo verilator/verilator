@@ -6,9 +6,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-if ($Last_Self->{v3}) {
+if ($Self->{v3}) {
     compile (
-	     make_flags => 'CPPFLAGS_ADD=-I../t',
+	     make_flags => "CPPFLAGS_ADD=-I$Self->{t_dir}",
 	     );
     execute (
 	     check_finished=>1,

@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 v_flags2 => ["--lint-only"],
-	 fails=>$Last_Self->{v3},
+	 fails=>$Self->{v3},
 	 expect=>
 '%Error: t/t_select_bad_range2.v:\d+: Selection index out of range: 3:2 outside 1:0
 %Error: Exiting due to.*',
