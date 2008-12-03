@@ -45,9 +45,16 @@ int sc_main(int argc, char* argv[]) {
     //==========
     // Define the Clocks
 
-    cout << ("Defining Clocks\n");
-    sc_clock clk     ("clk",10, 0.5, 3, true);
-    sc_clock fastclk ("fastclk",2, 0.5, 2, true);
+    cout << "Defining Clocks\n";
+#if (SYSTEMC_VERSION>=20070314)
+    sc_clock clk     ("clk",    10,SC_NS, 0.5, 3,SC_NS, true);
+    sc_clock fastclk ("fastclk", 2,SC_NS, 0.5, 2,SC_NS, true);
+#else
+    sc_clock clk     ("clk",    10, 0.5, 3, true);
+    sc_clock fastclk ("fastclk", 2, 0.5, 2, true);
+#endif
+
+    cout << "Defining Interconnect\n";
     sc_signal<bool> reset_l;
     sc_signal<bool> passed;
     sc_signal<uint32_t> in_small;
@@ -98,7 +105,11 @@ int sc_main(int argc, char* argv[]) {
     // SystemC to interconnect everything for testing.
     cout <<("Test initialization...\n");
     reset_l = 1;
+#if (SYSTEMC_VERSION>=20070314)
+    sc_start(1,SC_NS);
+#else
     sc_start(1);
+#endif
 
     //==========
     //  Waves
@@ -127,7 +138,11 @@ int sc_main(int argc, char* argv[]) {
 	} else if (VL_TIME_Q() > 1) {
 	    reset_l = 0;	// Assert reset
 	}
+#if (SYSTEMC_VERSION>=20070314)
+	sc_start(1,SC_NS);
+#else
 	sc_start(1);
+#endif
     }
 
     top->final();

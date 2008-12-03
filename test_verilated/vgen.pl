@@ -627,7 +627,7 @@ sub write_output_sc {
     foreach my $block (@Blocks) {
 	print $fh "SP_CTOR_IMP($block->{name}) {\n";
 	print $fh "  SC_METHOD(clkPosedge);\n";
-	print $fh "  sensitive_pos(clk);\n";
+	print $fh "  sensitive << clk.pos();\n";
 	print $fh "}\n\n";
 
 	print $fh "void $block->{name}::clkPosedge() {\n";

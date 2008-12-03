@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Minor performance improvements of Verilator compiler runtime.
 
+**** Fix SystemC 2.2 deprecated warnings about sensitive() and sc_start().
+
 **** Fix arrayed variables under function not compiling, bug44. [Ralf Karge]
 
 **** Fix --output-split-cfuncs to also split trace code. [Niranjan Prabhu]

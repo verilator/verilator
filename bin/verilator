@@ -720,7 +720,7 @@ This is an example similar to the above, but using SystemPerl.
           Vour* top;
           top = new Vour("top");   // SP_CELL (top, Vour);
           top->clk(clk);           // SP_PIN  (top, clk, clk);
-          while (!Verilated::gotFinish()) { sc_start(1); }
+          while (!Verilated::gotFinish()) { sc_start(1, SC_NS); }
           exit(0);
       }
     EOF

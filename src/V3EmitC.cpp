@@ -1351,7 +1351,7 @@ void EmitCImp::emitSensitives() {
 	for (AstNode* nodep=m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	    if (AstVar* varp = nodep->castVar()) {
 		if (varp->isInput() && (varp->isScSensitive() || varp->isUsedClock())) {
-		    puts("sensitive("+varp->name()+");\n");
+		    puts("sensitive << "+varp->name()+";\n");
 		}
 	    }
 	}

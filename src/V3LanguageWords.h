@@ -116,6 +116,7 @@ class V3LanguageWords {
 	addKwd("sc_inout",		"SystemC common word");
 	addKwd("sc_out",		"SystemC common word");
 	addKwd("sc_signal",		"SystemC common word");
+	addKwd("sensitive",		"SystemC common word");
 	addKwd("sensitive_neg",		"SystemC common word");
 	addKwd("sensitive_pos",		"SystemC common word");
     }

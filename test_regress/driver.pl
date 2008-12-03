@@ -678,7 +678,11 @@ sub _make_main {
 	    $action = 1;
 	}
 	if ($self->sc_or_sp) {
+	    print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
+	    print $fh "	sc_start(1,SC_NS);\n";
+	    print $fh "#else\n";
 	    print $fh "	sc_start(1);\n";
+	    print $fh "#endif\n";
 	} else {
 	    print $fh "	main_time+=1;\n";
 	    print $fh "	${set}eval();\n" if $action;
