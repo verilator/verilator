@@ -249,7 +249,7 @@ private:
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
-    AstUser4InUse	m_inuser4;
+    //AstUser4InUse	m_inuser4;	// Used only when building tree, so below
 
     //int debug() { return 9; }
 
@@ -415,13 +415,16 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	// We're finished, complete any unfinished topscopes
+	{
+	    AstUser4InUse	m_inuser4;	// Used only when building tree, so below
+	    nodep->iterateChildren(*this);
+	}
+	// We're finished, complete the topscopes
 	if (m_topScopep) { process(); m_topScopep=NULL; }
     }
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	// Process the last thing we're finishing
-	if (m_topScopep) { process(); m_topScopep=NULL; }
+	if (m_topScopep) nodep->v3fatalSrc("Only one topscope supported");
 	UINFO(2,"  Loading tree...\n");
 	//VV*****  We reset userp()
 	AstNode::user1ClearTree();
