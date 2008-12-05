@@ -9,7 +9,12 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support posedge of bit-selected signals, bug45. [Rodney Sinclair]
 
+***  Line coverage now aggregates by hierarchy automatically.
+     Previously this would be done inside SystemPerl, which was slower.
+
 **** Minor performance improvements of Verilator compiler runtime.
+
+**** Fix line coverage of public functions.  [Soon Koh]
 
 **** Fix SystemC 2.2 deprecated warnings about sensitive() and sc_start().
 

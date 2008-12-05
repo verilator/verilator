@@ -35,36 +35,6 @@
 #define VL_VALUE_STRING_MAX_WIDTH 1024	// We use a static char array in VL_VALUE_STRING
 
 //######################################################################
-// Coverage ID tracking
-
-class EmitCoverIds {
-    // TYPES
-    typedef map<AstCoverDecl*,int> CoverIdMap;
-    // MEMBERS
-    CoverIdMap	m_coverIds;	// Remapping of coverage IDs to per-module value
-    int		m_coverIdsSize;	// Size of m_coverIds (to avoid O(n^2) insert)
-    // METHODS
-public:
-    void clear() {
-	m_coverIds.clear();
-	m_coverIdsSize = 0;
-    }
-    int size() const { return m_coverIdsSize; }
-    int remap(AstCoverDecl* declp) {
-	// Make cover ID for this point, unique on this module
-	CoverIdMap::iterator it = m_coverIds.find(declp);
-	if (it == m_coverIds.end()) {
-	    m_coverIds.insert(make_pair(declp,m_coverIdsSize++));	// Remapping of coverage IDs to per-module value
-	    return m_coverIdsSize-1;
-	} else {
-	    return it->second;
-	}
-    }
-    EmitCoverIds() : m_coverIdsSize(0) {}
-    ~EmitCoverIds() {}
-};
-
-//######################################################################
 // Emit statements and math operators
 
 class EmitCStmts : public EmitCBaseVisitor {
@@ -74,8 +44,6 @@ private:
     vector<AstVar*>		m_ctorVarsVec;		// All variables in constructor order
     int		m_splitSize;	// # of cfunc nodes placed into output file
     int		m_splitFilenum;	// File number being created, 0 = primary
-public:
-    EmitCoverIds m_coverIds;	// Coverage ID remapping
 public:
     //int debug() { return 9; }
 
@@ -222,8 +190,14 @@ public:
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
-	puts("&__Vcoverage[");
-	puts(cvtToStr(m_coverIds.remap(nodep))); puts("]");
+	puts("&(vlSymsp->__Vcoverage[");
+	puts(cvtToStr(nodep->binNum())); puts("])");
+	// If this isn't the first instantiation of this module under this
+	// design, don't really count the bucket, and rely on SystemPerl to
+	// aggregate counts.  This is because Verilator combines all
+	// hiearchies itself, and if SystemPerl also did it, you'd end up
+	// with (number-of-instant) times too many counts in this bin.
+	puts(", first");  // Enable, passed from __Vconfigure parameter
 	puts(", \"");	puts(nodep->fileline()->filename()); puts("\"");
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(", ");	puts(cvtToStr(nodep->column()));
@@ -233,8 +207,9 @@ public:
 	puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
-	puts("++this->__Vcoverage[");
-	puts(cvtToStr(m_coverIds.remap(nodep->declp()))); puts("];\n");
+	puts("++(vlSymsp->__Vcoverage[");
+	puts(cvtToStr(nodep->declp()->binNum()));
+	puts("]);\n");
     }
     virtual void visit(AstCReturn* nodep, AstNUser*) {
 	puts("return (");
@@ -1221,18 +1196,10 @@ void EmitCImp::emitVarResets(AstModule* modp) {
 }
 
 void EmitCImp::emitCoverageDecl(AstModule* modp) {
-    m_coverIds.clear();
-    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCoverDecl* declp = nodep->castCoverDecl()) {
-	    m_coverIds.remap(declp);
-	}
-    }
-    if (m_coverIds.size()) {
+    if (v3Global.opt.coverage()) {
 	ofp()->putsPrivate(true);
 	puts("// Coverage\n");
-	puts("SpZeroed<uint32_t>\t__Vcoverage["); puts(cvtToStr(m_coverIds.size())); puts("];\n");
-	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint32_t)*m_coverIds.size());
-	puts("void __vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
+	puts("void __vlCoverInsert(uint32_t* countp, bool enable, const char* filename, int lineno, int column,\n");
 	puts(  	"const char* hier, const char* type, const char* comment);\n");
     }
 }
@@ -1258,8 +1225,9 @@ void EmitCImp::emitCtorImp(AstModule* modp) {
 }
 
 void EmitCImp::emitConfigureImp(AstModule* modp) {
-    puts("\nvoid "+modClassName(modp)+"::__Vconfigure("+symClassName()+"* symsp) {\n");
-    puts(   "__VlSymsp = symsp;\n");  // First, as later stuff needs it.
+    puts("\nvoid "+modClassName(modp)+"::__Vconfigure("+symClassName()+"* vlSymsp, bool first) {\n");
+    puts(   "if (0 && first) {}  // Prevent unused\n");
+    puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     bool first=true;
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (nodep->castCoverDecl()) {
@@ -1274,12 +1242,17 @@ void EmitCImp::emitConfigureImp(AstModule* modp) {
 }
 
 void EmitCImp::emitCoverageImp(AstModule* modp) {
-    if (m_coverIds.size()) {
+    if (v3Global.opt.coverage() ) {
 	puts("\n// Coverage\n");
 	// Rather than putting out SP_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments
-	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(SpZeroed<uint32_t>* countp, const char* filename, int lineno, int column,\n");
+	// SystemPerl 1.301 is much faster, but it's nice to remain back
+	// compatible, and have a common wrapper.
+	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filename, int lineno, int column,\n");
 	puts(  	"const char* hier, const char* type, const char* comment) {\n");
+	puts(   "static uint32_t fake_zero_count = 0;\n");
+	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
+	puts(   "*countp = 0;\n");
 	puts(   "SP_COVER_INSERT(countp,");
 	puts(	"  \"filename\",filename,");
 	puts(	"  \"lineno\",lineno,");
@@ -1602,7 +1575,7 @@ void EmitCImp::emitInt(AstModule* modp) {
     if (v3Global.opt.trace() && !optSystemPerl()) {
 	puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
     }
-    puts("void\t__Vconfigure("+symClassName()+"* symsp);\n");
+    puts("void\t__Vconfigure("+symClassName()+"* symsp, bool first);\n");
     if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
 
     emitTextSection(AstType::SCINT);

@@ -38,11 +38,17 @@
 // Symbol table emitting
 
 class EmitCSyms : EmitCBaseVisitor {
+    // NODE STATE
+    // Cleared on Netlist
+    //  AstModule::user1()	-> bool.  Set true __Vconfigure called
+    AstUser1InUse	m_inuser1;
+
     // STATE
     AstModule*	m_modp;		// Current module
     typedef pair<AstScope*,AstModule*> ScopeModPair;
     vector<ScopeModPair>  m_scopes;	// Every scope by module
     V3LanguageWords 	m_words;	// Reserved word detector
+    int		m_coverBins;		// Coverage bin number
 
     // METHODS
     void emitInt();
@@ -70,6 +76,7 @@ class EmitCSyms : EmitCBaseVisitor {
 
 	// Sort m_scopes by scope name
 	sort(m_scopes.begin(), m_scopes.end(), CmpName());
+
 	// Output
 	emitInt();
 	emitImp();
@@ -84,6 +91,10 @@ class EmitCSyms : EmitCBaseVisitor {
 	nameCheck(nodep);
 	m_scopes.push_back(make_pair(nodep, m_modp));
     }
+    virtual void visit(AstCoverDecl* nodep, AstNUser*) {
+	// Assign numbers to all bins, so we know how big of an array to use
+	nodep->binNum(m_coverBins++);
+    }
     // NOPs
     virtual void visit(AstNodeStmt*, AstNUser*) {}
     virtual void visit(AstConst*, AstNUser*) {}
@@ -97,6 +108,7 @@ class EmitCSyms : EmitCBaseVisitor {
 public:
     EmitCSyms(AstNetlist* nodep) {
 	m_modp = NULL;
+	m_coverBins = 0;
 	nodep->accept(*this);
     }
 };
@@ -144,6 +156,12 @@ void EmitCSyms::emitInt() {
 	    ofp()->printf("%-30s ", (modClassName(modp)+"").c_str());
 	    puts(scopep->nameDotless()+";\n");
 	}
+    }
+
+    puts("\n// COVERAGE\n");
+    if (m_coverBins) {
+	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint32_t));
+	puts("uint32_t\t__Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
     }
 
     puts("\n// CREATORS\n");
@@ -216,11 +234,16 @@ void EmitCSyms::emitImp() {
 	}
     }
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
-    puts("TOPp->__Vconfigure(this);\n");
+    puts("TOPp->__Vconfigure(this, true);\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
 	if (!modp->isTop()) {
-	    puts(scopep->nameDotless()+".__Vconfigure(this);\n");
+	    // first is used by AstCoverDecl's call to __vlCoverInsert
+	    bool first = !modp->user1();
+	    modp->user1(true);
+	    puts(scopep->nameDotless()+".__Vconfigure(this, "
+		 +(first?"true":"false")
+		 +");\n");
 	}
     }
 

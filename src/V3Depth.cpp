@@ -133,11 +133,6 @@ private:
 	    m_funcp->isStatic(false);
 	}
     }
-    virtual void visit(AstCoverInc* nodep, AstNUser*) {
-	// OPTIMIZE: For now this needs this->__Vcoverage, but could be globalized
-	needNonStaticFunc(nodep);
-	visitStmt(nodep);
-    }
     virtual void visit(AstUCFunc* nodep, AstNUser*) {
 	needNonStaticFunc(nodep);
 	nodep->iterateChildren(*this);

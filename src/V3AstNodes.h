@@ -1006,16 +1006,20 @@ private:
     string	m_text;
     string	m_hier;
     int		m_column;
+    int		m_binNum;	// Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     AstCoverDecl(FileLine* fl, int column, const string& type, const string& comment)
 	: AstNodeStmt(fl) {
 	m_text = comment; m_typeText = type; m_column = column;
+	m_binNum = 0;
     }
     ASTNODE_NODE_FUNCS(CoverDecl, COVERDECL)
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 1+2*instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
     int		column() 	const { return m_column; }
+    void	binNum(int flag) { m_binNum = flag; }
+    int		binNum() 	const { return m_binNum; }
     const string& comment() const { return m_text; }			// text to insert in code
     const string& typeText() const { return m_typeText; }
     const string& hier() const { return m_hier; }

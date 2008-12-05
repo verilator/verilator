@@ -229,7 +229,6 @@ sub new {
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
-				 ." -Mdir $self->{obj_dir}"
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
@@ -244,7 +243,8 @@ sub new {
 	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
 	'v3' => 0,
-	verilator_flags => [split(/\s+/,"-cc")],
+	verilator_flags => ["-cc",
+			    "-Mdir $self->{obj_dir}"],
 	verilator_flags2 => [],
 	verilator_make_gcc => 1,
 	verilated_debug => $Opt_Verilated_Debug,
@@ -338,10 +338,14 @@ sub compile {
     return 1 if $self->errors;
     $self->oprint("Compile\n");
 
-    $self->{sc} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-sc\b/);
-    $self->{sp} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-sp\b/);
-    $self->{trace} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-trace\b/);
-    $self->{coverage} = 1 if (join(' ',@{$param{v_flags}},@{$param{v_flags2}}) =~ /-coverage\b/);
+    my $checkflags = join(' ',@{$param{v_flags}},
+			  @{$param{v_flags2}},
+			  @{$param{verilator_flags}},
+			  @{$param{verilator_flags2}});
+    $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
+    $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
+    $self->{trace} = 1 if ($checkflags =~ /-trace\b/);
+    $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
     if ($param{vcs}) {
 	$self->_make_top();
@@ -464,6 +468,44 @@ sub execute {
 		    %param,
 		    );
     }
+}
+
+sub inline_checks {
+    my $self = (ref $_[0]? shift : $Self);
+    return 1 if $self->errors;
+    my %param = (%{$self}, @_);	   # Default arguments are from $self
+
+    my $covfn = $Self->{coverage_filename};
+    my $contents = $self->file_contents($covfn);
+
+    $self->oprint("Extract checks\n");
+    my $fh = IO::File->new("<$self->{top_filename}");
+    while (defined(my $line = $fh->getline)) {
+	if ($line =~ /CHECK/) {
+	    if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *(\d+) *\)/) {
+		my $lineno=($. + $1); my $hier=$2; my $count=$3;
+		my $regexp = "\001l\002".$lineno;
+		$regexp .= ".*\001h\002".quotemeta($hier);
+		$regexp .= ".*' ".$count;
+		if ($contents !~ /$regexp/) {
+		    $self->error("CHECK_COVER: $covfn: Regexp not found: $regexp\n".
+				 "From $self->{top_filename}:$.: $line");
+		}
+	    }
+	    elsif ($line =~ /CHECK_COVER_MISSING *\( *([---0-9]+) *\)/) {
+		my $lineno=($. + $1);
+		my $regexp = "\001l\002".$lineno;
+		if ($contents =~ /$regexp/) {
+		    $self->error("CHECK_COVER_MISSING: $covfn: Regexp found: $regexp\n".
+				 "From $self->{top_filename}:$.: $line");
+		}
+	    }
+	    else {
+		$self->error("$self->{top_filename}:$.: Unknown CHECK request: $line");
+	    }
+	}
+    }
+    $fh->close;
 }
 
 #----------------------------------------------------------------------
