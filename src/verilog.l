@@ -554,7 +554,8 @@ escid	\\[^ \t\f\r\n]+
 <V95,V01,V05,S05,PSL>{
   "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK_ENABLE;}
-  "/*verilator coverage_block_off*/"	{yylval.fileline = CRELINE(); return yVL_COVER_OFF;}
+  "/*verilator coverage_block_off*/"	{yylval.fileline = CRELINE(); return yVL_COVERAGE_BLOCK_OFF;}
+  "/*verilator coverage_module_off*/"	{yylval.fileline = CRELINE(); return yVL_COVERAGE_MODULE_OFF;}
   "/*verilator full_case*/"		{yylval.fileline = CRELINE(); return yVL_FULL_CASE;}
   "/*verilator inline_module*/"		{yylval.fileline = CRELINE(); return yVL_INLINE_MODULE;}
   "/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}

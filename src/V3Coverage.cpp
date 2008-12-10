@@ -73,13 +73,17 @@ private:
 	return new AstCoverInc(fl, declp);
     }
 
-    // VISITORS
+    // VISITORS - BOTH
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
-	m_fileps.clear();
-	nodep->iterateChildren(*this);
+	if (nodep->modCover()) {   // Cleared by /*verilator coverage_module_off*/
+	    m_fileps.clear();
+	    nodep->iterateChildren(*this);
+	}
 	m_modp = NULL;
     }
+
+    // VISITORS - LINE COVERAGE
     virtual void visit(AstIf* nodep, AstNUser*) {
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
@@ -157,6 +161,8 @@ private:
 	}
 	m_beginHier = oldHier;
     }
+
+    // VISITORS - BOTH
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	if (m_checkBlock) {

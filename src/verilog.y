@@ -268,7 +268,8 @@ class AstSenTree;
 
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
-%token<fileline>	yVL_COVER_OFF		"/*verilator coverage_block_off*/"
+%token<fileline>	yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
+%token<fileline>	yVL_COVERAGE_MODULE_OFF	"/*verilator coverage_module_off*/"
 %token<fileline>	yVL_FULL_CASE		"/*verilator full_case*/"
 %token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
 %token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
@@ -629,6 +630,7 @@ modItem<nodep>:
 	|	yaSCIMPH				{ $$ = new AstScImpHdr(CRELINE(),*$1); }
 	|	yaSCCTOR				{ $$ = new AstScCtor(CRELINE(),*$1); }
 	|	yaSCDTOR				{ $$ = new AstScDtor(CRELINE(),*$1); }
+	|	yVL_COVERAGE_MODULE_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_MODULE_OFF); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
@@ -974,7 +976,7 @@ stmt<nodep>:
 	|	yD_FINISH '(' expr ')' ';'		{ $$ = new AstFinish($1); }
 	|	yD_STOP parenE ';'			{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')' ';'		{ $$ = new AstStop($1); }
-	|	yVL_COVER_OFF				{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
+	|	yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
 	|	stateCaseForIf				{ $$ = $1; }
 	|	taskRef ';' 				{ $$ = $1; }
 

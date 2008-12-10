@@ -311,7 +311,8 @@ corresponding to each counter are written into logs/coverage.pl.
 Verilator automatically disables coverage of branches that have a $stop in
 them, as it is assumed $stop branches contain an error check that should
 not occur.  A /*verilator coverage_block_off*/ comment will perform a
-similar function on any code in that block or below.
+similar function on any code in that block or below, or /*verilator
+coverage_module_off*/ will disable coverage on the entire module.
 
 Note Verilator may over-count combinatorial (non-clocked) blocks when those
 blocks receive signals which have had the UNOPTFLAT warning disabled; for
@@ -1221,7 +1222,13 @@ ignored in the scheduling algorithm, improving performance.
 
 =item /*verilator coverage_block_off*/
 
-Specifies the entire begin/end block should be ignored for coverage analysis.
+Specifies the entire begin/end block should be ignored for coverage
+analysis purposes.
+
+=item /*verilator coverage_module_off*/
+
+Specifies the entire module should be ignored for coverage analysis
+purposes.
 
 =item /*verilator inline_module*/
 

@@ -35,6 +35,10 @@ module t (/*AUTOARG*/
 	     // Inputs
 	     .clk			(clk),
 	     .toggle			(toggle));
+   off   o1 (/*AUTOINST*/
+	     // Inputs
+	     .clk			(clk),
+	     .toggle			(toggle));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
@@ -132,5 +136,23 @@ module tsk (/*AUTOARG*/
 	 end
       end
    endtask
+
+endmodule
+
+module off (/*AUTOARG*/
+   // Inputs
+   clk, toggle
+   );
+   input clk;
+   input toggle;
+
+   // verilator coverage_module_off
+
+   always @ (posedge clk) begin
+      if (toggle) begin
+	 // CHECK_COVER_MISSING(-1)
+	 // because under coverage_module_off
+      end
+   end
 
 endmodule

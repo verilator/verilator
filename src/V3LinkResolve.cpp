@@ -334,6 +334,11 @@ private:
 	    m_modp->modPublic(true);  // Need to get to the task...
 	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
 	}
+	else if (nodep->pragType() == AstPragmaType::COVERAGE_MODULE_OFF) {
+	    if (!m_modp) nodep->v3fatalSrc("COVERAGE_MODULE_OFF not under a module\n");
+	    m_modp->modCover(false);
+	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	}
 	else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
 	    if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize better without
 		nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;

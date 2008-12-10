@@ -157,12 +157,8 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts((string)"// "+nodep->name()+"\n");
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCoverDecl*, AstNUser*) {
-	// N/A
-    }
-    virtual void visit(AstCoverInc*, AstNUser*) {
-	// N/A
-    }
+    virtual void visit(AstCoverDecl*, AstNUser*) {}  // N/A
+    virtual void visit(AstCoverInc*, AstNUser*) {}  // N/A
 
     void visitNodeDisplay(AstNode* nodep, AstNode* filep, const string& text, AstNode* exprsp) {
 	putbs(nodep->verilogKwd());

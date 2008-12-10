@@ -473,6 +473,8 @@ sub execute {
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors;
+    return 1 if !$self->{v3};
+
     my %param = (%{$self}, @_);	   # Default arguments are from $self
 
     my $covfn = $Self->{coverage_filename};
