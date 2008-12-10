@@ -14,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Minor performance improvements of Verilator compiler runtime.
 
+**** Fix certain generate-if cells causing "clone" error. [Stephane Laurent]
+
 **** Fix line coverage of public functions.  [Soon Koh]
 
 **** Fix SystemC 2.2 deprecated warnings about sensitive() and sc_start().

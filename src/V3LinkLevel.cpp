@@ -60,7 +60,8 @@ private:
 	m_modp = holdmodp;
     }
     // For speed, don't recurse things that can't have cells
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
+    // Must do statements to support Generates, math though...
+    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);

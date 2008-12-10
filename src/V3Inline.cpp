@@ -305,7 +305,7 @@ private:
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_stmtCnt = 0;
 	m_modp = nodep;
-	m_modp->user2(true);
+	m_modp->user2(true);  // Allowed = true
 	if (m_modp->modPublic()) cantInline("modPublic");
 	//
 	nodep->iterateChildren(*this);
