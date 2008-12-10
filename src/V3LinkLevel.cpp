@@ -39,43 +39,6 @@
 //######################################################################
 // Levelizing class functions
 
-class LinkLevelVisitor : public AstNVisitor {
-private:
-    // STATE
-    AstModule* m_modp;
-    // VISITs
-    virtual void visit(AstModule* nodep, AstNUser*) {
-	m_modp = nodep;
-	nodep->iterateChildren(*this);
-	m_modp = NULL;
-    }
-    virtual void visit(AstCell* nodep, AstNUser*) {
-	// Track module depths, so can sort list from parent down to children
-	nodep->modp()->level(max(nodep->modp()->level(), (1+m_modp->level())));
-	UINFO(5," Under "<<m_modp<<"  IS  "<<nodep->modp()<<endl);
-	if (nodep->modp()->level()>99) nodep->v3error("Over 99 levels of cell hierarchy.  Probably cell instantiates itself.");
-	// Recurse in, preserving state
-	AstModule* holdmodp = m_modp;
-	nodep->modp()->accept(*this);
-	m_modp = holdmodp;
-    }
-    // For speed, don't recurse things that can't have cells
-    // Must do statements to support Generates, math though...
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	// Default: Just iterate
-	nodep->iterateChildren(*this);
-    }
-
-public:
-    // CONSTUCTORS
-    LinkLevelVisitor() {}
-    virtual ~LinkLevelVisitor() {}
-    void main(AstNetlist* rootp) {
-	rootp->accept(*this);
-    }
-};
-
 struct CmpLevel {
     inline bool operator () (const AstModule* lhsp, const AstModule* rhsp) const {
 	return lhsp->level() < rhsp->level();
@@ -101,8 +64,7 @@ void V3LinkLevel::modSortByLevel() {
 	}
     }
 
-    LinkLevelVisitor visitor;
-    visitor.main(v3Global.rootp());
+    // level() was computed for us in V3LinkCells
 
     vector<AstModule*> vec;
     AstModule* topp = NULL;
