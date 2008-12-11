@@ -33,6 +33,8 @@
 class V3ErrorCode {
 public:
     enum en {
+	MIN=0,		// Keep first
+	//
 	SUPPRESS,	// Warning suppressed by user
 	INFO,		// General information out
 	FATAL,		// Kill the program
@@ -77,8 +79,8 @@ public:
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
-	    " SUPPRESS", " INFO", " FATAL", " ERROR",
-	     "MULTITOP", "TASKNSVAR",
+	    " MIN", " SUPPRESS", " INFO", " FATAL", " ERROR",
+	    "MULTITOP", "TASKNSVAR",
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
@@ -202,7 +204,7 @@ class FileLine {
     // File and line number of an object, mostly for error reporting
     int		m_lineno;
     string	m_filename;
-    bitset<V3ErrorCode::MAX>	m_warnOff;
+    bitset<V3ErrorCode::MAX>	m_warnOn;
     static FileLine s_defaultFileLine;
     struct EmptySecret {};
 protected:
@@ -216,8 +218,8 @@ protected:
     void incLineno() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
-    FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOff=s_defaultFileLine.m_warnOff; }
-    FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOff=fromp->m_warnOff; }
+    FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOn=s_defaultFileLine.m_warnOn; }
+    FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOn=fromp->m_warnOn; }
     FileLine (EmptySecret);
     ~FileLine() { }
 #ifdef VL_LEAK_CHECKS
@@ -231,11 +233,11 @@ public:
     const string filebasename () const;
     const char* cfilename () const { return m_filename.c_str(); }
     const string profileFuncname() const;
-    void warnOff(V3ErrorCode code, bool flag) { m_warnOff.set(code,flag); }	// Turn on/off warning messages on this line.
+    void warnOff(V3ErrorCode code, bool flag) { m_warnOn.set(code,!flag); }	// Turn on/off warning messages on this line.
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
-    void warnStateFrom(const FileLine& from) { m_warnOff=from.m_warnOff; }
+    void warnStateFrom(const FileLine& from) { m_warnOn=from.m_warnOn; }
     void warnStateInherit(const FileLine& from);
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 

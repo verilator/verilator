@@ -69,10 +69,10 @@ FileLine::FileLine(FileLine::EmptySecret) {
     m_lineno=0;
     m_filename="COMMAND_LINE";
 
-    m_warnOff=0;
-    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+    m_warnOn=0;
+    for (int codei=V3ErrorCode::MIN; codei<V3ErrorCode::MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
-	if (code.defaultsOff()) warnOff(code, true);
+	warnOff(code, code.defaultsOff());
     }
 }
 
@@ -165,9 +165,9 @@ ostream& operator<<(ostream& os, FileLine* fileline) {
 }
 
 bool FileLine::warnIsOff(V3ErrorCode code) const {
-    if (m_warnOff.test(code)) return true;
+    if (!m_warnOn.test(code)) return true;
     // UNOPTFLAT implies UNOPT
-    if (code==V3ErrorCode::UNOPT && m_warnOff.test(V3ErrorCode::UNOPTFLAT)) return true;
+    if (code==V3ErrorCode::UNOPT && !m_warnOn.test(V3ErrorCode::UNOPTFLAT)) return true;
     return false;
 }
 
