@@ -555,7 +555,6 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK_ENABLE;}
   "/*verilator coverage_block_off*/"	{yylval.fileline = CRELINE(); return yVL_COVERAGE_BLOCK_OFF;}
-  "/*verilator coverage_module_off*/"	{yylval.fileline = CRELINE(); return yVL_COVERAGE_MODULE_OFF;}
   "/*verilator full_case*/"		{yylval.fileline = CRELINE(); return yVL_FULL_CASE;}
   "/*verilator inline_module*/"		{yylval.fileline = CRELINE(); return yVL_INLINE_MODULE;}
   "/*verilator isolate_assignments*/"	{yylval.fileline = CRELINE(); return yVL_ISOLATE_ASSIGNMENTS;}
@@ -567,8 +566,10 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator public_module*/"		{yylval.fileline = CRELINE(); return yVL_PUBLIC_MODULE;}
   "/*verilator sc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
   "/*verilator systemc_clock*/"		{yylval.fileline = CRELINE(); return yVL_CLOCK;}
-  "/*verilator tracing_off*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_OFF;}
-  "/*verilator tracing_on*/"		{yylval.fileline = CRELINE(); return yVL_TRACING_ON;}
+  "/*verilator tracing_off*/"		{V3Read::fileline()->tracingOn(false);}
+  "/*verilator tracing_on*/"		{V3Read::fileline()->tracingOn(true);}
+  "/*verilator coverage_off*/"		{V3Read::fileline()->coverageOn(false);}
+  "/*verilator coverage_on*/"		{V3Read::fileline()->coverageOn(true);}
   "/*verilator lint_off"[^*]*"*/"	{V3Read::verilatorCmtLint(yytext, true); }
   "/*verilator lint_on"[^*]*"*/"	{V3Read::verilatorCmtLint(yytext, false); }
   "/*verilator lint_restore*/"		{V3Read::verilatorCmtLintRestore(); }

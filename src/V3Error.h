@@ -39,6 +39,9 @@ public:
 	INFO,		// General information out
 	FATAL,		// Kill the program
 	ERROR,		// General error out, can't suppress
+	// Boolean information we track per-line, but aren't errors
+	I_COVERAGE,	// Coverage is on/off from /*verilator coverage_on/off*/
+	I_TRACING,	// Tracing is on/off from /*verilator tracing_on/off*/
 	// Error codes:
 	MULTITOP,	// Error: Multiple top level modules
 	TASKNSVAR,	// Error: Task I/O not simple
@@ -80,7 +83,11 @@ public:
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
 	    " MIN", " SUPPRESS", " INFO", " FATAL", " ERROR",
+	    // Boolean
+	    " I_COVERAGE", " I_TRACING",
+	    // Errors
 	    "MULTITOP", "TASKNSVAR",
+	    // Warnings
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
@@ -241,6 +248,13 @@ public:
     void warnStateInherit(const FileLine& from);
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 
+    // Boolean ACCESSORS/METHODS
+    bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
+    void coverageOn(bool flag) { m_warnOn.set(V3ErrorCode::I_COVERAGE,flag); }
+    bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
+    void tracingOn(bool flag) { m_warnOn.set(V3ErrorCode::I_TRACING,flag); }
+
+    // METHODS
     void	v3errorEnd(ostringstream& str);
     inline bool operator==(FileLine rhs) { return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename); }
 

@@ -76,10 +76,8 @@ private:
     // VISITORS - BOTH
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
-	if (nodep->modCover()) {   // Cleared by /*verilator coverage_module_off*/
-	    m_fileps.clear();
-	    nodep->iterateChildren(*this);
-	}
+	m_fileps.clear();
+	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
 
@@ -88,7 +86,8 @@ private:
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
 	    nodep->ifsp()->iterateAndNext(*this);
-	    if (m_checkBlock && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
+	    if (m_checkBlock
+		&& nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
 		if (!nodep->backp()->castIf()
 		    || nodep->backp()->castIf()->elsesp()!=nodep) {  // Ignore if else; did earlier
 		    UINFO(4,"   COVER: "<<nodep<<endl);
@@ -99,7 +98,8 @@ private:
 	    if (nodep->elsesp()) {
 		m_checkBlock = true;
 		nodep->elsesp()->iterateAndNext(*this);
-		if (m_checkBlock && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
+		if (m_checkBlock
+		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
 		    if (nodep->elsesp()->castIf()) {
 			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "block", "elsif"));
@@ -113,7 +113,8 @@ private:
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
 	UINFO(4," CASEI: "<<nodep<<endl);
-	if (m_checkBlock && v3Global.opt.coverageLine()) {
+	if (m_checkBlock
+	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {
 	    nodep->bodysp()->iterateAndNext(*this);
 	    if (m_checkBlock) {	// if the case body didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);

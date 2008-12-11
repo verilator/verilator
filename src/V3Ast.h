@@ -56,7 +56,6 @@ class AstPragmaType {
 public:
     enum en {
 	COVERAGE_BLOCK_OFF,
-	COVERAGE_MODULE_OFF,
 	INLINE_MODULE,
 	NO_INLINE_MODULE,
 	NO_INLINE_TASK,

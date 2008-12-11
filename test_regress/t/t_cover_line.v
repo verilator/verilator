@@ -146,11 +146,17 @@ module off (/*AUTOARG*/
    input clk;
    input toggle;
 
-   // verilator coverage_module_off
-
+   // verilator coverage_off
    always @ (posedge clk) begin
       if (toggle) begin
 	 // CHECK_COVER_MISSING(-1)
+	 // because under coverage_module_off
+      end
+   end
+   // verilator coverage_on
+   always @ (posedge clk) begin
+      if (toggle) begin
+	 // CHECK_COVER(-1,"TOP.v.o1",1)
 	 // because under coverage_module_off
       end
    end

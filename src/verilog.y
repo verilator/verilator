@@ -56,7 +56,6 @@ public:
     static bool		s_pinStar;	// Encountered SystemVerilog .*
     static string	s_instModule;	// Name of module referenced for instantiations
     static AstPin*	s_instParamp;	// Parameters for instantiations
-    static bool		s_trace;	// Tracing is turned on
     static int		s_uniqueAttr;	// Bitmask of unique/priority keywords
 
     static AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp);
@@ -75,7 +74,6 @@ public:
 };
 
 bool		V3Parse::s_impliedDecl = false;
-bool		V3Parse::s_trace = false;   // Set on first module creation
 AstVarType	V3Parse::s_varDecl = AstVarType::UNKNOWN;
 AstVarType	V3Parse::s_varIO = AstVarType::UNKNOWN;
 bool		V3Parse::s_varSigned = false;
@@ -269,7 +267,6 @@ class AstSenTree;
 %token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
 %token<fileline>	yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
-%token<fileline>	yVL_COVERAGE_MODULE_OFF	"/*verilator coverage_module_off*/"
 %token<fileline>	yVL_FULL_CASE		"/*verilator full_case*/"
 %token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
 %token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
@@ -279,8 +276,6 @@ class AstSenTree;
 %token<fileline>	yVL_PUBLIC		"/*verilator public*/"
 %token<fileline>	yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
 %token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
-%token<fileline>	yVL_TRACING_OFF		"/*verilator tracing_off*/"
-%token<fileline>	yVL_TRACING_ON		"/*verilator tracing_on*/"
 
 %token<fileline>	yP_OROR		"||"
 %token<fileline>	yP_ANDAND	"&&"
@@ -463,13 +458,12 @@ moduleDecl:	modHeader  timeunitsDeclE modItemListE yENDMODULE endLabelE
 
 modHeader<modulep>:
 		modHdr modParE modPortsE ';'
-			{ $1->modTrace(V3Parse::s_trace);  // Stash for implicit wires, etc
+			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); }
 	;
 
 modHdr<modulep>:
-		yMODULE { V3Parse::s_trace=v3Global.opt.trace();}
-			yaID				{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
+		yMODULE yaID				{ $$ = new AstModule($1,*$2); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
 							  $$->modTrace(v3Global.opt.trace());
 							  V3Read::rootp()->addModulep($$); }
 	;
@@ -630,12 +624,9 @@ modItem<nodep>:
 	|	yaSCIMPH				{ $$ = new AstScImpHdr(CRELINE(),*$1); }
 	|	yaSCCTOR				{ $$ = new AstScCtor(CRELINE(),*$1); }
 	|	yaSCDTOR				{ $$ = new AstScDtor(CRELINE(),*$1); }
-	|	yVL_COVERAGE_MODULE_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_MODULE_OFF); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
-	|	yVL_TRACING_OFF				{ $$ = NULL; V3Parse::s_trace=false; }
-	|	yVL_TRACING_ON				{ $$ = NULL; V3Parse::s_trace=v3Global.opt.trace(); }
 	|	ySPECIFY specifyJunkList yENDSPECIFY	{ $$ = NULL; }
 	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
 	;
@@ -1607,7 +1598,7 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
     nodep->width(0,0);
     // Propagate from current module tracing state
     if (nodep->isGenVar() || nodep->isParam()) nodep->trace(false);
-    else nodep->trace(V3Parse::s_trace);
+    else nodep->trace(v3Global.opt.trace() && nodep->fileline()->tracingOn());
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     V3Parse::s_varAttrp = nodep;

@@ -574,7 +574,6 @@ struct AstModule : public AstNode {
 private:
     string	m_name;		// Name of the module
     string	m_origName;	// Name of the module, ignoring name() changes, for dot lookup
-    bool	m_modCover:1;	// Coverage of this module
     bool	m_modPublic:1;	// Module has public references
     bool	m_modTrace:1;	// Tracing this module
     bool	m_inLibrary:1;	// From a library, no error if not used, never top level
@@ -584,7 +583,7 @@ private:
 public:
     AstModule(FileLine* fl, const string& name)
 	: AstNode (fl)
-	,m_name(name), m_origName(name), m_modCover(true)
+	,m_name(name), m_origName(name)
 	,m_modPublic(false), m_modTrace(false), m_inLibrary(false)
 	,m_level(0), m_varNum(0), m_clkReqVarp(NULL) { }
     ASTNODE_NODE_FUNCS(Module, MODULE)
@@ -609,8 +608,6 @@ public:
     int  varNumGetInc() 	{ return ++m_varNum; }
     AstVar* clkReqVarp() const	{ return m_clkReqVarp; }
     void clkReqVarp(AstVar* varp) { m_clkReqVarp = varp; }
-    void modCover(bool flag) 	{ m_modCover = flag; }
-    bool modCover() const 	{ return m_modCover; }
     void modPublic(bool flag) 	{ m_modPublic = flag; }
     bool modPublic() const 	{ return m_modPublic; }
     void modTrace(bool flag) 	{ m_modTrace = flag; }

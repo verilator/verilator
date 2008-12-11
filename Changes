@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.700***
 
-**   Add /*verilator coverage_module_off*/.
+**   Add /*verilator coverage_on/_off */.
 
 ***  Optimize two-level shift and and/or trees, +23% on one test.
 
