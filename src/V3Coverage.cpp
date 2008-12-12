@@ -45,7 +45,7 @@
 class CoverageVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef map<FileLine*,int>	FileMap;
+    typedef map<string,int>	FileMap;
 
     // STATE
     bool	m_checkBlock;	// Should this block get covered?
@@ -75,17 +75,24 @@ private:
 
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier,
 			     const string& page_prefix, const string& comment) {
+	// For line coverage, we may have multiple if's on one line, so disambiguate if
+	// everything is otherwise identical
+	// (Don't set column otherwise as it may result in making bins not match up with
+	// different types of coverage enabled.)
+	string key = fl->filename()+"\001"+cvtToStr(fl->lineno())+"\001"+hier+"\001"+page_prefix+"\001"+comment;
 	int column = 0;
-	FileMap::iterator it = m_fileps.find(fl);
+	FileMap::iterator it = m_fileps.find(key);
 	if (it == m_fileps.end()) {
-	    m_fileps.insert(make_pair(fl,column+1));
+	    m_fileps.insert(make_pair(key,column+1));
 	} else {
 	    column = (it->second)++;
 	}
 
-	// We add the module name to the page.
+	// We could use the basename of the filename to the page, but seems better for code
+	// from an include file to be listed under the module using it rather than the include file.
+	// Note the module name could have parameters appended, thus we use origName.
 	// Someday the user might be allowed to specify a different page suffix
-	string page = page_prefix + "/" + m_modp->prettyName();
+	string page = page_prefix + "/" + m_modp->origName();
 
 	AstCoverDecl* declp = new AstCoverDecl(fl, column, page, comment);
 	declp->hier(hier);
