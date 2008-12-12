@@ -20,7 +20,7 @@ export VERILATOR_ROOT
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk
 
-DEBUG_ON = --debug --trace-dups --output-split 100
+DEBUG_ON = --debug --trace-dups
 
 ######################################################################
 test_default:  prep        preproc compile     run coverage
@@ -31,7 +31,7 @@ V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 
 # Note the --public --output-split-cfunc is here for testing only,
 # Avoid using these settings in real application Makefiles!
-VERILATOR_FLAGS = --public --output-split-cfuncs 100 --output-split 100 \
+VERILATOR_FLAGS = --public --output-split-cfuncs 1000 --output-split 1000 \
 	--sp --coverage --stats --trace $(V_FLAGS) top.v
 
 prep:

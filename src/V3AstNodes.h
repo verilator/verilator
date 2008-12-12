@@ -1011,15 +1011,15 @@ struct AstCoverDecl : public AstNodeStmt {
     // Children: none
 private:
     AstCoverDecl* m_dataDeclp;	// [After V3CoverageJoin] Pointer to duplicate declaration to get data from instead
-    string	m_typeText;
+    string	m_page;
     string	m_text;
     string	m_hier;
     int		m_column;
     int		m_binNum;	// Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
-    AstCoverDecl(FileLine* fl, int column, const string& type, const string& comment)
+    AstCoverDecl(FileLine* fl, int column, const string& page, const string& comment)
 	: AstNodeStmt(fl) {
-	m_text = comment; m_typeText = type; m_column = column;
+	m_text = comment; m_page = page; m_column = column;
 	m_binNum = 0;
 	m_dataDeclp = NULL;
     }
@@ -1036,7 +1036,7 @@ public:
     void	binNum(int flag) { m_binNum = flag; }
     int		binNum() 	const { return m_binNum; }
     const string& comment() const { return m_text; }			// text to insert in code
-    const string& typeText() const { return m_typeText; }
+    const string& page() const { return m_page; }
     const string& hier() const { return m_hier; }
     void hier(const string& flag) { m_hier=flag; }
     void comment(const string& flag) { m_text=flag; }

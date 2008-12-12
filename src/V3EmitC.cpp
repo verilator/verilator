@@ -202,7 +202,7 @@ public:
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(", ");	puts(cvtToStr(nodep->column()));
 	puts(", \"");	puts((nodep->hier()!=""?".":"")+nodep->hier()); puts("\"");
-	puts(", \"");	puts(nodep->typeText()); puts("\"");
+	puts(", \"");	puts(nodep->page()); puts("\"");
 	puts(", \"");	puts(nodep->comment()); puts("\"");
 	puts(");\n");
     }
@@ -1199,8 +1199,8 @@ void EmitCImp::emitCoverageDecl(AstModule* modp) {
     if (v3Global.opt.coverage()) {
 	ofp()->putsPrivate(true);
 	puts("// Coverage\n");
-	puts("void __vlCoverInsert(uint32_t* countp, bool enable, const char* filename, int lineno, int column,\n");
-	puts(  	"const char* hier, const char* type, const char* comment);\n");
+	puts("void __vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+	puts(  	"const char* hierp, const char* pagep, const char* commentp);\n");
     }
 }
 
@@ -1248,19 +1248,19 @@ void EmitCImp::emitCoverageImp(AstModule* modp) {
 	// This gets around gcc slowness constructing all of the template arguments
 	// SystemPerl 1.301 is much faster, but it's nice to remain back
 	// compatible, and have a common wrapper.
-	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filename, int lineno, int column,\n");
-	puts(  	"const char* hier, const char* type, const char* comment) {\n");
+	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+	puts(  	"const char* hierp, const char* pagep, const char* commentp) {\n");
 	puts(   "static uint32_t fake_zero_count = 0;\n");
 	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
 	puts(   "*countp = 0;\n");
 	puts(   "SP_COVER_INSERT(countp,");
-	puts(	"  \"filename\",filename,");
+	puts(	"  \"filename\",filenamep,");
 	puts(	"  \"lineno\",lineno,");
 	puts(	"  \"column\",column,\n");
-	//puts(	"\"hier\",string(__VlSymsp->name())+hier,");  // Need to move hier into scopes and back out if do this
-	puts(	"\"hier\",string(name())+hier,");
-	puts(	"  \"type\",type,");
-	puts(	"  \"comment\",comment);\n");
+	//puts(	"\"hier\",string(__VlSymsp->name())+hierp,");  // Need to move hier into scopes and back out if do this
+	puts(	"\"hier\",string(name())+hierp,");
+	puts(	"  \"page\",pagep,");
+	puts(	"  \"comment\",commentp);\n");
 	puts("}\n");
     }
 }

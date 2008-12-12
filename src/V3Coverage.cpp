@@ -74,7 +74,7 @@ private:
     }
 
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier,
-			     const string& type, const string& comment) {
+			     const string& page_prefix, const string& comment) {
 	int column = 0;
 	FileMap::iterator it = m_fileps.find(fl);
 	if (it == m_fileps.end()) {
@@ -83,7 +83,11 @@ private:
 	    column = (it->second)++;
 	}
 
-	AstCoverDecl* declp = new AstCoverDecl(fl, column, type, comment);
+	// We add the module name to the page.
+	// Someday the user might be allowed to specify a different page suffix
+	string page = page_prefix + "/" + m_modp->prettyName();
+
+	AstCoverDecl* declp = new AstCoverDecl(fl, column, page, comment);
 	declp->hier(hier);
 	m_modp->addStmtp(declp);
 
@@ -207,7 +211,7 @@ private:
 		if (!nodep->backp()->castIf()
 		    || nodep->backp()->castIf()->elsesp()!=nodep) {  // Ignore if else; did earlier
 		    UINFO(4,"   COVER: "<<nodep<<endl);
-		    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "block", "if"));
+		    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "if"));
 		}
 	    }
 	    // Don't do empty else's, only empty if/case's
@@ -218,9 +222,9 @@ private:
 		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
 		    if (nodep->elsesp()->castIf()) {
-			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "block", "elsif"));
+			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "v_line", "elsif"));
 		    } else {
-			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "block", "else"));
+			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "v_line", "else"));
 		    }
 		}
 	    }
@@ -234,7 +238,7 @@ private:
 	    nodep->bodysp()->iterateAndNext(*this);
 	    if (m_checkBlock) {	// if the case body didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
-		nodep->addBodysp(newCoverInc(nodep->fileline(), "", "block", "case"));
+		nodep->addBodysp(newCoverInc(nodep->fileline(), "", "v_line", "case"));
 	    }
 	    m_checkBlock = true;  // Reset as a child may have cleared it
 	}
@@ -245,7 +249,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->coverincp()) {
 	    // Note the name may be overridden by V3Assert processing
-	    nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "psl_cover", "cover"));
+	    nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover"));
 	}
 	m_checkBlock = true;  // Reset as a child may have cleared it
     }

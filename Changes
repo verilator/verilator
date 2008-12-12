@@ -6,6 +6,7 @@ indicates the contributor was also the author of the fix; Thanks!
 * Verilator 3.700***
 
 **   Add --coverage_toggle for toggle coverage analysis.
+     Running coverage now requires SystemPerl 1.301 or newer.
 
 ***  Add /*verilator coverage_on/_off */ to bracket coverage regions.
 
