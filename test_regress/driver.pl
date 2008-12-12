@@ -259,7 +259,7 @@ sub new {
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vl_sim.log";
-    $self->{coverage_filename} ||= "$self->{obj_dir}/V".$self->{name}."_coverage.pl";
+    $self->{coverage_filename} ||= "$self->{obj_dir}/vl_coverage.pl";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
     if (!$self->{make_top_shell}) {
 	$self->{top_shell_filename} = $self->{top_filename};
@@ -484,9 +484,10 @@ sub inline_checks {
     my $fh = IO::File->new("<$self->{top_filename}");
     while (defined(my $line = $fh->getline)) {
 	if ($line =~ /CHECK/) {
-	    if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *(\d+) *\)/) {
-		my $lineno=($. + $1); my $hier=$2; my $count=$3;
+	    if ($line =~ /CHECK_COVER *\( *([---0-9]+) *, *"([^"]+)" *, *("([^"]+)" *,|) *(\d+) *\)/) {
+		my $lineno=($. + $1); my $hier=$2; my $comment=$4; my $count=$5;
 		my $regexp = "\001l\002".$lineno;
+		$regexp .= ".*\001o\002".quotemeta($comment) if $comment;
 		$regexp .= ".*\001h\002".quotemeta($hier);
 		$regexp .= ".*' ".$count;
 		if ($contents !~ /$regexp/) {

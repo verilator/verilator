@@ -191,7 +191,7 @@ public:
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
 	puts("&(vlSymsp->__Vcoverage[");
-	puts(cvtToStr(nodep->binNum())); puts("])");
+	puts(cvtToStr(nodep->dataDeclThisp()->binNum())); puts("])");
 	// If this isn't the first instantiation of this module under this
 	// design, don't really count the bucket, and rely on SystemPerl to
 	// aggregate counts.  This is because Verilator combines all
@@ -208,7 +208,7 @@ public:
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
 	puts("++(vlSymsp->__Vcoverage[");
-	puts(cvtToStr(nodep->declp()->binNum()));
+	puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
 	puts("]);\n");
     }
     virtual void visit(AstCReturn* nodep, AstNUser*) {

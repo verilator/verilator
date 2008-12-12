@@ -731,7 +731,7 @@ public:
     AstNode*	addNextNull(AstNode* newp);	// Returns this, adds to end of list, NULL is OK
     void	addNextHere(AstNode* newp);	// Adds after speced node
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
-    void	v3errorEnd(ostringstream& str);
+    void	v3errorEnd(ostringstream& str) const;
     virtual void dump(ostream& str=cout);
     AstNode*	unlinkFrBack(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it.
     AstNode*	unlinkFrBackWithNext(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it, keep entire next list with unlinked node

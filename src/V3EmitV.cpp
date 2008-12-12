@@ -159,6 +159,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstCoverDecl*, AstNUser*) {}  // N/A
     virtual void visit(AstCoverInc*, AstNUser*) {}  // N/A
+    virtual void visit(AstCoverToggle*, AstNUser*) {}  // N/A
 
     void visitNodeDisplay(AstNode* nodep, AstNode* filep, const string& text, AstNode* exprsp) {
 	putbs(nodep->verilogKwd());

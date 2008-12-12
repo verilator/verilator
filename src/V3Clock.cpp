@@ -282,6 +282,26 @@ private:
 	}
 	nodep->deleteTree(); nodep = NULL;
     }
+    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+	//nodep->dumpTree(cout,"ct:");
+	//COVERTOGGLE(INC, ORIG, CHANGE) ->
+	//   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
+	AstNode* incp = nodep->incp()->unlinkFrBack();
+	AstNode* origp = nodep->origp()->unlinkFrBack();
+	AstNode* changep = nodep->changep()->unlinkFrBack();
+	AstIf* newp = new AstIf(nodep->fileline(),
+				new AstXor(nodep->fileline(),
+					   origp,
+					   changep),
+				incp, NULL);
+	// We could add another IF to detect posedges, and only increment if so.
+	// It's another whole branch though verus a potential memory miss.
+	// We'll go with the miss.
+	newp->addIfsp(new AstAssign(nodep->fileline(),
+				    changep->cloneTree(false),
+				    origp->cloneTree(false)));
+	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+    }
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);

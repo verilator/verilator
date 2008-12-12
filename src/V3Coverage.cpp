@@ -50,12 +50,29 @@ private:
     // STATE
     bool	m_checkBlock;	// Should this block get covered?
     AstModule*	m_modp;		// Current module to add statement to
+    bool	m_inToggleOff;	// In function/task etc
     FileMap	m_fileps;	// Column counts for each fileline
     string	m_beginHier;	// AstBegin hier name for user coverage points
 
     //int debug() { return 9; }
 
     // METHODS
+    const char* varIgnoreToggle(AstVar* nodep) {
+	// Return true if this shouldn't be traced
+	// See also similar rule in V3TraceDecl::varIgnoreTrace
+	string prettyName = nodep->prettyName();
+	if (!nodep->isToggleCoverable())
+	    return "Not relevant signal type";
+	if (prettyName.c_str()[0] == '_')
+	    return "Leading underscore";
+	if (prettyName.find("._") != string::npos)
+	    return "Inlined leading underscore";
+	if ((nodep->width()*nodep->arrayElements()) > 256) return "Wide bus/array > 256 bits";
+	// We allow this, though tracing doesn't
+	// if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
+	return NULL;
+    }
+
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier,
 			     const string& type, const string& comment) {
 	int column = 0;
@@ -79,6 +96,105 @@ private:
 	m_fileps.clear();
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
+    }
+
+    // VISITORS - TOGGLE COVERAGE
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	bool oldtog = m_inToggleOff;
+	{
+	    m_inToggleOff = true;
+	    nodep->iterateChildren(*this);
+	}
+	m_inToggleOff = oldtog;
+    }
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (m_modp && !m_inToggleOff
+	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageToggle()) {
+	    const char* disablep = varIgnoreToggle(nodep);
+	    if (disablep) {
+		UINFO(4, "    Disable Toggle: "<<disablep<<" "<<nodep<<endl);
+	    } else {
+		UINFO(4, "    Toggle: "<<nodep<<endl);
+		// There's several overall ways to approach this
+		//    Treat like tracing, where a end-of-timestamp action sees all changes
+		//	Works ok, but would be quite slow as need to reform vectors before the calls
+		//    Convert to "always @ (posedge signal[#]) coverinc"
+		//	Would mark many signals as clocks, precluding many later optimizations
+		//    Convert to "if (x & !lastx) CoverInc"
+		//	OK, but we couldn't later detect them to schedule where the IFs get called
+		//    Convert to "AstCoverInc(CoverInc...)"
+		//	We'll do this, and make the if(...) coverinc later.
+
+		// Compute size of the problem
+		int dimensions = 0;
+		for (AstRange* arrayp=nodep->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
+		    dimensions++;
+		}
+
+		// Add signal to hold the old value
+		string newvarname = (string)"__Vtogcov__"+nodep->shortName();
+		AstVar* chgVarp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
+		m_modp->addStmtp(chgVarp);
+
+		// Create bucket for each dimension * bit.
+		// This is necessarily an O(n^2) expansion, which is why
+		// we limit coverage to signals with < 256 bits.
+		vector<int> selects_docs;  selects_docs.resize(dimensions);
+		vector<int> selects_code;  selects_code.resize(dimensions);
+		toggleVarRecurse(nodep, chgVarp, nodep->arraysp(),
+				 0, selects_docs, selects_code );
+	    }
+	}
+    }
+
+    void toggleVarRecurse(AstVar* nodep, AstVar* chgVarp, AstRange* arrayp,
+			  int dimension, vector<int>& selects_docs, vector<int>& selects_code) {
+	if (arrayp) {
+	    for (int index=arrayp->lsbConst(); index<=arrayp->msbConst()+1; index++) {
+		// Handle the next dimension, if any
+		selects_docs[dimension] = index;
+		selects_code[dimension] = index - arrayp->lsbConst();
+		toggleVarRecurse(nodep, chgVarp, arrayp->nextp()->castRange(),
+				 dimension+1, selects_docs, selects_code);
+	    }
+	} else {  // No more arraying - just each bit in the width
+	    if (nodep->rangep()) {
+		for (int bitindex_docs=nodep->lsb(); bitindex_docs<nodep->msb()+1; bitindex_docs++) {
+		    toggleVarBottom(nodep, chgVarp,
+				    dimension, selects_docs, selects_code,
+				    true, bitindex_docs);
+		}
+	    } else {
+		toggleVarBottom(nodep, chgVarp,
+				dimension, selects_docs, selects_code,
+				false, 0);
+	    }
+	}
+    }
+    void toggleVarBottom(AstVar* nodep, AstVar* chgVarp,
+			 int dimension, vector<int>& selects_docs, vector<int>& selects_code,
+			 bool bitsel, int bitindex_docs) {
+	string comment = nodep->name();
+	AstNode* varRefp = new AstVarRef(nodep->fileline(), nodep, false);
+	AstNode* chgRefp = new AstVarRef(nodep->fileline(), chgVarp, true);
+	// Now determine the name of, and how to get to the bit of this slice
+	for (int dim=0; dim<dimension; dim++) {
+	    // Comments are strings, not symbols, so we don't need __BRA__ __KET__ 
+	    comment += "["+cvtToStr(selects_docs[dim])+"]";
+	    varRefp = new AstArraySel(nodep->fileline(), varRefp, selects_code[dim]);
+	    chgRefp = new AstArraySel(nodep->fileline(), chgRefp, selects_code[dim]);
+	}
+	if (bitsel) {
+	    comment += "["+cvtToStr(bitindex_docs)+"]";
+	    int bitindex_code = bitindex_docs - nodep->lsb();
+	    varRefp = new AstSel(nodep->fileline(), varRefp, bitindex_code, 1);
+	    chgRefp = new AstSel(nodep->fileline(), chgRefp, bitindex_code, 1);
+	}
+	AstCoverToggle* newp = new AstCoverToggle (nodep->fileline(),
+						   newCoverInc(nodep->fileline(), "", "v_toggle", comment),
+						   varRefp, chgRefp);
+	m_modp->addStmtp(newp);
     }
 
     // VISITORS - LINE COVERAGE
@@ -154,13 +270,16 @@ private:
 	// (Currently ignored for line coverage, since any generate iteration
 	// covers the code in that line.)
 	string oldHier = m_beginHier;
+	bool oldtog = m_inToggleOff;
 	{
+	    m_inToggleOff = true;
 	    if (nodep->name()!="") {
 		m_beginHier = m_beginHier + (m_beginHier!=""?".":"") + nodep->name();
 	    }
 	    nodep->iterateChildren(*this);
 	}
 	m_beginHier = oldHier;
+	m_inToggleOff = oldtog;
     }
 
     // VISITORS - BOTH
@@ -178,6 +297,7 @@ public:
 	// Operate on all modules
 	m_checkBlock = true;
 	m_beginHier = "";
+	m_inToggleOff = false;
 	rootp->iterateChildren(*this);
     }
     virtual ~CoverageVisitor() {}

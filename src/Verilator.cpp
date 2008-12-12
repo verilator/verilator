@@ -37,6 +37,7 @@
 #include "V3Combine.h"
 #include "V3Const.h"
 #include "V3Coverage.h"
+#include "V3CoverageJoin.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -309,6 +310,12 @@ void process () {
 	// V3Gate calls constant propagation itself.
     } else {
 	v3info("Command Line disabled gate optimization with -Og/-O0.  This may cause ordering problems.");
+    }
+
+    // Combine COVERINCs with duplicate terms
+    if (v3Global.opt.coverage()) {
+	V3CoverageJoin::coverageJoin(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("coveragejoin.tree"));
     }
 
     // Remove unused vars

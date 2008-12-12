@@ -624,6 +624,7 @@ private:
 
     AstVarScope* findDuplicateTable(AstVarScope* vsc1p) {
 	// See if another table we've created is identical, if so use it for both.
+	// (A more 'modern' way would be to instead use V3Hashed::findDuplicate)
 	AstVar* var1p = vsc1p->varp();
 	for (deque<AstVarScope*>::iterator it = m_modTableVscs.begin(); it!=m_modTableVscs.end(); ++it) {
 	    AstVarScope* vsc2p= *it;

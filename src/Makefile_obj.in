@@ -140,6 +140,7 @@ RAW_OBJS = \
 	V3Combine.o \
 	V3Const__gen.o \
 	V3Coverage.o \
+	V3CoverageJoin.o \
 	V3Dead.o \
 	V3Delayed.o \
 	V3Depth.o \

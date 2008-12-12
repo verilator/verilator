@@ -93,7 +93,9 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	// Assign numbers to all bins, so we know how big of an array to use
-	nodep->binNum(m_coverBins++);
+	if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
+	    nodep->binNum(m_coverBins++);
+	}
     }
     // NOPs
     virtual void visit(AstNodeStmt*, AstNUser*) {}

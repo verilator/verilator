@@ -393,6 +393,12 @@ void AstNodeFTask::dump(ostream& str) {
 }
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (this->dataDeclNullp()) {
+	str<<" -> ";
+	this->dataDeclNullp()->dump(str);
+    } else {
+	if (binNum()) { str<<" bin"<<dec<<binNum(); }
+    }
 }
 void AstCoverInc::dump(ostream& str) {
     this->AstNode::dump(str);

@@ -97,6 +97,10 @@ struct AstArraySel : public AstNodeSel {
 	:AstNodeSel(fl, fromp, bitp) {
 	if (fromp) widthSignedFrom(fromp);
     }
+    AstArraySel(FileLine* fl, AstNode* fromp, int bit)
+	:AstNodeSel(fl, fromp, new AstConst(fl,bit)) {
+	if (fromp) widthSignedFrom(fromp);
+    }
     ASTNODE_NODE_FUNCS(ArraySel, ARRAYSEL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
 	V3ERROR_NA; /* How can from be a const? */ }
@@ -320,6 +324,10 @@ public:
 					    || varType()==AstVarType::REG || varType()==AstVarType::INTEGER); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
 					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
+    bool	isToggleCoverable() const  { return ((isIO() || isSignal())
+						     && varType()!=AstVarType::INTEGER
+						     // Wrapper would otherwise duplicate wrapped module's coverage
+						     && !isSc() && !isPrimaryIO()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool	isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool	isPure() const { return (varType()==AstVarType::XTEMP); }
@@ -1002,6 +1010,7 @@ struct AstCoverDecl : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: none
 private:
+    AstCoverDecl* m_dataDeclp;	// [After V3CoverageJoin] Pointer to duplicate declaration to get data from instead
     string	m_typeText;
     string	m_text;
     string	m_hier;
@@ -1012,8 +1021,14 @@ public:
 	: AstNodeStmt(fl) {
 	m_text = comment; m_typeText = type; m_column = column;
 	m_binNum = 0;
+	m_dataDeclp = NULL;
     }
     ASTNODE_NODE_FUNCS(CoverDecl, COVERDECL)
+    virtual bool broken() const {
+	if (m_dataDeclp && !m_dataDeclp->brokeExists()) return true;
+	if (m_dataDeclp && m_dataDeclp->m_dataDeclp) v3fatalSrc("dataDeclp should point to real data, not be a list");  // Avoid O(n^2) accessing
+        return false; }
+    virtual void cloneRelink() { if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep()->castCoverDecl(); }
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 1+2*instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
@@ -1032,6 +1047,10 @@ public:
 		&& comment()==samep->castCoverDecl()->comment()
 		&& column()==samep->castCoverDecl()->column()); }
     virtual bool isPredictOptimizable() const { return false; }
+    void		dataDeclp(AstCoverDecl* nodep) { m_dataDeclp=nodep; }
+    // dataDecl NULL means "use this one", but often you want "this" to indicate to get data from here
+    AstCoverDecl*	dataDeclNullp() const { return m_dataDeclp; }
+    AstCoverDecl*	dataDeclThisp() { return dataDeclNullp()?dataDeclNullp():this; }
 };
 
 struct AstCoverInc : public AstNodeStmt {
@@ -1058,6 +1077,30 @@ public:
     virtual bool isOutputter() const { return true; }
     // but isSplittable()  true
     AstCoverDecl*	declp() const { return m_declp; }	// Where defined
+};
+
+struct AstCoverToggle : public AstNodeStmt {
+    // Toggle analysis of given signal
+    // Parents:  MODULE
+    // Children: AstCoverInc, orig var, change det var
+    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNode* origp, AstNode* changep)
+	: AstNodeStmt(fl) {
+	setOp1p(incp);
+	setOp2p(origp);
+	setOp3p(changep);
+    }
+    ASTNODE_NODE_FUNCS(CoverToggle, COVERTOGGLE)
+    virtual int instrCount()	const { return 3+instrCountBranch()+instrCountLd(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode*) const { return true; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return true; }
+    virtual bool isOutputter() const { return false; }   // Though the AstCoverInc under this is an outputter
+    // but isSplittable()  true
+    AstCoverInc* incp() const { return op1p()->castCoverInc(); }
+    void 	incp(AstCoverInc* nodep) { setOp1p(nodep); }
+    AstNode* origp() const { return op2p(); }
+    AstNode* changep() const { return op3p(); }
 };
 
 struct AstGenCase : public AstNodeCase {

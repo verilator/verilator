@@ -89,6 +89,7 @@ class V3Options {
     bool	m_assert;	// main switch: --assert
     bool	m_autoflush;	// main switch: --autoflush
     bool	m_coverageLine;	// main switch: --coverage-block
+    bool	m_coverageToggle;// main switch: --coverage-toggle
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
     bool	m_dumpTree;	// main switch: --dump-tree
@@ -159,7 +160,7 @@ class V3Options {
     void addIncDir(const string& incdir);
     void addLibExt(const string& libext);
     void optimize(int level);
-    void coverage(bool flag) { m_coverageLine = m_coverageUser = flag; }
+    void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const char* envvar, const char* defaultValue);
@@ -188,8 +189,9 @@ class V3Options {
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as "assert" may be defined
     bool autoflush() const { return m_autoflush; }
-    bool coverage() const { return m_coverageUser || m_coverageLine; }
+    bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
+    bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool dumpTree() const { return m_dumpTree; }

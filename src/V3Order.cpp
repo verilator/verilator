@@ -674,6 +674,9 @@ private:
 	iterateNewStmt(nodep);
 	m_inPost = false;
     }
+    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+	iterateNewStmt(nodep);
+    }
     virtual void visit(AstCFunc*, AstNUser*) {
 	// Ignore for now
 	// We should detect what variables are set in the function, and make

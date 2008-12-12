@@ -59,6 +59,7 @@ private:
     // METHODS
     const char* varIgnoreTrace(AstVar* nodep) {
 	// Return true if this shouldn't be traced
+	// See also similar rule in V3Coverage::varIgnoreToggle
 	string prettyName = nodep->prettyName();
 	if (!nodep->isTrace())
 	    return "Verilator trace_off";

@@ -223,6 +223,13 @@ private:
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
     }
+    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+	// Relink to CACTIVE, unless already under it
+	UINFO(4,"    COVERTOGGLE "<<nodep<<endl);
+	AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
+	nodep->unlinkFrBack();
+	wantactivep->addStmtsp(nodep);
+    }
     virtual void visit(AstFinal* nodep, AstNUser*) {
 	// Relink to CFUNC for the final
 	UINFO(4,"    FINAL "<<nodep<<endl);

@@ -905,7 +905,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append) {
     editCountSetLast();
 }
 
-void AstNode::v3errorEnd(ostringstream& str) {
+void AstNode::v3errorEnd(ostringstream& str) const {
     if (this && m_fileline) {
 	ostringstream nsstr;
 	nsstr<<str.str();

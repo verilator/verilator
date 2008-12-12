@@ -372,6 +372,9 @@ private:
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	iterateNewStmt(nodep, NULL, NULL);
     }
+    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+	iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
+    }
     virtual void visit(AstTraceInc* nodep, AstNUser*) {
 	bool lastslow = m_inSlow;
 	m_inSlow = true;
