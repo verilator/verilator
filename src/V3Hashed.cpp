@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <map>
+#include <memory>
 
 #include "V3Global.h"
 #include "V3Hashed.h"
