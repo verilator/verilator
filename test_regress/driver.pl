@@ -430,7 +430,8 @@ sub compile {
 			      "make", "-f".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
 			      ($param{make_main}?"":"MAKE_MAIN=0"),
-			      "$self->{VM_PREFIX}",  # not default, as we don't need archive
+			      ($param{benchmark}?"OPT_FAST=-O2":""),
+			      "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
 			      ($param{make_flags}||""),
 			      ]);
 	}

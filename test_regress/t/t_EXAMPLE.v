@@ -54,6 +54,7 @@ module t (/*AUTOARG*/
       if (cyc==0) begin
 	 // Setup
 	 crc <= 64'h5aef0c8d_d70a4497;
+	 sum <= 64'h0;
       end
       else if (cyc<10) begin
 	 sum <= 64'h0;

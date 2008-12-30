@@ -764,7 +764,7 @@ sigIdRange<varp>:
 regSigId<varp>:
 		yaID rangeListE				{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2); }
 	|	yaID rangeListE '=' constExpr		{ $$ = V3Parse::createVariable(CRELINE(), *$1, $2);
-							  $$->addNext(new AstInitial($3,new AstAssign($3, new AstVarRef($3, $$, true), $4))); }
+							  $$->addNext(new AstInitial($3,new AstAssign($3, new AstVarRef($3, *$1, true), $4))); }
 	;
 
 sigId<varp>:	yaID					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
