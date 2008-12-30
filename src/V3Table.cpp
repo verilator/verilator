@@ -74,8 +74,8 @@ private:
     // Checking:
     //  AstVarScope::user1()	-> VarUsage.  Set true to indicate tracking as lvalue/rvalue
     // Simulating:
-    //  AstVarScope::user3()	-> V3Number*. Value of variable or node
-    //  AstVarScope::user4()	-> V3Number*. Last value output was set to
+    //  AstVarScope::user3()	-> V3Number*. Input value of variable or node (and output for non-delayed assignments)
+    //  AstVarScope::user4()	-> V3Number*. Output value of variable (delayed assignments)
 
     enum VarUsage { VU_NONE=0, VU_LV=1, VU_RV=2, VU_LVDLY=4 };
 
@@ -113,34 +113,55 @@ public:
     int dataCount() const { return m_dataCount; }
 
     // Simulation METHODS
+private:
+    V3Number* allocNumber(AstNode* nodep, uint32_t value) {
+	// Save time - kept a list of allocated but unused V3Numbers
+	// It would be more efficient to do this by size, but the extra accounting
+	// slows things down more than we gain.
+	V3Number* nump;
+	if (!m_numFreeps.empty()) {
+	    //UINFO(7,"Num Reuse "<<nodep->width()<<endl);
+	    nump = m_numFreeps.back(); m_numFreeps.pop_back();
+	    nump->width(nodep->width());
+	    nump->fileline(nodep->fileline());
+	    nump->setLong(value);  // We do support more than 32 bit numbers, just valuep=0 in that case
+	} else {
+	    //UINFO(7,"Num New "<<nodep->width()<<endl);
+	    nump = new V3Number (nodep->fileline(), nodep->width(), value);
+	    m_numAllps.push_back(nump);
+	}
+	return nump;
+    }
 public:
     V3Number* newNumber(AstNode* nodep, uint32_t value=0) {
 	// Set a constant value for this node
 	if (!nodep->user3p()) {
-	    // Save time - kept a list of allocated but unused V3Numbers
-	    // It would be more efficient to do this by size, but the extra accounting
-	    // slows things down more than we gain.
-	    V3Number* nump;
-	    if (!m_numFreeps.empty()) {
-		//UINFO(7,"Num Reuse "<<nodep->width()<<endl);
-		nump = m_numFreeps.back(); m_numFreeps.pop_back();
-		nump->width(nodep->width());
-		nump->fileline(nodep->fileline());
-		nump->setLong(value);  // We do support more than 32 bit numbers, just valuep=0 in that case
-	    } else {
-		//UINFO(7,"Num New "<<nodep->width()<<endl);
-		nump = new V3Number (nodep->fileline(), nodep->width(), value);
-		m_numAllps.push_back(nump);
-	    }
+	    V3Number* nump = allocNumber(nodep, value);
 	    setNumber(nodep, nump);
 	}
 	return (fetchNumber(nodep));
     }
+    V3Number* newOutNumber(AstNode* nodep, uint32_t value=0) {
+	// Set a constant value for this node
+	if (!nodep->user4p()) {
+	    V3Number* nump = allocNumber(nodep, value);
+	    setOutNumber(nodep, nump);
+	}
+	return (fetchOutNumber(nodep));
+    }
     V3Number* fetchNumberNull(AstNode* nodep) {
 	return ((V3Number*)nodep->user3p());
     }
+    V3Number* fetchOutNumberNull(AstNode* nodep) {
+	return ((V3Number*)nodep->user4p());
+    }
     V3Number* fetchNumber(AstNode* nodep) {
 	V3Number* nump = fetchNumberNull(nodep);
+	if (!nump) nodep->v3fatalSrc("No value found for node.");
+	return nump;
+    }
+    V3Number* fetchOutNumber(AstNode* nodep) {
+	V3Number* nump = fetchOutNumberNull(nodep);
 	if (!nump) nodep->v3fatalSrc("No value found for node.");
 	return nump;
     }
@@ -148,6 +169,10 @@ private:
     void setNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
 	nodep->user3p((AstNUser*)nump);
+    }
+    void setOutNumber(AstNode* nodep, const V3Number* nump) {
+	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
+	nodep->user4p((AstNUser*)nump);
     }
 
     void checkNodeInfo(AstNode* nodep) {
@@ -298,7 +323,13 @@ private:
 	else if (!m_checking) {
 	    nodep->rhsp()->iterateAndNext(*this);
 	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
-	    setNumber(vscp, fetchNumber(nodep->rhsp()));
+	    if (nodep->castAssignDly()) {
+		// Don't do setNumber, as value isn't visible to new statements
+		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
+	    } else {
+		setNumber(vscp, fetchNumber(nodep->rhsp()));
+		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
+	    }
 	}
 	m_inDlyAssign = false;
     }
@@ -593,7 +624,7 @@ private:
 	    V3Number outputChgMask (nodep->fileline(), m_outVarps.size(), 0);
 	    for (deque<AstVarScope*>::iterator it = m_outVarps.begin(); it!=m_outVarps.end(); ++it) {
 		AstVarScope* outvscp = *it;
-		V3Number* outnump = simvis.fetchNumberNull(outvscp);
+		V3Number* outnump = simvis.fetchOutNumberNull(outvscp);
 		AstNode* setp;
 		if (!outnump) {
 		    UINFO(8,"   Output "<<outvscp->name()<<" never set\n");
