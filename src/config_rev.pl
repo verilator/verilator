@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 ######################################################################
 #
-# Copyright 2005-2008 by Wilson Snyder.
+# Copyright 2005-2009 by Wilson Snyder.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of either the GNU General Public License or the

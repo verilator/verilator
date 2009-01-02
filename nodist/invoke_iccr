@@ -40,7 +40,7 @@ invoke_iccr - Invoke tool under "modules" command
 
 =head1 DISTRIBUTION
 
-Copyright 2007-2008 by Wilson Snyder.  This package is free software; you
+Copyright 2007-2009 by Wilson Snyder.  This package is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License or the Perl Artistic License.
 
