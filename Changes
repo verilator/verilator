@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Minor performance improvements of Verilator compiler runtime.
 
+**** Coverage of each parametarized module is counted separately. [Bob Fredieu]
+
 **** Fix certain generate-if cells causing "clone" error. [Stephane Laurent]
 
 **** Fix line coverage of public functions.  [Soon Koh]

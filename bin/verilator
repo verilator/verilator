@@ -334,7 +334,9 @@ are also not covered.
 
 Hierarchy is compressed, such that if a module is instantiated multiple
 times, coverage will be summed for that bit across ALL instantiations of
-that module.
+that module with the same parameter set.  A module instantiated with
+different parameter values is considered a different module, and will get
+counted separately.
 
 Verilator makes a minimally-intelligent decision about what clock domain
 the signal goes to, and only looks for edges in that clock domain.  This

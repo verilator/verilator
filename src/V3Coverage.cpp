@@ -90,9 +90,10 @@ private:
 
 	// We could use the basename of the filename to the page, but seems better for code
 	// from an include file to be listed under the module using it rather than the include file.
-	// Note the module name could have parameters appended, thus we use origName.
+	// Note the module name could have parameters appended, we'll consider this
+	// a feature as it allows for each parameterized block to be counted separately.
 	// Someday the user might be allowed to specify a different page suffix
-	string page = page_prefix + "/" + m_modp->origName();
+	string page = page_prefix + "/" + m_modp->prettyName();
 
 	AstCoverDecl* declp = new AstCoverDecl(fl, column, page, comment);
 	declp->hier(hier);
