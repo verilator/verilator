@@ -164,6 +164,8 @@ class AstSenTree;
 %token<fileline>	yAUTOMATIC	"automatic"
 %token<fileline>	yBEGIN		"begin"
 %token<fileline>	yBUF		"buf"
+%token<fileline>	yBUFIF0		"bufif0"
+%token<fileline>	yBUFIF1		"bufif1"
 %token<fileline>	yCASE		"case"
 %token<fileline>	yCASEX		"casex"
 %token<fileline>	yCASEZ		"casez"
@@ -200,6 +202,8 @@ class AstSenTree;
 %token<fileline>	yNEGEDGE	"negedge"
 %token<fileline>	yNOR		"nor"
 %token<fileline>	yNOT		"not"
+%token<fileline>	yNOTIF0		"notif0"
+%token<fileline>	yNOTIF1		"notif1"
 %token<fileline>	yOR		"or"
 %token<fileline>	yOUTPUT		"output"
 %token<fileline>	yPARAMETER	"parameter"
@@ -1249,8 +1253,12 @@ commaVRDListE<nodep>:
 // Gate declarations
 
 gateDecl<nodep>:
-		yBUF  delayE gateBufList ';'		{ $$ = $3; }
-	|	yNOT  delayE gateNotList ';'		{ $$ = $3; }
+		yBUF    delayE gateBufList ';'		{ $$ = $3; }
+	|	yBUFIF0 delayE gateBufif0List ';'	{ $$ = $3; }
+	|	yBUFIF1 delayE gateBufif1List ';'	{ $$ = $3; }
+	|	yNOT    delayE gateNotList ';'		{ $$ = $3; }
+	|	yNOTIF0 delayE gateNotif0List ';'	{ $$ = $3; }
+	|	yNOTIF1 delayE gateNotif1List ';'	{ $$ = $3; }
 	|	yAND  delayE gateAndList ';'		{ $$ = $3; }
 	|	yNAND delayE gateNandList ';'		{ $$ = $3; }
 	|	yOR   delayE gateOrList ';'		{ $$ = $3; }
@@ -1265,9 +1273,25 @@ gateBufList<nodep>:
 		gateBuf 				{ $$ = $1; }
 	|	gateBufList ',' gateBuf			{ $$ = $1->addNext($3); }
 	;
+gateBufif0List<nodep>:
+		gateBufif0 				{ $$ = $1; }
+	|	gateBufif0List ',' gateBufif0		{ $$ = $1->addNext($3); }
+	;
+gateBufif1List<nodep>:
+		gateBufif1 				{ $$ = $1; }
+	|	gateBufif1List ',' gateBufif1		{ $$ = $1->addNext($3); }
+	;
 gateNotList<nodep>:
 		gateNot 				{ $$ = $1; }
 	|	gateNotList ',' gateNot			{ $$ = $1->addNext($3); }
+	;
+gateNotif0List<nodep>:
+		gateNotif0 				{ $$ = $1; }
+	|	gateNotif0List ',' gateNotif0		{ $$ = $1->addNext($3); }
+	;
+gateNotif1List<nodep>:
+		gateNotif1 				{ $$ = $1; }
+	|	gateNotif1List ',' gateNotif1		{ $$ = $1->addNext($3); }
 	;
 gateAndList<nodep>:
 		gateAnd 				{ $$ = $1; }
@@ -1304,7 +1328,15 @@ gatePulldownList<nodep>:
 
 gateBuf<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
+gateBufif0<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), $6)); }
+	;
+gateBufif1<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, $6, new AstConst($3,V3Number($3,"1'bz")))); }
+	;
 gateNot<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
+	;
+gateNotif0<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), new AstNot($3, $6))); }
+	;
+gateNotif1<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstNot($3,$6), new AstConst($3,V3Number($3,"1'bz")))); }
 	;
 gateAnd<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;

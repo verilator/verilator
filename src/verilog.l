@@ -182,6 +182,8 @@ escid	\\[^ \t\f\r\n]+
   "assign"		{yylval.fileline = CRELINE(); return yASSIGN;}
   "begin"		{yylval.fileline = CRELINE(); return yBEGIN;}
   "buf"			{yylval.fileline = CRELINE(); return yBUF;}
+  "bufif0"		{yylval.fileline = CRELINE(); return yBUFIF0;}
+  "bufif1"		{yylval.fileline = CRELINE(); return yBUFIF1;}
   "case"		{yylval.fileline = CRELINE(); return yCASE;}
   "casex"		{yylval.fileline = CRELINE(); return yCASEX;}
   "casez"		{yylval.fileline = CRELINE(); return yCASEZ;}
@@ -209,6 +211,8 @@ escid	\\[^ \t\f\r\n]+
   "negedge"		{yylval.fileline = CRELINE(); return yNEGEDGE;}
   "nor"			{yylval.fileline = CRELINE(); return yNOR;}
   "not"			{yylval.fileline = CRELINE(); return yNOT;}
+  "notif0"		{yylval.fileline = CRELINE(); return yNOTIF0;}
+  "notif1"		{yylval.fileline = CRELINE(); return yNOTIF1;}
   "or"			{yylval.fileline = CRELINE(); return yOR;}
   "output"		{yylval.fileline = CRELINE(); return yOUTPUT;}
   "parameter"		{yylval.fileline = CRELINE(); return yPARAMETER;}
@@ -242,8 +246,6 @@ escid	\\[^ \t\f\r\n]+
   "$writeh"		{yyerrorf("Unsupported: Use $write with %%x format instead: %s",yytext);}
   "$writeo"		{yyerrorf("Unsupported: Use $write with %%o format instead: %s",yytext);}
   /*     Generic unsupported warnings */
-  "bufif0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "bufif1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "cmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "deassign"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "endprimitive"	{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
@@ -258,8 +260,6 @@ escid	\\[^ \t\f\r\n]+
   "large"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "medium"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "nmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "notif0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "notif1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "pmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "primitive"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "pull0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}

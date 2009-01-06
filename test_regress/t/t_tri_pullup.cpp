@@ -35,6 +35,8 @@ bool check() {
 
 int main() {
     bool pass = true;
+
+    Verilated::debug(0);
     tb  = new Vt_tri_pullup("tb");
 
     // loop through every possibility and check the result

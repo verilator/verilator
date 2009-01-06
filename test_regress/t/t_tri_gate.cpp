@@ -1,9 +1,21 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks
 
-#include "Vt_tristate.h"
+#ifdef T_COND
+# include "Vt_tri_gate_cond.h"
+#elif defined(T_BUFIF0)
+# include "Vt_tri_gate_bufif0.h"
+#elif defined(T_BUFIF1)
+# include "Vt_tri_gate_bufif1.h"
+#elif defined(T_NOTIF0)
+# include "Vt_tri_gate_notif0.h"
+#elif defined(T_NOTIF1)
+# include "Vt_tri_gate_notif1.h"
+#else
+# error "Unknown test"
+#endif
 
-Vt_tristate *tb = NULL;
+VM_PREFIX* tb = NULL;
 
 double sc_time_stamp() {
     return 0;
@@ -26,7 +38,9 @@ bool check() {
 
 int main() {
     bool pass = true;
-    tb = new Vt_tristate("tb");
+
+    Verilated::debug(0);
+    tb = new VM_PREFIX ("tb");
 
     // loop through every possibility and check the result
     for (tb->SEL=0; tb->SEL<2; tb->SEL++) {

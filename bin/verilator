@@ -1507,8 +1507,9 @@ Will be converted to
     output driver__en;    // True if driven from this module
     output driver__enout; // Value being driven from this module
 
-Pullup and pulldown are also supported.  External logic will be needed to
-combine these signals with any external drivers.
+Pullup, pulldown, bufif0, bufif1, notif0, notif1 are also supported.
+External logic will be needed to combine these signals with any external
+drivers.
 
 Tristate drivers are not supported inside functions and tasks; a inout
 there will be considered a two state variable that is read and written
