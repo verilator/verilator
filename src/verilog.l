@@ -213,6 +213,8 @@ escid	\\[^ \t\f\r\n]+
   "output"		{yylval.fileline = CRELINE(); return yOUTPUT;}
   "parameter"		{yylval.fileline = CRELINE(); return yPARAMETER;}
   "posedge"		{yylval.fileline = CRELINE(); return yPOSEDGE;}
+  "pulldown"		{yylval.fileline = CRELINE(); return yPULLDOWN;}
+  "pullup"		{yylval.fileline = CRELINE(); return yPULLUP;}
   "reg"			{yylval.fileline = CRELINE(); return yREG;}
   "scalared"		{yylval.fileline = CRELINE(); return ySCALARED;}
   "specify"		{yylval.fileline = CRELINE(); return ySPECIFY;}
@@ -260,8 +262,6 @@ escid	\\[^ \t\f\r\n]+
   "notif1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "pmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "primitive"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "pulldown"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "pullup"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "pull0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "pull1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "rcmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}

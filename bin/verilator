@@ -1495,9 +1495,24 @@ all variables to one at startup finds most problems.
 
 =head2 Tri/Inout
 
-As a 2 state compiler, tristate and inouts are not supported.
-Traditionally only chip "cores" are Verilated, the pad rings have been
-written by hand in C++.
+Verilator converts some simple tristate structures into two state. An assignment
+of the form:
+
+    inout driver;
+    wire driver = (enable) ? output_value : 1'bz;
+    
+Will be converted to
+
+    input driver__in;     // Value being driven in from "external" drivers
+    output driver__en;    // True if driven from this module
+    output driver__enout; // Value being driven from this module
+
+Pullup and pulldown are also supported.  External logic will be needed to
+combine these signals with any external drivers.
+
+Tristate drivers are not supported inside functions and tasks; a inout
+there will be considered a two state variable that is read and written
+instead of a four state variable.
 
 =head2 Functions & Tasks
 

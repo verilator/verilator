@@ -111,6 +111,7 @@ class AstSenTree;
     AstNode*	nodep;
 
     AstAssignW* assignwp;
+    AstPull*    pullp;
     AstBegin*	beginp;
     AstCase*	casep;
     AstCaseItem* caseitemp;
@@ -205,6 +206,8 @@ class AstSenTree;
 %token<fileline>	yPOSEDGE	"posedge"
 %token<fileline>	yPRIORITY	"priority"
 %token<fileline>	yPROPERTY	"property"
+%token<fileline>	yPULLDOWN 	"pulldown"
+%token<fileline>	yPULLUP 	"pullup"
 %token<fileline>	yREG		"reg"
 %token<fileline>	ySCALARED	"scalared"
 %token<fileline>	ySIGNED		"signed"
@@ -1254,6 +1257,8 @@ gateDecl<nodep>:
 	|	yNOR  delayE gateNorList ';'		{ $$ = $3; }
 	|	yXOR  delayE gateXorList ';'		{ $$ = $3; }
 	|	yXNOR delayE gateXnorList ';'		{ $$ = $3; }
+	|	yPULLUP delayE gatePullupList ';'	{ $$ = $3; }
+	|	yPULLDOWN delayE gatePulldownList ';'	{ $$ = $3; }
 	;
 
 gateBufList<nodep>:
@@ -1288,6 +1293,14 @@ gateXnorList<nodep>:
 		gateXnor 				{ $$ = $1; }
 	|	gateXnorList ',' gateXnor		{ $$ = $1->addNext($3); }
 	;
+gatePullupList<nodep>:
+		gatePullup 				{ $$ = $1; }
+	|	gatePullupList ',' gatePullup		{ $$ = $1->addNext($3); }
+	;
+gatePulldownList<nodep>:
+		gatePulldown 				{ $$ = $1; }
+	|	gatePulldownList ',' gatePulldown	{ $$ = $1->addNext($3); }
+	;
 
 gateBuf<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
 	;
@@ -1305,7 +1318,10 @@ gateXor<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' gateXorPinList ')'	{ 
 	;
 gateXnor<assignwp>:	gateIdE instRangeE '(' varRefDotBit ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
 	;
-
+gatePullup<pullp>: gateIdE instRangeE '(' varRefDotBit ')'	{ $$ = new AstPull ($3, $4, true); }
+	;
+gatePulldown<pullp>: gateIdE instRangeE '(' varRefDotBit ')'	{ $$ = new AstPull ($3, $4, false); }
+	;
 gateIdE:	/*empty*/				{}
 	|	yaID					{}
 	;

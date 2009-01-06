@@ -5,6 +5,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.700***
 
+**   Add limited support for tristate inouts.  Written by Lane Brooks.
+     This allows common pad ring and tristate-mux structures to be
+     Verilated.  See the documentation for more information on supported
+     constructs.
+
 **   Add --coverage_toggle for toggle coverage analysis.
      Running coverage now requires SystemPerl 1.301 or newer.
 

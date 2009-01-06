@@ -192,6 +192,7 @@ RAW_OBJS = \
 	V3Task.o \
 	V3Trace.o \
 	V3TraceDecl.o \
+	V3Tristate.o \
 	V3Unknown.o \
 	V3Unroll.o \
 	V3Width.o \

@@ -700,8 +700,15 @@ private:
 		}
 		nodep->width(awidth,awidth);
 	    } else {
-		if (nodep->modVarp()->isTristate()) nodep->v3error("Unsupported: inouts: Verilator is a 2 state simulator\n");
-		// if support tristates need some mess to force both sides to proper size
+		if (nodep->modVarp()->isTristate()) {
+		    if (pinwidth != expwidth) {
+			nodep->v3error("Unsupported: Port connection "<<nodep->prettyName()<<" to inout signal "
+				       <<" requires "<<pinwidth
+				       <<" bits, but connection's "<<nodep->exprp()->typeName()
+				       <<" generates "<<expwidth<<" bits.");
+			// otherwise would need some mess to force both sides to proper size
+		    }
+		}
 		if (inputPin) {
 		    // input pin is lhs, expr is rhs; resize expr to match
 		    awidth = pinwidth;

@@ -115,6 +115,8 @@ public:
     // SETTERS
     V3Number& setAllBitsX();
     V3Number& setAllBitsZ();
+    V3Number& setAllBits0();
+    V3Number& setAllBits1();
     V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
@@ -129,6 +131,8 @@ public:
     bool isSigned() const { return m_signed; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     bool isNegative() const { return bitIs1(width()-1); }
     bool isFourState() const { for (int i=0;i<words();i++) {if (m_valueX[i]) return true;} return false; }
+    bool hasZ() const { for(int i=0;i<words();i++) {if((~m_value[i]) & m_valueX[i]) return true;} return false;}
+    bool isAllZ() const { for(int i=0;i<width();i++) { if(!bitIsZ(i)){return false;} } return true; }
     bool isEqZero() const;
     bool isNeqZero() const;
     bool isEqOne() const;
@@ -158,6 +162,8 @@ public:
     V3Number& opBitsNonX(const V3Number& lhs); // 0/1->1, X/Z->0
     V3Number& opBitsOne	(const V3Number& lhs); // 1->1, 0/X/Z->0
     V3Number& opBitsXZ	(const V3Number& lhs); // 0/1->0, X/Z->1
+    V3Number& opBitsZ	(const V3Number& lhs); // Z->1, 0/1/X->0
+    V3Number& opBitsNonZ(const V3Number& lhs); // Z->0, 0/1/X->1
     //
     V3Number& opAssign	(const V3Number& lhs);
     V3Number& opExtendS	(const V3Number& lhs); // Sign extension

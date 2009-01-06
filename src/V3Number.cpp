@@ -291,6 +291,14 @@ V3Number& V3Number::setSingleBits(char value) {
     return *this;
 }
 
+V3Number& V3Number::setAllBits0() {
+  for (int i=0; i<words(); i++) { m_value[i] = m_valueX[i]=0; }
+  return *this;
+}
+V3Number& V3Number::setAllBits1() {
+  for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
+  return *this;
+}
 V3Number& V3Number::setAllBitsX() {
     for (int i=0; i<words(); i++) { m_value[i]=m_valueX[i] = ~0; }
     return *this;
@@ -581,6 +589,22 @@ V3Number& V3Number::opBitsXZ (const V3Number& lhs) { // 0/1->1, X/Z->0
     setZero();
     for(int bit=0; bit<this->width(); bit++) {
 	if (lhs.bitIsXZ(bit))  { setBit(bit,1); }
+    }
+    return *this;
+}
+V3Number& V3Number::opBitsZ (const V3Number& lhs) { // 0/1->1, X/Z->0
+    // op i, L(lhs) bit return
+    setZero();
+    for(int bit=0; bit<this->width(); bit++) {
+      if (lhs.bitIsZ(bit))  { setBit(bit,1); }
+    }
+    return *this;
+}
+V3Number& V3Number::opBitsNonZ (const V3Number& lhs) { // 0/1->1, X/Z->0
+    // op i, L(lhs) bit return
+    setZero();
+    for(int bit=0; bit<this->width(); bit++) {
+      if (!lhs.bitIsZ(bit)) { setBit(bit,1); }
     }
     return *this;
 }

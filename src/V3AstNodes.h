@@ -283,6 +283,8 @@ public:
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
+    void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
+    void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
     string	cType()		const;	// Return C type for declaration: bool, uint32_t, uint64_t, etc.
     string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
@@ -953,6 +955,23 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignW(this->fileline(), lhsp, rhsp); }
     bool allowImplicit() const { return m_allowImplicit; }
     void allowImplicit(bool flag) { m_allowImplicit = flag; }
+};
+
+struct AstPull : public AstNode {
+private:
+    bool m_direction;
+public:
+    AstPull(FileLine* fileline, AstNode* lhsp, bool direction) 
+	: AstNode(fileline) {
+	setOp1p(lhsp);
+	m_direction = direction;
+    }
+    ASTNODE_NODE_FUNCS(Pull, PULL)
+    virtual bool same(AstNode* samep) const {
+	return direction()==samep->castPull()->direction(); }
+    void lhsp(AstNode* np) { setOp1p(np); }
+    AstNode* lhsp() const { return op1p()->castNode(); }	// op1 = Assign to
+    uint32_t direction() const { return (uint32_t) m_direction; }
 };
 
 struct AstAssignPre : public AstNodeAssign {

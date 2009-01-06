@@ -79,6 +79,7 @@
 #include "V3Task.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
+#include "V3Tristate.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
@@ -182,9 +183,16 @@ void process () {
     V3Const::constifyAllLint(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
+    // Expand Inouts
+    V3Tristate::inoutAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inouts.tree"));
+
     // Remove cell arrays (must be between V3Width and scoping)
     V3Inst::dearrayAll(v3Global.rootp());
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
+
+    V3Tristate::tristateAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tristate.tree"));
 
     // Move assignments from X into MODULE temps.
     // (Before flattening, so each new X variable is shared between all scopes of that module.)
