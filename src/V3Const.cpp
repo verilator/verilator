@@ -91,7 +91,7 @@ public:
 class ConstVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // ** only when m_warn is set.  If state is needed other times,
+    // ** only when m_warn/m_expensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
 
@@ -101,6 +101,7 @@ private:
     bool	m_wremove;	// Inside scope, no assignw removal
     bool	m_warn;		// Output warnings
     bool	m_cpp;		// C++ conversions only
+    bool	m_expensive;	// Enable computationally expensive optimizations
     AstModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
     //int debug() { return 9; }
@@ -169,6 +170,31 @@ private:
 		&& lp->width()==rp->width()
 		&& lp->type()==rp->type()
 		&& operandsSame(lp->lhsp(),rp->lhsp()));
+    }
+    static bool matchOrAndNot(AstNodeBiop* nodep) {
+	// AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
+	// Someday we'll sort the biops completely and this can be simplified
+	// This often results from our simplified clock generation:
+	// if (rst) ... else if (enable)... -> OR(rst,AND(!rst,enable))
+	AstNode* ap;
+	AstNodeBiop* andp;
+	if      (nodep->lhsp()->castAnd()) { andp=nodep->lhsp()->castAnd(); ap=nodep->rhsp(); }
+	else if (nodep->rhsp()->castAnd()) { andp=nodep->rhsp()->castAnd(); ap=nodep->lhsp(); }
+	else return false;
+	AstNodeUniop* notp;
+	AstNode* cp;
+	if      (andp->lhsp()->castNot()) { notp=andp->lhsp()->castNot(); cp=andp->rhsp(); }
+	else if (andp->rhsp()->castNot()) { notp=andp->rhsp()->castNot(); cp=andp->lhsp(); }
+	else return false;
+	AstNode* bp = notp->lhsp();
+	if (!operandsSame(ap, bp)) return false;
+	// Do it
+	cp->unlinkFrBack();
+	andp->unlinkFrBack()->deleteTree(); andp=NULL; notp=NULL;
+	// Replace whichever branch is now dangling
+	if (nodep->rhsp()) nodep->lhsp(cp);
+	else nodep->rhsp(cp);
+	return true;
     }
     static bool operandShiftSame(AstNode* nodep) {
 	AstNodeBiop* np = nodep->castNodeBiop();
@@ -1034,19 +1060,26 @@ private:
 	    } else nodep->v3fatalSrc("Missing ATTR type case\n");
 	}
     }
+    bool onlySenItemInSenTree(AstNodeSenItem* nodep) {
+	// Only one if it's not in a list
+	return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
+    }
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->sensp()->castConst()
 	    || (nodep->varrefp() && nodep->varrefp()->varp()->isParam())) {
 	    // Constants in sensitivity lists may be removed (we'll simplify later)
-	    AstSenItem* newp;
 	    if (nodep->isClocked()) {  // A constant can never get a pos/negexge
-		newp = new AstSenItem(nodep->fileline(), AstSenItem::Never());
+		if (onlySenItemInSenTree(nodep)) {
+		    nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
+		    nodep->deleteTree(); nodep=NULL;
+		} else {
+		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+		}
 	    } else {  // Otherwise it may compute a result that needs to settle out
-		newp = new AstSenItem(nodep->fileline(), AstSenItem::Combo());
+		nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
+		nodep->deleteTree(); nodep=NULL;
 	    }
-	    nodep->replaceWith(newp);
-	    nodep->deleteTree(); nodep=NULL;
 	} else if (nodep->sensp()->castNot()) {
 	    // V3Gate may propagate NOTs into clocks... Just deal with it
 	    AstNode* sensp = nodep->sensp();
@@ -1064,6 +1097,150 @@ private:
 	    sensp->deleteTree(); sensp=NULL;
 	} else {
 	    if (nodep->hasVar() && !nodep->varrefp()) nodep->v3fatalSrc("Null sensitivity variable");
+	}
+    }
+    virtual void visit(AstSenGate* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (AstConst* constp = nodep->rhsp()->castConst()) {
+	    if (constp->isZero()) {
+		UINFO(4,"SENGATE(...,0)->NEVER"<<endl);
+		if (onlySenItemInSenTree(nodep)) {
+		    nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
+		    nodep->deleteTree(); nodep=NULL;
+		} else {
+		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+		}
+	    } else {
+		UINFO(4,"SENGATE(SENITEM,0)->ALWAYS SENITEM"<<endl);
+		AstNode* senitemp = nodep->sensesp()->unlinkFrBack();
+		nodep->replaceWith(senitemp);
+		nodep->deleteTree(); nodep=NULL;
+	    }
+	}
+    }
+
+    struct SenItemCmp {
+	inline bool operator () (AstNodeSenItem* lhsp, AstNodeSenItem* rhsp) const {
+	    if (lhsp->type() < rhsp->type()) return true;
+	    if (lhsp->type() > rhsp->type()) return false;
+	    const AstSenItem* litemp = lhsp->castSenItem();
+	    const AstSenItem* ritemp = rhsp->castSenItem();
+	    if (litemp && ritemp) {
+		// Looks visually better if we keep sorted by name
+		if (litemp->edgeType() < ritemp->edgeType()) return true;
+		if (litemp->edgeType() > ritemp->edgeType()) return false;
+		if (!litemp->varrefp() &&  ritemp->varrefp()) return true;
+		if ( litemp->varrefp() && !ritemp->varrefp()) return false;
+		if (litemp->varrefp() && ritemp->varrefp()) {
+		    if (litemp->varrefp()->name() < ritemp->varrefp()->name()) return true;
+		    if (litemp->varrefp()->name() > ritemp->varrefp()->name()) return false;
+		    // But might be same name with different scopes
+		    if (litemp->varrefp()->varScopep() < ritemp->varrefp()->varScopep()) return true;
+		    if (litemp->varrefp()->varScopep() > ritemp->varrefp()->varScopep()) return false;
+		}
+	    }
+	    return false;
+	}
+    };
+
+    virtual void visit(AstSenTree* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (m_expensive) {
+	    //cout<<endl; nodep->dumpTree(cout,"ssin: ");
+	    // Optimize ideas for the future:
+	    //   SENTREE(... SENGATE(x,a), SENGATE(SENITEM(x),b) ...)  => SENGATE(x,OR(a,b))
+
+	    //   SENTREE(... SENITEM(x),   SENGATE(SENITEM(x),*) ...)  => SENITEM(x)
+	    // Do we need the SENITEM's to be identical?  No because we're
+	    // ORing between them; we just need to insure that the result is at
+	    // least as frequently activating.  So we simply
+	    // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
+	    // other SENITEM(x).
+	    {
+		AstUser4InUse	m_inuse4;
+		// Mark x in SENITEM(x)
+		for (AstNodeSenItem* senp = nodep->sensesp()->castNodeSenItem();
+		     senp; senp=senp->nextp()->castNodeSenItem()) {
+		    if (AstSenItem* itemp = senp->castSenItem()) {
+			if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
+			    itemp->varrefp()->varScopep()->user4(1);
+			}
+		    }
+		}
+		// Find x in SENTREE(SENITEM(x))
+		for (AstNodeSenItem* nextp, * senp = nodep->sensesp()->castNodeSenItem();
+		     senp; senp=nextp) {
+		    nextp=senp->nextp()->castNodeSenItem();
+		    if (AstSenGate* gatep = senp->castSenGate()) {
+			if (AstSenItem* itemp = gatep->sensesp()->castSenItem()) {
+			    if (itemp->varrefp() && itemp->varrefp()->varScopep()) {
+				if (itemp->varrefp()->varScopep()->user4()) {
+				    // Found, push this item up to the top
+				    itemp->unlinkFrBack();
+				    nodep->addSensesp(itemp);
+				    gatep->unlinkFrBack()->deleteTree(); gatep=NULL; senp=NULL;
+				}
+			    }
+			}
+		    }
+		}
+	    }
+
+	    // Sort the sensitivity names so "posedge a or b" and "posedge b or a" end up together.
+	    // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
+	    // Make things a little faster; check first if we need a sort
+	    for (AstNodeSenItem* nextp, * senp = nodep->sensesp()->castNodeSenItem();
+		 senp; senp=nextp) {
+		nextp=senp->nextp()->castNodeSenItem();
+		SenItemCmp cmp;
+		if (nextp && !cmp(senp, nextp)) {
+		    // Something's out of order, sort it
+		    senp = NULL;
+		    vector<AstNodeSenItem*> vec;
+		    for (AstNodeSenItem* senp = nodep->sensesp()->castNodeSenItem(); senp; senp=senp->nextp()->castNodeSenItem()) {
+			vec.push_back(senp);
+		    }
+		    sort(vec.begin(), vec.end(), SenItemCmp());
+		    for (vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
+			(*it)->unlinkFrBack();
+		    }
+		    for (vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
+			nodep->addSensesp(*it);
+		    }
+		    break;
+		}
+	    }
+	    
+	    // Pass2, remove dup edges
+	    for (AstNodeSenItem* nextp, * senp = nodep->sensesp()->castNodeSenItem();
+		 senp; senp=nextp) {
+		nextp=senp->nextp()->castNodeSenItem();
+		AstNodeSenItem* cmpp = nextp;
+		AstSenItem* litemp = senp->castSenItem();
+		AstSenItem* ritemp = cmpp->castSenItem();
+		if (litemp && ritemp) {
+		    if (litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameTree(ritemp->varrefp())
+			|| (!litemp->varrefp() && !ritemp->varrefp())) {
+			// We've sorted in the order ANY, BOTH, POS, NEG, so we don't need to try opposite orders
+			if ((   litemp->edgeType()==AstEdgeType::ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY
+			    || (litemp->edgeType()==AstEdgeType::BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
+			    || (litemp->edgeType()==AstEdgeType::POSEDGE    // POS  or NEG -> BOTH
+				&& ritemp->edgeType()==AstEdgeType::NEGEDGE)
+			    || (litemp->edgeType()==ritemp->edgeType())	// Identical edges
+			    ) {
+			    // Fix edge of old node
+			    if (litemp->edgeType()==AstEdgeType::POSEDGE
+				&& ritemp->edgeType()==AstEdgeType::NEGEDGE)
+				litemp->edgeType(AstEdgeType::BOTHEDGE);
+			    // Remove redundant node
+			    ritemp->unlinkFrBack()->deleteTree(); ritemp=NULL; cmpp=NULL;
+			    // Try to collapse again
+			    nextp=litemp;
+			}
+		    }
+		}
+	    }
+	    //nodep->dumpTree(cout,"ssou: ");
 	}
     }
 
@@ -1456,6 +1633,7 @@ private:
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");
+    TREEOP ("AstOr  {matchOrAndNot(nodep)}",		"DONE");
     TREEOP ("AstAnd {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
@@ -1503,8 +1681,11 @@ private:
 
 public:
     // CONSTUCTORS
-    ConstVisitor(bool params, bool required, bool warn, bool cpp) {
-	m_params = params; m_required = required; m_warn=warn; m_cpp=cpp;
+    ConstVisitor(bool params, bool expensive, bool warn, bool cpp) {
+	m_params = params; m_required = params;
+	m_expensive = expensive;
+	m_warn = warn;
+	m_cpp = cpp;
 	m_wremove = true;
 	m_modp = NULL;
 	m_scopep = NULL;
@@ -1525,7 +1706,7 @@ void V3Const::constifyParam(AstNode* nodep) {
 	V3Width::widthParams(nodep);
 	V3Signed::signedParams(nodep);
     }
-    ConstVisitor visitor (true,true,false,false);
+    ConstVisitor visitor (true,false,false,false);
     visitor.main(nodep);
     // Because we do edits, nodep links may get trashed and core dump this.
     //if (debug()>0) nodep->dumpTree(cout,"  forceConDONE: ");
@@ -1534,7 +1715,7 @@ void V3Const::constifyParam(AstNode* nodep) {
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (false,false,false,false);
+    ConstVisitor visitor (false,true,false,false);
     visitor.main(nodep);
 }
 
@@ -1553,5 +1734,10 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
 
 void V3Const::constifyTree(AstNode* nodep) {
     ConstVisitor visitor (false,false,false,false);
+    visitor.main(nodep);
+}
+
+void V3Const::constifyTreeExpensive(AstNode* nodep) {
+    ConstVisitor visitor (false,true,false,false);
     visitor.main(nodep);
 }

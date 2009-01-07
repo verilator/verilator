@@ -811,7 +811,7 @@ struct AstFuncRef : public AstNodeFTaskRef {
 
 struct AstSenItem : public AstNodeSenItem {
     // Parents:  SENTREE
-    // Children: (optional) VARREF
+    // Children: (optional) VARREF SENGATE
 private:
     AstEdgeType	m_edgeType;		// Edge type
 public:
@@ -861,6 +861,28 @@ public:
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }
 };
 
+struct AstSenGate : public AstNodeSenItem {
+    // Parents:  SENTREE
+    // Children: SENITEM expr
+    // AND as applied to a sensitivity list and a gating expression
+    // Performing this gating is optional; it may be removed by later optimizations
+    AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp) : AstNodeSenItem(fl) {
+	width(1,1); addOp1p(sensesp); setOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(SenGate, SENGATE)
+    virtual string emitVerilog() { return "(%l) && (%r)"; }
+    AstSenItem*	sensesp() const { return op1p()->castSenItem(); }
+    AstNode*	rhsp() 	const { return op2p()->castNode(); }
+    void	sensesp(AstSenItem* nodep)  { addOp1p(nodep); }
+    void	rhsp(AstNode* nodep)  { setOp2p(nodep); }
+    //
+    virtual bool isClocked() const { return true; }
+    virtual bool isCombo() const { return false; }
+    virtual bool isInitial() const { return false; }
+    virtual bool isSettle() const { return false; }
+    virtual bool isNever() const { return false; }
+};
+
 struct AstSenTree : public AstNode {
     // A list of senitems
     // Parents:  MODULE | SBLOCK
@@ -880,7 +902,6 @@ public:
     void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }
     void multi(bool flag) { m_multi = true; }
     // METHODS
-    void sortSenses();	// Sort senitems in standard way
     bool hasClocked();	// Includes a clocked statement
     bool hasSettle();	// Includes a SETTLE SenItem
     bool hasInitial();	// Includes a INITIAL SenItem

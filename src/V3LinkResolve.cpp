@@ -162,6 +162,9 @@ private:
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
 	}
     }
+    virtual void visit(AstSenGate* nodep, AstNUser*) {
+	nodep->v3fatalSrc("SenGates shouldn't be in tree yet");
+    }
 
     void iterateSelTriop(AstNodePreSel* nodep) {
 	nodep->iterateChildren(*this);

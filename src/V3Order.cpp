@@ -107,6 +107,7 @@
 #include "V3SenTree.h"
 #include "V3Stats.h"
 #include "V3EmitCBase.h"
+#include "V3Const.h"
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
@@ -246,6 +247,8 @@ private:
     // Ordering (user3/4/5 cleared between forming and ordering)
     //	  AstScope::user1p()	-> AstModule*. Module this scope is under
     //    AstModule::user3()    -> Number of routines created
+    //  Each call to V3Const::constify
+    //   AstNode::user4()		Used by V3Const::constify, called below
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
@@ -1088,7 +1091,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 		    AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
 		    if (!newtree2p) fromVertexp->domainp()->v3fatalSrc("No senitem found under clocked domain");
 		    newtreep->addSensesp(newtree2p);
-		    newtreep->sortSenses();	// Remove duplicates
+		    V3Const::constifyTreeExpensive(newtreep);	// Remove duplicates
 		    newtreep->multi(true);	// Comment that it was made from 2 clock domains
 		    domainp = m_finder.getSenTree(domainp->fileline(), newtreep);
 		    if (ddebug) {
@@ -1140,7 +1143,7 @@ void OrderVisitor::processEdgeReport() {
 	    else if (dynamic_cast<OrderVarSettleVertex*>(itp)) name += " {STL}";
 	    ostringstream os;
 	    os.setf(ios::left);
-	    os<<"  "<<setw(50)<<name<<" ";
+	    os<<"  "<<(void*)(vvertexp->varScp())<<" "<<setw(50)<<name<<" ";
 	    AstSenTree* sentreep = vvertexp->domainp();
 	    if (sentreep) V3EmitV::verilogForTree(sentreep, os);
 	    report.push_back(os.str());

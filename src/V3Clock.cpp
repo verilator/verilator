@@ -151,12 +151,21 @@ private:
 	}
 	return newp;
     }
-    AstNode* createSenseEquation(AstSenTree* nodep) {
+    AstNode* createSenGateEquation(AstSenGate* nodep) {
+	AstNode* newp = new AstAnd(nodep->fileline(),
+				   createSenseEquation(nodep->sensesp()),
+				   nodep->rhsp()->cloneTree(true));
+	return newp;
+    }
+    AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
+	// Nodep may be a list of elements; we need to walk it
 	AstNode* senEqnp = NULL;
-	for (AstNodeSenItem* senp = nodep->sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
+	for (AstNodeSenItem* senp = nodesp; senp; senp=senp->nextp()->castNodeSenItem()) {
 	    AstNode* senOnep = NULL;
 	    if (AstSenItem* itemp = senp->castSenItem()) {
 		senOnep = createSenItemEquation(itemp);
+	    } else if (AstSenGate* itemp = senp->castSenGate()) {
+		senOnep = createSenGateEquation(itemp);
 	    } else {
 		senp->v3fatalSrc("Strange node under sentree");
 	    }
@@ -170,7 +179,7 @@ private:
 	return senEqnp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
-	AstNode* senEqnp = createSenseEquation(sensesp);
+	AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
 	if (!senEqnp) sensesp->v3fatalSrc("No sense equation, shouldn't be in sequent activation.");
 	AstIf* newifp = new AstIf (sensesp->fileline(),
 				   senEqnp, NULL, NULL);

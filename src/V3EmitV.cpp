@@ -119,12 +119,17 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	// AstSenItem is called for dumping in isolation by V3Order
 	putbs("@(");
-	nodep->iterateChildren(*this);
+	for (AstNode* expp=nodep->sensesp(); expp; expp = expp->nextp()) {
+	    nodep->iterateChildren(*this);
+	    if (expp->nextp()) puts(" or ");
+	}
 	puts(")");
+    }
+    virtual void visit(AstSenGate* nodep, AstNUser*) {
+	emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->sensesp(), nodep->rhsp());
     }
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	putbs("");
-	if (!nodep->backp()->castSenTree()) puts(" or ");
 	puts(nodep->edgeType().verilogKwd());
 	if (nodep->sensp()) puts(" ");
 	nodep->iterateChildren(*this);

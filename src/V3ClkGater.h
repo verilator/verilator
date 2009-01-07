@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Propagate constants across AST
+// DESCRIPTION: Verilator: Break always into clock gated blocks
 //
 // Code available from: http://www.veripool.org/verilator
 //
@@ -8,7 +8,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2009 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2008 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // General Public License or the Perl Artistic License.
 //
@@ -19,8 +19,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3CONST_H_
-#define _V3CONST_H_ 1
+#ifndef _V3CLKGATER_H_
+#define _V3CLKGATER_H_ 1
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
@@ -28,20 +28,9 @@
 
 //============================================================================
 
-class V3Const {
+class V3ClkGater {
 public:
-    // Force this cell node's parameter list to become a constant
-    static void constifyParam(AstNode* nodep);
-    // Everything that's possible
-    static void constifyAll(AstNetlist* nodep);
-    // Also, warn
-    static void constifyAllLint(AstNetlist* nodep);
-    // C++ datatypes
-    static void constifyCpp(AstNetlist* nodep);
-    // Only the current node and lower
-    static void constifyTree(AstNode* nodep);
-    // Only the current node and lower, with special SenTree optimization
-    static void constifyTreeExpensive(AstNode* nodep);
+    static void clkGaterAll(AstNetlist* nodep);
 };
 
 #endif // Guard

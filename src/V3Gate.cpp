@@ -355,10 +355,21 @@ private:
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	iterateNewStmt(nodep, "User C Function", "User C Function");
     }
-    virtual void visit(AstNodeSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep, AstNUser*) {
+	// Note we look at only AstSenItems, not AstSenGate's
+	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
-	iterateNewStmt(nodep, NULL, NULL);
+	if (m_logicVertexp) {  // Already under logic; presumably a SenGate
+	    nodep->iterateChildren(*this);
+	} else {  // Standalone item, probably right under a SenTree
+	    iterateNewStmt(nodep, NULL, NULL);
+	}
 	m_inSenItem = false;
+    }
+    virtual void visit(AstSenGate* nodep, AstNUser*) {
+	// First handle the clock part will be handled in a minute by visit AstSenItem
+	// The logic gating term is delt with as logic
+	iterateNewStmt(nodep, "Clock gater", "Clock gater");
     }
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	bool lastslow = m_inSlow;

@@ -43,6 +43,7 @@
 #include "V3Active.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
+#include "V3Const.h"
 
 //***** See below for main transformation engine
 
@@ -77,8 +78,8 @@ private:
 	// Don't clear scopep, the namer persists beyond this visit
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
-	// Sort sensitivity list
-	nodep->sortSenses();
+	// Simplify sensitivity list
+	V3Const::constifyTreeExpensive(nodep);
     }
     // Empty visitors, speed things up
     virtual void visit(AstNodeStmt* nodep, AstNUser*) { }
@@ -185,10 +186,15 @@ public:
 class ActiveVisitor : public ActiveBaseVisitor {
 private:
     // NODE STATE
+    //  Each call to V3Const::constify
+    //   AstNode::user4()		Used by V3Const::constify, called below
 
     // STATE
     ActiveNamer	m_namer;	// Tracking of active names
     AstCFunc*   m_scopeFinalp;	// Final function for this scope
+    AstAlways*	m_alwaysp;	// Under always
+    bool	m_itemCombo;	// Found a SenItem combo
+    bool	m_itemSequent;	// Found a SenItem sequential
 
     // VISITORS
     virtual void visit(AstScope* nodep, AstNUser*) {
@@ -252,6 +258,7 @@ private:
 	nodep->deleteTree(); nodep = NULL;
     }
 
+    // METHODS
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	// Move always to appropriate ACTIVE based on its sense list
 	UINFO(4,"    ALW   "<<nodep<<endl);
@@ -273,29 +280,14 @@ private:
 	}
 
 	// Read sensitivitues
-	bool combo = false;
-	bool sequent = false;
-	if (nodep->sensesp()) {
-	    for (AstNodeSenItem* nextp, *senp = nodep->sensesp()->sensesp(); senp; senp=nextp) {
-		nextp = senp->nextp()->castNodeSenItem();
-		if (AstSenItem* itemp = senp->castSenItem()) {
-		    if (itemp->edgeType() == AstEdgeType::ANYEDGE) {
-			combo = true;
-			// Delete the sensitivity
-			// We'll add it as a generic COMBO SenItem in a moment.
-			itemp->unlinkFrBack()->deleteTree(); itemp=NULL; senp=NULL;
-		    } else if (itemp->varrefp()) {
-			// V3LinkResolve should have cleaned most of these up
-			if (itemp->varrefp()->width()>1) itemp->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
-									<<itemp->varrefp()->prettyName());
-			sequent = true;
-			itemp->varrefp()->varp()->usedClock(true);
-		    }
-		} else {
-		    senp->v3fatalSrc("Strange node under sentree");
-		}
-	    }
-	}
+	m_alwaysp = nodep;
+	m_itemCombo = false;
+	m_itemSequent = false;
+	nodep->sensesp()->iterateAndNext(*this);
+	m_alwaysp = NULL;
+	bool combo = m_itemCombo;
+	bool sequent = m_itemSequent;
+
 	if (!combo && !sequent) combo=true;	// If no list, Verilog 2000: always @ (*)
 #ifndef NEW_ORDERING
 	if (combo && sequent) {
@@ -334,6 +326,29 @@ private:
 	    ActiveDlyVisitor dlyvisitor (nodep);
 	}
     }
+    virtual void visit(AstSenGate* nodep, AstNUser*) {
+	AstSenItem* subitemp = nodep->sensesp();
+	if (subitemp->edgeType() != AstEdgeType::ANYEDGE
+	    && subitemp->edgeType() != AstEdgeType::POSEDGE
+	    && subitemp->edgeType() != AstEdgeType::NEGEDGE) {
+	    nodep->v3fatalSrc("Strange activity type under SenGate");
+	}
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstSenItem* nodep, AstNUser*) {
+	if (nodep->edgeType() == AstEdgeType::ANYEDGE) {
+	    m_itemCombo = true;
+	    // Delete the sensitivity
+	    // We'll add it as a generic COMBO SenItem in a moment.
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	} else if (nodep->varrefp()) {
+	    // V3LinkResolve should have cleaned most of these up
+	    if (nodep->varrefp()->width()>1) nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
+							    <<nodep->varrefp()->prettyName());
+	    m_itemSequent = true;
+	    nodep->varrefp()->varp()->usedClock(true);
+	}
+    }
 
     // Empty visitors, speed things up
     virtual void visit(AstNodeMath* nodep, AstNUser*) {}
@@ -346,6 +361,9 @@ public:
     // CONSTUCTORS
     ActiveVisitor(AstNode* nodep) {
 	m_scopeFinalp = NULL;
+	m_alwaysp = NULL;
+	m_itemCombo = false;
+	m_itemSequent = false;
 	nodep->accept(*this);
     }
     virtual ~ActiveVisitor() {}

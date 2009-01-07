@@ -642,6 +642,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		    case 'b': m_oCombine = flag; break;
 		    case 'c': m_oConst = flag; break;
 		    case 'e': m_oCase = flag; break;
+		    case 'f': m_oFlopGater = flag; break;
 		    case 'g': m_oGate = flag; break;
 		    case 'i': m_oInline = flag; break;
 		    case 'k': m_oSubstConst = flag; break;
@@ -926,6 +927,7 @@ void V3Options::optimize(int level) {
     m_oCombine = flag;
     m_oConst = flag;
     m_oExpand = flag;
+    m_oFlopGater = flag;
     m_oGate = flag;
     m_oInline = flag;
     m_oLife = flag;

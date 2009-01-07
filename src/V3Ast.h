@@ -105,7 +105,7 @@ class AstEdgeType {
 public:
 // REMEMBER to edit the strings below too
     enum en {
-	// These must be in general -> most specific order, as we sort by it in AstSenTree::sortSenses()
+	// These must be in general -> most specific order, as we sort by it in V3Const::visit AstSenTre
 	ILLEGAL,
 	// Involving a variable
 	ANYEDGE,	// Default for sensitivities; rip them out

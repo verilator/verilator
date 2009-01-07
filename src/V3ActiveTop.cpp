@@ -39,6 +39,7 @@
 #include "V3ActiveTop.h"
 #include "V3Ast.h"
 #include "V3SenTree.h"
+#include "V3Const.h"
 
 //######################################################################
 // Active class functions
@@ -48,6 +49,8 @@ private:
     // NODE STATE
     //  Entire netlist
     //   AstNode::user()		bool. True if processed
+    //  Each call to V3Const::constify
+    //   AstNode::user4()		Used by V3Const::constify, called below
     AstUser1InUse	m_inuser1;
 
     // STATE
@@ -72,7 +75,7 @@ private:
 	UINFO(4,"   ACTIVE "<<nodep<<endl);
 	AstSenTree* sensesp = nodep->sensesp();
 	if (!sensesp) nodep->v3fatalSrc("NULL");
-	sensesp->sortSenses();	// Remove duplicate clocks and such
+	V3Const::constifyTreeExpensive(nodep);	// Remove duplicate clocks and such
 	if (sensesp->sensesp()
 	    && sensesp->sensesp()->castSenItem()
 	    && sensesp->sensesp()->castSenItem()->isNever()) {
