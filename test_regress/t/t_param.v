@@ -11,6 +11,7 @@ module t (/*AUTOARG*/
 
    m1 #(PAR) m1();
    m3 #(PAR) m3();
+   mnooverride #(10) mno();
 
    input clk;
    integer cyc=1;
@@ -54,5 +55,15 @@ module m3;
       $display("%x %x",LOC,PAR);
       if (LOC !== 13) $stop;
       if (PAR !== 3) $stop;
+   end
+endmodule
+
+module mnooverride;
+   localparam LOC = 13;
+   parameter PAR = 10;
+   initial begin
+      $display("%x %x",LOC,PAR);
+      if (LOC !== 13) $stop;
+      if (PAR !== 10) $stop;
    end
 endmodule

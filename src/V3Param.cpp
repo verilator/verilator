@@ -236,10 +236,12 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	if (debug()>9) nodep->dumpTree(cout,"cell:\t");
 	// Evaluate all module constants
 	V3Const::constifyParam(nodep);
+
 	// Make sure constification worked
 	// Must be a separate loop, as constant conversion may have changed some pointers.
 	//if (debug()) nodep->dumpTree(cout,"cel2:\t");
 	string longname = nodep->modp()->name();
+	bool any_overrides = false;
 	longname += "_";
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
 	for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
@@ -251,97 +253,102 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		pinp->v3error("Attempted parameter setting of non-parameter: Param "<<pinp->name()<<" of "<<nodep->prettyName());
 	    } else {
 		AstConst* constp = pinp->exprp()->castConst();
+		AstConst* origconstp = modvarp->initp()->castConst();
 		if (!constp) {
 		    //if (debug()) pinp->dumpTree(cout,"error:");
 		    pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
 		    pinp->exprp()->replaceWith(new AstConst(pinp->fileline(), V3Number(pinp->fileline(), pinp->width(), 0)));
+		} else if (origconstp && constp->sameTree(origconstp)) {
+		    // Setting parameter to its default value.  Just ignore it.
+		    // This prevents making additional modules, and makes coverage more
+		    // obvious as it won't show up under a unique module page name.
 		} else {
 		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+constp->num().ascii(false);
+		    any_overrides = true;
 		}
 	    }
 	}
 
-	//
-	// If the name is very long, we don't want to overwhelm the filename limit
-	// We don't do this always, as it aids debugability to have intuitive naming.
-	string newname = longname;
-	if (longname.length()>30) {
-	    LongMap::iterator iter = m_longMap.find(longname);
-	    if (iter != m_longMap.end()) {
-		newname = iter->second;
-	    } else {
-		newname = nodep->modp()->name();
-		newname += "__pi"+cvtToStr(++m_longId);  // We use all upper case above, so lower here can't conflict
-		m_longMap.insert(make_pair(longname, newname));
+	if (!any_overrides) {
+	    UINFO(8,"Cell parameters all match original values, skipping expansion.\n");
+	} else {
+	    // If the name is very long, we don't want to overwhelm the filename limit
+	    // We don't do this always, as it aids debugability to have intuitive naming.
+	    string newname = longname;
+	    if (longname.length()>30) {
+		LongMap::iterator iter = m_longMap.find(longname);
+		if (iter != m_longMap.end()) {
+		    newname = iter->second;
+		} else {
+		    newname = nodep->modp()->name();
+		    newname += "__pi"+cvtToStr(++m_longId);  // We use all upper case above, so lower here can't conflict
+		    m_longMap.insert(make_pair(longname, newname));
+		}
 	    }
-	}
-	UINFO(4,"Name: "<<nodep->modp()->name()<<"->"<<longname<<"->"<<newname<<endl);
+	    UINFO(4,"Name: "<<nodep->modp()->name()<<"->"<<longname<<"->"<<newname<<endl);
 
-	//
-	// Already made this flavor?
-	AstModule* modp = NULL;
-	ModNameMap::iterator iter = m_modNameMap.find(newname);
-	if (iter != m_modNameMap.end()) modp = iter->second.m_modp;
-	if (!modp) {
-	    // Deep clone of new module
-	    // Note all module internal variables will be re-linked to the new modules by clone
-	    // However links outside the module (like on the upper cells) will not.
-	    modp = nodep->modp()->cloneTree(false);
-	    modp->name(newname);
-	    nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
-
-	    m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
-	    iter = m_modNameMap.find(newname);
-	    VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
-	    UINFO(4,"     De-parameterize to new: "<<modp<<endl);
-
-	    // Grab all I/O so we can remap our pins later
-	    // Note we allow multiple users of a parameterized model, thus we need to stash this info.
-	    for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-		if (AstVar* varp = stmtp->castVar()) {
-		    if (varp->isIO() || varp->isGParam()) {
-			// Cloning saved a pointer to the new node for us, so just follow that link.
-			AstVar* oldvarp = varp->clonep()->castVar();
-			//UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
-			clonemapp->insert(make_pair(oldvarp, varp));
+	    //
+	    // Already made this flavor?
+	    AstModule* modp = NULL;
+	    ModNameMap::iterator iter = m_modNameMap.find(newname);
+	    if (iter != m_modNameMap.end()) modp = iter->second.m_modp;
+	    if (!modp) {
+		// Deep clone of new module
+		// Note all module internal variables will be re-linked to the new modules by clone
+		// However links outside the module (like on the upper cells) will not.
+		modp = nodep->modp()->cloneTree(false);
+		modp->name(newname);
+		nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
+		
+		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
+		iter = m_modNameMap.find(newname);
+		VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
+		UINFO(4,"     De-parameterize to new: "<<modp<<endl);
+		
+		// Grab all I/O so we can remap our pins later
+		// Note we allow multiple users of a parameterized model, thus we need to stash this info.
+		for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+		    if (AstVar* varp = stmtp->castVar()) {
+			if (varp->isIO() || varp->isGParam()) {
+			    // Cloning saved a pointer to the new node for us, so just follow that link.
+			    AstVar* oldvarp = varp->clonep()->castVar();
+			    //UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
+			    clonemapp->insert(make_pair(oldvarp, varp));
+			}
 		    }
 		}
-	    }
-
-	    // Relink parameter vars to the new module
-	    relinkPins(clonemapp, nodep->paramsp());
-
-	    // Assign parameters to the constants specified
-	    for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
-		AstVar* modvarp = pinp->modVarp();
-		if (modvarp) {
-		    AstConst* constp = pinp->exprp()->castConst();
-		    // Remove any existing parameter
-		    if (modvarp->initp()) modvarp->initp()->unlinkFrBack()->deleteTree();
-		    // Set this parameter to value requested by cell
-		    modvarp->initp(constp->cloneTree(false));
+		
+		// Relink parameter vars to the new module
+		relinkPins(clonemapp, nodep->paramsp());
+		
+		// Assign parameters to the constants specified
+		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
+		    AstVar* modvarp = pinp->modVarp();
+		    if (modvarp) {
+			AstConst* constp = pinp->exprp()->castConst();
+			// Remove any existing parameter
+			if (modvarp->initp()) modvarp->initp()->unlinkFrBack()->deleteTree();
+			// Set this parameter to value requested by cell
+			modvarp->initp(constp->cloneTree(false));
+		    }
 		}
+	    } else {
+		UINFO(4,"     De-parameterize to old: "<<modp<<endl);
 	    }
-	} else {
-	    UINFO(4,"     De-parameterize to old: "<<modp<<endl);
-	}
-
-	// Have child use this module instead.
-	nodep->modp(modp);
-	nodep->modName(newname);
-
+	    
+	    // Have child use this module instead.
+	    nodep->modp(modp);
+	    nodep->modName(newname);
+	    
+	    // We need to relink the pins to the new module
+	    VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
+	    relinkPins(clonemapp, nodep->pinsp());
+	    UINFO(8,"     Done with "<<modp<<endl);
+	} // if any_overrides
+	
 	// Delete the parameters from the cell; they're not relevant any longer.
-	{
-	    AstNRelinker delHandle;
-	    nodep->paramsp()->unlinkFrBackWithNext(&delHandle);
-	    delHandle.oldp()->deleteTree();
-	}
-
-	// We need to relink the pins to the new module
-	VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
-	relinkPins(clonemapp, nodep->pinsp());
-
-	UINFO(8,"     Done with "<<modp<<endl);
+	nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
+	UINFO(8,"     Done with "<<nodep<<endl);
     }
 }
 
