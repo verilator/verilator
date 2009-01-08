@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.700***
+* Verilator 3.700 2009/01/08
 
 **   Add limited support for tristate inouts.  Written by Lane Brooks.
      This allows common pad ring and tristate-mux structures to be
