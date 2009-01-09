@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.70**
+
+**** Fix compile issues with GCC 4.3, bug47.  [Lane Brooks]
+
 * Verilator 3.700 2009/01/08
 
 **   Add limited support for tristate inouts.  Written by Lane Brooks.

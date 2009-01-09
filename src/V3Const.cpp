@@ -30,6 +30,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <map>
+#include <algorithm>
 
 #include "V3Global.h"
 #include "V3Const.h"
