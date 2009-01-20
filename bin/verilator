@@ -1249,11 +1249,11 @@ The Verilog code returns to the last language mode specified with
 
 =item /*verilator clock_enable*/
 
-Experimental use only.  Used after a signal declaration to indicate the
-signal is used to gate a clock, and the user takes responsibility for
-insuring there are no races related to it.  (Typically by adding a latch,
-and running static timing analysis.) This will cause the clock gate to be
-ignored in the scheduling algorithm, improving performance.
+Used after a signal declaration to indicate the signal is used to gate a
+clock, and the user takes responsibility for insuring there are no races
+related to it.  (Typically by adding a latch, and running static timing
+analysis.) This will cause the clock gate to be ignored in the scheduling
+algorithm, improving performance.
 
 =item /*verilator coverage_block_off*/
 
