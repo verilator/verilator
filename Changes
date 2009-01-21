@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.70**
 
-***  Add --debugi-<srcfile> option.  [Art Stamness]
+***  Add --debugi-<srcfile> option.  [Dennis Muhlestein]
 
 **** Fix compile issues with GCC 4.3, bug47.  [Lane Brooks]
 
