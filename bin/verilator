@@ -633,6 +633,12 @@ will call a function to determine the value, this allows randomization of
 all Xs to find reset bugs and is the slowest, but safest for finding reset
 bugs in code.
 
+If using -x-assign unique, you may want to seed your random number
+generator such that each regression run gets a different randomization
+sequence.  Use the system's srand48() or for Windows srand() function to do
+this.  You'll probably also want to print any seeds selected, and code to
+enable rerunning with that same seed so you can reproduce bugs.
+
 =back
 
 =head1 VERILOG ARGUMENTS

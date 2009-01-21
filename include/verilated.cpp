@@ -73,9 +73,9 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
 IData VL_RAND32() {
 #if defined(_WIN32) && !defined(__CYGWIN__)
     // Windows doesn't have lrand48(), although Cygwin does.
-    return (rand()<<16) | rand();
+    return (rand()<<16) ^ rand();
 #else
-    return (lrand48()<<16) | lrand48();
+    return (lrand48()<<16) ^ lrand48();
 #endif
 }
 

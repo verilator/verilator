@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix compile issues with GCC 4.3, bug47.  [Lane Brooks]
 
+**** Fix VL_RANDom to better randomize bits.  [Art Stamness]
+
 * Verilator 3.700 2009/01/08
 
 **   Add limited support for tristate inouts.  Written by Lane Brooks.
