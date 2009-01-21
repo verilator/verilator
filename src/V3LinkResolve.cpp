@@ -58,9 +58,13 @@ private:
     AstVAssert*	m_assertp;	// Current assertion
     int		m_senitemCvtNum; // Temporary signal counter
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     // VISITs
     virtual void visit(AstModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
@@ -484,7 +488,13 @@ class LinkBotupVisitor : public AstNVisitor {
 private:
     // STATE
     AstModule*	m_modp;		// Current module
-    //int debug() { return 9; }
+
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {

@@ -50,14 +50,19 @@ private:
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
 
-    // STATE
-    AstModule* m_modp;
-    //int debug() { return 9; }
-
-    // ENUMS
+    // TYPES
     enum CleanState { UNKNOWN, CLEAN, DIRTY };
 
+    // STATE
+    AstModule* m_modp;
+
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     // Width resetting
     int  cppWidth(AstNode* nodep) {
 	if (nodep->width()<=VL_WORDSIZE) return VL_WORDSIZE;

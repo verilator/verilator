@@ -186,8 +186,12 @@ private:
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
 public:
-    static int debug() { return V3Error::debugDefault(); }
-//    static int debug() { return 9; }
+
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // CONSTRUCTORS
     LinkDotState(bool forPrearray, bool forScopeCreation) {
@@ -372,6 +376,7 @@ private:
     LinkDotBaseVertex*	m_inlineVxp;	// Vertex for current module, possibly a fake inlined one
     string		m_scope;	// Scope text
     AstBegin*		m_beginp;	// Current Begin/end block
+
     int debug() { return LinkDotState::debug(); }
 
     // VISITs
@@ -518,6 +523,7 @@ private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
     LinkDotCellVertex*	m_cellVxp;	// Vertex for current module
+
     int debug() { return LinkDotState::debug(); }
 
     // VISITs
@@ -580,6 +586,7 @@ private:
     // STATE
     LinkDotState*	m_statep;	// State, including dotted symbol table
     LinkDotCellVertex*	m_cellVxp;	// Vertex for current module
+
     int debug() { return LinkDotState::debug(); }
 
     // METHODS

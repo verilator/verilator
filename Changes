@@ -5,16 +5,18 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.70**
 
+***  Add --debugi-<srcfile> option.  [Art Stamness]
+
 **** Fix compile issues with GCC 4.3, bug47.  [Lane Brooks]
 
 **** Fix VL_RANDom to better randomize bits.  [Art Stamness]
 
 * Verilator 3.700 2009/01/08
 
-**   Add limited support for tristate inouts.  Written by Lane Brooks.
-     This allows common pad ring and tristate-mux structures to be
-     Verilated.  See the documentation for more information on supported
-     constructs.
+**   Add limited support for tristate inouts.  Written by Lane Brooks,
+     under support by Ubixum Inc.  This allows common pad ring and
+     tristate-mux structures to be Verilated.  See the documentation for
+     more information on supported constructs.
 
 **   Add --coverage_toggle for toggle coverage analysis.
      Running coverage now requires SystemPerl 1.301 or newer.

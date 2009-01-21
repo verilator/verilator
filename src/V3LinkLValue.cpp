@@ -46,9 +46,12 @@ private:
     bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITs
     // Result handing

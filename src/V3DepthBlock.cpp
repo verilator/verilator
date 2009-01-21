@@ -48,9 +48,13 @@ private:
     int			m_depth;	// How deep in an expression
     int			m_deepNum;	// How many functions made
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     AstCFunc* createDeepFunc(AstNode* nodep) {
 	AstNRelinker relinkHandle;
 	nodep->unlinkFrBack(&relinkHandle);

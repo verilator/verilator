@@ -55,8 +55,14 @@ private:
     // STATE
     AstTopScope*	m_topscopep;		// Top scope to add statement to
     vector<AstSenTree*>	m_treesp;	// List of sensitive blocks, for folding
-    //int debug() { return 9; }
+
     // VISITORS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     virtual void visit(AstModule* nodep, AstNUser*) {
 	// Only do the top
 	if (nodep->isTop()) {

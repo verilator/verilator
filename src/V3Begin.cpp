@@ -47,7 +47,13 @@ private:
     AstModule*		m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     string		m_beginScope;	// Name of begin blocks above us
-    //int debug() { return 9; }
+
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {

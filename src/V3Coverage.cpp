@@ -54,9 +54,13 @@ private:
     FileMap	m_fileps;	// Column counts for each fileline
     string	m_beginHier;	// AstBegin hier name for user coverage points
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     const char* varIgnoreToggle(AstVar* nodep) {
 	// Return true if this shouldn't be traced
 	// See also similar rule in V3TraceDecl::varIgnoreTrace

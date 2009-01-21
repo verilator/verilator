@@ -43,10 +43,14 @@ protected:
     static V3PreShellImp s_preImp;
     static V3PreProc*	s_preprocp;
 
-    //int debug() { return 9; }
-
     //---------------------------------------
     // METHODS
+
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     void boot(char** env) {
 	// Create the implementation pointer

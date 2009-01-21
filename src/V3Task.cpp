@@ -314,9 +314,14 @@ private:
     InsertMode	m_insMode;	// How to insert
     AstNode*	m_insStmtp;	// Where to insert statement
     int		m_modNCalls;	// Incrementing func # for making symbols
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
 	// We could create under either the ref's scope or the ftask's scope.
 	// It shouldn't matter, as they are only local variables.

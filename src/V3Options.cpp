@@ -532,7 +532,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    shift;
 	} // + options
 	else if (argv[i][0]=='-') {
-	    char *sw = argv[i];
+	    const char *sw = argv[i];
 	    bool flag = true;
 	    // Allow gnu -- switches
 	    if (sw[0]=='-' && sw[1]=='-') ++sw;
@@ -543,6 +543,11 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-debugi") ) {
 		shift;
 		setDebugMode(atoi(argv[i]));
+	    }
+	    else if ( !strncmp (sw, "-debugi-", strlen("-debugi-"))) {
+		const char* src = sw+strlen("-debugi-");
+		shift;
+		setDebugSrcLevel(src, atoi(argv[i]));
 	    }
 	    else if ( !strcmp (sw, "-error-limit") ) {
 		shift;
@@ -631,7 +636,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
-		for (char* cp=sw+strlen("-O"); *cp; ++cp) {
+		for (const char* cp=sw+strlen("-O"); *cp; ++cp) {
 		    flag = isupper(*cp);
 		    switch (tolower(*cp)) {
 		    case '0': optimize(0); break; // 0=all off
@@ -917,6 +922,27 @@ void V3Options::setDebugMode(int level) {
     m_stats = true;
     m_debugCheck = true;
     cout << "Starting "<<version()<<endl;
+}
+
+void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
+    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    if (iter!=m_debugSrcs.end()) {
+	iter->second = level;
+    } else {
+	m_debugSrcs.insert(make_pair(srcfile,level));
+    }
+}
+
+int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
+    // For simplicity, calling functions can just use __FILE__ for srcfile.
+    // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
+    string srcfile = V3Options::filenameNonDirExt(srcfile_path);
+    DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
+    if (iter!=m_debugSrcs.end()) {
+	return iter->second;
+    } else {
+	return default_level;
+    }
 }
 
 void V3Options::optimize(int level) {

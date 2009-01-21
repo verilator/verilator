@@ -101,9 +101,14 @@ private:
     VarMap		m_modVarMap;	// Table of new var names created under module
     V3Double0		m_statSharedSet;// Statistic tracking
 
-    //static int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void markVarUsage(AstVar* nodep, uint32_t flags) {
 	//UINFO(4," MVU "<<flags<<" "<<nodep<<endl);
 	nodep->user1( nodep->user1() | flags );

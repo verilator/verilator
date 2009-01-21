@@ -53,9 +53,13 @@ private:
 
     V3Double0		m_statToggleJoins;	// Statistic tracking
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void detectDuplicates() {
 	UINFO(9,"Finding duplicates\n");
 	// Note uses user4

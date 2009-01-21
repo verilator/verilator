@@ -105,9 +105,14 @@ private:
     bool	m_expensive;	// Enable computationally expensive optimizations
     AstModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     bool operandConst (AstNode* nodep) {
 	return (nodep->castConst());
     }

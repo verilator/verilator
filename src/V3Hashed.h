@@ -42,7 +42,7 @@ public:
 private:
     // MEMBERS
     HashMmap		m_hashMmap;	// hashvalue -> nodes with that hash
-    int debug() { return 0; }
+
 public:
     // CONSTRUCTORS
     V3Hashed();
@@ -51,7 +51,13 @@ public:
     HashMmap& mmap() { return m_hashMmap; }	// Return map for iteration
     HashMmap::iterator begin() { return m_hashMmap.begin(); }
     HashMmap::iterator end() { return m_hashMmap.end(); }
+
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
     void clear() { m_hashMmap.clear(); }
     void hashAndInsert(AstNode* nodep);	// Hash the node, and insert into map
     bool sameNodes(AstNode* node1p, AstNode* node2p);	// After hashing, and tell if identical

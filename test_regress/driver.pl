@@ -1,17 +1,5 @@
 #!/usr/bin/perl -w
-######################################################################
-#
-# This program is Copyright 2003-2009 by Wilson Snyder.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of either the GNU General Public License or the
-# Perl Artistic License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
+# See copyright, etc in below POD section.
 ######################################################################
 
 require 5.006_001;
@@ -60,6 +48,9 @@ my $opt_gdb;
 my $opt_jobs = 1;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
+our @Opt_Driver_Verilator_Flags;
+
+Getopt::Long::config ("pass_through");
 if (! GetOptions (
 		  "help"	=> \&usage,
 		  "debug"	=> \&debug,
@@ -75,7 +66,7 @@ if (! GetOptions (
 		  "verbose!"	=> \$opt_verbose,
 		  "<>"		=> \&parameter,
 		  )) {
-    usage();
+    die "%Error: Bad usage, try '$0 --help'\n";
 }
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
@@ -155,14 +146,28 @@ sub usage {
 
 sub debug {
     $Debug = 1;
+    push @Opt_Driver_Verilator_Flags, "--debug";
 }
+
+our $_Parameter_Next_Level;
 
 sub parameter {
     my $param = shift;
-    if ($param =~ /\.pl/) {
+    if ($_Parameter_Next_Level) {
+	($param =~ /^(\d+)$/)
+	    or die "%Error: Expected number following $_Parameter_Next_Level: $param\n";
+	push @Opt_Driver_Verilator_Flags, $param;
+	$_Parameter_Next_Level	= undef;
+    }
+    elsif ($param =~ /\.pl/) {
 	push @opt_tests, $param;
-    } else {
-	die "%Error: Unknown parameter: $param\n";
+    }
+    elsif ($param =~ /^--debugi/) {
+	push @Opt_Driver_Verilator_Flags, $param;
+	$_Parameter_Next_Level = $param;
+    }
+    else {
+	warn "%Error: Unknown parameter: $param\n";
     }
 }
 
@@ -379,7 +384,7 @@ sub compile {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
 	my @verilator_flags = @{$param{verilator_flags}};
 	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
-	unshift @verilator_flags, "--debug" if $::Debug;
+	unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
 	unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
 #	unshift @verilator_flags, "--trace";
 	if (defined $opt_optimize) {
@@ -1057,11 +1062,21 @@ Command to use to invoke VCS.
 
 =back
 
-=head1 SEE ALSO
+=head1 DISTRIBUTION
+
+The latest version is available from L<http://www.veripool.org/>.
+
+Copyright 2003-2009 by Wilson Snyder.  Verilator is free software; you can
+redistribute it and/or modify it under the terms of either the GNU Lesser
+General Public License or the Perl Artistic License.
 
 =head1 AUTHORS
 
 Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+L<verilator>
 
 =cut
 

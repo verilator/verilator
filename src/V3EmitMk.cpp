@@ -37,9 +37,14 @@
 
 class EmitMkVisitor : public EmitCBaseVisitor {
 public:
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void emitClassMake() {
 	// Generate the makefile
 	V3OutMkFile of (v3Global.opt.makeDir()+"/"+ v3Global.opt.prefix() + "_classes.mk");

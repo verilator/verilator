@@ -26,6 +26,7 @@
 #include "verilatedos.h"
 #include <string>
 #include <vector>
+#include <map>
 #include <set>
 
 #include "V3Global.h"
@@ -75,6 +76,9 @@ typedef vector<string> V3StringList;
 typedef set<string> V3StringSet;
 
 class V3Options {
+    // TYPES
+    typedef map<string,int> DebugSrcMap;
+
     // MEMBERS (general options)
     V3OptionsImp*	m_impp;		// Slow hidden options
 
@@ -82,6 +86,7 @@ class V3Options {
     V3StringSet	m_futures;	// argument: -Wfuture- list
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
     V3StringList m_vFiles;	// argument: Verilog files to read
+    DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
 
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
@@ -170,6 +175,8 @@ class V3Options {
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
+    void setDebugSrcLevel(const string& srcfile, int level);
+    int debugSrcLevel(const string& srcfile, int default_level=V3Error::debugDefault());
 
     // METHODS
     void addCppFile(const string& filename);
@@ -187,7 +194,7 @@ class V3Options {
     bool systemPerl() const { return m_systemPerl; }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
-    bool assertOn() const { return m_assert; }  // assertOn as "assert" may be defined
+    bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }

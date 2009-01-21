@@ -81,9 +81,13 @@ private:
     AssignMap			m_assignMap;	// List of all simple assignments for each variable
     bool			m_elimUserVars;	// Allow removal of user's vars
     bool			m_sideEffect;	// Side effects discovered in assign RHS
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {

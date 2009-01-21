@@ -53,7 +53,11 @@ private:
     AstModule*	m_modp;		// Current module
     AstCell*	m_cellp;	// Current cell
 
-    //int debug() { return 8; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
     //int m_debug;  int debug() { return m_debug; }
 
     // VISITORS
@@ -147,7 +151,11 @@ private:
     int		m_instNum;	// Current instantiation number
     int		m_instLsb;	// Current instantiation number
 
-    //int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {

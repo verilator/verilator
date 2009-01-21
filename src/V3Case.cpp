@@ -58,7 +58,12 @@
 class CaseLintVisitor : public AstNVisitor {
 private:
     AstNodeCase* m_caseExprp;	// Under a CASE value node, if so the relevant case statement
-    //int debug() { return 9; }
+
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
 	// Detect multiple defaults
@@ -130,9 +135,13 @@ private:
     int		m_caseNoOverlapsAllCovered;	// Proven to be synopsys parallel_case compliant
     AstNode*	m_valueItem[1<<CASE_OVERLAP_WIDTH];  // For each possible value, the case branch we need
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     bool isCaseTreeFast(AstCase* nodep) {
 	int width = 0;
 	m_caseItems = 0;

@@ -81,15 +81,18 @@ private:
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
     AstNodeCase* m_casep;	// Current case statement CaseItem is under
 
-    //int debug() { return 9; }
-
     // CLASSES
 #define ANYSIZE 0
 
     // METHODS
-    //   Naming:  width_{output size rule}_{lhs rule}_{rhs rule}
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
+    //   Naming:  width_{output size rule}_{lhs rule}_{rhs rule}
     // Widths: 1 bit out, lhs 1 bit
     void width_O1_L1(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstLogNot* nodep, AstNUser* vup) {	width_O1_L1(nodep,vup); }

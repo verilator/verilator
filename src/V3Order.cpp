@@ -254,8 +254,6 @@ private:
     AstUser3InUse	m_inuser3;
     //AstUser4InUse	m_inuser4;	// Used only when building tree, so below
 
-    //int debug() { return 9; }
-
     // STATE
     OrderGraph		m_graph;	// Scoreboard of var usages/dependencies
     SenTreeFinder	m_finder;	// Find global sentree's and add them
@@ -296,6 +294,12 @@ private:
     enum VarUsage { VU_NONE=0, VU_CON=1, VU_GEN=2 };
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void iterateNewStmt(AstNode* nodep) {
 	if (m_scopep) {
 	    UINFO(4,"   STMT "<<nodep<<endl);

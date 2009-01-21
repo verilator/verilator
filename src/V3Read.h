@@ -51,6 +51,8 @@ class V3Read {
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
     deque<FileLine>  m_lintState;	// Current lint state for save/restore
     deque<string> m_ppBuffers;		// Preprocessor->lex buffer of characters to process
+
+    // Options isn't visible, so not using debugSrcLevel
     //int debug() { return 9; }
 
 protected:

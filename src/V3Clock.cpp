@@ -71,9 +71,14 @@ private:
     AstSenTree*		m_lastSenp;	// Last sensitivity match, so we can detect duplicates.
     AstIf*		m_lastIfp;	// Last sensitivity if active to add more under
     int			m_stableNum;	// Number of each untilstable
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
 	if (vscp->user1p()) return ((AstVarScope*)vscp->user1p());
 	AstVar* varp = vscp->varp();

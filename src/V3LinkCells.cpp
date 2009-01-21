@@ -96,7 +96,11 @@ private:
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
 
-    //int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // METHODS
     V3GraphVertex* vertex(AstModule* nodep) {

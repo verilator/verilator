@@ -43,9 +43,14 @@ private:
     // STATE
     int		m_likely;	// Excuses for branch likely taken
     int		m_unlikely;	// Excuses for branch likely not taken
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void reset() {
 	m_likely = false;
 	m_unlikely = false;

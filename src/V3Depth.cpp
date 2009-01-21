@@ -51,9 +51,13 @@ private:
     int			m_depth;	// How deep in an expression
     int			m_maxdepth;	// Maximum depth in an expression
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void createDeepTemp(AstNode* nodep) {
 	UINFO(6,"  Deep  "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"deep:");

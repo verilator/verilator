@@ -56,7 +56,13 @@ private:
     // STATE
     AstTopScope*	m_topscopep;	// Top scope for adding sentrees under
     SenTreeFinder	m_finder;	// Find global sentree's and add them
-    //int debug() { return 9; }
+
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {

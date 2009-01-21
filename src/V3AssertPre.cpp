@@ -48,9 +48,13 @@ private:
     // Reset each assertion:
     AstNodeSenItem*	m_senip;	// Last sensitivity
 
-    int debug() { return 0; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     AstSenTree* newSenTree(AstNode* nodep) {
 	// Create sentree based on clocked or default clock
 	// Return NULL for always

@@ -35,8 +35,12 @@
 class V3GraphTest {
 public:
     // ***These tests only run with DEBUG ON***
-    //static int debug() { return 9; }
-    static int debug() { return 0; }
+    static int debug() {
+	static int level = -1;
+	// Note setting just --debug will not enable this, as we exit when we run the test
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__, 0);
+	return level;
+    }
 
 protected:
     // MEMBERS

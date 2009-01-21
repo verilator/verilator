@@ -270,7 +270,6 @@ private:
     // STATE
     LifeState*	m_statep;	// Current state
     bool	m_sideEffect;	// Side effects discovered in assign RHS
-    //static int debug() { return 9; }
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
@@ -278,6 +277,12 @@ private:
     LifeBlock*	m_lifep;	// Current active lifetime map for current scope
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// Consumption/generation of a variable,

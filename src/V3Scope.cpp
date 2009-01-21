@@ -56,7 +56,12 @@ private:
     AstCell*	m_aboveCellp;	// Cell that instantiates this module
     AstScope*	m_aboveScopep;	// Scope that instantiates this scope
 
-    //int debug() { return 9; }
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
@@ -250,9 +255,13 @@ private:
     // STATE
     AstScope*	m_scopep;	// Current scope we are building
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     // VISITORS
     virtual void visit(AstScope* nodep, AstNUser*) {
 	// Want to ignore blocks under it

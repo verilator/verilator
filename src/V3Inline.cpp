@@ -62,7 +62,11 @@ private:
     AstCell*		m_cellp;	// Cell being cloned
     V3Double0		m_statCells;	// Statistic tracking
 
-    //int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {

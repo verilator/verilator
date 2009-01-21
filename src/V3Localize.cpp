@@ -49,7 +49,12 @@ protected:
     //  AstVar::user2()		-> VarFlags.  Flag state
     //  AstVar::user4()		-> AstVarRef*.  First place signal set; must be first assignment
 
-    //int debug() { return 9; }
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // TYPES
     union VarFlags {

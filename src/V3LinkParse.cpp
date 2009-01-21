@@ -55,9 +55,13 @@ private:
     AstParseRefExp m_exp;	// Type of data we're looking for
     AstText*	m_baseTextp;	// Lowest TEXT node that needs replacement with varref
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void checkExpected(AstNode* nodep) {
 	if (m_exp != AstParseRefExp::NONE) {
 	    nodep->v3fatalSrc("Tree syntax error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type());

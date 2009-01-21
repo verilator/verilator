@@ -63,9 +63,14 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
 	UINFO(4,"  NeedCast "<<nodep<<endl);
 	AstNRelinker relinkHandle;

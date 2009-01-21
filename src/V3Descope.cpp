@@ -55,9 +55,14 @@ private:
     AstScope*		m_scopep;	// Current scope
     bool		m_needThis;	// Add thisp to function
     FuncMmap		m_modFuncs;	// Name of public functions added
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     string descopedName(AstScope* scopep, bool& hierThisr, AstVar* varp=NULL) {
 	UASSERT(scopep, "Var/Func not scoped\n");
 	hierThisr = true;

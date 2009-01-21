@@ -44,8 +44,14 @@ private:
     vector<AstVar*>		m_ctorVarsVec;		// All variables in constructor order
     int		m_splitSize;	// # of cfunc nodes placed into output file
     int		m_splitFilenum;	// File number being created, 0 = primary
+
 public:
-    //int debug() { return 9; }
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // ACCESSORS
     int	splitFilenum() { return m_splitFilenum; }
@@ -1680,8 +1686,7 @@ void EmitCImp::main(AstModule* modp, bool slow, bool fast) {
     string filenameNoExt = v3Global.opt.makeDir()+"/"+ modClassName(modp)+(m_fast ? "" : "__Slow");
 
     if (debug()>=5) {
-	for (int i=0;i<modp->level();i++) { cout<<"  "; }
-	UINFONL(0,"  Emitting "<<modClassName(modp)<<endl);
+	UINFO(0,"  Emitting "<<modClassName(modp)<<endl);
     }
 
     if (optSystemPerl()) {

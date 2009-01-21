@@ -71,7 +71,11 @@ private:
     int		m_beginNum;	// Begin block number, 0=none seen
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
-    //int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 
     // METHODS
     void linkVarName (AstVarRef* nodep) {

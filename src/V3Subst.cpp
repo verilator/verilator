@@ -45,8 +45,11 @@
 
 class SubstBaseVisitor : public AstNVisitor {
 public:
-    static int debug() { return V3Error::debugDefault(); }
-//    static int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 };
 
 //######################################################################
@@ -80,6 +83,7 @@ class SubstVarEntry {
     SubstVarWord	m_whole;	// Data for whole vector used at once
     vector<SubstVarWord> m_words;	// Data for every word, if multi word variable
     int debug() { return SubstBaseVisitor::debug(); }
+
 public:
     // CONSTRUCTORS
     SubstVarEntry (AstVar* varp) {	// Construction for when a var is used

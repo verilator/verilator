@@ -235,9 +235,13 @@ private:
     uint32_t		m_stepNum;	// Step number we need to ignore a edge in
     V3Double0		m_statSplits;	// Statistic tracking
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void scoreboardClear() {
 	//VV*****  We reset user1p() and user2p on each block!!!
 	m_inDly = false;

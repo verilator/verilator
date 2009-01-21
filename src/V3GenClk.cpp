@@ -38,7 +38,11 @@
 
 class GenClkBaseVisitor : public AstNVisitor {
 protected:
-    //static int debug() { return 9; }
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
 };
 
 //######################################################################

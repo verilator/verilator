@@ -70,9 +70,13 @@ private:
     LongMap	m_longMap;	// Hash of very long names to unique identity number
     int		m_longId;
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void makeSmallNames(AstModule* modp) {
 	vector<int> usedLetter; usedLetter.resize(256);
 	// Pass 1, assign first letter to each gparam's name

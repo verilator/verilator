@@ -60,9 +60,13 @@ private:
     AstTraceInc*	m_inTracep;	// Inside while loop, special statement additions
     bool		m_assignLhs;	// Inside assignment lhs, don't breakup extracts
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     bool assignNoTemp(AstNodeAssign* nodep) {
 	return (nodep->lhsp()->castVarRef()
 		&& !nodep->lhsp()->castVarRef()->varp()->isSc()

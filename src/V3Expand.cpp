@@ -50,9 +50,13 @@ private:
     // STATE
     AstNode*		m_stmtp;	// Current statement
 
-    //int debug() { return 9; }
-
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     int longOrQuadWidth (AstNode* nodep) {
 	// Return 32 or 64...
 	return (nodep->width()+(VL_WORDSIZE-1)) & ~(VL_WORDSIZE-1);

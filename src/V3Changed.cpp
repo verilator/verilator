@@ -57,9 +57,14 @@ private:
     AstModule*		m_topModp;	// Top module
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
     AstCFunc*		m_chgFuncp;	// Change function we're building
-    //int debug() { return 9; }
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void genChangeDet(AstVarScope* vscp) {
 #ifdef NEW_ORDERING
 	vscp->v3fatalSrc("Not applicable\n");
