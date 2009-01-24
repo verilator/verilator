@@ -9,7 +9,7 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.035';
+$VERSION = '3.101';
 
 #======================================================================
 # main
@@ -45,8 +45,8 @@ if (! GetOptions (
     die "%Error: Bad usage, try 'bisonpre --help'\n";
 }
 
-$Opt_Input or die "bisonpp: %Error: input file not specified\n";
-$Opt_Output or die "bisonpp: %Error: --o option is required\n";
+$Opt_Input or die "bisonpre: %Error: input file not specified\n";
+$Opt_Output or die "bisonpre: %Error: --o option is required\n";
 
 process();
 
@@ -63,7 +63,7 @@ sub parameter {
     if (!defined $Opt_Input) {
 	$Opt_Input = $param;
     } else {
-	die "bisonpp: %Error: Unknown parameter: $param\n";
+	die "bisonpre: %Error: Unknown parameter: $param\n";
     }
 }
 
@@ -91,7 +91,7 @@ sub process {
     if ($status != 0) {
 	remove_outputs();
 	my $v = bison_version_check();
-	die "bisonpp: %Error: $Opt_Yacc version $v run failed due to errors\n";
+	die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
     }
 
     clean_output(tmp_prefix().".output",output_prefix().".output");
@@ -133,10 +133,10 @@ sub bison_version_check {
     my $v = `$Opt_Yacc --version`;
     if ($v && $v =~ /([0-9]+\.[0-9]+)/) {
 	my $v = $1;
-	($v >= 1.875) or die "bisonpp: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
+	($v >= 1.875) or die "bisonpre: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
 	return $v;
     } else {
-	die "bisonpp: %Error: '$Opt_Yacc' is not installed, or not working\n";
+	die "bisonpre: %Error: '$Opt_Yacc' is not installed, or not working\n";
     }
 }
 
@@ -188,12 +188,50 @@ sub clean_input {
     my @lines = $fh->getlines;
     $fh->close;
 
-    # Find "rule<type>:"
+    # Find "%tokens<type>:"
+    my %tokens;
+    foreach my $line (@lines) {
+	if ($line =~ /^%token\s*<(\S+)>\s*(\S+)/) {
+	    $tokens{$2} = $1;
+	}
+    }
+
+    # Replace BISONPRE_NOT(type,...) with expanded list
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	foreach my $line (@linesin) {
+	    if ($line =~ /BISONPRE_NOT/) {
+		($line =~ s/BISONPRE_NOT\((\S+)\)\s*({[^}]+})\s*$//)
+		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
+		my $endtok = $1;  my $action = $2;
+		my @endtoks = split (/,/, $endtok);
+		map { $tokens{$_} or die "%Error: $filename:$l: Can't find definition for token: $_\n"
+		} @endtoks;
+		# Push it all onto one line to avoid error messages changing
+		my $bar = "";
+	      tok:
+		foreach my $tok (sort keys %tokens) {
+		    foreach (@endtoks) {
+			next tok if $tok eq $_;
+		    }
+		    if ($endtok ne $tok) {
+			$line .= "\t$bar $tok $action";
+			$bar = "|";
+		    }
+		}
+		$line .= "\n";
+	    }
+	    push @lines, $line;
+	}
+    }
+
+    # Find "rule<type>:" and replace with just "rule:"
     my %types;
     {
 	my @linesin = @lines;  @lines=();  my $l=0;
 	foreach my $line (@linesin) {
-	    if ($line =~ s/^(\S+)<(\S+)>:/$1:/) {
+	    #  ^/ to prevent comments from matching
+	    if ($line =~ s/^([^<\/ \t\n]+)<(\S+)>:/$1:/) {
 		$types{$2}{$1} = 1;
 	    }
 	    push @lines, $line;
@@ -268,7 +306,11 @@ This is expanded into %type declarations.
 =item rule_label<type>:
 
 This allows the label declaring a rule to also specify the type of the
-rule.  The type will be inserted where /*BISONPP_TYPES*/ is encountered.
+rule.  The type will be inserted where /*BISONPRE_TYPES*/ is encountered.
+
+=item BISONPRE_NOT(token[, token...])
+
+Create a rule that matches every token except for those specified.
 
 =back
 
