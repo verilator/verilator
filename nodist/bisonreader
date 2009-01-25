@@ -42,8 +42,8 @@ foreach my $line (<STDIN>) {
 	$rule .= $line;
 	if ($line =~ m!^\s*;\s*$!) {
 	    #print "Rule: $rule\n";
-	    ($rule =~ /^([a-zA-Z0-9_]+):(.*)$/) or die "%Error: No rule name: $1\n";
-	    my $rulename = $1; my $preaction = $2;
+	    ($rule =~ /^([a-zA-Z0-9_]+)(<\S+>)?:(.*)$/) or die "%Error: No rule name: $1\n";
+	    my $rulename = $1; my $preaction = $3;
 	    $declared{$rulename} = $lineno;
 	    $preaction =~ s/\{[^\}]*\}/ /g;
 	    #print "RULEN $rulename PA $preaction\n" if $Debug;
@@ -62,5 +62,5 @@ foreach my $line (<STDIN>) {
 }
 
 # Local Variables:
-# compile-command: "./bisonreader < verilog.y"
+# compile-command: "./bisonreader < ../src/verilog.y"
 # End:

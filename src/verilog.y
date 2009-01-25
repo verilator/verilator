@@ -419,11 +419,12 @@ class AstSenTree;
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 
-%start fileE
+%start source_text
 
 %%
 //**********************************************************************
 // Feedback to the Lexer
+// Note we read a parenthesis ahead, so this may not change the lexer at the right point.
 
 stateExitPsl:	/* empty */			 	{ V3Read::stateExitPsl(); }
 	;
@@ -435,25 +436,29 @@ statePop:	/* empty */			 	{ V3Read::statePop(); }
 //**********************************************************************
 // Files
 
-fileE:		/* empty */				{ }
-	|       timeunits_declarationE 	file	      	{ }
+source_text:			// ==IEEE: source_text
+		/* empty */				{ }
+	|       timeunits_declarationE 	descriptionList	{ }
 	;
 
-file:		description				{ }
-	|	file description			{ }
+descriptionList:		// IEEE: part of source_text
+		description				{ }
+	|	descriptionList description		{ }
 	;
 
 description:			// ==IEEE: description
 		module_declaration			{ }
 //	|	interfaceDecl				{ }
-//      |       programDecl                             { }
-//      |       packageDecl                             { }
-//	|	packageItem				{ }
+//      |       program_declaration			{ }
+//      |       package_declaration			{ }
+//	|	package_item				{ }
+//	|	bind_directive				{ }
+	|	error					{ }
 	;
 
 timeunits_declarationE:		// IEEE: timeunits_declaration + empty
 		/*empty*/							{ }
-        |	yTIMEUNIT       yaTIMENUM ';'					{ }
+	|	yTIMEUNIT       yaTIMENUM ';'					{ }
 	| 	yTIMEPRECISION  yaTIMENUM ';'					{ }
 	| 	yTIMEUNIT       yaTIMENUM ';' yTIMEPRECISION  yaTIMENUM ';' 	{ }
 	| 	yTIMEPRECISION  yaTIMENUM ';' yTIMEUNIT       yaTIMENUM ';'	{ }
@@ -463,23 +468,24 @@ timeunits_declarationE:		// IEEE: timeunits_declaration + empty
 // Module headers
 
 module_declaration:		// ==IEEE: module_declaration (incomplete)
-		modHeader  timeunits_declarationE modItemListE yENDMODULE endLabelE
+		modHeader timeunits_declarationE module_itemListE yENDMODULE endLabelE
 			{ if ($3) $1->addStmtp($3); }
 	;
 
-modHeader<modulep>:
-		modHdr modParE modPortsE ';'
+modHeader<modulep>:		// IEEE: module_nonansi_header + module_ansi_header
+		modHdr parameter_port_listE modPortsE ';'
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); }
 	;
 
 modHdr<modulep>:
-		yMODULE yaID				{ $$ = new AstModule($1,*$2); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
-							  $$->modTrace(v3Global.opt.trace());
-							  V3Read::rootp()->addModulep($$); }
+		yMODULE yaID
+			{ $$ = new AstModule($1,*$2); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
+			  $$->modTrace(v3Global.opt.trace());
+			  V3Read::rootp()->addModulep($$); }
 	;
 
-modParE<nodep>:
+parameter_port_listE<nodep>:	// IEEE: parameter_port_list + empty == parameter_value_assignment
 		/* empty */				{ $$ = NULL; }
 	|	'#' '(' ')'				{ $$ = NULL; }
 	|	'#' '(' modParArgs ')'			{ $$ = $3; }
@@ -576,10 +582,11 @@ modParDecl<nodep>:
 		varRESET varGParam  signingE regrangeE   param 	{ $$ = $5; }
 	;
 
-varRESET:	/* empty */ 				{ VARRESET(); }
+varRESET:
+		/* empty */ 				{ VARRESET(); }
 	;
 
-net_type:			// ==IEEE: net_type  (complete)
+net_type:			// ==IEEE: net_type
 		ySUPPLY0				{ VARDECL(SUPPLY0); }
 	|	ySUPPLY1				{ VARDECL(SUPPLY1); }
 	|	yWIRE 					{ VARDECL(WIRE); }
@@ -602,13 +609,14 @@ port_direction:			// ==IEEE: port_direction
 //	|	yREF					{ VARIO(REF); }
 	;
 
-signingE:			// IEEE: signing - plus empty (complete)
+signingE:			// IEEE: signing - plus empty
 		/*empty*/ 				{ }
 	|	ySIGNED					{ VARSIGNED(true); }
 	|	yUNSIGNED				{ VARSIGNED(false); }
 	;
 
-v2kVarDeclE:	/*empty*/ 				{ }
+v2kVarDeclE:
+		/*empty*/ 				{ }
 	|	net_type				{ }
 	|	varReg 					{ }
 	;
@@ -616,19 +624,24 @@ v2kVarDeclE:	/*empty*/ 				{ }
 //************************************************
 // Module Items
 
-modItemListE<nodep>:
+module_itemListE<nodep>:	// IEEE: Part of module_declaration
 		/* empty */				{ $$ = NULL; }
-	|	modItemList				{ $$ = $1; }
+	|	module_itemList				{ $$ = $1; }
 	;
 
-modItemList<nodep>:
-		modItem					{ $$ = $1; }
-	|	modItemList modItem			{ $$ = $1->addNextNull($2); }
+module_itemList<nodep>:		// IEEE: Part of module_declaration
+		module_item				{ $$ = $1; }
+	|	module_itemList module_item		{ $$ = $1->addNextNull($2); }
 	;
 
-modItem<nodep>:
-		modOrGenItem 				{ $$ = $1; }
-	|	generateRegion				{ $$ = $1; }
+module_item<nodep>:		// ==IEEE: module_item
+	//			// IEEE: non_port_module_item
+		generate_region				{ $$ = $1; }
+	|	modOrGenItem 				{ $$ = $1; }
+	//			// IEEE: specify_block
+	|	ySPECIFY specifyJunkList yENDSPECIFY	{ $$ = NULL; }
+	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
+	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
 	|	yaSCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
 	|	yaSCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
@@ -638,32 +651,35 @@ modItem<nodep>:
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
-	|	ySPECIFY specifyJunkList yENDSPECIFY	{ $$ = NULL; }
-	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
 	;
 
-// IEEE: generate_region
-generateRegion<nodep>:
+generate_region<nodep>:		// ==IEEE: generate_region
 		yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
 	;
 
-// IEEE: ??? + parameter_override
+// IEEE: module_or_generate_item + module_common_item + parameter_override
 modOrGenItem<nodep>:
+	//			// IEEE: always_construct
 		yALWAYS event_controlE stmtBlock	{ $$ = new AstAlways($1,$2,$3); }
-	|	yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
+	//			// IEEE: initial_construct
 	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
+	//			// IEEE: final_construct
+	|	yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
+	//			// IEEE: continuous_assign
 	|	yASSIGN delayE assignList ';'		{ $$ = $3; }
 	|	yDEFPARAM list_of_defparam_assignments ';'	{ $$ = $2; }
 	|	instDecl 				{ $$ = $1; }
 	|	taskDecl 				{ $$ = $1; }
-	|	funcDecl 				{ $$ = $1; }
+	|	function_declaration 			{ $$ = $1; }
 	|	gateDecl 				{ $$ = $1; }
 	|	portDecl 				{ $$ = $1; }
 	|	varDecl 				{ $$ = $1; }
 	//No: |	tableDecl				// Unsupported
 	|	pslStmt 				{ $$ = $1; }
-	|	concurrent_assertion_item		{ $$ = $1; }  // IEEE puts in modItem; seems silly
+	|	concurrent_assertion_item		{ $$ = $1; }  // IEEE puts in module_item; seems silly
 	|	clocking_declaration			{ $$ = $1; }
+
+	|	error ';'				{ $$ = NULL; }
 	;
 
 //************************************************
@@ -680,7 +696,7 @@ genTopBlock<nodep>:
 	|	genItemBegin				{ $$ = $1; }
 	;
 
-genItemBegin<nodep>:
+genItemBegin<nodep>:		// IEEE: part of generate_block
 		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2); }
 	|	yBEGIN yEND				{ $$ = NULL; }
 	|	yBEGIN ':' yaID genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
@@ -693,10 +709,12 @@ genItemList<nodep>:
 	;
 
 genItem<nodep>:
+	//			// IEEE: module_or_interface_or_generate_item (INCOMPLETE)
 		modOrGenItem 				{ $$ = $1; }
 	|	yCASE  '(' expr ')' genCaseListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
 	|	yIF '(' expr ')' genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
 	|	yIF '(' expr ')' genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$3,$5,$7); }
+	//			// IEEE: loop_generate_construct
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
 							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
 									     ,$7, new AstAssign($10,$9,$11)
@@ -727,14 +745,15 @@ assignList<nodep>:
 
 assignOne<nodep>:
 		varRefDotBit '=' expr			{ $$ = new AstAssignW($2,$1,$3); }
-	|	'{' concIdList '}' '=' expr		{ $$ = new AstAssignW($1,$2,$5); }
+	|	'{' identifier_listLvalue '}' '=' expr	{ $$ = new AstAssignW($1,$2,$5); }
 	;
 
-delayE:		/* empty */				{ }
+delayE:
+		/* empty */				{ }
 	|	delay_control				{ } /* ignored */
 	;
 
-delay_control<fileline>:	//== IEEE: delay_control (complete)
+delay_control<fileline>:	//== IEEE: delay_control
 		'#' dlyTerm				{ $$ = $1; } /* ignored */
 	|	'#' '(' minTypMax ')'			{ $$ = $1; } /* ignored */
 	|	'#' '(' minTypMax ',' minTypMax ')'			{ $$ = $1; } /* ignored */
@@ -748,8 +767,7 @@ dlyTerm<nodep>:
 	|	yaTIMENUM 				{ $$ = NULL; }
 	;
 
-// IEEE: mintypmax_expression and constant_mintypmax_expression
-minTypMax<nodep>:
+minTypMax<nodep>:		// IEEE: mintypmax_expression and constant_mintypmax_expression
 		dlyTerm					{ $$ = $1; } /* ignored */
 	|	dlyTerm ':' dlyTerm ':' dlyTerm		{ $$ = $1; } /* ignored */
 	;
@@ -783,18 +801,22 @@ sigId<varp>:
 		yaID					{ $$ = V3Parse::createVariable(CRELINE(), *$1, NULL); }
 	;
 
-regsig<varp>:	regSigId sigAttrListE			{}
+regsig<varp>:
+		regSigId sigAttrListE			{}
 	;
 
-sigAttrListE:	/* empty */				{}
+sigAttrListE:
+		/* empty */				{}
 	|	sigAttrList				{}
 	;
 
-sigAttrList:	sigAttr					{}
+sigAttrList:
+		sigAttr					{}
 	|	sigAttrList sigAttr			{}
 	;
 
-sigAttr:	yVL_CLOCK				{ V3Parse::s_varAttrp->attrScClocked(true); }
+sigAttr:
+		yVL_CLOCK				{ V3Parse::s_varAttrp->attrScClocked(true); }
 	|	yVL_CLOCK_ENABLE			{ V3Parse::s_varAttrp->attrClockEn(true); }
 	|	yVL_PUBLIC				{ V3Parse::s_varAttrp->sigPublic(true); V3Parse::s_varAttrp->sigModPublic(true); }
 	|	yVL_PUBLIC_FLAT				{ V3Parse::s_varAttrp->sigPublic(true); }
@@ -806,7 +828,7 @@ rangeListE<rangep>:
 	|	rangeList 				{ $$ = $1; }
 	;
 
-rangeList<rangep>:
+rangeList<rangep>:		// IEEE: packed_dimension + ...
 		anyrange				{ $$ = $1; }
         |	rangeList anyrange			{ $$ = $1; $1->addNext($2); }
 	;
@@ -844,12 +866,12 @@ paramList<varp>:
 	|	paramList ',' param			{ $$ = $1; $1->addNext($3); }
 	;
 
-list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments (complete)
+list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments
 		defparam_assignment			{ $$ = $1; }
 	|	list_of_defparam_assignments ',' defparam_assignment	{ $$ = $1->addNext($3); }
 	;
 
-defparam_assignment<nodep>:	// ==IEEE: defparam_assignment (complete)
+defparam_assignment<nodep>:	// ==IEEE: defparam_assignment
 		yaID '.' yaID '=' expr 			{ $$ = new AstDefParam($4,*$1,*$3,$5); }
 	;
 
@@ -904,6 +926,7 @@ cellpinItemE<pinp>:
 event_controlE<sentreep>:
 		/* empty */				{ $$ = NULL; }
 	|	event_control				{ $$ = $1; }
+	;
 
 event_control<sentreep>:	// ==IEEE: event_control
 		'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
@@ -928,7 +951,7 @@ senitemVar<senitemp>:
 		varRefDotBit				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
 	;
 
-senitemEdge<senitemp>:
+senitemEdge<senitemp>:		// IEEE: part of event_expression
 		yPOSEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
 	|	yNEGEDGE varRefDotBit			{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
 	|	yPOSEDGE '(' varRefDotBit ')'		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$3); }
@@ -938,7 +961,7 @@ senitemEdge<senitemp>:
 //************************************************
 // Statements
 
-stmtBlock<nodep>:
+stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 		stmt					{ $$ = $1; }
 	|	yBEGIN stmtList yEND			{ $$ = $2; }
 	|	yBEGIN yEND				{ $$ = NULL; }
@@ -956,19 +979,23 @@ stmtList<nodep>:
 	|	stmtList stmtBlock			{ $$ = ($2==NULL)?($1):($1->addNext($2)); }
 	;
 
+// IEEE: statement_or_null (may include more stuff, not analyzed)
+//	== function_statement_or_null
 stmt<nodep>:
 		';'					{ $$ = NULL; }
 	|	labeledStmt				{ $$ = $1; }
 	|	yaID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
 
+	//			// IEEE: nonblocking_assignment
+	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
+
 	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement.\n"); }
 
-	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
 	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
 	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
-	|	'{' concIdList '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
-	|	'{' concIdList '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
+	|	'{' identifier_listLvalue '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
+	|	'{' identifier_listLvalue '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH ';'				{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
@@ -1008,14 +1035,14 @@ stmt<nodep>:
 //************************************************
 // Case/If
 
-unique_priorityE<uniqstate>:
+unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 		/*empty*/				{ $$ = uniq_NONE; }
 	|	yPRIORITY				{ $$ = uniq_PRIORITY; }
 	|	yUNIQUE					{ $$ = uniq_UNIQUE; }
 	;
 
 stateCaseForIf<nodep>:
-		unique_priorityE caseStmt caseAttrE caseListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
+		unique_priorityE caseStmt caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
 							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
 							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
@@ -1033,29 +1060,30 @@ stateCaseForIf<nodep>:
 caseStmt<casep>:
 	 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
 	|	yCASEX '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
-	|	yCASEZ '(' expr ')'	 		{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
+	|	yCASEZ '(' expr ')'			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
 	;
 
-caseAttrE: 	/*empty*/				{ }
+caseAttrE:
+	 	/*empty*/				{ }
 	|	caseAttrE yVL_FULL_CASE			{ V3Parse::s_caseAttrp->fullPragma(true); }
 	|	caseAttrE yVL_PARALLEL_CASE		{ V3Parse::s_caseAttrp->parallelPragma(true); }
 	;
 
-caseListE<caseitemp>:
+case_itemListE<caseitemp>:	// IEEE: [ { case_item } ]
 		/* empty */				{ $$ = NULL; }
-	|	caseList				{ $$ = $1; }
+	|	case_itemList				{ $$ = $1; }
 	;
 
-caseList<caseitemp>:
+case_itemList<caseitemp>:	// IEEE: { case_item + ... }
 		caseCondList ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
 	|	yDEFAULT ':' stmtBlock			{ $$ = new AstCaseItem($2,NULL,$3); }
 	|	yDEFAULT stmtBlock			{ $$ = new AstCaseItem($1,NULL,$2); }
-	|	caseList caseCondList ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
-	|       caseList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,NULL,$3)); }
-	|	caseList yDEFAULT ':' stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
+	|	case_itemList caseCondList ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
+	|       case_itemList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,NULL,$3)); }
+	|	case_itemList yDEFAULT ':' stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
 	;
 
-caseCondList<nodep>:
+caseCondList<nodep>:		// IEEE: part of case_item
 		expr 					{ $$ = $1; }
 	|	caseCondList ',' expr			{ $$ = $1;$1->addNext($3); }
 	;
@@ -1077,14 +1105,14 @@ taskDecl<nodep>:
 			{ $$ = new AstTask ($1,*$3,$4);}
 	;
 
-funcDecl<funcp>:
+function_declaration<funcp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE         funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
 	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
 	| 	yFUNCTION lifetimeE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
 	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
-lifetimeE:			// IEEE: lifetime - plus empty (complete)
+lifetimeE:			// IEEE: lifetime - plus empty
 		/* empty */		 		{ }
 	|	ySTATIC			 		{ $1->v3error("Unsupported: Static in this context\n"); }
 	|	yAUTOMATIC		 		{ }
@@ -1118,7 +1146,8 @@ funcVar<nodep>:
 	|	yVL_NO_INLINE_TASK			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_TASK); }
 	;
 
-parenE:		/* empty */				{ }
+parenE:
+		/* empty */				{ }
 	|	'(' ')'					{ }
 	;
 
@@ -1358,7 +1387,8 @@ gatePullup<pullp>: gateIdE instRangeE '(' varRefDotBit ')'	{ $$ = new AstPull ($
 	;
 gatePulldown<pullp>: gateIdE instRangeE '(' varRefDotBit ')'	{ $$ = new AstPull ($3, $4, false); }
 	;
-gateIdE:	/*empty*/				{}
+gateIdE:
+		/*empty*/				{}
 	|	yaID					{}
 	;
 
@@ -1382,71 +1412,14 @@ gateXorPinList<nodep>:
 //************************************************
 // Specify
 
-specifyJunkList:	specifyJunk 			{} /* ignored */
-	|	specifyJunkList specifyJunk		{} /* ignored */
+specifyJunkList:
+		specifyJunk 				{ } /* ignored */
+	|	specifyJunkList specifyJunk		{ } /* ignored */
 	;
 
-specifyJunk:	dlyTerm 	{} /* ignored */
-	|	';' {}
-	|	'!' {}
-	|	'&' {}
-	|	'(' {}
-	|	')' {}
-	|	'*' {} | '/' {} | '%' {}
-	|	'+' {} | '-' {}
-	|	',' {}
-	|	':' {}
-	|	'$' {}
-	|	'=' {}
-	|	'>' {} | '<' {}
-	|	'?' {}
-	|	'^' {}
-	|	'{' {} | '}' {}
-	|	'[' {} | ']' {}
-	|	'|' {}
-	|	'~' {}
-	|	'@' {}
-
-	|	yIF {}
-	|	yNEGEDGE {}
-	|	yPOSEDGE {}
-
-	|	yaSTRING {}
-	|	yaTIMINGSPEC {}
-
-	|	yP_ANDAND {} | yP_GTE {} | yP_LTE {}
-	|	yP_EQUAL {} | yP_NOTEQUAL {}
-	|	yP_CASEEQUAL {} | yP_CASENOTEQUAL {}
-	|	yP_WILDEQUAL {} | yP_WILDNOTEQUAL {}
-	|	yP_XNOR {} | yP_NOR {} | yP_NAND {}
-	|	yP_OROR {}
-	|	yP_SLEFT {} | yP_SRIGHT {} | yP_SSRIGHT {}
-	|	yP_PLUSCOLON {} | yP_MINUSCOLON {}
-	|	yP_POW {}
-
-	|	yP_MINUSGT {}
-	|	yP_LOGIFF {}
-	|	yPSL_BRA {}
-	|	yPSL_KET {}
-	|	yP_ORMINUSGT {}
-	|	yP_OREQGT {}
-	|	yP_EQGT {}	| yP_ASTGT {}
-	|	yP_ANDANDAND {}
-	|	yP_MINUSGTGT {}
-	|	yP_POUNDPOUND {}
-	|	yP_DOTSTAR {}
-	|	yP_ATAT {}
-	|	yP_COLONCOLON {}
-	|	yP_COLONEQ {}
-	|	yP_COLONDIV {}
-
-	|	yP_PLUSEQ {}	| yP_MINUSEQ {}
-	|	yP_TIMESEQ {}
-	|	yP_DIVEQ {}	| yP_MODEQ {}
-	|	yP_ANDEQ {}	| yP_OREQ {}
-	|	yP_XOREQ {}
-	|	yP_SLEFTEQ {}	| yP_SRIGHTEQ {} | yP_SSRIGHTEQ {}
-
+specifyJunk:
+		BISONPRE_NOT(ySPECIFY,yENDSPECIFY)	{ }
+	|	ySPECIFY specifyJunk yENDSPECIFY	{ }
 	|	error {}
 	;
 
@@ -1492,12 +1465,13 @@ strAsText<nodep>:
 		yaSTRING				{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
 	;
 
-concIdList<nodep>:
+identifier_listLvalue<nodep>:	// IEEE: identifier_list for lvalue only
 		varRefDotBit				{ $$ = $1; }
-	|	concIdList ',' varRefDotBit		{ $$ = new AstConcat($2,$1,$3); }
+	|	identifier_listLvalue ',' varRefDotBit	{ $$ = new AstConcat($2,$1,$3); }
 	;
 
-endLabelE:	/* empty */				{ }
+endLabelE:
+		/* empty */				{ }
 	|	':' yaID				{ }
 	;
 
@@ -1513,7 +1487,7 @@ clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
 			{ $$ = new AstClocking($1, $5, NULL); }
 	;
 
-concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item  (complete)
+concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 		concurrent_assertion_statement		{ $$ = $1; }
 	|	yaID ':' concurrent_assertion_statement	{ $$ = new AstBegin($2,*$1,$3); }
 	;
@@ -1522,7 +1496,7 @@ concurrent_assertion_statement<nodep>:	// IEEE: concurrent_assertion_statement  
 		cover_property_statement		{ $$ = $1; }
 	;
 
-cover_property_statement<nodep>:	// IEEE: cover_property_statement (complete)
+cover_property_statement<nodep>:	// IEEE: cover_property_statement
 		yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
 	;
 

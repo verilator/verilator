@@ -1,0 +1,73 @@
+#!/usr/bin/perl -w
+######################################################################
+#
+# Copyright 2007-2009 by Wilson Snyder.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of either the GNU General Public License or the
+# Perl Artistic License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the Perl Artistic License
+# along with this module; see the file COPYING.  If not, see
+# www.cpan.org
+#
+######################################################################
+
+# DESCRIPTION: Diff bison files
+
+use IO::File;
+use strict;
+
+my $Debug;
+
+diff($ARGV[0],$ARGV[1]);
+
+sub diff {
+    my $a=shift;
+    my $b=shift;
+
+    my $ta = "/tmp/bisondiff.$$.a";
+    my $tb = "/tmp/bisondiff.$$.b";
+
+    prep($a,$ta);
+    prep($b,$tb);
+
+    system("diff -u -w $ta $tb");
+}
+
+sub prep {
+    my $filename = shift;
+    my $wfilename = shift;
+
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename";
+    my $fho = IO::File->new(">$wfilename") or die "%Error: $! writing $wfilename";
+
+    my %declared;
+    my %used;
+
+    my $body = 0;
+    my $rule = "";
+    my $skip = 1;
+    while (defined(my $line = $fh->getline)) {
+	if ($skip == 1) {
+	    next if $line !~ /%token/;
+	    $skip = 2;
+	}
+	# %type<foo>
+	$line =~ s/^(%\S+)<(\S+)>/$1/;
+	# rule<foo>
+	$line =~ s/^([a-zA-Z0-9_]+)<\S+>:/$1:/;
+	# Productions
+	$line =~ s/[ \t]{[^}]*?}/\t{}/g;
+	$fho->print($line);
+    }
+}
+
+# Local Variables:
+# compile-command: "./bisondiff $WUP/Verilog/Parser/VParseBison.y ../src/verilog.y"
+# End:
