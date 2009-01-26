@@ -1304,6 +1304,7 @@ this to the signal causing a false loop may clear up the problem.
 IE, with the following
 
     reg splitme /* verilator isolate_assignments*/;
+    // Note the placement of the semicolon above
     always @* begin
       if (....) begin
          splitme = ....;
@@ -2363,7 +2364,8 @@ strips array bound checks where it believes them to be unnecessary.)
 
 In the SYSTEMC example above, if you had in our.v:
 
-         input clk /*verilator public*/;
+    input clk /*verilator public*/;
+    // Note the placement of the semicolon above
 
 From the sc_main.cpp file, you'd then:
 
