@@ -582,7 +582,7 @@ void GateVisitor::replaceAssigns() {
 		//if (debug()>9) {vscp->dumpTree(cout, "-vscDone: "); cout<<endl;}
 		if (!vscp->valuep()->castNodeMath()
 		    || vscp->valuep()->nextp()) {
-		    vscp->dumpTree(cout, "vscStrange: ");
+		    vscp->dumpTree(cerr, "vscStrange: ");
 		    vscp->v3fatalSrc("Value of varscope not mathematical\n");
 		}
 	    }

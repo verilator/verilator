@@ -228,7 +228,7 @@ void V3Graph::clearColors() {
 
 void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    cout<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;
+    cerr<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;
 }
 
 void V3Graph::dump(ostream& os) {

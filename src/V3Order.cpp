@@ -121,10 +121,10 @@ class OrderMoveDomScope;
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
     if (debug()) cout<<"-Info-Loop: "<<vertexp<<" "<<endl;
     if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
-	cout<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->nodep()->fileline()<<" "<<vvertexp->nodep()->typeName()<<endl;
+	cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->nodep()->fileline()<<" "<<vvertexp->nodep()->typeName()<<endl;
     }
     if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
-	cout<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->varScp()->fileline()<<" "<<vvertexp->varScp()->prettyName()<<endl;
+	cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->varScp()->fileline()<<" "<<vvertexp->varScp()->prettyName()<<endl;
     }
 };
 

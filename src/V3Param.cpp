@@ -233,7 +233,7 @@ public:
 
 void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
     // Cell: Check for parameters in the instantiation.
-    if (!nodep->modp()) { nodep->dumpTree(cout,"error:"); nodep->v3fatalSrc("Not linked?"); }
+    if (!nodep->modp()) { nodep->dumpTree(cerr,"error:"); nodep->v3fatalSrc("Not linked?"); }
     if (nodep->paramsp()) {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);
 	// Create new module name with _'s between the constants

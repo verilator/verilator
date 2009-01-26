@@ -129,9 +129,9 @@ public:
 		    // Use only AstNode::dump instead of the virtual one, as there
 		    // may be varp() and other cross links that are bad.
 		    if (debug()) {
-			cout<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
-			((AstNode*)(it->first))->AstNode::dump(cout);
-			cout<<endl;
+			cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
+			((AstNode*)(it->first))->AstNode::dump(cerr);
+			cerr<<endl;
 			V3Error::incErrors();
 		    }
 		    it->second |= FLAG_LEAKED;
