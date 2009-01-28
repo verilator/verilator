@@ -2158,7 +2158,7 @@ using --debug), see if your machine is paging; most likely you need to run
 it on a machine with more memory.  Verilator is a full 64 bit application
 and may use more than 4GB, but about 1GB is the maximum typically needed.
 
-=item How do I generate waveforms (traces) in C++ or SystemC?
+=item How do I generate waveforms (traces) in C++?
 
 See the next question for tracing in SystemPerl mode.
 
@@ -2177,7 +2177,7 @@ distribution.
 You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
 done for you if using the Verilator --exe flag.
 
-=item How do I generate waveforms (traces) in SystemPerl?
+=item How do I generate waveforms (traces) in SystemC/SystemPerl?
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
 is installed.
@@ -2186,6 +2186,10 @@ In your top level C sc_main code, call Verilated::traceEverOn(true).  Then
 create a SpTraceFile object as you would create a normal SystemC trace
 file.  For an example, see the call to SpTraceFile in the
 test_sp/sc_main.cpp file of the distribution.
+
+Alternatively you may use the C++ trace mechanism described in the previous
+question, however the timescale and timeprecision will not inherited from
+your SystemC settings.
 
 =item How do I view waveforms (traces)?
 
