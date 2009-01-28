@@ -129,9 +129,13 @@ class AstSenTree;
     AstVarRef*	varrefp;
 }
 
+// When writing Bison patterns we use yTOKEN instead of "token",
+// so Bison will error out on unknown "token"s.
+
 // Generic lexer tokens, for example a number
 // IEEE: real_number
 %token<cdouble>		yaFLOATNUM	"FLOATING-POINT NUMBER"
+
 // IEEE: identifier, class_identifier, class_variable_identifier,
 // covergroup_variable_identifier, dynamic_array_variable_identifier,
 // enum_identifier, interface_identifier, interface_instance_identifier,
@@ -152,6 +156,33 @@ class AstSenTree;
 %token<strp>		yaSCIMPH	"`systemc_interface BLOCK"
 %token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
+
+%token<fileline>	'!'
+%token<fileline>	'#'
+%token<fileline>	'%'
+%token<fileline>	'&'
+%token<fileline>	'('
+%token<fileline>	')'
+%token<fileline>	'*'
+%token<fileline>	'+'
+%token<fileline>	','
+%token<fileline>	'-'
+%token<fileline>	'.'
+%token<fileline>	'/'
+%token<fileline>	':'
+%token<fileline>	';'
+%token<fileline>	'<'
+%token<fileline>	'='
+%token<fileline>	'>'
+%token<fileline>	'?'
+%token<fileline>	'@'
+%token<fileline>	'['
+%token<fileline>	']'
+%token<fileline>	'^'
+%token<fileline>	'{'
+%token<fileline>	'|'
+%token<fileline>	'}'
+%token<fileline>	'~'
 
 // Specific keywords
 // yKEYWORD means match "keyword"
@@ -335,33 +366,6 @@ class AstSenTree;
 %token<fileline>	yPSL_KET	"}"
 %token<fileline> 	yP_LOGIFF
 
-%token<fileline>	'!'
-%token<fileline>	'#'
-%token<fileline>	'%'
-%token<fileline>	'&'
-%token<fileline>	'('
-%token<fileline>	')'
-%token<fileline>	'*'
-%token<fileline>	'+'
-%token<fileline>	','
-%token<fileline>	'-'
-%token<fileline>	'.'
-%token<fileline>	'/'
-%token<fileline>	':'
-%token<fileline>	';'
-%token<fileline>	'<'
-%token<fileline>	'='
-%token<fileline>	'>'
-%token<fileline>	'?'
-%token<fileline>	'@'
-%token<fileline>	'['
-%token<fileline>	']'
-%token<fileline>	'^'
-%token<fileline>	'{'
-%token<fileline>	'|'
-%token<fileline>	'}'
-%token<fileline>	'~'
-
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
 // '( is not a operator, as "' (" is legal
@@ -395,10 +399,6 @@ class AstSenTree;
 
 %nonassoc prLOWER_THAN_ELSE
 %nonassoc yELSE
-
-// Types are in same order as declarations.
-// Naming:
-//	Trailing E indicates this type may have empty match
 
 //BISONPRE_TYPES
 //  Blank lines for type insertion
@@ -448,11 +448,12 @@ descriptionList:		// IEEE: part of source_text
 
 description:			// ==IEEE: description
 		module_declaration			{ }
-//	|	interfaceDecl				{ }
+//	|	interface_declaration			{ }
 //      |       program_declaration			{ }
-//      |       package_declaration			{ }
+//	|       package_declaration			{ }
 //	|	package_item				{ }
 //	|	bind_directive				{ }
+	//	unsupported	// IEEE: config_declaration
 	|	error					{ }
 	;
 
@@ -473,7 +474,7 @@ module_declaration:		// ==IEEE: module_declaration (incomplete)
 	;
 
 modHeader<modulep>:		// IEEE: module_nonansi_header + module_ansi_header
-		modHdr parameter_port_listE modPortsE ';'
+		modHdr parameter_port_listE modPortsStarE ';'
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3); }
 	;
@@ -507,7 +508,7 @@ modParSecond<nodep>:
 	|	param					{ $$ = $1; }
 	;
 
-modPortsE<nodep>:
+modPortsStarE<nodep>:
 		/* empty */					{ $$ = NULL; }
 	|	'(' ')'						{ $$ = NULL; }
 	|	'(' {V3Parse::s_pinNum=1;} portList ')'		{ $$ = $3; }
@@ -637,10 +638,8 @@ module_itemList<nodep>:		// IEEE: Part of module_declaration
 module_item<nodep>:		// ==IEEE: module_item
 	//			// IEEE: non_port_module_item
 		generate_region				{ $$ = $1; }
-	|	modOrGenItem 				{ $$ = $1; }
-	//			// IEEE: specify_block
-	|	ySPECIFY specifyJunkList yENDSPECIFY	{ $$ = NULL; }
-	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
+	|	module_or_generate_item 		{ $$ = $1; }
+	|	specify_block 				{ $$ = $1; }
 	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
 	|	yaSCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
@@ -658,18 +657,15 @@ generate_region<nodep>:		// ==IEEE: generate_region
 	;
 
 // IEEE: module_or_generate_item + module_common_item + parameter_override
-modOrGenItem<nodep>:
+module_or_generate_item<nodep>:
 	//			// IEEE: always_construct
 		yALWAYS event_controlE stmtBlock	{ $$ = new AstAlways($1,$2,$3); }
-	//			// IEEE: initial_construct
-	|	yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
-	//			// IEEE: final_construct
-	|	yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
-	//			// IEEE: continuous_assign
-	|	yASSIGN delayE assignList ';'		{ $$ = $3; }
+	|	continuous_assign			{ $$ = $1; }
+	|	initial_construct			{ $$ = $1; }
+	|	final_construct				{ $$ = $1; }
 	|	yDEFPARAM list_of_defparam_assignments ';'	{ $$ = $2; }
 	|	instDecl 				{ $$ = $1; }
-	|	taskDecl 				{ $$ = $1; }
+	|	task_declaration 			{ $$ = $1; }
 	|	function_declaration 			{ $$ = $1; }
 	|	gateDecl 				{ $$ = $1; }
 	|	portDecl 				{ $$ = $1; }
@@ -678,15 +674,25 @@ modOrGenItem<nodep>:
 	|	pslStmt 				{ $$ = $1; }
 	|	concurrent_assertion_item		{ $$ = $1; }  // IEEE puts in module_item; seems silly
 	|	clocking_declaration			{ $$ = $1; }
+	;
 
-	|	error ';'				{ $$ = NULL; }
+continuous_assign<nodep>:	// IEEE: continuous_assign
+		yASSIGN delayE assignList ';'		{ $$ = $3; }
+	;
+
+initial_construct<nodep>:	// IEEE: initial_construct
+		yINITIAL stmtBlock			{ $$ = new AstInitial($1,$2); }
+	;
+
+final_construct<nodep>:		// IEEE: final_construct
+		yFINAL stmtBlock			{ $$ = new AstFinal($1,$2); }
 	;
 
 //************************************************
 // Generates
 
 // Because genItemList includes variable declarations, we don't need beginNamed
-genItemBlock<nodep>:
+generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 		genItem					{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
 	|	genItemBegin				{ $$ = $1; }
 	;
@@ -699,6 +705,8 @@ genTopBlock<nodep>:
 genItemBegin<nodep>:		// IEEE: part of generate_block
 		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2); }
 	|	yBEGIN yEND				{ $$ = NULL; }
+	|	yaID ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4); }
+	|	yaID ':' yBEGIN             yEND endLabelE	{ $$ = NULL; }
 	|	yBEGIN ':' yaID genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
 	|	yBEGIN ':' yaID 	    yEND endLabelE	{ $$ = NULL; }
 	;
@@ -708,31 +716,39 @@ genItemList<nodep>:
 	|	genItemList genItem			{ $$ = $1->addNextNull($2); }
 	;
 
-genItem<nodep>:
-	//			// IEEE: module_or_interface_or_generate_item (INCOMPLETE)
-		modOrGenItem 				{ $$ = $1; }
-	|	yCASE  '(' expr ')' genCaseListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
-	|	yIF '(' expr ')' genItemBlock	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
-	|	yIF '(' expr ')' genItemBlock yELSE genItemBlock	{ $$ = new AstGenIf($1,$3,$5,$7); }
-	//			// IEEE: loop_generate_construct
-	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' genItemBlock
-							{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
-									     ,$7, new AstAssign($10,$9,$11)
-									     ,$13);}
+genItem<nodep>:		// IEEE: module_or_interface_or_generate_item (INCOMPLETE)
+		module_or_generate_item			{ $$ = $1; }
+	|	conditional_generate_construct		{}
+	|	loop_generate_construct			{}
 	;
 
-genCaseListE<nodep>:
+conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
+		yCASE  '(' expr ')' case_generate_itemListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
+	|	yIF '(' expr ')' generate_block_or_null	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
+	|	yIF '(' expr ')' generate_block_or_null yELSE generate_block_or_null	{ $$ = new AstGenIf($1,$3,$5,$7); }
+	;
+
+loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
+		yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' generate_block_or_null
+			{ $$ = new AstGenFor($1, new AstAssign($4,$3,$5)
+					     ,$7, new AstAssign($10,$9,$11)
+					     ,$13);}
+	;
+
+case_generate_itemListE<nodep>:	// IEEE: [{ case_generate_itemList }]
 		/* empty */				{ $$ = NULL; }
-	|	genCaseList				{ $$ = $1; }
+	|	case_generate_itemList			{ $$ = $1; }
 	;
 
-genCaseList<nodep>:
-		caseCondList ':' genItemBlock		{ $$ = new AstCaseItem($2,$1,$3); }
-	|	yDEFAULT ':' genItemBlock		{ $$ = new AstCaseItem($2,NULL,$3); }
-	|	yDEFAULT genItemBlock			{ $$ = new AstCaseItem($1,NULL,$2); }
-	|	genCaseList caseCondList ':' genItemBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
-	|       genCaseList yDEFAULT genItemBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,NULL,$3)); }
-	|	genCaseList yDEFAULT ':' genItemBlock		{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
+case_generate_itemList<nodep>:	// IEEE: { case_generate_itemList }
+		case_generate_item			{ $$=$1; }
+	|	case_generate_itemList case_generate_item	{ $$=$1; $1->addNext($2); }
+	;
+
+case_generate_item<nodep>:	// ==IEEE: case_generate_item
+		caseCondList ':' generate_block_or_null		{ $$ = new AstCaseItem($2,$1,$3); }
+	|	yDEFAULT ':' generate_block_or_null		{ $$ = new AstCaseItem($2,NULL,$3); }
+	|	yDEFAULT generate_block_or_null			{ $$ = new AstCaseItem($1,NULL,$2); }
 	;
 
 //************************************************
@@ -931,7 +947,7 @@ event_controlE<sentreep>:
 event_control<sentreep>:	// ==IEEE: event_control
 		'@' '(' senList ')'			{ $$ = new AstSenTree($1,$3); }
 	|	'@' senitemVar				{ $$ = new AstSenTree($1,$2); }	/* For events only */
-	|	'@' '(' '*' ')'				{ $$ = NULL; }  /* Verilog 2001 */
+	|	'@' '(' '*' ')'				{ $$ = NULL; }
 	|	'@' '*'					{ $$ = NULL; }  /* Verilog 2001 */
 	;
 
@@ -982,20 +998,39 @@ stmtList<nodep>:
 // IEEE: statement_or_null (may include more stuff, not analyzed)
 //	== function_statement_or_null
 stmt<nodep>:
+	//			// from _or_null
 		';'					{ $$ = NULL; }
 	|	labeledStmt				{ $$ = $1; }
 	|	yaID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
 
-	//			// IEEE: nonblocking_assignment
-	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
-
 	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement.\n"); }
 
+	//			// IEEE: operator_assignment
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
 	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
-	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
-	|	'{' identifier_listLvalue '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
 	|	'{' identifier_listLvalue '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
+
+	//			// IEEE: nonblocking_assignment
+	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
+	|	'{' identifier_listLvalue '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
+
+	//			// IEEE: procedural_continuous_assignment
+	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
+
+	//			// IEEE: case_statement
+	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
+							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
+							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
+
+	//			// IEEE: conditional_statement
+	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
+							{ $$ = new AstIf($2,$4,$6,NULL); }
+	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
+							{ $$ = new AstIf($2,$4,$6,$8); }
+
+	//			// IEEE: subroutine_call_statement (INCOMPLETE)
+	|	taskRef ';' 				{ $$ = $1; }
+
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH ';'				{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
@@ -1006,8 +1041,6 @@ stmt<nodep>:
 	|	yD_STOP parenE ';'			{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')' ';'		{ $$ = new AstStop($1); }
 	|	yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
-	|	stateCaseForIf				{ $$ = $1; }
-	|	taskRef ';' 				{ $$ = $1; }
 
 	|	yD_DISPLAY  parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
@@ -1030,6 +1063,14 @@ stmt<nodep>:
 	|	yD_READMEMH '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+
+	//			// IEEE: loop_statement (INCOMPLETE)
+	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
+	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
+							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
+									  ,$7, new AstAssign($10,$9,$11)
+									  ,$13);}
+	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	;
 
 //************************************************
@@ -1041,23 +1082,7 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 	|	yUNIQUE					{ $$ = uniq_UNIQUE; }
 	;
 
-stateCaseForIf<nodep>:
-		unique_priorityE caseStmt caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
-							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
-							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
-	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-							{ $$ = new AstIf($2,$4,$6,NULL); }
-	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
-							{ $$ = new AstIf($2,$4,$6,$8); }
-	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
-							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)
-									  ,$7, new AstAssign($10,$9,$11)
-									  ,$13);}
-	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
-	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
-	;
-
-caseStmt<casep>:
+caseStart<casep>:		// IEEE: part of case_statement
 	 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
 	|	yCASEX '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
 	|	yCASEZ '(' expr ')'			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
@@ -1091,25 +1116,25 @@ caseCondList<nodep>:		// IEEE: part of case_item
 //************************************************
 // Functions/tasks
 
-taskRef<nodep>:
+taskRef<nodep>:			// IEEE: part of tf_call
 		idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),NULL);}
 	|	idDotted '(' exprList ')'		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),$3);}
 	;
 
-funcRef<nodep>:
+funcRef<nodep>:			// IEEE: part of tf_call
 		idDotted '(' exprList ')'		{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
 	;
 
-taskDecl<nodep>:
-		yTASK lifetimeE yaID funcGuts yENDTASK endLabelE
+task_declaration<nodep>:	// ==IEEE: task_declaration
+		yTASK lifetimeE yaID tfGuts yENDTASK endLabelE
 			{ $$ = new AstTask ($1,*$3,$4);}
 	;
 
 function_declaration<funcp>:	// IEEE: function_declaration + function_body_declaration
-	 	yFUNCTION lifetimeE         funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
-	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID			   funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
-	| 	yFUNCTION lifetimeE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
-	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS funcGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
+	 	yFUNCTION lifetimeE         funcTypeE yaID			   tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); }
+	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID			   tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$6,$4); $$->isSigned(true); }
+	| 	yFUNCTION lifetimeE         funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true);}
+	|	yFUNCTION lifetimeE ySIGNED funcTypeE yaID yVL_ISOLATE_ASSIGNMENTS tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$5,$7,$4); $$->attrIsolateAssign(true); $$->isSigned(true); }
 	;
 
 lifetimeE:			// IEEE: lifetime - plus empty
@@ -1118,12 +1143,12 @@ lifetimeE:			// IEEE: lifetime - plus empty
 	|	yAUTOMATIC		 		{ }
 	;
 
-funcGuts<nodep>:
-		'(' {V3Parse::s_pinNum=1;} portV2kArgs ')' ';' funcBody	{ $$ = $3->addNextNull($6); }
-	|	';' funcBody				{ $$ = $2; }
+tfGuts<nodep>:
+		'(' {V3Parse::s_pinNum=1;} portV2kArgs ')' ';' tfBody	{ $$ = $3->addNextNull($6); }
+	|	';' tfBody				{ $$ = $2; }
 	;
 
-funcBody<nodep>:
+tfBody<nodep>:			// IEEE: part of function_body_declaration/task_body_declaration
 		funcVarList stmtBlock			{ $$ = $1;$1->addNextNull($2); }
 	|	stmtBlock				{ $$ = $1; }
 	;
@@ -1203,6 +1228,8 @@ exprNoStr<nodep>:
 	|	expr '?' expr ':' expr			{ $$ = new AstCond($2,$1,$3,$5); }
 	|	'(' expr ')'				{ $$ = $2; }
 	|	'_' '(' statePushVlg expr statePop ')'	{ $$ = $4; }	// Arbitrary Verilog inside PSL
+
+	//			// IEEE: concatenation/constant_concatenation
 	|	'{' cateList '}'			{ $$ = $2; }
 	|	'{' constExpr '{' cateList '}' '}'	{ $$ = new AstReplicate($1,$4,$2); }
 
@@ -1231,6 +1258,8 @@ exprNoStr<nodep>:
 	|	yaINTNUM				{ $$ = new AstConst(CRELINE(),*$1); }
 
 	|	varRefDotBit	  			{ $$ = $1; }
+
+	|	error ';'				{ $$ = NULL; }
 	;
 
 // Generic expressions
@@ -1411,6 +1440,11 @@ gateXorPinList<nodep>:
 
 //************************************************
 // Specify
+
+specify_block<nodep>:		// ==IEEE: specify_block
+		ySPECIFY specifyJunkList yENDSPECIFY	{ $$ = NULL; }
+	|	ySPECIFY yENDSPECIFY			{ $$ = NULL; }
+	;
 
 specifyJunkList:
 		specifyJunk 				{ } /* ignored */
