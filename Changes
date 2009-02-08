@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix error messages to consistently go to stderr. [Jeremy Bennett]
 
+**** Fix left associativity for ?: operators.
+
 * Verilator 3.700 2009/01/08
 
 **   Add limited support for tristate inouts.  Written by Lane Brooks,

@@ -378,13 +378,11 @@ class AstSenTree;
 %left<fileline>	prPSLCLK
 
 // Verilog op precedence
-%left		':'
-%left		'?'
+%right		'?' ':'
 %left		yP_OROR
 %left		yP_ANDAND
 %left		'|' yP_NOR
-%left		'^'
-%left		yP_XNOR
+%left		'^' yP_XNOR
 %left		'&' yP_NAND
 %left		yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
 %left		'>' '<' yP_GTE yP_LTE
@@ -392,10 +390,7 @@ class AstSenTree;
 %left		'+' '-'
 %left		'*' '/' '%'
 %left		yP_POW
-%left		'{' '}'
-%left<fileline>	prUNARYARITH
-%left<fileline>	prREDUCTION
-%left<fileline>	prNEGATION
+%left		prUNARYARITH prREDUCTION prNEGATION
 
 %nonassoc prLOWER_THAN_ELSE
 %nonassoc yELSE
