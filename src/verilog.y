@@ -369,7 +369,6 @@ class AstSenTree;
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
 // '( is not a operator, as "' (" is legal
-// '{ could be an operator.  More research needed.
 
 //********************
 // PSL op precedence
@@ -421,11 +420,14 @@ class AstSenTree;
 // Feedback to the Lexer
 // Note we read a parenthesis ahead, so this may not change the lexer at the right point.
 
-stateExitPsl:	/* empty */			 	{ V3Read::stateExitPsl(); }
+stateExitPsl:			// For PSL lexing, return from PSL state
+		/* empty */			 	{ V3Read::stateExitPsl(); }
 	;
-statePushVlg:	/* empty */			 	{ V3Read::statePushVlg(); }
+statePushVlg:			// For PSL lexing, escape current state into Verilog state
+		/* empty */			 	{ V3Read::statePushVlg(); }
 	;
-statePop:	/* empty */			 	{ V3Read::statePop(); }
+statePop:			// Return to previous lexing state
+		/* empty */			 	{ V3Read::statePop(); }
 	;
 
 //**********************************************************************
@@ -475,8 +477,8 @@ modHeader<modulep>:		// IEEE: module_nonansi_header + module_ansi_header
 	;
 
 modHdr<modulep>:
-		yMODULE yaID
-			{ $$ = new AstModule($1,*$2); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
+		yMODULE lifetimeE yaID
+			{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
 			  V3Read::rootp()->addModulep($$); }
 	;
@@ -997,35 +999,35 @@ stmt<nodep>:
 		';'					{ $$ = NULL; }
 	|	labeledStmt				{ $$ = $1; }
 	|	yaID ':' labeledStmt			{ $$ = new AstBegin($2, *$1, $3); }  /*S05 block creation rule*/
-
+	//
 	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement.\n"); }
-
+	//
 	//			// IEEE: operator_assignment
 	|	varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($2,$1,$4); }
 	|	varRefDotBit '=' yD_FOPEN '(' expr ',' expr ')' ';'	{ $$ = new AstFOpen($3,$1,$5,$7); }
 	|	'{' identifier_listLvalue '}' '=' delayE expr ';'  { $$ = new AstAssign($4,$2,$6); }
-
+	//
 	//			// IEEE: nonblocking_assignment
 	|	varRefDotBit yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	|	'{' identifier_listLvalue '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
-
+	//
 	//			// IEEE: procedural_continuous_assignment
 	|	yASSIGN varRefDotBit '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
-
+	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
 							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
 							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
-
+	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
 							{ $$ = new AstIf($2,$4,$6,NULL); }
 	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
 							{ $$ = new AstIf($2,$4,$6,$8); }
-
+	//
 	//			// IEEE: subroutine_call_statement (INCOMPLETE)
 	|	taskRef ';' 				{ $$ = $1; }
-
+	//
 	|	yD_C '(' cStrList ')' ';'		{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' varRefDotBit ')' ';'	{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH ';'				{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
@@ -1036,7 +1038,7 @@ stmt<nodep>:
 	|	yD_STOP parenE ';'			{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')' ';'		{ $$ = new AstStop($1); }
 	|	yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
-
+	//
 	|	yD_DISPLAY  parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
 	|	yD_WRITE    '(' yaSTRING commaEListE ')' ';'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
@@ -1051,14 +1053,14 @@ stmt<nodep>:
 	|	yD_FATAL    parenE ';'						{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    '(' expr ')' ';'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
 	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')' ';'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
-
+	//
 	|	yD_READMEMB '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
 	|	yD_READMEMH '(' expr ',' varRefMem ')' ';'			{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ')' ';'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
-
+	//
 	//			// IEEE: loop_statement (INCOMPLETE)
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
@@ -1208,7 +1210,7 @@ exprNoStr<nodep>:
 	|	expr yP_POW expr			{ $$ = new AstPow	($2,$1,$3); }
 	|	expr yP_MINUSGT expr			{ $$ = new AstLogIf	($2,$1,$3); }
 	|	expr yP_LOGIFF expr			{ $$ = new AstLogIff	($2,$1,$3); }
-
+	//
 	|	'-' expr	%prec prUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
 	|	'+' expr	%prec prUNARYARITH	{ $$ = $2; }
 	|	'&' expr	%prec prREDUCTION	{ $$ = new AstRedAnd	($1,$2); }
@@ -1219,15 +1221,15 @@ exprNoStr<nodep>:
 	|	yP_NOR expr	%prec prREDUCTION	{ $$ = new AstNot($1,new AstRedOr ($1,$2)); }
 	|	'!' expr	%prec prNEGATION	{ $$ = new AstLogNot	($1,$2); }
 	|	'~' expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }
-
+	//
 	|	expr '?' expr ':' expr			{ $$ = new AstCond($2,$1,$3,$5); }
 	|	'(' expr ')'				{ $$ = $2; }
 	|	'_' '(' statePushVlg expr statePop ')'	{ $$ = $4; }	// Arbitrary Verilog inside PSL
-
+	//
 	//			// IEEE: concatenation/constant_concatenation
 	|	'{' cateList '}'			{ $$ = $2; }
 	|	'{' constExpr '{' cateList '}' '}'	{ $$ = new AstReplicate($1,$4,$2); }
-
+	//
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
@@ -1247,13 +1249,13 @@ exprNoStr<nodep>:
 	|	yD_STIME				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_TIME					{ $$ = new AstTime($1); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
-
+	//
 	|	funcRef					{ $$ = $1; }
-
+	//
 	|	yaINTNUM				{ $$ = new AstConst(CRELINE(),*$1); }
-
+	//
 	|	varRefDotBit	  			{ $$ = $1; }
-
+	//
 	|	error ';'				{ $$ = NULL; }
 	;
 
@@ -1475,8 +1477,10 @@ idDotted<nodep>:
 // we'll assume so and cleanup later.
 idArrayed<nodep>:
 		yaID						{ $$ = new AstText(CRELINE(),*$1); }
+	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
+	//			// IEEE: id + indexed_range/constant_indexed_range
 	|	idArrayed '[' expr yP_PLUSCOLON  constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
 	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
 	;
