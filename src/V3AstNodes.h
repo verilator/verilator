@@ -1408,6 +1408,21 @@ struct AstFor : public AstNodeFor {
     ASTNODE_NODE_FUNCS(For, FOR)
 };
 
+struct AstRepeat : public AstNodeStmt {
+    AstRepeat(FileLine* fileline, AstNode* countp, AstNode* bodysp)
+	: AstNodeStmt(fileline) {
+	setOp2p(countp); addNOp3p(bodysp);
+    }
+    ASTNODE_NODE_FUNCS(Repeat, REPEAT)
+    AstNode*	countp()	const { return op2p()->castNode(); }	// op2= condition to continue
+    AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual int instrCount()	const { return instrCountBranch(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+};
+
 struct AstWhile : public AstNodeStmt {
     AstWhile(FileLine* fileline, AstNode* condp, AstNode* bodysp)
 	: AstNodeStmt(fileline) {

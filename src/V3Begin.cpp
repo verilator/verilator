@@ -47,6 +47,7 @@ private:
     AstModule*		m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     string		m_beginScope;	// Name of begin blocks above us
+    int			m_repeatNum;	// Repeat counter
 
     // METHODS
     static int debug() {
@@ -58,6 +59,7 @@ private:
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {
 	m_modp = nodep;
+	m_repeatNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
@@ -136,6 +138,38 @@ private:
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); nodep=NULL;
     }
+    virtual void visit(AstRepeat* nodep, AstNUser*) {
+	// So later optimizations don't need to deal with them,
+	//    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
+	// Note var can be signed or unsigned based on original number.
+	AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
+   	string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
+	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
+				  new AstRange(nodep->fileline(), countp->width()-1, 0));
+	m_modp->addStmtp(varp);
+	AstNode* initsp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
+					countp);
+	AstNode* decp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
+				      new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
+						 new AstConst(nodep->fileline(), 1)));
+	AstNode* condp;
+	if (countp->isSigned()) {
+	    condp = new AstGtS(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
+			       new AstConst(nodep->fileline(), 0));
+	} else {
+	    condp = new AstGt (nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
+			       new AstConst(nodep->fileline(), 0));
+	}
+	AstNode* bodysp = nodep->bodysp(); if (bodysp) bodysp->unlinkFrBackWithNext();
+	bodysp = bodysp->addNext(decp);
+	AstNode* newp = new AstWhile(nodep->fileline(),
+				     condp,
+				     bodysp);
+	initsp = initsp->addNext(newp);
+	newp = initsp;
+	nodep->replaceWith(newp);
+	nodep->deleteTree(); nodep=NULL;
+    }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline
@@ -161,6 +195,7 @@ public:
     BeginVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_ftaskp = NULL;
+	m_repeatNum = 0;
 	nodep->accept(*this);
     }
     virtual ~BeginVisitor() {}

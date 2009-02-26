@@ -218,6 +218,7 @@ class AstSenTree;
 %token<fileline>	yENDTASK	"endtask"
 %token<fileline>	yFINAL		"final"
 %token<fileline>	yFOR		"for"
+%token<fileline>	yFOREVER	"forever"
 %token<fileline>	yFUNCTION	"function"
 %token<fileline>	yGENERATE	"generate"
 %token<fileline>	yGENVAR		"genvar"
@@ -244,6 +245,7 @@ class AstSenTree;
 %token<fileline>	yPULLDOWN 	"pulldown"
 %token<fileline>	yPULLUP 	"pullup"
 %token<fileline>	yREG		"reg"
+%token<fileline>	yREPEAT		"repeat"
 %token<fileline>	ySCALARED	"scalared"
 %token<fileline>	ySIGNED		"signed"
 %token<fileline>	ySPECIFY	"specify"
@@ -1062,6 +1064,8 @@ stmt<nodep>:
 	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')' ';'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	//
 	//			// IEEE: loop_statement (INCOMPLETE)
+	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,V3Number($1,1,1)),$2); }
+	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	|	yFOR '(' varRefBase '=' expr ';' expr ';' varRefBase '=' expr ')' stmtBlock
 							{ $$ = new AstFor($1, new AstAssign($4,$3,$5)

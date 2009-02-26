@@ -422,7 +422,7 @@ private:
     }
 
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
-	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Unroll\n");
+	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin\n");
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	bool oldloop = m_inLoop;

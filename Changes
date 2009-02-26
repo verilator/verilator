@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.70**
 
+**   Support repeat and forever statements.  [Jeremy Bennett]
+
 ***  Add --debugi-<srcfile> option, for internal debugging. [Dennis Muhlestein]
 
 **** Fix compile issues with GCC 4.3, bug47.  [Lane Brooks]

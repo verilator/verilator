@@ -344,7 +344,7 @@ private:
 	if (m_generate) {  // Ignore for's when expanding genfor's
 	    nodep->iterateChildren(*this);
 	} else {
-	    nodep->v3error("V3Task should have removed standard FORs");
+	    nodep->v3error("V3Begin should have removed standard FORs");
 	}
     }
 

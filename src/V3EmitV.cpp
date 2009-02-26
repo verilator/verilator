@@ -239,6 +239,13 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->bodysp()->iterateAndNext(*this);
 	puts("}\n");
     }
+    virtual void visit(AstRepeat* nodep, AstNUser*) {
+	puts("repeat (");
+	nodep->countp()->iterateAndNext(*this);
+	puts(") {\n");
+	nodep->bodysp()->iterateAndNext(*this);
+	puts("}\n");
+    }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");

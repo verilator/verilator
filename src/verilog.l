@@ -199,6 +199,7 @@ escid	\\[^ \t\f\r\n]+
   "endspecify"		{yylval.fileline = CRELINE(); return yENDSPECIFY;}
   "endtask"		{yylval.fileline = CRELINE(); return yENDTASK;}
   "for"			{yylval.fileline = CRELINE(); return yFOR;}
+  "forever"		{yylval.fileline = CRELINE(); return yFOREVER;}
   "function"		{yylval.fileline = CRELINE(); return yFUNCTION;}
   "if"			{yylval.fileline = CRELINE(); return yIF;}
   "initial"		{yylval.fileline = CRELINE(); return yINITIAL;}
@@ -220,6 +221,7 @@ escid	\\[^ \t\f\r\n]+
   "pulldown"		{yylval.fileline = CRELINE(); return yPULLDOWN;}
   "pullup"		{yylval.fileline = CRELINE(); return yPULLUP;}
   "reg"			{yylval.fileline = CRELINE(); return yREG;}
+  "repeat"		{yylval.fileline = CRELINE(); return yREPEAT;}
   "scalared"		{yylval.fileline = CRELINE(); return ySCALARED;}
   "specify"		{yylval.fileline = CRELINE(); return ySPECIFY;}
   "specparam"		{yylval.fileline = CRELINE(); return yaTIMINGSPEC;}
@@ -252,7 +254,6 @@ escid	\\[^ \t\f\r\n]+
   "endtable"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "event"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "force"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "forever"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "fork"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "highz0"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "highz1"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
@@ -268,7 +269,6 @@ escid	\\[^ \t\f\r\n]+
   "real"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "realtime"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "release"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
-  "repeat"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "rnmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "rpmos"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}
   "rtran"		{yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext);}

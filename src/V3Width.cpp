@@ -479,9 +479,9 @@ private:
 	nodep->sensesp()->iterateAndNext(*this);
 	if (nodep->disablep()) {
 	    nodep->disablep()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	    widthCheckReduce(nodep,"Disable",nodep->disablep(),1,1); // it's like a if() condition.
+	    widthCheckReduce(nodep,"Disable",nodep->disablep(),1,1); // it's like an if() condition.
 	}
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
 	nodep->width(1,1);
     }
 
@@ -536,14 +536,18 @@ private:
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	if (!nodep->castGenFor()) nodep->bodysp()->iterateAndNext(*this);
 	nodep->incsp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like an if() condition.
+    }
+    virtual void visit(AstRepeat* nodep, AstNUser*) {
+	nodep->countp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->bodysp()->iterateAndNext(*this);
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->precondsp()->iterateAndNext(*this);
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->bodysp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like an if() condition.
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	// TOP LEVEL NODE
@@ -553,7 +557,7 @@ private:
 	    nodep->elsesp()->iterateAndNext(*this);
 	}
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	widthCheckReduce(nodep,"If",nodep->condp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"If",nodep->condp(),1,1);	// it's like an if() condition.
 	//if (debug()) nodep->dumpTree(cout,"  IfPos: ");
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
@@ -654,19 +658,19 @@ private:
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->stmtsp()->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->passsp()->iterateAndNext(*this);
 	nodep->failsp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like a if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
     }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	//if (debug()) nodep->dumpTree(cout,"-  PinPre: ");
