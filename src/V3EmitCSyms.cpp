@@ -207,11 +207,9 @@ void EmitCSyms::emitImp() {
 	AstScope* scopep = it->first;  AstModule* modp = it->second;
 	if (modp->isTop()) {
 	} else {
-	    string arrow = scopep->name();
-	    if (arrow.substr(0,4) == "TOP.") arrow.replace(0,4,".");
 	    ofp()->printf("\t%c %-30s ", comma, scopep->nameDotless().c_str());
 	    puts("(Verilated::catName(topp->name(),\"");
-	    puts(arrow);
+	    puts("."+scopep->prettyName());
 	    puts("\"))\n");
 	    comma=',';
 	}

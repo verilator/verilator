@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# Copyright 2003-2008 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# General Public License or the Perl Artistic License.
+
+compile (
+	 v_flags2 => [$Self->{v3}?'--assert --sp --coverage-user':''],
+	 );
+
+execute (
+	 check_finished=>1,
+	 );
+
+#if ($Self->{nc}) ... # See t_assert_cover.pl for NC version
+
+# Allow old Perl format dump, or new binary dump
+# Check that the hierarchy doesn't include __PVT__
+# Otherwise our coverage reports would look really ugly
+file_grep ($Self->{coverage_filename}, qr/(TOP\.v\.sub.*.cyc_eq_5)/);
+
+ok(1);
+1;
