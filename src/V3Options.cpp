@@ -622,7 +622,8 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-inhibit-sim", flag/*ref*/)){ m_inhibitSim = flag; }
 	    else if ( onoff   (sw, "-l2name", flag/*ref*/) )	{ m_l2Name = flag; }
 	    else if ( onoff   (sw, "-lint-only", flag/*ref*/) )	{ m_lintOnly = flag; }
-	    else if ( onoff   (sw, "-pins64", flag/*ref*/) )	{ m_pins64 = flag; }
+	    else if ( !strcmp (sw, "-no-pins64") )		{ m_pinsBv = 33; }
+	    else if ( !strcmp (sw, "-pins64") )			{ m_pinsBv = 65; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
 	    else if ( onoff   (sw, "-psl", flag/*ref*/) )		{ m_psl = flag; }
@@ -739,6 +740,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "-mod-prefix") && (i+1)<argc ) {
 		shift; m_modPrefix = argv[i];
+	    }
+	    else if ( !strcmp (sw, "-pins-bv") && (i+1)<argc ) {
+		shift; m_pinsBv = atoi(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-prefix") && (i+1)<argc ) {
 		shift; m_prefix = argv[i];
@@ -872,7 +876,7 @@ V3Options::V3Options() {
     m_makeDepend = true;
     m_makePhony = false;
     m_outFormatOk = false;
-    m_pins64 = true;
+    m_pinsBv = 65;
     m_profileCFuncs = false;
     m_preprocOnly = false;
     m_psl = false;

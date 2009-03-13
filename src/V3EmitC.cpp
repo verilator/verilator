@@ -1412,7 +1412,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 			int sigbytes = varp->widthAlignBytes();
 			if (varp->isUsedClock() && varp->widthMin()==1) sigbytes = 0;
 			else if (varp->arraysp()) sigbytes=7;
-			else if (varp->isScWide()) sigbytes=6;
+			else if (varp->isScBv()) sigbytes=6;
 			else if (sigbytes==8) sigbytes=5;
 			else if (sigbytes==4) sigbytes=4;
 			else if (sigbytes==2) sigbytes=2;
@@ -1544,7 +1544,7 @@ void EmitCImp::emitInt(AstModule* modp) {
 		if (!varp->initp()) nodep->v3fatalSrc("No init for a param?");
 		// These should be static const values, however microsloth VC++ doesn't
 		// support them.  They also cause problems with GDB under GCC2.95.
-		if (varp->isScWide()) {   // Unsupported for output
+		if (varp->isWide()) {   // Unsupported for output
 		    puts("// enum WData "+varp->name()+"  //wide");
 		} else if (!varp->initp()->castConst()) {   // Unsupported for output
 		    puts("// enum IData "+varp->name()+"  //not simple value");
@@ -1816,11 +1816,11 @@ class EmitCTrace : EmitCStmts {
 	puts("\n//======================\n\n");
     }
 
-    bool emitTraceIsScWide(AstTraceInc* nodep) {
+    bool emitTraceIsScBv(AstTraceInc* nodep) {
 	AstVarRef* varrefp = nodep->valuep()->castVarRef();
 	if (!varrefp) return false;
 	AstVar* varp = varrefp->varp();
-	return varp->isSc() && varp->isScWide();
+	return varp->isSc() && varp->isScBv();
     }
     void emitTraceInitOne(AstTraceDecl* nodep) {
 	if (nodep->isWide()) {
@@ -1851,7 +1851,7 @@ class EmitCTrace : EmitCStmts {
 	string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
 			|| m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
 		       ? "full":"chg");
-	if (nodep->isWide() || emitTraceIsScWide(nodep)) {
+	if (nodep->isWide() || emitTraceIsScBv(nodep)) {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
@@ -1873,7 +1873,7 @@ class EmitCTrace : EmitCStmts {
 	if (nodep->valuep()->castVarRef()) {
 	    AstVarRef* varrefp = nodep->valuep()->castVarRef();
 	    AstVar* varp = varrefp->varp();
-	    if (emitTraceIsScWide(nodep)) puts("(uint32_t*)");
+	    if (emitTraceIsScBv(nodep)) puts("(uint32_t*)");
 	    puts("(");
 	    varrefp->iterate(*this);	// Put var name out
 	    if (varp->arraysp()) {
@@ -1882,7 +1882,7 @@ class EmitCTrace : EmitCStmts {
 		else puts("["+cvtToStr(arrayindex)+"]");
 	    }
 	    if (varp->isSc()) puts(".read()");
-	    if (emitTraceIsScWide(nodep)) puts(".get_datap()");
+	    if (emitTraceIsScBv(nodep)) puts(".get_datap()");
 	    puts(")");
 	} else {
 	    puts("(");

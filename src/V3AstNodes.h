@@ -341,7 +341,7 @@ public:
     bool	isUsedParam() const { return m_usedParam; }
     bool	isSc() const { return m_sc; }
     bool	isScQuad() const;
-    bool	isScWide() const;
+    bool	isScBv() const;
     bool	isScSensitive() const { return m_scSensitive; }
     bool	isSigPublic()  const;
     bool	isSigModPublic() const { return m_sigModPublic; }

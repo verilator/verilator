@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.70****
 
+***  Add --pins-bv option to use sc_bv for all ports.  [Brian Small]
+
 **** Fix the SC_MODULE name() to not include __PVT__.  [Bob Fredieu]
 
 * Verilator 3.701 2009/02/26
@@ -1405,3 +1407,4 @@ Local variables:
 mode: outline
 paragraph-separate: "[ 	\f\n]*$"
 end:
+   

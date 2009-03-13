@@ -212,6 +212,7 @@ descriptions in the next sections for more information.
     -O<optimization-letter>     Selectable optimizations
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
+    --pins-bv <bits>            Specify types for top level ports
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
@@ -459,9 +460,7 @@ the same as --prefix.
 
 =item --no-pins64
 
-Specifies SystemC outputs of 33-64 bits wide should use sc_bv's instead of
-uint64_t's.  Uint64's are faster, but sc_bvs were the default until
-Verilator 3.671.
+Backward compatible alias for "--pins-bv 33".
 
 =item --no-skip-identical
 
@@ -506,6 +505,17 @@ enable GCC to compile faster, at a small loss in performance that gets
 worse with decreasing split values.  Note that this option is stronger than
 --output-split in the sense that --output-split will not split inside a
 function.
+
+=item --pins64
+
+Backward compatible alias for "--pins-bv 65".  Note that's a 65, not a 64.
+
+=item --pins-bv I<width>
+
+Specifies SystemC outputs of greater than or equal to I<width> bits wide
+should use sc_bv's instead of uint32/uint64_t's.  The default is "--pins-bv
+65".  Versions before Verilator 3.671 defaulted to "--pins-bv 33".  The
+more sc_bv is used, the worse for performance.
 
 =item --prefix I<topname>
 

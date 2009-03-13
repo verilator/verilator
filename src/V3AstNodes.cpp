@@ -51,11 +51,11 @@ bool AstVar::isSigPublic() const {
 }
 
 bool AstVar::isScQuad() const {
-    return (isSc()&&isQuad()&&v3Global.opt.pins64());
+    return (isSc() && isQuad() && !isScBv());
 }
 
-bool AstVar::isScWide() const {
-    return (isWide() || isSc()&&isQuad()&&!v3Global.opt.pins64());
+bool AstVar::isScBv() const {
+    return (isSc() && width() >= v3Global.opt.pinsBv());
 }
 
 void AstVar::combineType(AstVarType type) {
@@ -108,7 +108,7 @@ string AstVar::cType() const {
 	return "bool";
     } else if (widthMin() <= VL_WORDSIZE) {
 	return "uint32_t";
-    } else if (isScWide()) {
+    } else if (isWide()) {
 	return "uint32_t";  // []'s added later
     } else {
 	return "uint64_t";
@@ -116,12 +116,12 @@ string AstVar::cType() const {
 }
 
 string AstVar::scType() const {
-    if (widthMin() == 1) {
+    if (isScBv()) {
+	return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
+    } else if (widthMin() == 1) {
 	return "bool";
     } else if (widthMin() <= VL_WORDSIZE) {
 	return "uint32_t";
-    } else if (isScWide()) {
-	return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
     } else {
 	return "uint64_t";
     }

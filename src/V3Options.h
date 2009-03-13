@@ -104,7 +104,6 @@ class V3Options {
     bool	m_l2Name;	// main switch: --l2name
     bool	m_lintOnly;	// main switch: --lint-only
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
-    bool	m_pins64;	// main switch: --pins64
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_psl;		// main switch: --psl
     bool	m_public;	// main switch: --public
@@ -121,6 +120,7 @@ class V3Options {
     int		m_outputSplit;	// main switch: --output-split
     int		m_outputSplitCFuncs;// main switch: --output-split-cfuncs
     int		m_outputSplitCTrace;// main switch: --output-split-ctrace
+    int		m_pinsBv;	// main switch: --pins-bv
     int		m_traceDepth;	// main switch: --trace-depth
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts
@@ -207,7 +207,6 @@ class V3Options {
     bool traceDups() const { return m_traceDups; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
-    bool pins64() const { return m_pins64; }
     bool profileCFuncs() const { return m_profileCFuncs; }
     bool psl() const { return m_psl; }
     bool allPublic() const { return m_public; }
@@ -221,6 +220,7 @@ class V3Options {
     int	   outputSplit() const { return m_outputSplit; }
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int	   outputSplitCTrace() const { return m_outputSplitCTrace; }
+    int	   pinsBv() const { return m_pinsBv; }
     int	   traceDepth() const { return m_traceDepth; }
     int	   unrollCount() const { return m_unrollCount; }
     int	   unrollStmts() const { return m_unrollStmts; }
