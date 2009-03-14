@@ -32,6 +32,7 @@ endif
 # Needed by tracing routines
 CPPFLAGS += -DVL_DEBUG=1
 CPPFLAGS += -DVM_PREFIX=$(VM_PREFIX)
+CPPFLAGS += $(CPPFLAGS_DRIVER)
 CPPFLAGS += $(CPPFLAGS_ADD)
 
 #######################################################################

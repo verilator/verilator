@@ -359,34 +359,44 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
 
 //===================================================================
 // SYSTEMC OPERATORS
-// Copying verilog format to/from systemc integers and bit vectors.
+// Copying verilog format to systemc integers and bit vectors.
 
-#define VL_ASSIGN_IS(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read()); }
-#define VL_ASSIGN_SI(obits,svar,vvar) { (svar).write(vvar); }
-
+#define VL_ASSIGN_ISI(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read()); }
 #define VL_ASSIGN_QSQ(obits,vvar,svar) { (vvar) = VL_CLEAN_QQ((obits),(obits),(svar).read()); }
+
+#define VL_ASSIGN_ISW(obits,od,svar) { \
+    od = (svar.read().get_word(0)) & VL_MASK_I(obits); \
+}
+#define VL_ASSIGN_QSW(obits,od,svar) { \
+    od = (((QData)svar.read().get_word(1))<<VL_WORDSIZE | svar.read().get_word(0)) \
+	& VL_MASK_Q(obits); \
+}
+#define VL_ASSIGN_WSW(obits,owp,svar) { \
+    int words = VL_WORDS_I(obits); \
+    for (int i=0; i < words; i++) owp[i] = svar.read().get_word(i); \
+    owp[words-1] &= VL_MASK_I(obits); \
+}
+
+// Copying verilog format from systemc integers and bit vectors.
+
+#define VL_ASSIGN_SII(obits,svar,vvar) { (svar).write(vvar); }
 #define VL_ASSIGN_SQQ(obits,svar,vvar) { (svar).write(vvar); }
 
-#define VL_ASSIGN_SQ(obits,svar,rd) { \
+#define VL_ASSIGN_SWI(obits,svar,rd) { \
+    sc_bv<obits> _bvtemp; \
+    _bvtemp.set_word(0,rd); \
+    svar.write(_bvtemp); \
+}
+#define VL_ASSIGN_SWQ(obits,svar,rd) { \
     sc_bv<obits> _bvtemp; \
     _bvtemp.set_word(0,rd); \
     _bvtemp.set_word(1,rd>>VL_WORDSIZE); \
     svar.write(_bvtemp); \
 }
-#define VL_ASSIGN_QS(obits,od,svar) { \
-    od = (((QData)svar.read().get_word(1))<<VL_WORDSIZE | svar.read().get_word(0)) \
-	& VL_MASK_Q(obits); \
-}
-
-#define VL_ASSIGN_SW(obits,svar,rwp) { \
+#define VL_ASSIGN_SWW(obits,svar,rwp) { \
     sc_bv<obits> _bvtemp; \
     for (int i=0; i < VL_WORDS_I(obits); i++) _bvtemp.set_word(i,rwp[i]); \
     svar.write(_bvtemp); \
-}
-#define VL_ASSIGN_WS(obits,owp,svar) { \
-    int words = VL_WORDS_I(obits); \
-    for (int i=0; i < words; i++) owp[i] = svar.read().get_word(i); \
-    owp[words-1] &= VL_MASK_I(obits); \
 }
 
 //===================================================================

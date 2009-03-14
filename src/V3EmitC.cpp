@@ -75,6 +75,9 @@ public:
     void emitIQW(AstNode* nodep) {
 	puts (nodep->isWide()?"W":(nodep->isQuad()?"Q":"I"));
     }
+    void emitScIQW(AstVar* nodep) {
+	puts (nodep->isScBv()?"SW":(nodep->isScQuad()?"SQ":"SI"));
+    }
     void emitOpName(AstNode* nodep, const string& format,
 		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
 
@@ -130,8 +133,7 @@ public:
 	} else if (nodep->lhsp()->castVarRef()
 		   && nodep->lhsp()->castVarRef()->varp()->isSc()) {
 	    putbs("VL_ASSIGN_"); 	// Set a systemC variable
-	    if (nodep->lhsp()->castVarRef()->varp()->isScQuad()) puts("SQ");
-	    else  puts("S");
+	    emitScIQW(nodep->lhsp()->castVarRef()->varp());
 	    emitIQW(nodep);
 	    puts("(");
 	    puts(cvtToStr(nodep->widthMin())+",");
@@ -140,8 +142,8 @@ public:
 		   && nodep->rhsp()->castVarRef()->varp()->isSc()) {
 	    putbs("VL_ASSIGN_"); 	// Get a systemC variable
 	    emitIQW(nodep);
-	    if (nodep->rhsp()->castVarRef()->varp()->isScQuad()) puts("SQ(");
-	    else puts("S(");
+	    emitScIQW(nodep->rhsp()->castVarRef()->varp());
+	    puts("(");
 	    puts(cvtToStr(nodep->widthMin())+",");
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
 	} else if (nodep->isWide()

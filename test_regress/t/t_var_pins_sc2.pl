@@ -9,8 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_var_pinsizes.v");
 
 compile (
-	 v_flags2 => ['-sp -pins-bv 2'],
-	 verilator_make_gcc => 0,
+	 v_flags2 => ["-sp -pins-bv 2 --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+	 make_main => 0,
 	 ) if $Self->{v3};
 
 if ($Self->{v3}) {
