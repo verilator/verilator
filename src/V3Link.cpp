@@ -78,6 +78,18 @@ private:
     }
 
     // METHODS
+    V3SymTable* symsFindNew(AstNode* nodep, V3SymTable* upperVarsp) {
+	// Find or create symbol table for this node
+	if (V3SymTable* symsp = nodep->user1p()->castSymTable()) {
+	    return symsp;
+	} else {
+	    V3SymTable* symsp = new V3SymTable(upperVarsp);
+	    m_delSymps.push_back(symsp);
+	    nodep->user1p(symsp);
+	    return symsp;
+	}
+    }
+
     void linkVarName (AstVarRef* nodep) {
 	if (!nodep->varp()) {
 	    AstVar* varp = m_curVarsp->findIdName(nodep->name())->castVar();
@@ -85,7 +97,7 @@ private:
 	}
     }
 
-    const char* varTextType(AstNode* nodep) {
+    const char* nodeTextType(AstNode* nodep) {
 	const char* what = "node";
 	if (nodep->castVar()) what = "variable";
 	else if (nodep->castCell()) what = "cell";
@@ -115,9 +127,7 @@ private:
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Look at all modules, and store pointers to all module names
 	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
-	    V3SymTable* symp = new V3SymTable(NULL);
-	    m_delSymps.push_back(symp);
-	    modp->user1p(symp);
+	    symsFindNew(modp, NULL);
 	}
 	// And recurse...
 	m_idState = ID_FIND;
@@ -134,7 +144,7 @@ private:
 	UINFO(2,"Link Module: "<<nodep<<endl);
 	m_modp = nodep;
 	// This state must be save/restored in the cell visitor function
-	m_curVarsp = nodep->user1p()->castSymTable();
+	m_curVarsp = symsFindNew(nodep, NULL);
 	if (!m_curVarsp) nodep->v3fatalSrc("NULL");
 	m_cellVarsp = NULL;
 	m_paramNum = 0;
@@ -164,7 +174,7 @@ private:
 		ins=true;
 	    } else if (!findvarp) {
 		nodep->v3error("Unsupported in C: Variable has same name as "
-			       <<varTextType(findidp)<<": "<<nodep->prettyName());
+			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<findvarp<<endl);
 		if (findvarp->user1p() == m_curVarsp) {  // Only when on same level
@@ -224,13 +234,8 @@ private:
 	V3SymTable* upperVarsp = m_curVarsp;
 	{
 	    // Create symbol table for the task's vars
-	    if (V3SymTable* localVarsp = nodep->user1p()->castSymTable()) {
-		m_curVarsp = localVarsp;
-	    } else {
-		m_curVarsp = new V3SymTable(upperVarsp);
-		m_delSymps.push_back(m_curVarsp);
-		nodep->user1p(m_curVarsp);
-	    }
+	    m_curVarsp = symsFindNew(nodep, upperVarsp);
+
 	    // Convert the func's range to the output variable
 	    // This should probably be done in the Parser instead, as then we could
 	    // just attact normal signal attributes to it.
@@ -260,7 +265,7 @@ private:
 		m_curVarsp->insert(nodep->name(), nodep);
 	    } else if (!findtaskp) {
 		nodep->v3error("Unsupported in C: Task/function has same name as "
-			       <<varTextType(findidp)<<": "<<nodep->prettyName());
+			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
 	    } else if (findtaskp!=nodep) {
 		nodep->v3error("Duplicate declaration of task/function: "<<nodep->prettyName());
 	    }
@@ -282,13 +287,7 @@ private:
 	m_beginNum = 0;
 	{
 	    // Create symbol table for the task's vars
-	    if (V3SymTable* localVarsp = nodep->user1p()->castSymTable()) {
-		m_curVarsp = localVarsp;
-	    } else {
-		m_curVarsp = new V3SymTable(upperVarsp);
-		m_delSymps.push_back(m_curVarsp);
-		nodep->user1p(m_curVarsp);
-	    }
+	    m_curVarsp = symsFindNew(nodep, upperVarsp);
 	    nodep->iterateChildren(*this);
 	}
 	m_curVarsp = upperVarsp;
@@ -316,7 +315,7 @@ private:
 		m_curVarsp->insert(nodep->name(), nodep);
 	    } else if (!findcellp) {
 		nodep->v3error("Unsupported in C: Cell has same name as "
-			       <<varTextType(findidp)<<": "<<nodep->prettyName());
+			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
 	    } else if (findcellp != nodep) {
 		nodep->v3error("Duplicate name of cell: "<<nodep->prettyName());
 	    }
