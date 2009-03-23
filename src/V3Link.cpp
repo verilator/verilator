@@ -29,6 +29,7 @@
 #include "verilatedos.h"
 #include <cstdio>
 #include <cstdarg>
+#include <cctype>
 #include <unistd.h>
 #include <map>
 #include <algorithm>
@@ -49,10 +50,11 @@ private:
     //   AstModule::user1p()	// V3SymTable*    Module's Symbol table
     //   AstNodeFTask::user1p()	// V3SymTable*    Local Symbol table
     //   AstBegin::user1p()	// V3SymTable*    Local Symbol table
-    //   AstVar::user1p()	// V3SymTable*    Table used to create this variable
     //   AstVar::user2p()	// bool		  True if port set for this variable
+    //   AstVar/Module::user3p() // V3SymTable*    Table used to create this variable
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // ENUMS
     enum IdState {		// Which loop through the tree
@@ -69,6 +71,7 @@ private:
     V3SymTable* m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
     V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
     int		m_beginNum;	// Begin block number, 0=none seen
+    bool	m_inGenerate;	// Inside a generate
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
     static int debug() {
@@ -90,6 +93,12 @@ private:
 	}
     }
 
+    void symsInsert(const string& name, AstNode* nodep) {
+	// Insert into symbol table, and remember what table the node is in
+	m_curVarsp->insert(name, nodep);
+	nodep->user3p(m_curVarsp);
+    }
+
     void linkVarName (AstVarRef* nodep) {
 	if (!nodep->varp()) {
 	    AstVar* varp = m_curVarsp->findIdName(nodep->name())->castVar();
@@ -103,7 +112,41 @@ private:
 	else if (nodep->castCell()) what = "cell";
 	else if (nodep->castTask()) what = "task";
 	else if (nodep->castFunc()) what = "function";
+	else if (nodep->castBegin()) what = "block";
 	return what;
+    }
+
+    string ucfirst(const string& text) {
+	string out = text;
+	out[0] = toupper(out[0]);
+	return out;
+    }
+
+    void checkDuplicate(AstNode* nodep, AstNode* foundp) {
+	// Check if there's a duplicate and report error if so
+	V3SymTable* nodeSymsp = (V3SymTable*)nodep->user3p();
+	V3SymTable* foundSymsp = (V3SymTable*)foundp->user3p();
+	// nodeSymsp may not have been set yet because it wasn't inserted yet,
+	// if so, pretend for a moment it is inserted right here.
+	if (!nodeSymsp) nodeSymsp = m_curVarsp;
+	//
+	if (nodep==foundp) {  // Good.
+	} else if ((nodep->castBegin() || foundp->castBegin())
+		   && nodeSymsp != foundSymsp) {
+	    // Conflicts with begin at *different* level.  Thus it isn't really a duplicate
+	    // if "foo" is under a block called "foo" - it's "foo.foo"; that's fine.
+	} else if ((nodep->castBegin() || foundp->castBegin())
+		   && m_inGenerate) {
+	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
+	    // See t_gen_forif.v for an example.
+	} else if (nodep->type() == foundp->type()) {
+	    nodep->v3error("Duplicate declaration of "<<nodeTextType(foundp)<<": "<<nodep->prettyName());
+	    foundp->v3error("... Location of original declaration");
+	} else {
+	    nodep->v3error("Unsupported in C: "<<ucfirst(nodeTextType(nodep))<<" has the same name as "
+			   <<nodeTextType(foundp)<<": "<<nodep->prettyName());
+	    foundp->v3error("... Location of original declaration");
+	}
     }
 
     void createImplicitVar (AstVarRef* forrefp, bool noWarn) {
@@ -154,6 +197,18 @@ private:
 	m_curVarsp = NULL;
 	m_modp = NULL;
     }
+
+    virtual void visit(AstGenerate* nodep, AstNUser*) {
+	// Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
+	// See t_gen_forif.v for an example.
+	bool lastInGen = m_inGenerate;
+	{
+	    m_inGenerate = true;
+	    nodep->iterateChildren(*this);
+	}
+	m_inGenerate = lastInGen;
+    }
+
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Var: Remember its name for later resolution
 	if (!m_curVarsp) nodep->v3fatalSrc("Var not under module??\n");
@@ -177,7 +232,7 @@ private:
 			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<findvarp<<endl);
-		if (findvarp->user1p() == m_curVarsp) {  // Only when on same level
+		if (findvarp->user3p() == m_curVarsp) {  // Only when on same level
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
@@ -198,11 +253,10 @@ private:
 		}
 	    }
 	    if (ins) {
-		m_curVarsp->insert(nodep->name(), nodep);
-		nodep->user1p(m_curVarsp);
+		symsInsert(nodep->name(), nodep);
 		if (nodep->isGParam()) {
 		    m_paramNum++;
-		    m_curVarsp->insert("__paramNumber"+cvtToStr(m_paramNum), nodep);
+		    symsInsert("__paramNumber"+cvtToStr(m_paramNum), nodep);
 		}
 	    }
 	}
@@ -250,7 +304,7 @@ private:
 		    newvarp->attrIsolateAssign(funcp->attrIsolateAssign());
 		    funcp->addFvarp(newvarp);
 		    // Explicit insert required, as the var name shadows the upper level's task name
-		    m_curVarsp->insert(newvarp->name(), newvarp);
+		    symsInsert(newvarp->name(), newvarp);
 		}
 	    }
 	    m_ftaskp = nodep;
@@ -260,14 +314,10 @@ private:
 	m_curVarsp = upperVarsp;
 	if (m_idState==ID_FIND) {
 	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
-	    AstNodeFTask* findtaskp = findidp->castNodeFTask();
 	    if (!findidp) {
-		m_curVarsp->insert(nodep->name(), nodep);
-	    } else if (!findtaskp) {
-		nodep->v3error("Unsupported in C: Task/function has same name as "
-			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
-	    } else if (findtaskp!=nodep) {
-		nodep->v3error("Duplicate declaration of task/function: "<<nodep->prettyName());
+		symsInsert(nodep->name(), nodep);
+	    } else {
+		checkDuplicate(nodep,findidp);
 	    }
 	}
     }
@@ -281,6 +331,17 @@ private:
 	if (m_idState==ID_FIND && nodep->name() == "genblk") {
 	    ++m_beginNum;
 	    nodep->name(nodep->name()+cvtToStr(m_beginNum));
+	}
+	// Check naming (we don't really care, but some tools do, so better to warn)
+	if (m_idState==ID_FIND) {
+	    // Note we only check for conflicts at the same level; it's ok if one block hides another
+	    // We also wouldn't want to not insert it even though it's lower down
+	    AstNode* foundp = m_curVarsp->findIdNameThisLevel(nodep->name());
+	    if (!foundp) {
+		symsInsert(nodep->name(), nodep);
+	    } else {
+		checkDuplicate(nodep, foundp);
+	    }
 	}
 	// Recurse
 	int oldNum = m_beginNum;
@@ -310,14 +371,10 @@ private:
 	if (m_idState==ID_FIND) {
 	    // Add to list of all cells, for error checking and defparam's
 	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
-	    AstCell* findcellp = findidp->castCell();
 	    if (!findidp) {
-		m_curVarsp->insert(nodep->name(), nodep);
-	    } else if (!findcellp) {
-		nodep->v3error("Unsupported in C: Cell has same name as "
-			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
-	    } else if (findcellp != nodep) {
-		nodep->v3error("Duplicate name of cell: "<<nodep->prettyName());
+		symsInsert(nodep->name(), nodep);
+	    } else {
+		checkDuplicate(nodep, findidp);
 	    }
 	}
 	if (!nodep->modp()) {
@@ -348,7 +405,7 @@ private:
 	    } else if (!refp->isIO()) {
 		nodep->v3error("Pin is not a in/out/inout: "<<nodep->prettyName());
 	    } else {
-		m_curVarsp->insert("__pinNumber"+cvtToStr(nodep->pinNum()), refp);
+		symsInsert("__pinNumber"+cvtToStr(nodep->pinNum()), refp);
 		refp->user2(true);
 	    }
 	    // Ports not needed any more
@@ -439,6 +496,7 @@ public:
 	m_ftaskp = NULL;
 	m_paramNum = 0;
 	m_beginNum = 0;
+	m_inGenerate = false;
 	//
 	rootp->accept(*this);
     }

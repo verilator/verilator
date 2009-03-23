@@ -56,11 +56,16 @@ class V3SymTable : public AstNUser {
 	    m_idNameMap.insert(make_pair(name, nodep));
 	}
     }
-    AstNode* findIdName(const string& name) {
+    AstNode* findIdNameThisLevel(const string& name) {
 	//UINFO(9, "     SymFind   "<<this<<" '"<<name<<"' "<<endl);
 	// First, scan this begin/end block or module for the name
 	IdNameMap::iterator iter = m_idNameMap.find(name);
 	if (iter != m_idNameMap.end()) return (iter->second);
+	return NULL;
+    }
+    AstNode* findIdName(const string& name) {
+	// First, scan this begin/end block or module for the name
+	if (AstNode* nodep = findIdNameThisLevel(name)) return nodep;
 	// Then scan the upper begin/end block or module for the name
 	if (m_upperp) return m_upperp->findIdName(name);
 	return NULL;
