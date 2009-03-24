@@ -101,7 +101,7 @@ private:
 
     void linkVarName (AstVarRef* nodep) {
 	if (!nodep->varp()) {
-	    AstVar* varp = m_curVarsp->findIdName(nodep->name())->castVar();
+	    AstVar* varp = m_curVarsp->findIdUpward(nodep->name())->castVar();
 	    nodep->varp(varp);
 	}
     }
@@ -122,19 +122,19 @@ private:
 	return out;
     }
 
-    void checkDuplicate(AstNode* nodep, AstNode* foundp) {
-	// Check if there's a duplicate and report error if so
-	V3SymTable* nodeSymsp = (V3SymTable*)nodep->user3p();
-	V3SymTable* foundSymsp = (V3SymTable*)foundp->user3p();
-	// nodeSymsp may not have been set yet because it wasn't inserted yet,
-	// if so, pretend for a moment it is inserted right here.
-	if (!nodeSymsp) nodeSymsp = m_curVarsp;
+    void findAndInsertAndCheck(AstNode* nodep, const string& name) {
+	// Lookup the given name under current symbol table
+	// Insert if not found
+	// Report error if there's a duplicate
 	//
-	if (nodep==foundp) {  // Good.
-	} else if ((nodep->castBegin() || foundp->castBegin())
-		   && nodeSymsp != foundSymsp) {
-	    // Conflicts with begin at *different* level.  Thus it isn't really a duplicate
-	    // if "foo" is under a block called "foo" - it's "foo.foo"; that's fine.
+	// Note we only check for conflicts at the same level; it's ok if one block hides another
+	// We also wouldn't want to not insert it even though it's lower down
+	AstNode* foundp = m_curVarsp->findIdFlat(name);
+	if (!foundp) {
+	    symsInsert(nodep->name(), nodep);
+	    foundp = nodep;
+	} else if (nodep==foundp) {  // Already inserted.
+	    // Good.
 	} else if ((nodep->castBegin() || foundp->castBegin())
 		   && m_inGenerate) {
 	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
@@ -222,14 +222,14 @@ private:
 		nodep->trace(false);
 	    }
 	    // Find under either a task or the module's vars
-	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
-	    AstVar* findvarp = findidp->castVar();
+	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    AstVar* findvarp = foundp->castVar();
 	    bool ins=false;
-	    if (!findidp) {
+	    if (!foundp) {
 		ins=true;
 	    } else if (!findvarp) {
 		nodep->v3error("Unsupported in C: Variable has same name as "
-			       <<nodeTextType(findidp)<<": "<<nodep->prettyName());
+			       <<nodeTextType(foundp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<findvarp<<endl);
 		if (findvarp->user3p() == m_curVarsp) {  // Only when on same level
@@ -313,12 +313,7 @@ private:
 	}
 	m_curVarsp = upperVarsp;
 	if (m_idState==ID_FIND) {
-	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
-	    if (!findidp) {
-		symsInsert(nodep->name(), nodep);
-	    } else {
-		checkDuplicate(nodep,findidp);
-	    }
+	    findAndInsertAndCheck(nodep, nodep->name());
 	}
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
@@ -334,14 +329,7 @@ private:
 	}
 	// Check naming (we don't really care, but some tools do, so better to warn)
 	if (m_idState==ID_FIND) {
-	    // Note we only check for conflicts at the same level; it's ok if one block hides another
-	    // We also wouldn't want to not insert it even though it's lower down
-	    AstNode* foundp = m_curVarsp->findIdNameThisLevel(nodep->name());
-	    if (!foundp) {
-		symsInsert(nodep->name(), nodep);
-	    } else {
-		checkDuplicate(nodep, foundp);
-	    }
+	    findAndInsertAndCheck(nodep, nodep->name());
 	}
 	// Recurse
 	int oldNum = m_beginNum;
@@ -358,7 +346,7 @@ private:
 	// NodeFTaskRef: Resolve its reference
 	if (m_idState==ID_RESOLVE && !nodep->taskp()) {
 	    if (nodep->dotted() == "") {
-		AstNodeFTask* taskp = m_curVarsp->findIdName(nodep->name())->castNodeFTask();
+		AstNodeFTask* taskp = m_curVarsp->findIdUpward(nodep->name())->castNodeFTask();
 		if (!taskp) { nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName()); }
 		nodep->taskp(taskp);
 	    }
@@ -370,12 +358,7 @@ private:
 	// Cell: Resolve its filename.  If necessary, parse it.
 	if (m_idState==ID_FIND) {
 	    // Add to list of all cells, for error checking and defparam's
-	    AstNode* findidp = m_curVarsp->findIdName(nodep->name());
-	    if (!findidp) {
-		symsInsert(nodep->name(), nodep);
-	    } else {
-		checkDuplicate(nodep, findidp);
-	    }
+	    findAndInsertAndCheck(nodep, nodep->name());
 	}
 	if (!nodep->modp()) {
 	    nodep->v3fatalSrc("Cell has unlinked module"); // V3LinkCell should have errored out
@@ -399,11 +382,11 @@ private:
 	if (m_idState==ID_PARAM) {
 	    // Need to set pin numbers after varnames are created
 	    // But before we do the final resolution based on names
-	    AstVar* refp = m_curVarsp->findIdName(nodep->name())->castVar();
+	    AstVar* refp = m_curVarsp->findIdFlat(nodep->name())->castVar();
 	    if (!refp) {
 		nodep->v3error("Input/output/inout declaration not found for port: "<<nodep->prettyName());
 	    } else if (!refp->isIO()) {
-		nodep->v3error("Pin is not a in/out/inout: "<<nodep->prettyName());
+		nodep->v3error("Pin is not an in/out/inout: "<<nodep->prettyName());
 	    } else {
 		symsInsert("__pinNumber"+cvtToStr(nodep->pinNum()), refp);
 		refp->user2(true);
@@ -433,11 +416,11 @@ private:
 	// Pin: Link to submodule's pin
 	if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
 	if (m_idState==ID_RESOLVE && !nodep->modVarp()) {
-	    AstVar* refp = m_cellVarsp->findIdName(nodep->name())->castVar();
+	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->castVar();
 	    if (!refp) {
 		nodep->v3error("Pin not found: "<<nodep->prettyName());
 	    } else if (!refp->isIO() && !refp->isParam()) {
-		nodep->v3error("Pin is not a in/out/inout/param: "<<nodep->prettyName());
+		nodep->v3error("Pin is not an in/out/inout/param: "<<nodep->prettyName());
 	    } else {
 		nodep->modVarp(refp);
 	    }
@@ -463,8 +446,8 @@ private:
     virtual void visit(AstDefParam* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_PARAM) {
-	    AstNode* findidp = m_curVarsp->findIdName(nodep->path());
-	    AstCell* cellp = findidp->castCell();
+	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->path());
+	    AstCell* cellp = foundp->castCell();
 	    if (!cellp) {
 		nodep->v3error("In defparam, cell "<<nodep->path()<<" never declared");
 	    } else {

@@ -144,7 +144,9 @@ private:
 	// Cell: Resolve its filename.  If necessary, parse it.
 	if (!nodep->modp()) {
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
-	    AstModule* modp = m_mods.findIdName(nodep->modName())->castModule();
+	    // Use findIdUpward instead of findIdFlat; it doesn't matter for now
+	    // but we might support modules-under-modules someday.
+	    AstModule* modp = m_mods.findIdUpward(nodep->modName())->castModule();
 	    if (!modp) {
 		// Read-subfile
 		V3Read reader (v3Global.rootp());
@@ -153,7 +155,7 @@ private:
 		// We've read new modules, grab new pointers to their names
 		readModNames();
 		// Check again
-		modp = m_mods.findIdName(nodep->modName())->castModule();
+		modp = m_mods.findIdUpward(nodep->modName())->castModule();
 		if (!modp) {
 		    nodep->v3error("Can't resolve module reference: "<<nodep->modName());
 		}
@@ -171,7 +173,7 @@ private:
 	    V3SymTable  ports;		// Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
-		if (!ports.findIdName(pinp->name())) {
+		if (!ports.findIdFlat(pinp->name())) {
 		    ports.insert(pinp->name(), pinp);
 		}
 	    }
@@ -179,7 +181,7 @@ private:
 	    // and it's easier to do it now than in V3Link when we'd need to repeat steps.
 	    for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep; portnodep=portnodep->nextp()) {
 		if (AstPort* portp = portnodep->castPort()) {
-		    if (!ports.findIdName(portp->name())) {
+		    if (!ports.findIdFlat(portp->name())) {
 			UINFO(9,"    need PORT  "<<portp<<endl);
 			// Create any not already connected
 			AstPin* newp = new AstPin(nodep->fileline(),0,portp->name(),
@@ -214,7 +216,7 @@ private:
     void readModNames() {
 	// Look at all modules, and store pointers to all module names
 	for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
-	    AstNode* foundp = m_mods.findIdName(nodep->name());
+	    AstNode* foundp = m_mods.findIdUpward(nodep->name());
 	    if (foundp && foundp != nodep) {
 		nodep->v3error("Duplicate declaration of module: "<<nodep->prettyName());
 		foundp->v3error("... Location of original declaration");

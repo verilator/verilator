@@ -360,7 +360,7 @@ public:
 	      <<((cellVxp->symPrefix()=="") ? "" : cellVxp->symPrefix()+dotname)
 	      <<"  at  "<<cellVxp
 	      <<endl);
-	AstNode* nodep = cellVxp->syms().findIdName(cellVxp->symPrefix() + dotname);  // Might be NULL
+	AstNode* nodep = cellVxp->syms().findIdFlat(cellVxp->symPrefix() + dotname);  // Might be NULL
 	if (!nodep) baddot = dotname;
 	return nodep;
     }
