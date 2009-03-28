@@ -168,7 +168,8 @@ class V3Options {
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
     static bool wildmatchi(const char* s, const char* p);
-    static string getenvStr(const char* envvar, const char* defaultValue);
+    static string getenvStr(const string& envvar, const string& defaultValue);
+    static void setenvStr(const string& envvar, const string& value, const string& why);
 
   public:
     // CREATORS

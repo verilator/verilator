@@ -303,19 +303,28 @@ void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
 //######################################################################
 // Environment
 
-string V3Options::getenvStr(const char* envvar, const char* defaultValue) {
-    if (const char* envvalue = getenv(envvar)) {
+string V3Options::getenvStr(const string& envvar, const string& defaultValue) {
+    if (const char* envvalue = getenv(envvar.c_str())) {
 	return envvalue;
     } else {
 	return defaultValue;
     }
 }
+
+void V3Options::setenvStr(const string& envvar, const string& value, const string& why) {
+    if (why != "") {
+	UINFO(1,"export "<<envvar<<"="<<value<<" # "<<why<<endl);
+    } else {
+	UINFO(1,"export "<<envvar<<"="<<value<<endl);
+    }
+    setenv(envvar.c_str(),value.c_str(),true);
+}
+
 string V3Options::getenvSYSTEMC() {
     string var = getenvStr("SYSTEMC","");
     if (var == "" && string(DEFENV_SYSTEMC) != "") {
 	var = DEFENV_SYSTEMC;
-	UINFO(1,"export SYSTEMC="<<var<<" # Hardcoded at build time"<<endl);
-	setenv("SYSTEMC", var.c_str(), false);
+	setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
     // Only correct or check it if we really need the value
     if ((v3Global.opt.systemPerl() || v3Global.opt.systemC())
@@ -327,12 +336,12 @@ string V3Options::getenvSYSTEMC() {
     }
     return var;
 }
+
 string V3Options::getenvSYSTEMC_ARCH() {
     string var = getenvStr("SYSTEMC_ARCH","");
     if (var == "" && string(DEFENV_SYSTEMC_ARCH) != "") {
 	var = DEFENV_SYSTEMC_ARCH;
-	UINFO(1,"export SYSTEMC_ARCH="<<var<<" # Hardcoded at build time"<<endl);
-	setenv("SYSTEMC_ARCH", var.c_str(), false);
+	setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
     }
     if (var == "") {
 	struct utsname uts;
@@ -341,17 +350,16 @@ string V3Options::getenvSYSTEMC_ARCH() {
 	if (wildmatch(sysname.c_str(), "*solaris*")) { var = "gccsparcOS5"; }
 	else if (wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
 	else { var = "linux"; }
-	UINFO(1,"export SYSTEMC_ARCH="<<var<<" # From sysname '"<<sysname<<"'"<<endl);
-	setenv("SYSTEMC_ARCH", var.c_str(), false);
+	setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
     }
     return var;
 }
+
 string V3Options::getenvSYSTEMPERL() {
     string var = getenvStr("SYSTEMPERL","");
     if (var == "" && string(DEFENV_SYSTEMPERL) != "") {
 	var = DEFENV_SYSTEMPERL;
-	UINFO(1,"export SYSTEMPERL="<<var<<" # Hardcoded at build time"<<endl);
-	setenv("SYSTEMC_PERL", var.c_str(), false);
+	setenvStr("SYSTEMC_PERL", var, "Hardcoded at build time");
     }
     // Only correct or check it if we really need the value
     if ((v3Global.opt.systemPerl() || v3Global.opt.trace()) && !v3Global.opt.lintOnly()) {
@@ -359,8 +367,7 @@ string V3Options::getenvSYSTEMPERL() {
 	    string testdir = V3Options::getenvW() + "/hw/utils/perltools/SystemC"; // Hack for internal testing
 	    if (V3Options::fileStatDir(testdir)) {
 		var = testdir;
-		UINFO(1,"export SYSTEMPERL="<<var<<endl);
-		setenv ("SYSTEMPERL", var.c_str(), false);
+		setenvStr ("SYSTEMPERL", var, "From W");
 	    }
 	}
 	if (var == "") {
@@ -374,12 +381,12 @@ string V3Options::getenvSYSTEMPERL() {
     }
     return var;
 }
+
 string V3Options::getenvVERILATOR_ROOT() {
     string var = getenvStr("VERILATOR_ROOT","");
     if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
 	var = DEFENV_VERILATOR_ROOT;
-	UINFO(1,"export VERILATOR_ROOT="<<var<<" # Hardcoded at build time"<<endl);
-	setenv("VERILATOR_ROOT", var.c_str(), false);
+	setenvStr("VERILATOR_ROOT", var.c_str(), "Hardcoded at build time");
     }
     if (var == "") {
 	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
