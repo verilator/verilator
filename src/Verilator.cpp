@@ -538,6 +538,7 @@ int main(int argc, char** argv, char** env) {
     V3Options::getenvSYSTEMC();
     V3Options::getenvSYSTEMC_ARCH();
     V3Options::getenvSYSTEMPERL();
+    V3Options::getenvSYSTEMPERL_INCLUDE();
 
     V3Error::abortIfErrors();
 

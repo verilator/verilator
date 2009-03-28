@@ -87,6 +87,7 @@ public:
 	of.puts("PERL = "+V3Options::getenvPERL()+"\n");
 	of.puts("VERILATOR_ROOT = "+V3Options::getenvVERILATOR_ROOT()+"\n");
 	of.puts("SYSTEMPERL = "+V3Options::getenvSYSTEMPERL()+"\n");
+	of.puts("SYSTEMPERL_INCLUDE = "+V3Options::getenvSYSTEMPERL_INCLUDE()+"\n");
 
 	of.puts("\n# Switches...\n");
 	of.puts(string("VM_SP = ")+(v3Global.opt.systemPerl()?"1":"0")+"\n");

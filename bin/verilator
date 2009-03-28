@@ -953,10 +953,18 @@ building the SystemC model.
 
 =item SYSTEMPERL
 
-Specifies the directory containing the Verilog-Perl distribution kit.  This
-is used to find the Verilog-Perl library and include files.  If not
+Specifies the directory containing the SystemPerl distribution kit.  This
+is used to find the SystemPerl library and include files.  If not
 specified, it will come from a default optionally specified at configure
-time (before Verilator was compiled).
+time (before Verilator was compiled).  See also SYSTEMPERL_INCLUDE.
+
+=item SYSTEMPERL_INCLUDE
+
+Specifies the directory containing the Verilog-Perl include .cpp files,
+from the src/ directory of the SystemPerl kit.  If not specified, it will
+be computed from the SYSTEMPERL environment variable if it is set, and if
+SYSTEMPERL is not set SYSTEMPERL_INCLUDE will come from a default
+optionally specified at configure time (before Verilator was compiled).
 
 =item VCS_HOME
 

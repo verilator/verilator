@@ -170,6 +170,7 @@ class V3Options {
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
     static void setenvStr(const string& envvar, const string& value, const string& why);
+    static string getenvSYSTEMPERLGuts();
 
   public:
     // CREATORS
@@ -193,6 +194,8 @@ class V3Options {
     string flags() const { return m_flags; }
     bool systemC() const { return m_systemC; }
     bool systemPerl() const { return m_systemPerl; }
+    bool usingSystemCLibs() const { return !lintOnly() && (systemPerl() || systemC()); }
+    bool usingSystemPerlLibs() const { return !lintOnly() && (systemPerl() || trace()); }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
@@ -290,6 +293,7 @@ class V3Options {
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMPERL();
+    static string getenvSYSTEMPERL_INCLUDE();
     static string getenvVERILATOR_ROOT();
     static string getenvW() { return getenvStr("W",""); }
 

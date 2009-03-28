@@ -327,8 +327,7 @@ string V3Options::getenvSYSTEMC() {
 	setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
     // Only correct or check it if we really need the value
-    if ((v3Global.opt.systemPerl() || v3Global.opt.systemC())
-	&& !v3Global.opt.lintOnly()) {
+    if (v3Global.opt.usingSystemCLibs()) {
 	if (var == "") {
 	    v3fatal("Need $SYSTEMC in environment\n"
 		    "Probably System-C isn't installed, see http://www.systemc.org\n");
@@ -356,13 +355,21 @@ string V3Options::getenvSYSTEMC_ARCH() {
 }
 
 string V3Options::getenvSYSTEMPERL() {
+    // Must be careful to set SYSTEMPERL_INCLUDE first else we'd setenv
+    // SYSTEMPERL which would override a DEFENVed SYSTEMPERL_INCLUDE.
+    V3Options::getenvSYSTEMPERL_INCLUDE();
+    return V3Options::getenvSYSTEMPERLGuts();
+}
+
+string V3Options::getenvSYSTEMPERLGuts() {
+    // Get SYSTEMPERL when SYSTEMPERL_INCLUDE has already been tested
     string var = getenvStr("SYSTEMPERL","");
     if (var == "" && string(DEFENV_SYSTEMPERL) != "") {
 	var = DEFENV_SYSTEMPERL;
-	setenvStr("SYSTEMC_PERL", var, "Hardcoded at build time");
+	setenvStr("SYSTEMPERL", var, "Hardcoded at build time");
     }
     // Only correct or check it if we really need the value
-    if ((v3Global.opt.systemPerl() || v3Global.opt.trace()) && !v3Global.opt.lintOnly()) {
+    if (v3Global.opt.usingSystemPerlLibs()) {
 	if (var == "") {
 	    string testdir = V3Options::getenvW() + "/hw/utils/perltools/SystemC"; // Hack for internal testing
 	    if (V3Options::fileStatDir(testdir)) {
@@ -370,13 +377,35 @@ string V3Options::getenvSYSTEMPERL() {
 		setenvStr ("SYSTEMPERL", var, "From W");
 	    }
 	}
+	// Test for correctness in SYSTEMPERL_INCLUDE
+    }
+    return var;
+}
+
+string V3Options::getenvSYSTEMPERL_INCLUDE() {
+    string var = getenvStr("SYSTEMPERL_INCLUDE","");
+    if (var == "" && string(DEFENV_SYSTEMPERL_INCLUDE) != "") {
+	// Note if SYSTEMPERL is DEFENVed, then SYSTEMPERL_INCLUDE is also DEFENVed
+	// So we don't need to sweat testing SYSTEMPERL also
+	var = DEFENV_SYSTEMPERL_INCLUDE;
+	setenvStr("SYSTEMPERL_INCLUDE", var, "Hardcoded at build time");
+    }
+    // Only correct or check it if we really need the value
+    if (v3Global.opt.usingSystemPerlLibs()) {
+	if (var == "") {
+	    string sp = V3Options::getenvSYSTEMPERLGuts();
+	    var = sp+"/src";
+	    setenvStr ("SYSTEMPERL_INCLUDE", var, "From $SYSTEMPERL/src");
+	}
+	// We warn about $SYSTEMPERL instead of _INCLUDE since that's more likely
+	// what users will want to set.
 	if (var == "") {
 	    v3fatal("Need $SYSTEMPERL in environment for --sp or --trace\n"
 		    "Probably System-Perl isn't installed, see http://www.veripool.org/systemperl\n");
 	}
 	if (var != ""
-	    && !V3Options::fileStatNormal(var+"/src/systemperl.h")) {
-	    v3fatal("$SYSTEMPERL environment var doesn't seem to point to System-Perl kit\n");
+	    && !V3Options::fileStatNormal(var+"/systemperl.h")) {
+	    v3fatal("Neither $SYSTEMPERL nor $SYSTEMPERL_INCLUDE environment vars to point to System-Perl kit: "<<var<<endl);
 	}
     }
     return var;

@@ -116,8 +116,9 @@ If you will be using SystemC, download and install Verilog-Perl,
 If you will be using SystemC, download and install System-Perl,
 @url{http://search.cpan.org/search?module=SystemC::Netlist}.  Note
 you'll need to set a @samp{SYSTEMPERL} environment variable to point
-to the downloaded kit (not the installed files.)  Also, make sure to
-do a @code{make sc_patch}.
+to the downloaded kit.  Optionally also set @samp{SYSTEMPERL_INCLUDE}
+to point to the installed headers.  Also, make sure to do a @code{make
+sc_patch}.
 
 @item
 @code{cd} to the Verilator directory containing this README.
@@ -128,8 +129,8 @@ Type @samp{./configure} to configure Verilator for your system.
 If you are configuring Verilator to be part of a RPM or other
 distribution package system, you may want to use the --enable-defenv
 configure flag.  This will take the current value of VERILATOR_ROOT,
-SYSTEMC, SYSTEMC_ARCH, and SYSTEMPERL and build them as defaults into
-the executable.
+SYSTEMC, SYSTEMC_ARCH, SYSTEMPERL, and SYSTEMPERL_INCLUDE and build
+them as defaults into the executable.
 
 @item
 Type @samp{make} to compile Verilator.

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --pins-bv option to use sc_bv for all ports.  [Brian Small]
 
+***  Add SYSTEMPERL_INCLUDE envvar to assist RPM builds.  [Chitlesh Goorah]
+
 **** Report errors when duplicate labels are used, bug72.  [Vasu Kandadi]
 
 **** Fix the SC_MODULE name() to not include __PVT__.  [Bob Fredieu]
