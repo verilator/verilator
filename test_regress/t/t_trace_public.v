@@ -9,7 +9,7 @@ module t (
 	  );
 
    neg neg (.clk(CLK));
-   glbl glbl;
+   glbl glbl ();
 
    initial RESET = 1'b1;
    always @ (posedge CLK)

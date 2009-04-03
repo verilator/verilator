@@ -1171,10 +1171,14 @@ or `ifdef's may break other tools.
 =item `__FILE__
 
 The __FILE__ define expands to the current filename, like C++'s __FILE__.
+This is in the draft SystemVerilog 2009 standard (but supported by
+Verilator since 2006!)
 
 =item `__LINE__
 
-The __LINE__ define expands to the current line number, like C++'s __LINE__.
+The __LINE__ define expands to the current line number, like C++'s
+__LINE__.  This is in the draft SystemVerilog 2009 standard (but supported
+by Verilator since 2006!)
 
 =item `error I<string>
 
