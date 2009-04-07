@@ -50,20 +50,6 @@ void V3LinkLevel::modSortByLevel() {
     // Calculate levels again in case we added modules
     UINFO(2,"modSortByLevel()\n");
 
-    if (v3Global.opt.topModule()!="") {
-	bool hit = false;
-	for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
-	    if (nodep->name() == v3Global.opt.topModule()) {
-		hit = true;
-	    } else {
-		nodep->level(3);
-	    }
-	}
-	if (!hit) {
-	    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
-	}
-    }
-
     // level() was computed for us in V3LinkCells
 
     vector<AstModule*> vec;

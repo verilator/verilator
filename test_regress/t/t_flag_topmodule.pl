@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # General Public License or the Perl Artistic License.
 
 compile (
-	 v_flags2 => ["--top-module b"],
+	 v_flags2 => ["--top-module b "],
 	 ) if $Self->{v3};
 
 execute (

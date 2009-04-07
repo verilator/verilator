@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.7***
+
+**** Fix "cloning" error with -y/--top-module, bug76. [Dimitris Nalbantis]
+
 * Verilator 3.702 2009/03/28
 
 ***  Add --pins-bv option to use sc_bv for all ports.  [Brian Small]

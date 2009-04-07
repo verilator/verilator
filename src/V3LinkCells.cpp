@@ -95,6 +95,7 @@ private:
     V3SymTable  m_mods;		// Symbol table of all module names
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
+    V3GraphVertex*	m_topVertexp;	// Vertex of top module
 
     static int debug() {
 	static int level = -1;
@@ -126,12 +127,22 @@ private:
 		vvertexp->modp()->level(vvertexp->rank()+1);
 	    }
 	}
+	if (v3Global.opt.topModule()!=""
+	    && !m_topVertexp) {
+	    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
+	}
     }
     virtual void visit(AstModule* nodep, AstNUser*) {
 	// Module: Pick up modnames, so we can resolve cells later
 	m_modp = nodep;
 	UINFO(2,"Link Module: "<<nodep<<endl);
-	if (nodep->inLibrary()) {
+	bool topMatch = (v3Global.opt.topModule()==nodep->name());
+	if (topMatch) m_topVertexp = vertex(nodep);
+	if (v3Global.opt.topModule()==""
+	    ? nodep->inLibrary()   // Library cells are lower
+	    : !topMatch) {  // Any non-specified module is lower
+	    // Put under a fake vertex so that the graph ranking won't indicate
+	    // this is a top level module
 	    if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
 	    new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
 	}
@@ -231,9 +242,9 @@ public:
     LinkCellsVisitor() {
 	m_modp = NULL;
 	m_libVertexp = NULL;
+	m_topVertexp = NULL;
     }
-    virtual ~LinkCellsVisitor() {
-    }
+    virtual ~LinkCellsVisitor() {}
     void main(AstNetlist* rootp) {
 	rootp->accept(*this);
     }
