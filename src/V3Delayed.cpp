@@ -415,6 +415,7 @@ private:
 	    else if (!m_inDly && nodep->lvalue()) {
 		//UINFO(9,"NBA "<<nodep<<endl);
 		if (!m_inInitial) {
+		    UINFO(4,"AssignNDlyVar: "<<nodep<<endl);
 		    markVarUsage(nodep->varp(), VU_NONDLY);
 		}
 	    }
