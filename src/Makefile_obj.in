@@ -269,12 +269,14 @@ y.tab.c: verilog.y $(HEADERS) bisonpre
 	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o y.tab.c $<
 
 V3Lexer_pregen.yy.cpp:	verilog.l y.tab.h $(HEADERS)
+	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp
 	$(PERL) $(srcdir)/flexfix <$< >$@
 
 V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
+	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3PreLex.yy.cpp:	V3PreLex_pregen.yy.cpp
