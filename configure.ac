@@ -72,5 +72,5 @@ AC_SUBST(pkgdatadir)
 AC_OUTPUT(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
 
 AC_MSG_RESULT([])
-AC_MSG_RESULT([Now type 'make'])
+AC_MSG_RESULT([Now type 'gmake'])
 AC_MSG_RESULT([])

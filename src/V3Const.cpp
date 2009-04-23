@@ -1225,7 +1225,7 @@ private:
 		AstSenItem* litemp = senp->castSenItem();
 		AstSenItem* ritemp = cmpp->castSenItem();
 		if (litemp && ritemp) {
-		    if (litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameTree(ritemp->varrefp())
+		    if ((litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameTree(ritemp->varrefp()))
 			|| (!litemp->varrefp() && !ritemp->varrefp())) {
 			// We've sorted in the order ANY, BOTH, POS, NEG, so we don't need to try opposite orders
 			if ((   litemp->edgeType()==AstEdgeType::ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY

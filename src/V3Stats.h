@@ -38,7 +38,7 @@ public:
 
     // Implicit conversion operators:
     inline V3Double0 (const vluint64_t v) : m_d(v) { };
-    inline operator const double () const { return m_d; };
+    inline operator double () const { return m_d; };
 
     // Explicit operators:
     inline V3Double0& operator++() { ++m_d; return *this; };	// prefix

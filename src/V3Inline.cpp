@@ -319,10 +319,10 @@ private:
 	int refs = nodep->user3();
 	// Should we automatically inline this module?
 	// inlineMult = 2000 by default.  If a mod*#instances is < this # nodes, can inline it
-	bool doit = (userinline || allowed && (refs==1
-					       || m_stmtCnt < INLINE_MODS_SMALLER
-					       || v3Global.opt.inlineMult() < 1
-					       || refs*m_stmtCnt < v3Global.opt.inlineMult()));
+	bool doit = (userinline || (allowed && (refs==1
+						|| m_stmtCnt < INLINE_MODS_SMALLER
+						|| v3Global.opt.inlineMult() < 1
+						|| refs*m_stmtCnt < v3Global.opt.inlineMult())));
 	UINFO(4, " Inline="<<doit<<" Possible="<<allowed<<" Usr="<<userinline<<" Refs="<<refs<<" Stmts="<<m_stmtCnt
 	      <<"  "<<nodep<<endl);
 	if (doit) {

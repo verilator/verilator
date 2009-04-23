@@ -336,8 +336,8 @@ static inline void VL_ASSIGNBIT_QI(int, int bit, QData& lhsr, QData rhs) {
 }
 static inline void VL_ASSIGNBIT_WI(int, int bit, WDataOutP owp, IData rhs) {
     IData orig = owp[VL_BITWORD_I(bit)];
-    owp[VL_BITWORD_I(bit)] = (orig & ~(VL_UL(1)<<VL_BITBIT_I(bit))
-			    | (rhs<<VL_BITBIT_I(bit)));
+    owp[VL_BITWORD_I(bit)] = ((orig & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
+			      | (rhs<<VL_BITBIT_I(bit)));
 }
 // Alternative form that is an instruction faster when rhs is constant one.
 static inline void VL_ASSIGNBIT_IO(int, int bit, CData& lhsr, IData) {
@@ -441,7 +441,7 @@ static inline QData VL_EXTENDS_QQ(int, int lbits, QData lhs) {
 
 static inline WDataOutP VL_EXTENDS_WI(int obits, int lbits, WDataOutP owp, IData ld) {
     IData sign = VL_SIGNONES_I(lbits,ld);
-    owp[0] = ld | sign & ~VL_MASK_I(lbits);
+    owp[0] = ld | (sign & ~VL_MASK_I(lbits));
     for (int i=1; i < VL_WORDS_I(obits); i++) owp[i] = sign;
     return(owp);
 }
@@ -456,7 +456,7 @@ static inline WDataOutP VL_EXTENDS_WW(int obits, int lbits, WDataOutP owp, WData
     for (int i=0; i < VL_WORDS_I(lbits)-1; i++) owp[i] = lwp[i];
     int lmsw=VL_WORDS_I(lbits)-1;
     IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
-    owp[lmsw] = lwp[lmsw] | sign & ~VL_MASK_I(lbits);
+    owp[lmsw] = lwp[lmsw] | (sign & ~VL_MASK_I(lbits));
     for (int i=VL_WORDS_I(lbits); i < VL_WORDS_I(obits); i++) owp[i] = sign;
     return(owp);
 }
@@ -991,16 +991,16 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
 	    {	// Lower word
 		int oword = lword+i;
 		IData d = lwp[i]<<loffset;
-		IData od = owp[oword] & ~linsmask | d & linsmask;
-		if (oword==hword) owp[oword] = owp[oword] & ~hinsmask | od & hinsmask;
+		IData od = (owp[oword] & ~linsmask) | (d & linsmask);
+		if (oword==hword) owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
 		else owp[oword] = od;
 	    }
 	    {   // Upper word
 		int oword = lword+i+1;
 		if (oword <= hword) {
 		    IData d = lwp[i]>>nbitsonright;
-		    IData od = d & ~linsmask | owp[oword] & linsmask;
-		    if (oword==hword) owp[oword] = owp[oword] & ~hinsmask | od & hinsmask;
+		    IData od = (d & ~linsmask) | (owp[oword] & linsmask);
+		    if (oword==hword) owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
 		    else owp[oword] = od;
 		}
 	    }
@@ -1188,12 +1188,12 @@ static inline IData VL_SHIFTRS_III(int obits, int, int, IData lhs, IData rhs) {
     // Note the C standard does not specify the >> operator as a arithmetic shift!
     IData sign    = -(lhs >> (obits-1)); // ffff_ffff if negative
     IData signext = ~(VL_MASK_I(obits) >> rhs);   // One with bits where we've shifted "past"
-    return (lhs >> rhs) | sign & VL_CLEAN_II(obits,obits,signext);
+    return (lhs >> rhs) | (sign & VL_CLEAN_II(obits,obits,signext));
 }
 static inline QData VL_SHIFTRS_QQI(int obits, int, int, QData lhs, IData rhs) {
     QData sign    = -(lhs >> (obits-1));
     QData signext = ~(VL_MASK_Q(obits) >> rhs);
-    return (lhs >> rhs) | sign & VL_CLEAN_QQ(obits,obits,signext);
+    return (lhs >> rhs) | (sign & VL_CLEAN_QQ(obits,obits,signext));
 }
 static inline WDataOutP VL_SHIFTRS_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);

@@ -1063,8 +1063,8 @@ V3Number& V3Number::opMulS (const V3Number& lhs, const V3Number& rhs) {
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
     V3Number qNoSign = opMul(lhsNoSign,rhsNoSign);
-    if (lhs.isNegative() && !rhs.isNegative()
-	|| !lhs.isNegative() && rhs.isNegative()) {
+    if ((lhs.isNegative() && !rhs.isNegative())
+	|| (!lhs.isNegative() && rhs.isNegative())) {
 	opUnaryMin(qNoSign);
     } else {
 	opAssign(qNoSign);
@@ -1087,8 +1087,8 @@ V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
     V3Number qNoSign = opDiv(lhsNoSign,rhsNoSign);
-    if (lhs.isNegative() && !rhs.isNegative()
-	|| !lhs.isNegative() && rhs.isNegative()) {
+    if ((lhs.isNegative() && !rhs.isNegative())
+	|| (!lhs.isNegative() && rhs.isNegative())) {
 	opUnaryMin(qNoSign);
     } else {
 	opAssign(qNoSign);
