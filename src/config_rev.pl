@@ -23,11 +23,11 @@
 my $dir = $ARGV[0]; defined $dir or die "%Error: No directory argument,";
 chdir $dir;
 
+my $rev = 'UNKNOWN_REV';
 my $data = `git log | head -1`;
-if ($data !~ /commit\s*([a-z0-9]+)/i) {
-    die "%Error: No git revision found,";
+if ($data =~ /commit\s*([a-z0-9]+)/i) {
+    $rev = $1;
 }
-my $rev = $1;
 
 $data = `git status`;
 if ($data !~ /nothing to commit/i) {
@@ -35,3 +35,6 @@ if ($data !~ /nothing to commit/i) {
 }
 
 print "static const char* DTVERSION_rev = \"$rev\";\n";
+
+# Die after the print, so at least the header has good contents
+$rev =~ /UNKNOWN/ and die "%Error: No git revision found,";
