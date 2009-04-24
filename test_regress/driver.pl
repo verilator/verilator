@@ -167,7 +167,7 @@ sub parameter {
 	$_Parameter_Next_Level = $param;
     }
     else {
-	warn "%Error: Unknown parameter: $param\n";
+	die "%Error: Unknown parameter: $param\n";
     }
 }
 

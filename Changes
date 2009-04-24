@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix "cloning" error with -y/--top-module, bug76. [Dimitris Nalbantis]
 
+**** Fix segfault with error on bad --top-module, bug79. [Dimitris Nalbantis]
+
 **** Fix GCC 4.3.2 compile warnings.
 
 * Verilator 3.702 2009/03/28

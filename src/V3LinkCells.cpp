@@ -124,7 +124,11 @@ private:
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
 		// +1 so we leave level 1  for the new wrapper we'll make in a moment
-		vvertexp->modp()->level(vvertexp->rank()+1);
+		AstModule* modp = vvertexp->modp();
+		modp->level(vvertexp->rank()+1);
+		if (vvertexp == m_topVertexp && modp->level() != 2) {
+		    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' isn't at the top level, it's under another cell.");
+		}
 	    }
 	}
 	if (v3Global.opt.topModule()!=""
@@ -137,7 +141,11 @@ private:
 	m_modp = nodep;
 	UINFO(2,"Link Module: "<<nodep<<endl);
 	bool topMatch = (v3Global.opt.topModule()==nodep->name());
-	if (topMatch) m_topVertexp = vertex(nodep);
+	if (topMatch) {
+	    m_topVertexp = vertex(nodep);
+	    UINFO(2,"Link --top-module: "<<nodep<<endl);
+	    nodep->inLibrary(false);   // Safer to make sure it doesn't disappear
+	}
 	if (v3Global.opt.topModule()==""
 	    ? nodep->inLibrary()   // Library cells are lower
 	    : !topMatch) {  // Any non-specified module is lower
