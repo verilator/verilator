@@ -1364,61 +1364,59 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
 
 // If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
-#define I IData
 #define _END(obits,wordsSet) \
     for(int i=(wordsSet);i<VL_WORDS_I(obits);i++) o[i] = (IData)0x0; \
     return o
 
 #define VL_HAVE_CONST_W_1X
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o,
-				      I d0) {
+				      IData d0) {
     o[0]=d0;
     _END(obits,1);  }
 #define VL_HAVE_CONST_W_2X
 static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o,
-				      I d1,I d0) {
+				      IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;
     _END(obits,2);  }
 #define VL_HAVE_CONST_W_3X
 static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o,
-				      I d2,I d1,I d0) {
+				      IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;
     _END(obits,3);  }
 #define VL_HAVE_CONST_W_4X
 static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
-				      I d3,I d2,I d1,I d0) {
+				      IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;
     _END(obits,4);  }
 #define VL_HAVE_CONST_W_5X
 static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
-				      I d4,I d3,I d2,I d1,I d0) {
+				      IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;
     _END(obits,5);  }
 #define VL_HAVE_CONST_W_6X
 static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
-				      I d5,I d4,I d3,I d2,I d1,I d0) {
+				      IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;
     _END(obits,6);  }
 #define VL_HAVE_CONST_W_7X
 static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
-				      I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+				      IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;
     _END(obits,7);  }
 #define VL_HAVE_CONST_W_8X
 static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
-				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+				      IData d7,IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     _END(obits,8);  }
 #define VL_HAVE_CONST_W_9X
 static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o,
-				      I d8,
-				      I d7,I d6,I d5,I d4,I d3,I d2,I d1,I d0) {
+				      IData d8,
+				      IData d7,IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     o[8]=d8;
     _END(obits,9);  }
 
 #undef _END
-#undef I
 
 // Debugging
 

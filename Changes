@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix segfault with error on bad --top-module, bug79. [Dimitris Nalbantis]
 
+**** Fix "redefining I" error with complex includes.  [Duraid Madina]
+
 **** Fix GCC 4.3.2 compile warnings.
 
 * Verilator 3.702 2009/03/28
