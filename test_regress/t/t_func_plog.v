@@ -70,7 +70,7 @@ module Test
   #(parameter SAMPLE_WIDTH = 5 )
    (
 `ifdef verilator  // UNSUPPORTED
-    output reg [$clog2(SAMPLE_WIDTH-1)-1:0]         pos,
+    output reg [$clog2(SAMPLE_WIDTH)-1:0]         pos,
 `else
     output reg [log2(SAMPLE_WIDTH-1)-1:0]         pos,
 `endif

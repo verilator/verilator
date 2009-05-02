@@ -675,10 +675,11 @@ V3Number& V3Number::opOneHot0 (const V3Number& lhs) {
 }
 V3Number& V3Number::opCLog2 (const V3Number& lhs) {
     if (lhs.isFourState()) return setAllBitsX();
-    int bit;
-    for (bit=lhs.width()-1; bit>=0; bit--) {
+    // IE if 4, this algorithm didn't pre-subtract 1, so we need to post-correct now
+    int adjust = (lhs.countOnes()==1) ? 0 : 1;
+    for (int bit=lhs.width()-1; bit>=0; bit--) {
 	if (lhs.bitIs1(bit)) {
-	    setLong(bit+1);
+	    setLong(bit+adjust);
 	    return *this;
 	}
     }

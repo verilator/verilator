@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.7***
 
+**** Fix $clog2 calculation error with powers-of-2, bug81. [Patricio Kaplan]
+
 **** Fix error with tasks that have output first, bug78.  [Andrea Foletto]
 
 **** Fix "cloning" error with -y/--top-module, bug76. [Dimitris Nalbantis]
