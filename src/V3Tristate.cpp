@@ -156,7 +156,7 @@ private:
 	// assign x = (OE) ?  y  : 'hZ;
 	// assign x = (OE) ? 'hz :  y;
 
-	// see if this a COND and seperate out the __en logic from the output logic if it is
+	// see if this a COND and separate out the __en logic from the output logic if it is
 	if (nodep->rhsp()->castCond()) {
 	    AstCond* condp = nodep->rhsp()->castCond();
 	    AstNode* oep = condp->condp();

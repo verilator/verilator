@@ -280,7 +280,7 @@ private:
 	}
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
-	// Record the hiearchy of any named begins, so we can apply to user
+	// Record the hierarchy of any named begins, so we can apply to user
 	// coverage points.  This is because there may be cov points inside
 	// generate blocks; each point should get separate consideration.
 	// (Currently ignored for line coverage, since any generate iteration
