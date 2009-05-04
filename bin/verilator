@@ -3,9 +3,10 @@ eval 'exec perl -wS $0 ${1+"$@"}'
   if 0;
 ######################################################################
 #
-# Copyright 2003-2009 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# General Public License or the Perl Artistic License.
+# Copyright 2003-2009 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -2163,10 +2164,13 @@ silicon.
 
 =item May programs I create with Verilator remain under my own copyright?
 
-Yes, it's just like using GCC on your programs.  If you change Verilator
-itself, you must make the source code available under the GNU Public
-License.  However, the include and generated files use the GNU Lesser
-Public License, which means that files using them are NOT required to be released.
+Yes, it's just like using GCC on your programs; this is why Verilator uses
+the "GNU *Lesser* Public License" instead of the more typical "GNU Public
+License".  If you change Verilator itself or the header files Verilator
+includes, you must make the source code available under the GNU Lesser
+Public License.  However, Verilator output (the Verilated code) only
+includes the licensed files, and so you are NOT required to release any
+output from Verilator.
 
 You also have the option of using the Perl Artistic License, which again
 does not require you release your Verilog or generated code.
@@ -2513,8 +2517,9 @@ Ding Xiaoliang.
 The latest version is available from L<http://www.veripool.org/>.
 
 Copyright 2003-2009 by Wilson Snyder.  Verilator is free software; you can
-redistribute it and/or modify it under the terms of either the GNU Lesser
-General Public License or the Perl Artistic License.
+redistribute it and/or modify the Verilator internals under the terms of
+either the GNU Lesser General Public License Version 3 or the Perl Artistic
+License Version 2.0.
 
 =head1 AUTHORS
 

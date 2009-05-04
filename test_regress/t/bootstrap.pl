@@ -3,7 +3,8 @@
 #
 # Copyright 2008 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
-# General Public License or the Perl Artistic License.
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
 
 # This is exec'ed by every test that is run standalone (called from the
 # shell as ./t_test_name.pl)

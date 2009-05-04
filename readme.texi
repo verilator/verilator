@@ -28,11 +28,15 @@ This is the Verilator Package.
 
 This package is Copyright 2003-2009 by Wilson Snyder @email{wsnyder@@wsnyder.org}.
 
-You may distribute under the terms of either the GNU General Public License
-or the Artistic License, as specified in the Perl README file.
+Verilator is free software; you can redistribute it and/or modify it
+under the terms of either the GNU General Public License Version 3 or
+the Perl Artistic License Version 2.0.  (See the documentation for
+more details.)
 
-This code is provided with no warranty of any kind, and is used entirely at
-your own risk.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
 @node Description, Obtaining Distribution, Copyright, Top
 @section Description

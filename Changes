@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.7***
+
+**   Verilator is now licensed under LGPL v3 and/or Artistic v2.0.
+
 * Verilator 3.703 2009/05/02
 
 ***  Fix $clog2 calculation error with powers-of-2, bug81. [Patricio Kaplan]
@@ -1417,9 +1421,10 @@ of input ports exists for tracing.
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright 2001-2009 by Wilson Snyder.  This program is free software;
-you can redistribute it and/or modify it under the terms of either the GNU
-General Public License or the Perl Artistic License.
+Copyright 2001-2009 by Wilson Snyder.  This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
 
 Local variables:
 mode: outline
