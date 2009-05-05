@@ -243,8 +243,8 @@ class AstSenTree;
 %token<fileline>	yPOSEDGE	"posedge"
 %token<fileline>	yPRIORITY	"priority"
 %token<fileline>	yPROPERTY	"property"
-%token<fileline>	yPULLDOWN 	"pulldown"
-%token<fileline>	yPULLUP 	"pullup"
+%token<fileline>	yPULLDOWN	"pulldown"
+%token<fileline>	yPULLUP		"pullup"
 %token<fileline>	yREG		"reg"
 %token<fileline>	yREPEAT		"repeat"
 %token<fileline>	ySCALARED	"scalared"
@@ -318,6 +318,8 @@ class AstSenTree;
 %token<fileline>	yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
 %token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
 
+%token<fileline>	yP_TICK		"'"
+%token<fileline>	yP_TICKBRA	"'{"
 %token<fileline>	yP_OROR		"||"
 %token<fileline>	yP_ANDAND	"&&"
 %token<fileline>	yP_NOR		"~|"
@@ -352,7 +354,12 @@ class AstSenTree;
 %token<fileline>	yP_COLONDIV	":/"
 %token<fileline>	yP_ORMINUSGT	"|->"
 %token<fileline>	yP_OREQGT	"|=>"
+%token<fileline>	yP_BRASTAR	"[*"
+%token<fileline>	yP_BRAEQ	"[="
+%token<fileline>	yP_BRAMINUSGT	"[->"
 
+%token<fileline>	yP_PLUSPLUS	"++"
+%token<fileline>	yP_MINUSMINUS	"--"
 %token<fileline>	yP_PLUSEQ	"+="
 %token<fileline>	yP_MINUSEQ	"-="
 %token<fileline>	yP_TIMESEQ	"*="
@@ -1747,6 +1754,11 @@ AstText* V3Parse::createTextQuoted(FileLine* fileline, string text) {
     return new AstText(fileline, newtext);
 }
 
+//YACC = /kits/sources/bison-2.4.1/src/bison --report=lookahead
+// --report=lookahead
+// --report=itemset
+// --graph
+//
 // Local Variables:
 // compile-command: "cd obj_dbg ; /usr/bin/bison -y -d -v ../verilog.y ; cat y.output"
 // End:
