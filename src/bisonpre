@@ -9,7 +9,9 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.101';
+$VERSION = '3.202';
+
+our $Self;
 
 #======================================================================
 # main
@@ -74,13 +76,17 @@ sub process {
 
     clean_input($Opt_Input, tmp_prefix().".y");
 
+    my $supports_report = (bison_version_check() >= 2.3);
+
     # Run bison
     my $command = ($Opt_Yacc
 		   .($Opt_Debug?" -t":"")
 		   .($Opt_Definitions?" -d":"")
 		   .($Opt_Token_Table?" -k":"")
-		   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
 		   .($Opt_Verbose?" -v":"")
+		   .(($Opt_Verbose && $supports_report)?" --report=itemset --report=lookahead":"")
+		   # -p required for GLR parsers; they write to -p basename, not -o
+		   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
 		   ." -b ".tmp_prefix()
 		   ." -o ".tmp_prefix().".c"
 		   ." ".tmp_prefix().".y" );
@@ -94,16 +100,16 @@ sub process {
 	die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
     }
 
-    clean_output(tmp_prefix().".output",output_prefix().".output");
+    clean_output(tmp_prefix().".output",output_prefix().".output", 1);
     warning_check(output_prefix().".output");
 
-    clean_output(tmp_prefix().".c",	output_prefix().".c");
-    clean_output(tmp_prefix().".h",	output_prefix().".h");
+    clean_output(tmp_prefix().".c",	output_prefix().".c", 0);
+    clean_output(tmp_prefix().".h",	output_prefix().".h", 0);
     remove_tmp();
 }
 
 sub tmp_prefix {
-    return output_prefix().".pre";
+    return output_prefix()."_pretmp";
 }
 
 sub output_prefix {
@@ -143,22 +149,44 @@ sub bison_version_check {
 sub clean_output {
     my $filename = shift;
     my $outname = shift || $filename;
+    my $is_output = shift;
     print "  edit $filename $outname\n";
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     my @lines = $fh->getlines;
     $fh->close;
 
-    (my $basename = tmp_prefix().".y") =~ s!.*/!!;
+    (my $basename = tmp_prefix()) =~ s!.*/!!;
     $basename = quotemeta($basename);
-    (my $newbase = output_prefix().".y") =~ s!.*/!!;
+    (my $newbase = output_prefix()) =~ s!.*/!!;
+
+    if ($is_output) {
+	my %state_line; my $l=0;
+	foreach my $line (@lines) {
+	    $l++;
+	    $state_line{$1} = $l if $line =~ /^state (\d+)\s*$/;
+	}
+	my @out;
+	foreach my $line (@lines) {
+	    $state_line{$1} = $l if $line =~ /^state (\d+)\s*$/;
+	    if ($line =~ /^State (\d+) (conflicts)/) {
+		chomp $line;
+		$line .= " // line $state_line{$1}" if $state_line{$1};
+		$line .= "\n";
+	    }
+	    push @out, $line;
+	}
+	@lines = @out; @out = ();
+    }
 
     $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
     foreach my $line (@lines) {
-	# Fix bison 2.3 and GCC 4.2.1
-	$line =~ s!\(YY_\("!(YY_((char*)"!g;
 	# Fix filename refs
 	$line =~ s!$basename!$newbase!g;
+	# Fix bison 2.3 and GCC 4.2.1
+	$line =~ s!\(YY_\("!(YY_((char*)"!g;
+	# Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
+	$line =~ s!(YYLTYPE yyerrloc;)!$1 yyerrloc.yydummy=0;/*bisonpre*/!g;
 	$fh->write($line);
     }
     $fh->close;
@@ -169,8 +197,7 @@ sub warning_check {
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     while (defined(my $line = $fh->getline)) {
-	if ($line =~ /(conflicts|warning:)/) {
-	    clean_output();
+	if ($line =~ /(conflicts|warning:|^useless)/i) {
 	    die "%Error: $filename:$.: $line\n";
 	}
     }
@@ -189,17 +216,67 @@ sub clean_input {
     $fh->close;
 
     # Find "%tokens<type>:"
+    # Find "rule<type>:" and replace with just "rule:"
+    my %types;
+    my %rules;  $Self->{rules} = \%rules;
     my %tokens;
-    foreach my $line (@lines) {
-	if ($line =~ /^%token\s*<(\S+)>\s*(\S+)/) {
-	    $tokens{$2} = $1;
+    my $last_rule;
+    my $section = 1;
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	foreach my $line (@linesin) {
+	    $l++;
+	    #  ^/ to prevent comments from matching
+	    $line =~ m!^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]! and die "%Error: $filename:$l: Move text on rule line to next line: $line\n";
+	    if ($line =~ /^%%/) {
+		$section++;
+		if ($section==2) { $last_rule = undef; }
+	    }
+	    elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S+)>:/$1:/) {
+		!$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
+		$types{$2}{$1} = 1;
+		$rules{$1}{name} = $1;
+		$rules{$1}{type} = $2;
+		!$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
+		$last_rule = $1;
+	    } elsif ($line =~ /^([a-zA-Z0-9_]+):/) {
+		!$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
+		$rules{$1}{name} = $1;
+		$rules{$1}{type} = "";
+		!$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
+		$last_rule = $1;
+	    }
+	    push @lines, $line;
+	    # Now clean the line and extract some more info
+	    (my $cline = $line) =~ s/\/\/.*$/\n/;
+	    (my $rline = $line) =~ s/\/\/.*$/\n/;
+	    if ($cline =~ /^\s*;/) {
+		$last_rule or die "%Error: $filename:$l: Stray semicolon\n";
+		$last_rule = undef;
+	    } elsif ($last_rule) {
+		$rules{$last_rule}{rules_and_productions} .= $cline;
+	    }
+	    if ($cline =~ /^%token\s*<(\S+)>\s*(\S+)/) {
+		!$tokens{$2} or die "%Error: $filename:$l: Redeclaring '$2': $line\n";
+		$tokens{$2} = $1;
+	    }
+	    foreach my $tok (split /[^a-zA-Z0-9_]+/, $cline) {
+		if ($last_rule && $tok=~/^[a-zA-Z]/) {
+		    #print "TT $last_rule $tok\n";
+		    $rules{$last_rule}{subrules}{$tok} = 1;
+		    $rules{$tok}{parentrules}{$last_rule} = 1;
+		}
+	    }
 	}
     }
+
+    #use Data::Dumper; print Dumper(\%rules);
 
     # Replace BISONPRE_NOT(type,...) with expanded list
     {
 	my @linesin = @lines;  @lines=();  my $l=0;
 	foreach my $line (@linesin) {
+	    $l++;
 	    if ($line =~ /BISONPRE_NOT/) {
 		($line =~ s/BISONPRE_NOT\((\S+)\)\s*({[^}]+})\s*$//)
 		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
@@ -225,15 +302,36 @@ sub clean_input {
 	}
     }
 
-    # Find "rule<type>:" and replace with just "rule:"
-    my %types;
+    # Replace BISONPRE_COPY(type,{code})
     {
 	my @linesin = @lines;  @lines=();  my $l=0;
 	foreach my $line (@linesin) {
-	    #  ^/ to prevent comments from matching
-	    if ($line =~ s/^([^<\/ \t\n]+)<(\S+)>:/$1:/) {
-		$types{$2}{$1} = 1;
+	    $l++;
+	    if ($line =~ /BISONPRE_COPY/) {
+		($line =~ s/BISONPRE_COPY\((\S+)\s*,\s*{([^}]*)}\s*\)/{HERE}/)
+		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
+		my $rule = $1;  my $code = $2;
+		$rules{$rule} or die "%Error: $filename:$l: Can't find definition for rule: $rule\n";
+		# Push it all onto one line to avoid error messages changing
+		my $insert = $rules{$rule}{rules_and_productions};
+		$insert =~ s/^\S+://g;	# Strip rule name
+		#print "COPY code $code\n";
+		#print "COPY in   $insert\n";
+		$_=$insert; eval("$code; \$_;");  $insert = $_;
+		#print "COPY out  $insert\n";
+		while ($insert =~ s/[ \t\n]+\n/\n/go) {}
+		$line =~ s/{HERE}/$insert/;
 	    }
+	    push @lines, $line;
+	}
+    }
+
+    # Replace ~[x]~  - must be after BISONPRE_COPY expansion
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	foreach my $line (@linesin) {
+	    $l++;
+	    $line =~ s/~[a-zA-Z0-9_]+~//g;
 	    push @lines, $line;
 	}
     }
@@ -273,7 +371,6 @@ sub clean_input {
     $fh->close;
 }
 
-
 #######################################################################
 __END__
 
@@ -303,10 +400,20 @@ various compile warnings.
 
 This is expanded into %type declarations.
 
+=item ~[a-z]+~
+
+Any text matching ~[a-z]+~ is removed.  This allows optional text to be
+used only when the rule containing the ~~ is used in a BISONPRE_COPY.
+
 =item rule_label<type>:
 
 This allows the label declaring a rule to also specify the type of the
 rule.  The type will be inserted where /*BISONPRE_TYPES*/ is encountered.
+
+=item BISONPRE_COPY(rule, {code})
+
+Copy the rules and productions from the specified rule, filter through the
+Perl code provided in the {} and insert here into the output file.
 
 =item BISONPRE_NOT(token[, token...])
 
@@ -350,16 +457,6 @@ Passed to bison.
 This switch causes the name.tab.c output to include a list of token names
 in order by their token numbers; this is defined in the array yytname.
 Also generated are #defines for YYNTOKENS, YYNNTS, YYNRULES, and YYNSTATES.
-
-=item -p prefix
-=item --name-prefix=prefix
-
-Passed to bison.
-
-Rename the external symbols used in the parser so that they start with
-prefix instead of yy.  The precise list of symbols renamed is yyparse,
-yylex, yyerror, yylval, yychar, and yydebug.  For example, if you use -p c,
-the names become cparse, clex, and so on.
 
 ==item -t
 ==item --debug

@@ -118,7 +118,6 @@ make_info:
 clean mostlyclean distclean maintainer-clean::
 	-rm -f *.o *.d perlxsi.c *_gen_*
 	-rm -f *__gen*
-	-rm -f *.yy.* y.output y.tab.[cho] *_test
 	-rm -f obj_* .objcache*
 
 distclean maintainer-clean:: clean
@@ -245,10 +244,10 @@ V3Number_test: V3Number_test.o
 %.o:	%.c
 	$(OBJCACHE) ${CC}  ${CPPFLAGS} -c $<
 
-V3Read.o:	V3Read.cpp V3Lexer.yy.cpp
+V3Read.o:	V3Read.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
 
-V3Parse.o:	V3Parse.cpp y.tab.c
+V3Parse.o:	V3Parse.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
 
 V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
@@ -257,19 +256,19 @@ V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
 #### Generated files
 
 # Target rule called before parallel build to make generated files
-serial:: V3Ast__gen_classes.h y.tab.c
+serial:: V3Ast__gen_classes.h V3ParseBison.c
 
 V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
 	$(PERL) $(ASTGEN) -I$(srcdir)  --classes
 
-y.tab.h: y.tab.c
+V3ParseBison.h: V3ParseBison.c
 
 # Have only one output file in this rule to prevent parallel make issues
-y.tab.c: verilog.y $(HEADERS) bisonpre
+V3ParseBison.c: verilog.y $(HEADERS) bisonpre
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
-	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o y.tab.c $<
+	$(PERL) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
-V3Lexer_pregen.yy.cpp:	verilog.l y.tab.h $(HEADERS)
+V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 

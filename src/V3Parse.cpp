@@ -19,8 +19,8 @@
 //
 //*************************************************************************
 
-#include "V3Ast.h"	// This must be before yy.tab.c, as we don't want #defines to conflict
+#include "V3Ast.h"	// This must be before V3ParseBison.cpp, as we don't want #defines to conflict
 
 //======================================================================
-// The guts are in bison
-#include "y.tab.c"
+// The guts came from bison
+#include "V3ParseBison.c"
