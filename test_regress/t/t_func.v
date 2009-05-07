@@ -22,6 +22,8 @@ module t;
       incr(global,global,32'h10);
       if (global != 32'h17) $stop;
       nop(32'h11);
+      empty;
+      empty();
 
       global = 32'h00000001;
       flipupperbit(global,4'd4);
@@ -87,6 +89,9 @@ module t;
       input  [31:0] a;
       begin
       end
+   endtask
+
+   task empty;
    endtask
 
    task flipupperbit;

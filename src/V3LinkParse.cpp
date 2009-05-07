@@ -55,6 +55,7 @@ private:
     bool	m_inModDot;	// We're inside module part of dotted name
     AstParseRefExp m_exp;	// Type of data we're looking for
     AstText*	m_baseTextp;	// Lowest TEXT node that needs replacement with varref
+    AstVar*	m_varp;		// Variable we're under
 
     // METHODS
     static int debug() {
@@ -225,6 +226,42 @@ private:
 	    }
 	}
     }
+
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	m_varp = nodep;
+	nodep->iterateChildren(*this);
+	m_varp = NULL;
+    }
+
+    virtual void visit(AstAttrOf* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrScClocked(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrClockEn(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->sigPublic(true); m_varp->sigModPublic(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->sigPublic(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrIsolateAssign(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+    }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	checkExpected(nodep);  // So we detect node types we forgot to list here
@@ -237,6 +274,7 @@ public:
 	m_inModDot = false;
 	m_exp = AstParseRefExp::NONE;
 	m_baseTextp = NULL;
+	m_varp = NULL;
 	rootp->accept(*this);
     }
     virtual ~LinkParseVisitor() {}

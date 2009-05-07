@@ -81,7 +81,7 @@ sub diff_file {
 
     filter ($a, $tmp_a);
     filter ($b, $tmp_b);
-    system("diff $tmp_a $tmp_b");
+    system("diff -u $tmp_a $tmp_b");
     unlink $tmp_a;
     unlink $tmp_b;
 }

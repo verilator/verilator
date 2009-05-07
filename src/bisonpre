@@ -156,9 +156,9 @@ sub clean_output {
     my @lines = $fh->getlines;
     $fh->close;
 
-    (my $basename = tmp_prefix()) =~ s!.*/!!;
+    (my $basename = tmp_prefix().".y") =~ s!.*/!!;
     $basename = quotemeta($basename);
-    (my $newbase = output_prefix()) =~ s!.*/!!;
+    (my $newbase = $Opt_Input) =~ s!.*/!!;
 
     if ($is_output) {
 	my %state_line; my $l=0;
@@ -320,6 +320,7 @@ sub clean_input {
 		$_=$insert; eval("$code; \$_;");  $insert = $_;
 		#print "COPY out  $insert\n";
 		while ($insert =~ s/[ \t\n]+\n/\n/go) {}
+		while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
 		$line =~ s/{HERE}/$insert/;
 	    }
 	    push @lines, $line;

@@ -294,6 +294,8 @@ public:
     AstRange*	arrayp(int dim)	const;					// op2 = Range for specific dimension #
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
+    void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
+    AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
     void	rangep(AstRange* nodep) { setOp1p(nodep); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
@@ -571,6 +573,7 @@ public:
     virtual bool broken() const { return (m_modVarp && !m_modVarp->brokeExists()); }
     virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
     void	name(const string& name)     { m_name = name; }
+    bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
     AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin
@@ -631,14 +634,13 @@ private:
     string	m_name;		// Cell name
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
-    bool	m_pinStar;	// Pin list has .*
     AstModule*	m_modp;		// [AfterLink] Pointer to module instanced
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
 	: AstNode(fl)
 	, m_name(instName), m_origName(instName), m_modName(modName)
-	, m_pinStar(false), m_modp(NULL) {
+	, m_modp(NULL) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     ASTNODE_NODE_FUNCS(Cell, CELL)
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -652,8 +654,6 @@ public:
     void origName(const string& name) 	{ m_origName = name; }
     string modName()		const { return m_modName; }		// * = Instance name
     void modName(const string& name)	{ m_modName = name; }
-    bool pinStar()		const { return m_pinStar; }
-    void pinStar(bool flag)		{ m_pinStar = flag; }
     AstPin* pinsp()		const { return op1p()->castPin(); }	// op1 = List of cell ports
     AstPin* paramsp()		const { return op2p()->castPin(); }	// op2 = List of parameter #(##) values
     AstRange* rangep()		const { return op3p()->castRange(); }	// op3 = Range of arrayed instants (NULL=not ranged)
@@ -1717,13 +1717,14 @@ private:
     AstAttrType	m_attrType;	// What sort of extraction
     int		m_dimension;	// Dimension number (0 is leftmost), for ARRAY_LSB extractions
 public:
-    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp, int dimension=0)
+    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp=NULL, int dimension=0)
 	: AstNode(fl) {
-	setOp1p(fromp); m_attrType = attrtype; m_dimension = dimension; }
+	setNOp1p(fromp); m_attrType = attrtype; m_dimension = dimension; }
     ASTNODE_NODE_FUNCS(AttrOf, ATTROF)
     AstNode*	fromp() const { return op1p(); }
     AstAttrType	attrType() const { return m_attrType; }
     int		dimension() const { return m_dimension; }
+    virtual void dump(ostream& str=cout);
 };
 
 struct AstScopeName : public AstNode {

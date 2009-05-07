@@ -207,6 +207,11 @@ void AstNode::dump(ostream& os) {
     if (!widthSized()) os<<"/"<<widthMin();
     if (name()!="") os<<"  "<<name();
 }
+
+void AstAttrOf::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" ["<<attrType().ascii()<<"]";
+}
 void AstCast::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" sz"<<size();
@@ -215,7 +220,6 @@ void AstCell::dump(ostream& str) {
     this->AstNode::dump(str);
     if (modp()) { str<<" -> "; modp()->dump(str); }
     else { str<<" ->UNLINKED:"<<modName(); }
-    if (pinStar()) str<<" [.*]";
 }
 void AstCellInline::dump(ostream& str) {
     this->AstNode::dump(str);

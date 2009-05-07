@@ -169,12 +169,25 @@ public:
 class AstAttrType {
 public:
     enum en {
-	BITS,
-	RANGE_LSB,
-	ARRAY_LSB,
-	SCOPE_TEXT
+	BITS,				// V3Const converts to constant
+	RANGE_LSB,			// V3Const converts to constant
+	ARRAY_LSB,			// V3Const converts to constant
+	//
+	VAR_CLOCK,			// V3LinkParse moves to AstVar::attrScClocked
+	VAR_CLOCK_ENABLE,		// V3LinkParse moves to AstVar::attrClockEn
+	VAR_PUBLIC,			// V3LinkParse moves to AstVar::sigPublic
+	VAR_PUBLIC_FLAT,		// V3LinkParse moves to AstVar::sigPublic
+	VAR_ISOLATE_ASSIGNMENTS		// V3LinkParse moves to AstVar::attrIsolateAssign
     };
     enum en m_e;
+    const char* ascii() const {
+	static const char* names[] = {
+	    "BITS", "RANGE_LSB", "ARRAY_LSB",
+	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+	    "VAR_ISOLATE_ASSIGNMENTS"
+	};
+	return names[m_e];
+    };
     inline AstAttrType () {};
     inline AstAttrType (en _e) : m_e(_e) {};
     explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {};
@@ -203,6 +216,7 @@ public:
 	IMPLICIT,
 	REG,
 	TRIWIRE,
+	PORT,		// Temp type used in parser only
 	BLOCKTEMP,
 	MODULETEMP,
 	STMTTEMP,
@@ -217,7 +231,7 @@ public:
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "INTEGER","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","REG","TRIWIRE",
+	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","REG","TRIWIRE","PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e];};
   };

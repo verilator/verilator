@@ -1042,8 +1042,7 @@ private:
     }
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	// Don't iterate children, don't want to loose VarRef.
-	if (nodep->attrType()==AstAttrType::SCOPE_TEXT) {
-	} else if (nodep->attrType()==AstAttrType::BITS) {
+	if (nodep->attrType()==AstAttrType::BITS) {
 	    if (!nodep->fromp() || !nodep->fromp()->widthMin()) nodep->v3fatalSrc("Unsized expression");
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->widthMin());
 	    replaceNum(nodep, num); nodep=NULL;

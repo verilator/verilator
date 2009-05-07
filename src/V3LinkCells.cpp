@@ -187,7 +187,17 @@ private:
 	    }
 	}
 	// Convert .* to list of pins
-	if (nodep->modp() && nodep->pinStar()) {
+	bool pinStar = false;
+	for (AstPin* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
+	    nextp = pinp->nextp()->castPin();
+	    if (pinp->dotStar()) {
+		if (pinStar) pinp->v3error("Duplicate .* in a cell");
+		pinStar = true;
+		// Done with this fake pin
+		pinp->unlinkFrBack()->deleteTree(); pinp=NULL;
+	    }
+	}
+	if (nodep->modp() && pinStar) {
 	    // Note what pins exist
 	    UINFO(9,"  CELL .* connect "<<nodep<<endl);
 	    V3SymTable  ports;		// Symbol table of all connected port names
