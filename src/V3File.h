@@ -113,6 +113,8 @@ public:
     void puts(const string& strg) { puts(strg.c_str()); }
     void putsNoTracking(const char* strg);
     void putsNoTracking(const string& strg) { putsNoTracking(strg.c_str()); }
+    void putsQuoted(const char* strg);
+    void putsQuoted(const string& strg) { putsQuoted(strg.c_str()); }
     void putBreak();  // Print linebreak if line is too wide
     void putBreakExpr();  // Print linebreak in expression if line is too wide
     void putAlign(bool isstatic/*AlignClass*/, int align, int size=0/*=align*/, const char* prefix=""); // Declare a variable, with natural alignment

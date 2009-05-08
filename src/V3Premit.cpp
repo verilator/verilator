@@ -278,7 +278,7 @@ private:
     }
 
     // Autoflush
-    virtual void visit(AstDisplay* nodep, AstNUser* vup) {
+    virtual void visit(AstDisplay* nodep, AstNUser*) {
 	startStatement(nodep);
 	nodep->iterateChildren(*this);
 	m_stmtp = NULL;

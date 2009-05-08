@@ -5,7 +5,7 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   \escaped_normal , double__underscore, \9num , \bra[ket]slash/dash-colon:9 ,
+   \escaped_normal , double__underscore, \9num , \bra[ket]slash/dash-colon:9backslash\done ,
    // Inputs
    clk
    );
@@ -24,20 +24,19 @@ module t (/*AUTOARG*/
    output \9num ;
    wire \9num = cyc[0];
 
-   output  \bra[ket]slash/dash-colon:9 ;
-   wire \bra[ket]slash/dash-colon:9 = cyc[0];
+   output  \bra[ket]slash/dash-colon:9backslash\done ;
+   wire \bra[ket]slash/dash-colon:9backslash\done = cyc[0];
+   wire \wire = cyc[0];
 
    wire \check_alias = cyc[0];
    wire \check:alias = cyc[0];
    wire \check;alias = !cyc[0];
 
-`ifndef verilator
-   initial begin
-      $dumpfile("obj_dir/t_var_escape/t_var_escape_dump.vcd");
-      $dumpvars( 0, t );
-      $dumpon;
-   end
-`endif
+   // These are *different entities*, bug83
+   wire [31:0] \a0.cyc = ~a0.cyc;
+   wire [31:0] \other.cyc = ~a0.cyc;
+
+   sub a0 (.cyc(cyc));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
@@ -45,15 +44,22 @@ module t (/*AUTOARG*/
       if (\escaped_normal != cyc[0]) $stop;
       if (double__underscore != cyc[0]) $stop;
       if (\9num != cyc[0]) $stop;
-      if (\bra[ket]slash/dash-colon:9 != cyc[0]) $stop;
+      if (\bra[ket]slash/dash-colon:9backslash\done != cyc[0]) $stop;
+      if (\wire != cyc[0]) $stop;
       if (\check_alias != cyc[0]) $stop;
       if (\check:alias != cyc[0]) $stop;
       if (\check;alias != !cyc[0]) $stop;
-
+      if (\a0.cyc != ~cyc) $stop;
+      if (\other.cyc != ~cyc) $stop;
       if (cyc==10) begin
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end
    end
 
+endmodule
+
+module sub (
+	    input [31:0] cyc
+	    );
 endmodule

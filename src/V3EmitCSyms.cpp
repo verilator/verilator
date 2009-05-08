@@ -209,9 +209,9 @@ void EmitCSyms::emitImp() {
 	if (modp->isTop()) {
 	} else {
 	    ofp()->printf("\t%c %-30s ", comma, scopep->nameDotless().c_str());
-	    puts("(Verilated::catName(topp->name(),\"");
-	    puts("."+scopep->prettyName());
-	    puts("\"))\n");
+	    puts("(Verilated::catName(topp->name(),");
+	    putsQuoted("."+scopep->prettyName());
+	    puts("))\n");
 	    comma=',';
 	}
     }

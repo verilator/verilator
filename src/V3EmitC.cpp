@@ -207,12 +207,12 @@ public:
 	// hiearchies itself, and if SystemPerl also did it, you'd end up
 	// with (number-of-instant) times too many counts in this bin.
 	puts(", first");  // Enable, passed from __Vconfigure parameter
-	puts(", \"");	puts(nodep->fileline()->filename()); puts("\"");
+	puts(", ");	putsQuoted(nodep->fileline()->filename());
 	puts(", ");	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(", ");	puts(cvtToStr(nodep->column()));
-	puts(", \"");	puts((nodep->hier()!=""?".":"")+nodep->hier()); puts("\"");
-	puts(", \"");	puts(nodep->page()); puts("\"");
-	puts(", \"");	puts(nodep->comment()); puts("\"");
+	puts(", ");	putsQuoted((nodep->hier()!=""?".":"")+nodep->hier());
+	puts(", ");	putsQuoted(nodep->page());
+	puts(", ");	putsQuoted(nodep->comment());
 	puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep, AstNUser*) {
@@ -339,16 +339,16 @@ public:
 	puts("}\n");
     }
     virtual void visit(AstStop* nodep, AstNUser*) {
-	puts("vl_stop(\"");
-	puts(nodep->fileline()->filename());
-	puts("\",");
+	puts("vl_stop(");
+	putsQuoted(nodep->fileline()->filename());
+	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(",\"\");\n");
     }
     virtual void visit(AstFinish* nodep, AstNUser*) {
-	puts("vl_finish(\"");
-	puts(nodep->fileline()->filename());
-	puts("\",");
+	puts("vl_finish(");
+	putsQuoted(nodep->fileline()->filename());
+	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(",\"\");\n");
     }
@@ -830,8 +830,8 @@ void EmitCStmts::emitVarCtors() {
 	}
 	else puts(", ");
 	if (ofp()->exceededWidth()) puts("\n  ");
-	puts((*it)->name()); puts("(\"");
-	puts((*it)->name()); puts("\")");
+	puts((*it)->name());
+	puts("("); putsQuoted((*it)->name()); puts(")");
     }
     if (!first) puts ("\n#endif\n");
     ofp()->indentDec();
@@ -995,7 +995,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    nodep->v3fatalSrc("Unknown displayEmit node type");
 	}
 	puts("\"");
-	ofp()->putsNoTracking(emitDispState.m_format);
+	ofp()->putsNoTracking(emitDispState.m_format);  // Not putsQuoted - already contains \s
 	puts("\"");
 	// Arguments
 	for (unsigned i=0; i < emitDispState.m_argsp.size(); i++) {
@@ -1299,7 +1299,9 @@ void EmitCImp::emitTextSection(AstType type) {
 			puts("\n//*** Below code from `systemc in Verilog file\n");
 		    }
 		    ofp()->putsNoTracking("//#line "+cvtToStr(nodep->fileline()->lineno())
-					  +" \""+nodep->fileline()->filename()+"\"\n");
+					  +" ");
+		    ofp()->putsQuoted(nodep->fileline()->filename());
+		    ofp()->putsNoTracking("\n");
 		    last_line = nodep->fileline()->lineno();
 		}
 		ofp()->putsNoTracking(textp->text());
@@ -1838,7 +1840,8 @@ class EmitCTrace : EmitCStmts {
 	}
 	puts("(c+"+cvtToStr(nodep->code()));
 	if (nodep->arrayWidth()) puts("+i*"+cvtToStr(nodep->widthWords()));
-	puts(",\""+nodep->showname()+"\"");
+	puts(",");
+	putsQuoted(nodep->showname());
 	if (nodep->arrayWidth()) {
 	    puts(",(i+"+cvtToStr(nodep->arrayLsb())+")");
 	} else {

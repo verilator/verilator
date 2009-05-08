@@ -431,6 +431,23 @@ void V3OutFile::putBreak () {
     }
 }
 
+void V3OutFile::putsQuoted(const char* strg) {
+    // Quote \ and " for use inside C programs
+    // Don't use to quote a filename for #include - #include doesn't \ escape.
+    putcNoTracking('"');
+    for (const char* cp=strg; *cp; cp++) {
+	if (*cp == '\\') {
+	    putcNoTracking('\\');
+	    putcNoTracking('\\');
+	} else if (*cp == '"') {
+	    putcNoTracking('\\');
+	    putcNoTracking('"');
+	} else {
+	    putcNoTracking (*cp);
+	}
+    }
+    putcNoTracking('"');
+}
 void V3OutFile::putsNoTracking (const char *strg) {
     // Don't track {}'s, probably because it's a $display format string
     for (const char* cp=strg; *cp; cp++) {

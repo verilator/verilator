@@ -7,6 +7,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Verilator is now licensed under LGPL v3 and/or Artistic v2.0.
 
+**** The front end parser has been re-factored to enable more SV parsing.
+     Code should parse the same, but minor parsing bugs may pop up now.
+
+**** Fix escaped identifiers with '.' causing conflicts, bug83.  [J Baxter]
+
 * Verilator 3.703 2009/05/02
 
 ***  Fix $clog2 calculation error with powers-of-2, bug81. [Patricio Kaplan]

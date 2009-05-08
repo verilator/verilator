@@ -177,7 +177,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putbs(" (");
 	if (filep) { filep->iterateAndNext(*this); putbs(","); }
 	puts("\"");
-	putsNoTracking(text);
+	putsNoTracking(text);   // Not putsQuoted, as display text contains \ already
 	puts("\"");
 	for (AstNode* expp=exprsp; expp; expp = expp->nextp()) {
 	    puts(",");

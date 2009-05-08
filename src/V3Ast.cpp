@@ -86,9 +86,9 @@ void AstNode::init() {
 }
 
 string AstNode::encodeName(const string& namein) {
-    string name2 = namein;
+    // Encode signal name raw from parser, then not called again on same signal
+    const char* start = namein.c_str();
     string out;
-    const char* start = name2.c_str();
     for (const char* pos = start; *pos; pos++) {
 	if ((pos==start) ? isalpha(pos[0])  // digits can't lead identifiers
 	    : isalnum(pos[0])) {
@@ -100,17 +100,13 @@ string AstNode::encodeName(const string& namein) {
 	    } else {
 		out += pos[0];
 	    }
-	} else if (pos[0]=='.') {
-	    out += "__DOT__";
-	} else if (pos[0]=='[') {
-	    out += "__BRA__";
-	} else if (pos[0]==']') {
-	    out += "__KET__";
 	} else {
 	    // Need the leading 0 so this will never collide with
 	    // a user identifier nor a temp we create in Verilator.
-	    char hex[10]; sprintf(hex,"%02X",pos[0]);
-	    out += "__0"; out += hex;
+	    // We also do *NOT* use __DOT__ etc, as we search for those
+	    // in some replacements, and don't want to mangle the user's names.
+	    char hex[10]; sprintf(hex,"__0%02X",pos[0]);
+	    out += hex;
 	}
     }
     return out;
@@ -145,9 +141,8 @@ string AstNode::dedotName(const string& namein) {
 
 string AstNode::prettyName(const string& namein) {
     string pretty;
-    string name2 = namein;
     pretty = "";
-    for (const char* pos = name2.c_str(); *pos; ) {
+    for (const char* pos = namein.c_str(); *pos; ) {
 	if (0==strncmp(pos,"__BRA__",7)) {
 	    pretty += "[";
 	    pos += 7;

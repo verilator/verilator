@@ -44,6 +44,7 @@ my $opt_vcs;
 my $opt_v3;
 my $opt_stop;
 my $opt_optimize;
+my $opt_trace;
 my $opt_gdb;
 my $opt_jobs = 1;
 my $opt_verbose;
@@ -63,6 +64,7 @@ if (! GetOptions (
 		  "gdb!"	=> \$opt_gdb,
 		  "optimize:s"	=> \$opt_optimize,
 		  "stop!"	=> \$opt_stop,
+		  "trace!"	=> \$opt_trace,
 		  "verbose!"	=> \$opt_verbose,
 		  "<>"		=> \&parameter,
 		  )) {
@@ -122,7 +124,7 @@ sub one_test {
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
-		 my $j = ($opt_jobs>1?" -j 2":"");
+		 my $j = ($opt_jobs>1?" -j $opt_jobs":"");
 		 push @fails, "\t\tmake$j && test_regress/"
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
 		 $failcnt++;
@@ -234,6 +236,7 @@ sub new {
 	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
+				 .($opt_trace ? " +define+WAVES=1":"")
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
@@ -265,6 +268,7 @@ sub new {
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vl_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/vl_coverage.pl";
+    $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
     if (!$self->{make_top_shell}) {
 	$self->{top_shell_filename} = $self->{top_filename};
@@ -349,7 +353,7 @@ sub compile {
 			  @{$param{verilator_flags2}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
-    $self->{trace} = 1 if ($checkflags =~ /-trace\b/);
+    $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
     if ($param{vcs}) {
@@ -386,7 +390,7 @@ sub compile {
 	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
 	unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
 	unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
-#	unshift @verilator_flags, "--trace";
+	unshift @verilator_flags, "--trace" if $opt_trace;
 	if (defined $opt_optimize) {
 	    my $letters = "";
 	    if ($opt_optimize =~ /[a-zA-Z]/) {
@@ -786,7 +790,18 @@ sub _make_top {
     }
     print $fh "    );\n";
 
+    # Waves
+    print $fh "\n";
+    print $fh "`ifdef WAVES\n";
+    print $fh "   initial begin\n";
+    print $fh "      \$display(\"-Tracing Waves to Dumpfile: $self->{vcd_filename}\");\n";
+    print $fh "      \$dumpfile(\"$self->{vcd_filename}\");\n";
+    print $fh "      \$dumpvars(12, t);\n";
+    print $fh "   end\n";
+    print $fh "`endif\n";
+
     # Test
+    print $fh "\n";
     print $fh "    initial begin\n";
     print $fh "        fastclk=1;\n" if $self->{inputs}{fastclk};
     print $fh "        clk=1;\n" if $self->{inputs}{clk};
