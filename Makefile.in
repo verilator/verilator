@@ -231,7 +231,6 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
 	( cd bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(bindir)/verilator_includer )
 	( cd bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
 	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )

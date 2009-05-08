@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **** The front end parser has been re-factored to enable more SV parsing.
      Code should parse the same, but minor parsing bugs may pop up now.
 
+**** Verilator_includer is no longer installed twice, bug48.  [Lane Brooks]
+
 **** Fix escaped identifiers with '.' causing conflicts, bug83.  [J Baxter]
 
 * Verilator 3.703 2009/05/02
