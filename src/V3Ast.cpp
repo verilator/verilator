@@ -172,7 +172,8 @@ string AstNode::prettyName(const string& namein) {
 	    pos++;
 	}
     }
-    return AstNode::dedotName(pretty);
+    if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
+    return pretty;
 }
 
 int AstNode::widthPow2() const {
