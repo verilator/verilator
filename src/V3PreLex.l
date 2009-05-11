@@ -37,7 +37,7 @@ static bool optPsl() { return V3PreProc::optPsl(); }
 static bool pedantic() { return V3PreLex::s_currentLexp->m_pedantic; }
 static void yyerror(char* msg) { V3PreLex::s_currentLexp->m_curFilelinep->v3error(msg); }
 static void yyerrorf(const char* msg) { V3PreLex::s_currentLexp->m_curFilelinep->v3error(msg); }
-static void appendDefValue(char* t,int l) { V3PreLex::s_currentLexp->appendDefValue(t,l); }
+static void appendDefValue(const char* t,int l) { V3PreLex::s_currentLexp->appendDefValue(t,l); }
 static int  pslParenLevel()    { return V3PreLex::s_currentLexp->m_pslParenLevel; }
 static void pslParenLevelInc() { V3PreLex::s_currentLexp->m_pslParenLevel++; }
 static void pslParenLevelDec() { if (pslParenLevel()) V3PreLex::s_currentLexp->m_pslParenLevel--; }
@@ -55,7 +55,9 @@ static void pslMoreNeeded(bool flag) { V3PreLex::s_currentLexp->m_pslMoreNeeded 
 %x CMTBEGM
 %x CMTMODE
 %x STRMODE
-%x DEFMODE
+%x DEFFPAR
+%x DEFFORM
+%x DEFVAL
 %x ARGMODE
 %x INCMODE
 %x PRTMODE
@@ -123,16 +125,35 @@ psl		[p]sl
 <INCMODE>{backslash}.	{ yymore(); }
 <INCMODE>[\>]	 	{ yy_pop_state(); return (VP_STRING); }
 
-	/* Reading definition */
-<DEFMODE>"/*"		{ yy_push_state(CMTMODE); yymore(); }
-<DEFMODE>"//"[^\n\r]*	{ return (VP_COMMENT);}
-<DEFMODE>{drop}		{ }
-<DEFMODE><<EOF>>	{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); } /* Technically illegal, but people complained */
-<DEFMODE>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); }
-<DEFMODE>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
-<DEFMODE>[^\/\*\n\r\\]+	|
-<DEFMODE>[\\][^\n\r]	|
-<DEFMODE>.		{ appendDefValue(yytext,yyleng); }
+	/* Reading definition formal parenthesis (or not) to begin formal arguments */
+	/* Note '(' must IMMEDIATELY follow definition name */
+<DEFFPAR>[(]		{ appendDefValue("(",1); BEGIN(DEFFORM); }
+<DEFFPAR>{crnl}		{ yy_pop_state(); unput('\n'); yyleng=0; return VP_DEFFORM; } /* DEFVAL will later grab the return */
+<DEFFPAR>.		{ yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
+ 
+	/* Reading definition formals */
+<DEFFORM>[(]		{ yy_pop_state(); yyerrorf("Extra ( in define formal arguments.\n"); yyleng=0; return VP_DEFFORM; }
+<DEFFORM>[)]		{ yy_pop_state(); appendDefValue(yytext,yyleng); yyleng=0; return VP_DEFFORM; }
+<DEFFORM>"/*"		{ yy_push_state(CMTMODE); yymore(); }
+<DEFFORM>"//"[^\n\r]*	{ return (VP_COMMENT);}
+<DEFFORM>{drop}	{ }
+<DEFFORM><<EOF>>	{ linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments."); yyleng=0; return VP_DEFFORM; }
+<DEFFORM>{crnl}		{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
+<DEFFORM>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
+<DEFFORM>[^\/\*\n\r\\()]+	|
+<DEFFORM>[\\][^\n\r]	|
+<DEFFORM>.		{ appendDefValue(yytext,yyleng); }
+
+	/* Reading definition value */
+<DEFVAL>"/*"		{ yy_push_state(CMTMODE); yymore(); }
+<DEFVAL>"//"[^\n\r]*	{ return (VP_COMMENT);}
+<DEFVAL>{drop}		{ }
+<DEFVAL><<EOF>>		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); } /* Technically illegal, but people complained */
+<DEFVAL>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); }
+<DEFVAL>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
+<DEFVAL>[^\/\*\n\r\\]+	|
+<DEFVAL>[\\][^\n\r]	|
+<DEFVAL>.		{ appendDefValue(yytext,yyleng); }
 
 	/* Define arguments */
 <ARGMODE>"/*"		{ yy_push_state(CMTMODE); yymore(); }
@@ -225,9 +246,16 @@ void V3PreLex::pushStateDefArg(int level) {
     m_defValue = "";
 }
 
+void V3PreLex::pushStateDefForm() {
+    // Enter define formal arguments state
+    yy_push_state(DEFFPAR);  // First is an optional ( to begin args
+    m_parenLevel = 0;
+    m_defValue = "";
+}
+
 void V3PreLex::pushStateDefValue() {
     // Enter define value state
-    yy_push_state(DEFMODE);
+    yy_push_state(DEFVAL);
     m_parenLevel = 0;
     m_defValue = "";
 }
@@ -250,6 +278,10 @@ void V3PreLex::unputString(const char* textp) {
 void V3PreLex::appendDefValue(const char* textp, int len) {
     // Append given text to current definition value being formed
     m_defValue.append(textp,len);
+}
+
+int V3PreLex::currentStartState() {
+    return YY_START;
 }
 
 void V3PreLex::lineDirective(const char* textp) {

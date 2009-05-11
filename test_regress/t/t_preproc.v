@@ -129,3 +129,17 @@ assign c = tmp_``c ;
   `error "Empty is still true"
 `endif
 Line_Preproc_Check `__LINE__
+
+//======================================================================
+// bug84
+
+`define ARGPAR(a,  // Hello, comments MIGHT not be legal
+  /*more,,)cmts*/ b  // But newlines ARE legal... who speced THAT?
+  ) (a,b)
+`ARGPAR(p,q)
+`ARGPAR( //Here
+	      x,
+  y   //Too
+  )
+Line_Preproc_Check `__LINE__
+
