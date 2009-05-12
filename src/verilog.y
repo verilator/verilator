@@ -1312,11 +1312,11 @@ cellpinItList<pinp>:		// IEEE: list_of_port_connections + list_of_parameter_assi
 cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment + empty
 		/* empty: ',,' is legal */		{ $$ = NULL; PINNUMINC(); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
-	|	'.' id					{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
-	|	'.' id '(' ')'				{ $$ = NULL; PINNUMINC(); }
-	|	'.' id '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
+	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' idAny '(' ')'			{ $$ = NULL; PINNUMINC(); }
+	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
 	//			// For parameters
-	//UNSUP	'.' id '(' data_type ')'		{ PINDONE($1,$2,$4);  GRAMMARP->pinNumInc(); }
+	//UNSUP	'.' idAny '(' data_type ')'		{ PINDONE($1,$2,$4);  GRAMMARP->pinNumInc(); }
 	//			// For parameters
 	//UNSUP	data_type				{ PINDONE($1->fileline(),"",$1);  GRAMMARP->pinNumInc(); }
 	//
