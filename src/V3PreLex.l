@@ -91,8 +91,10 @@ psl		[p]sl
 
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ if (!pedantic()) {
-			     yytext = (char*)V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
-			     yyleng = strlen(yytext); return (VP_TEXT);
+			     static string rtnfile;
+			     rtnfile = '"'; rtnfile += V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
+			     rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
+			     return (VP_STRING);
 	                  } else return(VP_DEFREF); }
 <INITIAL>"`__LINE__"	{ if (!pedantic()) {
 	                     static char buf[10];

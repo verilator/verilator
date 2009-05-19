@@ -13,7 +13,7 @@
 
 
 
-At file t/t_preproc_inc2.v  line 4
+At file "t/t_preproc_inc2.v"  line 4
  
  
 `line 6 "t/t_preproc_inc2.v" 0
@@ -27,7 +27,7 @@ At file t/t_preproc_inc2.v  line 4
   
   
   
-  At file inc3_a_filename_from_line_directive  line 10
+  At file "inc3_a_filename_from_line_directive"  line 10
 
    
 

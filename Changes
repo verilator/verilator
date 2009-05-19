@@ -7,8 +7,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Verilator is now licensed under LGPL v3 and/or Artistic v2.0.
 
+***  `__FILE__ now expands to a string, per draft SystemVerilog 2010(ish).
+
 **** The front end parser has been re-factored to enable more SV parsing.
-     Code should parse the same, but minor parsing bugs may pop up now.
+     Code should parse the same, but minor parsing bugs may pop up.
 
 **** Verilator_includer is no longer installed twice, bug48.  [Lane Brooks]
 

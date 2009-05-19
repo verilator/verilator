@@ -35,6 +35,8 @@ module t;
  second
       $display(`msg(twoline, `twoline));
 
+      $display("Line %0d File \"%s\"",`__LINE__,`__FILE__);
+
       //$display(`msg(left side, \ right side \ ));  // Not sure \{space} is legal.
       $write("*-* All Finished *-*\n");
       $finish;
