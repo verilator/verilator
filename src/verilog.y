@@ -592,10 +592,10 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-	//UNSUP	portDirNetE id/*interface*/                   id/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($3, $4); PARSEP->instantCb(CRELINE(), $2, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE                        id/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE id/*interface*/ '.' id/*modport*/ id/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($5, $6); PARSEP->instantCb(CRELINE(), $2, $5, $6); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE      '.' id/*modport*/ id/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($3, $4); PARSEP->instantCb(CRELINE(), $2, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($5, $6); PARSEP->instantCb(CRELINE(), $2, $5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ regArRangeE sigAttrListE	{ VARTYPE($2); VARDONEA($5, $6); PINNUMINC(); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension }
@@ -677,7 +677,7 @@ list_of_genvar_identifiers<nodep>:	// IEEE: list_of_genvar_identifiers (for decl
 	;
 
 genvar_identifierDecl<nodep>:		// IEEE: genvar_identifier (for declaration)
-		id/*genvar_identifier*/ sigAttrListE	{ VARRESET_NONLIST(GENVAR); $$ = VARDONEA(*$1, NULL, $2); }
+		id/*new-genvar_identifier*/ sigAttrListE	{ VARRESET_NONLIST(GENVAR); $$ = VARDONEA(*$1, NULL, $2); }
 	;
 
 local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
@@ -833,8 +833,8 @@ data_typeNoRef<rangep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP	ySTRING					{ UNSUP }
 	//UNSUP	yCHANDLE				{ UNSUP }
 	//UNSUP	yEVENT					{ UNSUP }
-	//UNSUP	yVIRTUAL__ETC yINTERFACE id/*interface*/	{ UNSUP }
-	//UNSUP	yVIRTUAL__ETC            id/*interface*/	{ UNSUP }
+	//UNSUP	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ UNSUP }
+	//UNSUP	yVIRTUAL__anyID                id/*interface*/	{ UNSUP }
 	//UNSUP	type_reference				{ UNSUP }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
@@ -870,9 +870,9 @@ list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifie
 	;
 
 tf_variable_identifier<varp>:		// IEEE: part of list_of_tf_variable_identifiers
-		yaID__ETC variable_dimensionListE sigAttrListE
+		id variable_dimensionListE sigAttrListE
 			{ $$ = VARDONEA(*$1, $2, $3); }
-	|	yaID__ETC variable_dimensionListE sigAttrListE '=' expr
+	|	id variable_dimensionListE sigAttrListE '=' expr
 			{ $$ = VARDONEA(*$1, $2, $3);
 			  $$->addNext(new AstAssign($4, new AstVarRef($4, *$1, true), $5)); }
 	;
@@ -912,6 +912,7 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 // Typedef
 
 data_declaration<nodep>:	// ==IEEE: data_declaration
+	//			// VARRESET can't be called here - conflicts
 		data_declarationVar			{ $$ = $1; }
 	//UNSUP	type_declaration			{ $$ = $1; }
 	//UNSUP	package_import_declaration		{ $$ = $1; }
@@ -920,7 +921,7 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
 	;
 
-data_declarationVar<nodep>:	// IEEE: part of data_declaration (called elsewhere)
+data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		varRESET data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $3; }
 	;
@@ -1039,7 +1040,7 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 		package_or_generate_item_declaration	{ $$ = $1; }
 	| 	genvar_declaration			{ $$ = $1; }
 	|	clocking_declaration			{ $$ = $1; }
-	//UNSUP	yDEFAULT yCLOCKING id/*clocking_identifier*/ ';'	{ $$ = $1; }
+	//UNSUP	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = $1; }
 	;
 
 //************************************************
@@ -1062,8 +1063,8 @@ genItemBegin<nodep>:		// IEEE: part of generate_block
 	|	yBEGIN yEND				{ $$ = NULL; }
 	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4); }
 	|	id ':' yBEGIN             yEND endLabelE	{ $$ = NULL; }
-	|	yBEGIN ':' id genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBEGIN ':' id 		  yEND endLabelE	{ $$ = NULL; }
+	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
+	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; }
 	;
 
 genItemList<nodep>:
@@ -1185,7 +1186,7 @@ netSig<varp>:			// IEEE: net_decl_assignment -  one element from list_of_port_id
 	;
 
 netId<strp>:
-		id/*net*/				{ $$ = $1; }
+		id/*new-net*/				{ $$ = $1; }
 	;
 
 sigId<varp>:
@@ -1389,7 +1390,7 @@ seq_block<nodep>:		// ==IEEE: seq_block
 	;
 
 seq_blockId<strp>:		// IEEE: part of seq_block
-		id/*block_identifier*/			{ $$ = $1; }
+		idAny/*new-block_identifier*/		{ $$ = $1; }
 	;
 
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
@@ -1464,12 +1465,18 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: subroutine_call_statement
 	//UNSUP	yVOID yP_TICK '(' function_subroutine_callNoMethod ')' ';' { }
+	//UNSUP	yVOID yP_TICK '(' expr '.' function_subroutine_callNoMethod ')' ';' { }
 	//			// Expr included here to resolve our not knowing what is a method call
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
 	//UNSUP	fexpr '.' array_methodNoRoot ';'	{ UNSUP }
 	//UNSUP	fexpr '.' task_subroutine_callNoMethod ';'	{ UNSUP }
 	//UNSUP	fexprScope ';'				{ UNSUP }
+	//			// Not here in IEEE; from class_constructor_declaration
+	//			// Because we've joined class_constructor_declaration into generic functions
+	//			// Way over-permissive;
+	//			// IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
+	//UNSUP	fexpr '.' class_new ';'		{ }
 	//
 	|	statementVerilatorPragmas			{ $$ = $1; }
 	//
@@ -1487,7 +1494,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
 							{ $$ = new AstFor($1, $3,$4,$6, $8);}
 	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
-	//UNSUP	yFOREACH '(' id/*array_identifier*/ '[' loop_variables ']' ')' stmt	{ UNSUP }
+	//UNSUP	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' stmt	{ UNSUP }
 	//
 	//			// IEEE: jump_statement
 	//UNSUP	yRETURN ';'				{ UNSUP }
@@ -1701,13 +1708,8 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 		/* empty */				{ $$ = NULL; }
-	|	list_of_arguments			{ $$ = $1; }
-	;
-
-list_of_arguments<nodep>:	// ==IEEE: list_of_arguments - empty (handled above)
-	//UNSUP	argsDottedList				{ $$ = $1; }
-		argsExprList				{ $$ = $1; }
-	//UNSUP	argsExprList ',' argsDottedList		{ $$ = $1->addNext($3); }
+	|	argsExprList				{ $$ = $1; }
+	//UNSUP empty arguments with just ,,
 	;
 
 task_declaration<nodep>:	// ==IEEE: task_declaration
@@ -1727,6 +1729,7 @@ lifetimeE:			// IEEE: [lifetime]
 	;
 
 lifetime:			// ==IEEE: lifetime
+	//			// Note lifetime used by members is instead under memberQual
 		ySTATIC			 		{ $1->v3error("Unsupported: Static in this context\n"); }
 	|	yAUTOMATIC		 		{ }
 	;
@@ -1815,9 +1818,9 @@ tf_port_itemDir:		// IEEE: part of tf_port_item, direction
 	;
 
 tf_port_itemAssignment<varp>:	// IEEE: part of tf_port_item, which has assignment
-		yaID__ETC variable_dimensionListE sigAttrListE
+		id variable_dimensionListE sigAttrListE
 			{ $$ = VARDONEA(*$1, $2, $3); }
-	|	yaID__ETC variable_dimensionListE sigAttrListE '=' expr
+	|	id variable_dimensionListE sigAttrListE '=' expr
 			{ $$ = VARDONEA(*$1, $2, $3); $$->initp($5); }
 	;
 
@@ -2027,6 +2030,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 		idClassSel				{ $$ = $1; }
 	//UNSUP: idArrayed instead of idClassSel
 	//UNSUP	package_scopeIdFollows idArrayed	{ UNSUP }
+	//UNSUP	class_scopeIdFollows idArrayed		{ UNSUP }
 	//UNSUP	~l~expr '.' idArrayed			{ UNSUP }
 	//			// expr below must be a "yTHIS"
 	//UNSUP	~l~expr '.' ySUPER			{ UNSUP }
@@ -2077,7 +2081,7 @@ commaVRDListE<nodep>:
 	|	',' vrdList				{ $$ = $2; }
 	;
 
-argsExprList<nodep>:		// IEEE: part of list_of_arguments
+argsExprList<nodep>:		// IEEE: part of list_of_arguments (used where ,, isn't legal)
 		expr					{ $$ = $1; }
 	|	argsExprList ',' expr			{ $$ = $1->addNext($3); }
 	;
