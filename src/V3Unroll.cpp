@@ -102,6 +102,7 @@ private:
 	AstAssign* initAssp = initp->castAssign();
 	if (!initAssp) return cantUnroll(nodep, "no initial assignment");
 	if (initp->nextp() && initp->nextp()!=nodep) nodep->v3fatalSrc("initial assignment shouldn't be a list");
+	if (!initAssp->lhsp()->castVarRef()) return cantUnroll(nodep, "no initial assignment to simple variable");
 	m_forVarp = initAssp->lhsp()->castVarRef()->varp();
 	m_forVscp = initAssp->lhsp()->castVarRef()->varScopep();
 	if (nodep->castGenFor() && !m_forVarp->isGenVar()) {
