@@ -828,6 +828,27 @@ Really, you're better off using a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
 the test_sp directory in the distribution for an example.
 
+=head1 CADENCE NC-SYSTEMC EXECUTION
+
+Similar to compiling Verilated designs with gcc, Verilated designs may be
+compiled inside other simulators that support SystemC models.  One such
+simulator is Cadence's NC-SystemC, part of their Incisive Verification
+Suite.  (Highly recommended.)
+
+Using the example files above, the following command will build the model
+underneath NC:
+
+   cd obj_dir
+   ncsc_run \
+	sc_main.cpp \
+	Vour__ALLcls.cpp \
+	Vour__ALLsup.cpp \
+	verilated.cpp
+
+For larger designs you'll want to automate this using makefiles, which pull
+the names of the .cpp files to compile in from the make variables generated
+in obj_dir/Vour_classes.mk.
+
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 -x-assign=fast
