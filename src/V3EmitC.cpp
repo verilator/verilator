@@ -1410,7 +1410,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 		    case EVL_ALL:  doit = true; break;
 		    case EVL_IO:   doit = varp->isIO(); break;
 		    case EVL_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
-		    case EVL_TEMP: doit = varp->isTemp(); break;
+		    case EVL_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
 		    default: v3fatalSrc("Bad Case");
 		    }
 		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;

@@ -207,6 +207,7 @@ private:
 				  AstVarType::MODULETEMP,
 				  outrefp->name() + "__en" + suffix + cvtToStr(m_unique++),
 				  (width>1) ? new AstRange(outp->fileline(), width-1, 0) : (AstRange *) NULL);
+	enp->varType2Out();
 
 	if (enp->width() != enrhsp->width()) {
 	    if (enrhsp->width()==1) { // it seems from my futzing that the linter guarantees this condition
