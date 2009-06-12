@@ -990,7 +990,7 @@ int V3PreProcImp::getToken() {
 string V3PreProcImp::getline() {
     // Get a single line from the parse stream.  Buffer unreturned text until the newline.
     if (isEof()) return "";
-    char* rtnp;
+    const char* rtnp;
     bool gotEof = false;
     while (NULL==(rtnp=strchr(m_lineChars.c_str(),'\n')) && !gotEof) {
 	int tok = getToken();

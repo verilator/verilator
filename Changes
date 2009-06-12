@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix tristates causing "Assigned pin is neither...". [by Lane Brooks]
 
+**** Fix compiler errors under Fedora release candidate 11. [Chitlesh Goorah]
+
 * Verilator 3.710 2009/05/19
 
 **   Verilator is now licensed under LGPL v3 and/or Artistic v2.0.
