@@ -131,31 +131,43 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	// Convert decimal number to hex
 	int olen = 0;
 	uint32_t val = 0;
-	for (const char* cp=value_startp;
-	     *cp; cp++) {
+	int got_x = 0;
+	int got_z = 0;
+	int got_01 = 0;
+	for (const char* cp=value_startp; *cp; cp++) {
 	    switch (tolower(*cp)) {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9': {
-		val = val*10 + (*cp-'0');
-		m_value[0] = val;
-		if (width()>32 && olen>7/*10000000 fits in 32 bits, so ok*/) {
-		    m_fileline->v3error("Unsupported: Conversion of decimal number over 32 bits, use hex\n");
-		    olen=0;
+		if (olen<=7) {  // 10000000 fits in 32 bits, so ok
+		    // Constants are common, so for speed avoid wide math until we need it
+		    val = val*10 + (*cp-'0');
+		    m_value[0] = val;
+		} else { // Wide; all previous digits are already in m_value[0]
+		    // this = (this * 10)/*product*/ + (*cp-'0')/*addend*/
+		    // Assumed rare; lots of optimizations are possible here
+		    V3Number product (fileline, width()+4);  // +4 for overflow detection
+		    V3Number ten (fileline, width()+4, 10);
+		    V3Number addend (fileline, width(), (*cp-'0'));
+		    product.opMul(*this,ten);
+		    this->opAdd(product,addend);
+		    if (product.bitsValue(width(), 4)) {  // Overflowed
+			m_fileline->v3error("Too many digits for "<<width()<<" bit number: "<<sourcep);
+			while (*(cp+1)) cp++;  // Skip ahead so don't get multiple warnings
+		    }
 		}
 		olen++;
+		got_01 = 1;
 		break;
 	    }
 	    case 'z': case '?': {
-		if (olen) m_fileline->v3error("Multi-digit X/Z/? not legal in decimal constant: "<<*cp);
 		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		olen++;
 		setAllBitsZ();
+		got_z = 1;
 		break;
 	    }
 	    case 'x': {
-		if (olen) m_fileline->v3error("Multi-digit X/Z/? not legal in decimal constant: "<<*cp);
 		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		olen++;
+		got_x = 1;
 		setAllBitsX();
 		break;
 	    }
@@ -167,6 +179,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	    }
 	}
 	obit = width();
+	if ((got_01+got_x+got_z)>1) m_fileline->v3error("Mixing X/Z/? with digits not legal in decimal constant: "<<value_startp);
     }
     else {
 	// Convert bin/octal number to hex
@@ -174,7 +187,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	     (cp>=value_startp
 	      && obit<=width());
 	     cp--) {
-	    if (*cp!='_' && obit>=width()) {
+	    if (*cp!='_' && *cp!='0' && obit>=width()) {
 		m_fileline->v3error("Too many digits for "<<width()<<" bit number: "<<sourcep);
 		break;
 	    }

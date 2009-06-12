@@ -84,6 +84,10 @@ module t (/*AUTOARG*/
 	    if ( con__ascii !== {"abcd","efgh","ijkl","mnop"}) $stop;
 
 	    if ( 3'dx !== 3'hx) $stop;
+
+	    // Wide decimal
+	    if ( 94'd12345678901234567890123456789 != 94'h27e41b3246bec9b16e398115) $stop;
+	    if (-94'sd123456789012345678901234567 != 94'h3f99e1020ea70d57d360b479) $stop;
 	 end
 	 if (cyc==2) begin
 	    win <= 32'h123123;
