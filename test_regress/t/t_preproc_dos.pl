@@ -12,7 +12,7 @@ top_filename("$Self->{obj_dir}/$Self->{name}.v");
 # Rather then having to maintain a new .v and .out, simply add returns
 # to all lines of the existing t_preproc test.
 
-$golden_out ||= "$Self->{obj_dir}/$Self->{name}.out";
+$Self->{golden_out} = "$Self->{obj_dir}/$Self->{name}.out";
 
 {
     my $wholefile = file_contents("$Self->{t_dir}/t_preproc.v");
@@ -22,9 +22,9 @@ $golden_out ||= "$Self->{obj_dir}/$Self->{name}.out";
 {
     my $wholefile = file_contents("$Self->{t_dir}/t_preproc.out");
     $wholefile =~ s!t/t_preproc.v!$Self->{obj_dir}/t_preproc_dos.v!og;  # Fix `line's
-    write_wholefile($golden_out, $wholefile);
+    write_wholefile($Self->{golden_out}, $wholefile);
 }
 
-require 't/t_preproc.pl';
+do 't/t_preproc.pl';
 
 1;

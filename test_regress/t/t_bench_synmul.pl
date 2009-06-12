@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_math_synmul.v");
 
-my $cycles = $Self->{benchmark}||0;
-$cycles = 100 if $cycles<100;
+$Self->{cycles} = $Self->{benchmark}||0;
+$Self->{cycles} = 100 if $Self->{cycles}<100;
 	      
-$Self->{sim_time} = $cycles*100;
+$Self->{sim_time} = $Self->{cycles}*100;
 
 compile (
-    v_flags2 => ["+define+SIM_CYCLES=${cycles}"],
+    v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}"],
     );
 
 execute (

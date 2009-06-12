@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$golden_out ||= "t/$Self->{name}.out";
+$Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 if (!$Self->{v3}) {
@@ -19,7 +19,7 @@ if (!$Self->{v3}) {
 	     stdout_filename => $stdout_filename,
 	     );
     ok(preproc_check($Self->{top_filename}, $stdout_filename)
-       && files_identical($stdout_filename, $golden_out));
+       && files_identical($stdout_filename, $Self->{golden_out}));
 }
 
 sub preproc_check {
