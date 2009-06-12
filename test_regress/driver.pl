@@ -25,6 +25,9 @@ $Fork = Forker->new(use_sig_child=>1) if !$Fork;
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; };
 
+our $Have_System_Perl;
+eval "use SystemC::Netlist; \$Have_System_Perl=1;";
+
 #======================================================================
 
 #======================================================================
@@ -417,6 +420,10 @@ sub compile {
 		      );
 	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
 	    $self->error("Test requires SystemC; ignore error since not installed\n");
+	    return 1;
+	}
+	elsif ($self->{trace} && !$Have_System_Perl) {
+	    $self->error("Test requires SystemPerl; ignore error since not installed\n");
 	    return 1;
 	}
 
