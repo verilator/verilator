@@ -86,14 +86,14 @@ module tpub (
 	    $c("publicNoArgs();");
 	    $c("publicSetBool(true);");
 	    $c("publicSetLong(0x11bca);");
-	    $c("publicSetQuad(0x66655554444);");
+	    $c("publicSetQuad(VL_ULL(0x66655554444));");
 	    $c("publicSetFlop(0x321);");
 	    //Unsupported: $c("WData w[3] = {0x12, 0x5678_9123, 0x1245_2352}; publicSetWide(w);");
 	 end
 	 if (cyc==12) begin
 	    $c("got_bool = publicGetSetBool(true);");
 	    $c("got_long = publicGetSetLong(0x11bca);");
-	    $c("got_quad = publicGetSetQuad(0xaaaabbbbcccc);");
+	    $c("got_quad = publicGetSetQuad(VL_ULL(0xaaaabbbbcccc));");
 	 end
 	 if (cyc==13) begin
 	    $c("{ bool gb; publicGetBool(gb); got_bool=gb; }");
