@@ -87,6 +87,9 @@ pkgdatadir = @pkgdatadir@
 # Directory in which to install data across multiple architectures
 datarootdir = @datarootdir@
 
+# Compile options
+CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+
 #### End of system configuration section. ####
 ######################################################################
 
@@ -271,6 +274,10 @@ install-project: dist
 	rm $(DISTNAME).tgz
 
 install-project-quick:
+ifeq ($(CFG_WITH_DEFENV),yes)
+	@echo "%Error: Reconfigure with './configure --disable-defenv' to avoid hardcoded paths."
+	false
+endif
 	@echo "Install-project-quick (no strip) to $(DIRPROJECT)"
 	for p in $(INST_PROJ_FILES) ; do \
 	  $(INST_PROJ_CVS) $$p $(DIRPROJECT)/hw/utils/verilator/$$p; \

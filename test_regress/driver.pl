@@ -4,9 +4,9 @@
 
 require 5.006_001;
 BEGIN {
-    if (my $Project=($ENV{DIRPROJECT}||$ENV{PROJECT})) {
+    if ($ENV{DIRPROJECT} && $ENV{DIRPROJECT_PERL_BOOT}) {
 	# Magic to allow author testing of perl packages in local directory
-	require "$Project/hw/utils/perltools/boot.pl";
+	require $ENV{DIRPROJECT}."/".$ENV{DIRPROJECT_PERL_BOOT};
     }
 }
 

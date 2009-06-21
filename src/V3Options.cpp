@@ -369,17 +369,6 @@ string V3Options::getenvSYSTEMPERLGuts() {
 	var = DEFENV_SYSTEMPERL;
 	setenvStr("SYSTEMPERL", var, "Hardcoded at build time");
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemPerlLibs()) {
-	if (var == "") {
-	    string testdir = V3Options::getenvW() + "/hw/utils/perltools/SystemC"; // Hack for internal testing
-	    if (V3Options::fileStatDir(testdir)) {
-		var = testdir;
-		setenvStr ("SYSTEMPERL", var, "From W");
-	    }
-	}
-	// Test for correctness in SYSTEMPERL_INCLUDE
-    }
     return var;
 }
 
