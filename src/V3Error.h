@@ -39,6 +39,7 @@ public:
 	SUPPRESS,	// Warning suppressed by user
 	INFO,		// General information out
 	FATAL,		// Kill the program
+	FATALSRC,	// Kill the program, for internal source errors
 	ERROR,		// General error out, can't suppress
 	// Boolean information we track per-line, but aren't errors
 	I_COVERAGE,	// Coverage is on/off from /*verilator coverage_on/off*/
@@ -83,7 +84,7 @@ public:
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
-	    " MIN", " SUPPRESS", " INFO", " FATAL", " ERROR",
+	    " MIN", " SUPPRESS", " INFO", " FATAL", " FATALSRC", " ERROR",
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING",
 	    // Errors
@@ -132,6 +133,7 @@ class V3Error {
     static int		s_debugDefault;		// Default debugging level
     static int		s_errCount;		// Error count
     static int		s_warnCount;		// Error count
+    static int 		s_tellManual;		// Tell user to see manual, 0=not yet, 1=doit, 2=disable
     static ostringstream s_errorStr;		// Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
@@ -175,12 +177,12 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 
 // These allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
-#define v3info(msg)  v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::INFO)<<msg),V3Error::v3errorStr()));
-#define v3fatal(msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::FATAL)<<msg),V3Error::v3errorStr()));
-#define v3error(msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::ERROR)<<msg),V3Error::v3errorStr()));
 #define v3warn(code,msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::code)<<msg),V3Error::v3errorStr()));
+#define v3info(msg)  v3warn(INFO,msg)
+#define v3fatal(msg) v3warn(FATAL,msg)
+#define v3error(msg) v3warn(ERROR,msg)
 // Use this instead of fatal() to mention the source code line.
-#define v3fatalSrc(msg) v3fatal("Internal Error: "<<__FILE__<<":"<<dec<<__LINE__<<": "<<msg)
+#define v3fatalSrc(msg) v3warn(FATALSRC,__FILE__<<":"<<dec<<__LINE__<<": "<<msg)
 
 #define UINFO(level,stmsg) {if(debug()>=(level)) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
 #define UINFONL(level,stmsg) {if(debug()>=(level)) { cout<<stmsg; } }

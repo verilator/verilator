@@ -38,6 +38,7 @@ FileLine FileLine::s_defaultFileLine = FileLine(EmptySecret());
 int V3Error::s_errCount = 0;
 int V3Error::s_warnCount = 0;
 int V3Error::s_debugDefault = 0;
+int V3Error::s_tellManual = 0;
 ostringstream V3Error::s_errorStr;		// Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::FATAL;
 bool V3Error::s_describedEachWarn[V3ErrorCode::MAX];
@@ -285,6 +286,7 @@ bool V3Error::isError(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return false;
     else if (code==V3ErrorCode::INFO) return false;
     else if (code==V3ErrorCode::FATAL) return true;
+    else if (code==V3ErrorCode::FATALSRC) return true;
     else if (code==V3ErrorCode::ERROR) return true;
     else if (code<V3ErrorCode::FIRST_WARN
 	     || s_pretendError[code]) return true;
@@ -295,6 +297,7 @@ string V3Error::msgPrefix(V3ErrorCode code) {
     if (code==V3ErrorCode::SUPPRESS) return "-arning-suppressed: ";
     else if (code==V3ErrorCode::INFO) return "-Info: ";
     else if (code==V3ErrorCode::FATAL) return "%Error: ";
+    else if (code==V3ErrorCode::FATALSRC) return "%Error: Internal Error: ";
     else if (code==V3ErrorCode::ERROR) return "%Error: ";
     else if (isError(code)) return "%Error-"+(string)code.ascii()+": ";
     else return "%Warning-"+(string)code.ascii()+": ";
@@ -352,12 +355,27 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		    cerr<<msgPrefix()<<"else you may end up with different sim results."<<endl;
 		}
 	    }
+	    // If first warning is not the user's fault (internal/unsupported) then give the website
+	    // Not later warnings, as a internal may be caused by an earlier problem
+	    if (s_tellManual == 0) {
+		if (s_errorCode==V3ErrorCode::FATALSRC
+		    || sstr.str().find("Unsupported") != string::npos) {
+		    s_tellManual = 1;
+		} else {
+		    s_tellManual = 2;
+		}
+	    }
 	    if (isError(s_errorCode)) incErrors();
 	    else incWarnings();
-	    if (s_errorCode==V3ErrorCode::FATAL) {
+	    if (s_errorCode==V3ErrorCode::FATAL
+		|| s_errorCode==V3ErrorCode::FATALSRC) {
 		static bool inFatal = false;
 		if (!inFatal) {
 		    inFatal = true;
+		    if (s_tellManual==1) {
+			cerr<<msgPrefix()<<"See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
+			s_tellManual = 2;
+		    }
 #ifndef _V3ERROR_NO_GLOBAL_
 		    if (debug()) {
 			v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",99));

@@ -89,7 +89,7 @@ public:
     virtual ~TraceActivityVertex() {}
     // Accessors
     AstNode* insertp() const {
-	if (!m_insertp) v3fatal("Null insertp; probably called on a special always/slow.");
+	if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
 	return m_insertp;
     }
     virtual string name() const {

@@ -432,7 +432,7 @@ private:
     }
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	// Process the last thing we're finishing
-	if (m_topScopep) nodep->v3fatalSrc("Only one topscope supported");
+	if (m_topScopep) nodep->v3fatalSrc("Only one topscope should ever be created");
 	UINFO(2,"  Loading tree...\n");
 	//VV*****  We reset userp()
 	AstNode::user1ClearTree();
