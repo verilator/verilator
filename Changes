@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support decimal constants of arbitrary widths. [Mark Marshall]
 
+**** Fix error on case statement with all duplicate items, bug99. [Mark Marshall]
+
 **** Fix segfault on unrolling for's with bad inits, bug90. [Andreas Olofsson]
 
 **** Fix tristates causing "Assigned pin is neither...". [by Lane Brooks]

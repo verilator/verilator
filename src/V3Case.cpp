@@ -219,6 +219,7 @@ private:
 	if (msb<0) {
 	    // There's no space for a IF.  We know upperValue is thus down to a specific
 	    // exact value, so just return the tree value
+	    // Note can't clone here, as we're going to check for equivelence above
 	    return m_valueItem[upperValue];
 	}
 	else {
@@ -284,6 +285,8 @@ private:
 
 	AstNode::user3ClearTree();
 	AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth-1, 0UL);
+	// Case expressions can't be linked twice, so clone them
+	if (ifrootp && !ifrootp->user3()) ifrootp = ifrootp->cloneTree(true);
 
 	if (ifrootp) nodep->replaceWith(ifrootp);
 	else nodep->unlinkFrBack();
