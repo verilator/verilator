@@ -3,11 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.71***
+* Verilator 3.711 2009/06/23
 
 **** Support decimal constants of arbitrary widths. [Mark Marshall]
 
-**** Fix error on case statement with all duplicate items, bug99. [Mark Marshall]
+**** Fix error on case statement with all duplicate items, bug99. [Gary Thomas]
 
 **** Fix segfault on unrolling for's with bad inits, bug90. [Andreas Olofsson]
 
