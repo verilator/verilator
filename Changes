@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.711 2009/**
+
+**** Add BLKLOOPINIT error code, and describe --unroll-count.  [Jeff Winston]
+
 * Verilator 3.711 2009/06/23
 
 **** Support decimal constants of arbitrary widths. [Mark Marshall]

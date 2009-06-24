@@ -47,6 +47,7 @@ public:
 	// Error codes:
 	MULTITOP,	// Error: Multiple top level modules
 	TASKNSVAR,	// Error: Task I/O not simple
+	BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
 	// Warning codes:
 	FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
@@ -88,7 +89,7 @@ public:
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING",
 	    // Errors
-	    "MULTITOP", "TASKNSVAR",
+	    "MULTITOP", "TASKNSVAR", "BLKLOOPINIT",
 	    // Warnings
 	    " FIRST_WARN",
 	    "BLKANDNBLK",

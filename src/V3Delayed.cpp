@@ -335,7 +335,7 @@ private:
 		&& nodep->lhsp()->castSel()->fromp()->castArraySel())) {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	    AstNode* newlhsp = createDlyArray(nodep, lhsp);
-	    if (m_inLoop) nodep->v3error("Unsupported: Delayed assignment to array inside for loops (non-delayed is ok - see docs)");
+	    if (m_inLoop) nodep->v3warn(BLKLOOPINIT,"Unsupported: Delayed assignment to array inside for loops (non-delayed is ok - see docs)");
 	    if (newlhsp) {
 		nodep->lhsp(newlhsp);
 	    } else {

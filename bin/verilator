@@ -1617,17 +1617,9 @@ All specify blocks and timing checks are ignored.
 
 =head2 Array Initialization
 
-When initializing an array, you need to use non-delayed assignments.  This
-is done in the interest of speed; if delayed assignments were used, the
-simulator would have to copy large arrays every cycle.  (In smaller loops,
-loop unrolling allows the delayed assignment to work, though it's a bit
-slower than a non-delayed assignment.)  Here's an example
-
-	always @ (posedge clk)
-            if (~reset_l) begin
-                for (i=0; i<`ARRAY_SIZE; i++) begin
-		    array[i] = 0;	 // Non-delayed for verilator
-                end
+When initializing a large array, you need to use non-delayed assignments.
+Verilator will tell you when this needs to be fixed; see the BLKLOOPINIT
+error for more information.
 
 =head2 Array Out of Bounds
 
@@ -1794,6 +1786,24 @@ inside a public task.
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item BLKLOOPINIT
+
+This indicates that the initialization of an array needs to use non-delayed
+assignments.  This is done in the interest of speed; if delayed assignments
+were used, the simulator would have to copy large arrays every cycle.  (In
+smaller loops, loop unrolling allows the delayed assignment to work, though
+it's a bit slower than a non-delayed assignment.)  Here's an example
+
+	always @ (posedge clk)
+            if (~reset_l) begin
+                for (i=0; i<`ARRAY_SIZE; i++) begin
+		    array[i] = 0;	 // Non-delayed for verilator
+                end
+
+This message is only seen on large or complicated loops because Verilator
+generally unrolls small loops.  You may want to try increasing
+--unroll-count which will raise the small loop bar to avoid this error.
 
 =item CASEINCOMPLETE
 
