@@ -166,8 +166,10 @@ class V3Options {
     void addIncDir(const string& incdir);
     void addLibExt(const string& libext);
     void optimize(int level);
+    void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
+
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
     static void setenvStr(const string& envvar, const string& value, const string& why);
@@ -290,13 +292,13 @@ class V3Options {
     // METHODS (environment)
     // Most of these may be built into the executable with --enable-defenv,
     // see the README.  If adding new variables, also see src/Makefile_obj.in
+    // Also add to V3Options::showVersion()
     static string getenvPERL() { return getenvStr("PERL","perl"); }
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMPERL();
     static string getenvSYSTEMPERL_INCLUDE();
     static string getenvVERILATOR_ROOT();
-    static string getenvW() { return getenvStr("W",""); }
 
     // METHODS (file utilities using these options)
     string fileExists (const string& filename);

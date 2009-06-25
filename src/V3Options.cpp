@@ -624,9 +624,12 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		shift;
 		V3Options::addLibraryFile(filenameSubstitute(argv[i]));
 	    }
+	    else if ( !strcmp (sw, "-V") ) {
+		showVersion(true);
+		exit(0);
+	    }
 	    else if ( !strcmp (sw, "-version") ) {
-		cout <<version();
-		cout <<endl;
+		showVersion(false);
 		exit(0);
 	    }
 	    // Single switches
@@ -882,6 +885,41 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 	argv[i] = (char*)args[i].c_str();
     }
     parseOptsList(fl, args.size(), argv);
+}
+
+//======================================================================
+
+void V3Options::showVersion(bool verbose) {
+    cout <<version();
+    cout <<endl;
+    if (!verbose) return;
+
+    cout <<endl;
+    cout << "Copyright 2003-2009 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
+    cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
+    cout << "License Version 2.0.\n";
+
+    cout <<endl;
+    cout << "See http://www.veripool.org/verilator for documentation\n";
+
+    cout <<endl;
+    cout << "Summary of configuration:\n";
+    cout << "  Compiled in defaults if not in environment:\n";
+    cout << "    SYSTEMC            = " << DEFENV_SYSTEMC<<endl;
+    cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH<<endl;
+    cout << "    SYSTEMPERL         = " << DEFENV_SYSTEMPERL<<endl;
+    cout << "    SYSTEMPERL_INCLUDE = " << DEFENV_SYSTEMPERL_INCLUDE<<endl;
+    cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT<<endl;
+
+    cout <<endl;
+    cout << "Environment:\n";
+    cout << "    PERL               = " << getenvStr("PERL","")<<endl;
+    cout << "    SYSTEMC            = " << getenvStr("SYSTEMC","")<<endl;
+    cout << "    SYSTEMC_ARCH       = " << getenvStr("SYSTEMC_ARCH","")<<endl;
+    cout << "    SYSTEMPERL         = " << getenvStr("SYSTEMPERL","")<<endl;
+    cout << "    SYSTEMPERL_INCLUDE = " << getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
+    cout << "    VERILATOR_ROOT     = " << getenvStr("VERILATOR_ROOT","")<<endl;
 }
 
 //======================================================================

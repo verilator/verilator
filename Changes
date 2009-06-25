@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.711 2009/**
 
+**** Add verilator -V option, to show verbose version.
+
 **** Add BLKLOOPINIT error code, and describe --unroll-count.  [Jeff Winston]
 
 * Verilator 3.711 2009/06/23

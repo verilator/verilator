@@ -227,6 +227,7 @@ descriptions in the next sections for more information.
     --trace-depth <levels>      Depth of tracing
     -U<var>                     Undefine preprocessor define
     --underline-zero            Zero signals with leading _'s
+    -V				Verbose version and config
     -v <filename>               Verilog library
     -Werror-<message>           Convert warning to error
     -Wfuture-<message>          Disable unknown message warnings
@@ -695,6 +696,11 @@ example module I<x> is referenced, look in I<x>.I<ext>.
 =item -UI<var>
 
 Undefines the given preprocessor symbol.
+
+=item -V
+
+Shows the verbose version, including configuration information compiled
+into Verilator.  (Similar to perl -V.)
 
 =item -v I<filename>
 
