@@ -105,6 +105,7 @@ class V3Options {
     bool	m_l2Name;	// main switch: --l2name
     bool	m_lintOnly;	// main switch: --lint-only
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
+    bool	m_pinsUint8;	// main switch: --pins-uint8
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_psl;		// main switch: --psl
     bool	m_public;	// main switch: --public
@@ -214,6 +215,7 @@ class V3Options {
     bool traceDups() const { return m_traceDups; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
+    bool pinsUint8() const { return m_pinsUint8; }
     bool profileCFuncs() const { return m_profileCFuncs; }
     bool psl() const { return m_psl; }
     bool allPublic() const { return m_public; }

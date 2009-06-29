@@ -5,7 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.711 2009/**
 
-**** Add verilator -V option, to show verbose version.
+*** Add verilator --pins-uint8 option to use sc_in<uint8_t/uint16_t>.
+
+*** Add verilator -V option, to show verbose version.
 
 **** Add BLKLOOPINIT error code, and describe --unroll-count.  [Jeff Winston]
 

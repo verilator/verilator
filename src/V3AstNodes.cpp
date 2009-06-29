@@ -122,7 +122,13 @@ string AstVar::scType() const {
     } else if (widthMin() == 1) {
 	return "bool";
     } else if (widthMin() <= VL_WORDSIZE) {
-	return "uint32_t";
+	if (widthMin() <= 8 && v3Global.opt.pinsUint8()) {
+	    return "uint8_t";
+	} else if (widthMin() <= 16 && v3Global.opt.pinsUint8()) {
+	    return "uint16_t";
+	} else {
+	    return "uint32_t";
+	}
     } else {
 	return "uint64_t";
     }

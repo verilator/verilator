@@ -214,6 +214,7 @@ descriptions in the next sections for more information.
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
+    --pins-uint8                Specify types for top level ports
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
@@ -514,10 +515,16 @@ Backward compatible alias for "--pins-bv 65".  Note that's a 65, not a 64.
 
 =item --pins-bv I<width>
 
-Specifies SystemC outputs of greater than or equal to I<width> bits wide
-should use sc_bv's instead of uint32/uint64_t's.  The default is "--pins-bv
-65".  Versions before Verilator 3.671 defaulted to "--pins-bv 33".  The
-more sc_bv is used, the worse for performance.
+Specifies SystemC inputs/outputs of greater than or equal to I<width> bits
+wide should use sc_bv's instead of uint32/uint64_t's.  The default is
+"--pins-bv 65".  Versions before Verilator 3.671 defaulted to "--pins-bv
+33".  The more sc_bv is used, the worse for performance.
+
+=item --pins-uint8
+
+Specifies SystemC inputs/outputs that are smaller than the --pins-bv
+setting and 8 bits or less should use uint8_t instead of uint32_t.
+Likewise pins of width 9-16 will use uint16_t instead of uint32_t.
 
 =item --prefix I<topname>
 

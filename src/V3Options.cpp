@@ -653,6 +653,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-lint-only", flag/*ref*/) )	{ m_lintOnly = flag; }
 	    else if ( !strcmp (sw, "-no-pins64") )		{ m_pinsBv = 33; }
 	    else if ( !strcmp (sw, "-pins64") )			{ m_pinsBv = 65; }
+	    else if ( onoff   (sw, "-pins-uint8", flag/*ref*/) ){ m_pinsUint8 = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
 	    else if ( onoff   (sw, "-psl", flag/*ref*/) )		{ m_psl = flag; }

@@ -8,6 +8,8 @@
 # include "Vt_var_pins_sc32.h"
 #elif defined(T_VAR_PINS_SC64)
 # include "Vt_var_pins_sc64.h"
+#elif defined(T_VAR_PINS_SCUI)
+# include "Vt_var_pins_scui.h"
 #else
 # error "Unknown test"
 #endif
