@@ -202,6 +202,22 @@ private:
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->width(nodep->lhsp()->width() + nodep->rhsp()->width(),
 			 nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin());
+	    // Cleanup zero width Verilog2001 {x,{0{foo}}} now,
+	    // otherwise having width(0) will cause later assertions to fire
+	    if (AstReplicate* repp=nodep->lhsp()->castReplicate()) {
+		if (repp->width()==0) {  // Keep rhs
+		    nodep->replaceWith(nodep->rhsp()->unlinkFrBack());
+		    pushDeletep(nodep); nodep=NULL;
+		    return;
+		}
+	    }
+	    if (AstReplicate* repp=nodep->rhsp()->castReplicate()) {
+		if (repp->width()==0) {  // Keep lhs
+		    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+		    pushDeletep(nodep); nodep=NULL;
+		    return;
+		}
+	    }
 	}
 	if (vup->c()->final()) {
 	    if (!nodep->widthSized()) {
@@ -218,7 +234,9 @@ private:
 	    AstConst* constp = nodep->rhsp()->castConst();
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
-	    if (times==0) { nodep->v3error("Replication value is 0."); times=1; }
+	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
+		nodep->v3error("Replication value of 0 is only legal under a concatenation."); times=1;
+	    }
 	    nodep->width((nodep->lhsp()->width() * times),
 			 (nodep->lhsp()->widthMin() * times));
 	}

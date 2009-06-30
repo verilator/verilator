@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.711 2009/**
 
+*** Support zero-width constants in concatenations.  [Jeff Winston]
+
 *** Add verilator --pins-uint8 option to use sc_in<uint8_t/uint16_t>.
 
 *** Add verilator -V option, to show verbose version.

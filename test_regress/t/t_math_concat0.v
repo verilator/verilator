@@ -1,17 +1,4 @@
 // DESCRIPTION: Verilator: Verilog Test module
-//
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//	$write("*-* All Finished *-*\n");
-//	$finish
-// on success, or $stop.
-//
-// The code as shown applies a random vector to the Test
-// module, then calculates a CRC on the Test module's outputs.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here, otherwise:**
-//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2009 by Wilson Snyder.
 
@@ -26,22 +13,26 @@ module t (/*AUTOARG*/
    reg [63:0] 	sum;
 
    // Take CRC data and apply to testblock inputs
-   wire [31:0]  in = crc[31:0];
+   wire [15:0]  in = crc[15:0];
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0] 		out;			// From test of Test.v
+   wire [15:0]		outa;			// From test of Test.v
+   wire [15:0]		outb;			// From test of Test.v
+   wire [15:0]		outc;			// From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
 	      // Outputs
-	      .out			(out[31:0]),
+	      .outa			(outa[15:0]),
+	      .outb			(outb[15:0]),
+	      .outc			(outc[15:0]),
 	      // Inputs
 	      .clk			(clk),
-	      .in			(in[31:0]));
+	      .in			(in[15:0]));
 
    // Aggregate outputs into a single result vector
-   wire [63:0] result = {32'h0, out};
+   wire [63:0] result = {16'h0, outa, outb, outc};
 
    // Test loop
    always @ (posedge clk) begin
@@ -65,7 +56,7 @@ module t (/*AUTOARG*/
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
 	 // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h4afe43fb79d7b71e
+`define EXPECTED_SUM 64'h09be74b1b0f8c35d
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
@@ -76,21 +67,21 @@ endmodule
 
 module Test (/*AUTOARG*/
    // Outputs
-   out,
+   outa, outb, outc,
    // Inputs
    clk, in
    );
 
-   // Replace this module with the device under test.
-   //
-   // Change the code in the t module to apply values to the inputs and
-   // merge the output values into the result vector.
-
    input clk;
-   input [31:0]      in;
-   output reg [31:0] out;
+   input [15:0]      in;
+   output reg [15:0] outa;
+   output reg [15:0] outb;
+   output reg [15:0] outc;
 
+   parameter WIDTH = 0;
    always @(posedge clk) begin
-      out <= in;
+      outa <= {in};
+      outb <= {{WIDTH{1'b0}}, in};
+      outc <= {in, {WIDTH{1'b0}}};
    end
 endmodule
