@@ -109,8 +109,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING *.in *.ac \
 	MANIFEST.SKIP \
 	bin/* \
 	install-sh configure mkinstalldirs *.texi \
-	include/verilated.[chv]* \
-	include/verilatedos.[chv]* \
+	include/verilated*.[chv]* \
 	include/*.in \
 	include/.*ignore \
 	.*attributes */.*attributes  */*/.*attributes \

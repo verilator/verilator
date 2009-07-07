@@ -1885,8 +1885,8 @@ class EmitCTrace : EmitCStmts {
 	if (nodep->valuep()->castVarRef()) {
 	    AstVarRef* varrefp = nodep->valuep()->castVarRef();
 	    AstVar* varp = varrefp->varp();
-	    if (emitTraceIsScBv(nodep)) puts("(uint32_t*)");
 	    puts("(");
+	    if (emitTraceIsScBv(nodep)) puts("VL_SC_BV_DATAP(");
 	    varrefp->iterate(*this);	// Put var name out
 	    if (varp->arraysp()) {
 		if (arrayindex==-2) puts("[i]");
@@ -1894,7 +1894,7 @@ class EmitCTrace : EmitCStmts {
 		else puts("["+cvtToStr(arrayindex)+"]");
 	    }
 	    if (varp->isSc()) puts(".read()");
-	    if (emitTraceIsScBv(nodep)) puts(".get_datap()");
+	    if (emitTraceIsScBv(nodep)) puts(")");
 	    puts(")");
 	} else {
 	    puts("(");

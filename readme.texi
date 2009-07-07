@@ -121,8 +121,7 @@ If you will be using SystemC, download and install System-Perl,
 @url{http://search.cpan.org/search?module=SystemC::Netlist}.  Note
 you'll need to set a @samp{SYSTEMPERL} environment variable to point
 to the downloaded kit.  Optionally also set @samp{SYSTEMPERL_INCLUDE}
-to point to the installed headers.  Also, make sure to do a @code{make
-sc_patch}.
+to point to the installed headers.
 
 @item
 @code{cd} to the Verilator directory containing this README.

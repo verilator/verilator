@@ -2337,12 +2337,6 @@ Call Verilated::assertOn(false) before you first call the model, then turn
 it back on after reset.  It defaults to true.  When false, all assertions
 controlled by --assert are disabled.
 
-=item Why do I get "undefined reference to `get_datap()'"?
-
-You need to apply the SystemC patches that are provided with the SystemPerl
-kit.  These enable fast tracing of SystemC sc_bv<> signals.  Recompiling
-SystemC is not needed, it's just a header change.
-
 =item Why do I get "undefined reference to `sc_time_stamp()'"?
 
 In C++ (non SystemC) code you need to define this function so that the

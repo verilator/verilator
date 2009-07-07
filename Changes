@@ -3,7 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.711 2009/**
+* Verilator 3.712 2009/**
+
+** Patching SystemC is no longer required to trace sc_bvs.
 
 *** Support zero-width constants in concatenations.  [Jeff Winston]
 

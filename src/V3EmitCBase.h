@@ -68,7 +68,10 @@ public:
     V3OutScFile(const string& filename) : V3OutCFile(filename) {}
     virtual ~V3OutScFile() {};
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() { puts("#include \"systemc.h\"\n"); }
+    virtual void putsIntTopInclude() {
+	puts("#include \"systemc.h\"\n");
+	puts("#include \"verilatedsc.h\"\n");
+    }
 };
 
 class V3OutSpFile : public V3OutCFile {
@@ -76,7 +79,10 @@ public:
     V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
     virtual ~V3OutSpFile() {};
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() { puts("#include \"systemperl.h\"\n"); }
+    virtual void putsIntTopInclude() {
+	puts("#include \"systemperl.h\"\n");
+	puts("#include \"verilatedsc.h\"\n");
+    }
 };
 
 class V3OutVFile : public V3OutFile {
