@@ -176,6 +176,11 @@ string AstNode::prettyName(const string& namein) {
     return pretty;
 }
 
+string AstNode::prettyTypeName() const {
+    if (name()=="") return typeName();
+    return string(typeName())+" '"+prettyName()+"'";
+}
+
 int AstNode::widthPow2() const {
     // I.e.  width 30 returns 32, width 32 returns 32.
     uint32_t width = this->width();

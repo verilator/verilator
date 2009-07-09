@@ -13,9 +13,9 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>$Self->{v3},
 	 expect=>
-'%Warning-WIDTH: t/t_flag_werror.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST generates 6 bits.
+q{%Warning-WIDTH: t/t_flag_werror.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST '6'h2e' generates 6 bits.
 %Warning-WIDTH: Use .* and lint_on around source to disable this message.
-%Error: Exiting due to',
+%Error: Exiting due to},
 	 ) if $Self->{v3};
 
 ok(1);

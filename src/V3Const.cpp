@@ -1674,7 +1674,7 @@ private:
 	// Default: Just iterate
 	if (m_required) {
 	    nodep->v3error("Expecting expression to be constant, but can't convert a "
-			   <<nodep->typeName()<<" to constant.");
+			   <<nodep->prettyTypeName()<<" to constant.");
 	} else {
 	    // Calculate the width of this operation
 	    if (m_params && !nodep->width()) {

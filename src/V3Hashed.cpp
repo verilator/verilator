@@ -65,7 +65,7 @@ private:
 	if (!nodep->user4()) {
 	    if (nodep->backp()->castCFunc()
 		&& !(nodep->castNodeStmt() || nodep->castCFunc())) {
-		nodep->v3fatalSrc("Node "<<nodep->typeName()<<" in statement position but not marked stmt (node under function)");
+		nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
 	    }
 	    V3Hash oldHash = m_lowerHash;
 	    {

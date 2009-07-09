@@ -14,8 +14,8 @@ compile (
 	 fails=>$Self->{v3},
 	 verilator_flags=> [qw(-sp -Werror-WIDTH)],
 	 expect=>
-'%Error-WIDTH: t/t_flag_werror.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST generates 6 bits.
-%Error: Exiting due to',
+q{%Error-WIDTH: t/t_flag_werror.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST '6'h2e' generates 6 bits.
+%Error: Exiting due to},
 	 ) if $Self->{v3};
 
 ok(1);

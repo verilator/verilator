@@ -442,9 +442,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstCell*, AstNUser*) {}		// Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
-	puts((string)"\n???? // "+nodep->typeName()+"\n");
+	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");
 	nodep->iterateChildren(*this);
-	nodep->v3fatalSrc("Unknown node type reached emitter: "<<nodep->typeName());
+	nodep->v3fatalSrc("Unknown node type reached emitter: "<<nodep->prettyTypeName());
     }
 
 public:

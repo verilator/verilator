@@ -353,7 +353,7 @@ private:
 		// In production code, we'll just not optimize.  It should be fixed though.
 		clearOptimizable(nodep, "Unknown node type, perhaps missing visitor in TableSimulateVisitor");
 #ifdef VL_DEBUG
-		UINFO(0,"Unknown node type in TableSimulateVisitor: "<<nodep->typeName()<<endl);
+		UINFO(0,"Unknown node type in TableSimulateVisitor: "<<nodep->prettyTypeName()<<endl);
 #endif
 	    }
 	} else { // simulating

@@ -640,7 +640,7 @@ protected:
 public:
     // ACCESSORS
     virtual AstType	type() const = 0;
-    const char*	typeName() const { return type().ascii(); }
+    const char*	typeName() const { return type().ascii(); }  // See also prettyTypeName
     AstNode*	nextp() const { return m_nextp; }
     AstNode*	backp() const { return m_backp; }
     AstNode*	op1p() const { return m_op1p; }
@@ -676,6 +676,7 @@ public:
     static string encodeName(const string& namein);	// Encode user name into internal C representation
     static string encodeNumber(vlsint64_t numin);	// Encode number into internal C representation
     string	prettyName() const { return prettyName(name()); }
+    string	prettyTypeName() const;			// "VARREF name" for error messages
     FileLine*	fileline() const { return m_fileline; }
     int		width() const { return m_width; }
     bool	width1() const { return width()==1; }

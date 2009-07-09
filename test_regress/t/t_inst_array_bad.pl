@@ -11,8 +11,8 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_inst_array_bad.v:\d+: Port connection __pinNumber2 as part of a module instance array  requires 1 or 8 bits, but connection\'s VARREF generates 9 bits.
-%Error: Exiting due to.*',
+q{%Error: t/t_inst_array_bad.v:\d+: Port connection __pinNumber2 as part of a module instance array  requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits.
+%Error: Exiting due to.*},
 	 );
 
 ok(1);

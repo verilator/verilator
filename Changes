@@ -5,13 +5,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.712 2009/**
 
-** Patching SystemC is no longer required to trace sc_bvs.
+**   Patching SystemC is no longer required to trace sc_bvs.
 
-*** Support zero-width constants in concatenations.  [Jeff Winston]
+***  Support zero-width constants in concatenations.  [Jeff Winston]
 
-*** Add verilator --pins-uint8 option to use sc_in<uint8_t/uint16_t>.
+***  Add verilator --pins-uint8 option to use sc_in<uint8_t/uint16_t>.
 
-*** Add verilator -V option, to show verbose version.
+***  Add verilator -V option, to show verbose version.
+
+***  On WIDTH warnings, show variable name causing error.  [Jeff Winston]
 
 **** Add BLKLOOPINIT error code, and describe --unroll-count.  [Jeff Winston]
 

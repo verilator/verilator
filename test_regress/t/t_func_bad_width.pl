@@ -11,10 +11,10 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>$Self->{v3},
 	 expect=>
-'%Warning-WIDTH: t/t_func_bad_width.v:\d+: Operator FUNCREF expects 40 bits on the Function Argument, but Function Argument.s VARREF generates 39 bits.
+q{%Warning-WIDTH: t/t_func_bad_width.v:\d+: Operator FUNCREF 'MUX' expects 40 bits on the Function Argument, but Function Argument's VARREF 'in' generates 39 bits.
 %Warning-WIDTH: Use [^\n]+
-%Warning-WIDTH: t/t_func_bad_width.v:\d+: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS.s FUNCREF generates 32 bits.
-%Error: Exiting due to',
+%Warning-WIDTH: t/t_func_bad_width.v:\d+: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS.s FUNCREF 'MUX' generates 32 bits.
+%Error: Exiting due to},
 	 );
 
 ok(1);

@@ -720,7 +720,7 @@ private:
 		    // (Because we need to know if to connect to one or all instants)
 		    nodep->v3error("Port connection "<<nodep->prettyName()<<" as part of a module instance array "
 				   <<" requires "<<pinwidth<<" or "<<pinwidth*numInsts
-				   <<" bits, but connection's "<<nodep->exprp()->typeName()
+				   <<" bits, but connection's "<<nodep->exprp()->prettyTypeName()
 				   <<" generates "<<expwidth<<" bits.");
 		    awidth = expwidth;
 		}
@@ -730,7 +730,7 @@ private:
 		    if (pinwidth != expwidth) {
 			nodep->v3error("Unsupported: Port connection "<<nodep->prettyName()<<" to inout signal "
 				       <<" requires "<<pinwidth
-				       <<" bits, but connection's "<<nodep->exprp()->typeName()
+				       <<" bits, but connection's "<<nodep->exprp()->prettyTypeName()
 				       <<" generates "<<expwidth<<" bits.");
 			// otherwise would need some mess to force both sides to proper size
 		    }
@@ -964,11 +964,11 @@ void WidthVisitor::widthCheck (AstNode* nodep, const char* side,
     }
     if (bad && !ignoreWarn) {
 	if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-	nodep->v3warn(WIDTH,"Operator "<<nodep->typeName()
+	nodep->v3warn(WIDTH,"Operator "<<nodep->prettyTypeName()
 		      <<" expects "<<expWidth
 		      <<(expWidth!=expWidthMin?" or "+cvtToStr(expWidthMin):"")
 		      <<" bits on the "<<side<<", but "<<side<<"'s "
-		      <<underp->typeName()<<" generates "<<underp->width()
+		      <<underp->prettyTypeName()<<" generates "<<underp->width()
 		      <<(underp->width()!=underp->widthMin()
 			 ?" or "+cvtToStr(underp->widthMin()):"")
 		      <<" bits.");
@@ -987,9 +987,9 @@ void WidthVisitor::widthCheckReduce (AstNode* nodep, const char* side,
     if (bad) {
 	if (!ignoreWarn) {
 	    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-	    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->typeName()
+	    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
 			  <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
-			  <<underp->typeName()<<" generates "<<underp->width()
+			  <<underp->prettyTypeName()<<" generates "<<underp->width()
 			  <<(underp->width()!=underp->widthMin()
 			     ?" or "+cvtToStr(underp->widthMin()):"")
 			  <<" bits.");
@@ -1006,7 +1006,7 @@ void WidthVisitor::widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth,
 		      <<" port connection "<<nodep->prettyName()
 		      <<" expects "<<expWidth
 		      <<" bits but connection's "
-		      <<underp->typeName()<<" generates "<<underp->width()
+		      <<underp->prettyTypeName()<<" generates "<<underp->width()
 		      <<(underp->width()!=underp->widthMin()
 			 ?" or "+cvtToStr(underp->widthMin()):"")
 		      <<" bits.");

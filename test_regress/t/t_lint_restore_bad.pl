@@ -11,9 +11,9 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'.*%Warning-WIDTH: t/t_lint_restore_bad.v:\d+: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS\'s CONST generates 64 bits.
+q{.*%Warning-WIDTH: t/t_lint_restore_bad.v:\d+: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS's CONST '64'h1' generates 64 bits.
 %Warning-WIDTH: Use .*
-%Error: Exiting due to.*',
+%Error: Exiting due to.*},
 	 ) if $Self->{v3};
 
 ok(1);
