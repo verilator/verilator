@@ -291,7 +291,7 @@ private:
 	}
     }
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
-	// We could use above visit(AstNodeTriop), but it's slower to evaluate
+	// We could use above visit(AstNodeTriop), but it's slower even O(n^2) to evaluate
 	// both sides when we really only need to evaluate one side.
 	if (m_checking) {
 	    if (!optimizable()) return;  // Accelerate
@@ -328,7 +328,7 @@ private:
 	    nodep->rhsp()->iterateAndNext(*this);
 	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
 	    if (nodep->castAssignDly()) {
-		// Don't do setNumber, as value isn't visible to new statements
+		// Don't do setNumber, as value isn't yet visible to following statements
 		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
 	    } else {
 		setNumber(vscp, fetchNumber(nodep->rhsp()));
