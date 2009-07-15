@@ -1,2 +1,4 @@
 // Test that environment substitutions work
 -f $VERILATOR_ROOT/test_regress/t/t_flag_f__2.vc
+// Env var with .v file
+$VERILATOR_ROOT/test_regress/t/t_flag_f__3.v

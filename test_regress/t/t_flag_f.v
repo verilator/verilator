@@ -8,6 +8,9 @@ module t;
 `ifndef GOT_DEF2
       $write("%%Error: NO GOT_DEF2\n"); $stop;
 `endif
+`ifndef GOT_DEF3
+      $write("%%Error: NO GOT_DEF3\n"); $stop;
+`endif
 `ifdef NON_DEF
       $write("%%Error: NON_DEF\n"); $stop;
 `endif
