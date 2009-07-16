@@ -2241,25 +2241,54 @@ untarred directory.
 In your top level C code, call Verilated::traceEverOn(true).  Then create a
 SpTraceVcdC object, and in your main loop call "trace_object->dump(time)"
 every time step, and finally call "trace_object->close()".  For an example,
-see the call to SpTraceVcdC in the test_c/sim_main.cpp file of the
-distribution.
+see below and the test_c/sim_main.cpp file of the distribution.
 
 You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
 done for you if using the Verilator --exe flag.
+
+    #include "SpTraceVcdC.cpp"
+    ...
+    int main(int argc, char **argv, char **env) {
+        ...
+        Verilated::traceEverOn(true);
+        SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
+        topp->trace (tfp, 99);
+        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        ...
+        while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
+            main_time += #;
+            tfp->dump (main_time);
+        }
+        tfp->close();
+    }
 
 =item How do I generate waveforms (traces) in SystemC/SystemPerl?
 
 Add the --trace switch to Verilator, and make sure the SystemPerl package
 is installed.
 
-In your top level C sc_main code, call Verilated::traceEverOn(true).  Then
-create a SpTraceFile object as you would create a normal SystemC trace
-file.  For an example, see the call to SpTraceFile in the
-test_sp/sc_main.cpp file of the distribution.
+In your top level C sc_main code, include SpTraceVcd.h.  Then call
+Verilated::traceEverOn(true).  Then create a SpTraceFile object as you
+would create a normal SystemC trace file.  For an example, see the call to
+SpTraceFile in the test_sp/sc_main.cpp file of the distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
 your SystemC settings.
+
+    #include "SpTraceVcd.cpp"
+    ...
+    int main(int argc, char **argv, char **env) {
+        ...
+        Verilated::traceEverOn(true);
+        SpTraceVcdFile* tfp = new SpTraceVcdFile;
+        topp->trace (tfp, 99);
+        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        ...
+        sc_start(1);
+	...
+        tfp->close();
+    }
 
 =item How do I view waveforms (traces)?
 
