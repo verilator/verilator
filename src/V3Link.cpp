@@ -156,7 +156,7 @@ private:
 	if (!forrefp->varp()) {
 	    if (!noWarn) forrefp->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<forrefp->prettyName());
 	    AstVar* newp = new AstVar (forrefp->fileline(), AstVarType::WIRE,
-				       forrefp->name());
+				       forrefp->name(), NULL, NULL);  // width 1
 	    newp->trace(m_modp->modTrace());
 	    m_modp->addStmtp(newp);
 	    // Link it to signal list

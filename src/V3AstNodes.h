@@ -251,13 +251,6 @@ private:
 	m_trace=false;
     }
 public:
-    AstVar(FileLine* fl, AstVarType type, const string& name)
-	:AstNode(fl)
-	, m_name(name) {
-	init();
-	combineType(type);
-	width(msb()-lsb()+1,0);
-    }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstRange* rangep, AstRange* arrayp=NULL)
 	:AstNode(fl)
 	, m_name(name) {
@@ -277,7 +270,7 @@ public:
 	if (examplep->arraysp()) {
 	    setOp2p(examplep->arraysp()->cloneTree(true));
 	}
-	width(msb()-lsb()+1,0);
+	width(examplep->width(), examplep->widthMin());
     }
     ASTNODE_NODE_FUNCS(Var, VAR)
     virtual void dump(ostream& str);
