@@ -358,6 +358,7 @@ escid	\\[^ \t\f\r\n]+
   "endproperty"		{ FL; return yENDPROPERTY; }
   "final"		{ FL; return yFINAL; }
   "iff"			{ FL; return yIFF; }
+  "logic"		{ FL; return yLOGIC; }
   "priority"		{ FL; return yPRIORITY; }
   "static"		{ FL; return ySTATIC; }
   "timeprecision"	{ FL; return yTIMEPRECISION; }
@@ -407,7 +408,6 @@ escid	\\[^ \t\f\r\n]+
   "join_any"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "join_none"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "local"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "logic"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "longint"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "matches"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "modport"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }

@@ -246,6 +246,7 @@ class AstSenTree;
 %token<fileline>	yGENVAR		"genvar"
 %token<fileline>	yIF		"if"
 %token<fileline>	yIFF		"iff"
+%token<fileline>	yLOGIC		"logic"
 %token<fileline>	yINITIAL	"initial"
 %token<fileline>	yINOUT		"inout"
 %token<fileline>	yINPUT		"input"
@@ -823,6 +824,7 @@ data_type<rangep>:		// ==IEEE: data_type
 data_typeNoRef<rangep>:		// ==IEEE: data_type, excluding class_type etc references
 		yINTEGER				{ VARDECL(INTEGER); $$ = new AstRange($1,31,0); $$->isSigned(true); }
 	|	yREG signingE rangeListE		{ VARDECL(REG); $$ = $3; }
+	|	yLOGIC signingE rangeListE		{ VARDECL(REG); $$ = $3; }
 	//UNSUP: above instead of integer_type
 	//
 	//UNSUP	integer_type signingE regArRangeE	{ UNSUP }
