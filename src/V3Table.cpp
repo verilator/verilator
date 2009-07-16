@@ -62,7 +62,7 @@ public:
 
     // CONSTRUCTORS
     TableSimulateVisitor(TableVisitor* cbthis, bool checking)
-	: SimulateVisitor(checking) {
+	: SimulateVisitor(true, checking) {
 	m_cbthis = cbthis;
     }
     virtual ~TableSimulateVisitor() {}
@@ -132,19 +132,19 @@ private:
 	double bytesPerInst = 4;
 	double time  = (chkvis.instrCount()*bytesPerInst + chkvis.dataCount()) + 1;  // +1 so won't div by zero
 	if (chkvis.instrCount() < TABLE_MIN_NODE_COUNT) {
-	    chkvis.clearOptimizable(nodep,"Too few nodes involved");
+	    chkvis.clearOptimizable(nodep,"Table has too few nodes involved");
 	}
 	if (space > TABLE_MAX_BYTES) {
-	    chkvis.clearOptimizable(nodep,"Too much space");
+	    chkvis.clearOptimizable(nodep,"Table takes too much space");
 	}
 	if (space > time * TABLE_SPACE_TIME_MULT) {
-	    chkvis.clearOptimizable(nodep,"Bad tradeoff");
+	    chkvis.clearOptimizable(nodep,"Table has bad tradeoff");
 	}
 	if (m_totalBytes > TABLE_TOTAL_BYTES) {
-	    chkvis.clearOptimizable(nodep,"Out of memory");
+	    chkvis.clearOptimizable(nodep,"Table out of memory");
 	}
 	if (!m_outWidth || !m_inWidth) {
-	    chkvis.clearOptimizable(nodep,"No I/O");
+	    chkvis.clearOptimizable(nodep,"Table has no outputs");
 	}
 	UINFO(4, "  Test: Opt="<<(chkvis.optimizable()?"OK":"NO")
 	      <<", Instrs="<<chkvis.instrCount()<<" Data="<<chkvis.dataCount()

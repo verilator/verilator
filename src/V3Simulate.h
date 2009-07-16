@@ -60,21 +60,23 @@ private:
     // NODE STATE
     // Cleared on each always/assignw
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
-    AstUser4InUse	m_inuser4;
 
     // Checking:
     //  AstVarScope::user1()	-> VarUsage.  Set true to indicate tracking as lvalue/rvalue
     // Simulating:
     //  AstVarScope::user3()	-> V3Number*. Input value of variable or node (and output for non-delayed assignments)
-    //  AstVarScope::user4()	-> V3Number*. Output value of variable (delayed assignments)
+    //  AstVarScope::user2()	-> V3Number*. Output value of variable (delayed assignments)
 
     enum VarUsage { VU_NONE=0, VU_LV=1, VU_RV=2, VU_LVDLY=4 };
 
     // STATE
     bool	m_checking;		///< Checking vs. simulation mode
+    bool	m_scoped;		///< Running with AstVarScopes instead of AstVars
     // Checking:
     const char*	m_whyNotOptimizable;	///< String explaining why not optimizable or NULL to optimize
+    AstNode*	m_whyNotNodep;		///< First node not optimizable
     bool	m_anyAssignDly;		///< True if found a delayed assignment
     bool	m_anyAssignComb;	///< True if found a non-delayed assignment
     bool	m_inDlyAssign;		///< Under delayed assignment
@@ -98,6 +100,7 @@ public:
 
     void clearOptimizable(AstNode* nodep/*null ok*/, const char* why) {
 	if (!m_whyNotOptimizable) {
+	    m_whyNotNodep = nodep;
 	    if (debug()>=5) {
 		UINFO(0,"Clear optimizable: "<<why);
 		if (nodep) cout<<": "<<nodep;
@@ -142,7 +145,7 @@ public:
     }
     V3Number* newOutNumber(AstNode* nodep, uint32_t value=0) {
 	// Set a constant value for this node
-	if (!nodep->user4p()) {
+	if (!nodep->user2p()) {
 	    V3Number* nump = allocNumber(nodep, value);
 	    setOutNumber(nodep, nump);
 	}
@@ -152,7 +155,7 @@ public:
 	return ((V3Number*)nodep->user3p());
     }
     V3Number* fetchOutNumberNull(AstNode* nodep) {
-	return ((V3Number*)nodep->user4p());
+	return ((V3Number*)nodep->user2p());
     }
     V3Number* fetchNumber(AstNode* nodep) {
 	V3Number* nump = fetchNumberNull(nodep);
@@ -171,7 +174,7 @@ private:
     }
     void setOutNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
-	nodep->user4p((AstNUser*)nump);
+	nodep->user2p((AstNUser*)nump);
     }
 
     void checkNodeInfo(AstNode* nodep) {
@@ -179,8 +182,16 @@ private:
 	m_dataCount += nodep->width();
 	if (!nodep->isPredictOptimizable()) {
 	    //UINFO(9,"     !predictopt "<<nodep<<endl);
-	    clearOptimizable(nodep,"!predictOptimzable");
+	    clearOptimizable(nodep,"Isn't predictable");
 	}
+    }
+
+    AstNode* varOrScope(AstVarRef* nodep) {
+	AstNode* vscp;
+	if (m_scoped) vscp = nodep->varScopep();
+	else vscp = nodep->varp();
+	if (!vscp) nodep->v3fatalSrc("Not linked");
+	return vscp;
     }
 
     // VISITORS
@@ -192,8 +203,7 @@ private:
 	// Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	AstVarScope* vscp = nodep->varScopep();
-	if (!vscp) nodep->v3fatalSrc("Not linked");
+	AstNode* vscp = varOrScope(nodep);
 	if (m_checking) {
 	    if (m_checking && !optimizable()) return;  // Accelerate
 	    // We can't have non-delayed assignments with same value on LHS and RHS
@@ -321,7 +331,7 @@ private:
 	}
 	else if (!m_checking) {
 	    nodep->rhsp()->iterateAndNext(*this);
-	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
+	    AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
 	    if (nodep->castAssignDly()) {
 		// Don't do setNumber, as value isn't yet visible to following statements
 		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
@@ -358,12 +368,14 @@ private:
 
 public:
     // CONSTRUCTORS
-    SimulateVisitor(bool checking) {
+    SimulateVisitor(bool scoped, bool checking) {
+	m_scoped = scoped;
 	m_checking = checking;
 	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
     }
     void clear() {
 	m_whyNotOptimizable = NULL;
+	m_whyNotNodep = NULL;
 	m_anyAssignComb = false;
 	m_anyAssignDly = false;
 	m_inDlyAssign = false;
@@ -371,8 +383,8 @@ public:
 	m_dataCount = 0;
 
 	AstNode::user1ClearTree();	// user1p() used on entire tree
+	AstNode::user2ClearTree();	// user2p() used on entire tree
 	AstNode::user3ClearTree();	// user3p() used on entire tree
-	AstNode::user4ClearTree();	// user4p() used on entire tree
 
 	// Move all allocated numbers to the free pool
 	m_numFreeps = m_numAllps;
