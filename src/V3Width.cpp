@@ -442,6 +442,8 @@ private:
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width
+	// We can't skip this step when width()!=0, as creating a AstVar
+	// with non-constant range gets size 1, not size 0.
 	int width=1; int mwidth=1;
 	nodep->arraysp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	if (nodep->rangep()) {
@@ -457,8 +459,11 @@ private:
 	}
 	if (nodep->initp()) {
 	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
-	    if (nodep->isParam() && !nodep->rangep()) {
-		if (nodep->initp()->widthSized()) {
+	    if (nodep->isParam()) {
+		if (nodep->rangep()) {
+		    // Parameters need to preserve widthMin from the value, not get a constant size
+		    mwidth = nodep->initp()->widthMin();
+		} else if (nodep->initp()->widthSized()) {
 		    width = mwidth = nodep->initp()->width();
 		} else {
 		    if (nodep->initp()->width()>32) nodep->initp()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)\n");
@@ -847,7 +852,7 @@ public:
 	m_taskDepth = 0;
 	m_cellRangep = NULL;
 	m_casep = NULL;
-	nodep->accept(*this);
+	nodep->accept(*this, WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual ~WidthVisitor() {}
 };

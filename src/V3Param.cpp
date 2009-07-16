@@ -127,6 +127,14 @@ private:
     }
     virtual void visit(AstCell* nodep, AstNUser*);
 
+    // Make sure all parameters are constantified
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	if (nodep->isParam()) {
+	    if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
+	    V3Const::constifyParam(nodep);  // The variable, not just the var->init()
+	}
+    }
+
     // Generate Statements
     virtual void visit(AstGenerate* nodep, AstNUser*) {
 	if (debug()>=9) nodep->dumpTree(cout,"-genin: ");

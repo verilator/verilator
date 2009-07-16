@@ -1713,7 +1713,14 @@ void V3Const::constifyParam(AstNode* nodep) {
 	V3Signed::signedParams(nodep);
     }
     ConstVisitor visitor (true,false,false,false);
-    visitor.main(nodep);
+    if (AstVar* varp=nodep->castVar()) {
+	// If a var wants to be constified, it's really a param, and
+	// we want the value to be constant.  We aren't passed just the
+	// init value because we need widthing above to handle the var's type.
+	if (varp->initp()) visitor.main(varp->initp());
+    } else {
+	visitor.main(nodep);
+    }
     // Because we do edits, nodep links may get trashed and core dump this.
     //if (debug()>0) nodep->dumpTree(cout,"  forceConDONE: ");
 }

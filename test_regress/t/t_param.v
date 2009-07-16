@@ -36,8 +36,10 @@ module t (/*AUTOARG*/
 endmodule
 
 module m1;
+   localparam PAR1MINUS1 = PAR1DUP-2-1;
+   localparam PAR1DUP = PAR1+2;  // Check we propagate parameters properly
    parameter PAR1 = 0;
-   m2 #(PAR1-1) m2 ();
+   m2 #(PAR1MINUS1) m2 ();
 endmodule
 
 module m2;
