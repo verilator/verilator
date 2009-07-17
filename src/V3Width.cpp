@@ -52,6 +52,7 @@
 
 #include "V3Global.h"
 #include "V3Width.h"
+#include "V3Signed.h"
 #include "V3Number.h"
 #include "V3Const.h"
 
@@ -1195,6 +1196,13 @@ void V3Width::widthParams(AstNode* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (nodep, true);
+}
+
+void V3Width::widthSignedIfNotAlready(AstNode* nodep) {
+    if (!nodep->width()) {
+	V3Width::widthParams(nodep);
+	V3Signed::signedParams(nodep);
+    }
 }
 
 void V3Width::widthCommit(AstNode* nodep) {

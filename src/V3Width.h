@@ -34,6 +34,7 @@ public:
     static void width(AstNetlist* nodep);
     // Smaller step... Only do a single node for parameter propagation
     static void widthParams(AstNode* nodep);
+    static void widthSignedIfNotAlready(AstNode* nodep);
     // Final step... Mark all widths as equal
     static void widthCommit(AstNode* nodep);
 };

@@ -11,9 +11,14 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-q{%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't convert a FUNCREF 'f_bad_output' to constant.
-%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't convert a FUNCREF 'f_bad_dotted' to constant.
-%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't convert a FUNCREF 'f_bad_nonparam' to constant.
+q{%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
+%Error: t/t_func_const_bad.v:\d+: ... Location of non-constant VAR 'o': Language violation: Outputs not allowed in constant functions
+%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
+%Error: t/t_func_const_bad.v:\d+: ... Location of non-constant VARXREF 'EIGHT': Language violation: Dotted hierarchical references not allowed in constant functions
+%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_nonparam'
+%Error: t/t_func_const_bad.v:\d+: ... Location of non-constant VARREF 'modvar': Language violation: reference to non-function-local variable
+%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_infinite'
+%Error: t/t_func_const_bad.v:\d+: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above 1024
 %Error: Exiting due to.*},
 	 );
 

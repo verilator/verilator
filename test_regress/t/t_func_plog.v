@@ -18,19 +18,21 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [2:0]		pos;			// From test of Test.v
+   wire [2:0]		pos1;			// From test of Test.v
+   wire [2:0]		pos2;			// From test of Test.v
    // End of automatics
 
    Test test (
 	      // Outputs
-	      .pos			(pos[2:0]),
+	      .pos1			(pos1[2:0]),
+	      .pos2			(pos2[2:0]),
 	      /*AUTOINST*/
 	      // Inputs
 	      .clk			(clk),
 	      .rst_n			(rst_n));
 
    // Aggregate outputs into a single result vector
-   wire [63:0] result = {61'h0, pos};
+   wire [63:0] result = {61'h0, pos1};
 
    // What checksum will we end up with
 `define EXPECTED_SUM 64'h039ea4d039c2e70b
@@ -54,6 +56,7 @@ module t (/*AUTOARG*/
 	 rst_n <= ~1'b1;
       end
       else if (cyc<90) begin
+	 if (pos1 !== pos2) $stop;
       end
       else if (cyc==99) begin
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
@@ -69,11 +72,12 @@ endmodule
 module Test
   #(parameter SAMPLE_WIDTH = 5 )
    (
-`ifdef verilator  // UNSUPPORTED
-    output reg [$clog2(SAMPLE_WIDTH)-1:0]         pos,
+`ifdef verilator  // Some simulators don't support clog2
+    output reg [$clog2(SAMPLE_WIDTH)-1:0]         pos1,
 `else
-    output reg [log2(SAMPLE_WIDTH-1)-1:0]         pos,
+    output reg [log2(SAMPLE_WIDTH-1)-1:0]         pos1,
 `endif
+    output reg [log2(SAMPLE_WIDTH-1)-1:0]         pos2,
     // System
     input 	clk,
     input 	rst_n
@@ -88,9 +92,11 @@ module Test
 
    always @ (posedge clk or negedge  rst_n)
      if (!rst_n) begin
-	pos   <= 0;
+	pos1 <= 0;
+	pos2 <= 0;
      end
      else begin
-	pos <= pos + 1;
+	pos1 <= pos1 + 1;
+	pos2 <= pos2 + 1;
      end
 endmodule

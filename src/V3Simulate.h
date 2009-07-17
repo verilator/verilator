@@ -21,7 +21,7 @@
 //*************************************************************************
 //
 // void example_usage() {
-//	SimulateVisitor simvis (false);
+//	SimulateVisitor simvis (false, false);
 //	simvis.clear();
 //	// Set all inputs to the constant
 //	for (deque<AstVarScope*>::iterator it = m_inVarps.begin(); it!=m_inVarps.end(); ++it) {
@@ -42,6 +42,7 @@
 #include "verilatedos.h"
 #include "V3Error.h"
 #include "V3Ast.h"
+#include "V3Width.h"
 
 //============================================================================
 
@@ -72,10 +73,12 @@ private:
     enum VarUsage { VU_NONE=0, VU_LV=1, VU_RV=2, VU_LVDLY=4 };
 
     // STATE
+    // Major mode
     bool	m_checking;		///< Checking vs. simulation mode
     bool	m_scoped;		///< Running with AstVarScopes instead of AstVars
+    bool	m_params;		///< Doing parameter propagation
     // Checking:
-    const char*	m_whyNotOptimizable;	///< String explaining why not optimizable or NULL to optimize
+    string	m_whyNotOptimizable;	///< String explaining why not optimizable or NULL to optimize
     AstNode*	m_whyNotNodep;		///< First node not optimizable
     bool	m_anyAssignDly;		///< True if found a delayed assignment
     bool	m_anyAssignComb;	///< True if found a non-delayed assignment
@@ -98,8 +101,8 @@ public:
     /// Call other-this function on all new var references
     virtual void varRefCb(AstVarRef* nodep) {}
 
-    void clearOptimizable(AstNode* nodep/*null ok*/, const char* why) {
-	if (!m_whyNotOptimizable) {
+    void clearOptimizable(AstNode* nodep/*null ok*/, const string& why) {
+	if (!m_whyNotNodep) {
 	    m_whyNotNodep = nodep;
 	    if (debug()>=5) {
 		UINFO(0,"Clear optimizable: "<<why);
@@ -109,7 +112,10 @@ public:
 	    m_whyNotOptimizable = why;
 	}
     }
-    bool optimizable() const { return m_whyNotOptimizable==NULL; }
+    bool optimizable() const { return m_whyNotNodep==NULL; }
+    string whyNotMessage() const { return m_whyNotOptimizable; }
+    AstNode* whyNotNodep() const { return m_whyNotNodep; }
+
     bool isAssignDly() const { return m_anyAssignDly; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
@@ -140,16 +146,20 @@ public:
 	if (!nodep->user3p()) {
 	    V3Number* nump = allocNumber(nodep, value);
 	    setNumber(nodep, nump);
+	    return nump;
+	} else {
+	    return (fetchNumber(nodep));
 	}
-	return (fetchNumber(nodep));
     }
     V3Number* newOutNumber(AstNode* nodep, uint32_t value=0) {
 	// Set a constant value for this node
 	if (!nodep->user2p()) {
 	    V3Number* nump = allocNumber(nodep, value);
 	    setOutNumber(nodep, nump);
+	    return nump;
+	} else {
+	    return (fetchOutNumber(nodep));
 	}
-	return (fetchOutNumber(nodep));
     }
     V3Number* fetchNumberNull(AstNode* nodep) {
 	return ((V3Number*)nodep->user3p());
@@ -160,6 +170,7 @@ public:
     V3Number* fetchNumber(AstNode* nodep) {
 	V3Number* nump = fetchNumberNull(nodep);
 	if (!nump) nodep->v3fatalSrc("No value found for node.");
+	//UINFO(9,"     fetch num "<<*nump<<" on "<<nodep<<endl);
 	return nump;
     }
     V3Number* fetchOutNumber(AstNode* nodep) {
@@ -168,11 +179,11 @@ public:
 	return nump;
     }
 private:
-    void setNumber(AstNode* nodep, const V3Number* nump) {
+    inline void setNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
 	nodep->user3p((AstNUser*)nump);
     }
-    void setOutNumber(AstNode* nodep, const V3Number* nump) {
+    inline void setOutNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
 	nodep->user2p((AstNUser*)nump);
     }
@@ -186,12 +197,34 @@ private:
 	}
     }
 
+    void badNodeType(AstNode* nodep) {
+	// Call for default node types, or other node types we don't know how to handle
+	if (m_checking) {
+	    checkNodeInfo(nodep);
+	    if (optimizable()) {
+		// Hmm, what is this then?
+		// In production code, we'll just not optimize.  It should be fixed though.
+		clearOptimizable(nodep, "Unknown node type, perhaps missing visitor in SimulateVisitor");
+#ifdef VL_DEBUG
+		UINFO(0,"Unknown node type in SimulateVisitor: "<<nodep->prettyTypeName()<<endl);
+#endif
+	    }
+	} else { // simulating
+	    nodep->v3fatalSrc("Optimizable should have been cleared in check step, and never reach simulation.");
+	}
+    }
+
     AstNode* varOrScope(AstVarRef* nodep) {
 	AstNode* vscp;
 	if (m_scoped) vscp = nodep->varScopep();
 	else vscp = nodep->varp();
 	if (!vscp) nodep->v3fatalSrc("Not linked");
 	return vscp;
+    }
+
+    int unrollCount() {
+	return m_params ? v3Global.opt.unrollCount()*16
+	    : v3Global.opt.unrollCount();
     }
 
     // VISITORS
@@ -218,14 +251,14 @@ private:
 		    }
 		} else { // nondly asn
 		    if (!(vscp->user1() & VU_LV)) {
-			if (vscp->user1() & VU_RV) clearOptimizable(nodep,"Var read & write");
+			if (!m_params && (vscp->user1() & VU_RV)) clearOptimizable(nodep,"Var read & write");
 			vscp->user1( vscp->user1() | VU_LV);
 			varRefCb (nodep);
 		    }
 		}
 	    } else {
 		if (!(vscp->user1() & VU_RV)) {
-		    if (vscp->user1() & VU_LV) clearOptimizable(nodep,"Var write & read");
+		    if (!m_params && (vscp->user1() & VU_LV)) clearOptimizable(nodep,"Var write & read");
 		    vscp->user1( vscp->user1() | VU_RV);
 		    varRefCb (nodep);
 		}
@@ -235,14 +268,31 @@ private:
 	    if (nodep->lvalue()) {
 		nodep->v3fatalSrc("LHS varref should be handled in AstAssign visitor.");
 	    } else {
-		// Return simulation value
+		// Return simulation value - copy by reference instead of value for speed
 		V3Number* nump = fetchNumberNull(vscp);
-		if (!nump) nodep->v3fatalSrc("Variable value should have been set before any visitor called.");
+		if (!nump) {
+		    if (m_params) {
+			clearOptimizable(nodep,"Language violation: reference to non-function-local variable");
+		    } else {
+			nodep->v3fatalSrc("Variable value should have been set before any visitor called.");
+		    }
+		    nump = allocNumber(nodep, 0);  // Any value; just so recover from error
+		}
 		setNumber(nodep, nump);
 	    }
 	}
     }
+    virtual void visit(AstVarXRef* nodep, AstNUser*) {
+	if (m_scoped) {  badNodeType(nodep); return; }
+	else { clearOptimizable(nodep,"Language violation: Dotted hierarchical references not allowed in constant functions"); }
+    }
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	if (!m_params) { badNodeType(nodep); return; }
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
+	UINFO(5,"   IF "<<nodep<<endl);
 	if (m_checking) {
 	    checkNodeInfo(nodep);
 	    nodep->iterateChildren(*this);
@@ -332,49 +382,171 @@ private:
 	else if (!m_checking) {
 	    nodep->rhsp()->iterateAndNext(*this);
 	    AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
+	    // Copy by value, not reference, as we don't want a=a+1 to get right results
 	    if (nodep->castAssignDly()) {
 		// Don't do setNumber, as value isn't yet visible to following statements
-		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
+		newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
 	    } else {
-		setNumber(vscp, fetchNumber(nodep->rhsp()));
-		setOutNumber(vscp, fetchNumber(nodep->rhsp()));
+		newNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
+		newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
 	    }
 	}
 	m_inDlyAssign = false;
     }
+    virtual void visit(AstNodeCase* nodep, AstNUser*) {
+	UINFO(5,"   CASE "<<nodep<<endl);
+	if (m_checking) {
+	    checkNodeInfo(nodep);
+	    nodep->iterateChildren(*this);
+	} else {
+	    nodep->exprp()->iterateAndNext(*this);
+	    bool hit = false;
+	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+		if (!itemp->isDefault()) {
+		    for (AstNode* ep = itemp->condsp(); ep; ep=ep->nextp()) {
+			if (hit) break;
+			ep->iterateAndNext(*this);
+			V3Number match (nodep->fileline(), 1);
+			match.opEq(*fetchNumber(nodep->exprp()), *fetchNumber(ep));
+			if (match.isNeqZero()) {
+			    itemp->bodysp()->iterateAndNext(*this);
+			    hit = true;
+			}
+		    }
+		}
+	    }
+	    // Else default match
+	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+		if (hit) break;
+		if (!hit && itemp->isDefault()) {
+		    itemp->bodysp()->iterateAndNext(*this);
+		    hit = true;
+		}
+	    }
+	}
+    }
+
+    virtual void visit(AstCaseItem* nodep, AstNUser*) {
+	// Real handling is in AstNodeCase
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+    }
 
     virtual void visit(AstComment*, AstNUser*) {}
+
+    virtual void visit(AstNodeFor* nodep, AstNUser*) {
+	// Doing lots of Whiles is slow, so only for parameters
+	UINFO(5,"   FOR "<<nodep<<endl);
+	if (!m_params) { badNodeType(nodep); return; }
+	if (m_checking) {
+	    checkNodeInfo(nodep);
+	    nodep->iterateChildren(*this);
+	} else {
+	    int loops = 0;
+	    nodep->initsp()->iterateAndNext(*this);
+	    while (1) {
+		UINFO(5,"    FOR-ITER "<<nodep<<endl);
+		nodep->condp()->iterateAndNext(*this);
+		if (!fetchNumber(nodep->condp())->isNeqZero()) {
+		    break;
+		}
+		nodep->bodysp()->iterateAndNext(*this);
+		nodep->incsp()->iterateAndNext(*this);
+		if (loops++ > unrollCount()*16) {
+		    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "+cvtToStr(unrollCount()));
+		    break;
+		}
+	    }
+	}
+    }
+
+    virtual void visit(AstWhile* nodep, AstNUser*) {
+	// Doing lots of Whiles is slow, so only for parameters
+	UINFO(5,"   WHILE "<<nodep<<endl);
+	if (!m_params) { badNodeType(nodep); return; }
+	if (m_checking) {
+	    checkNodeInfo(nodep);
+	    nodep->iterateChildren(*this);
+	} else {
+	    int loops = 0;
+	    while (1) {
+		UINFO(5,"    WHILE-ITER "<<nodep<<endl);
+		nodep->precondsp()->iterateAndNext(*this);
+		nodep->condp()->iterateAndNext(*this);
+		if (!fetchNumber(nodep->condp())->isNeqZero()) {
+		    break;
+		}
+		nodep->bodysp()->iterateAndNext(*this);
+		if (loops++ > unrollCount()*16) {
+		    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "+cvtToStr(unrollCount()));
+		    break;
+		}
+	    }
+	}
+    }
+
+    virtual void visit(AstFuncRef* nodep, AstNUser*) {
+	UINFO(5,"   FUNCREF "<<nodep<<endl);
+	if (!m_params) { badNodeType(nodep); return; }
+	AstFunc* funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
+	V3Width::widthSignedIfNotAlready(funcp); // Make sure we've sized the function
+	// Apply function call values to function
+	// Note we'd need a stack if we allowed recursive functions!
+	AstNode* pinp = nodep->pinsp();  AstNode* nextpinp = NULL;
+	for (AstNode* stmtp = funcp->stmtsp(); stmtp; pinp=nextpinp, stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO()) {
+		    if (pinp==NULL) {
+			nodep->v3error("Too few arguments in function call");
+		    } else {
+			nextpinp = pinp->nextp();
+			if (portp->isOutput()) {
+			    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
+			    return;
+			}
+			// Evaluate pin value
+			pinp->accept(*this);
+			// Apply value to the function
+			if (!m_checking) {
+			    newNumber(stmtp)->opAssign(*fetchNumber(pinp));
+			}
+		    }
+		}
+	    }
+	}
+	// Evaluate the function
+	funcp->accept(*this);
+	if (!m_checking) {
+	    // Grab return value from output variable
+	    newNumber(nodep)->opAssign(*fetchNumber(funcp->fvarp()));
+	}
+    }
+
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	if (!m_params) { badNodeType(nodep); return; }
+    }
+
     // default
     // These types are definately not reducable
     //   AstCoverInc, AstNodePli, AstArraySel, AstStop, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
-    // In theory, we could follow the loop, but might be slow
-    //   AstFor, AstWhile
     virtual void visit(AstNode* nodep, AstNUser*) {
-	if (m_checking) {
-	    checkNodeInfo(nodep);
-	    if (optimizable()) {
-		// Hmm, what is this then?
-		// In production code, we'll just not optimize.  It should be fixed though.
-		clearOptimizable(nodep, "Unknown node type, perhaps missing visitor in SimulateVisitor");
-#ifdef VL_DEBUG
-		UINFO(0,"Unknown node type in SimulateVisitor: "<<nodep->prettyTypeName()<<endl);
-#endif
-	    }
-	} else { // simulating
-	    nodep->v3fatalSrc("Optimizable should have been cleared in check step, and never reach simulation.");
-	}
+	badNodeType(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    SimulateVisitor(bool scoped, bool checking) {
-	m_scoped = scoped;
-	m_checking = checking;
+    SimulateVisitor() {
+	setMode(false,false,false);
 	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
     }
+    void setMode(bool scoped, bool checking, bool params) {
+	m_checking = checking;
+	m_scoped = scoped;
+	m_params = params;
+    }
     void clear() {
-	m_whyNotOptimizable = NULL;
+	m_whyNotOptimizable = "";
 	m_whyNotNodep = NULL;
 	m_anyAssignComb = false;
 	m_anyAssignDly = false;
@@ -389,7 +561,20 @@ public:
 	// Move all allocated numbers to the free pool
 	m_numFreeps = m_numAllps;
     }
-    void main (AstNode* nodep) {
+    void mainTableCheck   (AstNode* nodep) {
+	setMode(true/*scoped*/,true/*checking*/, false/*params*/);
+	nodep->accept(*this);
+    }
+    void mainTableEmulate (AstNode* nodep) {
+	setMode(true/*scoped*/,false/*checking*/, false/*params*/);
+	nodep->accept(*this);
+    }
+    void mainParamCheck   (AstNode* nodep) {
+	setMode(false/*scoped*/,true/*checking*/, true/*params*/);
+	nodep->accept(*this);
+    }
+    void mainParamEmulate (AstNode* nodep) {
+	setMode(false/*scoped*/,false/*checking*/, true/*params*/);
 	nodep->accept(*this);
     }
     virtual ~SimulateVisitor() {

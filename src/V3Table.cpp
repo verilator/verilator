@@ -61,8 +61,7 @@ public:
     virtual void varRefCb(AstVarRef* nodep);	///< Call other-this function on all new var references
 
     // CONSTRUCTORS
-    TableSimulateVisitor(TableVisitor* cbthis, bool checking)
-	: SimulateVisitor(true, checking) {
+    TableSimulateVisitor(TableVisitor* cbthis) {
 	m_cbthis = cbthis;
     }
     virtual ~TableSimulateVisitor() {}
@@ -115,8 +114,8 @@ private:
 	m_outNotSet.clear();
 
 	// Collect stats
-	TableSimulateVisitor chkvis (this, true);
-	chkvis.main(nodep);
+	TableSimulateVisitor chkvis (this);
+	chkvis.mainTableCheck(nodep);
 	m_assignDly = chkvis.isAssignDly();
 	// Also sets m_inWidth
 	// Also sets m_outWidth
@@ -273,7 +272,7 @@ private:
 	    m_outNotSet.push_back(false);
 	}
 	uint32_t inValueNextInitArray=0;
-	TableSimulateVisitor simvis (this, false);
+	TableSimulateVisitor simvis (this);
 	for (uint32_t inValue=0; inValue <= VL_MASK_I(m_inWidth); inValue++) {
 	    // Make a new simulation structure so we can set new input values
 	    UINFO(8," Simulating "<<hex<<inValue<<endl);
@@ -295,7 +294,7 @@ private:
 	    }
 
 	    // Simulate
-	    simvis.main(nodep);
+	    simvis.mainTableEmulate(nodep);
 
 	    // If a output changed, add it to table
 	    int outnum = 0;

@@ -980,7 +980,6 @@ struct AstNodeFor : public AstNodeStmt {
     AstNode*	incsp()		const { return op3p()->castNode(); }	// op3= increment statements
     AstNode*	bodysp()	const { return op4p()->castNode(); }	// op4= body of loop
     virtual bool isGateOptimizable() const { return false; }
-    virtual bool isPredictOptimizable() const { return false; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }

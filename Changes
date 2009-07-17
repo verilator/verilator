@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.71***
 
+**   Support constant function calls for parameters. [many!]
+
 ***  Support SystemVerilog "logic", bug101.  [by Alex Duller]
 
 * Verilator 3.712 2009/07/14

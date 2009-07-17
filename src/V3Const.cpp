@@ -39,6 +39,7 @@
 #include "V3Ast.h"
 #include "V3Width.h"
 #include "V3Signed.h"
+#include "V3Simulate.h"
 
 //######################################################################
 // Utilities
@@ -827,6 +828,28 @@ private:
 	if (debug()>=9) newp->dumpTree(cout,"       _new: ");
     }
 
+    void replaceWithSimulation(AstNode* nodep) {
+	SimulateVisitor simvis;
+	simvis.mainParamCheck(nodep);
+	if (simvis.optimizable()) {  // Run it - may also be unoptimizable due to large for loop
+	    simvis.mainParamEmulate(nodep);
+	}
+	if (!simvis.optimizable()) {
+		    AstNode* errorp = simvis.whyNotNodep(); if (!errorp) errorp = nodep;
+	    nodep->v3error("Expecting expression to be constant, but can't determine constant for "
+			   <<nodep->prettyTypeName()<<endl
+			   <<V3Error::msgPrefix()<<errorp->fileline()<<"... Location of non-constant "
+			   <<errorp->prettyTypeName()<<": "<<simvis.whyNotMessage());
+	    replaceZero(nodep); nodep=NULL;
+	} else {
+	    // Fetch the result
+	    V3Number* outnump = simvis.fetchNumberNull(nodep);
+	    if (!outnump) nodep->v3fatalSrc("No number returned from simulation");
+	    // Replace it
+	    replaceNum(nodep,*outnump); nodep=NULL;
+	}
+    }
+
     //----------------------------------------
 
     // VISITORS
@@ -1420,6 +1443,13 @@ private:
 	}
     }
 
+    virtual void visit(AstFuncRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (m_params) {  // Only parameters force us to do constant function call propagation
+	    replaceWithSimulation(nodep);
+	}
+    }
+
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->condp()->isZero()) {
@@ -1708,10 +1738,7 @@ public:
 
 void V3Const::constifyParam(AstNode* nodep) {
     //if (debug()>0) nodep->dumpTree(cout,"  forceConPRE : ");
-    if (!nodep->width()) {
-	V3Width::widthParams(nodep);
-	V3Signed::signedParams(nodep);
-    }
+    V3Width::widthSignedIfNotAlready(nodep); // Make sure we've sized everything first
     ConstVisitor visitor (true,false,false,false);
     if (AstVar* varp=nodep->castVar()) {
 	// If a var wants to be constified, it's really a param, and
