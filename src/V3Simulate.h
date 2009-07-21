@@ -74,7 +74,7 @@ private:
 
     // STATE
     // Major mode
-    bool	m_checking;		///< Checking vs. simulation mode
+    bool	m_checkOnly;		///< Checking only (no simulation) mode
     bool	m_scoped;		///< Running with AstVarScopes instead of AstVars
     bool	m_params;		///< Doing parameter propagation
     // Checking:
@@ -102,6 +102,8 @@ public:
     virtual void varRefCb(AstVarRef* nodep) {}
 
     void clearOptimizable(AstNode* nodep/*null ok*/, const string& why) {
+	//  Something bad found.  optimizable() will return false,
+	//  and fetchNumber should not be called or it may assert.
 	if (!m_whyNotNodep) {
 	    m_whyNotNodep = nodep;
 	    if (debug()>=5) {
@@ -112,7 +114,7 @@ public:
 	    m_whyNotOptimizable = why;
 	}
     }
-    bool optimizable() const { return m_whyNotNodep==NULL; }
+    inline bool optimizable() const { return m_whyNotNodep==NULL; }
     string whyNotMessage() const { return m_whyNotOptimizable; }
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
@@ -189,8 +191,10 @@ private:
     }
 
     void checkNodeInfo(AstNode* nodep) {
-	m_instrCount += nodep->instrCount();
-	m_dataCount += nodep->width();
+	if (m_checkOnly) {
+	    m_instrCount += nodep->instrCount();
+	    m_dataCount += nodep->width();
+	}
 	if (!nodep->isPredictOptimizable()) {
 	    //UINFO(9,"     !predictopt "<<nodep<<endl);
 	    clearOptimizable(nodep,"Isn't predictable");
@@ -199,18 +203,14 @@ private:
 
     void badNodeType(AstNode* nodep) {
 	// Call for default node types, or other node types we don't know how to handle
-	if (m_checking) {
-	    checkNodeInfo(nodep);
-	    if (optimizable()) {
-		// Hmm, what is this then?
-		// In production code, we'll just not optimize.  It should be fixed though.
-		clearOptimizable(nodep, "Unknown node type, perhaps missing visitor in SimulateVisitor");
+	checkNodeInfo(nodep);
+	if (optimizable()) {
+	    // Hmm, what is this then?
+	    // In production code, we'll just not optimize.  It should be fixed though.
+	    clearOptimizable(nodep, "Unknown node type, perhaps missing visitor in SimulateVisitor");
 #ifdef VL_DEBUG
-		UINFO(0,"Unknown node type in SimulateVisitor: "<<nodep->prettyTypeName()<<endl);
+	    UINFO(0,"Unknown node type in SimulateVisitor: "<<nodep->prettyTypeName()<<endl);
 #endif
-	    }
-	} else { // simulating
-	    nodep->v3fatalSrc("Optimizable should have been cleared in check step, and never reach simulation.");
 	}
     }
 
@@ -229,42 +229,41 @@ private:
 
     // VISITORS
     virtual void visit(AstAlways* nodep, AstNUser*) {
-	if (m_checking) checkNodeInfo(nodep);
+	checkNodeInfo(nodep);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	// Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (!optimizable()) return;  // Accelerate
 	AstNode* vscp = varOrScope(nodep);
-	if (m_checking) {
-	    if (m_checking && !optimizable()) return;  // Accelerate
-	    // We can't have non-delayed assignments with same value on LHS and RHS
-	    // as we don't figure out variable ordering.
-	    // Delayed is OK though, as we'll decode the next state separately.
-	    if (nodep->varp()->arraysp()) clearOptimizable(nodep,"Array references");
-	    if (nodep->lvalue()) {
-		if (m_inDlyAssign) {
-		    if (!(vscp->user1() & VU_LVDLY)) {
-			vscp->user1( vscp->user1() | VU_LVDLY);
-			varRefCb (nodep);
-		    }
-		} else { // nondly asn
-		    if (!(vscp->user1() & VU_LV)) {
-			if (!m_params && (vscp->user1() & VU_RV)) clearOptimizable(nodep,"Var read & write");
-			vscp->user1( vscp->user1() | VU_LV);
-			varRefCb (nodep);
-		    }
+
+	// We can't have non-delayed assignments with same value on LHS and RHS
+	// as we don't figure out variable ordering.
+	// Delayed is OK though, as we'll decode the next state separately.
+	if (nodep->varp()->arraysp()) clearOptimizable(nodep,"Array references");
+	if (nodep->lvalue()) {
+	    if (m_inDlyAssign) {
+		if (!(vscp->user1() & VU_LVDLY)) {
+		    vscp->user1( vscp->user1() | VU_LVDLY);
+		    if (m_checkOnly) varRefCb (nodep);
 		}
-	    } else {
-		if (!(vscp->user1() & VU_RV)) {
-		    if (!m_params && (vscp->user1() & VU_LV)) clearOptimizable(nodep,"Var write & read");
-		    vscp->user1( vscp->user1() | VU_RV);
-		    varRefCb (nodep);
+	    } else { // nondly asn
+		if (!(vscp->user1() & VU_LV)) {
+		    if (!m_params && (vscp->user1() & VU_RV)) clearOptimizable(nodep,"Var read & write");
+		    vscp->user1( vscp->user1() | VU_LV);
+		    if (m_checkOnly) varRefCb (nodep);
 		}
 	    }
+	} else {
+	    if (!(vscp->user1() & VU_RV)) {
+		if (!m_params && (vscp->user1() & VU_LV)) clearOptimizable(nodep,"Var write & read");
+		vscp->user1( vscp->user1() | VU_RV);
+		if (m_checkOnly) varRefCb (nodep);
+	    }
 	}
-	else { // simulating
+	if (!m_checkOnly && optimizable()) { // simulating
 	    if (nodep->lvalue()) {
 		nodep->v3fatalSrc("LHS varref should be handled in AstAssign visitor.");
 	    } else {
@@ -293,52 +292,47 @@ private:
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	UINFO(5,"   IF "<<nodep<<endl);
-	if (m_checking) {
-	    checkNodeInfo(nodep);
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->condp()->iterateAndNext(*this);
-	    if (fetchNumber(nodep->condp())->isNeqZero()) {
-		nodep->ifsp()->iterateAndNext(*this);
-	    } else {
-		nodep->elsesp()->iterateAndNext(*this);
+	    if (optimizable()) {
+		if (fetchNumber(nodep->condp())->isNeqZero()) {
+		    nodep->ifsp()->iterateAndNext(*this);
+		} else {
+		    nodep->elsesp()->iterateAndNext(*this);
+		}
 	    }
 	}
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
-	if (m_checking) {
-	    checkNodeInfo(nodep);
-	} else {
+	checkNodeInfo(nodep);
+	if (!m_checkOnly && optimizable()) {
 	    setNumber(nodep, &(nodep->num()));
 	}
     }
     virtual void visit(AstNodeUniop* nodep, AstNUser*) {
-	if (m_checking) {
-	    if (!optimizable()) return;  // Accelerate
-	    checkNodeInfo(nodep);
-	    nodep->iterateChildren(*this);
-	} else {
-	    nodep->iterateChildren(*this);
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+	if (!m_checkOnly && optimizable()) {
 	    nodep->numberOperate(*newNumber(nodep), *fetchNumber(nodep->lhsp()));
 	}
     }
     virtual void visit(AstNodeBiop* nodep, AstNUser*) {
-	if (m_checking) {
-	    if (!optimizable()) return;  // Accelerate
-	    checkNodeInfo(nodep);
-	    nodep->iterateChildren(*this);
-	} else {
-	    nodep->iterateChildren(*this);
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+	if (!m_checkOnly && optimizable()) {
 	    nodep->numberOperate(*newNumber(nodep), *fetchNumber(nodep->lhsp()), *fetchNumber(nodep->rhsp()));
 	}
     }
     virtual void visit(AstNodeTriop* nodep, AstNUser*) {
-	if (m_checking) {
-	    if (!optimizable()) return;  // Accelerate
-	    checkNodeInfo(nodep);
-	    nodep->iterateChildren(*this);
-	} else {
-	    nodep->iterateChildren(*this);
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+	if (!m_checkOnly && optimizable()) {
 	    nodep->numberOperate(*newNumber(nodep),
 				 *fetchNumber(nodep->lhsp()),
 				 *fetchNumber(nodep->rhsp()),
@@ -348,57 +342,65 @@ private:
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
 	// We could use above visit(AstNodeTriop), but it's slower even O(n^2) to evaluate
 	// both sides when we really only need to evaluate one side.
-	if (m_checking) {
-	    if (!optimizable()) return;  // Accelerate
-	    checkNodeInfo(nodep);
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->condp()->accept(*this);
-	    if (fetchNumber(nodep->condp())->isNeqZero()) {
-		nodep->expr1p()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
-	    } else {
-		nodep->expr2p()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
+	    if (optimizable()) {
+		if (fetchNumber(nodep->condp())->isNeqZero()) {
+		    nodep->expr1p()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
+		} else {
+		    nodep->expr2p()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
+		}
 	    }
 	}
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
-	if (m_checking) {
-	    if (!optimizable()) return;  // Accelerate
-	    if (nodep->castAssignDly()) {
-		if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non dly assigns");
-		m_anyAssignDly = true;
-		m_inDlyAssign = true;
-	    } else {
-		if (m_anyAssignDly) clearOptimizable(nodep, "Mix of dly/non dly assigns");
-		m_anyAssignComb = true;
-	    }
-	    nodep->iterateChildren(*this);
+	if (!optimizable()) return;  // Accelerate
+	if (nodep->castAssignDly()) {
+	    if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non dly assigns");
+	    m_anyAssignDly = true;
+	    m_inDlyAssign = true;
+	} else {
+	    if (m_anyAssignDly) clearOptimizable(nodep, "Mix of dly/non dly assigns");
+	    m_anyAssignComb = true;
 	}
 	if (!nodep->lhsp()->castVarRef()) {
 	    clearOptimizable(nodep, "LHS isn't simple variable");
 	}
-	else if (!m_checking) {
+	else if (m_checkOnly) {
+	    nodep->iterateChildren(*this);
+	}
+	else if (optimizable()) {
 	    nodep->rhsp()->iterateAndNext(*this);
-	    AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
-	    // Copy by value, not reference, as we don't want a=a+1 to get right results
-	    if (nodep->castAssignDly()) {
-		// Don't do setNumber, as value isn't yet visible to following statements
-		newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
-	    } else {
-		newNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
-		newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
+	    if (optimizable()) {
+		AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
+		// Copy by value, not reference, as we don't want a=a+1 to get right results
+		if (nodep->castAssignDly()) {
+		    // Don't do setNumber, as value isn't yet visible to following statements
+		    newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
+		} else {
+		    newNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
+		    newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
+		}
 	    }
 	}
 	m_inDlyAssign = false;
     }
+    virtual void visit(AstBegin* nodep, AstNUser*) {
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
 	UINFO(5,"   CASE "<<nodep<<endl);
-	if (m_checking) {
-	    checkNodeInfo(nodep);
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
-	} else {
+	} else if (optimizable()) {
 	    nodep->exprp()->iterateAndNext(*this);
 	    bool hit = false;
 	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
@@ -406,11 +408,13 @@ private:
 		    for (AstNode* ep = itemp->condsp(); ep; ep=ep->nextp()) {
 			if (hit) break;
 			ep->iterateAndNext(*this);
-			V3Number match (nodep->fileline(), 1);
-			match.opEq(*fetchNumber(nodep->exprp()), *fetchNumber(ep));
-			if (match.isNeqZero()) {
-			    itemp->bodysp()->iterateAndNext(*this);
-			    hit = true;
+			if (optimizable()) {
+			    V3Number match (nodep->fileline(), 1);
+			    match.opEq(*fetchNumber(nodep->exprp()), *fetchNumber(ep));
+			    if (match.isNeqZero()) {
+				itemp->bodysp()->iterateAndNext(*this);
+				hit = true;
+			    }
 			}
 		    }
 		}
@@ -434,19 +438,28 @@ private:
 
     virtual void visit(AstComment*, AstNUser*) {}
 
+    virtual void visit(AstStop* nodep, AstNUser*) {
+	if (m_params) {  // This message seems better than an obscure $stop
+	    // The spec says $stop is just ignored, it seems evil to ignore assertions
+	    clearOptimizable(nodep,"$stop executed during function constification; maybe indicates assertion firing");
+	}
+	checkNodeInfo(nodep);
+    }
+
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	// Doing lots of Whiles is slow, so only for parameters
 	UINFO(5,"   FOR "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
-	if (m_checking) {
-	    checkNodeInfo(nodep);
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
-	} else {
+	} else if (optimizable()) {
 	    int loops = 0;
 	    nodep->initsp()->iterateAndNext(*this);
 	    while (1) {
 		UINFO(5,"    FOR-ITER "<<nodep<<endl);
 		nodep->condp()->iterateAndNext(*this);
+		if (!optimizable()) break;
 		if (!fetchNumber(nodep->condp())->isNeqZero()) {
 		    break;
 		}
@@ -464,15 +477,16 @@ private:
 	// Doing lots of Whiles is slow, so only for parameters
 	UINFO(5,"   WHILE "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
-	if (m_checking) {
-	    checkNodeInfo(nodep);
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
-	} else {
+	} else if (optimizable()) {
 	    int loops = 0;
 	    while (1) {
 		UINFO(5,"    WHILE-ITER "<<nodep<<endl);
 		nodep->precondsp()->iterateAndNext(*this);
 		nodep->condp()->iterateAndNext(*this);
+		if (!optimizable()) break;
 		if (!fetchNumber(nodep->condp())->isNeqZero()) {
 		    break;
 		}
@@ -507,7 +521,7 @@ private:
 			// Evaluate pin value
 			pinp->accept(*this);
 			// Apply value to the function
-			if (!m_checking) {
+			if (!m_checkOnly && optimizable()) {
 			    newNumber(stmtp)->opAssign(*fetchNumber(pinp));
 			}
 		    }
@@ -516,7 +530,7 @@ private:
 	}
 	// Evaluate the function
 	funcp->accept(*this);
-	if (!m_checking) {
+	if (!m_checkOnly && optimizable()) {
 	    // Grab return value from output variable
 	    newNumber(nodep)->opAssign(*fetchNumber(funcp->fvarp()));
 	}
@@ -540,8 +554,8 @@ public:
 	setMode(false,false,false);
 	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
     }
-    void setMode(bool scoped, bool checking, bool params) {
-	m_checking = checking;
+    void setMode(bool scoped, bool checkOnly, bool params) {
+	m_checkOnly = checkOnly;
 	m_scoped = scoped;
 	m_params = params;
     }
@@ -567,10 +581,6 @@ public:
     }
     void mainTableEmulate (AstNode* nodep) {
 	setMode(true/*scoped*/,false/*checking*/, false/*params*/);
-	nodep->accept(*this);
-    }
-    void mainParamCheck   (AstNode* nodep) {
-	setMode(false/*scoped*/,true/*checking*/, true/*params*/);
 	nodep->accept(*this);
     }
     void mainParamEmulate (AstNode* nodep) {

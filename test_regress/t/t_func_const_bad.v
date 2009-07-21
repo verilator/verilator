@@ -38,4 +38,11 @@ module t;
 	 f_bad_infinite = 0;
       end
    endfunction
+
+   // Our own - stop
+   localparam BSTOP = f_bad_stop(3);
+   function integer f_bad_stop(input [31:0] a);
+      $stop;
+   endfunction
+
 endmodule

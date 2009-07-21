@@ -50,7 +50,9 @@ module t;
       integer i;
       begin
 	 i=0;
-	 f_while = 1;
+	 begin : named
+	    f_while = 1;
+	 end : named
 	 while (i<=a) begin
 	    if (i[0]) f_while = f_while + 1;
 	    i = i + 1;
@@ -63,6 +65,7 @@ module t;
       case(a)
 	32'd1: f_case = 1;
 	32'd0, 32'd4: f_case = 18;
+	32'd1234: begin $display("never get here"); $stop; end
 	default: f_case = 99;
       endcase
    endfunction

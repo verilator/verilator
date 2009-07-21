@@ -830,10 +830,8 @@ private:
 
     void replaceWithSimulation(AstNode* nodep) {
 	SimulateVisitor simvis;
-	simvis.mainParamCheck(nodep);
-	if (simvis.optimizable()) {  // Run it - may also be unoptimizable due to large for loop
-	    simvis.mainParamEmulate(nodep);
-	}
+	// Run it - may be unoptimizable due to large for loop, etc
+	simvis.mainParamEmulate(nodep);
 	if (!simvis.optimizable()) {
 		    AstNode* errorp = simvis.whyNotNodep(); if (!errorp) errorp = nodep;
 	    nodep->v3error("Expecting expression to be constant, but can't determine constant for "
