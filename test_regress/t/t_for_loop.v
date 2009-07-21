@@ -3,15 +3,12 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_loop (/*AUTOARG*/
-   // Outputs
-   passed,
+module t (/*AUTOARG*/
    // Inputs
    clk
    );
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
    reg [7:0] cyc; initial cyc=0;
 
    reg [31:0] loops;
@@ -53,8 +50,8 @@ module t_loop (/*AUTOARG*/
 	 end
 	 if (loops !== 100000) $stop;
 	 //
-	 $write("[%0t] t_loop: Passed\n",$time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 
