@@ -34,6 +34,7 @@
 #include "V3Global.h"
 #include "V3Name.h"
 #include "V3Ast.h"
+#include "V3LanguageWords.h"
 
 //######################################################################
 // Name state, as a visitor of each AstNode
@@ -45,20 +46,34 @@ private:
     //  AstCell::user1()	-> bool.  Set true if already processed
     //  AstScope::user1()	-> bool.  Set true if already processed
     //  AstVar::user1()		-> bool.  Set true if already processed
-    //
-    //  AstCell::user2()	-> bool.  Set true if was privitized
-    //  AstVar::user2()		-> bool.  Set true if was privitized
     AstUser1InUse	m_inuser1;
-    AstUser2InUse	m_inuser2;
 
     // STATE
     AstModule*	m_modp;
+    V3LanguageWords 	m_words;	// Reserved word detector
 
     // METHODS
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
+    }
+
+    void rename(AstNode* nodep, bool addPvt) {
+	if (!nodep->user1()) {  // Not already done
+	    if (addPvt) {
+		string newname = (string)"__PVT__"+nodep->name();
+		nodep->name(newname);
+	    } else {
+		string rsvd = m_words.isKeyword(nodep->name());
+		if (rsvd != "") {
+		    nodep->v3warn(SYMRSVDWORD,"Symbol matches "+rsvd+": '"<<nodep->name()<<"'");
+		    string newname = (string)"__SYM__"+nodep->name();
+		    nodep->name(newname);
+		}
+	    }
+	    nodep->user1(1);
+	}
     }
 
     // VISITORS
@@ -70,16 +85,13 @@ private:
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Don't iterate... Don't need temps for RANGES under the Var.
-	if (!nodep->user1()
-	    && !m_modp->isTop()
-	    && !nodep->isSigPublic()
-	    && !nodep->isTemp()) {	// Don't bother to rename internal signals
-	    // Change the name to something private...
-	    string newname = (string)"__PVT__"+nodep->name();
-	    nodep->name(newname);
-	    nodep->user1(1);
-	    nodep->user2(1);
-	}
+	rename(nodep, (!m_modp->isTop()
+		       && !nodep->isSigPublic()
+		       && !nodep->isTemp()));	// Don't bother to rename internal signals
+    }
+    virtual void visit(AstCFunc* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	rename(nodep, false);
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (nodep->varp()) {
@@ -88,14 +100,7 @@ private:
 	}
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
-	if (!nodep->user1()
-	    && !nodep->modp()->modPublic()) {
-	    // Change the name to something private...
-	    string newname = (string)"__PVT__"+nodep->name();
-	    nodep->name(newname);
-	    nodep->user1(1);
-	    nodep->user2(1);
-	}
+	rename(nodep, !nodep->modp()->modPublic());
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {

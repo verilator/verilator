@@ -1965,6 +1965,13 @@ example:
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
 
+=item SYMRSVDWORD
+
+Error that a symbol matches a C++ reserved word and using this as a symbol
+name would result in odd C compiler errors.  You may disable this error
+message as you would disable warnings, but the symbol will be renamed by
+Verilator to avoid the conflict.
+
 =item TASKNSVAR
 
 Error when a call to a task or function has a output from that task tied to

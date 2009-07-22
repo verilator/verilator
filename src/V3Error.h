@@ -59,6 +59,7 @@ public:
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
 	STMTDLY,	// Delayed statement
+	SYMRSVDWORD,	// Symbol is Reserved Word
 	GENCLK,		// Generated Clock
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
 	IMPLICIT,	// Implicit wire
@@ -94,7 +95,7 @@ public:
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
-	    "COMBDLY", "STMTDLY", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+	    "COMBDLY", "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
@@ -108,7 +109,7 @@ public:
     bool dangerous() const { return ( m_e==COMBDLY ); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE ); }
+    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE || m_e==SYMRSVDWORD); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==FATALSRC || pretendError() ); }
 

@@ -669,6 +669,7 @@ public:
 
     // ACCESSORS
     virtual string name() const { return ""; }
+    virtual void name(const string& name) { this->v3fatalSrc("name() called on object without name() method"); }
     virtual string verilogKwd() const { return ""; }
     string 	shortName() const;	// Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);	// Name with dots removed
@@ -1058,7 +1059,7 @@ public:
     virtual int instrCount() const { return widthInstrs(); }
     virtual void cloneRelink();
     virtual string name()	const { return m_name; }		// * = Var name
-    void 	name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     bool	lvalue() const { return m_lvalue; }
     void	lvalue(bool lval) { m_lvalue=lval; }  // Avoid using this; Set in constructor
     AstVar*	varp() const { return m_varp; }				// [After Link] Pointer to variable
@@ -1135,7 +1136,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     // {AstFunc only} op1 = Range output variable
     // op3 = Statements/Ports/Vars
-    void 	name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) 	{ m_name = name; }
     AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op1 = List of statements
     void	addStmtsp(AstNode* nodep) { addOp3p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
@@ -1168,7 +1169,7 @@ public:
     void	inlinedDots(const string& flag) { m_inlinedDots = flag; }
     AstNodeFTask*	taskp() const { return m_taskp; }		// [After Link] Pointer to variable
     void  	taskp(AstNodeFTask* taskp) { m_taskp=taskp; }
-    void	name(const string& name) { m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     void	dotted(const string& name) { m_dotted = name; }
     // op1 = namep
     AstNode*	namep()		const { return op1p(); }

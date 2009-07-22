@@ -308,7 +308,7 @@ public:
     void	funcReturn(bool flag) { m_funcReturn = flag; }
     void	trace(bool flag) { m_trace=flag; }
     // METHODS
-    void 	name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     bool	isInput() const { return m_input; }
     bool	isOutput() const { return m_output; }
     bool	isInOnly() const { return m_input && !m_output; }
@@ -425,7 +425,7 @@ public:
     virtual bool broken() const;
     virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }		// * = Scope name
-    void name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     string nameDotless() const;
     string nameVlSym() const { return (((string)"vlSymsp->") + nameDotless()); }
     AstModule* modp()		const { return m_modp; }
@@ -565,7 +565,7 @@ public:
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modVarp && !m_modVarp->brokeExists()); }
     virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
-    void	name(const string& name)     { m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
@@ -605,7 +605,7 @@ public:
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
-    void name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     string origName() const	{ return m_origName; }
     bool inLibrary() const 	{ return m_inLibrary; }
     void inLibrary(bool flag) 	{ m_inLibrary = flag; }
@@ -642,7 +642,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     // ACCESSORS
     virtual string name()	const { return m_name; }		// * = Cell name
-    void name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
     string origName()		const { return m_origName; }		// * = Original name
     void origName(const string& name) 	{ m_origName = name; }
     string modName()		const { return m_modName; }		// * = Instance name
@@ -672,7 +672,7 @@ public:
     // ACCESSORS
     virtual string name()	const { return m_name; }		// * = Cell name
     string origModName()	const { return m_origModName; }		// * = modp()->origName() before inlining
-    void name(const string& name) 	{ m_name = name; }
+    virtual void name(const string& name) { m_name = name; }
 };
 
 struct AstPort : public AstNode {
@@ -707,7 +707,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Begin, BEGIN)
     virtual string name()	const { return m_name; }		// * = Block name
-    void name(const string& flag) { m_name=flag; }
+    virtual void name(const string& name) { m_name = name; }
     // op1 = Statements
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
@@ -2627,7 +2627,7 @@ public:
     virtual string name()	const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(AstNode* samep) const { return samep->name() == name(); }
-    void name(const string& flag) { m_name = flag; }
+    virtual void name(const string& name) { m_name = name; }
     AstNode*	propp()		const { return op1p(); }	// op1 = property
     AstSenTree*	sentreep()	const { return op2p()->castSenTree(); }	// op2 = clock domain
     void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
@@ -2809,7 +2809,7 @@ public:
 						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())
 						      && (argTypes()==samep->castCFunc()->argTypes())); }
     //
-    void	name(const string& flag) { m_name = flag; }
+    virtual void name(const string& name) { m_name = name; }
     AstScope*	scopep() const { return m_scopep; }
     void	scopep(AstScope* nodep) { m_scopep = nodep; }
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }

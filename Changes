@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support SystemVerilog "logic", bug101.  [by Alex Duller]
 
+***  Name SYMRSVDWORD error, and allow disabling it, bug103. [Gary Thomas]
+
 * Verilator 3.712 2009/07/14
 
 **   Patching SystemC is no longer required to trace sc_bvs.
