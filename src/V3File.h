@@ -123,7 +123,7 @@ public:
     bool exceededWidth() const { return m_column > WIDTH; }
     bool tokenStart(const char* cp, const char* cmp);
     bool tokenEnd(const char* cp);
-    void indentInc() { m_indentLevel += INDBLK; };
+    void indentInc() { m_indentLevel += INDBLK; }
     void indentDec() {
 	m_indentLevel -= INDBLK;
 	UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation\n");

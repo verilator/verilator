@@ -935,7 +935,7 @@ struct AstAssign : public AstNodeAssign {
     }
     ASTNODE_NODE_FUNCS(Assign, ASSIGN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
-    virtual string verilogKwd() const { return "="; };
+    virtual string verilogKwd() const { return "="; }
 };
 
 struct AstAssignAlias : public AstNodeAssign {
@@ -954,7 +954,7 @@ struct AstAssignDly : public AstNodeAssign {
     ASTNODE_NODE_FUNCS(AssignDly, ASSIGNDLY)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignDly(this->fileline(), lhsp, rhsp); }
     virtual bool isGateOptimizable() const { return false; }
-    virtual string verilogKwd() const { return "<="; };
+    virtual string verilogKwd() const { return "<="; }
 };
 
 struct AstAssignW : public AstNodeAssign {
@@ -1242,7 +1242,7 @@ struct AstFClose : public AstNodeStmt {
 	setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FClose, FCLOSE)
-    virtual string verilogKwd() const { return "$fclose"; };
+    virtual string verilogKwd() const { return "$fclose"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }
@@ -1262,7 +1262,7 @@ struct AstFOpen : public AstNodeStmt {
 	setOp3p(modep);
     }
     ASTNODE_NODE_FUNCS(FOpen, FOPEN)
-    virtual string verilogKwd() const { return "$fclose"; };
+    virtual string verilogKwd() const { return "$fclose"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }
@@ -1283,7 +1283,7 @@ struct AstFFlush : public AstNodeStmt {
 	setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FFlush, FFLUSH)
-    virtual string verilogKwd() const { return "$fflush"; };
+    virtual string verilogKwd() const { return "$fflush"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }
@@ -1371,7 +1371,7 @@ public:
 	setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
     }
     ASTNODE_NODE_FUNCS(ReadMem, READMEM)
-    virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); };
+    virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }

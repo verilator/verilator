@@ -103,7 +103,7 @@ public: // But for internal use only
     }
 
     // Return next token, for bison, since bison isn't class based, use a global THIS
-    static int yylex() { return s_readp->yylexThis(); };
+    static int yylex() { return s_readp->yylexThis(); }
     static FileLine* fileline() { return s_readp->m_fileline; }
     static AstNetlist* rootp() { return s_readp->m_rootp; }
     static FileLine* copyOrSameFileLine() { return s_readp->fileline()->copyOrSameFileLine(); }

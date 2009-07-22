@@ -67,7 +67,7 @@
 	int	m_minWidth;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
 	Stage	m_stage;	// If true, report errors
     public:
-	WidthVP(int width, int minWidth, Stage stage) : m_width(width), m_minWidth(minWidth), m_stage(stage) {};
+	WidthVP(int width, int minWidth, Stage stage) : m_width(width), m_minWidth(minWidth), m_stage(stage) {}
 	int width() const { return m_width; }
 	int widthMin() const { return m_minWidth?m_minWidth:m_width; }
 	bool prelim() const { return m_stage&1; }

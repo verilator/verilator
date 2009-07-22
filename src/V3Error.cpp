@@ -46,7 +46,7 @@ bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::MAX];
 
 struct v3errorIniter {
-    v3errorIniter() {  V3Error::init(); };
+    v3errorIniter() {  V3Error::init(); }
 };
 v3errorIniter v3errorInit;
 
@@ -358,7 +358,7 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 	    // If first warning is not the user's fault (internal/unsupported) then give the website
 	    // Not later warnings, as a internal may be caused by an earlier problem
 	    if (s_tellManual == 0) {
-		if (s_errorCode==V3ErrorCode::FATALSRC
+		if (s_errorCode.mentionManual()
 		    || sstr.str().find("Unsupported") != string::npos) {
 		    s_tellManual = 1;
 		} else {

@@ -43,7 +43,7 @@ public:
     V3OutCFile(const string& filename) : V3OutFile(filename) {
 	resetPrivate();
     }
-    virtual ~V3OutCFile() {};
+    virtual ~V3OutCFile() {}
     virtual void putsCellDecl(const string& classname, const string& cellname) {
 	this->printf("%-19s\t%s;\n",
 		     (classname + "*").c_str(),cellname.c_str());
@@ -66,7 +66,7 @@ public:
 class V3OutScFile : public V3OutCFile {
 public:
     V3OutScFile(const string& filename) : V3OutCFile(filename) {}
-    virtual ~V3OutScFile() {};
+    virtual ~V3OutScFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
 	puts("#include \"systemc.h\"\n");
@@ -77,7 +77,7 @@ public:
 class V3OutSpFile : public V3OutCFile {
 public:
     V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
-    virtual ~V3OutSpFile() {};
+    virtual ~V3OutSpFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
 	puts("#include \"systemperl.h\"\n");
@@ -88,14 +88,14 @@ public:
 class V3OutVFile : public V3OutFile {
 public:
     V3OutVFile(const string& filename) : V3OutFile(filename) {}
-    virtual ~V3OutVFile() {};
+    virtual ~V3OutVFile() {}
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
 class V3OutMkFile : public V3OutFile {
 public:
     V3OutMkFile(const string& filename) : V3OutFile(filename) {}
-    virtual ~V3OutMkFile() {};
+    virtual ~V3OutMkFile() {}
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }
@@ -110,7 +110,7 @@ public:
     // STATE
     V3OutCFile*	m_ofp;
     // METHODS
-    V3OutCFile*	ofp() const { return m_ofp; };
+    V3OutCFile*	ofp() const { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
     void putbs(const string& str) { ofp()->putbs(str); }
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }

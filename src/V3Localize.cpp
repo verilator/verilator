@@ -69,7 +69,7 @@ protected:
 	};
 	uint32_t m_flags;
 	VarFlags(AstNode* nodep) { m_flags = nodep->user2(); }
-	void setNodeFlags(AstNode* nodep) { nodep->user2(m_flags); };
+	void setNodeFlags(AstNode* nodep) { nodep->user2(m_flags); }
     };
 };
 

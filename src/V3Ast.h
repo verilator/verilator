@@ -41,10 +41,10 @@ public:
     //   enum en {...};
     //   const char* ascii() const {...};
     enum en m_e;
-    inline AstType () {};
-    inline AstType (en _e) : m_e(_e) {};
-    explicit inline AstType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstType () {}
+    inline AstType (en _e) : m_e(_e) {}
+    explicit inline AstType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
   };
   inline bool operator== (AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstType lhs, AstType::en rhs) { return (lhs.m_e == rhs); }
@@ -64,10 +64,10 @@ public:
 	PUBLIC_TASK
     };
     enum en m_e;
-    inline AstPragmaType () {};
-    inline AstPragmaType (en _e) : m_e(_e) {};
-    explicit inline AstPragmaType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstPragmaType () {}
+    inline AstPragmaType (en _e) : m_e(_e) {}
+    explicit inline AstPragmaType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
   };
   inline bool operator== (AstPragmaType lhs, AstPragmaType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstPragmaType lhs, AstPragmaType::en rhs) { return (lhs.m_e == rhs); }
@@ -87,10 +87,10 @@ public:
 	TRACE_CHANGE_SUB
     };
     enum en m_e;
-    inline AstCFuncType () {};
-    inline AstCFuncType (en _e) : m_e(_e) {};
-    explicit inline AstCFuncType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstCFuncType () {}
+    inline AstCFuncType (en _e) : m_e(_e) {}
+    explicit inline AstCFuncType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     // METHODS
     bool isTrace() const { return (m_e==TRACE_INIT || m_e==TRACE_INIT_SUB
 				   || m_e==TRACE_FULL || m_e==TRACE_FULL_SUB
@@ -155,10 +155,10 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstEdgeType () {};
-    inline AstEdgeType (en _e) : m_e(_e) {};
-    explicit inline AstEdgeType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstEdgeType () {}
+    inline AstEdgeType (en _e) : m_e(_e) {}
+    explicit inline AstEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
   };
   inline bool operator== (AstEdgeType lhs, AstEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstEdgeType lhs, AstEdgeType::en rhs) { return (lhs.m_e == rhs); }
@@ -188,10 +188,10 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstAttrType () {};
-    inline AstAttrType (en _e) : m_e(_e) {};
-    explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstAttrType () {}
+    inline AstAttrType (en _e) : m_e(_e) {}
+    explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
   };
   inline bool operator== (AstAttrType lhs, AstAttrType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstAttrType lhs, AstAttrType::en rhs) { return (lhs.m_e == rhs); }
@@ -223,17 +223,17 @@ public:
 	XTEMP
     };
     enum en m_e;
-    inline AstVarType () {};
-    inline AstVarType (en _e) : m_e(_e) {};
-    explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstVarType () {}
+    inline AstVarType (en _e) : m_e(_e) {}
+    explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     const char* ascii() const {
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "INTEGER","INPUT","OUTPUT","INOUT",
 	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","REG","TRIWIRE","PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
-	return names[m_e];};
+	return names[m_e]; }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
@@ -252,10 +252,10 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstBranchPred () : m_e(UNKNOWN) {};
-    inline AstBranchPred (en _e) : m_e(_e) {};
-    explicit inline AstBranchPred (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstBranchPred () : m_e(UNKNOWN) {}
+    inline AstBranchPred (en _e) : m_e(_e) {}
+    explicit inline AstBranchPred (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     AstBranchPred invert() const {
 	if (m_e==UNLIKELY) return LIKELY;
 	else if (m_e==LIKELY) return UNLIKELY;
@@ -264,7 +264,7 @@ public:
     const char* ascii() const {
 	static const char* names[] = {
 	    "","VL_LIKELY","VL_UNLIKELY"};
-	return names[m_e];};
+	return names[m_e]; }
   };
   inline bool operator== (AstBranchPred lhs, AstBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBranchPred lhs, AstBranchPred::en rhs) { return (lhs.m_e == rhs); }
@@ -281,10 +281,10 @@ public:
 	CASEZ
     };
     enum en m_e;
-    inline AstCaseType () {};
-    inline AstCaseType (en _e) : m_e(_e) {};
-    explicit inline AstCaseType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstCaseType () {}
+    inline AstCaseType (en _e) : m_e(_e) {}
+    explicit inline AstCaseType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
   };
   inline bool operator== (AstCaseType lhs, AstCaseType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstCaseType lhs, AstCaseType::en rhs) { return (lhs.m_e == rhs); }
@@ -303,16 +303,16 @@ public:
 	FATAL
     };
     enum en m_e;
-    inline AstDisplayType () {};
-    inline AstDisplayType (en _e) : m_e(_e) {};
-    explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstDisplayType () {}
+    inline AstDisplayType (en _e) : m_e(_e) {}
+    explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     bool addNewline() const { return m_e!=WRITE; }
     bool needScopeTracking() const { return m_e!=DISPLAY && m_e!=WRITE; }
     const char* ascii() const {
 	static const char* names[] = {
 	    "display","write","info","error","warning","fatal"};
-	return names[m_e];};
+	return names[m_e]; }
   };
   inline bool operator== (AstDisplayType lhs, AstDisplayType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstDisplayType lhs, AstDisplayType::en rhs) { return (lhs.m_e == rhs); }
@@ -331,14 +331,14 @@ public:
 	_ENUM_END
     };
     enum en m_e;
-    inline AstParseRefExp() : m_e(NONE) {};
-    inline AstParseRefExp (en _e) : m_e(_e) {};
-    explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    inline AstParseRefExp() : m_e(NONE) {}
+    inline AstParseRefExp (en _e) : m_e(_e) {}
+    explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     const char* ascii() const {
 	static const char* names[] = {
 	    "","VAR_MEM","VAR_ANY","TASK","FUNC"};
-	return names[m_e];};
+	return names[m_e]; }
   };
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp::en rhs) { return (lhs.m_e == rhs); }
@@ -520,9 +520,9 @@ public:
     uint32_t depth() const { return (m_both >> 24) & 255; }
     uint32_t hshval() const { return m_both & M24; }
     // OPERATORS
-    inline bool operator== (const V3Hash& rh) const { return m_both==rh.m_both; };
-    inline bool operator!= (const V3Hash& rh) const { return m_both!=rh.m_both; };
-    inline bool operator< (const V3Hash& rh) const { return m_both<rh.m_both; };
+    inline bool operator== (const V3Hash& rh) const { return m_both==rh.m_both; }
+    inline bool operator!= (const V3Hash& rh) const { return m_both!=rh.m_both; }
+    inline bool operator< (const V3Hash& rh) const { return m_both<rh.m_both; }
     // CREATORS
     class Illegal {};		// for creator type-overload selection
     class FullValue {};		// for creator type-overload selection

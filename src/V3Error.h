@@ -77,11 +77,11 @@ public:
 	// ***Add new elements below also***
     };
     enum en m_e;
-    inline V3ErrorCode () {};
-    inline V3ErrorCode (en _e) : m_e(_e) {};
+    inline V3ErrorCode () {}
+    inline V3ErrorCode (en _e) : m_e(_e) {}
     V3ErrorCode (const char* msgp);	// Matching code or ERROR
-    explicit inline V3ErrorCode (int _e) : m_e(static_cast<en>(_e)) {};
-    operator en () const { return m_e; };
+    explicit inline V3ErrorCode (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
@@ -101,14 +101,17 @@ public:
 	    " MAX"
 	};
 	return names[m_e];
-    };
+    }
     // Warnings that default to off
-    bool defaultsOff() const { return ( m_e==IMPERFECTSCH );};
+    bool defaultsOff() const { return ( m_e==IMPERFECTSCH ); }
     // Warnings that warn about nasty side effects
-    bool dangerous() const { return ( m_e==COMBDLY );};
+    bool dangerous() const { return ( m_e==COMBDLY ); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE); };
+    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE ); }
+    // Warnings to mention manual
+    bool mentionManual() const { return ( m_e==FATALSRC || pretendError() ); }
+
     // Warnings that are lint only
     bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
 				      || m_e==CASEWITHX || m_e==CASEX
@@ -116,7 +119,7 @@ public:
 				      || m_e==IMPLICIT
 				      || m_e==UNDRIVEN || m_e==UNSIGNED
 				      || m_e==UNUSED || m_e==VARHIDDEN
-				      || m_e==WIDTH); };
+				      || m_e==WIDTH); }
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }

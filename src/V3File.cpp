@@ -62,7 +62,7 @@ class V3FileDependImp {
 		}
 	    }
 	}
-	bool operator<(const DependFile& rhs) const { return filename()<rhs.filename(); };
+	bool operator<(const DependFile& rhs) const { return filename()<rhs.filename(); }
     };
 
     // MEMBERS

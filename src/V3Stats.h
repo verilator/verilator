@@ -34,19 +34,19 @@ class V3Double0 {
     double	m_d;	///< Count of occurrences/ value
 public:
     // METHODS
-    V3Double0() : m_d(0) {};
+    V3Double0() : m_d(0) {}
     ~V3Double0() {}
 
     // Implicit conversion operators:
-    inline V3Double0 (const vluint64_t v) : m_d(v) { };
-    inline operator double () const { return m_d; };
+    inline V3Double0 (const vluint64_t v) : m_d(v) { }
+    inline operator double () const { return m_d; }
 
     // Explicit operators:
-    inline V3Double0& operator++() { ++m_d; return *this; };	// prefix
-    inline V3Double0  operator++(int) { V3Double0 old=*this; m_d++; return old; };	// postfix
-    inline V3Double0& operator= (const double v) { m_d = v; return *this; };
-    inline V3Double0& operator+=(const double v) { m_d += v; return *this; };
-    inline V3Double0& operator-=(const double v) { m_d -= v; return *this; };
+    inline V3Double0& operator++() { ++m_d; return *this; }	// prefix
+    inline V3Double0  operator++(int) { V3Double0 old=*this; m_d++; return old; }	// postfix
+    inline V3Double0& operator= (const double v) { m_d = v; return *this; }
+    inline V3Double0& operator+=(const double v) { m_d += v; return *this; }
+    inline V3Double0& operator-=(const double v) { m_d -= v; return *this; }
 };
 
 //============================================================================

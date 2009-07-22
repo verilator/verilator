@@ -108,7 +108,7 @@ public:
     class VerilogString {};	// for creator type-overload selection
     // CONSTRUCTORS
     V3Number(FileLine* fileline) { init(fileline, 1); }
-    V3Number(FileLine* fileline, int width) { init(fileline, width); };  // 0=unsized
+    V3Number(FileLine* fileline, int width) { init(fileline, width); }  // 0=unsized
     V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; }
     V3Number(FileLine* fileline, const char* source);	// Create from a verilog 32'hxxxx number.
     V3Number(VerilogString, FileLine* fileline, const string& vvalue);

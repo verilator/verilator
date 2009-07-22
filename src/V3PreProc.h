@@ -83,7 +83,7 @@ protected:
     };
 public:
     static V3PreProc* createPreProc(FileLine* fileline);
-    virtual ~V3PreProc() {};
+    virtual ~V3PreProc() {}
 };
 
 #endif // Guard

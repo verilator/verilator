@@ -461,7 +461,7 @@ class EmitVFileVisitor : public EmitVBaseVisitor {
     // MEMBERS
     V3OutFile*	m_ofp;
     // METHODS
-    V3OutFile*	ofp() const { return m_ofp; };
+    V3OutFile*	ofp() const { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
     void putbs(const string& str) { ofp()->putbs(str); }
     void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
