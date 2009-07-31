@@ -69,7 +69,7 @@ wsn		[ \t\f]
 crnl		[\r]*[\n]
 quote		[\"]
 backslash	[\\]
-symb		[a-zA-Z_][a-zA-Z0-9_$]*
+symb		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n]+)
 drop		[\032]
 psl		[p]sl
 
