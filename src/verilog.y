@@ -113,6 +113,12 @@ static AstNode* newVarInit(FileLine* fileline, AstNode* varp, AstNode* initp) {
 
 #define INSTPREP(modname,paramsp) { V3Parse::s_impliedDecl = true; V3Parse::s_instModule = modname; V3Parse::s_instParamp = paramsp; }
 
+static void ERRSVKWD(FileLine* fileline, const string& tokname) {
+    static int toldonce = 0;
+    fileline->v3error((string)"Unexpected \""+tokname+"\": \""+tokname+"\" is a SystemVerilog keyword misused as an identifier.");
+    if (!toldonce++) fileline->v3error("Modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.");
+}
+
 //======================================================================
 
 class AstSenTree;
@@ -657,6 +663,7 @@ port_declNetE:			// IEEE: part of port_declaration, optional net type
  
 portSig<portp>:
 		id/*port*/				{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
+	|	idSVKwd					{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
  	;
 
 //**********************************************************************
@@ -854,6 +861,7 @@ variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
 	|	id variable_dimensionListE sigAttrListE '=' variable_declExpr
 			{ $$ = VARDONEA(*$1,$2,$3);
 			  $$->addNext(new AstInitial($4,new AstAssign($4, new AstVarRef($4, *$1, true), $5))); }
+	|	idSVKwd					{ $$ = NULL; }
 	//
 	//			// IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
 	//			// Matches above with variable_dimensionE = "[]"
@@ -1189,6 +1197,7 @@ netSig<varp>:			// IEEE: net_decl_assignment -  one element from list_of_port_id
 
 netId<strp>:
 		id/*new-net*/				{ $$ = $1; }
+	|	idSVKwd					{ $$ = $1; }
 	;
 
 sigId<varp>:
@@ -1315,6 +1324,7 @@ cellpinItList<pinp>:		// IEEE: list_of_port_connections + list_of_parameter_assi
 cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment + empty
 		/* empty: ',,' is legal */		{ $$ = NULL; PINNUMINC(); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
+	|	'.' idSVKwd				{ $$ = NULL; PINNUMINC(); }
 	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = NULL; PINNUMINC(); }
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
@@ -2284,6 +2294,12 @@ idAny<strp>:			// Any kind of identifier
 	//UNSUP	yaID__aPACKAGE				{ $$ = $1; }
 	//UNSUP	yaID__aTYPE				{ $$ = $1; }
 		yaID__ETC				{ $$ = $1; }
+	;
+
+idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
+	//			// yBIT, yBYTE won't work here as causes conflicts
+		yDO					{ static string s = "do"   ; $$ = &s; ERRSVKWD($1,*$$); }
+	|	yFINAL					{ static string s = "final"; $$ = &s; ERRSVKWD($1,*$$); }
 	;
 
 variable_lvalue<nodep>:		// IEEE: variable_lvalue or net_lvalue
