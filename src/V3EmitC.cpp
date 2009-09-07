@@ -1796,10 +1796,13 @@ class EmitCTrace : EmitCStmts {
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 
 	//Future; need to wait to estabilish backwards compatibility
-	//puts("#if defined(SPTRACEVCDC_VERSION) && SPTRACEVCDC_VERSION >= 1320\n");
-	//puts("vcdp->scopeEscape(' ');\n");
+	puts("#if defined(SPTRACEVCDC_VERSION) && SPTRACEVCDC_VERSION >= 1330\n");
+	puts("vcdp->scopeEscape(' ');\n");
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
-	//puts("vcdp->scopeEscape('.');\n");  // Restore so SystemPerl traced files won't break
+	puts("vcdp->scopeEscape('.');\n");  // Restore so SystemPerl traced files won't break
+	puts("#else\n");
+	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
+	puts("#endif\n");
 	puts("}\n");
 
 	puts("void "+topClassName()+"::traceFull(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
