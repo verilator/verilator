@@ -179,7 +179,7 @@ private:
 	    if (!inPct && ch=='%') {
 		inPct = true;
 	    } else if (inPct && isdigit(ch)) {
-	    } else if (inPct) {
+	    } else if (tolower(inPct)) {
 		inPct = false;
 		switch (tolower(ch)) {
 		case '%': break;  // %% - just output a %

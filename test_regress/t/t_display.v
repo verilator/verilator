@@ -52,7 +52,7 @@ module sub;
       begin
 	 $write("[%0t] In %m\n", $time);
 	 begin : subblock
-	    $write("[%0t] In %m\n", $time);
+	    $write("[%0t] In %M\n", $time); // Uppercase %M test
 	 end
       end
    endtask

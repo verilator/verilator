@@ -361,7 +361,7 @@ private:
 		inPct = true;
 	    } else if (inPct) {
 		inPct = false;
-		switch (ch) {
+		switch (tolower(ch)) {
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 		    inPct = true;
@@ -441,7 +441,8 @@ private:
 	    nodep->v3error(nodep->verilogKwd()+" only allowed under a assertion.");
 	}
 	if (nodep->displayType().needScopeTracking()
-	    || nodep->name().find("%m") != string::npos) {
+	    || nodep->name().find("%m") != string::npos
+	    || nodep->name().find("%M") != string::npos) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
