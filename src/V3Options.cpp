@@ -577,7 +577,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "-error-limit") ) {
 		shift;
-		m_inlineMult = atoi(argv[i]);
+		m_errorLimit = atoi(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-inline-mult") ) {
 		shift;

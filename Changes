@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix $display with uppercase %M.
 
+**** Fix --error-limit option being ignored.
+
 * Verilator 3.713 2009/08/04
 
 **   Support constant function calls for parameters. [many!]
