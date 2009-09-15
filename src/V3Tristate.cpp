@@ -650,6 +650,7 @@ private:
 	    if (nodep->modVarp()->user1p()) {
 		// create the input pin
 		AstVarRef* refp = nodep->exprp()->castVarRef();
+		if (!refp) nodep->v3fatal("Unsupported: Tristate pin not connected to simple net");
 		AstVar* inp;
 		if (refp->varp()->user1p()) { // this is a tristate
 		    inp = (AstVar*) refp->varp()->user1p();
