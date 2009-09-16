@@ -236,7 +236,7 @@ sub new {
 	sim_time => 1000,
 	benchmark => $opt_benchmark,
 	# All compilers
-	v_flags => [split(/\s+/,(" -f input.vc --debug-check"
+	v_flags => [split(/\s+/,(" -f input.vc "
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
 				 .($opt_trace ? " +define+WAVES=1":"")
@@ -245,7 +245,7 @@ sub new {
 	v_other_filenames => [],	# After the filename so we can spec multiple files
 	# VCS
 	vcs => 0,
-	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q +v2k")],
+	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q -sverilog")],
 	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
@@ -255,7 +255,8 @@ sub new {
 	# Verilator
 	'v3' => 0,
 	verilator_flags => ["-cc",
-			    "-Mdir $self->{obj_dir}"],
+			    "-Mdir $self->{obj_dir}",
+			    "--debug-check"],
 	verilator_flags2 => [],
 	verilator_make_gcc => 1,
 	verilated_debug => $Opt_Verilated_Debug,

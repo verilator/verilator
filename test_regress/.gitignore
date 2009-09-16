@@ -10,3 +10,4 @@ simx*
 ncverilog.*
 INCA_libs
 logs
+.vcsmx_rebuild
