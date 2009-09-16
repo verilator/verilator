@@ -94,6 +94,7 @@ class V3Options {
     bool	m_makePhony;	// main switch: -MP
     bool	m_assert;	// main switch: --assert
     bool	m_autoflush;	// main switch: --autoflush
+    bool	m_bboxSys;	// main switch: --bbox-sys
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageToggle;// main switch: --coverage-toggle
     bool	m_coverageUser;	// main switch: --coverage-func
@@ -204,6 +205,7 @@ class V3Options {
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }
+    bool bboxSys() const { return m_bboxSys; }
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }

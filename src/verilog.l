@@ -44,6 +44,10 @@ extern void yyerrorf(const char* format, ...);
 
 #define FL { yylval.fileline = CRELINE(); }
 
+#define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {	\
+	if (v3Global.opt.bboxSys()) return yD_aIGNORE; \
+	else yyerrorf(msg,yytext); }
+
 void V3Read::ppline (const char* textp) {
     // Handle `line directive
     fileline()->lineDirective(textp);
@@ -239,18 +243,18 @@ escid	\\[^ \t\f\r\n]+
   "xnor"		{ FL; return yXNOR; }
   "xor"			{ FL; return yXOR; }
   /*     Special errors */
-  "$displayb"		{ yyerrorf("Unsupported: Use $display with %%b format instead: %s",yytext); }
-  "$displayh"		{ yyerrorf("Unsupported: Use $display with %%x format instead: %s",yytext); }
-  "$displayo"		{ yyerrorf("Unsupported: Use $display with %%o format instead: %s",yytext); }
-  "$fdisplayb"		{ yyerrorf("Unsupported: Use $fdisplay with %%b format instead: %s",yytext); }
-  "$fdisplayh"		{ yyerrorf("Unsupported: Use $fdisplay with %%x format instead: %s",yytext); }
-  "$fdisplayo"		{ yyerrorf("Unsupported: Use $fdisplay with %%o format instead: %s",yytext); }
-  "$fwriteb"		{ yyerrorf("Unsupported: Use $fwrite with %%b format instead: %s",yytext); }
-  "$fwriteh"		{ yyerrorf("Unsupported: Use $fwrite with %%x format instead: %s",yytext); }
-  "$fwriteo"		{ yyerrorf("Unsupported: Use $fwrite with %%o format instead: %s",yytext); }
-  "$writeb"		{ yyerrorf("Unsupported: Use $write with %%b format instead: %s",yytext); }
-  "$writeh"		{ yyerrorf("Unsupported: Use $write with %%x format instead: %s",yytext); }
-  "$writeo"		{ yyerrorf("Unsupported: Use $write with %%o format instead: %s",yytext); }
+  "$displayb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s",yytext); }
+  "$displayh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s",yytext); }
+  "$displayo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s",yytext); }
+  "$fdisplayb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s",yytext); }
+  "$fdisplayh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s",yytext); }
+  "$fdisplayo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s",yytext); }
+  "$fwriteb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s",yytext); }
+  "$fwriteh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s",yytext); }
+  "$fwriteo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s",yytext); }
+  "$writeb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s",yytext); }
+  "$writeh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
+  "$writeo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
   /*     Generic unsupported warnings */
   "cmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "deassign"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -461,7 +465,7 @@ escid	\\[^ \t\f\r\n]+
 
   /* Default PLI rule */
 <V95,V01,V05,S05,PSL>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ yyerrorf("Unsupported or unknown PLI call: %s",yytext); }
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s",yytext); }
 }
 
   /************************************************************************/

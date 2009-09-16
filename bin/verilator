@@ -179,6 +179,7 @@ descriptions in the next sections for more information.
 
     --assert                    Enable all assertions
     --autoflush                 Flush streams after all $displays
+    --bbox-sys                  Blackbox unknown $system calls
     --bin <filename>            Override Verilator binary
     --cc                        Create C++ output
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -193,7 +194,7 @@ descriptions in the next sections for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --dump-tree                 Enable dumping .tree files
     -E                          Preprocess, but do not compile
-    --error-limit <value>	Abort after this number of errors
+    --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
     -f <file>                   Parse options from a file
     --help                      Display this help.
@@ -228,11 +229,14 @@ descriptions in the next sections for more information.
     --trace-depth <levels>      Depth of tracing
     -U<var>                     Undefine preprocessor define
     --underline-zero            Zero signals with leading _'s
-    -V				Verbose version and config
+    --unroll-count <loops>      Tune maximum loop iterations
+    --unroll-stmts <stmts>      Tune maximum loop body size
+    -V                          Verbose version and config
     -v <filename>               Verilog library
     -Werror-<message>           Convert warning to error
     -Wfuture-<message>          Disable unknown message warnings
     -Wno-<message>              Disable warning
+    -Wno-lint                   Disable all lint warnings
     -x-assign <mode>            Initially assign Xs to this value
     -y <dir>                    Directory to search for modules
 
@@ -268,6 +272,14 @@ See also --x-assign; setting "--x-assign unique" may be desirable.
 After every $display or $fdisplay, flush the output stream.  This insures
 that messages will appear immediately but may reduce performance.  Defaults
 off, which will buffer output as provided by the normal C stdio calls.
+
+=item --bbox-sys
+
+Black box any unknown $system task or function calls.  System tasks will be
+simply NOPed, and system functions will be replaced by unsized zero.
+Arguments to such functions will be parsed, but not otherwise checked.
+This prevents errors when linting in the presence of company specific PLI
+calls.
 
 =item --bin I<filename>
 
@@ -440,6 +452,9 @@ appropriate `begin_keywords.
 =item --lint-only
 
 Check the files for lint violations only, do not create any other output.
+
+If the design is not to be completely Verilated see also the --bbox-sys
+option.
 
 =item --MMD
 

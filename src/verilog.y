@@ -327,6 +327,7 @@ class AstSenTree;
 %token<fileline>	yD_UNSIGNED	"$unsigned"
 %token<fileline>	yD_WARNING	"$warning"
 %token<fileline>	yD_WRITE	"$write"
+%token<fileline>	yD_aIGNORE	"${ignored-bbox-sys}"
 
 %token<fileline>	yPSL		"psl"
 %token<fileline>	yPSL_ASSERT	"PSL assert"
@@ -1663,7 +1664,10 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
-		yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
+		yD_aIGNORE  '(' ')'			{ $$ = NULL; }
+	|	yD_aIGNORE  '(' exprList ')'		{ $$ = NULL; }
+	//
+	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH				{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
 	|	yD_FFLUSH '(' ')'			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
@@ -1697,7 +1701,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
-		yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
+		yD_aIGNORE '(' ')'			{ $$ = new AstConst($1,V3Number($1,0,0)); } // Unsized 0
+	|	yD_aIGNORE '(' exprList ')'		{ $$ = new AstConst($1,V3Number($1,0,0)); } // Unsized 0
+	//
+	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
