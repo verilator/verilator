@@ -313,15 +313,24 @@ private:
 	    if (m_warn
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
-		&& (!varp->rangep() || varp->msb())  // else it's non-resolvable parameterized
-		&& ( (  (nodep->msbConst() > varp->msbMaxSelect())
-			|| (nodep->lsbConst() > varp->msbMaxSelect())))) {
-		// See also warning in V3Width
-		nodep->v3error("Selection index out of range: "
-			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
-			       <<" outside "<<varp->msbMaxSelect()<<":0"
-			       <<(varp->lsb()>=0 ? ""
-				  :" (adjusted +"+cvtToStr(-varp->lsb())+" to account for negative lsb)"));
+		&& (!varp->rangep() || varp->msb())) {  // else it's non-resolvable parameterized
+		if (nodep->lsbp()->castConst()->num().isFourState()
+		    || nodep->widthp()->castConst()->num().isFourState()) {
+		    nodep->v3error("Selection index is constantly unknown or tristated: "
+				   "lsb="<<nodep->lsbp()->name()<<" width="<<nodep->widthp()->name());
+		    // Replacing nodep will make a mess above, so we replace the offender
+		    replaceZero(nodep->lsbp());
+		}
+		else if ((nodep->msbConst() > varp->msbMaxSelect())
+			 || (nodep->lsbConst() > varp->msbMaxSelect())) {
+		    // See also warning in V3Width
+		    nodep->v3error("Selection index out of range: "
+				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
+				   <<" outside "<<varp->msbMaxSelect()<<":0"
+				   <<(varp->lsb()>=0 ? ""
+				      :" (adjusted +"+cvtToStr(-varp->lsb())+" to account for negative lsb)"));
+		    // Don't replace with zero, we'll do it later
+		}
 	    }
 	}
 	return false;  // Not a transform, so NOP
@@ -367,7 +376,9 @@ private:
     void replaceNum (AstNode* oldp, const V3Number& num) {
 	// Replace oldp node with a constant set to specified value
 	UASSERT (oldp, "Null old\n");
-	if (oldp->castConst()) oldp->v3fatalSrc("Already constant??\n");
+	if (oldp->castConst() && !oldp->castConst()->num().isFourState()) {
+	    oldp->v3fatalSrc("Already constant??\n");
+	}
 	AstNode* newp = new AstConst(oldp->fileline(), num);
 	newp->widthSignedFrom(oldp);
 	if (debug()>5) oldp->dumpTree(cout,"  const_old: ");
