@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Improved warning when "do" used as identifier.
 
+**** Don't require SYSTEMPERL_INCLUDE if SYSTEMPERL/src exists. [Gary Thomas]
+
 **** Fix tracing escaped dotted identifiers, bug107.
 
 **** Fix $display with uppercase %M.
