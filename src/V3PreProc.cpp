@@ -160,6 +160,7 @@ private:
 
     bool commentTokenMatch(string& cmdr, const char* strg);
     string trimWhitespace(const string& strg);
+    void unputString(const string& strg);
 
     void parsingOn() {
 	m_off--;
@@ -386,6 +387,18 @@ const char* V3PreProcImp::tokenName(int tok) {
     }
 }
 
+void V3PreProcImp::unputString(const string& strg) {
+    // We used to just m_lexp->unputString(strg.c_str());
+    // However this can lead to "flex scanner push-back overflow"
+    // so instead we scan from a temporary buffer, then on EOF return.
+    // This is also faster than the old scheme, amazingly.
+    if (m_lexp->m_bufferStack.empty() || m_lexp->m_bufferStack.top()!=m_lexp->currentBuffer()) {
+	fileline()->v3fatalSrc("bufferStack missing current buffer; will return incorrectly");
+	// Hard to debug lost text as won't know till much later
+    }
+    m_lexp->scanBytes(strg);
+}
+
 string V3PreProcImp::trimWhitespace(const string& strg) {
     string out = strg;
     while (out.length()>0 && isspace(out[0])) {
@@ -535,7 +548,6 @@ void V3PreProcImp::openFile(FileLine* fl, const string& filename) {
     addLineComment(1); // Enter
 
     yy_flex_debug = (debug()>4)?1:0;
-    yy_switch_to_buffer(m_lexp->m_yyState);
 }
 
 void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
@@ -560,16 +572,27 @@ void V3PreProcImp::addLineComment(int enter_exit_level) {
 }
 
 void V3PreProcImp::eof() {
-    // Remove current lexer
-    UINFO(4,fileline()<<"EOF!\n");
-    addLineComment(2);	// Exit
-    delete m_lexp;  m_lexp=NULL;
-    // Perhaps there's a parent file including us?
-    if (!m_includeStack.empty()) {
-	// Back to parent.
-	m_lexp = m_includeStack.top(); m_includeStack.pop();
-	addLineComment(0);
-	yy_switch_to_buffer(m_lexp->m_yyState);
+    // Perhaps we're completing unputString
+    if (m_lexp->m_bufferStack.size()>1) {
+	UINFO(4,fileline()<<"EOS\n");
+	// Switch to file or next unputString, but not a eof so don't delete lexer
+	yy_delete_buffer(m_lexp->currentBuffer());
+	m_lexp->m_bufferStack.pop();  // Must work as size>1
+	yy_switch_to_buffer(m_lexp->m_bufferStack.top());
+    } else {
+	// Remove current lexer
+	UINFO(4,fileline()<<"EOF!\n");
+	addLineComment(2);	// Exit
+	// Destructor will call yy_delete_buffer
+	delete m_lexp;  m_lexp=NULL;
+	// Perhaps there's a parent file including us?
+	if (!m_includeStack.empty()) {
+	    // Back to parent.
+	    m_lexp = m_includeStack.top(); m_includeStack.pop();
+	    addLineComment(0);
+	    if (m_lexp->m_bufferStack.empty()) fileline()->v3fatalSrc("No include buffer to return to");
+	    yy_switch_to_buffer(m_lexp->m_bufferStack.top());  // newest buffer in older lexer
+	}
     }
 }
 
@@ -808,7 +831,7 @@ int V3PreProcImp::getToken() {
 		// Similar code in non-parenthesized define (Search for END_OF_DEFARG)
 		m_defRefs.pop();
 		if (m_defRefs.empty()) {
-		    m_lexp->unputString(out.c_str());
+		    unputString(out.c_str());
 		    m_state = ps_TOP;
 		    m_lexp->m_parenLevel = 0;
 		}
@@ -941,7 +964,7 @@ int V3PreProcImp::getToken() {
 			// Similar code in parenthesized define (Search for END_OF_DEFARG)
 			if (m_defRefs.empty()) {
 			    // Just output the substitution
-			    m_lexp->unputString(out.c_str());
+			    unputString(out.c_str());
 			} else {
 			    // Inside another define.  Can't subst now, or
 			    // `define a x,y

@@ -26,6 +26,8 @@
 #ifndef _VPREPROCLEX_H_		// Guard
 #define _VPREPROCLEX_H_ 1
 
+#include <stack>
+
 #include "V3Error.h"
 
 // Token codes
@@ -105,7 +107,7 @@ class V3PreLex {
 
     // Parse state
     FILE*	m_fp;		// File state is for
-    YY_BUFFER_STATE  m_yyState;	// flex input state
+    stack<YY_BUFFER_STATE> m_bufferStack; // Stack of inserted text above current point
 
     // State to lexer
     static V3PreLex* s_currentLexp;	// Current lexing point
@@ -121,14 +123,18 @@ class V3PreLex {
     // CONSTRUCTORS
     V3PreLex(FILE* fp) {
 	m_fp = fp;
-	m_yyState = yy_create_buffer (fp, YY_BUF_SIZE);
 	m_keepComments = 0;
 	m_pedantic = false;
 	m_parenLevel = 0;
 	m_pslParenLevel = 0;
 	m_pslMoreNeeded = false;
+	m_bufferStack.push(yy_create_buffer (fp, YY_BUF_SIZE));
+	yy_switch_to_buffer(m_bufferStack.top());
     }
-    ~V3PreLex() { fclose(m_fp); yy_delete_buffer(m_yyState); }
+    ~V3PreLex() {
+	fclose(m_fp);
+	while (!m_bufferStack.empty()) { yy_delete_buffer(m_bufferStack.top()); m_bufferStack.pop(); }
+    }
 
     // Called by V3PreLex.l from lexer
     void appendDefValue(const char* text, int len);
@@ -139,9 +145,11 @@ class V3PreLex {
     void pushStateDefForm();
     void pushStateDefValue();
     void pushStateIncFilename();
-    void unputString(const char* textp);
+    void scanBytes(const string& strg);
     /// Called by VPreproc.cpp to get data from lexer
+    YY_BUFFER_STATE currentBuffer();
     int	 currentStartState();
+    void dumpStack();
 };
 
 #endif // Guard

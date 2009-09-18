@@ -1,4 +1,3 @@
-/* -*- C++ -*- */
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex verilog preprocessor
  *
@@ -131,6 +130,7 @@ psl		[p]sl
 	/* Note '(' must IMMEDIATELY follow definition name */
 <DEFFPAR>[(]		{ appendDefValue("(",1); BEGIN(DEFFORM); }
 <DEFFPAR>{crnl}		{ yy_pop_state(); unput('\n'); yyleng=0; return VP_DEFFORM; } /* DEFVAL will later grab the return */
+<DEFFPAR><<EOF>>	{ yy_pop_state(); return VP_DEFFORM; }  /* empty formals */
 <DEFFPAR>.		{ yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
  
 	/* Reading definition formals */
@@ -204,7 +204,6 @@ psl		[p]sl
 <PSLONEM>[{(]		{ pslParenLevelInc(); return (VP_TEXT); }
 <PSLONEM>[})]		{ pslParenLevelDec(); return (VP_TEXT); }
 <PSLONEM>[;]		{ if (!pslParenLevel()) {BEGIN PSLONEE; pslMoreNeeded(false);} return (VP_TEXT); }
-<PSLONEM><<EOF>>	{ yyerrorf("EOF in '/* ... */' psl comment\n"); yyleng=0; yyterminate(); }
 <PSLONEM>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
 
 	/* Completed psl oneline comments */
@@ -224,16 +223,17 @@ psl		[p]sl
 <CMTMODE>.			{ yymore(); }
 
 	/* Psl C-style comments. */
+	/* EOFs are normal because / * `foo(..) * / hits a unputString EOF */
 <PSLMUL1>.|{crnl}	{ yyless(0); BEGIN PSLMULM; return(VP_PSL); }
 <PSLMULM>"*/"		{ yy_pop_state(); return(VP_COMMENT); }
 <PSLMULM>"//"[^\n\r]*	{ return (VP_COMMENT); }	/* Comments inside block comments get literal inclusion (later removal) */
-<PSLMULM><<EOF>>	{ yyerrorf("EOF in '/* ... */' psl comment\n"); yyleng=0; yyterminate(); }
 
 	/* Define calls */
 <INITIAL,PSLMULM,PSLONEM>"`"{symb}	{ return (VP_DEFREF); }
 
 	/* Generics */
 <INITIAL,PSLMULM>{crnl}		{ linenoInc(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
+<INITIAL,PSLMULM,PSLONEM><<EOF>> { yyterminate(); }  /* A "normal" EOF */
 <INITIAL,PSLMULM,PSLONEM>{symb}	{ return (VP_SYMBOL); }
 <INITIAL,PSLMULM,PSLONEM>{wsn}+	{ return (VP_WHITE); }
 <INITIAL,PSLMULM,PSLONEM>{drop}	{ }
@@ -268,18 +268,18 @@ void V3PreLex::pushStateIncFilename() {
     yymore();
 }
 
-void V3PreLex::unputString(const char* textp) {
-    // Add characters to input stream in back-to-front order
-    const char* cp;
-    for (cp = textp; *cp; cp++);
-    for (cp--; cp >= textp; cp--) {
-	unput(*cp);
-    }
+void V3PreLex::scanBytes(const string& strg) {
+    yy_scan_bytes(strg.c_str(), strg.length());
+    m_bufferStack.push(currentBuffer());  // yy_scan_bytes makes new buffer
 }
 
 void V3PreLex::appendDefValue(const char* textp, int len) {
     // Append given text to current definition value being formed
     m_defValue.append(textp,len);
+}
+
+YY_BUFFER_STATE V3PreLex::currentBuffer() {
+    return YY_CURRENT_BUFFER;
 }
 
 int V3PreLex::currentStartState() {
@@ -291,3 +291,20 @@ void V3PreLex::lineDirective(const char* textp) {
     // Make sure we have a dependency on whatever file was specified
     V3File::addSrcDepend(m_curFilelinep->filename());
 }
+
+void V3PreLex::dumpStack() {
+    // For debug use
+    stack<YY_BUFFER_STATE> tmpstack = m_bufferStack;
+    printf("  bufferStack[%p]:",this);
+    while (!tmpstack.empty()) {
+	printf(" %p",tmpstack.top());
+	tmpstack.pop();
+    }
+    printf("\n");
+}
+ 
+/*###################################################################
+ * Local Variables:
+ * mode: C++
+ * End:
+ */
