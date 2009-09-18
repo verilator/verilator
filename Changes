@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Don't require SYSTEMPERL_INCLUDE if SYSTEMPERL/src exists. [Gary Thomas]
 
+**** Fix preprocessing commas in deep parameterized macros. [Brad Dobbie]
+
 **** Fix tracing escaped dotted identifiers, bug107.
 
 **** Fix $display with uppercase %M.

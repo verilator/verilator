@@ -794,6 +794,7 @@ int V3PreProcImp::getToken() {
 	    if (m_defRefs.empty()) v3fatalSrc("Shouldn't be in DEFARG w/o active defref");
 	    V3DefineRef* refp = &(m_defRefs.top());
 	    refp->nextarg(refp->nextarg()+m_lexp->m_defValue); m_lexp->m_defValue="";
+	    UINFO(4,"defarg++ "<<refp->nextarg()<<endl);
 	    if (tok==VP_DEFARG && yyleng==1 && yytext[0]==',') {
 		refp->args().push_back(refp->nextarg());
 		m_state = ps_DEFARG;
@@ -806,13 +807,17 @@ int V3PreProcImp::getToken() {
 		// Substitute in and prepare for next action
 		// Similar code in non-parenthesized define (Search for END_OF_DEFARG)
 		m_defRefs.pop();
-		m_lexp->unputString(out.c_str());
 		if (m_defRefs.empty()) {
+		    m_lexp->unputString(out.c_str());
 		    m_state = ps_TOP;
 		    m_lexp->m_parenLevel = 0;
 		}
 		else {  // Finished a defref inside a upper defref
+		    // Can't subst now, or
+		    // `define a(ign) x,y
+		    // foo(`a(ign),`b)  would break because a contains comma
 		    refp = &(m_defRefs.top());  // We popped, so new top
+		    refp->nextarg(refp->nextarg()+m_lexp->m_defValue+out); m_lexp->m_defValue="";
 		    m_lexp->m_parenLevel = refp->parenLevel();
 		    m_state = ps_DEFARG;
 		}

@@ -143,3 +143,9 @@ Line_Preproc_Check `__LINE__
   )
 Line_Preproc_Check `__LINE__
 
+//======================================================================
+// misparsed comma in submacro
+`define sb bee
+`define sa(l) x,y)
+`define sfoo(q,r) q--r
+`sfoo(`sa(el),`sb)  submacro has comma paren
