@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.7***
+* Verilator 3.714 2009/09/18
 
 **   Add --bbox-sys option to blackbox $system calls.
 
