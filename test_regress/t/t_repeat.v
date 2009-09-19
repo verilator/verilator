@@ -7,7 +7,6 @@ module t (/*AUTOARG*/);
 
    reg signed [2:0] negcnt;
    integer times;
-   integer repeats;
    initial begin
       times = 0;
       repeat (1) begin
@@ -23,7 +22,6 @@ module t (/*AUTOARG*/);
       end
       if (times != 10) $stop;
       //
-      repeats = 0;
       forever begin
 	 $write("*-* All Finished *-*\n");
 	 $finish;

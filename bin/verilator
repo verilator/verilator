@@ -2279,6 +2279,9 @@ see below and the test_c/sim_main.cpp file of the distribution.
 You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
 done for you if using the Verilator --exe flag.
 
+Note you can also call ->trace on multiple Verilated objects with the same
+trace file if you want all data to land in the same output file.
+
     #include "SpTraceVcdC.cpp"
     ...
     int main(int argc, char **argv, char **env) {
@@ -2309,12 +2312,18 @@ Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
 your SystemC settings.
 
+You'll then need to compile in Sp.cpp, which includes SpTraceVcd.cpp among
+other things.
+
+Note you can also call ->trace on multiple Verilated objects with the same
+trace file if you want all data to land in the same output file.
+
     #include "SpTraceVcd.cpp"
     ...
     int main(int argc, char **argv, char **env) {
         ...
         Verilated::traceEverOn(true);
-        SpTraceVcdFile* tfp = new SpTraceVcdFile;
+        SpTraceFile* tfp = new SpTraceFile;
         topp->trace (tfp, 99);
         tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
