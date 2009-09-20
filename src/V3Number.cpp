@@ -1185,7 +1185,7 @@ V3Number& V3Number::opExtendS (const V3Number& lhs) {
 }
 
 V3Number& V3Number::opClean (const V3Number& lhs, uint32_t bits) {
-    return opRange(lhs, bits-1, 0);
+    return opSel(lhs, bits-1, 0);
 }
 
 void V3Number::opCleanThis() {
@@ -1195,12 +1195,12 @@ void V3Number::opCleanThis() {
     }
 }
 
-V3Number& V3Number::opRange (const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {
+V3Number& V3Number::opSel (const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {
     if (lsb.isFourState() || msb.isFourState()) return setAllBitsX();
-    return opRange(lhs, msb.toUInt(), lsb.toUInt());
+    return opSel(lhs, msb.toUInt(), lsb.toUInt());
 }
 
-V3Number& V3Number::opRange (const V3Number& lhs, uint32_t msbval, uint32_t lsbval) {
+V3Number& V3Number::opSel (const V3Number& lhs, uint32_t msbval, uint32_t lsbval) {
     setZero();
     int ibit=lsbval;
     for(int bit=0; bit<this->width(); bit++) {

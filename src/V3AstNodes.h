@@ -192,7 +192,7 @@ struct AstSel : public AstNodeTriop {
     }
     ASTNODE_NODE_FUNCS(Sel, SEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
-	out.opRange(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
+	out.opSel(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() {
 	return this->widthp()->isOne()
