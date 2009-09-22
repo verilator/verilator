@@ -577,7 +577,7 @@ private:
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	//if (debug()) nodep->dumpTree(cout,"  IfPre: ");
-	if (!nodep->castGenIf()) {
+	if (!nodep->castGenIf()) {  // for m_paramsOnly
 	    nodep->ifsp()->iterateAndNext(*this);
 	    nodep->elsesp()->iterateAndNext(*this);
 	}

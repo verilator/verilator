@@ -161,6 +161,13 @@ private:
 	// so, it's just
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+	if (!nodep->castGenIf()) {  // for m_paramsOnly
+	    nodep->ifsp()->iterateAndNext(*this);
+	    nodep->elsesp()->iterateAndNext(*this);
+	}
+	nodep->condp()->iterateAndNext(*this);
+    }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Same as above taskref argument.
 	nodep->iterateChildren(*this);
