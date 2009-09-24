@@ -559,6 +559,15 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
     pointpr = newp;
 }
 
+void AstNode::swapWith (AstNode* bp) {
+    AstNRelinker aHandle;
+    AstNRelinker bHandle;
+    this->unlinkFrBack(&aHandle);
+    bp->unlinkFrBack(&bHandle);
+    aHandle.relink(bp);
+    bHandle.relink(this);
+}
+
 //======================================================================
 // Clone
 

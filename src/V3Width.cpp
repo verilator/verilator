@@ -275,7 +275,7 @@ private:
 		    nodep->v3error("Unsupported: MSB < LSB of bit range: "<<msb<<"<"<<lsb);
 		}
 		// Correct it.
-		swap(msbConstp, lsbConstp);
+		msbConstp->swapWith(lsbConstp);
 		int x=msb; msb=lsb; lsb=x;
 	    }
 	    int width = msb-lsb+1;
@@ -837,14 +837,6 @@ private:
     bool fixAutoExtend (AstNode*& nodepr, int expWidth);
     void fixWidthExtend (AstNode* nodep, int expWidth);
     void fixWidthReduce (AstNode* nodep, int expWidth);
-    void swap (AstNode* ap, AstNode* bp) {
-	AstNRelinker aHandle;
-	AstNRelinker bHandle;
-	ap->unlinkFrBack(&aHandle);
-	bp->unlinkFrBack(&bHandle);
-	aHandle.relink(bp);
-	bHandle.relink(ap);
-    }
 
 public:
     // CONSTUCTORS

@@ -390,19 +390,19 @@ struct AstNUser {
 
 class AstUserInUseBase {
 protected:
-    static void	allocate(uint32_t& cntGblRef, bool& userBusyRef) {
+    static void	allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
 	// Perhaps there's still a AstUserInUse in scope for this?
-	UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser*InUse request when under another AstUserInUse");
+	UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser"+cvtToStr(id)+"InUse request when under another AstUserInUse");
 	userBusyRef = true;
-	clearcnt(cntGblRef, userBusyRef);
+	clearcnt(id, cntGblRef, userBusyRef);
     }
-    static void	free(uint32_t& cntGblRef, bool& userBusyRef) {
-	UASSERT_STATIC(userBusyRef, "Free of User*() not under AstUserInUse");
-	clearcnt(cntGblRef, userBusyRef);  // Includes a checkUse for us
+    static void	free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+	UASSERT_STATIC(userBusyRef, "Free of User"+cvtToStr(id)+"() not under AstUserInUse");
+	clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
 	userBusyRef = false;
     }
-    static void clearcnt(uint32_t& cntGblRef, bool& userBusyRef) {
-	UASSERT_STATIC(userBusyRef, "Clear of User*() not under AstUserInUse");
+    static void clearcnt(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+	UASSERT_STATIC(userBusyRef, "Clear of User"+cvtToStr(id)+"() not under AstUserInUse");
 	// If this really fires and is real (after 2^32 edits???)
 	// we could just walk the tree and clear manually
 	++cntGblRef;
@@ -419,9 +419,9 @@ protected:
     static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
     static bool		s_userBusy;	// Count is in use
 public:
-    AstUser1InUse()     { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUser1InUse()    { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear() { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    AstUser1InUse()     { allocate(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser1InUse()    { free    (1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear() { clearcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser2InUse : AstUserInUseBase {
 protected:
@@ -429,9 +429,9 @@ protected:
     static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
     static bool		s_userBusy;	// Count is in use
 public:
-    AstUser2InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUser2InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    AstUser2InUse()      { allocate(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser2InUse()     { free    (2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser3InUse : AstUserInUseBase {
 protected:
@@ -439,9 +439,9 @@ protected:
     static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
     static bool		s_userBusy;	// Count is in use
 public:
-    AstUser3InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUser3InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    AstUser3InUse()      { allocate(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser3InUse()     { free    (3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser4InUse : AstUserInUseBase {
 protected:
@@ -449,9 +449,9 @@ protected:
     static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
     static bool		s_userBusy;	// Count is in use
 public:
-    AstUser4InUse()      { allocate(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~AstUser4InUse()     { free    (s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear()  { clearcnt(s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    AstUser4InUse()      { allocate(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser4InUse()     { free    (4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 
 //######################################################################
@@ -752,6 +752,7 @@ public:
     virtual void dump(ostream& str=cout);
     AstNode*	unlinkFrBack(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it.
     AstNode*	unlinkFrBackWithNext(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it, keep entire next list with unlinked node
+    void	swapWith(AstNode* bp);
     void	relink(AstNRelinker* linkerp);	// Generally use linker->relink() instead
     void	cloneRelinkNode() { cloneRelink(); }
 

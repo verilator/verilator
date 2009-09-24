@@ -46,6 +46,7 @@ struct AstConst : public AstNodeMath {
 private:
     V3Number	m_num;		// Constant value
 public:
+    class Unsized32 {};		// for creator type-overload selection
     AstConst(FileLine* fl, const V3Number& num)
 	:AstNodeMath(fl)
 	 ,m_num(num) {
@@ -55,6 +56,9 @@ public:
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
 	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.minWidth()); }
+    AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
+	:AstNodeMath(fl)
+	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,false); }
     ASTNODE_NODE_FUNCS(Const, CONST)
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
