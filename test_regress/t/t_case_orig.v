@@ -3,17 +3,12 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-`include "verilated.v"
-
-module t_case(/*AUTOARG*/
-   // Outputs
-   passed,
+module t (/*AUTOARG*/
    // Inputs
    clk
    );
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
    reg 	 _ranit;
 
    reg 	 rnd;
@@ -111,17 +106,11 @@ module t_case(/*AUTOARG*/
 	 //
 
 	 if (rnd) begin
-	    // This gets covered
-	    $write("");
-	 end
-	 if (rnd) begin
-	    // This doesn't
-	    // verilator coverage_block_off
 	    $write("");
 	 end
 	 //
-	 $write("[%0t] t_case: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 
