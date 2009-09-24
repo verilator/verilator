@@ -143,6 +143,12 @@ DISTFILES := $(DISTFILES_INC)
 
 VL_INST_MAN_FILES = verilator.1
 
+ifeq ($(OBJCACHE_HOSTS),)
+export OBJCACHE_JOBS :=
+else
+export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
+endif
+
 all: all_nomsg msg_test
 all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 
@@ -150,7 +156,7 @@ all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 verilator_exe verilator_bin verilator_bin_dbg:
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src" ; \
-	  (cd src && $(MAKE) )
+	  (cd src && $(MAKE) $(OBJCACHE_JOBS) )
 
 .PHONY:msg_test
 msg_test:
