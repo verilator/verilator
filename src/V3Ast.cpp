@@ -33,8 +33,8 @@
 //======================================================================
 // Statics
 
-vluint64_t AstNode::s_editCntGbl=0;
 vluint64_t AstNode::s_editCntLast=0;
+vluint64_t AstNode::s_editCntGbl=0;	// Hot cache line
 
 // To allow for fast clearing of all user pointers, we keep a "timestamp"
 // along with each userp, and thus by bumping this count we can make it look

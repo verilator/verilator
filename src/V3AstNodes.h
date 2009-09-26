@@ -58,7 +58,7 @@ public:
 	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.minWidth()); }
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,false); }
+	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,m_num.minWidth()); }
     ASTNODE_NODE_FUNCS(Const, CONST)
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value
