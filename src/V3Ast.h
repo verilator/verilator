@@ -676,6 +676,7 @@ public:
     static string prettyName(const string& namein);	// Name for printing out to the user
     static string encodeName(const string& namein);	// Encode user name into internal C representation
     static string encodeNumber(vlsint64_t numin);	// Encode number into internal C representation
+    static string vcdName(const string& namein); // Name for printing out to vcd files
     string	prettyName() const { return prettyName(name()); }
     string	prettyTypeName() const;			// "VARREF name" for error messages
     FileLine*	fileline() const { return m_fileline; }

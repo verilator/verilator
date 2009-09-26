@@ -125,8 +125,10 @@ private:
 	    AstVar* varp = nodep->varp();
 	    AstScope* scopep = nodep->scopep();
 	    // Compute show name
-	    string showname = scopep->prettyName() + "." + varp->prettyName();
-	    if (showname.substr(0,4) == "TOP.") showname.replace(0,4,"");
+	    // This code assumes SPTRACEVCDC_VERSION >= 1330;
+	    // it uses spaces to separate hierarchy components.
+	    string showname = AstNode::vcdName(scopep->name() + " " + varp->name());
+	    if (showname.substr(0,4) == "TOP ") showname.replace(0,4,"");
 	    if (!m_initSubFuncp) nodep->v3fatalSrc("NULL");
 	    if (varIgnoreTrace(varp)) {
 		m_statIgnSigs++;

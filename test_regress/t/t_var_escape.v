@@ -38,6 +38,8 @@ module t (/*AUTOARG*/
 
    sub a0 (.cyc(cyc));
 
+   sub \mod.with_dot (.cyc(cyc));
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (escaped_normal != cyc[0]) $stop;

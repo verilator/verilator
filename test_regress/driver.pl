@@ -13,7 +13,7 @@ BEGIN {
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
-use Data::Dumper;
+use Data::Dumper; $Data::Dumper::Sortkeys=1;
 use strict;
 use vars qw ($Debug %Vars $Driver $Fork);
 use POSIX qw(strftime);
@@ -903,15 +903,57 @@ sub vcd_identical {
     my $fn2 = shift;
     if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
     if (!-r $fn2) { $self->error("File does not exist $fn2\n"); return 0; }
-    my $out = `vcddiff --help`;
-    if ($out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
-    $out = `vcddiff "$fn1" "$fn2"`;
-    if ($out ne '') {
-	print $out;
-	$self->error("VCD miscompare $fn1 $fn2\n");
-	return 0;
+    {
+	# vcddiff to check transitions, if installed
+	my $out = `vcddiff --help`;
+	if ($out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
+	my $cmd = qq{vcddiff "$fn1" "$fn2"};
+	print "\t$cmd\n" if $::Debug;
+	$out = `$cmd`;
+	if ($out ne '') {
+	    print $out;
+	    $self->error("VCD miscompare $fn1 $fn2\n");
+	    return 0;
+	}
+    }
+    {
+	# vcddiff doesn't check module and variable scope, so check that
+	# Also provides backup if vcddiff not installed
+	my $h1 = $self->_vcd_read($fn1);
+	my $h2 = $self->_vcd_read($fn2);
+	$Data::Dumper::Sortkeys=1;
+	my $a = Dumper($h1);
+	my $b = Dumper($h2);
+	if ($a ne $b) {
+	    print "$a\n$b\n" if $::Debug;
+	    $self->error("VCD hier mismatch $fn1 $fn2\n");
+	    return 0;
+	}
     }
     return 1;
+}
+
+sub _vcd_read {
+    my $self = (ref $_[0]? shift : $Self);
+    my $filename = shift;
+    my $data = {};
+    my $fh = IO::File->new ("<$filename");
+    if (!$fh) { warn "%Error: $! $filename\n"; return $data; }
+    my @hier = ($data);
+    while (defined(my $line = $fh->getline)) {
+	if ($line =~ /\$scope module\s+(\S+)/) {
+	    $hier[$#hier]->{$1} ||= {};
+	    push @hier, $hier[$#hier]->{$1};
+	} elsif ($line =~ /(\$var \S+\s+\d+\s+)\S+\s+(\S+)/) {
+	    $hier[$#hier]->{$1.$2} ||= 1;
+	} elsif ($line =~ /\$enddefinitions/) {
+	    last;
+	}
+	while ($line =~ s/\$upscope//) {
+	    pop @hier;
+	}
+    }
+    return $data;
 }
 
 sub file_grep_not {

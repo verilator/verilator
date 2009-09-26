@@ -139,6 +139,21 @@ string AstNode::dedotName(const string& namein) {
     return pretty;
 }
 
+string AstNode::vcdName(const string& namein) {
+    // VCD tracing expects space to separate hiearchy
+    // Dots are reserved for dots the user put in the name
+    string pretty = namein;
+    string::size_type pos;
+    while ((pos=pretty.find("__DOT__")) != string::npos) {
+	pretty.replace(pos, 7, " ");
+    }
+    while ((pos=pretty.find(".")) != string::npos) {
+	pretty.replace(pos, 1, " ");
+    }
+    // Now convert escaped special characters, etc
+    return prettyName(pretty);
+}
+
 string AstNode::prettyName(const string& namein) {
     string pretty;
     pretty = "";

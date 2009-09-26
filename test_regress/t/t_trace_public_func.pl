@@ -20,10 +20,9 @@ if ($Self->{v3}) {
 	     check_finished=>1,
 	     );
 
-    ok(vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		      "t/$Self->{name}.out"));
+    vcd_identical ("$Self->{obj_dir}/simx.vcd",
+		   "t/$Self->{name}.out");
 }
-else {
-    ok(1);
-}
+
+ok(1);
 1;

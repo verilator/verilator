@@ -20,10 +20,10 @@ if ($Self->{v3}) {
 	     check_finished=>1,
 	     );
 
-    ok(vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		      "t/$Self->{name}.out"));
+    vcd_identical ("$Self->{obj_dir}/simx.vcd",
+		   "t/$Self->{name}.out");
+    # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
+    file_grep ("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);
 }
-else {
-    ok(1);
-}
+ok(1);
 1;
