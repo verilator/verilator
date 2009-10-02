@@ -36,7 +36,7 @@ public:
     static void widthParams(AstNode* nodep);
     static void widthSignedIfNotAlready(AstNode* nodep);
     // Final step... Mark all widths as equal
-    static void widthCommit(AstNode* nodep);
+    static void widthCommit(AstNetlist* nodep);
 };
 
 #endif // Guard

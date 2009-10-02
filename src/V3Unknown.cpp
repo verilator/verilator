@@ -377,7 +377,7 @@ private:
 
 public:
     // CONSTUCTORS
-    UnknownVisitor(AstNode* nodep) {
+    UnknownVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~UnknownVisitor() {

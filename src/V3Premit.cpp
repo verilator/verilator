@@ -306,17 +306,15 @@ private:
 
 public:
     // CONSTUCTORS
-    PremitVisitor() {
+    PremitVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_funcp = NULL;
 	m_stmtp = NULL;
 	m_inWhilep = NULL;
 	m_inTracep = NULL;
-    }
-    virtual ~PremitVisitor() {}
-    void main(AstNode* nodep) {
 	nodep->accept(*this);
     }
+    virtual ~PremitVisitor() {}
 };
 
 //----------------------------------------------------------------------
@@ -327,6 +325,5 @@ public:
 
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    PremitVisitor visitor;
-    visitor.main(nodep);
+    PremitVisitor visitor (nodep);
 }

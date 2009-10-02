@@ -280,8 +280,7 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
-	AstNode* stmtsp = nodep->bodysp();
-	if (stmtsp) {
+	if (AstNode* stmtsp = nodep->bodysp()) {
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
@@ -290,8 +289,7 @@ private:
     virtual void visit(AstAlwaysPost* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
-	AstNode* stmtsp = nodep->bodysp();
-	if (stmtsp) {
+	if (AstNode* stmtsp = nodep->bodysp()) {
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
@@ -320,8 +318,7 @@ private:
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
-	AstNode* stmtsp = nodep->bodysp();
-	if (stmtsp) {
+	if (AstNode* stmtsp = nodep->bodysp()) {
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
@@ -534,7 +531,7 @@ private:
 
 public:
     // CONSTUCTORS
-    ClockVisitor(AstNode* nodep) {
+    ClockVisitor(AstNetlist* nodep) {
 	m_modp=NULL; m_activep=NULL;
 	m_evalFuncp = NULL;
 	m_topScopep=NULL;

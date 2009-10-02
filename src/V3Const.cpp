@@ -59,7 +59,7 @@ public:
     // CONSTUCTORS
     ConstVarMarkVisitor(AstNode* nodep) {
 	AstNode::user4ClearTree();  // Check marked InUse before we're called
-	nodep->iterateAndNext(*this, NULL);
+	nodep->accept(*this);
     }
     virtual ~ConstVarMarkVisitor() {}
 };

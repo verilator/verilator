@@ -1197,7 +1197,7 @@ void V3Width::widthSignedIfNotAlready(AstNode* nodep) {
     }
 }
 
-void V3Width::widthCommit(AstNode* nodep) {
+void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     WidthCommitVisitor visitor (nodep);
 }

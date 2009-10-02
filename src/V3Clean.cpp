@@ -262,11 +262,10 @@ private:
 
 public:
     // CONSTUCTORS
-    CleanVisitor() {}
-    virtual ~CleanVisitor() {}
-    void main(AstNetlist* nodep) {
+    CleanVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
+    virtual ~CleanVisitor() {}
 };
 
 //######################################################################
@@ -274,6 +273,5 @@ public:
 
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    CleanVisitor visitor;
-    visitor.main(nodep);
+    CleanVisitor visitor (nodep);
 }

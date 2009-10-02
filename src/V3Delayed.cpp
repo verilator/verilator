@@ -441,7 +441,7 @@ private:
 
 public:
     // CONSTUCTORS
-    DelayedVisitor(AstNode* nodep) {
+    DelayedVisitor(AstNetlist* nodep) {
 	m_inDly = false;
 	m_activep=NULL;
 	m_cfuncp=NULL;

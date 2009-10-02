@@ -548,7 +548,7 @@ private:
 
 public:
     // CONSTUCTORS
-    SplitVisitor(AstNode* nodep, bool reorder)
+    SplitVisitor(AstNetlist* nodep, bool reorder)
 	: m_reorder(reorder) {
 	scoreboardClear();
 	nodep->accept(*this);

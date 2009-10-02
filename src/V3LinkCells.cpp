@@ -258,15 +258,13 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkCellsVisitor() {
+    LinkCellsVisitor(AstNetlist* rootp) {
 	m_modp = NULL;
 	m_libVertexp = NULL;
 	m_topVertexp = NULL;
-    }
-    virtual ~LinkCellsVisitor() {}
-    void main(AstNetlist* rootp) {
 	rootp->accept(*this);
     }
+    virtual ~LinkCellsVisitor() {}
 };
 
 //######################################################################
@@ -274,6 +272,5 @@ public:
 
 void V3LinkCells::link(AstNetlist* rootp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkCellsVisitor visitor;
-    visitor.main(rootp);
+    LinkCellsVisitor visitor (rootp);
 }

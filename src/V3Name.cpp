@@ -122,7 +122,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    NameVisitor(AstNode* nodep) {
+    NameVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~NameVisitor() {}

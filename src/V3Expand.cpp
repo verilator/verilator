@@ -905,13 +905,11 @@ private:
 
 public:
     // CONSTUCTORS
-    ExpandVisitor() {
+    ExpandVisitor(AstNetlist* nodep) {
 	m_stmtp=NULL;
-    }
-    virtual ~ExpandVisitor() {}
-    void main(AstNode* nodep) {
 	nodep->accept(*this);
     }
+    virtual ~ExpandVisitor() {}
 };
 
 //----------------------------------------------------------------------
@@ -922,6 +920,5 @@ public:
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ExpandVisitor visitor;
-    visitor.main(nodep);
+    ExpandVisitor visitor (nodep);
 }
