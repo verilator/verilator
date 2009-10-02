@@ -42,33 +42,35 @@ our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^
 $Debug = 0;
 my $opt_benchmark;
 my @opt_tests;
-my $opt_nc;
-my $opt_vcs;
-my $opt_v3;
-my $opt_stop;
-my $opt_optimize;
-my $opt_trace;
 my $opt_gdb;
+my $opt_iv;
 my $opt_jobs = 1;
+my $opt_nc;
+my $opt_optimize;
+my $opt_stop;
+my $opt_trace;
+my $opt_v3;
+my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
 our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config ("pass_through");
 if (! GetOptions (
-		  "help"	=> \&usage,
+		  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "debug"	=> \&debug,
-		  "vcs!"	=> \$opt_vcs,
-		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
-		  "j=i"		=> \$opt_jobs,
-		  "v3!"		=> \$opt_v3,
-		  "nc!"		=> \$opt_nc,
-	  	  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "gdb!"	=> \$opt_gdb,
+		  "help"	=> \&usage,
+		  "iverilog!"	=> \$opt_iv,
+		  "j=i"		=> \$opt_jobs,
+		  "nc!"		=> \$opt_nc,
 		  "optimize:s"	=> \$opt_optimize,
 		  "stop!"	=> \$opt_stop,
 		  "trace!"	=> \$opt_trace,
+		  "v3!"		=> \$opt_v3,
+		  "vcs!"	=> \$opt_vcs,
 		  "verbose!"	=> \$opt_verbose,
+		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
 		  "<>"		=> \&parameter,
 		  )) {
     die "%Error: Bad usage, try '$0 --help'\n";
@@ -78,7 +80,7 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_vcs && !$opt_nc && !$opt_v3) {
+if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_v3) {
     $opt_v3 = 1;
 }
 
@@ -93,8 +95,9 @@ my $okcnt=0; my $failcnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
-    one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
+    one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
+    one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
     one_test(pl_filename => $testpl, 'v3'=>1) if $opt_v3;
 }
 
@@ -243,6 +246,11 @@ sub new {
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
+        # IV
+	iv => 0,
+	iv_flags => [split(/\s+/,"-o $self->{obj_dir}/simiv")],
+	iv_flags2 => [],  # Overridden in some sim files
+	ivrun_flags => [],
 	# VCS
 	vcs => 0,
 	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q -sverilog")],
@@ -267,6 +275,7 @@ sub new {
     $self->{mode} ||= "vcs" if $self->{vcs};
     $self->{mode} ||= "v3" if $self->{v3};
     $self->{mode} ||= "nc" if $self->{nc};
+    $self->{mode} ||= "iv" if $self->{iv};
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
@@ -388,6 +397,22 @@ sub compile {
 			  @{$param{v_other_filenames}},
 			  ]);
     }
+    if ($param{iv}) {
+	$self->_make_top();
+	my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
+		   @{$param{iv_flags}},
+		   @{$param{iv_flags2}},
+		   @{$param{v_flags}},
+		   @{$param{v_flags2}},
+		   $param{top_filename},
+		   $param{top_shell_filename},
+		   @{$param{v_other_filenames}});
+	@cmd = grep { s/\+define\+/-D /g; $_; } @cmd;
+
+	$self->_run(logfile=>"$self->{obj_dir}/iv_compile.log",
+		    fails=>$param{fails},
+		    cmd=>\@cmd);
+    }
     if ($param{v3}) {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
 	my @verilator_flags = @{$param{verilator_flags}};
@@ -462,6 +487,13 @@ sub execute {
     return 1 if $self->errors;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
+    if ($param{iv}) {
+	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
+		    fails=>$param{fails},
+		    cmd=>["$self->{obj_dir}/simiv",
+			  @{$param{ivrun_flags}},
+			  ]);
+    }
     if ($param{nc}) {
 	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
