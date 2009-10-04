@@ -172,7 +172,7 @@ class V3Error {
     static ostringstream& v3errorPrep (V3ErrorCode code) {
 	s_errorStr.str(""); s_errorCode=code; return s_errorStr; }
     static ostringstream& v3errorStr () { return s_errorStr; }
-    static void	v3abort();
+    static void	vlAbort();
     static void	v3errorEnd(ostringstream& sstr);	// static, but often overridden in classes.
 };
 

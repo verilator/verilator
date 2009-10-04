@@ -304,6 +304,18 @@ string V3Error::msgPrefix(V3ErrorCode code) {
 }
 
 //======================================================================
+// Abort/exit
+
+void V3Error::vlAbort () {
+    if (V3Error::debugDefault()) {
+	cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
+	abort();
+    } else {
+	exit(10);
+    }
+}
+
+//======================================================================
 // Global Functions
 
 string V3Error::v3sform (const char* format, ...) {
@@ -323,10 +335,6 @@ void V3Error::suppressThisWarning() {
 	V3Stats::addStatSum(string("Warnings, Suppressed ")+s_errorCode.ascii(), 1);
 	s_errorCode=V3ErrorCode::SUPPRESS;
     }
-}
-
-void V3Error::v3abort () {
-    v3fatalSrc("v3abort called\n");
 }
 
 void V3Error::v3errorEnd (ostringstream& sstr) {
@@ -385,12 +393,7 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 #endif
 		}
 
-		if (V3Error::debugDefault()) {
-		    cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
-		    abort();
-		} else {
-		    exit(10);
-		}
+		vlAbort();
 	    }
 	}
     }
