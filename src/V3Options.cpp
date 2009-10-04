@@ -769,6 +769,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-gdb") && (i+1)<argc ) {
 		shift; // Used only in perl shell
 	    }
+	    else if ( !strcmp (sw, "-gdbbt")) {
+		// Used only in perl shell
+	    }
 	    else if ( !strcmp (sw, "-mod-prefix") && (i+1)<argc ) {
 		shift; m_modPrefix = argv[i];
 	    }

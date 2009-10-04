@@ -45,6 +45,7 @@ autoflush STDERR 1;
 
 $Debug = 0;
 my $opt_gdb;
+my $opt_gdbbt;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -66,20 +67,29 @@ if (! GetOptions (
 		  # "version!"	=> \&version,	# Also passthru'ed
 		  # Switches
 		  "gdb=s"	=> \$opt_gdb,	# Undocumented debugging
+		  "gdbbt!"	=> \$opt_gdbbt,	# Undocumented debugging
 		  # Additional parameters
 		  "<>"		=> sub {},	# Ignored
 		  )) {
     pod2usage(-exitstatus=>2, -verbose=>0);
 }
 
-# Determine runtime flags
-my $vcmd =(($opt_gdb?"$opt_gdb ":"")
-	   .verilator_bin()
-	   ." ".join(' ',@Opt_Verilator_Sw)
-	   );
-
-# Run verilator
-run ($vcmd);
+# Determine runtime flags and run
+if ($opt_gdbbt && !$opt_gdb && $Debug) {
+    # Run under GDB to get gdbbt
+    run ("gdb ".verilator_bin()
+	 ." --batch --quiet"
+	 ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
+	 ." -ex 'set width 0'"
+	 ." -ex 'bt'"
+	 ." -ex 'c'");
+    die "%Error: --gdbbt looses the exit status; so must assume run went badly...";
+} else {
+    # Normal, non gdb
+    run (($opt_gdb?"$opt_gdb ":"")
+	 .verilator_bin()
+	 ." ".join(' ',@Opt_Verilator_Sw));
+}
 
 #----------------------------------------------------------------------
 
@@ -2637,6 +2647,8 @@ either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.
 
 =head1 AUTHORS
+
+When possible, please instead report bugs to L<http://www.veripool.org/>.
 
 Wilson Snyder <wsnyder@wsnyder.org>
 

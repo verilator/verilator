@@ -43,6 +43,7 @@ $Debug = 0;
 my $opt_benchmark;
 my @opt_tests;
 my $opt_gdb;
+my $opt_gdbbt;
 my $opt_iv;
 my $opt_jobs = 1;
 my $opt_nc;
@@ -60,6 +61,7 @@ if (! GetOptions (
 		  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "debug"	=> \&debug,
 		  "gdb!"	=> \$opt_gdb,
+		  "gdbbt!"	=> \$opt_gdbbt,
 		  "help"	=> \&usage,
 		  "iverilog!"	=> \$opt_iv,
 		  "j=i"		=> \$opt_jobs,
@@ -417,6 +419,7 @@ sub compile {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
 	my @verilator_flags = @{$param{verilator_flags}};
 	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
+	unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
 	unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
 	unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
 	unshift @verilator_flags, "--trace" if $opt_trace;
@@ -1105,6 +1108,11 @@ specifies the number of simulation cycles (for tests that support it).
 =item --gdb
 
 Run verilator under the debugger.
+
+=item --gdbbt
+
+Run verilator under the debugger, only to print backtrace information.
+Requires --debug.
 
 =item --help
 
