@@ -146,7 +146,7 @@ private:
 	    }
 	    // Cleanup var names, etc, to not conflict
 	    m_cellp = nodep;
-	    newmodp->iterateAndNext(*this);
+	    newmodp->iterate(*this);   // Not iterateAndNext because newmodp isn't linked; no back
 	    m_cellp = NULL;
 	    // Move statements to top module
 	    if (debug()>=9) { newmodp->dumpTree(cout,"fixmod:"); }

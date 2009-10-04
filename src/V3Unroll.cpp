@@ -257,9 +257,14 @@ private:
 
 		    m_varValuep = new AstConst(nodep->fileline(), loopValue);
 
-		    m_varModeReplace = true;
-		    oneloopp->iterateAndNext(*this);
-		    m_varModeReplace = false;
+		    // Iteration requires a back, so put under temporary node
+		    if (oneloopp) {	
+			AstBegin* tempp = new AstBegin(oneloopp->fileline(),"[EditWrapper]",oneloopp);
+			m_varModeReplace = true;
+			tempp->stmtsp()->iterateAndNext(*this);
+			m_varModeReplace = false;
+			tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+		    }
 
 		    if (newbodysp) newbodysp->addNext(oneloopp);
 		    else newbodysp = oneloopp;

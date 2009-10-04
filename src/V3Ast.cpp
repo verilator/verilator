@@ -720,7 +720,11 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
     // if (!this) return;  // Part of for()
-    for (AstNode* nodep=this; nodep;) {
+    // Future versions of this function may require the node to have a back to be iterated;
+    // there's no lower level reason yet though the back must exist.
+    AstNode* nodep=this;
+    if (VL_UNLIKELY(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
+    while (nodep) {
 	AstNode* niterp = nodep;
 	ASTNODE_PREFETCH(nodep->m_nextp);
 	niterp->m_iterpp = &niterp;
@@ -728,7 +732,7 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
 	// accept may do a replaceNode and change niterp on us...
 	if (!niterp) return;
 	niterp->m_iterpp = NULL;
-	if (niterp!=nodep) { // Edited it
+	if (VL_UNLIKELY(niterp!=nodep)) { // Edited it
 	    nodep = niterp;
 	} else {  // Same node, just loop
 	    nodep = niterp->m_nextp;

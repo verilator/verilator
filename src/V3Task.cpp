@@ -243,7 +243,7 @@ public:
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
 	//
-	nodep->iterateAndNext(*this, NULL);
+	nodep->accept(*this);
 	//
 	m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
 	m_callGraph.dumpDotFilePrefixed("task_call");
@@ -280,8 +280,8 @@ private:
     }
 public:
     // CONSTUCTORS
-    TaskRelinkVisitor(AstNode* nodep) {
-	nodep->iterateAndNext(*this, NULL);
+    TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
+	nodep->accept(*this);
     }
     virtual ~TaskRelinkVisitor() {}
 };
@@ -430,7 +430,12 @@ private:
 	    refp->taskp()->castFunc()->fvarp()->user2p(outvscp);
 	}
 	// Replace variable refs
-	TaskRelinkVisitor visit (beginp);
+	// Iteration requires a back, so put under temporary node
+	{	
+	    AstBegin* tempp = new AstBegin(beginp->fileline(),"[EditWrapper]",beginp);
+	    TaskRelinkVisitor visit (tempp);
+	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+	}
 	//
 	if (debug()>=9) { beginp->dumpTree(cout,"-iotask: "); }
 	return beginp;
@@ -582,7 +587,12 @@ private:
 					      new AstVarRef(rtnvscp->fileline(), rtnvscp, false)));
 	}
 	// Replace variable refs
-	TaskRelinkVisitor visit (cfuncp);
+	// Iteration requires a back, so put under temporary node
+	{	
+	    AstBegin* tempp = new AstBegin(cfuncp->fileline(),"[EditWrapper]",cfuncp);
+	    TaskRelinkVisitor visit (tempp);
+	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+	}
 	// Delete rest of cloned task and return new func
 	pushDeletep(nodep); nodep=NULL;
 	if (debug()>=9 &&  forUser) { cfuncp->dumpTree(cout,"-userFunc: "); }

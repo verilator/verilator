@@ -1169,8 +1169,8 @@ private:
     }
 public:
     // CONSTUCTORS
-    WidthCommitVisitor(AstNode* nodep) {
-	nodep->iterateAndNext(*this, NULL);
+    WidthCommitVisitor(AstNetlist* nodep) {
+	nodep->accept(*this);
     }
     virtual ~WidthCommitVisitor() {}
 };
