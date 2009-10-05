@@ -965,7 +965,7 @@ V3Options::V3Options() {
     m_outputSplitCTrace = 0;
     m_traceDepth = 0;
     m_unrollCount = 64;
-    m_unrollStmts = 20;
+    m_unrollStmts = 100;
 
     m_compLimitParens = 0;
     m_compLimitBlocks = 0;
