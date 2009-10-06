@@ -42,12 +42,12 @@ class V3Number {
     vector<uint32_t>	m_valueX;	// Each bit is true if it's X or Z, 10=z, 11=x
     // METHODS
     void init(FileLine* fileline, int width);
-    V3Number& setZero();
     V3Number& setSingleBits(char value);
     void opCleanThis();
 public:
     FileLine*	fileline() const { return m_fileline; }
     void	fileline(FileLine* fl) { m_fileline=fl; }
+    V3Number& setZero();
     V3Number& setQuad(vluint64_t value);
     V3Number& setLong(uint32_t value);
     void setBit (int bit, char value) {		// Note must be pre-zeroed!

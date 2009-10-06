@@ -215,7 +215,7 @@ private:
     }
 
     // VISITORS - LINE COVERAGE
-    virtual void visit(AstIf* nodep, AstNUser*) {
+    virtual void visit(AstIf* nodep, AstNUser*) { // Note not AstNodeIf; other types don't get covered
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
 	    nodep->ifsp()->iterateAndNext(*this);
