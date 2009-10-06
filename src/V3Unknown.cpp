@@ -66,6 +66,19 @@ private:
 	return level;
     }
 
+    AstNode* constify(AstNode* nodep) {
+	// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
+	// This way when we constify, if the expression
+	// is a constant it will still be under the XOR.
+	AstXor* newp = new AstXor (nodep->fileline(), nodep,
+				   new AstConst (nodep->fileline(), 0)); // Just so it's a valid XOR
+	V3Const::constifyTree(newp->lhsp()); nodep=NULL; // Just the conditional
+	// Nodep may now be a changed object like a constant
+	nodep = newp->lhsp()->unlinkFrBack();
+	newp->deleteTree(); newp=NULL;
+	return nodep;
+    }
+
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
@@ -249,7 +262,17 @@ private:
 	    int maxlsb = maxmsb - nodep->widthMin() + 1;
 	    if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
 	    V3Number maxlsbnum (nodep->fileline(), nodep->lsbp()->width(), maxlsb);
-	    if (!lvalue) {
+
+	    // See if the condition is constant true
+	    AstNode* condp = new AstLte (nodep->fileline(),
+					 nodep->lsbp()->cloneTree(false),
+					 new AstConst(nodep->fileline(), maxlsbnum));
+	    condp = constify(condp);
+	    if (condp->isOne()) {
+		// We don't need to add a conditional; we know the existing expression is ok
+		condp->deleteTree();
+	    }
+	    else if (!lvalue) {
 		// SEL(...) -> COND(LTE(bit<=maxlsb), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
@@ -258,43 +281,29 @@ private:
 		// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
 		// This way when we constify, if the expression
 		// is a constant it will still be under the XOR.
-		AstXor* newp = new AstXor (
-		    nodep->fileline(),
-		    new AstCondBound (nodep->fileline(),
-				      new AstLte (nodep->fileline(),
-						  nodep->lsbp()->cloneTree(false),
-						  new AstConst(nodep->fileline(), maxlsbnum)),
-				      nodep,
-				      new AstConst(nodep->fileline(), xnum)),
-		    new AstConst (nodep->fileline(), 0)); // Just so it's a valid XOR
+		AstNode* newp = new AstCondBound (nodep->fileline(),
+						  condp,
+						  nodep,
+						  new AstConst(nodep->fileline(), xnum));
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
-		V3Const::constifyTree(newp->lhsp());  // Just the conditional
-		if (debug()>=9) newp->dumpTree(cout,"        _con: ");
-		// Link in conditional, can blow away temp xor
-		AstNode* nnp = newp->lhsp()->unlinkFrBack();
-		replaceHandle.relink(nnp); nodep=NULL;
-		newp->deleteTree(); newp=NULL;
+		// Link in conditional
+		replaceHandle.relink(newp);
 		// Added X's, tristate them too
-		nnp->accept(*this);
+		newp->accept(*this);
 	    }
-	    else {
+	    else { // lvalue
 		// SEL(...) -> SEL(COND(LTE(bit<=maxlsb), bit, 0))
 		AstNRelinker replaceHandle;
 		AstNode* lsbp = nodep->lsbp()->unlinkFrBack(&replaceHandle);
 		V3Number zeronum (nodep->fileline(), lsbp->width(), 0);
-		AstCondBound* newp = new AstCondBound
-		    (lsbp->fileline(),
-		     new AstLte (lsbp->fileline(),
-				 lsbp->cloneTree(false),
-				 new AstConst(lsbp->fileline(), maxlsbnum)),
-		     lsbp,
-		     new AstConst(lsbp->fileline(), zeronum));
+		AstNode* newp = new AstCondBound (lsbp->fileline(),
+						  condp,
+						  lsbp,
+						  new AstConst(lsbp->fileline(), zeronum));
+		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
 		replaceHandle.relink(newp);
 		// Added X's, tristate them too
-		if (debug()>=9) nodep->dumpTree(cout,"        _new: ");
-		V3Const::constifyTree(nodep);
-		if (debug()>=9) nodep->dumpTree(cout,"        _con: ");
-		nodep->iterateChildren(*this);
+		newp->accept(*this);
 	    }
 	}
     }
@@ -319,7 +328,17 @@ private:
 	    }
 	    if (debug()>=9) nodep->dumpTree(cout,"arraysel_old: ");
 	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), maxmsb);
-	    if (!lvalue
+
+	    // See if the condition is constant true
+	    AstNode* condp = new AstLte (nodep->fileline(),
+					 nodep->bitp()->cloneTree(false),
+					 new AstConst(nodep->fileline(), widthnum));
+	    condp = constify(condp);
+	    if (condp->isOne()) {
+		// We don't need to add a conditional; we know the existing expression is ok
+		condp->deleteTree();
+	    }
+	    else if (!lvalue
 		&& !nodep->backp()->castArraySel()) {	// Too complicated and slow if mid-multidimension
 		// ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
@@ -329,43 +348,29 @@ private:
 		// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
 		// This way when we constify, if the expression
 		// is a constant it will still be under the XOR.
-		AstXor* newp = new AstXor (
-		    nodep->fileline(),
-		    new AstCondBound (nodep->fileline(),
-				       new AstLte (nodep->fileline(),
-						   nodep->bitp()->cloneTree(false),
-						   new AstConst(nodep->fileline(), widthnum)),
-				       nodep,
-				       new AstConst(nodep->fileline(), xnum)),
-		    new AstConst (nodep->fileline(), 0)); // Just so it's a valid XOR
+		AstNode* newp = new AstCondBound (nodep->fileline(),
+						  condp,
+						  nodep,
+						  new AstConst(nodep->fileline(), xnum));
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
-		V3Const::constifyTree(newp->lhsp());  // Just the conditional
-		if (debug()>=9) newp->dumpTree(cout,"        _con: ");
 		// Link in conditional, can blow away temp xor
-		AstNode* nnp = newp->lhsp()->unlinkFrBack();
-		replaceHandle.relink(nnp); nodep=NULL;
-		newp->deleteTree(); newp=NULL;
+		replaceHandle.relink(newp);
 		// Added X's, tristate them too
-		nnp->accept(*this);
+		newp->accept(*this);
 	    }
 	    else {
 		// ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
 		AstNRelinker replaceHandle;
 		AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
 		V3Number zeronum (nodep->fileline(), bitp->width(), 0);
-		AstCondBound* newp = new AstCondBound
-		    (bitp->fileline(),
-		     new AstLte (bitp->fileline(),
-				 bitp->cloneTree(false),
-				 new AstConst(bitp->fileline(), widthnum)),
-		     bitp,
-		     new AstConst(bitp->fileline(), zeronum));
-		replaceHandle.relink(newp);
+		AstNode* newp = new AstCondBound (bitp->fileline(),
+						  condp,
+						  bitp,
+						  new AstConst(bitp->fileline(), zeronum));
 		// Added X's, tristate them too
-		if (debug()>=9) nodep->dumpTree(cout,"        _new: ");
-		V3Const::constifyTree(nodep);
-		if (debug()>=9) nodep->dumpTree(cout,"        _con: ");
-		nodep->iterateChildren(*this);
+		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
+		replaceHandle.relink(newp);
+		newp->accept(*this);
 	    }
 	}
     }
