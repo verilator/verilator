@@ -58,6 +58,7 @@
 #include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Stats.h"
+#include "V3Inst.h"
 
 //######################################################################
 
@@ -545,6 +546,9 @@ private:
 	    refp->user1p(enp);
 	    refp->varp()->user1p(enp);
 	}
+	// Simplify interconnect in preperation for V3Inst
+	// (This could be a separate visitor, but we're in the neighborhood)
+	V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp);
     }
 
     // Default: Just iterate

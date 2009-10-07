@@ -193,6 +193,8 @@ void process () {
     V3Inst::dearrayAll(v3Global.rootp());
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
 
+    // Expand inouts, stage 2
+    // Also simplify pin connections to always be AssignWs in prep for V3Unknown
     V3Tristate::tristateAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tristate.tree"));
 
