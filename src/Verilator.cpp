@@ -196,15 +196,15 @@ void process () {
     V3Tristate::tristateAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tristate.tree"));
 
-    // Move assignments from X into MODULE temps.
-    // (Before flattening, so each new X variable is shared between all scopes of that module.)
-    V3Unknown::unknownAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unknown.tree"));
-
     // Task inlining & pushing BEGINs names to variables/cells
     // Begin processing must be after Param, before module inlining
     V3Begin::debeginAll(v3Global.rootp());	// Flatten cell names, before inliner
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("begin.tree"));
+
+    // Move assignments from X into MODULE temps.
+    // (Before flattening, so each new X variable is shared between all scopes of that module.)
+    V3Unknown::unknownAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unknown.tree"));
 
     // Module inlining
     // Cannot remove dead variables after this, as alias information for final
@@ -273,12 +273,11 @@ void process () {
 
     // Push constants across variables and remove redundant assignments
     V3Const::constifyAll(v3Global.rootp());
+    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
     if (v3Global.opt.oLife()) {
 	V3Life::lifeAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
     }
-
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
     // Make large low-fanin logic blocks into lookup tables
     // This should probably be done much later, once we have common logic elimination.

@@ -87,7 +87,7 @@ private:
 	UINFO(4,"   PIN  "<<nodep<<endl);
 	if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
 	if (nodep->modVarp()->isOutOnly() && nodep->exprp()->castConst())
-	    nodep->v3error("Output pin is assigned to a constant, electrical short");
+	    nodep->v3error("Output port is connected to a constant pin, electrical short");
 	// Use user1p on the PIN to indicate we created an assign for this pin
 	if (!nodep->user1()) {
 	    nodep->user1(1);

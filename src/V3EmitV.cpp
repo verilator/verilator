@@ -109,7 +109,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts(";\n");
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
-	putbs("assign ");
+	putbs("alias ");
 	nodep->lhsp()->iterateAndNext(*this);
 	putbs(" = ");
 	nodep->rhsp()->iterateAndNext(*this);
