@@ -963,17 +963,10 @@ struct AstAssignDly : public AstNodeAssign {
 
 struct AstAssignW : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
-private:
-    bool	m_allowImplicit;	// Output can be a implicit wire
-public:
     AstAssignW(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-	: AstNodeAssign(fileline, lhsp, rhsp) {
-	m_allowImplicit = false;
-    }
+	: AstNodeAssign(fileline, lhsp, rhsp) { }
     ASTNODE_NODE_FUNCS(AssignW, ASSIGNW)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignW(this->fileline(), lhsp, rhsp); }
-    bool allowImplicit() const { return m_allowImplicit; }
-    void allowImplicit(bool flag) { m_allowImplicit = flag; }
 };
 
 struct AstPull : public AstNode {

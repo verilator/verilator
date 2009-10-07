@@ -2191,7 +2191,7 @@ gatePulldownList<nodep>:
 	;
 
 gateBuf<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateBufif0<assignwp>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), $6)); }
@@ -2200,7 +2200,7 @@ gateBufif1<assignwp>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, $6, new AstConst($3,V3Number($3,"1'bz")))); }
 	;
 gateNot<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateNotif0<assignwp>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), new AstNot($3, $6))); }
@@ -2209,22 +2209,22 @@ gateNotif1<assignwp>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstNot($3,$6), new AstConst($3,V3Number($3,"1'bz")))); }
 	;
 gateAnd<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateNand<assignwp>:
-	 	gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
+	 	gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateOr<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateNor<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateXor<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateXnor<assignwp>:
-		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); $$->allowImplicit(true); }
+		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gatePullup<nodep>:
 		gateIdE instRangeE '(' idClassSel ')'	{ $$ = new AstPull ($3, $4, true); }
