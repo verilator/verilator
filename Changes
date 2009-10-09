@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.71****
 
+**** Fix writing to out-of-bounds arrays writing element 0.
+
 **** Fix VCD files showing internal flattened hierarchy, broke in 3.714.
 
 * Verilator 3.714 2009/09/18

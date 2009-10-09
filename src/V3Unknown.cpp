@@ -51,13 +51,18 @@ class UnknownVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on Netlist
+    //  AstSel::user()		-> bool.  Set true if already processed
     //  AstArraySel::user()	-> bool.  Set true if already processed
+    //  AstNode::user2p()	-> AstIf* Inserted if assignment for conditional
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
-    AstModule*	m_modp;		// Current module
-    bool	m_constXCvt;	// Convert X's
-    V3Double0	m_statUnkVars;	// Statistic tracking
+    AstModule*		m_modp;		// Current module
+    bool		m_constXCvt;	// Convert X's
+    V3Double0		m_statUnkVars;	// Statistic tracking
+    AstAssignW*		m_assignwp;	// Current assignment
+    AstAssignDly*	m_assigndlyp;	// Current assignment
 
     // METHODS
     static int debug() {
@@ -79,6 +84,80 @@ private:
 	return nodep;
     }
 
+    void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
+	// Spec says a out-of-range LHS SEL results in a NOP.
+	// This is a PITA.  We could:
+	//  1. IF(...) around an ASSIGN,
+	//     but that would break a "foo[TOO_BIG]=$fopen(...)".
+	//  2. Hack to extend the size of the output structure
+	//     by one bit, and write to that temporary, but never read it.
+	//     That makes there be two widths() and is likely a bug farm.
+	//  3. Make a special SEL to choose between the real lvalue
+	//     and a temporary NOP register.
+	//  4. Assign to a temp, then IF that assignment.
+	//     This is suspected to be nicest to later optimizations.
+	// 4 seems best but breaks later optimizations.  3 was tried,
+	// but makes a mess in the emitter as lvalue switching is needed.  So 4.
+	// SEL(...) -> temp
+	//             if (COND(LTE(bit<=maxlsb))) ASSIGN(SEL(...)),temp)
+	if (m_assignwp) {
+	    // Wire assigns must become always statements to deal with insertion
+	    // of multiple statements.  Perhaps someday make all wassigns into always's?
+	    UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
+	    m_assignwp->convertToAlways(); pushDeletep(m_assignwp); m_assignwp=NULL;
+	}
+	bool needDly = m_assigndlyp;
+	if (m_assigndlyp) {
+	    // Delayed assignments become normal assignments,
+	    // then the temp created becomes the delayed assignment
+	    AstNode* newp = new AstAssign(m_assigndlyp->fileline(),
+					  m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
+					  m_assigndlyp->rhsp()->unlinkFrBackWithNext());
+	    m_assigndlyp->replaceWith(newp); pushDeletep(m_assigndlyp); m_assigndlyp=NULL;
+	}
+	AstNode* prep = nodep;
+
+	// Scan back to put the condlvalue above all selects (IE top of the lvalue)
+	while (prep->backp()->castNodeSel()
+	       || prep->backp()->castSel()) {
+	    prep=prep->backp();
+	}
+	FileLine* fl = nodep->fileline();
+	nodep=NULL;  // Zap it so we don't use it by mistake - use prep
+
+	// Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
+	// Saves us teaching V3Const how to optimize, and it won't be needed again.
+	if (AstIf* ifp = prep->user2p()->castNode()->castIf()) {
+	    if (needDly) prep->v3fatalSrc("Should have already converted to non-delay");
+	    AstNRelinker replaceHandle;
+	    AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
+	    AstNode* newp = new AstLogAnd (condp->fileline(),
+					   condp,
+					   earliercondp);
+	    UINFO(4, "Edit BOUNDLVALUE "<<newp<<endl);
+	    replaceHandle.relink(newp);
+	}
+	else {
+	    string name = ((string)"__Vlvbound"+cvtToStr(m_modp->varNumGetInc()));
+	    AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name,
+				      new AstRange(fl, prep->width()-1, 0));
+	    m_modp->addStmtp(varp);
+
+	    AstNode* abovep = prep->backp();  // Grab above point before loose it w/ next replace
+	    prep->replaceWith(new AstVarRef(fl, varp, true));
+	    AstNode* newp = new AstIf(fl, condp,
+				      (needDly
+				       ? ((new AstAssignDly(fl, prep,
+							    new AstVarRef(fl, varp, false)))->castNode())
+				       : ((new AstAssign   (fl, prep,
+							    new AstVarRef(fl, varp, false)))->castNode())),
+				      NULL);
+	    if (debug()>=9) newp->dumpTree(cout,"     _new: ");
+	    abovep->addNextStmt(newp,abovep);
+	    prep->user2p(newp);  // Save so we may LogAnd it next time
+	}
+    }
+
     // VISITORS
     virtual void visit(AstModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
@@ -86,6 +165,16 @@ private:
 	m_constXCvt = true;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
+    }
+    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+	m_assigndlyp = nodep;
+	nodep->iterateChildren(*this); nodep=NULL;  // May delete nodep.
+	m_assigndlyp = NULL;
+    }
+    virtual void visit(AstAssignW* nodep, AstNUser*) {
+	m_assignwp = nodep;
+	nodep->iterateChildren(*this); nodep=NULL;  // May delete nodep.
+	m_assignwp = NULL;
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
 	m_constXCvt = false;  // Avoid loosing the X's in casex
@@ -292,18 +381,7 @@ private:
 		newp->accept(*this);
 	    }
 	    else { // lvalue
-		// SEL(...) -> SEL(COND(LTE(bit<=maxlsb), bit, 0))
-		AstNRelinker replaceHandle;
-		AstNode* lsbp = nodep->lsbp()->unlinkFrBack(&replaceHandle);
-		V3Number zeronum (nodep->fileline(), lsbp->width(), 0);
-		AstNode* newp = new AstCondBound (lsbp->fileline(),
-						  condp,
-						  lsbp,
-						  new AstConst(lsbp->fileline(), zeronum));
-		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
-		replaceHandle.relink(newp);
-		// Added X's, tristate them too
-		newp->accept(*this);
+		replaceBoundLvalue(nodep, condp);
 	    }
 	}
     }
@@ -312,6 +390,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->user1()) {
 	    nodep->user1(1);
+	    if (debug()==9) nodep->dumpTree(cout,"-in: ");
 	    // Guard against reading/writing past end of arrays
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	    int dimension      = AstArraySel::dimension(nodep->fromp());
@@ -358,7 +437,7 @@ private:
 		// Added X's, tristate them too
 		newp->accept(*this);
 	    }
-	    else {
+	    else if (!lvalue) {  // Mid-multidimension read, just use zero
 		// ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
 		AstNRelinker replaceHandle;
 		AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
@@ -372,6 +451,9 @@ private:
 		replaceHandle.relink(newp);
 		newp->accept(*this);
 	    }
+	    else {  // lvalue
+		replaceBoundLvalue(nodep, condp);
+	    }
 	}
     }
     //--------------------
@@ -383,6 +465,10 @@ private:
 public:
     // CONSTUCTORS
     UnknownVisitor(AstNetlist* nodep) {
+	m_modp = NULL;
+	m_assigndlyp = NULL;
+	m_assignwp = NULL;
+	m_constXCvt = false;
 	nodep->accept(*this);
     }
     virtual ~UnknownVisitor() {

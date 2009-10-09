@@ -191,11 +191,7 @@ private:
 	    // Wire assigns must become always statements to deal with insertion
 	    // of multiple statements.  Perhaps someday make all wassigns into always's?
 	    UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
-	    AstNode* lhsp = m_assignwp->lhsp()->unlinkFrBack();
-	    AstNode* rhsp = m_assignwp->rhsp()->unlinkFrBack();
-	    AstNode* assignp = new AstAssign (m_assignwp->fileline(), lhsp, rhsp);
-	    AstNode* alwaysp = new AstAlways (m_assignwp->fileline(), NULL, assignp);
-	    m_assignwp->replaceWith(alwaysp); pushDeletep(m_assignwp); m_assignwp=NULL;
+	    m_assignwp->convertToAlways(); pushDeletep(m_assignwp); m_assignwp=NULL;
 	}
 	// We make multiple edges if a task is called multiple times from another task.
 	new TaskEdge (&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
@@ -609,16 +605,14 @@ private:
 	m_scopep = oldscopep;
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
+	// See also AstNode::addBeforeStmt; this predates that function
 	if (debug()>=9) { nodep->dumpTree(cout,"-newstmt:"); }
 	if (!m_insStmtp) nodep->v3fatalSrc("Function not underneath a statement");
 	if (m_insMode == IM_BEFORE) {
 	    // Add the whole thing before insertAt
 	    UINFO(5,"     IM_Before  "<<m_insStmtp<<endl);
-	    AstNRelinker handle;
-	    m_insStmtp->unlinkFrBackWithNext(&handle);
 	    if (debug()>=9) { newp->dumpTree(cout,"-newfunc:"); }
-	    newp->addNext(m_insStmtp);
-	    handle.relink(newp);
+	    m_insStmtp->addHereThisAsNext(newp);
 	}
 	else if (m_insMode == IM_AFTER) {
 	    UINFO(5,"     IM_After   "<<m_insStmtp);

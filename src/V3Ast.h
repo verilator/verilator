@@ -748,6 +748,7 @@ public:
     AstNode*	addNext(AstNode* newp);		// Returns this, adds to end of list
     AstNode*	addNextNull(AstNode* newp);	// Returns this, adds to end of list, NULL is OK
     void	addNextHere(AstNode* newp);	// Adds after speced node
+    void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
     void	v3errorEnd(ostringstream& str) const;
     virtual void dump(ostream& str=cout);
@@ -756,6 +757,9 @@ public:
     void	swapWith(AstNode* bp);
     void	relink(AstNRelinker* linkerp);	// Generally use linker->relink() instead
     void	cloneRelinkNode() { cloneRelink(); }
+    // Iterate and insert - assumes tree format
+    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
+    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);
@@ -950,6 +954,8 @@ struct AstNodeStmt : public AstNode {
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
+    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
+    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
 };
 
 struct AstNodeAssign : public AstNodeStmt {
