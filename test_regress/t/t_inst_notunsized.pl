@@ -8,13 +8,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>$Self->{v3},
-	 expect=>
-q{%Error: t/t_select_bad_tri.v:\d+: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
-%Error: Exiting due to.*},
+    verilator_flags2=>["-Wno-IMPLICIT"],
 	 );
+
+execute (
+	 check_finished=>1,
+     );
 
 ok(1);
 1;
-

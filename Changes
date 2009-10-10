@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix VCD files showing internal flattened hierarchy, broke in 3.714.
 
+**** Fix cell port connection to unsized integer causing false width warning.
+
 * Verilator 3.714 2009/09/18
 
 **   Add --bbox-sys option to blackbox $system calls.

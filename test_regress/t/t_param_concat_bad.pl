@@ -15,8 +15,6 @@ compile (
 '%Warning-WIDTHCONCAT: t/t_param_concat.v:\d+: Unsized numbers/parameters not allowed in concatenations.
 %Warning-WIDTHCONCAT: Use "/\* verilator lint_off WIDTHCONCAT \*/" and lint_on around source to disable this message.
 %Warning-WIDTHCONCAT: t/t_param_concat.v:\d+: Unsized numbers/parameters not allowed in replications.
-%Warning-WIDTHCONCAT: t/t_param_concat.v:\d+: Unsized numbers/parameters not allowed in concatenations.
-%Warning-WIDTHCONCAT: t/t_param_concat.v:\d+: Unsized numbers/parameters not allowed in replications.
 %Error: Exiting due to.*',
 	 );
 

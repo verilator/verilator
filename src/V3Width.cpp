@@ -284,8 +284,8 @@ private:
     }
     virtual void visit(AstSel* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    V3Const::constifyParam(nodep->widthp());
 	    AstConst* widthConstp = nodep->widthp()->castConst();
@@ -323,7 +323,8 @@ private:
 		fromlsb = varrp->varp()->lsb();
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,BOTH).p());
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,FINAL).p());
+	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,FINAL).p());
 	    if (widthBad(nodep->lsbp(),selwidth,selwidth)
 		&& nodep->lsbp()->width()!=32) {
 		nodep->v3warn(WIDTH,"Bit extraction of var["<<frommsb<<":"<<fromlsb<<"] requires "
@@ -341,6 +342,7 @@ private:
  			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
 			       <<" outside "<<frommsb<<":"<<fromlsb);
 	    }
+	    // iterate FINAL is two blocks above
 	    widthCheck(nodep,"Extract Range",nodep->lsbp(),selwidth,selwidth,true);
 	}
     }
@@ -348,7 +350,7 @@ private:
     virtual void visit(AstArraySel* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
 	    nodep->bitp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	    int dimension      = AstArraySel::dimension(nodep->fromp());
 	    AstNodeVarRef* varrp = basefromp->castNodeVarRef();
@@ -369,7 +371,7 @@ private:
 		nodep->width(outwidth,outwidth);		// Width out = width of array
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,BOTH).p());
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,FINAL).p());
 	    if (widthBad(nodep->bitp(),selwidth,selwidth)
 		&& nodep->bitp()->width()!=32)
 		nodep->v3warn(WIDTH,"Bit extraction of array["<<frommsb<<":"<<fromlsb<<"] requires "
@@ -395,6 +397,8 @@ private:
 		nodep->width(nodep->num().width(), nodep->num().minWidth());
 	    }
 	}
+	// We don't size the constant until we commit the widths, as need parameters
+	// to remain unsized, and numbers to remain unsized to avoid backp() warnings
     }
     virtual void visit(AstRand* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
@@ -459,7 +463,10 @@ private:
 	    width = mwidth = 0;  // But see below later.
 	}
 	if (nodep->initp()) {
-	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
+	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
+	    // Although nodep will get a different width for parameters just below,
+	    // we want the init numbers to retain their width/minwidth until parameters are replaced.
+	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
 	    if (nodep->isParam()) {
 		if (nodep->rangep()) {
 		    // Parameters need to preserve widthMin from the value, not get a constant size
@@ -481,7 +488,8 @@ private:
 	    nodep->rangep(new AstRange(nodep->fileline(),width-1,0));
 	    nodep->rangep()->width(width,width);
 	}
-	nodep->width(width,mwidth);  // No need to check; varrefs are the "checkers"
+	nodep->width(width,mwidth);
+	// See above note about initp()->...FINAL
 	if (nodep->initp()) widthCheck(nodep,"Initial value",nodep->initp(),width,mwidth);
 	UINFO(4,"varWidthed "<<nodep<<endl);
 	//if (debug()) nodep->dumpTree(cout,"  InitPos: ");
@@ -730,7 +738,6 @@ private:
 				   <<" generates "<<expwidth<<" bits.");
 		    awidth = expwidth;
 		}
-		nodep->width(awidth,awidth);
 	    } else {
 		if (nodep->modVarp()->isTristate()) {
 		    if (pinwidth != expwidth) {
@@ -749,10 +756,12 @@ private:
 		    // We can't make the RANGE/EXTEND until V3Inst phase, as need RHS of assignment
 		    awidth = expwidth;
 		}
-		nodep->width(awidth,awidth);
+	    }
+	    nodep->width(awidth,awidth);
+	    nodep->exprp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
+	    if (!m_cellRangep) {
 		widthCheckPin(nodep, nodep->exprp(), pinwidth, inputPin);
 	    }
-	    nodep->exprp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
 	}
 	//if (debug()) nodep->dumpTree(cout,"-  PinPos: ");
     }
@@ -874,8 +883,8 @@ void WidthVisitor::fixWidthExtend (AstNode* nodep, int expWidth) {
 	// Save later constant propagation work, just right-size it.
 	V3Number num (nodep->fileline(), expWidth);
 	num.opAssign(constp->num());
+	num.isSigned(nodep->isSigned());
 	AstNode* newp = new AstConst(nodep->fileline(), num);
-	newp->signedFrom(constp);
 	constp->replaceWith(newp);
 	pushDeletep(constp); constp=NULL;
 	nodep=newp;
@@ -910,8 +919,8 @@ void WidthVisitor::fixWidthReduce (AstNode* nodep, int expWidth) {
     if (constp) {
 	V3Number num (nodep->fileline(), expWidth);
 	num.opRedOr(constp->num());
+	num.isSigned(constp->isSigned());
 	AstNode* newp = new AstConst(nodep->fileline(), num);
-	newp->signedFrom(constp);
 	constp->replaceWith(newp);
 	nodep=newp;
     } else {
@@ -979,6 +988,7 @@ void WidthVisitor::widthCheck (AstNode* nodep, const char* side,
 void WidthVisitor::widthCheckReduce (AstNode* nodep, const char* side,
 			      AstNode* underp, int expWidth, int expWidthMin,
 			      bool ignoreWarn) {
+    // Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
     if (expWidthMin==0) expWidthMin = expWidth;
     if (expWidth!=1) nodep->v3fatalSrc("Only for binary functions");
     bool bad = widthBad(underp,expWidth,expWidthMin);
@@ -997,6 +1007,7 @@ void WidthVisitor::widthCheckReduce (AstNode* nodep, const char* side,
 }
 
 void WidthVisitor::widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth, bool inputPin) {
+    // Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
     bool bad = widthBad(underp,expWidth,expWidth);
     if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
     if (bad) {
@@ -1163,6 +1174,19 @@ class WidthCommitVisitor : public AstNVisitor {
     // Copy all width() to widthMin().  V3Const expects this
 private:
     // VISITORS
+    virtual void visit(AstConst* nodep, AstNUser*) {
+	nodep->width(nodep->width(),nodep->width());
+	if ((nodep->width() != nodep->num().width()) || !nodep->num().sized()) {
+	    V3Number num (nodep->fileline(), nodep->width());
+	    num.opAssign(nodep->num());
+	    num.isSigned(nodep->isSigned());
+	    AstNode* newp = new AstConst(nodep->fileline(), num);
+	    nodep->replaceWith(newp);
+	    //if (debug()>4) nodep->dumpTree(cout,"  fixConstSize_old: ");
+	    //if (debug()>4)  newp->dumpTree(cout,"              _new: ");
+	    pushDeletep(nodep); nodep=NULL;
+	}
+    }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->width(nodep->width(),nodep->width());
 	nodep->iterateChildren(*this);
