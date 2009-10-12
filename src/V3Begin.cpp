@@ -25,6 +25,9 @@
 //	    BEGIN(VAR...) -> VAR ... {renamed}
 //	FOR -> WHILEs
 //
+// There are two scopes; named BEGINs change %m and variable scopes.
+// Unnamed BEGINs change only variable, not $display("%m") scope.
+//
 //*************************************************************************
 
 #include "config_build.h"
@@ -47,7 +50,8 @@ private:
     // STATE
     AstModule*		m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
-    string		m_beginScope;	// Name of begin blocks above us
+    string		m_namedScope;	// Name of begin blocks above us
+    string		m_unnamedScope;	// Name of begin blocks, including unnamed blocks
     int			m_repeatNum;	// Repeat counter
 
     // METHODS
@@ -72,24 +76,31 @@ private:
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	// Begin blocks were only useful in variable creation, change names and delete
 	UINFO(8,"  "<<nodep<<endl);
-	string oldScope = m_beginScope;
+	string oldScope = m_namedScope;
+	string oldUnnamed = m_unnamedScope;
 	{
-	    //UINFO(8,"nname "<<m_beginScope<<endl);
-	    // Create data for dotted variable resolution
-	    string dottedname = nodep->name() + "__DOT__";  // So always found
-	    string::size_type pos;
-	    while ((pos=dottedname.find("__DOT__")) != string::npos) {
-		string ident = dottedname.substr(0,pos);
-		dottedname = dottedname.substr(pos+strlen("__DOT__"));
-		if (m_beginScope=="") m_beginScope = ident;
-		else m_beginScope = m_beginScope + "__DOT__"+ident;
-		// Create CellInline for dotted resolution
-		AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
-							   m_beginScope, "__BEGIN__");
-		m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+	    //UINFO(8,"nname "<<m_namedScope<<endl);
+	    if (nodep->name() != "") {  // Else unneeded unnamed block
+		// Create data for dotted variable resolution
+		string dottedname = nodep->name() + "__DOT__";  // So always found
+		string::size_type pos;
+		while ((pos=dottedname.find("__DOT__")) != string::npos) {
+		    string ident = dottedname.substr(0,pos);
+		    dottedname = dottedname.substr(pos+strlen("__DOT__"));
+		    if (!nodep->unnamed()) {
+			if (m_namedScope=="") m_namedScope = ident;
+			else m_namedScope = m_namedScope + "__DOT__"+ident;
+		    }
+		    if (m_unnamedScope=="") m_unnamedScope = ident;
+		    else m_unnamedScope = m_unnamedScope + "__DOT__"+ident;
+		    // Create CellInline for dotted var resolution
+		    AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
+							       m_unnamedScope, "__BEGIN__");
+		    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+		}
 	    }
 
-	    // Remap var names
+	    // Remap var names and replace lower Begins
 	    nodep->iterateChildren(*this);
 
 	    if (AstNode* stmtsp = nodep->stmtsp()) {
@@ -100,12 +111,13 @@ private:
 	    }
 	    pushDeletep(nodep); nodep=NULL;
 	}
-	m_beginScope = oldScope;
+	m_namedScope = oldScope;
+	m_unnamedScope = oldUnnamed;
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (m_beginScope != "") {
+	if (m_unnamedScope != "") {
 	    // Rename it
-	    nodep->name(m_beginScope+"__DOT__"+nodep->name());
+	    nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
 	    // Move to module
 	    nodep->unlinkFrBack();
 	    if (m_ftaskp) m_ftaskp->addStmtsp(nodep);   // Begins under funcs just move into the func
@@ -114,9 +126,9 @@ private:
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(8,"   CELL "<<nodep<<endl);
-	if (m_beginScope != "") {
+	if (m_namedScope != "") {
 	    // Rename it
-	    nodep->name(m_beginScope+"__DOT__"+nodep->name());
+	    nodep->name(m_namedScope+"__DOT__"+nodep->name());
 	    UINFO(8,"     rename to "<<nodep->name()<<endl);
 	    // Move to module
 	    nodep->unlinkFrBack();
@@ -174,11 +186,11 @@ private:
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline
-	if (m_beginScope != "") {
+	if (m_namedScope != "") {
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();
-	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"."+AstNode::prettyName(m_beginScope)));
+	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"."+AstNode::prettyName(m_namedScope)));
 	    if (afterp) nodep->scopeAttrp(afterp);
 	}
 	nodep->iterateChildren(*this);

@@ -380,6 +380,10 @@ void AstNodeFTask::dump(ostream& str) {
     this->AstNode::dump(str);
     if (taskPublic()) str<<" [PUBLIC]";
 }
+void AstBegin::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (unnamed()) str<<" [UNNAMED]";
+}
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);
     if (this->dataDeclNullp()) {

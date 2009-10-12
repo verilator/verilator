@@ -1395,7 +1395,8 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
-		yBEGIN blockDeclStmtList yEND		{ $$ = $2; }
+	//			// So need begin's even if unnamed to scope variables down
+		yBEGIN blockDeclStmtList yEND		{ $$ = new AstBegin($1,"",$2); }
 	|	yBEGIN /**/		 yEND		{ $$ = NULL; }
 	|	yBEGIN ':' seq_blockId blockDeclStmtList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
 	|	yBEGIN ':' seq_blockId /**/	         yEND endLabelE	{ $$ = new AstBegin($2,*$3,NULL); }

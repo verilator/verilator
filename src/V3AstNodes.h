@@ -702,19 +702,23 @@ struct AstBegin : public AstNode {
     // Children: statements
 private:
     string	m_name;		// Name of block
+    bool	m_unnamed;	// Originally unnamed
 public:
     // Node that simply puts name into the output stream
     AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
 	, m_name(name) {
 	addNOp1p(stmtsp);
+	m_unnamed = (name=="");
     }
     ASTNODE_NODE_FUNCS(Begin, BEGIN)
+    virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Block name
     virtual void name(const string& name) { m_name = name; }
     // op1 = Statements
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
+    bool unnamed() const { return m_unnamed; }
 };
 
 struct AstGenerate : public AstNode {

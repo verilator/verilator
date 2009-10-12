@@ -72,6 +72,7 @@ private:
     V3SymTable* m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
     V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
     int		m_beginNum;	// Begin block number, 0=none seen
+    int		m_modBeginNum;	// Begin block number in module, 0=none seen
     bool	m_inGenerate;	// Inside a generate
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
@@ -193,6 +194,7 @@ private:
 	m_cellVarsp = NULL;
 	m_paramNum = 0;
 	m_beginNum = 0;
+	m_modBeginNum = 0;
 	nodep->iterateChildren(*this);
 	// Prep for next
 	m_curVarsp = NULL;
@@ -328,8 +330,23 @@ private:
 	    ++m_beginNum;
 	    nodep->name(nodep->name()+cvtToStr(m_beginNum));
 	}
+	if (m_idState==ID_FIND && nodep->name()=="" && nodep->unnamed()) {
+	    // Unnamed blocks are only important when they contain var
+	    // decls, so search for them. (Otherwise adding all the
+	    // unnamed#'s would just confuse tracing variables in
+	    // places such as tasks, where "task ...; begin ... end"
+	    // are common.
+	    for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+		if (stmtp->castVar()) {
+		    ++m_modBeginNum;
+		    nodep->name("unnamedblk"+cvtToStr(m_modBeginNum));
+		    break;
+		}
+	    }
+	}
+
 	// Check naming (we don't really care, but some tools do, so better to warn)
-	if (m_idState==ID_FIND) {
+	if (m_idState==ID_FIND && nodep->name()!="") {
 	    findAndInsertAndCheck(nodep, nodep->name());
 	}
 	// Recurse
@@ -480,6 +497,7 @@ public:
 	m_ftaskp = NULL;
 	m_paramNum = 0;
 	m_beginNum = 0;
+	m_modBeginNum = 0;
 	m_inGenerate = false;
 	//
 	rootp->accept(*this);
