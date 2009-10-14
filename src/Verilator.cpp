@@ -267,7 +267,7 @@ void process () {
 
     // Loop unrolling & convert FORs to WHILEs
     V3Unroll::unrollAll(v3Global.rootp());
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unroll.tree"));
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unroll.tree"));
 
     // Convert case statements to if() blocks.  Must be after V3Unknown
     V3Case::caseAll(v3Global.rootp());

@@ -34,6 +34,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <map>
+#include <vector>
 
 #include "V3Global.h"
 #include "V3Life.h"
@@ -53,13 +54,21 @@ class LifeState {
 public:
     V3Double0	m_statAssnDel;	// Statistic tracking
     V3Double0	m_statAssnCon;	// Statistic tracking
+    vector<AstNode*>	m_unlinkps;
 
 public:
+    // CONSTRUCTORS
     LifeState() {}
     ~LifeState() {
 	V3Stats::addStat("Optimizations, Lifetime assign deletions", m_statAssnDel);
 	V3Stats::addStat("Optimizations, Lifetime constant prop", m_statAssnCon);
+	for (vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
+	    (*it)->unlinkFrBack();
+	    (*it)->deleteTree();
+	}
     }
+    // METHODS
+    void pushUnlinkDeletep(AstNode* nodep) { m_unlinkps.push_back(nodep); }
 };
 
 //######################################################################
@@ -144,9 +153,11 @@ public:
 	    if (AstNode* oldassp = entp->assignp()) {
 		UINFO(7,"       PREV: "<<oldassp<<endl);
 		// Redundant assignment, in same level block
+		// Don't delete it now as it will confuse iteration since it maybe WAY
+		// above our current iteration point.
 		if (debug()>4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
 		entp->complexAssign();
-		oldassp->unlinkFrBack()->deleteTree(); oldassp=NULL;
+		m_statep->pushUnlinkDeletep(oldassp); oldassp=NULL;
 		m_statep->m_statAssnDel++;
 	    }
 	}
