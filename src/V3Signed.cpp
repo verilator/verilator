@@ -359,12 +359,14 @@ private:
 
 public:
     // CONSTRUCTORS
-    SignedVisitor(AstNode* nodep, bool paramsOnly) {
+    SignedVisitor(bool paramsOnly) {
 	m_paramsOnly = paramsOnly;
 	m_taskDepth = 0;
-	nodep->accept(*this);
     }
     virtual ~SignedVisitor() {}
+    AstNode* mainAcceptEdit(AstNode* nodep) {
+	return nodep->acceptSubtreeReturnEdits(*this);
+    }
 };
 
 //######################################################################
@@ -391,10 +393,11 @@ private:
     }
 public:
     // CONSTRUCTORS
-    SignedRemoveVisitor(AstNode* nodep) {
-	nodep->accept(*this);
-    }
+    SignedRemoveVisitor() {}
     virtual ~SignedRemoveVisitor() {}
+    AstNode* mainAcceptEdit(AstNode* nodep) {
+	return nodep->acceptSubtreeReturnEdits(*this);
+    }
 };
 
 //######################################################################
@@ -402,12 +405,15 @@ public:
 
 void V3Signed::signedAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    SignedVisitor visitor (nodep, false);
-    SignedRemoveVisitor rvisitor (nodep);
+    (void)signedParamsEdit(nodep);
 }
 
-void V3Signed::signedParams(AstNode* nodep) {
+AstNode* V3Signed::signedParamsEdit(AstNode* nodep) {
+    // Only called from V3Width::widthParamsEdit
     UINFO(4,__FUNCTION__<<": "<<endl);
-    SignedVisitor visitor (nodep, true);
-    SignedRemoveVisitor rvisitor (nodep);
+    SignedVisitor visitor (true);
+    nodep = visitor.mainAcceptEdit(nodep);
+    SignedRemoveVisitor rvisitor;
+    nodep = rvisitor.mainAcceptEdit(nodep);
+    return nodep;
 }

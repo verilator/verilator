@@ -71,19 +71,6 @@ private:
 	return level;
     }
 
-    AstNode* constify(AstNode* nodep) {
-	// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
-	// This way when we constify, if the expression
-	// is a constant it will still be under the XOR.
-	AstXor* newp = new AstXor (nodep->fileline(), nodep,
-				   new AstConst (nodep->fileline(), 0)); // Just so it's a valid XOR
-	V3Const::constifyTree(newp->lhsp()); nodep=NULL; // Just the conditional
-	// Nodep may now be a changed object like a constant
-	nodep = newp->lhsp()->unlinkFrBack();
-	newp->deleteTree(); newp=NULL;
-	return nodep;
-    }
-
     void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
 	// Spec says a out-of-range LHS SEL results in a NOP.
 	// This is a PITA.  We could:
@@ -184,11 +171,11 @@ private:
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
 	UINFO(4," N/EQCASE->EQ "<<nodep<<endl);
-	V3Const::constifyTree(nodep->lhsp());
-	V3Const::constifyTree(nodep->rhsp());
+	V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
+	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
 	    // Both sides are constant, node can be constant
-	    V3Const::constifyTree(nodep); nodep=NULL;
+	    V3Const::constifyEdit(nodep); nodep=NULL;
 	    return;
 	} else {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -214,11 +201,11 @@ private:
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
 	UINFO(4," N/EQWILD->EQ "<<nodep<<endl);
-	V3Const::constifyTree(nodep->lhsp());
-	V3Const::constifyTree(nodep->rhsp());
+	V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
+	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
 	    // Both sides are constant, node can be constant
-	    V3Const::constifyTree(nodep); nodep=NULL;
+	    V3Const::constifyEdit(nodep); nodep=NULL;
 	    return;
 	} else {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -356,7 +343,8 @@ private:
 	    AstNode* condp = new AstLte (nodep->fileline(),
 					 nodep->lsbp()->cloneTree(false),
 					 new AstConst(nodep->fileline(), maxlsbnum));
-	    condp = constify(condp);
+	    // Note below has null backp(); the Edit function knows how to deal with that.
+	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {
 		// We don't need to add a conditional; we know the existing expression is ok
 		condp->deleteTree();
@@ -367,9 +355,6 @@ private:
 		nodep->unlinkFrBack(&replaceHandle);
 		V3Number xnum (nodep->fileline(), nodep->width());
 		xnum.setAllBitsX();
-		// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
-		// This way when we constify, if the expression
-		// is a constant it will still be under the XOR.
 		AstNode* newp = new AstCondBound (nodep->fileline(),
 						  condp,
 						  nodep,
@@ -412,7 +397,8 @@ private:
 	    AstNode* condp = new AstLte (nodep->fileline(),
 					 nodep->bitp()->cloneTree(false),
 					 new AstConst(nodep->fileline(), widthnum));
-	    condp = constify(condp);
+	    // Note below has null backp(); the Edit function knows how to deal with that.
+	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {
 		// We don't need to add a conditional; we know the existing expression is ok
 		condp->deleteTree();
@@ -424,9 +410,6 @@ private:
 		nodep->unlinkFrBack(&replaceHandle);
 		V3Number xnum (nodep->fileline(), nodep->width());
 		xnum.setAllBitsX();
-		// Put the new nodes under a temporary XOR operator we'll rip up in a moment.
-		// This way when we constify, if the expression
-		// is a constant it will still be under the XOR.
 		AstNode* newp = new AstCondBound (nodep->fileline(),
 						  condp,
 						  nodep,

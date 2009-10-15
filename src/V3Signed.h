@@ -32,7 +32,9 @@
 class V3Signed {
 public:
     static void signedAll(AstNetlist* nodep);
-    static void signedParams(AstNode* nodep);
+protected:
+    friend class V3Width;  // Use widthParamsEdit instead of signedParamsEdit
+    static AstNode* signedParamsEdit(AstNode* nodep); // May replace nodep
 };
 
 #endif // Guard

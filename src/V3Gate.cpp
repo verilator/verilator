@@ -688,7 +688,7 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 	if (debug()>=9) consumerp->dumpTree(cout,"\telimUseCns: ");
 	//Caution: Can't let V3Const change our handle to consumerp, such as by
 	// optimizing away this assignment, etc.
-	V3Const::constifyTree(consumerp);
+	consumerp = V3Const::constifyEdit(consumerp);
 	if (debug()>=5) consumerp->dumpTree(cout,"\telimUseDne: ");
     }
 }

@@ -1096,7 +1096,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 		    AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
 		    if (!newtree2p) fromVertexp->domainp()->v3fatalSrc("No senitem found under clocked domain");
 		    newtreep->addSensesp(newtree2p);
-		    V3Const::constifyTreeExpensive(newtreep);	// Remove duplicates
+		    newtree2p=NULL; // Below edit may replace it
+		    V3Const::constifyExpensiveEdit(newtreep);	// Remove duplicates
 		    newtreep->multi(true);	// Comment that it was made from 2 clock domains
 		    domainp = m_finder.getSenTree(domainp->fileline(), newtreep);
 		    if (ddebug) {

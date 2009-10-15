@@ -791,6 +791,7 @@ public:
     void	iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup=NULL);
     void	iterateChildren(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
+    AstNode*	acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
 
     // CONVERSION
     AstNode*	castNode() { return this; }

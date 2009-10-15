@@ -32,7 +32,8 @@
 class V3Const {
 public:
     // Force this cell node's parameter list to become a constant
-    static void constifyParam(AstNode* nodep);
+    // Return new node that may have replaced nodep
+    static AstNode* constifyParamsEdit(AstNode* nodep);
     // Everything that's possible
     static void constifyAll(AstNetlist* nodep);
     // Also, warn
@@ -40,9 +41,11 @@ public:
     // C++ datatypes
     static void constifyCpp(AstNetlist* nodep);
     // Only the current node and lower
-    static void constifyTree(AstNode* nodep);
+    // Return new node that may have replaced nodep
+    static AstNode* constifyEdit(AstNode* nodep);
     // Only the current node and lower, with special SenTree optimization
-    static void constifyTreeExpensive(AstNode* nodep);
+    // Return new node that may have replaced nodep
+    static AstNode* constifyExpensiveEdit(AstNode* nodep);
 };
 
 #endif // Guard

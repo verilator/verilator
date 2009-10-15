@@ -108,7 +108,7 @@ private:
 	if (nodep->castGenFor() && !m_forVarp->isGenVar()) {
 	    nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->name()<<endl);
 	}
-	if (m_generate) V3Const::constifyParam(initAssp->rhsp());
+	if (m_generate) V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 	AstConst* constInitp = initAssp->rhsp()->castConst();
 	if (!constInitp) return cantUnroll(nodep, "non-constant initializer");
 	//
@@ -142,7 +142,7 @@ private:
 	// Subtracts have it on the rhs, because you write i=i-1; i=1-i is non-sensible.
 	AstConst* preconstIncp = (subtract ? incInstrp->rhsp()->castConst()
 				  : incInstrp->lhsp()->castConst());
-	if (m_generate) V3Const::constifyParam(preconstIncp);
+	if (m_generate) preconstIncp = V3Const::constifyParamsEdit(preconstIncp)->castConst();
 	AstConst* constIncp = (subtract ? incInstrp->rhsp()->castConst()
 			       : incInstrp->lhsp()->castConst());
 	UINFO(8, "   Inc expr ok:  "<<constIncp<<endl);
@@ -161,7 +161,7 @@ private:
 	if (condBip->lhsp()->castVarRef()->varp() != m_forVarp
 	    || condBip->lhsp()->castVarRef()->varScopep() != m_forVscp)
 	    return cantUnroll(nodep, "different variable in condition");
-	if (m_generate) V3Const::constifyParam(condBip->rhsp());
+	if (m_generate) V3Const::constifyParamsEdit(condBip->rhsp());  // rhsp may change
 	AstConst* constStopp = condBip->rhsp()->castConst();
 	if (!constStopp) return cantUnroll(nodep, "non-constant final value");
 	UINFO(8, "   Stop expr ok: "<<constStopp<<endl);
@@ -299,17 +299,17 @@ private:
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
 	    // Constify before unroll call, as it may change what is underneath.
-	    if (nodep->precondsp()) V3Const::constifyTree(nodep->precondsp());
-	    if (nodep->condp()) V3Const::constifyTree(nodep->condp());
+	    if (nodep->precondsp()) V3Const::constifyEdit(nodep->precondsp());  // precondsp may change
+	    if (nodep->condp()) V3Const::constifyEdit(nodep->condp()); //condp may change
 	    // Grab initial value
 	    AstNode* initp = NULL;  // Should be statement before the while.
 	    if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
-	    if (initp) V3Const::constifyTree(initp);
-	    initp = NULL; if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
+	    if (initp) { V3Const::constifyEdit(initp); initp=NULL; }
+	    if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
 	    // Grab assignment
 	    AstNode* incp = NULL;  // Should be last statement
 	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
-	    if (incp) V3Const::constifyTree(incp);
+	    if (incp) { V3Const::constifyEdit(incp); incp=NULL; }
 	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
 	    // And check it
 	    if (forUnrollCheck(nodep, initp,
@@ -326,9 +326,9 @@ private:
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
 	    // Constify before unroll call, as it may change what is underneath.
-	    if (nodep->initsp()) V3Const::constifyTree(nodep->initsp());
-	    if (nodep->condp()) V3Const::constifyTree(nodep->condp());
-	    if (nodep->incsp()) V3Const::constifyTree(nodep->incsp());
+	    if (nodep->initsp()) V3Const::constifyEdit(nodep->initsp());  // initsp may change
+	    if (nodep->condp()) V3Const::constifyEdit(nodep->condp());  // condp may change
+	    if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());  // incsp may change
 	    if (nodep->condp()->isZero()) {
 		// We don't need to do any loops.  Remove the GenFor,
 		// Genvar's don't care about any initial assignments.

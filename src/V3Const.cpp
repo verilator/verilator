@@ -1717,8 +1717,7 @@ private:
 	} else {
 	    // Calculate the width of this operation
 	    if (m_params && !nodep->width()) {
-		V3Width::widthParams(nodep);
-		V3Signed::signedParams(nodep);
+		nodep = V3Width::widthParamsEdit(nodep);
 	    }
 	    nodep->iterateChildren(*this);
 	}
@@ -1736,57 +1735,60 @@ public:
 	m_scopep = NULL;
     }
     virtual ~ConstVisitor() {}
-    void main(AstNode* nodep) {
+    AstNode* mainAcceptEdit(AstNode* nodep) {
 	// Operate starting at a random place
-	nodep->accept(*this);
+	return nodep->acceptSubtreeReturnEdits(*this);
     }
 };
 
 //######################################################################
 // Const class functions
 
-void V3Const::constifyParam(AstNode* nodep) {
+AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     //if (debug()>0) nodep->dumpTree(cout,"  forceConPRE : ");
-    V3Width::widthSignedIfNotAlready(nodep); // Make sure we've sized everything first
+    nodep = V3Width::widthParamsEditIfNeed(nodep); // Make sure we've sized everything first
     ConstVisitor visitor (true,false,false,false);
     if (AstVar* varp=nodep->castVar()) {
 	// If a var wants to be constified, it's really a param, and
 	// we want the value to be constant.  We aren't passed just the
 	// init value because we need widthing above to handle the var's type.
-	if (varp->initp()) visitor.main(varp->initp());
+	if (varp->initp()) visitor.mainAcceptEdit(varp->initp());
     } else {
-	visitor.main(nodep);
+	nodep = visitor.mainAcceptEdit(nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump this.
     //if (debug()>0) nodep->dumpTree(cout,"  forceConDONE: ");
+    return nodep;
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,true,false,false);
-    visitor.main(nodep);
+    (void)visitor.mainAcceptEdit(nodep);
 }
 
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,true,false);
-    visitor.main(nodep);
+    (void)visitor.mainAcceptEdit(nodep);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (false,false,false,true);
-    visitor.main(nodep);
+    (void)visitor.mainAcceptEdit(nodep);
 }
 
-void V3Const::constifyTree(AstNode* nodep) {
+AstNode* V3Const::constifyEdit(AstNode* nodep) {
     ConstVisitor visitor (false,false,false,false);
-    visitor.main(nodep);
+    nodep = visitor.mainAcceptEdit(nodep);
+    return nodep;
 }
 
-void V3Const::constifyTreeExpensive(AstNode* nodep) {
+AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {
     ConstVisitor visitor (false,true,false,false);
-    visitor.main(nodep);
+    nodep = visitor.mainAcceptEdit(nodep);
+    return nodep;
 }

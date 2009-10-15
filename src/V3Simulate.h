@@ -503,7 +503,8 @@ private:
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
 	AstFunc* funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
-	V3Width::widthSignedIfNotAlready(funcp); // Make sure we've sized the function
+	V3Width::widthParamsEditIfNeed(funcp); funcp=NULL; // Make sure we've sized the function
+	funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	// Note we'd need a stack if we allowed recursive functions!
 	AstNode* pinp = nodep->pinsp();  AstNode* nextpinp = NULL;

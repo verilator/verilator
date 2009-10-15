@@ -231,7 +231,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    V3Const::constifyParam(nodep->rhsp());
+	    V3Const::constifyParamsEdit(nodep->rhsp()); // rhsp may change
 	    AstConst* constp = nodep->rhsp()->castConst();
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
@@ -252,8 +252,8 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    V3Const::constifyParam(nodep->msbp());
-	    V3Const::constifyParam(nodep->lsbp());
+	    V3Const::constifyParamsEdit(nodep->msbp()); // msbp may change
+	    V3Const::constifyParamsEdit(nodep->lsbp()); // lsbp may change
 	    AstConst* msbConstp = nodep->msbp()->castConst();
 	    AstConst* lsbConstp = nodep->lsbp()->castConst();
 	    if (!msbConstp || !lsbConstp) {
@@ -287,7 +287,7 @@ private:
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    V3Const::constifyParam(nodep->widthp());
+	    V3Const::constifyParamsEdit(nodep->widthp()); // widthp may change
 	    AstConst* widthConstp = nodep->widthp()->castConst();
 	    if (!widthConstp) {
 		nodep->v3error("Width of bit extract isn't a constant");
@@ -849,12 +849,14 @@ private:
 
 public:
     // CONSTUCTORS
-    WidthVisitor(AstNode* nodep, bool paramsOnly) {
+    WidthVisitor(bool paramsOnly) {
 	m_paramsOnly = paramsOnly;
 	m_taskDepth = 0;
 	m_cellRangep = NULL;
 	m_casep = NULL;
-	nodep->accept(*this, WidthVP(ANYSIZE,0,BOTH).p());
+    }
+    AstNode* mainAcceptEdit(AstNode* nodep) {
+	return nodep->acceptSubtreeReturnEdits(*this, WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual ~WidthVisitor() {}
 };
@@ -1205,24 +1207,27 @@ public:
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor (nodep, false);
+    WidthVisitor visitor (false);
+    (void)visitor.mainAcceptEdit(nodep);
 }
 
-void V3Width::widthParams(AstNode* nodep) {
+AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor (nodep, true);
+    WidthVisitor visitor (true);
+    nodep = visitor.mainAcceptEdit(nodep);
+    nodep = V3Signed::signedParamsEdit(nodep);
+    return nodep;
 }
 
-void V3Width::widthSignedIfNotAlready(AstNode* nodep) {
+AstNode* V3Width::widthParamsEditIfNeed(AstNode* nodep) {
     if (!nodep->width()) {
-	V3Width::widthParams(nodep);
-	V3Signed::signedParams(nodep);
+	nodep = V3Width::widthParamsEdit(nodep);
     }
+    return nodep;
 }
 
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     WidthCommitVisitor visitor (nodep);
 }
-

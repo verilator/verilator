@@ -778,6 +778,42 @@ void AstNode::iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup) {
     }
 }
 
+AstNode* AstNode::acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
+    // Some visitors perform tree edits (such as V3Const), and may even
+    // replace/delete the exact nodep that the visitor is called with.  If
+    // this happens, the parent will loose the handle to the node that was
+    // processed.
+    // To solve this, this function returns the pointer to the replacement node,
+    // which in many cases is just the same node that was passed in.
+    AstNode* nodep = this;  // Note "this" may point to bogus point later in this function
+    if (nodep->castNetlist()) {
+	// Calling on top level; we know the netlist won't get replaced
+	nodep->accept(v, vup);
+    } else if (!nodep->backp()) {
+	// Calling on standalone tree; insert a shim node so we can keep track, then delete it on completion
+	AstBegin* tempp = new AstBegin(nodep->fileline(),"[EditWrapper]",nodep);
+	{
+	    tempp->stmtsp()->accept(v, vup);  nodep=NULL; // nodep to null as may be replaced
+	}
+	nodep = tempp->stmtsp()->unlinkFrBackWithNext();
+	tempp->deleteTree(); tempp=NULL;
+    } else {
+	// Use back to determine who's pointing at us (IE assume new node grafts into same place as old one)
+	AstNode** nextnodepp = NULL;
+	if (this->m_backp->m_op1p == this) nextnodepp = &(this->m_backp->m_op1p);
+	else if (this->m_backp->m_op2p == this) nextnodepp = &(this->m_backp->m_op2p);
+	else if (this->m_backp->m_op3p == this) nextnodepp = &(this->m_backp->m_op3p);
+	else if (this->m_backp->m_op4p == this) nextnodepp = &(this->m_backp->m_op4p);
+	else if (this->m_backp->m_nextp == this) nextnodepp = &(this->m_backp->m_nextp);
+	if (!nextnodepp) this->v3fatalSrc("Node's back doesn't point to forward to node itself");
+	{
+	    nodep->accept(v, vup); nodep=NULL; // nodep to null as may be replaced
+	}
+	nodep = *nextnodepp;  // Grab new node from point where old was connected
+    }
+    return nodep;
+}
+
 //======================================================================
 
 void AstNode::cloneRelinkTree() {
@@ -958,6 +994,7 @@ void AstNode::v3errorEnd(ostringstream& str) const {
 }
 
 //######################################################################
+// AstNVisitor
 
 void AstNVisitor::doDeletes() {
     for (vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {

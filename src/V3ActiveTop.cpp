@@ -80,9 +80,9 @@ private:
     }
     virtual void visit(AstActive* nodep, AstNUser*) {
 	UINFO(4,"   ACTIVE "<<nodep<<endl);
+	V3Const::constifyExpensiveEdit(nodep); // Remove duplicate clocks and such; sensesp() may change!
 	AstSenTree* sensesp = nodep->sensesp();
 	if (!sensesp) nodep->v3fatalSrc("NULL");
-	V3Const::constifyTreeExpensive(nodep);	// Remove duplicate clocks and such
 	if (sensesp->sensesp()
 	    && sensesp->sensesp()->castSenItem()
 	    && sensesp->sensesp()->castSenItem()->isNever()) {

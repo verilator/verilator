@@ -318,7 +318,7 @@ private:
 	if (lastEdit != AstNode::editCountGbl()) {
 	    // We changed something, try to constant propagate, but don't delete the
 	    // assignment as we still need nodep to remain.
-	    V3Const::constifyTree(nodep->rhsp());
+	    V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	}
 	// Has to be direct assignment without any EXTRACTing.
 	if (nodep->lhsp()->castVarRef() && !m_sideEffect) {

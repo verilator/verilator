@@ -131,7 +131,7 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (nodep->isParam()) {
 	    if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
-	    V3Const::constifyParam(nodep);  // The variable, not just the var->init()
+	    V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
 	}
     }
 
@@ -151,9 +151,8 @@ private:
 	nodep->deleteTree(); nodep=NULL;
     }
     virtual void visit(AstGenIf* nodep, AstNUser*) {
-	V3Width::widthParams(nodep);  // Param typed widthing will NOT recurse the body
-	V3Signed::signedParams(nodep);
-	V3Const::constifyParam(nodep->condp());
+	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
+	V3Const::constifyParamsEdit(nodep->condp());  // condp may change
 	if (AstConst* constp = nodep->condp()->castConst()) {
 	    AstNode* keepp = (constp->isZero()
 			      ? nodep->elsesp()
@@ -172,22 +171,20 @@ private:
     virtual void visit(AstGenFor* nodep, AstNUser*) {
 	// We parse a very limited form of FOR, so we don't need to do a full
 	// simulation to unroll the loop
-	V3Width::widthParams(nodep);  // Param typed widthing will NOT recurse the body
-	V3Signed::signedParams(nodep);
+	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
 	V3Unroll::unrollGen(nodep); nodep=NULL;
     }
     virtual void visit(AstGenCase* nodep, AstNUser*) {
 	AstNode* keepp = NULL;
 	V3Case::caseLint(nodep);
-	V3Width::widthParams(nodep);  // Param typed widthing will NOT recurse the body
-	V3Signed::signedParams(nodep);
-	V3Const::constifyParam(nodep->exprp());
+	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
+	V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
 	AstConst* exprp = nodep->exprp()->castConst();
 	// Constify
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    for (AstNode* ep = itemp->condsp(); ep; ) {
 		AstNode* nextp = ep->nextp(); //May edit list
-		V3Const::constifyParam(ep);
+		V3Const::constifyParamsEdit(ep); ep=NULL; // ep may change
 		ep = nextp;
 	    }
 	}
@@ -248,7 +245,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	// Create new module name with _'s between the constants
 	if (debug()>9) nodep->dumpTree(cout,"cell:\t");
 	// Evaluate all module constants
-	V3Const::constifyParam(nodep);
+	V3Const::constifyParamsEdit(nodep);
 
 	// Make sure constification worked
 	// Must be a separate loop, as constant conversion may have changed some pointers.

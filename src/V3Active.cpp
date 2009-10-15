@@ -84,7 +84,7 @@ private:
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	// Simplify sensitivity list
-	V3Const::constifyTreeExpensive(nodep);
+	V3Const::constifyExpensiveEdit(nodep); nodep=NULL;
     }
     // Empty visitors, speed things up
     virtual void visit(AstNodeStmt* nodep, AstNUser*) { }
