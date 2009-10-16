@@ -164,6 +164,7 @@ private:
 		nodep->unlinkFrBack();
 	    }
 	    nodep->deleteTree(); nodep=NULL;
+	    // Normal edit rules will now recurse the replacement
 	} else {
 	    nodep->condp()->v3error("Generate If condition must evaluate to constant");
 	}

@@ -865,8 +865,8 @@ public:
 // METHODs
 
 bool WidthVisitor::widthBad (AstNode* nodep, int expWidth, int expWidthMin) {
-    if (nodep->width()==0) nodep->v3fatalSrc("Under node has no expected width?? Missing Visitor func?");
-    if (expWidth==0) nodep->v3fatalSrc("Node has no expected width?? Missing Visitor func?");
+    if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
+    if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
     if (expWidthMin==0) expWidthMin = expWidth;
     if (nodep->widthSized()  && nodep->width() != expWidthMin) return true;
     if (!nodep->widthSized() && nodep->widthMin() > expWidthMin) return true;

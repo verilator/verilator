@@ -574,7 +574,9 @@ class AstNode {
     static int	s_cloneCntGbl;	// Count of which userp is set
 
     // Attributes
-    bool	m_signed;	// Node is signed
+    bool	m_signed:1;	// Node is signed
+    //		// Space for more bools here
+
     int		m_width;	// Bit width of operation
     int		m_widthMin;	// If unsized, bitwidth of minimum implementation
     // This member ordering both allows 64 bit alignment and puts associated data together
