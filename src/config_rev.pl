@@ -19,8 +19,8 @@ my $dir = $ARGV[0]; defined $dir or die "%Error: No directory argument,";
 chdir $dir;
 
 my $rev = 'UNKNOWN_REV';
-my $data = `git log | head -1`;
-if ($data =~ /commit\s*([a-z0-9]+)/i) {
+my $data = `git describe`;
+if ($data =~ /(verilator.*)/i) {
     $rev = $1;
 }
 
