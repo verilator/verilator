@@ -104,7 +104,8 @@ DISTDEP = info Makefile
 # Files to distribute.
 DISTBIN = $(wildcard bin/verilator-*)
 
-DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING *.in *.ac \
+DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
+	*.in *.ac \
 	Changes README TODO \
 	MANIFEST.SKIP \
 	bin/* \

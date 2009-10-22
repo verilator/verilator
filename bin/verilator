@@ -665,7 +665,7 @@ Disable the specified warning message.
 
 =item -Wno-lint
 
-Disable all lint related warning messages.  This is equivelent to
+Disable all lint related warning messages.  This is equivalent to
 "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX
 -Wno-CMPCONST -Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
 -Wno-VARHIDDEN -Wno-WIDTH".
@@ -1888,7 +1888,7 @@ correctly.
 Warns that a case statement contains a constant with a C<x>.  Verilator is
 two-state so interpret such items as always false.  Note a common error is
 to use a C<X> in a case or casez statement item; often what the user
-instead insteaded is to use a casez with C<?>.
+instead intended is to use a casez with C<?>.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -2158,7 +2158,7 @@ correctly.
 =item WIDTHCONCAT
 
 Warns that based on width rules of Verilog, a concatenate or replication
-has a undeterminate width.  In most cases this violates the Verilog rule
+has a indeterminate width.  In most cases this violates the Verilog rule
 that widths inside concatenates and replicates must be sized, and should be
 fixed in the code.
 
@@ -2226,10 +2226,10 @@ Visual C++ Version 7 or newer, but this is not tested by the author.
 
 =item Can you provide binaries?
 
-Verilator is available as a RPM for SuSE, Redhat and perhaps other systems;
-this is done by porters and may slightly lag the primary distribution.  If
-there isn't a binary build for your distribution, how about you set one up?
-Please contact the authors for assistance.
+Verilator is available as a RPM for SuSE, Fedora, and perhaps other
+systems; this is done by porters and may slightly lag the primary
+distribution.  If there isn't a binary build for your distribution, how
+about you set one up?  Please contact the authors for assistance.
 
 Note people sometimes request binaries when they are having problems with
 their C++ compiler. Alas, binaries won't help this, as in the end a fully
@@ -2249,18 +2249,24 @@ so your simulator shouldn't have to be -- and Verilator is closer to the
 synthesis interpretation, so this is a good thing for getting working
 silicon.
 
-=item May programs I create with Verilator remain under my own copyright?
+=item Will Verilator output remain under my own copyright?
 
 Yes, it's just like using GCC on your programs; this is why Verilator uses
-the "GNU *Lesser* Public License" instead of the more typical "GNU Public
-License".  If you change Verilator itself or the header files Verilator
-includes, you must make the source code available under the GNU Lesser
-Public License.  However, Verilator output (the Verilated code) only
-includes the licensed files, and so you are NOT required to release any
-output from Verilator.
+the "GNU *Lesser* Public License Version 3" instead of the more typical
+"GNU Public License".  See the licenses for details, but in brief, if you
+change Verilator itself or the header files Verilator includes, you must
+make the source code available under the GNU Lesser Public License.
+However, Verilator output (the Verilated code) only "include"s the licensed
+files, and so you are NOT required to release any output from Verilator.
 
 You also have the option of using the Perl Artistic License, which again
-does not require you release your Verilog or generated code.
+does not require you release your Verilog or generated code, and also
+allows you to modify Verilator for internal use without distributing the
+modified version.  But please contribute back to the community!
+
+One limit is that you cannot under either license release a commercial
+simulation product incorporating Verilator without making the source code
+available.
 
 =item Why is running Verilator so slow?
 
