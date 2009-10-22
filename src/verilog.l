@@ -136,6 +136,7 @@ void yyerrorf(const char* format, ...) {
 
 ws	[ \t\f\r]+
 wsnr	[ \t\f]+
+crnl	[\r]*[\n]
 	/* identifier */
 id	[a-zA-Z_][a-zA-Z0-9_$]*
 	/* escaped identifier */
@@ -148,7 +149,7 @@ escid	\\[^ \t\f\r\n]+
   /* Verilog 1995 */
 <V95,V01,V05,S05,PSL>{
   {ws}			{ }	/* otherwise ignore white-space */
-  \n			{ NEXTLINE(); }		/* Count line numbers */
+  {crnl}		{ NEXTLINE(); }		/* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
   "$c"[0-9]*		{ FL; return yD_C; }		/*Verilator only*/
   /*     System Tasks */
@@ -765,17 +766,18 @@ escid	\\[^ \t\f\r\n]+
 
   /************************************************************************/
   /* STRINGS */
-<STRING>\n 		{ yyerrorf("Unterminated string\n"); }
-<STRING>\r		;
-<STRING>[^\"\\]* 	{ yymore(); }
+<STRING>{crnl} 		{ yyerrorf("Unterminated string"); }
 <STRING>\\.	 	{ yymore(); }
 <STRING>\" 		{ yy_pop_state();
 			  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
 			  return yaSTRING; }
+<STRING>. 		{ yymore(); }
+<STRING><<EOF>>		{ yyerrorf("EOF in string");
+			  yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/
   /* Attributes */
-<ATTRMODE>\n		{ yymore(); NEXTLINE(); }
+<ATTRMODE>{crnl}	{ yymore(); NEXTLINE(); }
 <ATTRMODE>"*)"		{ yy_pop_state(); }
 <ATTRMODE>. 		{ yymore(); }
 <ATTRMODE><<EOF>>	{ yyerrorf("EOF in (*");
@@ -795,7 +797,7 @@ escid	\\[^ \t\f\r\n]+
   "`accelerate"				{ } // Verilog-XL compatibility
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ V3Read::inCellDefine(true); }
-  "`default_decay_time"{ws}+[^\n]*	{ } // Verilog spec - delays only
+  "`default_decay_time"{ws}+[^\n\r]*	{ } // Verilog spec - delays only
   "`delay_mode_distributed"		{ } // Verilog spec - delays only
   "`delay_mode_path"			{ } // Verilog spec - delays only
   "`delay_mode_unit"			{ } // Verilog spec - delays only
@@ -806,7 +808,7 @@ escid	\\[^ \t\f\r\n]+
   "`endprotect"				{ }
   "`expand_vectornets"			{ } // Verilog-XL compatibility
   "`inline"				{ }
-  "`line"{ws}+[^\n]*\n			{ V3Read::ppline(yytext); }
+  "`line"{ws}+[^\n\r]*{crnl}		{ V3Read::ppline(yytext); }
   "`noaccelerate"			{ } // Verilog-XL compatibility
   "`noexpand_vectornets"		{ } // Verilog-XL compatibility
   "`noremove_gatenames"			{ } // Verilog-XL compatibility
@@ -814,7 +816,7 @@ escid	\\[^ \t\f\r\n]+
   "`nosuppress_faults"			{ } // Verilog-XL compatibility
   "`nounconnected_drive"		{ } // Verilog-XL compatibility
   "`portcoerce"				{ }
-  "`pragma"{ws}+[^\n]*\n		{ } // Verilog 2005
+  "`pragma"{ws}+[^\n\r]*		{ } // Verilog 2005
   "`protect"				{ }
   "`psl"				{ if (V3Read::optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
   "`remove_gatenames"			{ } // Verilog-XL compatibility
@@ -827,7 +829,7 @@ escid	\\[^ \t\f\r\n]+
   "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
   "`systemc_implementation"		{ BEGIN SYSCIMP; }
   "`systemc_interface"			{ BEGIN SYSCINT; }
-  "`timescale"{ws}+[^\n]*\n		{ NEXTLINE(); } // Verilog spec - not supported
+  "`timescale"{ws}+[^\n\r]*		{ } // Verilog spec - not supported
   "`verilog"				{ BEGIN V3Read::lastVerilogState(); }
 
   "`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START); }
@@ -838,19 +840,18 @@ escid	\\[^ \t\f\r\n]+
   "`end_keywords"				{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 }
 
-<SYSCHDR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR; }
-<SYSCINT>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCINT; }
-<SYSCIMP>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMP; }
-<SYSCIMPH>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMPH; }
-<SYSCCTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCCTOR; }
-<SYSCDTOR>[ \t]*[^` \t\n][^\n]*\n	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCDTOR; }
-<IGNORE>[ \t]*[^` \t\n][^\n]*\n		{ NEXTLINE(); }
+<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR; }
+<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCINT; }
+<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMP; }
+<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMPH; }
+<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCCTOR; }
+<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCDTOR; }
+<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}		{ NEXTLINE(); }
 
   /* Pick up text-type data */
 <SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   {wsnr}*		{ yymore(); }
-  \n			{ NEXTLINE(); yymore(); }
-  \r			;
+  {crnl}		{ NEXTLINE(); yymore(); }
 }
 
   /************************************************************************/
