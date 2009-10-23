@@ -196,6 +196,31 @@ string AstNode::prettyTypeName() const {
     return string(typeName())+" '"+prettyName()+"'";
 }
 
+string AstNode::quoteName(const string& namein) {
+    // Encode control chars into C style escapes
+    // Reverse is V3Parse::deQuote
+    const char* start = namein.c_str();
+    string out;
+    for (const char* pos = start; *pos; pos++) {
+	if (pos[0]=='\\' || pos[0]=='"') {
+	    out += string("\\")+pos[0];
+	} else if (pos[0]=='\n') {
+	    out += "\\n";
+	} else if (pos[0]=='\r') {
+	    out += "\\r";
+	} else if (pos[0]=='\t') {
+	    out += "\\t";
+	} else if (isprint(pos[0])) {
+	    out += pos[0];
+	} else {
+	    // This will also cover \a etc
+	    char octal[10]; sprintf(octal,"\\%03o",pos[0]);
+	    out += octal;
+	}
+    }
+    return out;
+}
+
 int AstNode::widthPow2() const {
     // I.e.  width 30 returns 32, width 32 returns 32.
     uint32_t width = this->width();

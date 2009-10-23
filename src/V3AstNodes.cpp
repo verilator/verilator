@@ -273,7 +273,7 @@ void AstNode::dump(ostream& os) {
       <<" "<<(isSigned()?"s":"")
       <<"w"<<(widthSized()?"":"u")<<width();
     if (!widthSized()) os<<"/"<<widthMin();
-    if (name()!="") os<<"  "<<name();
+    if (name()!="") os<<"  "<<AstNode::quoteName(name());
 }
 
 void AstAttrOf::dump(ostream& str) {

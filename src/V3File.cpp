@@ -31,6 +31,7 @@
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3PreShell.h"
+#include "V3Ast.h"
 
 //######################################################################
 // V3File Internal state
@@ -435,16 +436,9 @@ void V3OutFile::putsQuoted(const char* strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
-    for (const char* cp=strg; *cp; cp++) {
-	if (*cp == '\\') {
-	    putcNoTracking('\\');
-	    putcNoTracking('\\');
-	} else if (*cp == '"') {
-	    putcNoTracking('\\');
-	    putcNoTracking('"');
-	} else {
-	    putcNoTracking (*cp);
-	}
+    string quoted = AstNode::quoteName(strg);
+    for (const char* cp=quoted.c_str(); *cp; cp++) {
+	putcNoTracking (*cp);
     }
     putcNoTracking('"');
 }

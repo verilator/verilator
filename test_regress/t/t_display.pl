@@ -12,7 +12,7 @@ compile (
 
 execute (
 	 check_finished=>1,
-	 expect=>quotemeta(
+	 expect=>quotemeta(dequote(
 '[0] In TOP.v: Hi
 [0] In TOP.v.sub
 [0] In TOP.v.sub.subblock
@@ -26,9 +26,14 @@ execute (
 
 [0] %s=! %s= what! %s= hmmm!1234
 [0] hello, from a very long string. Percent %s are literally substituted in.
+[0] Embedded <#013> return
 *-* All Finished *-*
-'),
+')),
      );
 
 ok(1);
+
+# Don't put control chars into our source repository, pre-compress instead
+sub dequote { my $s = shift; $s =~ s/<#013>/\r/g; $s; }
+
 1;

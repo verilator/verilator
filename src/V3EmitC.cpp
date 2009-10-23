@@ -227,7 +227,7 @@ public:
     }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	string text = nodep->text();
-	if (nodep->addNewline()) text += "\\n";
+	if (nodep->addNewline()) text += "\n";
 	displayNode(nodep, text, nodep->exprsp(), false);
     }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
@@ -994,9 +994,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    isStmt = true;
 	    nodep->v3fatalSrc("Unknown displayEmit node type");
 	}
-	puts("\"");
-	ofp()->putsNoTracking(emitDispState.m_format);  // Not putsQuoted - already contains \s
-	puts("\"");
+	ofp()->putsQuoted(emitDispState.m_format);
 	// Arguments
 	for (unsigned i=0; i < emitDispState.m_argsp.size(); i++) {
 	    puts(",");

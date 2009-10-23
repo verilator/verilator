@@ -1677,20 +1677,20 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_STOP parenE				{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); }
 	//
-	|	yD_DISPLAY  parenE						{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
-	|	yD_DISPLAY  '(' yaSTRING commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
-	|	yD_WRITE    '(' yaSTRING commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
-	|	yD_FDISPLAY '(' idClassSel ',' yaSTRING commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
-	|	yD_FWRITE   '(' idClassSel ',' yaSTRING commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
-	|	yD_INFO	    parenE						{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
-	|	yD_INFO	    '(' yaSTRING commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
-	|	yD_WARNING  parenE						{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
-	|	yD_WARNING  '(' yaSTRING commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
-	|	yD_ERROR    parenE						{ $$ = V3Parse::createDisplayError($1); }
-	|	yD_ERROR    '(' yaSTRING commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE						{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
-	|	yD_FATAL    '(' expr ',' yaSTRING commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
+	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
+	|	yD_WRITE    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
+	|	yD_FDISPLAY '(' idClassSel ',' str commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
+	|	yD_FWRITE   '(' idClassSel ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
+	|	yD_INFO	    parenE					{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
+	|	yD_INFO	    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
+	|	yD_WARNING  parenE					{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
+	|	yD_WARNING  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
+	|	yD_ERROR    parenE					{ $$ = V3Parse::createDisplayError($1); }
+	|	yD_ERROR    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    parenE					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
 	//
 	|	yD_READMEMB '(' expr ',' varRefMem ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')'			{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -1711,8 +1711,8 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
 	|	yD_FGETS '(' idClassSel ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
-	|	yD_FSCANF '(' expr ',' yaSTRING commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
-	|	yD_SSCANF '(' expr ',' yaSTRING commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
+	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
+	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
@@ -2372,6 +2372,11 @@ varRefBase<varrefp>:
 		id					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 
+// yaSTRING shouldn't be used directly, instead via an abstraction below
+str<strp>:			// yaSTRING but with \{escapes} need decoded
+		yaSTRING				{ $$ = V3Read::newString(V3Parse::deQuote(CRELINE(),*$1)); }
+	;
+
 strAsInt<nodep>:
 		yaSTRING				{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}
 	;
@@ -2593,6 +2598,7 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 
 string V3Parse::deQuote(FileLine* fileline, string text) {
     // Fix up the quoted strings the user put in, for example "\"" becomes "
+    // Reverse is AstNode::quoteName(...)
     bool quoted = false;
     string newtext;
     unsigned char octal_val = 0;
