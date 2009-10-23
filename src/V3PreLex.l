@@ -107,6 +107,7 @@ psl		[p]sl
 <STRMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in unterminated string"); yyleng=0; yyterminate(); }
 <STRMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated string"); BEGIN(INITIAL); }
 <STRMODE>[^\"\\]	{ yymore(); }
+<STRMODE>{backslash}{crnl} { linenoInc(); yymore(); }
 <STRMODE>{backslash}.	{ yymore(); }
 <STRMODE>{quote} 	{ yy_pop_state();
 			  if (V3PreLex::s_currentLexp->m_parenLevel) appendDefValue(yytext,yyleng);

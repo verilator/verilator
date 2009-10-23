@@ -38,6 +38,8 @@ module t;
       $display("[%0t] %s%s%s", $time,
 	       "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $write("[%0t] Embedded \r return\n", $time);
+      $display("[%0t] Embedded\
+multiline", $time);
 
       // Str check
 `ifndef nc	// NC-Verilog 5.3 chokes on this test

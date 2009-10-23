@@ -30,6 +30,8 @@ execute (
 [0] %s=! %s= what! %s= hmmm!1234
 [0] hello, from a very long string. Percent %s are literally substituted in.
 [0] Embedded <#013> return
+[0] Embedded
+multiline
 *-* All Finished *-*
 ')),
      );

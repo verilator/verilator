@@ -767,6 +767,7 @@ escid	\\[^ \t\f\r\n]+
   /************************************************************************/
   /* STRINGS */
 <STRING>{crnl} 		{ yyerrorf("Unterminated string"); }
+<STRING>\\{crnl}	{ yymore(); NEXTLINE(); }
 <STRING>\\.	 	{ yymore(); }
 <STRING>\" 		{ yy_pop_state();
 			  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
