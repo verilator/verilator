@@ -55,7 +55,9 @@ private:
     // NODE STATE
     //	 AstModule::user4()	// bool	  True if parameters numbered
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
+    //				//        (0=not processed, 1=iterated, but no number, 65+ parameter numbered)
     AstUser4InUse	m_inuser4;
+    // User1/2/3 used by constant function simulations
 
     // STATE
     typedef std::map<AstVar*,AstVar*> VarCloneMap;
@@ -93,7 +95,7 @@ private:
 	}
     }
     string paramSmallName(AstModule* modp, AstVar* varp) {
-	if (!varp->user4()) {
+	if (varp->user4()<=1) {
 	    makeSmallNames(modp);
 	}
 	int index = varp->user4()/256;
@@ -129,10 +131,18 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (nodep->isParam()) {
-	    if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
-	    V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+	if (!nodep->user4()) {
+	    nodep->user4(1);  // Mark done - Note values >1 used for letter numbering
+	    nodep->iterateChildren(*this);
+	    if (nodep->isParam()) {
+		if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
+		V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+	    }
 	}
+    }
+    // Make sure varrefs cause vars to constify before things above
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (nodep->varp()) nodep->varp()->iterate(*this);
     }
 
     // Generate Statements
@@ -151,6 +161,7 @@ private:
 	nodep->deleteTree(); nodep=NULL;
     }
     virtual void visit(AstGenIf* nodep, AstNUser*) {
+	nodep->condp()->iterateAndNext(*this);
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
 	V3Const::constifyParamsEdit(nodep->condp());  // condp may change
 	if (AstConst* constp = nodep->condp()->castConst()) {
@@ -173,10 +184,12 @@ private:
 	// We parse a very limited form of FOR, so we don't need to do a full
 	// simulation to unroll the loop
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
+	// Note V3Unroll will replace some AstVarRef's to the loop variable with constants
 	V3Unroll::unrollGen(nodep); nodep=NULL;
     }
     virtual void visit(AstGenCase* nodep, AstNUser*) {
 	AstNode* keepp = NULL;
+	nodep->exprp()->iterateAndNext(*this);
 	V3Case::caseLint(nodep);
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
 	V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
@@ -185,6 +198,7 @@ private:
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    for (AstNode* ep = itemp->condsp(); ep; ) {
 		AstNode* nextp = ep->nextp(); //May edit list
+		ep->iterateAndNext(*this);
 		V3Const::constifyParamsEdit(ep); ep=NULL; // ep may change
 		ep = nextp;
 	    }
@@ -240,6 +254,7 @@ public:
 
 void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
     // Cell: Check for parameters in the instantiation.
+    nodep->iterateChildren(*this);
     if (!nodep->modp()) { nodep->dumpTree(cerr,"error:"); nodep->v3fatalSrc("Not linked?"); }
     if (nodep->paramsp()) {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);

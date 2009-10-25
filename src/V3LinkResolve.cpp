@@ -160,6 +160,11 @@ private:
 		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
 		    did=1;
 		}
+		if (AstNodePreSel* selp = nodep->sensp()->castNodePreSel()) {
+		    AstNode* fromp = selp->lhsp()->unlinkFrBack();
+		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    did=1;
+		}
 	    }
 	}
 	if (!nodep->sensp()->castNodeVarRef()) {
@@ -171,151 +176,19 @@ private:
 	nodep->v3fatalSrc("SenGates shouldn't be in tree yet");
     }
 
-    void iterateSelTriop(AstNodePreSel* nodep) {
-	nodep->iterateChildren(*this);
-    }
-
-    AstNode* newSubAttrOf(AstNode* underp, AstNode* fromp, AstAttrType attrType) {
-	// Account for a variable's LSB in bit selections
-	// Replace underp with a SUB(underp, ATTROF(varp, attrType))
-	int dimension=0;
-	while (fromp && !fromp->castNodeVarRef() && (fromp->castSel() || fromp->castArraySel())) {
-	    if (fromp->castSel()) fromp = fromp->castSel()->fromp();
-	    else fromp = fromp->castArraySel()->fromp();
-	    dimension++;
+    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
+	if (!nodep->attrp()) {
+	    nodep->iterateChildren(*this);
+	    // Constification may change the fromp() to a constant, which will loose the
+	    // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
+	    // So we replicate it in another node
+	    // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
+	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
+	    AstNodeVarRef* varrefp = basefromp->castNodeVarRef();  // Maybe varxref - so need to clone
+	    if (!varrefp) nodep->v3fatalSrc("Illegal bit select; no signal being extracted from");
+	    nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+				       varrefp->cloneTree(false)));
 	}
-	AstNodeVarRef* varrefp = fromp->castNodeVarRef();
-	if (!varrefp) fromp->v3fatalSrc("Bit/array selection of non-variable");
-	if (!varrefp->varp()) varrefp->v3fatalSrc("Signal not linked");
-	AstRange* vararrayp = varrefp->varp()->arrayp(dimension);
-	AstRange* varrangep = varrefp->varp()->rangep();
-	if ((attrType==AstAttrType::ARRAY_LSB
-	     // SUB #'s Not needed because LSB==0? (1D only, else we'll constify it later)
-	     ? (vararrayp && !vararrayp->lsbp()->isZero())
-	     : (varrangep && !varrangep->lsbp()->isZero()))) {
-	    AstNode* newrefp;
-	    if (varrefp->castVarXRef()) {
-		newrefp = new AstVarXRef(underp->fileline(),
-					 varrefp->varp(), varrefp->castVarXRef()->dotted(), false);
-	    } else {
-		newrefp = new AstVarRef (underp->fileline(),
-					 varrefp->varp(), false);
-	    }
-	    AstNode* newp = new AstSub (underp->fileline(),
-					underp,
-					new AstAttrOf(underp->fileline(),
-						      attrType, newrefp, dimension));
-	    return newp;
-	} else {
-	    return underp;
-	}
-    }
-
-    void selCheckDimension(AstSel* nodep) {
-	// Perform error checks on the node
-	AstNode* fromp = nodep->lhsp();
-	AstNode* basefromp = AstArraySel::baseFromp(fromp);
-	AstNodeVarRef* varrefp = basefromp->castNodeVarRef();
-	AstVar* varp = varrefp ? varrefp->varp() : NULL;
-	if (fromp->castSel()
-	    || (varp && !varp->rangep() && !varp->isParam())) {
-	    nodep->v3error("Illegal bit select; variable already selected, or bad dimension");
-	}
-    }
-
-    virtual void visit(AstSelBit* nodep, AstNUser*) {
-	// Couldn't tell until link time if [#] references a bit or an array
-	iterateSelTriop(nodep);
-	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
-	AstNode* bitp = nodep->rhsp()->unlinkFrBack();
-	AstNode* basefromp = AstArraySel::baseFromp(fromp);
-	int dimension      = AstArraySel::dimension(fromp);
-	AstNodeVarRef* varrefp = basefromp->castNodeVarRef();
-	if (varrefp
-	    && varrefp->varp()
-	    && varrefp->varp()->arrayp(dimension)) {
-	    // SELBIT(array, index) -> ARRAYSEL(array, index)
-	    AstNode* newp = new AstArraySel
-		(nodep->fileline(),
-		 fromp,
-		 newSubAttrOf(bitp, fromp, AstAttrType::ARRAY_LSB));
-	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	}
-	else {
-	    // SELBIT(range, index) -> SEL(array, index, 1)
-	    V3Number one (nodep->fileline(),32,1); one.width(32,false);  // Unsized so width from user
-	    AstSel* newp = new AstSel
-		(nodep->fileline(),
-		 fromp,
-		 newSubAttrOf(bitp, fromp, AstAttrType::RANGE_LSB),
-		 new AstConst (nodep->fileline(),one));
-	    selCheckDimension(newp);
-	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	}
-    }
-
-    virtual void visit(AstSelExtract* nodep, AstNUser*) {
-	// SELEXTRACT(from,msb,lsb) -> SEL(from, lsb, 1+msb-lsb)
-	iterateSelTriop(nodep);
-	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
-	AstNode* msbp = nodep->rhsp()->unlinkFrBack();
-	AstNode* lsbp = nodep->thsp()->unlinkFrBack();
-	AstNode* widthp;
-	if (msbp->castConst() && lsbp->castConst()) {
-	    // Quite common, save V3Const some effort
-	    V3Number widnum (msbp->fileline(),32,msbp->castConst()->toSInt() +1-lsbp->castConst()->toSInt());
-	    widnum.width(32,false);  // Unsized so width from user
-	    widthp = new AstConst (msbp->fileline(), widnum);
-	    pushDeletep(msbp);
-	} else {
-	    V3Number one (nodep->fileline(),32,1);  one.width(32,false);  // Unsized so width from user
-	    widthp = new AstSub (lsbp->fileline(),
-				 new AstAdd(msbp->fileline(),
-					    new AstConst(msbp->fileline(),one),
-					    msbp),
-				 lsbp->cloneTree(true));
-	}
-	AstSel* newp = new AstSel
-	    (nodep->fileline(),
-	     fromp,
-	     newSubAttrOf(lsbp, fromp, AstAttrType::RANGE_LSB),
-	     widthp);
-	selCheckDimension(newp);
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-    }
-    virtual void visit(AstSelPlus* nodep, AstNUser*) {
-	// SELPLUS -> SEL
-	iterateSelTriop(nodep);
-	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
-	AstNode* lsbp = nodep->rhsp()->unlinkFrBack();
-	AstNode* widthp = nodep->thsp()->unlinkFrBack();
-	AstSel*  newp = new AstSel
-	    (nodep->fileline(),
-	     fromp,
-	     newSubAttrOf(lsbp, fromp, AstAttrType::RANGE_LSB),
-	     widthp);
-	selCheckDimension(newp);
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-    }
-    virtual void visit(AstSelMinus* nodep, AstNUser*) {
-	// SELMINUS(from,msb,width) -> SEL(from, msb-(width-1)-lsb#)
-	iterateSelTriop(nodep);
-	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
-	AstNode* msbp = nodep->rhsp()->unlinkFrBack();
-	AstNode* widthp = nodep->thsp()->unlinkFrBack();
-	V3Number one (msbp->fileline(),32,1);  one.width(32,false);  // Unsized so width from user
-	AstSel*  newp = new AstSel
-	    (nodep->fileline(),
-	     fromp,
-	     newSubAttrOf(new AstSub (msbp->fileline(),
-				      msbp,
-				      new AstSub (msbp->fileline(),
-						  widthp->cloneTree(true),
-						  new AstConst (msbp->fileline(), one))),
-			  fromp, AstAttrType::RANGE_LSB),
-	     widthp);
-	selCheckDimension(newp);
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
     }
 
     virtual void visit(AstCaseItem* nodep, AstNUser*) {

@@ -8,13 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 fails=>1,
-	 expect=>
-'%Warning-LITENDIAN: t/t_select_bad_msb.v:\d+: Little bit endian vector: MSB < LSB of bit range: 0:22
-.*
-%Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
+
+execute (
+	 check_finished=>1,
+     );
 
 ok(1);
 1;
-

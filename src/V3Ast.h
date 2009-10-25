@@ -170,9 +170,8 @@ class AstAttrType {
 public:
     enum en {
 	BITS,				// V3Const converts to constant
-	RANGE_LSB,			// V3Const converts to constant
-	ARRAY_LSB,			// V3Const converts to constant
 	//
+	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	VAR_CLOCK,			// V3LinkParse moves to AstVar::attrScClocked
 	VAR_CLOCK_ENABLE,		// V3LinkParse moves to AstVar::attrClockEn
 	VAR_PUBLIC,			// V3LinkParse moves to AstVar::sigPublic
@@ -182,7 +181,7 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "BITS", "RANGE_LSB", "ARRAY_LSB",
+	    "BITS", "VAR_BASE",
 	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
 	    "VAR_ISOLATE_ASSIGNMENTS"
 	};
@@ -942,11 +941,14 @@ struct AstNodePreSel : public AstNode {
 	setOp1p(lhs); setOp2p(rhs); setNOp3p(ths); }
     ASTNODE_BASE_FUNCS(NodePreSel)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
+    AstNode*	fromp() const { return lhsp(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     AstNode*	thsp() 	const { return op3p()->castNode(); }
+    AstAttrOf*	attrp() const { return op4p()->castAttrOf(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
     void	thsp(AstNode* nodep)  { return setOp3p(nodep); }
+    void	attrp(AstAttrOf* nodep)  { return setOp4p((AstNode*)nodep); }
     // METHODS
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }

@@ -141,12 +141,51 @@ AstRange* AstVar::arrayp(int dimension) const {
     return NULL;
 }
 
+int AstVar::arrayDimensions() const {
+    int  entries=0;
+    for (AstRange* arrayp=this->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
+	entries++;
+    }
+    return entries;
+}
+
 uint32_t AstVar::arrayElements() const {
     uint32_t entries=1;
     for (AstRange* arrayp=this->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
 	entries *= arrayp->elementsConst();
     }
     return entries;
+}
+
+// Special operators
+int AstArraySel::dimension(AstNode* nodep) {	///< How many dimensions is this reference from the base variable?
+    // Only called after V3Param; so only ArraySel's need to be recursed
+    int dim = 0;
+    while (nodep) {
+	if (nodep->castNodeSel()) { dim++; nodep=nodep->castNodeSel()->fromp(); continue; }
+	if (nodep->castNodePreSel()) { dim++; nodep=nodep->castNodePreSel()->fromp(); continue; }
+	break;
+    }
+    return dim;
+}
+AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
+    // Else AstArraySel etc; search for the base
+    while (nodep) {
+	if (nodep->castArraySel()) { nodep=nodep->castArraySel()->fromp(); continue; }
+	else if (nodep->castSel()) { nodep=nodep->castSel()->fromp(); continue; }
+	// AstNodeSelPre stashes the associated variable under a ATTROF so it isn't constified
+	else if (nodep->castAttrOf()) { nodep=nodep->castAttrOf()->fromp(); continue; }
+	else if (nodep->castNodePreSel()) {
+	    if (nodep->castNodePreSel()->attrp()) {
+		nodep=nodep->castNodePreSel()->attrp();
+	    } else {
+		nodep=nodep->castNodePreSel()->lhsp();
+	    }
+	    continue;
+	}
+	else break;
+    }
+    return nodep;
 }
 
 bool AstScope::broken() const {
@@ -302,6 +341,10 @@ void AstPin::dump(ostream& str) {
     if (modVarp()) { str<<" -> "; modVarp()->dump(str); }
     else { str<<" ->UNLINKED"; }
     if (svImplicit()) str<<" [.SV]";
+}
+void AstRange::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (littleEndian()) str<<" [LITTLE]";
 }
 void AstVarXRef::dump(ostream& str) {
     this->AstNode::dump(str);

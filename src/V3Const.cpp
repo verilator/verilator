@@ -1053,7 +1053,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
-	if (!m_cpp && nodep->varp()->hasSimpleInit()) {
+	if (!m_cpp && nodep->varp()->hasSimpleInit() && !nodep->backp()->castAttrOf()) {
 	    //if (debug()) nodep->varp()->initp()->dumpTree(cout,"  visitvaref: ");
 	    nodep->varp()->initp()->iterateAndNext(*this);
 	    if (operandConst(nodep->varp()->initp())
@@ -1079,23 +1079,7 @@ private:
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->widthMin());
 	    replaceNum(nodep, num); nodep=NULL;
 	} else {
-	    if (!nodep->fromp()->castNodeVarRef()) nodep->v3fatalSrc("Not linked");
-	    AstVar* varp = nodep->fromp()->castNodeVarRef()->varp();
-	    if (!varp) nodep->v3fatalSrc("Not linked");
-	    if (nodep->attrType()==AstAttrType::RANGE_LSB) {
-		if (!varp->rangep()) nodep->v3fatalSrc("RANGE_LSB on vec w/o range\n");
-		if (operandConst(varp->rangep()->lsbp())) {
-		    V3Number num (nodep->fileline(), 32, varp->lsb());
-		    replaceNum(nodep, num); nodep=NULL;
-		}
-	    } else if (nodep->attrType()==AstAttrType::ARRAY_LSB) {
-		AstRange* arrayp=varp->arrayp(nodep->dimension());
-		if (!arrayp) nodep->v3fatalSrc("ARRAY_LSB on vec w/o range or right # dimensions\n");
-		if (operandConst(arrayp->lsbp())) {
-		    V3Number num (nodep->fileline(), 32, arrayp->lsbConst());
-		    replaceNum(nodep, num); nodep=NULL;
-		}
-	    } else nodep->v3fatalSrc("Missing ATTR type case\n");
+	    nodep->v3fatalSrc("Missing ATTR type case");
 	}
     }
     bool onlySenItemInSenTree(AstNodeSenItem* nodep) {
@@ -1471,6 +1455,10 @@ private:
 	}
     }
 
+    // These are converted by V3Param.  Don't constify as we don't want the from() VARREF to disappear, if any
+    // If output of a presel didn't get consted, chances are V3Param didn't visit properly
+    virtual void visit(AstNodePreSel* nodep, AstNUser*) {}
+
     //-----
     // Below lines are magic expressions processed by astgen
     //  "AstNODETYPE {             # bracket not paren
@@ -1746,7 +1734,9 @@ public:
 
 AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     //if (debug()>0) nodep->dumpTree(cout,"  forceConPRE : ");
-    nodep = V3Width::widthParamsEditIfNeed(nodep); // Make sure we've sized everything first
+    // Resize even if the node already has a width, because burried in the treee we may
+    // have a node we just created with signing, etc, that isn't sized yet.
+    nodep = V3Width::widthParamsEdit(nodep); // Make sure we've sized everything first
     ConstVisitor visitor (true,false,false,false);
     if (AstVar* varp=nodep->castVar()) {
 	// If a var wants to be constified, it's really a param, and

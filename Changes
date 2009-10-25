@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.71****
 
+**   Support little endian bit vectors ("reg [0:2] x;").
+
 **** Fix writing to out-of-bounds arrays writing element 0.
 
 **** Fix core dump with SystemVerilog var declarations under unnamed begins.

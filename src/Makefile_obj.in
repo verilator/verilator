@@ -204,6 +204,7 @@ RAW_OBJS = \
 	V3Unknown.o \
 	V3Unroll.o \
 	V3Width.o \
+	V3WidthSel.o \
 
 # Non-concatable
 OBJS += \

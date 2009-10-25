@@ -667,8 +667,8 @@ Disable the specified warning message.
 
 Disable all lint related warning messages.  This is equivalent to
 "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX
--Wno-CMPCONST -Wno-IMPLICIT -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
--Wno-VARHIDDEN -Wno-WIDTH".
+-Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-UNDRIVEN -Wno-UNSIGNED
+-Wno-UNUSED -Wno-VARHIDDEN -Wno-WIDTH".
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -1953,6 +1953,16 @@ Verilator cannot schedule these variables correctly.
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item LITENDIAN
+
+Warns that a vector is declared with little endian bit numbering
+(i.e. [0:7]).  Big endian bit numbering is now the overwhelming standard,
+and little numbering is now thus often due to simple oversight instead of
+intent.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item MULTIDRIVEN
 

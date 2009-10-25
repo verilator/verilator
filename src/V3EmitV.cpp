@@ -368,8 +368,8 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstRange* nodep, AstNUser*) {
 	puts("[");
-	nodep->msbp()->iterateAndNext(*this); puts(":");
-	nodep->lsbp()->iterateAndNext(*this); puts("]");
+	nodep->msbEndianedp()->iterateAndNext(*this); puts(":");
+	nodep->lsbEndianedp()->iterateAndNext(*this); puts("]");
     }
     virtual void visit(AstSel* nodep, AstNUser*) {
 	nodep->fromp()->iterateAndNext(*this); puts("[");

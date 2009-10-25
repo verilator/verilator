@@ -64,6 +64,7 @@ public:
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
+	LITENDIAN,	// Little bit endian vector
 	MULTIDRIVEN,	// Driven from multiple blocks
 	REDEFMACRO,	// Redefining existing define macro
 	UNDRIVEN,	// No drivers
@@ -96,6 +97,7 @@ public:
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
 	    "COMBDLY", "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+	    "LITENDIAN",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
@@ -118,6 +120,7 @@ public:
 				      || m_e==CASEWITHX || m_e==CASEX
 				      || m_e==CMPCONST
 				      || m_e==IMPLICIT
+				      || m_e==LITENDIAN
 				      || m_e==UNDRIVEN || m_e==UNSIGNED
 				      || m_e==UNUSED || m_e==VARHIDDEN
 				      || m_e==WIDTH); }

@@ -1839,7 +1839,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->declArray");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->declQuad ");
-	} else if (nodep->msb() || nodep->lsb()) {
+	} else if (nodep->msbEndianed() || nodep->lsbEndianed()) {
 	    puts("vcdp->declBus  ");
 	} else {
 	    puts("vcdp->declBit  ");
@@ -1853,8 +1853,8 @@ class EmitCTrace : EmitCStmts {
 	} else {
 	    puts(",-1");
 	}
-	if (nodep->msb() || nodep->lsb()) {
-	    puts(","+cvtToStr(nodep->msb())+","+cvtToStr(nodep->lsb()));
+	if (nodep->msbEndianed() || nodep->lsbEndianed()) {
+	    puts(","+cvtToStr(nodep->msbEndianed())+","+cvtToStr(nodep->lsbEndianed()));
 	}
 	puts(");");
     }
@@ -1868,7 +1868,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
-	} else if (nodep->declp()->msb() || nodep->declp()->lsb()) {
+	} else if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed()) {
 	    puts("vcdp->"+full+"Bus  ");
 	} else {
 	    puts("vcdp->"+full+"Bit  ");
@@ -1877,7 +1877,7 @@ class EmitCTrace : EmitCStmts {
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
-	if (nodep->declp()->msb() || nodep->declp()->lsb()) {
+	if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed()) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");

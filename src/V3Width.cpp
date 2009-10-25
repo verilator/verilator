@@ -249,39 +249,20 @@ private:
 	}
     }
     virtual void visit(AstRange* nodep, AstNUser* vup) {
+	// If there's an edit, then processes the edit'ee (can't just rely on iterateChildren because sometimes we for(...) here ourself
+	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	if (vup->c()->prelim()) {
 	    nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    V3Const::constifyParamsEdit(nodep->msbp()); // msbp may change
-	    V3Const::constifyParamsEdit(nodep->lsbp()); // lsbp may change
-	    AstConst* msbConstp = nodep->msbp()->castConst();
-	    AstConst* lsbConstp = nodep->lsbp()->castConst();
-	    if (!msbConstp || !lsbConstp) {
-		if (!msbConstp) nodep->v3error("MSB of bit range isn't a constant");
-		if (!lsbConstp) nodep->v3error("LSB of bit range isn't a constant");
-		nodep->width(1,1); return;
-	    }
-	    int msb = msbConstp->toSInt();
-	    int lsb = lsbConstp->toSInt();
-	    if (msb > (1<<28)) nodep->v3error("MSB of bit range is huge; vector of over 1billion bits: 0x"<<hex<<msb);
-	    if (msb<lsb) {
-		// If it's a array, ok to have either ordering, we'll just correct
-		// So, see if we're sitting under a variable's arrayp.
-		AstNode* huntbackp = nodep;
-		while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
-		if (huntbackp->backp()->castVar()
-		    && huntbackp->backp()->castVar()->arraysp()==huntbackp) {
-		} else {
-		    nodep->v3error("Unsupported: MSB < LSB of bit range: "<<msb<<"<"<<lsb);
-		}
-		// Correct it.
-		msbConstp->swapWith(lsbConstp);
-		int x=msb; msb=lsb; lsb=x;
-	    }
-	    int width = msb-lsb+1;
+	    int width = nodep->elementsConst();
+	    if (width > (1<<28)) nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"<<hex<<width);
 	    nodep->width(width,width);
+	    if (nodep->littleEndian()) {
+		nodep->v3warn(LITENDIAN,"Little bit endian vector: MSB < LSB of bit range: "<<nodep->lsbConst()<<":"<<nodep->msbConst());
+	    }
 	}
     }
+
     virtual void visit(AstSel* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
@@ -383,6 +364,54 @@ private:
 	    widthCheck(nodep,"Extract Range",nodep->bitp(),selwidth,selwidth,true);
 	}
     }
+
+    virtual void visit(AstSelBit* nodep, AstNUser* vup) {
+	// Just a quick check as after V3Param these nodes instead are AstSel's
+	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
+	nodep->v3fatalSrc("AstSelBit should disappear after widthSel");
+	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p()); // from
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p()); // bit
+	}
+    }
+    virtual void visit(AstSelExtract* nodep, AstNUser* vup) {
+	// Just a quick check as after V3Param these nodes instead are AstSel's
+	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
+	nodep->v3fatalSrc("AstSelExtract should disappear after widthSel");
+	if (vup->c()->prelim()) {
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	}
+    }
+
+    virtual void visit(AstSelPlus* nodep, AstNUser* vup) {
+	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
+	nodep->v3fatalSrc("AstSelPlus should disappear after widthSel");
+	if (vup->c()->prelim()) {
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->bitp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    if (AstConst* constp = nodep->widthp()->castConst()) {
+		int width = constp->toSInt();
+		nodep->width(width,width);
+	    }
+	}
+    }
+    virtual void visit(AstSelMinus* nodep, AstNUser* vup) {
+	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
+	nodep->v3fatalSrc("AstSelMinus should disappear after widthSel");
+	if (vup->c()->prelim()) {
+	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->bitp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    if (AstConst* constp = nodep->widthp()->castConst()) {
+		int width = constp->toSInt();
+		nodep->width(width,width);
+	    }
+	}
+    }
+
     virtual void visit(AstExtend* nodep, AstNUser* vup) {
 	// Only created by this process, so we know width from here down it is correct.
     }
@@ -433,8 +462,8 @@ private:
 	    int selwidth = V3Number::log2b(nodep->lhsp()->width())+1;
 	    nodep->width(selwidth,selwidth);
 	}
-    }
-    virtual void visit(AstAttrOf* nodep, AstNUser*) {
+    } 
+   virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->width(32,1);	// Approximation, unsized 32
     }
@@ -526,8 +555,9 @@ private:
 	AstNodeCase* lastCasep = m_casep;
 	m_casep = nodep;
 	nodep->exprp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
-	    itemp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	for (AstCaseItem* nextp, *itemp = nodep->itemsp(); itemp; itemp=nextp) {
+	    nextp = itemp->nextp()->castCaseItem(); // Prelim may cause the node to get replaced
+	    itemp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p());  itemp=NULL;
 	}
 	int width = nodep->exprp()->width();
 	int mwidth = nodep->exprp()->widthMin();
@@ -552,8 +582,11 @@ private:
 	    // Need to look across multiple case values for one set of statements
 	    int width = nodep->condsp()->width();
 	    int mwidth = nodep->condsp()->widthMin();
+	    for (AstNode* nextp, *condp = nodep->condsp(); condp; condp=nextp) {
+		nextp = condp->nextp(); // Prelim may cause the node to get replaced
+		condp->iterate(*this,vup); condp=NULL;
+	    }
 	    for (AstNode* condp = nodep->condsp(); condp; condp=condp->nextp()) {
-		condp->iterate(*this,vup);
 		width = max(width,condp->width());
 		mwidth = max(mwidth,condp->widthMin());
 		if (vup->c()->final()) {
@@ -804,19 +837,25 @@ private:
 	    m_taskDepth--;
 	}
 	// And do the arguments to the task/function too
-	AstNode* pinp = nodep->pinsp();
-	AstNode* stmt_nextp;	// List may change, so need to keep pointer
-	for (AstNode* stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp=stmt_nextp) {
-	    stmt_nextp = stmtp->nextp();
-	    if (AstVar* portp = stmtp->castVar()) {
-		if (portp->isIO()
-		    && pinp!=NULL) {  // Else argument error we'll find later
-		    AstNode* pin_nextp = pinp->nextp();	// List may change, so remember nextp
-		    int width = portp->width();
-		    int ewidth = portp->widthMin();
-		    pinp->accept(*this,WidthVP(width,ewidth,BOTH).p());
-		    widthCheck(nodep,"Function Argument",pinp,width,ewidth);
-		    pinp = pin_nextp;
+	for (int accept_mode=1; accept_mode>=0; accept_mode--) {  // Avoid duplicate code; just do inner stuff twice
+	    AstNode* pinp = nodep->pinsp();
+	    for (AstNode* stmt_nextp, *stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp=stmt_nextp) {
+		stmt_nextp = stmtp->nextp();
+		if (AstVar* portp = stmtp->castVar()) {
+		    if (portp->isIO()
+			&& pinp!=NULL) {  // Else argument error we'll find later
+			AstNode* pin_nextp = pinp->nextp();	// List may change, so remember nextp
+			if (accept_mode) {
+			    // Prelim may cause the node to get replaced; we've lost our
+			    // pointer, so need to iterate separately later
+			    pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
+			} else {
+			    // Do PRELIM again, because above accept may have exited early due to node replacement
+			    pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
+			    widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
+			}
+			pinp = pin_nextp;
+		    }
 		}
 	    }
 	}
@@ -1192,6 +1231,10 @@ private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->width(nodep->width(),nodep->width());
 	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
+	// This check could go anywhere after V3Param
+	nodep->v3fatalSrc("Presels should have been removed before this point");
     }
 public:
     // CONSTUCTORS

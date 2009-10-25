@@ -76,20 +76,30 @@ public:
 
 struct AstRange : public AstNode {
     // Range specification, for use under variables and cells
+private:
+    bool	m_littleEndian:1;	// Bit vector is little endian
+public:
     AstRange(FileLine* fl, AstNode* msbp, AstNode* lsbp)
 	:AstNode(fl) {
+	m_littleEndian = false;
 	setOp2p(msbp); setOp3p(lsbp); }
     AstRange(FileLine* fl, int msb, int lsb)
 	:AstNode(fl) {
+	m_littleEndian = false;
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
 	width(msb-lsb+1,msb-lsb+1);
     }
     ASTNODE_NODE_FUNCS(Range, RANGE)
-    AstNode* msbp()		const { return op2p()->castNode(); }	// op2 = Msb expression
-    AstNode* lsbp()		const { return op3p()->castNode(); }	// op3 = Lsb expression
+    AstNode* msbp() const { return op2p()->castNode(); }	// op2 = Msb expression
+    AstNode* lsbp() const { return op3p()->castNode(); }	// op3 = Lsb expression
+    AstNode* msbEndianedp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
+    AstNode* lsbEndianedp() const { return littleEndian()?msbp():lsbp(); }
     int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
     int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
-    int	     elementsConst() const { return msbConst()-lsbConst()+1; }
+    int	     elementsConst() const { return (msbConst()>lsbConst()) ? msbConst()-lsbConst()+1 : lsbConst()-msbConst()+1; }
+    bool     littleEndian() const { return m_littleEndian; }
+    void     littleEndian(bool flag) { m_littleEndian=flag; }
+    virtual void dump(ostream& str);
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
@@ -120,15 +130,8 @@ struct AstArraySel : public AstNodeSel {
     virtual bool same(AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
     // Special operators
-    static int dimension(AstNode* nodep) {	///< How many dimensions is this reference from the base variable?
-	int dim = 0;
-	while (nodep && nodep->castArraySel()) { dim++; nodep=nodep->castArraySel()->fromp(); }
-	return dim;
-    }
-    static AstNode* baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
-	while (nodep && nodep->castArraySel()) { nodep=nodep->castArraySel()->fromp(); }
-	return nodep;
-    }
+    static int dimension(AstNode* nodep); ///< How many dimensions is this reference from the base variable?
+    static AstNode* baseFromp(AstNode* nodep);	///< What is the base variable (or const) this dereferences?
 };
 
 struct AstWordSel : public AstNodeSel {
@@ -153,6 +156,8 @@ struct AstSelExtract : public AstNodePreSel {
     AstSelExtract(FileLine* fl, AstNode* fromp, AstNode* msbp, AstNode* lsbp)
 	: AstNodePreSel(fl, fromp, msbp, lsbp) {}
     ASTNODE_NODE_FUNCS(SelExtract, SELEXTRACT)
+    AstNode*	msbp() const { return rhsp(); }
+    AstNode*	lsbp() const { return thsp(); }
 };
 
 struct AstSelBit : public AstNodePreSel {
@@ -163,6 +168,7 @@ struct AstSelBit : public AstNodePreSel {
 	width(1,1);
     }
     ASTNODE_NODE_FUNCS(SelBit, SELBIT)
+    AstNode*	bitp() const { return rhsp(); }
 };
 
 struct AstSelPlus : public AstNodePreSel {
@@ -171,6 +177,8 @@ struct AstSelPlus : public AstNodePreSel {
     AstSelPlus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelPlus, SELPLUS)
+    AstNode*	bitp() const { return rhsp(); }
+    AstNode*	widthp() const { return thsp(); }
 };
 
 struct AstSelMinus : public AstNodePreSel {
@@ -179,6 +187,8 @@ struct AstSelMinus : public AstNodePreSel {
     AstSelMinus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelMinus, SELMINUS)
+    AstNode*	bitp() const { return rhsp(); }
+    AstNode*	widthp() const { return thsp(); }
 };
 
 struct AstSel : public AstNodeTriop {
@@ -358,7 +368,11 @@ public:
     int		widthTotalBytes() const;	// Width in bytes rounding up 1,2,4,8,12,...
     int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
     int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
+    int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
+    int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
+    bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
+    int		arrayDimensions() const;
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
@@ -1620,7 +1634,7 @@ public:
 	widthSignedFrom(varp);
 	m_code = 0;
 	m_codeInc = varp->arrayElements() * varp->widthWords();
-	m_lsb = varp->lsb();  m_msb = varp->msb();
+	m_lsb = varp->lsbEndianed();  m_msb = varp->msbEndianed();
 	m_arrayLsb = varp->arrayp(0) ? varp->arrayp(0)->lsbConst() : 0;
 	m_arrayMsb = varp->arrayp(0) ? varp->arrayp(0)->msbConst() : 0;
     }
@@ -1634,8 +1648,8 @@ public:
     uint32_t	code() const { return m_code; }
     void	code(uint32_t code) { m_code=code; }
     uint32_t	codeInc() const { return m_codeInc; }
-    int		msb() const { return m_msb; }
-    int		lsb() const { return m_lsb; }
+    int		msbEndianed() const { return m_msb; }  // Note msb maybe < lsb if little endian
+    int		lsbEndianed() const { return m_lsb; }
     uint32_t	arrayMsb() const { return m_arrayMsb; }
     uint32_t	arrayLsb() const { return m_arrayLsb; }
     uint32_t	arrayWidth() const { if (!arrayMsb()) return 0; return arrayMsb()-arrayLsb()+1; }
@@ -1717,15 +1731,14 @@ struct AstAttrOf : public AstNode {
 private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     AstAttrType	m_attrType;	// What sort of extraction
-    int		m_dimension;	// Dimension number (0 is leftmost), for ARRAY_LSB extractions
 public:
-    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp=NULL, int dimension=0)
+    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp=NULL)
 	: AstNode(fl) {
-	setNOp1p(fromp); m_attrType = attrtype; m_dimension = dimension; }
+	setNOp1p(fromp);
+	m_attrType = attrtype; }
     ASTNODE_NODE_FUNCS(AttrOf, ATTROF)
     AstNode*	fromp() const { return op1p(); }
     AstAttrType	attrType() const { return m_attrType; }
-    int		dimension() const { return m_dimension; }
     virtual void dump(ostream& str=cout);
 };
 

@@ -388,7 +388,8 @@ private:
 	if (m_varModeReplace
 	    && nodep->varp() == m_forVarp
 	    && nodep->varScopep() == m_forVscp
-	    && !nodep->lvalue()) {
+	    && !nodep->lvalue()
+	    && !nodep->backp()->castAttrOf()) {  // Most likely under a select
 	    AstNode* newconstp = m_varValuep->cloneTree(false);
 	    nodep->replaceWith(newconstp);
 	    pushDeletep(nodep);
