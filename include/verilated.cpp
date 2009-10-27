@@ -137,6 +137,117 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 }
 
 //===========================================================================
+// Slow math
+
+WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus) {
+    // See Knuth Algorithm D.  Computes u/v = q.r
+    // This isn't massively tuned, as wide division is rare
+    // for debug see V3Number version
+    // Requires clean input
+    int words = VL_WORDS_I(lbits);
+    for (int i=0; i<words; i++) owp[i]=0;
+    // Find MSB and check for zero.
+    int umsbp1 = VL_MOSTSETBITP1_W(words,lwp); // dividend
+    int vmsbp1 = VL_MOSTSETBITP1_W(words,rwp); // divisor
+    if (VL_UNLIKELY(vmsbp1==0)  // rwp==0 so division by zero.  Return 0.
+	|| VL_UNLIKELY(umsbp1==0)) {	// 0/x so short circuit and return 0
+	return owp;
+    }
+
+    int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
+    int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+
+    if (vw == 1) {  // Single divisor word breaks rest of algorithm
+	vluint64_t k = 0;
+	for (int j = uw-1; j >= 0; j--) {
+	    vluint64_t unw64 = ((k<<VL_ULL(32)) + (vluint64_t)(lwp[j]));
+	    owp[j] = unw64 / (vluint64_t)(rwp[0]);
+	    k      = unw64 - (vluint64_t)(owp[j])*(vluint64_t)(rwp[0]);
+	}
+	if (is_modulus) {
+	    owp[0] = k;
+	    for (int i=1; i<words; i++) owp[i]=0;
+	}
+	return owp;
+    }
+
+    // +1 word as we may shift during normalization
+    uint32_t un[VL_MULS_MAX_WORDS+1]; // Fixed size, as MSVC++ doesn't allow [words] here
+    uint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
+
+    // Zero for ease of debugging and to save having to zero for shifts
+    for (int i=0; i<words; i++) { un[i]=vn[i]=0; }
+
+    // Algorithm requires divisor MSB to be set
+    // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
+    int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
+    uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
+    for (int i = vw-1; i>0; i--) {
+	vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i-1] >> (32-s)));
+    }
+    vn[0] = rwp[0] << s;
+
+    // Copy and shift dividend by same amount; may set new upper word
+    if (s) un[uw] = lwp[uw-1] >> (32-s);
+    else un[uw] = 0;
+    for (int i=uw-1; i>0; i--) {
+	un[i] = (lwp[i] << s) | (shift_mask & (lwp[i-1] >> (32-s)));
+    }
+    un[0] = lwp[0] << s;
+
+    // Main loop
+    for (int j = uw - vw; j >= 0; j--) {
+	// Estimate
+	vluint64_t unw64 = ((vluint64_t)(un[j+vw])<<VL_ULL(32) | (vluint64_t)(un[j+vw-1]));
+	vluint64_t qhat = unw64 / (vluint64_t)(vn[vw-1]);
+	vluint64_t rhat = unw64 - qhat*(vluint64_t)(vn[vw-1]);
+
+      again:
+	if (qhat >= VL_ULL(0x100000000)
+	    || ((qhat*vn[vw-2]) > ((rhat<<VL_ULL(32)) + un[j+vw-2]))) {
+	    qhat = qhat - 1;
+	    rhat = rhat + vn[vw-1];
+	    if (rhat < VL_ULL(0x100000000)) goto again;
+	}
+
+	vlsint64_t t = 0;  // Must be signed
+	vluint64_t k = 0;
+	for (int i=0; i<vw; i++) {
+	    vluint64_t p = qhat*vn[i];  // Multiply by estimate
+	    t = un[i+j] - k - (p & VL_ULL(0xFFFFFFFF));  // Subtract
+	    un[i+j] = t;
+	    k = (p >> VL_ULL(32)) - (t >> VL_ULL(32));
+	}
+	t = un[j+vw] - k;
+	un[j+vw] = t;
+	owp[j] = qhat; // Save quotient digit
+
+	if (t < 0) {
+	    // Over subtracted; correct by adding back
+	    owp[j]--;
+	    k = 0;
+	    for (int i=0; i<vw; i++) {
+		t = (vluint64_t)(un[i+j]) + (vluint64_t)(vn[i]) + k;
+		un[i+j] = t;
+		k = t >> VL_ULL(32);
+	    }
+	    un[j+vw] = un[j+vw] + k;
+	}
+    }
+
+    if (is_modulus) { // modulus
+	// Need to reverse normalization on copy to output
+	for (int i=0; i<vw; i++) {
+	    owp[i] = (un[i] >> s) | (shift_mask & (un[i+1] << (32-s)));
+	}
+	for (int i=vw; i<words; i++) owp[i] = 0;
+	return owp;
+    } else { // division
+	return owp;
+    }
+}
+
+//===========================================================================
 // Formatting
 
 // Do a va_arg returning a quad, assuming input argument is anything less than wide

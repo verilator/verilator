@@ -104,6 +104,8 @@ private:
 
     int words() const { return ((width()+31)/32); }
 
+    V3Number& opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus);
+
 public:
     class VerilogString {};	// for creator type-overload selection
     // CONSTRUCTORS

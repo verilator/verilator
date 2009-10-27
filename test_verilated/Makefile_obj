@@ -25,6 +25,10 @@ CPPFLAGS += -DWAVES=1
 CPPFLAGS += -DVL_DEBUG=1
 CPPFLAGS += $(CPPFLAGS_ADD)
 
+# Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
+# without this flag, even though there's a conditional to prevent the divide.
+CPPFLAGS += -Wno-div-by-zero
+
 #######################################################################
 # Linking final exe -- presumes have a sim_main.cpp
 

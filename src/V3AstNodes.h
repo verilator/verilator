@@ -2382,7 +2382,7 @@ struct AstDiv : public AstNodeBiop {
     ASTNODE_NODE_FUNCS(Div, DIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
-    virtual string emitC() { return "VL_DIV_%lq(%lW, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_DIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2394,7 +2394,7 @@ struct AstDivS : public AstNodeBiop {
     ASTNODE_NODE_FUNCS(DivS, DIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
-    virtual string emitC() { return "VL_DIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_DIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2407,7 +2407,7 @@ struct AstModDiv : public AstNodeBiop {
     ASTNODE_NODE_FUNCS(ModDiv, MODDIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
-    virtual string emitC() { return "VL_MODDIV_%lq(%lW, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_MODDIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
@@ -2419,7 +2419,7 @@ struct AstModDivS : public AstNodeBiop {
     ASTNODE_NODE_FUNCS(ModDivS, MODDIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
-    virtual string emitC() { return "VL_MODDIVS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_MODDIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}

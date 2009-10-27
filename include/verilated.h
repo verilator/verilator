@@ -192,6 +192,9 @@ extern QData  VL_RAND_RESET_Q(int obits);	///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);	///< Random reset a signal
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a signal
 
+/// Math
+extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);
+
 /// File I/O
 extern IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq);
 
@@ -228,6 +231,7 @@ extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
 #define VL_SET_WQ(owp,data)	{ owp[0]=(data); owp[1]=((data)>>VL_WORDSIZE); }
 #define VL_SET_WI(owp,data)	{ owp[0]=(data); owp[1]=0; }
 #define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
+#define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
 
 // Use a union to avoid cast-to-different-size warnings
 /// Return FILE* from QData
@@ -302,6 +306,11 @@ extern double sc_time_stamp();
 
 // EMIT_RULE: VL_ASSIGNCLEAN:  oclean=clean; obits==lbits;
 #define VL_ASSIGNCLEAN_W(obits,owp,lwp) VL_CLEAN_WW(obits,obits,owp,lwp)
+static inline WDataOutP _VL_CLEAN_INPLACE_W(int obits, WDataOutP owp) {
+    int words = VL_WORDS_I(obits);
+    owp[words-1] &= VL_MASK_I(obits);
+    return(owp);
+}
 static inline WDataOutP VL_CLEAN_WW(int obits, int, WDataOutP owp, WDataInP lwp){
     int words = VL_WORDS_I(obits);
     for (int i=0; (i < (words-1)); i++) owp[i] = lwp[i];
@@ -609,10 +618,25 @@ static inline IData VL_CLOG2_Q(QData lhs) {
 static inline IData VL_CLOG2_W(int words, WDataInP lwp) {
     IData adjust = (VL_COUNTONES_W(words,lwp)==1) ? 0 : 1;
     for (int i=words-1; i>=0; i--) {
-	if (lwp[i]) {
+	if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
 	    for (int bit=31; bit>=0; bit--) {
 		if (VL_UNLIKELY(VL_BITISSET_I(lwp[i],bit))) {
 		    return i*VL_WORDSIZE + bit + adjust;
+		}
+	    }
+	    // Can't get here - one bit must be set
+	}
+    }
+    return 0;
+}
+
+static inline IData VL_MOSTSETBITP1_W(int words, WDataInP lwp) {
+    // MSB set bit plus one; similar to FLS.  0=value is zero
+    for (int i=words-1; i>=0; i--) {
+	if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
+	    for (int bit=31; bit>=0; bit--) {
+		if (VL_UNLIKELY(VL_BITISSET_I(lwp[i],bit))) {
+		    return i*VL_WORDSIZE + bit + 1;
 		}
 	    }
 	    // Can't get here - one bit must be set
@@ -759,10 +783,12 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) {
 // EMIT_RULE: VL_MUL:    oclean=dirty; lclean==clean; rclean==clean;
 // EMIT_RULE: VL_DIV:    oclean=dirty; lclean==clean; rclean==clean;
 // EMIT_RULE: VL_MODDIV: oclean=dirty; lclean==clean; rclean==clean;
-#define VL_DIV_I(lhs,rhs)	(((rhs)==0)?0:(lhs)/(rhs))
-#define VL_DIV_Q(lhs,rhs)	(((rhs)==0)?0:(lhs)/(rhs))
-#define VL_MODDIV_I(lhs,rhs)	(((rhs)==0)?0:(lhs)%(rhs))
-#define VL_MODDIV_Q(lhs,rhs)	(((rhs)==0)?0:(lhs)%(rhs))
+#define VL_DIV_III(lbits,lhs,rhs)	(((rhs)==0)?0:(lhs)/(rhs))
+#define VL_DIV_QQQ(lbits,lhs,rhs)	(((rhs)==0)?0:(lhs)/(rhs))
+#define VL_DIV_WWW(lbits,owp,lwp,rwp)   (_vl_moddiv_w(lbits,owp,lwp,rwp,0))
+#define VL_MODDIV_III(lbits,lhs,rhs)	(((rhs)==0)?0:(lhs)%(rhs))
+#define VL_MODDIV_QQQ(lbits,lhs,rhs)	(((rhs)==0)?0:(lhs)%(rhs))
+#define VL_MODDIV_WWW(lbits,owp,lwp,rwp) (_vl_moddiv_w(lbits,owp,lwp,rwp,1))
 
 static inline WDataOutP VL_ADD_W(int words, WDataOutP owp,WDataInP lwp,WDataInP rwp){
     QData carry = 0;
@@ -866,29 +892,68 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
     return(owp);
 }
 
-static inline IData VL_DIVS_III(int,int lbits,int, IData lhs,IData rhs) {
+static inline IData VL_DIVS_III(int lbits, IData lhs,IData rhs) {
     if (rhs==0) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
-static inline QData VL_DIVS_QQQ(int,int lbits,int, QData lhs,QData rhs) {
+static inline QData VL_DIVS_QQQ(int lbits, QData lhs,QData rhs) {
     if (rhs==0) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
-static inline IData VL_MODDIVS_III(int,int lbits,int, IData lhs,IData rhs) {
+static inline IData VL_MODDIVS_III(int lbits, IData lhs,IData rhs) {
     if (rhs==0) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
-static inline QData VL_MODDIVS_QQQ(int,int lbits,int, QData lhs,QData rhs) {
+static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs,QData rhs) {
     if (rhs==0) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed % rhs_signed;
+}
+
+static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataInP rwp) {
+    int words = VL_WORDS_I(lbits);
+    IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
+    IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
+    IData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    IData rwstore[VL_MULS_MAX_WORDS];
+    WDataInP ltup = lwp;
+    WDataInP rtup = rwp;
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if ((lsign && !rsign) || (!lsign && rsign)) {
+	IData qNoSign[VL_MULS_MAX_WORDS];
+	VL_DIV_WWW(lbits,qNoSign,ltup,rtup);
+	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	return owp;
+    } else {
+	return VL_DIV_WWW(lbits,owp,ltup,rtup);
+    }
+}
+static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataInP rwp) {
+    int words = VL_WORDS_I(lbits);
+    IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
+    IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
+    IData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    IData rwstore[VL_MULS_MAX_WORDS];
+    WDataInP ltup = lwp;
+    WDataInP rtup = rwp;
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) {  // Only dividend sign matters for modulus
+	IData qNoSign[VL_MULS_MAX_WORDS];
+	VL_MODDIV_WWW(lbits,qNoSign,ltup,rtup);
+	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	return owp;
+    } else {
+	return VL_MODDIV_WWW(lbits,owp,ltup,rtup);
+    }
 }
 
 static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {

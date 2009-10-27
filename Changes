@@ -7,7 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Support little endian bit vectors ("reg [0:2] x;").
 
-**** Fix writing to out-of-bounds arrays writing element 0.
+**   Support division and modulus of > 64 bit vectors.  [Gary Thomas]
+
+***  Fix writing to out-of-bounds arrays writing element 0.
 
 **** Fix core dump with SystemVerilog var declarations under unnamed begins.
 

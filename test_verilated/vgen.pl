@@ -49,7 +49,7 @@ our $Raise_Weight_Max = 50;
  'VBITSELP'=>	{weight=>1&&10, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2+:%3]', },
  'VBITSELM'=>	{weight=>1&&10, width=>0, signed=>0,sc=>0, terminal=>0, v=>'%i[%2-:%3]', },
  # Unary
- 'VEXTEND'=>	{weight=>1&&3, width=>-2, signed=>0,sc=>0, terminal=>0, v=>'{%xw\'h0,%1}', },
+ 'VEXTEND'=>	{weight=>1&&3, width=>-2, signed=>0,sc=>0, terminal=>0, v=>'{%xd\'h0,%1}', },
  'VLOGNOT'=>	{weight=>1&&1, width=>1, signed=>0, sc=>0, terminal=>0, v=>'(! %1)', },
  'VREDAND'=>	{weight=>1&&1, width=>1, signed=>0, sc=>0, terminal=>0, v=>'(& %1)', },
  'VREDOR'=>	{weight=>1&&1, width=>1, signed=>0, sc=>0, terminal=>0, v=>'(| %1)', },
@@ -82,8 +82,8 @@ our $Raise_Weight_Max = 50;
  'VADD'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'(%1 + %2)', },
  'VSUB'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'(%1 - %2)', },
  'VMUL'=>	{weight=>1&&15,width=>0, 	    sc=>1, terminal=>0, v=>'(%1 * %2)', },  # High % as rarely applyable
- #'VDIV'=>	{weight=>2&&0, width=>-32,	    sc=>1, terminal=>0, v=>'(%1 / %2)', }, # FIX
- #'VMODDIV'=>	{weight=>2&&0, width=>-32,	    sc=>1, terminal=>0, v=>'(%1 %% %2)', }, # FIX
+ 'VDIV'=>	{weight=>1&&8, width=>0,	    sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 / %2))', },
+ 'VMODDIV'=>	{weight=>1&&8, width=>0,	    sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 %% %2))', },
  #'VPOW'=>	{weight=>2&&0,width=>-64, 	    sc=>0, terminal=>0, v=>'(%1 ** %2)', },
  'VSHIFTL'=>	{weight=>1&&8, width=>0, signed=>0, sc=>0, terminal=>0, v=>'(%1 << %2)', },
  'VSHIFTLS'=>	{weight=>1&&8, width=>0, signed=>1, sc=>0, terminal=>0, v=>'(%1 <<< %2)', },
@@ -167,8 +167,8 @@ my %ops2 =
  'VADD'=>	{pl=>'VADD   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);', trunc=>1,},
  'VSUB'=>	{pl=>'VSUB   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);', trunc=>1,},
  'VMUL'=>	{pl=>'VMUL   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);', trunc=>1,},  # Multiply generates larger width, so need truncate for safety
- #'VDIV'=>	{pl=>'VDIV   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
- #'VMODDIV'=>	{pl=>'VMODDIV(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
+ 'VDIV'=>	{pl=>'VDIV   (%tr,%1r,%2r,0);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
+ 'VMODDIV'=>	{pl=>'VDIV   (%tr,%1r,%2r,1);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
  #'VPOW'=>	{pl=>'VPOW   (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>min(%tw,6),signed=>%tg); %2r=gen_leaf(width=>min(%tw,8),signed=>%tg);', trunc=>1,},  # Generates larger width, so need truncate for safety
  'VSHIFTL'=>	{pl=>'VSHIFTL(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>log2(%tw)+1,signed=>%tg);'},
  'VSHIFTLS'=>	{pl=>'VSHIFTL(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>log2(%tw)+1,signed=>%tg);'},
@@ -227,6 +227,7 @@ if ($opt_seed==0) {
 }
 srand($opt_seed);
 init();
+selftest();
 gentest();
 write_output_sc("vgen.cpp") if $Opt_Sc;
 write_output_v("vgen.v") if !$Opt_Sc;
@@ -293,7 +294,10 @@ sub _rnd_op_ok {
     my $paramref = shift;
     return (($opref->{width} == 0
 	     || $opref->{width} == $paramref->{width}
+	     # Note -2 means >, while -32 means <!
+	     || ($opref->{width}==-31 && $paramref->{width}<=31)     # -31... must be <31 bits
 	     || ($opref->{width}==-32 && $paramref->{width}<=32)     # -32... must be <32 bits
+	     || ($opref->{width}==-63 && $paramref->{width}<=63)     # -63... must be <63 bits
 	     || ($opref->{width}==-64 && $paramref->{width}<=64)     # -64... must be <64 bits
 	     || ($opref->{width}==-2  && $paramref->{width}>=2)     # -2... must be >2 bits
 	     )
@@ -719,7 +723,8 @@ sub gen_leaf {
     $treeref->{val_size} = $treeref->{val}->Size;   #Debugging
     $treeref->{val_text} = $treeref->{val}->to_Hex; #Debugging
 
-    ($treeref->{val}->Size == $treeref->{width}) or die "%Error: Size mismatch,";
+    ($treeref->{val}->Size == $treeref->{width})
+	or die "%Error: Size mismatch ",$treeref->{val}->Size,"!=",$treeref->{width},"\n",Dumper($treeref);
 
     return $treeref;
 }
@@ -733,18 +738,20 @@ sub gen_v {
     $fmt =~ s/%3/%s/g;
     $fmt =~ s/%v/%s/g;
     $fmt =~ s/%i/%s/g;
-    $fmt =~ s/%xw/%s/g;
+    $fmt =~ s/%x[wds]/%s/g;
 
     my $argl = $opref->{v};
     my @args;
-    while ($argl =~ s/(%xw|%.)//) {
+    while ($argl =~ s/(%x.|%.)//) {
 	my $arg = $1;
 	push @args, '$treeref->{op1}{text}'	if $arg =~ /%1/;
 	push @args, '$treeref->{op2}{text}'	if $arg =~ /%2/;
 	push @args, '$treeref->{op3}{text}'	if $arg =~ /%3/;
 	push @args, '$treeref->val_to_text'	if $arg =~ /%v/;
 	push @args, '$treeref->{id}'		if $arg =~ /%i/;
-	push @args, '$treeref->{width}-$treeref->{op1}{width}'		if $arg =~ /%xw/;
+	push @args, '$treeref->{signed}?"s":""'	if $arg =~ /%xs/;
+	push @args, '$treeref->{width}'		if $arg =~ /%xw/;
+	push @args, '$treeref->{width}-$treeref->{op1}{width}'		if $arg =~ /%xd/;
     }
 
     my $func = ("sub { "
@@ -848,6 +855,21 @@ sub decl_text {
 #######################################################################
 # Math Functions
 
+sub selftest {
+    my $o = {};
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0xff)}, {val=>Bit::Vector->new_Dec(8,0x13)}, 0);
+    ($o->{val}->Word_Read(0) == 0x0d) or die;
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0xff)}, {val=>Bit::Vector->new_Dec(8,0x13)}, 1);
+    ($o->{val}->Word_Read(0) == 0x08) or die;
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0xff), signed=>1}, {val=>Bit::Vector->new_Dec(8,0x13), signed=>1}, 0);
+    ($o->{val}->Word_Read(0) == 0x00) or die;
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0xff), signed=>1}, {val=>Bit::Vector->new_Dec(8,0x13), signed=>1}, 1);
+    ($o->{val}->Word_Read(0) == 0xff) or die;
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0xff), signed=>1}, {val=>Bit::Vector->new_Dec(8,0xdb), signed=>1}, 1);
+    ($o->{val}->Word_Read(0) == 0xff) or die;
+    VDIV($o, {val=>Bit::Vector->new_Dec(8,0x72), signed=>1}, {val=>Bit::Vector->new_Dec(8,0xdb), signed=>1}, 1);
+    ($o->{val}->Word_Read(0) == 0x3) or die;
+}
 sub val_leaf { return {width=>32, signed=>0, val=>Bit::Vector->new_Dec(32,$_[0]), text=>$_[0],}; }
 
 sub makebool { return (Bit::Vector->new_Dec(1,$_[0])); }
@@ -936,25 +958,35 @@ sub VRESIZE {
 }
 sub VADD { $_[0]{val}=my $o=newsized($_[1]); $o->add($_[1],$_[2],0); }
 sub VSUB { $_[0]{val}=my $o=newsized($_[1]); $o->subtract($_[1],$_[2],0); }
-sub VMUL { # Multiply is signed, so need an additional sign bit
-	   my $a=$_[1]->Clone; $a->Resize($_[1]->Size + 1);
-	   my $b=$_[2]->Clone; $b->Resize($_[1]->Size + 1);
-	   my $mo=Bit::Vector->new($_[1]->Size + $_[2]->Size + 1);
-	   $mo->Multiply($a,$b);
-	   my $o=newsized($_[1]); $o->Interval_Copy($mo,0,0,$_[1]->Size);
-	   $_[0]{val}=$o;
-	   }
-sub VDIV { my $a=$_[1]->Clone; my $b=$_[2]->Clone;  # Else it will take them as signed #s
-	   $a->Resize($a->Size + 1); $b->Resize($b->Size + 1);
-	   print ("//DIVpp ",$_[1]->to_Hex,' ',$_[2]->to_Hex,' ',$_[1]->Size,'.',$_[2]->Size," \n");
-	   print ("//DIVpp ",$a->to_Hex,' ',$b->to_Hex,' ',$a->Size,'.',$b->Size," \n");
-	   my $o=newsized($a); my $rem=newsized($a);
-	   if (!$_[2]->is_empty) { $o->Divide($a,$b,$rem); } # No division by zero
-	   #push @Lines, ("//DIV ",$_[1]{val}->to_Hex,' ',$_[2]->to_Hex,' ',$o->to_Hex,'.',$rem->to_Hex," \n");
-	   $_[0]{val}=$o; }
+sub VMUL {
+    # Multiply is signed, so need an additional sign bit
+    my $a=$_[1]->Clone; $a->Resize($a->Size + 1);
+    my $b=$_[2]->Clone; $b->Resize($b->Size + 1);
+    my $mo=Bit::Vector->new($_[1]->Size + $_[2]->Size + 1);
+    $mo->Multiply($a,$b);
+    my $o=newsized($_[1]); $o->Interval_Copy($mo,0,0,$_[1]->Size);
+    $_[0]{val}=$o;
+}
+sub VDIV {
+    my $is_mod = $_[3];
+    if ($_[2]{val}->is_empty) {  # Avoid divide by zero
+	$_[0]{val}=newsized($_[1]{val});
+	return;
+    }
+    my $a=$_[1]{val}->Clone; if (!$_[1]->{signed}) { $a->Resize($a->Size + 1); }
+    my $b=$_[2]{val}->Clone; if (!$_[2]->{signed}) { $b->Resize($b->Size + 1); }
+    #print ("//DIVpp ",$_[1]->to_Hex,' ',$_[2]->to_Hex,' ',$_[1]->Size,'.',$_[2]->Size," \n");
+    #print ("//DIVpp ",$a->to_Hex,' ',$b->to_Hex,' ',$a->Size,'.',$b->Size," \n");
+    my $quo=newsized($a); my $rem=newsized($a);
+    $quo->Divide($a,$b,$rem); # No division by zero - handled by if above
+    my $o=newsized($_[1]{val});
+    $o->Interval_Copy($is_mod ? $rem : $quo,0,0,$_[1]{val}->Size);
+    #print "//DIV",($_[1]->{signed}?"S":" "),' w',$a->Size,' ',$_[1]{val}->to_Hex,' ',$_[2]{val}->to_Hex,' =',$quo->to_Hex,'.',$rem->to_Hex," \n";
+    $_[0]{val}=$o;
+}
 sub VPOW { # Power is a signed operation
-    my $a=$_[1]{val}->Clone; if (!$_[1]->{Signed}) { $a->Resize($_[1]{val}->Size + 1); }
-    my $b=$_[2]{val}->Clone; if (!$_[2]->{Signed}) { $b->Resize($_[2]{val}->Size + 1); }
+    my $a=$_[1]{val}->Clone; if (!$_[1]->{signed}) { $a->Resize($_[1]{val}->Size + 1); }
+    my $b=$_[2]{val}->Clone; if (!$_[2]->{signed}) { $b->Resize($_[2]{val}->Size + 1); }
     print "VVpow = ",$_[1]{val}->to_Hex," ** ",$_[2]{val}->to_Hex,"\n";
     my $mo=Bit::Vector->new($_[1]{val}->Size + 1);
     $mo->Power($a,$b);

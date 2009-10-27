@@ -245,7 +245,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		case 'd': setBit(obit++,1); setBit(obit++,0); setBit(obit++,1); setBit(obit++,1); break;
 		case 'e': setBit(obit++,0); setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); break;
 		case 'f': setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); setBit(obit++,1); break;
-		case 'z': case '?': 
+		case 'z': case '?':
 		    setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); setBit(obit++,'z'); break;
 		case 'x':
 		    setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
@@ -1087,37 +1087,47 @@ V3Number& V3Number::opMulS (const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 V3Number& V3Number::opDiv (const V3Number& lhs, const V3Number& rhs) {
+    UINFO(9, "opdiv "<<lhs<<" "<<rhs<<endl);
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsX();
-    if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
-    if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large / math not implemented yet: "<<*this);
-    setQuad(lhs.toUQuad() / rhs.toUQuad());
-    return *this;
+    if (lhs.width()<=64) {
+	setQuad(lhs.toUQuad() / rhs.toUQuad());
+	return *this;
+    } else {
+	// Wide division
+	return opModDivGuts(lhs,rhs,false);
+    }
 }
 V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed divide
+    //UINFO(9, ">>divs-start "<<lhs<<" "<<rhs<<endl);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsX();
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
     V3Number qNoSign = opDiv(lhsNoSign,rhsNoSign);
+    //UINFO(9, " >divs-mid "<<lhs<<" "<<rhs<<" "<<qNoSign<<endl);
     if ((lhs.isNegative() && !rhs.isNegative())
 	|| (!lhs.isNegative() && rhs.isNegative())) {
 	opUnaryMin(qNoSign);
     } else {
 	opAssign(qNoSign);
     }
+    UINFO(9, " <divs-out "<<lhs<<" "<<rhs<<" ="<<*this<<endl);
     return *this;
 }
 V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsX();
-    if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
-    if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large % math not implemented yet: "<<*this);
-    setQuad(lhs.toUQuad() % rhs.toUQuad());
-    return *this;
+    if (lhs.width()<=64) {
+	setQuad(lhs.toUQuad() % rhs.toUQuad());
+	return *this;
+    } else {
+	// Wide modulus
+	return opModDivGuts(lhs,rhs,true);
+    }
 }
 V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed moddiv
@@ -1133,6 +1143,122 @@ V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
     }
     return *this;
 }
+V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus) {
+    // See Knuth Algorithm D.  Computes u/v = q.r
+    // This isn't massively tuned, as wide division is rare
+    setZero();
+    // Find MSB and check for zero.
+    int words = lhs.words();
+    int umsbp1 = lhs.mostSetBitP1(); // dividend
+    int vmsbp1 = rhs.mostSetBitP1(); // divisor
+    if (VL_UNLIKELY(vmsbp1==0)  // rwp==0 so division by zero.  Return 0.
+	|| VL_UNLIKELY(umsbp1==0)) {	// 0/x so short circuit and return 0
+	UINFO(9, "  opmoddiv-zero "<<lhs<<" "<<rhs<<" now="<<*this<<endl);
+	return *this;
+    }
+
+    int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
+    int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+
+    if (vw == 1) {  // Single divisor word breaks rest of algorithm
+	vluint64_t k = 0;
+	for (int j = uw-1; j >= 0; j--) {
+	    vluint64_t unw64 = ((k<<VL_ULL(32)) + (vluint64_t)(lhs.m_value[j]));
+	    m_value[j] = unw64 / (vluint64_t)(rhs.m_value[0]);
+	    k          = unw64 - (vluint64_t)(m_value[j])*(vluint64_t)(rhs.m_value[0]);
+	}
+	UINFO(9, "  opmoddiv-1w  "<<lhs<<" "<<rhs<<" q="<<*this<<" rem=0x"<<hex<<k<<dec<<endl);
+	if (is_modulus) { setZero(); m_value[0] = k; }
+	return *this;
+    }
+
+    // +1 word as we may shift during normalization
+    uint32_t un[VL_MULS_MAX_WORDS+1]; // Fixed size, as MSVC++ doesn't allow [words] here
+    uint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
+
+    // Zero for ease of debugging and to save having to zero for shifts
+    for (int i=0; i<6; i++) { un[i]=vn[i]=m_value[i]=0; }
+    for (int i=6; i<words+1; i++) { un[i]=vn[i]=0; }  // +1 as vn may get extra word
+
+    // Algorithm requires divisor MSB to be set
+    // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
+    int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
+    uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
+    for (int i = vw-1; i>0; i--) {
+	vn[i] = (rhs.m_value[i] << s) | (shift_mask & (rhs.m_value[i-1] >> (32-s)));
+    }
+    vn[0] = rhs.m_value[0] << s;
+
+    // Copy and shift dividend by same amount; may set new upper word
+    if (s) un[uw] = lhs.m_value[uw-1] >> (32-s);
+    else   un[uw] = 0;
+    for (int i=uw-1; i>0; i--) {
+	un[i] = (lhs.m_value[i] << s) | (shift_mask & (lhs.m_value[i-1] >> (32-s)));
+    }
+    un[0] = lhs.m_value[0] << s;
+
+    //printf("  un="); for(int i=5; i>=0; i--) printf(" %08x",un[i]); printf("\n");
+    //printf("  vn="); for(int i=5; i>=0; i--) printf(" %08x",vn[i]); printf("\n");
+    //printf("  mv="); for(int i=5; i>=0; i--) printf(" %08x",m_value[i]); printf("\n");
+
+    // Main loop
+    for (int j = uw - vw; j >= 0; j--) {
+	// Estimate
+	vluint64_t unw64 = ((vluint64_t)(un[j+vw])<<VL_ULL(32) | (vluint64_t)(un[j+vw-1]));
+	vluint64_t qhat = unw64 / (vluint64_t)(vn[vw-1]);
+	vluint64_t rhat = unw64 - qhat*(vluint64_t)(vn[vw-1]);
+
+      again:
+	if (qhat >= VL_ULL(0x100000000)
+	    || ((qhat*vn[vw-2]) > ((rhat<<VL_ULL(32)) + un[j+vw-2]))) {
+	    qhat = qhat - 1;
+	    rhat = rhat + vn[vw-1];
+	    if (rhat < VL_ULL(0x100000000)) goto again;
+	}
+
+	vlsint64_t t = 0;  // Must be signed
+	vluint64_t k = 0;
+	for (int i=0; i<vw; i++) {
+	    vluint64_t p = qhat*vn[i];  // Multiply by estimate
+	    t = un[i+j] - k - (p & VL_ULL(0xFFFFFFFF));  // Subtract
+	    un[i+j] = t;
+	    k = (p >> VL_ULL(32)) - (t >> VL_ULL(32));
+	}
+	t = un[j+vw] - k;
+	un[j+vw] = t;
+	this->m_value[j] = qhat; // Save quotient digit
+
+	if (t < 0) {
+	    // Over subtracted; correct by adding back
+	    this->m_value[j]--;
+	    k = 0;
+	    for (int i=0; i<vw; i++) {
+		t = (vluint64_t)(un[i+j]) + (vluint64_t)(vn[i]) + k;
+		un[i+j] = t;
+		k = t >> VL_ULL(32);
+	    }
+	    un[j+vw] = un[j+vw] + k;
+	}
+    }
+
+    //printf("  un="); for(int i=5; i>=0; i--) printf(" %08x",un[i]); printf("\n");
+    //printf("  vn="); for(int i=5; i>=0; i--) printf(" %08x",vn[i]); printf("\n");
+    //printf("  mv="); for(int i=5; i>=0; i--) printf(" %08x",m_value[i]); printf("\n");
+
+    if (is_modulus) { // modulus
+	// Need to reverse normalization on copy to output
+	for (int i=0; i<vw; i++) {
+	    m_value[i] = (un[i] >> s) | (shift_mask & (un[i+1] << (32-s)));
+	}
+	for (int i=vw; i<words; i++) m_value[i] = 0;
+	UINFO(9, "  opmoddiv-mod "<<lhs<<" "<<rhs<<" now="<<*this<<endl);
+	return *this;
+    } else { // division
+	UINFO(9, "  opmoddiv-div "<<lhs<<" "<<rhs<<" now="<<*this<<endl);
+	return *this;
+    }
+}
+
 V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs) {
     // L(i) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();

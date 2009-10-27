@@ -1647,12 +1647,6 @@ Bit ranges must be numbered with the MSB being numbered greater or the same
 as the LSB.  Little-bit-endian busses [0:15] are not supported as they
 aren't easily made compatible with C++.
 
-=head2 32-Bit Divide
-
-The division and modulus operators are limited to 32 bits.  This can be
-easily fixed if someone contributes the appropriate wide-integer math
-functions.
-
 =head2 Gate Primitives
 
 The 2-state gate primitives (and, buf, nand, nor, not, or, xnor, xor) are

@@ -273,6 +273,15 @@ module t (/*AUTOARG*/
 
    //============================================================
 
+   reg signed [105:  0] W0032 /*verilator public*/; //=106'h3ff0000000100000000bd597bb1
+   always @(check) begin : Block237
+      W0032 = 106'sh3ff0000000100000000bd597bb1;
+      if ((106'sh1ca0000000000000000b96b8dc2 / 106'sh3ff0000000100000000bd597bb1) != 106'sh3fffffffffffffffffffffffe36) if (check) $stop;
+      if ((106'sh1ca0000000000000000b96b8dc2 / W0032) != 106'sh3fffffffffffffffffffffffe36) if (check) $stop;
+   end
+
+   //============================================================
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
