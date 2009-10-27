@@ -25,7 +25,8 @@ if ($data =~ /(verilator.*)/i) {
 }
 
 $data = `git status`;
-if ($data !~ /nothing to commit/i) {
+if ($data =~ /Changed but not updated/i
+    || $data =~ /Changes to be committed/i) {
     $rev .= " (mod)";
 }
 
