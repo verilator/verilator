@@ -18,6 +18,14 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
+// Overview of files involved in parsing
+//	 V3Parse.h		External consumer interface to V3ParseImp
+//	 V3ParseImp		Internals to parser, common to across flex & bison
+//	   V3ParseGrammar	Wrapper that includes V3ParseBison
+//	     V3ParseBison	Bison output
+//	   V3ParseLex		Wrapper that includes lex output
+//	     V3Lexer.yy.cpp	Flex output
+//*************************************************************************
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -30,55 +38,18 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3File.h"
-#include "V3Read.h"
+#include "V3ParseImp.h"
 #include "V3PreShell.h"
-
-//======================================================================
-// Build in LEX script
-
-#define yyFlexLexer V3LexerBase
-#include "V3Lexer.yy.cpp"
-#undef yyFlexLexer
-
-//YYSTYPE yylval;
 
 //======================================================================
 // Globals
 
-V3Read*	V3Read::s_readp = NULL;
-
-extern bool yyparse();
-extern int yydebug;
-
-//######################################################################
-// Lex-derived class
-
-/// Override the base lexer class so we can add some access functions
-class V3Lexer : public V3LexerBase {
-public:
-    // CONSTRUCTORS
-    V3Lexer() : V3LexerBase(NULL) {}
-    ~V3Lexer() {}
-    // METHODS
-    void stateExitPsl() {
-	if (YY_START != PSL) yyerrorf("Internal error: Exiting PSL state when not in PSL state");
-	yy_pop_state();
-    }
-    void statePushVlg() {
-	yy_push_state(STATE_VERILOG_RECENT);
-    }
-    void statePop() {
-	yy_pop_state();
-    }
-};
-void V3Read::stateExitPsl() { s_readp->m_lexerp->stateExitPsl(); }
-void V3Read::statePushVlg() { s_readp->m_lexerp->stateExitPsl(); }
-void V3Read::statePop()	    { s_readp->m_lexerp->statePop(); }
+V3ParseImp*	V3ParseImp::s_parsep = NULL;
 
 //######################################################################
 // Read class functions
 
-V3Read::~V3Read() {
+V3ParseImp::~V3ParseImp() {
     for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
 	delete (*it);
     }
@@ -87,11 +58,11 @@ V3Read::~V3Read() {
 	delete (*it);
     }
     m_numberps.clear();
-    if (m_lexerp) { delete m_lexerp; m_lexerp = NULL; }
+    lexDestroy();
     parserClear();
 }
 
-int V3Read::ppInputToLex(char* buf, int max_size) {
+int V3ParseImp::ppInputToLex(char* buf, int max_size) {
     int got = 0;
     while (got < max_size	// Haven't got enough
 	   && !m_ppBuffers.empty()) {	// And something buffered
@@ -114,7 +85,7 @@ int V3Read::ppInputToLex(char* buf, int max_size) {
     return got;
 }
 
-void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibrary) {
+void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary) {
     string modname = V3Options::filenameNonExt(modfilename);
 
     UINFO(2,__FUNCTION__<<": "<<modname<<(inLibrary?" [LIB]":"")<<endl);
@@ -161,38 +132,30 @@ void V3Read::readFile(FileLine* fileline, const string& modfilename, bool inLibr
     }
 }
 
-void V3Read::lexFile(const string& modname) {
+void V3ParseImp::lexFile(const string& modname) {
     // Prepare for lexing
     UINFO(3,"Lexing "<<modname<<endl);
-    V3Read::s_readp = this;
-    V3Read::fileline()->warnResetDefault();	// Reenable warnings on each file
-    if (m_lexerp) delete m_lexerp;	// Restart from clean slate.
-    m_lexerp = new V3Lexer();
-    // if (debug()) { m_lexerp->set_debug(~0);  }
-    // if (debug()) yydebug = 1;
-    UINFO(4,"Lexing Done "<<modname<<endl);
+    s_parsep = this;
+    fileline()->warnResetDefault();	// Reenable warnings on each file
+    lexDestroy();	// Restart from clean slate.
+    lexNew(debugFlex()>=9);
 
     // Lex it
-    if (yyparse()) v3fatal("Cannot continue\n");
+    if (bisonParse()) v3fatal("Cannot continue\n");
 }
 
 //======================================================================
-// Lex accessors
+// V3Parse functions
 
-bool V3Read::optPsl() {
-    return v3Global.opt.psl();
+V3Parse::V3Parse(AstNetlist* rootp) {
+    m_impp = new V3ParseImp (rootp);
 }
-bool V3Read::optFuture(const string& flag) {
-    return v3Global.opt.isFuture(flag);
+V3Parse::~V3Parse() {
+    delete m_impp; m_impp = NULL;
 }
-
-//======================================================================
-// Lex internal functions
-
-int V3Read::yylexThis() {
-    int token = m_lexerp->yylex();
-    // Match verilog-perl names
-    if (token == yaID__LEX) { token = yaID__ETC; }
-    UINFO(5,m_fileline<<" TOKEN="<<dec<<token<<" "<<endl);
-    return (token);
+void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary) {
+    m_impp->parseFile(fileline, modname, inLibrary);
+}
+void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
+    impp->ppPushText(text);
 }

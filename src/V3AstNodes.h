@@ -731,7 +731,7 @@ public:
     virtual void name(const string& name) { m_name = name; }
     // op1 = Statements
     AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
-    void addStmtp(AstNode* nodep) { addOp1p(nodep); }
+    void addStmtp(AstNode* nodep) { addNOp1p(nodep); }
     bool unnamed() const { return m_unnamed; }
 };
 
@@ -804,7 +804,7 @@ public:
     ASTNODE_NODE_FUNCS(Func, FUNC)
     // op1 = Range output variable (functions only)
     AstNode*	fvarp() 	const { return op1p()->castNode(); }
-    void addFvarp(AstNode* nodep) { addOp1p(nodep); }
+    void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
 };

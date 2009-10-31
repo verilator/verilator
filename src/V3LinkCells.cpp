@@ -37,7 +37,7 @@
 #include "V3Global.h"
 #include "V3LinkCells.h"
 #include "V3SymTable.h"
-#include "V3Read.h"
+#include "V3Parse.h"
 #include "V3Ast.h"
 #include "V3Graph.h"
 
@@ -169,8 +169,8 @@ private:
 	    AstModule* modp = m_mods.findIdUpward(nodep->modName())->castModule();
 	    if (!modp) {
 		// Read-subfile
-		V3Read reader (v3Global.rootp());
-		reader.readFile(nodep->fileline(), nodep->modName(), false);
+		V3Parse parser (v3Global.rootp());
+		parser.parseFile(nodep->fileline(), nodep->modName(), false);
 		V3Error::abortIfErrors();
 		// We've read new modules, grab new pointers to their names
 		readModNames();
@@ -200,7 +200,7 @@ private:
 	if (nodep->modp() && pinStar) {
 	    // Note what pins exist
 	    UINFO(9,"  CELL .* connect "<<nodep<<endl);
-	    V3SymTable  ports;		// Symbol table of all connected port names
+	    V3SymTable  ports;	// Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
 		if (!ports.findIdFlat(pinp->name())) {
@@ -254,6 +254,7 @@ private:
 		m_mods.insert(nodep->name(), nodep);
 	    }
 	}
+	//if (debug()>=9) m_mods.dump(cout, "-syms: ");
     }
 
 public:

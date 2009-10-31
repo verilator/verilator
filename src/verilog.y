@@ -26,16 +26,16 @@
 #include <cstdarg>
 #include <cstring>
 
-#include "V3Read.h"
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
 
 #define YYERROR_VERBOSE 1
 #define YYINITDEPTH 10000	// Older bisons ignore YYMAXDEPTH
 #define YYMAXDEPTH 10000
 
 // Pick up new lexer
-#define yylex V3Read::yylex
+#define yylex PARSEP->lexToBison
 #define PSLUNSUP(what) NULL; yyerrorf("Unsupported: PSL language feature not implemented");
 
 extern void yyerror(const char* errmsg);
@@ -44,74 +44,84 @@ extern void yyerrorf(const char* format, ...);
 //======================================================================
 // Statics (for here only)
 
-class V3Parse {
+class V3ParseGrammar {
 public:
-    static bool		s_impliedDecl;	// Allow implied wire declarations
-    static AstVarType	s_varDecl;	// Type for next signal declaration (reg/wire/etc)
-    static AstVarType	s_varIO;	// Type for next signal declaration (input/output/etc)
-    static bool		s_varSigned;	// Signed state for next signal declaration
-    static AstVar*	s_varAttrp;	// Current variable for attribute adding
-    static AstCase*	s_caseAttrp;	// Current case statement for attribute adding
-    static AstRange*	s_varRangep;	// Pointer to range for next signal declaration
-    static int		s_pinNum;	// Pin number currently parsing
-    static string	s_instModule;	// Name of module referenced for instantiations
-    static AstPin*	s_instParamp;	// Parameters for instantiations
-    static int		s_uniqueAttr;	// Bitmask of unique/priority keywords
+    bool	m_impliedDecl;	// Allow implied wire declarations
+    AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
+    AstVarType	m_varIO;	// Type for next signal declaration (input/output/etc)
+    bool	m_varSigned;	// Signed state for next signal declaration
+    AstVar*	m_varAttrp;	// Current variable for attribute adding
+    AstCase*	m_caseAttrp;	// Current case statement for attribute adding
+    AstRange*	m_varRangep;	// Pointer to range for next signal declaration
+    int		m_pinNum;	// Pin number currently parsing
+    string	m_instModule;	// Name of module referenced for instantiations
+    AstPin*	m_instParamp;	// Parameters for instantiations
+    int		m_uniqueAttr;	// Bitmask of unique/priority keywords
 
-    static AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
-    static AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
-    static AstText* createTextQuoted(FileLine* fileline, string text);
-    static AstDisplay* createDisplayError(FileLine* fileline) {
+    // CONSTRUCTORS
+    V3ParseGrammar() {
+	m_impliedDecl = false;
+	m_varDecl = AstVarType::UNKNOWN;
+	m_varIO = AstVarType::UNKNOWN;
+	m_varSigned = false;
+	m_varRangep = NULL;
+	m_pinNum = -1;
+	m_instModule;
+	m_instParamp = NULL;
+	m_varAttrp = NULL;
+	m_caseAttrp = NULL;
+    }
+    static V3ParseGrammar* singletonp() {
+	static V3ParseGrammar singleton;
+	return &singleton;
+    }
+
+    // METHODS
+    AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
+    AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
+    AstText* createTextQuoted(FileLine* fileline, string text) {
+	string newtext = deQuote(fileline, text);
+	return new AstText(fileline, newtext);
+    }
+    AstDisplay* createDisplayError(FileLine* fileline) {
 	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::ERROR,  "", NULL,NULL);
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
-    static void setRange(AstRange* rangep) {
-	if (s_varRangep) { s_varRangep->deleteTree(); s_varRangep=NULL; } // It was cloned, so this is safe.
-	s_varRangep = rangep;
-    }
-    static string   deQuote(FileLine* fileline, string text);
-};
-
-bool		V3Parse::s_impliedDecl = false;
-AstVarType	V3Parse::s_varDecl = AstVarType::UNKNOWN;
-AstVarType	V3Parse::s_varIO = AstVarType::UNKNOWN;
-bool		V3Parse::s_varSigned = false;
-AstRange*	V3Parse::s_varRangep = NULL;
-int 		V3Parse::s_pinNum = -1;
-string		V3Parse::s_instModule;
-AstPin*		V3Parse::s_instParamp = NULL;
-AstVar*		V3Parse::s_varAttrp = NULL;
-AstCase*	V3Parse::s_caseAttrp = NULL;
-
-//======================================================================
-// Utility functions
-
-static AstNode* newVarInit(FileLine* fileline, AstNode* varp, AstNode* initp) {
+    AstNode* newVarInit(FileLine* fileline, AstNode* varp, AstNode* initp) {
 	return new AstInitial(fileline, new AstAssign(fileline,
 						      new AstVarRef(fileline, varp->name(),true),
 						      initp));
-}	
+    }	
+    void setRange(AstRange* rangep) {
+	if (m_varRangep) { m_varRangep->deleteTree(); m_varRangep=NULL; } // It was cloned, so this is safe.
+	m_varRangep = rangep;
+    }
+    string   deQuote(FileLine* fileline, string text);
+};
+
+#define PARSEP V3ParseImp::parsep()
+#define GRAMMARP V3ParseGrammar::singletonp()
 
 //======================================================================
 // Macro functions
 
-#define CRELINE() (V3Read::copyOrSameFileLine())
+#define CRELINE() (PARSEP->copyOrSameFileLine())
 
-#define VARRESET_LIST(decl)    { V3Parse::s_pinNum=1; VARRESET(); VARDECL(decl); }	// Start of pinlist
-#define VARRESET_NONLIST(decl) { V3Parse::s_pinNum=0; VARRESET(); VARDECL(decl); }	// Not in a pinlist
+#define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; VARRESET(); VARDECL(decl); }	// Start of pinlist
+#define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; VARRESET(); VARDECL(decl); }	// Not in a pinlist
 #define VARRESET() { VARDECL(UNKNOWN); VARIO(UNKNOWN); VARSIGNED(false); VARRANGE(NULL); }
-#define VARDECL(type) { V3Parse::s_varDecl = AstVarType::type; }
-#define VARIO(type) { V3Parse::s_varIO = AstVarType::type; }
-#define VARSIGNED(value) { V3Parse::s_varSigned = value; }
-#define VARRANGE(rangep) { V3Parse::setRange(rangep); }
+#define VARDECL(type) { GRAMMARP->m_varDecl = AstVarType::type; }
+#define VARIO(type) { GRAMMARP->m_varIO = AstVarType::type; }
+#define VARSIGNED(value) { GRAMMARP->m_varSigned = value; }
+#define VARRANGE(rangep) { GRAMMARP->setRange(rangep); }
 #define VARTYPE(typep) { VARRANGE(typep); }  // Temp until other data types supported
 
-#define VARDONEA(name,array,attrs) V3Parse::createVariable(CRELINE(),(name),(array),(attrs))
-#define VARDONEP(portp,array,attrs) V3Parse::createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
-#define PINNUMINC() (V3Parse::s_pinNum++)
+#define VARDONEA(name,array,attrs) GRAMMARP->createVariable(CRELINE(),(name),(array),(attrs))
+#define VARDONEP(portp,array,attrs) GRAMMARP->createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
+#define PINNUMINC() (GRAMMARP->m_pinNum++)
 
-#define INSTPREP(modname,paramsp) { V3Parse::s_impliedDecl = true; V3Parse::s_instModule = modname; V3Parse::s_instParamp = paramsp; }
+#define INSTPREP(modname,paramsp) { GRAMMARP->m_impliedDecl = true; GRAMMARP->m_instModule = modname; GRAMMARP->m_instParamp = paramsp; }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
@@ -123,30 +133,6 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
 
 class AstSenTree;
 %}
-
-%union {
-    FileLine*	fileline;
-    V3Number*	nump;
-    string*	strp;
-    int 	cint;
-    double	cdouble;
-    V3UniqState	uniqstate;
-
-    AstNode*	nodep;
-
-    AstCase*	casep;
-    AstCaseItem* caseitemp;
-    AstConst*	constp;
-    AstFunc*	funcp;
-    AstModule*	modulep;
-    AstNodeVarRef*	varnodep;
-    AstParseRef*	parserefp;
-    AstPin*	pinp;
-    AstRange*	rangep;
-    AstNodeSenItem*	senitemp;
-    AstSenTree*	sentreep;
-    AstVar*	varp;
-}
 
 // When writing Bison patterns we use yTOKEN instead of "token",
 // so Bison will error out on unknown "token"s.
@@ -170,7 +156,7 @@ class AstSenTree;
 %token<strp>		yaSTRING	"STRING"
 %token<strp>		yaSTRING__IGNORE "STRING-ignored"	// Used when expr:string not allowed
 
-%token<fileline>	yaTIMINGSPEC	"TIMING SPEC ELEMENT"
+%token<fl>		yaTIMINGSPEC	"TIMING SPEC ELEMENT"
 
 %token<strp>		yaSCHDR		"`systemc_header BLOCK"
 %token<strp>		yaSCINT		"`systemc_ctor BLOCK"
@@ -179,32 +165,33 @@ class AstSenTree;
 %token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
 
-%token<fileline>	'!'
-%token<fileline>	'#'
-%token<fileline>	'%'
-%token<fileline>	'&'
-%token<fileline>	'('
-%token<fileline>	')'
-%token<fileline>	'*'
-%token<fileline>	'+'
-%token<fileline>	','
-%token<fileline>	'-'
-%token<fileline>	'.'
-%token<fileline>	'/'
-%token<fileline>	':'
-%token<fileline>	';'
-%token<fileline>	'<'
-%token<fileline>	'='
-%token<fileline>	'>'
-%token<fileline>	'?'
-%token<fileline>	'@'
-%token<fileline>	'['
-%token<fileline>	']'
-%token<fileline>	'^'
-%token<fileline>	'{'
-%token<fileline>	'|'
-%token<fileline>	'}'
-%token<fileline>	'~'
+// <fl> is the fileline, abbreviated to shorten "$<fl>1" references
+%token<fl>		'!'
+%token<fl>		'#'
+%token<fl>		'%'
+%token<fl>		'&'
+%token<fl>		'('
+%token<fl>		')'
+%token<fl>		'*'
+%token<fl>		'+'
+%token<fl>		','
+%token<fl>		'-'
+%token<fl>		'.'
+%token<fl>		'/'
+%token<fl>		':'
+%token<fl>		';'
+%token<fl>		'<'
+%token<fl>		'='
+%token<fl>		'>'
+%token<fl>		'?'
+%token<fl>		'@'
+%token<fl>		'['
+%token<fl>		']'
+%token<fl>		'^'
+%token<fl>		'{'
+%token<fl>		'|'
+%token<fl>		'}'
+%token<fl>		'~'
 
 // Specific keywords
 // yKEYWORD means match "keyword"
@@ -212,195 +199,195 @@ class AstSenTree;
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
-%token<fileline>	yALWAYS		"always"
-%token<fileline>	yAND		"and"
-%token<fileline>	yASSERT		"assert"
-%token<fileline>	yASSIGN		"assign"
-%token<fileline>	yAUTOMATIC	"automatic"
-%token<fileline>	yBEGIN		"begin"
-%token<fileline>	yBUF		"buf"
-%token<fileline>	yBUFIF0		"bufif0"
-%token<fileline>	yBUFIF1		"bufif1"
-%token<fileline>	yCASE		"case"
-%token<fileline>	yCASEX		"casex"
-%token<fileline>	yCASEZ		"casez"
-%token<fileline>	yCLOCKING	"clocking"
-%token<fileline>	yCOVER		"cover"
-%token<fileline>	yDEFAULT	"default"
-%token<fileline>	yDEFPARAM	"defparam"
-%token<fileline>	yDISABLE	"disable"
-%token<fileline>	yDO		"do"
-%token<fileline>	yELSE		"else"
-%token<fileline>	yEND		"end"
-%token<fileline>	yENDCASE	"endcase"
-%token<fileline>	yENDCLOCKING	"endclocking"
-%token<fileline>	yENDFUNCTION	"endfunction"
-%token<fileline>	yENDGENERATE	"endgenerate"
-%token<fileline>	yENDMODULE	"endmodule"
-%token<fileline>	yENDPROPERTY	"endproperty"
-%token<fileline>	yENDSPECIFY	"endspecify"
-%token<fileline>	yENDTASK	"endtask"
-%token<fileline>	yFINAL		"final"
-%token<fileline>	yFOR		"for"
-%token<fileline>	yFOREVER	"forever"
-%token<fileline>	yFUNCTION	"function"
-%token<fileline>	yGENERATE	"generate"
-%token<fileline>	yGENVAR		"genvar"
-%token<fileline>	yIF		"if"
-%token<fileline>	yIFF		"iff"
-%token<fileline>	yLOGIC		"logic"
-%token<fileline>	yINITIAL	"initial"
-%token<fileline>	yINOUT		"inout"
-%token<fileline>	yINPUT		"input"
-%token<fileline>	yINTEGER	"integer"
-%token<fileline>	yLOCALPARAM	"localparam"
-%token<fileline>	yMODULE		"module"
-%token<fileline>	yNAND		"nand"
-%token<fileline>	yNEGEDGE	"negedge"
-%token<fileline>	yNOR		"nor"
-%token<fileline>	yNOT		"not"
-%token<fileline>	yNOTIF0		"notif0"
-%token<fileline>	yNOTIF1		"notif1"
-%token<fileline>	yOR		"or"
-%token<fileline>	yOUTPUT		"output"
-%token<fileline>	yPARAMETER	"parameter"
-%token<fileline>	yPOSEDGE	"posedge"
-%token<fileline>	yPRIORITY	"priority"
-%token<fileline>	yPROPERTY	"property"
-%token<fileline>	yPULLDOWN	"pulldown"
-%token<fileline>	yPULLUP		"pullup"
-%token<fileline>	yREG		"reg"
-%token<fileline>	yREPEAT		"repeat"
-%token<fileline>	ySCALARED	"scalared"
-%token<fileline>	ySIGNED		"signed"
-%token<fileline>	ySPECIFY	"specify"
-%token<fileline>	ySPECPARAM	"specparam"
-%token<fileline>	ySTATIC		"static"
-%token<fileline>	ySUPPLY0	"supply0"
-%token<fileline>	ySUPPLY1	"supply1"
-%token<fileline>	yTASK		"task"
-%token<fileline>	yTIMEPRECISION	"timeprecision"
-%token<fileline>	yTIMEUNIT	"timeunit"
-%token<fileline>	yTRI		"tri"
-%token<fileline>	yTRUE		"true"
-%token<fileline>	yUNIQUE		"unique"
-%token<fileline>	yUNSIGNED	"unsigned"
-%token<fileline>	yVECTORED	"vectored"
-%token<fileline>	yWHILE		"while"
-%token<fileline>	yWIRE		"wire"
-%token<fileline>	yXNOR		"xnor"
-%token<fileline>	yXOR		"xor"
+%token<fl>		yALWAYS		"always"
+%token<fl>		yAND		"and"
+%token<fl>		yASSERT		"assert"
+%token<fl>		yASSIGN		"assign"
+%token<fl>		yAUTOMATIC	"automatic"
+%token<fl>		yBEGIN		"begin"
+%token<fl>		yBUF		"buf"
+%token<fl>		yBUFIF0		"bufif0"
+%token<fl>		yBUFIF1		"bufif1"
+%token<fl>		yCASE		"case"
+%token<fl>		yCASEX		"casex"
+%token<fl>		yCASEZ		"casez"
+%token<fl>		yCLOCKING	"clocking"
+%token<fl>		yCOVER		"cover"
+%token<fl>		yDEFAULT	"default"
+%token<fl>		yDEFPARAM	"defparam"
+%token<fl>		yDISABLE	"disable"
+%token<fl>		yDO		"do"
+%token<fl>		yELSE		"else"
+%token<fl>		yEND		"end"
+%token<fl>		yENDCASE	"endcase"
+%token<fl>		yENDCLOCKING	"endclocking"
+%token<fl>		yENDFUNCTION	"endfunction"
+%token<fl>		yENDGENERATE	"endgenerate"
+%token<fl>		yENDMODULE	"endmodule"
+%token<fl>		yENDPROPERTY	"endproperty"
+%token<fl>		yENDSPECIFY	"endspecify"
+%token<fl>		yENDTASK	"endtask"
+%token<fl>		yFINAL		"final"
+%token<fl>		yFOR		"for"
+%token<fl>		yFOREVER	"forever"
+%token<fl>		yFUNCTION	"function"
+%token<fl>		yGENERATE	"generate"
+%token<fl>		yGENVAR		"genvar"
+%token<fl>		yIF		"if"
+%token<fl>		yIFF		"iff"
+%token<fl>		yLOGIC		"logic"
+%token<fl>		yINITIAL	"initial"
+%token<fl>		yINOUT		"inout"
+%token<fl>		yINPUT		"input"
+%token<fl>		yINTEGER	"integer"
+%token<fl>		yLOCALPARAM	"localparam"
+%token<fl>		yMODULE		"module"
+%token<fl>		yNAND		"nand"
+%token<fl>		yNEGEDGE	"negedge"
+%token<fl>		yNOR		"nor"
+%token<fl>		yNOT		"not"
+%token<fl>		yNOTIF0		"notif0"
+%token<fl>		yNOTIF1		"notif1"
+%token<fl>		yOR		"or"
+%token<fl>		yOUTPUT		"output"
+%token<fl>		yPARAMETER	"parameter"
+%token<fl>		yPOSEDGE	"posedge"
+%token<fl>		yPRIORITY	"priority"
+%token<fl>		yPROPERTY	"property"
+%token<fl>		yPULLDOWN	"pulldown"
+%token<fl>		yPULLUP		"pullup"
+%token<fl>		yREG		"reg"
+%token<fl>		yREPEAT		"repeat"
+%token<fl>		ySCALARED	"scalared"
+%token<fl>		ySIGNED		"signed"
+%token<fl>		ySPECIFY	"specify"
+%token<fl>		ySPECPARAM	"specparam"
+%token<fl>		ySTATIC		"static"
+%token<fl>		ySUPPLY0	"supply0"
+%token<fl>		ySUPPLY1	"supply1"
+%token<fl>		yTASK		"task"
+%token<fl>		yTIMEPRECISION	"timeprecision"
+%token<fl>		yTIMEUNIT	"timeunit"
+%token<fl>		yTRI		"tri"
+%token<fl>		yTRUE		"true"
+%token<fl>		yUNIQUE		"unique"
+%token<fl>		yUNSIGNED	"unsigned"
+%token<fl>		yVECTORED	"vectored"
+%token<fl>		yWHILE		"while"
+%token<fl>		yWIRE		"wire"
+%token<fl>		yXNOR		"xnor"
+%token<fl>		yXOR		"xor"
 
-%token<fileline>	yD_BITS		"$bits"
-%token<fileline>	yD_C		"$c"
-%token<fileline>	yD_CLOG2	"$clog2"
-%token<fileline>	yD_COUNTONES	"$countones"
-%token<fileline>	yD_DISPLAY	"$display"
-%token<fileline>	yD_ERROR	"$error"
-%token<fileline>	yD_FATAL	"$fatal"
-%token<fileline>	yD_FCLOSE	"$fclose"
-%token<fileline>	yD_FDISPLAY	"$fdisplay"
-%token<fileline>	yD_FEOF		"$feof"
-%token<fileline>	yD_FFLUSH	"$fflush"
-%token<fileline>	yD_FGETC	"$fgetc"
-%token<fileline>	yD_FGETS	"$fgets"
-%token<fileline>	yD_FINISH	"$finish"
-%token<fileline>	yD_FOPEN	"$fopen"
-%token<fileline>	yD_FSCANF	"$fscanf"
-%token<fileline>	yD_FWRITE	"$fwrite"
-%token<fileline>	yD_INFO		"$info"
-%token<fileline>	yD_ISUNKNOWN	"$isunknown"
-%token<fileline>	yD_ONEHOT	"$onehot"
-%token<fileline>	yD_ONEHOT0	"$onehot0"
-%token<fileline>	yD_RANDOM	"$random"
-%token<fileline>	yD_READMEMB	"$readmemb"
-%token<fileline>	yD_READMEMH	"$readmemh"
-%token<fileline>	yD_SIGNED	"$signed"
-%token<fileline>	yD_SSCANF	"$sscanf"
-%token<fileline>	yD_STIME	"$stime"
-%token<fileline>	yD_STOP		"$stop"
-%token<fileline>	yD_TIME		"$time"
-%token<fileline>	yD_UNSIGNED	"$unsigned"
-%token<fileline>	yD_WARNING	"$warning"
-%token<fileline>	yD_WRITE	"$write"
-%token<fileline>	yD_aIGNORE	"${ignored-bbox-sys}"
+%token<fl>		yD_BITS		"$bits"
+%token<fl>		yD_C		"$c"
+%token<fl>		yD_CLOG2	"$clog2"
+%token<fl>		yD_COUNTONES	"$countones"
+%token<fl>		yD_DISPLAY	"$display"
+%token<fl>		yD_ERROR	"$error"
+%token<fl>		yD_FATAL	"$fatal"
+%token<fl>		yD_FCLOSE	"$fclose"
+%token<fl>		yD_FDISPLAY	"$fdisplay"
+%token<fl>		yD_FEOF		"$feof"
+%token<fl>		yD_FFLUSH	"$fflush"
+%token<fl>		yD_FGETC	"$fgetc"
+%token<fl>		yD_FGETS	"$fgets"
+%token<fl>		yD_FINISH	"$finish"
+%token<fl>		yD_FOPEN	"$fopen"
+%token<fl>		yD_FSCANF	"$fscanf"
+%token<fl>		yD_FWRITE	"$fwrite"
+%token<fl>		yD_INFO		"$info"
+%token<fl>		yD_ISUNKNOWN	"$isunknown"
+%token<fl>		yD_ONEHOT	"$onehot"
+%token<fl>		yD_ONEHOT0	"$onehot0"
+%token<fl>		yD_RANDOM	"$random"
+%token<fl>		yD_READMEMB	"$readmemb"
+%token<fl>		yD_READMEMH	"$readmemh"
+%token<fl>		yD_SIGNED	"$signed"
+%token<fl>		yD_SSCANF	"$sscanf"
+%token<fl>		yD_STIME	"$stime"
+%token<fl>		yD_STOP		"$stop"
+%token<fl>		yD_TIME		"$time"
+%token<fl>		yD_UNSIGNED	"$unsigned"
+%token<fl>		yD_WARNING	"$warning"
+%token<fl>		yD_WRITE	"$write"
+%token<fl>		yD_aIGNORE	"${ignored-bbox-sys}"
 
-%token<fileline>	yPSL		"psl"
-%token<fileline>	yPSL_ASSERT	"PSL assert"
-%token<fileline>	yPSL_CLOCK	"PSL clock"
-%token<fileline>	yPSL_COVER	"PSL cover"
-%token<fileline>	yPSL_REPORT	"PSL report"
+%token<fl>		yPSL		"psl"
+%token<fl>		yPSL_ASSERT	"PSL assert"
+%token<fl>		yPSL_CLOCK	"PSL clock"
+%token<fl>		yPSL_COVER	"PSL cover"
+%token<fl>		yPSL_REPORT	"PSL report"
 
-%token<fileline>	yVL_CLOCK		"/*verilator sc_clock*/"
-%token<fileline>	yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
-%token<fileline>	yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
-%token<fileline>	yVL_FULL_CASE		"/*verilator full_case*/"
-%token<fileline>	yVL_INLINE_MODULE	"/*verilator inline_module*/"
-%token<fileline>	yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
-%token<fileline>	yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
-%token<fileline>	yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
-%token<fileline>	yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
-%token<fileline>	yVL_PUBLIC		"/*verilator public*/"
-%token<fileline>	yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
-%token<fileline>	yVL_PUBLIC_MODULE	"/*verilator public_module*/"
+%token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
+%token<fl>		yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
+%token<fl>		yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
+%token<fl>		yVL_FULL_CASE		"/*verilator full_case*/"
+%token<fl>		yVL_INLINE_MODULE	"/*verilator inline_module*/"
+%token<fl>		yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
+%token<fl>		yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
+%token<fl>		yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
+%token<fl>		yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
+%token<fl>		yVL_PUBLIC		"/*verilator public*/"
+%token<fl>		yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
+%token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
 
-%token<fileline>	yP_TICK		"'"
-%token<fileline>	yP_TICKBRA	"'{"
-%token<fileline>	yP_OROR		"||"
-%token<fileline>	yP_ANDAND	"&&"
-%token<fileline>	yP_NOR		"~|"
-%token<fileline>	yP_XNOR		"^~"
-%token<fileline>	yP_NAND		"~&"
-%token<fileline>	yP_EQUAL	"=="
-%token<fileline>	yP_NOTEQUAL	"!="
-%token<fileline>	yP_CASEEQUAL	"==="
-%token<fileline>	yP_CASENOTEQUAL	"!=="
-%token<fileline>	yP_WILDEQUAL	"==?"
-%token<fileline>	yP_WILDNOTEQUAL	"!=?"
-%token<fileline>	yP_GTE		">="
-%token<fileline>	yP_LTE		"<="
-%token<fileline>	yP_SLEFT	"<<"
-%token<fileline>	yP_SRIGHT	">>"
-%token<fileline>	yP_SSRIGHT	">>>"
-%token<fileline>	yP_POW		"**"
+%token<fl>		yP_TICK		"'"
+%token<fl>		yP_TICKBRA	"'{"
+%token<fl>		yP_OROR		"||"
+%token<fl>		yP_ANDAND	"&&"
+%token<fl>		yP_NOR		"~|"
+%token<fl>		yP_XNOR		"^~"
+%token<fl>		yP_NAND		"~&"
+%token<fl>		yP_EQUAL	"=="
+%token<fl>		yP_NOTEQUAL	"!="
+%token<fl>		yP_CASEEQUAL	"==="
+%token<fl>		yP_CASENOTEQUAL	"!=="
+%token<fl>		yP_WILDEQUAL	"==?"
+%token<fl>		yP_WILDNOTEQUAL	"!=?"
+%token<fl>		yP_GTE		">="
+%token<fl>		yP_LTE		"<="
+%token<fl>		yP_SLEFT	"<<"
+%token<fl>		yP_SRIGHT	">>"
+%token<fl>		yP_SSRIGHT	">>>"
+%token<fl>		yP_POW		"**"
 
-%token<fileline>	yP_PLUSCOLON	"+:"
-%token<fileline>	yP_MINUSCOLON	"-:"
-%token<fileline>	yP_MINUSGT	"->"
-%token<fileline>	yP_MINUSGTGT	"->>"
-%token<fileline>	yP_EQGT		"=>"
-%token<fileline>	yP_ASTGT	"*>"
-%token<fileline>	yP_ANDANDAND	"&&&"
-%token<fileline>	yP_POUNDPOUND	"##"
-%token<fileline>	yP_DOTSTAR	".*"
+%token<fl>		yP_PLUSCOLON	"+:"
+%token<fl>		yP_MINUSCOLON	"-:"
+%token<fl>		yP_MINUSGT	"->"
+%token<fl>		yP_MINUSGTGT	"->>"
+%token<fl>		yP_EQGT		"=>"
+%token<fl>		yP_ASTGT	"*>"
+%token<fl>		yP_ANDANDAND	"&&&"
+%token<fl>		yP_POUNDPOUND	"##"
+%token<fl>		yP_DOTSTAR	".*"
 
-%token<fileline>	yP_ATAT		"@@"
-%token<fileline>	yP_COLONCOLON	"::"
-%token<fileline>	yP_COLONEQ	":="
-%token<fileline>	yP_COLONDIV	":/"
-%token<fileline>	yP_ORMINUSGT	"|->"
-%token<fileline>	yP_OREQGT	"|=>"
-%token<fileline>	yP_BRASTAR	"[*"
-%token<fileline>	yP_BRAEQ	"[="
-%token<fileline>	yP_BRAMINUSGT	"[->"
+%token<fl>		yP_ATAT		"@@"
+%token<fl>		yP_COLONCOLON	"::"
+%token<fl>		yP_COLONEQ	":="
+%token<fl>		yP_COLONDIV	":/"
+%token<fl>		yP_ORMINUSGT	"|->"
+%token<fl>		yP_OREQGT	"|=>"
+%token<fl>		yP_BRASTAR	"[*"
+%token<fl>		yP_BRAEQ	"[="
+%token<fl>		yP_BRAMINUSGT	"[->"
 
-%token<fileline>	yP_PLUSPLUS	"++"
-%token<fileline>	yP_MINUSMINUS	"--"
-%token<fileline>	yP_PLUSEQ	"+="
-%token<fileline>	yP_MINUSEQ	"-="
-%token<fileline>	yP_TIMESEQ	"*="
-%token<fileline>	yP_DIVEQ	"/="
-%token<fileline>	yP_MODEQ	"%="
-%token<fileline>	yP_ANDEQ	"&="
-%token<fileline>	yP_OREQ		"|="
-%token<fileline>	yP_XOREQ	"^="
-%token<fileline>	yP_SLEFTEQ	"<<="
-%token<fileline>	yP_SRIGHTEQ	">>="
-%token<fileline>	yP_SSRIGHTEQ	">>>="
+%token<fl>		yP_PLUSPLUS	"++"
+%token<fl>		yP_MINUSMINUS	"--"
+%token<fl>		yP_PLUSEQ	"+="
+%token<fl>		yP_MINUSEQ	"-="
+%token<fl>		yP_TIMESEQ	"*="
+%token<fl>		yP_DIVEQ	"/="
+%token<fl>		yP_MODEQ	"%="
+%token<fl>		yP_ANDEQ	"&="
+%token<fl>		yP_OREQ		"|="
+%token<fl>		yP_XOREQ	"^="
+%token<fl>		yP_SLEFTEQ	"<<="
+%token<fl>		yP_SRIGHTEQ	">>="
+%token<fl>		yP_SSRIGHTEQ	">>>="
 
-%token<fileline>	yPSL_BRA	"{"
-%token<fileline>	yPSL_KET	"}"
-%token<fileline> 	yP_LOGIFF
+%token<fl>		yPSL_BRA	"{"
+%token<fl>		yPSL_KET	"}"
+%token<fl>	 	yP_LOGIFF
 
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
@@ -410,7 +397,7 @@ class AstSenTree;
 // PSL op precedence
 %right	 	yP_MINUSGT  yP_LOGIFF
 %right		yP_ORMINUSGT  yP_OREQGT
-%left<fileline>	prPSLCLK
+%left<fl>		prPSLCLK
 
 // Verilog op precedence
 %right		'?' ':'
@@ -464,13 +451,13 @@ class AstSenTree;
 // Note we read a parenthesis ahead, so this may not change the lexer at the right point.
 
 stateExitPsl:			// For PSL lexing, return from PSL state
-		/* empty */			 	{ V3Read::stateExitPsl(); }
+		/* empty */			 	{ PARSEP->stateExitPsl(); }
 	;
 statePushVlg:			// For PSL lexing, escape current state into Verilog state
-		/* empty */			 	{ V3Read::statePushVlg(); }
+		/* empty */			 	{ PARSEP->statePushVlg(); }
 	;
 statePop:			// Return to previous lexing state
-		/* empty */			 	{ V3Read::statePop(); }
+		/* empty */			 	{ PARSEP->statePop(); }
 	;
 
 //**********************************************************************
@@ -533,17 +520,21 @@ module_declaration:		// ==IEEE: module_declaration
 			module_itemListE yENDMODULE endLabelE
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
-			  if ($5) $1->addStmtp($5); }
+			  if ($5) $1->addStmtp($5);
+			  }
 	//
 	//UNSUP	yEXTERN modFront parameter_port_listE portsStarE ';'
 	//UNSUP		{ UNSUP }
 	;
 
 modFront<modulep>:
+	//			// General note: all *Front functions must call symPushNew before
+	//			// any formal arguments, as the arguments must land in the new scope.
 		yMODULE lifetimeE idAny
-			{ $$ = new AstModule($1,*$3); $$->inLibrary(V3Read::inLibrary()||V3Read::inCellDefine());
+			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
-			  V3Read::rootp()->addModulep($$); }
+			  PARSEP->rootp()->addModulep($$);
+			  }
 	;
 
 parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
@@ -638,10 +629,10 @@ port<nodep>:			// ==IEEE: port
 	|	portDirNetE signingE rangeList portSig variable_dimensionListE sigAttrListE	{ $$=$4; VARTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE	{ $$=$2; /*VARTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
-	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5));     $$->addNextNull(newVarInit($6,$$,$7)); }
-	//UNSUP	portDirNetE yVAR data_type     portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(newVarInit($7,$$,$8)); }
-	//UNSUP	portDirNetE yVAR implicit_type portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(newVarInit($7,$$,$8)); }
-	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; /*VARTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); $$->addNextNull(newVarInit($5,$$,$6)); }
+	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5));     $$->addNextNull(GRAMMARP->newVarInit($6,$$,$7)); }
+	//UNSUP	portDirNetE yVAR data_type     portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
+	//UNSUP	portDirNetE yVAR implicit_type portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
+	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; /*VARTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); $$->addNextNull(GRAMMARP->newVarInit($5,$$,$6)); }
  	;
  
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
@@ -981,12 +972,12 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	//UNSUP	interface_declaration			{ $$ = $1; }
 	|	timeunits_declaration			{ $$ = NULL; }
 	//			// Verilator specific
-	|	yaSCHDR					{ $$ = new AstScHdr(CRELINE(),*$1); }
-	|	yaSCINT					{ $$ = new AstScInt(CRELINE(),*$1); }
-	|	yaSCIMP					{ $$ = new AstScImp(CRELINE(),*$1); }
-	|	yaSCIMPH				{ $$ = new AstScImpHdr(CRELINE(),*$1); }
-	|	yaSCCTOR				{ $$ = new AstScCtor(CRELINE(),*$1); }
-	|	yaSCDTOR				{ $$ = new AstScDtor(CRELINE(),*$1); }
+	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
+	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); }
+	|	yaSCIMP					{ $$ = new AstScImp($<fl>1,*$1); }
+	|	yaSCIMPH				{ $$ = new AstScImpHdr($<fl>1,*$1); }
+	|	yaSCCTOR				{ $$ = new AstScCtor($<fl>1,*$1); }
+	|	yaSCDTOR				{ $$ = new AstScDtor($<fl>1,*$1); }
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
@@ -1153,7 +1144,7 @@ delayE:
 	|	delay_control				{ } /* ignored */
 	;
 
-delay_control<fileline>:	//== IEEE: delay_control
+delay_control<fl>:	//== IEEE: delay_control
 		'#' delay_value				{ $$ = $1; } /* ignored */
 	|	'#' '(' minTypMax ')'			{ $$ = $1; } /* ignored */
 	|	'#' '(' minTypMax ',' minTypMax ')'			{ $$ = $1; } /* ignored */
@@ -1287,7 +1278,7 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP(*$1,$2);} instnameList ';'
-			{ $$ = $4; V3Parse::s_impliedDecl=false;}
+			{ $$ = $4; GRAMMARP->m_impliedDecl=false;}
 	//UNSUP: strengthSpecE for udp_instantiations
 	;
 
@@ -1297,8 +1288,8 @@ instnameList<nodep>:
 	;
 
 instnameParen<nodep>:
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,       *$1,V3Parse::s_instModule,$4,  V3Parse::s_instParamp,$2); }
-	|	id instRangeE 				{ $$ = new AstCell(CRELINE(),*$1,V3Parse::s_instModule,NULL,V3Parse::s_instParamp,$2); }
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,       *$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2); }
+	|	id instRangeE 				{ $$ = new AstCell(CRELINE(),*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
 	;
 
@@ -1392,14 +1383,13 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
 	//			// So need begin's even if unnamed to scope variables down
-		yBEGIN blockDeclStmtList yEND		{ $$ = new AstBegin($1,"",$2); }
-	|	yBEGIN /**/		 yEND		{ $$ = NULL; }
-	|	yBEGIN ':' seq_blockId blockDeclStmtList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBEGIN ':' seq_blockId /**/	         yEND endLabelE	{ $$ = new AstBegin($2,*$3,NULL); }
+		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtp($2); }
+	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; }
 	;
 
-seq_blockId<strp>:		// IEEE: part of seq_block
-		idAny/*new-block_identifier*/		{ $$ = $1; }
+seq_blockFront<beginp>:		// IEEE: part of par_block
+		yBEGIN					 { $$ = new AstBegin($1,"",NULL);  }
+	|	yBEGIN ':' idAny/*new-block_identifier*/ { $$ = new AstBegin($1,*$3,NULL); }
 	;
 
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
@@ -1581,15 +1571,15 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 	;
 
 caseStart<casep>:		// IEEE: part of case_statement
-	 	yCASE  '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
-	|	yCASEX '(' expr ')' 			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
-	|	yCASEZ '(' expr ')'			{ $$ = V3Parse::s_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
+	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
+	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
+	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
 	;
 
 caseAttrE:
 	 	/*empty*/				{ }
-	|	caseAttrE yVL_FULL_CASE			{ V3Parse::s_caseAttrp->fullPragma(true); }
-	|	caseAttrE yVL_PARALLEL_CASE		{ V3Parse::s_caseAttrp->parallelPragma(true); }
+	|	caseAttrE yVL_FULL_CASE			{ GRAMMARP->m_caseAttrp->fullPragma(true); }
+	|	caseAttrE yVL_PARALLEL_CASE		{ GRAMMARP->m_caseAttrp->parallelPragma(true); }
 	;
 
 case_itemListE<caseitemp>:	// IEEE: [ { case_item } ]
@@ -1682,7 +1672,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_INFO	    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
 	|	yD_WARNING  parenE					{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
 	|	yD_WARNING  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
-	|	yD_ERROR    parenE					{ $$ = V3Parse::createDisplayError($1); }
+	|	yD_ERROR    parenE					{ $$ = GRAMMARP->createDisplayError($1); }
 	|	yD_ERROR    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    parenE					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
@@ -1727,14 +1717,18 @@ list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 	//UNSUP empty arguments with just ,,
 	;
 
-task_declaration<nodep>:	// ==IEEE: task_declaration
+task_declaration<taskp>:	// ==IEEE: task_declaration
 		yTASK lifetimeE taskId tfGuts yENDTASK endLabelE
-			{ $$ = new AstTask ($1,*$3,$4);}
+			{ $$ = $3; $$->addStmtsp($4); }
 	;
 
 function_declaration<funcp>:	// IEEE: function_declaration + function_body_declaration
-	 	yFUNCTION lifetimeE funcTypeE tfIdScoped			 tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$5,$3); if ($3) $$->isSigned($3->isSigned()); }
-	| 	yFUNCTION lifetimeE funcTypeE tfIdScoped yVL_ISOLATE_ASSIGNMENTS tfGuts yENDFUNCTION endLabelE { $$ = new AstFunc ($1,*$4,$6,$3); $$->attrIsolateAssign(true); if ($3) $$->isSigned($3->isSigned()); }
+	 	yFUNCTION lifetimeE funcTypeE funcId			 tfGuts yENDFUNCTION endLabelE
+			{ $$ = $4; $$->addFvarp($3); $$->addStmtsp($5); if ($3) $$->isSigned($3->isSigned());
+			  }
+	| 	yFUNCTION lifetimeE funcTypeE funcId yVL_ISOLATE_ASSIGNMENTS tfGuts yENDFUNCTION endLabelE
+			{ $$ = $4; $$->addFvarp($3); $$->addStmtsp($6); $$->attrIsolateAssign(true); if ($3) $$->isSigned($3->isSigned());
+			  }
 	//UNSUP: Generic function return types
 	;
 
@@ -1749,13 +1743,18 @@ lifetime:			// ==IEEE: lifetime
 	|	yAUTOMATIC		 		{ }
 	;
 
-taskId<strp>:
-		tfIdScoped				{ $$ = $1; }
+taskId<taskp>:
+		id
+			{ $$ = new AstTask($<fl>1, *$1, NULL);
+			  }
 	;
 
-tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
-	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
-		id					{ $$ = $1; }
+funcId<funcp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
+	//			// IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
+	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
+		id
+			{ $$ = new AstFunc ($<fl>1,*$1,NULL,NULL);
+			  }
 	//UNSUP	id/*interface_identifier*/ '.' id	{ UNSUP }
 	//UNSUP	class_scope_id				{ UNSUP }
 	;
@@ -1949,7 +1948,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//======================// IEEE: primary/constant_primary
 	//
 	//			// IEEE: primary_literal (minus string, which is handled specially)
-	|	yaINTNUM				{ $$ = new AstConst(CRELINE(),*$1); }
+	|	yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	//UNSUP	yaFLOATNUM				{ UNSUP }
 	//UNSUP	yaTIMENUM				{ UNSUP }
 	|	strAsInt~noStr__IGNORE~			{ $$ = $1; }
@@ -2288,15 +2287,15 @@ junkToSemi:
 // IDs
 
 id<strp>:
-		yaID__ETC				{ $$ = $1; }
+		yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idAny<strp>:			// Any kind of identifier
-	//UNSUP	yaID__aCLASS				{ $$ = $1; }
-	//UNSUP	yaID__aCOVERGROUP			{ $$ = $1; }
-	//UNSUP	yaID__aPACKAGE				{ $$ = $1; }
-	//UNSUP	yaID__aTYPE				{ $$ = $1; }
-		yaID__ETC				{ $$ = $1; }
+	//UNSUP	yaID__aCLASS				{ $$ = $1; $<fl>$=$<fl>1; }
+	//UNSUP	yaID__aCOVERGROUP			{ $$ = $1; $<fl>$=$<fl>1; }
+	//UNSUP	yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
+	//UNSUP	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+		yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
@@ -2370,11 +2369,11 @@ varRefBase<nodep>:
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
 str<strp>:			// yaSTRING but with \{escapes} need decoded
-		yaSTRING				{ $$ = V3Read::newString(V3Parse::deQuote(CRELINE(),*$1)); }
+		yaSTRING				{ $$ = PARSEP->newString(GRAMMARP->deQuote($<fl>1,*$1)); }
 	;
 
 strAsInt<nodep>:
-		yaSTRING				{ $$ = new AstConst(CRELINE(),V3Number(V3Number::VerilogString(),CRELINE(),V3Parse::deQuote(CRELINE(),*$1)));}
+		yaSTRING				{ $$ = new AstConst($<fl>1,V3Number(V3Number::VerilogString(),$<fl>1,GRAMMARP->deQuote($<fl>1,*$1)));}
 	;
 
 strAsIntIgnore<nodep>:		// strAsInt, but never matches for when expr shouldn't parse strings
@@ -2382,7 +2381,7 @@ strAsIntIgnore<nodep>:		// strAsInt, but never matches for when expr shouldn't p
 	;
 
 strAsText<nodep>:
-		yaSTRING				{ $$ = V3Parse::createTextQuoted(CRELINE(),*$1);}
+		yaSTRING				{ $$ = GRAMMARP->createTextQuoted($<fl>1,*$1);}
 	;
 
 endLabelE:
@@ -2432,7 +2431,7 @@ property_specDisable<nodep>:		// IEEE: part of property_spec
 
 immediate_assert_statement<nodep>:	// ==IEEE: immediate_assert_statement
 	//				// action_block expanded here, for compatibility with AstVAssert
-		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, V3Parse::createDisplayError($1)); }
+		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, GRAMMARP->createDisplayError($1)); }
 	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
 	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
 	;
@@ -2516,12 +2515,30 @@ pslExpr<nodep>:
 //**********************************************************************
 %%
 
-void V3Read::parserClear() {
-    // Clear up any dynamic memory V3Parser required
-    V3Parse::setRange(NULL);
+int V3ParseImp::bisonParse() {
+    if (PARSEP->debugBison()>=9) yydebug = 1;
+    return yyparse();       
 }
 
-AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
+const char* V3ParseImp::tokenName(int token) {
+#if YYDEBUG || YYERROR_VERBOSE
+    if (token >= 255)
+	return yytname[token-255];
+    else {
+	static char ch[2];  ch[0]=token; ch[1]='\0';
+	return ch;
+    }
+#else
+    return "";
+#endif
+}
+
+void V3ParseImp::parserClear() {
+    // Clear up any dynamic memory V3Parser required
+    GRAMMARP->setRange(NULL);
+}
+
+AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
     FileLine* newfl = new FileLine (fileline);
     newfl->warnOff(V3ErrorCode::WIDTH, true);
     AstNode* nodep = new AstConst(newfl, V3Number(fileline));
@@ -2532,12 +2549,12 @@ AstNode* V3Parse::createSupplyExpr(FileLine* fileline, string name, int value) {
     return nodep;
 }
 
-AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp) {
-    AstVarType type = V3Parse::s_varIO;
-    AstRange* rangep = V3Parse::s_varRangep;
+AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp) {
+    AstVarType type = GRAMMARP->m_varIO;
+    AstRange* rangep = GRAMMARP->m_varRangep;
     AstRange* cleanup_rangep = NULL;
-    //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<V3Parse::s_varDecl.ascii()<<" io="<<V3Parse::s_varIO.ascii()<<endl);
-    if (type == AstVarType::UNKNOWN || type == AstVarType::PORT) type = V3Parse::s_varDecl;
+    //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<" io="<<GRAMMARP->m_varIO.ascii()<<endl);
+    if (type == AstVarType::UNKNOWN || type == AstVarType::PORT) type = GRAMMARP->m_varDecl;
     if (type == AstVarType::PORT) {
 	// Just wanted port decl; we've already made it.
 	if (rangep) fileline->v3error("Unsupported: Ranges ignored in port-lists");
@@ -2545,12 +2562,12 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
     }
     if (type == AstVarType::UNKNOWN) fileline->v3fatalSrc("Unknown signal type declared");
     // Linting, because we allow parsing of a superset of the language
-    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER
+    if (type == AstVarType::INTEGER || GRAMMARP->m_varDecl == AstVarType::INTEGER
 	|| type == AstVarType::GENVAR) {
 	if (rangep) {
 	    if (rangep->msbConst()==31 && rangep->lsbConst()==0) {
 		// For backward compatibility with functions some INTEGERS are internally made as [31:0]
-		rangep->deleteTree(); rangep=NULL; V3Parse::s_varRangep=NULL;
+		rangep->deleteTree(); rangep=NULL; GRAMMARP->m_varRangep=NULL;
 	    } else {
 		fileline->v3error("Integers may not be ranged: "<<name);
 	    }
@@ -2565,19 +2582,19 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
 			       rangep->cloneTree(false),
 			       arrayp);
     nodep->addAttrsp(attrsp);
-    nodep->isSigned(V3Parse::s_varSigned);
-    if (type == AstVarType::INTEGER || V3Parse::s_varDecl == AstVarType::INTEGER
+    nodep->isSigned(GRAMMARP->m_varSigned);
+    if (type == AstVarType::INTEGER || GRAMMARP->m_varDecl == AstVarType::INTEGER
 	|| type == AstVarType::GENVAR) {
 	nodep->isSigned(true);
     }
-    if (V3Parse::s_varDecl != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varDecl);
-    if (V3Parse::s_varIO != AstVarType::UNKNOWN) nodep->combineType(V3Parse::s_varIO);
+    if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
+    if (GRAMMARP->m_varIO != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varIO);
 
-    if (V3Parse::s_varDecl == AstVarType::SUPPLY0) {
-	nodep->addNext(V3Parse::createSupplyExpr(fileline, nodep->name(), 0));
+    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY0) {
+	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
     }
-    if (V3Parse::s_varDecl == AstVarType::SUPPLY1) {
-	nodep->addNext(V3Parse::createSupplyExpr(fileline, nodep->name(), 1));
+    if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
+	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
     // Clear any widths that got presumed by the ranging;
     // We need to autosize parameters and integers separately
@@ -2587,12 +2604,12 @@ AstVar* V3Parse::createVariable(FileLine* fileline, string name, AstRange* array
     else nodep->trace(v3Global.opt.trace() && nodep->fileline()->tracingOn());
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
-    V3Parse::s_varAttrp = nodep;
+    GRAMMARP->m_varAttrp = nodep;
     if (cleanup_rangep) { cleanup_rangep->deleteTree(); cleanup_rangep=NULL; }
     return nodep;
 }
 
-string V3Parse::deQuote(FileLine* fileline, string text) {
+string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     // Fix up the quoted strings the user put in, for example "\"" becomes "
     // Reverse is AstNode::quoteName(...)
     bool quoted = false;
@@ -2645,11 +2662,6 @@ string V3Parse::deQuote(FileLine* fileline, string text) {
 	}
     }
     return newtext;
-}
-
-AstText* V3Parse::createTextQuoted(FileLine* fileline, string text) {
-    string newtext = deQuote(fileline, text);
-    return new AstText(fileline, newtext);
 }
 
 //YACC = /kits/sources/bison-2.4.1/src/bison --report=lookahead

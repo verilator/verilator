@@ -228,7 +228,7 @@ class FileLine {
 protected:
     // User routines should never need to change line numbers
     // We are storing pointers, so we CAN'T change them after initial reading.
-    friend class V3Read;
+    friend class V3ParseImp;
     friend class V3PreLex;
     void lineno(int num) { m_lineno = num; }
     void filename(const string& name) { m_filename = name; }

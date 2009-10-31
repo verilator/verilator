@@ -33,7 +33,7 @@
 #include "V3PreShell.h"
 #include "V3PreProc.h"
 #include "V3File.h"
-#include "V3Read.h"
+#include "V3Parse.h"
 
 //######################################################################
 
@@ -69,7 +69,7 @@ protected:
 	}
     }
 
-    void preproc (FileLine* fl, const string& modname, V3Read* readerp) {
+    void preproc (FileLine* fl, const string& modname, V3ParseImp* parsep) {
 	// Preprocess the given module, putting output in vppFilename
 	UINFONL(1,"  Preprocessing "<<modname<<endl);
 
@@ -77,7 +77,7 @@ protected:
 	preprocOpen(fl, modname, "Cannot find file containing module: ");
 	while (!s_preprocp->isEof()) {
 	    string line = s_preprocp->getline();
-	    readerp->ppPushText(line);
+	    V3Parse::ppPushText(parsep, line);
 	}
     }
 
@@ -111,8 +111,8 @@ V3PreProc* V3PreShellImp::s_preprocp = NULL;
 void V3PreShell::boot(char** env) {
     V3PreShellImp::s_preImp.boot(env);
 }
-void V3PreShell::preproc(FileLine* fl, const string& modname, V3Read* readerp) {
-    V3PreShellImp::s_preImp.preproc(fl, modname, readerp);
+void V3PreShell::preproc(FileLine* fl, const string& modname, V3ParseImp* parsep) {
+    V3PreShellImp::s_preImp.preproc(fl, modname, parsep);
 }
 void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);

@@ -1152,7 +1152,7 @@ public:
     // op3 = Statements/Ports/Vars
     virtual void name(const string& name) 	{ m_name = name; }
     AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op1 = List of statements
-    void	addStmtsp(AstNode* nodep) { addOp3p(nodep); }
+    void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
 };

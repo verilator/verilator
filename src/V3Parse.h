@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Preprocessing wrapper program
+// DESCRIPTION: Verilator: Reading of Verilog files
 //
 // Code available from: http://www.veripool.org/verilator
 //
@@ -8,7 +8,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2009 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2009 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,26 +20,34 @@
 //
 //*************************************************************************
 
-#ifndef _V3PRESHELL_H_
-#define _V3PRESHELL_H_ 1
-
+#ifndef _V3PARSE_H_
+#define _V3PARSE_H_ 1
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
+#include "V3Global.h"
 
+class AstNetlist;
 class V3ParseImp;
 
 //============================================================================
 
-class V3PreShell {
-    // Static class for calling preprocessor
+class V3Parse {
+private:
+    V3ParseImp*	m_impp;
+
 public:
-    static void boot(char** env);
-    static void preproc(FileLine* fileline, const string& module, V3ParseImp* parsep);
-    static void preprocInclude(FileLine* fileline, const string& module);
-    static string dependFiles() { return ""; }   // Perl only
-    static void define(const string& name, const string& value);
-    static void undef(const string& name);
+    // CONSTRUCTORS
+    // We must allow reading multiple files into one parser
+    V3Parse(AstNetlist* rootp);
+    ~V3Parse();
+
+    // METHODS
+    // Preprocess and read the Verilog file specified into the netlist database
+    void parseFile(FileLine* fileline, const string& modname, bool inLibrary);
+
+    // Push preprocessed text to the lexer
+    static void ppPushText(V3ParseImp* impp, const string& text);
 };
 
 #endif // Guard

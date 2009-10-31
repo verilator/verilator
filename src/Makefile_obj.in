@@ -208,9 +208,10 @@ RAW_OBJS = \
 
 # Non-concatable
 OBJS += \
-	V3Parse.o \
+	V3ParseImp.o \
+	V3ParseGrammar.o \
+	V3ParseLex.o \
 	V3PreProc.o \
-	V3Read.o \
 
 #### Linking
 
@@ -245,10 +246,13 @@ V3Number_test: V3Number_test.o
 %.o:	%.c
 	$(OBJCACHE) ${CC}  ${CPPFLAGS} -c $<
 
-V3Read.o:	V3Read.cpp V3Lexer.yy.cpp V3ParseBison.c
+V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
 
-V3Parse.o:	V3Parse.cpp V3ParseBison.c
+V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
+	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+
+V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
 
 V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp

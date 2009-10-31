@@ -68,9 +68,9 @@
 #include "V3Name.h"
 #include "V3Order.h"
 #include "V3Param.h"
+#include "V3Parse.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
-#include "V3Read.h"
 #include "V3Scope.h"
 #include "V3Signed.h"
 #include "V3Split.h"
@@ -92,12 +92,12 @@ V3Global v3Global;
 // V3 Class -- top level
 
 void V3Global::readFiles() {
-    V3Read reader (m_rootp);
+    V3Parse parser (v3Global.rootp());
     // Read top module
     for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
 	 it != v3Global.opt.vFiles().end(); ++it) {
 	string filename = *it;
-	reader.readFile(new FileLine("CommandLine",0), filename, false);
+	parser.parseFile(new FileLine("CommandLine",0), filename, false);
     }
 
     // Read libraries
@@ -106,16 +106,21 @@ void V3Global::readFiles() {
     for (V3StringSet::const_iterator it = v3Global.opt.libraryFiles().begin();
 	 it != v3Global.opt.libraryFiles().end(); ++it) {
 	string filename = *it;
-	reader.readFile(new FileLine("CommandLine",0), filename, true);
+	parser.parseFile(new FileLine("CommandLine",0), filename, true);
     }
+    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
+
+    if (!v3Global.opt.preprocOnly()) {
+	// Resolve all modules cells refer to
+	V3LinkCells::link(v3Global.rootp());
+    }
 }
 
 //######################################################################
 
 void process () {
-    // Resolve all modules cells refer to
-    V3LinkCells::link(v3Global.rootp());
+    // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cells.tree"));
     V3Error::abortIfErrors();
@@ -566,7 +571,6 @@ int main(int argc, char** argv, char** env) {
 
     // Read first filename
     v3Global.readFiles();
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {
