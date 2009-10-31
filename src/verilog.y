@@ -206,6 +206,7 @@ class AstSenTree;
 %token<fl>		yASSIGN		"assign"
 %token<fl>		yAUTOMATIC	"automatic"
 %token<fl>		yBEGIN		"begin"
+%token<fl>		yBIT		"bit"
 %token<fl>		yBUF		"buf"
 %token<fl>		yBUFIF0		"bufif0"
 %token<fl>		yBUFIF1		"bufif1"
@@ -792,6 +793,21 @@ tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	//UNSUP	port_directionReset yVAR implicit_type { VARTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
 	;
 
+integer_atom_type<rangep>:	// ==IEEE: integer_atom_type
+	//UNSUP	yBYTE					{ UNSUP }
+	//UNSUP	ySHORTINT				{ UNSUP }
+	//UNSUP	yINT					{ UNSUP }
+	//UNSUP	yLONGINT				{ UNSUP }
+		yINTEGER				{ VARDECL(INTEGER); $$ = new AstRange($1,31,0); $$->isSigned(true); }
+	//UNSUP	yTIME					{ UNSUP }
+	;
+
+integer_vector_type:		// ==IEEE: integer_atom_type
+		yBIT					{ VARDECL(REG); }
+	|	yLOGIC					{ VARDECL(REG); }
+	|	yREG					{ VARDECL(REG); }
+	;
+
 signingE:			// IEEE: signing - plus empty
 		/*empty*/ 				{ }
 	|	signing					{ }
@@ -818,12 +834,8 @@ data_type<rangep>:		// ==IEEE: data_type
 	;
 
 data_typeNoRef<rangep>:		// ==IEEE: data_type, excluding class_type etc references
-		yINTEGER				{ VARDECL(INTEGER); $$ = new AstRange($1,31,0); $$->isSigned(true); }
-	|	yREG signingE rangeListE		{ VARDECL(REG); $$ = $3; }
-	|	yLOGIC signingE rangeListE		{ VARDECL(REG); $$ = $3; }
-	//UNSUP: above instead of integer_type
-	//
-	//UNSUP	integer_type signingE regArRangeE	{ UNSUP }
+		integer_vector_type signingE rangeListE	{ $$ = $3; }
+	|	integer_atom_type signingE		{ $$ = $1; }
 	//UNSUP	non_integer_type			{ UNSUP }
 	//UNSUP	ySTRUCT        packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
