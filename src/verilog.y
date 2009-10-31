@@ -134,23 +134,18 @@ class AstSenTree;
 
     AstNode*	nodep;
 
-    AstAssignW* assignwp;
-    AstBegin*	beginp;
     AstCase*	casep;
     AstCaseItem* caseitemp;
-    AstCell*	cellp;
     AstConst*	constp;
     AstFunc*	funcp;
     AstModule*	modulep;
     AstNodeVarRef*	varnodep;
     AstParseRef*	parserefp;
     AstPin*	pinp;
-    AstPort*	portp;
     AstRange*	rangep;
     AstNodeSenItem*	senitemp;
     AstSenTree*	sentreep;
     AstVar*	varp;
-    AstVarRef*	varrefp;
 }
 
 // When writing Bison patterns we use yTOKEN instead of "token",
@@ -165,6 +160,7 @@ class AstSenTree;
 // enum_identifier, interface_identifier, interface_instance_identifier,
 // package_identifier, type_identifier, variable_identifier,
 %token<strp>		yaID__ETC	"IDENTIFIER"
+%token<strp>		yaID__LEX	"IDENTIFIER-in-lex"
 
 // IEEE: integral_number
 %token<nump>		yaINTNUM	"INTEGER NUMBER"
@@ -662,7 +658,7 @@ port_declNetE:			// IEEE: part of port_declaration, optional net type
 	|	net_type				{ } // net_type calls VARNET
  	;
  
-portSig<portp>:
+portSig<nodep>:
 		id/*port*/				{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
 	|	idSVKwd					{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
  	;
@@ -1300,7 +1296,7 @@ instnameList<nodep>:
 	|	instnameList ',' instnameParen		{ $$ = $1->addNext($3); }
 	;
 
-instnameParen<cellp>:
+instnameParen<nodep>:
 		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,       *$1,V3Parse::s_instModule,$4,  V3Parse::s_instParamp,$2); }
 	|	id instRangeE 				{ $$ = new AstCell(CRELINE(),*$1,V3Parse::s_instModule,NULL,V3Parse::s_instParamp,$2); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
@@ -2191,40 +2187,40 @@ gatePulldownList<nodep>:
 	|	gatePulldownList ',' gatePulldown	{ $$ = $1->addNext($3); }
 	;
 
-gateBuf<assignwp>:
+gateBuf<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); }
 	;
-gateBufif0<assignwp>:
+gateBufif0<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), $6)); }
 	;
-gateBufif1<assignwp>:
+gateBufif1<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, $6, new AstConst($3,V3Number($3,"1'bz")))); }
 	;
-gateNot<assignwp>:
+gateNot<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
-gateNotif0<assignwp>:
+gateNotif0<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), new AstNot($3, $6))); }
 	;
-gateNotif1<assignwp>:
+gateNotif1<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstNot($3,$6), new AstConst($3,V3Number($3,"1'bz")))); }
 	;
-gateAnd<assignwp>:
+gateAnd<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
 	;
-gateNand<assignwp>:
+gateNand<nodep>:
 	 	gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
-gateOr<assignwp>:
+gateOr<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,$6); }
 	;
-gateNor<assignwp>:
+gateNor<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
-gateXor<assignwp>:
+gateXor<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
 	;
-gateXnor<assignwp>:
+gateXnor<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gatePullup<nodep>:
@@ -2368,7 +2364,7 @@ idArrayed<nodep>:		// IEEE: id + select
 	;
 
 // VarRef without any dots or vectorizaion
-varRefBase<varrefp>:
+varRefBase<nodep>:
 		id					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 

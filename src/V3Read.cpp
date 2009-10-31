@@ -191,6 +191,8 @@ bool V3Read::optFuture(const string& flag) {
 
 int V3Read::yylexThis() {
     int token = m_lexerp->yylex();
+    // Match verilog-perl names
+    if (token == yaID__LEX) { token = yaID__ETC; }
     UINFO(5,m_fileline<<" TOKEN="<<dec<<token<<" "<<endl);
     return (token);
 }

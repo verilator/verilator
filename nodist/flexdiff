@@ -48,7 +48,10 @@ sub prep {
 
     while (defined(my $line = $fh->getline)) {
 	# Productions
-	$line =~ s/[ \t]{[^}]*?}/\t{}/g;
+	#$line =~ s/[ \t]{[^}]*?}/\t{}/g;
+	$line =~ s/StashPrefix;//g;
+	$line =~ s/VALTEXT;//g;
+	$line =~ s/CALLBACK\([^)]*\);//g;
 	push @lines, $line;
     }
 
@@ -57,5 +60,5 @@ sub prep {
 }
 
 # Local Variables:
-# compile-command: "./flexdiff $WUP/Verilog/Parser/VParseLex.l ../src/verilog.l"
+# compile-command: "./flexdiff $VP/Parser/VParseLex.l ../src/verilog.l"
 # End:

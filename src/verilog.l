@@ -244,18 +244,18 @@ escid	\\[^ \t\f\r\n]+
   "xnor"		{ FL; return yXNOR; }
   "xor"			{ FL; return yXOR; }
   /*     Special errors */
-  "$displayb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s",yytext); }
-  "$displayh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s",yytext); }
-  "$displayo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s",yytext); }
-  "$fdisplayb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s",yytext); }
-  "$fdisplayh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s",yytext); }
-  "$fdisplayo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s",yytext); }
-  "$fwriteb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s",yytext); }
-  "$fwriteh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s",yytext); }
-  "$fwriteo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s",yytext); }
-  "$writeb"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s",yytext); }
-  "$writeh"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
-  "$writeo"		{ RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
+  "$displayb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s",yytext); }
+  "$displayh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s",yytext); }
+  "$displayo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s",yytext); }
+  "$fdisplayb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s",yytext); }
+  "$fdisplayh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s",yytext); }
+  "$fdisplayo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s",yytext); }
+  "$fwriteb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s",yytext); }
+  "$fwriteh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s",yytext); }
+  "$fwriteo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s",yytext); }
+  "$writeb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s",yytext); }
+  "$writeh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
+  "$writeo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
   /*     Generic unsupported warnings */
   "cmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "deassign"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -644,8 +644,8 @@ escid	\\[^ \t\f\r\n]+
   "~&"			{ FL; return yP_NAND; }
   "~|"			{ FL; return yP_NOR; }
   "->"			{ FL; return yP_MINUSGT; }
-  "=>"                  { FL; return yP_EQGT; }
-  "*>"                  { FL; return yP_ASTGT; }
+  "=>"			{ FL; return yP_EQGT; }
+  "*>"			{ FL; return yP_ASTGT; }
   "&&&"			{ FL; return yP_ANDANDAND; }
 }
 
@@ -710,71 +710,67 @@ escid	\\[^ \t\f\r\n]+
 
   /* Identifiers and numbers */
 <V95,V01,V05,S05,PSL>{
-  {escid}		{ yylval.strp = V3Read::newString
+  {escid}		{ FL; yylval.strp = V3Read::newString
 	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
-			  return yaID__ETC;
+			  return yaID__LEX;
 			}
-
-  {id}			{ yylval.strp = V3Read::newString(AstNode::encodeName(string(yytext)));
-			  return yaID__ETC;
+  {id}			{ FL; yylval.strp = V3Read::newString(AstNode::encodeName(string(yytext)));
+			  return yaID__LEX;
 			}
-
-  \"[^\"\\]*\"		{ yylval.strp = V3Read::newString(yytext+1,yyleng-2);
+  \"[^\"\\]*\"		{ FL; yylval.strp = V3Read::newString(yytext+1,yyleng-2);
 			  return yaSTRING;
 			}
   \" 			{ yy_push_state(STRING); yymore(); }
 
-
   [0-9]*?['']s?[bcodhBCODH][ \t]*[A-Fa-f0-9xXzZ_?]*	{
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9]*?['']s?[01xXzZ]	{	/* SystemVerilog */
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   /* Note below is constructed to not match the ' that begins a '(  or '{ */
   [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+	{
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]	{
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*[ \t]*['']s	{
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*		{
-			  yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
+			  FL; yylval.nump = V3Read::newNumber(V3Read::fileline(),(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-			  yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  FL; yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-			  yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  FL; yylval.cdouble = 0;  /* Only for delays, not used yet */
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
-			  yylval.cdouble = 0;  /* Only for times, not used yet */
+			  FL; yylval.cdouble = 0;  /* Only for times, not used yet */
                           return yaTIMENUM;
 			}
 }
 
   /************************************************************************/
   /* STRINGS */
-<STRING>{crnl} 		{ yyerrorf("Unterminated string"); }
+<STRING><<EOF>>		{ yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); }
+<STRING>{crnl}		{ yyerrorf("Unterminated string"); NEXTLINE(); }
 <STRING>\\{crnl}	{ yymore(); NEXTLINE(); }
 <STRING>\\.	 	{ yymore(); }
 <STRING>\" 		{ yy_pop_state();
-			  yylval.strp = V3Read::newString(yytext+1,yyleng-2);
+			  FL; yylval.strp = V3Read::newString(yytext+1,yyleng-2);
 			  return yaSTRING; }
-<STRING>. 		{ yymore(); }
-<STRING><<EOF>>		{ yyerrorf("EOF in string");
-			  yyleng = 0; yy_pop_state(); }
+<STRING>.		{ yymore(); }
 
   /************************************************************************/
   /* Attributes */
@@ -791,7 +787,7 @@ escid	\\[^ \t\f\r\n]+
 }
 
   /************************************************************************/
-  /* Preprocessor*/
+  /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
 <V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
@@ -799,6 +795,7 @@ escid	\\[^ \t\f\r\n]+
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ V3Read::inCellDefine(true); }
   "`default_decay_time"{ws}+[^\n\r]*	{ } // Verilog spec - delays only
+  "`default_nettype"{ws}+[a-zA-Z0-9]*	{ yyerrorf("Unsupported: Verilog 2001 directive not implemented: %s",yytext); } // Verilog 2001
   "`delay_mode_distributed"		{ } // Verilog spec - delays only
   "`delay_mode_path"			{ } // Verilog spec - delays only
   "`delay_mode_unit"			{ } // Verilog spec - delays only
@@ -824,29 +821,32 @@ escid	\\[^ \t\f\r\n]+
   "`remove_netnames"			{ } // Verilog-XL compatibility
   "`resetall"				{ }
   "`suppress_faults"			{ } // Verilog-XL compatibility
-  "`systemc_ctor"			{ BEGIN SYSCCTOR; }
-  "`systemc_dtor"			{ BEGIN SYSCDTOR; }
-  "`systemc_header"			{ BEGIN SYSCHDR; }
-  "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
-  "`systemc_implementation"		{ BEGIN SYSCIMP; }
-  "`systemc_interface"			{ BEGIN SYSCINT; }
   "`timescale"{ws}+[^\n\r]*		{ } // Verilog spec - not supported
-  "`verilog"				{ BEGIN V3Read::lastVerilogState(); }
 
+  /* See also setLanguage below */
   "`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); V3Read::pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); V3Read::pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); V3Read::pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); V3Read::pushBeginKeywords(YY_START); }
   "`end_keywords"				{ yy_pop_state(); if (!V3Read::popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+
+  /* Verilator */
+  "`systemc_ctor"			{ BEGIN SYSCCTOR; }
+  "`systemc_dtor"			{ BEGIN SYSCDTOR; }
+  "`systemc_header"			{ BEGIN SYSCHDR; }
+  "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
+  "`systemc_implementation"		{ BEGIN SYSCIMP; }
+  "`systemc_interface"			{ BEGIN SYSCINT; }
+  "`verilog"				{ BEGIN V3Read::lastVerilogState(); }
 }
 
-<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR; }
-<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCINT; }
-<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMP; }
-<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMPH; }
-<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCCTOR; }
-<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCDTOR; }
+<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCHDR; }
+<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCINT; }
+<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMP; }
+<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCIMPH; }
+<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCCTOR; }
+<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = V3Read::newString(yytext); return yaSCDTOR; }
 <IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}		{ NEXTLINE(); }
 
   /* Pick up text-type data */
@@ -859,7 +859,7 @@ escid	\\[^ \t\f\r\n]+
   /* Default rules - leave last */
 
 <V95,V01,V05,S05,PSL>{
-  "`"[a-zA-Z_0-9]+	{ yyerrorf("Define or directive not defined: %s",yytext); }
+  "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
   "//"[^\n]*		{ }  /* throw away single line comments */
   .			{ FL; return yytext[0]; }	/* return single char ops. */
 }

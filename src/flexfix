@@ -26,5 +26,8 @@ foreach my $line (<STDIN>) {
     $line =~ s!\(void\) *fwrite\((.*)\)!if (fwrite($1)) {}!g;
     # Fix flex 2.5.33 and GCC 4.1.2 "warning: comparison between signed and unsigned integer expressions" in YY_INPUT
     $line =~ s!for \( n = 0; n < max_size && !for ( n = 0; ((size_t)n < (size_t)max_size) && !g;
+    # Fix flex 2.5.4 and GCC 4.0.2 under FLEX_DEBUG
+    $line =~ s!--accepting rule at line %d !--accepting rule at line %ld !g;
+
     print "$line";
 }
