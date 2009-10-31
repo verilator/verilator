@@ -45,6 +45,7 @@ typedef enum { uniq_NONE, uniq_UNIQUE, uniq_PRIORITY } V3UniqState;
 
 struct V3ParseBisonYYSType {
     FileLine*	fl;
+    //V3SymTable*	scp;	// Symbol table scope for future lookups
     union {
 	V3Number*	nump;
 	string*		strp;
@@ -74,6 +75,115 @@ struct V3ParseBisonYYSType {
 #define YYSTYPE V3ParseBisonYYSType
 
 //######################################################################
+// Symbol table for parsing
+
+class V3ParseSym {
+    // TYPES
+    typedef vector<V3SymTable*>	SymStack;
+
+private:
+    // MEMBERS
+    static int	s_anonNum;		// Number of next anonymous object
+    V3SymTable*	m_symTableNextId;	// Symbol table for next lexer lookup
+    V3SymTable*	m_symCurrentp;		// Node with active symbol table for additions/lookups
+    SymStack	m_sympStack;		// Stack of nodes with symbol tables
+    SymStack	m_symsp;		// All symbol tables, to cleanup
+
+private:
+    // METHODS
+    static V3SymTable* getTable(AstNode* nodep) {
+	if (!nodep->user4p()) nodep->v3fatalSrc("Current symtable not found");
+	return nodep->user4p()->castSymTable();
+    }
+
+public:
+    V3SymTable* nextId() const { return m_symTableNextId; }
+    V3SymTable* symCurrentp() const { return m_symCurrentp; }
+
+    V3SymTable* findNewTable(AstNode* nodep, V3SymTable* parentp) {
+	if (!nodep->user4p()) {
+	    V3SymTable* symsp = new V3SymTable(nodep, parentp);
+	    nodep->user4p(symsp);
+	    m_symsp.push_back(symsp);
+	}
+	return getTable(nodep);
+    }
+    void nextId(AstNode* entp) {
+	if (entp) { UINFO(9,"symTableNextId under "<<entp<<"-"<<entp->type().ascii()<<endl); }
+	else { UINFO(9,"symTableNextId under NULL"<<endl); }
+	m_symTableNextId = getTable(entp);
+    }
+    void reinsert(AstNode* nodep, V3SymTable* parentp=NULL) {
+	if (!parentp) parentp = symCurrentp();
+	string name = nodep->name();
+	if (name == "") {  // New name with space in name so can't collide with users
+	    name = string(" anon") + nodep->type().ascii() + cvtToStr(++s_anonNum);
+	}
+	parentp->reinsert(name,nodep);
+    }
+    void pushNew(AstNode* nodep) { pushNewUnder(nodep, NULL); }
+    void pushNewUnder(AstNode* nodep, V3SymTable* parentp) {
+	if (!parentp) parentp = symCurrentp();
+	V3SymTable* symp = findNewTable(nodep, parentp);  // Will set user4p, which is how we connect table to node
+	reinsert(nodep, parentp);
+	pushScope(symp);
+    }
+    void pushScope(V3SymTable* symp) {
+	m_sympStack.push_back(symp);
+	m_symCurrentp = symp;
+    }
+    void popScope(AstNode* nodep) {
+	if (symCurrentp()->ownerp() != nodep) {
+	    if (debug()) { showUpward(); dump(cout,"-mism: "); }
+	    nodep->v3fatalSrc("Symbols suggest ending "<<symCurrentp()->ownerp()->prettyTypeName()
+			      <<" but parser thinks ending "<<nodep->prettyTypeName());
+	    return;
+	}
+	m_sympStack.pop_back();
+	if (m_sympStack.empty()) { nodep->v3fatalSrc("symbol stack underflow"); return; }
+	m_symCurrentp = m_sympStack.back();
+    }
+    void showUpward () {
+	UINFO(1,"ParseSym Stack:\n");
+	for (SymStack::reverse_iterator it=m_sympStack.rbegin(); it!=m_sympStack.rend(); ++it) {
+	    V3SymTable* symp = *it;
+	    UINFO(1,"\t"<<symp->ownerp()<<endl);
+	}
+	UINFO(1,"ParseSym Current: "<<symCurrentp()->ownerp()<<endl);
+    }
+    void dump(ostream& os, const string& indent="") {
+	os<<"ParseSym Dump:\n";
+	m_sympStack[0]->dump(os, indent, true);
+    }
+    AstNode* findEntUpward (const string& name) {
+	// Lookup the given string as an identifier, return type of the id, scanning upward
+	return symCurrentp()->findIdUpward(name);
+    }
+    void import(AstNode* nodep, const string& pkg, const string& id_or_star) {
+	// Import from package::id_or_star to this
+	AstNode* entp = findEntUpward(pkg);
+	if (!entp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+	    nodep->v3fatalSrc("Import package not found: "+pkg);
+	    return;
+	}
+	// Walk old sym table and reinsert into current table
+	nodep->v3fatalSrc("Unimplemented: import");
+    }
+public:
+    // CREATORS
+    V3ParseSym(AstNetlist* rootp) {
+	s_anonNum = 0;		// Number of next anonymous object
+	pushScope(findNewTable(rootp, NULL));
+	m_symTableNextId = symCurrentp();
+    }
+    ~V3ParseSym() {
+	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
+	    delete (*it);
+	}
+    }
+};
+
+//######################################################################
 
 class V3ParseImp {
     // MEMBERS
@@ -82,6 +192,7 @@ class V3ParseImp {
     static V3ParseImp*	s_parsep;	// Current THIS, bison() isn't class based
     FileLine*	m_fileline;		// Filename/linenumber currently active
 
+    V3ParseSym	m_sym;			// Symbol table
     bool	m_inCellDefine;		// Inside a `celldefine
     bool	m_inLibrary;		// Currently reading a library vs. regular file
     int		m_inBeginKwd;		// Inside a `begin_keywords
@@ -172,9 +283,12 @@ public:
     int stateVerilogRecent();	// Parser -> lexer communication
     int flexPpInputToLex(char* buf, int max_size) { return ppInputToLex(buf,max_size); }
 
+    //==== Symbol tables
+    V3ParseSym* symp() { return &m_sym; }
+
 public:
     // CREATORS
-    V3ParseImp(AstNetlist* rootp) {
+    V3ParseImp(AstNetlist* rootp) : m_sym(rootp) {
 	m_rootp = rootp; m_lexerp = NULL;
 	m_inCellDefine = false;
 	m_inLibrary = false;

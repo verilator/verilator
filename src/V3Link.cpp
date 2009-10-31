@@ -88,7 +88,7 @@ private:
 	if (V3SymTable* symsp = nodep->user1p()->castSymTable()) {
 	    return symsp;
 	} else {
-	    V3SymTable* symsp = new V3SymTable(upperVarsp);
+	    V3SymTable* symsp = new V3SymTable(nodep, upperVarsp);
 	    m_delSymps.push_back(symsp);
 	    nodep->user1p(symsp);
 	    return symsp;

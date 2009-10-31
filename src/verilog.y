@@ -101,6 +101,7 @@ public:
 };
 
 #define PARSEP V3ParseImp::parsep()
+#define SYMP PARSEP->symp()
 #define GRAMMARP V3ParseGrammar::singletonp()
 
 //======================================================================
@@ -521,7 +522,7 @@ module_declaration:		// ==IEEE: module_declaration
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
-			  }
+			  SYMP->popScope($1); }
 	//
 	//UNSUP	yEXTERN modFront parameter_port_listE portsStarE ';'
 	//UNSUP		{ UNSUP }
@@ -534,7 +535,7 @@ modFront<modulep>:
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
 			  PARSEP->rootp()->addModulep($$);
-			  }
+			  SYMP->pushNew($$); }
 	;
 
 parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
@@ -1383,13 +1384,13 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
 	//			// So need begin's even if unnamed to scope variables down
-		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtp($2); }
-	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; }
+		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtp($2); SYMP->popScope($1); }
+	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); }
 	;
 
 seq_blockFront<beginp>:		// IEEE: part of par_block
-		yBEGIN					 { $$ = new AstBegin($1,"",NULL);  }
-	|	yBEGIN ':' idAny/*new-block_identifier*/ { $$ = new AstBegin($1,*$3,NULL); }
+		yBEGIN					 { $$ = new AstBegin($1,"",NULL);  SYMP->pushNew($$); }
+	|	yBEGIN ':' idAny/*new-block_identifier*/ { $$ = new AstBegin($1,*$3,NULL); SYMP->pushNew($$); }
 	;
 
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
@@ -1719,16 +1720,16 @@ list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 
 task_declaration<taskp>:	// ==IEEE: task_declaration
 		yTASK lifetimeE taskId tfGuts yENDTASK endLabelE
-			{ $$ = $3; $$->addStmtsp($4); }
+			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$); }
 	;
 
 function_declaration<funcp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE funcTypeE funcId			 tfGuts yENDFUNCTION endLabelE
 			{ $$ = $4; $$->addFvarp($3); $$->addStmtsp($5); if ($3) $$->isSigned($3->isSigned());
-			  }
+			  SYMP->popScope($$); }
 	| 	yFUNCTION lifetimeE funcTypeE funcId yVL_ISOLATE_ASSIGNMENTS tfGuts yENDFUNCTION endLabelE
 			{ $$ = $4; $$->addFvarp($3); $$->addStmtsp($6); $$->attrIsolateAssign(true); if ($3) $$->isSigned($3->isSigned());
-			  }
+			  SYMP->popScope($$); }
 	//UNSUP: Generic function return types
 	;
 
@@ -1744,17 +1745,24 @@ lifetime:			// ==IEEE: lifetime
 	;
 
 taskId<taskp>:
-		id
-			{ $$ = new AstTask($<fl>1, *$1, NULL);
-			  }
+		tfIdScoped
+			{ $$ = new AstTask($<fl>1, *$<strp>1, NULL);
+			  SYMP->pushNewUnder($$, NULL); }
 	;
 
 funcId<funcp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
 	//			// IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
 	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
-		id
-			{ $$ = new AstFunc ($<fl>1,*$1,NULL,NULL);
-			  }
+		tfIdScoped
+			{ $$ = new AstFunc ($<fl>1,*$<strp>1,NULL,NULL);
+			  SYMP->pushNewUnder($$, NULL); }
+	//UNSUP	id/*interface_identifier*/ '.' id	{ UNSUP }
+	//UNSUP	class_scope_id				{ UNSUP }
+	;
+
+tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
+ 	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
+		id					{ $<fl>$=$<fl>1; $<strp>$ = $1; }
 	//UNSUP	id/*interface_identifier*/ '.' id	{ UNSUP }
 	//UNSUP	class_scope_id				{ UNSUP }
 	;

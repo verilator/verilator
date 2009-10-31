@@ -18,6 +18,9 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
+// NO EDITS: Don't replace or delete nodes, as the parser symbol table
+//	     has pointers into the ast tree.
+//
 // LINK TRANSFORMATIONS:
 //	Top-down traversal
 //	    Cells:
@@ -88,6 +91,8 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstModule::user1p()	// V3GraphVertex*    Vertex describing this module
+    //  Allocated across all readFiles in V3Global::readFiles:
+    //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
     AstUser1InUse	m_inuser1;
 
     // STATE

@@ -46,6 +46,8 @@
 
 V3ParseImp*	V3ParseImp::s_parsep = NULL;
 
+int		V3ParseSym::s_anonNum = 0;
+
 //######################################################################
 // Read class functions
 
@@ -60,6 +62,8 @@ V3ParseImp::~V3ParseImp() {
     m_numberps.clear();
     lexDestroy();
     parserClear();
+
+    if (debug()>=9) { UINFO(0,"~V3ParseImp\n"); symp()->dump(cout, "-vpi: "); }
 }
 
 int V3ParseImp::ppInputToLex(char* buf, int max_size) {

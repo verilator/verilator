@@ -92,6 +92,10 @@ V3Global v3Global;
 // V3 Class -- top level
 
 void V3Global::readFiles() {
+    // NODE STATE
+    //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
+    AstUser4InUse	inuser4;
+
     V3Parse parser (v3Global.rootp());
     // Read top module
     for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
