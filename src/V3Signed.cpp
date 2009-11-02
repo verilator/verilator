@@ -139,9 +139,13 @@ private:
     //=======
     // These have proper signedness set when they were created.
     virtual void visit(AstFunc* nodep, AstNUser*) {		nodep->iterateChildren(*this); }
-    virtual void visit(AstVar* nodep, AstNUser*) {		nodep->iterateChildren(*this); }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {	nodep->iterateChildren(*this); }
 
     // Inherit from others
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	nodep->signedFrom(nodep->dtypep());
+    }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->varp()->iterate(*this);
 	nodep->signedFrom(nodep->varp());

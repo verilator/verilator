@@ -157,8 +157,7 @@ private:
 	// Note var can be signed or unsigned based on original number.
 	AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
    	string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
-	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
-				  new AstRange(nodep->fileline(), countp->width()-1, 0));
+	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name, AstVar::LogicPacked(), countp->width());
 	m_modp->addStmtp(varp);
 	AstNode* initsp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
 					countp);

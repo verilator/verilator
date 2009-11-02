@@ -106,6 +106,16 @@ private:
 	    UINFO(5," Inline CELL   "<<nodep<<endl);
 	    UINFO(5,"   To MOD      "<<m_modp<<endl);
 	    m_statCells++;
+
+	    // Before cloning simplify pin assignments
+	    // Better off before, as if module has multiple instantiations
+	    // we'll save work, and we can't call pinReconnectSimple in
+	    // this loop as it clone()s itself.
+	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
+		V3Inst::pinReconnectSimple(pinp, nodep, m_modp);
+	    }
+
+	    // Clone original module
 	    if (debug()>=9) { nodep->dumpTree(cout,"inlcell:"); }
 	    //if (debug()>=9) { nodep->modp()->dumpTree(cout,"oldmod:"); }
 	    AstModule* newmodp = nodep->modp()->cloneTree(false);
@@ -119,8 +129,6 @@ private:
 	    // Create assignments to the pins
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		UINFO(6,"     Pin change from "<<pinp->modVarp()<<endl);
-		// First, simplify it
-		V3Inst::pinReconnectSimple(pinp, nodep, m_modp);
 		// Make new signal; even though we'll optimize the interconnect, we
 		// need an alias to trace correctly.  If tracing is disabled, we'll
 		// delete it in later optimizations.

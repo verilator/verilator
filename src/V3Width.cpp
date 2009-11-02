@@ -299,7 +299,7 @@ private:
 	    int frommsb = nodep->fromp()->width() - 1;
 	    int fromlsb = 0;
 	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
-	    if (varrp && varrp->varp()->rangep()) {	// Selecting a bit from a multibit register
+	    if (varrp && varrp->varp()->dtypep()->rangep()) {	// Selecting a bit from a multibit register
 		frommsb = varrp->varp()->msbMaxSelect();  // Corrected for negative lsb
 		fromlsb = varrp->varp()->lsb();
 	    }
@@ -480,9 +480,9 @@ private:
 	// with non-constant range gets size 1, not size 0.
 	int width=1; int mwidth=1;
 	nodep->arraysp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	if (nodep->rangep()) {
-	    nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    width = mwidth = nodep->rangep()->width();
+	if (nodep->dtypep()->rangep()) {
+	    nodep->dtypep()->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    width = mwidth = nodep->dtypep()->rangep()->width();
 	}
 	else if (nodep->isInteger() || nodep->isGenVar()) {
 	    width = 32;
@@ -497,7 +497,7 @@ private:
 	    // we want the init numbers to retain their width/minwidth until parameters are replaced.
 	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
 	    if (nodep->isParam()) {
-		if (nodep->rangep()) {
+		if (nodep->dtypep()->rangep()) {
 		    // Parameters need to preserve widthMin from the value, not get a constant size
 		    mwidth = nodep->initp()->widthMin();
 		} else if (nodep->initp()->widthSized()) {
@@ -510,12 +510,13 @@ private:
 	    }
 	    //if (debug()) nodep->dumpTree(cout,"  final: ");
 	}
-	if (nodep->isParam() && !nodep->rangep()) {
+	if (nodep->isParam() && !nodep->dtypep()->rangep()) {
 	    // Parameter sizes can come from the thing they get assigned from
 	    // They then "stick" to that width.
 	    if (!width) width=32;	// Or, if nothing, they're 32 bits.
-	    nodep->rangep(new AstRange(nodep->fileline(),width-1,0));
-	    nodep->rangep()->width(width,width);
+	    AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
+	    bdtypep->rangep(new AstRange(nodep->fileline(),width-1,0));
+	    bdtypep->rangep()->width(width,width);
 	}
 	nodep->width(width,mwidth);
 	// See above note about initp()->...FINAL

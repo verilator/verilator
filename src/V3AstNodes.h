@@ -105,6 +105,47 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
+struct AstBasicDType : public AstNodeDType {
+    // Builtin atomic/vectored data type
+private:
+    AstBasicDTypeKwd	m_keyword;	// What keyword created it
+public:
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstRange* rangep=NULL, AstSignedState signst=signedst_NOP)
+	: AstNodeDType(fl), m_keyword(kwd) {
+	init(signst, rangep);
+    }
+private:
+    void init(AstSignedState signst, AstRange* rangep) {
+	if (rangep==NULL) {  // Set based on keyword properties
+	    if (m_keyword == AstBasicDTypeKwd::INTEGER) {
+		rangep = new AstRange(fileline(),31,0); signst = signedst_SIGNED;
+	    }
+	}
+	setNOp1p(rangep); setSignedState(signst);
+    }
+    AstBasicDTypeKwd keyword() const { return m_keyword; }
+public:
+    ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
+    virtual void dump(ostream& str);
+    virtual string name()	const {
+	if (rangep()) return string(m_keyword.ascii())+"[]";
+	else return m_keyword.ascii();
+    }
+    AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
+    void	rangep(AstRange* nodep) { setNOp1p(nodep); }
+    void	setSignedState(AstSignedState signst) {
+	if (signst!=signedst_NOP) isSigned(signst==signedst_SIGNED);
+    }
+    // METHODS
+    bool	isInteger() const { return (keyword() == AstBasicDTypeKwd::INTEGER); }
+    int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
+    int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
+    int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
+    int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
+    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
+    bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
+};
+
 struct AstArraySel : public AstNodeSel {
     // Parents: math|stmt
     // Children: varref|arraysel, math
@@ -265,21 +306,30 @@ private:
 	m_trace=false;
     }
 public:
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstRange* rangep, AstRange* arrayp=NULL)
+    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtypep, AstRange* arrayp=NULL)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
-	combineType(type); setNOp1p(rangep); addNOp2p(arrayp);
+	combineType(type); setOp1p(dtypep); addNOp2p(arrayp);
 	width(msb()-lsb()+1,0);
+    }
+    class LogicPacked {};
+    AstVar(FileLine* fl, AstVarType type, const string& name, LogicPacked, int wantwidth)
+	:AstNode(fl)
+	, m_name(name) {
+	init();
+	combineType(type);
+	setOp1p(new AstBasicDType(fl, AstBasicDTypeKwd::LOGIC,
+				  ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL)));
+	width(wantwidth,0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	if (examplep->rangep()) {
-	    // Creating is faster than cloning; know have constant args
-	    setOp1p(new AstRange(fl, examplep->msb(), examplep->lsb()));
+	if (examplep->dtypep()) {
+	    setOp1p(examplep->dtypep()->cloneTree(true));
 	}
 	if (examplep->arraysp()) {
 	    setOp2p(examplep->arraysp()->cloneTree(true));
@@ -290,21 +340,23 @@ public:
     virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
+    virtual bool broken() const { return !dtypep(); }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
     string	cType()		const;	// Return C type for declaration: bool, uint32_t, uint64_t, etc.
     string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
-    AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
+    AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     AstRange*	arraysp() 	const { return op2p()->castRange(); }	// op2 = Array(s) of variable
+    void	addArraysp(AstNode* nodep) { addNOp2p(nodep); }
     AstRange*	arrayp(int dim)	const;					// op2 = Range for specific dimension #
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
-    void	rangep(AstRange* nodep) { setOp1p(nodep); }
+    void	dtypep(AstRange* nodep) { setOp1p(nodep); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
@@ -333,11 +385,11 @@ public:
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }
     bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICIT
-					    || varType()==AstVarType::REG || varType()==AstVarType::INTEGER); }
+					    || varType()==AstVarType::VAR); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
 					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
     bool	isToggleCoverable() const  { return ((isIO() || isSignal())
-						     && varType()!=AstVarType::INTEGER
+						     && (isIO() || !isInteger())
 						     // Wrapper would otherwise duplicate wrapped module's coverage
 						     && !isSc() && !isPrimaryIO()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
@@ -346,7 +398,7 @@ public:
     bool	isParam() const { return (varType()==AstVarType::LPARAM || varType()==AstVarType::GPARAM); }
     bool	isGParam() const { return (varType()==AstVarType::GPARAM); }
     bool	isGenVar() const { return (varType()==AstVarType::GENVAR); }
-    bool	isInteger() const { return (varType() == AstVarType::INTEGER); }
+    bool	isInteger() const { return dtypep()->castBasicDType() && dtypep()->castBasicDType()->isInteger(); }
     bool	isUsedClock() const { return m_usedClock; }
     bool	isUsedParam() const { return m_usedParam; }
     bool	isSc() const { return m_sc; }
@@ -366,12 +418,12 @@ public:
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     int		widthAlignBytes() const;	// Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int		widthTotalBytes() const;	// Width in bytes rounding up 1,2,4,8,12,...
-    int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
-    int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
-    int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
-    int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
-    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
-    bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
+    int		msb() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msb(); }
+    int		lsb() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->lsb(); }
+    int		msbEndianed() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msbEndianed(); }
+    int		lsbEndianed() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->lsbEndianed(); }
+    int		msbMaxSelect() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msbMaxSelect(); }
+    bool	littleEndian() const { return (dtypep() && dtypep()->castBasicDType()->littleEndian()); }
     int		arrayDimensions() const;
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;

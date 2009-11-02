@@ -35,6 +35,11 @@
 //======================================================================
 // Special methods
 
+AstRange* AstNodeDType::rangep() {
+    if (castBasicDType()) return castBasicDType()->rangep();
+    else return NULL;
+}
+
 // We need these here, because the classes they point to aren't defined when we declare the class
 bool AstNodeVarRef::broken() const { return ((m_varScopep && !m_varScopep->brokeExists())
 					     || (m_varp && !m_varp->brokeExists())); }
@@ -318,6 +323,10 @@ void AstNode::dump(ostream& os) {
 void AstAttrOf::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<attrType().ascii()<<"]";
+}
+void AstBasicDType::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" ["<<keyword().ascii()<<"]";
 }
 void AstCast::dump(ostream& str) {
     this->AstNode::dump(str);

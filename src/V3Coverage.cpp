@@ -176,7 +176,7 @@ private:
 				 dimension+1, selects_docs, selects_code);
 	    }
 	} else {  // No more arraying - just each bit in the width
-	    if (nodep->rangep()) {
+	    if (nodep->msb() != nodep->lsb()) {
 		for (int bitindex_docs=nodep->lsb(); bitindex_docs<nodep->msb()+1; bitindex_docs++) {
 		    toggleVarBottom(nodep, chgVarp,
 				    dimension, selects_docs, selects_code,

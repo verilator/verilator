@@ -103,7 +103,7 @@ private:
     AstVar* getBlockTemp(AstNode* nodep) {
 	string newvarname = ((string)"__Vtemp"+cvtToStr(m_modp->varNumGetInc()));
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-				   new AstRange(nodep->fileline(), nodep->widthMin()-1, 0));
+				   AstVar::LogicPacked(), nodep->widthMin());
 	m_funcp->addInitsp(varp);
 	return varp;
     }

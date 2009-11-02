@@ -421,11 +421,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts(nodep->verilogKwd());
 	puts(" ");
 	if (nodep->isSigned()) puts("signed ");
-	if (nodep->rangep()) {
-	    puts("["+cvtToStr(nodep->msb())
-		 +":"+cvtToStr(nodep->lsb())
-		 +"] ");
-	}
+	nodep->dtypep()->iterateChildren(*this);
 	puts(nodep->name());
 	for (AstRange* arrayp=nodep->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
 	    puts(" ["+cvtToStr(arrayp->msbConst())

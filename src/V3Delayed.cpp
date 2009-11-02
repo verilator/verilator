@@ -128,19 +128,12 @@ private:
 	    // Created module's AstVar earlier under some other scope
 	    varp = iter->second;
 	} else {
-	    AstRange* rangep = NULL;
 	    if (width==0) {
-		rangep = new AstRange(oldvarscp->fileline(),
-				      oldvarscp->varp()->msb(),
-				      oldvarscp->varp()->lsb());
-	    } else if (width==1) {
-		rangep = NULL;
+		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
+		varp->widthSignedFrom(oldvarscp);
 	    } else {
-		rangep = new AstRange(oldvarscp->fileline(),
-				      width-1, 0);
+		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, AstVar::LogicPacked(), width);
 	    }
-	    varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, rangep);
-	    if (width==0) varp->widthSignedFrom(oldvarscp);
 	    addmodp->addStmtp(varp);
 	    m_modVarMap.insert(make_pair(make_pair(addmodp, name), varp));
 	}

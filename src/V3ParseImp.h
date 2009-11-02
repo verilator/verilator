@@ -52,9 +52,11 @@ struct V3ParseBisonYYSType {
 	int 		cint;
 	double		cdouble;
 	V3UniqState	uniqstate;
+	AstSignedState	signstate;
 
 	AstNode*	nodep;
 
+	AstBasicDType*	bdtypep;
 	AstBegin*	beginp;
 	AstCase*	casep;
 	AstCaseItem*	caseitemp;
@@ -62,6 +64,7 @@ struct V3ParseBisonYYSType {
 	AstFunc*	funcp;
 	AstModule*	modulep;
 	AstNodeSenItem*	senitemp;
+	AstNodeDType*	typep;
 	AstNodeVarRef*	varnodep;
 	AstParseRef*	parserefp;
 	AstPin*		pinp;

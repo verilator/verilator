@@ -86,7 +86,7 @@ private:
 	} else if (dimension > dimensions) {  // Too many indexes provided
 	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension: "<<varp->prettyName());
 	} else if (dimension == dimensions) {  // Right number, but...
-	    if (!varp->rangep()) {
+	    if (!varp->dtypep()->rangep()) {
 		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<varp->prettyName());
 	    }
 	}
@@ -133,12 +133,12 @@ private:
 	// Don't report WIDTH warnings etc here, as may be inside a generate branch that will be deleted
 	AstVar* varp = varFromBasefrom(basefromp);
 	// SUB #'s Not needed when LSB==0 and MSB>=0 (ie [0:-13] must still get added!)
-	if (!varp->rangep()) {
+	if (!varp->dtypep()->rangep()) {
 	    // vector without range is ok, for example a INTEGER x; y = x[21:0];
 	    return underp;
 	} else {
-	    if (!varp->rangep()->msbp()->castConst()
-		|| !varp->rangep()->lsbp()->castConst())
+	    if (!varp->dtypep()->rangep()->msbp()->castConst()
+		|| !varp->dtypep()->rangep()->lsbp()->castConst())
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
 	    if (varp->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
@@ -239,7 +239,7 @@ private:
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
 	selCheckDimension(nodep, basefromp, dimension, msb!=lsb);
-	if (varp->rangep() && varp->rangep()->littleEndian()) {
+	if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
 	    // Below code assumes big bit endian; just works out if we swap
 	    int x = msb; msb = lsb; lsb = x;
 	}
@@ -277,7 +277,7 @@ private:
 	selCheckDimension(nodep, basefromp, dimension, width!=1);
 	AstSel* newp = NULL;
 	if (nodep->castSelPlus()) {
-	    if (varp->rangep() && varp->rangep()->littleEndian()) {
+	    if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
 		// SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
 		newp = new AstSel (nodep->fileline(),
 				   fromp,
@@ -291,7 +291,7 @@ private:
 				   widthp);
 	    }
 	} else if (nodep->castSelMinus()) {
-	    if (varp->rangep() && varp->rangep()->littleEndian()) {
+	    if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
 		// SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
 		newp = new AstSel (nodep->fileline(),
 				   fromp,

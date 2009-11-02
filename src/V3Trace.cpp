@@ -311,10 +311,9 @@ private:
 
 	// Insert global variable
 	if (!activityNumber) activityNumber++;   // For simplicity, always create it
-	activityNumber = VL_WORDS_I(activityNumber)*VL_WORDSIZE;   // For tighter code; round to next 32 bit point.
+	int activityBits = VL_WORDS_I(activityNumber)*VL_WORDSIZE;   // For tighter code; round to next 32 bit point.
 	AstVar* newvarp = new AstVar (m_chgFuncp->fileline(), AstVarType::MODULETEMP,
-				      "__Vm_traceActivity",
-				      new AstRange (m_chgFuncp->fileline(), activityNumber-1, 0));
+				      "__Vm_traceActivity", AstVar::LogicPacked(), activityBits);
 	m_topModp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_highScopep, newvarp);
 	m_highScopep->addVarp(newvscp);

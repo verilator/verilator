@@ -182,7 +182,7 @@ private:
 	// Index into our table
 	AstVar* indexVarp = new AstVar (nodep->fileline(), AstVarType::BLOCKTEMP,
 					"__Vtableidx" + cvtToStr(m_modTables),
-					new AstRange (nodep->fileline(), m_inWidth-1, 0));
+					AstVar::LogicPacked(), m_inWidth);
 	m_modp->addStmtp(indexVarp);
 	AstVarScope* indexVscp = new AstVarScope (indexVarp->fileline(), m_scopep, indexVarp);
 	m_scopep->addVarp(indexVscp);
@@ -190,8 +190,8 @@ private:
 	// Change it variable
 	AstVar* chgVarp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
 				      "__Vtablechg" + cvtToStr(m_modTables),
-				      new AstRange (nodep->fileline(), m_outVarps.size()-1, 0),
-				      new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
+				      AstVar::LogicPacked(), m_outVarps.size());
+	chgVarp->addArraysp(new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
 	chgVarp->isConst(true);
 	chgVarp->initp(new AstInitArray (nodep->fileline(), NULL));
 	m_modp->addStmtp(chgVarp);
@@ -232,8 +232,8 @@ private:
 	    AstVar* tablevarp
 		= new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
 			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
-			      new AstRange (nodep->fileline(), outvarp->widthMin()-1, 0),
-			      new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
+			      AstVar::LogicPacked(), outvarp->widthMin());
+	    tablevarp->addArraysp(new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
 	    tablevarp->initp(new AstInitArray (nodep->fileline(), NULL));

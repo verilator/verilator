@@ -235,6 +235,7 @@ public:
 void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstModule* modp) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
+    // Note this module calles cloneTree() via new AstVar
     AstVar* pinVarp = pinp->modVarp();
     AstVarRef* connectRefp = pinp->exprp()->castVarRef();
     if (connectRefp

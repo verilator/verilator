@@ -157,7 +157,8 @@ private:
 	if (!forrefp->varp()) {
 	    if (!noWarn) forrefp->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<forrefp->prettyName());
 	    AstVar* newp = new AstVar (forrefp->fileline(), AstVarType::WIRE,
-				       forrefp->name(), NULL, NULL);  // width 1
+				       forrefp->name(), AstVar::LogicPacked(), 1);
+
 	    newp->trace(m_modp->modTrace());
 	    m_modp->addStmtp(newp);
 	    // Link it to signal list
@@ -298,9 +299,12 @@ private:
 	    // just attact normal signal attributes to it.
 	    if (AstFunc* funcp = nodep->castFunc()) {
 		if (!funcp->fvarp()->castVar()) {
-		    AstRange* rangep = funcp->fvarp()->castRange();
-		    if (rangep) rangep->unlinkFrBack();
-		    AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), rangep);
+		    AstNodeDType* dtypep = funcp->fvarp()->castNodeDType();
+		    // If unspecified, function returns one bit; however when we support NEW() it could
+		    // also return the class reference.
+		    if (dtypep) dtypep->unlinkFrBack();
+		    else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC, NULL);
+		    AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), dtypep);
 		    newvarp->isSigned(funcp->isSigned());
 		    newvarp->funcReturn(true);
 		    newvarp->trace(false);  // Not user visible

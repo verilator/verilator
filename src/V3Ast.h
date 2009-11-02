@@ -198,6 +198,38 @@ public:
 
 //######################################################################
 
+class AstBasicDTypeKwd {
+public:
+    enum en {
+	BYTE, SHORTINT, INT, LONGINT, INTEGER, TIME, BIT,
+	LOGIC, REG, SHORTREAL, REAL, REALTIME
+    };
+    enum en m_e;
+    const char* ascii() const {
+	static const char* names[] = {
+	    "byte", "shortint", "int", "longint", "integer", "time", "bit",
+	    "logic", "reg", "shortreal", "real", "realtime"
+	};
+	return names[m_e];
+    };
+    inline AstBasicDTypeKwd () {}
+    inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
+    explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+  };
+  inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstBasicDTypeKwd::en lhs, AstBasicDTypeKwd rhs) { return (lhs == rhs.m_e); }
+
+//######################################################################
+
+enum AstSignedState {
+    // This can't be in the fancy class as the lexer union will get upset
+    signedst_NOP=0, signedst_SIGNED=1, signedst_UNSIGNED=2
+};
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {
@@ -205,7 +237,7 @@ public:
 	GPARAM,
 	LPARAM,
 	GENVAR,
-	INTEGER,
+	VAR,		// Reg, integer, logic, etc
 	INPUT,
 	OUTPUT,
 	INOUT,
@@ -213,7 +245,6 @@ public:
 	SUPPLY1,
 	WIRE,
 	IMPLICIT,
-	REG,
 	TRIWIRE,
 	PORT,		// Temp type used in parser only
 	BLOCKTEMP,
@@ -229,8 +260,8 @@ public:
     const char* ascii() const {
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
-	    "INTEGER","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","REG","TRIWIRE","PORT",
+	    "VAR","INPUT","OUTPUT","INOUT",
+	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","TRIWIRE","PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e]; }
   };
@@ -1121,10 +1152,19 @@ public:
 	return text()==samep->castNodeText()->text(); }
 };
 
+struct AstNodeDType : public AstNode {
+    // Data type
+    AstNodeDType(FileLine* fl) : AstNode(fl) {}
+    ASTNODE_BASE_FUNCS(NodeDType)
+    // Accessors
+    AstRange* rangep();
+};
+
 struct AstNodeSel : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
     AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodeBiop(fl, fromp, bitp) {}
+    ASTNODE_BASE_FUNCS(NodeSel)
     AstNode* fromp()		const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
     AstNode* bitp()		const { return op2p()->castNode(); }	// op2 = Msb selection expression
     int	     bitConst()	const;

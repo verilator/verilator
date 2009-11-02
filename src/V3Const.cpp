@@ -309,10 +309,11 @@ private:
 	AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 	    AstVar* varp = varrefp->varp();
+	    if (!varp->dtypep()) varp->v3fatalSrc("Data type lost");
 	    if (m_warn
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
-		&& (!varp->rangep() || varp->msb())) {  // else it's non-resolvable parameterized
+		&& (!varp->dtypep()->rangep() || varp->msb())) {  // else it's non-resolvable parameterized
 		if (nodep->lsbp()->castConst()->num().isFourState()
 		    || nodep->widthp()->castConst()->num().isFourState()) {
 		    nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -770,9 +771,9 @@ private:
 		string name1 = ((string)"__Vconcswap"+cvtToStr(m_modp->varNumGetInc()));
 		string name2 = ((string)"__Vconcswap"+cvtToStr(m_modp->varNumGetInc()));
 		AstVar* temp1p = new AstVar(sel1p->fileline(), AstVarType::BLOCKTEMP, name1,
-					    new AstRange(sel1p->fileline(), msb1-lsb1, 0));
+					    AstVar::LogicPacked(), msb1-lsb1+1);
 		AstVar* temp2p = new AstVar(sel2p->fileline(), AstVarType::BLOCKTEMP, name2,
-					    new AstRange(sel2p->fileline(), msb2-lsb2, 0));
+					    AstVar::LogicPacked(), msb2-lsb2+1);
 		m_modp->addStmtp(temp1p);
 		m_modp->addStmtp(temp2p);
 		AstNodeAssign* asn1ap=nodep->cloneType

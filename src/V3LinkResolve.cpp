@@ -124,7 +124,7 @@ private:
 		// Make a new temp wire
 		string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
 		AstVar* newvarp = new AstVar (sensp->fileline(), AstVarType::MODULETEMP, newvarname,
-					      NULL,NULL);
+					      AstVar::LogicPacked(), 1);
 		// We can't just add under the module, because we may be inside a generate, begin, etc.
 		// We know a SenItem should be under a SenTree/Always etc, we we'll just hunt upwards
 		AstNode* addwherep = nodep;  // Add to this element's next
