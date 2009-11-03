@@ -10,12 +10,13 @@
 *.tex
 /Makefile
 README
+autom4te.cache
 config.cache
 config.status
 configure
 dddrun*
 gdbrun*
-verilator.txt
+internals.txt
 verilator.pdf
+verilator.txt
 verilator_bin*
-autom4te.cache

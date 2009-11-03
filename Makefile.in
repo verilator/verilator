@@ -58,7 +58,7 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
-TEXI2DVI = texi2dvi
+POD2TEXT = pod2text
 PERL = @PERL@
 
 # Destination prefix for RPMs
@@ -97,7 +97,7 @@ SHELL = /bin/sh
 
 SUBDIRS = src test_verilated test_c test_sc test_sp test_regress test_vcs
 
-INFOS = README verilator.txt verilator.html verilator.1 verilator.pdf
+INFOS = README internals.txt verilator.txt verilator.html verilator.1 verilator.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -106,10 +106,10 @@ DISTBIN = $(wildcard bin/verilator-*)
 
 DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	*.in *.ac \
-	Changes README TODO \
+	Changes TODO \
 	MANIFEST.SKIP \
 	bin/* \
-	install-sh configure mkinstalldirs *.texi \
+	install-sh configure mkinstalldirs *.pod \
 	include/verilated*.[chv]* \
 	include/*.in \
 	include/.*ignore \
@@ -207,7 +207,7 @@ verilator.1: bin/verilator
 	pod2man $< $@
 
 verilator.txt: bin/verilator
-	pod2text $< $@
+	$(POD2TEXT) $< $@
 
 verilator.html: bin/verilator
 	pod2html $< >$@
@@ -228,13 +228,13 @@ verilator.pdf: bin/verilator $(DISTCONFIG)
 	pdflatex verilator.tex
 	-rm -f verilator.toc verilator.aux verilator.idx verilator.out
 
-INSTALL: install.texi
-	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
-	--no-headers --no-validate
+README: readme.pod
+	-rm -f $@
+	$(POD2TEXT) --loose $< > $@
 
-README: readme.texi
-	$(MAKEINFO) -I$(srcdir) $(srcdir)/readme.texi --output=$@ \
-	--no-headers --no-validate
+internals.txt: internals.pod
+	-rm -f $@
+	$(POD2TEXT) --loose $< > $@
 
 # See uninstall also
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
@@ -337,7 +337,7 @@ configure: configure.ac
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* $(INFOS) faq.html verilator.html configure
+	rm -f *.info* $(INFOS) configure
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
@@ -357,7 +357,7 @@ distclean maintainer-clean::
 	rm -f include/verilated.mk
 
 TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/[a-z]*.in \
-	${srcdir}/[a-z]*.in ${srcdir}/*.texi
+	${srcdir}/[a-z]*.in ${srcdir}/*.pod
 
 TAGS:	$(TAGFILES)
 	etags $(TAGFILES)

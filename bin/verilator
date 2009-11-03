@@ -2668,6 +2668,8 @@ Major concepts by Paul Wasson and Duane Galbi.
 
 L<verilator_profcfunc>, L<systemperl>, L<vcoverage>, L<make>
 
+And verilator_internals.txt in the distribution.
+
 =cut
 
 ######################################################################

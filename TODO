@@ -7,11 +7,8 @@
 
 
 Features:
-	Finish 3.400 new ordering fixes
 	Latch optimizations {Need here}
 	Task I/Os connecting to non-simple variables.
-	Fix nested casez statements expanding into to huge C++. [JeanPaul Vanitegem]
-	Fix FileLine memory inefficiency
 	Fix ordering of each bit separately in a signal (mips)
 		assign b[3:0] = b[7:4];  assign b[7:4] = in;
 	Support gate primitives/ cell libraries from xilinx, etc
@@ -20,8 +17,6 @@ Features:
 	Support generated clocks (correctness)
 	?gcov coverage
 	Selectable SystemC types based on widths (see notes below)
-	Compile time
-		Inline first level trace routines
 	Coverage
 		Points should be per-scope like everything else rather then per-module
 		Expression coverage (see notes)
@@ -39,7 +34,6 @@ Long-term Features
 	Tristate support
 	SystemPerl integration
 	Multithreaded execution
-	Front end parser integration into Verilog-Perl like Netlist
 
 Testing:
 	Capture all inputs into global "rerun it" file
@@ -114,20 +108,6 @@ Performance:
 	be per-invocation, and even better register-colored-like to reuse
 	the space.  This will greatly reduce the data footprint.
 
-
-//**********************************************************************
-//* Detailed notes on 'todo' features
-
-Selectable SystemC types based on widths (see notes below)
-	Statements:
-		verilator sc_type    uint32_t  {override specific I/O signals}
-		verilator sc_typedef width 1     bool
-		verilator sc_typedef width 2-32  uint32_t
-		verilator sc_typedef width 33-64 uint64_t
-		verilator sc_typedef width 65+   sc_bv<width>	//<< programmable width
-	Replace `systemc_clock, --pins64
-	Have accessor function with type overloading to get or set the pin value.
-	(Get rid of getdatap mess?)
 
 //**********************************************************************
 //* Eventual tristate bus Stuff allowed (old verilator)

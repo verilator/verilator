@@ -1,0 +1,164 @@
+# DESCRIPTION: DOCUMENT source run through perl to produce internals.txt file
+# Use 'make internals.txt' to produce the output file
+
+=pod
+
+=head1 NAME
+
+Verilator Internals
+
+=head1 INTRODUCTION
+
+This file discusses internal and programming details for Verilator.  It's
+the first for reference for developers and debugging problems.
+
+See also the Verilator internals presentation at http://www.veripool.org.
+
+=head1 ADDING A NEW FEATURE
+
+Generally what would you do to add a new feature?
+
+=over 4
+
+File a bug (if there isn't already) so others know what you're working on.
+
+Make a testcase in the test_regress/t/t_EXAMPLE format, there's notes on
+this in the forum and in the verilator.txt manual.
+
+If grammar changes are needed, look at the git version of VerilogPerl's
+src/VParseGrammar.y, as this grammar supports the full SystemVerilog
+language and has a lot of back-and-forth with Verilator's grammar.  Copy
+the appropriate rules to src/verilog.y and modify the productions.
+
+If a new Ast type is needed, add it to V3AstNodes.h.
+
+Now you can run "test_regress/t/t_{new testcase}.pl --debug" and it'll
+probably fail but you'll see a test_regress/obj_dir/t_{newtestcase}/*.tree
+file which you can examine to see if the parsing worked. See also the
+sections below on debugging.
+
+Modify the later visitor functions to process the new feature as needed.
+
+=back
+
+=head1 DEBUG OUTPUT/ TREE FILES
+
+When you run with --debug there are two primary output file types placed into
+the obj_dir, .tree and .dot files.
+
+=head2 .dot output
+
+Dot files are dumps of internal graphs in Graphviz
+L<http://www.graphviz.org/> dot format.  When a dot file is dumped,
+Verilator will also print a line on stdout that can be used to format the
+output, for example:
+
+    dot -Tps -o ~/a.ps obj_dir/Vtop_foo.dot
+
+You can then print a.ps.  You may prefer gif format, which doesn't get
+scaled so can be more useful with large graphs.
+
+For dynamic graph viewing consider ZGRViewer
+L<http://zvtm.sourceforge.net/zgrviewer.html>.  If you know of better
+viewers let us know; ZGRViewer isn't great for large graphs.
+
+=head2 .tree output
+
+Tree files are dumps of the AST Tree and are produced between every major
+algorithmic stage.  An example:
+
+     NETLIST 0x90fb00 <e1> {0} w0
+    1: MODULE 0x912b20 <e8822> {8} w0  top  L2 [P]
+   *1:2: VAR 0x91a780 <e74#> {22} w70  out_wide [O] WIRE
+    1:2:1: BASICDTYPE 0x91a3c0 <e73> {22} w70  [logic]
+
+=over 4
+
+"1:2:" indicates the hiearchy the VAR is op2p under the MODULE.
+
+"VAR" is the AstNodeType.
+
+"0x91a780" is the address of this node.
+
+"<e74>" means the 74th edit to the netlist was the last modification to
+this node.  A trailing # indicates this node changed since the last tree
+dump was made.  You can gdb break on this edit; see below.
+
+"{22}" indicates this node is related to line 22 in the source.
+
+"w70" indicates the width is 70 bits.  sw70 would be signed 70 bits.
+
+"out_wide" is the name of the node, in this case the name of the variable.
+
+"[O]" are flags which vary with the type of node, in this case it means the
+variable is an output.
+
+=back
+
+=head1 VISITOR FUNCTIONS
+
+=head2 Passing Variables
+
+There's three ways data is passed between visitor functions.
+
+1. A visitor-class member variable.  This is generally for passing "parent"
+information down to children.  m_modp is a common example.  It's set to
+NULL in the constructor, where that node (AstModule visitor) sets it, then
+the children are iterated, then it's cleared.  Children under an AstModule
+will see it set, while nodes elsewhere will see it clear.  If there can be
+nested items (for example an AstFor under an AstFor) the variable needs to
+be save-set-restored in the AstFor visitor, otherwise exiting the lower for
+will loose the upper for's setting.
+
+2. User() attributes.  Each node has 4 ->user() number or ->userp() pointer
+utility values (a common technique lifted from graph traversal packages).
+A visitor first clears the one it wants to use by calling
+AstNode::user#ClearTree(), then it can mark any node's user() with whatever
+data it wants.  Readers just call nodep->user(), but may need to cast
+appropriately, so you'll often see nodep->userp()->castSOMETYPE().  At the
+top of each visitor are comments describing how the user() stuff applies to
+that visitor class.  For example:
+
+    // NODE STATE
+    // Cleared entire netlist
+    //   AstModule::user1p()     // bool. True to inline this module
+
+This says that at the AstNetlist user1ClearTree() is called.  Each
+AstModule's is user1() is used to indicate if we're going to inline it.
+
+These comments are important to make sure a user#() on a given AstNode type
+is never being used for two different purposes.
+
+Note that calling user#ClearTree is fast, it doesn't walk the tree, so it's
+ok to call fairly often.  For example, it's commonly called on every
+module.
+
+3. Parameters can be passed between the visitors in close to the "normal"
+function caller to callee way.  This is the second "vup" parameter that is
+ignored on most of the visitor functions.  V3Width does this, but it proved
+more messy than the above and is deprecated.  (V3Width was nearly the first
+module written.  Someday this scheme may be removed, as it slows the
+program down to have to pass vup everywhere.)
+
+=head1 DEBUGGING WITH GDB
+
+The test_regress/driver.pl script accepts --debug --gdb to start Verilator
+under gdb.  You can also use --debug --gdbbt to just backtrace and then
+exit gdb.
+
+To break at a specific edit number which changed a node (presumably to find
+what made a <e####> line in the tree dumps):
+
+   watch AstNode::s_editCntGbl==####
+
+=head1 DISTRIBUTION
+
+The latest version is available from L<http://www.veripool.org/>.
+
+Copyright 2008-2009 by Wilson Snyder.  Verilator is free software; you can
+redistribute it and/or modify it under the terms of either the GNU Lesser
+General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+=cut
+
+######################################################################
