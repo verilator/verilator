@@ -140,7 +140,7 @@ private:
 	    if (!varp->dtypep()->rangep()->msbp()->castConst()
 		|| !varp->dtypep()->rangep()->lsbp()->castConst())
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
-	    if (varp->littleEndian()) {
+	    if (varp->dtypep()->rangep()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
 		AstNode* newp = newSubNeg(varp->msb(), underp);
 		return newp;
