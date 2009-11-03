@@ -196,7 +196,6 @@ escid	\\[^ \t\f\r\n]+
   "buf"			{ FL; return yBUF; }
   "bufif0"		{ FL; return yBUFIF0; }
   "bufif1"		{ FL; return yBUFIF1; }
-  "byte"		{ FL; return yBYTE; }
   "case"		{ FL; return yCASE; }
   "casex"		{ FL; return yCASEX; }
   "casez"		{ FL; return yCASEZ; }
@@ -218,9 +217,7 @@ escid	\\[^ \t\f\r\n]+
   "initial"		{ FL; return yINITIAL; }
   "inout"		{ FL; return yINOUT; }
   "input"		{ FL; return yINPUT; }
-  "int"			{ FL; return yINT; }
   "integer"		{ FL; return yINTEGER; }
-  "longint"		{ FL; return yLONGINT; }
   "macromodule"		{ FL; return yMODULE; }
   "module"		{ FL; return yMODULE; }
   "nand"		{ FL; return yNAND; }
@@ -238,7 +235,6 @@ escid	\\[^ \t\f\r\n]+
   "reg"			{ FL; return yREG; }
   "repeat"		{ FL; return yREPEAT; }
   "scalared"		{ FL; return ySCALARED; }
-  "shortint"		{ FL; return ySHORTINT; }
   "specify"		{ FL; return ySPECIFY; }
   "specparam"		{ FL; return ySPECPARAM; }
   "supply0"		{ FL; return ySUPPLY0; }
@@ -360,23 +356,28 @@ escid	\\[^ \t\f\r\n]+
   "$onehot"		{ FL; return yD_ONEHOT; }
   "$onehot0"		{ FL; return yD_ONEHOT0; }
   "$warning"		{ FL; return yD_WARNING; }
-  /*     Keywords */
+  /*     SV2005 Keywords */
   "always_comb"		{ FL; return yALWAYS; }
   "always_ff"		{ FL; return yALWAYS; }
   "always_latch"	{ FL; return yALWAYS; }
   "bit"			{ FL; return yBIT; }
+  "byte"		{ FL; return yBYTE; }
   "clocking"		{ FL; return yCLOCKING; }
   "do"			{ FL; return yDO; }
   "endclocking"		{ FL; return yENDCLOCKING; }
   "endproperty"		{ FL; return yENDPROPERTY; }
   "final"		{ FL; return yFINAL; }
   "iff"			{ FL; return yIFF; }
+  "int"			{ FL; return yINT; }
   "logic"		{ FL; return yLOGIC; }
+  "longint"		{ FL; return yLONGINT; }
   "priority"		{ FL; return yPRIORITY; }
+  "shortint"		{ FL; return ySHORTINT; }
   "static"		{ FL; return ySTATIC; }
   "timeprecision"	{ FL; return yTIMEPRECISION; }
   "timeunit"		{ FL; return yTIMEUNIT; }
   "unique"		{ FL; return yUNIQUE; }
+  "void"		{ FL; return yVOID; }
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "$root"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -446,7 +447,6 @@ escid	\\[^ \t\f\r\n]+
   "typedef"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "var"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "virtual"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "void"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "wait_order"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "wildcard"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "with"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }

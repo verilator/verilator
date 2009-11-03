@@ -61,10 +61,10 @@ struct V3ParseBisonYYSType {
 	AstCase*	casep;
 	AstCaseItem*	caseitemp;
 	AstConst*	constp;
-	AstFunc*	funcp;
 	AstModule*	modulep;
-	AstNodeSenItem*	senitemp;
 	AstNodeDType*	typep;
+	AstNodeFTask*	ftaskp;
+	AstNodeSenItem*	senitemp;
 	AstNodeVarRef*	varnodep;
 	AstParseRef*	parserefp;
 	AstPin*		pinp;

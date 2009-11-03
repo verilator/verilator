@@ -278,6 +278,7 @@ class AstSenTree;
 %token<fl>		yUNIQUE		"unique"
 %token<fl>		yUNSIGNED	"unsigned"
 %token<fl>		yVECTORED	"vectored"
+%token<fl>		yVOID		"void"
 %token<fl>		yWHILE		"while"
 %token<fl>		yWIRE		"wire"
 %token<fl>		yXNOR		"xnor"
@@ -1743,16 +1744,15 @@ list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 	//UNSUP empty arguments with just ,,
 	;
 
-task_declaration<taskp>:	// ==IEEE: task_declaration
+task_declaration<ftaskp>:	// ==IEEE: task_declaration
 		yTASK lifetimeE taskId tfGuts yENDTASK endLabelE
 			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$); }
 	;
 
-function_declaration<funcp>:	// IEEE: function_declaration + function_body_declaration
+function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
-			{ $$ = $3; $$->attrIsolateAssign($4); $$->addStmtsp($5);
+			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
 			  SYMP->popScope($$); }
-	//UNSUP: Generic function return types
 	;
 
 funcIsolateE<cint>:
@@ -1777,25 +1777,27 @@ taskId<taskp>:
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 
-funcId<funcp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
+funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_body_declaration
 	//			// IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
 	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
 		/**/			tfIdScoped
-			{ $$ = new AstFunc ($<fl>1,*$<strp>1,NULL,NULL);
-			  $$->addFvarp(new AstBasicDType($$->fileline(), LOGIC_IMPLICIT, NULL));
+			{ $$ = new AstFunc ($<fl>1,*$<strp>1,NULL,
+					    new AstBasicDType($<fl>1, LOGIC_IMPLICIT, NULL));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signingE rangeList	tfIdScoped
-			{ $$ = new AstFunc ($<fl>3,*$<strp>3,NULL,NULL);
-			  $$->addFvarp(new AstBasicDType($$->fileline(), LOGIC_IMPLICIT, $2, $1));
+			{ $$ = new AstFunc ($<fl>3,*$<strp>3,NULL,
+					    new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $2, $1));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signing			tfIdScoped
-			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,NULL);
-			  $$->addFvarp(new AstBasicDType($$->fileline(), LOGIC_IMPLICIT, NULL, $1));
+			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,
+					    new AstBasicDType($<fl>2, LOGIC_IMPLICIT, NULL, $1));
 			  SYMP->pushNewUnder($$, NULL); }
-	//UNSUP	yVOID			tfIdScoped	{ UNSUP }
 	|	data_type		tfIdScoped
-			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,NULL);
-			  $$->addFvarp($1);
+			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,$1);
+			  SYMP->pushNewUnder($$, NULL); }
+	//			// To verilator tasks are the same as void functions (we separately detect time passing)
+	|	yVOID			tfIdScoped
+			{ $$ = new AstTask ($<fl>2,*$<strp>2,NULL);
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 

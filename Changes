@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Support byte, shortint, int, longint in variables, parameters and
      functions.
 
+***  Support void functions.
+
 * Verilator 3.720 2009/10/26
 
 **   Support little endian bit vectors ("reg [0:2] x;").

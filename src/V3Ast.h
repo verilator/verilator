@@ -1205,11 +1205,13 @@ private:
     string	m_name;		// Name of task
     bool	m_taskPublic:1;	// Public task
     bool	m_didSigning:1;	// V3Signed completed; can skip iteration
+    bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
 public:
     // Node that simply puts name into the output stream
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
-	, m_name(name), m_taskPublic(false), m_didSigning(false) {
+	, m_name(name), m_taskPublic(false), m_didSigning(false)
+	, m_attrIsolateAssign(false) {
 	addNOp3p(stmtsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTask)
@@ -1225,6 +1227,8 @@ public:
     bool	taskPublic() const { return m_taskPublic; }
     void	didSigning(bool flag) { m_didSigning=flag; }
     bool	didSigning() const { return m_didSigning; }
+    void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
+    bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
 };
 
 struct AstNodeFTaskRef : public AstNode {

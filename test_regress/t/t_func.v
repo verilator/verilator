@@ -7,6 +7,7 @@ module t;
    reg [2:0] value;
    reg [31:0] global;
    reg [31:0] vec [1:0];
+   reg [31:0] n;
 
    initial begin
       global = 1;
@@ -41,6 +42,10 @@ module t;
       if (vec[1] != 32'hdef) $stop;
 
       incr(vec[2],vec[0],vec[2]);  // Reading/Writing past end of vector!
+
+      n=1;
+      nil();
+      if (n !== 10) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -111,6 +116,10 @@ module t;
       // verilator no_inline_task
       q = nil_func(a, b);
    endtask
+
+   function void nil;
+      n = 10;
+   endfunction
 
    function [31:0] nil_func;
       input [31:0] fa;

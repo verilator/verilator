@@ -858,20 +858,15 @@ struct AstTask : public AstNodeFTask {
 };
 
 struct AstFunc : public AstNodeFTask {
-    bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
-public:
     // A function inside a module
     AstFunc(FileLine* fl, const string& name, AstNode* stmtp, AstNode* fvarsp)
 	:AstNodeFTask(fl, name, stmtp) {
 	addNOp1p(fvarsp);
-	m_attrIsolateAssign = false;
     }
     ASTNODE_NODE_FUNCS(Func, FUNC)
     // op1 = Range output variable (functions only)
     AstNode*	fvarp() 	const { return op1p()->castNode(); }
     void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
-    void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
-    bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
 };
 
 struct AstTaskRef : public AstNodeFTaskRef {
