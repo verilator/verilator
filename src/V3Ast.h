@@ -202,13 +202,16 @@ class AstBasicDTypeKwd {
 public:
     enum en {
 	BYTE, SHORTINT, INT, LONGINT, INTEGER, TIME, BIT,
-	LOGIC, REG, SHORTREAL, REAL, REALTIME
+	LOGIC, SHORTREAL, REAL, REALTIME,
+	// Internal types
+	LOGIC_IMPLICIT
     };
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
 	    "byte", "shortint", "int", "longint", "integer", "time", "bit",
-	    "logic", "reg", "shortreal", "real", "realtime"
+	    "logic", "shortreal", "real", "realtime",
+	    "LOGIC_IMPLICIT"
 	};
 	return names[m_e];
     };
@@ -216,6 +219,30 @@ public:
     inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
     explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
+    int width() const {
+	switch (m_e) {
+	case BYTE:	return 8;
+	case SHORTINT:	return 16;
+	case INT:	return 32;
+	case LONGINT:	return 64;
+	case INTEGER:	return 32;
+	case LOGIC:	return 1;
+	case BIT:	return 1;
+	default: return 0;
+	}
+    }
+    int isSigned() const {
+	return m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER;
+    }
+    int isFourstate() const {
+	return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
+    }
+    int isSloppy() const { // Don't be as anal about width warnings
+	return !(m_e==LOGIC || m_e==BIT);
+    }
+    int isBitLogic() const { // Don't be as anal about width warnings
+	return (m_e==LOGIC || m_e==BIT);
+    }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
@@ -244,7 +271,7 @@ public:
 	SUPPLY0,
 	SUPPLY1,
 	WIRE,
-	IMPLICIT,
+	IMPLICITWIRE,
 	TRIWIRE,
 	PORT,		// Temp type used in parser only
 	BLOCKTEMP,
@@ -261,7 +288,7 @@ public:
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "VAR","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","IMPLICIT","TRIWIRE","PORT",
+	    "SUPPLY0","SUPPLY1","WIRE","IMPLICITWIRE","TRIWIRE","PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e]; }
   };
@@ -1176,12 +1203,13 @@ struct AstNodeSel : public AstNodeBiop {
 struct AstNodeFTask : public AstNode {
 private:
     string	m_name;		// Name of task
-    bool	m_taskPublic;	// Public task
+    bool	m_taskPublic:1;	// Public task
+    bool	m_didSigning:1;	// V3Signed completed; can skip iteration
 public:
     // Node that simply puts name into the output stream
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
-	, m_name(name), m_taskPublic(false) {
+	, m_name(name), m_taskPublic(false), m_didSigning(false) {
 	addNOp3p(stmtsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTask)
@@ -1195,6 +1223,8 @@ public:
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
+    void	didSigning(bool flag) { m_didSigning=flag; }
+    bool	didSigning() const { return m_didSigning; }
 };
 
 struct AstNodeFTaskRef : public AstNode {

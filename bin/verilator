@@ -1700,13 +1700,13 @@ This section describes specific limitations for each language keyword.
 
 Fully supported.
 
-=item always, always_comb, always_ff, always_latch, and, assign, begin,
-buf, case, casex, casez, default, defparam, do-while, else, end, endcase,
-endfunction, endgenerate, endmodule, endspecify, endtask, final, for,
-function, generate, genvar, if, initial, inout, input, integer, localparam,
-macromodule, module, nand, negedge, nor, not, or, output, parameter,
-posedge, reg, scalared, signed, supply0, supply1, task, tri, vectored,
-while, wire, xnor, xor
+=item int, shortint, longint, always, always_comb, always_ff, always_latch,
+and, assign, begin, buf, byte, case, casex, casez, default, defparam,
+do-while, else, end, endcase, endfunction, endgenerate, endmodule,
+endspecify, endtask, final, for, function, generate, genvar, if, initial,
+inout, input, integer, logic, localparam, macromodule, module, nand,
+negedge, nor, not, or, output, parameter, posedge, reg, scalared, signed,
+supply0, supply1, task, tri, vectored, while, wire, xnor, xor
 
 Generally supported.
 

@@ -473,6 +473,14 @@ private:
     virtual void visit(AstScopeName* nodep, AstNUser* vup) {
 	// Only used in Displays which don't care....
     }
+    virtual void visit(AstBasicDType* nodep, AstNUser* vup) {
+	if (nodep->rangep()) {
+	    nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->widthFrom(nodep->rangep());
+	}
+	// else width in node is correct; it was set based on keyword().width()
+	// at construction time
+    }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width
@@ -480,27 +488,18 @@ private:
 	// with non-constant range gets size 1, not size 0.
 	int width=1; int mwidth=1;
 	nodep->arraysp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	if (nodep->dtypep()->rangep()) {
-	    nodep->dtypep()->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    width = mwidth = nodep->dtypep()->rangep()->width();
-	}
-	else if (nodep->isInteger() || nodep->isGenVar()) {
-	    width = 32;
-	    mwidth = 1;	// Consider it unsized, as we want x[int] to work, and also want {int} to fail.
-	}
-	else if (nodep->isParam()) { // unranged
-	    width = mwidth = 0;  // But see below later.
-	}
-	if (nodep->initp()) {
-	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
-	    // Although nodep will get a different width for parameters just below,
-	    // we want the init numbers to retain their width/minwidth until parameters are replaced.
-	    nodep->initp()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
-	    if (nodep->isParam()) {
-		if (nodep->dtypep()->rangep()) {
-		    // Parameters need to preserve widthMin from the value, not get a constant size
-		    mwidth = nodep->initp()->widthMin();
-		} else if (nodep->initp()->widthSized()) {
+
+	// Parameters if implicit untyped inherit from what they are assigned to
+	AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
+	if (nodep->isParam() && bdtypep && bdtypep->implicit()) {
+	    width = mwidth = 0;
+	    if (nodep->initp()) {
+		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
+		// Although nodep will get a different width for parameters just below,
+		// we want the init numbers to retain their width/minwidth until parameters are replaced.
+		// This prevents width warnings at the location the parameter is substituted in
+		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
+		if (nodep->initp()->widthSized()) {
 		    width = mwidth = nodep->initp()->width();
 		} else {
 		    if (nodep->initp()->width()>32) nodep->initp()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)\n");
@@ -508,34 +507,43 @@ private:
 		    mwidth = nodep->initp()->widthMin();
 		}
 	    }
-	    //if (debug()) nodep->dumpTree(cout,"  final: ");
-	}
-	if (nodep->isParam() && !nodep->dtypep()->rangep()) {
 	    // Parameter sizes can come from the thing they get assigned from
 	    // They then "stick" to that width.
 	    if (!width) width=32;	// Or, if nothing, they're 32 bits.
-	    AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
+	    if (bdtypep->rangep()) bdtypep->rangep()->unlinkFrBackWithNext()->deleteTree();
 	    bdtypep->rangep(new AstRange(nodep->fileline(),width-1,0));
-	    bdtypep->rangep()->width(width,width);
+	    nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	}
+	else { // non param or sized param
+	    nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    width = nodep->dtypep()->width(); mwidth = nodep->dtypep()->widthMin();
+	    if (nodep->initp()) {
+		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
+		//if (debug()) nodep->dumpTree(cout,"  final: ");
+	    }
 	}
 	nodep->width(width,mwidth);
 	// See above note about initp()->...FINAL
 	if (nodep->initp()) widthCheck(nodep,"Initial value",nodep->initp(),width,mwidth);
 	UINFO(4,"varWidthed "<<nodep<<endl);
-	//if (debug()) nodep->dumpTree(cout,"  InitPos: ");
+	//if (debug()) nodep->dumpTree(cout,"  InitOut: ");
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser* vup) {
 	if (nodep->varp()->width()==0) {
 	    // Var hasn't been widthed, so make it so.
 	    nodep->varp()->iterate(*this);
 	}
-	if ((nodep->varp()->isInteger() || nodep->varp()->isGenVar())
+	//if (debug()>=9) { nodep->dumpTree(cout,"  VRin  "); nodep->varp()->dumpTree(cout,"   forvar "); }
+	// Note genvar's are also entered as integers
+	AstBasicDType* bdtypep = nodep->varp()->dtypep()->castBasicDType();
+	if (bdtypep && bdtypep->isSloppy()
 	    && nodep->backp()->castNodeAssign()) {  // On LHS
 	    // Consider Integers on LHS to sized (else would be unsized.)
-	    nodep->width(32,32);
+	    nodep->width(bdtypep->width(),bdtypep->width());
 	} else {
-	    nodep->width(nodep->varp()->width(), nodep->varp()->widthMin());
+	    nodep->widthFrom(nodep->varp());
 	}
+	//if (debug()>=9) nodep->dumpTree(cout,"  VRout ");
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
@@ -625,14 +633,14 @@ private:
 	}
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	widthCheckReduce(nodep,"If",nodep->condp(),1,1);	// it's like an if() condition.
-	//if (debug()) nodep->dumpTree(cout,"  IfPos: ");
+	//if (debug()) nodep->dumpTree(cout,"  IfOut: ");
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	//if (debug()) nodep->dumpTree(cout,"  AssignPre: ");
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	if(!nodep->lhsp()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
+	if (!nodep->lhsp()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
 	int awidth = nodep->lhsp()->width();
 	if (awidth==0) {
 	    awidth = nodep->rhsp()->width();	// Parameters can propagate by unsized assignment
@@ -643,7 +651,7 @@ private:
 	// than using "width" and have the optimizer truncate the result, we do
 	// it using the normal width reduction checks.
 	widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
-	//if (debug()) nodep->dumpTree(cout,"  AssignPos: ");
+	//if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
     }
     virtual void visit(AstNodePli* nodep, AstNUser*) {
 	// Excludes NodeDisplay, see below
@@ -797,7 +805,7 @@ private:
 		widthCheckPin(nodep, nodep->exprp(), pinwidth, inputPin);
 	    }
 	}
-	//if (debug()) nodep->dumpTree(cout,"-  PinPos: ");
+	//if (debug()) nodep->dumpTree(cout,"-  PinOut: ");
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	if (!m_paramsOnly) {
@@ -822,6 +830,7 @@ private:
     virtual void visit(AstFuncRef* nodep, AstNUser* vup) {
 	visit(nodep->castNodeFTaskRef(), vup);
 	nodep->widthSignedFrom(nodep->taskp());
+	//if (debug()) nodep->dumpTree(cout,"  FuncOut: ");
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser* vup) {
 	// Function hasn't been widthed, so make it so.

@@ -98,14 +98,12 @@ string AstVar::verilogKwd() const {
 	return "input";
     } else if (isOutput()) {
 	return "output";
-    } else if (isInteger()) {
-	return "integer";
     } else if (isTristate()) {
 	return "tri";
     } else if (varType()==AstVarType::WIRE) {
 	return "wire";
     } else {
-	return "reg";
+	return dtypep()->name();
     }
 }
 
@@ -327,6 +325,7 @@ void AstAttrOf::dump(ostream& str) {
 void AstBasicDType::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<keyword().ascii()<<"]";
+    if (implicit()) str<<" [IMPLICIT]";
 }
 void AstCast::dump(ostream& str) {
     this->AstNode::dump(str);

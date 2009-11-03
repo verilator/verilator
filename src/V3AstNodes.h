@@ -109,6 +109,7 @@ struct AstBasicDType : public AstNodeDType {
     // Builtin atomic/vectored data type
 private:
     AstBasicDTypeKwd	m_keyword;	// What keyword created it
+    bool		m_implicit;	// Implicitly declared
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstRange* rangep=NULL, AstSignedState signst=signedst_NOP)
 	: AstNodeDType(fl), m_keyword(kwd) {
@@ -116,14 +117,24 @@ public:
     }
 private:
     void init(AstSignedState signst, AstRange* rangep) {
-	if (rangep==NULL) {  // Set based on keyword properties
-	    if (m_keyword == AstBasicDTypeKwd::INTEGER) {
-		rangep = new AstRange(fileline(),31,0); signst = signedst_SIGNED;
-	    }
+	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
+	m_implicit = false;
+	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
+	    if (!rangep) m_implicit = true;
+	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
-	setNOp1p(rangep); setSignedState(signst);
+	if (signst == signedst_NOP && keyword().isSigned()) signst = signedst_SIGNED;
+	setSignedState(signst);
+	if (!rangep) {  // Set based on keyword properties
+	    // V3Width will pull from this width
+	    if (keyword().width() > 1) rangep = new AstRange(fileline(), keyword().width()-1, 0);
+	    width(keyword().width(), keyword().width());
+	} else {
+	    widthFrom(rangep);  // Maybe unknown if parameters underneath it
+	}
+	setNOp1p(rangep);
     }
-    AstBasicDTypeKwd keyword() const { return m_keyword; }
+    AstBasicDTypeKwd keyword() const { return m_keyword; }  // private - use isSomething accessors instead
 public:
     ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
     virtual void dump(ostream& str);
@@ -137,13 +148,15 @@ public:
 	if (signst!=signedst_NOP) isSigned(signst==signedst_SIGNED);
     }
     // METHODS
-    bool	isInteger() const { return (keyword() == AstBasicDTypeKwd::INTEGER); }
+    bool	isBitLogic() const { return keyword().isBitLogic(); }
+    bool	isSloppy() const { return keyword().isSloppy(); }
     int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
     int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
     int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
     int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
+    bool	implicit() const { return m_implicit; }
 };
 
 struct AstArraySel : public AstNodeSel {
@@ -384,12 +397,12 @@ public:
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }
-    bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICIT
+    bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICITWIRE
 					    || varType()==AstVarType::VAR); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
 					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
     bool	isToggleCoverable() const  { return ((isIO() || isSignal())
-						     && (isIO() || !isInteger())
+						     && (isIO() || isBitLogic())
 						     // Wrapper would otherwise duplicate wrapped module's coverage
 						     && !isSc() && !isPrimaryIO()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
@@ -398,7 +411,7 @@ public:
     bool	isParam() const { return (varType()==AstVarType::LPARAM || varType()==AstVarType::GPARAM); }
     bool	isGParam() const { return (varType()==AstVarType::GPARAM); }
     bool	isGenVar() const { return (varType()==AstVarType::GENVAR); }
-    bool	isInteger() const { return dtypep()->castBasicDType() && dtypep()->castBasicDType()->isInteger(); }
+    bool	isBitLogic() const { return dtypep()->castBasicDType() && dtypep()->castBasicDType()->isBitLogic(); }
     bool	isUsedClock() const { return m_usedClock; }
     bool	isUsedParam() const { return m_usedParam; }
     bool	isSc() const { return m_sc; }

@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.7**
+
+***  Support byte, shortint, int, longint in variables, parameters and
+     functions.
+
 * Verilator 3.720 2009/10/26
 
 **   Support little endian bit vectors ("reg [0:2] x;").

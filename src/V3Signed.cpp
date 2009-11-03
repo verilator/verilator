@@ -138,7 +138,6 @@ private:
 
     //=======
     // These have proper signedness set when they were created.
-    virtual void visit(AstFunc* nodep, AstNUser*) {		nodep->iterateChildren(*this); }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {	nodep->iterateChildren(*this); }
 
     // Inherit from others
@@ -150,20 +149,28 @@ private:
 	nodep->varp()->iterate(*this);
 	nodep->signedFrom(nodep->varp());
     }
-    virtual void visit(AstFuncRef* nodep, AstNUser* vup) {
-	visit(nodep->castNodeFTaskRef(), vup);  // Deal with as if was task
-	nodep->signedFrom(nodep->taskp());
-    }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	// The node got setup with the signed state of the node.
 	// However a later operation may have changed the node->signed w/o changing
 	// the number's sign.  So we don't: nodep->isSigned(nodep->num().isSigned());
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
-	// Fortunately, the input variables to the task keep whatever sign they are given
-	// And we already did the function's output signedness above in visit(AstFuncRef,
-	// so, it's just
+    virtual void visit(AstFunc* nodep, AstNUser*) {
+	// Avoid recursion; can't use user() as they're all full, and anyhow this is often called
+	if (nodep->didSigning()) return;
+	nodep->didSigning(true);
 	nodep->iterateChildren(*this);
+	nodep->signedFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
+    }
+    virtual void visit(AstTask* nodep, AstNUser*) {
+	// Avoid recursion; can't use user() as they're all full, and anyhow this is often called
+	if (nodep->didSigning()) return;
+	nodep->didSigning(true);
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->taskp()) nodep->taskp()->iterate(*this);
+	nodep->signedFrom(nodep->taskp());
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	if (!nodep->castGenIf()) {  // for m_paramsOnly
