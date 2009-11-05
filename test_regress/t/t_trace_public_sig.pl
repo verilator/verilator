@@ -21,7 +21,7 @@ if ($Self->{v3}) {
 	     );
 
     vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		   "t/$Self->{name}.out");
+		   "t/t_trace_public.out");
     # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
     file_grep ("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);
 }

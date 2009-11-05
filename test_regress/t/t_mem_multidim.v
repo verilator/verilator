@@ -40,6 +40,7 @@ module t (/*AUTOARG*/
    end
 
    reg [71:0] wread;
+   reg	      wreadb;
 
    always @ (posedge clk) begin
       //$write("cyc==%0d crc=%x i[%d][%d][%d] nar=%x wide=%x\n",cyc, crc, index0,index1,index2, narrow, wide);
@@ -58,12 +59,14 @@ module t (/*AUTOARG*/
 	 index1 <= crc[3:2];
 	 index2 <= crc[6:4];
 	 crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+
 	 // We never read past bounds, or get unspecific results
 	 // We also never read lowest indexes, as writing outside of range may corrupt them
 	 if (index0>=0+1 && index0<=2 && index1>=1+1 && index1<=3 && index2>=2+1 && index2<=5) begin
 	    narrow <= ({narrow[6:0], narrow[7]^narrow[0]}
 		       ^ {memn[index0][index1][index2]});
 	    wread   = memw[index0][index1][index2];
+	    wreadb  = memw[index0][index1][index2][2];
 	    wide   <= ({wide[70:0], wide[71]^wide[2]^wide[0]} ^ wread);
 	    //$write("Get memw[%d][%d][%d] -> %x\n",index0,index1,index2, wread);
 	 end

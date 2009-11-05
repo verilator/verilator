@@ -35,11 +35,6 @@
 //======================================================================
 // Special methods
 
-AstRange* AstNodeDType::rangep() {
-    if (castBasicDType()) return castBasicDType()->rangep();
-    else return NULL;
-}
-
 // We need these here, because the classes they point to aren't defined when we declare the class
 bool AstNodeVarRef::broken() const { return ((m_varScopep && !m_varScopep->brokeExists())
 					     || (m_varp && !m_varp->brokeExists())); }
@@ -50,6 +45,20 @@ void AstNodeVarRef::cloneRelink() {
 
 int AstNodeSel::bitConst() const {
     AstConst* constp=bitp()->castConst(); return (constp?constp->toSInt():0);
+}
+
+int AstBasicDType::widthAlignBytes() const {
+    if (width()<=8) return 1;
+    else if (width()<=16) return 2;
+    else if (isQuad()) return 8;
+    else return 4;
+}
+
+int AstBasicDType::widthTotalBytes() const {
+    if (width()<=8) return 1;
+    else if (width()<=16) return 2;
+    else if (isQuad()) return 8;
+    else return widthWords()*(VL_WORDSIZE/8);
 }
 
 bool AstVar::isSigPublic() const {
@@ -75,20 +84,6 @@ void AstVar::combineType(AstVarType type) {
 	m_output = true;
     if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE)
 	m_tristate = true;
-}
-
-int AstVar::widthAlignBytes() const {
-    if (width()<=8) return 1;
-    else if (width()<=16) return 2;
-    else if (isSc() ? isScQuad() : isQuad()) return 8;
-    else return 4;
-}
-
-int AstVar::widthTotalBytes() const {
-    if (width()<=8) return 1;
-    else if (width()<=16) return 2;
-    else if (isSc() ? isScQuad() : isQuad()) return 8;
-    else return widthWords()*(VL_WORDSIZE/8);
 }
 
 string AstVar::verilogKwd() const {
@@ -137,32 +132,61 @@ string AstVar::scType() const {
     }
 }
 
-AstRange* AstVar::arrayp(int dimension) const {
-    for (AstRange* arrayp=this->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
-	if ((dimension--)==0) return arrayp;
+AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
+    // dimension passed from AstArraySel::dimension
+    // Dimension 0 means the VAR itself, 1 is the closest SEL to the AstVar,
+    // which is the lowest in the dtype list.
+    //     ref order:   a[1][2][3][4]
+    //     Created as:  reg [4] a [1][2][3];
+    //        *or*      reg a [1][2][3][4];
+    //     		// The bit select is optional; used only if "leftover" []'s
+    //	   SEL:	        SEL4(SEL3(SEL2(SEL1(VARREF0 a))))
+    //	   DECL:	VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (DT RANGE3))))
+    //	      *or*	VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (ARRAYSEL3 (DT))))
+    //	   SEL1 needs to select from entire variable which is a pointer to ARRAYSEL0
+    int dim = 0;
+    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	    if ((dim++)==dimension) {
+		return dtypep;
+	    }
+	    dtypep = adtypep->dtypep();
+	    continue;
+	} else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
+	    // AstBasicDType - nothing below, return null
+	    if (adtypep->rangep()) {
+		if ((dim++) == dimension) {
+		    return adtypep;
+		}
+	    }
+	    return NULL;
+	}
+	// Node no ->next in loop; use continue where necessary
+	break;
     }
     return NULL;
 }
 
-int AstVar::arrayDimensions() const {
-    int  entries=0;
-    for (AstRange* arrayp=this->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
-	entries++;
-    }
-    return entries;
-}
-
 uint32_t AstVar::arrayElements() const {
     uint32_t entries=1;
-    for (AstRange* arrayp=this->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
-	entries *= arrayp->elementsConst();
+    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	    entries *= adtypep->elementsConst();
+	    dtypep = adtypep->dtypep();
+	} else {
+	    // AstBasicDType - nothing below, 1
+	    break;
+	}
     }
     return entries;
 }
 
 // Special operators
-int AstArraySel::dimension(AstNode* nodep) {	///< How many dimensions is this reference from the base variable?
-    // Only called after V3Param; so only ArraySel's need to be recursed
+int AstArraySel::dimension(AstNode* nodep) {
+    // How many dimensions is this reference from the base variable?
+    // nodep is typically the fromp() of a select; thus the first select
+    // is selecting from the entire variable type - effectively dimension 0.
+    // Dimension passed to AstVar::dtypeDimensionp; see comments there
     int dim = 0;
     while (nodep) {
 	if (nodep->castNodeSel()) { dim++; nodep=nodep->castNodeSel()->fromp(); continue; }

@@ -11,7 +11,7 @@ compile (
 	 fails=>$Self->{v3},
 	 nc=>0,
 	 expect=>
-'%Error: t/t_mem_multi_io_bad.v:\d+: Arrayed variables may not be inputs nor outputs
+'%Error: t/t_mem_multi_io_bad.v:\d+: Unsupported: Inputs and outputs must be simple data types; no arrays
 %Error: Exiting due to.*',
 	 );
 

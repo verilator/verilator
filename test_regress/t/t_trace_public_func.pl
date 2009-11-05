@@ -21,7 +21,7 @@ if ($Self->{v3}) {
 	     );
 
     vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		   "t/$Self->{name}.out");
+		   "t/t_trace_public.out");
 }
 
 ok(1);

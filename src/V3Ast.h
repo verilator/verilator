@@ -32,6 +32,9 @@
 // Things like:
 //   class V3AstNode;
 
+// Hint class so we can choose constructors
+class AstLogicPacked {};
+
 //######################################################################
 
 class AstType {
@@ -1184,7 +1187,9 @@ struct AstNodeDType : public AstNode {
     AstNodeDType(FileLine* fl) : AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeDType)
     // Accessors
-    AstRange* rangep();
+    virtual AstBasicDType* basicp() = 0;  // (Slow) recurse down to find basic data type
+    virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
+    virtual int widthTotalBytes() const = 0; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
 };
 
 struct AstNodeSel : public AstNodeBiop {

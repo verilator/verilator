@@ -105,6 +105,31 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
+//######################################################################
+//==== Data Types
+
+struct AstArrayDType : public AstNodeDType {
+    AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep)
+	: AstNodeDType(fl) {
+	setOp1p(dtypep);
+	setOp2p(rangep);
+	widthSignedFrom(dtypep);
+    }
+    ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstRange*	arrayp() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
+    void	arrayp(AstRange* nodep) { setOp2p(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return elementsConst() * dtypep()->widthTotalBytes(); }
+    int		msb() const { return arrayp()->msbConst(); }
+    int		lsb() const { return arrayp()->lsbConst(); }
+    int		elementsConst() const { return arrayp()->elementsConst(); }
+    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
+};
+
 struct AstBasicDType : public AstNodeDType {
     // Builtin atomic/vectored data type
 private:
@@ -112,11 +137,17 @@ private:
     bool		m_implicit;	// Implicitly declared
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstRange* rangep=NULL, AstSignedState signst=signedst_NOP)
-	: AstNodeDType(fl), m_keyword(kwd) {
-	init(signst, rangep);
+	: AstNodeDType(fl) {
+	init(kwd, signst, rangep);
+    }
+    AstBasicDType(FileLine* fl, AstLogicPacked, int wantwidth)
+	: AstNodeDType(fl) {
+	init(AstBasicDTypeKwd::LOGIC, signedst_NOP,
+	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
     }
 private:
-    void init(AstSignedState signst, AstRange* rangep) {
+    void init(AstBasicDTypeKwd kwd, AstSignedState signst, AstRange* rangep) {
+	m_keyword = kwd;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
 	m_implicit = false;
 	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
@@ -148,6 +179,9 @@ public:
 	if (signst!=signedst_NOP) isSigned(signst==signedst_SIGNED);
     }
     // METHODS
+    virtual AstBasicDType* basicp() { return this; }  // (Slow) recurse down to find basic data type
+    virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
+    virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
@@ -158,6 +192,8 @@ public:
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
 };
+
+//######################################################################
 
 struct AstArraySel : public AstNodeSel {
     // Parents: math|stmt
@@ -319,21 +355,19 @@ private:
 	m_trace=false;
     }
 public:
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtypep, AstRange* arrayp=NULL)
+    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtypep)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
-	combineType(type); setOp1p(dtypep); addNOp2p(arrayp);
+	combineType(type); setOp1p(dtypep);
 	width(msb()-lsb()+1,0);
     }
-    class LogicPacked {};
-    AstVar(FileLine* fl, AstVarType type, const string& name, LogicPacked, int wantwidth)
+    AstVar(FileLine* fl, AstVarType type, const string& name, AstLogicPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	setOp1p(new AstBasicDType(fl, AstBasicDTypeKwd::LOGIC,
-				  ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL)));
+	setOp1p(new AstBasicDType(fl, AstLogicPacked(), wantwidth));
 	width(wantwidth,0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
@@ -343,9 +377,6 @@ public:
 	combineType(type);
 	if (examplep->dtypep()) {
 	    setOp1p(examplep->dtypep()->cloneTree(true));
-	}
-	if (examplep->arraysp()) {
-	    setOp2p(examplep->arraysp()->cloneTree(true));
 	}
 	width(examplep->width(), examplep->widthMin());
     }
@@ -361,9 +392,7 @@ public:
     string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
-    AstRange*	arraysp() 	const { return op2p()->castRange(); }	// op2 = Array(s) of variable
-    void	addArraysp(AstNode* nodep) { addNOp2p(nodep); }
-    AstRange*	arrayp(int dim)	const;					// op2 = Range for specific dimension #
+    AstNodeDType* dtypeDimensionp(int depth) const;
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
@@ -387,6 +416,7 @@ public:
     void	funcReturn(bool flag) { m_funcReturn = flag; }
     void	trace(bool flag) { m_trace=flag; }
     // METHODS
+    AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual void name(const string& name) { m_name = name; }
     bool	isInput() const { return m_input; }
     bool	isOutput() const { return m_output; }
@@ -411,7 +441,7 @@ public:
     bool	isParam() const { return (varType()==AstVarType::LPARAM || varType()==AstVarType::GPARAM); }
     bool	isGParam() const { return (varType()==AstVarType::GPARAM); }
     bool	isGenVar() const { return (varType()==AstVarType::GENVAR); }
-    bool	isBitLogic() const { return dtypep()->castBasicDType() && dtypep()->castBasicDType()->isBitLogic(); }
+    bool	isBitLogic() const { AstBasicDType* bdtypep = basicp(); return bdtypep && bdtypep->isBitLogic(); }
     bool	isUsedClock() const { return m_usedClock; }
     bool	isUsedParam() const { return m_usedParam; }
     bool	isSc() const { return m_sc; }
@@ -429,15 +459,11 @@ public:
     bool	attrFileDescr() const { return m_fileDescr; }
     bool	attrScClocked() const { return m_scClocked; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
-    int		widthAlignBytes() const;	// Structure alignment 1,2,4 or 8 bytes (arrays affect this)
-    int		widthTotalBytes() const;	// Width in bytes rounding up 1,2,4,8,12,...
-    int		msb() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msb(); }
-    int		lsb() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->lsb(); }
-    int		msbEndianed() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msbEndianed(); }
-    int		lsbEndianed() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->lsbEndianed(); }
-    int		msbMaxSelect() const { if (!dtypep()) return 0; return dtypep()->castBasicDType()->msbMaxSelect(); }
-    bool	littleEndian() const { return (dtypep() && dtypep()->castBasicDType()->littleEndian()); }
-    int		arrayDimensions() const;
+    int		msb() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msb() : 0; }
+    int		lsb() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->lsb() : 0; }
+    int		msbEndianed() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msbEndianed() : 0; }
+    int		lsbEndianed() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->lsbEndianed() : 0; }
+    int		msbMaxSelect() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msbMaxSelect() : 0; }
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
@@ -1695,8 +1721,13 @@ public:
 	m_code = 0;
 	m_codeInc = varp->arrayElements() * varp->widthWords();
 	m_lsb = varp->lsbEndianed();  m_msb = varp->msbEndianed();
-	m_arrayLsb = varp->arrayp(0) ? varp->arrayp(0)->lsbConst() : 0;
-	m_arrayMsb = varp->arrayp(0) ? varp->arrayp(0)->msbConst() : 0;
+	if (AstArrayDType* adtypep = varp->dtypep()->castArrayDType()) {
+	    m_arrayLsb = adtypep->arrayp()->lsbConst();
+	    m_arrayMsb = adtypep->arrayp()->msbConst();
+	} else {
+	    m_arrayLsb = 0;
+	    m_arrayMsb = 0;
+	}
     }
     virtual int instrCount()	const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl, TRACEDECL)

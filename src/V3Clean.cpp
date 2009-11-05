@@ -76,7 +76,7 @@ private:
     }
     void computeCppWidth (AstNode* nodep) {
 	if (!nodep->user2()) {
-	    if (nodep->castVar()) {  // Don't want to change variable widths!
+	    if (nodep->castVar() || nodep->castNodeDType()) {  // Don't want to change variable widths!
 		setCppWidth(nodep, nodep->width(), nodep->width());  // set widthMin anyways so can see it later
 	    } else {
 		setCppWidth(nodep, cppWidth(nodep), nodep->widthMin());

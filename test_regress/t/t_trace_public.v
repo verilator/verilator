@@ -12,6 +12,17 @@ module t (
    little little (.clk(CLK));
    glbl glbl ();
 
+   // A vector
+   logic [2:1] vec [4:3];
+
+   integer     val = 0;
+   always @ (posedge CLK) begin
+     if (RESET) val <= 0;
+     else val <= val + 1;
+      vec[3] <= val[1:0];
+      vec[4] <= val[3:2];
+   end
+
    initial RESET = 1'b1;
    always @ (posedge CLK)
      RESET <= glbl.GSR;

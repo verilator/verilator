@@ -274,10 +274,13 @@ public:
 	uint32_t array_lsb = 0;
 	{
 	    AstVarRef* varrefp = nodep->memp()->castVarRef();
-	    if (!varrefp || !varrefp->varp()->arrayp(0)) { nodep->v3error("Readmem loading non-arrayed variable"); }
-	    else {
+	    if (!varrefp) { nodep->v3error("Readmem loading non-variable"); }
+	    else if (AstArrayDType* adtypep = varrefp->varp()->dtypep()->castArrayDType()) {
 		puts(cvtToStr(varrefp->varp()->arrayElements()));
-		array_lsb = varrefp->varp()->arrayp(0)->lsbConst();
+		array_lsb = adtypep->lsb();
+	    }
+	    else {
+		nodep->v3error("Readmem loading non-arrayed variable");
 	    }
 	}
 	putbs(", ");
@@ -770,7 +773,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    puts(nodep->name());
 	    puts(";\n");
 	} else { // C++ signals
-	    ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes());
+	    ofp()->putAlign(nodep->isStatic(), nodep->dtypep()->widthAlignBytes(),
+			    nodep->dtypep()->widthTotalBytes());
 	    if (nodep->isInout()) puts("VL_INOUT");
 	    else if (nodep->isInput()) puts("VL_IN");
 	    else if (nodep->isOutput()) puts("VL_OUT");
@@ -793,7 +797,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     } else {
 	// Arrays need a small alignment, but may need different padding after.
 	// For example three VL_SIG8's needs alignment 1 but size 3.
-	ofp()->putAlign(nodep->isStatic(), nodep->widthAlignBytes(), nodep->arrayElements()*nodep->widthAlignBytes());
+	ofp()->putAlign(nodep->isStatic(), nodep->dtypep()->widthAlignBytes(),
+			nodep->dtypep()->widthTotalBytes());
 	if (nodep->isStatic() && prefixIfImp=="") puts("static ");
 	if (nodep->isStatic()) puts("VL_ST_"); else puts("VL_");
 	if (nodep->widthMin() <= 8) {
@@ -809,7 +814,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	}
 	if (prefixIfImp!="") { puts(prefixIfImp); puts("::"); }
 	puts(nodep->name());
-	for (AstRange* arrayp=nodep->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
+	// This isn't very robust and may need cleanup for other data types
+	for (AstArrayDType* arrayp=nodep->dtypep()->castArrayDType(); arrayp; arrayp = arrayp->dtypep()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
 	puts(","+cvtToStr(nodep->msb())+","+cvtToStr(nodep->lsb()));
@@ -1154,18 +1160,22 @@ void EmitCImp::emitVarResets(AstModule* modp) {
 	    }
 	    else if (AstInitArray* initarp = varp->initp()->castInitArray()) {
 		AstConst* constsp = initarp->initsp()->castConst();
-		if (!varp->arraysp()) varp->v3fatalSrc("InitArray under non-arrayed var");
-		for (int i=0; i<varp->arraysp()->elementsConst(); i++) {
-		    if (!constsp) initarp->v3fatalSrc("Not enough values in array initalizement");
-		    emitSetVarConstant(varp->name()+"["+cvtToStr(i)+"]", constsp);
-		    constsp = constsp->nextp()->castConst();
+		if (AstArrayDType* arrayp = varp->dtypep()->castArrayDType()) {
+		    for (int i=0; i<arrayp->elementsConst(); i++) {
+			if (!constsp) initarp->v3fatalSrc("Not enough values in array initalizement");
+			emitSetVarConstant(varp->name()+"["+cvtToStr(i)+"]", constsp);
+			constsp = constsp->nextp()->castConst();
+		    }
+		} else {
+		    varp->v3fatalSrc("InitArray under non-arrayed var");
 		}
 	    }
 	    else {
 		int vects = 0;
-		for (AstRange* arrayp=varp->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
+		// This isn't very robust and may need cleanup for other data types
+		for (AstArrayDType* arrayp=varp->dtypep()->castArrayDType(); arrayp; arrayp = arrayp->dtypep()->castArrayDType()) {
 		    int vecnum = vects++;
-		    if (arrayp->msbConst() < arrayp->lsbConst()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
+		    if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 		    string ivar = string("__Vi")+cvtToStr(vecnum);
 		    // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
 		    puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
@@ -1413,15 +1423,16 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 		    }
 		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;
 		    if (doit) {
-			int sigbytes = varp->widthAlignBytes();
-			if (varp->isUsedClock() && varp->widthMin()==1) sigbytes = 0;
-			else if (varp->arraysp()) sigbytes=7;
-			else if (varp->isScBv()) sigbytes=6;
-			else if (sigbytes==8) sigbytes=5;
-			else if (sigbytes==4) sigbytes=4;
-			else if (sigbytes==2) sigbytes=2;
-			else if (sigbytes==1) sigbytes=1;
-			if (size==sigbytes) {
+			int sigbytes = varp->dtypep()->widthAlignBytes();
+			int sortbytes = 7;
+			if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
+			else if (varp->dtypep()->castArrayDType()) sortbytes=7;
+			else if (varp->isScBv()) sortbytes=6;
+			else if (sigbytes==8) sortbytes=5;
+			else if (sigbytes==4) sortbytes=4;
+			else if (sigbytes==2) sortbytes=2;
+			else if (sigbytes==1) sortbytes=1;
+			if (size==sortbytes) {
 			    emitVarDecl(varp, prefixIfImp);
 			}
 		    }
@@ -1889,7 +1900,8 @@ class EmitCTrace : EmitCStmts {
 	    puts("(");
 	    if (emitTraceIsScBv(nodep)) puts("VL_SC_BV_DATAP(");
 	    varrefp->iterate(*this);	// Put var name out
-	    if (varp->arraysp()) {
+	    // Tracing only supports 1D arrays
+	    if (varp->dtypep()->castArrayDType()) {
 		if (arrayindex==-2) puts("[i]");
 		else if (arrayindex==-1) puts("[0]");
 		else puts("["+cvtToStr(arrayindex)+"]");

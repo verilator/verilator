@@ -85,7 +85,7 @@ private:
 	AstVar* varp = vscp->varp();
 	if (varp->width()!=1) varp->v3error("Unsupported: Clock edge on non-single bit signal: "<<varp->prettyName());
 	string newvarname = ((string)"__Vclklast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName());
-	AstVar* newvarp = new AstVar (vscp->fileline(), AstVarType::MODULETEMP, newvarname, AstVar::LogicPacked(), 1);
+	AstVar* newvarp = new AstVar (vscp->fileline(), AstVarType::MODULETEMP, newvarname, AstLogicPacked(), 1);
 	newvarp->width(1,1);
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
@@ -104,7 +104,7 @@ private:
     AstVarScope* getCreateLocalVar(FileLine* fl, const string& name, AstVar* examplep, int width) {
 	AstVar* newvarp;
 	if (width) {
-	    newvarp = new AstVar (fl, AstVarType::BLOCKTEMP, name, AstVar::LogicPacked(), width);
+	    newvarp = new AstVar (fl, AstVarType::BLOCKTEMP, name, AstLogicPacked(), width);
 	} else {
 	    newvarp = new AstVar (fl, AstVarType::BLOCKTEMP, name, examplep); // No range; 1 bit.
 	}

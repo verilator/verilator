@@ -62,6 +62,7 @@ sub diff_dir {
 	(my $base = $fn) =~ s!.*/!!;
 	$files{$base}{b} = $fn;
     }
+    my $any;
     foreach my $base (sort (keys %files)) {
 	my $a = $files{$base}{a};
 	my $b = $files{$base}{b};
@@ -70,6 +71,7 @@ sub diff_dir {
 	print "= $a <-> $b\n";
 	diff_file($a,$b);
     }
+    $any or warn "%Warning: No .tree files found\n";
 }
 
 sub diff_file {

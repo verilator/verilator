@@ -163,7 +163,7 @@ public:
 	UINFO(9,"   SimVARREF "<<nodep<<endl);
 	AstVarScope* vscp = nodep->varScopep();
 	if (nodep->lvalue()) {
-	    m_outWidth += nodep->varp()->widthTotalBytes();
+	    m_outWidth += nodep->varp()->dtypep()->widthTotalBytes();
 	    m_outVarps.push_back(vscp);
 	} else {
 	    // We'll make the table with a separate natural alignment for each
@@ -182,16 +182,19 @@ private:
 	// Index into our table
 	AstVar* indexVarp = new AstVar (nodep->fileline(), AstVarType::BLOCKTEMP,
 					"__Vtableidx" + cvtToStr(m_modTables),
-					AstVar::LogicPacked(), m_inWidth);
+					AstLogicPacked(), m_inWidth);
 	m_modp->addStmtp(indexVarp);
 	AstVarScope* indexVscp = new AstVarScope (indexVarp->fileline(), m_scopep, indexVarp);
 	m_scopep->addVarp(indexVscp);
 
 	// Change it variable
-	AstVar* chgVarp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
-				      "__Vtablechg" + cvtToStr(m_modTables),
-				      AstVar::LogicPacked(), m_outVarps.size());
-	chgVarp->addArraysp(new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
+	FileLine* fl = nodep->fileline();
+	AstVar* chgVarp
+	    = new AstVar (fl, AstVarType::MODULETEMP,
+			  "__Vtablechg" + cvtToStr(m_modTables),
+			  new AstArrayDType (fl,
+					     new AstBasicDType(fl, AstLogicPacked(), m_outVarps.size()),
+					     new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
 	chgVarp->isConst(true);
 	chgVarp->initp(new AstInitArray (nodep->fileline(), NULL));
 	m_modp->addStmtp(chgVarp);
@@ -229,11 +232,13 @@ private:
 	for (deque<AstVarScope*>::iterator it = m_outVarps.begin(); it!=m_outVarps.end(); ++it) {
 	    AstVarScope* outvscp = *it;
 	    AstVar* outvarp = outvscp->varp();
+	    FileLine* fl = nodep->fileline();
 	    AstVar* tablevarp
-		= new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
+		= new AstVar (fl, AstVarType::MODULETEMP,
 			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
-			      AstVar::LogicPacked(), outvarp->widthMin());
-	    tablevarp->addArraysp(new AstRange (nodep->fileline(), VL_MASK_I(m_inWidth), 0));
+			      new AstArrayDType (fl,
+						 new AstBasicDType(fl, AstLogicPacked(), outvarp->widthMin()),
+						 new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
 	    tablevarp->initp(new AstInitArray (nodep->fileline(), NULL));

@@ -423,11 +423,6 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->isSigned()) puts("signed ");
 	nodep->dtypep()->iterateChildren(*this);
 	puts(nodep->name());
-	for (AstRange* arrayp=nodep->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
-	    puts(" ["+cvtToStr(arrayp->msbConst())
-		 +":"+cvtToStr(arrayp->lsbConst())
-		 +"]");
-	}
 	puts(";\n");
     }
     virtual void visit(AstNodeText*, AstNUser*) {}

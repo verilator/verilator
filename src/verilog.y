@@ -2613,9 +2613,21 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     if (type == AstVarType::GENVAR) {
 	if (arrayp) fileline->v3error("Genvars may not be arrayed: "<<name);
     }
+
+    // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
+    AstNodeDType* arrayDTypep = dtypep;
+    if (arrayp) {
+	while (arrayp->nextp()) arrayp = arrayp->nextp()->castRange();
+	while (arrayp) {
+	    AstRange* prevp = arrayp->backp()->castRange();
+	    if (prevp) arrayp->unlinkFrBack();
+	    arrayDTypep = new AstArrayDType(arrayp->fileline(), arrayDTypep, arrayp);
+	    arrayp = prevp;
+	}
+    }
+
     AstVar* nodep = new AstVar(fileline, type, name,
-			       dtypep,
-			       arrayp);
+			       arrayDTypep);
     nodep->addAttrsp(attrsp);
     if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varIO);

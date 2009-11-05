@@ -74,22 +74,29 @@ private:
 	}
     }
 
-    void selCheckDimension(AstNode* nodep, AstNode* basefromp, int dimension, bool rangedSelect) {
+    AstNodeDType* dtypeForExtractp(AstNode* nodep, AstNode* basefromp, int dimension, bool rangedSelect) {
 	// Perform error checks on the node
 	AstVar* varp = varFromBasefrom(basefromp);
 	//UINFO(9,"SCD\n"); if (debug()>=9) nodep->backp()->dumpTree(cout,"-selcheck: ");
-	int dimensions = varp->arrayDimensions();
-	if (dimension < dimensions) {
+	AstNodeDType* ddtypep = varp->dtypeDimensionp(dimension);
+	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    if (rangedSelect) {
 		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<varp->prettyName());
+		return NULL;
 	    }
-	} else if (dimension > dimensions) {  // Too many indexes provided
-	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension: "<<varp->prettyName());
-	} else if (dimension == dimensions) {  // Right number, but...
-	    if (!varp->dtypep()->rangep()) {
-		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<varp->prettyName());
-	    }
+	    return adtypep;
 	}
+	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+	    if (!adtypep->rangep()) {
+		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<varp->prettyName());
+		return NULL;
+	    }
+	    return adtypep;
+	}
+	else {
+	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension: "<<varp->prettyName());
+	}
+	return NULL;
     }
 
     AstNode* newSubNeg(AstNode* lhsp, vlsint32_t rhs) {
@@ -133,14 +140,14 @@ private:
 	// Don't report WIDTH warnings etc here, as may be inside a generate branch that will be deleted
 	AstVar* varp = varFromBasefrom(basefromp);
 	// SUB #'s Not needed when LSB==0 and MSB>=0 (ie [0:-13] must still get added!)
-	if (!varp->dtypep()->rangep()) {
+	if (!varp->basicp()->rangep()) {
 	    // vector without range is ok, for example a INTEGER x; y = x[21:0];
 	    return underp;
 	} else {
-	    if (!varp->dtypep()->rangep()->msbp()->castConst()
-		|| !varp->dtypep()->rangep()->lsbp()->castConst())
+	    if (!varp->basicp()->rangep()->msbp()->castConst()
+		|| !varp->basicp()->rangep()->lsbp()->castConst())
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
-	    if (varp->dtypep()->rangep()->littleEndian()) {
+	    if (varp->basicp()->rangep()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
 		AstNode* newp = newSubNeg(varp->msb(), underp);
 		return newp;
@@ -169,8 +176,7 @@ private:
 	    // So, see if we're sitting under a variable's arrayp.
 	    AstNode* huntbackp = nodep;
 	    while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
-	    if (huntbackp->backp()->castVar()
-		&& huntbackp->backp()->castVar()->arraysp()==huntbackp) {
+	    if (huntbackp->backp()->castArrayDType()) {
 	    } else {
 		// Little endian bits are legal, just remember to swap
 		// Warning is in V3Width to avoid false warnings when in "off" generate if's
@@ -189,26 +195,23 @@ private:
 	// lhsp/rhsp do not need to be constant
 	AstNode* basefromp = AstArraySel::baseFromp(nodep->attrp());
 	int dimension      = AstArraySel::dimension(nodep->fromp());  // Not attrp as need hierarchy
-	selCheckDimension(nodep, basefromp, dimension, false);
+	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, false);
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* bitp = nodep->rhsp()->unlinkFrBack();
-	AstVar* varp = varFromBasefrom(basefromp);
 	if (debug()>=9) nodep->dumpTree(cout,"-vsbmd: ");
-	if (varp->arrayp(dimension)) {
+	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
-	    AstRange* arrayp = varp->arrayp(dimension); // NULL checked above
 	    AstNode* subp = bitp;
-	    if (!arrayp->lsbp()->isZero() || arrayp->msbConst()<0) {
-		subp = newSubNeg (subp, arrayp->lsbConst());
+	    if (adtypep->lsb()!=0 || adtypep->msb()<0) {
+		subp = newSubNeg (subp, adtypep->lsb());
 	    }
-	    AstArraySel* newp = new AstArraySel
-		(nodep->fileline(),
-		 fromp,
-		 subp);
+	    AstArraySel* newp = new AstArraySel	(nodep->fileline(),
+						 fromp, subp);
 	    UINFO(6,"   newd"<<dimension<<" "<<newp<<endl);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
-	else {
+	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+	    if (adtypep) {} // unused
 	    // SELBIT(range, index) -> SEL(array, index, 1)
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
@@ -217,6 +220,11 @@ private:
 				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
 	    UINFO(6,"   new "<<newp<<endl); if (debug()>=9) newp->dumpTree(cout,"-vsbnw: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	}
+	else {  // NULL=bad extract, or unknown node type
+	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension");
+	    // How to recover?  We'll strip a dimension.
+	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
     }
 
@@ -238,25 +246,33 @@ private:
 	AstVar* varp = varFromBasefrom(basefromp);
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
-	selCheckDimension(nodep, basefromp, dimension, msb!=lsb);
-	if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
-	    // Below code assumes big bit endian; just works out if we swap
-	    int x = msb; msb = lsb; lsb = x;
+	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, msb!=lsb);
+	if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+	    if (adtypep) {} // Unused
+	    if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+		// Below code assumes big bit endian; just works out if we swap
+		int x = msb; msb = lsb; lsb = x;
+	    }
+	    if (lsb > msb) {
+		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
+		int x = msb; msb = lsb; lsb = x;
+	    }
+	    AstNode* widthp = new AstConst (msbp->fileline(), AstConst::Unsized32(), // Unsized so width from user
+					    msb +1-lsb);
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubLsbOf(lsbp, basefromp),
+				       widthp);
+	    UINFO(6,"   new "<<newp<<endl);
+	    //if (debug()>=9) newp->dumpTree(cout,"--SLEXnew: ");
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(msbp); msbp=NULL;
 	}
-	if (lsb > msb) {
-	    nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
-	    int x = msb; msb = lsb; lsb = x;
+	else {  // NULL=bad extract, or unknown node type
+	    nodep->v3error("Illegal range select; variable already selected, or bad dimension");
+	    // How to recover?  We'll strip a dimension.
+	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
-	AstNode* widthp = new AstConst (msbp->fileline(), AstConst::Unsized32(), // Unsized so width from user
-					msb +1-lsb);
-	AstSel* newp = new AstSel (nodep->fileline(),
-				   fromp,
-				   newSubLsbOf(lsbp, basefromp),
-				   widthp);
-	UINFO(6,"   new "<<newp<<endl);
-	//if (debug()>=9) newp->dumpTree(cout,"--SLEXnew: ");
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	pushDeletep(msbp); msbp=NULL;
     }
 
     void replaceSelPlusMinus(AstNodePreSel* nodep) {
@@ -274,41 +290,49 @@ private:
 	AstVar* varp = varFromBasefrom(basefromp);
 	if (width > (1<<28)) nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "<<widthp->prettyName());
 	if (width<0) nodep->v3error("Width of :+ or :- is < 0: "<<widthp->prettyName());
-	selCheckDimension(nodep, basefromp, dimension, width!=1);
-	AstSel* newp = NULL;
-	if (nodep->castSelPlus()) {
-	    if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
-		// SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
-		newp = new AstSel (nodep->fileline(),
-				   fromp,
-				   newSubNeg((varp->msb()-width+1), rhsp),
-				   widthp);
+	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, width!=1);
+	if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+	    if (adtypep) {} // Unused
+	    AstSel* newp = NULL;
+	    if (nodep->castSelPlus()) {
+		if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+		    // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
+		    newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubNeg((varp->msb()-width+1), rhsp),
+				       widthp);
+		} else {
+		    // SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
+		    newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubLsbOf(rhsp, basefromp),
+				       widthp);
+		}
+	    } else if (nodep->castSelMinus()) {
+		if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+		    // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
+		    newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubNeg(varp->msb(), rhsp),
+				       widthp);
+		} else {
+		    // SELMINUS(from,msb,width) -> SEL(from, msb-(width-1)-lsb#)
+		    newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubNeg(rhsp, varp->lsb()+(width-1)),
+				       widthp);
+		}
 	    } else {
-		// SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
-		newp = new AstSel (nodep->fileline(),
-				   fromp,
-				   newSubLsbOf(rhsp, basefromp),
-				   widthp);
+		nodep->v3fatalSrc("Bad Case");
 	    }
-	} else if (nodep->castSelMinus()) {
-	    if (varp->dtypep()->rangep() && varp->dtypep()->rangep()->littleEndian()) {
-		// SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
-		newp = new AstSel (nodep->fileline(),
-				   fromp,
-				   newSubNeg(varp->msb(), rhsp),
-				   widthp);
-	    } else {
-		// SELMINUS(from,msb,width) -> SEL(from, msb-(width-1)-lsb#)
-		newp = new AstSel (nodep->fileline(),
-				   fromp,
-				   newSubNeg(rhsp, varp->lsb()+(width-1)),
-				   widthp);
-	    }
-	} else {
-	    nodep->v3fatalSrc("Bad Case");
+	    UINFO(6,"   new "<<newp<<endl);
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
-	UINFO(6,"   new "<<newp<<endl);
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	else {  // NULL=bad extract, or unknown node type
+	    nodep->v3error("Illegal +: or -: select; variable already selected, or bad dimension");
+	    // How to recover?  We'll strip a dimension.
+	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
+	}
     }
     virtual void visit(AstSelPlus* nodep, AstNUser*) {
 	replaceSelPlusMinus(nodep);

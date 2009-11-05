@@ -84,8 +84,8 @@ private:
 
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->arraysp() && nodep->isIO()) {
-	    nodep->v3error("Arrayed variables may not be inputs nor outputs");
+	if (nodep->isIO() && !nodep->dtypep()->castBasicDType()) {
+	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types; no arrays");
 	}
 	if (m_ftaskp) nodep->funcLocal(true);
 	if (nodep->isSigModPublic()) {
@@ -124,7 +124,7 @@ private:
 		// Make a new temp wire
 		string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
 		AstVar* newvarp = new AstVar (sensp->fileline(), AstVarType::MODULETEMP, newvarname,
-					      AstVar::LogicPacked(), 1);
+					      AstLogicPacked(), 1);
 		// We can't just add under the module, because we may be inside a generate, begin, etc.
 		// We know a SenItem should be under a SenTree/Always etc, we we'll just hunt upwards
 		AstNode* addwherep = nodep;  // Add to this element's next

@@ -207,7 +207,7 @@ private:
         AstVar* enp = new AstVar (outrefp->varp()->fileline(),
 				  AstVarType::MODULETEMP,
 				  outrefp->name() + "__en" + suffix + cvtToStr(m_unique++),
-				  AstVar::LogicPacked(), width);
+				  AstLogicPacked(), width);
 	enp->varType2Out();
 
 	if (enp->width() != enrhsp->width()) {
@@ -381,7 +381,7 @@ private:
 		AstVar* newlhsp = new AstVar(lhsp->fileline(),
 					     AstVarType::MODULETEMP,
 					     lhsp->name()+"__lhs"+cvtToStr(m_unique++),
-					     AstVar::LogicPacked(), w);
+					     AstLogicPacked(), w);
 		nodep->addStmtp(newlhsp);
 
 		// now append this driver to the driver logic.
@@ -396,7 +396,7 @@ private:
 		    bitselp = new AstVar(lhsp->fileline(),
 					 AstVarType::MODULETEMP,
 					 lhsp->name()+"__sel"+cvtToStr(m_unique-1),
-					 AstVar::LogicPacked(), ws);
+					 AstLogicPacked(), ws);
 		    //
 		    nodep->addStmtp(bitselp);
 		    nodep->addStmtp(new AstAssignW(lhsp->fileline(),

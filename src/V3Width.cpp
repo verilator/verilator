@@ -265,6 +265,7 @@ private:
 
     virtual void visit(AstSel* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
+	    if (debug()>=9) nodep->dumpTree(cout,"-selWidth: ");
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -299,7 +300,7 @@ private:
 	    int frommsb = nodep->fromp()->width() - 1;
 	    int fromlsb = 0;
 	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
-	    if (varrp && varrp->varp()->dtypep()->rangep()) {	// Selecting a bit from a multibit register
+	    if (varrp && varrp->varp()->basicp()->rangep()) {	// Selecting a bit from a multibit register
 		frommsb = varrp->varp()->msbMaxSelect();  // Corrected for negative lsb
 		fromlsb = varrp->varp()->lsb();
 	    }
@@ -314,6 +315,9 @@ private:
 			      <<(nodep->lsbp()->width()!=nodep->lsbp()->widthMin()
 				 ?" or "+cvtToStr(nodep->lsbp()->widthMin()):"")
 			      <<" bits.");
+		UINFO(1,"    Related node: "<<nodep<<endl);
+		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
 	    }
 	    if (nodep->lsbp()->castConst() && nodep->msbConst() > frommsb) {
 		// See also warning in V3Const
@@ -322,6 +326,9 @@ private:
 		nodep->v3error("Selection index out of range: "
  			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
 			       <<" outside "<<frommsb<<":"<<fromlsb);
+		UINFO(1,"    Related node: "<<nodep<<endl);
+		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
 	    }
 	    // iterate FINAL is two blocks above
 	    widthCheck(nodep,"Extract Range",nodep->lsbp(),selwidth,selwidth,true);
@@ -339,28 +346,34 @@ private:
 	    //
 	    int frommsb;
 	    int fromlsb;
-	    if (!varrp->varp()->arrayp(dimension)) {
-		nodep->v3fatalSrc("Array reference exceeds dimension of array");
-	    }
-	    if (1) {	// ARRAY slice extraction
+	    AstNodeDType* ddtypep = varrp->varp()->dtypeDimensionp(dimension);
+	    if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 		int outwidth = varrp->width();		// Width of variable
-		frommsb = varrp->varp()->arrayp(dimension)->msbConst();
-		fromlsb = varrp->varp()->arrayp(dimension)->lsbConst();
+		frommsb = adtypep->msb();
+		fromlsb = adtypep->lsb();
 		if (fromlsb>frommsb) {int t=frommsb; frommsb=fromlsb; fromlsb=t; }
 		// However, if the lsb<0 we may go negative, so need more bits!
 		if (fromlsb < 0) frommsb += -fromlsb;
 		nodep->width(outwidth,outwidth);		// Width out = width of array
 	    }
+	    else {
+		nodep->v3fatalSrc("Array reference exceeds dimension of array");
+		frommsb = fromlsb = 0;
+	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,FINAL).p());
 	    if (widthBad(nodep->bitp(),selwidth,selwidth)
-		&& nodep->bitp()->width()!=32)
+		&& nodep->bitp()->width()!=32) {
 		nodep->v3warn(WIDTH,"Bit extraction of array["<<frommsb<<":"<<fromlsb<<"] requires "
 			      <<selwidth<<" bit index, not "
 			      <<nodep->bitp()->width()
 			      <<(nodep->bitp()->width()!=nodep->bitp()->widthMin()
 				 ?" or "+cvtToStr(nodep->bitp()->widthMin()):"")
 			      <<" bits.");
+		UINFO(1,"    Related node: "<<nodep<<endl);
+		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		if (varrp) UINFO(1,"    Related depth: "<<dimension<<" dtype: "<<ddtypep<<endl);
+	    }
 	    widthCheck(nodep,"Extract Range",nodep->bitp(),selwidth,selwidth,true);
 	}
     }
@@ -473,6 +486,13 @@ private:
     virtual void visit(AstScopeName* nodep, AstNUser* vup) {
 	// Only used in Displays which don't care....
     }
+    virtual void visit(AstArrayDType* nodep, AstNUser* vup) {
+	// Lower datatype determines the width
+	nodep->dtypep()->iterateAndNext(*this,vup);
+	// But also cleanup array size
+	nodep->arrayp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->widthFrom(nodep->dtypep());
+    }
     virtual void visit(AstBasicDType* nodep, AstNUser* vup) {
 	if (nodep->rangep()) {
 	    nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -487,8 +507,6 @@ private:
 	// We can't skip this step when width()!=0, as creating a AstVar
 	// with non-constant range gets size 1, not size 0.
 	int width=1; int mwidth=1;
-	nodep->arraysp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-
 	// Parameters if implicit untyped inherit from what they are assigned to
 	AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
 	if (nodep->isParam() && bdtypep && bdtypep->implicit()) {
@@ -535,11 +553,9 @@ private:
 	}
 	//if (debug()>=9) { nodep->dumpTree(cout,"  VRin  "); nodep->varp()->dumpTree(cout,"   forvar "); }
 	// Note genvar's are also entered as integers
-	AstBasicDType* bdtypep = nodep->varp()->dtypep()->castBasicDType();
-	if (bdtypep && bdtypep->isSloppy()
-	    && nodep->backp()->castNodeAssign()) {  // On LHS
-	    // Consider Integers on LHS to sized (else would be unsized.)
-	    nodep->width(bdtypep->width(),bdtypep->width());
+	if (nodep->backp()->castNodeAssign() && nodep->lvalue()) {  // On LHS
+	    // Consider Integers on LHS to sized (else may be unsized.)
+	    nodep->width(nodep->varp()->width(), nodep->varp()->width());
 	} else {
 	    nodep->widthFrom(nodep->varp());
 	}

@@ -127,7 +127,7 @@ private:
 	else {
 	    string name = ((string)"__Vlvbound"+cvtToStr(m_modp->varNumGetInc()));
 	    AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name,
-				      AstVar::LogicPacked(), prep->width());
+				      AstLogicPacked(), prep->width());
 	    m_modp->addStmtp(varp);
 
 	    AstNode* abovep = prep->backp();  // Grab above point before loose it w/ next replace
@@ -288,7 +288,7 @@ private:
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
 		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,
-				  AstVar::LogicPacked(), nodep->width());
+				  AstLogicPacked(), nodep->width());
 		m_statUnkVars++;
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
@@ -327,7 +327,7 @@ private:
 	    // Guard against reading/writing past end of bit vector array
 	    int maxmsb = 0;
 	    bool lvalue = false;
-	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
+	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 		lvalue = varrefp->lvalue();
 		maxmsb = (varrefp->varp()->width()-1);
@@ -382,8 +382,10 @@ private:
 	    int maxmsb = 0;
 	    bool lvalue = false;
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
+		AstArrayDType* adtypep = varrefp->varp()->dtypeDimensionp(dimension)->castArrayDType();
+		if (!adtypep) nodep->v3fatalSrc("ArraySel to type without array at same depth");
 		lvalue = varrefp->lvalue();
-		maxmsb = (varrefp->varp()->arrayp(dimension)->elementsConst()-1);
+		maxmsb = adtypep->elementsConst()-1;
 	    } else if (AstConst* lhconstp = basefromp->castConst()) {
 		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
 		maxmsb = lhconstp->widthMin();

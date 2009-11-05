@@ -72,7 +72,7 @@ private:
 #endif
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
-	if (varp->arraysp()) {
+	if (!varp->dtypep()->castBasicDType()) {
 	    vscp->v3error("Unsupported: Can't detect changes on arrayed variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
 	} else {
 	    string newvarname = "__Vchglast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName();

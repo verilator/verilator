@@ -48,6 +48,19 @@ private:
     // TYPES
     typedef map<string,int>	FileMap;
 
+    struct ToggleEnt {
+	string		m_comment;	// Comment for coverage dump
+	AstNode*	m_varRefp;	// How to get to this element
+	AstNode*	m_chgRefp;	// How to get to this element
+	ToggleEnt(const string& comment, AstNode* vp, AstNode* cp)
+	    : m_comment(comment), m_varRefp(vp), m_chgRefp(cp) {}
+	~ToggleEnt() {}
+	void cleanup() {
+	    m_varRefp->deleteTree(); m_varRefp=NULL;
+	    m_chgRefp->deleteTree(); m_chgRefp=NULL;
+	}
+    };
+
     // STATE
     bool	m_checkBlock;	// Should this block get covered?
     AstModule*	m_modp;		// Current module to add statement to
@@ -143,12 +156,6 @@ private:
 		//    Convert to "AstCoverInc(CoverInc...)"
 		//	We'll do this, and make the if(...) coverinc later.
 
-		// Compute size of the problem
-		int dimensions = 0;
-		for (AstRange* arrayp=nodep->arraysp(); arrayp; arrayp = arrayp->nextp()->castRange()) {
-		    dimensions++;
-		}
-
 		// Add signal to hold the old value
 		string newvarname = (string)"__Vtogcov__"+nodep->shortName();
 		AstVar* chgVarp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
@@ -157,61 +164,65 @@ private:
 		// Create bucket for each dimension * bit.
 		// This is necessarily an O(n^2) expansion, which is why
 		// we limit coverage to signals with < 256 bits.
-		vector<int> selects_docs;  selects_docs.resize(dimensions);
-		vector<int> selects_code;  selects_code.resize(dimensions);
-		toggleVarRecurse(nodep, chgVarp, nodep->arraysp(),
-				 0, selects_docs, selects_code );
+
+		ToggleEnt newvec (string(""),
+				  new AstVarRef(nodep->fileline(), nodep, false),
+				  new AstVarRef(nodep->fileline(), chgVarp, true));
+		toggleVarRecurse(nodep->dtypep(), 0, newvec,
+				 nodep, chgVarp);
+		newvec.cleanup();
 	    }
 	}
     }
 
-    void toggleVarRecurse(AstVar* nodep, AstVar* chgVarp, AstRange* arrayp,
-			  int dimension, vector<int>& selects_docs, vector<int>& selects_code) {
-	if (arrayp) {
-	    for (int index=arrayp->lsbConst(); index<=arrayp->msbConst()+1; index++) {
-		// Handle the next dimension, if any
-		selects_docs[dimension] = index;
-		selects_code[dimension] = index - arrayp->lsbConst();
-		toggleVarRecurse(nodep, chgVarp, arrayp->nextp()->castRange(),
-				 dimension+1, selects_docs, selects_code);
-	    }
-	} else {  // No more arraying - just each bit in the width
-	    if (nodep->msb() != nodep->lsb()) {
-		for (int bitindex_docs=nodep->lsb(); bitindex_docs<nodep->msb()+1; bitindex_docs++) {
-		    toggleVarBottom(nodep, chgVarp,
-				    dimension, selects_docs, selects_code,
-				    true, bitindex_docs);
+    void toggleVarBottom(AstNodeDType* nodep, int depth, // per-iteration
+		     const ToggleEnt& above,
+		     AstVar* varp, AstVar* chgVarp) { // Constant
+	AstCoverToggle* newp
+	    = new AstCoverToggle (varp->fileline(),
+				  newCoverInc(varp->fileline(), "", "v_toggle",
+					      varp->name()+above.m_comment),
+				  above.m_varRefp->cloneTree(true),
+				  above.m_chgRefp->cloneTree(true));
+	m_modp->addStmtp(newp);
+    }
+
+    void toggleVarRecurse(AstNodeDType* nodep, int depth, // per-iteration
+		     const ToggleEnt& above,
+		     AstVar* varp, AstVar* chgVarp) { // Constant
+	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+	    if (bdtypep->rangep()) {
+		for (int index_docs=bdtypep->lsb(); index_docs<bdtypep->msb()+1; index_docs++) {
+		    int index_code = index_docs - bdtypep->lsb();
+		    ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
+				      new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code, 1),
+				      new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code, 1));
+		    toggleVarBottom(nodep, depth+1,
+				    newent,
+				    varp, chgVarp);
+		    newent.cleanup();
 		}
 	    } else {
-		toggleVarBottom(nodep, chgVarp,
-				dimension, selects_docs, selects_code,
-				false, 0);
+		toggleVarBottom(nodep, depth+1,
+				above,
+				varp, chgVarp);
 	    }
 	}
-    }
-    void toggleVarBottom(AstVar* nodep, AstVar* chgVarp,
-			 int dimension, vector<int>& selects_docs, vector<int>& selects_code,
-			 bool bitsel, int bitindex_docs) {
-	string comment = nodep->name();
-	AstNode* varRefp = new AstVarRef(nodep->fileline(), nodep, false);
-	AstNode* chgRefp = new AstVarRef(nodep->fileline(), chgVarp, true);
-	// Now determine the name of, and how to get to the bit of this slice
-	for (int dim=0; dim<dimension; dim++) {
-	    // Comments are strings, not symbols, so we don't need __BRA__ __KET__ 
-	    comment += "["+cvtToStr(selects_docs[dim])+"]";
-	    varRefp = new AstArraySel(nodep->fileline(), varRefp, selects_code[dim]);
-	    chgRefp = new AstArraySel(nodep->fileline(), chgRefp, selects_code[dim]);
+	else if (AstArrayDType* adtypep = nodep->castArrayDType()) {
+	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb()+1; ++index_docs) {
+		int index_code = index_docs - adtypep->lsb();
+		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
+				  new AstArraySel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code),
+				  new AstArraySel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code));
+		toggleVarRecurse(adtypep->dtypep(), depth+1,
+				 newent,
+				 varp, chgVarp);
+		newent.cleanup();
+	    }
 	}
-	if (bitsel) {
-	    comment += "["+cvtToStr(bitindex_docs)+"]";
-	    int bitindex_code = bitindex_docs - nodep->lsb();
-	    varRefp = new AstSel(nodep->fileline(), varRefp, bitindex_code, 1);
-	    chgRefp = new AstSel(nodep->fileline(), chgRefp, bitindex_code, 1);
+	else {
+	    nodep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "<<nodep->prettyTypeName());
 	}
-	AstCoverToggle* newp = new AstCoverToggle (nodep->fileline(),
-						   newCoverInc(nodep->fileline(), "", "v_toggle", comment),
-						   varRefp, chgRefp);
-	m_modp->addStmtp(newp);
     }
 
     // VISITORS - LINE COVERAGE

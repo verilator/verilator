@@ -75,7 +75,11 @@ private:
 	    return "Inlined leading underscore";
 	if (nodep->width() > 256) return "Wide bus > 256 bits";
 	if (nodep->arrayElements() > 32) return "Wide memory > 32 ents";
-	if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
+	if (!(nodep->dtypep()->castBasicDType()
+	      || (nodep->dtypep()->castArrayDType()
+		  && nodep->dtypep()->castArrayDType()->dtypep()->castBasicDType()))) {
+	    return "Unsupported: Multi-dimensional array";
+	}
 	return NULL;
     }
 
