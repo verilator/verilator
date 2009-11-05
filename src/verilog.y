@@ -75,6 +75,7 @@ public:
     }
 
     // METHODS
+    AstNodeDType* createArray(AstNodeDType* basep, AstRange* rangep);
     AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
     AstText* createTextQuoted(FileLine* fileline, string text) {
@@ -94,6 +95,24 @@ public:
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
+    }
+    AstNodeDType* addRange(AstBasicDType* dtypep, AstRange* rangesp) {
+	if (!rangesp) {
+	    return dtypep;
+	} else {
+	    // Only the first range becomes the basicdtype range; everything else is arraying
+	    AstRange* rangearraysp = NULL;
+	    if (dtypep->rangep()) {
+		rangearraysp = rangesp;  // Already a range; everything is an array
+	    } else {
+		if (rangesp->nextp()) {
+		    rangearraysp = rangesp->nextp()->unlinkFrBackWithNext()->castRange();
+		}
+		dtypep->rangep(rangesp);
+	       	dtypep->implicit(false);
+	    }
+	    return createArray(dtypep, rangearraysp);
+	}
     }
     string   deQuote(FileLine* fileline, string text);
 };
@@ -632,7 +651,7 @@ port<nodep>:			// ==IEEE: port
 		portDirNetE data_type          portSig variable_dimensionListE sigAttrListE	{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
 	//UNSUP	portDirNetE yVAR data_type     portSig variable_dimensionListE sigAttrListE	{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	//UNSUP	portDirNetE yVAR implicit_type portSig variable_dimensionListE sigAttrListE	{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
-	|	portDirNetE signingE rangeList portSig variable_dimensionListE sigAttrListE	{ $$=$4; VARDTYPE(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $3, $2)); $$->addNextNull(VARDONEP($$,$5,$6)); }
+	|	portDirNetE signingE rangeList portSig variable_dimensionListE sigAttrListE	{ $$=$4; VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3)); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE	{ $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
 	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE '=' constExpr	{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5));     $$->addNextNull(GRAMMARP->newVarInit($6,$$,$7)); }
@@ -722,7 +741,7 @@ net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
 	;
 
 net_declarationFront:		// IEEE: beginning of net_declaration
-		net_declRESET net_type   strengthSpecE signingE delayrange { VARDTYPE($5); $5->setSignedState($4); }
+		net_declRESET net_type   strengthSpecE signingE delayrange { VARDTYPE($5); $5->basicp()->setSignedState($4); }
 	;
 
 net_declRESET:
@@ -785,9 +804,9 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 			list_of_variable_decl_assignments			{ $$ = $5; }
 	//UNSUP	port_directionReset port_declNetE yVAR data_type     { VARDTYPE($4); } list_of_variable_decl_assignments	{ $$ = $6; }
 	//UNSUP	port_directionReset port_declNetE yVAR implicit_type { VARDTYPE($4); } list_of_variable_decl_assignments	{ $$ = $6; }
-	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $4, $3)); }
+	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3),$4)); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE signing	     { VARDTYPE(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, NULL, $3)); }
+	|	port_directionReset port_declNetE signing	     { VARDTYPE(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $3)); }
 			list_of_variable_decl_assignments			{ $$ = $5; }
 	|	port_directionReset port_declNetE /*implicit*/       { VARDTYPE(NULL);/*default_nettype*/}
 			list_of_variable_decl_assignments			{ $$ = $4; }
@@ -831,7 +850,7 @@ signing<signstate>:		// ==IEEE: signing
 //************************************************
 // Data Types
 
-data_type<typep>:		// ==IEEE: data_type
+data_type<dtypep>:		// ==IEEE: data_type
 	//			// This expansion also replicated elsewhere, IE data_type__AndID
 		data_typeNoRef				{ $$ = $1; }
 	//			// IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
@@ -843,13 +862,13 @@ data_type<typep>:		// ==IEEE: data_type
 	//UNSUP	ps_covergroup_identifier		{ $$ = $1; }
 	;
 
-data_typeBasic<bdtypep>:		// IEEE: part of data_type
-		integer_vector_type signingE rangeListE	{ $$ = $1; $$->setSignedState($2); $$->rangep($3); }
-	|	integer_atom_type signingE		{ $$ = $1; $$->setSignedState($2); }
+data_typeBasic<dtypep>:		// IEEE: part of data_type
+		integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3); }
+	|	integer_atom_type signingE		{ $1->setSignedState($2); $$ = $1; }
 	//UNSUP	non_integer_type			{ UNSUP }
 	;
 
-data_typeNoRef<typep>:		// ==IEEE: data_type, excluding class_type etc references
+data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc references
 		data_typeBasic				{ $$ = $1; }
 	//UNSUP	ySTRUCT        packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
@@ -964,11 +983,11 @@ data_declarationVarFront:	// IEEE: part of data_declaration
 	//			// = class_new is in variable_decl_assignment
 	;
 
-implicit_type<typep>:		// IEEE: part of *data_type_or_implicit
+implicit_type<dtypep>:		// IEEE: part of *data_type_or_implicit
 	//			// Also expanded in data_declaration
 		/* empty */				{ $$ = NULL; }
-	|	signingE rangeList			{ $$ = new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $2, $1); }
-	|	signing					{ $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, NULL, $1); }
+	|	signingE rangeList			{ $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2); }
+	|	signing					{ $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
 	;
 
 //************************************************
@@ -1246,9 +1265,9 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
         |	rangeList anyrange			{ $$ = $1; $1->addNext($2); }
 	;
 
-wirerangeE<bdtypep>:
-		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC, NULL); }  // not implicit
-	|	anyrange 				{ $$ = new AstBasicDType(CRELINE(), LOGIC, $1); }  // not implicit
+wirerangeE<dtypep>:
+		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
+	|	anyrange 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1); }  // not implicit
 	;
 
 // IEEE: select
@@ -1258,7 +1277,7 @@ anyrange<rangep>:
 		'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
-delayrange<bdtypep>:
+delayrange<dtypep>:
 		wirerangeE delayE 			{ $$ = $1; }
 	|	ySCALARED wirerangeE delayE 		{ $$ = $2; }
 	|	yVECTORED wirerangeE delayE 		{ $$ = $2; }
@@ -1782,15 +1801,15 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
 		/**/			tfIdScoped
 			{ $$ = new AstFunc ($<fl>1,*$<strp>1,NULL,
-					    new AstBasicDType($<fl>1, LOGIC_IMPLICIT, NULL));
+					    new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signingE rangeList	tfIdScoped
 			{ $$ = new AstFunc ($<fl>3,*$<strp>3,NULL,
-					    new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $2, $1));
+					    GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signing			tfIdScoped
 			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,
-					    new AstBasicDType($<fl>2, LOGIC_IMPLICIT, NULL, $1));
+					    new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	data_type		tfIdScoped
 			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,$1);
@@ -1855,15 +1874,15 @@ tf_port_item<nodep>:		// ==IEEE: tf_port_item
 
 tf_port_itemFront:		// IEEE: part of tf_port_item, which has the data type
 		data_type				{ VARDTYPE($1); }
-	|	signingE rangeList			{ VARDTYPE(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $2, $1)); }
-	|	signing					{ VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, NULL, $1)); }
+	|	signingE rangeList			{ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1), $2)); }
+	|	signing					{ VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1)); }
 	//UNSUP	yVAR data_type				{ VARDTYPE($2); }
 	//UNSUP	yVAR implicit_type			{ VARDTYPE($2); }
 	//
 	|	tf_port_itemDir /*implicit*/		{ VARDTYPE(NULL); /*default_nettype-see spec*/ }
 	|	tf_port_itemDir data_type		{ VARDTYPE($2); }
-	|	tf_port_itemDir signingE rangeList	{ VARDTYPE(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $3, $2)); }
-	|	tf_port_itemDir signing			{ VARDTYPE(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, NULL, $2)); }
+	|	tf_port_itemDir signingE rangeList	{ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2),$3)); }
+	|	tf_port_itemDir signing			{ VARDTYPE(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $2)); }
 	//UNSUP	tf_port_itemDir yVAR data_type		{ VARDTYPE($3); }
 	//UNSUP	tf_port_itemDir yVAR implicit_type	{ VARDTYPE($3); }
 	;
@@ -2590,6 +2609,21 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int v
     return nodep;
 }
 
+AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstRange* rangep) {
+    // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
+    AstNodeDType* arrayp = basep;
+    if (rangep) { // Maybe no range - return unmodified base type
+	while (rangep->nextp()) rangep = rangep->nextp()->castRange();
+	while (rangep) {
+	    AstRange* prevp = rangep->backp()->castRange();
+	    if (prevp) rangep->unlinkFrBack();
+	    arrayp = new AstArrayDType(rangep->fileline(), arrayp, rangep);
+	    rangep = prevp;
+	}
+    }
+    return arrayp;
+}
+
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5,"  creVar "<<name<<"  decl="<<GRAMMARP->m_varDecl<<"  io="<<GRAMMARP->m_varIO<<"  dt="<<(dtypep?"set":"")<<endl);
@@ -2615,16 +2649,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     }
 
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
-    AstNodeDType* arrayDTypep = dtypep;
-    if (arrayp) {
-	while (arrayp->nextp()) arrayp = arrayp->nextp()->castRange();
-	while (arrayp) {
-	    AstRange* prevp = arrayp->backp()->castRange();
-	    if (prevp) arrayp->unlinkFrBack();
-	    arrayDTypep = new AstArrayDType(arrayp->fileline(), arrayDTypep, arrayp);
-	    arrayp = prevp;
-	}
-    }
+    AstNodeDType* arrayDTypep = createArray(dtypep,arrayp);
 
     AstVar* nodep = new AstVar(fileline, type, name,
 			       arrayDTypep);

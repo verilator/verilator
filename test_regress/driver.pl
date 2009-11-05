@@ -250,7 +250,7 @@ sub new {
 	v_other_filenames => [],	# After the filename so we can spec multiple files
         # IV
 	iv => 0,
-	iv_flags => [split(/\s+/,"-o $self->{obj_dir}/simiv")],
+	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
 	iv_flags2 => [],  # Overridden in some sim files
 	ivrun_flags => [],
 	# VCS

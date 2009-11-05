@@ -136,22 +136,23 @@ private:
     AstBasicDTypeKwd	m_keyword;	// What keyword created it
     bool		m_implicit;	// Implicitly declared
 public:
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstRange* rangep=NULL, AstSignedState signst=signedst_NOP)
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstSignedState signst=signedst_NOP)
 	: AstNodeDType(fl) {
-	init(kwd, signst, rangep);
+	init(kwd, signst, NULL);
     }
     AstBasicDType(FileLine* fl, AstLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
 	init(AstBasicDTypeKwd::LOGIC, signedst_NOP,
 	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
     }
+    // See also addRange in verilog.y
 private:
     void init(AstBasicDTypeKwd kwd, AstSignedState signst, AstRange* rangep) {
 	m_keyword = kwd;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
 	m_implicit = false;
 	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
-	    if (!rangep) m_implicit = true;
+	    if (!rangep) m_implicit = true;  // Also cleared if range added later
 	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
 	if (signst == signedst_NOP && keyword().isSigned()) signst = signedst_SIGNED;
@@ -191,6 +192,7 @@ public:
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
+    void	implicit(bool flag) { m_implicit = flag; }
 };
 
 //######################################################################

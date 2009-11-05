@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support void functions.
 
+***  Support "reg [1:0][1:0][1:0]", bug176.  [Byron Bradley]
+
 * Verilator 3.720 2009/10/26
 
 **   Support little endian bit vectors ("reg [0:2] x;").

@@ -303,7 +303,7 @@ private:
 		    // If unspecified, function returns one bit; however when we support NEW() it could
 		    // also return the class reference.
 		    if (dtypep) dtypep->unlinkFrBack();
-		    else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC, NULL);
+		    else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
 		    AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), dtypep);
 		    newvarp->isSigned(funcp->isSigned());
 		    newvarp->funcReturn(true);
