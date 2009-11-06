@@ -697,16 +697,14 @@ private:
     bool	m_inLibrary:1;	// From a library, no error if not used, never top level
     int		m_level;	// 1=top module, 2=cell off top module, ...
     int		m_varNum;	// Incrementing variable number
-    AstVar*	m_clkReqVarp;	// Clock request variable
 public:
     AstModule(FileLine* fl, const string& name)
 	: AstNode (fl)
 	,m_name(name), m_origName(name)
 	,m_modPublic(false), m_modTrace(false), m_inLibrary(false)
-	,m_level(0), m_varNum(0), m_clkReqVarp(NULL) { }
+	,m_level(0), m_varNum(0) { }
     ASTNODE_NODE_FUNCS(Module, MODULE)
     virtual void dump(ostream& str);
-    virtual bool broken() const { return (m_clkReqVarp && !m_clkReqVarp->brokeExists()); }
     virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }
     AstNode*	stmtsp() 	const { return op2p()->castNode(); }	// op2 = List of statements
@@ -724,8 +722,6 @@ public:
     int  level() const		{ return m_level; }
     bool isTop() const		{ return level()==1; }
     int  varNumGetInc() 	{ return ++m_varNum; }
-    AstVar* clkReqVarp() const	{ return m_clkReqVarp; }
-    void clkReqVarp(AstVar* varp) { m_clkReqVarp = varp; }
     void modPublic(bool flag) 	{ m_modPublic = flag; }
     bool modPublic() const 	{ return m_modPublic; }
     void modTrace(bool flag) 	{ m_modTrace = flag; }
