@@ -245,6 +245,7 @@ class AstSenTree;
 %token<fl>		yENDFUNCTION	"endfunction"
 %token<fl>		yENDGENERATE	"endgenerate"
 %token<fl>		yENDMODULE	"endmodule"
+%token<fl>		yENDPROGRAM	"endprogram"
 %token<fl>		yENDPROPERTY	"endproperty"
 %token<fl>		yENDSPECIFY	"endspecify"
 %token<fl>		yENDTASK	"endtask"
@@ -276,6 +277,7 @@ class AstSenTree;
 %token<fl>		yPARAMETER	"parameter"
 %token<fl>		yPOSEDGE	"posedge"
 %token<fl>		yPRIORITY	"priority"
+%token<fl>		yPROGRAM	"program"
 %token<fl>		yPROPERTY	"property"
 %token<fl>		yPULLDOWN	"pulldown"
 %token<fl>		yPULLUP		"pullup"
@@ -502,7 +504,7 @@ descriptionList:		// IEEE: part of source_text
 description:			// ==IEEE: description
 		module_declaration			{ }
 	//UNSUP	interface_declaration			{ }
-	//UNSUP	program_declaration			{ }
+	|	program_declaration			{ }
 	//UNSUP	package_declaration			{ }
 	//UNSUP	package_item				{ }
 	//UNSUP	bind_directive				{ }
@@ -684,6 +686,57 @@ portSig<nodep>:
 
 //**********************************************************************
 // Program headers
+
+program_declaration:		// IEEE: program_declaration + program_nonansi_header + program_ansi_header:
+	//			// timeunits_delcarationE is instead in program_item
+		pgmFront parameter_port_listE portsStarE ';'
+			program_itemListE yENDPROGRAM endLabelE
+			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
+			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
+			  if ($5) $1->addStmtp($5);
+			  SYMP->popScope($1); }
+	//UNSUP	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
+	//UNSUP		{ PARSEP->symPopScope(VAstType::PROGRAM); }
+	;
+
+pgmFront<modulep>:
+		yPROGRAM lifetimeE idAny/*new_program*/
+			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
+			  $$->modTrace(v3Global.opt.trace());
+			  PARSEP->rootp()->addModulep($$);
+			  SYMP->pushNew($$); }
+	;
+
+program_itemListE<nodep>:	// ==IEEE: [{ program_item }]
+		/* empty */				{ $$ = NULL; }
+	|	program_itemList			{ $$ = $1; }
+	;
+
+program_itemList<nodep>:	// ==IEEE: { program_item }
+		program_item				{ $$ = $1; }
+	|	program_itemList program_item		{ $$ = $1->addNextNull($2); }
+	;
+
+program_item<nodep>:		// ==IEEE: program_item
+		port_declaration ';'			{ $$ = $1; }
+	|	non_port_program_item			{ $$ = $1; }
+	;
+
+non_port_program_item<nodep>:	// ==IEEE: non_port_program_item
+		continuous_assign			{ $$ = $1; }
+	|	module_or_generate_item_declaration	{ $$ = $1; }
+	|	initial_construct			{ $$ = $1; }
+	|	final_construct				{ $$ = $1; }
+	|	concurrent_assertion_item		{ $$ = $1; }
+	//UNSUP	timeunits_declaration			{ $$ = $1; }
+	|	program_generate_item			{ $$ = $1; }
+	;
+
+program_generate_item<nodep>:		// ==IEEE: program_generate_item
+		loop_generate_construct			{ $$ = $1; }
+	|	conditional_generate_construct		{ $$ = $1; }
+	|	generate_region				{ $$ = $1; }
+	;
 
 //************************************************
 // Variable Declarations
