@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.7**
 
-***  Support byte, shortint, int, longint in variables, parameters and
+***  Support byte, shortint, int, longint and var in variables, parameters and
      functions.
 
 ***  Support void functions.

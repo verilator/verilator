@@ -27,6 +27,11 @@ module t (/*AUTOARG*/);
    //UNSUP real		d_real;
    //UNSUP realtime	d_realtime;
 
+   // Declarations using var
+   var byte 	v_b;
+   var [2:0] 	v_b3;
+   var signed [2:0] v_bs;
+
    // verilator lint_off WIDTH
    localparam 		p_implicit = {96{1'b1}};
    localparam [89:0]	p_explicit = {96{1'b1}};
