@@ -995,7 +995,7 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//UNSUP	'[' ']'					{ UNSUP }
 	//			// IEEE: unpacked_dimension
 		anyrange				{ $$ = $1; }
-	|	'[' constExpr ']'			{ $$ = new AstRange($1,$2,$2->cloneTree(true)); }
+	|	'[' constExpr ']'			{ $$ = new AstRange($1,new AstSub($1,$2, new AstConst($1,1)), new AstConst($1,0)); }
 	//			// IEEE: associative_dimension
 	//UNSUP	'[' data_type ']'			{ UNSUP }
 	//UNSUP	yP_BRASTAR ']'				{ UNSUP }

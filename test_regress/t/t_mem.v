@@ -11,7 +11,8 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   reg [7:0] memory8_16 [15:0];
+   // [16] is SV syntax for [15:0]
+   reg [7:0] memory8_16 [16];
 
    reg 	      m_we;
    reg [3:1]  m_addr;

@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "reg [1:0][1:0][1:0]", bug176.  [Byron Bradley]
 
+***  Support "reg x [3][2]".
+
 ***  Support "program".
 
 * Verilator 3.720 2009/10/26
