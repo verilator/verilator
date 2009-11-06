@@ -38,6 +38,7 @@ foreach my $file (sort keys %files) {
     }
 }
 
+my %warns;
 foreach my $file (sort keys %files) {
     my $tar = $files{$file}&1;
     my $dir = $files{$file}&2;
@@ -49,9 +50,17 @@ foreach my $file (sort keys %files) {
 	    ."  $file\n") if $Debug;
 
     if ($dir && !$tar && !$skip) {
-	$Self->error("File not in manifest or MANIFEST.SKIP: $file");
+	$warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
     } elsif (!$dir && $tar && !$skip) {
-	$Self->error("File in manifest, but not directory: $file");
+	$warns{$file} = "File in manifest, but not directory: $file";
+    }
+}
+
+if (keys %warns) {
+    # First warning lists everything as that's shown in the driver summary
+    $Self->error("Files mismatch with manifest: ",join(' ',sort keys %warns));
+    foreach my $file (sort keys %warns) {
+	$Self->error($warns{$file});
     }
 }
 
