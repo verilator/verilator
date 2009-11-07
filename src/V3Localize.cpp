@@ -160,10 +160,6 @@ private:
 	nodep->iterateChildren(*this);
 	moveVars();
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
-	// Consumption/generation of a variable,
-	nodep->iterateChildren(*this);
-    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	UINFO(4,"  CFUNC "<<nodep<<endl);
 	m_cfuncp = nodep;

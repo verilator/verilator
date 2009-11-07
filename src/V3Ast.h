@@ -1272,6 +1272,49 @@ public:
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
 };
 
+struct AstNodeModule : public AstNode {
+    // A module, package, program or interface declaration;
+    // something that can live directly under the TOP,
+    // excluding $unit package stuff
+private:
+    string	m_name;		// Name of the module
+    string	m_origName;	// Name of the module, ignoring name() changes, for dot lookup
+    bool	m_modPublic:1;	// Module has public references
+    bool	m_modTrace:1;	// Tracing this module
+    bool	m_inLibrary:1;	// From a library, no error if not used, never top level
+    int		m_level;	// 1=top module, 2=cell off top module, ...
+    int		m_varNum;	// Incrementing variable number
+public:
+    AstNodeModule(FileLine* fl, const string& name)
+	: AstNode (fl)
+	,m_name(name), m_origName(name)
+	,m_modPublic(false), m_modTrace(false), m_inLibrary(false)
+	,m_level(0), m_varNum(0) { }
+    ASTNODE_BASE_FUNCS(NodeModule)
+    virtual void dump(ostream& str);
+    virtual bool maybePointedTo() const { return true; }
+    virtual string name()	const { return m_name; }
+    AstNode*	stmtsp() 	const { return op2p()->castNode(); }	// op2 = List of statements
+    AstActive*  activesp()	const { return op3p()->castActive(); }	// op3 = List of i/sblocks
+    // METHODS
+    void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
+    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    void addActivep(AstNode* nodep) { addOp3p(nodep); }
+    // ACCESSORS
+    virtual void name(const string& name) { m_name = name; }
+    string origName() const	{ return m_origName; }
+    bool inLibrary() const 	{ return m_inLibrary; }
+    void inLibrary(bool flag) 	{ m_inLibrary = flag; }
+    void level(int level)	{ m_level = level; }
+    int  level() const		{ return m_level; }
+    bool isTop() const		{ return level()==1; }
+    int  varNumGetInc() 	{ return ++m_varNum; }
+    void modPublic(bool flag) 	{ m_modPublic = flag; }
+    bool modPublic() const 	{ return m_modPublic; }
+    void modTrace(bool flag) 	{ m_modTrace = flag; }
+    bool modTrace() const 	{ return m_modTrace; }
+};
+
 //######################################################################
 
 #include "V3AstNodes.h"

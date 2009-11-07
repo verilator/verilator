@@ -167,7 +167,7 @@ private:
     //AstUser4InUse	In V3Hashed
 
     // STATE
-    AstModule*		m_topModp;	// Module to add variables to
+    AstNodeModule*	m_topModp;	// Module to add variables to
     AstScope*		m_highScopep;	// Scope to add variables to
     AstCFunc*		m_funcp;	// C function adding to graph
     AstTraceInc*	m_tracep;	// Trace function adding to graph
@@ -583,7 +583,7 @@ private:
 	assignActivity();
 	putTracesIntoTree();
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	if (nodep->isTop()) m_topModp = nodep;
 	nodep->iterateChildren(*this);
     }

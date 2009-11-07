@@ -95,7 +95,7 @@ private:
 
     // STATE
     int		m_unique;
-    AstModule*	m_modp;	 // Current module
+    AstNodeModule*	m_modp;	 // Current module
     VarMap*	m_lhsmapp;   // LHS driver map
     AstSel*	m_sel;
 
@@ -262,7 +262,7 @@ private:
     }
 
 public:
-    TristateExpander(AstModule* nodep, VarMap* lhsmapp) {
+    TristateExpander(AstNodeModule* nodep, VarMap* lhsmapp) {
 	m_modp    = nodep;
 	m_lhsmapp = lhsmapp;
 	m_unique  = 0;
@@ -287,7 +287,7 @@ private:
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
 
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCell* m_cellp; // current cell
     int m_unique;
 
@@ -296,7 +296,7 @@ private:
 	nodep->iterateChildrenBackwards(*this);
     }
 
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(9," MOD   "<<nodep<<endl);
 	m_unique = 0;
 	VarMap* lhsmapp = new VarMap();
@@ -592,7 +592,7 @@ private:
 	CONVERT_PINS
     };
 
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCell*		m_cellp;	// Current cell
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     States		m_state;
@@ -606,7 +606,7 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;

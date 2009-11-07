@@ -246,8 +246,8 @@ private:
     //   USER4 Cleared on each Logic stmt
     //    AstVarScope::user4()	-> VarUsage(gen/con/both).	Where already encountered signal
     // Ordering (user3/4/5 cleared between forming and ordering)
-    //	  AstScope::user1p()	-> AstModule*. Module this scope is under
-    //    AstModule::user3()    -> Number of routines created
+    //	  AstScope::user1p()	-> AstNodeModule*. Module this scope is under
+    //    AstNodeModule::user3()    -> Number of routines created
     //  Each call to V3Const::constify
     //   AstNode::user4()		Used by V3Const::constify, called below
     AstUser1InUse	m_inuser1;
@@ -266,7 +266,7 @@ private:
     OrderLogicVertex*	m_logicVxp;	// Current statement being tracked, NULL=ignored
     AstTopScope*	m_topScopep;	// Current top scope being processed
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstScope*		m_scopep;	// Current scope being processed
     AstActive*		m_activep;	// Current activation block
     bool		m_inSenTree;	// Underneath AstSenItem; any varrefs are clocks
@@ -374,7 +374,7 @@ private:
     void processMoveLoopStmt(AstNode* newSubnodep);
     OrderLoopId processMoveLoopCurrent();
 
-    string cfuncName(AstModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
+    string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3(1+modp->user3());
 	int funcnum = modp->user3();
 	string name = (domainp->hasCombo() ? "_combo"
@@ -473,7 +473,7 @@ private:
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
@@ -1387,7 +1387,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
-    AstModule* modp = scopep->user1p()->castNode()->castModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
+    AstNodeModule* modp = scopep->user1p()->castNode()->castNodeModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
     if (nodep->castUntilStable()) {
 #ifdef NEW_ORDERING
 	// Beginning of loop.

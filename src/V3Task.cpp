@@ -306,7 +306,7 @@ private:
 
     // STATE
     TaskStateVisitor* m_statep;	// Common state between visitors
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstScope*	m_scopep;	// Current scope
     InsertMode	m_insMode;	// How to insert
     AstNode*	m_insStmtp;	// Where to insert statement
@@ -632,7 +632,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_insStmtp = NULL;
 	m_modNCalls = 0;

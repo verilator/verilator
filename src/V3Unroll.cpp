@@ -68,11 +68,6 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
-	UINFO(4," MOD   "<<nodep<<endl);
-	nodep->iterateChildren(*this);
-    }
-
     bool cantUnroll(AstNode* nodep, const char* reason) {
 	if (m_generate) {
 	    nodep->v3error("Unsupported: Can't unroll generate for; "<<reason);

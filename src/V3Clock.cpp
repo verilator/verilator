@@ -60,7 +60,7 @@ private:
     enum {  DOUBLE_OR_RATE = 10 };	// How many | per ||, Determined experimentally as best
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstTopScope*	m_topScopep;	// Current top scope
     AstScope*		m_scopep;	// Current scope
     AstActive*		m_activep;	// Current block
@@ -258,7 +258,7 @@ private:
 	m_topScopep=NULL;
 	m_scopep = NULL;
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_stableNum = 0;

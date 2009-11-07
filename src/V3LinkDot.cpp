@@ -106,16 +106,16 @@ public:
 
 class LinkDotCellVertex : public LinkDotBaseVertex {
     // A real point in the hierarchy, corresponding to a instantiated module
-    AstModule*	m_modp;		// Module
+    AstNodeModule*	m_modp;		// Module
     AstCell*	m_cellp;	// Cell creating this vertex **NULL AT TOP**
     V3SymTable  m_syms;		// Symbol table of variable/task names for global lookup
 public:
     LinkDotCellVertex(V3Graph* graphp, AstCell* nodep)
 	: LinkDotBaseVertex(graphp, ""), m_modp(nodep->modp()), m_cellp(nodep) {}
-    LinkDotCellVertex(V3Graph* graphp, AstModule* nodep)
+    LinkDotCellVertex(V3Graph* graphp, AstNodeModule* nodep)
 	: LinkDotBaseVertex(graphp, ""), m_modp(nodep), m_cellp(NULL) {}
     virtual ~LinkDotCellVertex() {}
-    AstModule* modp() const { return m_modp; }   // May be NULL
+    AstNodeModule* modp() const { return m_modp; }   // May be NULL
     AstCell* cellp() const { return m_cellp; }   // Is NULL at TOP
     virtual V3SymTable& syms() { return m_syms; }
     // We need to use origName as parameters may have renamed the modname
@@ -174,7 +174,7 @@ class LinkDotState {
 private:
     // NODE STATE
     // Cleared on Netlist
-    //  AstModule::user1p()	-> LinkDotCellVertex*.  Last cell that uses this module
+    //  AstNodeModule::user1p()	-> LinkDotCellVertex*.  Last cell that uses this module
     //  AstVarScope::user2p()	-> AstVarScope*.  Base alias for this signal
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
@@ -209,7 +209,7 @@ public:
     bool forScopeCreation() const { return m_forScopeCreation; }
 
     // METHODS
-    LinkDotCellVertex* insertTopCell(AstModule* nodep, const string& scopename) {
+    LinkDotCellVertex* insertTopCell(AstNodeModule* nodep, const string& scopename) {
 	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
 	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
 	nodep->user1p(vxp);
@@ -254,10 +254,10 @@ public:
 	UINFO(9,"      INSERTsym "<<name<<" "<<nodep<<endl);
 	abovep->syms().insert(name, nodep);
     }
-    bool existsModScope(AstModule* nodep) {
+    bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
     }
-    LinkDotCellVertex* findModScope(AstModule* nodep) {
+    LinkDotCellVertex* findModScope(AstNodeModule* nodep) {
 	LinkDotCellVertex* vxp = (LinkDotCellVertex*)(nodep->user1p());
 	if (!vxp) nodep->v3fatalSrc("Module never assigned a vertex");
 	return vxp;
@@ -385,7 +385,7 @@ private:
 	// The first module in the list is always the top module (sorted before this is called).
 	// This may not be the module with isTop() set, as early in the steps,
 	// wrapTop may have not been created yet.
-	AstModule* topmodp = nodep->modulesp();
+	AstNodeModule* topmodp = nodep->modulesp();
 	if (!topmodp) {
 	    nodep->v3error("No top level module found");
 	} else {
@@ -401,7 +401,7 @@ private:
 	    m_inlineVxp = m_cellVxp;
 	}
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(8,"   "<<nodep<<endl);
 	if (!m_cellVxp) {
 	    // Will be optimized away later
@@ -593,7 +593,7 @@ private:
     // METHODS
 
     // VISITs
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(8,"  "<<nodep<<endl);
 	if (!m_statep->existsModScope(nodep)) {
 	    UINFO(5,"Dead module for "<<nodep<<endl);

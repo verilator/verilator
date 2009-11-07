@@ -64,7 +64,7 @@ private:
 	return level;
     }
 
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Only do the top
 	if (nodep->isTop()) {
 	    nodep->iterateChildren(*this);

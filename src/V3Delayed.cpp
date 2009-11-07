@@ -98,7 +98,7 @@ private:
     bool		m_inDly;	// True in delayed assignments
     bool		m_inLoop;	// True in for loops
     bool		m_inInitial;	// True in intial blocks
-    typedef std::map<pair<AstModule*,string>,AstVar*> VarMap;
+    typedef std::map<pair<AstNodeModule*,string>,AstVar*> VarMap;
     VarMap		m_modVarMap;	// Table of new var names created under module
     V3Double0		m_statSharedSet;// Statistic tracking
 
@@ -121,7 +121,7 @@ private:
 	// Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
 	if (!oldvarscp->scopep()) oldvarscp->v3fatalSrc("Var unscoped");
 	AstVar* varp;
-	AstModule* addmodp = oldvarscp->scopep()->modp();
+	AstNodeModule* addmodp = oldvarscp->scopep()->modp();
 	// We need a new AstVar, but only one for all scopes, to match the new AstVarScope
 	VarMap::iterator iter = m_modVarMap.find(make_pair(addmodp,name));
 	if (iter != m_modVarMap.end()) {

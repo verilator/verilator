@@ -51,7 +51,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE, inside processing a single module
-    AstModule*	m_modp;		// Current module
+    AstNodeModule* m_modp;	// Current module
     AstScope*	m_scopep;	// Current scope we are building
     // STATE, for passing down one level of hierarchy (may need save/restore)
     AstCell*	m_aboveCellp;	// Cell that instantiates this module
@@ -66,7 +66,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
-	AstModule* modp = nodep->topModulep();
+	AstNodeModule* modp = nodep->topModulep();
 	if (!modp) { nodep->v3error("No root module specified"); return; }
 	// Operate starting at the top of the hierarchy
         AstNode::user2ClearTree();
@@ -74,7 +74,7 @@ private:
 	m_aboveScopep = NULL;
 	modp->accept(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Create required blocks and add to module
 	string scopename = (!m_aboveScopep ? "TOP"
 			    : (m_aboveScopep->name()+"."+m_aboveCellp->name()));
@@ -94,9 +94,9 @@ private:
 		{
 		    m_aboveCellp = cellp;
 		    m_aboveScopep = m_scopep;
-		    AstModule* modp = cellp->modp();
+		    AstNodeModule* modp = cellp->modp();
 		    if (!modp) cellp->v3fatalSrc("Unlinked mod");
-		    modp->accept(*this);  // Recursive call to visit(AstModule)
+		    modp->accept(*this);  // Recursive call to visit(AstNodeModule)
 		}
 		// Done, restore vars
 		m_scopep = oldScopep;

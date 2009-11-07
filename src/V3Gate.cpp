@@ -242,7 +242,7 @@ private:
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
     GateLogicVertex*	m_logicVertexp;	// Current statement being tracked, NULL=ignored
     AstScope*		m_scopep;	// Current scope being processed
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstActive*		m_activep;	// Current active
     bool		m_activeReducible;	// Is activation block reducible?
     bool		m_inSenItem;	// Underneath AstSenItem; any varrefs are clocks
@@ -316,7 +316,7 @@ private:
 	consumedMove();
 	replaceAssigns();
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_activeReducible = true;
 	nodep->iterateChildren(*this);

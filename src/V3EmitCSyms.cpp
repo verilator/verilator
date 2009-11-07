@@ -41,12 +41,12 @@
 class EmitCSyms : EmitCBaseVisitor {
     // NODE STATE
     // Cleared on Netlist
-    //  AstModule::user1()	-> bool.  Set true __Vconfigure called
+    //  AstNodeModule::user1()	-> bool.  Set true __Vconfigure called
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstModule*	m_modp;		// Current module
-    typedef pair<AstScope*,AstModule*> ScopeModPair;
+    AstNodeModule*	m_modp;		// Current module
+    typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
     vector<ScopeModPair>  m_scopes;	// Every scope by module
     V3LanguageWords 	m_words;	// Reserved word detector
     int		m_coverBins;		// Coverage bin number
@@ -84,7 +84,7 @@ class EmitCSyms : EmitCBaseVisitor {
 	emitInt();
 	emitImp();
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nameCheck(nodep);
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
@@ -131,7 +131,7 @@ void EmitCSyms::emitInt() {
 
     // for
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
@@ -152,7 +152,7 @@ void EmitCSyms::emitInt() {
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
     puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-	AstScope* scopep = it->first;  AstModule* modp = it->second;
+	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (modp->isTop()) {
 	    ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
 	    puts(scopep->nameDotless()+"p;\n");
@@ -192,7 +192,7 @@ void EmitCSyms::emitImp() {
 
     // Includes
     puts("#include \""+symClassName()+".h\"\n");
-    for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
@@ -207,7 +207,7 @@ void EmitCSyms::emitImp() {
     puts("\t// Setup submodule names\n");
     char comma=',';
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-	AstScope* scopep = it->first;  AstModule* modp = it->second;
+	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (modp->isTop()) {
 	} else {
 	    ofp()->printf("\t%c %-30s ", comma, scopep->nameDotless().c_str());
@@ -223,7 +223,7 @@ void EmitCSyms::emitImp() {
     puts("TOPp = topp;\n");
     puts("// Setup each module's pointers to their submodules\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-	AstScope* scopep = it->first;  AstModule* modp = it->second;
+	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (!modp->isTop()) {
 	    string arrow = scopep->name();
 	    string::size_type pos;
@@ -239,7 +239,7 @@ void EmitCSyms::emitImp() {
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->__Vconfigure(this, true);\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-	AstScope* scopep = it->first;  AstModule* modp = it->second;
+	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (!modp->isTop()) {
 	    // first is used by AstCoverDecl's call to __vlCoverInsert
 	    bool first = !modp->user1();

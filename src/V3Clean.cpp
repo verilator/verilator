@@ -55,7 +55,7 @@ private:
     enum CleanState { UNKNOWN, CLEAN, DIRTY };
 
     // STATE
-    AstModule* m_modp;
+    AstNodeModule* m_modp;
 
     // METHODS
     static int debug() {
@@ -160,7 +160,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;

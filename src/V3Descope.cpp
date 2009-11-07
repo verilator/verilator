@@ -52,7 +52,7 @@ private:
     typedef multimap<string,AstCFunc*>	FuncMmap;
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstScope*		m_scopep;	// Current scope
     bool		m_needThis;	// Add thisp to function
     FuncMmap		m_modFuncs;	// Name of public functions added
@@ -179,7 +179,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_modFuncs.clear();
 	nodep->iterateChildren(*this);

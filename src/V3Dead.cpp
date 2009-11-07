@@ -55,7 +55,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    DeadModVisitor(AstModule* nodep) {
+    DeadModVisitor(AstNodeModule* nodep) {
 	nodep->accept(*this);
     }
     virtual ~DeadModVisitor() {}
@@ -68,7 +68,7 @@ class DeadVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire Netlist:
-    //  AstModule::user()	-> int. Count of number of cells referencing this module.
+    //  AstNodeModule::user()	-> int. Count of number of cells referencing this module.
     //  AstVar::user()		-> int. Count of number of references
     //  AstVarScope::user()	-> int. Count of number of references
     AstUser1InUse	m_inuser1;
@@ -145,9 +145,9 @@ private:
 	// after we've done all the generate blocks
 	for (bool retry=true; retry; ) {
 	    retry=false;
-	    AstModule* nextmodp;
-	    for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
-		nextmodp = modp->nextp()->castModule();
+	    AstNodeModule* nextmodp;
+	    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
+		nextmodp = modp->nextp()->castNodeModule();
 		if (modp->level()>2	&& modp->user1()==0) {
 		    // > 2 because L1 is the wrapper, L2 is the top user module
 		    UINFO(4,"  Dead module "<<modp<<endl);

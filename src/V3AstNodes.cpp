@@ -228,7 +228,7 @@ bool AstScope::broken() const {
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep()->castScope();
     if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep()->castCell();
-    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep()->castModule();
+    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep()->castNodeModule();
 }
 
 string AstScope::nameDotless() const {
@@ -397,7 +397,7 @@ void AstVarXRef::dump(ostream& str) {
     else if (varp()) { varp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstModule::dump(ostream& str) {
+void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<"  L"<<level();
     if (modPublic()) str<<" [P]";

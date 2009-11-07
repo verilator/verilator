@@ -56,12 +56,12 @@ public:
 
 
 class LinkCellsVertex : public V3GraphVertex {
-    AstModule* m_modp;
+    AstNodeModule* m_modp;
 public:
-    LinkCellsVertex(V3Graph* graphp, AstModule* modp)
+    LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
 	: V3GraphVertex(graphp), m_modp(modp) {}
     virtual ~LinkCellsVertex() {}
-    AstModule* modp() const { return m_modp; }
+    AstNodeModule* modp() const { return m_modp; }
     virtual string name() const { return modp()->name(); }
 };
 
@@ -90,15 +90,15 @@ class LinkCellsVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
-    //   AstModule::user1p()	// V3GraphVertex*    Vertex describing this module
+    //   AstNodeModule::user1p()	// V3GraphVertex*    Vertex describing this module
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
     AstUser1InUse	m_inuser1;
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstModule*	m_modp;		// Current module
-    V3SymTable  m_mods;		// Symbol table of all module names
+    AstNodeModule*	m_modp;		// Current module
+    V3SymTable  	m_mods;		// Symbol table of all module names
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
     V3GraphVertex*	m_topVertexp;	// Vertex of top module
@@ -110,7 +110,7 @@ private:
     }
 
     // METHODS
-    V3GraphVertex* vertex(AstModule* nodep) {
+    V3GraphVertex* vertex(AstNodeModule* nodep) {
 	// Return corresponding vertex for this module
 	if (!nodep->user1p()) {
 	    nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
@@ -130,7 +130,7 @@ private:
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
 		// +1 so we leave level 1  for the new wrapper we'll make in a moment
-		AstModule* modp = vvertexp->modp();
+		AstNodeModule* modp = vvertexp->modp();
 		modp->level(vvertexp->rank()+1);
 		if (vvertexp == m_topVertexp && modp->level() != 2) {
 		    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' isn't at the top level, it's under another cell.");
@@ -142,7 +142,7 @@ private:
 	    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
 	}
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Pick up modnames, so we can resolve cells later
 	m_modp = nodep;
 	UINFO(2,"Link Module: "<<nodep<<endl);
@@ -171,7 +171,7 @@ private:
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
 	    // Use findIdUpward instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
-	    AstModule* modp = m_mods.findIdUpward(nodep->modName())->castModule();
+	    AstNodeModule* modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
 	    if (!modp) {
 		// Read-subfile
 		V3Parse parser (v3Global.rootp());
@@ -180,7 +180,7 @@ private:
 		// We've read new modules, grab new pointers to their names
 		readModNames();
 		// Check again
-		modp = m_mods.findIdUpward(nodep->modName())->castModule();
+		modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
 		if (!modp) {
 		    nodep->v3error("Can't resolve module reference: "<<nodep->modName());
 		}
@@ -250,7 +250,7 @@ private:
     // METHODS
     void readModNames() {
 	// Look at all modules, and store pointers to all module names
-	for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+	for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	    AstNode* foundp = m_mods.findIdUpward(nodep->name());
 	    if (foundp && foundp != nodep) {
 		nodep->v3error("Duplicate declaration of module: "<<nodep->prettyName());

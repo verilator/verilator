@@ -72,7 +72,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	allNodes(nodep);
 	if (!m_fast) {
 	    nodep->iterateChildren(*this);

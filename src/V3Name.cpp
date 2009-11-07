@@ -49,7 +49,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstModule*	m_modp;
+    AstNodeModule*	m_modp;
     V3LanguageWords 	m_words;	// Reserved word detector
 
     // METHODS
@@ -77,7 +77,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;

@@ -119,7 +119,7 @@ public:
     static string symClassName() { return v3Global.opt.prefix()+"__Syms"; }
     static string symClassVar()  { return symClassName()+"* __restrict vlSymsp"; }
     static string symTopAssign() { return v3Global.opt.prefix()+"* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;"; }
-    static string modClassName(AstModule* modp) {	// Return name of current module being processed
+    static string modClassName(AstNodeModule* modp) {	// Return name of current module being processed
 	if (modp->isTop()) {
 	    return v3Global.opt.prefix();
 	} else {

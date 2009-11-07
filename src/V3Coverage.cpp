@@ -63,7 +63,7 @@ private:
 
     // STATE
     bool	m_checkBlock;	// Should this block get covered?
-    AstModule*	m_modp;		// Current module to add statement to
+    AstNodeModule*	m_modp;	// Current module to add statement to
     bool	m_inToggleOff;	// In function/task etc
     FileMap	m_fileps;	// Column counts for each fileline
     string	m_beginHier;	// AstBegin hier name for user coverage points
@@ -121,7 +121,7 @@ private:
     }
 
     // VISITORS - BOTH
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_fileps.clear();
 	nodep->iterateChildren(*this);

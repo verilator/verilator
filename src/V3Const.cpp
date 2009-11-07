@@ -104,7 +104,7 @@ private:
     bool	m_warn;		// Output warnings
     bool	m_cpp;		// C++ conversions only
     bool	m_expensive;	// Enable computationally expensive optimizations
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
 
     // METHODS
@@ -866,7 +866,7 @@ private:
 	// Iterate modules backwards, in bottom-up order.  That's faster
 	nodep->iterateChildrenBackwards(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;

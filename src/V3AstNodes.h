@@ -594,9 +594,9 @@ private:
     string	m_name;		// Name
     AstScope*	m_aboveScopep;	// Scope above this one in the hierarchy (NULL if top)
     AstCell*	m_aboveCellp;	// Cell above this in the hierarchy (NULL if top)
-    AstModule*	m_modp;		// Module scope corresponds to
+    AstNodeModule*	m_modp;		// Module scope corresponds to
 public:
-    AstScope(FileLine* fl, AstModule* modp, const string& name,
+    AstScope(FileLine* fl, AstNodeModule* modp, const string& name,
 	     AstScope* aboveScopep, AstCell* aboveCellp)
 	:AstNode(fl)
 	,m_name(name) ,m_aboveScopep(aboveScopep) ,m_aboveCellp(aboveCellp), m_modp(modp) {}
@@ -608,7 +608,7 @@ public:
     virtual void name(const string& name) { m_name = name; }
     string nameDotless() const;
     string nameVlSym() const { return (((string)"vlSymsp->") + nameDotless()); }
-    AstModule* modp()		const { return m_modp; }
+    AstNodeModule* modp()		const { return m_modp; }
     void addVarp(AstNode* nodep) { addOp1p(nodep); }
     AstNode* varsp()		const { return op1p()->castNode(); }	// op1 = AstVarScope's
     void addActivep(AstNode* nodep) { addOp2p(nodep); }
@@ -756,54 +756,20 @@ public:
     void        svImplicit(bool flag) { m_svImplicit=flag; }
 };
 
-struct AstModule : public AstNode {
+struct AstModule : public AstNodeModule {
     // A module declaration
-private:
-    string	m_name;		// Name of the module
-    string	m_origName;	// Name of the module, ignoring name() changes, for dot lookup
-    bool	m_modPublic:1;	// Module has public references
-    bool	m_modTrace:1;	// Tracing this module
-    bool	m_inLibrary:1;	// From a library, no error if not used, never top level
-    int		m_level;	// 1=top module, 2=cell off top module, ...
-    int		m_varNum;	// Incrementing variable number
-public:
     AstModule(FileLine* fl, const string& name)
-	: AstNode (fl)
-	,m_name(name), m_origName(name)
-	,m_modPublic(false), m_modTrace(false), m_inLibrary(false)
-	,m_level(0), m_varNum(0) { }
+	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Module, MODULE)
-    virtual void dump(ostream& str);
-    virtual bool maybePointedTo() const { return true; }
-    virtual string name()	const { return m_name; }
-    AstNode*	stmtsp() 	const { return op2p()->castNode(); }	// op2 = List of statements
-    AstActive*  activesp()	const { return op3p()->castActive(); }	// op3 = List of i/sblocks
-    // METHODS
-    void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
-    void addActivep(AstNode* nodep) { addOp3p(nodep); }
-    // ACCESSORS
-    virtual void name(const string& name) { m_name = name; }
-    string origName() const	{ return m_origName; }
-    bool inLibrary() const 	{ return m_inLibrary; }
-    void inLibrary(bool flag) 	{ m_inLibrary = flag; }
-    void level(int level)	{ m_level = level; }
-    int  level() const		{ return m_level; }
-    bool isTop() const		{ return level()==1; }
-    int  varNumGetInc() 	{ return ++m_varNum; }
-    void modPublic(bool flag) 	{ m_modPublic = flag; }
-    bool modPublic() const 	{ return m_modPublic; }
-    void modTrace(bool flag) 	{ m_modTrace = flag; }
-    bool modTrace() const 	{ return m_modTrace; }
 };
 
 struct AstCell : public AstNode {
-    // A instantiation cell
+    // A instantiation cell or interface call (don't know which until link)
 private:
     string	m_name;		// Cell name
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
-    AstModule*	m_modp;		// [AfterLink] Pointer to module instanced
+    AstNodeModule*	m_modp;		// [AfterLink] Pointer to module instanced
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
@@ -826,10 +792,10 @@ public:
     AstPin* pinsp()		const { return op1p()->castPin(); }	// op1 = List of cell ports
     AstPin* paramsp()		const { return op2p()->castPin(); }	// op2 = List of parameter #(##) values
     AstRange* rangep()		const { return op3p()->castRange(); }	// op3 = Range of arrayed instants (NULL=not ranged)
-    AstModule* modp()		const { return m_modp; }		// [AfterLink] = Pointer to module instantiated
+    AstNodeModule* modp()		const { return m_modp; }		// [AfterLink] = Pointer to module instantiated
     void addPinsp(AstPin* nodep) { addOp1p(nodep); }
     void addParamsp(AstPin* nodep) { addOp2p(nodep); }
-    void modp(AstModule* nodep)	{ m_modp = nodep; }
+    void modp(AstNodeModule* nodep)	{ m_modp = nodep; }
 };
 
 struct AstCellInline : public AstNode {
@@ -3098,18 +3064,18 @@ struct AstCInclude : public AstNode {
     // Parents:  MODULE
     // Children: None
 private:
-    AstModule*	m_modp;
+    AstNodeModule*	m_modp;
 public:
-    AstCInclude(FileLine* fl, AstModule* modp)
+    AstCInclude(FileLine* fl, AstNodeModule* modp)
 	: AstNode(fl) {
 	m_modp = modp;
     }
     ASTNODE_NODE_FUNCS(CInclude, CINCLUDE)
     virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
     virtual void cloneRelink() { if (m_modp && m_modp->clonep()) {
-	m_modp = m_modp->clonep()->castModule();
+	m_modp = m_modp->clonep()->castNodeModule();
     }}
-    AstModule*	modp() const { return m_modp; }
+    AstNodeModule*	modp() const { return m_modp; }
 };
 
 struct AstCMath : public AstNodeMath {
@@ -3163,9 +3129,9 @@ struct AstNetlist : public AstNode {
     // Children:  MODULEs & CFILEs
     AstNetlist() : AstNode(new FileLine("AstRoot",0)) {}
     ASTNODE_NODE_FUNCS(Netlist, NETLIST)
-    AstModule*	modulesp() 	const { return op1p()->castModule();}	// op1 = List of modules
-    AstModule*  topModulep() const { return op1p()->castModule(); }	// * = Top module in hierarchy (first one added, for now)
-    void addModulep(AstModule* modulep) { addOp1p(modulep); }
+    AstNodeModule*	modulesp() 	const { return op1p()->castNodeModule();}	// op1 = List of modules
+    AstNodeModule*  topModulep() const { return op1p()->castNodeModule(); }	// * = Top module in hierarchy (first one added, for now)
+    void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
     AstCFile*	filesp() 	const { return op2p()->castCFile();}	// op2 = List of files
     void addFilesp(AstCFile* filep) { addOp2p(filep); }
 };

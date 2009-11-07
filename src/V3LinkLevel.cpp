@@ -41,7 +41,7 @@
 // Levelizing class functions
 
 struct CmpLevel {
-    inline bool operator () (const AstModule* lhsp, const AstModule* rhsp) const {
+    inline bool operator () (const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
 	return lhsp->level() < rhsp->level();
     }
 };
@@ -53,9 +53,11 @@ void V3LinkLevel::modSortByLevel() {
 
     // level() was computed for us in V3LinkCells
 
-    vector<AstModule*> vec;
-    AstModule* topp = NULL;
-    for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+    typedef vector<AstNodeModule*> ModVec;
+
+    ModVec vec;
+    AstNodeModule* topp = NULL;
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	if (nodep->level()<=2) {
 	    if (topp) {
 		nodep->v3warn(MULTITOP, "Unsupported: Multiple top level modules: "
@@ -67,13 +69,13 @@ void V3LinkLevel::modSortByLevel() {
 	vec.push_back(nodep);
     }
     sort(vec.begin(), vec.end(), CmpLevel()); // Sort the vector
-    for (vector<AstModule*>::iterator it = vec.begin(); it != vec.end(); ++it) {
-	AstModule* nodep = *it;
+    for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
+	AstNodeModule* nodep = *it;
 	nodep->unlinkFrBack();
     }
     if (v3Global.rootp()->modulesp()) v3Global.rootp()->v3fatalSrc("Unlink didn't work");
-    for (vector<AstModule*>::iterator it = vec.begin(); it != vec.end(); ++it) {
-	AstModule* nodep = *it;
+    for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
+	AstNodeModule* nodep = *it;
 	v3Global.rootp()->addModulep(nodep);
     }
 }
@@ -84,9 +86,9 @@ void V3LinkLevel::modSortByLevel() {
 void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We do ONLY the top module
-    AstModule* oldmodp = netlistp->modulesp();
+    AstNodeModule* oldmodp = netlistp->modulesp();
     if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
-    AstModule* newmodp = new AstModule(oldmodp->fileline(), (string)"TOP_"+oldmodp->name());
+    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), (string)"TOP_"+oldmodp->name());
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
     newmodp->addNext(oldmodp);

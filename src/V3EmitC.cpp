@@ -551,7 +551,7 @@ public:
 
 class EmitCImp : EmitCStmts {
     // MEMBERS
-    AstModule*	m_modp;
+    AstNodeModule*	m_modp;
     vector<AstChangeDet*>	m_blkChangeDetVec;	// All encountered changes in block
     bool	m_slow;		// Creating __Slow file
     bool	m_fast;		// Creating non __Slow file (or both)
@@ -592,7 +592,7 @@ class EmitCImp : EmitCStmts {
 	}
     }
 
-    V3OutCFile* newOutCFile(AstModule* modp, bool slow, bool source, int filenum=0) {
+    V3OutCFile* newOutCFile(AstNodeModule* modp, bool slow, bool source, int filenum=0) {
 	string filenameNoExt = v3Global.opt.makeDir()+"/"+ modClassName(modp);
 	if (filenum) filenameNoExt += "__"+cvtToStr(filenum);
 	filenameNoExt += (slow ? "__Slow":"");
@@ -722,22 +722,22 @@ class EmitCImp : EmitCStmts {
 
     // METHODS
     // Low level
-    void emitVarResets(AstModule* modp);
-    void emitCellCtors(AstModule* modp);
+    void emitVarResets(AstNodeModule* modp);
+    void emitCellCtors(AstNodeModule* modp);
     void emitSensitives();
     // Medium level
-    void emitCtorImp(AstModule* modp);
-    void emitConfigureImp(AstModule* modp);
-    void emitCoverageDecl(AstModule* modp);
-    void emitCoverageImp(AstModule* modp);
-    void emitDestructorImp(AstModule* modp);
+    void emitCtorImp(AstNodeModule* modp);
+    void emitConfigureImp(AstNodeModule* modp);
+    void emitCoverageDecl(AstNodeModule* modp);
+    void emitCoverageImp(AstNodeModule* modp);
+    void emitDestructorImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
-    void emitIntFuncDecls(AstModule* modp);
+    void emitIntFuncDecls(AstNodeModule* modp);
     // High level
-    void emitImp(AstModule* modp);
-    void emitStaticDecl(AstModule* modp);
-    void emitWrapEval(AstModule* modp);
-    void emitInt(AstModule* modp);
+    void emitImp(AstNodeModule* modp);
+    void emitStaticDecl(AstNodeModule* modp);
+    void emitWrapEval(AstNodeModule* modp);
+    void emitInt(AstNodeModule* modp);
     void writeMakefile(string filename);
 
 public:
@@ -745,7 +745,7 @@ public:
 	m_modp = NULL;
     }
     virtual ~EmitCImp() {}
-    void main(AstModule* modp, bool slow, bool fast);
+    void main(AstNodeModule* modp, bool slow, bool fast);
     void mainDoFunc(AstCFunc* nodep) {
 	nodep->accept(*this);
     }
@@ -1141,7 +1141,7 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
 //######################################################################
 // Internal EmitC
 
-void EmitCImp::emitVarResets(AstModule* modp) {
+void EmitCImp::emitVarResets(AstNodeModule* modp) {
     puts("// Reset internal values\n");
     if (modp->isTop()) {
 	if (v3Global.opt.inhibitSim()) puts("__Vm_inhibitSim = false;\n");
@@ -1214,7 +1214,7 @@ void EmitCImp::emitVarResets(AstModule* modp) {
     }
 }
 
-void EmitCImp::emitCoverageDecl(AstModule* modp) {
+void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
     if (v3Global.opt.coverage()) {
 	ofp()->putsPrivate(true);
 	puts("// Coverage\n");
@@ -1223,7 +1223,7 @@ void EmitCImp::emitCoverageDecl(AstModule* modp) {
     }
 }
 
-void EmitCImp::emitCtorImp(AstModule* modp) {
+void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     if (optSystemPerl() && modp->isTop()) {
 	puts("SP_CTOR_IMP("+modClassName(modp)+")");
@@ -1243,7 +1243,7 @@ void EmitCImp::emitCtorImp(AstModule* modp) {
     puts("}\n");
 }
 
-void EmitCImp::emitConfigureImp(AstModule* modp) {
+void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::__Vconfigure("+symClassName()+"* vlSymsp, bool first) {\n");
     puts(   "if (0 && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
@@ -1260,7 +1260,7 @@ void EmitCImp::emitConfigureImp(AstModule* modp) {
     puts("}\n");
 }
 
-void EmitCImp::emitCoverageImp(AstModule* modp) {
+void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
     if (v3Global.opt.coverage() ) {
 	puts("\n// Coverage\n");
 	// Rather than putting out SP_COVER_INSERT calls directly, we do it via this function
@@ -1284,7 +1284,7 @@ void EmitCImp::emitCoverageImp(AstModule* modp) {
     }
 }
 
-void EmitCImp::emitDestructorImp(AstModule* modp) {
+void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
     puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
     emitTextSection(AstType::SCDTOR);
@@ -1292,7 +1292,7 @@ void EmitCImp::emitDestructorImp(AstModule* modp) {
     puts("}\n");
 }
 
-void EmitCImp::emitStaticDecl(AstModule* modp) {
+void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
     // Need implementation here.  Be careful of alignment code; needs to be uniquified
     // with module name to avoid multiple symbols.
     //emitVarList(modp->stmtsp(), EVL_ALL, modp->name());
@@ -1323,7 +1323,7 @@ void EmitCImp::emitTextSection(AstType type) {
     }
 }
 
-void EmitCImp::emitCellCtors(AstModule* modp) {
+void EmitCImp::emitCellCtors(AstNodeModule* modp) {
     if (modp->isTop()) {
 	// Must be before other constructors, as __vlCoverInsert calls it
 	puts(EmitCBaseVisitor::symClassVar()+" = __VlSymsp = new "+symClassName()+"(this, name());\n");
@@ -1353,7 +1353,7 @@ void EmitCImp::emitSensitives() {
     }
 }
 
-void EmitCImp::emitWrapEval(AstModule* modp) {
+void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp; // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
@@ -1450,7 +1450,7 @@ struct CmpName {
     }
 };
 
-void EmitCImp::emitIntFuncDecls(AstModule* modp) {
+void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
     vector<AstCFunc*> funcsp;
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -1472,7 +1472,7 @@ void EmitCImp::emitIntFuncDecls(AstModule* modp) {
     }
 }
 
-void EmitCImp::emitInt(AstModule* modp) {
+void EmitCImp::emitInt(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
     if (!optSystemPerl()) {  // else done for us automatically
 	puts("#ifndef _"+modClassName(modp)+"_H_\n");
@@ -1634,7 +1634,7 @@ void EmitCImp::emitInt(AstModule* modp) {
 
 //----------------------------------------------------------------------
 
-void EmitCImp::emitImp(AstModule* modp) {
+void EmitCImp::emitImp(AstNodeModule* modp) {
     if (optSystemPerl()) {
 	puts("//############################################################\n");
 	puts("#sp implementation\n");
@@ -1694,7 +1694,7 @@ void EmitCImp::emitImp(AstModule* modp) {
 
 //######################################################################
 
-void EmitCImp::main(AstModule* modp, bool slow, bool fast) {
+void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     // Output a module
     m_modp = modp;
     m_slow = slow;
@@ -1922,7 +1922,7 @@ class EmitCTrace : EmitCStmts {
 	// Top module only
 	nodep->topModulep()->accept(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
@@ -2022,7 +2022,7 @@ public:
 void V3EmitC::emitc() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // Process each module in turn
-    for (AstModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	if (v3Global.opt.outputSplit()) {
 	    { EmitCImp imp; imp.main(nodep, false, true); }
 	    { EmitCImp imp; imp.main(nodep, true, false); }

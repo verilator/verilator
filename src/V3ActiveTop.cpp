@@ -72,7 +72,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_topscopep = NULL;
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Create required actives and add to module
 	// We can start ordering at a module, or a scope
 	UINFO(4," MOD   "<<nodep<<endl);

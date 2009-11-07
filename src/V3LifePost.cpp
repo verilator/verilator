@@ -72,7 +72,7 @@ private:
 	    nodep->deleteTree(); nodep=NULL;
 	}
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) nodep->iterateChildren(*this);
     }
@@ -162,7 +162,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) nodep->iterateChildren(*this);
     }

@@ -189,7 +189,7 @@ private:
     typedef enum {STATE_IDLE, STATE_HASH, STATE_DUP} CombineState;
     V3Double0		m_statCombs;	// Statistic tracking
     CombineState	m_state;	// Major state
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCFunc*		m_funcp;	// Current function
     V3Hash		m_lowerHash;	// Hash of the statement we're building
     CombCallVisitor	m_call;		// Tracking of function call users
@@ -393,7 +393,7 @@ private:
 	// Required so that a module instantiating another can benefit from collapsing.
 	nodep->iterateChildrenBackwards(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_modNFuncs = 0;

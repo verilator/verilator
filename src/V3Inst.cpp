@@ -51,7 +51,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCell*	m_cellp;	// Current cell
 
     static int debug() {
@@ -62,7 +62,7 @@ private:
     //int m_debug;  int debug() { return m_debug; }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	//if (nodep->name() == "t_chg") m_debug = 9; else m_debug=0;
 	m_modp = nodep;
@@ -232,7 +232,7 @@ public:
 //######################################################################
 // Inst class functions
 
-void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstModule* modp) {
+void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
     // Note this module calles cloneTree() via new AstVar

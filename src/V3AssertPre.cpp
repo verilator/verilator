@@ -127,7 +127,7 @@ private:
 	nodep->replaceWith(blockp);
 	pushDeletep(nodep); nodep=NULL;
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	// Reset defaults
 	m_seniDefaultp = NULL;

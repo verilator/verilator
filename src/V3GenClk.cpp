@@ -59,8 +59,8 @@ private:
     AstUser3InUse	m_inuser3;
 
     // STATE
-    AstActive*	m_activep;		// Inside activate statement
-    AstModule*		m_topModp;	// Top module
+    AstActive*		m_activep;	// Inside activate statement
+    AstNodeModule*	m_topModp;	// Top module
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
 
     // METHODS
@@ -130,7 +130,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    GenClkRenameVisitor(AstTopScope* nodep, AstModule* topModp) {
+    GenClkRenameVisitor(AstTopScope* nodep, AstNodeModule* topModp) {
 	m_topModp = topModp;
 	m_scopetopp = NULL;
 	m_activep = NULL;
@@ -152,7 +152,7 @@ private:
     // STATE
     AstActive*	m_activep;		// Inside activate statement
     AstNodeAssign* m_assignp;		// Inside assigndly statement
-    AstModule*		m_topModp;	// Top module
+    AstNodeModule*	m_topModp;	// Top module
 
     // VISITORS
     virtual void visit(AstTopScope* nodep, AstNUser*) {
@@ -164,7 +164,7 @@ private:
 	    GenClkRenameVisitor visitor (nodep, m_topModp);
 	}
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) {
 	    m_topModp = nodep;

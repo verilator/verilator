@@ -48,7 +48,7 @@
 class BeginVisitor : public AstNVisitor {
 private:
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     string		m_namedScope;	// Name of begin blocks above us
     string		m_unnamedScope;	// Name of begin blocks, including unnamed blocks
@@ -62,7 +62,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_repeatNum = 0;
 	nodep->iterateChildren(*this);

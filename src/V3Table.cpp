@@ -80,8 +80,8 @@ private:
     V3Double0	m_statTablesCre;	// Statistic tracking
 
     //  State cleared on each module
-    AstModule*	m_modp;			// Current MODULE
-    int		m_modTables;		// Number of tables created in this module
+    AstNodeModule*	m_modp;		// Current MODULE
+    int			m_modTables;	// Number of tables created in this module
     deque<AstVarScope*> m_modTableVscs;	// All tables created
 
     //  State cleared on each scope
@@ -399,7 +399,7 @@ private:
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modTables = 0;
 	m_modTableVscs.clear();
 	m_modp = nodep;

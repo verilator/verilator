@@ -55,7 +55,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstModule*		m_topModp;	// Top module
+    AstNodeModule*	m_topModp;	// Top module
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
     AstCFunc*		m_chgFuncp;	// Change function we're building
 
@@ -99,7 +99,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	if (nodep->isTop()) {
 	    m_topModp = nodep;

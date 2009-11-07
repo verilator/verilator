@@ -54,12 +54,12 @@ private:
     // NODE STATE
     // Cleared entire netlist
     //  Input:
-    //   AstModule::user1p()	// bool. True to inline this module (from InlineMarkVisitor)
+    //   AstNodeModule::user1p()	// bool. True to inline this module (from InlineMarkVisitor)
     // Cleared each cell
     //   AstVar::user2p()	// AstVarRef*/AstConst*  Points to signal this is a direct connect to
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCell*		m_cellp;	// Cell being cloned
     V3Double0		m_statCells;	// Statistic tracking
 
@@ -74,7 +74,7 @@ private:
 	// Iterate modules backwards, in bottom-up order.  Required!
 	nodep->iterateChildrenBackwards(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	if (m_cellp) {
 	} else {
 	    m_modp = nodep;
@@ -118,7 +118,7 @@ private:
 	    // Clone original module
 	    if (debug()>=9) { nodep->dumpTree(cout,"inlcell:"); }
 	    //if (debug()>=9) { nodep->modp()->dumpTree(cout,"oldmod:"); }
-	    AstModule* newmodp = nodep->modp()->cloneTree(false);
+	    AstNodeModule* newmodp = nodep->modp()->cloneTree(false);
 	    if (debug()>=9) { newmodp->dumpTree(cout,"newmod:"); }
 	    // Clear var markings
 	    AstNode::user2ClearTree();
@@ -306,16 +306,16 @@ class InlineMarkVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist
-    //  AstModule::user1()	// OUTPUT: bool. User request to inline this module
-    //  AstModule::user2()	// bool. Allowed to automatically inline module
-    //  AstModule::user3()	// int. Number of cells referencing this module
+    //  AstNodeModule::user1()	// OUTPUT: bool. User request to inline this module
+    //  AstNodeModule::user2()	// bool. Allowed to automatically inline module
+    //  AstNodeModule::user3()	// int. Number of cells referencing this module
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
 
     // STATE
-    AstModule*	m_modp;		// Current module
-    int		m_stmtCnt;	// Statements in module
+    AstNodeModule*	m_modp;		// Current module
+    int			m_stmtCnt;	// Statements in module
 
     // METHODS
     void cantInline(const char* reason) {
@@ -326,7 +326,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_stmtCnt = 0;
 	m_modp = nodep;
 	m_modp->user2(true);  // Allowed = true
@@ -427,9 +427,9 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     // Remove all modules that were inlined
     // V3Dead will also clean them up, but if we have debug on, it's a good
     // idea to avoid dumping the hugely exploded tree.
-    AstModule* nextmodp;
-    for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
-	nextmodp = modp->nextp()->castModule();
+    AstNodeModule* nextmodp;
+    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
+	nextmodp = modp->nextp()->castNodeModule();
 	if (modp->user1p()) { // Was inlined
 	    modp->unlinkFrBack()->deleteTree(); modp=NULL;
 	}

@@ -54,7 +54,7 @@ private:
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
     AstVAssert*	m_assertp;	// Current assertion
     int		m_senitemCvtNum; // Temporary signal counter
@@ -67,7 +67,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);
 	m_modp = nodep;
@@ -362,7 +362,7 @@ public:
 class LinkBotupVisitor : public AstNVisitor {
 private:
     // STATE
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
 
     // METHODS
     static int debug() {
@@ -376,7 +376,7 @@ private:
 	// Iterate modules backwards, in bottom-up order.
 	nodep->iterateChildrenBackwards(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;

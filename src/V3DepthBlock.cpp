@@ -44,7 +44,7 @@ private:
     // NODE STATE
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstCFunc*		m_funcp;	// Current function
     int			m_depth;	// How deep in an expression
     int			m_deepNum;	// How many functions made
@@ -77,7 +77,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_deepNum = 0;

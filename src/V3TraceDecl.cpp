@@ -44,7 +44,7 @@ private:
     // NODE STATE
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstScope*		m_scopetopp;	// Current top scope
     AstCFunc*		m_initFuncp;	// Trace function being built
     AstCFunc*		m_initSubFuncp;	// Trace function being built (under m_init)

@@ -52,7 +52,7 @@
 class ParamVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    //	 AstModule::user4()	// bool	  True if parameters numbered
+    //	 AstNodeModule::user4()	// bool	  True if parameters numbered
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
     //				//        (0=not processed, 1=iterated, but no number, 65+ parameter numbered)
     AstUser4InUse	m_inuser4;
@@ -61,9 +61,9 @@ private:
     // STATE
     typedef std::map<AstVar*,AstVar*> VarCloneMap;
     struct ModInfo {
-	AstModule*	m_modp;		// Module with specified name
+	AstNodeModule*	m_modp;		// Module with specified name
 	VarCloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
-	ModInfo(AstModule* modp) { m_modp=modp; }
+	ModInfo(AstNodeModule* modp) { m_modp=modp; }
     };
     typedef std::map<string,ModInfo> ModNameMap;
     ModNameMap	m_modNameMap;	// Hash of created module flavors by name
@@ -79,7 +79,7 @@ private:
 	return level;
     }
 
-    void makeSmallNames(AstModule* modp) {
+    void makeSmallNames(AstNodeModule* modp) {
 	vector<int> usedLetter; usedLetter.resize(256);
 	// Pass 1, assign first letter to each gparam's name
 	for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
@@ -93,7 +93,7 @@ private:
 	    }
 	}
     }
-    string paramSmallName(AstModule* modp, AstVar* varp) {
+    string paramSmallName(AstNodeModule* modp, AstVar* varp) {
 	if (varp->user4()<=1) {
 	    makeSmallNames(modp);
 	}
@@ -122,7 +122,7 @@ private:
 	// Modules must be done in top-down-order
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	nodep->iterateChildren(*this);
     }
@@ -314,7 +314,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 
 	    //
 	    // Already made this flavor?
-	    AstModule* modp = NULL;
+	    AstNodeModule* modp = NULL;
 	    ModNameMap::iterator iter = m_modNameMap.find(newname);
 	    if (iter != m_modNameMap.end()) modp = iter->second.m_modp;
 	    if (!modp) {

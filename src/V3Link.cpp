@@ -48,7 +48,7 @@ class LinkVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
-    //   AstModule::user1p()	// V3SymTable*    Module's Symbol table
+    //   AstNodeModule::user1p() // V3SymTable*    Module's Symbol table
     //   AstNodeFTask::user1p()	// V3SymTable*    Local Symbol table
     //   AstBegin::user1p()	// V3SymTable*    Local Symbol table
     //   AstVar::user2p()	// bool		  True if port set for this variable
@@ -65,7 +65,7 @@ private:
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;	// Current module
     AstNodeFTask* m_ftaskp;	// Current function/task
     IdState	m_idState;	// Id linking mode (find or resolve)
     int		m_paramNum;	// Parameter number, for position based connection
@@ -172,7 +172,7 @@ private:
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Look at all modules, and store pointers to all module names
-	for (AstModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castModule()) {
+	for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
 	    symsFindNew(modp, NULL);
 	}
 	// And recurse...
@@ -185,7 +185,7 @@ private:
 	nodep->checkTree();
     }
 
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(2,"Link Module: "<<nodep<<endl);
 	m_modp = nodep;

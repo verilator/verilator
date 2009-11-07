@@ -58,7 +58,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     bool		m_constXCvt;	// Convert X's
     V3Double0		m_statUnkVars;	// Statistic tracking
     AstAssignW*		m_assignwp;	// Current assignment
@@ -146,7 +146,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_constXCvt = true;

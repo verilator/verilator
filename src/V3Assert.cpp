@@ -44,7 +44,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstModule*	m_modp;		// Last module
+    AstNodeModule*	m_modp;		// Last module
     AstBegin*	m_beginp;	// Last begin
     V3Double0	m_statAsCover;	// Statistic tracking
     V3Double0	m_statAsPsl;	// Statistic tracking
@@ -257,7 +257,7 @@ private:
 	m_statAsSV++;
     }
 
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	//
 	nodep->iterateChildren(*this);

@@ -33,7 +33,7 @@ class V3Inst {
 public:
     static void instAll(AstNetlist* nodep);
     static void dearrayAll(AstNetlist* nodep);
-    static void pinReconnectSimple(AstPin* nodep, AstCell* cellp, AstModule* modp);
+    static void pinReconnectSimple(AstPin* nodep, AstCell* cellp, AstNodeModule* modp);
 };
 
 #endif // Guard
