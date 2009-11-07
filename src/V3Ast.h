@@ -468,6 +468,9 @@ protected:
 	++cntGblRef;
 	UASSERT_STATIC(cntGblRef, "User*() overflowed!");
     }
+    static void checkcnt(int id, uint32_t&, bool& userBusyRef) {
+	UASSERT_STATIC(userBusyRef, "Check of User"+cvtToStr(id)+"() failed, not under AstUserInUse");
+    }
 };
 
 // For each user() declare the in use structure
@@ -482,6 +485,7 @@ public:
     AstUser1InUse()     { allocate(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser1InUse()    { free    (1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void check() { checkcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser2InUse : AstUserInUseBase {
 protected:
@@ -492,6 +496,7 @@ public:
     AstUser2InUse()      { allocate(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser2InUse()     { free    (2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear()  { clearcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void check()	 { checkcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser3InUse : AstUserInUseBase {
 protected:
@@ -502,6 +507,7 @@ public:
     AstUser3InUse()      { allocate(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser3InUse()     { free    (3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear()  { clearcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void check()	 { checkcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class AstUser4InUse : AstUserInUseBase {
 protected:
@@ -512,6 +518,7 @@ public:
     AstUser4InUse()      { allocate(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     ~AstUser4InUse()     { free    (4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear()  { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void check()	 { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 
 //######################################################################

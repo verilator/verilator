@@ -88,6 +88,7 @@ class V3SymTable : public AstNUser {
 	return NULL;
     }
     void dump(ostream& os, const string& indent="", bool user4p_is_table=false) const {
+	if (user4p_is_table) { AstUser4InUse::check(); }
 	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
 	    os<<indent<<it->first;
 	    for (int i=it->first.length(); i<30; ++i) os<<" ";
