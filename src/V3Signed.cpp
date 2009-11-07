@@ -172,6 +172,11 @@ private:
 	if (nodep->taskp()) nodep->taskp()->iterate(*this);
 	nodep->signedFrom(nodep->taskp());
     }
+    virtual void visit(AstRefDType* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->defp()) nodep->defp()->iterate(*this);
+	nodep->signedFrom(nodep->skipRefp());
+    }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	if (!nodep->castGenIf()) {  // for m_paramsOnly
 	    nodep->ifsp()->iterateAndNext(*this);

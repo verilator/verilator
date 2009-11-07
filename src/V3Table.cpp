@@ -163,7 +163,7 @@ public:
 	UINFO(9,"   SimVARREF "<<nodep<<endl);
 	AstVarScope* vscp = nodep->varScopep();
 	if (nodep->lvalue()) {
-	    m_outWidth += nodep->varp()->dtypep()->widthTotalBytes();
+	    m_outWidth += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
 	    m_outVarps.push_back(vscp);
 	} else {
 	    // We'll make the table with a separate natural alignment for each

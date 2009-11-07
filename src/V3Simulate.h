@@ -244,7 +244,7 @@ private:
 	// We can't have non-delayed assignments with same value on LHS and RHS
 	// as we don't figure out variable ordering.
 	// Delayed is OK though, as we'll decode the next state separately.
-	if (!nodep->varp()->dtypep()->castBasicDType()) clearOptimizable(nodep,"Array references/not basic");
+	if (!nodep->varp()->dtypeSkipRefp()->castBasicDType()) clearOptimizable(nodep,"Array references/not basic");
 	if (nodep->lvalue()) {
 	    if (m_inDlyAssign) {
 		if (!(vscp->user1() & VU_LVDLY)) {

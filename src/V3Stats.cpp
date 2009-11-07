@@ -94,8 +94,8 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_counting) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
-	    if (nodep->dtypep()->castArrayDType()) ++m_statVarArray;
-	    else m_statVarBytes += nodep->dtypep()->widthTotalBytes();
+	    if (nodep->dtypeSkipRefp()->castArrayDType()) ++m_statVarArray;
+	    else m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();
 	    if (int(m_statVarWidths.size()) <= nodep->width()) {
 		m_statVarWidths.resize(nodep->width()+5);
 	    }
@@ -106,8 +106,8 @@ private:
 	allNodes(nodep);
 	nodep->iterateChildren(*this);
 	if (m_counting) {
-	    if (nodep->varp()->dtypep()->castBasicDType()) {
-		m_statVarScpBytes += nodep->varp()->dtypep()->widthTotalBytes();
+	    if (nodep->varp()->dtypeSkipRefp()->castBasicDType()) {
+		m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
 	    }
 	}
     }

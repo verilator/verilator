@@ -177,7 +177,8 @@ public:
     V3ParseSym(AstNetlist* rootp) {
 	s_anonNum = 0;		// Number of next anonymous object
 	pushScope(findNewTable(rootp, NULL));
-	m_symTableNextId = symCurrentp();
+	m_symTableNextId = NULL;
+	m_symCurrentp = symCurrentp();
     }
     ~V3ParseSym() {
 	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {

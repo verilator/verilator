@@ -29,6 +29,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <map>
+#include <iomanip>
 
 #include "V3Global.h"
 
@@ -90,10 +91,12 @@ class V3SymTable : public AstNUser {
 	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
 	    os<<indent<<it->first;
 	    for (int i=it->first.length(); i<30; ++i) os<<" ";
-	    os<<it->second<<endl;
 	    if (user4p_is_table) {
 		V3SymTable* belowp = (it->second)->user4p()->castSymTable();
-		belowp->dump(os, indent+"  ", user4p_is_table);
+		os<<setw(10)<<(void*)(belowp)<<setw(0)<<"  "<<it->second<<endl;
+		if (belowp) belowp->dump(os, indent+"+ ", user4p_is_table);
+	    } else {
+		os<<it->second<<endl;
 	    }
 	}
     }

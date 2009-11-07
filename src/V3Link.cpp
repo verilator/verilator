@@ -376,6 +376,30 @@ private:
 	nodep->iterateChildren(*this);
     }
 
+    virtual void visit(AstTypedef* nodep, AstNUser*) {
+	// Remember its name for later resolution
+	if (!m_curVarsp) nodep->v3fatalSrc("Typedef not under module??\n");
+	nodep->iterateChildren(*this);
+	if (m_idState==ID_FIND) {
+	    findAndInsertAndCheck(nodep, nodep->name());
+	}
+    }
+    virtual void visit(AstTypedefFwd* nodep, AstNUser*) {
+	// We only needed the forward declaration in order to parse correctly.
+	// We won't even check it was ever really defined, as it might have been in a header
+	// file referring to a module we never needed
+	nodep->unlinkFrBack()->deleteTree();
+    }
+    virtual void visit(AstRefDType* nodep, AstNUser*) {
+	// Resolve its reference
+	if (m_idState==ID_RESOLVE && !nodep->defp()) {
+	    AstTypedef* defp = m_curVarsp->findIdUpward(nodep->name())->castTypedef();
+	    if (!defp) { nodep->v3error("Can't find typedef: "<<nodep->prettyName()); }
+	    nodep->defp(defp);
+	}
+	nodep->iterateChildren(*this);
+    }
+
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
 	if (m_idState==ID_FIND) {

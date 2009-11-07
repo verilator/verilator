@@ -389,6 +389,12 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	}
 	puts("]");
     }
+    virtual void visit(AstTypedef* nodep, AstNUser*) {
+	puts("typedef ");
+	nodep->dtypep()->iterateAndNext(*this); puts(" ");
+	puts(nodep->name());
+	puts(";\n");
+    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (nodep->dotted()!="") { puts(nodep->dotted()); puts("."); }
 	puts(nodep->name());

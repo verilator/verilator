@@ -206,6 +206,13 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstTypedef* nodep, AstNUser*) {
+	if (m_cellp) {
+	    // Typedef under the inline cell, need to rename to avoid conflicts
+	    nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
+	}
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (m_cellp) {
 	    if (nodep->varp()->user2p()  // It's being converted to a alias.
@@ -248,6 +255,10 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+
+    // Not needed, as V3LinkDot doesn't care about typedefs
+    //virtual void visit(AstRefDType* nodep, AstNUser*) {}
+
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Begin

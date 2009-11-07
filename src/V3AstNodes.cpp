@@ -146,13 +146,15 @@ AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
     //	   SEL1 needs to select from entire variable which is a pointer to ARRAYSEL0
     int dim = 0;
     for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    if ((dim++)==dimension) {
 		return dtypep;
 	    }
 	    dtypep = adtypep->dtypep();
 	    continue;
-	} else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
+	}
+	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
 	    // AstBasicDType - nothing below, return null
 	    if (adtypep->rangep()) {
 		if ((dim++) == dimension) {
@@ -170,10 +172,12 @@ AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
 uint32_t AstVar::arrayElements() const {
     uint32_t entries=1;
     for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    entries *= adtypep->elementsConst();
 	    dtypep = adtypep->dtypep();
-	} else {
+	}
+	else {
 	    // AstBasicDType - nothing below, 1
 	    break;
 	}
@@ -377,6 +381,11 @@ void AstPin::dump(ostream& str) {
 void AstRange::dump(ostream& str) {
     this->AstNode::dump(str);
     if (littleEndian()) str<<" [LITTLE]";
+}
+void AstRefDType::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (defp()) { str<<" -> "; defp()->dump(str); }
+    else { str<<" -> UNLINKED"; }
 }
 void AstVarXRef::dump(ostream& str) {
     this->AstNode::dump(str);

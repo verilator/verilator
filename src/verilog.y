@@ -166,6 +166,7 @@ class AstSenTree;
 // package_identifier, type_identifier, variable_identifier,
 %token<strp>		yaID__ETC	"IDENTIFIER"
 %token<strp>		yaID__LEX	"IDENTIFIER-in-lex"
+%token<strp>		yaID__aTYPE	"TYPE-IDENTIFIER"
 
 // IEEE: integral_number
 %token<nump>		yaINTNUM	"INTEGER NUMBER"
@@ -296,6 +297,7 @@ class AstSenTree;
 %token<fl>		yTIMEUNIT	"timeunit"
 %token<fl>		yTRI		"tri"
 %token<fl>		yTRUE		"true"
+%token<fl>		yTYPEDEF	"typedef"
 %token<fl>		yUNIQUE		"unique"
 %token<fl>		yUNSIGNED	"unsigned"
 %token<fl>		yVAR		"var"
@@ -513,9 +515,9 @@ description:			// ==IEEE: description
 	|	error					{ }
 	;
 
-timeunits_declaration:		// ==IEEE: timeunits_declaration
-		yTIMEUNIT       yaTIMENUM ';'		{ }
-	| 	yTIMEPRECISION  yaTIMENUM ';'		{ }
+timeunits_declaration<nodep>:	// ==IEEE: timeunits_declaration
+		yTIMEUNIT       yaTIMENUM ';'		{ $$ = NULL; }
+	| 	yTIMEPRECISION  yaTIMENUM ';'		{ $$ = NULL; }
 	;
 
 //**********************************************************************
@@ -738,7 +740,7 @@ non_port_program_item<nodep>:	// ==IEEE: non_port_program_item
 	|	initial_construct			{ $$ = $1; }
 	|	final_construct				{ $$ = $1; }
 	|	concurrent_assertion_item		{ $$ = $1; }
-	//UNSUP	timeunits_declaration			{ $$ = $1; }
+	|	timeunits_declaration			{ $$ = $1; }
 	|	program_generate_item			{ $$ = $1; }
 	;
 
@@ -919,7 +921,7 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// This expansion also replicated elsewhere, IE data_type__AndID
 		data_typeNoRef				{ $$ = $1; }
 	//			// IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
-	//UNSUP	ps_type  packed_dimensionE		{ UNSUP }
+	|	ps_type  packed_dimensionE		{ $$ = GRAMMARP->createArray($1,$2); }
 	//UNSUP	class_scope_type packed_dimensionE	{ UNSUP }
 	//			// IEEE: class_type
 	//UNSUP	class_typeWithoutId			{ $$ = $1; }
@@ -1023,7 +1025,7 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// VARRESET can't be called here - conflicts
 		data_declarationVar			{ $$ = $1; }
-	//UNSUP	type_declaration			{ $$ = $1; }
+	|	type_declaration			{ $$ = $1; }
 	//UNSUP	package_import_declaration		{ $$ = $1; }
 	//			// IEEE: virtual_interface_declaration
 	//			// "yVIRTUAL yID yID" looks just like a data_declaration
@@ -1060,6 +1062,19 @@ implicit_type<dtypep>:		// IEEE: part of *data_type_or_implicit
 	|	signing					{ $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
 	;
 
+type_declaration<nodep>:	// ==IEEE: type_declaration
+	//			// Use idAny, as we can redeclare a typedef on an existing typedef
+	 /*U*/	yTYPEDEF data_type idAny variable_dimensionListE ';'	{ $$ = new AstTypedef($<fl>1, *$3, GRAMMARP->createArray($2,$4)); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; $1->v3error("Unsupported: SystemVerilog 2005 typedef in this context"); } //UNSUP
+	//			// Combines into above "data_type id" rule
+	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
+	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	;
+
 //************************************************
 // Module Items
 
@@ -1086,7 +1101,7 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	//UNSUP	program_declaration			{ $$ = $1; }
 	//UNSUP	module_declaration			{ $$ = $1; }
 	//UNSUP	interface_declaration			{ $$ = $1; }
-	|	timeunits_declaration			{ $$ = NULL; }
+	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
 	|	yaSCINT					{ $$ = new AstScInt($<fl>1,*$1); }
@@ -1345,6 +1360,16 @@ wirerangeE<dtypep>:
 
 anyrange<rangep>:
 		'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
+	;
+
+packed_dimensionE<rangep>:	// IEEE: [ packed_dimension ]
+		/* empty */				{ $$ = NULL; }
+	|	packed_dimension			{ $$ = $1; }
+	;
+
+packed_dimension<rangep>:	// ==IEEE: packed_dimension
+		anyrange				{ $$ = $1; }
+	//UNSUP	'[' ']'					{ UNSUP }
 	;
 
 delayrange<dtypep>:
@@ -2424,8 +2449,8 @@ idAny<strp>:			// Any kind of identifier
 	//UNSUP	yaID__aCLASS				{ $$ = $1; $<fl>$=$<fl>1; }
 	//UNSUP	yaID__aCOVERGROUP			{ $$ = $1; $<fl>$=$<fl>1; }
 	//UNSUP	yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
-	//UNSUP	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
-		yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
+		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
@@ -2581,7 +2606,13 @@ immediate_assert_statement<nodep>:	// ==IEEE: immediate_assert_statement
 // Each of these must end with {symsPackageDone | symsClassDone}
 
 ps_id_etc<strp>:		// package_scope + general id
-		package_scopeIdFollowsE id		{ $$=$2; }
+		package_scopeIdFollowsE id		{ $$ = $2; }
+	;
+
+ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
+				// Even though we looked up the type and have a AstNode* to it,
+				// we can't fully resolve it because it may have been just a forward definition.
+		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>1, *$2); }
 	;
 
 //=== Below rules assume special scoping per above
@@ -2721,8 +2752,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
     AstNodeDType* arrayDTypep = createArray(dtypep,arrayp);
 
-    AstVar* nodep = new AstVar(fileline, type, name,
-			       arrayDTypep);
+    AstVar* nodep = new AstVar(fileline, type, name, arrayDTypep);
     nodep->addAttrsp(attrsp);
     if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varIO);

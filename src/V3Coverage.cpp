@@ -168,14 +168,14 @@ private:
 		ToggleEnt newvec (string(""),
 				  new AstVarRef(nodep->fileline(), nodep, false),
 				  new AstVarRef(nodep->fileline(), chgVarp, true));
-		toggleVarRecurse(nodep->dtypep(), 0, newvec,
+		toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec,
 				 nodep, chgVarp);
 		newvec.cleanup();
 	    }
 	}
     }
 
-    void toggleVarBottom(AstNodeDType* nodep, int depth, // per-iteration
+    void toggleVarBottom(AstNodeDType* dtypep, int depth, // per-iteration
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
 	AstCoverToggle* newp
@@ -187,41 +187,41 @@ private:
 	m_modp->addStmtp(newp);
     }
 
-    void toggleVarRecurse(AstNodeDType* nodep, int depth, // per-iteration
+    void toggleVarRecurse(AstNodeDType* dtypep, int depth, // per-iteration
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
-	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+	if (AstBasicDType* bdtypep = dtypep->castBasicDType()) {
 	    if (bdtypep->rangep()) {
 		for (int index_docs=bdtypep->lsb(); index_docs<bdtypep->msb()+1; index_docs++) {
 		    int index_code = index_docs - bdtypep->lsb();
 		    ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
 				      new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code, 1),
 				      new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code, 1));
-		    toggleVarBottom(nodep, depth+1,
+		    toggleVarBottom(dtypep, depth+1,
 				    newent,
 				    varp, chgVarp);
 		    newent.cleanup();
 		}
 	    } else {
-		toggleVarBottom(nodep, depth+1,
+		toggleVarBottom(dtypep, depth+1,
 				above,
 				varp, chgVarp);
 	    }
 	}
-	else if (AstArrayDType* adtypep = nodep->castArrayDType()) {
+	else if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb()+1; ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
 				  new AstArraySel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code),
 				  new AstArraySel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code));
-		toggleVarRecurse(adtypep->dtypep(), depth+1,
+		toggleVarRecurse(adtypep->dtypeSkipRefp(), depth+1,
 				 newent,
 				 varp, chgVarp);
 		newent.cleanup();
 	    }
 	}
 	else {
-	    nodep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "<<nodep->prettyTypeName());
+	    dtypep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "<<dtypep->prettyTypeName());
 	}
     }
 

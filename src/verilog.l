@@ -35,7 +35,7 @@ extern void yyerrorf(const char* format, ...);
 #define STATE_VERILOG_RECENT  S05		// State name for most recent Verilog Version
 
 #define PARSEP V3ParseImp::parsep()
-
+#define SYMP PARSEP->symp()
 
 #define YY_INPUT(buf,result,max_size) \
     result = PARSEP->flexPpInputToLex(buf,max_size);
@@ -378,6 +378,7 @@ escid	\\[^ \t\f\r\n]+
   "static"		{ FL; return ySTATIC; }
   "timeprecision"	{ FL; return yTIMEPRECISION; }
   "timeunit"		{ FL; return yTIMEUNIT; }
+  "typedef"		{ FL; return yTYPEDEF; }
   "unique"		{ FL; return yUNIQUE; }
   "var"			{ FL; return yVAR; }
   "void"		{ FL; return yVOID; }
@@ -445,7 +446,6 @@ escid	\\[^ \t\f\r\n]+
   "this"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "throughout"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "type"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "typedef"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "virtual"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "wait_order"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "wildcard"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -876,7 +876,31 @@ int V3ParseImp::lexToken() {
     // called from lexToBison, has a "this"
     // yylvalp is global
     int token = yylexThis();
-    if (token == yaID__LEX) { token = yaID__ETC; }
+    if (token == yaID__LEX) {
+	AstNode* scp;
+	if (V3SymTable* look_underp = SYMP->nextId()) {
+	    if (debugFlex()) { cout<<"   lexToken: next id lookup forced under "<<look_underp<<endl; }
+	    scp = look_underp->findIdUpward(*(yylval.strp));
+	    // "consume" it.  Must set again if want another token under temp scope
+	    SYMP->nextId(NULL);
+	} else {
+	    UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()<<" for '"<<*(yylval.strp)<<"'"<<endl);
+	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
+	    scp = SYMP->symCurrentp()->findIdUpward(*(yylval.strp));
+	}
+	if (scp) {
+	    UINFO(7,"   lexToken: Found "<<scp<<endl);
+	    //UNSUP s_yylvalp->scp = scp;
+	    if (scp->castTypedef())		token = yaID__aTYPE;
+	    else if (scp->castTypedefFwd())	token = yaID__aTYPE;
+	    //UNSUP else if (scp->castClass()) 		token = yaID__aCLASS;
+	    //UNSUP else if (scp->castPackage()) 	token = yaID__aPACKAGE;
+	    //UNSUP else if (scp->castCoverGroup()) 	token = yaID__aCOVERGROUP;
+	    else token = yaID__ETC;
+	} else {  // Not found
+	    token = yaID__ETC;
+	}
+    }
     return token;
 }
 
@@ -886,6 +910,9 @@ int V3ParseImp::lexToBison() {
     //yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex()>=6 || debugBison()>=6) {
 	cout<<"   lexToBison  TOKEN="<<tok<<" "<<tokenName(tok);
+	if (tok == yaID__ETC || tok == yaID__LEX || tok == yaID__aTYPE) {
+	    cout<<"   strp='"<<*(yylval.strp)<<"'";
+	}
 	cout<<endl;
     }
     return tok;

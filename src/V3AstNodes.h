@@ -108,7 +108,36 @@ public:
 //######################################################################
 //==== Data Types
 
+struct AstTypedef : public AstNode {
+    string	m_name;
+public:
+    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtypep)
+	: AstNode(fl), m_name(name) {
+	setOp1p(dtypep);
+	widthSignedFrom(dtypep);
+    }
+    ASTNODE_NODE_FUNCS(Typedef, TYPEDEF)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    // METHODS
+    virtual string name() const { return m_name; }
+    virtual bool maybePointedTo() const { return true; }
+    void name(const string& flag) { m_name = flag; }
+};
+
+struct AstTypedefFwd : public AstNode {
+    // Forward declaration of a type; stripped after netlist parsing is complete
+    string	m_name;
+public:
+    AstTypedefFwd(FileLine* fl, const string& name)
+	: AstNode(fl), m_name(name) {}
+    ASTNODE_NODE_FUNCS(TypedefFwd, TYPEDEFFWD)
+    // METHODS
+    virtual string name() const { return m_name; }
+};
+
 struct AstArrayDType : public AstNodeDType {
+    // Array data type, ie "some_dtype var_name [2:0]"
     AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep)
 	: AstNodeDType(fl) {
 	setOp1p(dtypep);
@@ -117,11 +146,13 @@ struct AstArrayDType : public AstNodeDType {
     }
     ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstRange*	arrayp() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
     void	arrayp(AstRange* nodep) { setOp2p(nodep); }
     // METHODS
     virtual AstBasicDType* basicp() { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() { return this; }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return elementsConst() * dtypep()->widthTotalBytes(); }
     int		msb() const { return arrayp()->msbConst(); }
@@ -181,6 +212,7 @@ public:
     }
     // METHODS
     virtual AstBasicDType* basicp() { return this; }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() { return this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     bool	isBitLogic() const { return keyword().isBitLogic(); }
@@ -193,6 +225,42 @@ public:
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
     void	implicit(bool flag) { m_implicit = flag; }
+};
+
+struct AstRefDType : public AstNodeDType {
+    AstTypedef*	m_defp;
+    string	m_name;
+public:
+    AstRefDType(FileLine* fl, const string& name)
+	: AstNodeDType(fl), m_defp(NULL), m_name(name) {}
+    AstRefDType(FileLine* fl, AstTypedef* defp)
+	: AstNodeDType(fl), m_defp(defp), m_name(defp->name()) {
+	widthSignedFrom(defp);
+    }
+    ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
+    // METHODS
+    virtual bool broken() const { return m_defp && !m_defp->brokeExists(); }
+    virtual void cloneRelink() { if (m_defp && m_defp->clonep()) {
+	m_defp = m_defp->clonep()->castTypedef();
+    }}
+    virtual void dump(ostream& str=cout);
+    virtual string name() const { return m_name; }
+    virtual AstBasicDType* basicp() { return defp() ? dtypep()->basicp() : NULL; }
+    virtual AstNodeDType* skipRefp() {
+	// Skip past both the Ref and the Typedef
+	if (defp()) return defp()->dtypep();
+	else { v3fatalSrc("Typedef not linked"); return NULL; }
+    }
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+    void name(const string& flag) { m_name = flag; }
+    AstNodeDType* dtypep() const {
+	if (defp()) return defp()->dtypep();
+	else { v3fatalSrc("Typedef not linked"); return NULL; }
+    }
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
+    AstTypedef* defp() const { return m_defp; }
+    void defp(AstTypedef* nodep) { m_defp=nodep; }
 };
 
 //######################################################################
@@ -394,6 +462,7 @@ public:
     string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     AstNodeDType* dtypeDimensionp(int depth) const;
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
@@ -1719,7 +1788,7 @@ public:
 	m_code = 0;
 	m_codeInc = varp->arrayElements() * varp->widthWords();
 	m_lsb = varp->lsbEndianed();  m_msb = varp->msbEndianed();
-	if (AstArrayDType* adtypep = varp->dtypep()->castArrayDType()) {
+	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
 	    m_arrayLsb = adtypep->arrayp()->lsbConst();
 	    m_arrayMsb = adtypep->arrayp()->msbConst();
 	} else {

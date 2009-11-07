@@ -1706,7 +1706,7 @@ endcase, endfunction, endgenerate, endmodule, endspecify, endtask, final,
 for, function, generate, genvar, if, initial, inout, input, int, integer,
 localparam, logic, longint, macromodule, module, nand, negedge, nor, not,
 or, output, parameter, posedge, reg, scalared, shortint, signed, supply0,
-supply1, task, tri, var, vectored, while, wire, xnor, xor
+supply1, task, tri, typedef, var, vectored, while, wire, xnor, xor
 
 Generally supported.
 

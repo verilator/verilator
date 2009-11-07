@@ -501,6 +501,15 @@ private:
 	// else width in node is correct; it was set based on keyword().width()
 	// at construction time
     }
+    virtual void visit(AstRefDType* nodep, AstNUser* vup) {
+	nodep->iterateChildren(*this, vup);
+	if (nodep->defp()) nodep->defp()->iterate(*this,vup);
+	nodep->widthFrom(nodep->dtypeSkipRefp());
+    }
+    virtual void visit(AstTypedef* nodep, AstNUser* vup) {
+	nodep->iterateChildren(*this, vup);
+	nodep->widthFrom(nodep->dtypep()->skipRefp());
+    }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width
