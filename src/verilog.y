@@ -44,6 +44,10 @@ extern void yyerrorf(const char* format, ...);
 //======================================================================
 // Statics (for here only)
 
+#define PARSEP V3ParseImp::parsep()
+#define SYMP PARSEP->symp()
+#define GRAMMARP V3ParseGrammar::singletonp()
+
 class V3ParseGrammar {
 public:
     bool	m_impliedDecl;	// Allow implied wire declarations
@@ -96,6 +100,18 @@ public:
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
     }
+    AstPackage* unitPackage(FileLine* fl) {	
+	// Find one made earlier?
+	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->castPackage();
+	if (!pkgp) {
+	    pkgp = new AstPackage(fl, AstPackage::dollarUnitName());
+	    pkgp->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
+	    pkgp->modTrace(false);  // may reconsider later
+	    PARSEP->rootp()->addModulep(pkgp);
+	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
+	}
+	return pkgp;
+    }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstRange* rangesp) {
 	if (!rangesp) {
 	    return dtypep;
@@ -116,10 +132,6 @@ public:
     }
     string   deQuote(FileLine* fileline, string text);
 };
-
-#define PARSEP V3ParseImp::parsep()
-#define SYMP PARSEP->symp()
-#define GRAMMARP V3ParseGrammar::singletonp()
 
 const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;	// Shorthand "LOGIC"
 const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
@@ -166,6 +178,7 @@ class AstSenTree;
 // package_identifier, type_identifier, variable_identifier,
 %token<strp>		yaID__ETC	"IDENTIFIER"
 %token<strp>		yaID__LEX	"IDENTIFIER-in-lex"
+%token<strp>		yaID__aPACKAGE	"PACKAGE-IDENTIFIER"
 %token<strp>		yaID__aTYPE	"TYPE-IDENTIFIER"
 
 // IEEE: integral_number
@@ -246,6 +259,7 @@ class AstSenTree;
 %token<fl>		yENDFUNCTION	"endfunction"
 %token<fl>		yENDGENERATE	"endgenerate"
 %token<fl>		yENDMODULE	"endmodule"
+%token<fl>		yENDPACKAGE	"endpackage"
 %token<fl>		yENDPROGRAM	"endprogram"
 %token<fl>		yENDPROPERTY	"endproperty"
 %token<fl>		yENDSPECIFY	"endspecify"
@@ -275,6 +289,7 @@ class AstSenTree;
 %token<fl>		yNOTIF1		"notif1"
 %token<fl>		yOR		"or"
 %token<fl>		yOUTPUT		"output"
+%token<fl>		yPACKAGE	"package"
 %token<fl>		yPARAMETER	"parameter"
 %token<fl>		yPOSEDGE	"posedge"
 %token<fl>		yPRIORITY	"priority"
@@ -337,6 +352,7 @@ class AstSenTree;
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNSIGNED	"$unsigned"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
@@ -472,6 +488,11 @@ class AstSenTree;
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -508,8 +529,8 @@ description:			// ==IEEE: description
 		module_declaration			{ }
 	//UNSUP	interface_declaration			{ }
 	|	program_declaration			{ }
-	//UNSUP	package_declaration			{ }
-	//UNSUP	package_item				{ }
+	|	package_declaration			{ }
+	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
 	//UNSUP	bind_directive				{ }
 	//	unsupported	// IEEE: config_declaration
 	|	error					{ }
@@ -522,6 +543,38 @@ timeunits_declaration<nodep>:	// ==IEEE: timeunits_declaration
 
 //**********************************************************************
 // Packages
+
+package_declaration:		// ==IEEE: package_declaration
+		packageFront package_itemListE yENDPACKAGE endLabelE
+			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
+			  if ($2) $1->addStmtp($2);
+			  SYMP->popScope($1); }
+	;
+
+packageFront<modulep>:
+		yPACKAGE idAny ';'
+			{ $$ = new AstPackage($1,*$2);
+			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
+			  $$->modTrace(v3Global.opt.trace());
+			  PARSEP->rootp()->addModulep($$);
+			  SYMP->pushNew($$); }
+	;
+
+package_itemListE<nodep>:	// IEEE: [{ package_item }]
+		/* empty */				{ $$ = NULL; }
+	|	package_itemList			{ $$ = $1; }
+	;
+
+package_itemList<nodep>:	// IEEE: { package_item }
+		package_item				{ $$ = $1; }
+	|	package_itemList package_item		{ $$ = $1->addNextNull($2); }
+	;
+
+package_item<nodep>:		// ==IEEE: package_item
+		package_or_generate_item_declaration	{ $$ = $1; }
+	//UNSUP	anonymous_program			{ $$ = $1; }
+	|	timeunits_declaration			{ $$ = $1; }
+	;
 
 package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item_declaration
 		net_declaration				{ $$ = $1; }
@@ -1762,14 +1815,17 @@ for_step<nodep>:		// IEEE: for_step
 //************************************************
 // Functions/tasks
 
-taskRef<nodep>:			// IEEE: part of tf_call
+taskRef<ftaskrefp>:		// IEEE: part of tf_call
 		idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),NULL);}
 	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),$3);}
+	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::TASK, $2),NULL);}
+	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::TASK, $2),$4);}
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
-funcRef<nodep>:			// IEEE: part of tf_call
+funcRef<ftaskrefp>:		// IEEE: part of tf_call
 		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
+	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($3,new AstParseRef($2->fileline(), AstParseRefExp::FUNC, $2), $4); $$->packagep($1); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -2448,8 +2504,8 @@ id<strp>:
 idAny<strp>:			// Any kind of identifier
 	//UNSUP	yaID__aCLASS				{ $$ = $1; $<fl>$=$<fl>1; }
 	//UNSUP	yaID__aCOVERGROUP			{ $$ = $1; $<fl>$=$<fl>1; }
-	//UNSUP	yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
-		yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
+		yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
@@ -2605,22 +2661,31 @@ immediate_assert_statement<nodep>:	// ==IEEE: immediate_assert_statement
 // must be included in the rules below.
 // Each of these must end with {symsPackageDone | symsClassDone}
 
-ps_id_etc<strp>:		// package_scope + general id
-		package_scopeIdFollowsE id		{ $$ = $2; }
+ps_id_etc:		// package_scope + general id
+		package_scopeIdFollowsE id		{ }
 	;
 
 ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
-		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>1, *$2); }
+		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>2, *$2); $$->castRefDType()->packagep($1); }
 	;
 
 //=== Below rules assume special scoping per above
 
-package_scopeIdFollowsE:	// IEEE: [package_scope]
+package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
-		/* empty */				{ }
-	//UNSUP	package_scopeIdFollows			{ UNSUP }
+		/* empty */				{ $$ = NULL; }
+	|	package_scopeIdFollows			{ $$ = $1; }
+	;
+
+package_scopeIdFollows<packagep>:	// IEEE: package_scope
+	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			//vv mid rule action needed otherwise we might not have NextId in time to parse the id token
+		yD_UNIT        { SYMP->nextId(PARSEP->rootp()); }
+	/*cont*/	yP_COLONCOLON	{ $$ = GRAMMARP->unitPackage($<fl>1); }
+	|	yaID__aPACKAGE { SYMP->nextId($<scp>1); }
+	/*cont*/	yP_COLONCOLON	{ $$ = $<scp>1->castPackage(); }
 	;
 
 //************************************************

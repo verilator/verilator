@@ -357,6 +357,7 @@ escid	\\[^ \t\f\r\n]+
   "$onehot0"		{ FL; return yD_ONEHOT0; }
   "$warning"		{ FL; return yD_WARNING; }
   /*     SV2005 Keywords */
+  "$unit"		{ FL; return yD_UNIT; }  /* Yes, a keyword, not task */
   "always_comb"		{ FL; return yALWAYS; }
   "always_ff"		{ FL; return yALWAYS; }
   "always_latch"	{ FL; return yALWAYS; }
@@ -365,6 +366,7 @@ escid	\\[^ \t\f\r\n]+
   "clocking"		{ FL; return yCLOCKING; }
   "do"			{ FL; return yDO; }
   "endclocking"		{ FL; return yENDCLOCKING; }
+  "endpackage"		{ FL; return yENDPACKAGE; }
   "endprogram"		{ FL; return yENDPROGRAM; }
   "endproperty"		{ FL; return yENDPROPERTY; }
   "final"		{ FL; return yFINAL; }
@@ -372,6 +374,7 @@ escid	\\[^ \t\f\r\n]+
   "int"			{ FL; return yINT; }
   "logic"		{ FL; return yLOGIC; }
   "longint"		{ FL; return yLONGINT; }
+  "package"		{ FL; return yPACKAGE; }
   "priority"		{ FL; return yPRIORITY; }
   "program"		{ FL; return yPROGRAM; }
   "shortint"		{ FL; return ySHORTINT; }
@@ -385,7 +388,6 @@ escid	\\[^ \t\f\r\n]+
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "$root"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "$unit"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "alias"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "bind"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -403,7 +405,6 @@ escid	\\[^ \t\f\r\n]+
   "endclass"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "endgroup"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "endinterface"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "endpackage"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "endsequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "enum"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "expect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -426,7 +427,6 @@ escid	\\[^ \t\f\r\n]+
   "modport"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "new"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "null"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "package"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "packed"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "protected"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "pure"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -888,13 +888,13 @@ int V3ParseImp::lexToken() {
 	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
 	    scp = SYMP->symCurrentp()->findIdUpward(*(yylval.strp));
 	}
+	yylval.scp = scp;
 	if (scp) {
 	    UINFO(7,"   lexToken: Found "<<scp<<endl);
-	    //UNSUP s_yylvalp->scp = scp;
 	    if (scp->castTypedef())		token = yaID__aTYPE;
 	    else if (scp->castTypedefFwd())	token = yaID__aTYPE;
+	    else if (scp->castPackage()) 	token = yaID__aPACKAGE;
 	    //UNSUP else if (scp->castClass()) 		token = yaID__aCLASS;
-	    //UNSUP else if (scp->castPackage()) 	token = yaID__aPACKAGE;
 	    //UNSUP else if (scp->castCoverGroup()) 	token = yaID__aCOVERGROUP;
 	    else token = yaID__ETC;
 	} else {  // Not found

@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2009 by Wilson Snyder.
 
-//UNSUPtypedef reg [2:0] three_t;
+typedef reg [2:0] threeansi_t;
 
 module t (/*AUTOARG*/
    // Inputs
@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   typedef reg [2:0] three_t; //UNSUP remove
+   typedef reg [2:0] three_t;
 
    integer 	cyc=0;
    reg [63:0] 	crc;
@@ -22,6 +22,7 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   threeansi_t		outa;			// From testa of TestAnsi.v
    three_t		outna;			// From test of TestNonAnsi.v
    // End of automatics
 
@@ -32,14 +33,12 @@ module t (/*AUTOARG*/
 		     .clk		(clk),
 		     .in		(in));
 
-//UNSUP
-//   TestAnsi testa (// Outputs
-//		  .out			(outa),
-//		  /*AUTOINST*/
-//		  // Inputs
-//		  .clk			(clk),
-//		  .in			(in));
-   wire [2:0]  outa = outna;
+   TestAnsi testa (// Outputs
+		  .out			(outa),
+		  /*AUTOINST*/
+		   // Inputs
+		   .clk			(clk),
+		   .in			(in));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {57'h0, outna, 1'b0, outa};
@@ -92,20 +91,15 @@ module TestNonAnsi (/*AUTOARG*/
    end
 endmodule
 
-`ifndef verilator //UNSUPPORTED
-typedef reg [2:0] three_t;
-
 module TestAnsi (
 	     input clk,
-	     input three_t in,
-	     output three_t out
+	     input threeansi_t in,
+	     output threeansi_t out
 	     );
    always @(posedge clk) begin
       out <= ~in;
    end
 endmodule
-
-`endif
 
 // Local Variables:
 // verilog-typedef-regexp: "_t$"

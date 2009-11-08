@@ -101,7 +101,7 @@ private:
 	    nodep->name(name);
 	    nodep->iterateChildren(*this);
 	}
-	if (nodep->modp()->user1p()) {  // Marked with inline request
+	if (nodep->modp()->user1()) {  // Marked with inline request
 	    if (m_cellp) nodep->v3error("Cloning should have already been done bottom-up");
 	    UINFO(5," Inline CELL   "<<nodep<<endl);
 	    UINFO(5,"   To MOD      "<<m_modp<<endl);
@@ -343,6 +343,8 @@ private:
 						|| m_stmtCnt < INLINE_MODS_SMALLER
 						|| v3Global.opt.inlineMult() < 1
 						|| refs*m_stmtCnt < v3Global.opt.inlineMult())));
+	// Packages aren't really "under" anything so they confuse this algorithm
+	if (nodep->castPackage()) doit = false;
 	UINFO(4, " Inline="<<doit<<" Possible="<<allowed<<" Usr="<<userinline<<" Refs="<<refs<<" Stmts="<<m_stmtCnt
 	      <<"  "<<nodep<<endl);
 	if (doit) {
@@ -381,7 +383,7 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	// Cleanup link until V3LinkDot can correct it
-	nodep->taskp(NULL);
+	if (!nodep->packagep()) nodep->taskp(NULL);
 	nodep->iterateChildren(*this);
     }
     // Nop's to speed up the loop
@@ -430,7 +432,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     AstNodeModule* nextmodp;
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
 	nextmodp = modp->nextp()->castNodeModule();
-	if (modp->user1p()) { // Was inlined
+	if (modp->user1()) { // Was inlined
 	    modp->unlinkFrBack()->deleteTree(); modp=NULL;
 	}
     }

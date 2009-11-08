@@ -210,6 +210,7 @@ public:
 
     // METHODS
     LinkDotCellVertex* insertTopCell(AstNodeModule* nodep, const string& scopename) {
+	// Only called on the module at the very top of the hierarchy
 	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
 	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
 	nodep->user1p(vxp);
@@ -382,6 +383,11 @@ private:
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
+	// Process $unit or other packages
+	// Not needed - dotted references not allowed from inside packages
+	//for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+	//    if (nodep->castPackage()) {}}
+
 	// The first module in the list is always the top module (sorted before this is called).
 	// This may not be the module with isTop() set, as early in the steps,
 	// wrapTop may have not been created yet.
@@ -402,6 +408,8 @@ private:
 	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	// Called on top module from Netlist, other modules from the cell creating them,
+	// and packages
 	UINFO(8,"   "<<nodep<<endl);
 	if (!m_cellVxp) {
 	    // Will be optimized away later
@@ -667,7 +675,9 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	UINFO(8,"     "<<nodep<<endl);
-	if (!m_cellVxp) {
+	if (nodep->packagep()) {
+	    // References into packages don't care about cell hierarchy.
+	} else if (!m_cellVxp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->taskp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else {

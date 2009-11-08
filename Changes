@@ -16,7 +16,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "program".
 
+***  Support "package" and $unit.
+
 ***  Support typedef.  [Donal Casey]
+
+***  Add VARHIDDEN warning when signal name hides module name.
 
 * Verilator 3.720 2009/10/26
 

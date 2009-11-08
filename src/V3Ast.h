@@ -1122,17 +1122,18 @@ private:
     bool	m_lvalue;	// Left hand side assignment
     AstVar*	m_varp;		// [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep;	// Varscope for hierarchy
+    AstPackage*	m_packagep;	// Package hierarchy
     string	m_name;		// Name of variable
     string	m_hiername;	// Scope converted into name-> for emitting
     bool	m_hierThis;	// Hiername points to "this" function
 public:
     AstNodeVarRef(FileLine* fl, const string& name, bool lvalue)
 	: AstNodeMath(fl), m_lvalue(lvalue), m_varp(NULL), m_varScopep(NULL),
-	  m_name(name), m_hierThis(false) {
+	  m_packagep(NULL), m_name(name), m_hierThis(false) {
     }
     AstNodeVarRef(FileLine* fl, const string& name, AstVar* varp, bool lvalue)
 	: AstNodeMath(fl), m_lvalue(lvalue), m_varp(varp), m_varScopep(NULL),
-	  m_name(name), m_hierThis(false) {
+	  m_packagep(NULL), m_name(name), m_hierThis(false) {
 	// May have varp==NULL
 	if (m_varp) widthSignedFrom((AstNode*)m_varp);
     }
@@ -1152,6 +1153,8 @@ public:
     void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
@@ -1251,10 +1254,11 @@ private:
     string		m_name;		// Name of variable
     string		m_dotted;	// Dotted part of scope to task or ""
     string		m_inlinedDots;	// Dotted hierarchy flattened out
+    AstPackage*		m_packagep;	// Package hierarchy
 public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
 	:AstNode(fl)
-	, m_taskp(NULL) {
+	, m_taskp(NULL), m_packagep(NULL) {
 	setOp1p(namep);	addNOp2p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
@@ -1272,6 +1276,8 @@ public:
     void  	taskp(AstNodeFTask* taskp) { m_taskp=taskp; }
     virtual void name(const string& name) { m_name = name; }
     void	dotted(const string& name) { m_dotted = name; }
+    AstPackage* packagep() const { return m_packagep; }
+    void	packagep(AstPackage* nodep) { m_packagep=nodep; }
     // op1 = namep
     AstNode*	namep()		const { return op1p(); }
     // op2 = Pin interconnection list

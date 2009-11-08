@@ -194,6 +194,7 @@ private:
 	    m_assignwp->convertToAlways(); pushDeletep(m_assignwp); m_assignwp=NULL;
 	}
 	// We make multiple edges if a task is called multiple times from another task.
+	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked task");
 	new TaskEdge (&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {

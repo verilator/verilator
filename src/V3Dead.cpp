@@ -22,6 +22,8 @@
 //	Remove any unreferenced modules
 //	Remove any unreferenced variables
 //
+// NOTE: If redo this, consider using maybePointedTo()/broken() ish scheme
+// instead of needing as many visitors.
 //*************************************************************************
 
 #include "config_build.h"
@@ -103,6 +105,21 @@ private:
 	}
 	if (nodep->varp()) {
 	    nodep->varp()->user1(nodep->varp()->user1() + 1);
+	}
+	if (nodep->packagep()) {
+	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
+	}
+    }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->packagep()) {
+	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
+	}
+    }
+    virtual void visit(AstRefDType* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->packagep()) {
+	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
 	}
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {

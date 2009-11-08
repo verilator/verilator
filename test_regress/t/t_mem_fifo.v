@@ -87,7 +87,9 @@ module fifo (/*AUTOARG*/
 
    reg [65:0] outData;
 
+   // verilator lint_off VARHIDDEN
    reg [65:0] 	 fifo[0:fifoDepth-1];
+   // verilator lint_on VARHIDDEN
    reg [`PTRBITSM1:0] wrPtr, rdPtr;
 
    //reg [65:0] 	      temp;

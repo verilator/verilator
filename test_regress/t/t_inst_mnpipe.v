@@ -63,9 +63,9 @@ module MxN_pipeline (in, out, clk);
    //wire [M*(N-1):1] t;
    //dffn #(M) p[N:1] ({out,t},{t,in},clk);
 
-   wire [M*(N-1):1] t;
+   wire [M*(N-1):1] w;
    wire [M*N:1] q;
-   dffn #(M) p[N:1] (q,{t,in},clk);
-   assign 	{out,t} = q;
+   dffn #(M) p[N:1] (q,{w,in},clk);
+   assign 	{out,w} = q;
 
 endmodule

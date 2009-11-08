@@ -128,4 +128,23 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 	    }
 	}
     }
+
+    wrapTopPackages(netlistp, newmodp);
+}
+
+void V3LinkLevel::wrapTopPackages(AstNetlist* netlistp, AstNodeModule* newmodp) {
+    // Instantiate all packages under the top wrapper
+    // This way all later SCOPE based optimizations can ignore packages
+    for (AstNodeModule* modp = netlistp->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
+	if (modp->castPackage()) {
+	    AstCell* cellp = new AstCell(modp->fileline(),
+					 // Could add __03a__03a="::" to prevent conflict
+					 // with module names/"v"
+					 modp->name(),
+					 modp->name(),
+					 NULL, NULL, NULL);
+	    cellp->modp(modp);
+	    newmodp->addStmtp(cellp);
+	}
+    }
 }

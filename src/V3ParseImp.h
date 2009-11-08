@@ -45,7 +45,7 @@ typedef enum { uniq_NONE, uniq_UNIQUE, uniq_PRIORITY } V3UniqState;
 
 struct V3ParseBisonYYSType {
     FileLine*	fl;
-    //V3SymTable*	scp;	// Symbol table scope for future lookups
+    AstNode*	scp;	// Symbol table scope for future lookups
     union {
 	V3Number*	nump;
 	string*		strp;
@@ -64,8 +64,10 @@ struct V3ParseBisonYYSType {
 	AstNodeModule*	modulep;
 	AstNodeDType*	dtypep;
 	AstNodeFTask*	ftaskp;
+	AstNodeFTaskRef* ftaskrefp;
 	AstNodeSenItem*	senitemp;
 	AstNodeVarRef*	varnodep;
+	AstPackage*	packagep;
 	AstParseRef*	parserefp;
 	AstPin*		pinp;
 	AstRange*	rangep;
@@ -88,7 +90,8 @@ private:
     // MEMBERS
     static int	s_anonNum;		// Number of next anonymous object
     V3SymTable*	m_symTableNextId;	// Symbol table for next lexer lookup
-    V3SymTable*	m_symCurrentp;		// Node with active symbol table for additions/lookups
+    V3SymTable*	m_symCurrentp;		// Active symbol table for additions/lookups
+    V3SymTable*	m_symRootp;		// Root symbol table
     SymStack	m_sympStack;		// Stack of nodes with symbol tables
     SymStack	m_symsp;		// All symbol tables, to cleanup
 
@@ -102,6 +105,7 @@ private:
 public:
     V3SymTable* nextId() const { return m_symTableNextId; }
     V3SymTable* symCurrentp() const { return m_symCurrentp; }
+    V3SymTable*	symRootp() const { return m_symRootp; }
 
     V3SymTable* findNewTable(AstNode* nodep, V3SymTable* parentp) {
 	if (!nodep->user4p()) {
@@ -112,9 +116,14 @@ public:
 	return getTable(nodep);
     }
     void nextId(AstNode* entp) {
-	if (entp) { UINFO(9,"symTableNextId under "<<entp<<"-"<<entp->type().ascii()<<endl); }
-	else { UINFO(9,"symTableNextId under NULL"<<endl); }
-	m_symTableNextId = getTable(entp);
+	if (entp) {
+	    UINFO(9,"symTableNextId under "<<entp<<"-"<<entp->type().ascii()<<endl);
+	    m_symTableNextId = getTable(entp);
+	}
+	else {
+	    UINFO(9,"symTableNextId under NULL"<<endl);
+	    m_symTableNextId = NULL;
+	}
     }
     void reinsert(AstNode* nodep, V3SymTable* parentp=NULL) {
 	if (!parentp) parentp = symCurrentp();
@@ -179,6 +188,7 @@ public:
 	pushScope(findNewTable(rootp, NULL));
 	m_symTableNextId = NULL;
 	m_symCurrentp = symCurrentp();
+	m_symRootp = symCurrentp();
     }
     ~V3ParseSym() {
 	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {

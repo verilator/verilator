@@ -230,11 +230,12 @@ public:
 struct AstRefDType : public AstNodeDType {
     AstTypedef*	m_defp;
     string	m_name;
+    AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
-	: AstNodeDType(fl), m_defp(NULL), m_name(name) {}
+	: AstNodeDType(fl), m_defp(NULL), m_name(name), m_packagep(NULL) {}
     AstRefDType(FileLine* fl, AstTypedef* defp)
-	: AstNodeDType(fl), m_defp(defp), m_name(defp->name()) {
+	: AstNodeDType(fl), m_defp(defp), m_name(defp->name()), m_packagep(NULL) {
 	widthSignedFrom(defp);
     }
     ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
@@ -261,6 +262,8 @@ public:
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     AstTypedef* defp() const { return m_defp; }
     void defp(AstTypedef* nodep) { m_defp=nodep; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
 //######################################################################
@@ -761,6 +764,15 @@ struct AstModule : public AstNodeModule {
     AstModule(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Module, MODULE)
+};
+
+struct AstPackage : public AstNodeModule {
+    // A package declaration
+    AstPackage(FileLine* fl, const string& name)
+	: AstNodeModule (fl,name) {}
+    ASTNODE_NODE_FUNCS(Package, PACKAGE)
+    static string dollarUnitName() { return AstNode::encodeName("$unit"); }
+    bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
 
 struct AstCell : public AstNode {
