@@ -109,6 +109,7 @@ public:
 //==== Data Types
 
 struct AstTypedef : public AstNode {
+private:
     string	m_name;
 public:
     AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtypep)
@@ -127,6 +128,7 @@ public:
 
 struct AstTypedefFwd : public AstNode {
     // Forward declaration of a type; stripped after netlist parsing is complete
+private:
     string	m_name;
 public:
     AstTypedefFwd(FileLine* fl, const string& name)
@@ -228,6 +230,7 @@ public:
 };
 
 struct AstRefDType : public AstNodeDType {
+private:
     AstTypedef*	m_defp;
     string	m_name;
     AstPackage*	m_packagep;	// Package hierarchy
@@ -628,7 +631,6 @@ struct AstTopScope : public AstNode {
     // There may be two of these, when we support "rare" and "usual" splitting
     // Parents: topMODULE
     // Children: SCOPEs
-public:
     AstTopScope(FileLine* fl, AstScope* ascopep)
 	:AstNode(fl)
 	{addNOp2p(ascopep);}
@@ -675,8 +677,6 @@ public:
 
 struct AstVarRef : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
-private:
-public:
     AstVarRef(FileLine* fl, const string& name, bool lvalue)
 	:AstNodeVarRef(fl, name, NULL, lvalue) {}
     AstVarRef(FileLine* fl, AstVar* varp, bool lvalue)  // This form only allowed post-link
@@ -1094,7 +1094,6 @@ struct AstAssign : public AstNodeAssign {
 struct AstAssignAlias : public AstNodeAssign {
     // Like AstAssignW, but a true bidirect interconnection alias
     // If both sides are wires, there's no LHS vs RHS,
-public:
     AstAssignAlias(FileLine* fileline, AstVarRef* lhsp, AstVarRef* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignAlias, ASSIGNALIAS)
@@ -1296,7 +1295,6 @@ struct AstGenCase : public AstNodeCase {
     // Parents:  {statement list}
     // exprp Children:  MATHs
     // casesp Children: CASEITEMs
-public:
     AstGenCase(FileLine* fileline, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
     }
@@ -1933,7 +1931,6 @@ struct AstTime : public AstNodeTermop {
 struct AstUCFunc : public AstNodeMath {
     // User's $c function
     // Perhaps this should be a AstNodeListop; but there's only one list math right now
-public:
     AstUCFunc(FileLine* fl, AstNode* exprsp)
 	: AstNodeMath(fl) {
 	addNOp1p(exprsp);
@@ -2705,7 +2702,6 @@ struct AstClocking : public AstNode {
     // Set default clock region
     // Parents:  MODULE
     // Children: Assertions
-public:
     AstClocking(FileLine* fl, AstNodeSenItem* sensesp, AstNode* bodysp)
 	: AstNode(fl) {
 	addOp1p(sensesp);
@@ -2723,7 +2719,6 @@ struct AstPslDefClock : public AstNode {
     // Set default PSL clock
     // Parents:  MODULE
     // Children: SENITEM
-public:
     AstPslDefClock(FileLine* fl, AstNodeSenItem* sensesp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
@@ -2736,7 +2731,6 @@ struct AstPslClocked : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
-public:
     AstPslClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
@@ -3058,7 +3052,6 @@ struct AstCReturn : public AstNodeStmt {
     // C++ return from a function
     // Parents:  CFUNC/statement
     // Children: Math
-public:
     AstCReturn(FileLine* fl, AstNode* lhsp)
 	: AstNodeStmt(fl) {
 	setOp1p(lhsp);
