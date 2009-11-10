@@ -272,6 +272,7 @@ class AstSenTree;
 %token<fl>		yGENVAR		"genvar"
 %token<fl>		yIF		"if"
 %token<fl>		yIFF		"iff"
+%token<fl>		yIMPORT		"import"
 %token<fl>		yINITIAL	"initial"
 %token<fl>		yINOUT		"inout"
 %token<fl>		yINPUT		"input"
@@ -591,6 +592,26 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	//UNSUP	overload_declaration			{ $$ = $1; }
 	//UNSUP	concurrent_assertion_item_declaration	{ $$ = $1; }
 	|	';'					{ $$ = NULL; }
+	;
+
+package_import_declaration<nodep>:	// ==IEEE: package_import_declaration
+		yIMPORT package_import_itemList ';'	{ $$ = $2; }
+	;
+
+package_import_itemList<nodep>:
+		package_import_item			{ $$ = $1; }
+	|	package_import_itemList ',' package_import_item { $$ = $1->addNextNull($3); }
+	;
+
+package_import_item<nodep>:	// ==IEEE: package_import_item
+		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
+			{ $$ = new AstPackageImport($<fl>1, $<scp>1->castPackage(), *$3);
+			  SYMP->import($<scp>1,*$3); }
+	;
+
+package_import_itemObj<strp>:	// IEEE: part of package_import_item
+		idAny					{ $<fl>$=$<fl>1; $$=$1; }
+	|	'*'					{ $<fl>$=$<fl>1; static string star="*"; $$=&star; }
 	;
 
 //**********************************************************************
@@ -1079,7 +1100,7 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// VARRESET can't be called here - conflicts
 		data_declarationVar			{ $$ = $1; }
 	|	type_declaration			{ $$ = $1; }
-	//UNSUP	package_import_declaration		{ $$ = $1; }
+	|	package_import_declaration		{ $$ = $1; }
 	//			// IEEE: virtual_interface_declaration
 	//			// "yVIRTUAL yID yID" looks just like a data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used

@@ -403,6 +403,10 @@ void AstNodeModule::dump(ostream& str) {
     if (modPublic()) str<<" [P]";
     if (inLibrary()) str<<" [LIB]";
 }
+void AstPackageImport::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" -> "<<packagep();
+}
 void AstVarScope::dump(ostream& str) {
     this->AstNode::dump(str);
     if (isCircular()) str<<" [CIRC]";

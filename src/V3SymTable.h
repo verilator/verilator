@@ -87,6 +87,24 @@ class V3SymTable : public AstNUser {
 	if (m_upperp) return m_upperp->findIdUpward(name);
 	return NULL;
     }
+    bool import(const V3SymTable* srcp, const string& id_or_star) {
+	// Import tokens from source symbol table into this symbol table
+	// Returns true if successful
+	bool any = false;
+	if (id_or_star != "*") {
+	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+	    if (it != m_idNameMap.end()) {
+		reinsert(it->first, it->second);
+		any = true;
+	    }
+	} else {
+	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
+		reinsert(it->first, it->second);
+		any = true;
+	    }
+	}
+	return any;
+    }
     void dump(ostream& os, const string& indent="", bool user4p_is_table=false) const {
 	if (user4p_is_table) { AstUser4InUse::check(); }
 	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {

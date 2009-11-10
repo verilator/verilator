@@ -16,7 +16,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "program".
 
-***  Support "package" and $unit.
+***  Support "package", "import" and $unit.
 
 ***  Support typedef.  [Donal Casey]
 

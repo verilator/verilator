@@ -171,15 +171,16 @@ public:
 	// Lookup the given string as an identifier, return type of the id, scanning upward
 	return symCurrentp()->findIdUpward(name);
     }
-    void import(AstNode* nodep, const string& pkg, const string& id_or_star) {
+    void import(AstNode* packagep, const string& id_or_star) {
 	// Import from package::id_or_star to this
-	AstNode* entp = findEntUpward(pkg);
-	if (!entp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
-	    nodep->v3fatalSrc("Import package not found: "+pkg);
+	V3SymTable* symp = getTable(packagep);
+	if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+	    packagep->v3fatalSrc("Import package not found");
 	    return;
 	}
 	// Walk old sym table and reinsert into current table
-	nodep->v3fatalSrc("Unimplemented: import");
+	// We let V3Link report the error instead of us
+	symCurrentp()->import(symp, id_or_star);
     }
 public:
     // CREATORS

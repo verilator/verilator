@@ -555,6 +555,20 @@ private:
 	}
     }
 
+    virtual void visit(AstPackageImport* nodep, AstNUser*) {
+	UINFO(2,"  Link: "<<nodep<<endl);
+	V3SymTable* srcp = symsFind(nodep->packagep());
+	if (nodep->name()!="*") {
+	    AstNode* impp = srcp->findIdFlat(nodep->name());
+	    if (!impp) {
+		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
+	    }
+	}
+	m_curVarsp->import(srcp, nodep->name());
+	// No longer needed
+	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+    }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);

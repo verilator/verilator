@@ -775,6 +775,23 @@ struct AstPackage : public AstNodeModule {
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
 
+struct AstPackageImport : public AstNode {
+private:
+    // A package import declaration
+    string	m_name;
+    AstPackage*	m_packagep;	// Package hierarchy
+public:
+    AstPackageImport(FileLine* fl, AstPackage* packagep, const string& name)
+	: AstNode (fl), m_name(name), m_packagep(packagep) {}
+    ASTNODE_NODE_FUNCS(PackageImport, PACKAGEIMPORT)
+    virtual bool broken() const { return (!m_packagep || !m_packagep->brokeExists()); }
+    virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep()->castPackage(); }
+    virtual void dump(ostream& str);
+    virtual string name() const { return m_name; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
+};
+
 struct AstCell : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
 private:

@@ -16,6 +16,13 @@ package p;
    endfunction
 endpackage
 
+package p2;
+   typedef int package2_type_t;
+   function [3:0] plustwo(input [3:0] i);
+      plustwo = i+2;
+   endfunction
+endpackage
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -25,6 +32,8 @@ module t (/*AUTOARG*/
    $unit::unit_type_t vdu;
    p::package_type_t vp;
 
+   t2 t2 ();
+   
    initial begin
       if (unit_plusone(1) !== 2) $stop;
       if ($unit::unit_plusone(1) !== 2) $stop;
@@ -32,5 +41,17 @@ module t (/*AUTOARG*/
 
       $write("*-* All Finished *-*\n");
       $finish;
+   end
+endmodule
+
+module t2;
+   import p::*;
+   import p2::plustwo;
+   import p2::package2_type_t;
+   package_type_t vp;
+   package2_type_t vp2;
+   initial begin
+      if (plusone(1) !== 2) $stop;
+      if (plustwo(1) !== 3) $stop;
    end
 endmodule
