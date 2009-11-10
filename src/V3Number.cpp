@@ -1177,8 +1177,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i=0; i<6; i++) { un[i]=vn[i]=m_value[i]=0; }
-    for (int i=6; i<words+1; i++) { un[i]=vn[i]=0; }  // +1 as vn may get extra word
+    for (int i=0; i<words; i++) { m_value[i]=0; }
+    for (int i=0; i<words+1; i++) { un[i]=vn[i]=0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set

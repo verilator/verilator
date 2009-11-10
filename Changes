@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add VARHIDDEN warning when signal name hides module name.
 
+**** Fix Verilator core dump on wide integer divides, bug178. [Bryon Bradley]
+
 * Verilator 3.720 2009/10/26
 
 **   Support little endian bit vectors ("reg [0:2] x;").
