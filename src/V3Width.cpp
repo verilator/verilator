@@ -315,9 +315,11 @@ private:
 			      <<(nodep->lsbp()->width()!=nodep->lsbp()->widthMin()
 				 ?" or "+cvtToStr(nodep->lsbp()->widthMin()):"")
 			      <<" bits.");
-		UINFO(1,"    Related node: "<<nodep<<endl);
-		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
+		if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
+		    UINFO(1,"    Related node: "<<nodep<<endl);
+		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		    if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
+		}
 	    }
 	    if (nodep->lsbp()->castConst() && nodep->msbConst() > frommsb) {
 		// See also warning in V3Const
@@ -370,9 +372,11 @@ private:
 			      <<(nodep->bitp()->width()!=nodep->bitp()->widthMin()
 				 ?" or "+cvtToStr(nodep->bitp()->widthMin()):"")
 			      <<" bits.");
-		UINFO(1,"    Related node: "<<nodep<<endl);
-		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		if (varrp) UINFO(1,"    Related depth: "<<dimension<<" dtype: "<<ddtypep<<endl);
+		if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
+		    UINFO(1,"    Related node: "<<nodep<<endl);
+		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		    if (varrp) UINFO(1,"    Related depth: "<<dimension<<" dtype: "<<ddtypep<<endl);
+		}
 	    }
 	    widthCheck(nodep,"Extract Range",nodep->bitp(),selwidth,selwidth,true);
 	}
