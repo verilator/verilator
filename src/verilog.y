@@ -1706,7 +1706,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initalization
 	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstFor($1, $3,$4,$6, $8);}
+							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstFor($1,NULL,$4,$6,$8));}
 	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	//UNSUP	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' stmt	{ UNSUP }
 	//
@@ -1819,7 +1819,11 @@ caseCondList<nodep>:		// IEEE: part of case_item
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
 for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
 	//			// IEEE: for_variable_declaration
-		varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
+		data_type idAny/*new*/ '=' expr ';'
+			{ VARDTYPE($1);
+			  $$ = VARDONEA(*$2,NULL,NULL);
+			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
+	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
 	//UNSUP: List of initializations
 	;
 

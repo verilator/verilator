@@ -5,20 +5,16 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.7**
 
-***  Support byte, shortint, int, longint and var in variables, parameters and
+**   Support byte, shortint, int, longint, var and void in variables, parameters and
      functions.
 
-***  Support void functions.
+**   Support "program", "package", "import" and $unit.
 
-***  Support "reg [1:0][1:0][1:0]", bug176.  [Byron Bradley]
+**   Support typedef.  [Donal Casey]
 
-***  Support "reg x [3][2]".
+***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
-***  Support "program".
-
-***  Support "package", "import" and $unit.
-
-***  Support typedef.  [Donal Casey]
+***  Support declarations in loop initializers, bug172.  [by Bryon Bradley]
 
 ***  Add VARHIDDEN warning when signal name hides module name.
 
