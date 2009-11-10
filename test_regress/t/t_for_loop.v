@@ -49,6 +49,34 @@ module t (/*AUTOARG*/
 	    loops = loops + 1;
 	 end
 	 if (loops !== 100000) $stop;
+	 // Test post-increment
+	 loops = 0;
+	 for (i=0; i<=16; i++) begin
+	    loops = loops + 1;
+	 end
+	 if (i !== 17) $stop;
+	 if (loops !== 17) $stop;
+	 // Test pre-increment
+	 loops = 0;
+	 for (i=0; i<=16; ++i) begin
+	    loops = loops + 1;
+	 end
+	 if (i !== 17) $stop;
+	 if (loops !== 17) $stop;
+	 // Test post-decrement
+	 loops = 0;
+	 for (i=16; i>=0; i--) begin
+	    loops = loops + 1;
+	 end
+	 if (i !== -1) $stop;
+	 if (loops !== 17) $stop;
+	 // Test pre-decrement
+	 loops = 0;
+	 for (i=16; i>=0; --i) begin
+	    loops = loops + 1;
+	 end
+	 if (i !== -1) $stop;
+	 if (loops !== 17) $stop;
 	 //
 	 $write("*-* All Finished *-*\n");
 	 $finish;
