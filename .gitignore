@@ -6,6 +6,7 @@
 *.info
 *.log
 *.1
+.*.swp
 *.tmp
 *.tex
 /Makefile

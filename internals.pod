@@ -22,8 +22,7 @@ Generally what would you do to add a new feature?
 
 File a bug (if there isn't already) so others know what you're working on.
 
-Make a testcase in the test_regress/t/t_EXAMPLE format, there's notes on
-this in the forum and in the verilator.txt manual.
+Make a testcase in the test_regress/t/t_EXAMPLE format, see TESTING Below.
 
 If grammar changes are needed, look at the git version of VerilogPerl's
 src/VParseGrammar.y, as this grammar supports the full SystemVerilog
@@ -94,6 +93,13 @@ dump was made.  You can gdb break on this edit; see below.
 variable is an output.
 
 =back
+
+=head1 TESTING
+
+To write a test see notes in the forum and in the verilator.txt manual.
+
+Note you can run the regression tests in parallel; see the
+test_regress/driver.pl script -j flag.
 
 =head1 VISITOR FUNCTIONS
 

@@ -14,11 +14,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
-***  Support declarations in loop initializers, bug172.  [by Bryon Bradley]
+***  Support declarations in loop initializers, bug172.  [by Byron Bradley]
 
 ***  Add VARHIDDEN warning when signal name hides module name.
 
-**** Fix Verilator core dump on wide integer divides, bug178. [Bryon Bradley]
+**** Support optional cell parenthesis, bug179. [by Byron Bradley]
+
+**** Fix Verilator core dump on wide integer divides, bug178. [Byron Bradley]
 
 * Verilator 3.720 2009/10/26
 

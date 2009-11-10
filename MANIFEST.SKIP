@@ -8,6 +8,7 @@
 \.tar\.
 .*\.tgz
 .*\.log
+\..*\.swp
 .*\.tmp
 .*\.tex
 .*\.key

@@ -644,6 +644,9 @@ modFront<modulep>:
 parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 		/* empty */				{ $$ = NULL; }
 	|	'#' '(' cellpinList ')'			{ $$ = $3; }
+	//			// Parentheses are optional around a single parameter
+	|	'#' yaINTNUM				{ $$ = new AstPin($1,1,"",new AstConst($1,*$2)); }
+	|	'#' idClassSel				{ $$ = new AstPin($1,1,"",$2); }
 	//			// Not needed in Verilator:
 	//			// Side effect of combining *_instantiations
 	//			// '#' delay_value	{ UNSUP }
