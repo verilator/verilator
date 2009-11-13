@@ -694,10 +694,10 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ regArRangeE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PARSEP->instantCb(CRELINE(), $2, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ regArRangeE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ regArRangeE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PARSEP->instantCb(CRELINE(), $2, $5, $6); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ regArRangeE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PARSEP->instantCb(CRELINE(), $2, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PARSEP->instantCb(CRELINE(), $2, $5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PINNUMINC(); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension }
@@ -720,7 +720,7 @@ port<nodep>:			// ==IEEE: port
 	//			//     net_port_type | [ port_direction ] var_data_type '.' port_identifier '(' [ expr ] ')'
 	//			// Expand implicit_type
 	//
-	//			// variable_dimensionListE instead of regArRangeE to avoid conflicts
+	//			// variable_dimensionListE instead of rangeListE to avoid conflicts
 	//
 	//			// Note implicit rules looks just line declaring additional followon port
 	//			// No VARDECL("port") for implicit, as we don't want to declare variables for them
@@ -998,8 +998,8 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// This expansion also replicated elsewhere, IE data_type__AndID
 		data_typeNoRef				{ $$ = $1; }
 	//			// IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
-	|	ps_type  packed_dimensionE		{ $$ = GRAMMARP->createArray($1,$2); }
-	//UNSUP	class_scope_type packed_dimensionE	{ UNSUP }
+	|	ps_type  packed_dimensionListE		{ $$ = GRAMMARP->createArray($1,$2); }
+	//UNSUP	class_scope_type packed_dimensionListE	{ UNSUP }
 	//			// IEEE: class_type
 	//UNSUP	class_typeWithoutId			{ $$ = $1; }
 	//			// IEEE: ps_covergroup_identifier
@@ -1014,8 +1014,10 @@ data_typeBasic<dtypep>:		// IEEE: part of data_type
 
 data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc references
 		data_typeBasic				{ $$ = $1; }
-	//UNSUP	ySTRUCT        packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
-	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionE	{ UNSUP }
+	//UNSUP	ySTRUCT        packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
+	//UNSUP		{ UNSUP }
+	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
+	//UNSUP		{ UNSUP }
 	//UNSUP	enumDecl				{ UNSUP }
 	//UNSUP	ySTRING					{ UNSUP }
 	//UNSUP	yCHANDLE				{ UNSUP }
@@ -1430,6 +1432,8 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
 wirerangeE<dtypep>:
 		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
 	|	anyrange 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1); }  // not implicit
+	//			// Verilator doesn't support 2D wiring yet
+	//UNSUP	rangeListE				{ $$ = $1; }
 	;
 
 // IEEE: select
@@ -1439,9 +1443,14 @@ anyrange<rangep>:
 		'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
-packed_dimensionE<rangep>:	// IEEE: [ packed_dimension ]
+packed_dimensionListE<rangep>:	// IEEE: [{ packed_dimension }]
 		/* empty */				{ $$ = NULL; }
-	|	packed_dimension			{ $$ = $1; }
+	|	packed_dimensionList			{ $$ = $1; }
+	;
+
+packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
+		packed_dimension			{ $$ = $1; }
+	|	packed_dimensionList packed_dimension	{ $$ = $1->addNext($2)->castRange(); }
 	;
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension

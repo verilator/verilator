@@ -81,5 +81,5 @@ sub prep {
 }
 
 # Local Variables:
-# compile-command: "./bisondiff --unsup $WUP/Verilog/Parser/VParseBison.y ../src/verilog.y"
+# compile-command: "./bisondiff --unsup $VP/Parser/VParseBison.y ../src/verilog.y"
 # End:
