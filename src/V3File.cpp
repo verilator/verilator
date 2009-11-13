@@ -146,7 +146,9 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     string cmdline = stripQuotes(cmdlineIn);
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
+#if !defined (__MINGW32__)
     sync();  // Push files so sizes look correct
+#endif
     for (set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	// Read stats of files we create after we're done making them (execpt for this file, of course)
@@ -238,7 +240,11 @@ void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {
 	created = true;
+#if !defined (__MINGW32__)
 	mkdir(v3Global.opt.makeDir().c_str(), 0777);
+#else
+	mkdir(v3Global.opt.makeDir().c_str());
+#endif
     }
 }
 

@@ -23,7 +23,9 @@
 #include "verilatedos.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#if !defined(__MINGW32__)
 #include <sys/utsname.h>
+#endif
 #include <cctype>
 #include <dirent.h>
 #include <unistd.h>
@@ -318,7 +320,16 @@ void V3Options::setenvStr(const string& envvar, const string& value, const strin
     } else {
 	UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
+//setenv() replaced by putenv() in MinGW environment. Prototype is different
+//putenv() requires NAME=VALUE format
+#if !defined (__MINGW32__)
     setenv(envvar.c_str(),value.c_str(),true);
+#else
+    int len = value.size() + envvar.size() + 5;
+    char *str = new char[len];
+    sprintf(str,"%s=%s", envvar.c_str(), value.c_str());
+    putenv(str);
+#endif
 }
 
 string V3Options::getenvSYSTEMC() {
@@ -344,12 +355,18 @@ string V3Options::getenvSYSTEMC_ARCH() {
 	setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
     }
     if (var == "") {
+#if defined (__MINGW32__)
+        // Hardcoded with MINGW current version. Would like a better way.
+        string sysname = "MINGW32_NT-5.0";
+        var = "mingw32";
+#else
 	struct utsname uts;
 	uname(&uts);
 	string sysname = downcase(uts.sysname);  // aka  'uname -s'
 	if (wildmatch(sysname.c_str(), "*solaris*")) { var = "gccsparcOS5"; }
 	else if (wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
 	else { var = "linux"; }
+#endif
 	setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
     }
     return var;

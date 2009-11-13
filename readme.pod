@@ -43,11 +43,11 @@ The resulting executable will perform the actual simulation.
 
 This version of verilator has been built and tested on:
 
-    SuSE AMD64 i686-linux-2.6.5
+    SuSE 11.1 AMD64 i686-linux-2.6.27, GCC 4.3.2
 
-Other users report success with Redhat Linux, Windows under Cygwin, Macs,
-HPUX and Solaris.  It should run with minor porting on any Linixish
-platform.
+Other users report success with Redhat Linux, Windows under Cygwin, Windows
+under MinGW, Macs, HPUX and Solaris.  It should run with minor porting on
+any Linix-ish platform.
 
 =head1 INSTALLATION
 
