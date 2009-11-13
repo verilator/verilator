@@ -10,7 +10,7 @@ use strict;
 
 delete $ENV{MODULE_VERSION};
 _setup_modules();
-module('add','cadence_verif');
+module('add','cadence-ius');
 exec('iccr',@ARGV);
 
 #######################################################################
@@ -18,7 +18,7 @@ exec('iccr',@ARGV);
 
 sub _setup_modules {
     # Load the 'module' command into the environment
-    my $init = "/sicortex/$ENV{DIRPROJECT_ARCH}/lib/Modules/default/init/perl";
+    my $init = "$ENV{MODULESHOME}/init/perl";
     (-f $init) or die "%Error: Script not found: $init,";
     require $init;
 }

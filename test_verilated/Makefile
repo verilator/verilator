@@ -19,6 +19,7 @@ VERILATOR_ROOT := $(shell pwd)/..
 export VERILATOR_ROOT
 
 VERILATOR_NCVERILOG ?= ncverilog
+VERILATOR_VCS ?= vcs
 
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk

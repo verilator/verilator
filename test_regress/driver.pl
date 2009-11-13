@@ -1158,6 +1158,10 @@ Run using Verilator.
 
 Root directory name of SystemC kit.
 
+=item VERILATOR_IVERILOG
+
+Command to use to invoke Icarus Verilog.
+
 =item VERILATOR_NCVERILOG
 
 Command to use to invoke ncverilog.
