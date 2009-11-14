@@ -238,7 +238,7 @@ sub new {
 	pl_filename => undef,	# Name of .pl file to get setup from
 	make_top_shell => 1,	# Make a default __top.v file
 	make_main => 1,		# Make __main.cpp
-	sim_time => 1000,
+	sim_time => 1100,
 	benchmark => $opt_benchmark,
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc "
@@ -748,7 +748,6 @@ sub _make_main {
 	$set = "topp->";
     }
 
-    my $ctraceit = ($self->{trace} && !$self->{sp});
     if ($self->{trace}) {
 	$fh->print("\n");
 	$fh->print("#if VM_TRACE\n");
@@ -763,34 +762,22 @@ sub _make_main {
 	$fh->print("#endif\n");
     }
 
-    print $fh "    ${set}fastclk = true;\n" if $self->{inputs}{fastclk};
-    print $fh "    ${set}clk = true;\n" if $self->{inputs}{clk};
+    print $fh "    ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
+    print $fh "    ${set}clk = false;\n" if $self->{inputs}{clk};
+    _print_advance_time($self, $fh, 10);
+
     print $fh "    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {\n";
     for (my $i=0; $i<5; $i++) {
-	my $action;
+	my $action = 0;
 	if ($self->{inputs}{fastclk}) {
 	    print $fh "	${set}fastclk=!${set}fastclk;\n";
 	    $action = 1;
 	}
-	if ($i==4 && $self->{inputs}{clk}) {
+	if ($i==0 && $self->{inputs}{clk}) {
 	    print $fh "	${set}clk=!${set}clk;\n";
 	    $action = 1;
 	}
-	if ($self->sc_or_sp) {
-	    print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-	    print $fh "	sc_start(1,SC_NS);\n";
-	    print $fh "#else\n";
-	    print $fh "	sc_start(1);\n";
-	    print $fh "#endif\n";
-	} else {
-	    print $fh "	main_time+=1;\n";
-	    print $fh "	${set}eval();\n" if $action;
-	    if ($ctraceit) {
-		$fh->print("#if VM_TRACE\n");
-		$fh->print("	tfp->dump (main_time);\n");
-		$fh->print("#endif //VM_TRACE\n");
-	    }
-	}
+	_print_advance_time($self, $fh, 1, $action);
     }
     print $fh "    }\n";
     print $fh "    if (!Verilated::gotFinish()) {\n";
@@ -810,6 +797,36 @@ sub _make_main {
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();
+}
+
+sub _print_advance_time {
+    my $self = shift;
+    my $fh = shift;
+    my $time = shift;
+    my $action = shift;
+
+    my $set;
+    if ($self->sp) { $set = ""; }
+    elsif ($self->sc) { $set = ""; }
+    else { $set = "topp->"; }
+
+    if ($self->sc_or_sp) {
+	print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
+	print $fh "	sc_start(${time},SC_NS);\n";
+	print $fh "#else\n";
+	print $fh "	sc_start(${time});\n";
+	print $fh "#endif\n";
+    } else {
+	if ($action) {
+	    print $fh "	${set}eval();\n";
+	    if ($self->{trace} && !$self->{sp}) {
+		$fh->print("#if VM_TRACE\n");
+		$fh->print("	tfp->dump (main_time);\n");
+		$fh->print("#endif //VM_TRACE\n");
+	    }
+	}
+	print $fh "	main_time += ${time};\n";
+    }
 }
 
 #######################################################################
@@ -846,6 +863,9 @@ sub _make_top {
     # Test
     print $fh "\n";
     print $fh "    initial begin\n";
+    print $fh "        fastclk=0;\n" if $self->{inputs}{fastclk};
+    print $fh "        clk=0;\n" if $self->{inputs}{clk};
+    print $fh "        #10;\n";
     print $fh "        fastclk=1;\n" if $self->{inputs}{fastclk};
     print $fh "        clk=1;\n" if $self->{inputs}{clk};
     print $fh "        while (\$time < $self->{sim_time}) begin\n";
