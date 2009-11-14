@@ -2302,7 +2302,7 @@ done for you if using the Verilator --exe flag.
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-    #include "SpTraceVcdC.cpp"
+    #include "SpTraceVcdC.h"
     ...
     int main(int argc, char **argv, char **env) {
         ...
@@ -2338,7 +2338,7 @@ other things.
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-    #include "SpTraceVcd.cpp"
+    #include "SpTraceVcd.h"
     ...
     int main(int argc, char **argv, char **env) {
         ...
