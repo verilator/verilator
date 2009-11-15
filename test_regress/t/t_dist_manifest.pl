@@ -29,11 +29,13 @@ foreach my $file (split /\s+/,$all_files) {
     $files{$file} |= 2;
 }
 
+my %file_regexps;
 my $skip = file_contents("$root/MANIFEST.SKIP");
 foreach my $file (sort keys %files) {
     foreach my $skip (split /\s+/,$skip) {
 	if ($file =~ /$skip/) {
 	    $files{$file} |= 4;
+	    $file_regexps{$file} = $skip;
 	}
     }
 }
@@ -53,6 +55,8 @@ foreach my $file (sort keys %files) {
 	$warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
     } elsif (!$dir && $tar && !$skip) {
 	$warns{$file} = "File in manifest, but not directory: $file";
+    } elsif ($dir && $tar && $skip) {
+	$warns{$file} = "File in manifest and also MANIFEST.SKIP, too general skip regexp '$file_regexps{$file}'?: $file";
     }
 }
 
