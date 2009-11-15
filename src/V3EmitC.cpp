@@ -755,6 +755,7 @@ public:
 // Internal EmitCStmts
 
 void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
+    AstBasicDType* basicp = nodep->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Outputting this data type");
     if (nodep->isIO()) {
 	if (nodep->isSc()) {
 	    m_ctorVarsVec.push_back(nodep);
@@ -786,12 +787,12 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 
 	    if (!nodep->isWide())
 		puts("("+nodep->name()
-		     +","+cvtToStr(nodep->msb())
-		     +","+cvtToStr(nodep->lsb()));
+		     +","+cvtToStr(basicp->msb())
+		     +","+cvtToStr(basicp->lsb()));
 	    else puts("W("+nodep->name()
-		      +","+cvtToStr(nodep->msb())
-		      +","+cvtToStr(nodep->lsb())
-		      +","+cvtToStr(nodep->widthWords()));
+		      +","+cvtToStr(basicp->msb())
+		      +","+cvtToStr(basicp->lsb())
+		      +","+cvtToStr(basicp->widthWords()));
 	    puts(");\n");
 	}
     } else {
@@ -818,8 +819,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
-	puts(","+cvtToStr(nodep->msb())+","+cvtToStr(nodep->lsb()));
-	if (nodep->isWide()) puts(","+cvtToStr(nodep->widthWords()));
+	puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
+	if (basicp->isWide()) puts(","+cvtToStr(basicp->widthWords()));
 	puts(");\n");
     }
 }

@@ -310,10 +310,11 @@ private:
 	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 	    AstVar* varp = varrefp->varp();
 	    if (!varp->dtypep()) varp->v3fatalSrc("Data type lost");
+	    AstBasicDType* bdtypep = varp->basicp();  if (!bdtypep) varp->v3fatalSrc("Select of non-selectable type");
 	    if (m_warn
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
-		&& (!varp->basicp()->rangep() || varp->msb())) {  // else it's non-resolvable parameterized
+		&& (!bdtypep->rangep() || bdtypep->msb())) {  // else it's non-resolvable parameterized
 		if (nodep->lsbp()->castConst()->num().isFourState()
 		    || nodep->widthp()->castConst()->num().isFourState()) {
 		    nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -321,14 +322,14 @@ private:
 		    // Replacing nodep will make a mess above, so we replace the offender
 		    replaceZero(nodep->lsbp());
 		}
-		else if ((nodep->msbConst() > varp->msbMaxSelect())
-			 || (nodep->lsbConst() > varp->msbMaxSelect())) {
+		else if ((nodep->msbConst() > bdtypep->msbMaxSelect())
+			 || (nodep->lsbConst() > bdtypep->msbMaxSelect())) {
 		    // See also warning in V3Width
 		    nodep->v3error("Selection index out of range: "
 				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
-				   <<" outside "<<varp->msbMaxSelect()<<":0"
-				   <<(varp->lsb()>=0 ? ""
-				      :" (adjusted +"+cvtToStr(-varp->lsb())+" to account for negative lsb)"));
+				   <<" outside "<<bdtypep->msbMaxSelect()<<":0"
+				   <<(bdtypep->lsb()>=0 ? ""
+				      :" (adjusted +"+cvtToStr(-bdtypep->lsb())+" to account for negative lsb)"));
 		    // Don't replace with zero, we'll do it later
 		}
 	    }

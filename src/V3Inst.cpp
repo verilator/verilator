@@ -238,12 +238,21 @@ void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* mod
     // Note this module calles cloneTree() via new AstVar
     AstVar* pinVarp = pinp->modVarp();
     AstVarRef* connectRefp = pinp->exprp()->castVarRef();
+    AstBasicDType* pinBasicp = pinVarp->dtypep()->basicp();  // Maybe NULL
+    AstBasicDType* connBasicp = NULL;
+    if (connectRefp) connBasicp = connectRefp->varp()->dtypep()->basicp();
+    //
     if (connectRefp
-	&& connectRefp->width() == pinVarp->width()
-	&& connectRefp->varp()->lsb() == pinVarp->lsb()
-	&& !connectRefp->varp()->isSc()	// Need the signal as a 'shell' to convert types
-	&& pinp->width() == pinVarp->width()
-	&& 1) {
+	&& connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())
+	&& !connectRefp->varp()->isSc()) { // Need the signal as a 'shell' to convert types
+	// Done.  Same data type
+    } else if (connBasicp
+	       && pinBasicp
+	       && connBasicp->width() == pinBasicp->width()
+	       && connBasicp->lsb() == pinBasicp->lsb()
+	       && !connectRefp->varp()->isSc()	// Need the signal as a 'shell' to convert types
+	       && pinp->width() == pinVarp->width()
+	       && 1) {
 	// Done. One to one interconnect won't need a temporary variable.
     } else if (pinp->exprp()->castConst()) {
 	// Done. Constant.

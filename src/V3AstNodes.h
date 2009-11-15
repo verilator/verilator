@@ -153,8 +153,8 @@ struct AstArrayDType : public AstNodeDType {
     AstRange*	arrayp() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
     void	arrayp(AstRange* nodep) { setOp2p(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() { return this; }
+    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return elementsConst() * dtypep()->widthTotalBytes(); }
     int		msb() const { return arrayp()->msbConst(); }
@@ -203,6 +203,9 @@ private:
 public:
     ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
     virtual void dump(ostream& str);
+    virtual V3Hash sameHash() const { return V3Hash(keyword()); }
+    virtual bool same(AstNode* samep) const {
+	return samep->castBasicDType()->keyword() == keyword(); }
     virtual string name()	const {
 	if (rangep()) return string(m_keyword.ascii())+"[]";
 	else return m_keyword.ascii();
@@ -213,8 +216,8 @@ public:
 	if (signst!=signedst_NOP) isSigned(signst==signedst_SIGNED);
     }
     // METHODS
-    virtual AstBasicDType* basicp() { return this; }  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() { return this; }
+    virtual AstBasicDType* basicp() const { return (AstBasicDType*)this; }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     bool	isBitLogic() const { return keyword().isBitLogic(); }
@@ -247,10 +250,13 @@ public:
     virtual void cloneRelink() { if (m_defp && m_defp->clonep()) {
 	m_defp = m_defp->clonep()->castTypedef();
     }}
+    virtual V3Hash sameHash() const { return V3Hash(skipRefp()); }
+    virtual bool same(AstNode* samep) const {
+	return skipRefp()->sameTree(samep->castRefDType()->skipRefp()); }
     virtual void dump(ostream& str=cout);
     virtual string name() const { return m_name; }
-    virtual AstBasicDType* basicp() { return defp() ? dtypep()->basicp() : NULL; }
-    virtual AstNodeDType* skipRefp() {
+    virtual AstBasicDType* basicp() const { return defp() ? dtypep()->basicp() : NULL; }
+    virtual AstNodeDType* skipRefp() const {
 	// Skip past both the Ref and the Typedef
 	if (defp()) return defp()->dtypep();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
@@ -436,7 +442,9 @@ public:
 	, m_name(name) {
 	init();
 	combineType(type); setOp1p(dtypep);
-	width(msb()-lsb()+1,0);
+	if (dtypep && dtypep->basicp()) {
+	    width(dtypep->basicp()->width(), 0);
+	} else width(1, 0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstLogicPacked, int wantwidth)
 	:AstNode(fl)
@@ -468,14 +476,15 @@ public:
     string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
     void	combineType(AstVarType type);
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
+    AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeDimensionp(int depth) const;
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
-    void	dtypep(AstRange* nodep) { setOp1p(nodep); }
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
@@ -493,7 +502,6 @@ public:
     void	funcReturn(bool flag) { m_funcReturn = flag; }
     void	trace(bool flag) { m_trace=flag; }
     // METHODS
-    AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual void name(const string& name) { m_name = name; }
     bool	isInput() const { return m_input; }
     bool	isOutput() const { return m_output; }
@@ -536,11 +544,6 @@ public:
     bool	attrFileDescr() const { return m_fileDescr; }
     bool	attrScClocked() const { return m_scClocked; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
-    int		msb() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msb() : 0; }
-    int		lsb() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->lsb() : 0; }
-    int		msbEndianed() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msbEndianed() : 0; }
-    int		lsbEndianed() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->lsbEndianed() : 0; }
-    int		msbMaxSelect() const { AstBasicDType* bdtypep = basicp(); return bdtypep ? bdtypep->msbMaxSelect() : 0; }
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
@@ -1780,7 +1783,9 @@ public:
 	widthSignedFrom(varp);
 	m_code = 0;
 	m_codeInc = varp->arrayElements() * varp->widthWords();
-	m_lsb = varp->lsbEndianed();  m_msb = varp->msbEndianed();
+	AstBasicDType* bdtypep = varp->basicp();
+	m_msb = bdtypep ? bdtypep->msbEndianed() : 0; 
+	m_lsb = bdtypep ? bdtypep->lsbEndianed() : 0;
 	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
 	    m_arrayLsb = adtypep->arrayp()->lsbConst();
 	    m_arrayMsb = adtypep->arrayp()->msbConst();

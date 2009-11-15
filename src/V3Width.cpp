@@ -301,8 +301,8 @@ private:
 	    int fromlsb = 0;
 	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
 	    if (varrp && varrp->varp()->basicp()->rangep()) {	// Selecting a bit from a multibit register
-		frommsb = varrp->varp()->msbMaxSelect();  // Corrected for negative lsb
-		fromlsb = varrp->varp()->lsb();
+		frommsb = varrp->varp()->basicp()->msbMaxSelect();  // Corrected for negative lsb
+		fromlsb = varrp->varp()->basicp()->lsb();
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,FINAL).p());

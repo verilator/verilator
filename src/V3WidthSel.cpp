@@ -149,11 +149,11 @@ private:
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
 	    if (varp->basicp()->rangep()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
-		AstNode* newp = newSubNeg(varp->msb(), underp);
+		AstNode* newp = newSubNeg(varp->basicp()->msb(), underp);
 		return newp;
 	    } else {
 		// reg [3:1] needs a SUB(under,1)
-		AstNode* newp = newSubNeg(underp, varp->lsb());
+		AstNode* newp = newSubNeg(underp, varp->basicp()->lsb());
 		return newp;
 	    }
 	}
@@ -287,19 +287,18 @@ private:
 	AstNode* rhsp  = nodep->rhsp()->unlinkFrBack();
 	AstNode* widthp = nodep->thsp()->unlinkFrBack();
 	int width = widthp->castConst()->toSInt();
-	AstVar* varp = varFromBasefrom(basefromp);
+	//AstVar* varp = varFromBasefrom(basefromp);
 	if (width > (1<<28)) nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "<<widthp->prettyName());
 	if (width<0) nodep->v3error("Width of :+ or :- is < 0: "<<widthp->prettyName());
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, width!=1);
 	if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
-	    if (adtypep) {} // Unused
 	    AstSel* newp = NULL;
 	    if (nodep->castSelPlus()) {
-		if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+		if (adtypep->rangep() && adtypep->rangep()->littleEndian()) {
 		    // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       newSubNeg((varp->msb()-width+1), rhsp),
+				       newSubNeg((adtypep->msb()-width+1), rhsp),
 				       widthp);
 		} else {
 		    // SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
@@ -309,17 +308,17 @@ private:
 				       widthp);
 		}
 	    } else if (nodep->castSelMinus()) {
-		if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+		if (adtypep->rangep() && adtypep->rangep()->littleEndian()) {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       newSubNeg(varp->msb(), rhsp),
+				       newSubNeg(adtypep->msb(), rhsp),
 				       widthp);
 		} else {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-(width-1)-lsb#)
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       newSubNeg(rhsp, varp->lsb()+(width-1)),
+				       newSubNeg(rhsp, adtypep->lsb()+(width-1)),
 				       widthp);
 		}
 	    } else {
