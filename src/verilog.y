@@ -309,6 +309,7 @@ class AstSenTree;
 %token<fl>		ySUPPLY0	"supply0"
 %token<fl>		ySUPPLY1	"supply1"
 %token<fl>		yTASK		"task"
+%token<fl>		yTIME		"time"
 %token<fl>		yTIMEPRECISION	"timeprecision"
 %token<fl>		yTIMEUNIT	"timeunit"
 %token<fl>		yTRI		"tri"
@@ -972,7 +973,7 @@ integer_atom_type<bdtypep>:	// ==IEEE: integer_atom_type
 	|	yINT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::INT); }
 	|	yLONGINT				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LONGINT); }
 	|	yINTEGER				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::INTEGER); }
-	//UNSUP	yTIME					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::TIME); }
+	|	yTIME					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::TIME); }
 	;
 
 integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type

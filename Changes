@@ -5,8 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.7**
 
-**   Support byte, shortint, int, longint, var and void in variables, parameters and
-     functions.
+**   Support byte, shortint, int, longint, time, var and void in variables,
+     parameters and functions.
 
 **   Support "program", "package", "import" and $unit.
 

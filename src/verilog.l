@@ -240,6 +240,7 @@ escid	\\[^ \t\f\r\n]+
   "supply0"		{ FL; return ySUPPLY0; }
   "supply1"		{ FL; return ySUPPLY1; }
   "task"		{ FL; return yTASK; }
+  "time"		{ FL; return yTIME; }
   "tri"			{ FL; return yTRI; }
   "vectored"		{ FL; return yVECTORED; }
   "while"		{ FL; return yWHILE; }
@@ -290,7 +291,6 @@ escid	\\[^ \t\f\r\n]+
   "strong0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "table"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "time"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tran"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tranif0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tranif1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }

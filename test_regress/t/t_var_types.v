@@ -11,7 +11,7 @@ module t (/*AUTOARG*/);
    int		d_int;
    longint	d_longint;
    integer	d_integer;
-   //UNSUP time		d_time;
+   time		d_time;
 
    // IEEE: integer_atom_type
    bit		d_bit;
@@ -62,6 +62,7 @@ module t (/*AUTOARG*/);
    function reg [1:0]	f_reg2;		f_reg2	 	= {96{1'b1}}; endfunction
    function bit [1:0]	f_bit2;		f_bit2	 	= {96{1'b1}}; endfunction
    function logic [1:0] f_logic2;	f_logic2	= {96{1'b1}}; endfunction
+   function time 	f_time;		f_time		= {96{1'b1}}; endfunction
    // verilator lint_on WIDTH
 
 `define CHECK_ALL(name,bits,issigned,twostate) \
@@ -82,6 +83,7 @@ module t (/*AUTOARG*/);
       `CHECK_ALL(d_int		,32,1'b1,1'b1);
       `CHECK_ALL(d_longint	,64,1'b1,1'b1);
       `CHECK_ALL(d_integer	,32,1'b1,1'b0);
+      `CHECK_ALL(d_time		,64,1'b0,1'b1);
       `CHECK_ALL(d_bit		,1 ,1'b0,1'b1);
       `CHECK_ALL(d_logic	,1 ,1'b0,1'b0);
       `CHECK_ALL(d_reg		,1 ,1'b0,1'b0);
@@ -118,6 +120,7 @@ module t (/*AUTOARG*/);
       `CHECK_F(f_int		,32);
       `CHECK_F(f_longint	,64);
       `CHECK_F(f_integer	,32);
+      `CHECK_F(f_time		,64);
       `CHECK_F(f_bit		,1 );
       `CHECK_F(f_logic		,1 );
       `CHECK_F(f_reg		,1 );
@@ -131,6 +134,10 @@ module t (/*AUTOARG*/);
       d_int	= 2;
       d_longint	= 2;
       d_integer	= 2;
+
+      // Special check
+      d_time = $time;
+      if ($time !== d_time) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

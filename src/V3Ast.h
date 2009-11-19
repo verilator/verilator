@@ -224,13 +224,14 @@ public:
     operator en () const { return m_e; }
     int width() const {
 	switch (m_e) {
+	case BIT:	return 1;
 	case BYTE:	return 8;
-	case SHORTINT:	return 16;
 	case INT:	return 32;
-	case LONGINT:	return 64;
 	case INTEGER:	return 32;
 	case LOGIC:	return 1;
-	case BIT:	return 1;
+	case LONGINT:	return 64;
+	case SHORTINT:	return 16;
+	case TIME:	return 64;
 	default: return 0;
 	}
     }
