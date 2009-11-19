@@ -248,6 +248,7 @@ sub new {
 				 ))],
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
+	all_run_flags => [],
         # IV
 	iv => 0,
 	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
@@ -495,6 +496,7 @@ sub execute {
 		    fails=>$param{fails},
 		    cmd=>["$self->{obj_dir}/simiv",
 			  @{$param{ivrun_flags}},
+			  @{$param{all_run_flags}},
 			  ]);
     }
     if ($param{nc}) {
@@ -502,13 +504,16 @@ sub execute {
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{ncrun_flags}},
+			  @{$param{all_run_flags}},
 			  ]);
     }
     if ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
-		    cmd=>["./simv",],
+		    cmd=>["./simv",
+			  @{$param{all_run_flags}},
+		          ],
 		    %param,
 		    expect=>undef,	# vcs expect isn't the same
 		    );
@@ -518,6 +523,7 @@ sub execute {
 	) {
 	$self->_run(logfile=>"$self->{obj_dir}/vl_sim.log",
 		    cmd=>["$self->{obj_dir}/$param{VM_PREFIX}",
+			  @{$param{all_run_flags}},
 			  ],
 		    %param,
 		    );
@@ -731,6 +737,7 @@ sub _make_main {
 	print $fh "int main(int argc, char **argv, char **env) {\n";
 	print $fh "    double sim_time = $self->{sim_time};\n";
     }
+    print $fh "    Verilated::commandArgs(argc, argv);\n";
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
     print $fh "    topp = new $VM_PREFIX (\"TOP\");\n";

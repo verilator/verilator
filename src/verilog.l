@@ -184,8 +184,10 @@ escid	\\[^ \t\f\r\n]+
   "$sscanf"		{ FL; return yD_SSCANF; }
   "$stime"		{ FL; return yD_STIME; }
   "$stop"		{ FL; return yD_STOP; }
+  "$test$plusargs"	{ FL; return yD_TESTPLUSARGS; }
   "$time"		{ FL; return yD_TIME; }
   "$timeskew"		{ FL; return yaTIMINGSPEC; }
+  "$value$plusargs"	{ FL; return yD_VALUEPLUSARGS; }
   "$width"		{ FL; return yaTIMINGSPEC; }
   "$write"		{ FL; return yD_WRITE; }
   /*     Keywords */

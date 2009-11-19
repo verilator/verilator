@@ -353,9 +353,11 @@ class AstSenTree;
 %token<fl>		yD_SSCANF	"$sscanf"
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
+%token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
 %token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNSIGNED	"$unsigned"
+%token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
 %token<fl>		yD_aIGNORE	"${ignored-bbox-sys}"
@@ -1947,7 +1949,9 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_STIME				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_TIME					{ $$ = new AstTime($1); }
+	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
+	|	yD_VALUEPLUSARGS '(' str ',' expr ')'	{ $$ = new AstValuePlusArgs($1,*$3,$5); }
 	;
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]

@@ -1558,6 +1558,56 @@ public:
     AstNode*	msbp() const { return op4p()->castNode(); }
 };
 
+struct AstValuePlusArgs : public AstNodeMath {
+    // Parents: expr
+    // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
+private:
+    string	m_text;
+public:
+    AstValuePlusArgs(FileLine* fileline, const string& text, AstNode* exprsp)
+	: AstNodeMath (fileline), m_text(text) {
+	setOp1p(exprsp);
+    }
+    ASTNODE_NODE_FUNCS(ValuePlusArgs, VALUEPLUSARGS)
+    virtual string name()	const { return m_text; }
+    virtual string verilogKwd() const { return "$value$plusargs"; }
+    virtual string emitVerilog() { return verilogKwd(); }
+    virtual string emitC() { return "VL_VALUEPLUSARGS_%nq(%lw, %P, NULL)"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool cleanOut() { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const {
+	return text()==samep->castValuePlusArgs()->text(); }
+    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    void 	exprsp(AstNode* nodep)	{ setOp1p(nodep); }	// op1 = Expressions to output
+    string 	text()		const { return m_text; }	// * = Text to display
+    void 	text(const string& text) { m_text=text; }
+};
+
+struct AstTestPlusArgs : public AstNodeMath {
+    // Parents: expr
+    // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
+private:
+    string	m_text;
+public:
+    AstTestPlusArgs(FileLine* fileline, const string& text)
+	: AstNodeMath (fileline), m_text(text) { }
+    ASTNODE_NODE_FUNCS(TestPlusArgs, TESTPLUSARGS)
+    virtual string name()	const { return m_text; }
+    virtual string verilogKwd() const { return "$test$plusargs"; }
+    virtual string emitVerilog() { return verilogKwd(); }
+    virtual string emitC() { return "VL_VALUEPLUSARGS_%nq(%lw, %P, NULL)"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool cleanOut() { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const {
+	return text()==samep->castTestPlusArgs()->text(); }
+    string 	text()		const { return m_text; }	// * = Text to display
+    void 	text(const string& text) { m_text=text; }
+};
+
 struct AstGenFor : public AstNodeFor {
     AstGenFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
 	   AstNode* incsp, AstNode* bodysp)

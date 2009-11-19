@@ -753,6 +753,13 @@ private:
 	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
+    virtual void visit(AstTestPlusArgs* nodep, AstNUser* vup) {
+	nodep->width(32,32);
+    }
+    virtual void visit(AstValuePlusArgs* nodep, AstNUser* vup) {
+	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->width(32,32);
+    }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	// Just let all arguments seek their natural sizes

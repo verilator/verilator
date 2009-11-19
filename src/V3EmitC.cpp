@@ -236,6 +236,59 @@ public:
     virtual void visit(AstSScanF* nodep, AstNUser*) {
 	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
     }
+    virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
+	string prefix;
+	char format = '?';
+	bool pct=false;
+	int got=0;
+	for (const char* cp = nodep->text().c_str(); *cp; cp++) {
+	    if (pct) {
+		pct = false;
+		switch (tolower(*cp)) {
+		case '%':
+		    prefix += *cp;
+		    break;
+		case 'd': // FALLTHRU
+		case 'o': // FALLTHRU
+		case 'h': // FALLTHRU
+		case 'x': // FALLTHRU
+		case 'b': // FALLTHRU
+		case 's':
+		    got++; format = tolower(*cp);
+		    break;
+		case 'e': // FALLTHRU
+		case 'f': // FALLTHRU
+		case 'g':
+		    got++; format = tolower(*cp);
+		    nodep->v3error("Unsupported $value$plusargs format qualifier: '"<<*cp<<"'"<<endl);
+		    break;
+		default:
+		    got++;
+		    nodep->v3error("Illegal $value$plusargs format qualifier: '"<<*cp<<"'"<<endl);
+		    break;
+		}
+	    }
+	    else if (*cp == '%') pct = true;
+	    else prefix += *cp;
+	}
+	if (got!=1) nodep->v3error("Missing or extra $value$plusargs format qualifier: '"<<nodep->text()<<"'"<<endl);
+	puts("VL_VALUEPLUSARGS_I");
+	emitIQW(nodep->exprsp());
+	puts("(");
+	puts(cvtToStr(nodep->exprsp()->widthMin()));  // Note argument width, not node width (which is always 32)
+	putbs(",");
+	putsQuoted(prefix);
+	putbs(",'");
+	puts(cvtToStr(format));
+	putbs("',");
+	nodep->exprsp()->iterateAndNext(*this);
+	puts(")");
+    }
+    virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {
+	puts("VL_TESTPLUSARGS_I(");
+	putsQuoted(nodep->text());
+	puts(")");
+    }
     virtual void visit(AstFGetS* nodep, AstNUser*) {
 	checkMaxWords(nodep);
 	emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);

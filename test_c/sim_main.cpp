@@ -23,6 +23,7 @@ int main(int argc, char **argv, char **env) {
     if (0 && argc && argv && env) {}	// Prevent unused variable warnings
     top = new Vtop;		// Create instance of module
 
+    Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
 #if VM_TRACE			// If verilator was invoked with --trace

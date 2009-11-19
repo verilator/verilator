@@ -19,6 +19,7 @@ double sc_time_stamp () {
 }
 
 int main(int argc, char **argv, char **env) {
+    Verilated::commandArgs(argc, argv);
     Verilated::debug(0);	// We compiled with it on for testing, turn it back off
 
     top = new Vvgen;

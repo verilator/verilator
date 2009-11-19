@@ -768,6 +768,7 @@ We'll compile this example into C++.
       #include "Vour.h"
       #include "verilated.h"
       int main(int argc, char **argv, char **env) {
+	  Verilated::commandArgs(argc, argv);
           Vour* top = new Vour;
           while (!Verilated::gotFinish()) { top->eval(); }
           exit(0);
@@ -825,6 +826,7 @@ This is an example similar to the above, but using SystemPerl.
     cat <<EOF >sc_main.cpp
       #include "Vour.h"
       int sc_main(int argc, char **argv) {
+	  Verilated::commandArgs(argc, argv);
           sc_clock clk ("clk",10, 0.5, 3, true);
           Vour* top;
           top = new Vour("top");   // SP_CELL (top, Vour);
@@ -1080,7 +1082,9 @@ example:
 	    return main_time;
 	}
 
-	int main() {
+	int main(int argc, char** argv) {
+	    Verilated::commandArgs(argc, argv);   // Remember args
+
 	    top = new Vtop;		// Create instance
 
 	    top->reset_l = 0;		// Set some inputs
@@ -1783,6 +1787,22 @@ arrays.
 =item $realtime
 
 Treated as $time.
+
+=item $test$plusargs, $value$plusargs
+
+Supported, but the instantiating C++/SystemC testbench must call
+
+    Verilated::commandArgs(argc, argv);
+
+to register the command line before calling $test$plusargs or
+$value$plusargs.
+
+=item $timeformat
+
+Not supported as Verilator needs to determine all formatting at compile
+time.  Generally you can just ifdef them out for no ill effect.  Note also
+VL_TIME_MULTIPLER can be defined at compile time to move the decimal point
+when displaying all times, model wide.
 
 =back
 

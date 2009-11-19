@@ -166,6 +166,9 @@ public:
     /// Enable/disable assertions
     static void assertOn(bool flag) { s_assertOn=flag; }
     static bool assertOn() { return s_assertOn; }
+    /// Command line arguments
+    static void commandArgs(int argc, const char** argv);
+    static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
 };
 
 //=========================================================================
@@ -217,6 +220,9 @@ extern IData VL_FSCANF_IX(QData fpq, const char* formatp, ...);
 extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
+
+extern IData VL_TESTPLUSARGS_I(const char* formatp);
+extern IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp);
 
 //=========================================================================
 // Base macros
@@ -1418,6 +1424,26 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
     int words = VL_WORDS_I(obits);
     for (int i=0; i < words; i++) owp[i] = cond ? w1p[i] : w2p[i];
     return(owp);
+}
+
+//======================================================================
+// System Functions
+
+inline IData VL_VALUEPLUSARGS_IQ(int rbits, const char* prefixp, char fmt, QData& ldr) {
+    WData wd[2]; IData v=VL_VALUEPLUSARGS_IW(rbits,prefixp,fmt,wd); if (v) ldr=VL_SET_QW(wd);
+    return v;
+}
+inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, CData& ldr) {
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    return v;
+}
+inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, SData& ldr) {
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    return v;
+}
+inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, IData& ldr) {
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    return v;
 }
 
 //======================================================================

@@ -25,6 +25,7 @@
 
 #include "verilated.h"
 #include <cctype>
+#include <vector>
 
 #define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
 
@@ -36,6 +37,38 @@ int  Verilated::s_debug = 1;
 bool Verilated::s_calcUnusedSigs = false;
 bool Verilated::s_gotFinish = false;
 bool Verilated::s_assertOn = true;
+
+//===========================================================================
+// Local Implementation Globals
+// (Not in Verilated as they can be slow, and we want to mimimize the STL imports)
+
+class VerilatedImp {
+protected:
+    friend class Verilated;
+    typedef vector<string> ArgVec;
+    static ArgVec	s_argVec;	// Argument list
+    static bool		s_argVecLoaded;	// Ever loaded argument list
+    // METHODS
+public:  // But only for this C file
+    static string argPlusMatch(const char* prefixp) {
+	int len = strlen(prefixp);
+	if (!s_argVecLoaded) {
+	    s_argVecLoaded = true;  // Complain only once
+	    vl_fatal("unknown",0,"",
+		     "%Error: Verilog called $test$plusargs or $value$plusargs without"
+		     " testbench C first calling Verilated::commandArgs(argc,argv).");
+	}
+	for (ArgVec::iterator it=s_argVec.begin(); it!=s_argVec.end(); ++it) {
+	    if ((*it)[0]=='+') {
+		if (0==strncmp(prefixp, it->c_str()+1, len)) return *it;
+	    }
+	}
+	return "";
+    }
+};
+
+VerilatedImp::ArgVec  VerilatedImp::s_argVec;
+bool	VerilatedImp::s_argVecLoaded = false;
 
 //===========================================================================
 // User definable functions
@@ -441,6 +474,32 @@ static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits,
 	VL_ASSIGNBIT_WI(0, lsb, owp, ld & 1);
     }
 }
+static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, int posstart, int posend) {
+    // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
+    int lsb = 0;
+    for (int i=0, pos=posend-1; i<obits && pos>=posstart; pos--) {
+	switch (tolower (strp[pos])) {
+	case 'x': case 'z': case '?': //FALLTHRU
+	case '0': lsb += baseLog2; break;
+	case '1': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  1); lsb+=baseLog2; break;
+	case '2': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  2); lsb+=baseLog2; break;
+	case '3': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  3); lsb+=baseLog2; break;
+	case '4': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  4); lsb+=baseLog2; break;
+	case '5': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  5); lsb+=baseLog2; break;
+	case '6': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  6); lsb+=baseLog2; break;
+	case '7': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  7); lsb+=baseLog2; break;
+	case '8': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  8); lsb+=baseLog2; break;
+	case '9': _vl_vsss_setbit(owp,obits,lsb, baseLog2,  9); lsb+=baseLog2; break;
+	case 'a': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 10); lsb+=baseLog2; break;
+	case 'b': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 11); lsb+=baseLog2; break;
+	case 'c': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 12); lsb+=baseLog2; break;
+	case 'd': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 13); lsb+=baseLog2; break;
+	case 'e': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 14); lsb+=baseLog2; break;
+	case 'f': _vl_vsss_setbit(owp,obits,lsb, baseLog2, 15); lsb+=baseLog2; break;
+	case '_': break;
+	}
+    }
+}
 
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		  int fbits, WDataInP fromp,  // Else if a sscanf
@@ -480,7 +539,6 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		// Deal with all read-and-scan somethings
 		// Note LSBs are preserved if there's an overflow
 		const int obits = va_arg(ap, int);
-		int lsb = 0;
 		WData qowp[2];
 		WDataOutP owp = qowp;
 		if (obits > VL_QUADSIZE) {
@@ -500,6 +558,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_read(fp,floc,fromp, tmp, NULL);
 		    if (!tmp[0]) goto done;
 		    int pos = strlen(tmp)-1;
+		    int lsb = 0;
 		    for (int i=0; i<obits && pos>=0; pos--) {
 			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[pos]); lsb+=8;
 		    }
@@ -507,7 +566,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		}
 		case 'd': { // Signed decimal
 		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xz?_");
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    vlsint64_t ld;
 		    sscanf(tmp,"%lld",&ld);
@@ -517,7 +576,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		case 't': // FALLTHRU  // Time
 		case 'u': { // Unsigned decimal
 		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xz?_");
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    QData ld;
 		    sscanf(tmp,"%llu",&ld);
@@ -526,67 +585,23 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		}
 		case 'b': {
 		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "01xz?_");
+		    _vl_vsss_read(fp,floc,fromp, tmp, "01xXzZ?_");
 		    if (!tmp[0]) goto done;
-		    int pos = strlen(tmp)-1;
-		    for (int i=0; i<obits && pos>=0; pos--) {
-			switch(tmp[pos]) {
-			case 'x': case 'z': case '?': //FALLTHRU
-			case '0': lsb++; break;
-			case '1': _vl_vsss_setbit(owp,obits,lsb, 1, 1); lsb++; break;
-			case '_': break;
-			}
-		    }
+		    _vl_vsss_based(owp,obits, 1, tmp, 0, strlen(tmp));
 		    break;
 		}
 		case 'o': {
 		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "01234567xz?_");
+		    _vl_vsss_read(fp,floc,fromp, tmp, "01234567xXzZ?_");
 		    if (!tmp[0]) goto done;
-		    int pos = strlen(tmp)-1;
-		    for (int i=0; i<obits && pos>=0; pos--) {
-			switch(tmp[pos]) {
-			case 'x': case 'z': case '?': //FALLTHRU
-			case '0': lsb+=3; break;
-			case '1': _vl_vsss_setbit(owp,obits,lsb, 3, 1); lsb+=3; break;
-			case '2': _vl_vsss_setbit(owp,obits,lsb, 3, 2); lsb+=3; break;
-			case '3': _vl_vsss_setbit(owp,obits,lsb, 3, 3); lsb+=3; break;
-			case '4': _vl_vsss_setbit(owp,obits,lsb, 3, 4); lsb+=3; break;
-			case '5': _vl_vsss_setbit(owp,obits,lsb, 3, 5); lsb+=3; break;
-			case '6': _vl_vsss_setbit(owp,obits,lsb, 3, 6); lsb+=3; break;
-			case '7': _vl_vsss_setbit(owp,obits,lsb, 3, 7); lsb+=3; break;
-			case '_': break;
-			}
-		    }
+		    _vl_vsss_based(owp,obits, 3, tmp, 0, strlen(tmp));
 		    break;
 		}
 		case 'x': {
 		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789abcdefxz?_");
+		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789abcdefABCDEFxXzZ?_");
 		    if (!tmp[0]) goto done;
-		    int pos = strlen(tmp)-1;
-		    for (int i=0; i<obits && pos>=0; pos--) {
-			switch(tmp[pos]) {
-			case 'x': case 'z': case '?': //FALLTHRU
-			case '0': lsb+=4; break;
-			case '1': _vl_vsss_setbit(owp,obits,lsb, 4,  1); lsb+=4; break;
-			case '2': _vl_vsss_setbit(owp,obits,lsb, 4,  2); lsb+=4; break;
-			case '3': _vl_vsss_setbit(owp,obits,lsb, 4,  3); lsb+=4; break;
-			case '4': _vl_vsss_setbit(owp,obits,lsb, 4,  4); lsb+=4; break;
-			case '5': _vl_vsss_setbit(owp,obits,lsb, 4,  5); lsb+=4; break;
-			case '6': _vl_vsss_setbit(owp,obits,lsb, 4,  6); lsb+=4; break;
-			case '7': _vl_vsss_setbit(owp,obits,lsb, 4,  7); lsb+=4; break;
-			case '8': _vl_vsss_setbit(owp,obits,lsb, 4,  8); lsb+=4; break;
-			case '9': _vl_vsss_setbit(owp,obits,lsb, 4,  9); lsb+=4; break;
-			case 'a': _vl_vsss_setbit(owp,obits,lsb, 4, 10); lsb+=4; break;
-			case 'b': _vl_vsss_setbit(owp,obits,lsb, 4, 11); lsb+=4; break;
-			case 'c': _vl_vsss_setbit(owp,obits,lsb, 4, 12); lsb+=4; break;
-			case 'd': _vl_vsss_setbit(owp,obits,lsb, 4, 13); lsb+=4; break;
-			case 'e': _vl_vsss_setbit(owp,obits,lsb, 4, 14); lsb+=4; break;
-			case 'f': _vl_vsss_setbit(owp,obits,lsb, 4, 15); lsb+=4; break;
-			case '_': break;
-			}
-		    }
+		    _vl_vsss_based(owp,obits, 4, tmp, 0, strlen(tmp));
 		    break;
 		}
 		default:
@@ -851,6 +866,48 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     }
 }
 
+IData VL_TESTPLUSARGS_I(const char* formatp) {
+    string match = VerilatedImp::argPlusMatch(formatp);
+    if (match == "") return 0;
+    else return 1;
+}
+
+IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp) {
+    string match = VerilatedImp::argPlusMatch(prefixp);
+    const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);
+    if (match == "") return 0;
+    VL_ZERO_RESET_W(rbits, rwp);
+    switch (tolower(fmt)) {
+    case '%':
+	break;
+    case 'd':
+	vlsint64_t ld;
+	sscanf(dp,"%lld",&ld);
+	VL_SET_WQ(rwp,ld);
+	break;
+    case 'b':
+	_vl_vsss_based(rwp,rbits, 1, dp, 0, strlen(dp));
+	break;
+    case 'o':
+	_vl_vsss_based(rwp,rbits, 3, dp, 0, strlen(dp));
+	break;
+    case 'h': //FALLTHRU
+    case 'x':
+	_vl_vsss_based(rwp,rbits, 4, dp, 0, strlen(dp));
+	break;
+    case 's':
+	for (int i=0, lsb=0, pos=strlen(dp)-1; i<rbits && pos>=0; pos--) {
+	    _vl_vsss_setbit(rwp,rbits,lsb, 8, dp[pos]); lsb+=8;
+	}
+	break;
+    default:  // Compile time should have found all errors before this
+	vl_fatal (__FILE__, __LINE__, "", "$value$plusargs format error");
+	break;
+    }
+    _VL_CLEAN_INPLACE_W(rbits,rwp);
+    return 1;
+}
+
 //===========================================================================
 // Verilated:: Methods
 
@@ -868,6 +925,15 @@ const char* Verilated::catName(const char* n1, const char* n2) {
     strcpy(strp,n1);
     strcat(strp,n2);
     return strp;
+}
+
+void Verilated::commandArgs(int argc, const char** argv) {
+    VerilatedImp::s_argVec.clear();
+    for (int i=0; i<argc; i++) {
+	VerilatedImp::s_argVec.push_back(argv[i]);
+    }
+    // Can't just test later for empty vector, no arguments is ok
+    VerilatedImp::s_argVecLoaded = true;
 }
 
 //===========================================================================

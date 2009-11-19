@@ -26,6 +26,7 @@
 Vtop *top;
 
 int sc_main(int argc, char* argv[]) {
+    Verilated::commandArgs(argc, argv);
     Verilated::randReset(2);
     Verilated::debug(0);	// We compiled with it on for testing, turn it back off
 

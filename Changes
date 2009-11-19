@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support declarations in loop initializers, bug172.  [by Byron Bradley]
 
+***  Support $test$plusargs and $value$plusargs, but see the docs!
+
 ***  Add VARHIDDEN warning when signal name hides module name.
 
 **** Fix MinGW compilation, bug184. [by Shankar Giri]
