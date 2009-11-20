@@ -260,6 +260,7 @@ class AstSenTree;
 %token<fl>		yENDGENERATE	"endgenerate"
 %token<fl>		yENDMODULE	"endmodule"
 %token<fl>		yENDPACKAGE	"endpackage"
+%token<fl>		yENDPRIMITIVE	"endprimitive"
 %token<fl>		yENDPROGRAM	"endprogram"
 %token<fl>		yENDPROPERTY	"endproperty"
 %token<fl>		yENDSPECIFY	"endspecify"
@@ -293,6 +294,7 @@ class AstSenTree;
 %token<fl>		yPACKAGE	"package"
 %token<fl>		yPARAMETER	"parameter"
 %token<fl>		yPOSEDGE	"posedge"
+%token<fl>		yPRIMITIVE	"primitive"
 %token<fl>		yPRIORITY	"priority"
 %token<fl>		yPROGRAM	"program"
 %token<fl>		yPROPERTY	"property"
@@ -629,6 +631,12 @@ module_declaration:		// ==IEEE: module_declaration
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1); }
+	|	udpFront parameter_port_listE portsStarE ';'
+			module_itemListE yENDPRIMITIVE endLabelE
+			{ $1->modTrace(false);  // Stash for implicit wires, etc
+			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
+			  if ($5) $1->addStmtp($5);
+			  SYMP->popScope($1); }
 	//
 	//UNSUP	yEXTERN modFront parameter_port_listE portsStarE ';'
 	//UNSUP		{ UNSUP }
@@ -640,6 +648,16 @@ modFront<modulep>:
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
+			  PARSEP->rootp()->addModulep($$);
+			  SYMP->pushNew($$); }
+	;
+
+udpFront<modulep>:
+		yPRIMITIVE lifetimeE idAny
+			{ $$ = new AstModule($1,*$3); $$->inLibrary(true);
+			  $$->modTrace(false);
+			  $$->addStmtp(new AstPragma($1,AstPragmaType::INLINE_MODULE));
+			  PARSEP->fileline()->tracingOn(false);
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
