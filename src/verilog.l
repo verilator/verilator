@@ -132,7 +132,7 @@ void yyerrorf(const char* format, ...) {
 %o 25000
 
 %s V95 V01 V05 S05
-%s STRING ATTRMODE
+%s STRING ATTRMODE TABLE
 %s PSL
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
@@ -212,6 +212,7 @@ escid	\\[^ \t\f\r\n]+
   "endmodule"		{ FL; return yENDMODULE; }
   "endprimitive"	{ FL; return yENDPRIMITIVE; }
   "endspecify"		{ FL; return yENDSPECIFY; }
+  "endtable"		{ yyerrorf("Syntax error: ENDTABLE outside of TABLE"); }
   "endtask"		{ FL; return yENDTASK; }
   "for"			{ FL; return yFOR; }
   "forever"		{ FL; return yFOREVER; }
@@ -243,6 +244,7 @@ escid	\\[^ \t\f\r\n]+
   "specparam"		{ FL; return ySPECPARAM; }
   "supply0"		{ FL; return ySUPPLY0; }
   "supply1"		{ FL; return ySUPPLY1; }
+  "table"		{ yy_push_state(TABLE); FL; return yTABLE; }
   "task"		{ FL; return yTASK; }
   "time"		{ FL; return yTIME; }
   "tri"			{ FL; return yTRI; }
@@ -267,7 +269,6 @@ escid	\\[^ \t\f\r\n]+
   /*     Generic unsupported warnings */
   "cmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "deassign"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "endtable"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "event"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "force"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "fork"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -292,7 +293,6 @@ escid	\\[^ \t\f\r\n]+
   "small"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "table"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tran"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tranif0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "tranif1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -790,6 +790,15 @@ escid	\\[^ \t\f\r\n]+
 <V95,V01,V05,S05>{
     "(*"/{ws}*[^)]	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*)
 }
+
+  /************************************************************************/
+  /* Tables */
+<TABLE>\\{crnl}		{ yymore(); NEXTLINE(); }
+<TABLE>{crnl}		{ NEXTLINE(); yymore(); }
+<TABLE>";"		{ yylval.strp = PARSEP->newString(yytext,yyleng); return yaTABLELINE; }
+<TABLE>"endtable"	{ yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>. 		{ yymore(); }
+<TABLE><<EOF>>		{ yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/
   /* Preprocessor */

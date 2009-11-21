@@ -1961,6 +1961,25 @@ struct AstScopeName : public AstNode {
     void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
 };
 
+struct AstUdpTable : public AstNode {
+    AstUdpTable(FileLine* fl, AstNode* bodysp)
+	: AstNode(fl) {
+	addNOp1p(bodysp);
+    }
+    ASTNODE_NODE_FUNCS(UdpTable, UDPTABLE)
+    AstUdpTableLine*	bodysp() 	const { return op1p()->castUdpTableLine(); }	// op1 = List of UdpTableLines
+};
+
+struct AstUdpTableLine : public AstNode {
+    string	m_text;
+public:
+    AstUdpTableLine(FileLine* fl, const string& text)
+	: AstNode(fl), m_text(text) {}
+    ASTNODE_NODE_FUNCS(UdpTableLine, UDPTABLELINE)
+    virtual string name()	const { return m_text; }
+    string text() const { return m_text; }
+};
+
 //======================================================================
 // non-ary ops
 

@@ -191,6 +191,8 @@ class AstSenTree;
 
 %token<fl>		yaTIMINGSPEC	"TIMING SPEC ELEMENT"
 
+%token<strp>		yaTABLELINE	"TABLE LINE"
+
 %token<strp>		yaSCHDR		"`systemc_header BLOCK"
 %token<strp>		yaSCINT		"`systemc_ctor BLOCK"
 %token<strp>		yaSCIMP		"`systemc_dtor BLOCK"
@@ -264,6 +266,7 @@ class AstSenTree;
 %token<fl>		yENDPROGRAM	"endprogram"
 %token<fl>		yENDPROPERTY	"endproperty"
 %token<fl>		yENDSPECIFY	"endspecify"
+%token<fl>		yENDTABLE	"endtable"
 %token<fl>		yENDTASK	"endtask"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
@@ -310,6 +313,7 @@ class AstSenTree;
 %token<fl>		ySTATIC		"static"
 %token<fl>		ySUPPLY0	"supply0"
 %token<fl>		ySUPPLY1	"supply1"
+%token<fl>		yTABLE		"table"
 %token<fl>		yTASK		"task"
 %token<fl>		yTIME		"time"
 %token<fl>		yTIMEPRECISION	"timeprecision"
@@ -1224,7 +1228,7 @@ module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
 	//			// IEEE: gate_instantiation + udp_instantiation + module_instantiation
 	//			// not here, see etcInst in module_common_item
 	//			// We joined udp & module definitions, so this goes here
-	//UNSUP	combinational_body			{ $$ = $1; }
+	|	table					{ $$ = $1; }
 	|	module_common_item			{ $$ = $1; }
 	;
 
@@ -2528,7 +2532,20 @@ strengthSpecE:			// IEEE: drive_strength + pullup_strength + pulldown_strength +
 
 //************************************************
 // Tables
-// Not supported
+
+table<nodep>:		// IEEE: combinational_body + sequential_body
+		yTABLE tableEntryList yENDTABLE		{ $$ = new AstUdpTable($1,$2); }
+	;
+
+tableEntryList<nodep>:	// IEEE: { combinational_entry | sequential_entry }
+		tableEntry 				{ $$ = $1; }
+	|	tableEntryList tableEntry		{ $$ = $1->addNext($2); }
+	;
+
+tableEntry<nodep>:	// IEEE: combinational_entry + sequential_entry
+		yaTABLELINE				{ $$ = new AstUdpTableLine(CRELINE(),*$1); }
+	|	error					{ $$ = NULL; }
+	;
 
 //************************************************
 // Specify

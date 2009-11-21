@@ -320,6 +320,12 @@ private:
 	}
     }
 
+    virtual void visit(AstUdpTable* nodep, AstNUser*) {
+	UINFO(5,"UDPTABLE  "<<nodep<<endl);
+	nodep->v3error("Unsupported: Verilog 1995 UDP Tables");
+	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+    }
+
     virtual void visit(AstScCtor* nodep, AstNUser*) {
 	// Constructor info means the module must remain public
 	m_modp->modPublic(true);
