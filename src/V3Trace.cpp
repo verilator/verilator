@@ -330,7 +330,7 @@ private:
 					new AstSel (fl, new AstVarRef(fl, m_activityVscp, true),
 						    new AstConst(fl, acode),
 						    new AstConst(fl, 1)),
-					new AstConst (fl, V3Number(fl, 1, 1))));
+					new AstConst (fl, AstConst::LogicTrue())));
 		}
 	    }
 	}

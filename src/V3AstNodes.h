@@ -59,6 +59,15 @@ public:
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
 	:AstNodeMath(fl)
 	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,m_num.minWidth()); }
+    class LogicFalse {};
+    AstConst(FileLine* fl, LogicFalse) // Shorthand const 0, know the dtype should be a logic of size 1
+	:AstNodeMath(fl)
+	,m_num(V3Number(fl,1,0)) { width(1,0); }
+    class LogicTrue {};
+    AstConst(FileLine* fl, LogicTrue) // Shorthand const 1, know the dtype should be a logic of size 1
+	:AstNodeMath(fl)
+	,m_num(V3Number(fl,1,1)) { width(1,0); }
+
     ASTNODE_NODE_FUNCS(Const, CONST)
     virtual string name()	const { return num().ascii(); }		// * = Value
     virtual const V3Number& num()	const { return m_num; }		// * = Value

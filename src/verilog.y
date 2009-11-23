@@ -1738,7 +1738,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	yP_MINUSGT hierarchical_identifier/*event*/ ';'	{ UNSUP }
 	//UNSUP	yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'	{ UNSUP }
 	//			// IEEE: loop_statement
-	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,V3Number($1,1,1)),$2); }
+	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,AstConst::LogicTrue()),$2); }
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initalization
@@ -2816,7 +2816,7 @@ pslSere<nodep>:
 // This can be bypassed with the _(...) embedding of any arbitrary expression.
 pslExpr<nodep>:
 		exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
-	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, V3Number($1,1,1))); }
+	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, AstConst::LogicTrue())); }
 	;
 
 //**********************************************************************

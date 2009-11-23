@@ -308,7 +308,7 @@ private:
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    if (!itemp->condsp()) {
 		// Default clause.  Just make true, we'll optimize it away later
-		itemp->condsp(new AstConst(itemp->fileline(), V3Number(itemp->fileline(), 1,1)));
+		itemp->condsp(new AstConst(itemp->fileline(), AstConst::LogicTrue()));
 		hadDefault = true;
 	    } else {
 		// Expressioned clause
@@ -326,8 +326,8 @@ private:
 			icondp->deleteTree(); icondp=NULL; iconstp=NULL;
 			// For simplicity, make expression that is not equal, and let later
 			// optimizations remove it
-			and1p = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,0));
-			and2p = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,1));
+			and1p = new AstConst(itemp->fileline(), AstConst::LogicFalse());
+			and2p = new AstConst(itemp->fileline(), AstConst::LogicTrue());
 		    } else if (iconstp && iconstp->num().isFourState()
 			       && (nodep->casex() || nodep->casez())) {
 			V3Number nummask (itemp->fileline(), iconstp->width());
@@ -361,7 +361,7 @@ private:
 	    // If there was no default, add a empty one, this greatly simplifies below code
 	    // and constant propagation will just eliminate it for us later.
 	    nodep->addItemsp(new AstCaseItem(nodep->fileline(),
-					     new AstConst(nodep->fileline(), V3Number(nodep->fileline(),1,1)),
+					     new AstConst(nodep->fileline(), AstConst::LogicTrue()),
 					     NULL));
 	}
 	if (debug()>=9) nodep->dumpTree(cout,"    _comp_COND: ");
@@ -398,7 +398,7 @@ private:
 		AstNode* itemexprp = ifexprp;  ifexprp=NULL;
 		if (depth == (CASE_ENCODER_GROUP_DEPTH)) { // End of group - can skip the condition
 		    itemexprp->deleteTree(); itemexprp=NULL;
-		    itemexprp = new AstConst(itemp->fileline(), V3Number(itemp->fileline(),1,1));
+		    itemexprp = new AstConst(itemp->fileline(), AstConst::LogicTrue());
 		}
 		AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, NULL);
 		if (itemnextp) itemnextp->addElsesp(newp);

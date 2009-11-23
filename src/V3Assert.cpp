@@ -80,7 +80,7 @@ private:
 			  // This allows syntax errors and such to be detected normally.
 			  (v3Global.opt.assertOn()
 			   ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
-			   : (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 0)))),
+			   : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
 			  nodep, NULL);
     }
 
@@ -91,8 +91,8 @@ private:
 			  // If assertions are off, have constant propagation rip them out later
 			  // This allows syntax errors and such to be detected normally.
 			  (v3Global.opt.coverage()
-			   ? (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 1)))
-			   : (AstNode*)(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 1, 0)))),
+			   ? (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicTrue()))
+			   : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
 			  nodep, NULL);
     }
 
