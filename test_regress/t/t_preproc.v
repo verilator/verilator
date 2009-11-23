@@ -146,6 +146,12 @@ Line_Preproc_Check `__LINE__
 //======================================================================
 // misparsed comma in submacro
 `define sb bee
+`define appease_emacs_paren_matcher (
 `define sa(l) x,y)
 `define sfoo(q,r) q--r
 `sfoo(`sa(el),`sb)  submacro has comma paren
+
+//======================================================================
+// bug191
+`define bug191(bits) $display("bits %d %d", $bits(foo), `bits);
+`bug191(10)
