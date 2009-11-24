@@ -5,8 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.7**
 
-**   Support byte, shortint, int, longint, time, var and void in variables,
-     parameters and functions.
+**   Support SystemVerilog types "byte", "chandle", "int", "longint",
+     "shortint", "time", "var" and "void" in variables and functions.
 
 **   Support "program", "package", "import" and $unit.
 
@@ -22,11 +22,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add VARHIDDEN warning when signal name hides module name.
 
-**** Fix MinGW compilation, bug184. [by Shankar Giri]
-
 **** Support optional cell parenthesis, bug179. [by Byron Bradley]
 
 **** Support for loop i++, ++i, i--, --i, bug175. [by Byron Bradley]
+
+**** Fix MinGW compilation, bug184. [by Shankar Giri]
 
 **** Fix `define argument mis-replacing system task of same name, bug191.
 

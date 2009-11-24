@@ -248,6 +248,7 @@ class AstSenTree;
 %token<fl>		yCASE		"case"
 %token<fl>		yCASEX		"casex"
 %token<fl>		yCASEZ		"casez"
+%token<fl>		yCHANDLE	"chandle"
 %token<fl>		yCLOCKING	"clocking"
 %token<fl>		yCOVER		"cover"
 %token<fl>		yDEFAULT	"default"
@@ -1047,7 +1048,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP		{ UNSUP }
 	//UNSUP	enumDecl				{ UNSUP }
 	//UNSUP	ySTRING					{ UNSUP }
-	//UNSUP	yCHANDLE				{ UNSUP }
+	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }
 	//UNSUP	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ UNSUP }
 	//UNSUP	yVIRTUAL__anyID                id/*interface*/	{ UNSUP }

@@ -204,16 +204,16 @@ public:
 class AstBasicDTypeKwd {
 public:
     enum en {
-	BYTE, SHORTINT, INT, LONGINT, INTEGER, TIME, BIT,
-	LOGIC, SHORTREAL, REAL, REALTIME,
+	BIT, BYTE, CHANDLE, INT, INTEGER, LOGIC, LONGINT,
+	REAL, REALTIME,	SHORTINT, SHORTREAL, TIME,
 	// Internal types
 	LOGIC_IMPLICIT
     };
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "byte", "shortint", "int", "longint", "integer", "time", "bit",
-	    "logic", "shortreal", "real", "realtime",
+	    "bit", "byte", "chandle", "int", "integer", "logic", "longint",
+	    "real", "realtime", "shortint", "shortreal", "time",
 	    "LOGIC_IMPLICIT"
 	};
 	return names[m_e];
@@ -226,6 +226,7 @@ public:
 	switch (m_e) {
 	case BIT:	return 1;
 	case BYTE:	return 8;
+	case CHANDLE:	return 64;
 	case INT:	return 32;
 	case INTEGER:	return 32;
 	case LOGIC:	return 1;
@@ -242,7 +243,7 @@ public:
 	return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
     }
     int isZeroInit() const { // Otherwise initializes to X
-	return m_e==BIT || m_e==BYTE || m_e==INT || m_e==LONGINT || m_e==SHORTINT;
+	return m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT;
     }
     int isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);

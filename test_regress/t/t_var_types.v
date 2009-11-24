@@ -12,6 +12,7 @@ module t (/*AUTOARG*/);
    longint	d_longint;
    integer	d_integer;
    time		d_time;
+   chandle	d_chandle;
 
    // IEEE: integer_atom_type
    bit		d_bit;
@@ -64,6 +65,7 @@ module t (/*AUTOARG*/);
    function bit [1:0]	f_bit2;		bit [1:0]	lv_bit2;	f_bit2	 	= lv_bit2;	endfunction
    function logic [1:0] f_logic2;	logic [1:0] 	lv_logic2;	f_logic2	= lv_logic2;	endfunction
    function time 	f_time;		time 		lv_time;	f_time		= lv_time;	endfunction
+   function chandle 	f_chandle;	chandle		lv_chandle;	f_chandle	= lv_chandle;	endfunction
    // verilator lint_on WIDTH
 
 `ifdef verilator
@@ -104,6 +106,9 @@ module t (/*AUTOARG*/);
       // verilator lint_on WIDTH
       // verilator lint_on UNSIGNED
 
+      // Can't CHECK_ALL(d_chandle), as many operations not legal on chandles
+      if ($bits(d_chandle) !== 64) $stop;
+
 `define CHECK_P(name,nbits) \
    if (name !== {(nbits){1'b1}}) begin $display("%%Error: Bad size for %s",`"name`"); $stop; end \
 
@@ -134,6 +139,7 @@ module t (/*AUTOARG*/);
       `CHECK_F(f_longint	,64,1'b1);
       `CHECK_F(f_integer	,32,1'b0);
       `CHECK_F(f_time		,64,1'b0);
+      `CHECK_F(f_chandle	,64,1'b0);
       `CHECK_F(f_bit		,1 ,1'b1);
       `CHECK_F(f_logic		,1 ,1'b0);
       `CHECK_F(f_reg		,1 ,1'b0);

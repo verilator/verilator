@@ -367,6 +367,7 @@ escid	\\[^ \t\f\r\n]+
   "always_latch"	{ FL; return yALWAYS; }
   "bit"			{ FL; return yBIT; }
   "byte"		{ FL; return yBYTE; }
+  "chandle"		{ FL; return yCHANDLE; }
   "clocking"		{ FL; return yCLOCKING; }
   "do"			{ FL; return yDO; }
   "endclocking"		{ FL; return yENDCLOCKING; }
@@ -398,7 +399,6 @@ escid	\\[^ \t\f\r\n]+
   "bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "binsof"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "break"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "chandle"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "class"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "constraint"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "context"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
