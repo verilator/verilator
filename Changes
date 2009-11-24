@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $test$plusargs and $value$plusargs, but see the docs!
 
+***  Support $sformat and $swrite.
+
 ***  Add VARHIDDEN warning when signal name hides module name.
 
 **** Fix MinGW compilation, bug184. [by Shankar Giri]

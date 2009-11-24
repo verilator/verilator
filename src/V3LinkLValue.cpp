@@ -174,6 +174,16 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstSFormat* nodep, AstNUser*) {
+	bool last_setRefLvalue = m_setRefLvalue;
+	{
+	    m_setRefLvalue = true;
+	    nodep->lhsp()->iterateAndNext(*this);
+	    m_setRefLvalue = false;
+	    nodep->exprsp()->iterateAndNext(*this);
+	}
+	m_setRefLvalue = last_setRefLvalue;
+    }
 
     // Nodes that change LValue state
     virtual void visit(AstSel* nodep, AstNUser*) {

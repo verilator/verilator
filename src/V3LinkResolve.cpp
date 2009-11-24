@@ -302,21 +302,29 @@ private:
 	nodep->iterateChildren(*this);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+
+    void expectNodeDisplay(AstNodeDisplay* nodep) {
+	// AstSFormat also handled here
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+	if ((nodep->castDisplay() && nodep->castDisplay()->displayType().needScopeTracking())
+	    || nodep->formatScopeTracking()) {
+	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	}
+    }
+    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	expectNodeDisplay(nodep);
+    }
+    virtual void visit(AstDisplay* nodep, AstNUser* vup) {
+	nodep->iterateChildren(*this);
+	expectNodeDisplay(nodep);
+	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
 	if (!m_assertp
 	    && (nodep->displayType() == AstDisplayType::INFO
 		|| nodep->displayType() == AstDisplayType::WARNING
 		|| nodep->displayType() == AstDisplayType::ERROR
 		|| nodep->displayType() == AstDisplayType::FATAL)) {
-	    nodep->v3error(nodep->verilogKwd()+" only allowed under a assertion.");
-	}
-	if (nodep->displayType().needScopeTracking()
-	    || nodep->name().find("%m") != string::npos
-	    || nodep->name().find("%M") != string::npos) {
-	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	    nodep->v3error(nodep->verilogKwd()+" only allowed under an assertion.");
 	}
     }
 

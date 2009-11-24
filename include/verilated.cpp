@@ -698,6 +698,16 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
     return VL_CVT_FP_Q(fopen(filenamez,modez));
 }
 
+void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
+    va_list ap;
+    va_start(ap,formatp);
+    string output;
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    _VL_STRING_TO_VINT(obits, destp, output.length(), output.c_str());
+}
+
 void VL_WRITEF(const char* formatp, ...) {
     va_list ap;
     va_start(ap,formatp);

@@ -1382,15 +1382,15 @@ public:
     void	ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
 
-struct AstDisplay : public AstNodePli {
+struct AstDisplay : public AstNodeDisplay {
     // Parents: stmtlist
     // Children: file which must be a varref, MATH to print
 private:
     AstDisplayType	m_displayType;
 public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
-	: AstNodePli (fileline, text, exprsp) {
-	setNOp2p(filep);
+	: AstNodeDisplay (fileline, text, exprsp) {
+	setNOp3p(filep);
 	m_displayType = dispType;
     }
     ASTNODE_NODE_FUNCS(Display, DISPLAY)
@@ -1406,14 +1406,37 @@ public:
     virtual bool same(AstNode* samep) const {
 	return displayType()==samep->castDisplay()->displayType()
 	    && text()==samep->castDisplay()->text(); }
-    // op1 used by AstNodePli
+    // op1,op2 used by AstNodeDisplay
     AstDisplayType	displayType()	const { return m_displayType; }
     void	displayType(AstDisplayType type) { m_displayType = type; }
     bool	addNewline() const { return displayType().addNewline(); }  // * = Add a newline for $display
-    AstNode*	filep() const { return op2p(); }
-    void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
-    AstScopeName* scopeNamep() const { return op3p()->castScopeName(); }
-    void 	scopeNamep(AstNode* nodep) { setNOp3p(nodep); }
+    AstNode*	filep() const { return op3p(); }
+    void 	filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
+};
+
+struct AstSFormat : public AstNodeDisplay {
+    // Parents: statement container
+    // Children: string to load
+    // Children: varrefs to print
+    AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
+	: AstNodeDisplay (fileline, text, exprsp) {
+	setOp3p(lhsp);
+    }
+    ASTNODE_NODE_FUNCS(SFormat, SFORMAT)
+    virtual string verilogKwd() const { return "$sformat"; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return true; }
+    virtual bool isSplittable() const { return true; }
+    virtual bool isOutputter() const { return false; }
+    virtual bool cleanOut() { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const {
+	return text()==samep->castSFormat()->text(); }
+    // op1,op2 used by AstNodeDisplay
+    AstNode*	lhsp() const { return op3p(); }
+    void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
 
 struct AstFClose : public AstNodeStmt {

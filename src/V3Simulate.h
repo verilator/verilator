@@ -545,7 +545,7 @@ private:
 
     // default
     // These types are definately not reducable
-    //   AstCoverInc, AstNodePli, AstArraySel, AstStop, AstFinish,
+    //   AstCoverInc, AstDisplay, AstArraySel, AstStop, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     virtual void visit(AstNode* nodep, AstNUser*) {
 	badNodeType(nodep);

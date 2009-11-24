@@ -192,7 +192,7 @@ private:
     }
 
     // VISITORS - Special
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	//
 	UINFO(9,"  Display in "<<nodep->text()<<endl);

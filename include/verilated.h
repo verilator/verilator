@@ -199,7 +199,7 @@ extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a 
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);
 
 /// File I/O
-extern IData VL_FGETS_IXQ(int sbits, void* strgp, QData fpq);
+extern IData VL_FGETS_IXQ(int obits, void* destp, QData fpq);
 
 extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
 extern QData VL_FOPEN_QI(QData ofilename, IData mode);
@@ -220,6 +220,8 @@ extern IData VL_FSCANF_IX(QData fpq, const char* formatp, ...);
 extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
+
+extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
 
 extern IData VL_TESTPLUSARGS_I(const char* formatp);
 extern IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp);

@@ -1282,7 +1282,7 @@ output.  [signal_32_bits = $c32("...");] This allows for compatibility with
 other simulators which require a differently named PLI function name for
 each different output width.
 
-=item $display, $write, $fdisplay, $fwrite
+=item $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 
 Format arguments may use C fprintf sizes after the % escape.  Per the
 Verilog standard, %x prints a number with the natural width, %0x prints a
@@ -1730,10 +1730,11 @@ $unsigned, $warning.
 
 Generally supported.
 
-=item $display, $write, $fdisplay, $fwrite
+=item $display, $write, $fdisplay, $fwrite, $swrite
 
 $display and friends must have a constant format string as the first
-argument (as with C's printf), you cannot simply list variables standalone.
+argument (as with C's printf).  The rare usage which lists variables
+standalone without a format is not supported.
 
 =item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
 

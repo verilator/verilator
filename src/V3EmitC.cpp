@@ -114,9 +114,9 @@ public:
 		putbs("VL_ASSIGNBIT_");
 		emitIQW(selp->fromp());
 		if (nodep->rhsp()->isAllOnesV()) {
-		    putbs("O(");
+		    puts("O(");
 		} else {
-		    putbs("I(");
+		    puts("I(");
 		}
 		puts(cvtToStr(nodep->widthMin())+",");
 		selp->lsbp()->iterateAndNext(*this); puts(", ");
@@ -124,7 +124,7 @@ public:
 	    } else {
 		putbs("VL_ASSIGNSEL_");
 		emitIQW (selp->fromp());
-		putbs("II");
+		puts("II");
 		emitIQW(nodep->rhsp());
 		puts("(");
 		puts(cvtToStr(nodep->widthMin())+",");
@@ -230,6 +230,9 @@ public:
 	if (nodep->addNewline()) text += "\n";
 	displayNode(nodep, text, nodep->exprsp(), false);
     }
+    virtual void visit(AstSFormat* nodep, AstNUser*) {
+	displayNode(nodep, nodep->text(), nodep->exprsp(), false);
+    }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
 	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
     }
@@ -278,9 +281,9 @@ public:
 	puts(cvtToStr(nodep->exprsp()->widthMin()));  // Note argument width, not node width (which is always 32)
 	putbs(",");
 	putsQuoted(prefix);
-	putbs(",'");
-	puts(cvtToStr(format));
-	putbs("',");
+	putbs(",");
+	puts("'"); puts(cvtToStr(format)); puts("'");
+	puts(",");
 	nodep->exprsp()->iterateAndNext(*this);
 	puts(")");
     }
@@ -1050,6 +1053,13 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    } else {
 		puts("VL_WRITEF(");
 	    }
+	} else if (AstSFormat* dispp = nodep->castSFormat()) {
+	    isStmt = true;
+	    puts("VL_SFORMAT_X(");
+	    puts(cvtToStr(dispp->lhsp()->widthMin()));
+	    putbs(",");
+	    dispp->lhsp()->iterate(*this);
+	    putbs(",");
 	} else {
 	    isStmt = true;
 	    nodep->v3fatalSrc("Unknown displayEmit node type");
@@ -1165,8 +1175,8 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
 	    case 'm': {
 		emitDispState.pushFormat("%S");
 		emitDispState.pushArg(NULL, "vlSymsp->name()");
-		if (!nodep->castDisplay()) nodep->v3fatalSrc("Non-Display with %m");
-		AstScopeName* scopenamep = nodep->castDisplay()->scopeNamep();
+		if (!nodep->castNodeDisplay()) nodep->v3fatalSrc("Non-Display with %m");
+		AstScopeName* scopenamep = nodep->castNodeDisplay()->scopeNamep();
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
 		for (AstText* textp=scopenamep->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
 		    emitDispState.pushFormat(textp->text());

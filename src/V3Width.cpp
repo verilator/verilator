@@ -682,7 +682,7 @@ private:
 	widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
 	//if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
     }
-    virtual void visit(AstNodePli* nodep, AstNUser*) {
+    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
 	// Excludes NodeDisplay, see below
 	// TOP LEVEL NODE
 	// Just let all arguments seek their natural sizes

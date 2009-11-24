@@ -180,10 +180,12 @@ escid	\\[^ \t\f\r\n]+
   "$removal"		{ FL; return yaTIMINGSPEC; }
   "$setup"		{ FL; return yaTIMINGSPEC; }
   "$setuphold"		{ FL; return yaTIMINGSPEC; }
+  "$sformat"		{ FL; return yD_SFORMAT; }
   "$skew"		{ FL; return yaTIMINGSPEC; }
   "$sscanf"		{ FL; return yD_SSCANF; }
   "$stime"		{ FL; return yD_STIME; }
   "$stop"		{ FL; return yD_STOP; }
+  "$swrite"		{ FL; return yD_SWRITE; }
   "$test$plusargs"	{ FL; return yD_TESTPLUSARGS; }
   "$time"		{ FL; return yD_TIME; }
   "$timeskew"		{ FL; return yaTIMINGSPEC; }

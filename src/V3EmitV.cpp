@@ -172,10 +172,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstCoverInc*, AstNUser*) {}  // N/A
     virtual void visit(AstCoverToggle*, AstNUser*) {}  // N/A
 
-    void visitNodeDisplay(AstNode* nodep, AstNode* filep, const string& text, AstNode* exprsp) {
+    void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text, AstNode* exprsp) {
 	putbs(nodep->verilogKwd());
 	putbs(" (");
-	if (filep) { filep->iterateAndNext(*this); putbs(","); }
+	if (fileOrStrgp) { fileOrStrgp->iterateAndNext(*this); putbs(","); }
 	puts("\"");
 	putsNoTracking(text);   // Not putsQuoted, as display text contains \ already
 	puts("\"");
@@ -193,6 +193,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstSScanF* nodep, AstNUser*) {
 	visitNodeDisplay(nodep, nodep->fromp(), nodep->text(), nodep->exprsp());
+    }
+    virtual void visit(AstSFormat* nodep, AstNUser*) {
+	visitNodeDisplay(nodep, nodep->lhsp(), nodep->text(), nodep->exprsp());
     }
     virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
 	visitNodeDisplay(nodep, NULL, nodep->text(), nodep->exprsp());

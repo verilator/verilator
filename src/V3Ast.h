@@ -1164,20 +1164,24 @@ public:
     void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
 };
 
-class AstNodePli : public AstNodeStmt {
+class AstNodeDisplay : public AstNodeStmt {
+    // AstDisplay, AstSFormat or anything else with a format that might have %m
     string	m_text;
 public:
-    AstNodePli(FileLine* fl, const string& text, AstNode* exprsp)
+    AstNodeDisplay(FileLine* fl, const string& text, AstNode* exprsp)
 	: AstNodeStmt(fl), m_text(text) {
-	addNOp1p(exprsp); }
-    ASTNODE_BASE_FUNCS(NodePli)
+	addNOp1p(exprsp); addNOp2p(NULL); }
+    ASTNODE_BASE_FUNCS(NodeDisplay)
     virtual string name()	const { return m_text; }
     virtual int instrCount()	const { return instrCountPli(); }
     void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
     AstNode* exprsp()		const { return op1p()->castNode(); }	// op1 = Expressions to output
     string 	text()		const { return m_text; }		// * = Text to display
     void text(const string& text) { m_text=text; }
-    // op2p,op3p... used by AstDisplay
+    AstScopeName* scopeNamep() const { return op2p()->castScopeName(); }
+    void 	scopeNamep(AstNode* nodep) { setNOp2p(nodep); }
+    bool formatScopeTracking() const {  // Track scopeNamep();  Ok if over-eager
+	return (name().find("%m") != string::npos || name().find("%M") != string::npos); }
 };
 
 struct AstNodeText : public AstNode {

@@ -355,10 +355,12 @@ class AstSenTree;
 %token<fl>		yD_RANDOM	"$random"
 %token<fl>		yD_READMEMB	"$readmemb"
 %token<fl>		yD_READMEMH	"$readmemh"
+%token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SIGNED	"$signed"
 %token<fl>		yD_SSCANF	"$sscanf"
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
+%token<fl>		yD_SWRITE	"$swrite"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
 %token<fl>		yD_UNIT		"$unit"
@@ -1925,6 +1927,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); }
 	|	yD_STOP parenE				{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); }
+	//
+	|	yD_SFORMAT '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SWRITE  '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	//
 	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
