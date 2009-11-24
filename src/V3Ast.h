@@ -241,6 +241,9 @@ public:
     int isFourstate() const {
 	return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
     }
+    int isZeroInit() const { // Otherwise initializes to X
+	return m_e==BIT || m_e==BYTE || m_e==INT || m_e==LONGINT || m_e==SHORTINT;
+    }
     int isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
     }

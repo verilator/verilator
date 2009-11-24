@@ -682,7 +682,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-stats", flag/*ref*/) )		{ m_stats = flag; }
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
-	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }
+	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
 		for (const char* cp=sw+strlen("-O"); *cp; ++cp) {

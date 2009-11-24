@@ -238,7 +238,6 @@ descriptions in the next sections for more information.
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
     -U<var>                     Undefine preprocessor define
-    --underline-zero            Zero signals with leading _'s
     --unroll-count <loops>      Tune maximum loop iterations
     --unroll-stmts <stmts>      Tune maximum loop body size
     -V                          Verbose version and config
@@ -627,13 +626,6 @@ Specify the number of levels deep to enable tracing, for example
 --trace-level 1 to only see the top level's signals.  Defaults to the
 entire model.  Using a small number will decrease visibility, but greatly
 improve runtime and trace file size.
-
-=item --underline-zero
-
-Rarely needed.  Signals starting with a underline should be initialized to
-zero, as was done in Verilator 2.  Default is for all signals including
-those with underlines being randomized.  This option may be depreciated in
-future versions.
 
 =item --unroll-count I<loops>
 

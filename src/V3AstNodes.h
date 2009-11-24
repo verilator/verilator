@@ -231,6 +231,7 @@ public:
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
+    bool	isZeroInit() const { return keyword().isZeroInit(); }
     int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
     int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
     int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }

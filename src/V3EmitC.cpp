@@ -1238,6 +1238,7 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		    puts("; ++"+ivar+") {\n");
 		}
 		bool zeroit = (varp->attrFileDescr() // Zero it out, so we don't core dump if never call $fopen
+			       || (varp->basicp() && varp->basicp()->isZeroInit())
 			       || (varp->name().c_str()[0]=='_' && v3Global.opt.underlineZero()));
 		if (varp->isWide()) {
 		    // DOCUMENT: We randomize everything.  If the user wants a _var to be zero,

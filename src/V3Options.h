@@ -116,7 +116,7 @@ class V3Options {
     bool	m_stats;	// main switch: --stats
     bool	m_trace;	// main switch: --trace
     bool	m_traceDups;	// main switch: --trace-dups
-    bool	m_underlineZero;// main switch: --underline-zero
+    bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
 
     int		m_errorLimit;	// main switch: --error-limit
     int		m_inlineMult;	// main switch: --inline-mult
