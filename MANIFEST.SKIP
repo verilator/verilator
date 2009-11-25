@@ -30,4 +30,5 @@ autom4te\.cache/
 nodist/
 /simv$
 /simv.daidir/
+/vc_hdrs.h$
 /csrc/

@@ -2082,7 +2082,8 @@ tf_item_declarationVerilator<nodep>:	// Verilator extensions
 
 tf_port_listE<nodep>:		// IEEE: tf_port_list + empty
 	//			// Empty covered by tf_port_item
-		{VARRESET_LIST(UNKNOWN);} tf_port_listList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+		{VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
+			tf_port_listList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
 	;
 
 tf_port_listList<nodep>:	// IEEE: part of tf_port_list
