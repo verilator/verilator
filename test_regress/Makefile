@@ -33,7 +33,7 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-PRODUCTS += --v3
+PRODUCTS += --vl
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)
  DRIVER_FLAGS += -j 0
@@ -57,8 +57,8 @@ nc:
 
 ######################################################################
 
-v3:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --v3 --stop
+vl:
+	$(PERL) driver.pl $(DRIVER_FLAGS) --vl --stop
 
 ######################################################################
 
@@ -73,5 +73,4 @@ random_forever:
 ######################################################################
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_dir simv* simx* csrc cov_work INCA_libs *.log *.key logs
-
+	-rm -rf obj_dir simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h

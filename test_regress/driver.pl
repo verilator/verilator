@@ -50,7 +50,7 @@ my $opt_nc;
 my $opt_optimize;
 my $opt_stop;
 my $opt_trace;
-my $opt_v3;
+my $opt_vl;
 my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
@@ -69,7 +69,8 @@ if (! GetOptions (
 		  "optimize:s"	=> \$opt_optimize,
 		  "stop!"	=> \$opt_stop,
 		  "trace!"	=> \$opt_trace,
-		  "v3!"		=> \$opt_v3,
+		  "v3!"		=> \$opt_vl,  # Old
+		  "vl!"		=> \$opt_vl,
 		  "vcs!"	=> \$opt_vcs,
 		  "verbose!"	=> \$opt_verbose,
 		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
@@ -82,8 +83,8 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_v3) {
-    $opt_v3 = 1;
+if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vl) {
+    $opt_vl = 1;
 }
 
 if ($#opt_tests<0) {
@@ -100,7 +101,7 @@ foreach my $testpl (@opt_tests) {
     one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
     one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
-    one_test(pl_filename => $testpl, 'v3'=>1) if $opt_v3;
+    one_test(pl_filename => $testpl, vl=>1, 'v3'=>1) if $opt_vl;
 }
 
 $Fork->wait_all();   # Wait for all children to finish
@@ -256,7 +257,7 @@ sub new {
 	ivrun_flags => [],
 	# VCS
 	vcs => 0,
-	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q -sverilog")],
+	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q -sverilog -CFLAGS '-DVCS' ")],
 	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
@@ -264,6 +265,7 @@ sub new {
 	nc_flags2 => [],  # Overridden in some sim files
 	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
+	vl => 0,
 	'v3' => 0,
 	verilator_flags => ["-cc",
 			    "-Mdir $self->{obj_dir}",
@@ -276,7 +278,7 @@ sub new {
     bless $self, $class;
 
     $self->{mode} ||= "vcs" if $self->{vcs};
-    $self->{mode} ||= "v3" if $self->{v3};
+    $self->{mode} ||= "vl" if $self->{vl};
     $self->{mode} ||= "nc" if $self->{nc};
     $self->{mode} ||= "iv" if $self->{iv};
     $self->{VM_PREFIX} ||= "V".$self->{name};
@@ -416,7 +418,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>\@cmd);
     }
-    if ($param{v3}) {
+    if ($param{vl}) {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
 	my @verilator_flags = @{$param{verilator_flags}};
 	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
@@ -438,7 +440,7 @@ sub compile {
 	    unshift @verilator_flags, "--O".$letters;
 	}
 
-	my @v3args = ("perl","../bin/verilator",
+	my @vlargs = ("perl","../bin/verilator",
 		      "--prefix ".$self->{VM_PREFIX},
 		      @verilator_flags,
 		      @{$param{verilator_flags2}},
@@ -460,7 +462,7 @@ sub compile {
 	$self->_run(logfile=>"$self->{obj_dir}/vl_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
-		    cmd=>\@v3args);
+		    cmd=>\@vlargs);
 	return 1 if $self->errors;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
@@ -518,7 +520,7 @@ sub execute {
 		    expect=>undef,	# vcs expect isn't the same
 		    );
     }
-    if ($param{v3}
+    if ($param{vl}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
 	$self->_run(logfile=>"$self->{obj_dir}/vl_sim.log",
@@ -533,7 +535,7 @@ sub execute {
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors;
-    return 1 if !$self->{v3};
+    return 1 if !$self->{vl};
 
     my %param = (%{$self}, @_);	   # Default arguments are from $self
 
@@ -1171,7 +1173,7 @@ Run using VCS.
 
 Enable test verbose messages.
 
-=item --v3
+=item --vl
 
 Run using Verilator.
 
