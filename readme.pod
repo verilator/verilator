@@ -95,13 +95,34 @@ C<cd> to the Verilator directory containing this README.
 
 =item
 
-Type C<./configure> to configure Verilator for your system.
+You now have to decide how you're going to eventually install the kit.
 
-If you are configuring Verilator to be part of a RPM or other distribution
-package system, you may want to use the --enable-defenv configure flag.
-This will take the current value of VERILATOR_ROOT, SYSTEMC, SYSTEMC_ARCH,
-SYSTEMPERL, and SYSTEMPERL_INCLUDE and build them as defaults into the
-executable.
+Our personal favorite is to always run Verilator from the kit directory.
+This allows the easiest experimentation and upgrading.  It's also how most
+EDA tools operate; you just point to the tarball.
+
+    export VERILATOR_ROOT=`pwd`   # if your shell is bash
+    setenv VERILATOR_ROOT `pwd`   # if your shell is csh
+    ./configure
+
+The next option is to install it globally, using the normal system paths:
+
+    unset VERILATOR_ROOT      # if your shell is bash
+    unsetenv VERILATOR_ROOT   # if your shell is csh
+    ./configure
+
+Alternatively you can configure a prefix that install will populate, as
+most GNU tools support:
+
+    unset VERILATOR_ROOT      # if your shell is bash
+    unsetenv VERILATOR_ROOT   # if your shell is csh
+    ./configure --prefix /opt/verilator-VERSION
+
+Finally, if you are configuring Verilator to be part of a RPM or other
+distribution package system, you may want to tune the various install
+directories and use the --enable-defenv configure flag.  This will take the
+current value of VERILATOR_ROOT, SYSTEMC, SYSTEMC_ARCH, SYSTEMPERL, and
+SYSTEMPERL_INCLUDE and build them as defaults into the executable.
 
 =item
 
@@ -119,11 +140,12 @@ unsigned long uint32_t;}.
 
 =item
 
-There is no installation at present; this package runs from the
-distribution directory.  Programs should set the environment variable
-VERILATOR_ROOT to point to this distribution, then execute
-$VERILATOR_ROOT/bin/verilator, which will find the path to all needed
-files.
+If you used the VERILATOR_ROOT sheme you're done.  Programs should set the
+environment variable VERILATOR_ROOT to point to this distribution, then
+execute $VERILATOR_ROOT/bin/verilator, which will find the path to all
+needed files.
+
+If you used the prefix scheme, now do a C<make install>.
 
 Verilator assumes you did a make in the SystemC kit directory.  If not, you
 will need to populate C<$SYSTEMC/include> and C<$SYSTEMC/lib-linux>

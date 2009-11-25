@@ -243,26 +243,27 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 # so they can be found by the user, and under $VERILATOR_ROOT.
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
-	( cd bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
 	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
-	( cd bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
-installman:
+installman: $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
 installdata:
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples
-	cp -r include $(DESTDIR)$(pkgdatadir)
-	cp -r test_c  $(DESTDIR)$(pkgdatadir)/examples
-	cp -r test_sc $(DESTDIR)$(pkgdatadir)/examples
-	cp -r test_sp $(DESTDIR)$(pkgdatadir)/examples
-	cp -r test_v  $(DESTDIR)$(pkgdatadir)/examples
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include $(DESTDIR)$(pkgdatadir)/examples
+	cp -r include/* $(DESTDIR)$(pkgdatadir)/include
+	cp -r ${srcdir}/include/* $(DESTDIR)$(pkgdatadir)/include
+	cp -r ${srcdir}/test_c  $(DESTDIR)$(pkgdatadir)/examples
+	cp -r ${srcdir}/test_sc $(DESTDIR)$(pkgdatadir)/examples
+	cp -r ${srcdir}/test_sp $(DESTDIR)$(pkgdatadir)/examples
+	cp -r ${srcdir}/test_v  $(DESTDIR)$(pkgdatadir)/examples
 
 VL_INST_DATA_FILES = verilator.1
 install: all_nomsg installbin installman installdata install-msg
@@ -373,7 +374,7 @@ dist-file-list:
 ######################################################################
 # Distributions
 
-DISTCONFIG = src/config_build.h.in
+DISTCONFIG = ${srcdir}/src/config_build.h.in
 
 DISTTITLE := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
 DISTNAME := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))

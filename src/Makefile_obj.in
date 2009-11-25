@@ -21,8 +21,22 @@
 
 #### Start of system configuration section. ####
 
-srcdir = ..
-incdir = ../../include
+# Unfortunately configure uses relative paths, and this makefile is called
+# from a level lower, so we need to move up if it's relative, not if absolute.
+config_srcdir = @srcdir@
+ifeq ($(config_srcdir),.)
+ srcdir = ..
+else  # Run an experiment
+ ifeq ($(shell -e $(config_srcdir)/../Makefile_obj.in),)
+   srcdir = $(config_srcdir)
+ else
+   srcdir = $(config_srcdir)/..
+ endif
+endif
+
+incdir = $(srcdir)/../include
+# Bldsrc may differ from srcdir if configure wan't run from the kit top
+bldsrc = ..
 
 # Programs
 CC = @CC@
@@ -49,7 +63,7 @@ LDFLAGS += @LDFLAGS@
 
 #### End of system configuration section. ####
 
-VPATH += . $(srcdir)
+VPATH += . $(bldsrc) $(srcdir)
 TGT = ../../verilator_bin
 
 #################
@@ -71,7 +85,7 @@ endif
 LIBS = -lm -lfl
 
 CPPFLAGSNOWALL += -MMD
-CPPFLAGSNOWALL += -I. -I$(srcdir) -I$(incdir)
+CPPFLAGSNOWALL += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
 CPPFLAGSNOWALL += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGSNOWALL += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
 CPPFLAGSNOWALL += $(COPT)
