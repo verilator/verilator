@@ -43,6 +43,7 @@
 #include "V3Error.h"
 #include "V3Ast.h"
 #include "V3Width.h"
+#include "V3Task.h"
 
 #include <deque>
 
@@ -509,25 +510,22 @@ private:
 	funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	// Note we'd need a stack if we allowed recursive functions!
-	AstNode* pinp = nodep->pinsp();  AstNode* nextpinp = NULL;
-	for (AstNode* stmtp = funcp->stmtsp(); stmtp; pinp=nextpinp, stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
-		if (portp->isIO()) {
-		    if (pinp==NULL) {
-			nodep->v3error("Too few arguments in function call");
-		    } else {
-			nextpinp = pinp->nextp();
-			if (portp->isOutput()) {
-			    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
-			    return;
-			}
-			// Evaluate pin value
-			pinp->accept(*this);
-			// Apply value to the function
-			if (!m_checkOnly && optimizable()) {
-			    newNumber(stmtp)->opAssign(*fetchNumber(pinp));
-			}
-		    }
+	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+	    AstVar* portp = it->first;
+	    AstNode* pinp = it->second;
+	    if (pinp==NULL) {
+		// Too few arguments in function call - ignore it
+	    } else {
+		if (portp->isOutput()) {
+		    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
+		    return;
+		}
+		// Evaluate pin value
+		pinp->accept(*this);
+		// Apply value to the function
+		if (!m_checkOnly && optimizable()) {
+		    newNumber(portp)->opAssign(*fetchNumber(pinp));
 		}
 	    }
 	}

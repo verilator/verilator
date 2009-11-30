@@ -55,6 +55,7 @@
 #include "V3Signed.h"
 #include "V3Number.h"
 #include "V3Const.h"
+#include "V3Task.h"
 
 //######################################################################
 // Width state, as a visitor of each AstNode
@@ -884,23 +885,19 @@ private:
 	}
 	// And do the arguments to the task/function too
 	for (int accept_mode=1; accept_mode>=0; accept_mode--) {  // Avoid duplicate code; just do inner stuff twice
-	    AstNode* pinp = nodep->pinsp();
-	    for (AstNode* stmt_nextp, *stmtp = nodep->taskp()->stmtsp(); stmtp; stmtp=stmt_nextp) {
-		stmt_nextp = stmtp->nextp();
-		if (AstVar* portp = stmtp->castVar()) {
-		    if (portp->isIO()
-			&& pinp!=NULL) {  // Else argument error we'll find later
-			AstNode* pin_nextp = pinp->nextp();	// List may change, so remember nextp
-			if (accept_mode) {
-			    // Prelim may cause the node to get replaced; we've lost our
-			    // pointer, so need to iterate separately later
-			    pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
-			} else {
-			    // Do PRELIM again, because above accept may have exited early due to node replacement
-			    pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
-			    widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
-			}
-			pinp = pin_nextp;
+	    V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+	    for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+		AstVar* portp = it->first;
+		AstNode* pinp = it->second;
+		if (pinp!=NULL) {  // Else argument error we'll find later
+		    if (accept_mode) {
+			// Prelim may cause the node to get replaced; we've lost our
+			// pointer, so need to iterate separately later
+			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
+		    } else {
+			// Do PRELIM again, because above accept may have exited early due to node replacement
+			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
+			widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
 		    }
 		}
 	    }

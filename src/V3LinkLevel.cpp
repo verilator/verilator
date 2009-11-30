@@ -60,9 +60,9 @@ void V3LinkLevel::modSortByLevel() {
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
 	if (nodep->level()<=2) {
 	    if (topp) {
-		nodep->v3warn(MULTITOP, "Unsupported: Multiple top level modules: "
+		nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
 			      <<nodep->prettyName()<<" and "<<topp->prettyName());
-		nodep->v3warn(MULTITOP, "Fix, or use --top-module option to select which you want.");
+		nodep->v3warn(E_MULTITOP, "Fix, or use --top-module option to select which you want.");
 	    }
 	    topp = nodep;
 	}

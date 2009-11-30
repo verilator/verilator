@@ -11,11 +11,14 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_func_bad.v:\d+: Too few arguments in function call
-%Error: t/t_func_bad.v:\d+: Too many arguments in function call
-%Error: t/t_func_bad.v:\d+: Too few arguments in function call
-%Error: t/t_func_bad.v:\d+: Outputs not allowed in function declarations
-%Error: Exiting due to',
+q{%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:\d+: Too many arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:\d+: Too few arguments in function call to TASK 'x'
+%Error: t/t_func_bad.v:\d+: Too few arguments in function call to TASK 'x'
+%Error: Exiting due to},
 	 );
 
 ok(1);

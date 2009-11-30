@@ -26,12 +26,19 @@
 #include "verilatedos.h"
 #include "V3Error.h"
 #include "V3Ast.h"
+#include <vector>
+
+//============================================================================
+
+typedef pair<AstVar*,AstNode*> V3TaskConnect;	// [port, pin-connects-to]
+typedef vector<V3TaskConnect> V3TaskConnects;	// [ [port, pin-connects-to] ... ]
 
 //============================================================================
 
 class V3Task {
 public:
     static void taskAll(AstNetlist* nodep);
+    static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp); // Return vector of [port, pin-connects-to]  (SLOW)
 };
 
 #endif // Guard

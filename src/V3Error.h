@@ -45,9 +45,9 @@ public:
 	I_COVERAGE,	// Coverage is on/off from /*verilator coverage_on/off*/
 	I_TRACING,	// Tracing is on/off from /*verilator tracing_on/off*/
 	// Error codes:
-	MULTITOP,	// Error: Multiple top level modules
-	TASKNSVAR,	// Error: Task I/O not simple
-	BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
+	E_MULTITOP,	// Error: Multiple top level modules
+	E_TASKNSVAR,	// Error: Task I/O not simple
+	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
 	// Warning codes:
 	FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//

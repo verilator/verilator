@@ -70,6 +70,7 @@ sub diff_dir {
 	print "="x70,"\n";
 	print "= $a <-> $b\n";
 	diff_file($a,$b);
+	$any = 1;
     }
     $any or warn "%Warning: No .tree files found\n";
 }
