@@ -540,7 +540,7 @@ private:
 	    // We need to get a pointer to all of our variables (may have eval'ed something else earlier)
 	    cfuncp->addInitsp(
 		new AstCStmt(nodep->fileline(),
-			     "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+			     EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
 	} else {
 	    // Need symbol table
 	    cfuncp->argTypes(EmitCBaseVisitor::symClassVar());

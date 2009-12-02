@@ -94,7 +94,7 @@ if ($#opt_tests<0) {
 mkdir "obj_dir";
 mkdir "logs";
 
-my $okcnt=0; my $failcnt=0;
+my $leftcnt=0; my $okcnt=0; my $failcnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
@@ -108,6 +108,7 @@ $Fork->wait_all();   # Wait for all children to finish
 
 sub one_test {
     my @params = @_;
+    $leftcnt++;
     $Fork->schedule
 	(
 	 run_on_start => sub {
@@ -139,6 +140,8 @@ sub one_test {
 		 $failcnt++;
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
+	     $leftcnt--;
+	     print "==SUMMARY: Left $leftcnt  Passed $okcnt  Failed $failcnt\n";
 	 },
 	 )->ready();
 }
@@ -203,12 +206,12 @@ sub report {
 
     $fh->print("\n");
     $fh->print("="x70,"\n");
-    $fh->print("TESTS Passed $okcnt Failed $failcnt\n");
+    $fh->print("TESTS Passed $okcnt  Failed $failcnt\n");
     foreach my $f (@$fails) {
 	chomp $f;
 	$fh->print("$f\n");
     }
-    $fh->print("TESTS Passed $okcnt Failed $failcnt\n");
+    $fh->print("TESTS Passed $okcnt  Failed $failcnt\n");
 }
 
 #######################################################################

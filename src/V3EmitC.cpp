@@ -415,9 +415,11 @@ public:
 	ofp()->putsNoTracking(nodep->text());
     }
     virtual void visit(AstCStmt* nodep, AstNUser*) {
+	putbs("");
 	nodep->bodysp()->iterateAndNext(*this);
     }
     virtual void visit(AstCMath* nodep, AstNUser*) {
+	putbs("");
 	nodep->bodysp()->iterateAndNext(*this);
     }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
@@ -572,6 +574,9 @@ public:
     }
 
     // Just iterate
+    virtual void visit(AstNetlist* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
@@ -585,6 +590,7 @@ public:
     virtual void visit(AstNodeText*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstTraceDecl*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstTraceInc*, AstNUser*) {}	// Handled outside the Visit class
+    virtual void visit(AstCFile*, AstNUser*) {}		// Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
 	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");

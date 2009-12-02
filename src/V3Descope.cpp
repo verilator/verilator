@@ -122,7 +122,7 @@ private:
 		newfuncp->addInitsp(
 		    new AstCStmt(newfuncp->fileline(),
 				 "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
-		newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(),"    "+EmitCBaseVisitor::symTopAssign()+"\n"));
+		newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
 		topFuncp->addNextHere(newfuncp);
 		// In the body, call each function if it matches the given scope
 		for (FuncMmap::iterator eachIt = it; eachIt!=m_modFuncs.end() && eachIt->first==name; ++eachIt) {

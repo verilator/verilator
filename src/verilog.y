@@ -2015,7 +2015,7 @@ lifetime:			// ==IEEE: lifetime
 	|	yAUTOMATIC		 		{ }
 	;
 
-taskId<taskp>:
+taskId<ftaskp>:
 		tfIdScoped
 			{ $$ = new AstTask($<fl>1, *$<strp>1, NULL);
 			  SYMP->pushNewUnder($$, NULL); }
