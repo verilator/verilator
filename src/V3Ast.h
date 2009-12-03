@@ -218,6 +218,14 @@ public:
 	};
 	return names[m_e];
     };
+    const char* dpiType() const {
+	static const char* names[] = {
+	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
+	    "double", "double", "short int", "float", "long long",
+	    ""
+	};
+	return names[m_e];
+    };
     inline AstBasicDTypeKwd () {}
     inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
     explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
@@ -250,6 +258,9 @@ public:
     }
     int isBitLogic() const { // Don't be as anal about width warnings
 	return (m_e==LOGIC || m_e==BIT);
+    }
+    int isDpiUnsupported() const {
+	return (m_e==LOGIC || m_e==TIME || m_e==REALTIME);
     }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
@@ -735,6 +746,7 @@ public:
     // CONSTANT ACCESSORS
     static int	instrCountBranch() { return 4; }	///< Instruction cycles to branch
     static int	instrCountDiv() { return 10; }		///< Instruction cycles to divide
+    static int	instrCountDpi() { return 1000; }	///< Instruction cycles to call user function
     static int	instrCountLd() { return 2; }		///< Instruction cycles to load memory
     static int	instrCountMul() { return 3; }		///< Instruction cycles to multiply integers
     static int	instrCountPli() { return 20; }		///< Instruction cycles to call pli routines
@@ -1228,25 +1240,39 @@ struct AstNodeSel : public AstNodeBiop {
 struct AstNodeFTask : public AstNode {
 private:
     string	m_name;		// Name of task
+    string	m_cname;	// Name of task if DPI import
     bool	m_taskPublic:1;	// Public task
     bool	m_didSigning:1;	// V3Signed completed; can skip iteration
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
+    bool	m_prototype:1;	// Just a prototype
+    bool	m_dpiImport:1;	// DPI imported
+    bool	m_dpiContext:1;	// DPI import context
+    bool	m_dpiTask:1;	// DPI import task (vs. void function)
+    bool	m_pure:1;	// DPI import pure
 public:
     // Node that simply puts name into the output stream
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
 	, m_name(name), m_taskPublic(false), m_didSigning(false)
-	, m_attrIsolateAssign(false) {
+	, m_attrIsolateAssign(false), m_prototype(false)
+	, m_dpiImport(false), m_dpiContext(false), m_dpiTask(false), m_pure(false) {
 	addNOp3p(stmtsp);
+	cname(name);  // Might be overridden by dpi import/export
     }
     ASTNODE_BASE_FUNCS(NodeFTask)
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
     // {AstFunc only} op1 = Range output variable
-    // op3 = Statements/Ports/Vars
     virtual void name(const string& name) 	{ m_name = name; }
-    AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op1 = List of statements
+    string cname() const { return m_cname; }
+    void cname(const string& cname) { m_cname = cname; }
+    // op1 = Output variable (functions only, NULL for tasks)
+    AstNode*	fvarp() 	const { return op1p()->castNode(); }
+    void 	addFvarp(AstNode* nodep) { addNOp1p(nodep); }
+    bool	isFunction() const { return fvarp(); }
+    // op3 = Statements/Ports/Vars
+    AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op3 = List of statements
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
@@ -1254,6 +1280,16 @@ public:
     bool	didSigning() const { return m_didSigning; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
+    void	prototype(bool flag) { m_prototype = flag; }
+    bool	prototype() const { return m_prototype; }
+    void	dpiImport(bool flag) { m_dpiImport = flag; }
+    bool	dpiImport() const { return m_dpiImport; }
+    void	dpiContext(bool flag) { m_dpiContext = flag; }
+    bool	dpiContext() const { return m_dpiContext; }
+    void	dpiTask(bool flag) { m_dpiTask = flag; }
+    bool	dpiTask() const { return m_dpiTask; }
+    void	pure(bool flag) { m_pure = flag; }
+    bool	pure() const { return m_pure; }
 };
 
 struct AstNodeFTaskRef : public AstNode {

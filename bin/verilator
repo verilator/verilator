@@ -969,6 +969,7 @@ For -sp mode, instead of .cpp and .h it creates:
 
 In certain optimization modes, it also creates:
 
+    {prefix}__Dpi.h			// DPI import and export declarations
     {prefix}__Inlines.h			// Inline support functions
     {prefix}__Slow.cpp			// Constructors and infrequent routines
     {prefix}__Syms.cpp			// Global symbol table C++
@@ -1120,6 +1121,32 @@ uint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
 Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an
 order of magnitude.
+
+=head1 DPI (DIRECT PROGRAMMING INTERFACE)
+
+Verilator supports SystemVerilog Direct Programming Interface import
+statements.  Only the SystemVerilog form ("DPI-C") is supported, not the
+original Synopsys-only DPI.
+
+In the SYSTEMC example above, if you had in our.v:
+
+   import "DPI-C" function integer add (input integer a, input integer b);
+
+   initial begin
+      $display("%x + %x = %x", 1, 2, add(1,2));
+   endtask
+
+Then after Verilating, Verilator will create a file Vour__Dpi.h with the
+prototype to call this function:
+
+    extern int add (int a, int b);
+
+From the sc_main.cpp file (or another .cpp file passed to the Verilator
+command line, or the link), you'd then:
+
+    #include "svdpi.h"
+    #include "Vour__Dpi.h"
+    int add (int a, int b) { return a+b; }
 
 =head1 CROSS COMPILATION
 
@@ -2459,13 +2486,15 @@ file found in the include directory of the Verilator kit.
 
 =item Is the PLI supported?
 
-No.
+No, but the DPI is.
 
 More specifically, the common PLI-ish calls $display, $finish, $stop,
-$time, $write are converted to C++ equivalents.  If you want something more
-complex, since Verilator emits standard C++ code, you can simply write your
-own C++ routines that can access and modify signal values without needing
-any PLI interface code, and call it with $c("{any_c++_statement}").
+$time, $write are converted to C++ equivalents.  You can also use the
+"import DPI" SystemVerilog feature to call C code (see the chapter above).
+If you want something more complex, since Verilator emits standard C++
+code, you can simply write your own C++ routines that can access and modify
+signal values without needing any PLI interface code, and call it with
+$c("{any_c++_statement}").
 
 =item How do I make a Verilog module that contain a C++ object?
 

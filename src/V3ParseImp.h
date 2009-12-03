@@ -40,6 +40,8 @@ class V3Lexer;
 
 typedef enum { uniq_NONE, uniq_UNIQUE, uniq_PRIORITY } V3UniqState;
 
+typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
+
 //============================================================================
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
@@ -53,6 +55,7 @@ struct V3ParseBisonYYSType {
 	double		cdouble;
 	V3UniqState	uniqstate;
 	AstSignedState	signstate;
+	V3ImportProperty iprop;
 
 	AstNode*	nodep;
 

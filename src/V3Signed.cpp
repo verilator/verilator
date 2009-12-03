@@ -156,18 +156,14 @@ private:
 	// However a later operation may have changed the node->signed w/o changing
 	// the number's sign.  So we don't: nodep->isSigned(nodep->num().isSigned());
     }
-    virtual void visit(AstFunc* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	// Avoid recursion; can't use user() as they're all full, and anyhow this is often called
 	if (nodep->didSigning()) return;
 	nodep->didSigning(true);
 	nodep->iterateChildren(*this);
-	nodep->signedFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
-    }
-    virtual void visit(AstTask* nodep, AstNUser*) {
-	// Avoid recursion; can't use user() as they're all full, and anyhow this is often called
-	if (nodep->didSigning()) return;
-	nodep->didSigning(true);
-	nodep->iterateChildren(*this);
+	if (nodep->fvarp()) {
+	    nodep->signedFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
+	}
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

@@ -405,7 +405,18 @@ private:
 	    nodep->funcp()->accept(*this);
 	}
     }
+    virtual void visit(AstCFunc* nodep, AstNUser*) {
+	//UINFO(4,"  CCALL "<<nodep<<endl);
+	if (nodep->dpiImport() && !nodep->pure()) {
+	    m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
+	}
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstUCFunc* nodep, AstNUser*) {
+	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstCMath* nodep, AstNUser*) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	nodep->iterateChildren(*this);
     }

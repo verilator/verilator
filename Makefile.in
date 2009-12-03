@@ -110,7 +110,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	MANIFEST.SKIP \
 	bin/* \
 	install-sh configure mkinstalldirs *.pod \
-	include/verilated*.[chv]* \
+	include/*.[chv]* \
 	include/*.in \
 	include/.*ignore \
 	.*attributes */.*attributes  */*/.*attributes \

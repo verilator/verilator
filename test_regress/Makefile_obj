@@ -32,6 +32,9 @@ endif
 
 #######################################################################
 
+# Needed by DPI tests
+CPPFLAGS += -DVERILATOR=1
+
 # Needed by tracing routines
 CPPFLAGS += -DVL_DEBUG=1
 CPPFLAGS += -DVM_PREFIX=$(VM_PREFIX)

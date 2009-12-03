@@ -326,22 +326,21 @@ private:
 	    // Convert the func's range to the output variable
 	    // This should probably be done in the Parser instead, as then we could
 	    // just attact normal signal attributes to it.
-	    if (AstFunc* funcp = nodep->castFunc()) {
-		if (!funcp->fvarp()->castVar()) {
-		    AstNodeDType* dtypep = funcp->fvarp()->castNodeDType();
-		    // If unspecified, function returns one bit; however when we support NEW() it could
-		    // also return the class reference.
-		    if (dtypep) dtypep->unlinkFrBack();
-		    else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
-		    AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), dtypep);
-		    newvarp->isSigned(funcp->isSigned());
-		    newvarp->funcReturn(true);
-		    newvarp->trace(false);  // Not user visible
-		    newvarp->attrIsolateAssign(funcp->attrIsolateAssign());
-		    funcp->addFvarp(newvarp);
-		    // Explicit insert required, as the var name shadows the upper level's task name
-		    symsInsert(newvarp->name(), newvarp);
-		}
+	    if (nodep->fvarp()
+		&& !nodep->fvarp()->castVar()) {
+		AstNodeDType* dtypep = nodep->fvarp()->castNodeDType();
+		// If unspecified, function returns one bit; however when we support NEW() it could
+		// also return the class reference.
+		if (dtypep) dtypep->unlinkFrBack();
+		else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
+		AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), dtypep);
+		newvarp->isSigned(nodep->isSigned());
+		newvarp->funcReturn(true);
+		newvarp->trace(false);  // Not user visible
+		newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
+		nodep->addFvarp(newvarp);
+		// Explicit insert required, as the var name shadows the upper level's task name
+		symsInsert(newvarp->name(), newvarp);
 	    }
 	    m_ftaskp = nodep;
 	    nodep->iterateChildren(*this);

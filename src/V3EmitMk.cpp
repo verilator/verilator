@@ -78,6 +78,9 @@ public:
 		of.puts(" += \\\n");
 		if (support==2 && !slow) {
 		    putMakeClassEntry(of, "verilated.cpp");
+		    if (v3Global.dpi()) {
+			putMakeClassEntry(of, "verilateddpi.cpp");
+		    }
 		    if (v3Global.opt.systemPerl()) {
 			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
 		    }

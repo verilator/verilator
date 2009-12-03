@@ -102,16 +102,80 @@ string AstVar::verilogKwd() const {
     }
 }
 
-string AstVar::cType() const {
-    if (widthMin() == 1) {
-	return "bool";
+string AstVar::vlArgType(bool named, bool forReturn) const {
+    if (forReturn) named=false;
+    if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
+    string arg;
+    if (isWide() && isInOnly()) arg += "const ";
+    if (widthMin() <= 8) {
+	arg += "CData";
+    } else if (widthMin() <= 16) {
+	arg += "SData";
     } else if (widthMin() <= VL_WORDSIZE) {
-	return "uint32_t";
+	arg += "IData";
+    } else if (isQuad()) {
+	arg += "QData";
     } else if (isWide()) {
-	return "uint32_t";  // []'s added later
-    } else {
-	return "uint64_t";
+	arg += "WData";  // []'s added later
     }
+    if (isWide()) {
+	arg += " (& "+name();
+	arg += ")["+cvtToStr(widthWords())+"]";
+    } else {
+	if (isOutput()) arg += "&";
+	if (named) arg += " "+name();
+    }
+    return arg;
+}
+
+string AstVar::cpubArgType(bool named, bool forReturn) const {
+    if (forReturn) named=false;
+    string arg;
+    if (isWide() && isInOnly()) arg += "const ";
+    if (widthMin() == 1) {
+	arg += "bool";
+    } else if (widthMin() <= VL_WORDSIZE) {
+	arg += "uint32_t";
+    } else if (isWide()) {
+	arg += "uint32_t";  // []'s added later
+    } else {
+	arg += "uint64_t";
+    }
+    if (isWide()) {
+	if (forReturn) v3error("Unsupported: Public functions with >64 bit outputs; make an output of a public task instead");
+	arg += " (& "+name();
+	arg += ")["+cvtToStr(widthWords())+"]";
+    } else {
+	if (isOutput() && !forReturn) arg += "&";
+	if (named) arg += " "+name();
+    }
+    return arg;
+}
+
+string AstVar::dpiArgType(bool named, bool forReturn) const {
+    if (forReturn) named=false;
+    string arg;
+    if (!basicp()) arg = "UNKNOWN";
+    if (isWide()) v3error("Unsupported: DPI functions with vectored outputs > 32-bits");
+    if (basicp()->isBitLogic()) {
+	if (widthMin() == 1) {
+	    arg = "unsigned char";
+	    if (!forReturn && isOutput()) arg += "*";
+	} else {
+	    if (forReturn) {
+		arg = "svBitVecVal";
+	    } else if (isInOnly()) {
+		arg = "const svBitVecVal*";
+	    } else {
+		arg = "svBitVecVal*";
+	    }
+	}
+    } else {
+	arg = basicp()->keyword().dpiType();
+	if (!forReturn && isOutput()) arg += "*";
+    }
+    if (named) arg += " "+name();
+    return arg;
 }
 
 string AstVar::scType() const {
@@ -467,6 +531,9 @@ void AstNodeFTaskRef::dump(ostream& str) {
 void AstNodeFTask::dump(ostream& str) {
     this->AstNode::dump(str);
     if (taskPublic()) str<<" [PUBLIC]";
+    if (prototype()) str<<" [PROTOTYPE]";
+    if (dpiImport()) str<<" [DPII]";
+    if (dpiImport() && cname()!=name()) str<<" [c="<<cname()<<"]";
 }
 void AstBegin::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -508,4 +575,6 @@ void AstCCall::dump(ostream& str) {
 void AstCFunc::dump(ostream& str) {
     this->AstNode::dump(str);
     if (slow()) str<<" [SLOW]";
+    if (pure()) str<<" [PURE]";
+    if (dpiImport()) str<<" [DPII]";
 }

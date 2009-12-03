@@ -131,6 +131,9 @@ public:
 	}
     }
     string   deQuote(FileLine* fileline, string text);
+    void checkDpiVer(FileLine* fileline, const string& str) {
+	if (str != "DPI-C") { fileline->v3error("Unsupported DPI type '"<<str<<"': Use 'DPI-C'"); }
+    }
 };
 
 const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;	// Shorthand "LOGIC"
@@ -250,6 +253,7 @@ class AstSenTree;
 %token<fl>		yCASEZ		"casez"
 %token<fl>		yCHANDLE	"chandle"
 %token<fl>		yCLOCKING	"clocking"
+%token<fl>		yCONTEXT	"context"
 %token<fl>		yCOVER		"cover"
 %token<fl>		yDEFAULT	"default"
 %token<fl>		yDEFPARAM	"defparam"
@@ -269,6 +273,7 @@ class AstSenTree;
 %token<fl>		yENDSPECIFY	"endspecify"
 %token<fl>		yENDTABLE	"endtable"
 %token<fl>		yENDTASK	"endtask"
+%token<fl>		yEXPORT		"export"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
 %token<fl>		yFOREVER	"forever"
@@ -304,6 +309,7 @@ class AstSenTree;
 %token<fl>		yPROPERTY	"property"
 %token<fl>		yPULLDOWN	"pulldown"
 %token<fl>		yPULLUP		"pullup"
+%token<fl>		yPURE		"pure"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
 %token<fl>		ySCALARED	"scalared"
@@ -594,7 +600,7 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	|	data_declaration			{ $$ = $1; }
 	|	task_declaration			{ $$ = $1; }
 	|	function_declaration			{ $$ = $1; }
-	//UNSUP	dpi_import_export			{ $$ = $1; }
+	|	dpi_import_export			{ $$ = $1; }
 	//UNSUP	extern_constraint_declaration		{ $$ = $1; }
 	//UNSUP	class_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
@@ -1993,10 +1999,18 @@ task_declaration<ftaskp>:	// ==IEEE: task_declaration
 			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$); }
 	;
 
+task_prototype<ftaskp>:		// ==IEEE: task_prototype
+		yTASK taskId '(' tf_port_listE ')'	{ $$=$2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
+	;
+
 function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
 			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
 			  SYMP->popScope($$); }
+	;
+
+function_prototype<ftaskp>:	// IEEE: function_prototype
+		yFUNCTION funcId '(' tf_port_listE ')'	{ $$=$2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
 	;
 
 funcIsolateE<cint>:
@@ -2136,6 +2150,30 @@ parenE:
 //				// IEEE: built_in_method_call
 //				//   method_call_root not needed, part of expr resolution
 //				// What's left is below array_methodNoRoot
+
+dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
+		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
+			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
+			  $5->dpiImport(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+	|	yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE task_prototype ';'
+			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
+			  $5->dpiImport(true); $5->dpiTask(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+	|	yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'	{ $$ = new AstDpiExport($1,*$5,*$3);
+			  GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+	|	yEXPORT yaSTRING dpi_importLabelE yTASK     idAny ';'	{ $$ = new AstDpiExport($1,*$5,*$3);
+			  GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+	;
+
+dpi_importLabelE<strp>:		// IEEE: part of dpi_import_export
+		/* empty */				{ static string s = ""; $$ = &s; }
+	|	idAny/*c_identifier*/ '='		{ $$ = $1; $<fl>$=$<fl>1; }
+	;
+
+dpi_tf_import_propertyE<iprop>:	// IEEE: [ dpi_function_import_property + dpi_task_import_property ]
+		/* empty */				{ $$ = iprop_NONE; }
+	|	yCONTEXT				{ $$ = iprop_CONTEXT; }
+	|	yPURE					{ $$ = iprop_PURE; }
+	;
 
 //************************************************
 // Expressions

@@ -61,7 +61,8 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts("endmodule\n");
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	putbs(nodep->castTask() ? "task ":"function ");
+	putbs(nodep->isFunction() ? "function":"task");
+	puts(" ");
 	puts(nodep->name());
 	puts(";\n");
 	putbs("begin\n");

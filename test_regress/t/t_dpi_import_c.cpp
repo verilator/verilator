@@ -1,0 +1,121 @@
+// -*- C++ -*-
+//*************************************************************************
+//
+// Copyright 2009-2009 by Wilson Snyder. This program is free software; you can
+// redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License.
+// Version 2.0.
+//
+// Verilator is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+//*************************************************************************
+
+#include <stdio.h>
+#include <svdpi.h>
+
+//======================================================================
+
+#if defined(VERILATOR)
+# include "Vt_dpi_import__Dpi.h"
+#elif defined(VCS)
+# include "../vc_hdrs.h"
+#elif defined(CADENCE)
+# define NEED_EXTERNS
+#else
+# error "Unknown simulator for DPI test"
+#endif
+
+#ifdef NEED_EXTERNS
+extern "C" {
+
+    extern unsigned char dpii_f_bit     (unsigned char i);
+    extern svBitVecVal   dpii_f_bit8    (const svBitVecVal *i);
+    extern svBitVecVal   dpii_f_bit9    (const svBitVecVal *i);
+    extern svBitVecVal   dpii_f_bit16   (const svBitVecVal *i);
+    extern svBitVecVal   dpii_f_bit17   (const svBitVecVal *i);
+    extern svBitVecVal   dpii_f_bit32   (const svBitVecVal *i);
+    extern long long     dpii_f_bit33   (const svBitVecVal *i);
+    extern long long     dpii_f_bit64   (const svBitVecVal *i);
+    extern int           dpii_f_int     (int i);
+    extern char          dpii_f_byte    (char i);
+    extern short int     dpii_f_shortint(short int i);
+    extern long long     dpii_f_longint (long long i);
+    extern void*         dpii_f_chandle (void* i);
+
+    extern void dpii_v_bit	(unsigned char i, unsigned char *o);
+    extern void dpii_v_int	(int i,		int *o);
+    extern void dpii_v_byte	(char i,	char *o);
+    extern void dpii_v_shortint	(short int i,	short int *o);
+    extern void dpii_v_longint	(long long i,	long long *o);
+    extern void dpii_v_chandle	(void* i,	void* *o);
+
+    extern void dpii_f_void	();
+    extern int dpii_t_void	();
+    extern int dpii_t_void_context ();
+    extern int dpii_t_int	(int i,		int *o);
+
+    extern int dpii_fa_bit(int i);
+
+    extern int dpii_context();
+}
+#endif
+
+//======================================================================
+
+unsigned char	dpii_f_bit (unsigned char i)		{ return SV_MASK(1) & ~i; }
+svBitVecVal	dpii_f_bit8 (const svBitVecVal *i)	{ return SV_MASK(8) & ~*i; }
+svBitVecVal	dpii_f_bit9 (const svBitVecVal *i)	{ return SV_MASK(9) & ~*i; }
+svBitVecVal	dpii_f_bit16(const svBitVecVal *i)	{ return SV_MASK(16) & ~*i; }
+svBitVecVal	dpii_f_bit17(const svBitVecVal *i)	{ return SV_MASK(17) & ~*i; }
+svBitVecVal	dpii_f_bit32(const svBitVecVal *i)	{ return               ~*i; }
+long long	dpii_f_bit33(const svBitVecVal *i)	{ return ((1ULL<<33)-1) & ~((long long)(i[1])<<32ULL | i[0]); }
+long long	dpii_f_bit64(const svBitVecVal *i)	{ return ~((long long)(i[1])<<32ULL | i[0]); }
+
+int		dpii_f_int (int i)		{ return ~i; }
+char		dpii_f_byte (char i)		{ return ~i; }
+short int	dpii_f_shortint(short int i)	{ return ~i; }
+long long	dpii_f_longint (long long i)	{ return ~i; }
+void*		dpii_f_chandle (void* i)	{ return i; }
+
+void dpii_v_bit	(unsigned char i, unsigned char *o)	{ *o = SV_MASK(1) & ~i; }
+void dpii_v_int (int i, int *o)				{ *o = ~i; }
+void dpii_v_byte (char i, char *o)			{ *o = ~i; }
+void dpii_v_shortint (short int i, short int *o)	{ *o = ~i; }
+void dpii_v_longint (long long i, long long *o)		{ *o = ~i; }
+void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
+
+//======================================================================
+
+void dpii_f_void () {}
+
+#ifdef VCS
+void dpii_t_void () {}
+void dpii_t_void_context () {}
+void dpii_t_int (int i, int *o) {
+    *o = i;
+}
+#else
+int dpii_t_void () { return svIsDisabledState(); }
+int dpii_t_void_context () { return svIsDisabledState(); }
+int dpii_t_int (int i, int *o) {
+    *o = i;
+    return svIsDisabledState();  // Tasks generally need this
+}
+#endif
+
+int dpii_fa_bit (int i) {
+    return ~i;
+}
+
+int dpii_context() {
+    const char* filename = "";
+    int lineno = 0;
+    if (svGetCallerInfo(&filename, &lineno)) {
+	return lineno;
+    } else {
+	return 0;
+    }
+}

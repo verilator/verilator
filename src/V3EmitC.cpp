@@ -90,16 +90,9 @@ public:
 	    if (AstVar* portp = stmtp->castVar()) {
 		if (portp->isIO() && !portp->isFuncReturn()) {
 		    if (args != "") args+= ", ";
-		    if (portp->isWide()) {
-			if (portp->isInOnly()) args += "const ";
-			args += portp->cType();
-			args += " (& "+portp->name();
-			args += ")["+cvtToStr(portp->widthWords())+"]";
-		    } else {
-			args += portp->cType();
-			if (portp->isOutput()) args += "&";
-			args += " "+portp->name();
-		    }
+		    if (nodep->dpiImport()) args += portp->dpiArgType(true,false);
+		    else if (nodep->funcPublic()) args += portp->cpubArgType(true,false);
+		    else args += portp->vlArgType(true,false);
 		}
 	    }
 	}
@@ -709,9 +702,9 @@ class EmitCImp : EmitCStmts {
     //---------------------------------------
     // VISITORS
     virtual void visit(AstCFunc* nodep, AstNUser*) {
-	if (nodep->funcType().isTrace()) {
-	    return;  // TRACE_* handled specially
-	}
+	// TRACE_* and DPI handled elsewhere
+	if (nodep->funcType().isTrace()) return;
+	if (nodep->dpiImport()) return;
 	if (!(nodep->slow() ? m_slow : m_fast)) return;
 
 	m_blkChangeDetVec.clear();
@@ -1557,10 +1550,12 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 
     for (vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
 	AstCFunc* funcp = *it;
-	ofp()->putsPrivate(funcp->declPrivate());
-	if (funcp->isStatic()) puts("static ");
-	puts(funcp->rtnTypeVoid()); puts("\t");
-	puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
+	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
+	    ofp()->putsPrivate(funcp->declPrivate());
+	    if (funcp->isStatic()) puts("static ");
+	    puts(funcp->rtnTypeVoid()); puts("\t");
+	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
+	}
     }
 }
 
@@ -1580,6 +1575,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (v3Global.needHInlines()) {   // Set by V3EmitCInlines; should have been called before us
 	puts("#include \""+topClassName()+"__Inlines.h\"\n");
     }
+    // No __Dpi.h needed, we've shimmed it all into the interface
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");
@@ -1757,6 +1753,9 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     // Us
     puts("#include \""+ symClassName() +".h\"\n");
+    if (v3Global.dpi()) {
+	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
+    }
 
     if (optSystemPerl() && (splitFilenum() || !m_fast)) {
 	puts("\n");
@@ -2131,6 +2130,66 @@ public:
 };
 
 //######################################################################
+// DPI definitions
+
+class EmitCDpi : EmitCStmts {
+    // METHODS
+    void newOutCFile() {
+	string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
+			   + "__Dpi.h");
+
+	AstCFile* cfilep = newCFile(filename, false/*slow*/, false/*source*/);
+	cfilep->support(true);
+
+	if (m_ofp) v3fatalSrc("Previous file not closed");
+	m_ofp = new V3OutCFile (filename);
+	m_ofp->putsHeader();
+    }
+
+    void emitTop() {
+	puts("// DESCR" "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
+	puts("//\n");
+	puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
+	puts("// Manually include this file where DPI .c import functions are declared to insure\n");
+	puts("// the C functions match the expectations of the DPI imports.\n");
+	puts("\n");
+	puts("#ifdef __cplusplus\n");
+	puts("extern \"C\" {\n");
+	puts("#endif\n");
+	puts("\n");
+    }
+
+    void emitBottom() {
+	puts("\n");
+	puts("#ifdef __cplusplus\n");
+	puts("}\n");
+	puts("#endif\n");
+    }
+
+    // VISITORS
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstCFunc* nodep, AstNUser*) {
+	if (nodep->dpiImport()) {
+	    puts("// dpi import at "+nodep->fileline()->ascii()+"\n");
+	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
+	}
+    }
+public:
+    EmitCDpi() {}
+    virtual ~EmitCDpi() {}
+    void main() {
+	// Put out the file
+	newOutCFile();
+	emitTop();
+	v3Global.rootp()->accept(*this);
+	emitBottom();
+	delete m_ofp; m_ofp=NULL;
+    }
+};
+
+//######################################################################
 // EmitC class functions
 
 void V3EmitC::emitc() {
@@ -2149,7 +2208,14 @@ void V3EmitC::emitc() {
 void V3EmitC::emitcTrace() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     if (v3Global.opt.trace()) {
-	{ EmitCTrace trace (true);  trace.main(); }
-	{ EmitCTrace trace (false); trace.main(); }
+	{ EmitCTrace imp (true);  imp.main(); }
+	{ EmitCTrace imp (false); imp.main(); }
+    }
+}
+
+void V3EmitC::emitcDpi() {
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    if (v3Global.dpi()) {
+	{ EmitCDpi imp; imp.main(); }
     }
 }

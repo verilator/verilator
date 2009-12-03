@@ -290,6 +290,7 @@ private:
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	if (!m_params) { badNodeType(nodep); return; }
+	if (nodep->dpiImport()) { clearOptimizable(nodep,"DPI import functions aren't simulatable"); }
 	checkNodeInfo(nodep);
 	nodep->iterateChildren(*this);
     }
@@ -505,9 +506,9 @@ private:
     virtual void visit(AstFuncRef* nodep, AstNUser*) {
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
-	AstFunc* funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
+	AstNodeFTask* funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	if (m_params) { V3Width::widthParamsEdit(funcp); } funcp=NULL; // Make sure we've sized the function
-	funcp = nodep->taskp()->castFunc(); if (!funcp) nodep->v3fatalSrc("Not linked");
+	funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	// Note we'd need a stack if we allowed recursive functions!
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
@@ -532,7 +533,8 @@ private:
 	// Evaluate the function
 	funcp->accept(*this);
 	if (!m_checkOnly && optimizable()) {
-	    // Grab return value from output variable
+	    // Grab return value from output variable (if it's a function)
+	    if (!funcp->fvarp()) nodep->v3fatalSrc("Function reference points at non-function");
 	    newNumber(nodep)->opAssign(*fetchNumber(funcp->fvarp()));
 	}
     }

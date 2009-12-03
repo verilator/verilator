@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Support typedef.  [Donal Casey]
 
+**   Support direct programming interface (DPI) "import".
+
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
 ***  Support declarations in loop initializers, bug172.  [by Byron Bradley]

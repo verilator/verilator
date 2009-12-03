@@ -208,7 +208,6 @@ private:
 	}
 	setNOp1p(rangep);
     }
-    AstBasicDTypeKwd keyword() const { return m_keyword; }  // private - use isSomething accessors instead
 public:
     ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
     virtual void dump(ostream& str);
@@ -229,6 +228,7 @@ public:
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    AstBasicDTypeKwd keyword() const { return m_keyword; }  // Avoid using - use isSomething accessors instead
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     bool	isZeroInit() const { return keyword().isZeroInit(); }
@@ -381,9 +381,9 @@ struct AstSel : public AstNodeTriop {
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
 	if (widthp->castConst()) width(widthp->castConst()->toUInt(), widthp->castConst()->toUInt());
     }
-    AstSel(FileLine* fl, AstNode* fromp, int lsbp, int bitwidth)
+    AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
 	:AstNodeTriop(fl, fromp,
-		      new AstConst(fl,lsbp), new AstConst(fl,bitwidth)) {
+		      new AstConst(fl,lsb), new AstConst(fl,bitwidth)) {
 	width(bitwidth,bitwidth);
     }
     ASTNODE_NODE_FUNCS(Sel, SEL)
@@ -482,8 +482,10 @@ public:
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
-    string	cType()		const;	// Return C type for declaration: bool, uint32_t, uint64_t, etc.
-    string	scType()	const;	// Return SysC type: bool, uint32_t, uint64_t, sc_bv
+    string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
+    string	cpubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
+    string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
+    string	vlArgType(bool named, bool forReturn) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
     void	combineType(AstVarType type);
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
@@ -965,9 +967,6 @@ struct AstFunc : public AstNodeFTask {
 	addNOp1p(fvarsp);
     }
     ASTNODE_NODE_FUNCS(Func, FUNC)
-    // op1 = Range output variable (functions only)
-    AstNode*	fvarp() 	const { return op1p()->castNode(); }
-    void addFvarp(AstNode* nodep) { addNOp1p(nodep); }
 };
 
 struct AstTaskRef : public AstNodeFTaskRef {
@@ -982,6 +981,23 @@ struct AstFuncRef : public AstNodeFTaskRef {
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef, FUNCREF)
+};
+
+struct AstDpiExport : public AstNode {
+    // We could put a AstNodeFTaskRef instead of the verilog function name,
+    // however we're not *calling* it, so that seems somehow wrong.
+    // (Probably AstNodeFTaskRef should be renamed AstNodeFTaskCall and have-a AstNodeFTaskRef)
+private:
+    string	m_name;		// Name of function
+    string	m_cname;	// Name of function on c side
+public:
+    AstDpiExport(FileLine* fl, const string& vname, const string& cname)
+	:AstNode(fl), m_name(vname), m_cname(cname) { }
+    ASTNODE_NODE_FUNCS(DpiExport, DPIEXPORT)
+    virtual string name() const { return m_name; }
+    virtual void name(const string& name) { m_name = name; }
+    string cname() const { return m_cname; }
+    void cname(const string& cname) { m_cname = cname; }
 };
 
 //######################################################################
@@ -3065,6 +3081,8 @@ private:
     bool	m_isStatic:1;		// Function is declared static (no this)
     bool	m_symProlog:1;		// Setup symbol table for later instructions
     bool	m_entryPoint:1;		// User may call into this top level function
+    bool	m_pure:1;		// Pure function
+    bool	m_dpiImport:1;		// From dpi import
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
@@ -3081,6 +3099,8 @@ public:
 	m_isStatic = true;	// Note defaults to static, later we see where thisp is needed
 	m_symProlog = false;
 	m_entryPoint = false;
+	m_pure = false;
+	m_dpiImport = false;
     }
     ASTNODE_NODE_FUNCS(CFunc, CFUNC)
     virtual string name()	const { return m_name; }
@@ -3090,9 +3110,11 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return ((funcType()==samep->castCFunc()->funcType())
 						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())
-						      && (argTypes()==samep->castCFunc()->argTypes())); }
+						      && (argTypes()==samep->castCFunc()->argTypes())
+						      && (!dpiImport() || name()==samep->castCFunc()->name())); }
     //
     virtual void name(const string& name) { m_name = name; }
+    virtual int instrCount()	const { return dpiImport() ? instrCountDpi() : 0; }
     AstScope*	scopep() const { return m_scopep; }
     void	scopep(AstScope* nodep) { m_scopep = nodep; }
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }
@@ -3118,8 +3140,12 @@ public:
     void	symProlog(bool flag) { m_symProlog = flag; }
     bool	entryPoint() const { return m_entryPoint; }
     void	entryPoint(bool flag) { m_entryPoint = flag; }
+    bool	pure() const { return m_pure; }
+    void	pure(bool flag) { m_pure = flag; }
+    bool	dpiImport() const { return m_dpiImport; }
+    void	dpiImport(bool flag) { m_dpiImport = flag; }
     //
-    // If adding node accessors, see below
+    // If adding node accessors, see below emptyBody
     AstNode*	argsp() 	const { return op1p()->castNode(); }
     void addArgsp(AstNode* nodep) { addOp1p(nodep); }
     AstNode*	initsp() 	const { return op2p()->castNode(); }
@@ -3165,8 +3191,8 @@ public:
     AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
-    virtual bool isOutputter() const { return true; }
+    virtual bool isSplittable() const { return funcp()->pure(); }
+    virtual bool isOutputter() const { return !(funcp()->pure()); }
     AstCFunc*	funcp() const { return m_funcp; }
     string hiername() const { return m_hiername; }
     void hiername(const string& hn) { m_hiername = hn; }

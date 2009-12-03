@@ -855,13 +855,15 @@ private:
 	nodep->paramsp()->iterateAndNext(*this);
 	m_cellRangep = NULL;
     }
-    virtual void visit(AstFunc* nodep, AstNUser* vup) {
-	// Grab width from the output variable
-	UINFO(5,"  FUNC "<<nodep<<endl);
+    virtual void visit(AstNodeFTask* nodep, AstNUser* vup) {
+	// Grab width from the output variable (if it's a function)
+	UINFO(5,"  FTASK "<<nodep<<endl);
 	if (nodep->width()==0) {
 	    // Function hasn't been widthed, so make it so.
 	    nodep->iterateChildren(*this);
-	    nodep->width(nodep->fvarp()->width(), nodep->fvarp()->width());
+	    if (nodep->fvarp()) {
+		nodep->width(nodep->fvarp()->width(), nodep->fvarp()->width());
+	    }
 	}
     }
     virtual void visit(AstFuncRef* nodep, AstNUser* vup) {
