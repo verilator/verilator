@@ -505,6 +505,7 @@ void V3EmitV::emitv() {
 	// All-in-one file
 	V3OutVFile of (v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__Vout.v");
 	of.putsHeader();
+	of.puts("# DESCR" "IPTION: Verilator output: Verilog representation of internal tree for debug\n");
 	EmitVFileVisitor visitor (v3Global.rootp(), &of);
     } else {
 	// Process each module in turn

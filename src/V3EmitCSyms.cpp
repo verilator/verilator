@@ -125,6 +125,11 @@ void EmitCSyms::emitInt() {
     m_ofp = &hf;
 
     ofp()->putsHeader();
+    puts("// DESCR" "IPTION: Verilator output: Symbol table internal header\n");
+    puts("//\n");
+    puts("// Internal details; most calling programs do not need this header\n");
+    puts("\n");
+
     puts("#ifndef _"+symClassName()+"_H_\n");
     puts("#define _"+symClassName()+"_H_\n");
     puts("\n");
@@ -188,6 +193,7 @@ void EmitCSyms::emitImp() {
     V3OutCFile cf (filename);
     m_ofp = &cf;
     ofp()->putsHeader();
+    puts("// DESCR" "IPTION: Verilator output: Symbol table implementation internals\n");
     puts("\n");
 
     // Includes

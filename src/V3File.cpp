@@ -144,6 +144,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 
     string cmdline = stripQuotes(cmdlineIn);
+    *ofp<<"# DESCR"<<"IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."<<endl;
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
 #if !defined (__MINGW32__)
@@ -170,6 +171,9 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
     if (ifp->fail()) {
 	UINFO(2,"   --check-times failed: no input "<<filename<<endl);
 	return false;
+    }
+    {
+	string ignore;  getline(*ifp, ignore);
     }
     {
 	char   chkDir;   *ifp>>chkDir;
