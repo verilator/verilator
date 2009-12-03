@@ -46,29 +46,58 @@ public:
 	return level;
     }
 
+    void putMakeClassEntry(V3OutMkFile& of, const string& name) {
+	of.puts("\t"+V3Options::filenameNonDirExt(name)+" \\\n");
+    }
+
     void emitClassMake() {
 	// Generate the makefile
 	V3OutMkFile of (v3Global.opt.makeDir()+"/"+ v3Global.opt.prefix() + "_classes.mk");
 	of.putsHeader();
-	of.puts("\n");
+	of.puts("# DESCR" "IPTION: Verilator output: Make include file with class lists\n");
+	of.puts("#\n");
+	of.puts("# This file lists generated Verilated files, for including in higher level makefiles.\n");
+	of.puts("# See "+v3Global.opt.prefix()+".mk"+" for the caller.\n");
 
+	of.puts("\n### Switches...\n");
+	of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
 	of.puts("VM_COVERAGE = "); of.puts(v3Global.opt.coverage()?"1":"0"); of.puts("\n");
+	of.puts("# Tracing output mode?  0/1 (from --trace)\n");
 	of.puts("VM_TRACE = "); of.puts(v3Global.opt.trace()?"1":"0"); of.puts("\n");
-	of.puts("\n");
 
-	for (int support=0; support<2; support++) {
+	of.puts("\n### Object file lists...\n");
+	for (int support=0; support<3; support++) {
 	    for (int slow=0; slow<2; slow++) {
-		of.puts(support?"VM_SUPPORT":"VM_CLASSES");
+		if (support==2) of.puts("# Global classes, need linked once per executable");
+		else if (support) of.puts("# Generated support classes");
+		else of.puts("# Generated module classes");
+		if (slow) of.puts(", non-fast-path, compile with low/medium optimization\n");
+		else of.puts(", fast-path, compile with highest optimization\n");
+		of.puts(support==2?"VM_GLOBAL":support==1?"VM_SUPPORT":"VM_CLASSES");
 		of.puts(slow?"_SLOW":"_FAST");
 		of.puts(" += \\\n");
-		for (AstCFile* nodep = v3Global.rootp()->filesp(); nodep; nodep=nodep->nextp()->castCFile()) {
-		    if (nodep->source() && nodep->slow()==slow && nodep->support()==support) {
-			of.puts("\t"+V3Options::filenameNonDirExt(nodep->name())+" \\\n");
+		if (support==2 && !slow) {
+		    putMakeClassEntry(of, "verilated.cpp");
+		    if (v3Global.opt.systemPerl()) {
+			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
+		    }
+		    else if (v3Global.opt.trace()) {
+			putMakeClassEntry(of, "SpTraceVcdC.cpp");
+		    }
+		}
+		else if (support==2 && slow) {
+		}
+		else {
+		    for (AstCFile* nodep = v3Global.rootp()->filesp(); nodep; nodep=nodep->nextp()->castCFile()) {
+			if (nodep->source() && nodep->slow()==slow && nodep->support()==support) {
+			    putMakeClassEntry(of, nodep->name());
+			}
 		    }
 		}
 		of.puts("\n");
 	    }
 	}
+
 	of.puts("\n");
 	of.putsHeader();
     }
@@ -77,6 +106,10 @@ public:
 	// Generate the makefile
 	V3OutMkFile of (v3Global.opt.makeDir()+"/"+ v3Global.opt.prefix() + ".mk");
 	of.putsHeader();
+	of.puts("# DESCR" "IPTION: Verilator output: Makefile for building Verilated archive or executable\n");
+	of.puts("#\n");
+	of.puts("# Execute this makefile from the object directory:\n");
+	of.puts("#    make -f "+v3Global.opt.prefix()+".mk"+"\n");
 	of.puts("\n");
 
 	if (v3Global.opt.exe()) {
@@ -84,33 +117,37 @@ public:
 	} else {
 	    of.puts("default: "+v3Global.opt.prefix()+"__ALL.a\n");
 	}
-	of.puts("\n# Constants...\n");
+	of.puts("\n### Constants...\n");
+	of.puts("# Perl executable (from $PERL)\n");
 	of.puts("PERL = "+V3Options::getenvPERL()+"\n");
+	of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
 	of.puts("VERILATOR_ROOT = "+V3Options::getenvVERILATOR_ROOT()+"\n");
+	of.puts("# Path to SystemPerl kit top (from $SYSTEMPERL)\n");
 	of.puts("SYSTEMPERL = "+V3Options::getenvSYSTEMPERL()+"\n");
+	of.puts("# Path to SystemPerl kit includes (from $SYSTEMPERL_INCLUDE)\n");
 	of.puts("SYSTEMPERL_INCLUDE = "+V3Options::getenvSYSTEMPERL_INCLUDE()+"\n");
 
-	of.puts("\n# Switches...\n");
+	of.puts("\n### Switches...\n");
+	of.puts("# SystemPerl output mode?  0/1 (from --sp)\n");
 	of.puts(string("VM_SP = ")+(v3Global.opt.systemPerl()?"1":"0")+"\n");
+	of.puts("# SystemC output mode?  0/1 (from --sc)\n");
 	of.puts(string("VM_SC = ")+((v3Global.opt.systemC()&&!v3Global.opt.systemPerl())?"1":"0")+"\n");
+	of.puts("# SystemPerl or SystemC output mode?  0/1 (from --sp/--sc)\n");
 	of.puts(string("VM_SP_OR_SC = ")+(v3Global.opt.systemC()?"1":"0")+"\n");
+	of.puts("# Deprecated\n");
 	of.puts(string("VM_PCLI = ")+(v3Global.opt.systemC()?"0":"1")+"\n");
+	of.puts("# SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
 	of.puts(string("VM_SC_TARGET_ARCH = ")+V3Options::getenvSYSTEMC_ARCH()+"\n");
 
-	of.puts("\n# Vars...\n");
+	of.puts("\n### Vars...\n");
+	of.puts("# Design prefix (from --prefix)\n");
 	of.puts(string("VM_PREFIX = ")+v3Global.opt.prefix()+"\n");
+	of.puts("# Module prefix (from --prefix)\n");
 	of.puts(string("VM_MODPREFIX = ")+v3Global.opt.modPrefix()+"\n");
-
-	// Imply generating verilated.o
-	if (v3Global.opt.exe()) {
-	    v3Global.opt.addCppFile("verilated.cpp");
-	    if (v3Global.opt.trace()) {
-		v3Global.opt.addCppFile("SpTraceVcdC.cpp");
-	    }
-	}
 
 	V3StringSet dirs;
 
+	of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
 	of.puts("VM_USER_CLASSES = \\\n");
 	for (V3StringSet::iterator it = v3Global.opt.cppFiles().begin();
 	     it != v3Global.opt.cppFiles().end(); ++it) {
@@ -121,18 +158,21 @@ public:
 	}
 	of.puts("\n");
 
+	of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");
 	of.puts("VM_USER_DIR = \\\n");
 	for (V3StringSet::iterator it = dirs.begin(); it!=dirs.end(); ++it) {
 	    of.puts("\t"+*it+" \\\n");
 	}
 	of.puts("\n");
 
-	of.puts("\n# Default rules...\n");
+	of.puts("\n### Default rules...\n");
+	of.puts("# Include list of all generated classes\n");
 	of.puts("include "+v3Global.opt.prefix()+"_classes.mk\n");
+	of.puts("# Include global rules\n");
 	of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
 
-	of.puts("\n# Local rules...\n");
 	if (v3Global.opt.exe()) {
+	    of.puts("\n### Executable rules... (from --exe)\n");
 	    of.puts("VPATH += $(VM_USER_DIR)\n");
 	    of.puts("\n");
 	    for (V3StringSet::iterator it = v3Global.opt.cppFiles().begin();
@@ -143,8 +183,8 @@ public:
 		of.puts("\t$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
 	    }
 
-	    of.puts("\n# Link rules...\n");
-	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(SP_SRCS) $(VM_PREFIX)__ALL.a\n");
+	    of.puts("\n### Link rules... (from --exe)\n");
+	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(SP_SRCS) $(VM_PREFIX)__ALL.a\n");
 	    of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS) 2>&1 | c++filt\n");
 	    of.puts("\n");
 	}

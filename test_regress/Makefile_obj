@@ -16,10 +16,12 @@ default: $(VM_PREFIX)
 
 ifneq ($(MAKE_MAIN),0)
    # Add main to classes rather then SP_SRCS to save a compiler run
-   VM_CLASSES += ${VM_PREFIX}__main
+   VM_CLASSES += ${VM_PREFIX}__main $(VM_USER_CLASSES) $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW)
 endif
 
 include $(VM_PREFIX).mk
+
+VPATH += ../../$(VM_USER_DIR)
 
 #######################################################################
 

@@ -685,7 +685,24 @@ class EmitCImp : EmitCStmts {
 	    newCFile(filename, slow, source);
 	    ofp = new V3OutCFile  (filename);
 	}
+
 	ofp->putsHeader();
+	if (modp->isTop() && !source) {
+	    ofp->puts("// DESCR" "IPTION: Verilator output: Primary design header\n");
+	    ofp->puts("//\n");
+	    ofp->puts("// This header should be included by all source files instantiating the design.\n");
+	    ofp->puts("// The class here is then constructed to instantiate the design.\n");
+	    ofp->puts("// See the Verilator manual for examples.\n");
+	} else {
+	    if (source) {
+		ofp->puts("// DESCR" "IPTION: Verilator output: Design implementation internals\n");
+	    } else {
+		ofp->puts("// DESCR" "IPTION: Verilator output: Design internal header\n");
+	    }
+	    ofp->puts("// See "+v3Global.opt.prefix()+".h for the primary calling header\n");
+	}
+	ofp->puts("\n");
+
 	return ofp;
     }
 
@@ -1596,6 +1613,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("/*AUTOSUBCELLS*/\n\n");
     } else {
 	puts("// CELLS\n");
+	if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
+	if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
 	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	    if (AstCell* cellp=nodep->castCell()) {
 		ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
@@ -1604,15 +1623,20 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     puts("\n// PORTS\n");
+    if (modp->isTop()) puts("// The application code writes and reads these signals to\n");
+    if (modp->isTop()) puts("// propagate new values into/out from the Verilated model.\n");
     emitVarList(modp->stmtsp(), EVL_IO, "");
 
     puts("\n// LOCAL SIGNALS\n");
+    if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
     emitVarList(modp->stmtsp(), EVL_SIG, "");
 
     puts("\n// LOCAL VARIABLES\n");
+    if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
     emitVarList(modp->stmtsp(), EVL_TEMP, "");
 
     puts("\n// INTERNAL VARIABLES\n");
+    if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
     ofp()->putAlign(V3OutFile::AL_AUTO, 8);
     puts(symClassName()+"*\t__VlSymsp;\t\t// Symbol table\n");
@@ -1628,6 +1652,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putAlign(V3OutFile::AL_AUTO, 8);
 
     puts("\n// PARAMETERS\n");
+    if (modp->isTop()) puts("// Parameters marked /*verilator public*/ for use by application code\n");
     ofp()->putsPrivate(false);  // public:
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstVar* varp = nodep->castVar()) {
@@ -1651,7 +1676,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	}
     }
 
-    puts("\n// METHODS\n");
+    puts("\n// CONSTRUCTORS\n");
     ofp()->resetPrivate();
     // We don't need a private copy constructor, as VerilatedModule has one for us.
     ofp()->putsPrivate(true);
@@ -1666,28 +1691,41 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("VL_CTOR("+modClassName(modp)+");\n");
 	puts("~"+modClassName(modp)+"();\n");
     } else {
+	if (modp->isTop()) puts("/// Construct the model; called by application code\n");
 	puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
+	if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
 	puts("~"+modClassName(modp)+"();\n");
     }
     if (v3Global.opt.trace() && !optSystemPerl()) {
-	puts("void\ttrace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
+	if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
+	puts("void trace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
     }
-    puts("void\t__Vconfigure("+symClassName()+"* symsp, bool first);\n");
-    if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
 
+    puts("\n// USER METHODS\n");
+    if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
     emitTextSection(AstType::SCINT);
 
-    puts("\n// Sensitivity blocks\n");
+    puts("\n// API METHODS\n");
     if (modp->isTop()) {
-	puts("void\tfinal();\t///< Function to call when simulation completed\n");
 	if (optSystemC()) ofp()->putsPrivate(true);	///< eval() is invoked by our sensitive() calls.
-	puts("void\teval();\t///< Main function to call from calling app when inputs change\n");
+	else puts("/// Evaluate the model.  Application must call when inputs change.\n");
+	puts("void eval();\n");
+	ofp()->putsPrivate(false);  // public:
+	if (!optSystemC()) puts("/// Simulation complete, run final blocks.  Application must call on completion.\n");
+	puts("void final();\n");
 	if (v3Global.opt.inhibitSim()) {
-	    puts("void\tinhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
+	    puts("void inhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
 	}
+    }
+
+    puts("\n// INTERNAL METHODS\n");
+    if (modp->isTop()) {
 	ofp()->putsPrivate(true);  // private:
 	puts("static void _eval_initial_loop("+EmitCBaseVisitor::symClassVar()+");\n");
     }
+
+    ofp()->putsPrivate(false);  // public:
+    puts("void __Vconfigure("+symClassName()+"* symsp, bool first);\n");
 
     emitIntFuncDecls(modp);
 
@@ -1845,6 +1883,7 @@ class EmitCTrace : EmitCStmts {
 	if (m_ofp) v3fatalSrc("Previous file not closed");
 	m_ofp = new V3OutCFile (filename);
 	m_ofp->putsHeader();
+	m_ofp->puts("// DESCR" "IPTION: Verilator output: Tracing implementation internals\n");
 
 	emitTraceHeader();
     }

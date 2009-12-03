@@ -134,7 +134,7 @@ sub one_test {
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
-		 my $j = ($opt_jobs>1?" -j $opt_jobs":"");
+		 my $j = ($opt_jobs>1?" -j":"");
 		 push @fails, "\t\tmake$j && test_regress/"
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
 		 $failcnt++;
@@ -720,12 +720,12 @@ sub _make_main {
     my $VM_PREFIX = $self->{VM_PREFIX};
     print $fh "#include \"$VM_PREFIX.h\"\n";
 
-    print $fh "// Compile in-place for speed\n";
-    print $fh "#include \"verilated.cpp\"\n";
+    print $fh "// General headers\n";
+    print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"systemperl.h\"\n" if $self->sp;
-    print $fh "#include \"SpTraceVcdC.cpp\"\n" if $self->{trace} && !$self->sp;
-    print $fh "#include \"Sp.cpp\"\n"  if $self->sp;
+    print $fh "#include \"SpTraceVcdC.h\"\n" if $self->{trace} && !$self->sp;
+    print $fh "#include \"SpTraceVcd.h\"\n" if $self->{trace} && $self->sp;
 
     print $fh "$VM_PREFIX * topp;\n";
     if (!$self->sc_or_sp) {

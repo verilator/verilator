@@ -136,6 +136,8 @@ VK_SUPPORT_CPP = $(addsuffix .cpp, $(VM_SUPPORT))
 
 VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
+VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
+
 ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast building, all .cpp's in one fell swoop
   # This saves about 5 sec per module, but can be slower if only a little changes
@@ -171,13 +173,15 @@ $(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
 ######################################################################
 ### Debugging
 
-debug::
+debug-make::
 	@echo
 	@echo VM_PREFIX:  $(VM_PREFIX)
 	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)
 	@echo VM_CLASSES_SLOW: $(VM_CLASSES_SLOW)
 	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
+	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
+	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
 	@echo
 
 ######################################################################
