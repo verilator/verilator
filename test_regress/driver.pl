@@ -356,7 +356,9 @@ sub read_status {
     use vars qw($VAR1);
     local $VAR1;
     require $filename or die "%Error: $! $filename,";
-    %{$self} = %{$VAR1};
+    if ($VAR1) {
+	%{$self} = %{$VAR1};
+    }
 }
 
 #----------------------------------------------------------------------

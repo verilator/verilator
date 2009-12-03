@@ -412,7 +412,11 @@ public:
 	puts(",\"\");\n");
     }
     virtual void visit(AstText* nodep, AstNUser*) {
-	ofp()->putsNoTracking(nodep->text());
+	if (nodep->tracking()) {
+	    puts(nodep->text());
+	} else {
+	    ofp()->putsNoTracking(nodep->text());
+	}
     }
     virtual void visit(AstCStmt* nodep, AstNUser*) {
 	putbs("");

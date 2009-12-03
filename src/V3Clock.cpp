@@ -232,9 +232,8 @@ private:
 	    funcp->slow(true);
 	    funcp->isStatic(false);
 	    funcp->entryPoint(true);
-	    funcp->addInitsp(
-		new AstCStmt(nodep->fileline(),
-			     "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+	    funcp->addInitsp(new AstCStmt(nodep->fileline(),
+					  EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
 	    funcp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
 	    m_scopep->addActivep(funcp);
 	    m_finalFuncp = funcp;

@@ -285,7 +285,8 @@ void process () {
 
     // Push constants across variables and remove redundant assignments
     V3Const::constifyAll(v3Global.rootp());
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
     if (v3Global.opt.oLife()) {
 	V3Life::lifeAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));

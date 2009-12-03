@@ -121,7 +121,7 @@ private:
 		newfuncp->isStatic(false);
 		newfuncp->addInitsp(
 		    new AstCStmt(newfuncp->fileline(),
-				 "    "+EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+				 EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
 		newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
 		topFuncp->addNextHere(newfuncp);
 		// In the body, call each function if it matches the given scope
@@ -224,7 +224,7 @@ private:
 	    if (m_needThis) {
 		nodep->v3fatalSrc("old code");
 		// Really we should have more node types for backend optimization of this stuff
-		string text = "    "+v3Global.opt.modPrefix() + "_" + m_modp->name()
+		string text = v3Global.opt.modPrefix() + "_" + m_modp->name()
 		    +"* thisp = &("+m_scopep->nameVlSym()+");\n";
 		nodep->addInitsp(new AstCStmt(nodep->fileline(), text));
 	    }

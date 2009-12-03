@@ -2939,9 +2939,14 @@ struct AstPslBool : public AstNode {
 // Text based nodes
 
 struct AstText : public AstNodeText {
-    AstText(FileLine* fl, const string& textp)
-	: AstNodeText(fl, textp) {}
+private:
+    bool	m_tracking;	// When emit, it's ok to parse the string to do indentation
+public:
+    AstText(FileLine* fl, const string& textp, bool tracking=false)
+	: AstNodeText(fl, textp), m_tracking(tracking) {}
     ASTNODE_NODE_FUNCS(Text, TEXT)
+    void tracking(bool flag) { m_tracking = flag; }
+    bool tracking() const { return m_tracking; }
 };
 
 struct AstScCtor : public AstNodeText {
@@ -3208,22 +3213,25 @@ public:
 };
 
 struct AstCMath : public AstNodeMath {
+private:
+    bool	m_cleanOut;
+public:
     // Emit C textual math function (like AstUCFunc)
     AstCMath(FileLine* fl, AstNode* exprsp)
-	: AstNodeMath(fl) {
+	: AstNodeMath(fl), m_cleanOut(true) {
 	addOp1p(exprsp);
 	widthSignedFrom(exprsp);
     }
-    AstCMath(FileLine* fl, const string& textStmt, int setwidth)
-	: AstNodeMath(fl) {
-	addNOp1p(new AstText(fl, textStmt));
+    AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut=true)
+	: AstNodeMath(fl), m_cleanOut(cleanOut) {
+	addNOp1p(new AstText(fl, textStmt, true));
 	if (setwidth) { width(setwidth,setwidth); }
     }
     ASTNODE_NODE_FUNCS(CMath, CMATH)
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool cleanOut() { return true; }
+    virtual bool cleanOut() { return m_cleanOut; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -3239,7 +3247,7 @@ struct AstCStmt : public AstNodeStmt {
     }
     AstCStmt(FileLine* fl, const string& textStmt)
 	: AstNodeStmt(fl) {
-	addNOp1p(new AstText(fl, textStmt));
+	addNOp1p(new AstText(fl, textStmt, true));
     }
     ASTNODE_NODE_FUNCS(CStmt, CSTMT)
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print

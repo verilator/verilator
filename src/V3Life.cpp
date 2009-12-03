@@ -136,6 +136,12 @@ class LifeBlock {
     LifeBlock*	m_aboveLifep;	// Upper life, or NULL
     LifeState*	m_statep;	// Current global state
 
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
 public:
     LifeBlock(LifeBlock* aboveLifep, LifeState* statep) {
 	m_aboveLifep = aboveLifep;  // Null if top
