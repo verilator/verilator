@@ -48,8 +48,8 @@ extern void yyerrorf(const char* format, ...);
 #define FL { yylval.fl = CRELINE(); }
 
 #define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {	\
-	if (v3Global.opt.bboxSys()) return yD_aIGNORE; \
-	else yyerrorf(msg,yytext); }
+	if (!v3Global.opt.bboxSys()) yyerrorf(msg,yytext); \
+	return yaD_IGNORE; }
 
 void V3ParseImp::ppline (const char* textp) {
     // Handle `line directive
@@ -388,6 +388,7 @@ escid	\\[^ \t\f\r\n]+
   "pure"		{ FL; return yPURE; }
   "shortint"		{ FL; return ySHORTINT; }
   "static"		{ FL; return ySTATIC; }
+  "string"		{ FL; return ySTRING; }
   "timeprecision"	{ FL; return yTIMEPRECISION; }
   "timeunit"		{ FL; return yTIMEUNIT; }
   "typedef"		{ FL; return yTYPEDEF; }
@@ -443,7 +444,6 @@ escid	\\[^ \t\f\r\n]+
   "return"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "shortreal"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "string"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "struct"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "tagged"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -473,7 +473,13 @@ escid	\\[^ \t\f\r\n]+
 
   /* Default PLI rule */
 <V95,V01,V05,S05,PSL>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s",yytext); }
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
+				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
+				  // Lookup unencoded name including the $, to avoid hitting normal signals
+				  if (SYMP->symCurrentp()->findIdUpward(str)) {
+				      FL; return yaD_DPI;
+				  } else { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s",yytext); }
+				}
 }
 
   /************************************************************************/

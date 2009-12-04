@@ -128,8 +128,10 @@ public:
 	}
     }
     void reinsert(AstNode* nodep, V3SymTable* parentp=NULL) {
+	reinsert(nodep, parentp, nodep->name());
+    }
+    void reinsert(AstNode* nodep, V3SymTable* parentp, string name) {
 	if (!parentp) parentp = symCurrentp();
-	string name = nodep->name();
 	if (name == "") {  // New name with space in name so can't collide with users
 	    name = string(" anon") + nodep->type().ascii() + cvtToStr(++s_anonNum);
 	}

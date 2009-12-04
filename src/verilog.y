@@ -132,7 +132,9 @@ public:
     }
     string   deQuote(FileLine* fileline, string text);
     void checkDpiVer(FileLine* fileline, const string& str) {
-	if (str != "DPI-C") { fileline->v3error("Unsupported DPI type '"<<str<<"': Use 'DPI-C'"); }
+	if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
+	    fileline->v3error("Unsupported DPI type '"<<str<<"': Use 'DPI-C'");
+	}
     }
 };
 
@@ -202,6 +204,9 @@ class AstSenTree;
 %token<strp>		yaSCIMPH	"`systemc_interface BLOCK"
 %token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
+
+%token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
+%token<strp>		yaD_DPI		"${dpi-sys}"
 
 // <fl> is the fileline, abbreviated to shorten "$<fl>1" references
 %token<fl>		'!'
@@ -318,6 +323,7 @@ class AstSenTree;
 %token<fl>		ySPECIFY	"specify"
 %token<fl>		ySPECPARAM	"specparam"
 %token<fl>		ySTATIC		"static"
+%token<fl>		ySTRING		"string"
 %token<fl>		ySUPPLY0	"supply0"
 %token<fl>		ySUPPLY1	"supply1"
 %token<fl>		yTABLE		"table"
@@ -375,7 +381,6 @@ class AstSenTree;
 %token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
-%token<fl>		yD_aIGNORE	"${ignored-bbox-sys}"
 
 %token<fl>		yPSL		"psl"
 %token<fl>		yPSL_ASSERT	"PSL assert"
@@ -1053,7 +1058,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
 	//UNSUP		{ UNSUP }
 	//UNSUP	enumDecl				{ UNSUP }
-	//UNSUP	ySTRING					{ UNSUP }
+	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }
 	//UNSUP	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ UNSUP }
@@ -1922,8 +1927,11 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
-		yD_aIGNORE  '(' ')'			{ $$ = NULL; }
-	|	yD_aIGNORE  '(' exprList ')'		{ $$ = NULL; }
+		yaD_IGNORE  '(' ')'			{ $$ = NULL; }
+	|	yaD_IGNORE  '(' exprList ')'		{ $$ = NULL; }
+	//
+	|	yaD_DPI '(' ')'				{ $$ = new AstTaskRef($2,*$1,NULL); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
@@ -1962,8 +1970,11 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
-		yD_aIGNORE '(' ')'			{ $$ = new AstConst($1,V3Number($1,"'b0")); } // Unsized 0
-	|	yD_aIGNORE '(' exprList ')'		{ $$ = new AstConst($1,V3Number($1,"'b0")); } // Unsized 0
+		yaD_IGNORE '(' ')'			{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
+	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
+	//
+	|	yaD_DPI '(' ')'				{ $$ = new AstFuncRef($2,*$1,NULL); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
 	//
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
@@ -2154,10 +2165,14 @@ parenE:
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
 		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
 			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
-			  $5->dpiImport(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+			  $5->dpiImport(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
+			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,NULL,$$->prettyName());  // For $SysTF overriding
+			  SYMP->reinsert($$); }
 	|	yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE task_prototype ';'
 			{ $$ = $5; if (*$4!="") $5->cname(*$4); $5->dpiContext($3==iprop_CONTEXT); $5->pure($3==iprop_PURE);
-			  $5->dpiImport(true); $5->dpiTask(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
+			  $5->dpiImport(true); $5->dpiTask(true); GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true);
+			  if ($$->prettyName()[0]=='$') SYMP->reinsert($$,NULL,$$->prettyName());  // For $SysTF overriding
+			  SYMP->reinsert($$); }
 	|	yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'	{ $$ = new AstDpiExport($1,*$5,*$3);
 			  GRAMMARP->checkDpiVer($1,*$2); v3Global.dpi(true); }
 	|	yEXPORT yaSTRING dpi_importLabelE yTASK     idAny ';'	{ $$ = new AstDpiExport($1,*$5,*$3);

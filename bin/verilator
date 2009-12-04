@@ -1148,6 +1148,14 @@ command line, or the link), you'd then:
     #include "Vour__Dpi.h"
     int add (int a, int b) { return a+b; }
 
+Verilator also extends the DPI format to allow using the same scheme to
+efficiently add system functions.  Simply use a dollar-sign prefixed system
+function name for the import, but note it must be escaped.
+
+   export "DPI-C" function integer \$myRand;
+
+   initial $display("myRand=%d", $myRand());
+
 =head1 CROSS COMPILATION
 
 Verilator supports cross-compiling Verilated code.  This is generally used

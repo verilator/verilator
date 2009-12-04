@@ -206,6 +206,8 @@ public:
     enum en {
 	BIT, BYTE, CHANDLE, INT, INTEGER, LOGIC, LONGINT,
 	REAL, REALTIME,	SHORTINT, SHORTREAL, TIME,
+	// Closer to a class type, but limited usage
+	STRING,
 	// Internal types
 	LOGIC_IMPLICIT
     };
@@ -214,6 +216,7 @@ public:
 	static const char* names[] = {
 	    "bit", "byte", "chandle", "int", "integer", "logic", "longint",
 	    "real", "realtime", "shortint", "shortreal", "time",
+	    "string",
 	    "LOGIC_IMPLICIT"
 	};
 	return names[m_e];
@@ -222,6 +225,7 @@ public:
 	static const char* names[] = {
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "double", "short int", "float", "long long",
+	    "char*",
 	    ""
 	};
 	return names[m_e];
@@ -241,6 +245,7 @@ public:
 	case LONGINT:	return 64;
 	case SHORTINT:	return 16;
 	case TIME:	return 64;
+	case STRING:	return 64;  // Just the pointer, for today
 	default: return 0;
 	}
     }
@@ -251,7 +256,8 @@ public:
 	return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
     }
     int isZeroInit() const { // Otherwise initializes to X
-	return m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT;
+	return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT
+		|| m_e==STRING);
     }
     int isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
@@ -1250,7 +1256,6 @@ private:
     bool	m_dpiTask:1;	// DPI import task (vs. void function)
     bool	m_pure:1;	// DPI import pure
 public:
-    // Node that simply puts name into the output stream
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
 	, m_name(name), m_taskPublic(false), m_didSigning(false)
@@ -1305,6 +1310,11 @@ public:
 	:AstNode(fl)
 	, m_taskp(NULL), m_packagep(NULL) {
 	setOp1p(namep);	addNOp2p(pinsp);
+    }
+    AstNodeFTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
+	:AstNode(fl)
+	, m_taskp(NULL), m_name(name), m_packagep(NULL) {
+	addNOp2p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual bool broken() const { return m_taskp && !m_taskp->brokeExists(); }

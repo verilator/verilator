@@ -973,6 +973,8 @@ struct AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
+    AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
+	:AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(TaskRef, TASKREF)
 };
 
@@ -980,6 +982,8 @@ struct AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
+    AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
+	:AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef, FUNCREF)
 };
 
