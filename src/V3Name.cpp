@@ -87,6 +87,7 @@ private:
 	// Don't iterate... Don't need temps for RANGES under the Var.
 	rename(nodep, (!m_modp->isTop()
 		       && !nodep->isSigPublic()
+		       && !nodep->isFuncLocal()	// Isn't exposed, and would mess up dpi import wrappers
 		       && !nodep->isTemp()));	// Don't bother to rename internal signals
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {

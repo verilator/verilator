@@ -5,10 +5,11 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
-module t ();
+// Global is the most likely usage scenario
+import "DPI-C" dpii_sys_task = function void \$dpii_sys (integer i);
+import "DPI-C" dpii_sys_func = function int \$dpii_func (integer i);
 
-   import "DPI-C" dpii_sys_task = function void \$dpii_sys (integer i);
-   import "DPI-C" dpii_sys_func = function int \$dpii_func (integer i);
+module t ();
 
 `ifndef verilator
    `error "Only Verilator supports PLI-ish DPI calls."
