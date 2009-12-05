@@ -38,6 +38,7 @@
 # define VL_ATTR_ALIGNED(alignment) __attribute__ ((aligned (alignment)))
 # define VL_ATTR_NORETURN __attribute__ ((noreturn))
 # define VL_ATTR_UNUSED __attribute__ ((unused))
+# define VL_FUNC  __func__
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)
 # define VL_UNLIKELY(x)	__builtin_expect(!!(x), 0)
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p),0)
@@ -47,6 +48,7 @@
 # define VL_ATTR_ALIGNED(alignment)	///< Align structure to specified byte alignment
 # define VL_ATTR_NORETURN		///< Function does not ever return
 # define VL_ATTR_UNUSED			///< Function that may be never used
+# define VL_FUNC "__func__"		///< Name of current function for error macros
 # define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true than false
 # define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false than true
 # define VL_PREFETCH_RD(p)		///< Prefetch data with read intent

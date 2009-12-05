@@ -223,6 +223,10 @@ public:
 	if (nodep->addNewline()) text += "\n";
 	displayNode(nodep, text, nodep->exprsp(), false);
     }
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
+	// For use under AstCCalls for dpiImports.  ScopeNames under displays are handled in AstDisplay
+	putbs("(&(vlSymsp->__Vscope_"+nodep->scopeSymName()+"))");
+    }
     virtual void visit(AstSFormat* nodep, AstNUser*) {
 	displayNode(nodep, nodep->text(), nodep->exprsp(), false);
     }
@@ -1198,9 +1202,7 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
 		if (!nodep->castNodeDisplay()) nodep->v3fatalSrc("Non-Display with %m");
 		AstScopeName* scopenamep = nodep->castNodeDisplay()->scopeNamep();
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
-		for (AstText* textp=scopenamep->scopeAttrp(); textp; textp=textp->nextp()->castText()) {
-		    emitDispState.pushFormat(textp->text());
-		}
+		emitDispState.pushFormat(scopenamep->scopePrettyName());
 		break;
 	    }
 	    case 'u':

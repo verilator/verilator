@@ -612,6 +612,7 @@ struct AstScope : public AstNode {
     // Parents: MODULE
     // Children: NODEBLOCK
 private:
+    // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string	m_name;		// Name
     AstScope*	m_aboveScopep;	// Scope above this one in the hierarchy (NULL if top)
     AstCell*	m_aboveCellp;	// Cell above this in the hierarchy (NULL if top)
@@ -2001,17 +2002,22 @@ public:
     virtual void dump(ostream& str=cout);
 };
 
-struct AstScopeName : public AstNode {
-    // For display %m
+struct AstScopeName : public AstNodeMath {
+    // For display %m and DPI context imports
     // Parents:  DISPLAY
     // Children: TEXT
-    AstScopeName(FileLine* fl)
-	: AstNode(fl) {}
+    AstScopeName(FileLine* fl) : AstNodeMath(fl) {
+	width(64,64); }
     ASTNODE_NODE_FUNCS(ScopeName, SCOPENAME)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
+    virtual string emitVerilog() { return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return true; }
     AstText*	scopeAttrp() const { return op1p()->castText(); }
     void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
+    string scopeSymName() const;  // Name for __Vscope variable including children
+    string scopePrettyName() const;  // Name for __Vscope printing
 };
 
 struct AstUdpTable : public AstNode {
@@ -3177,9 +3183,12 @@ public:
 	addNOp1p(argsp);
     }
     AstCCall(AstCCall* oldp, AstCFunc* funcp)	// Replacement form for V3Combine
+	// Note this removes old attachments from the oldp
 	: AstNodeStmt(oldp->fileline()) {
 	m_funcp = funcp;
 	m_hiername = oldp->hiername();
+	m_argTypes = oldp->argTypes();
+	if (oldp->argsp()) addNOp1p(oldp->argsp()->unlinkFrBackWithNext());
     }
     ASTNODE_NODE_FUNCS(CCall, CCALL)
     virtual void dump(ostream& str=cout);

@@ -109,6 +109,12 @@ private:
 	nodep->iterateChildren(*this);
 	m_ftaskp = NULL;
     }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->taskp() && nodep->taskp()->dpiContext()) {
+	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	}
+    }
 
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	// Remove bit selects, and bark if it's not a simple variable

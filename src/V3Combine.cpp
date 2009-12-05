@@ -72,6 +72,10 @@ protected:
     //***** optimization levels
     bool emptyFunctionDeletion() { return true; }
     bool duplicateFunctionCombine() { return true; }
+    // Note this is disabled, it still needed work
+    // Also repair it for DPI functions; when make __common need to insure proper
+    // flags get inherited from the old to new AstCFunc, and that AstText doesn't
+    // get split between functions causing the text to have a danginling reference.
     bool statementCombine() { return false && duplicateFunctionCombine(); }
 };
 
@@ -101,7 +105,7 @@ public:
 		if (callp->funcp() != oldfuncp) callp->v3fatalSrc("Call list broken, points to call w/different func");
 		if (newfuncp) {
 		    AstCCall* newp = new AstCCall(callp, newfuncp);
-		    newp->argTypes(callp->argTypes());
+		    // Special new AstCCall form above transfers children of callp to newfuncp
 		    callp->replaceWith(newp);
 		    addCall(newp); // Fix the table
 		} else { // Just deleting empty function

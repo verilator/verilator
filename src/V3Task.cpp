@@ -324,6 +324,16 @@ private:
 	return level;
     }
 
+    AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
+	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
+				      new AstBasicDType(funcp->fileline(), kwd));
+	newvarp->funcLocal(true);
+	newvarp->combineType(AstVarType::INPUT);
+	funcp->addArgsp(newvarp);
+	AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+	m_scopep->addVarp(newvscp);
+	return newvscp;
+    }
     AstVarScope* createVarScope(AstVar* invarp, const string& name) {
 	// We could create under either the ref's scope or the ftask's scope.
 	// It shouldn't matter, as they are only local variables.
@@ -491,8 +501,19 @@ private:
 	    }
 	}
 	// First argument is symbol table, then output if a function
-	bool needContext = !refp->taskp()->dpiImport() || refp->taskp()->dpiContext();
-	if (needContext) ccallp->argTypes("vlSymsp");
+	bool needSyms = !refp->taskp()->dpiImport();
+	if (needSyms) ccallp->argTypes("vlSymsp");
+
+	if (refp->taskp()->dpiContext()) {
+	    // __Vscopep
+	    AstNode* snp = refp->scopeNamep()->unlinkFrBack();  if (!snp) refp->v3fatalSrc("Missing scoping context");
+	    ccallp->addArgsp(snp);
+	    // __Vfilenamep
+	    ccallp->addArgsp(new AstCMath(refp->fileline(), "\""+refp->fileline()->filename()+"\"", 64, true));
+	    // __Vlineno
+	    ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
+	}
+
 	if (outvscp) {
 	    ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, true));
 	}
@@ -536,7 +557,10 @@ private:
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
 		AstVarScope* portvscp = portp->user2p()->castNode()->castVarScope();  // Remembered when we created it earlier
-		if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp) {
+		if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
+		    && portp->name() != "__Vscopep"	// Passed to dpiContext, not callee
+		    && portp->name() != "__Vfilenamep"
+		    && portp->name() != "__Vlineno") {
 		    bool bitvec = (portp->basicp()->isBitLogic() && portp->width() > 32);
 
 		    if (args != "") { args+= ", "; }
@@ -576,7 +600,8 @@ private:
 
 	// Store context, if needed
 	if (nodep->dpiContext()) {
-	    // TBD
+	    string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);\n";
+	    cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
 
 	{// Call the user function
@@ -640,8 +665,11 @@ private:
 	string prefix = "";
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
+	// Unless public, v3Descope will not uniquify function names even if duplicate per-scope.
+	string suffix = "";  // So, make them unique
+	if (!nodep->taskPublic()) suffix = "_"+m_scopep->nameDotless();
 	AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
-					prefix + nodep->name(),
+					prefix + nodep->name() + suffix,
 					m_scopep,
 					((nodep->taskPublic() && rtnvarp)?rtnvarp->cpubArgType(true,true):""));
 	// It's ok to combine imports because this is just a wrapper; duplicate wrappers can get merged.
@@ -652,8 +680,8 @@ private:
 	cfuncp->pure	   (nodep->pure());
 	//cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
 
-	bool needContext = !nodep->dpiImport() || nodep->dpiContext();
-	if (needContext) {
+	bool needSyms = !nodep->dpiImport();
+	if (needSyms) {
 	    if (nodep->taskPublic()) {
 		// We need to get a pointer to all of our variables (may have eval'ed something else earlier)
 		cfuncp->addInitsp(
@@ -664,6 +692,13 @@ private:
 		cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
 	    }
 	}
+	if (nodep->dpiContext()) {
+	    // First three args go to dpiContext call
+	    createInputVar (cfuncp, "__Vscopep", AstBasicDTypeKwd::SCOPEPTR);
+	    createInputVar (cfuncp, "__Vfilenamep", AstBasicDTypeKwd::CHARPTR);
+	    createInputVar (cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
+	}
+
 	// Fake output variable if was a function
 	if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 

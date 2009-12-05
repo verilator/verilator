@@ -266,7 +266,7 @@ private:
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();
-	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"."+m_cellp->prettyName()));
+	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"__DOT__"+m_cellp->name()));
 	    if (afterp) nodep->scopeAttrp(afterp);
 	}
 	nodep->iterateChildren(*this);

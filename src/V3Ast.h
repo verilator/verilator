@@ -208,7 +208,9 @@ public:
 	REAL, REALTIME,	SHORTINT, SHORTREAL, TIME,
 	// Closer to a class type, but limited usage
 	STRING,
-	// Internal types
+	// Internal types for mid-steps
+	SCOPEPTR, CHARPTR,
+	// Internal types, eliminated after parsing
 	LOGIC_IMPLICIT
     };
     enum en m_e;
@@ -217,6 +219,7 @@ public:
 	    "bit", "byte", "chandle", "int", "integer", "logic", "longint",
 	    "real", "realtime", "shortint", "shortreal", "time",
 	    "string",
+	    "VerilatedScope*", "char*",
 	    "LOGIC_IMPLICIT"
 	};
 	return names[m_e];
@@ -225,6 +228,7 @@ public:
 	static const char* names[] = {
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "double", "short int", "float", "long long",
+	    "dpiScope", "const char*",
 	    "char*",
 	    ""
 	};
@@ -1213,10 +1217,11 @@ public:
 	m_text = textp;	// Copy it
     }
     ASTNODE_BASE_FUNCS(NodeText)
-    const string& text() const { return m_text; }
+    virtual void dump(ostream& str=cout);
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
 	return text()==samep->castNodeText()->text(); }
+    const string& text() const { return m_text; }
 };
 
 struct AstNodeDType : public AstNode {
@@ -1338,6 +1343,9 @@ public:
     // op2 = Pin interconnection list
     AstNode*	pinsp() 	const { return op2p()->castNode(); }
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
+    // op3 = scope tracking
+    AstScopeName* scopeNamep() const { return op3p()->castScopeName(); }
+    void 	scopeNamep(AstNode* nodep) { setNOp3p(nodep); }
 };
 
 struct AstNodeModule : public AstNode {

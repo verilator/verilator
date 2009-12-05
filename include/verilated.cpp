@@ -23,7 +23,8 @@
 ///
 //=========================================================================
 
-#include "verilated.h"
+#define _VERILATED_CPP_
+#include "verilatedimp.h"
 #include <cctype>
 #include <vector>
 
@@ -37,38 +38,11 @@ int  Verilated::s_debug = 1;
 bool Verilated::s_calcUnusedSigs = false;
 bool Verilated::s_gotFinish = false;
 bool Verilated::s_assertOn = true;
+VL_THREAD const VerilatedScope* Verilated::t_dpiScopep = NULL;
+VL_THREAD const char* Verilated::t_dpiFilename = "";
+VL_THREAD int Verilated::t_dpiLineno = 0;
 
-//===========================================================================
-// Local Implementation Globals
-// (Not in Verilated as they can be slow, and we want to mimimize the STL imports)
-
-class VerilatedImp {
-protected:
-    friend class Verilated;
-    typedef vector<string> ArgVec;
-    static ArgVec	s_argVec;	// Argument list
-    static bool		s_argVecLoaded;	// Ever loaded argument list
-    // METHODS
-public:  // But only for this C file
-    static string argPlusMatch(const char* prefixp) {
-	int len = strlen(prefixp);
-	if (!s_argVecLoaded) {
-	    s_argVecLoaded = true;  // Complain only once
-	    vl_fatal("unknown",0,"",
-		     "%Error: Verilog called $test$plusargs or $value$plusargs without"
-		     " testbench C first calling Verilated::commandArgs(argc,argv).");
-	}
-	for (ArgVec::iterator it=s_argVec.begin(); it!=s_argVec.end(); ++it) {
-	    if ((*it)[0]=='+') {
-		if (0==strncmp(prefixp, it->c_str()+1, len)) return *it;
-	    }
-	}
-	return "";
-    }
-};
-
-VerilatedImp::ArgVec  VerilatedImp::s_argVec;
-bool	VerilatedImp::s_argVecLoaded = false;
+VerilatedImp  VerilatedImp::s_s;
 
 //===========================================================================
 // User definable functions
@@ -938,12 +912,7 @@ const char* Verilated::catName(const char* n1, const char* n2) {
 }
 
 void Verilated::commandArgs(int argc, const char** argv) {
-    VerilatedImp::s_argVec.clear();
-    for (int i=0; i<argc; i++) {
-	VerilatedImp::s_argVec.push_back(argv[i]);
-    }
-    // Can't just test later for empty vector, no arguments is ok
-    VerilatedImp::s_argVecLoaded = true;
+    VerilatedImp::commandArgs(argc,argv);
 }
 
 //===========================================================================
@@ -955,6 +924,24 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     if (m_namep) free((void*)m_namep); m_namep=NULL;
+}
+
+//======================================================================
+// VerilatedScope:: Methods
+
+VerilatedScope::~VerilatedScope() {
+    VerilatedImp::scopeErase(this);
+    delete [] m_namep; m_namep = NULL;
+}
+
+void VerilatedScope::configure(const char* prefixp, const char* suffixp) {
+    // Slow ok - called once/scope at construction
+    // We don't want the space and reference-count access overhead of strings.
+    char* namep = new char[strlen(prefixp)+strlen(suffixp)+2];
+    strcpy(namep, prefixp);
+    strcat(namep, suffixp);
+    m_namep = namep;
+    VerilatedImp::scopeInsert(this);
 }
 
 //===========================================================================

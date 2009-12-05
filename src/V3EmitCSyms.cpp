@@ -44,10 +44,13 @@ class EmitCSyms : EmitCBaseVisitor {
     //  AstNodeModule::user1()	-> bool.  Set true __Vconfigure called
     AstUser1InUse	m_inuser1;
 
+    typedef map<string,AstScopeName*> ScopeNames;
+
     // STATE
     AstNodeModule*	m_modp;		// Current module
     typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
     vector<ScopeModPair>  m_scopes;	// Every scope by module
+    ScopeNames		m_scopeNames;	// Each unique AstScopeName
     V3LanguageWords 	m_words;	// Reserved word detector
     int		m_coverBins;		// Coverage bin number
 
@@ -94,6 +97,12 @@ class EmitCSyms : EmitCBaseVisitor {
 	nameCheck(nodep);
 	m_scopes.push_back(make_pair(nodep, m_modp));
     }
+    virtual void visit(AstScopeName* nodep, AstNUser*) {
+	string name = nodep->scopeSymName();
+	if (m_scopeNames.find(name) == m_scopeNames.end()) {
+	    m_scopeNames.insert(make_pair(name, nodep));
+	}
+    }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	// Assign numbers to all bins, so we know how big of an array to use
 	if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
@@ -101,7 +110,6 @@ class EmitCSyms : EmitCBaseVisitor {
 	}
     }
     // NOPs
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
     virtual void visit(AstConst*, AstNUser*) {}
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -174,6 +182,11 @@ void EmitCSyms::emitInt() {
 	puts("uint32_t\t__Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
     }
 
+    puts("\n// SCOPE NAMES\n");
+    for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
+	puts("VerilatedScope __Vscope_"+it->second->scopeSymName()+";\n");
+    }
+
     puts("\n// CREATORS\n");
     puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
     puts((string)"~"+symClassName()+"() {};\n");
@@ -242,6 +255,7 @@ void EmitCSyms::emitImp() {
 	    puts(scopep->nameDotless()+";\n");
 	}
     }
+
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->__Vconfigure(this, true);\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
@@ -254,6 +268,13 @@ void EmitCSyms::emitImp() {
 		 +(first?"true":"false")
 		 +");\n");
 	}
+    }
+
+    puts("// Setup scope names\n");
+    for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
+	puts("__Vscope_"+it->second->scopeSymName()+".configure(name(),");
+	putsQuoted(it->second->scopePrettyName());
+	puts(");\n");
     }
 
     puts("}\n");

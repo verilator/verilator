@@ -481,7 +481,7 @@ private:
 	    nodep->width(selwidth,selwidth);
 	}
     } 
-   virtual void visit(AstAttrOf* nodep, AstNUser*) {
+    virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->width(32,1);	// Approximation, unsized 32
     }
@@ -489,7 +489,7 @@ private:
 	// Only used in CStmts which don't care....
     }
     virtual void visit(AstScopeName* nodep, AstNUser* vup) {
-	// Only used in Displays which don't care....
+	nodep->width(64,1);	// A pointer, but not that it matters
     }
     virtual void visit(AstArrayDType* nodep, AstNUser* vup) {
 	// Lower datatype determines the width

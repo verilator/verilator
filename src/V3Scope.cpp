@@ -211,16 +211,14 @@ private:
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
-	string prefix = (string)(".")+m_scopep->prettyName();
+	string prefix = (string)("__DOT__")+m_scopep->name();
 	// TOP and above will be the user's name().
-	// Note 'TOP.'is stripped by prettyName, but not 'TOP'.
-	if (prefix != ".TOP") {
-	    // To keep correct visual order, must add before other Text's
-	    AstNode* afterp = nodep->scopeAttrp();
-	    if (afterp) afterp->unlinkFrBackWithNext();
-	    nodep->scopeAttrp(new AstText(nodep->fileline(), prefix));
-	    if (afterp) nodep->scopeAttrp(afterp);
-	}
+	// Note 'TOP.' is stripped by scopePrettyName
+	// To keep correct visual order, must add before other Text's
+	AstNode* afterp = nodep->scopeAttrp();
+	if (afterp) afterp->unlinkFrBackWithNext();
+	nodep->scopeAttrp(new AstText(nodep->fileline(), prefix));
+	if (afterp) nodep->scopeAttrp(afterp);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {

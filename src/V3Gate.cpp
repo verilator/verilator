@@ -110,7 +110,7 @@ public:
 	: GateEitherVertex(graphp,scopep), m_nodep(nodep), m_activep(activep), m_slow(slow) {}
     virtual ~GateLogicVertex() {}
     // Accessors
-    virtual string name() const { return (cvtToStr((void*)m_nodep)+"@"+scopep()->name()); }
+    virtual string name() const { return (cvtToStr((void*)m_nodep)+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return "yellow"; }
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }

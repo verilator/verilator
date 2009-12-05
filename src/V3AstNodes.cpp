@@ -107,7 +107,12 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
     if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
     string arg;
     if (isWide() && isInOnly()) arg += "const ";
-    if (widthMin() <= 8) {
+    AstBasicDType* bdtypep = basicp();
+    if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
+	arg += "const char*";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
+	arg += "const VerilatedScope*";
+    } else if (widthMin() <= 8) {
 	arg += "CData";
     } else if (widthMin() <= 16) {
 	arg += "SData";
@@ -296,12 +301,38 @@ void AstScope::cloneRelink() {
 }
 
 string AstScope::nameDotless() const {
-    string dotless = shortName();
+    string out = shortName();
     string::size_type pos;
-    while ((pos=dotless.find(".")) != string::npos) {
-	dotless.replace(pos, 1, "__");
+    while ((pos=out.find(".")) != string::npos) {
+	out.replace(pos, 1, "__");
     }
-    return dotless;
+    return out;
+}
+
+string AstScopeName::scopePrettyName() const {
+    string out;
+    for (AstText* textp=scopeAttrp(); textp; textp=textp->nextp()->castText()) {
+	out += textp->text();
+    }
+    // TOP will be replaced by top->name()
+    if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
+    return AstNode::prettyName(out);
+}
+
+string AstScopeName::scopeSymName() const {
+    string out;
+    for (AstText* textp=scopeAttrp(); textp; textp=textp->nextp()->castText()) {
+	out += textp->text();
+    }
+    if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
+    string::size_type pos;
+    while ((pos=out.find(".")) != string::npos) {
+	out.replace(pos, 1, "__");
+    }
+    while ((pos=out.find("__DOT__")) != string::npos) {
+	out.replace(pos, 7, "__");
+    }
+    return out;
 }
 
 bool AstSenTree::hasClocked() {
@@ -560,6 +591,17 @@ void AstTraceInc::dump(ostream& str) {
     if (declp()) { declp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
+void AstNodeText::dump(ostream& str) {
+    this->AstNode::dump(str);
+    string out = text();
+    string::size_type pos;
+    if ((pos = out.find("\n")) != string::npos) {
+	out.erase(pos,out.length()-pos);
+	out += "...";
+    }
+    str<<" \""<<out<<"\"";
+}
+
 void AstCFile::dump(ostream& str) {
     this->AstNode::dump(str);
     if (source()) str<<" [SRC]";

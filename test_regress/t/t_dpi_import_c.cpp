@@ -58,8 +58,6 @@ extern "C" {
     extern int dpii_t_int	(int i,		int *o);
 
     extern int dpii_fa_bit(int i);
-
-    extern int dpii_context();
 }
 #endif
 
@@ -108,14 +106,4 @@ int dpii_t_int (int i, int *o) {
 
 int dpii_fa_bit (int i) {
     return ~i;
-}
-
-int dpii_context() {
-    const char* filename = "";
-    int lineno = 0;
-    if (svGetCallerInfo(&filename, &lineno)) {
-	return lineno;
-    } else {
-	return 0;
-    }
 }

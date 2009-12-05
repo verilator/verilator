@@ -23,19 +23,27 @@
 ///
 //=========================================================================
 
+#define _VERILATEDDPI_CPP_
 #include "verilatedos.h"
-#include "verilated.h"
+#include "verilatedimp.h"
 #include "svdpi.h"
 
 //======================================================================
 // Internal macros
 
-#define _VL_SVDPI_UNIMP()
+// Not supported yet
+#define _VL_SVDPI_UNIMP() \
+    vl_fatal(__FILE__,__LINE__,"",Verilated::catName("%%Error: Unsupported DPI function: ",__func__))
 
 // Function requires a "context" in the import declaration
-#define _VL_SVDPI_CONTEXT_WARN()
+#define _VL_SVDPI_CONTEXT_WARN() \
+    VL_PRINTF("%%Warning: DPI C Function called by Verilog DPI import with missing 'context' keyword.\n");
 
 //======================================================================
+//======================================================================
+//======================================================================
+// DPI ROUTINES
+
 // Version
 
 const char* svDpiVersion() {
@@ -245,36 +253,39 @@ void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1, int ind
 // Functions for working with DPI context
 
 svScope svGetScope() {
-    _VL_SVDPI_UNIMP(); return NULL;
+    if (VL_UNLIKELY(!Verilated::dpiInContext())) { _VL_SVDPI_CONTEXT_WARN(); return NULL; }
+    return (svScope)Verilated::dpiScope();
 }
 
 svScope svSetScope(const svScope scope) {
-    _VL_SVDPI_UNIMP(); return NULL;
+    const VerilatedScope* vscopep = (const VerilatedScope*)(scope);
+    Verilated::dpiScope(vscopep);
+    return (svScope)vscopep;
 }
 
-const char* svGetNameFromScope(const svScope) {
-    _VL_SVDPI_UNIMP(); return "";
+const char* svGetNameFromScope(const svScope scope) {
+    const VerilatedScope* vscopep = (const VerilatedScope*)(scope);
+    return vscopep->name();
 }
 
 svScope svGetScopeFromName(const char* scopeName) {
-    _VL_SVDPI_UNIMP(); return NULL;
+    return (svScope)VerilatedImp::scopeFind(scopeName);
 }
 
 int svPutUserData(const svScope scope, void *userKey, void* userData) {
-    _VL_SVDPI_UNIMP();
-    return -1;  // -1 == error
+    VerilatedImp::userInsert(scope,userKey,userData);
+    return 0;
 }
 
 void* svGetUserData(const svScope scope, void* userKey) {
-    return NULL;  // NULL == error
+    return VerilatedImp::userFind(scope,userKey);
 }
 
 int svGetCallerInfo(const char** fileNamepp, int *lineNumberp) {
-    _VL_SVDPI_UNIMP(); return false;
-    //UNSUP if (!Verilated::dpiInContext) { _VL_SVDPI_CONTEXT_WARN(); return false; }
-    //UNSUP if (fileNamep) *fileNamepp = Verilated::dpiFilenamep;  // thread local
-    //UNSUP if (lineNumberp) *lineNumberp = Verilated::dpiLineno;  // thread local
-    //UNSUP return true;
+    if (VL_UNLIKELY(!Verilated::dpiInContext())) { _VL_SVDPI_CONTEXT_WARN(); return false; }
+    if (VL_LIKELY(fileNamepp)) *fileNamepp = Verilated::dpiFilenamep();  // thread local
+    if (VL_LIKELY(lineNumberp)) *lineNumberp = Verilated::dpiLineno();  // thread local
+    return true;
 }
 
 //======================================================================

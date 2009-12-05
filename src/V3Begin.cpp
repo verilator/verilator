@@ -189,7 +189,7 @@ private:
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
 	    if (afterp) afterp->unlinkFrBackWithNext();
-	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"."+AstNode::prettyName(m_namedScope)));
+	    nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"__DOT__"+m_namedScope));
 	    if (afterp) nodep->scopeAttrp(afterp);
 	}
 	nodep->iterateChildren(*this);

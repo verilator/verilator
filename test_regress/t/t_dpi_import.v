@@ -54,9 +54,6 @@ module t ();
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
    import "DPI-C" dpii_fa_bit =  function int oth_f_int2(input int i);
 
-   // Try context
-   import "DPI-C" context function int dpii_context();
-
    bit       	i_b,	o_b;
    bit [7:0]	i_b8,	o_b8;
    bit [8:0]	i_b9,	o_b9;
@@ -130,12 +127,6 @@ module t ();
       // Check alias
       if (oth_f_int1(32'd123) !== ~32'd123) $stop;
       if (oth_f_int2(32'd124) !== ~32'd124) $stop;
-
-`ifndef verilator // Not all sims support SV2009 `__LINE__, and some that do fail the specific-line test
-      if (!dpii_context()) $stop;
-`else
-      //UNSUP  if (dpii_context() !== `__LINE__) $stop;
-`endif
 
       $write("*-* All Finished *-*\n");
       $finish;

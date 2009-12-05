@@ -52,6 +52,7 @@ typedef       WData* WDataOutP;	///< Array output from a function
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedScope;
 
 //=========================================================================
 /// Base class for all Verilated module classes
@@ -126,16 +127,37 @@ public:
 //===========================================================================
 /// Verilator global static information class
 
+class VerilatedScope {
+    const char* m_namep;	// Scope name
+public:
+    // Internals - called from VerilatedModule's
+    VerilatedScope() {}
+    ~VerilatedScope();
+    void configure(const char* prefixp, const char* suffixp);
+    // Accessors
+    const char* name() const { return m_namep; }
+};
+
+//===========================================================================
+/// Verilator global static information class
+
 struct Verilated {
-    // Extern Vars
-    // Below two are used as bool, but having as uint32_t avoids conversion time
+    // MEMBERS
 private:
     static int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
     static int		s_debug;		///< See accessors... only when VL_DEBUG set
     static bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
     static bool		s_gotFinish;		///< A $finish statement executed
     static bool		s_assertOn;		///< Assertions are enabled
+
+    static VL_THREAD const VerilatedScope* t_dpiScopep;	///< DPI context scope
+    static VL_THREAD const char*	t_dpiFilename;	///< DPI context filename
+    static VL_THREAD int		t_dpiLineno;	///< DPI context line number
+
 public:
+
+    // METHODS - User called
+
     /// Select initial value of otherwise uninitialized signals.
     ////
     /// 0 = Set to zeros
@@ -151,8 +173,6 @@ public:
 #else
     static inline int  debug() { return 0; }		///< Constant 0 debug, so C++'s optimizer rips up
 #endif
-    /// Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2); // Returns new'ed data
     /// Enable calculation of unused signals
     static void calcUnusedSigs(bool flag) { s_calcUnusedSigs=flag; }
     static bool calcUnusedSigs() { return s_calcUnusedSigs; }	///< Return calcUnusedSigs value
@@ -166,9 +186,22 @@ public:
     /// Enable/disable assertions
     static void assertOn(bool flag) { s_assertOn=flag; }
     static bool assertOn() { return s_assertOn; }
-    /// Command line arguments
+    /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);
     static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
+
+    // METHODS - INTERNAL USE ONLY
+    // Internal: Create a new module name by concatenating two strings
+    static const char* catName(const char* n1, const char* n2); // Returns new'ed data
+    // Internal: Get and set DPI context
+    static const VerilatedScope* dpiScope() { return t_dpiScopep; }
+    static void dpiScope(const VerilatedScope* scopep) { scopep=t_dpiScopep; }
+    static void dpiContext(const VerilatedScope* scopep, const char* filenamep, int lineno) {
+	t_dpiScopep=scopep; t_dpiFilename=filenamep; t_dpiLineno=lineno; }
+    static void dpiClearContext() { t_dpiScopep = NULL; }
+    static bool dpiInContext() { return t_dpiScopep != NULL; }
+    static const char* dpiFilenamep() { return t_dpiFilename; }
+    static int dpiLineno() { return t_dpiLineno; }
 };
 
 //=========================================================================
