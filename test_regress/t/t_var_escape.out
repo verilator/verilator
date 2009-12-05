@@ -3,7 +3,7 @@ $date Fri Nov 13 19:14:12 2009
  $end
 $timescale 1ns $end
 
- $scope module TOP $end
+ $scope module top $end
   $var wire  1 * 9num $end
   $var wire  1 + bra[ket]slash/dash-colon:9backslash\done $end
   $var wire  1 ' clk $end

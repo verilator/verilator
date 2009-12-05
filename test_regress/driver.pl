@@ -747,7 +747,7 @@ sub _make_main {
     print $fh "    Verilated::commandArgs(argc, argv);\n";
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
-    print $fh "    topp = new $VM_PREFIX (\"TOP\");\n";
+    print $fh "    topp = new $VM_PREFIX (\"top\");\n";
     my $set;
     if ($self->sp) {
 	print $fh "    SP_PIN(topp,fastclk,fastclk);\n" if $self->{inputs}{fastclk};

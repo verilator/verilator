@@ -3,7 +3,7 @@ $date Sun Oct 11 20:21:49 2009
  $end
 $timescale 1ns $end
 
- $scope module TOP $end
+ $scope module top $end
   $var wire  1 # clk $end
   $var wire  1 $ reset_l $end
   $scope module v $end

@@ -18,7 +18,7 @@ double sc_time_stamp() {
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char **argv, char **env) {
-    Vt_trace_public_sig *top = new Vt_trace_public_sig();
+    Vt_trace_public_sig *top = new Vt_trace_public_sig("top");
 
     Verilated::debug(0);
     Verilated::traceEverOn(true);

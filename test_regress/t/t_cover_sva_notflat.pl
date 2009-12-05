@@ -20,7 +20,7 @@ execute (
 # Allow old Perl format dump, or new binary dump
 # Check that the hierarchy doesn't include __PVT__
 # Otherwise our coverage reports would look really ugly
-file_grep ($Self->{coverage_filename}, qr/(TOP\.v\.sub.*.cyc_eq_5)/);
+file_grep ($Self->{coverage_filename}, qr/(top\.v\.sub.*.cyc_eq_5)/);
 
 ok(1);
 1;
