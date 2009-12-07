@@ -234,6 +234,7 @@ descriptions in the next sections for more information.
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
+    -sv                         Enable SystemVerilog parsing
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -599,6 +600,12 @@ Specifies SystemPerl output mode; see also --cc and -sc.
 =item --stats
 
 Creates a dump file with statistics on the design in {prefix}__stats.txt.
+
+=item -sv
+
+Specifies SystemVerilog language features should be enabled; equivalent to
+"--language 1800-2005".  This option is selected by default, it exists for
+compatibility with other simulators.
 
 =item --top-module I<topname>
 
