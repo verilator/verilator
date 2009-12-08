@@ -137,7 +137,15 @@ public: // But only for verilated*.cpp
 	ScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
-    
+    static void scopesDump() {
+	VL_PRINTF("scopesDump:\n");
+	for (ScopeNameMap::iterator it=s_s.m_nameMap.begin();
+	     it!=s_s.m_nameMap.end(); ++it) {
+	    const VerilatedScope* scopep = it->second;
+	    VL_PRINTF("    %s\n", scopep->name());
+	}
+	VL_PRINTF("\n");
+    }
 };
 
 #endif  // Guard

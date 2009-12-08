@@ -186,9 +186,15 @@ public:
     /// Enable/disable assertions
     static void assertOn(bool flag) { s_assertOn=flag; }
     static bool assertOn() { return s_assertOn; }
+
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);
     static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
+
+    /// For debugging, print text list of all scope names with
+    /// dpiImport/Export context.  This function may change in future
+    /// releases - contact the authors before production use.
+    static void scopesDump();
 
     // METHODS - INTERNAL USE ONLY
     // Internal: Create a new module name by concatenating two strings

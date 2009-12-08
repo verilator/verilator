@@ -32,6 +32,10 @@
 # error "Unknown simulator for DPI test"
 #endif
 
+#ifdef VERILATOR
+# include "verilated.h"
+#endif
+
 #ifdef NEED_EXTERNS
 extern "C" {
 
@@ -49,6 +53,13 @@ int dpic_line() {
 	printf("%%Warning: svGetScope failed\n");
 	return 0;
     }
+
+#ifdef VERILATOR
+    static int didDump = 0;
+    if (didDump++ == 0) {
+	Verilated::scopesDump();
+    }
+#endif
 
     const char* scopenamep = svGetNameFromScope(scope);
     if (!scopenamep) {

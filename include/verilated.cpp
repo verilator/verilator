@@ -915,6 +915,10 @@ void Verilated::commandArgs(int argc, const char** argv) {
     VerilatedImp::commandArgs(argc,argv);
 }
 
+void Verilated::scopesDump() {
+    VerilatedImp::scopesDump();
+}
+
 //===========================================================================
 // VerilatedModule:: Methods
 
