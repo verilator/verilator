@@ -30,6 +30,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add Makefile VM_GLOBAL_FAST, listing objects needed to link executables.
 
+**** Fix creating implicit variables for expressions, bug196. [Byron Bradley]
+
 **** Fix MinGW compilation, bug184. [by Shankar Giri]
 
 **** Fix `define argument mis-replacing system task of same name, bug191.

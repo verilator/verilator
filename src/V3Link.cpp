@@ -502,9 +502,13 @@ private:
 	    //if (!nodep->modVarp()->rangep()) ...
 	    createImplicitVar(varrefp, false);
 	}
-	else if (AstConcat* concp = nodep->castConcat()) {
-	    pinImplicitExprRecurse(concp->lhsp());
-	    pinImplicitExprRecurse(concp->rhsp());
+	// These are perhaps a little too generous, as a SELect of siga[sigb]
+	// perhaps shouldn't create an implicit variable.  But, we've warned...
+	else {
+	    if (nodep->op1p()) pinImplicitExprRecurse(nodep->op1p());
+	    if (nodep->op2p()) pinImplicitExprRecurse(nodep->op2p());
+	    if (nodep->op3p()) pinImplicitExprRecurse(nodep->op3p());
+	    if (nodep->op4p()) pinImplicitExprRecurse(nodep->op4p());
 	}
     }
 
