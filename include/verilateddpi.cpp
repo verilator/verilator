@@ -258,9 +258,10 @@ svScope svGetScope() {
 }
 
 svScope svSetScope(const svScope scope) {
+    const VerilatedScope* prevScopep = Verilated::dpiScope();
     const VerilatedScope* vscopep = (const VerilatedScope*)(scope);
     Verilated::dpiScope(vscopep);
-    return (svScope)vscopep;
+    return (svScope)prevScopep;
 }
 
 const char* svGetNameFromScope(const svScope scope) {

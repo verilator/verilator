@@ -483,7 +483,7 @@ public:
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
-    string	cpubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
+    string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
     string	vlArgType(bool named, bool forReturn) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
     void	combineType(AstVarType type);

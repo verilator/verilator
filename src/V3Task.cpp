@@ -671,7 +671,7 @@ private:
 	AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
 					prefix + nodep->name() + suffix,
 					m_scopep,
-					((nodep->taskPublic() && rtnvarp)?rtnvarp->cpubArgType(true,true):""));
+					((nodep->taskPublic() && rtnvarp)?rtnvarp->cPubArgType(true,true):""));
 	// It's ok to combine imports because this is just a wrapper; duplicate wrappers can get merged.
 	cfuncp->dontCombine(!nodep->dpiImport());
 	cfuncp->entryPoint (!nodep->dpiImport());

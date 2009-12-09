@@ -133,7 +133,7 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-string AstVar::cpubArgType(bool named, bool forReturn) const {
+string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
     if (isWide() && isInOnly()) arg += "const ";

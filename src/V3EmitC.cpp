@@ -91,7 +91,7 @@ public:
 		if (portp->isIO() && !portp->isFuncReturn()) {
 		    if (args != "") args+= ", ";
 		    if (nodep->dpiImport()) args += portp->dpiArgType(true,false);
-		    else if (nodep->funcPublic()) args += portp->cpubArgType(true,false);
+		    else if (nodep->funcPublic()) args += portp->cPubArgType(true,false);
 		    else args += portp->vlArgType(true,false);
 		}
 	    }
