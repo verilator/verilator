@@ -35,7 +35,6 @@ public:
     static void emitcInlines();
     static void emitcSyms();
     static void emitcTrace();
-    static void emitcDpi();
 };
 
 #endif // Guard

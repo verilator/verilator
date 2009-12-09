@@ -507,7 +507,6 @@ void process () {
 	V3EmitC::emitcInlines();
 	V3EmitC::emitcSyms();
 	V3EmitC::emitcTrace();
-	V3EmitC::emitcDpi();
     }
     // Unfortunately we have some lint checks in emitc.
     V3EmitC::emitc();

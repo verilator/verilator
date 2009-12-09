@@ -44,24 +44,28 @@ class EmitCSyms : EmitCBaseVisitor {
     //  AstNodeModule::user1()	-> bool.  Set true __Vconfigure called
     AstUser1InUse	m_inuser1;
 
+    // TYPES
     typedef map<string,AstScopeName*> ScopeNames;
-
-    // STATE
-    AstNodeModule*	m_modp;		// Current module
     typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
-    vector<ScopeModPair>  m_scopes;	// Every scope by module
-    ScopeNames		m_scopeNames;	// Each unique AstScopeName
-    V3LanguageWords 	m_words;	// Reserved word detector
-    int		m_coverBins;		// Coverage bin number
-
-    // METHODS
-    void emitInt();
-    void emitImp();
     struct CmpName {
 	inline bool operator () (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
 	    return lhsp.first->name() < rhsp.first->name();
 	}
     };
+
+    // STATE
+    AstNodeModule*	m_modp;		// Current module
+    vector<ScopeModPair>  m_scopes;	// Every scope by module
+    vector<AstCFunc*>	m_dpis;		// DPI functions
+    ScopeNames		m_scopeNames;	// Each unique AstScopeName
+    V3LanguageWords 	m_words;	// Reserved word detector
+    int		m_coverBins;		// Coverage bin number
+
+    // METHODS
+    void emitSymHdr();
+    void emitSymImp();
+    void emitDpiHdr();
+    void emitDpiImp();
 
     void nameCheck(AstNode* nodep) {
 	// Prevent GCC compile time error; name check all things that reach C++ code
@@ -84,8 +88,11 @@ class EmitCSyms : EmitCBaseVisitor {
 	sort(m_scopes.begin(), m_scopes.end(), CmpName());
 
 	// Output
-	emitInt();
-	emitImp();
+	emitSymHdr();
+	emitSymImp();
+	if (v3Global.dpi()) {
+	    emitDpiHdr();
+	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nameCheck(nodep);
@@ -109,6 +116,12 @@ class EmitCSyms : EmitCBaseVisitor {
 	    nodep->binNum(m_coverBins++);
 	}
     }
+    virtual void visit(AstCFunc* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->dpiImport()) {
+	    m_dpis.push_back(nodep);
+	}
+    }
     // NOPs
     virtual void visit(AstConst*, AstNUser*) {}
     // Default
@@ -126,7 +139,8 @@ public:
     }
 };
 
-void EmitCSyms::emitInt() {
+void EmitCSyms::emitSymHdr() {
+    UINFO(6,__FUNCTION__<<": "<<endl);
     string filename = v3Global.opt.makeDir()+"/"+symClassName()+".h";
     newCFile(filename, true/*slow*/, false/*source*/);
     V3OutCFile hf (filename);
@@ -199,7 +213,8 @@ void EmitCSyms::emitInt() {
     puts("#endif  /*guard*/\n");
 }
 
-void EmitCSyms::emitImp() {
+void EmitCSyms::emitSymImp() {
+    UINFO(6,__FUNCTION__<<": "<<endl);
     string filename = v3Global.opt.makeDir()+"/"+symClassName()+".cpp";
     AstCFile* cfilep = newCFile(filename, true/*slow*/, true/*source*/);
     cfilep->support(true);
@@ -279,6 +294,42 @@ void EmitCSyms::emitImp() {
 
     puts("}\n");
     puts("\n");
+}
+
+//######################################################################
+
+void EmitCSyms::emitDpiHdr() {
+    UINFO(6,__FUNCTION__<<": "<<endl);
+    string filename = v3Global.opt.makeDir()+"/"+topClassName()+"__Dpi.h";
+    AstCFile* cfilep = newCFile(filename, false/*slow*/, false/*source*/);
+    cfilep->support(true);
+    V3OutCFile hf (filename);
+    m_ofp = &hf;
+
+    m_ofp->putsHeader();
+    puts("// DESCR" "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
+    puts("//\n");
+    puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
+    puts("// Manually include this file where DPI .c import functions are declared to insure\n");
+    puts("// the C functions match the expectations of the DPI imports.\n");
+    puts("\n");
+    puts("#ifdef __cplusplus\n");
+    puts("extern \"C\" {\n");
+    puts("#endif\n");
+    puts("\n");
+    
+    for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
+	AstCFunc* nodep = *it;
+	if (nodep->dpiImport()) {
+	    puts("// dpi import at "+nodep->fileline()->ascii()+"\n");
+	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
+	}
+    }
+
+    puts("\n");
+    puts("#ifdef __cplusplus\n");
+    puts("}\n");
+    puts("#endif\n");
 }
 
 //######################################################################

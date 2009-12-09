@@ -136,6 +136,22 @@ public:
 	v3Global.rootp()->addFilesp(cfilep);
 	return cfilep;
     }
+    string cFuncArgs(AstCFunc* nodep) {
+	// Return argument list for given C function
+	string args = nodep->argTypes();
+	// Might be a user function with argument list.
+	for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO() && !portp->isFuncReturn()) {
+		    if (args != "") args+= ", ";
+		    if (nodep->dpiImport()) args += portp->dpiArgType(true,false);
+		    else if (nodep->funcPublic()) args += portp->cPubArgType(true,false);
+		    else args += portp->vlArgType(true,false);
+		}
+	    }
+	}
+	return args;
+    }
 
     // CONSTRUCTORS
     EmitCBaseVisitor() {
