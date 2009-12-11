@@ -41,7 +41,7 @@ class VerilatedScope;
 
 struct VerilatedCStrCmp {
     // For ordering maps keyed by const char*'s
-    bool operator() (const char *a, const char *b) {
+    bool operator() (const char *a, const char *b) const {
 	return std::strcmp(a, b) < 0;
     }
 };
