@@ -1004,6 +1004,18 @@ After running Make, the C++ compiler should produce the following:
 
 =over 4
 
+=item OBJCACHE
+
+Optionally specifies a caching or distribution program to place in front of
+all runs of the C++ Compiler.  For example, "objcache --read --write", or
+"ccache".  If using distcc, it would generally be run under either objcache
+or ccache; see the documentation for those programs.
+
+=item OBJCACHE_JOBS
+
+Optionally lists Make flags that specifies parallel make jobs.  For example
+a 4 CPU system may use "-j 6" to request 6 parallel compiles when making.
+
 =item SYSTEMC
 
 Required for SystemC output mode.  If set, specifies the directory
@@ -2525,7 +2537,8 @@ to compile on parallel machines and avoid compilations altogether.  See the
 --output-split option, and the web for the ccache, distcc and icecream
 packages, and the Make::Cache package available from
 L<http://www.veripool.org/>. Make::Cache will skip GCC runs between
-identical source builds, even across different users.
+identical source builds, even across different users.  You can use the
+OBJCACHE environment variable to use these CC wrappers.
 
 =item Why do so many files need to recompile when I add a signal?
 

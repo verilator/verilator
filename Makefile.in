@@ -145,10 +145,10 @@ DISTFILES := $(DISTFILES_INC)
 
 VL_INST_MAN_FILES = verilator.1
 
-ifeq ($(OBJCACHE_HOSTS),)
-export OBJCACHE_JOBS :=
-else
+ifeq ($(OBJCACHE_JOBS),)
+ifneq ($(OBJCACHE_HOSTS),)
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
+endif
 endif
 
 default: all

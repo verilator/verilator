@@ -40,11 +40,10 @@ export OBJCACHE_HOSTS := $(shell rschedule --no-allow-reserved --similar hostnam
  endif
 endif
 
-ifeq ($(OBJCACHE_HOSTS),)
-export OBJCACHE :=
-else
+ifeq ($(OBJCACHE_JOBS),)
+ifneq ($(OBJCACHE_HOSTS),)
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
-export OBJCACHE := @objcache --read --write
+endif
 endif
 
 UNDER_GIT = $(wildcard ../.git/logs/HEAD)
@@ -65,13 +64,13 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
 	@-cp -p $<.exe $@.exe
 else
 ../verilator_bin: obj_opt prefiles
-	cd obj_opt && $(MAKE)                  TGT=../$@ -f ../Makefile_obj serial
+	cd obj_opt && $(MAKE) -j 1             TGT=../$@ -f ../Makefile_obj serial
 	cd obj_opt && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ -f ../Makefile_obj
 endif
 
 dbg: ../verilator_bin_dbg
 ../verilator_bin_dbg: obj_dbg prefiles
-	cd obj_dbg && $(MAKE)                  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	cd obj_dbg && $(MAKE) -j 1             TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
 	cd obj_dbg && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 prefiles::
