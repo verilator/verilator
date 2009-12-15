@@ -2703,25 +2703,33 @@ grants include Compaq Corporation, Digital Equipment Corporation, Intel
 Corporation, Maker Communications, MicroTune Inc., Sun Microsystems,
 Nauticus Networks, and SiCortex Inc.
 
-The people who have contributed code or other major functionality are Lane
-Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major testers include
-Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and Gene Weber.
+The people who have contributed code or other major functionality are Byron
+Bradley, Lane Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major
+testers include Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and
+Gene Weber.
 
 Some of the people who have provided ideas and feedback for Verilator
-include David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm,
-Jeremy Bennett, David Black, Gregg Bouchard, Chris Boumenot, Bryan Brady,
-Lane Brooks, John Brownlee, Lauren Carlson, Robert A. Clark, Allan
+include David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm, J
+Baxter, Jeremy Bennett, David Black, Gregg Bouchard, Christopher Boumenot,
+Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee, Lawrence Butcher,
+Chris Candler, Lauren Carlson, Donal Casey, Robert A. Clark, Allan
 Cochrane, Gunter Dannoritzer, Bernard Deadman, John Deroo, John Dickol,
-Danny Ding, Jeff Dutton, Robert Farrell, Eugen Fekete, Sam Gladstone,
-Thomas Hawkins, David Hewson, Jae Hossell, Ben Jackson, Mike Kagen,
-Patricio Kaplan, Ralf Karge, Dan Katz, Sol Katzman, Jonathan Kimmitt,
-Gernot Koch, Steve Kolecki, Steve Lang, Stephane Laurent, Charlie Lind, Dan
-Lussier, Fred Ma, Wim Michiels, John Murphy, Richard Myers, Paul Nitza,
-Lisa Noack, Mark Nodine, Niranjan Prabhu, Oleg Rodionov, Mike Shinkarovsky,
-Rafael Shirakawa, Rodney Sinclair, John Stroebel, Emerson Suguimoto, Renga
-Sundararajan, Stefan Thiede, Steve Tong, Holger Waechtler, Shawn Wang, Greg
-Waters, Eugene Weber, Leon Wildman, Gerald Williams, Johan Wouters, and
-Ding Xiaoliang.
+Danny Ding, Alex Duller, Jeff Dutton, Robert Farrell, Eugen Fekete, Andrea
+Foletto, Bob Fredieu, Shankar Giri, Sam Gladstone, Chitlesh Goorah, Thomas
+Hawkins, David Hewson, Jae Hossell, Ben Jackson, Mike Kagen, Guy-Armand
+Kamendje, Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan Katz, Sol Katzman,
+Jonathan Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki, Steve Lang,
+Stephane Laurent, Charlie Lind, Dan Lussier, Fred Ma, Duraid Madina, Mark
+Marshall, Wim Michiels, Dennis Muhlestein, John Murphy, Richard Myers,
+Dimitris Nalbantis, Paul Nitza, Pete Nixon, Lisa Noack, Mark Nodine,
+Andreas Olofsson, Niranjan Prabhu, Oleg Rodionov, John Sanguinetti, Mike
+Shinkarovsky, Rafael Shirakawa, Rodney Sinclair, Brian Small, Art Stamness,
+John Stroebel, Emerson Suguimoto, Renga Sundararajan, Stefan Thiede, Gary
+Thomas, Steve Tong, Holger Waechtler, Shawn Wang, Greg Waters, Eugene
+Weber, Leon Wildman, Gerald Williams, Jeff Winston, Johan Wouters, and Ding
+Xiaoliang.
+
+Thanks all.
 
 =head1 DISTRIBUTION
 
