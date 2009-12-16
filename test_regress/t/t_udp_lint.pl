@@ -13,7 +13,7 @@ compile (
     # Unsupported: UDP Tables
     make_top_shell => 0,
     make_main => 0,
-    v_flags2 => ["--lint-only"],
+    v_flags2 => ["--lint-only --bbox-unsup"],
     verilator_make_gcc => 0,
     );
 

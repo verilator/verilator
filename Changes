@@ -30,6 +30,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add Makefile VM_GLOBAL_FAST, listing objects needed to link executables.
 
+**** Add --bbox-unsup option to black-box unsupported UDP tables.
+
 **** Fix creating implicit variables for expressions, bug196. [Byron Bradley]
 
 **** Fix MinGW compilation, bug184. [by Shankar Giri]

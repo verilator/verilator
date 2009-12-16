@@ -190,6 +190,7 @@ descriptions in the next sections for more information.
     --assert                    Enable all assertions
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
+    --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
     --cc                        Create C++ output
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -290,6 +291,11 @@ simply NOPed, and system functions will be replaced by unsized zero.
 Arguments to such functions will be parsed, but not otherwise checked.
 This prevents errors when linting in the presence of company specific PLI
 calls.
+
+=item --bbox-unsup
+
+Black box some unsupported language features, currently UDP tables.  This
+may allow linting when unsupported constructs are present.
 
 =item --bin I<filename>
 
@@ -463,8 +469,8 @@ appropriate `begin_keywords.
 
 Check the files for lint violations only, do not create any other output.
 
-If the design is not to be completely Verilated see also the --bbox-sys
-option.
+If the design is not to be completely Verilated see also the --bbox-sys and
+--bbox-unsup options.
 
 =item --MMD
 
