@@ -467,6 +467,9 @@ private:
 		nodep->iterateChildren(*this);
 		m_cellVarsp = NULL;
 	    }
+	    else if (m_idState==ID_PARAM) {
+		nodep->iterateChildren(*this);
+	    }
 	}
 	// Parent module inherits child's publicity
 	// This is done bottom up in the LinkBotupVisitor stage
@@ -509,14 +512,15 @@ private:
 	    if (nodep->op2p()) pinImplicitExprRecurse(nodep->op2p());
 	    if (nodep->op3p()) pinImplicitExprRecurse(nodep->op3p());
 	    if (nodep->op4p()) pinImplicitExprRecurse(nodep->op4p());
+	    if (nodep->nextp()) pinImplicitExprRecurse(nodep->nextp());
 	}
     }
 
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Pin: Link to submodule's pin
-	// ONLY CALLED by AstCell during ID_RESOLVE state
-	if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
+	// ONLY CALLED by AstCell during ID_RESOLVE and ID_PARAM state
 	if (m_idState==ID_RESOLVE && !nodep->modVarp()) {
+	    if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->castVar();
 	    if (!refp) {
 		nodep->v3error("Pin not found: "<<nodep->prettyName());
@@ -525,13 +529,12 @@ private:
 	    } else {
 		nodep->modVarp(refp);
 	    }
+	    nodep->iterateChildren(*this);
 	}
-	// Deal with implicit definitions
-	if (m_idState==ID_RESOLVE && nodep->modVarp()
-	    && !nodep->svImplicit()) {   // SV 19.11.3: .name pins don't allow implicit decls
+	// Deal with implicit definitions - do before ID_RESOLVE stage as may be referenced above declaration
+	if (m_idState==ID_PARAM && !nodep->svImplicit()) {   // SV 19.11.3: .name pins don't allow implicit decls
 	    pinImplicitExprRecurse(nodep->exprp());
 	}
-	nodep->iterateChildren(*this);
     }
 
     virtual void visit(AstAssignW* nodep, AstNUser*) {
