@@ -336,7 +336,27 @@ private:
 
     virtual void visit(AstUdpTable* nodep, AstNUser*) {
 	UINFO(5,"UDPTABLE  "<<nodep<<endl);
-	nodep->v3error("Unsupported: Verilog 1995 UDP Tables");
+	if (!v3Global.opt.lintOnly()) {
+	    nodep->v3error("Unsupported: Verilog 1995 UDP Tables");
+	} else {
+	    // Massive hack, just tie off all outputs so our analysis can proceed
+	    AstVar* varoutp = NULL;
+	    for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+		if (AstVar* varp = stmtp->castVar()) {
+		    if (varp->isInput()) {
+		    } else if (varp->isOutput()) {
+			if (varoutp) { varp->v3error("Multiple outputs not allowed in udp modules"); }
+			varoutp = varp;
+			// Tie off
+			m_modp->addStmtp(new AstAssignW(varp->fileline(),
+							new AstVarRef(varp->fileline(), varp, true),
+							new AstConst(varp->fileline(), AstConst::LogicFalse())));
+		    } else {
+			varp->v3error("Only inputs and outputs are allowed in udp modules");
+		    }
+		}
+	    }
+	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
     }
 
