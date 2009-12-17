@@ -40,7 +40,7 @@ module t (/*AUTOARG*/
    reg [1:0] 		ql;
    reg [1:0] 		qd;
 
-   initial $display("****FIXME: No sequential tables\n");
+   // No sequential tables, yet
 //   always @* begin
 //      if (!clk) ql = in[13:12];
 //   end
