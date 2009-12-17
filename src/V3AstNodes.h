@@ -2330,7 +2330,7 @@ struct AstFGetC : public AstNodeUniop {
     ASTNODE_NODE_FUNCS(FGetC, FGETC)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k$fgetc(%l)"; }
-    // Non-existant filehandle returns EOF
+    // Non-existent filehandle returns EOF
     virtual string emitC() { return "(%li ? fgetc(VL_CVT_Q_FP(%li)) : -1)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -3267,7 +3267,6 @@ public:
 	if (setwidth) { width(setwidth,setwidth); }
     }
     ASTNODE_NODE_FUNCS(CMath, CMATH)
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() { return m_cleanOut; }
@@ -3275,6 +3274,8 @@ public:
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
+    void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
 };
 
 
@@ -3289,11 +3290,12 @@ struct AstCStmt : public AstNodeStmt {
 	addNOp1p(new AstText(fl, textStmt, true));
     }
     ASTNODE_NODE_FUNCS(CStmt, CSTMT)
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
+    void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
 };
 
 //######################################################################

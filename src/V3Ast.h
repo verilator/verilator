@@ -228,8 +228,8 @@ public:
 	static const char* names[] = {
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "double", "short int", "float", "long long",
-	    "dpiScope", "const char*",
 	    "char*",
+	    "dpiScope", "const char*",
 	    ""
 	};
 	return names[m_e];

@@ -201,7 +201,7 @@ public:
     static const char* catName(const char* n1, const char* n2); // Returns new'ed data
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() { return t_dpiScopep; }
-    static void dpiScope(const VerilatedScope* scopep) { scopep=t_dpiScopep; }
+    static void dpiScope(const VerilatedScope* scopep) { t_dpiScopep=scopep; }
     static void dpiContext(const VerilatedScope* scopep, const char* filenamep, int lineno) {
 	t_dpiScopep=scopep; t_dpiFilename=filenamep; t_dpiLineno=lineno; }
     static void dpiClearContext() { t_dpiScopep = NULL; }
