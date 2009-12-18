@@ -113,6 +113,7 @@ public:
 	return pkgp;
     }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstRange* rangesp) {
+	// If dtypep isn't basic, then call createArray() instead
 	if (!rangesp) {
 	    return dtypep;
 	} else {
@@ -769,24 +770,24 @@ port<nodep>:			// ==IEEE: port
 	//UNSUP	portDirNetE signingE rangeList '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
 	//UNSUP	portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
 	//
-		portDirNetE data_type          portSig variable_dimensionListE sigAttrListE
+		portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
 			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
-	|	portDirNetE yVAR data_type     portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
-	|	portDirNetE yVAR implicit_type portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
-	|	portDirNetE signingE rangeList portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3)); $$->addNextNull(VARDONEP($$,$5,$6)); }
-	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE
 			{ $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
-	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE '=' constExpr
+	|	portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5));     $$->addNextNull(GRAMMARP->newVarInit($6,$$,$7)); }
-	|	portDirNetE yVAR data_type     portSig variable_dimensionListE sigAttrListE '=' constExpr
+	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$3; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
-	|	portDirNetE yVAR implicit_type portSig variable_dimensionListE sigAttrListE '=' constExpr
+	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$3; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
-	|	portDirNetE /*implicit*/       portSig variable_dimensionListE sigAttrListE '=' constExpr
+	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$3; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); $$->addNextNull(GRAMMARP->newVarInit($5,$$,$6)); }
  	;
  
@@ -898,13 +899,13 @@ parameter_declaration<nodep>:	// IEEE: parameter_declaration
 	;
 
 local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assignment
-		varLParamReset implicit_type 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
+		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	//UNSUP	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	;
 
 parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
-		varGParamReset implicit_type 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	;
@@ -985,7 +986,7 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 			list_of_variable_decl_assignments			{ $$ = $5; }
 	|	port_directionReset port_declNetE yVAR data_type     { VARDTYPE($4); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE yVAR implicit_type { VARDTYPE($4); }
+	|	port_directionReset port_declNetE yVAR implicit_typeE { VARDTYPE($4); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
 	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3),$4)); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
@@ -999,10 +1000,10 @@ tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	//			// Used inside function; followed by ';'
 	//			// SIMILAR to port_declaration
 	//
-		port_directionReset      data_type     { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
-	|	port_directionReset      implicit_type { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
-	|	port_directionReset yVAR data_type     { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
-	|	port_directionReset yVAR implicit_type { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
+		port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
+	|	port_directionReset      implicit_typeE { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
+	|	port_directionReset yVAR data_type      { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
+	|	port_directionReset yVAR implicit_typeE { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
 	;
 
 integer_atom_type<bdtypep>:	// ==IEEE: integer_atom_type
@@ -1173,7 +1174,7 @@ constE:				// IEEE: part of data_declaration
 	//UNSUP	yCONST__ETC				{ UNSUP }
 	;
 
-implicit_type<dtypep>:		// IEEE: part of *data_type_or_implicit
+implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 	//			// Also expanded in data_declaration
 		/* empty */				{ $$ = NULL; }
 	|	signingE rangeList			{ $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2); }
@@ -1187,10 +1188,10 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	;
 
 //************************************************
@@ -2128,14 +2129,14 @@ tf_port_itemFront:		// IEEE: part of tf_port_item, which has the data type
 	|	signingE rangeList			{ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1), $2)); }
 	|	signing					{ VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1)); }
 	|	yVAR data_type				{ VARDTYPE($2); }
-	|	yVAR implicit_type			{ VARDTYPE($2); }
+	|	yVAR implicit_typeE			{ VARDTYPE($2); }
 	//
 	|	tf_port_itemDir /*implicit*/		{ VARDTYPE(NULL); /*default_nettype-see spec*/ }
 	|	tf_port_itemDir data_type		{ VARDTYPE($2); }
 	|	tf_port_itemDir signingE rangeList	{ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2),$3)); }
 	|	tf_port_itemDir signing			{ VARDTYPE(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $2)); }
 	|	tf_port_itemDir yVAR data_type		{ VARDTYPE($3); }
-	|	tf_port_itemDir yVAR implicit_type	{ VARDTYPE($3); }
+	|	tf_port_itemDir yVAR implicit_typeE	{ VARDTYPE($3); }
 	;
 
 tf_port_itemDir:		// IEEE: part of tf_port_item, direction

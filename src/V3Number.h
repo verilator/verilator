@@ -141,6 +141,7 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth=0) const;
     bool isCaseEq(const V3Number& rhsp) const;  // operator==
+    bool isLt(const V3Number& rhsp) const;  // operator<
     void width(int width, bool sized=true);
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
@@ -152,6 +153,9 @@ public:
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;	// Highest bit set plus one, IE for 16 return 5, for 0 return 0.
+
+    // Operators
+    bool operator<(const V3Number& rhs) const { return isLt(rhs); }
 
     // STATICS
     static int log2b(uint32_t num);

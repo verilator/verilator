@@ -558,6 +558,15 @@ bool V3Number::isUnknown() const {
     }
     return false;
 }
+bool V3Number::isLt(const V3Number& rhs) const {
+    for (int bit=0; bit<max(this->width(),rhs.width()); bit++) {
+	if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return 1; }
+	if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return 0; }
+	if (this->bitIsXZ(bit)) { return 0; }
+	if (rhs.bitIsXZ(bit)) { return 0; }
+    }
+    return 0;
+}
 
 int V3Number::minWidth() const {
     for(int bit=width()-1; bit>0; bit--) {
