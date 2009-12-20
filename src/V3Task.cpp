@@ -324,6 +324,15 @@ private:
 	return level;
     }
 
+    AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
+	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
+				      examplep);
+	newvarp->funcLocal(true);
+	funcp->addInitsp(newvarp);
+	AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+	m_scopep->addVarp(newvscp);
+	return newvscp;
+    }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
 	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
 				      new AstBasicDType(funcp->fileline(), kwd));
@@ -514,9 +523,6 @@ private:
 	    ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
 	}
 
-	if (outvscp) {
-	    ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, true));
-	}
 	// Create connections
 	AstNode* nextpinp;
 	for (AstNode* pinp = refp->pinsp(); pinp; pinp=nextpinp) {
@@ -525,11 +531,191 @@ private:
 	    pinp->unlinkFrBack();
 	    ccallp->addArgsp(pinp);
 	}
+
+	if (outvscp) {
+	    ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, true));
+	}
+
 	if (debug()>=9) { beginp->dumpTree(cout,"-nitask: "); }
 	return beginp;
     }
 
-    AstCFunc* makeDpiCFunc(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    string dpiprotoName(AstNodeFTask* nodep, AstVar* rtnvarp) {
+	// Return fancy export-ish name for DPI function
+	// Variable names are NOT included so differences in only IO names won't matter
+	string dpiproto;
+	if (nodep->pure()) dpiproto += "pure ";
+	if (nodep->dpiContext()) dpiproto += "context ";
+	dpiproto += rtnvarp ? rtnvarp->dpiArgType(true,true):"void";
+	dpiproto += " "+nodep->cname()+" (";
+	string args;
+	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO() && !portp->isFuncReturn() && portp!=rtnvarp) {
+		    if (args != "") { args+= ", "; dpiproto+= ", "; }
+		    args += portp->name();  // Leftover so ,'s look nice
+		    if (nodep->dpiImport()) dpiproto += portp->dpiArgType(false,false);
+		}
+	    }
+	}
+	dpiproto += ")";
+	return dpiproto;
+    }
+
+    AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+	bool bitvec = (portp->basicp()->isBitLogic() && portp->width() > 32);
+	string stmt;
+	if (bitvec) {
+	    stmt += "svBitVecVal "+portp->name()+suffix;
+	    stmt += " ["+cvtToStr(portp->widthWords())+"]";
+	} else {
+	    stmt += portp->dpiArgType(true,true);
+	    stmt += " "+portp->name()+suffix;
+	}
+	stmt += ";\n";
+	return new AstCStmt(portp->fileline(), stmt);
+    }
+
+    AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix, const string& toSuffix) {
+	// Create assignment from internal format into DPI temporary
+	bool bitvec = (portp->basicp()->isBitLogic() && portp->width() > 32);
+	string stmt;
+	// Someday we'll have better type support, and this can make variables and casts.
+	// But for now, we'll just text-bash it.
+	if (bitvec) {
+	    // We only support quads, so don't need to sweat longer stuff
+	    stmt += "VL_SET_WQ("+portp->name()+toSuffix+", "+portp->name()+frSuffix+")";
+	} else {
+	    if (isPtr) stmt += "*"; // DPI outputs are pointers
+	    stmt += portp->name()+toSuffix+" = ";
+	    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
+		stmt += "(void*)";
+	    }
+	    stmt += portp->name()+frSuffix;
+	}
+	stmt += ";\n";
+	return new AstCStmt(portp->fileline(), stmt);
+    }
+
+    AstNode* createAssignDpiToInternal(AstVarScope* portvscp, const string& frName) {
+	// Create assignment from DPI temporary into internal format
+	AstVar* portp = portvscp->varp();
+	string stmt;
+	if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
+	    stmt += "(QData)";
+	}
+	stmt += frName;
+	// Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
+	int cwidth = VL_WORDSIZE; if (portp->basicp()) cwidth = portp->basicp()->keyword().width();
+	if (portp->basicp() && portp->basicp()->isBitLogic()) cwidth = VL_WORDSIZE*portp->widthWords();
+	AstNode* newp = new AstAssign(portp->fileline(),
+				      new AstVarRef(portp->fileline(), portvscp, true),
+				      new AstSel(portp->fileline(),
+						 new AstCMath(portp->fileline(), stmt, cwidth, false),
+						 0, portp->width()));
+	return newp;
+    }
+
+    AstCFunc* makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+	string dpiproto = dpiprotoName(nodep,rtnvarp);
+
+	AstCFunc* dpip = new AstCFunc(nodep->fileline(),
+				      nodep->cname(),
+				      m_scopep,
+				      (rtnvarp ? rtnvarp->dpiArgType(true,true) : ""));
+	dpip->dontCombine(true);
+	dpip->entryPoint(true);
+	dpip->isStatic(true);
+	dpip->dpiExportWrapper(true);
+	dpip->cname(nodep->cname());
+	// Add DPI reference to top, since it's a global function
+	m_topScopep->scopep()->addActivep(dpip);
+
+	{// Create dispatch wrapper
+	    // Note this function may dispatch to myfunc on a different class.
+	    // Thus we need to be careful not to assume a particular function layout.
+	    //
+	    // Func numbers must be the same for each function, even when there are
+	    // completely different models with the same function name.
+	    // Thus we can't just use a constant computed at Verilation time.
+	    // We could use 64-bits of a MD5/SHA hash rather than a string here,
+	    // but the compare is only done on first call then memoized, so it's not worth optimizing.
+	    string stmt;
+	    stmt += "static int __Vfuncnum = -1;\n";
+	    // First time init (faster than what the compiler does if we did a singleton
+	    stmt += "if (VL_UNLIKELY(__Vfuncnum==-1)) { __Vfuncnum = Verilated::exportFuncNum(\""+nodep->cname()+"\"); }\n";
+	    // If the find fails, it will throw an error
+	    stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
+	    // If dpiScope is fails and is null; the exportFind function throws and error
+	    string cbtype = v3Global.opt.prefix()+"__Vcb_"+nodep->cname()+"_t";
+	    stmt += cbtype+" __Vcb = ("+cbtype+")__Vscopep->exportFind(__Vfuncnum);\n";
+	    // If __Vcb is null the exportFind function throws and error
+	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+	}
+
+	// Convert input/inout DPI arguments to Internal types
+	string args;
+	args += "("+v3Global.opt.prefix()+"__Syms*)(__Vscopep->symsp())";  // Upcast w/o overhead
+	AstNode* argnodesp = NULL;
+	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
+		    // No createDpiTemp; we make a real internal variable instead
+		    // SAME CODE BELOW
+		    args+= ", ";
+		    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
+		    AstVarScope* outvscp = createFuncVar (dpip, portp->name()+"__Vcvt", portp);
+		    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
+		    argnodesp = argnodesp->addNextNull(refp);
+
+		    if (portp->isInput()) {
+			dpip->addStmtsp(createAssignDpiToInternal(outvscp, portp->name()));
+		    }
+		}
+	    }
+	}
+
+	if (rtnvarp) {
+	    AstVar* portp = rtnvarp;
+	    // SAME CODE ABOVE
+	    args+= ", ";
+	    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
+	    AstVarScope* outvscp = createFuncVar (dpip, portp->name()+"__Vcvt", portp);
+	    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
+	    argnodesp = argnodesp->addNextNull(refp);
+	}
+
+	{// Call the user function
+	    // Add the variables referenced as VarRef's so that lifetime analysis
+	    // doesn't rip up the variables on us
+	    string stmt;
+	    stmt += "(*__Vcb)(";
+	    args += ");\n";
+	    AstCStmt* newp = new AstCStmt(nodep->fileline(), stmt);
+	    newp->addBodysp(argnodesp); argnodesp=NULL;
+	    newp->addBodysp(new AstText(nodep->fileline(), args, true));
+	    dpip->addStmtsp(newp);
+	}
+
+	// Convert output/inout arguments back to internal type
+	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+	    if (AstVar* portp = stmtp->castVar()) {
+		if (portp->isIO() && portp->isOutput() && !portp->isFuncReturn()) {
+		    dpip->addStmtsp(createAssignInternalToDpi(portp,true,"__Vcvt",""));
+		}
+	    }
+	}
+
+	if (rtnvarp) {
+	    dpip->addStmtsp(createDpiTemp(rtnvarp,""));
+	    dpip->addStmtsp(createAssignInternalToDpi(rtnvarp,false,"__Vcvt",""));
+	    string stmt = "return "+rtnvarp->name()+";\n";
+	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+	}
+	return dpip;
+    }
+
+    AstCFunc* makeDpiImportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
 	if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
 	    nodep->v3error("DPI function has illegal characters in C identifier name: "<<AstNode::prettyName(nodep->cname()));
 	}
@@ -551,7 +737,7 @@ private:
 	return dpip;
     }
 
-    void bodyDpiCFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp) {
+    void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp) {
 	// Convert input/inout arguments to DPI types
 	string args;
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
@@ -568,32 +754,12 @@ private:
 		    else if (portp->isOutput()) args += "&";
 		    else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1) args += "&";  // it's a svBitVecVal
 
-		    args += "__Vcvt_"+portp->name();
+		    args += portp->name()+"__Vcvt";
 
-		    string stmt;
-		    if (bitvec) {
-			stmt += "svBitVecVal __Vcvt_"+portp->name();
-			stmt += " ["+cvtToStr(portp->widthWords())+"]";
-		    } else {
-			stmt += portp->dpiArgType(true,true);
-			stmt += " __Vcvt_"+portp->name();
-		    }
+		    cfuncp->addStmtsp(createDpiTemp(portp,"__Vcvt"));
 		    if (portp->isInput()) {
-			// Someday we'll have better type support, and this can make variables and casts.
-			// But for now, we'll just text-bash it.
-			if (bitvec) {
-			    // We only support quads, so don't need to sweat longer stuff
-			    stmt += "; VL_SET_WQ(__Vcvt_"+portp->name()+", "+portp->name()+")";
-			} else {
-			    stmt += " = ";
-			    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-				stmt += "(void*)";
-			    }
-			    stmt += portp->name();
-			}
+			cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,"","__Vcvt"));
 		    }
-		    stmt += ";\n";
-		    cfuncp->addStmtsp(new AstCStmt(portp->fileline(), stmt));
 		}
 	    }
 	}
@@ -607,7 +773,7 @@ private:
 	{// Call the user function
 	    string stmt;
 	    if (rtnvscp) {  // isFunction will no longer work as we unlinked the return var
-		stmt += rtnvscp->varp()->dpiArgType(true,true) + " __Vcvt_"+rtnvscp->varp()->name() + " = ";
+		stmt += rtnvscp->varp()->dpiArgType(true,true) + " "+rtnvscp->varp()->name()+"__Vcvt = ";
 	    }
 	    stmt += nodep->cname()+"("+args+");\n";
 	    cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
@@ -616,23 +782,9 @@ private:
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
-		if (portp->isIO()) {
+		if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())) {
 		    AstVarScope* portvscp = portp->user2p()->castNode()->castVarScope();  // Remembered when we created it earlier
-		    if (portp->isOutput() || portp->isFuncReturn()) {
-			string stmt;
-			if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-			    stmt += "(QData)";
-			}
-			stmt += "__Vcvt_"+portp->name();
-			// Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
-			int cwidth = VL_WORDSIZE; if (portp->basicp()) cwidth = portp->basicp()->keyword().width();
-			if (portp->basicp() && portp->basicp()->isBitLogic()) cwidth = VL_WORDSIZE*portp->widthWords();
-			cfuncp->addStmtsp(new AstAssign(portp->fileline(),
-							new AstVarRef(portp->fileline(), portvscp, true),
-							new AstSel(portp->fileline(),
-								   new AstCMath(portp->fileline(), stmt, cwidth, false),
-								   0, portp->width())));
-		    }
+		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt"));
 		}
 	    }
 	}
@@ -650,7 +802,7 @@ private:
 	    if (NULL!=(portp = nodep->fvarp()->castVar())) {
 		if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
 		if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
-		if (ftaskNoInline) portp->funcReturn(false);  // Converting return to 'outputs'
+		if (ftaskNoInline || nodep->dpiExport()) portp->funcReturn(false);  // Converting return to 'outputs'
 		portp->unlinkFrBack();
 		rtnvarp = portp;
 		rtnvarp->funcLocal(true);
@@ -664,21 +816,26 @@ private:
 	}
 	string prefix = "";
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
+	else if (nodep->dpiExport()) prefix = "__Vdpiexp_";
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
-	// Unless public, v3Descope will not uniquify function names even if duplicate per-scope.
+	// Unless public, v3Descope will not uniquify function names even if duplicate per-scope,
+	// so make it unique now.
 	string suffix = "";  // So, make them unique
 	if (!nodep->taskPublic()) suffix = "_"+m_scopep->nameDotless();
 	AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
 					prefix + nodep->name() + suffix,
 					m_scopep,
-					((nodep->taskPublic() && rtnvarp)?rtnvarp->cPubArgType(true,true):""));
+					((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true,true)
+					 : ""));
 	// It's ok to combine imports because this is just a wrapper; duplicate wrappers can get merged.
 	cfuncp->dontCombine(!nodep->dpiImport());
 	cfuncp->entryPoint (!nodep->dpiImport());
 	cfuncp->funcPublic (nodep->taskPublic());
+	cfuncp->dpiExport  (nodep->dpiExport());
 	cfuncp->isStatic   (!(nodep->dpiImport()||nodep->taskPublic()));
 	cfuncp->pure	   (nodep->pure());
 	//cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
+	if (cfuncp->dpiExport()) cfuncp->cname (nodep->cname());
 
 	bool needSyms = !nodep->dpiImport();
 	if (needSyms) {
@@ -699,31 +856,44 @@ private:
 	    createInputVar (cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
 	}
 
-	// Fake output variable if was a function
-	if (rtnvarp) cfuncp->addArgsp(rtnvarp);
-
 	if (!nodep->dpiImport()) {
 	    cfuncp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
 	}
 
+	if (nodep->dpiExport()) {
+	    AstScopeName* snp = nodep->scopeNamep();  if (!snp) nodep->v3fatalSrc("Missing scoping context");
+	    snp->dpiExport(true);  // The AstScopeName is really a statement(ish) for tracking, not a function
+	    snp->unlinkFrBack();
+	    cfuncp->addInitsp(snp);
+	}
+
 	AstCFunc* dpip = NULL;
 	string dpiproto;
-	if (nodep->dpiImport()) {
-	    if (nodep->pure()) dpiproto += "pure ";
-	    if (nodep->dpiContext()) dpiproto += "context ";
-	    dpiproto += rtnvarp ? rtnvarp->dpiArgType(true,true):"void";
-	    dpiproto += " "+nodep->cname()+" (";
+	if (nodep->dpiImport() || nodep->dpiExport()) {
+	    dpiproto = dpiprotoName(nodep, rtnvarp);
 
 	    // Only create one DPI extern for each specified cname,
 	    // as it's legal for the user to attach multiple tasks to one dpi cname
-	    if (m_dpiNames.find(nodep->cname()) == m_dpiNames.end()) {
+	    DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
+	    if (iter == m_dpiNames.end()) {
 		// m_dpiNames insert below
-		dpip = makeDpiCFunc(nodep, rtnvarp);
+		if (nodep->dpiImport()) {
+		    dpip = makeDpiImportWrapper(nodep, rtnvarp);
+		} else if (nodep->dpiExport()) {
+		    dpip = makeDpiExportWrapper(nodep, rtnvarp);
+		    cfuncp->addInitsp(new AstComment(dpip->fileline(), (string)("Function called from: ")+dpip->cname()));
+		}
+
+		m_dpiNames.insert(make_pair(nodep->cname(), make_pair(dpip, dpiproto)));
+	    }
+	    else if (iter->second.second != dpiproto) {
+		nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "<<nodep->prettyName());
+		nodep->v3error("... New prototype:      "<<dpiproto);
+		iter->second.first->v3error("... Original prototype: "<<iter->second.second);
 	    }
 	}
 
 	// Create list of arguments and move to function
-	string args;
 	for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {
 	    nextp = stmtp->nextp();
 	    if (AstVar* portp = stmtp->castVar()) {
@@ -739,11 +909,6 @@ private:
 			    portp->v3error("... For best portability, use bit, byte, int, or longint");
 			}
 		    }
-		    if (!portp->isFuncReturn()) {
-			if (args != "") { args+= ", "; dpiproto+= ", "; }
-			args += portp->name();  // Leftover so ,'s look nice
-			if (nodep->dpiImport()) dpiproto += portp->dpiArgType(false,false);
-		    }
 		} else {
 		    // "Normal" variable, mark inside function
 		    portp->funcLocal(true);
@@ -753,26 +918,18 @@ private:
 		portp->user2p(newvscp);
 	    }
 	}
-	dpiproto += ")";
 
-	if (nodep->dpiImport()) {
-	    // Only create one DPI extern for each specified cname,
-	    // as it's legal for the user to attach multiple tasks to one dpi cname
-	    DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
-	    if (iter == m_dpiNames.end()) {
-		m_dpiNames.insert(make_pair(nodep->cname(), make_pair(dpip, dpiproto)));
-	    } else if (iter->second.second != dpiproto) {
-		nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "<<nodep->prettyName());
-		nodep->v3error("... New prototype:      "<<dpiproto);
-		iter->second.first->v3error("... Original prototype: "<<iter->second.second);
-	    }
-	}
+	// Fake output variable if was a function.  It's more efficient to
+	// have it last, rather than first, as the C compiler can sometimes
+	// avoid copying variables when calling shells if argument 1
+	// remains argument 1 (which it wouldn't if a return got added).
+	if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 
 	// Move body
 	AstNode* bodysp = nodep->stmtsp();
 	if (bodysp) { bodysp->unlinkFrBackWithNext(); cfuncp->addStmtsp(bodysp); }
 	if (nodep->dpiImport()) {
-	    bodyDpiCFunc(nodep, rtnvscp, cfuncp);
+	    bodyDpiImportFunc(nodep, rtnvscp, cfuncp);
 	}
 
 	// Return statement
@@ -904,7 +1061,15 @@ private:
 	if (!nodep->user1()) {  // Just one creation needed per function
 	    // Expand functions in it
 	    nodep->user1(true);
-	    if (nodep->dpiImport() || nodep->taskPublic() || m_statep->ftaskNoInline(nodep)) {
+
+	    int modes = 0;
+	    if (nodep->dpiImport()) modes++;
+	    if (nodep->dpiExport()) modes++;
+	    if (nodep->taskPublic()) modes++;
+	    if (modes > 1) nodep->v3error("Cannot mix DPI import, DPI export and/or public on same function: "<<nodep->prettyName());
+	    
+	    if (nodep->dpiImport() || nodep->dpiExport()
+		|| nodep->taskPublic() || m_statep->ftaskNoInline(nodep)) {
 		// Clone it first, because we may have later FTaskRef's that still need
 		// the original version.
 		if (m_statep->ftaskNoInline(nodep)) m_statep->checkPurity(nodep);

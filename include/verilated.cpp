@@ -919,6 +919,10 @@ void Verilated::scopesDump() {
     VerilatedImp::scopesDump();
 }
 
+int Verilated::exportFuncNum(const char* namep) {
+    return VerilatedImp::exportFind(namep);
+}
+
 //===========================================================================
 // VerilatedModule:: Methods
 
@@ -933,19 +937,76 @@ VerilatedModule::~VerilatedModule() {
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::~VerilatedScope() {
-    VerilatedImp::scopeErase(this);
-    delete [] m_namep; m_namep = NULL;
+VerilatedScope::VerilatedScope() {
+    m_callbacksp = NULL;
+    m_namep = NULL;
+    m_funcnumMax = 0;
 }
 
-void VerilatedScope::configure(const char* prefixp, const char* suffixp) {
-    // Slow ok - called once/scope at construction
+VerilatedScope::~VerilatedScope() {
+    VerilatedImp::scopeErase(this);
+    if (m_namep) { delete [] m_namep; m_namep = NULL; }
+    if (m_callbacksp) { delete [] m_callbacksp; m_callbacksp = NULL; }
+    m_funcnumMax = 0;  // Force callback table to empty
+}
+
+void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) {
+    // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
+    m_symsp = symsp;
     char* namep = new char[strlen(prefixp)+strlen(suffixp)+2];
     strcpy(namep, prefixp);
     strcat(namep, suffixp);
     m_namep = namep;
     VerilatedImp::scopeInsert(this);
+}
+
+void VerilatedScope::exportInsert(bool finalize, const char* namep, void* cb) {
+    // Slowpath - called once/scope*export at construction
+    // Insert a exported function into scope table
+    int funcnum = VerilatedImp::exportInsert(namep);
+    if (!finalize) {
+	// Need two passes so we know array size to create
+	// Alternative is to dynamically stretch the array, which is more code, and slower.
+	if (funcnum >= m_funcnumMax) { m_funcnumMax = funcnum+1; }
+    } else {
+	if (funcnum >= m_funcnumMax) {
+	    vl_fatal(__FILE__,__LINE__,"","Internal: Bad funcnum vs. pre-finalize maximum");
+	}
+	if (!m_callbacksp) { // First allocation
+	    m_callbacksp = new void* [m_funcnumMax];
+	    memset(m_callbacksp, 0, m_funcnumMax*sizeof(void*));
+	}
+	m_callbacksp[funcnum] = cb;
+    }
+}
+
+void* VerilatedScope::exportFindNullError(int funcnum) const {
+    // Slowpath - Called only when find has failed
+    string msg = (string("%Error: Testbench C called '")
+		  +VerilatedImp::exportName(funcnum)
+		  +"' but scope wasn't set, perhaps due to dpi import call without 'context'");
+    vl_fatal("unknown",0,"", msg.c_str());
+    return NULL;
+}
+
+void* VerilatedScope::exportFindError(int funcnum) const {
+    // Slowpath - Called only when find has failed
+    string msg = (string("%Error: Testbench C called '")
+		  +VerilatedImp::exportName(funcnum)
+		  +"' but this DPI export function exists only in other scopes, not scope '"
+		  +name()+"'");
+    vl_fatal("unknown",0,"", msg.c_str());
+    return NULL;
+}
+
+void VerilatedScope::scopeDump() const {
+    VL_PRINTF("    SCOPE: %s\n", name());
+    for (int i=0; i<m_funcnumMax; i++) {
+	if (m_callbacksp && m_callbacksp[i]) {
+	    VL_PRINTF("       DPI-EXPORT: %s\n", VerilatedImp::exportName(i));
+	}
+    }
 }
 
 //===========================================================================

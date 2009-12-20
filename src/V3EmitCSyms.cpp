@@ -45,6 +45,11 @@ class EmitCSyms : EmitCBaseVisitor {
     AstUser1InUse	m_inuser1;
 
     // TYPES
+    struct ScopeFuncData { AstScopeName* m_scopep; AstCFunc* m_funcp; AstNodeModule* m_modp;
+	ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
+	    : m_scopep(scopep), m_funcp(funcp), m_modp(modp) {}
+    };
+    typedef map<string,ScopeFuncData> ScopeFuncs;
     typedef map<string,AstScopeName*> ScopeNames;
     typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
     struct CmpName {
@@ -52,12 +57,22 @@ class EmitCSyms : EmitCBaseVisitor {
 	    return lhsp.first->name() < rhsp.first->name();
 	}
     };
+    struct CmpDpi {
+	inline bool operator () (const AstCFunc* lhsp, const AstCFunc* rhsp) const {
+	    if (lhsp->dpiImport() != rhsp->dpiImport()) {
+		return lhsp->dpiImport() < rhsp->dpiImport();
+	    }
+	    return lhsp->name() < rhsp->name();
+	}
+    };
 
     // STATE
+    AstCFunc*		m_funcp;	// Current function
     AstNodeModule*	m_modp;		// Current module
     vector<ScopeModPair>  m_scopes;	// Every scope by module
     vector<AstCFunc*>	m_dpis;		// DPI functions
     ScopeNames		m_scopeNames;	// Each unique AstScopeName
+    ScopeFuncs		m_scopeFuncs;	// Each {scope,dpiexportfunc}
     V3LanguageWords 	m_words;	// Reserved word detector
     int		m_coverBins;		// Coverage bin number
 
@@ -84,14 +99,16 @@ class EmitCSyms : EmitCBaseVisitor {
 	// Collect list of scopes
 	nodep->iterateChildren(*this);
 
-	// Sort m_scopes by scope name
+	// Sort by names, so line/process order matters less
 	sort(m_scopes.begin(), m_scopes.end(), CmpName());
+	sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
 
 	// Output
 	emitSymHdr();
 	emitSymImp();
 	if (v3Global.dpi()) {
 	    emitDpiHdr();
+	    emitDpiImp();
 	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
@@ -109,6 +126,11 @@ class EmitCSyms : EmitCBaseVisitor {
 	if (m_scopeNames.find(name) == m_scopeNames.end()) {
 	    m_scopeNames.insert(make_pair(name, nodep));
 	}
+	if (nodep->dpiExport()) {
+	    if (!m_funcp) nodep->v3fatalSrc("ScopeName not under DPI function");
+	    m_scopeFuncs.insert(make_pair(name + " " + m_funcp->name(),
+					  ScopeFuncData(nodep, m_funcp, m_modp)));
+	}
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
 	// Assign numbers to all bins, so we know how big of an array to use
@@ -117,10 +139,12 @@ class EmitCSyms : EmitCBaseVisitor {
 	}
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	if (nodep->dpiImport()) {
+	if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
 	    m_dpis.push_back(nodep);
 	}
+	m_funcp = nodep;
+	nodep->iterateChildren(*this);
+	m_funcp = NULL;
     }
     // NOPs
     virtual void visit(AstConst*, AstNUser*) {}
@@ -133,6 +157,7 @@ class EmitCSyms : EmitCBaseVisitor {
     // ACCESSORS
 public:
     EmitCSyms(AstNetlist* nodep) {
+	m_funcp = NULL;
 	m_modp = NULL;
 	m_coverBins = 0;
 	nodep->accept(*this);
@@ -162,11 +187,24 @@ void EmitCSyms::emitSymHdr() {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
-    puts("\n// SYMS CLASS\n");
-    puts((string)"class "+symClassName()+" {\n");
-    ofp()->putsPrivate(false);  // public:
+    if (v3Global.dpi()) {
+	puts ("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
+	map<string,int> types;  // Remove duplicates and sort
+	for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
+	    AstCFunc* funcp = it->second.m_funcp;
+	    if (funcp->dpiExport()) {
+		string cbtype = v3Global.opt.prefix()+"__Vcb_"+funcp->cname()+"_t";
+		types["typedef void (*"+cbtype+") ("+cFuncArgs(funcp)+");\n"] = 1;
+	    }
+	}
+	for (map<string,int>::iterator it = types.begin(); it != types.end(); ++it) {
+	    puts(it->first);
+	}
+    }
 
-    //puts("\n// STATIC STATE\n");
+    puts("\n// SYMS CLASS\n");
+    puts((string)"class "+symClassName()+" : public VerilatedSyms {\n");
+    ofp()->putsPrivate(false);  // public:
 
     puts("\n// LOCAL STATE\n");
     ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
@@ -287,9 +325,29 @@ void EmitCSyms::emitSymImp() {
 
     puts("// Setup scope names\n");
     for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	puts("__Vscope_"+it->second->scopeSymName()+".configure(name(),");
+	puts("__Vscope_"+it->second->scopeSymName()+".configure(this,name(),");
 	putsQuoted(it->second->scopePrettyName());
 	puts(");\n");
+    }
+
+    if (v3Global.dpi()) {
+	puts("// Setup export functions\n");
+	puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
+	for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
+	    AstScopeName* scopep = it->second.m_scopep;
+	    AstCFunc* funcp = it->second.m_funcp;
+	    AstNodeModule* modp = it->second.m_modp;
+	    if (funcp->dpiExport()) {
+		puts("__Vscope_"+scopep->scopeSymName()+".exportInsert(__Vfinal,");
+		putsQuoted(funcp->cname());
+		puts(", (void*)(&");
+		puts(modClassName(modp));
+		puts("::");
+		puts(funcp->name());
+		puts("));\n");
+	    }
+	}
+	puts("}\n");
     }
 
     puts("}\n");
@@ -318,10 +376,18 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
     puts("\n");
     
+    bool firstExp = false;
+    bool firstImp = false;
     for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
 	AstCFunc* nodep = *it;
-	if (nodep->dpiImport()) {
-	    puts("// dpi import at "+nodep->fileline()->ascii()+"\n");
+	if (nodep->dpiExportWrapper()) {
+	    if (!firstExp++) puts("\n// DPI EXPORTS\n");
+	    puts("// DPI Export at "+nodep->fileline()->ascii()+"\n");
+	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
+	}
+	else if (nodep->dpiImport()) {
+	    if (!firstImp++) puts("\n// DPI IMPORTS\n");
+	    puts("// DPI Import at "+nodep->fileline()->ascii()+"\n");
 	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
 	}
     }
@@ -330,6 +396,59 @@ void EmitCSyms::emitDpiHdr() {
     puts("#ifdef __cplusplus\n");
     puts("}\n");
     puts("#endif\n");
+}
+
+//######################################################################
+
+void EmitCSyms::emitDpiImp() {
+    UINFO(6,__FUNCTION__<<": "<<endl);
+    string filename = v3Global.opt.makeDir()+"/"+topClassName()+"__Dpi.cpp";
+    AstCFile* cfilep = newCFile(filename, false/*slow*/, true/*source*/);
+    cfilep->support(true);
+    V3OutCFile hf (filename);
+    m_ofp = &hf;
+
+    m_ofp->putsHeader();
+    puts("// DESCR" "IPTION: Verilator output: Implementation of DPI export functions.\n");
+    puts("//\n");
+    puts("// Verilator compiles this file in when DPI functions are used.\n");
+    puts("// If you have multiple Verilated designs with the same DPI exported\n");
+    puts("// function names, you will get multiple definition link errors from here.\n");
+    puts("// This is an unfortunate result of the DPI specification.\n");
+    puts("// To solve this, either\n");
+    puts("//    1. Call "+topClassName()+"::{export_function} instead,\n");
+    puts("//       and do not even bother to compile this file\n");
+    puts("// or 2. Compile all __Dpi.cpp files in the same compiler run,\n");
+    puts("//       and #ifdefs already inserted here will sort everything out.\n");
+    puts("\n");
+    
+    puts("#include \""+topClassName()+"__Dpi.h\"\n");
+    puts("#include \""+topClassName()+".h\"\n");
+    puts("\n");
+
+    for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
+	AstCFunc* nodep = *it;
+	if (nodep->dpiExportWrapper()) {
+	    puts("#ifndef _VL_DPIDECL_"+nodep->name()+"\n");
+	    puts("#define _VL_DPIDECL_"+nodep->name()+"\n");
+	    puts(nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+") {\n");
+	    puts("// DPI Export at "+nodep->fileline()->ascii()+"\n");
+	    puts("return "+topClassName()+"::"+nodep->name()+"(");
+	    string args;
+	    for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
+		if (AstVar* portp = stmtp->castVar()) {
+		    if (portp->isIO() && !portp->isFuncReturn()) {
+			if (args != "") args+= ", ";
+			args += portp->name();
+		    }
+		}
+	    }
+	    puts(args+");\n");
+	    puts("}\n");
+	    puts("#endif\n");
+	    puts("\n");
+	}
+    }
 }
 
 //######################################################################

@@ -208,7 +208,9 @@ public:
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// For use under AstCCalls for dpiImports.  ScopeNames under displays are handled in AstDisplay
-	putbs("(&(vlSymsp->__Vscope_"+nodep->scopeSymName()+"))");
+	if (!nodep->dpiExport()) {
+	    putbs("(&(vlSymsp->__Vscope_"+nodep->scopeSymName()+"))");
+	}
     }
     virtual void visit(AstSFormat* nodep, AstNUser*) {
 	displayNode(nodep, nodep->text(), nodep->exprsp(), false);

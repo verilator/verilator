@@ -1256,6 +1256,7 @@ private:
     bool	m_didSigning:1;	// V3Signed completed; can skip iteration
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_prototype:1;	// Just a prototype
+    bool	m_dpiExport:1;	// DPI exported
     bool	m_dpiImport:1;	// DPI imported
     bool	m_dpiContext:1;	// DPI import context
     bool	m_dpiTask:1;	// DPI import task (vs. void function)
@@ -1265,7 +1266,8 @@ public:
 	: AstNode(fileline)
 	, m_name(name), m_taskPublic(false), m_didSigning(false)
 	, m_attrIsolateAssign(false), m_prototype(false)
-	, m_dpiImport(false), m_dpiContext(false), m_dpiTask(false), m_pure(false) {
+	, m_dpiExport(false), m_dpiImport(false), m_dpiContext(false)
+	, m_dpiTask(false), m_pure(false) {
 	addNOp3p(stmtsp);
 	cname(name);  // Might be overridden by dpi import/export
     }
@@ -1284,6 +1286,9 @@ public:
     // op3 = Statements/Ports/Vars
     AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op3 = List of statements
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
+    // op4 = scope name
+    AstScopeName* scopeNamep() const { return op4p()->castScopeName(); }
+    void 	scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
     void	didSigning(bool flag) { m_didSigning=flag; }
@@ -1292,6 +1297,8 @@ public:
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     void	prototype(bool flag) { m_prototype = flag; }
     bool	prototype() const { return m_prototype; }
+    void	dpiExport(bool flag) { m_dpiExport = flag; }
+    bool	dpiExport() const { return m_dpiExport; }
     void	dpiImport(bool flag) { m_dpiImport = flag; }
     bool	dpiImport() const { return m_dpiImport; }
     void	dpiContext(bool flag) { m_dpiContext = flag; }

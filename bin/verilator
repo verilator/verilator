@@ -1149,11 +1149,12 @@ order of magnitude.
 
 =head1 DPI (DIRECT PROGRAMMING INTERFACE)
 
-Verilator supports SystemVerilog Direct Programming Interface import
-statements.  Only the SystemVerilog form ("DPI-C") is supported, not the
-original Synopsys-only DPI.
+Verilator supports SystemVerilog Direct Programming Interface import and
+export statements.  Only the SystemVerilog form ("DPI-C") is supported, not
+the original Synopsys-only DPI.
 
-In the SYSTEMC example above, if you had in our.v:
+In the SYSTEMC example above, if you wanted to import C++ functions into
+Verilog, put in our.v:
 
    import "DPI-C" function integer add (input integer a, input integer b);
 
@@ -1180,6 +1181,36 @@ function name for the import, but note it must be escaped.
    export "DPI-C" function integer \$myRand;
 
    initial $display("myRand=%d", $myRand());
+
+Going the other direction, you can export Verilog tasks so they can be
+called from C++:
+
+   export "DPI-C" task publicSetBool;
+
+   task publicSetBool;
+      input bit in_bool;
+      var_bool = in_bool;
+   endtask
+
+Then after Verilating, Verilator will create a file Vour__Dpi.h with the
+prototype to call this function:
+
+    extern bool publicSetBool(bool in_bool);
+
+From the sc_main.cpp file, you'd then:
+
+    #include "Vour__Dpi.h"
+    publicSetBool(value);
+
+Or, alternatively, call the function under the design class.  This isn't
+DPI compatible but is easier to read and better supports multiple designs.
+
+    #include "Vour__Dpi.h"
+    Vour::publicSetBool(value);
+    // or top->publicSetBool(value);
+
+Instead of DPI exporting, there's also Verilator public functions, which
+are slightly faster, but less compatible.
 
 =head1 CROSS COMPILATION
 
@@ -1518,9 +1549,13 @@ be pure; they cannot reference any variables outside the task itself.
 =item /*verilator public*/ (variable)
 
 Used after a input, output, register, or wire declaration to indicate the
-signal should be declared so that C code may read or write the value
-of the signal.  This will also declare this module public, otherwise use
+signal should be declared so that C code may read or write the value of the
+signal.  This will also declare this module public, otherwise use
 /*verilator public_flat*/.
+
+Instead of using public variables, consider instead making a DPI or public
+function that accesses the variable.  This is nicer as it provides an
+obvious entry point that is also compatible across simulators.
 
 =item /*verilator public*/ (task/function)
 
@@ -1540,6 +1575,9 @@ passed as references to an array of 32 bit numbers.
 Generally, only the values of stored state (flops) should be written, as
 the model will NOT notice changes made to variables in these functions.
 (Same as when a signal is declared public.)
+
+You may want to use DPI exports instead, as it's compatible with other
+simulators.
 
 =item /*verilator public_flat*/ (variable)
 
@@ -2555,42 +2593,17 @@ faster, but can result in more compilations when something changes.
 
 =item How do I access functions/tasks in C?
 
-Write a Verilog function or task with input/outputs that match what you
-want to call in with C.  Then mark that function public.
-
-Verilog inputs of one bit become C++ bool inputs.  Inputs 32 bits or
-smaller become C uint32_t inputs, 64-32 bits become C uint64_t inputs, and
-wider signals become arrays of 32 bits.  Outputs are passed as references
-to bool, uint32_t, uint64_t or uint32_t[] arrays.
-
-Signals wider than 64 bits are passed as an array of 32-bit uint32_t's.
-Thus to read bits 31:0, access signal[0], and for bits 63:32, access
-signal[1].  Unused bits (for example bit numbers 65-96 of a 65 bit vector)
-will always be zero.  if you change the value you must make sure to pack
-zeros in the unused bits or core-dumps may result.  (Because Verilator
-strips array bound checks where it believes them to be unnecessary.)
-
-In the SYSTEMC example above, if you had in our.v:
-
-   task publicSetBool;
-      // verilator public
-      input in_bool;
-      var_bool = in_bool;
-   endtask
-
-From the sc_main.cpp file, you'd then:
-
-    #include "Vour.h"
-    #include "Vour_our.h"
-    top->v->publicSetBool(value);
-
-See additional notes under the /*verilator public*/ section.
+Use the SystemVerilog Direct Programming Interface.  You write a Verilog
+function or task with input/outputs that match what you want to call in
+with C.  Then mark that function as an external function.  See the DPI
+chapter in the manual.
 
 =item How do I access signals in C?
 
-The best thing is to make a Verilator public task or function accessor that
-can read or write that signal, as described in the previous FAQ.  This will
-allow Verilator to better optimize the model.
+The best thing is to make a SystemVerilog "export DPI task" or function
+that accesses that signal, as described in the DPI chapter in the manual
+and DPI tutorials on the web.  This will allow Verilator to better optimize
+the model and should be portable across simulators.
 
 If you really want raw access to the signals, declare the signals you will
 be accessing with a /*verilator public*/ comment before the closing

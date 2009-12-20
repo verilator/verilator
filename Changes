@@ -12,7 +12,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Support typedef.  [Donal Casey]
 
-**   Support direct programming interface (DPI) "import".
+**   Support direct programming interface (DPI) "import" and "export".
 
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 

@@ -622,7 +622,8 @@ private:
 	}
 	V3GraphVertex* funcVtxp = getCFuncVertexp(nodep);
 	if (!m_finding) {  // If public, we need a unique activity code to allow for sets directly in this func
-	    if (nodep->funcPublic() || nodep->name() == "_eval") {
+	    if (nodep->funcPublic() || nodep->dpiExport()
+		|| nodep->name() == "_eval") {
 		// Need a non-null place to remember to later add a statement; make one
 		if (!nodep->stmtsp()) nodep->addStmtsp(new AstComment(nodep->fileline(), "Tracing activity check"));
 		V3GraphVertex* activityVtxp = getActivityVertexp(nodep->stmtsp(), nodep->slow());

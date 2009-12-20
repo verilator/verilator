@@ -144,8 +144,10 @@ public:
 	    if (AstVar* portp = stmtp->castVar()) {
 		if (portp->isIO() && !portp->isFuncReturn()) {
 		    if (args != "") args+= ", ";
-		    if (nodep->dpiImport()) args += portp->dpiArgType(true,false);
-		    else if (nodep->funcPublic()) args += portp->cPubArgType(true,false);
+		    if (nodep->dpiImport() || nodep->dpiExportWrapper())
+			args += portp->dpiArgType(true,false);
+		    else if (nodep->funcPublic())
+			args += portp->cPubArgType(true,false);
 		    else args += portp->vlArgType(true,false);
 		}
 	    }

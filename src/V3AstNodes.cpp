@@ -564,7 +564,8 @@ void AstNodeFTask::dump(ostream& str) {
     if (taskPublic()) str<<" [PUBLIC]";
     if (prototype()) str<<" [PROTOTYPE]";
     if (dpiImport()) str<<" [DPII]";
-    if (dpiImport() && cname()!=name()) str<<" [c="<<cname()<<"]";
+    if (dpiExport()) str<<" [DPIX]";
+    if ((dpiImport() || dpiExport()) && cname()!=name()) str<<" [c="<<cname()<<"]";
 }
 void AstBegin::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -619,4 +620,6 @@ void AstCFunc::dump(ostream& str) {
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";
     if (dpiImport()) str<<" [DPII]";
+    if (dpiExport()) str<<" [DPIX]";
+    if (dpiExportWrapper()) str<<" [DPIXWR]";
 }

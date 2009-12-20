@@ -52,7 +52,6 @@ typedef       WData* WDataOutP;	///< Array output from a function
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
-class VerilatedScope;
 
 //=========================================================================
 /// Base class for all Verilated module classes
@@ -125,17 +124,42 @@ public:
 #endif
 
 //===========================================================================
+/// Verilator symbol table base class
+
+class VerilatedSyms {
+    // VerilatedSyms base class exists just so symbol tables have a common pointer type
+};
+
+//===========================================================================
 /// Verilator global static information class
 
 class VerilatedScope {
-    const char* m_namep;	// Scope name
-public:
-    // Internals - called from VerilatedModule's
-    VerilatedScope() {}
+    // Fastpath:
+    VerilatedSyms* m_symsp;	///< Symbol table
+    void**	m_callbacksp;	///< Callback table pointer (Fastpath)
+    int		m_funcnumMax;	///< Maxium function number stored (Fastpath)
+    // 4 bytes padding (on -m64), for rent.
+    const char* m_namep;	///< Scope name (Slowpath)
+public:  // But internals only - called from VerilatedModule's
+    VerilatedScope();
     ~VerilatedScope();
-    void configure(const char* prefixp, const char* suffixp);
-    // Accessors
+    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp);
+    void exportInsert(bool finalize, const char* namep, void* cb);
+    // ACCESSORS
     const char* name() const { return m_namep; }
+    inline VerilatedSyms* symsp() const { return m_symsp; }
+    void* exportFindError(int funcnum) const;
+    void* exportFindNullError(int funcnum) const;
+    void scopeDump() const;
+    inline void* exportFind(int funcnum) const {
+	if (VL_UNLIKELY(!this)) return exportFindNullError(funcnum);
+	if (VL_LIKELY(funcnum < m_funcnumMax)) {
+	    // m_callbacksp must be declared, as Max'es are > 0
+	    return m_callbacksp[funcnum];
+	} else {
+	    return exportFindError(funcnum);
+	}
+    }
 };
 
 //===========================================================================
@@ -208,6 +232,7 @@ public:
     static bool dpiInContext() { return t_dpiScopep != NULL; }
     static const char* dpiFilenamep() { return t_dpiFilename; }
     static int dpiLineno() { return t_dpiLineno; }
+    static int exportFuncNum(const char* namep);
 };
 
 //=========================================================================

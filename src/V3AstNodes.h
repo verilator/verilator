@@ -2006,11 +2006,14 @@ struct AstScopeName : public AstNodeMath {
     // For display %m and DPI context imports
     // Parents:  DISPLAY
     // Children: TEXT
-    AstScopeName(FileLine* fl) : AstNodeMath(fl) {
+private:
+    bool	m_dpiExport;	// Is for dpiExport
+public:
+    AstScopeName(FileLine* fl) : AstNodeMath(fl), m_dpiExport(false) {
 	width(64,64); }
     ASTNODE_NODE_FUNCS(ScopeName, SCOPENAME)
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode* samep) const { return true; }
+    virtual bool same(AstNode* samep) const { return m_dpiExport==samep->castScopeName()->m_dpiExport; }
     virtual string emitVerilog() { return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
@@ -2018,6 +2021,8 @@ struct AstScopeName : public AstNodeMath {
     void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
     string scopeSymName() const;  // Name for __Vscope variable including children
     string scopePrettyName() const;  // Name for __Vscope printing
+    bool dpiExport() const { return m_dpiExport; }
+    void dpiExport(bool flag) { m_dpiExport=flag; }
 };
 
 struct AstUdpTable : public AstNode {
@@ -3080,6 +3085,7 @@ private:
     AstCFuncType m_funcType;
     AstScope*	m_scopep;
     string	m_name;
+    string	m_cname;		// C name, for dpiExports
     string	m_rtnType;		// void, bool, or other return type
     string	m_argTypes;
     bool	m_dontCombine:1;	// V3Combine shouldn't compare this func tree, it's special
@@ -3092,6 +3098,8 @@ private:
     bool	m_symProlog:1;		// Setup symbol table for later instructions
     bool	m_entryPoint:1;		// User may call into this top level function
     bool	m_pure:1;		// Pure function
+    bool	m_dpiExport:1;		// From dpi export
+    bool	m_dpiExportWrapper:1;	// From dpi export; static function with dispatch table
     bool	m_dpiImport:1;		// From dpi import
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
@@ -3110,6 +3118,8 @@ public:
 	m_symProlog = false;
 	m_entryPoint = false;
 	m_pure = false;
+	m_dpiExport = false;
+	m_dpiExportWrapper = false;
 	m_dpiImport = false;
     }
     ASTNODE_NODE_FUNCS(CFunc, CFUNC)
@@ -3121,10 +3131,13 @@ public:
     virtual bool same(AstNode* samep) const { return ((funcType()==samep->castCFunc()->funcType())
 						      && (rtnTypeVoid()==samep->castCFunc()->rtnTypeVoid())
 						      && (argTypes()==samep->castCFunc()->argTypes())
-						      && (!dpiImport() || name()==samep->castCFunc()->name())); }
+						      && (!(dpiImport() || dpiExport())
+							  || name()==samep->castCFunc()->name())); }
     //
     virtual void name(const string& name) { m_name = name; }
     virtual int instrCount()	const { return dpiImport() ? instrCountDpi() : 0; }
+    void	cname(const string& name) { m_cname = name; }
+    string	cname() const { return m_cname; }
     AstScope*	scopep() const { return m_scopep; }
     void	scopep(AstScope* nodep) { m_scopep = nodep; }
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }
@@ -3152,6 +3165,10 @@ public:
     void	entryPoint(bool flag) { m_entryPoint = flag; }
     bool	pure() const { return m_pure; }
     void	pure(bool flag) { m_pure = flag; }
+    bool	dpiExport() const { return m_dpiExport; }
+    void	dpiExport(bool flag) { m_dpiExport = flag; }
+    bool	dpiExportWrapper() const { return m_dpiExportWrapper; }
+    void	dpiExportWrapper(bool flag) { m_dpiExportWrapper = flag; }
     bool	dpiImport() const { return m_dpiImport; }
     void	dpiImport(bool flag) { m_dpiImport = flag; }
     //

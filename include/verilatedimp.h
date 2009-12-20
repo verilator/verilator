@@ -53,18 +53,22 @@ class VerilatedImp {
     typedef vector<string> ArgVec;
     typedef map<pair<const void*,void*>,void*> UserMap;
     typedef map<const char*, const VerilatedScope*, VerilatedCStrCmp>  ScopeNameMap;
+    typedef map<const char*, int>  ExportNameMap;
 
     // MEMBERS
     static VerilatedImp	s_s;		///< Static Singleton; One and only static this
 
-    ArgVec		m_argVec;	// Argument list
-    bool		m_argVecLoaded;	// Ever loaded argument list
+    ArgVec		m_argVec;	///< Argument list
+    bool		m_argVecLoaded;	///< Ever loaded argument list
     UserMap	 	m_userMap;	///< Map of <(scope,userkey), userData>
-    ScopeNameMap	m_nameMap;	///< Map of <scope name, scope pointer>
+    ScopeNameMap	m_nameMap;	///< Map of <scope_name, scope pointer>
+    // Slow - somewhat static:
+    ExportNameMap	m_exportMap;	///< Map of <export_func_proto, func number>
+    int			m_exportNext;	///< Next export funcnum
 
 public: // But only for verilated*.cpp
     // CONSTRUCTORS
-    VerilatedImp() : m_argVecLoaded(false) {}
+    VerilatedImp() : m_argVecLoaded(false), m_exportNext(0) {}
     ~VerilatedImp() {}
 
     // METHODS - arguments
@@ -137,15 +141,52 @@ public: // But only for verilated*.cpp
 	ScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
+
     static void scopesDump() {
 	VL_PRINTF("scopesDump:\n");
-	for (ScopeNameMap::iterator it=s_s.m_nameMap.begin();
-	     it!=s_s.m_nameMap.end(); ++it) {
+	for (ScopeNameMap::iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
-	    VL_PRINTF("    %s\n", scopep->name());
+	    scopep->scopeDump();
 	}
 	VL_PRINTF("\n");
     }
+
+public: // But only for verilated*.cpp
+    // METHODS - export names
+
+    // Each function prototype is converted to a function number which we
+    // then use to index a 2D table also indexed by scope number, because we
+    // can't know at Verilation time what scopes will exist in other modules
+    // in the design that also happen to have our same callback function.
+    // Rather than a 2D map, the integer scheme saves 500ish ns on a likely
+    // miss at the cost of a multiply, and all lookups move to slowpath.
+    static int exportInsert(const char* namep) {
+	// Slow ok - called once/function at creation
+	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
+	if (it == s_s.m_exportMap.end()) {
+	    s_s.m_exportMap.insert(it, make_pair(namep, s_s.m_exportNext++));
+	    return s_s.m_exportNext++;
+	} else {
+	    return it->second;
+	}
+    }
+    static int exportFind(const char* namep) {
+	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
+	if (it != s_s.m_exportMap.end()) return it->second;
+	string msg = (string("%Error: Testbench C called ")+namep
+		      +" but no such DPI export function name exists in ANY model");
+	vl_fatal("unknown",0,"", msg.c_str());
+	return -1;
+    }
+    static const char* exportName(int funcnum) {
+	// Slowpath; find name for given export; errors only so no map to reverse-map it
+	for (ExportNameMap::iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
+	    if (it->second == funcnum) return it->first;
+	}
+	return "*UNKNOWN*";
+    }
+    // We don't free up m_exportMap until the end, because we can't be sure
+    // what other models are using the assigned funcnum's.
 };
 
 #endif  // Guard

@@ -409,6 +409,22 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstDpiExport* nodep, AstNUser*) {
+	// AstDpiExport: Make sure the function referenced exists, then dump it
+	nodep->iterateChildren(*this);
+	if (m_idState==ID_RESOLVE) {
+	    AstNodeFTask* taskp;
+	    taskp = m_curVarsp->findIdUpward(nodep->name())->castNodeFTask();
+	    if (!taskp) { nodep->v3error("Can't find definition of exported task/function: "<<nodep->prettyName()); }
+	    else if (taskp->dpiExport()) {
+		nodep->v3error("Function was already DPI Exported, duplicate not allowed: "<<nodep->prettyName());
+	    } else {
+		taskp->dpiExport(true);
+		if (nodep->cname()!="") taskp->cname(nodep->cname());
+	    }
+	    nodep->unlinkFrBack()->deleteTree();
+	}
+    }
 
     virtual void visit(AstTypedef* nodep, AstNUser*) {
 	// Remember its name for later resolution

@@ -108,10 +108,13 @@ private:
 	m_ftaskp = nodep;
 	nodep->iterateChildren(*this);
 	m_ftaskp = NULL;
+	if (nodep->dpiExport()) {
+	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	}
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->taskp() && nodep->taskp()->dpiContext()) {
+	if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
