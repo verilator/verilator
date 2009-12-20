@@ -1258,17 +1258,18 @@ Verilator partially supports the uwire keyword.
 
 =head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
 
-Verilator currently has very minimal support for SystemVerilog. As
-SystemVerilog features enter common usage they will be added.  Contact the
-author if a feature you need is missing.
+Verilator currently has some support for SystemVerilog synthesis
+constructs. As SystemVerilog features enter common usage they are added;
+please file a bug if a feature you need is missing.
 
 Verilator implements the full SystemVerilog 1800-2005 preprocessor,
 including function call-like preprocessor defines.
 
 Verilator supports ==? and !=? operators, $bits, $countones, $error,
-$fatal, $info, $isunknown, $onehot, $onehot0, $warning, always_comb,
-always_ff, always_latch, bit, do-while, final, logic, priority case/if, and
-unique case/if.
+$fatal, $info, $isunknown, $onehot, $onehot0, $unit, $warning, always_comb,
+always_ff, always_latch, bit, byte, chandle, do-while, export, final,
+import, int, logic, longint, package, program, shortint, time, var, void,
+priority case/if, and unique case/if.
 
 It also supports .name and .* interconnection.
 
@@ -1289,7 +1290,7 @@ to increment the line counters described in the coverage section.
 
 Verilator implements these keywords: assert, assume (same as assert),
 default (for clocking), countones, cover, isunknown, onehot, onehot0,
-report, true.
+report, and true.
 
 Verilator implements these operators: -> (logical if).
 
@@ -1377,9 +1378,9 @@ each different output width.
 =item $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 
 Format arguments may use C fprintf sizes after the % escape.  Per the
-Verilog standard, %x prints a number with the natural width, %0x prints a
-number with minimum width, however %5x prints 5 digits per the C standard
-(it's unspecified in Verilog).
+Verilog standard, %x prints a number with the natural width, and %0x prints
+a number with minimum width.  Verilator extends this so %5x prints 5 digits
+per the C standard (it's unspecified in Verilog).
 
 =item `coverage_block_off
 
@@ -2389,14 +2390,15 @@ One limit is that you cannot under either license release a commercial
 simulation product incorporating Verilator without making the source code
 available.
 
-=item Why is running Verilator so slow?
+=item Why is Verilation so slow?
 
 Verilator needs more memory than the resulting simulator will require, as
 Verilator creates internally all of the state of the resulting simulator in
 order to optimize it.  If it takes more than a minute or so (and you're not
-using --debug), see if your machine is paging; most likely you need to run
-it on a machine with more memory.  Verilator is a full 64 bit application
-and may use more than 4GB, but about 1GB is the maximum typically needed.
+using --debug since debug is disk bound), see if your machine is paging;
+most likely you need to run it on a machine with more memory.  Verilator is
+a full 64 bit application and may use more than 4GB, but about 1GB is the
+maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
 
@@ -2708,6 +2710,8 @@ called it Verilator2.  This was the first packaged public release.
 In 2002, Wilson Snyder created Verilator3 by rewriting Verilator from
 scratch in C++.  This added many optimizations, yielding about a 2-5x
 performance gain.
+
+In 2009, major SystemVerilog and DPI language support was added.
 
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 2x faster than in 2002, and is
