@@ -43,6 +43,7 @@
 #define VP_ELSE		262
 #define VP_ELSIF	263
 #define VP_LINE		264
+#define VP_UNDEFINEALL	265
 
 #define VP_SYMBOL	300
 #define VP_STRING	301

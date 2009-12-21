@@ -38,7 +38,7 @@ public:
     static void preproc(FileLine* fileline, const string& module, V3ParseImp* parsep);
     static void preprocInclude(FileLine* fileline, const string& module);
     static string dependFiles() { return ""; }   // Perl only
-    static void define(const string& name, const string& value);
+    static void defineCmdLine(const string& name, const string& value);
     static void undef(const string& name);
 };
 

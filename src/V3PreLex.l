@@ -79,14 +79,15 @@ psl		[p]sl
 					  return(VP_LINE); }
 
 	/* Special directives we recognize */
-<INITIAL>"`include"	{ return(VP_INCLUDE); }
-<INITIAL>"`ifdef"	{ return(VP_IFDEF); }
-<INITIAL>"`ifndef"	{ return(VP_IFNDEF); }
+<INITIAL>"`define"	{ return(VP_DEFINE); }
 <INITIAL>"`else"	{ return(VP_ELSE); }
 <INITIAL>"`elsif"	{ return(VP_ELSIF); }
 <INITIAL>"`endif"	{ return(VP_ENDIF); }
+<INITIAL>"`ifdef"	{ return(VP_IFDEF); }
+<INITIAL>"`ifndef"	{ return(VP_IFNDEF); }
+<INITIAL>"`include"	{ return(VP_INCLUDE); }
 <INITIAL>"`undef"	{ return(VP_UNDEF); }
-<INITIAL>"`define"	{ return(VP_DEFINE); }
+<INITIAL>"`undefineall"	{ return(VP_UNDEFINEALL); }
 
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ if (!pedantic()) {

@@ -53,12 +53,14 @@ class V3Define {
     FileLine*	m_fileline;	// Where it was declared
     string	m_value;	// Value of define
     string	m_params;	// Parameters
+    bool	m_cmdline;	// Set on command line, don't `undefineall
 public:
-    V3Define(FileLine* fl, const string& value, const string& params)
-	: m_fileline(fl), m_value(value), m_params(params) {}
+    V3Define(FileLine* fl, const string& value, const string& params, bool cmdline)
+	: m_fileline(fl), m_value(value), m_params(params), m_cmdline(cmdline) {}
     FileLine* fileline() const { return m_fileline; }
     string value() const { return m_value; }
     string params() const { return m_params; }
+    bool cmdline() const { return m_cmdline; }
 };
 
 //*************************************************************************
@@ -181,7 +183,9 @@ public:
     virtual void comment(const string& cmt);		// Comment detected (if keepComments==2)
     virtual void include(const string& filename);	// Request a include file be processed
     virtual void undef (const string& name);
-    virtual void define (FileLine* fl, const string& name, const string& value, const string& params);
+    virtual void undefineall();
+    virtual void define (FileLine* fl, const string& name, const string& value,
+			 const string& params, bool cmdline);
     virtual string removeDefines(const string& text);	// Remove defines in a text string
 
     // CONSTRUCTORS
@@ -215,6 +219,12 @@ bool V3PreProc::optPsl() {
 void V3PreProcImp::undef(const string& name) {
     m_defines.erase(name);
 }
+void V3PreProcImp::undefineall() {
+    for (DefinesMap::iterator nextit, it = m_defines.begin(); it != m_defines.end(); it=nextit) {
+	nextit = it; ++nextit;
+	if (!it->second.cmdline()) m_defines.erase(it);
+    }
+}
 bool V3PreProcImp::defExists(const string& name) {
     DefinesMap::iterator iter = m_defines.find(name);
     if (iter == m_defines.end()) return false;
@@ -241,7 +251,8 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
     if (iter == m_defines.end()) return false;
     return iter->second.fileline();
 }
-void V3PreProcImp::define(FileLine* fl, const string& name, const string& value, const string& params) {
+void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
+			  const string& params, bool cmdline) {
     UINFO(4,"DEFINE '"<<name<<"' as '"<<value<<"' params '"<<params<<"'"<<endl);
     if (defExists(name)) {
 	if (!(defValue(name)==value && defParams(name)==params)) {  // Duplicate defs are OK
@@ -250,7 +261,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
 	}
 	undef(name);
     }
-    m_defines.insert(make_pair(name, V3Define(fl, value, params)));
+    m_defines.insert(make_pair(name, V3Define(fl, value, params, cmdline)));
 }
 
 string V3PreProcImp::removeDefines(const string& sym) {
@@ -382,6 +393,7 @@ const char* V3PreProcImp::tokenName(int tok) {
     case VP_DEFREF	: return("DEFREF");
     case VP_DEFARG	: return("DEFARG");
     case VP_ERROR	: return("ERROR");
+    case VP_UNDEFINEALL	: return("UNDEFINEALL");
     case VP_PSL		: return("PSL");
     default: return("?");
     }
@@ -791,7 +803,7 @@ int V3PreProcImp::getToken() {
 		    if (trailspace) formAndValue.erase(formAndValue.length()-trailspace,trailspace);
 		    // Define it
 		    UINFO(4,"Define "<<m_lastSym<<" = '"<<formAndValue<<"'"<<endl);
-		    define(fileline(), m_lastSym, formAndValue, params);
+		    define(fileline(), m_lastSym, formAndValue, params, false);
 		}
 	    } else {
 		fileline()->v3fatalSrc("Bad define text\n");
@@ -996,6 +1008,12 @@ int V3PreProcImp::getToken() {
 		fileline()->v3error("`ifdef not terminated at EOF\n");
 	    }
 	    return tok;
+	case VP_UNDEFINEALL:
+	    if (!m_off) {
+		UINFO(4,"Undefineall "<<endl);
+		undefineall();
+	    }
+	    goto next_tok;
 	case VP_SYMBOL:
 	case VP_STRING:
 	case VP_PSL:

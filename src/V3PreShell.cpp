@@ -62,10 +62,10 @@ protected:
 	    s_preprocp->debug(debug());
 	    // Default defines
 	    FileLine* prefl = new FileLine("INTERNAL_VERILATOR_DEFINE",0);
-	    s_preprocp->define(prefl,"verilator", "1");  // LEAK_OK
-	    s_preprocp->define(prefl,"verilator3", "1");  // LEAK_OK
-	    s_preprocp->define(prefl,"systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK
-	    s_preprocp->define(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");  // LEAK_OK
+	    s_preprocp->defineCmdLine(prefl,"verilator", "1");  // LEAK_OK
+	    s_preprocp->defineCmdLine(prefl,"verilator3", "1");  // LEAK_OK
+	    s_preprocp->defineCmdLine(prefl,"systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK
+	    s_preprocp->defineCmdLine(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");  // LEAK_OK
 	}
     }
 
@@ -117,9 +117,9 @@ void V3PreShell::preproc(FileLine* fl, const string& modname, V3ParseImp* parsep
 void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);
 }
-void V3PreShell::define(const string& name, const string& value) {
+void V3PreShell::defineCmdLine(const string& name, const string& value) {
     FileLine* prefl = new FileLine("COMMAND_LINE_DEFINE",0);
-    V3PreShellImp::s_preprocp->define(prefl, name,value,"");
+    V3PreShellImp::s_preprocp->defineCmdLine(prefl, name, value);
 }
 void V3PreShell::undef(const string& name) {
     V3PreShellImp::s_preprocp->undef(name);

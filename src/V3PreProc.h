@@ -72,7 +72,11 @@ public:
 
     virtual void undef(const string& name)=0;			// Remove a definition
     virtual void define(FileLine* fileline, const string& name,
-			const string& value, const string& params="")=0; // `define without any parameters
+			const string& value, const string& params="", bool cmdline=false)=0; // `define without any parameters
+    virtual void defineCmdLine(FileLine* fileline, const string& name,
+			       const string& value) { // `define without any parameters
+	define(fileline, name, value, "", true);
+    }
     virtual string removeDefines(const string& text)=0;	// Remove defines in a text string
 
 protected:

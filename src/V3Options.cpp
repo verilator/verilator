@@ -89,7 +89,7 @@ void V3Options::addDefine(const string& defline) {
 	value = def.substr(pos+1);
 	def.erase(pos);
     }
-    V3PreShell::define(def,value);
+    V3PreShell::defineCmdLine(def,value);
 }
 
 void V3Options::addCppFile(const string& filename) {

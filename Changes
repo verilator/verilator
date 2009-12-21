@@ -22,6 +22,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $sformat and $swrite.
 
+***  Support `undefineall.
+
 ***  Add VARHIDDEN warning when signal name hides module name.
 
 **** Support optional cell parenthesis, bug179. [by Byron Bradley]
