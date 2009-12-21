@@ -30,18 +30,20 @@
 
 V3PreLex* V3PreLex::s_currentLexp = NULL;	// Current lexing point
 
+#define LEXP V3PreLex::s_currentLexp
+
 // Prevent conflicts from perl version
-static void linenoInc()  {V3PreLex::s_currentLexp->incLineno();}
+static void linenoInc()  {LEXP->incLineno();}
 static bool optPsl() { return V3PreProc::optPsl(); }
-static bool pedantic() { return V3PreLex::s_currentLexp->m_pedantic; }
-static void yyerror(char* msg) { V3PreLex::s_currentLexp->m_curFilelinep->v3error(msg); }
-static void yyerrorf(const char* msg) { V3PreLex::s_currentLexp->m_curFilelinep->v3error(msg); }
-static void appendDefValue(const char* t,int l) { V3PreLex::s_currentLexp->appendDefValue(t,l); }
-static int  pslParenLevel()    { return V3PreLex::s_currentLexp->m_pslParenLevel; }
-static void pslParenLevelInc() { V3PreLex::s_currentLexp->m_pslParenLevel++; }
-static void pslParenLevelDec() { if (pslParenLevel()) V3PreLex::s_currentLexp->m_pslParenLevel--; }
-static bool pslMoreNeeded()    { return V3PreLex::s_currentLexp->m_pslMoreNeeded; }
-static void pslMoreNeeded(bool flag) { V3PreLex::s_currentLexp->m_pslMoreNeeded = flag; }
+static bool pedantic() { return LEXP->m_pedantic; }
+static void yyerror(char* msg) { LEXP->m_curFilelinep->v3error(msg); }
+static void yyerrorf(const char* msg) { LEXP->m_curFilelinep->v3error(msg); }
+static void appendDefValue(const char* t,int l) { LEXP->appendDefValue(t,l); }
+static int  pslParenLevel()    { return LEXP->m_pslParenLevel; }
+static void pslParenLevelInc() { LEXP->m_pslParenLevel++; }
+static void pslParenLevelDec() { if (pslParenLevel()) LEXP->m_pslParenLevel--; }
+static bool pslMoreNeeded()    { return LEXP->m_pslMoreNeeded; }
+static void pslMoreNeeded(bool flag) { LEXP->m_pslMoreNeeded = flag; }
 
 /**********************************************************************/
 %}
@@ -75,7 +77,7 @@ psl		[p]sl
 	/**************************************************************/
 %%
 
-<INITIAL>^{ws}*"`line"{ws}+.*{crnl}	{ V3PreLex::s_currentLexp->lineDirective(yytext);
+<INITIAL>^{ws}*"`line"{ws}+.*{crnl}	{ LEXP->lineDirective(yytext);
 					  return(VP_LINE); }
 
 	/* Special directives we recognize */
@@ -92,13 +94,13 @@ psl		[p]sl
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ if (!pedantic()) {
 			     static string rtnfile;
-			     rtnfile = '"'; rtnfile += V3PreLex::s_currentLexp->m_curFilelinep->cfilename();
+			     rtnfile = '"'; rtnfile += LEXP->m_curFilelinep->cfilename();
 			     rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
 			     return (VP_STRING);
 	                  } else return(VP_DEFREF); }
 <INITIAL>"`__LINE__"	{ if (!pedantic()) {
 	                     static char buf[10];
-			     sprintf(buf, "%d",V3PreLex::s_currentLexp->m_curFilelinep->lineno());
+			     sprintf(buf, "%d",LEXP->m_curFilelinep->lineno());
 	                     yytext = buf; yyleng = strlen(yytext); return (VP_TEXT);
 	                  } else return(VP_DEFREF); }
 <INITIAL>"`error"	{ if (!pedantic()) return (VP_ERROR); else return(VP_DEFREF); }
@@ -108,10 +110,10 @@ psl		[p]sl
 <STRMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in unterminated string"); yyleng=0; yyterminate(); }
 <STRMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated string"); BEGIN(INITIAL); }
 <STRMODE>[^\"\\]	{ yymore(); }
-<STRMODE>{backslash}{crnl} { linenoInc(); yymore(); }
+<STRMODE>{backslash}{crnl}	{ linenoInc(); yymore(); }
 <STRMODE>{backslash}.	{ yymore(); }
 <STRMODE>{quote} 	{ yy_pop_state();
-			  if (V3PreLex::s_currentLexp->m_parenLevel) appendDefValue(yytext,yyleng);
+			  if (LEXP->m_parenLevel || LEXP->m_formalLevel) { appendDefValue(yytext,yyleng); yyleng=0; }
 			  else return (VP_STRING); }
 
 	/* Protected blocks */
@@ -130,21 +132,24 @@ psl		[p]sl
 
 	/* Reading definition formal parenthesis (or not) to begin formal arguments */
 	/* Note '(' must IMMEDIATELY follow definition name */
-<DEFFPAR>[(]		{ appendDefValue("(",1); BEGIN(DEFFORM); }
+<DEFFPAR>[(]		{ appendDefValue("(",1); LEXP->m_formalLevel=1; BEGIN(DEFFORM); }
 <DEFFPAR>{crnl}		{ yy_pop_state(); unput('\n'); yyleng=0; return VP_DEFFORM; } /* DEFVAL will later grab the return */
 <DEFFPAR><<EOF>>	{ yy_pop_state(); return VP_DEFFORM; }  /* empty formals */
 <DEFFPAR>.		{ yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
- 
+
 	/* Reading definition formals */
-<DEFFORM>[(]		{ yy_pop_state(); yyerrorf("Extra ( in define formal arguments.\n"); yyleng=0; return VP_DEFFORM; }
-<DEFFORM>[)]		{ yy_pop_state(); appendDefValue(yytext,yyleng); yyleng=0; return VP_DEFFORM; }
+<DEFFORM>[(]		{ appendDefValue(yytext,yyleng); yyleng=0; ++LEXP->m_formalLevel; }
+<DEFFORM>[)]		{ appendDefValue(yytext,yyleng); yyleng=0; if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; } }
 <DEFFORM>"/*"		{ yy_push_state(CMTMODE); yymore(); }
 <DEFFORM>"//"[^\n\r]*	{ return (VP_COMMENT);}
-<DEFFORM>{drop}	{ }
+<DEFFORM>{drop}		{ }
 <DEFFORM><<EOF>>	{ linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments."); yyleng=0; return VP_DEFFORM; }
 <DEFFORM>{crnl}		{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
 <DEFFORM>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
-<DEFFORM>[^\/\*\n\r\\()]+	|
+<DEFFORM>{quote}	{ yy_push_state(STRMODE); yymore(); }
+<DEFFORM>[{\[]		{ LEXP->m_formalLevel++; appendDefValue(yytext,yyleng); }
+<DEFFORM>[}\]]		{ LEXP->m_formalLevel--; appendDefValue(yytext,yyleng); }
+<DEFFORM>[^\/\*\n\r\\(){}\[\]\"]+	|
 <DEFFORM>[\\][^\n\r]	|
 <DEFFORM>.		{ appendDefValue(yytext,yyleng); }
 
@@ -166,26 +171,24 @@ psl		[p]sl
 <ARGMODE><<EOF>>	{ yyerrorf("EOF in define argument list\n"); yyleng = 0; yyterminate(); }
 <ARGMODE>{crnl}		{ linenoInc(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
 <ARGMODE>{quote}	{ yy_push_state(STRMODE); yymore(); }
-<ARGMODE>[{\[]		{ V3PreLex::s_currentLexp->m_parenLevel++;
-			  appendDefValue(yytext,yyleng); }
-<ARGMODE>[}\]]		{ V3PreLex::s_currentLexp->m_parenLevel--;
-			  appendDefValue(yytext,yyleng); }
-<ARGMODE>[(]		{ V3PreLex::s_currentLexp->m_parenLevel++;
+<ARGMODE>[{\[]		{ LEXP->m_parenLevel++; appendDefValue(yytext,yyleng); }
+<ARGMODE>[}\]]		{ LEXP->m_parenLevel--; appendDefValue(yytext,yyleng); }
+<ARGMODE>[(]		{ LEXP->m_parenLevel++;
 			  // Note paren level 0 means before "(" of starting args
 			  // Level 1 means "," between arguments
 			  // Level 2+ means one argument's internal ()
-			  if (V3PreLex::s_currentLexp->m_parenLevel>1) {
+			  if (LEXP->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      return (VP_TEXT);
 			}}
-<ARGMODE>[)]		{ V3PreLex::s_currentLexp->m_parenLevel--;
-			  if (V3PreLex::s_currentLexp->m_parenLevel>0) {
+<ARGMODE>[)]		{ LEXP->m_parenLevel--;
+			  if (LEXP->m_parenLevel>0) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      yy_pop_state(); return (VP_DEFARG);
 			}}
-<ARGMODE>[,]		{ if (V3PreLex::s_currentLexp->m_parenLevel>1) {
+<ARGMODE>[,]		{ if (LEXP->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {
 			      yy_pop_state(); return (VP_DEFARG);

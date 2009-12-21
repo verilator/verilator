@@ -161,7 +161,7 @@ private:
     FileLine* defFileline(const string& name);
 
     bool commentTokenMatch(string& cmdr, const char* strg);
-    string trimWhitespace(const string& strg);
+    string trimWhitespace(const string& strg, bool trailing);
     void unputString(const string& strg);
 
     void parsingOn() {
@@ -411,10 +411,19 @@ void V3PreProcImp::unputString(const string& strg) {
     m_lexp->scanBytes(strg);
 }
 
-string V3PreProcImp::trimWhitespace(const string& strg) {
+string V3PreProcImp::trimWhitespace(const string& strg, bool trailing) {
+    // Remove leading whitespace
     string out = strg;
-    while (out.length()>0 && isspace(out[0])) {
-	out.erase(0,1);
+    string::size_type leadspace = 0;
+    while (out.length() > leadspace
+	   && isspace(out[leadspace])) leadspace++;
+    if (leadspace) out.erase(0,leadspace);
+    // Remove trailing whitespace
+    if (trailing) {
+	string::size_type trailspace = 0;
+	while (out.length() > trailspace
+	       && isspace(out[out.length()-1-trailspace])) trailspace++;
+	if (trailspace) out.erase(out.length()-trailspace,trailspace);
     }
     return out;
 }
@@ -429,7 +438,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     // parsed result.
     UINFO(4,"defineSubstIn  `"<<refp->name()<<" "<<refp->params()<<endl);
     for (unsigned i=0; i<refp->args().size(); i++) {
-	UINFO(4,"defineArg["<<i<<"] = "<<refp->args()[i]<<endl);
+	UINFO(4,"defineArg["<<i<<"] = '"<<refp->args()[i]<<"'"<<endl);
     }
     // Grab value
     string value = defValue(refp->name());
@@ -439,27 +448,63 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     {   // Parse argument list into map
 	unsigned numArgs=0;
 	string argName;
-	for (const char* cp=refp->params().c_str(); *cp; cp++) {
-	    if (*cp=='(') {
-	    } else if (argName=="" && isspace(*cp)) {
-	    } else if (isspace(*cp) || *cp==')' || *cp==',') {
-		if (argName!="") {
-		    if (refp->args().size() > numArgs) {
-			// A call `def( a ) must be equivelent to `def(a ), so trimWhitespace
-			// Note other sims don't trim trailing whitespace, so we don't either.
-			argValueByName[argName] = trimWhitespace(refp->args()[numArgs]);
+	int paren = 1;  // (), {} and [] can use same counter, as must be matched pair per spec
+	string token;
+	bool quote = false;
+	bool haveDefault = false;
+	// Note there's a leading ( and trailing ), so parens==1 is the base parsing level
+	const char* cp=refp->params().c_str();
+	if (*cp == '(') cp++;
+	for (; *cp; cp++) {
+	    //UINFO(4,"   Parse  Paren="<<paren<<"  Arg="<<numArgs<<"  token='"<<token<<"'  Parse="<<cp<<endl);
+	    if (!quote && paren==1) {
+		if (*cp==')' || *cp==',') {
+		    string value;
+		    if (haveDefault) { value=token; } else { argName=token; }
+		    argName = trimWhitespace(argName,true);
+		    UINFO(4,"    Got Arg="<<numArgs<<"  argName='"<<argName<<"'  default='"<<value<<"'"<<endl);
+		    // Parse it
+		    if (argName!="") {
+			if (refp->args().size() > numArgs) {
+			    // A call `def( a ) must be equivelent to `def(a ), so trimWhitespace
+			    // Note other sims don't trim trailing whitespace, so we don't either.
+			    string arg = trimWhitespace(refp->args()[numArgs], false);
+			    if (arg != "") value = arg;
+			} else if (!haveDefault) {
+			    fileline()->v3error("Define missing argument '"+argName+"' for: "+refp->name()+"\n");
+			    return " `"+refp->name()+" ";
+			}
+			numArgs++;
 		    }
-		    numArgs++;
-		    //cout << "  arg "<<argName<<endl;
+		    argValueByName[argName] = value;
+		    // Prepare for next
+		    argName = "";
+		    token = "";
+		    haveDefault = false;
+		    continue;
 		}
-		argName = "";
-	    } else if ( isalpha(*cp) || *cp=='_'
-			|| (argName!="" && (isdigit(*cp) || *cp=='$'))) {
-		argName += *cp;
+		else if (*cp=='=') {
+		    haveDefault = true;
+		    argName = token;
+		    token = "";
+		    continue;
+		}
 	    }
+	    if (cp[0]=='\\' && cp[1]) {
+		token += cp[0]; // \{any} Put out literal next character
+		token += cp[1];
+		cp++;
+		continue;
+	    }
+	    if (!quote) {
+		if (*cp=='(' || *cp=='{' || *cp=='[') paren++;
+		else if (*cp==')' || *cp=='}' || *cp==']') paren--;
+	    }
+	    if (*cp=='"') quote=!quote;
+	    if (*cp) token += *cp;
 	}
-	if (refp->args().size() != numArgs) {
-	    fileline()->v3error("Define passed wrong number of arguments: "+refp->name()+"\n");
+	if (refp->args().size() > numArgs) {
+	    fileline()->v3error("Define passed too many arguments: "+refp->name()+"\n");
 	    return " `"+refp->name()+" ";
 	}
     }
@@ -768,42 +813,27 @@ int V3PreProcImp::getToken() {
 	    if (tok == VP_DEFVALUE) {
 		if (debug()) cout<<"DefValue='"<<m_lexp->m_defValue<<"'  formals='"<<m_formals<<"'\n";
 		// Add any formals
-		string formAndValue = m_formals + m_lexp->m_defValue;
+		string formals = m_formals;
+		string value = m_lexp->m_defValue;
 		// Remove returns
-		for (unsigned i=0; i<formAndValue.length(); i++) {
-		    if (formAndValue[i] == '\n') {
-			formAndValue[i] = ' ';
+		for (unsigned i=0; i<formals.length(); i++) {
+		    if (formals[i] == '\n') {
+			formals[i] = ' ';
+			newlines += "\n";
+		    }
+		}
+		for (unsigned i=0; i<value.length(); i++) {
+		    if (value[i] == '\n') {
+			value[i] = ' ';
 			newlines += "\n";
 		    }
 		}
 		if (!m_off) {
-		    string params;
-		    if (formAndValue=="" || isspace(formAndValue[0])) {
-			// Define without parameters
-		    } else if (formAndValue[0] == '(') {
-			string::size_type paren = formAndValue.find(")");
-			if (paren == string::npos) {
-			    fileline()->v3error("Missing ) to end define arguments.");
-			} else {
-			    params = formAndValue.substr(0, paren+1);
-			    formAndValue.replace(0, paren+1, "");
-			}
-		    } else {
-			fileline()->v3error("Missing space or paren to start define value.");
-		    }
-		    // Remove leading whitespace
-		    unsigned leadspace = 0;
-		    while (formAndValue.length() > leadspace
-			   && isspace(formAndValue[leadspace])) leadspace++;
-		    if (leadspace) formAndValue.erase(0,leadspace);
-		    // Remove trailing whitespace
-		    unsigned trailspace = 0;
-		    while (formAndValue.length() > trailspace
-			   && isspace(formAndValue[formAndValue.length()-1-trailspace])) trailspace++;
-		    if (trailspace) formAndValue.erase(formAndValue.length()-trailspace,trailspace);
+		    // Remove leading and trailing whitespace
+		    value = trimWhitespace(value, true);
 		    // Define it
-		    UINFO(4,"Define "<<m_lastSym<<" = '"<<formAndValue<<"'"<<endl);
-		    define(fileline(), m_lastSym, formAndValue, params, false);
+		    UINFO(4,"Define "<<m_lastSym<<" "<<formals<<" = '"<<value<<"'"<<endl);
+		    define(fileline(), m_lastSym, value, formals, false);
 		}
 	    } else {
 		fileline()->v3fatalSrc("Bad define text\n");

@@ -116,6 +116,7 @@ class V3PreLex {
     bool	m_pedantic;	// Obey standard; don't Substitute `__FILE__ and `__LINE__
 
     // State from lexer
+    int		m_formalLevel;	// Parenthesis counting inside def formals
     int		m_parenLevel;	// Parenthesis counting inside def args
     int		m_pslParenLevel;// PSL Parenthesis (){} counting, so we can find final ;
     bool	m_pslMoreNeeded;// Next // comment is really psl
@@ -126,6 +127,7 @@ class V3PreLex {
 	m_fp = fp;
 	m_keepComments = 0;
 	m_pedantic = false;
+	m_formalLevel = 0;
 	m_parenLevel = 0;
 	m_pslParenLevel = 0;
 	m_pslMoreNeeded = false;

@@ -22,7 +22,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $sformat and $swrite.
 
-***  Support `undefineall.
+***  Support 1800-2009 define defaults and `undefineall.
 
 ***  Add VARHIDDEN warning when signal name hides module name.
 

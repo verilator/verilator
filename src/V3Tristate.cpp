@@ -131,7 +131,7 @@ private:
 	    outrefp = outp->castSel()->fromp()->castVarRef();
 	    width = outp->castSel()->widthConst();
 	} else {
-	    v3error("Can't find LHS varref");
+	    nodep->v3error("Can't find LHS varref");
 	}
 	outrefp->lvalue(true);
 	AstVar* varp = outrefp->varp();
@@ -185,7 +185,7 @@ private:
 	    } else if (outp->castSel()) {
 		outrefp = outp->castSel()->fromp()->castVarRef();
 	    } else {
-		v3error("Can't find LHS varref");
+		nodep->v3error("Can't find LHS varref");
 	    }
 
 	    createEnableVar(outp, outrefp, enrhsp, outrhsp->width());
@@ -215,7 +215,7 @@ private:
 		enrhsp = new AstReplicate(enrhsp->fileline(), enrhsp, new AstConst(enrhsp->fileline(), V3Number(enrhsp->fileline(), 32, enp->width())));
 		enrhsp->width(enp->width(), enp->widthMin());
 	    } else {
-		v3error("Don't know how to deal with selection logic wider than 1 bit");
+		enrhsp->v3error("Don't know how to deal with selection logic wider than 1 bit");
 	    }
 	}
         m_modp->addStmtp(enp);
@@ -351,7 +351,7 @@ private:
 		    // not sure what I should do here other than error that they are mixing low-Z and tristate drivers.
 		    // The other scenerio, and probably more likely, is that they are using a high-Z construct that
 		    // is not supported.  Improving the high-Z detection logic will reduce the occurance of this failure.
-		    v3error("Mixing tristate and low-Z drivers.  Perhaps you are using a high-Z construct not supported");
+		    nodep->v3error("Mixing tristate and low-Z drivers.  Perhaps you are using a high-Z construct not supported");
 		} else  {
 		    UINFO(9, "       No tristates found on " << lhsp <<endl);
 		}
