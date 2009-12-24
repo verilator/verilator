@@ -1256,14 +1256,11 @@ Verilator supports $clog2.
 
 Verilator partially supports the uwire keyword.
 
-=head1 SYSTEMVERILOG (IEEE 1800-2005) SUPPORT
+=head1 SYSTEMVERILOG 2005 (IEEE 1800-2005) SUPPORT
 
 Verilator currently has some support for SystemVerilog synthesis
 constructs. As SystemVerilog features enter common usage they are added;
 please file a bug if a feature you need is missing.
-
-Verilator implements the full SystemVerilog 1800-2005 preprocessor,
-including function call-like preprocessor defines.
 
 Verilator supports ==? and !=? operators, $bits, $countones, $error,
 $fatal, $info, $isunknown, $onehot, $onehot0, $unit, $warning, always_comb,
@@ -1275,6 +1272,12 @@ It also supports .name and .* interconnection.
 
 Verilator partially supports concurrent assert and cover statements; see
 the enclosed coverage tests for the syntax which is allowed.
+
+=head1 SYSTEMVERILOG 2009 (IEEE 1800-2009) SUPPORT
+
+Verilator implements a full SystemVerilog 2009 preprocessor, including
+function call-like preprocessor defines, default define arguments,
+`__FILE__, `__LINE__ and `undefineall.
 
 =head1 SUGAR/PSL SUPPORT
 
@@ -1329,15 +1332,15 @@ or `ifdef's may break other tools.
 
 =item `__FILE__
 
-The __FILE__ define expands to the current filename, like C++'s __FILE__.
-This is in the draft SystemVerilog 2009 standard (but supported by
-Verilator since 2006!)
+The __FILE__ define expands to the current filename as a string, like C++'s
+__FILE__.  This was incorporated into to the 1800-2009 standard (but
+supported by Verilator since 2006!)
 
 =item `__LINE__
 
-The __LINE__ define expands to the current line number, like C++'s
-__LINE__.  This is in the draft SystemVerilog 2009 standard (but supported
-by Verilator since 2006!)
+The __LINE__ define expands to the current filename as a string, like C++'s
+__LINE__.  This was incorporated into to the 1800-2009 standard (but
+supported by Verilator since 2006!)
 
 =item `error I<string>
 

@@ -92,17 +92,14 @@ psl		[p]sl
 <INITIAL>"`undefineall"	{ return(VP_UNDEFINEALL); }
 
 	/* Optional directives we recognize */
-<INITIAL>"`__FILE__"	{ if (!pedantic()) {
-			     static string rtnfile;
-			     rtnfile = '"'; rtnfile += LEXP->m_curFilelinep->cfilename();
-			     rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
-			     return (VP_STRING);
-	                  } else return(VP_DEFREF); }
-<INITIAL>"`__LINE__"	{ if (!pedantic()) {
-	                     static char buf[10];
-			     sprintf(buf, "%d",LEXP->m_curFilelinep->lineno());
-	                     yytext = buf; yyleng = strlen(yytext); return (VP_TEXT);
-	                  } else return(VP_DEFREF); }
+<INITIAL>"`__FILE__"	{ static string rtnfile;
+			  rtnfile = '"'; rtnfile += LEXP->m_curFilelinep->cfilename();
+			  rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
+			  return (VP_STRING); }
+<INITIAL>"`__LINE__"	{ static char buf[10];
+			  sprintf(buf, "%d",LEXP->m_curFilelinep->lineno());
+	                  yytext = buf; yyleng = strlen(yytext);
+			  return (VP_TEXT); }
 <INITIAL>"`error"	{ if (!pedantic()) return (VP_ERROR); else return(VP_DEFREF); }
 
 	/* Pass-through strings */

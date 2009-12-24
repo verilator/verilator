@@ -62,7 +62,7 @@ public:
     // These options control how the parsing proceeds
     int keepComments() { return 2; }		// Return comments, 0=no, 1=yes, 2=callback
     bool lineDirectives() { return true; }	// Insert `line directives
-    bool pedantic() { return false; }		// Obey standard; Don't substitute `__FILE__ and `__LINE__
+    bool pedantic() { return false; }		// Obey standard; Don't substitute `error
     static bool optPsl();
 
     // CALLBACK METHODS
