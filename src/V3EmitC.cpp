@@ -1989,7 +1989,7 @@ class EmitCTrace : EmitCStmts {
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
-	if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed()) {
+	if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed() || emitTraceIsScBv(nodep)) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");

@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_var_pinsizes.v");
 
 compile (
-	 v_flags2 => ["-sp -no-pins64 --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+	 v_flags2 => ["-sp -no-pins64 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
 	 make_main => 0,
 	 ) if $Self->{v3};
 
@@ -29,6 +29,8 @@ if ($Self->{v3}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<sc_bv<64>\s> \s+ o64;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<sc_bv<65>\s> \s+ o65;/x);
 }
+
+execute();
 
 ok(1);
 1;
