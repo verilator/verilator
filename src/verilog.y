@@ -279,6 +279,7 @@ class AstSenTree;
 %token<fl>		yENDSPECIFY	"endspecify"
 %token<fl>		yENDTABLE	"endtable"
 %token<fl>		yENDTASK	"endtask"
+%token<fl>		yENUM		"enum"
 %token<fl>		yEXPORT		"export"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
@@ -1058,7 +1059,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP		{ UNSUP }
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
 	//UNSUP		{ UNSUP }
-	//UNSUP	enumDecl				{ UNSUP }
+	|	enumDecl				{ $$ = $1; }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }
@@ -1139,6 +1140,50 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	;
 
 //************************************************
+// enum
+
+// IEEE: part of data_type
+enumDecl<dtypep>:
+		yENUM enum_base_typeE '{' enum_nameList '}' { $$ = new AstEnumDType($1,$2,$4); }
+	;
+
+enum_base_typeE<dtypep>:	// IEEE: enum_base_type
+		/* empty */				{ $$ = new AstBasicDType(CRELINE(),AstBasicDTypeKwd::INT); }
+	//			// Not in spec, but obviously "enum [1:0]" should work
+	//			// implicit_type expanded, without empty
+	|	signingE rangeList			{ $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2); }
+	|	signing					{ $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
+	//
+	|	integer_atom_type signingE		{ $1->setSignedState($2); $$ = $1; }
+	|	integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3); }
+	|	yaID__aTYPE rangeListE			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2); }
+	;
+
+enum_nameList<nodep>:
+		enum_name_declaration			{ $$ = $1; }
+	|	enum_nameList ',' enum_name_declaration	{ $$ = $1->addNextNull($3); }
+	;
+
+enum_name_declaration<nodep>:	// ==IEEE: enum_name_declaration
+		idAny/*enum_identifier*/ enumNameRangeE enumNameStartE	{ $$ = new AstEnumItem($<fl>1, *$1, $2, $3); }
+	;
+
+enumNameRangeE<nodep>:		// IEEE: second part of enum_name_declaration
+		/* empty */				{ $$ = NULL; }
+	|	'[' intnumAsConst ']'			{ $$ = new AstRange($1,new AstConst($1,0), $2); }
+	|	'[' intnumAsConst ':' intnumAsConst ']'	{ $$ = new AstRange($1,$2,$4); }
+	;
+
+enumNameStartE<nodep>:		// IEEE: third part of enum_name_declaration
+		/* empty */				{ $$ = NULL; }
+	|	'=' constExpr				{ $$ = $2; }
+	;
+
+intnumAsConst<nodep>:
+		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
+	;
+
+//************************************************
 // Typedef
 
 data_declaration<nodep>:	// ==IEEE: data_declaration
@@ -1188,7 +1233,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	|	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }

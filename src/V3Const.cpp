@@ -1073,6 +1073,23 @@ private:
 	    nodep->v3error("Expecting expression to be constant, but variable isn't const: "<<nodep->varp()->prettyName());
 	}
     }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
+	bool did=false;
+	if (nodep->itemp()->initp()) {
+	    //if (debug()) nodep->varp()->initp()->dumpTree(cout,"  visitvaref: ");
+	    nodep->itemp()->initp()->iterateAndNext(*this);
+	    if (AstConst* initp = nodep->itemp()->initp()->castConst()) {
+		const V3Number& num = initp->num();
+		replaceNum(nodep, num); nodep=NULL;
+		did=true;
+	    }
+	}
+	if (!did && m_required) {
+	    nodep->v3error("Expecting expression to be constant, but variable isn't const: "<<nodep->itemp()->prettyName());
+	}
+    }
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	// Don't iterate children, don't want to loose VarRef.
 	if (nodep->attrType()==AstAttrType::BITS) {

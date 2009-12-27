@@ -152,6 +152,10 @@ private:
 	nodep->varp()->iterate(*this);
 	nodep->signedFrom(nodep->varp());
     }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+	nodep->itemp()->iterate(*this);
+	nodep->signedFrom(nodep->itemp());
+    }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	// The node got setup with the signed state of the node.
 	// However a later operation may have changed the node->signed w/o changing

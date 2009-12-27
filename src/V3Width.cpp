@@ -575,6 +575,58 @@ private:
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"  VRout ");
     }
+
+    virtual void visit(AstEnumDType* nodep, AstNUser* vup) {
+	nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->widthFrom(nodep->dtypep());
+	// Assign widths
+	nodep->itemsp()->iterateAndNext(*this,WidthVP(nodep->width(),nodep->widthMin(),BOTH).p());
+	// Assign missing values
+	V3Number num (nodep->fileline(), nodep->width(), 0);
+	V3Number one (nodep->fileline(), nodep->width(), 1);
+	map<V3Number,AstEnumItem*> inits;
+	for (AstEnumItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
+	    if (itemp->initp()) {
+		if (debug()>=9) { UINFO(0,"EnumInit "<<itemp<<endl); itemp->initp()->dumpTree(cout,"-EnumInit: "); }
+		V3Const::constifyParamsEdit(itemp->initp()); // itemp may change
+		if (!itemp->initp()->castConst()) {
+		    itemp->initp()->v3error("Enum value isn't a constant");
+		    itemp->initp()->unlinkFrBack()->deleteTree();
+		}
+	    }
+	    if (!itemp->initp()) itemp->initp(new AstConst(itemp->fileline(), num));
+	    num.opAssign(itemp->initp()->castConst()->num());
+	    // Look for duplicates
+	    if (inits.find(num) != inits.end()) {
+		itemp->v3error("Overlapping enumeration value: "<<itemp->prettyName());
+		inits.find(num)->second->v3error("... Location of original declaration");
+	    } else {
+		inits.insert(make_pair(num,itemp));
+	    }
+	    num.opAdd(one, itemp->initp()->castConst()->num());
+	}
+    }
+    virtual void visit(AstEnumItem* nodep, AstNUser* vup) {
+	int width = vup->c()->width();
+	int mwidth = vup->c()->widthMin();
+	nodep->width(width, mwidth);
+	if (nodep->initp()) {
+	    nodep->initp()->iterateAndNext(*this,WidthVP(width,mwidth,BOTH).p());
+	    widthCheck(nodep,"Enum value",nodep->initp(),width,mwidth);
+	}
+    }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser* vup) {
+	if (nodep->itemp()->width()==0) {
+	    // We need to do the whole enum en-mass
+	    AstNode* enump = nodep;
+	    for (; enump; enump=enump->backp()) {
+		if (enump->castEnumDType()) break;
+	    }
+	    if (!enump) nodep->v3fatalSrc("EnumItem not under a Enum");
+	    enump->iterate(*this);
+	}
+	nodep->widthFrom(nodep->itemp()->initp());
+    }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->sensesp()->iterateAndNext(*this);

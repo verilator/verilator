@@ -10,7 +10,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Support "program", "package", "import" and $unit.
 
-**   Support typedef.  [Donal Casey]
+**   Support typedef and enum.  [by Donal Casey]
 
 **   Support direct programming interface (DPI) "import" and "export".
 

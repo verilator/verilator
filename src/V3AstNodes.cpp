@@ -467,6 +467,12 @@ void AstDisplay::dump(ostream& str) {
     this->AstNode::dump(str);
     //str<<" "<<displayType().ascii();
 }
+void AstEnumItemRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" -> ";
+    if (itemp()) { itemp()->dump(str); }
+    else { str<<"UNLINKED"; }
+}
 void AstPin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (modVarp()) { str<<" -> "; modVarp()->dump(str); }

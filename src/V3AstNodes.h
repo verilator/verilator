@@ -285,6 +285,64 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
+struct AstEnumItem : public AstNode {
+private:
+    string	m_name;
+public:
+    // Parents: ENUM
+    AstEnumItem(FileLine* fl, const string& name, AstNode* rangep, AstNode* initp)
+	: AstNode(fl), m_name(name)
+	{ addNOp1p(rangep); addNOp2p(initp); }
+    ASTNODE_NODE_FUNCS(EnumItem, ENUMITEM)
+    virtual string name() const { return m_name; }
+    virtual bool maybePointedTo() const { return true; }
+    void name(const string& flag) { m_name = flag; }
+    AstRange* rangep() const { return op1p()->castRange(); } // op1 = Range for name appending
+    void rangep(AstNode* nodep) { addOp1p(nodep); }
+    AstNode* initp() const { return op2p(); } // op2 = Value
+    void initp(AstNode* nodep) { addOp2p(nodep); }
+};
+
+struct AstEnumItemRef : public AstNodeMath {
+private:
+    AstEnumItem* m_itemp;	// [AfterLink] Pointer to item
+public:
+    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp)
+	: AstNodeMath(fl), m_itemp(itemp) {
+	if (m_itemp) widthSignedFrom(m_itemp);
+    }
+    ASTNODE_NODE_FUNCS(EnumItemRef, ENUMITEMREF)
+    virtual void dump(ostream& str);
+    virtual string name() const { return itemp()->name(); }
+    virtual bool broken() const { return !itemp(); }
+    virtual int instrCount() const { return 0; }
+    virtual void cloneRelink() { if (m_itemp->clonep()) m_itemp = m_itemp->clonep()->castEnumItem(); }
+    virtual bool same(AstNode* samep) const {
+	return itemp()==samep->castEnumItemRef()->itemp(); }
+    AstEnumItem* itemp() const { return m_itemp; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return true; }
+};
+
+struct AstEnumDType : public AstNodeDType {
+    // Parents: TYPEDEF/MODULE
+    // Children: ENUMVALUEs
+    AstEnumDType(FileLine* fl, AstNodeDType* dtypep, AstNode* itemsp)
+	: AstNodeDType(fl)
+	{ setOp1p(dtypep); addNOp2p(itemsp); }
+    ASTNODE_NODE_FUNCS(EnumDType, ENUMDTYPE)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Data type
+    void dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstEnumItem* itemsp() const { return op2p()->castEnumItem(); } // op2 = AstEnumItem's
+    void addValuesp(AstNode* nodep) { addOp2p(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthAlignBytes(); }
+};
+
 //######################################################################
 
 struct AstArraySel : public AstNodeSel {

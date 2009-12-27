@@ -118,12 +118,22 @@ private:
 	else return NULL;
     }
 
-    void linkVarName (AstVarRef* nodep) {
+    bool linkVarName (AstVarRef* nodep) {
+	// Return true if changed, and caller should end processing
 	if (!nodep->varp()) {
-	    AstVar* varp = m_curVarsp->findIdUpward(nodep->name())->castVar();
-	    nodep->varp(varp);
-	    nodep->packagep(packageFor(varp));
+	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    if (AstVar* varp = foundp->castVar()) {
+		nodep->varp(varp);
+		nodep->packagep(packageFor(varp));
+	    }
+	    else if (AstEnumItem* valuep = foundp->castEnumItem()) {
+		AstNode* newp = new AstEnumItemRef(nodep->fileline(), valuep);
+		nodep->replaceWith(newp);
+		nodep->deleteTree(); nodep=NULL;
+		return true; // Edited
+	    }
 	}
+	return false;
     }
 
     string nodeTextType(AstNode* nodep) {
@@ -170,7 +180,7 @@ private:
 
     void createImplicitVar (AstVarRef* forrefp, bool noWarn) {
 	// Create implicit after warning
-	linkVarName(forrefp);
+	if (linkVarName(forrefp)) { forrefp=NULL; return; }
 	if (!forrefp->varp()) {
 	    if (!noWarn) forrefp->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<forrefp->prettyName());
 	    AstVar* newp = new AstVar (forrefp->fileline(), AstVarType::WIRE,
@@ -301,18 +311,49 @@ private:
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// VarRef: Resolve its reference
+	nodep->iterateChildren(*this);
 	if (m_idState==ID_RESOLVE && !nodep->varp()) {
-	    linkVarName(nodep);
+	    if (linkVarName(nodep)) { nodep=NULL; return; }
 	    if (!nodep->varp()) {
 		nodep->v3error("Can't find definition of signal: "<<nodep->prettyName());
 		createImplicitVar (nodep, true);  // So only complain once
 	    }
 	}
-	nodep->iterateChildren(*this);
     }
     //virtual void visit(AstVarXRef* nodep, AstNUser*) {
     // See LinkDotVisitor
     //}
+
+    virtual void visit(AstEnumItem* nodep, AstNUser*) {
+	// EnumItem: Remember its name for later resolution
+	nodep->iterateChildren(*this);
+	if (m_idState==ID_FIND) {
+	    // Find under either a task or the module's vars
+	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    AstEnumItem* findvarp = foundp->castEnumItem();
+	    bool ins=false;
+	    if (!foundp) {
+		ins=true;
+	    } else if (findvarp != nodep) {
+		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
+		if (findvarp && findvarp->user3p() == m_curVarsp) {  // Only when on same level
+		    nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName());
+		    findvarp->v3error("... Location of original declaration");
+		} else {
+		    // User can disable the message at either point
+		    if (!nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
+			&& !foundp->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
+			nodep->v3warn(VARHIDDEN,"Declaration of enum value hides declaration in upper scope: "<<nodep->name());
+			foundp->v3warn(VARHIDDEN,"... Location of original declaration");
+		    }
+		    ins = true;
+		}
+	    }
+	    if (ins) {
+		symsInsert(nodep->name(), nodep);
+	    }
+	}
+    }
 
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	// NodeTask: Remember its name for later resolution

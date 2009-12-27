@@ -375,6 +375,7 @@ escid	\\[^ \t\f\r\n]+
   "endpackage"		{ FL; return yENDPACKAGE; }
   "endprogram"		{ FL; return yENDPROGRAM; }
   "endproperty"		{ FL; return yENDPROPERTY; }
+  "enum"		{ FL; return yENUM; }
   "export"		{ FL; return yEXPORT; }
   "final"		{ FL; return yFINAL; }
   "iff"			{ FL; return yIFF; }
@@ -414,7 +415,6 @@ escid	\\[^ \t\f\r\n]+
   "endgroup"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "endinterface"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "endsequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "enum"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "expect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "extends"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "extern"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
