@@ -1137,6 +1137,7 @@ void OrderVisitor::processEdgeReport() {
     string filename = v3Global.debugFilename("order_edges.txt");
     const auto_ptr<ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+    //Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
     deque<string> report;
 

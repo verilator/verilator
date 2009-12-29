@@ -1019,7 +1019,7 @@ struct AstNodeCond : public AstNodeTriop {
     AstNode*	condp() 	const { return op1p()->castNode(); }	// op1 = Condition
     AstNode*	expr1p() 	const { return op2p()->castNode(); }	// op2 = If true...
     AstNode*	expr2p() 	const { return op3p()->castNode(); }	// op3 = If false...
-    virtual string emitVerilog() { return "%k(%l %k? %r %k: %t)"; }
+    virtual string emitVerilog() { return "%k(%l %f? %r %k: %t)"; }
     virtual string emitC() { return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() { return false; } // clean if e1 & e2 clean
     virtual bool cleanLhs() { return true; }
@@ -1076,6 +1076,7 @@ struct AstNodeAssign : public AstNodeStmt {
     virtual int  instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
+    virtual string verilogKwd() const { return "="; }
 };
 
 struct AstNodeFor : public AstNodeStmt {

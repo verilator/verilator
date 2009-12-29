@@ -214,10 +214,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(keyword()); }
     virtual bool same(AstNode* samep) const {
 	return samep->castBasicDType()->keyword() == keyword(); }
-    virtual string name()	const {
-	if (rangep()) return string(m_keyword.ascii())+"[]";
-	else return m_keyword.ascii();
-    }
+    virtual string name()	const { return m_keyword.ascii(); }
     AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
     void	rangep(AstRange* nodep) { setNOp1p(nodep); }
     void	setSignedState(AstSignedState signst) {
@@ -359,7 +356,7 @@ struct AstArraySel : public AstNodeSel {
     ASTNODE_NODE_FUNCS(ArraySel, ARRAYSEL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
 	V3ERROR_NA; /* How can from be a const? */ }
-    virtual string emitVerilog() { return "%k(%l%k[%r])"; }
+    virtual string emitVerilog() { return "%k(%l%f[%r])"; }
     virtual string emitC() { return "%li%k[%ri]"; }
     virtual bool cleanOut() { return true; }
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return true;}
@@ -382,7 +379,7 @@ struct AstWordSel : public AstNodeSel {
     }
     ASTNODE_NODE_FUNCS(WordSel, WORDSEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k(%l[%r])"; } // Not %k, as usually it's a small constant rhsp
+    virtual string emitVerilog() { return "%k(%l%f[%r])"; }
     virtual string emitC() { return "%li[%ri]"; } // Not %k, as usually it's a small constant rhsp
     virtual bool cleanOut() { return true; }
     virtual bool cleanLhs() { return true; } virtual bool cleanRhs() { return true; }
@@ -1126,7 +1123,7 @@ struct AstSenGate : public AstNodeSenItem {
 	width(1,1); addOp1p(sensesp); setOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(SenGate, SENGATE)
-    virtual string emitVerilog() { return "(%l) && (%r)"; }
+    virtual string emitVerilog() { return "(%l) %f&& (%r)"; }
     AstSenItem*	sensesp() const { return op1p()->castSenItem(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     void	sensesp(AstSenItem* nodep)  { addOp1p(nodep); }
@@ -1197,7 +1194,6 @@ struct AstAssign : public AstNodeAssign {
     }
     ASTNODE_NODE_FUNCS(Assign, ASSIGN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
-    virtual string verilogKwd() const { return "="; }
 };
 
 struct AstAssignAlias : public AstNodeAssign {
@@ -1813,7 +1809,7 @@ struct AstChangeXor : public AstNodeBiComAsv {
 	width(32,32); }
     ASTNODE_NODE_FUNCS(ChangeXor, CHANGEXOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opChangeXor(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l ^ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f^ %r)"; }
     virtual string emitC() { return "VL_CHANGEXOR_%li(%lw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^"; }
     virtual bool cleanOut() {return false;}  // Lclean && Rclean
@@ -2114,7 +2110,7 @@ public:
 	width(wwidth,wwidth); m_reset=reset; }
     AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
     ASTNODE_NODE_FUNCS(Rand, RAND)
-    virtual string emitVerilog() { return "$random"; }
+    virtual string emitVerilog() { return "%f$random"; }
     virtual string emitC() {
 	return (m_reset ?
 		"VL_RAND_RESET_%nq(%nw, %P)"
@@ -2131,7 +2127,7 @@ struct AstTime : public AstNodeTermop {
     AstTime(FileLine* fl)	: AstNodeTermop(fl) {
 	width(64,64); }
     ASTNODE_NODE_FUNCS(Time, TIME)
-    virtual string emitVerilog() { return "$time"; }
+    virtual string emitVerilog() { return "%f$time"; }
     virtual string emitC() { return "VL_TIME_%nq()"; }
     virtual bool cleanOut() { return true; }
     virtual bool isGateOptimizable() const { return false; }
@@ -2171,7 +2167,7 @@ struct AstUnaryMin : public AstNodeUniop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(UnaryMin, UNARYMIN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opUnaryMin(lhs); }
-    virtual string emitVerilog() { return "%k(- %l)"; }
+    virtual string emitVerilog() { return "%f(- %l)"; }
     virtual string emitC() { return "VL_UNARYMIN_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
@@ -2181,7 +2177,7 @@ struct AstRedAnd : public AstNodeUniop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(RedAnd, REDAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedAnd(lhs); }
-    virtual string emitVerilog() { return "%k(& %l)"; }
+    virtual string emitVerilog() { return "%f(& %l)"; }
     virtual string emitC() { return "VL_REDAND_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2191,7 +2187,7 @@ struct AstRedOr : public AstNodeUniop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(RedOr, REDOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedOr(lhs); }
-    virtual string emitVerilog() { return "%k(| %l)"; }
+    virtual string emitVerilog() { return "%f(| %l)"; }
     virtual string emitC() { return "VL_REDOR_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2201,7 +2197,7 @@ struct AstRedXor : public AstNodeUniop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(RedXor, REDXOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXor(lhs); }
-    virtual string emitVerilog() { return "%k(^ %l)"; }
+    virtual string emitVerilog() { return "%f(^ %l)"; }
     virtual string emitC() { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return (lhsp()->width()!=1 && lhsp()->width()!=2 && lhsp()->width()!=4
@@ -2215,7 +2211,7 @@ struct AstRedXnor : public AstNodeUniop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(RedXnor, REDXNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXnor(lhs); }
-    virtual string emitVerilog() { return "%k(~^ %l)"; }
+    virtual string emitVerilog() { return "%f(~^ %l)"; }
     virtual string emitC() { v3fatalSrc("REDXNOR should have became REDXOR"); return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2227,7 +2223,7 @@ struct AstLogNot : public AstNodeUniop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LogNot, LOGNOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLogNot(lhs); }
-    virtual string emitVerilog() { return "%k(! %l)"; }
+    virtual string emitVerilog() { return "%f(! %l)"; }
     virtual string emitC() { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual string emitSimpleOperator() { return "!"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
@@ -2238,7 +2234,7 @@ struct AstNot : public AstNodeUniop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Not, NOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNot(lhs); }
-    virtual string emitVerilog() { return "%k(~ %l)"; }
+    virtual string emitVerilog() { return "%f(~ %l)"; }
     virtual string emitC() { return "VL_NOT_%lq(%lW, %P, %li)"; }
     virtual string emitSimpleOperator() { return "~"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
@@ -2274,7 +2270,7 @@ struct AstSigned : public AstNodeUniop {
     }
     ASTNODE_NODE_FUNCS(Signed, SIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
-    virtual string emitVerilog() { return "%k$signed(%l)"; }
+    virtual string emitVerilog() { return "%f$signed(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}  // Eliminated before matters
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
@@ -2287,7 +2283,7 @@ struct AstUnsigned : public AstNodeUniop {
     }
     ASTNODE_NODE_FUNCS(Unsigned, UNSIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
-    virtual string emitVerilog() { return "%k$unsigned(%l)"; }
+    virtual string emitVerilog() { return "%f$unsigned(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}  // Eliminated before matters
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
@@ -2297,7 +2293,7 @@ struct AstCLog2 : public AstNodeUniop {
     AstCLog2(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CLog2, CLOG2)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
-    virtual string emitVerilog() { return "%k$clog2(%l)"; }
+    virtual string emitVerilog() { return "%f$clog2(%l)"; }
     virtual string emitC() { return "VL_CLOG2_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2308,7 +2304,7 @@ struct AstCountOnes : public AstNodeUniop {
     AstCountOnes(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CountOnes, COUNTONES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCountOnes(lhs); }
-    virtual string emitVerilog() { return "%k$countones(%l)"; }
+    virtual string emitVerilog() { return "%f$countones(%l)"; }
     virtual string emitC() { return "VL_COUNTONES_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2320,7 +2316,7 @@ struct AstIsUnknown : public AstNodeUniop {
 	width(1,1);}
     ASTNODE_NODE_FUNCS(IsUnknown, ISUNKNOWN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
-    virtual string emitVerilog() { return "%k$isunknown(%l)"; }
+    virtual string emitVerilog() { return "%f$isunknown(%l)"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2331,7 +2327,7 @@ struct AstOneHot : public AstNodeUniop {
 	width(1,1);}
     ASTNODE_NODE_FUNCS(OneHot, ONEHOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot(lhs); }
-    virtual string emitVerilog() { return "%k$onehot(%l)"; }
+    virtual string emitVerilog() { return "%f$onehot(%l)"; }
     virtual string emitC() { return "VL_ONEHOT_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2343,7 +2339,7 @@ struct AstOneHot0 : public AstNodeUniop {
 	width(1,1);}
     ASTNODE_NODE_FUNCS(OneHot0, ONEHOT0)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot0(lhs); }
-    virtual string emitVerilog() { return "%k$onehot0(%l)"; }
+    virtual string emitVerilog() { return "%f$onehot0(%l)"; }
     virtual string emitC() { return "VL_ONEHOT0_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2365,7 +2361,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Cast, CAST)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
-    virtual string emitVerilog() { return "%k$_CAST(%l)"; }
+    virtual string emitVerilog() { return "%f$_CAST(%l)"; }
     virtual string emitC() { return "VL_CAST_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}  // Special cased in V3Cast
@@ -2380,7 +2376,7 @@ struct AstFEof : public AstNodeUniop {
     AstFEof(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FEof, FEOF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k$feof(%l)"; }
+    virtual string emitVerilog() { return "%f$feof(%l)"; }
     virtual string emitC() { return "(%li ? feof(VL_CVT_Q_FP(%li)) : true)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
@@ -2392,7 +2388,7 @@ struct AstFGetC : public AstNodeUniop {
     AstFGetC(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FGetC, FGETC)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k$fgetc(%l)"; }
+    virtual string emitVerilog() { return "%f$fgetc(%l)"; }
     // Non-existent filehandle returns EOF
     virtual string emitC() { return "(%li ? fgetc(VL_CVT_Q_FP(%li)) : -1)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
@@ -2409,7 +2405,7 @@ struct AstLogOr : public AstNodeBiComAsv {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LogOr, LOGOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k|| %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f|| %r)"; }
     virtual string emitC() { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "||"; }
     virtual bool cleanOut() {return true;}
@@ -2422,7 +2418,7 @@ struct AstLogAnd : public AstNodeBiComAsv {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LogAnd, LOGAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k&& %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f&& %r)"; }
     virtual string emitC() { return "VL_LOGAND_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "&&"; }
     virtual bool cleanOut() {return true;}
@@ -2435,7 +2431,7 @@ struct AstLogIf : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LogIf, LOGIF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k(%l %k-> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f-> %r)"; }
     virtual string emitC() { return "VL_LOGIF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "->"; }
     virtual bool cleanOut() {return true;}
@@ -2448,7 +2444,7 @@ struct AstLogIff : public AstNodeBiCom {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LogIff, LOGIFF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k(%l %k<-> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f<-> %r)"; }
     virtual string emitC() { return "VL_LOGIFF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<->"; }
     virtual bool cleanOut() {return true;}
@@ -2461,7 +2457,7 @@ struct AstOr : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Or, OR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k| %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f| %r)"; }
     virtual string emitC() { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "|"; }
     virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean && Rclean
@@ -2473,7 +2469,7 @@ struct AstAnd : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(And, AND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k& %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f& %r)"; }
     virtual string emitC() { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "&"; }
     virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean || Rclean
@@ -2485,7 +2481,7 @@ struct AstXor : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xor, XOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k^ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f^ %r)"; }
     virtual string emitC() { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^"; }
     virtual bool cleanOut() {return false;}  // Lclean && Rclean
@@ -2497,7 +2493,7 @@ struct AstXnor : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xnor, XNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXnor(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k^ ~ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f^ ~ %r)"; }
     virtual string emitC() { return "VL_XNOR_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "^ ~"; }
     virtual bool cleanOut() {return false;}
@@ -2509,7 +2505,7 @@ struct AstEq : public AstNodeBiCom {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Eq, EQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k== %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f== %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
     virtual bool cleanOut() {return true;}
@@ -2521,7 +2517,7 @@ struct AstNeq : public AstNodeBiCom {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Neq, NEQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k!= %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f!= %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
     virtual bool cleanOut() {return true;}
@@ -2533,7 +2529,7 @@ struct AstLt : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Lt, LT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k< %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f< %r)"; }
     virtual string emitC() { return "VL_LT_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<"; }
     virtual bool cleanOut() {return true;}
@@ -2545,7 +2541,7 @@ struct AstLtS : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LtS, LTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k< %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f< %r)"; }
     virtual string emitC() { return "VL_LTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return true;}
@@ -2558,7 +2554,7 @@ struct AstGt : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Gt, GT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f> %r)"; }
     virtual string emitC() { return "VL_GT_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">"; }
     virtual bool cleanOut() {return true;}
@@ -2570,7 +2566,7 @@ struct AstGtS : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(GtS, GTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f> %r)"; }
     virtual string emitC() { return "VL_GTS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return true;}
@@ -2583,7 +2579,7 @@ struct AstGte : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Gte, GTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
     virtual string emitC() { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">="; }
     virtual bool cleanOut() {return true;}
@@ -2595,7 +2591,7 @@ struct AstGteS : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(GteS, GTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k>= %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
     virtual string emitC() { return "VL_GTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return true;}
@@ -2608,7 +2604,7 @@ struct AstLte : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(Lte, LTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
     virtual string emitC() { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<="; }
     virtual bool cleanOut() {return true;}
@@ -2620,7 +2616,7 @@ struct AstLteS : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(LteS, LTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k<= %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
     virtual string emitC() { return "VL_LTES_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return true;}
@@ -2635,7 +2631,7 @@ struct AstShiftL : public AstNodeBiop {
     }
     ASTNODE_NODE_FUNCS(ShiftL, SHIFTL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k<< %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f<< %r)"; }
     virtual string emitC() { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "<<"; }
     virtual bool cleanOut() {return false;}
@@ -2649,7 +2645,7 @@ struct AstShiftR : public AstNodeBiop {
     }
     ASTNODE_NODE_FUNCS(ShiftR, SHIFTR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k>> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f>> %r)"; }
     virtual string emitC() { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ">>"; }
     virtual bool cleanOut() {return false;}
@@ -2663,7 +2659,7 @@ struct AstShiftRS : public AstNodeBiop {
     }
     ASTNODE_NODE_FUNCS(ShiftRS, SHIFTRS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k>>> %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f>>> %r)"; }
     virtual string emitC() { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return false;}
@@ -2676,7 +2672,7 @@ struct AstAdd : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Add, ADD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k+ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f+ %r)"; }
     virtual string emitC() { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "+"; }
     virtual bool cleanOut() {return false;}
@@ -2688,7 +2684,7 @@ struct AstSub : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Sub, SUB)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k- %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f- %r)"; }
     virtual string emitC() { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "-"; }
     virtual bool cleanOut() {return false;}
@@ -2700,7 +2696,7 @@ struct AstMul : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Mul, MUL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k* %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f* %r)"; }
     virtual string emitC() { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "*"; }
     virtual bool cleanOut() {return false;}
@@ -2713,7 +2709,7 @@ struct AstMulS : public AstNodeBiComAsv {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(MulS, MULS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k* %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f* %r)"; }
     virtual string emitC() { return "VL_MULS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() {return false;}
@@ -2727,7 +2723,7 @@ struct AstDiv : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Div, DIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f/ %r)"; }
     virtual string emitC() { return "VL_DIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2739,7 +2735,7 @@ struct AstDivS : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(DivS, DIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k/ %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f/ %r)"; }
     virtual string emitC() { return "VL_DIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2752,7 +2748,7 @@ struct AstModDiv : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDiv, MODDIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f%% %r)"; }
     virtual string emitC() { return "VL_MODDIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2764,7 +2760,7 @@ struct AstModDivS : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDivS, MODDIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k%% %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f%% %r)"; }
     virtual string emitC() { return "VL_MODDIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2777,7 +2773,7 @@ struct AstPow : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Pow, POW)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k** %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POW_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2789,7 +2785,7 @@ struct AstPowS : public AstNodeBiop {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowS, POWS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowS(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k** %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f** %r)"; }
     virtual string emitC() { return "VL_POWS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2802,7 +2798,7 @@ struct AstEqCase : public AstNodeBiCom {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(EqCase, EQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseEq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k=== %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f=== %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
     virtual bool cleanOut() {return true;}
@@ -2814,7 +2810,7 @@ struct AstNeqCase : public AstNodeBiCom {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(NeqCase, NEQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseNeq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k!== %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f!== %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
     virtual bool cleanOut() {return true;}
@@ -2827,7 +2823,7 @@ struct AstEqWild : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(EqWild, EQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildEq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k==? %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f==? %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "=="; }
     virtual bool cleanOut() {return true;}
@@ -2839,7 +2835,7 @@ struct AstNeqWild : public AstNodeBiop {
 	width(1,1); }
     ASTNODE_NODE_FUNCS(NeqWild, NEQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs,rhs); }
-    virtual string emitVerilog() { return "%k(%l %k!=? %r)"; }
+    virtual string emitVerilog() { return "%k(%l %f!=? %r)"; }
     virtual string emitC() { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return "!="; }
     virtual bool cleanOut() {return true;}
@@ -2852,7 +2848,7 @@ struct AstConcat : public AstNodeBiop {
 	if (lhsp->width() && rhsp->width()) width(lhsp->width()+rhsp->width(),lhsp->width()+rhsp->width());
     }
     ASTNODE_NODE_FUNCS(Concat, CONCAT)
-    virtual string emitVerilog() { return "%k{%l, %k%r}"; }
+    virtual string emitVerilog() { return "%f{%l, %k%r}"; }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opConcat(lhs,rhs); }
     virtual string emitC() { return "VL_CONCAT_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return true;}
@@ -2866,7 +2862,7 @@ struct AstReplicate : public AstNodeBiop {
 	: AstNodeBiop(fl, lhsp, new AstConst(fl, repCount)) {}
     ASTNODE_NODE_FUNCS(Replicate, REPLICATE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs,rhs); }
-    virtual string emitVerilog() { return "%k{%l{%k%r}}"; }
+    virtual string emitVerilog() { return "%f{%l{%k%r}}"; }
     virtual string emitC() { return "VL_REPLICATE_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
@@ -2877,7 +2873,7 @@ struct AstFGetS : public AstNodeBiop {
     AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(FGetS, FGETS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
-    virtual string emitVerilog() { return "%k$fgets(%l,%r)"; }
+    virtual string emitVerilog() { return "%f$fgets(%l,%r)"; }
     virtual string emitC() { return "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
