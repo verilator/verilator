@@ -206,7 +206,7 @@ escid	\\[^ \t\f\r\n]+
   "default"		{ FL; return yDEFAULT; }
   "defparam"		{ FL; return yDEFPARAM; }
   "disable"		{ FL; return yDISABLE; }
-  "edge"		{ FL; return yaTIMINGSPEC; }
+  "edge"		{ FL; return yEDGE; }
   "else"		{ FL; return yELSE; }
   "end"			{ FL; return yEND; }
   "endcase"		{ FL; return yENDCASE; }

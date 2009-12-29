@@ -153,7 +153,7 @@ public:
     };
     const char* verilogKwd() const {
 	static const char* names[] = {
-	    "%E-edge", "[any]", "[both]", "posedge", "negedge", "[high]","[low]",
+	    "%E-edge", "[any]", "edge", "posedge", "negedge", "[high]","[low]",
 	    "*","[initial]","[settle]","[never]"
 	};
 	return names[m_e];

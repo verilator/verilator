@@ -127,7 +127,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	// AstSenItem is called for dumping in isolation by V3Order
 	putbs("@(");
 	for (AstNode* expp=nodep->sensesp(); expp; expp = expp->nextp()) {
-	    nodep->iterateChildren(*this);
+	    expp->accept(*this);
 	    if (expp->nextp()) puts(" or ");
 	}
 	puts(")");

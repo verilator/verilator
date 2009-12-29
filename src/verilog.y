@@ -265,6 +265,7 @@ class AstSenTree;
 %token<fl>		yDEFPARAM	"defparam"
 %token<fl>		yDISABLE	"disable"
 %token<fl>		yDO		"do"
+%token<fl>		yEDGE		"edge"
 %token<fl>		yELSE		"else"
 %token<fl>		yEND		"end"
 %token<fl>		yENDCASE	"endcase"
@@ -1680,8 +1681,10 @@ senitemVar<senitemp>:
 senitemEdge<senitemp>:		// IEEE: part of event_expression
 		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
 	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
+	|	yEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::BOTHEDGE,$2); }
 	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$3); }
 	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$3); }
+	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::BOTHEDGE,$3); }
 	//UNSUP	yIFF...
 	;
 
