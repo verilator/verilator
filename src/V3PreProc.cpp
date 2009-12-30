@@ -200,6 +200,9 @@ public:
 	m_rawAtBol = true;
 	m_defDepth = 0;
     }
+    ~V3PreProcImp() {
+	if (m_lexp) { delete m_lexp; m_lexp = NULL; }
+    }
 };
 
 //*************************************************************************
