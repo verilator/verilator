@@ -8,6 +8,7 @@
 module t;
    initial begin
       // Display formatting
+      $write;  // Check missing arguments work
       $write("default:   [%0t] 0t time [%t] No0 time\n",$time,$time);
 `ifndef verilator // Unsupported
       $timeformat(-9, 0, "",   0);

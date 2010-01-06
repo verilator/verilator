@@ -1997,6 +1997,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
+	|	yD_WRITE    parenE					{ $$ = NULL; } // NOP
 	|	yD_WRITE    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
 	|	yD_FDISPLAY '(' idClassSel ',' str commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
 	|	yD_FWRITE   '(' idClassSel ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
@@ -2019,10 +2020,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
-		yaD_IGNORE '(' ')'			{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
+		yaD_IGNORE parenE			{ $$ = new AstConst($<fl>1,V3Number($<fl>1,"'b0")); } // Unsized 0
 	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
 	//
-	|	yaD_DPI '(' ')'				{ $$ = new AstFuncRef($2,*$1,NULL); }
+	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
 	//
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
@@ -2038,11 +2039,10 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")\n"); }
-	|	yD_RANDOM '(' ')'			{ $$ = new AstRand($1); }
-	|	yD_RANDOM				{ $$ = new AstRand($1); }
+	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
-	|	yD_STIME				{ $$ = new AstSel($1,new AstTime($1),0,32); }
-	|	yD_TIME					{ $$ = new AstTime($1); }
+	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
+	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 	|	yD_VALUEPLUSARGS '(' str ',' expr ')'	{ $$ = new AstValuePlusArgs($1,*$3,$5); }
