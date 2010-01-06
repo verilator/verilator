@@ -26,7 +26,7 @@ This is the Verilator Package.
 @node Copyright, Description, Top, Top
 @section Copyright
 
-This package is Copyright 2003-2009 by Wilson Snyder @email{wsnyder@@wsnyder.org}.
+This package is Copyright 2003-2010 by Wilson Snyder @email{wsnyder@@wsnyder.org}.
 
 Verilator is free software; you can redistribute it and/or modify it
 under the terms of either the GNU Lesser General Public License

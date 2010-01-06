@@ -1,6 +1,6 @@
 dnl DESCRIPTION: Process this file with autoconf to produce a configure script.
 dnl
-dnl Copyright 2003-2009 by Wilson Snyder. Verilator is free software; you can
+dnl Copyright 2003-2010 by Wilson Snyder. Verilator is free software; you can
 dnl redistribute it and/or modify it under the terms of either the GNU Lesser
 dnl General Public License Version 3 or the Perl Artistic License Version 2.0.
 
