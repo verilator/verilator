@@ -31,7 +31,11 @@ module t;
 
       $swrite(str2, "mod=%m");
 `ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
+`ifdef verilator
       if (str2 !== "mod=top.v") $stop;
+`else
+      if (str2 !== "mod=top.t") $stop;
+`endif
 
       $write("*-* All Finished *-*\n");
       $finish;

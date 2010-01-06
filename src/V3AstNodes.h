@@ -265,7 +265,7 @@ public:
     virtual AstBasicDType* basicp() const { return defp() ? dtypep()->basicp() : NULL; }
     virtual AstNodeDType* skipRefp() const {
 	// Skip past both the Ref and the Typedef
-	if (defp()) return defp()->dtypep();
+	if (defp()) return defp()->dtypep()->skipRefp();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
@@ -335,7 +335,7 @@ struct AstEnumDType : public AstNodeDType {
     void addValuesp(AstNode* nodep) { addOp2p(nodep); }
     // METHODS
     virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefp() const { return dtypep()->skipRefp(); }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return dtypep()->widthAlignBytes(); }
 };
