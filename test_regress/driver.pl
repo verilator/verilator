@@ -50,7 +50,7 @@ my $opt_nc;
 my $opt_optimize;
 my $opt_stop;
 my $opt_trace;
-my $opt_vl;
+my $opt_vlt;
 my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
@@ -69,8 +69,9 @@ if (! GetOptions (
 		  "optimize:s"	=> \$opt_optimize,
 		  "stop!"	=> \$opt_stop,
 		  "trace!"	=> \$opt_trace,
-		  "v3!"		=> \$opt_vl,  # Old
-		  "vl!"		=> \$opt_vl,
+		  "v3!"		=> \$opt_vlt,  # Old
+		  "vl!"		=> \$opt_vlt,  # Old
+		  "vlt!"	=> \$opt_vlt,
 		  "vcs!"	=> \$opt_vcs,
 		  "verbose!"	=> \$opt_verbose,
 		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
@@ -83,8 +84,8 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vl) {
-    $opt_vl = 1;
+if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
+    $opt_vlt = 1;
 }
 
 if ($#opt_tests<0) {
@@ -101,7 +102,7 @@ foreach my $testpl (@opt_tests) {
     one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
     one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
-    one_test(pl_filename => $testpl, vl=>1, 'v3'=>1) if $opt_vl;
+    one_test(pl_filename => $testpl, vlt=>1, 'v3'=>1) if $opt_vlt;
 }
 
 $Fork->wait_all();   # Wait for all children to finish
@@ -268,7 +269,7 @@ sub new {
 	nc_flags2 => [],  # Overridden in some sim files
 	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
-	vl => 0,
+	vlt => 0,
 	'v3' => 0,
 	verilator_flags => ["-cc",
 			    "-Mdir $self->{obj_dir}",
@@ -281,14 +282,14 @@ sub new {
     bless $self, $class;
 
     $self->{mode} ||= "vcs" if $self->{vcs};
-    $self->{mode} ||= "vl" if $self->{vl};
+    $self->{mode} ||= "vlt" if $self->{vlt};
     $self->{mode} ||= "nc" if $self->{nc};
     $self->{mode} ||= "iv" if $self->{iv};
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
-    $self->{run_log_filename} ||= "$self->{obj_dir}/vl_sim.log";
-    $self->{coverage_filename} ||= "$self->{obj_dir}/vl_coverage.pl";
+    $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
+    $self->{coverage_filename} ||= "$self->{obj_dir}/vlt_coverage.pl";
     $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
     if (!$self->{make_top_shell}) {
@@ -423,7 +424,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>\@cmd);
     }
-    if ($param{vl}) {
+    if ($param{vlt}) {
 	$opt_gdb="gdbrun" if defined $opt_gdb;
 	my @verilator_flags = @{$param{verilator_flags}};
 	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
@@ -464,7 +465,7 @@ sub compile {
 	    return 1;
 	}
 
-	$self->_run(logfile=>"$self->{obj_dir}/vl_compile.log",
+	$self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
 		    cmd=>\@vlargs);
@@ -478,7 +479,7 @@ sub compile {
 		$self->_sp_preproc(%param);
 	    }
 	    $self->oprint("GCC\n");
-	    $self->_run(logfile=>"$self->{obj_dir}/vl_gcc.log",
+	    $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
 			cmd=>["cd $self->{obj_dir} && ",
 			      "make", "-f".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
@@ -526,10 +527,10 @@ sub execute {
 		    expect=>undef,	# vcs expect isn't the same
 		    );
     }
-    if ($param{vl}
+    if ($param{vlt}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
-	$self->_run(logfile=>"$self->{obj_dir}/vl_sim.log",
+	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
 		    cmd=>["$self->{obj_dir}/$param{VM_PREFIX}",
 			  @{$param{all_run_flags}},
 			  ],
@@ -541,7 +542,7 @@ sub execute {
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors;
-    return 1 if !$self->{vl};
+    return 1 if !$self->{vlt};
 
     my %param = (%{$self}, @_);	   # Default arguments are from $self
 
@@ -1179,7 +1180,7 @@ Run using VCS.
 
 Enable test verbose messages.
 
-=item --vl
+=item --vlt
 
 Run using Verilator.
 

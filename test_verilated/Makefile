@@ -50,7 +50,7 @@ test::	nc
 test::	nonc
  endif
 
-test::	vl
+test::	vlt
 endif
 
 vgen.v: ./vgen.pl
@@ -103,7 +103,7 @@ nc_passed.log:	vgen.v sim_main.v
 
 ######################################################################
 
-vl:	prep compile vl_passed.log
+vlt:	prep compile vlt_passed.log
 
 prep: 	vgen.v $(VERILATOR_ROOT)/bin/verilator
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(VERILATOR_SW) --cc vgen.v
@@ -111,10 +111,10 @@ prep: 	vgen.v $(VERILATOR_ROOT)/bin/verilator
 compile:
 	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj
 
-vl_passed.log vl_run: prep compile
-	-rm -f vl_passed.log sim.log
+vlt_passed.log vlt_run: prep compile
+	-rm -f vlt_passed.log sim.log
 	obj_dir/simx | tee sim.log
-	grep -q Finished sim.log && grep Finished sim.log > vl_passed.log
+	grep -q Finished sim.log && grep Finished sim.log > vlt_passed.log
 
 ######################################################################
 maintainer-copy::

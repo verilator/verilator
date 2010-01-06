@@ -31,7 +31,7 @@ int main(int argc, char **argv, char **env) {
     cout << "Enabling waves...\n";
     SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
     top->trace (tfp, 99);	// Trace 99 levels of hierarchy
-    tfp->open ("vl_dump.vcd");	// Open the dump file
+    tfp->open ("vlt_dump.vcd");	// Open the dump file
 #endif
 
     top->reset_l = 1;		// Set some inputs

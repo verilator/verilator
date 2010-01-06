@@ -33,7 +33,7 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-PRODUCTS += --vl
+PRODUCTS += --vlt
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)
  DRIVER_FLAGS += -j 0
@@ -57,8 +57,8 @@ nc:
 
 ######################################################################
 
-vl:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vl --stop
+vlt:
+	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --stop
 
 ######################################################################
 

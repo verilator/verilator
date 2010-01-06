@@ -120,7 +120,7 @@ int sc_main(int argc, char* argv[]) {
     cout << "Enabling waves...\n";
     SpTraceFile* tfp = new SpTraceFile;
     top->trace (tfp, 99);
-    tfp->open ("vl_dump.vcd");
+    tfp->open ("vlt_dump.vcd");
 #endif
 
     //==========
