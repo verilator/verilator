@@ -740,6 +740,10 @@ for include directories or libraries.
 Specify the extensions that should be used for finding modules.  If for
 example module I<x> is referenced, look in I<x>.I<ext>.
 
+=item +notimingchecks
+
+Ignored for compatibility with other simulators.
+
 =item -UI<var>
 
 Undefines the given preprocessor symbol.

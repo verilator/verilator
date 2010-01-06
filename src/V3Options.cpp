@@ -569,6 +569,8 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "+librescan")) { // NOP
 	    }
+	    else if ( !strcmp (sw, "+notimingchecks")) { // NOP
+	    }
 	    else {
 		fl->v3fatal ("Invalid Option: "<<argv[i]);
 	    }
