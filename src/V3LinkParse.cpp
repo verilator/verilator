@@ -50,12 +50,16 @@ private:
     //  AstNode::user()		-> bool.  True if processed
     AstUser1InUse	m_inuser1;
 
+    // TYPES
+    typedef map <pair<void*,string>,AstTypedef*> ImplTypedefMap;
+
     // STATE
     string	m_dotText;	// Dotted module text we are building for a dotted node, passed up
     bool	m_inModDot;	// We're inside module part of dotted name
     AstParseRefExp m_exp;	// Type of data we're looking for
     AstText*	m_baseTextp;	// Lowest TEXT node that needs replacement with varref
     AstVar*	m_varp;		// Variable we're under
+    ImplTypedefMap	m_implTypedef;	// Created typedefs for each <container,name>
 
     // METHODS
     static int debug() {
@@ -283,6 +287,41 @@ private:
 	    m_varp->attrIsolateAssign(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
+    }
+
+    virtual void visit(AstDefImplicitDType* nodep, AstNUser*) {
+	UINFO(8,"   DEFIMPLICIT "<<nodep<<endl);
+	// Must remember what names we've already created, and combine duplicates
+	// so that for "var enum {...} a,b" a & b will share a common typedef
+	// Unique name space under each containerp() so that an addition of a new type won't change every verilated module.
+	AstTypedef* defp = NULL;
+	ImplTypedefMap::iterator it = m_implTypedef.find(make_pair(nodep->containerp(), nodep->name()));
+	if (it != m_implTypedef.end()) {
+	    defp = it->second;
+	} else {
+	    // Definition must be inserted right after the variable (etc) that needed it
+	    // AstVar, AstTypedef, AstNodeFTask are common containers
+	    AstNode* backp = nodep->backp();
+	    for (; backp; backp=nodep->backp()) {
+		if (backp->castVar()) break;
+		else if (backp->castTypedef()) break;
+		else if (backp->castNodeFTask()) break;
+	    }
+	    if (!backp) nodep->v3fatalSrc("Implicit enum/struct type created under unexpected node type");
+	    AstNodeDType* dtypep = nodep->dtypep(); dtypep->unlinkFrBack();
+	    if (backp->castTypedef()) { // A typedef doesn't need us to make yet another level of typedefing
+		// For typedefs just remove the AstRefDType level of abstraction
+		nodep->replaceWith(dtypep);
+		nodep->deleteTree(); nodep=NULL;
+		return;
+	    } else {
+		defp = new AstTypedef(nodep->fileline(), nodep->name(), dtypep);
+		m_implTypedef.insert(make_pair(make_pair(nodep->containerp(), defp->name()), defp));
+		backp->addNextHere(defp);
+	    }
+	}
+	nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
+	nodep->deleteTree(); nodep=NULL;
     }
 
     virtual void visit(AstNode* nodep, AstNUser*) {

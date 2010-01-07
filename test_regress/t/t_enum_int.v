@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
 	      EP_State_DWAIT  		,
 	      EP_State_DSHIFT0  	,
 	      EP_State_DSHIFT1  	,
-	      EP_State_DSHIFT15  	} m_state_xr;
+	      EP_State_DSHIFT15  	} m_state_xr, m_state2_xr;
 
    // Beginning of automatic ASCII enum decoding
    reg [79:0]		m_stateAscii_xr;	// Decode of m_state_xr
@@ -49,21 +49,29 @@ module t (/*AUTOARG*/
 	 //$write("%d %x %x %x\n", cyc, data, wrapcheck_a, wrapcheck_b);
 	 if (cyc==1) begin
 	    m_state_xr <= EP_State_IDLE;
+	    m_state2_xr <= EP_State_IDLE;
 	 end
 	 if (cyc==2) begin
 	    if (m_stateAscii_xr != "idle      ") $stop;
 	    m_state_xr <= EP_State_CMDSHIFT13;
+	    if (m_state2_xr != EP_State_IDLE) $stop;
+	    m_state2_xr <= EP_State_CMDSHIFT13;
 	 end
 	 if (cyc==3) begin
 	    if (m_stateAscii_xr != "cmdshift13") $stop;
 	    m_state_xr <= EP_State_CMDSHIFT16;
+	    if (m_state2_xr != EP_State_CMDSHIFT13) $stop;
+	    m_state2_xr <= EP_State_CMDSHIFT16;
 	 end
 	 if (cyc==4) begin
 	    if (m_stateAscii_xr != "cmdshift16") $stop;
 	    m_state_xr <= EP_State_DWAIT;
+	    if (m_state2_xr != EP_State_CMDSHIFT16) $stop;
+	    m_state2_xr <= EP_State_DWAIT;
 	 end
 	 if (cyc==9) begin
 	    if (m_stateAscii_xr != "dwait     ") $stop;
+	    if (m_state2_xr != EP_State_DWAIT) $stop;
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end

@@ -59,6 +59,8 @@ public:
     int		m_pinNum;	// Pin number currently parsing
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
+    AstNodeModule* m_modp;	// Module
+    int		m_modTypeImpNum; // Implicit type number, incremented each module
     int		m_uniqueAttr;	// Bitmask of unique/priority keywords
 
     // CONSTRUCTORS
@@ -70,6 +72,8 @@ public:
 	m_pinNum = -1;
 	m_instModule;
 	m_instParamp = NULL;
+	m_modp = NULL;
+	m_modTypeImpNum = 0;
 	m_varAttrp = NULL;
 	m_caseAttrp = NULL;
     }
@@ -107,6 +111,7 @@ public:
 	    pkgp = new AstPackage(fl, AstPackage::dollarUnitName());
 	    pkgp->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
 	    pkgp->modTrace(false);  // may reconsider later
+	    GRAMMARP->m_modp = pkgp; GRAMMARP->m_modTypeImpNum = 0;
 	    PARSEP->rootp()->addModulep(pkgp);
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
 	}
@@ -583,6 +588,7 @@ packageFront<modulep>:
 			{ $$ = new AstPackage($1,*$2);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
 			  $$->modTrace(v3Global.opt.trace());
+			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -669,6 +675,7 @@ modFront<modulep>:
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
+			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -679,6 +686,7 @@ udpFront<modulep>:
 			  $$->modTrace(false);
 			  $$->addStmtp(new AstPragma($1,AstPragmaType::INLINE_MODULE));
 			  PARSEP->fileline()->tracingOn(false);
+			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -834,6 +842,7 @@ pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
+			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -1060,7 +1069,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP		{ UNSUP }
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
 	//UNSUP		{ UNSUP }
-	|	enumDecl				{ $$ = $1; }
+	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),GRAMMARP->m_modp,$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }

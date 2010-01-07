@@ -147,6 +147,33 @@ public:
     virtual string name() const { return m_name; }
 };
 
+struct AstDefImplicitDType : public AstNodeDType {
+    // For parsing enum/struct/unions that are declared with a variable rather than typedef
+    // This allows "var enum {...} a,b" to share the enum definition for both variables
+    // After link, these become typedefs
+private:
+    string	m_name;
+    void*	m_containerp;	// In what scope is the name unique, so we can know what are duplicate definitions (arbitrary value)
+public:
+    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp, AstNodeDType* dtypep)
+	: AstNodeDType(fl), m_name(name), m_containerp(containerp) {
+	setOp1p(dtypep);
+	widthSignedFrom(dtypep);
+    }
+    ASTNODE_NODE_FUNCS(DefImplicitDType, DEFIMPLICITDTYPE)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    void*	containerp() const { return m_containerp; }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+    virtual string name() const { return m_name; }
+    void name(const string& flag) { m_name = flag; }
+};
+
 struct AstArrayDType : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep)
