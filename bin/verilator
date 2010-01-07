@@ -314,12 +314,11 @@ Specifies C++ without SystemC output mode; see also --sc and --sp.
 
 Experimental.  Perform some clock domain crossing checks and issue related
 warnings.  Additional warning information is written to the file
-{prefix}__cdc.txt.  Generally used with --lint-only.
+{prefix}__cdc.txt.  Generally used with --lint-only.  Enables CDCRSTLOGIC
+warning.
 
-Currently only checks that asynchronous flop reset terms come from primary
-inputs (a check that most other CDC tools missed, so it was put here).  If
-you have interest in adding more traditional CDC checks, please contact the
-authors.
+Currently only checks some items that other CDC tools missed; if you have
+interest in adding more traditional CDC checks, please contact the authors.
 
 =item --compiler I<compiler-name>
 
@@ -2025,6 +2024,12 @@ instead intended is to use a casez with C<?>.
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
+
+=item CDCRSTLOGIC
+
+With --cdc only, warns that asynchronous flop reset terms come from other
+than primary inputs or flopped outputs, creating the potential for reset
+glitches.
 
 =item CMPCONST
 

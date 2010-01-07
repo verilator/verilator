@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.7**
+* Verilator 3.800***
 
 **   Support SystemVerilog types "byte", "chandle", "int", "longint",
      "shortint", "time", "var" and "void" in variables and functions.
@@ -13,6 +13,7 @@ indicates the contributor was also the author of the fix; Thanks!
 **   Support typedef and enum.  [by Donal Casey]
 
 **   Support direct programming interface (DPI) "import" and "export".
+     Includes an extension to map user $system PLI calls to the DPI.
 
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
