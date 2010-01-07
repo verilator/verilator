@@ -72,9 +72,9 @@ public:
 };
 
 //============================================================================
-// V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
+// V3OutFormatter: A class for automatic indentation of C++ or Verilog code.
 
-class V3OutFile {
+class V3OutFormatter {
     // TYPES
     enum MiscConsts {
 	INDBLK = 4,	// Indentation per block level
@@ -87,8 +87,8 @@ public:
 
 private:
     // MEMBERS
-    FILE*	m_fp;
     string	m_filename;
+    bool	m_verilog;	// Indenting Verilog code
     int		m_lineno;
     int		m_column;
     int		m_nobreak;	// Basic operator or begin paren, don't break next
@@ -101,10 +101,11 @@ private:
 
     int		endLevels(const char* strg);
     static const char* indentStr(int levels);
+    void putcNoTracking(char chr);
 
 public:
-    V3OutFile(const string& filename);
-    ~V3OutFile();
+    V3OutFormatter(const string& filename, bool verilog);
+    virtual ~V3OutFormatter() {}
     // ACCESSORS
     int  column() const { return m_column; }
     // METHODS
@@ -132,8 +133,23 @@ public:
     void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }
     // STATIC METHODS
     static const string indentSpaces(int levels);
+
+    // CALLBACKS - MUST OVERRIDE
+    virtual void putcOutput(char chr) = 0;
+};
+
+//============================================================================
+// V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
+
+class V3OutFile : public V3OutFormatter {
+    // MEMBERS
+    FILE*	m_fp;
+public:
+    V3OutFile(const string& filename);
+    virtual ~V3OutFile();
 private:
-    void putcNoTracking(char chr);
+    // CALLBACKS
+    virtual void putcOutput(char chr) { fputc(chr, m_fp); }
 };
 
 #endif // Guard

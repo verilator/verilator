@@ -253,26 +253,19 @@ void V3File::createMakeDir() {
 }
 
 //######################################################################
-// V3OutFile: A class for printing to a file, with automatic indentation of C++ code.
+// V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
-V3OutFile::V3OutFile(const string& filename)
-    : m_filename(filename), m_lineno(1), m_column(0)
+V3OutFormatter::V3OutFormatter(const string& filename, bool verilog)
+    : m_filename(filename), m_verilog(verilog)
+    , m_lineno(1), m_column(0)
     , m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
     , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
-    if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
-	v3fatal("Cannot write "<<filename);
-    }
-}
-
-V3OutFile::~V3OutFile() {
-    if (m_fp) fclose(m_fp);
-    m_fp = NULL;
 }
 
 //----------------------------------------------------------------------
 
-const char* V3OutFile::indentStr(int num) {
-    // Indent the specified levelsber of spaces.  Use tabs as possible.
+const char* V3OutFormatter::indentStr(int num) {
+    // Indent the specified number of spaces.  Use tabs as possible.
     static char str[MAXSPACE+20];
     char* cp = str;
     if (num>MAXSPACE) num=MAXSPACE;
@@ -288,7 +281,7 @@ const char* V3OutFile::indentStr(int num) {
     return (str);
 }
 
-const string V3OutFile::indentSpaces(int num) {
+const string V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.  Use spaces.
     static char str[MAXSPACE+20];
     char* cp = str;
@@ -302,21 +295,20 @@ const string V3OutFile::indentSpaces(int num) {
     return (st);
 }
 
-bool V3OutFile::tokenStart(const char* cp, const char* cmp) {
+bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
     while (*cmp == *cp) { cp++; cmp++; }
     if (*cmp) return false;
     if (*cp && !isspace(*cp)) return false;
     return true;
 }
 
-#define VERILOG_INDENTS 0  // No verilog output yet, speed things up
-bool V3OutFile::tokenEnd(const char* cp) {
+bool V3OutFormatter::tokenEnd(const char* cp) {
     return (tokenStart(cp,"end")
 	    || tokenStart(cp,"endcase")
 	    || tokenStart(cp,"endmodule"));
 }
 
-int V3OutFile::endLevels (const char *strg) {
+int V3OutFormatter::endLevels (const char *strg) {
     int levels=m_indentLevel;
     const char* cp=strg;
     while (isspace(*cp)) cp++;
@@ -341,7 +333,7 @@ int V3OutFile::endLevels (const char *strg) {
 	    levels-=INDBLK;
 	    break;
 	case 'e':
-	    if (VERILOG_INDENTS && tokenEnd(cp)) {
+	    if (m_verilog && tokenEnd(cp)) {
 		levels-=INDBLK;
 	    }
 	    break;
@@ -355,7 +347,7 @@ int V3OutFile::endLevels (const char *strg) {
     return (levels);
 }
 
-void V3OutFile::puts (const char *strg) {
+void V3OutFormatter::puts (const char *strg) {
     if (m_prependIndent) {
 	putsNoTracking(indentStr(endLevels(strg)));
 	m_prependIndent = false;
@@ -395,27 +387,27 @@ void V3OutFile::puts (const char *strg) {
 	    indentDec();
 	    break;
 	case 'b':
-	    if (wordstart && VERILOG_INDENTS && tokenStart(cp,"begin")) {
+	    if (wordstart && m_verilog && tokenStart(cp,"begin")) {
 		indentInc();
 	    }
 	    wordstart = false;
 	    break;
 	case 'c':
-	    if (wordstart && VERILOG_INDENTS && (tokenStart(cp,"case")
-						 || tokenStart(cp,"casex")
-						 || tokenStart(cp,"casez"))) {
+	    if (wordstart && m_verilog && (tokenStart(cp,"case")
+					   || tokenStart(cp,"casex")
+					   || tokenStart(cp,"casez"))) {
 		indentInc();
 	    }
 	    wordstart = false;
 	    break;
 	case 'e':
-	    if (wordstart && VERILOG_INDENTS && tokenEnd(cp)) {
+	    if (wordstart && m_verilog && tokenEnd(cp)) {
 		indentDec();
 	    }
 	    wordstart = false;
 	    break;
 	case 'm':
-	    if (wordstart && VERILOG_INDENTS && tokenStart(cp,"module")) {
+	    if (wordstart && m_verilog && tokenStart(cp,"module")) {
 		indentInc();
 	    }
 	    wordstart = false;
@@ -427,12 +419,12 @@ void V3OutFile::puts (const char *strg) {
     }
 }
 
-void V3OutFile::putBreakExpr () {
+void V3OutFormatter::putBreakExpr () {
     if (!m_parenVec.empty()) putBreak();
 }
 
 // Add a line break if too wide
-void V3OutFile::putBreak () {
+void V3OutFormatter::putBreak () {
     if (!m_nobreak) {
 	//char s[1000]; sprintf(s,"{%d,%d}",m_column,m_parenVec.top()); putsNoTracking(s);
 	if (exceededWidth()) {
@@ -442,7 +434,7 @@ void V3OutFile::putBreak () {
     }
 }
 
-void V3OutFile::putsQuoted(const char* strg) {
+void V3OutFormatter::putsQuoted(const char* strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
@@ -452,14 +444,14 @@ void V3OutFile::putsQuoted(const char* strg) {
     }
     putcNoTracking('"');
 }
-void V3OutFile::putsNoTracking (const char *strg) {
+void V3OutFormatter::putsNoTracking (const char *strg) {
     // Don't track {}'s, probably because it's a $display format string
     for (const char* cp=strg; *cp; cp++) {
 	putcNoTracking (*cp);
     }
 }
 
-void V3OutFile::putcNoTracking (char chr) {
+void V3OutFormatter::putcNoTracking (char chr) {
     switch (chr) {
     case '\n':
 	m_lineno++;
@@ -480,10 +472,10 @@ void V3OutFile::putcNoTracking (char chr) {
 	m_nobreak=false;
 	break;
     }
-    fputc (chr, m_fp);
+    putcOutput (chr);
 }
 
-void V3OutFile::putAlign (bool/*AlignClass*/ isStatic, int align, int size, const char* prefix) {
+void V3OutFormatter::putAlign (bool/*AlignClass*/ isStatic, int align, int size, const char* prefix) {
     if (size==0) size=align;
     int alignSize = size; if (alignSize>8) alignSize=8;
     int& alignr = isStatic ? m_declSAlign : m_declNSAlign;
@@ -504,7 +496,7 @@ void V3OutFile::putAlign (bool/*AlignClass*/ isStatic, int align, int size, cons
 //----------------------------------------------------------------------
 // Simple wrappers
 
-void V3OutFile::printf (const char *fmt...) {
+void V3OutFormatter::printf (const char *fmt...) {
     char sbuff[5000];
     va_list ap;
     va_start(ap,fmt);
@@ -513,3 +505,17 @@ void V3OutFile::printf (const char *fmt...) {
     this->puts(sbuff);
 }
 
+//######################################################################
+// V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
+
+V3OutFile::V3OutFile(const string& filename)
+    : V3OutFormatter(filename, false) {
+    if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
+	v3fatal("Cannot write "<<filename);
+    }
+}
+
+V3OutFile::~V3OutFile() {
+    if (m_fp) fclose(m_fp);
+    m_fp = NULL;
+}
