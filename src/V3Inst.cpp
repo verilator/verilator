@@ -122,6 +122,12 @@ private:
 	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
     }
 
+    virtual void visit(AstUdpTable* nodep, AstNUser*) {
+	if (!v3Global.opt.bboxUnsup()) {
+	    nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.");
+	}
+    }
+
     // Save some time
     virtual void visit(AstNodeAssign*, AstNUser*) {}
     virtual void visit(AstAlways*, AstNUser*) {}

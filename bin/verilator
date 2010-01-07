@@ -193,6 +193,7 @@ descriptions in the next sections for more information.
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
     --cc                        Create C++ output
+    --cdc                       Clock domain crossing analysis
     --compiler <compiler-name>  Tune for specified C++ compiler
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage
@@ -254,6 +255,7 @@ descriptions in the next sections for more information.
     +define+<var>+<value>       Set preprocessor define
     +incdir+<dir>               Directory to search for includes
     +libext+<ext>+[ext]...      Extensions for finding modules
+    +notimingchecks             Ignored
 
 =head1 ARGUMENTS
 
@@ -307,6 +309,17 @@ output files.
 =item --cc
 
 Specifies C++ without SystemC output mode; see also --sc and --sp.
+
+=item --cdc
+
+Experimental.  Perform some clock domain crossing checks and issue related
+warnings.  Additional warning information is written to the file
+{prefix}__cdc.txt.  Generally used with --lint-only.
+
+Currently only checks that asynchronous flop reset terms come from primary
+inputs (a check that most other CDC tools missed, so it was put here).  If
+you have interest in adding more traditional CDC checks, please contact the
+authors.
 
 =item --compiler I<compiler-name>
 
@@ -992,6 +1005,7 @@ In certain optimization modes, it also creates:
     {prefix}__Syms.cpp			// Global symbol table C++
     {prefix}__Syms.h			// Global symbol table header
     {prefix}__Trace.cpp			// Wave file generation code (--trace)
+    {prefix}__cdc.txt			// Clock Domain Crossing checks (--cdc)
     {prefix}__stats.txt			// Statistics (--stats)
 
 It also creates internal files that can be mostly ignored:

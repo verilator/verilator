@@ -96,6 +96,7 @@ class V3Options {
     bool	m_autoflush;	// main switch: --autoflush
     bool	m_bboxSys;	// main switch: --bbox-sys
     bool	m_bboxUnsup;	// main switch: --bbox-unsup
+    bool	m_cdc;		// main switch: --cdc
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageToggle;// main switch: --coverage-toggle
     bool	m_coverageUser;	// main switch: --coverage-func
@@ -208,6 +209,7 @@ class V3Options {
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool cdc() const { return m_cdc; }
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }

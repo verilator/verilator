@@ -100,7 +100,7 @@ private:
     stack<int>	m_parenVec;	// Stack of columns where last ( was
 
     int		endLevels(const char* strg);
-    static const char* indentStr(int levels);
+    const char* indentStr(int levels);
     void putcNoTracking(char chr);
 
 public:

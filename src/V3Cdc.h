@@ -1,6 +1,6 @@
-//-*- C++ -*-
+// -*- C++ -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Emit Verilog code for module tree
+// DESCRIPTION: Verilator: Break always into sensitivity block domains
 //
 // Code available from: http://www.veripool.org/verilator
 //
@@ -20,8 +20,8 @@
 //
 //*************************************************************************
 
-#ifndef _V3EMITV_H_
-#define _V3EMITV_H_ 1
+#ifndef _V3CDC_H_
+#define _V3CDC_H_ 1
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
@@ -29,11 +29,9 @@
 
 //============================================================================
 
-class V3EmitV {
+class V3Cdc {
 public:
-    static void emitv();
-    static void verilogForTree(AstNode* nodep, ostream& os=cout);
-    static void verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix, bool user3percent);
+    static void cdcAll(AstNetlist* nodep);
 };
 
 #endif // Guard

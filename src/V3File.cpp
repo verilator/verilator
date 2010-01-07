@@ -269,9 +269,11 @@ const char* V3OutFormatter::indentStr(int num) {
     static char str[MAXSPACE+20];
     char* cp = str;
     if (num>MAXSPACE) num=MAXSPACE;
-    while (num>=8) {
-	*cp++ = '\t';
-	num -= 8;
+    if (!m_verilog) {  // verilogPrefixedTree doesn't want tabs
+	while (num>=8) {
+	    *cp++ = '\t';
+	    num -= 8;
+	}
     }
     while (num>0) {
 	*cp++ = ' ';

@@ -340,7 +340,8 @@ private:
     virtual void visit(AstUdpTable* nodep, AstNUser*) {
 	UINFO(5,"UDPTABLE  "<<nodep<<endl);
 	if (!v3Global.opt.bboxUnsup()) {
-	    nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.");
+	    // We don't warn until V3Inst, so that UDPs that are in libraries and
+	    // never used won't result in any warnings.
 	} else {
 	    // Massive hack, just tie off all outputs so our analysis can proceed
 	    AstVar* varoutp = NULL;

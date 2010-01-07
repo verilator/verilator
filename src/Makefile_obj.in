@@ -155,6 +155,7 @@ RAW_OBJS = \
 	V3Broken.o \
 	V3Case.o \
 	V3Cast.o \
+	V3Cdc.o \
 	V3Changed.o \
 	V3Clean.o \
 	V3ClkGater.o \

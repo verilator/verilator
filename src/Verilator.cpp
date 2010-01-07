@@ -50,6 +50,7 @@
 #include "V3EmitV.h"
 #include "V3Expand.h"
 #include "V3File.h"
+#include "V3Cdc.h"
 #include "V3Gate.h"
 #include "V3Graph.h"
 #include "V3GenClk.h"
@@ -351,6 +352,11 @@ void process () {
     V3Const::constifyAll(v3Global.rootp());
     V3Dead::deadifyAll(v3Global.rootp(), true);
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+    // Clock domain crossing analysis
+    if (v3Global.opt.cdc()) {
+	V3Cdc::cdcAll(v3Global.rootp());
+    }
 
     // Reorder assignments in pipelined blocks
     if (v3Global.opt.oReorder()) {

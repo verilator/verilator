@@ -56,6 +56,7 @@ public:
 	CASEOVERLAP,	// Case statements overlap
 	CASEWITHX,	// Case with X values
 	CASEX,		// Casex
+	CDCRSTLOGIC,	// Logic in async reset path
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
 	STMTDLY,	// Delayed statement
@@ -95,7 +96,7 @@ public:
 	    // Warnings
 	    " FIRST_WARN",
 	    "BLKANDNBLK",
-	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CMPCONST",
+	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "LITENDIAN",
 	    "MULTIDRIVEN", "REDEFMACRO",
@@ -185,7 +186,8 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 
 // These allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
-#define v3warn(code,msg) v3errorEnd(((V3Error::v3errorPrep(V3ErrorCode::code)<<msg),V3Error::v3errorStr()));
+#define v3warnCode(code,msg) v3errorEnd(((V3Error::v3errorPrep(code)<<msg),V3Error::v3errorStr()));
+#define v3warn(code,msg) v3warnCode(V3ErrorCode::code,msg)
 #define v3info(msg)  v3warn(INFO,msg)
 #define v3fatal(msg) v3warn(FATAL,msg)
 #define v3error(msg) v3warn(ERROR,msg)
