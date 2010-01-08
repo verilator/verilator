@@ -258,7 +258,8 @@ private:
 		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName());
 		    foundp->v3warn(MODDUP,"... Location of original declaration");
 		}
-		nodep->unlinkFrBack()->deleteTree();
+		nodep->unlinkFrBack();
+		pushDeletep(nodep); nodep=NULL;
 	    } else if (!foundp) {
 		m_mods.insert(nodep->name(), nodep);
 	    }
