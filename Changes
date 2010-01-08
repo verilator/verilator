@@ -37,6 +37,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add --bbox-unsup option to black-box unsupported UDP tables.
 
+**** Add -Wno-MODDUP option to allow duplicate modules.
+
 **** Fix creating implicit variables for expressions, bug196. [Byron Bradley]
 
 **** Fix tracing with --pins-bv 1, bug195.  [Michael S]

@@ -8,14 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 fails=>$Self->{v3},
-	 nc=>0,  # Need to get it not to give the prompt
-	 expect=>
-'%Error-MODDUP: t/t_mod_dup_bad.v:\d+: Duplicate declaration of module: a
-%Error-MODDUP: t/t_mod_dup_bad.v:\d+: ... Location of original declaration
-.*
-%Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 make_top_shell => 0,
+	 make_main => 0,
+	 v_flags2 => ["--lint-only"],
+	 verilator_make_gcc => 0,
+	 );
 
 ok(1);
 1;

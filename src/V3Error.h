@@ -66,6 +66,7 @@ public:
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
 	LITENDIAN,	// Little bit endian vector
+	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
 	REDEFMACRO,	// Redefining existing define macro
 	UNDRIVEN,	// No drivers
@@ -98,7 +99,7 @@ public:
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
-	    "LITENDIAN",
+	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
@@ -112,7 +113,7 @@ public:
     bool dangerous() const { return ( m_e==COMBDLY ); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE || m_e==SYMRSVDWORD); }
+    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE || m_e==MODDUP || m_e==SYMRSVDWORD); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==FATALSRC || pretendError() ); }
 

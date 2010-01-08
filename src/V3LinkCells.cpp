@@ -250,11 +250,15 @@ private:
     // METHODS
     void readModNames() {
 	// Look at all modules, and store pointers to all module names
-	for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+	for (AstNodeModule* nextp,* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nextp) {
+	    nextp = nodep->nextp()->castNodeModule();
 	    AstNode* foundp = m_mods.findIdUpward(nodep->name());
 	    if (foundp && foundp != nodep) {
-		nodep->v3error("Duplicate declaration of module: "<<nodep->prettyName());
-		foundp->v3error("... Location of original declaration");
+		if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP) || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
+		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName());
+		    foundp->v3warn(MODDUP,"... Location of original declaration");
+		}
+		nodep->unlinkFrBack()->deleteTree();
 	    } else if (!foundp) {
 		m_mods.insert(nodep->name(), nodep);
 	    }
