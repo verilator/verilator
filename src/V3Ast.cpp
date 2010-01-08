@@ -693,14 +693,17 @@ AstNode::~AstNode() {
 
 void AstNode::deleteTreeIter() {
     if (!this) return;
-    // MUST be depth first!
-    this->m_op1p->deleteTreeIter();
-    this->m_op2p->deleteTreeIter();
-    this->m_op3p->deleteTreeIter();
-    this->m_op4p->deleteTreeIter();
-    this->m_nextp->deleteTreeIter();
-    this->m_backp = NULL;
-    deleteNode();
+    for (AstNode* nodep=this, *nnextp; nodep; nodep=nnextp) {
+	nnextp = nodep->m_nextp;
+	// MUST be depth first!
+	nodep->m_op1p->deleteTreeIter();
+	nodep->m_op2p->deleteTreeIter();
+	nodep->m_op3p->deleteTreeIter();
+	nodep->m_op4p->deleteTreeIter();
+	nodep->m_nextp = NULL;
+	nodep->m_backp = NULL;
+	nodep->deleteNode();
+    }
 }
 
 void AstNode::deleteTree() {
@@ -843,12 +846,13 @@ AstNode* AstNode::acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
 
 void AstNode::cloneRelinkTree() {
     if (!this) return;
-    this->cloneRelink();
-    m_op1p->cloneRelinkTree();
-    m_op2p->cloneRelinkTree();
-    m_op3p->cloneRelinkTree();
-    m_op4p->cloneRelinkTree();
-    m_nextp->cloneRelinkTree();  // Tail recursion
+    for (AstNode* nodep=this; nodep; nodep=nodep->m_nextp) {
+	nodep->cloneRelink();
+	nodep->m_op1p->cloneRelinkTree();
+	nodep->m_op2p->cloneRelinkTree();
+	nodep->m_op3p->cloneRelinkTree();
+	nodep->m_op4p->cloneRelinkTree();
+    }
 }
 
 //======================================================================
