@@ -91,30 +91,34 @@ private:
 		       && !nodep->isTemp()));	// Don't bother to rename internal signals
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	rename(nodep, false);
+	if (!nodep->user1()) {
+	    nodep->iterateChildren(*this);
+	    rename(nodep, false);
+	}
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (nodep->varp()) {
-	    nodep->varp()->iterateChildren(*this);
+	    nodep->varp()->iterate(*this);
 	    nodep->name(nodep->varp()->name());
 	}
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
-	rename(nodep, !nodep->modp()->modPublic());
-	nodep->iterateChildren(*this);
+	if (!nodep->user1()) {
+	    rename(nodep, !nodep->modp()->modPublic());
+	    nodep->iterateChildren(*this);
+	}
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	if (!nodep->user1()) {
-	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterateChildren(*this);
-	    nodep->aboveCellp()->iterateChildren(*this);
+	    nodep->user1(1);
+	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterate(*this);
+	    if (nodep->aboveCellp()) nodep->aboveCellp()->iterate(*this);
 	    // Always recompute name (as many level above scope may have changed)
 	    // Same formula as V3Scope
 	    nodep->name(nodep->isTop() ? "TOP"
 			: (nodep->aboveScopep()->name()+"."+nodep->aboveCellp()->name()));
-	    nodep->user1(1);
+	    nodep->iterateChildren(*this);
 	}
-	nodep->iterateChildren(*this);
     }
 
     //--------------------
