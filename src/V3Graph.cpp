@@ -198,7 +198,8 @@ void V3Graph::clear() {
 void V3Graph::userClearVertices() {
     // Clear user() in all of tree
     // We may use the userCnt trick in V3Ast later... (but gblCnt would be
-    // in V3Graph instead of static) For now we don't call this often, and
+    // in V3Graph instead of static - which has the complication of finding
+    // the graph pointer given a vertex.)  For now we don't call this often, and
     // the extra code on each read of user() would probably slow things
     // down more than help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {

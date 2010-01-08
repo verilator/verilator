@@ -144,6 +144,7 @@ private:
     int			m_senNumber;	// Number of senitems
     string		m_ofFilename;	// Output filename
     ofstream*		m_ofp;		// Output file
+    uint32_t		m_userGeneration; // Generation count to avoid slow userClearVertices
 
     // METHODS
     void iterateNewStmt(AstNode* nodep) {
@@ -242,8 +243,9 @@ private:
     void edgeDomainRecurse(CdcEitherVertex* vertexp, bool traceDests, int level) {
 	// Scan back to inputs/outputs, flops, and compute clock domain information
 	UINFO(8,spaces(level)<<"     Tracein  "<<vertexp<<endl);
-	if (vertexp->user()) return;   // Mid-Processed - prevent loop
-	vertexp->user(true);
+	if (vertexp->user()>=m_userGeneration) return;   // Mid-Processed - prevent loop
+	vertexp->user(m_userGeneration);
+
 	// Variables from flops already are domained
 	if (traceDests ? vertexp->dstDomainSet() : vertexp->srcDomainSet()) return;  // Fully computed
 
@@ -309,7 +311,7 @@ private:
 	}
     }
 
-    CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, uint32_t did_value, bool mark);
+    CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark);
     void dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp);
     void dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& blank);
 
@@ -448,6 +450,7 @@ public:
 	m_domainp = NULL;
 	m_inDly = false;
 	m_senNumber = 0;
+	m_userGeneration = 0;
 
 	// Make report of all signal names and what clock edges they have
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc.txt";
@@ -523,17 +526,20 @@ void CdcVisitor::analyze() {
 
 void CdcVisitor::analyzeReset() {
     // Find all async reset wires, and trace backwards
+    // userClearVertices is very slow, so we use a generation count instead
+    m_graph.userClearVertices();  // user1: uint32_t - was analyzed generation
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
 	    if (vvertexp->cntAsyncRst()) {
-		m_graph.userClearVertices();  // user1: bool - was analyzed
+		m_userGeneration++;  // Effectively a userClearVertices()
 		UINFO(9, "   Trace One async: "<<vvertexp<<endl);
 		// Twice, as we need to detect, then propagate
-		CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, 1, false);
+		CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
 		if (markp) { // Mark is non-NULL if something bad on this path
 		    UINFO(9, "   Trace One bad! "<<vvertexp<<endl);
-		    traceAsyncRecurse(vvertexp, 2, true);
-		    m_graph.userClearVertices();  // user1: bool - was analyzed
+		    m_userGeneration++;  // Effectively a userClearVertices()
+		    traceAsyncRecurse(vvertexp, true);
+		    m_userGeneration++;  // Effectively a userClearVertices()
 		    dumpAsync(vvertexp, markp);
 		}
 	    }
@@ -541,14 +547,14 @@ void CdcVisitor::analyzeReset() {
     }
 }
 
-CdcEitherVertex* CdcVisitor::traceAsyncRecurse(CdcEitherVertex* vertexp, uint32_t did_value, bool mark) {
+CdcEitherVertex* CdcVisitor::traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
     // Return vertex of any dangerous stuff attached, or NULL if OK
     // If mark, also mark the output even if nothing dangerous below
     CdcEitherVertex* mark_outp = NULL;
     UINFO(9,"      Trace: "<<vertexp<<endl);
 
-    if (vertexp->user()>=did_value) return false;   // Processed - prevent loop
-    vertexp->user(did_value);
+    if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
+    vertexp->user(m_userGeneration);
 
     if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
 	// Any logic considered bad, at the moment, anyhow
@@ -565,7 +571,7 @@ CdcEitherVertex* CdcVisitor::traceAsyncRecurse(CdcEitherVertex* vertexp, uint32_
 
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
 	CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
-	CdcEitherVertex* submarkp = traceAsyncRecurse(eFromVertexp, did_value, mark);
+	CdcEitherVertex* submarkp = traceAsyncRecurse(eFromVertexp, mark);
 	if (submarkp && !mark_outp) mark_outp = submarkp;
     }
 
@@ -592,8 +598,8 @@ void CdcVisitor::dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp) {
 void CdcVisitor::dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& blank) {
     // Return true if any dangerous stuff attached
     // If mark, also mark the output even if nothing dangerous below
-    if (vertexp->user()) return;   // Processed - prevent loop
-    vertexp->user(1);
+    if (vertexp->user()>=m_userGeneration) return;   // Processed - prevent loop
+    vertexp->user(m_userGeneration);
     if (!vertexp->asyncPath()) return;  // Not part of path
 
     *m_ofp<<V3OutFile::indentSpaces(40)<<" "<<blank<<"\n";
