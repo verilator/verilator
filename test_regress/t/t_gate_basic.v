@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
 		         BF2 (bf[2], a[2]);
 
    // verilator lint_off IMPLICIT
-   not   NT0 (nt0, a[0]);
+   not   #(0.108) NT0 (nt0, a[0]);
    and   #1       AN0 (an0, a[0], b[0]);
    nand  #(2,3)   ND0 (nd0, a[0], b[0], b[1]);
    or    OR0 (or0, a[0], b[0]);

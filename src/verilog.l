@@ -203,6 +203,7 @@ escid	\\[^ \t\f\r\n]+
   "case"		{ FL; return yCASE; }
   "casex"		{ FL; return yCASEX; }
   "casez"		{ FL; return yCASEZ; }
+  "cmos"		{ FL; return yCMOS; }
   "default"		{ FL; return yDEFAULT; }
   "defparam"		{ FL; return yDEFPARAM; }
   "disable"		{ FL; return yDISABLE; }
@@ -228,6 +229,7 @@ escid	\\[^ \t\f\r\n]+
   "module"		{ FL; return yMODULE; }
   "nand"		{ FL; return yNAND; }
   "negedge"		{ FL; return yNEGEDGE; }
+  "nmos"		{ FL; return yNMOS; }
   "nor"			{ FL; return yNOR; }
   "not"			{ FL; return yNOT; }
   "notif0"		{ FL; return yNOTIF0; }
@@ -235,12 +237,19 @@ escid	\\[^ \t\f\r\n]+
   "or"			{ FL; return yOR; }
   "output"		{ FL; return yOUTPUT; }
   "parameter"		{ FL; return yPARAMETER; }
+  "pmos"		{ FL; return yPMOS; }
   "posedge"		{ FL; return yPOSEDGE; }
   "primitive"		{ FL; return yPRIMITIVE; }
   "pulldown"		{ FL; return yPULLDOWN; }
   "pullup"		{ FL; return yPULLUP; }
+  "rcmos"		{ FL; return yRCMOS; }
   "reg"			{ FL; return yREG; }
   "repeat"		{ FL; return yREPEAT; }
+  "rnmos"		{ FL; return yRNMOS; }
+  "rpmos"		{ FL; return yRPMOS; }
+  "rtran"		{ FL; return yRTRAN; }
+  "rtranif0"		{ FL; return yRTRANIF0; }
+  "rtranif1"		{ FL; return yRTRANIF1; }
   "scalared"		{ FL; return ySCALARED; }
   "specify"		{ FL; return ySPECIFY; }
   "specparam"		{ FL; return ySPECPARAM; }
@@ -249,6 +258,9 @@ escid	\\[^ \t\f\r\n]+
   "table"		{ yy_push_state(TABLE); FL; return yTABLE; }
   "task"		{ FL; return yTASK; }
   "time"		{ FL; return yTIME; }
+  "tran"		{ FL; return yTRAN; }
+  "tranif0"		{ FL; return yTRANIF0; }
+  "tranif1"		{ FL; return yTRANIF1; }
   "tri"			{ FL; return yTRI; }
   "vectored"		{ FL; return yVECTORED; }
   "while"		{ FL; return yWHILE; }
@@ -269,7 +281,6 @@ escid	\\[^ \t\f\r\n]+
   "$writeh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
   "$writeo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
   /*     Generic unsupported warnings */
-  "cmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "deassign"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "event"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "force"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -279,25 +290,14 @@ escid	\\[^ \t\f\r\n]+
   "join"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "large"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "medium"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "nmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "pmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "pull0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "pull1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rcmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "real"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "realtime"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "release"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rnmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rpmos"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rtran"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rtranif0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "rtranif1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "small"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "tran"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "tranif0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "tranif1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "triand"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "trior"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "trireg"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }

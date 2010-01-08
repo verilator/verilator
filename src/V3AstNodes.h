@@ -689,6 +689,17 @@ public:
     string   path()		const { return m_path; }
 };
 
+struct AstImplicit : public AstNode {
+    // Create implicit wires and do nothing else, for gates that are ignored
+    // Parents: MODULE
+    AstImplicit(FileLine* fl, AstNode* exprsp)
+	: AstNode(fl) {
+	addNOp1p(exprsp);
+    }
+    ASTNODE_NODE_FUNCS(Implicit, IMPLICIT)
+    AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Assign from
+};
+
 struct AstScope : public AstNode {
     // A particular usage of a cell
     // Parents: MODULE

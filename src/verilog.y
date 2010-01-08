@@ -36,7 +36,7 @@
 
 // Pick up new lexer
 #define yylex PARSEP->lexToBison
-#define PSLUNSUP(what) NULL; yyerrorf("Unsupported: PSL language feature not implemented");
+#define GATEUNSUP(fl,tok) { if (!v3Global.opt.bboxUnsup()) { (fl)->v3error("Unsupported: Verilog 1995 gate primitive: "<<(tok)); } }
 
 extern void yyerror(const char* errmsg);
 extern void yyerrorf(const char* format, ...);
@@ -264,6 +264,7 @@ class AstSenTree;
 %token<fl>		yCASEZ		"casez"
 %token<fl>		yCHANDLE	"chandle"
 %token<fl>		yCLOCKING	"clocking"
+%token<fl>		yCMOS		"cmos"
 %token<fl>		yCONTEXT	"context"
 %token<fl>		yCOVER		"cover"
 %token<fl>		yDEFAULT	"default"
@@ -307,6 +308,7 @@ class AstSenTree;
 %token<fl>		yMODULE		"module"
 %token<fl>		yNAND		"nand"
 %token<fl>		yNEGEDGE	"negedge"
+%token<fl>		yNMOS		"nmos"
 %token<fl>		yNOR		"nor"
 %token<fl>		yNOT		"not"
 %token<fl>		yNOTIF0		"notif0"
@@ -315,6 +317,7 @@ class AstSenTree;
 %token<fl>		yOUTPUT		"output"
 %token<fl>		yPACKAGE	"package"
 %token<fl>		yPARAMETER	"parameter"
+%token<fl>		yPMOS		"pmos"
 %token<fl>		yPOSEDGE	"posedge"
 %token<fl>		yPRIMITIVE	"primitive"
 %token<fl>		yPRIORITY	"priority"
@@ -323,8 +326,14 @@ class AstSenTree;
 %token<fl>		yPULLDOWN	"pulldown"
 %token<fl>		yPULLUP		"pullup"
 %token<fl>		yPURE		"pure"
+%token<fl>		yRCMOS		"rcmos"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
+%token<fl>		yRNMOS		"rnmos"
+%token<fl>		yRPMOS		"rpmos"
+%token<fl>		yRTRAN		"rtran"
+%token<fl>		yRTRANIF0	"rtranif0"
+%token<fl>		yRTRANIF1	"rtranif1"
 %token<fl>		ySCALARED	"scalared"
 %token<fl>		ySHORTINT	"shortint"
 %token<fl>		ySIGNED		"signed"
@@ -339,6 +348,9 @@ class AstSenTree;
 %token<fl>		yTIME		"time"
 %token<fl>		yTIMEPRECISION	"timeprecision"
 %token<fl>		yTIMEUNIT	"timeunit"
+%token<fl>		yTRAN		"tran"
+%token<fl>		yTRANIF0	"tranif0"
+%token<fl>		yTRANIF1	"tranif1"
 %token<fl>		yTRI		"tri"
 %token<fl>		yTRUE		"true"
 %token<fl>		yTYPEDEF	"typedef"
@@ -2524,6 +2536,19 @@ gateDecl<nodep>:
 	|	yXNOR delayE gateXnorList ';'		{ $$ = $3; }
 	|	yPULLUP delayE gatePullupList ';'	{ $$ = $3; }
 	|	yPULLDOWN delayE gatePulldownList ';'	{ $$ = $3; }
+	//
+	|	yTRAN delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
+	|	yNMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"nmos"); } // Unsupported
+	|	yPMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"pmos"); } // Unsupported
+	|	yRCMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported
+	|	yCMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"cmos"); } // Unsupported
+	|	yRNMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"rmos"); } // Unsupported
+	|	yRPMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"pmos"); } // Unsupported
+	|	yRTRAN delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"rtran"); } // Unsupported
+	|	yRTRANIF0 delayE gateUnsupList ';'	{ $$ = $3; GATEUNSUP($3,"rtranif0"); } // Unsupported
+	|	yRTRANIF1 delayE gateUnsupList ';'	{ $$ = $3; GATEUNSUP($3,"rtranif1"); } // Unsupported
+	|	yTRANIF0 delayE gateUnsupList ';'	{ $$ = $3; GATEUNSUP($3,"tranif0"); } // Unsupported
+	|	yTRANIF1 delayE gateUnsupList ';'	{ $$ = $3; GATEUNSUP($3,"tranif1"); } // Unsupported
 	;
 
 gateBufList<nodep>:
@@ -2582,6 +2607,10 @@ gatePulldownList<nodep>:
 		gatePulldown 				{ $$ = $1; }
 	|	gatePulldownList ',' gatePulldown	{ $$ = $1->addNext($3); }
 	;
+gateUnsupList<nodep>:
+		gateUnsup 				{ $$ = $1; }
+	|	gateUnsupList ',' gateUnsup		{ $$ = $1->addNext($3); }
+	;
 
 gateBuf<nodep>:
 		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); }
@@ -2625,6 +2654,10 @@ gatePullup<nodep>:
 gatePulldown<nodep>:
 		gateIdE instRangeE '(' idClassSel ')'	{ $$ = new AstPull ($3, $4, false); }
 	;
+gateUnsup<nodep>:
+		gateIdE instRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); }
+	;
+
 gateIdE:
 		/*empty*/				{}
 	|	id					{}
@@ -2641,6 +2674,10 @@ gateOrPinList<nodep>:
 gateXorPinList<nodep>:
 		expr 					{ $$ = $1; }
 	|	gateXorPinList ',' expr			{ $$ = new AstXor($2,$1,$3); }
+	;
+gateUnsupPinList<nodep>:
+		expr 					{ $$ = $1; }
+	|	gateUnsupPinList ',' expr		{ $$ = $1->addNext($3); }
 	;
 
 strengthSpecE:			// IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty
@@ -2773,7 +2810,7 @@ idArrayed<nodep>:		// IEEE: id + select
 	;
 
 // VarRef without any dots or vectorizaion
-varRefBase<nodep>:
+varRefBase<varrefp>:
 		id					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
 	;
 

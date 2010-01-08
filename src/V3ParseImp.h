@@ -76,6 +76,7 @@ struct V3ParseBisonYYSType {
 	AstRange*	rangep;
 	AstSenTree*	sentreep;
 	AstVar*		varp;
+	AstVarRef*	varrefp;
     };
 };
 

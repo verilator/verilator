@@ -296,8 +296,9 @@ calls.
 
 =item --bbox-unsup
 
-Black box some unsupported language features, currently UDP tables.  This
-may allow linting when unsupported constructs are present.
+Black box some unsupported language features, currently UDP tables and the
+cmos and tran gate primitives.  This may enable linting the rest of the
+design even when unsupported constructs are present.
 
 =item --bin I<filename>
 

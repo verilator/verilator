@@ -603,6 +603,22 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+	// tran gates need implicit creation
+	if (AstVarRef* forrefp = nodep->lhsp()->castVarRef()) {
+	    createImplicitVar(forrefp, false);
+	}
+	if (AstVarRef* forrefp = nodep->rhsp()->castVarRef()) {
+	    createImplicitVar(forrefp, false);
+	}
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstImplicit* nodep, AstNUser*) {
+	// Unsupported gates need implicit creation
+	pinImplicitExprRecurse(nodep);
+	// We're done with implicit gates
+	nodep->unlinkFrBack()->deleteTree();
+    }
 
     virtual void visit(AstDefParam* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
