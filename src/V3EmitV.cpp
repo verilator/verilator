@@ -66,10 +66,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstModule* nodep, AstNUser*) {
-	putfs(nodep, "module "+modClassName(nodep)+";\n");
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	putfs(nodep, nodep->verilogKwd()+" "+modClassName(nodep)+";\n");
 	nodep->iterateChildren(*this);
-	putqs(nodep, "endmodule\n");
+	putqs(nodep, "end"+nodep->verilogKwd()+"\n");
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	putfs(nodep, nodep->isFunction() ? "function":"task");

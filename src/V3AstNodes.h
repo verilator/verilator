@@ -873,6 +873,7 @@ struct AstModule : public AstNodeModule {
     AstModule(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Module, MODULE)
+    virtual string verilogKwd() const { return "module"; }
 };
 
 struct AstPackage : public AstNodeModule {
@@ -880,8 +881,17 @@ struct AstPackage : public AstNodeModule {
     AstPackage(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Package, PACKAGE)
+    virtual string verilogKwd() const { return "package"; }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
     bool isDollarUnit() const { return name() == dollarUnitName(); }
+};
+
+struct AstPrimitive : public AstNodeModule {
+    // A primitive declaration
+    AstPrimitive(FileLine* fl, const string& name)
+	: AstNodeModule (fl,name) {}
+    ASTNODE_NODE_FUNCS(Primitive, PRIMITIVE)
+    virtual string verilogKwd() const { return "primitive"; }
 };
 
 struct AstPackageImport : public AstNode {

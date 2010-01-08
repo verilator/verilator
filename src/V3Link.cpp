@@ -67,6 +67,7 @@ private:
     // STATE
     // Below state needs to be preserved between each module call.
     AstPackage*		m_packagep;	// Current package
+    AstCell*		m_cellp;	// Current cell
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Current function/task
     IdState	m_idState;	// Id linking mode (find or resolve)
@@ -215,6 +216,7 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(2,"Link Module: "<<nodep<<endl);
+	AstCell* upperCellp = m_cellp;
 	V3SymTable* upperVarsp = m_curVarsp;
 	{
 	    m_modp = nodep;
@@ -229,6 +231,7 @@ private:
 		UINFO(9, "New module scope "<<m_curVarsp<<endl);
 	    }
 	    // This state must be save/restored in the cell visitor function
+	    m_cellp = NULL;
 	    m_cellVarsp = NULL;
 	    m_paramNum = 0;
 	    m_beginNum = 0;
@@ -239,6 +242,7 @@ private:
 	    m_packagep = NULL;
 	}
 	m_curVarsp = upperVarsp;
+	m_cellp = upperCellp;
     }
 
     virtual void visit(AstGenerate* nodep, AstNUser*) {
@@ -507,6 +511,7 @@ private:
 
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
+	m_cellp = nodep;
 	if (m_idState==ID_FIND) {
 	    // Add to list of all cells, for error checking and defparam's
 	    findAndInsertAndCheck(nodep, nodep->name());
@@ -528,6 +533,7 @@ private:
 		nodep->iterateChildren(*this);
 	    }
 	}
+	m_cellp = NULL;
 	// Parent module inherits child's publicity
 	// This is done bottom up in the LinkBotupVisitor stage
     }
@@ -574,12 +580,17 @@ private:
     }
 
     virtual void visit(AstPin* nodep, AstNUser*) {
-	// Pin: Link to submodule's pin
+	// Pin: Link to submodule's port
 	// ONLY CALLED by AstCell during ID_RESOLVE and ID_PARAM state
 	if (m_idState==ID_RESOLVE && !nodep->modVarp()) {
 	    if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->castVar();
 	    if (!refp) {
+		if (nodep->name() == "__paramNumber1" && m_cellp->modp()->castPrimitive()) {
+		    // Primitive parameter is really a delay we can just ignore
+		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+		    return;
+		}
 		nodep->v3error("Pin not found: "<<nodep->prettyName());
 	    } else if (!refp->isIO() && !refp->isParam()) {
 		nodep->v3error("Pin is not an in/out/inout/param: "<<nodep->prettyName());
@@ -592,6 +603,7 @@ private:
 	if (m_idState==ID_PARAM && !nodep->svImplicit()) {   // SV 19.11.3: .name pins don't allow implicit decls
 	    pinImplicitExprRecurse(nodep->exprp());
 	}
+	// Early return() above when deleted
     }
 
     virtual void visit(AstAssignW* nodep, AstNUser*) {
@@ -617,7 +629,7 @@ private:
 	// Unsupported gates need implicit creation
 	pinImplicitExprRecurse(nodep);
 	// We're done with implicit gates
-	nodep->unlinkFrBack()->deleteTree();
+	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
     }
 
     virtual void visit(AstDefParam* nodep, AstNUser*) {
@@ -666,6 +678,7 @@ public:
     LinkVisitor(AstNetlist* rootp) {
 	m_curVarsp = NULL;
 	m_cellVarsp = NULL;
+	m_cellp = NULL;
 	m_modp = NULL;
 	m_ftaskp = NULL;
 	m_packagep = NULL;

@@ -31,9 +31,9 @@ module t (/*AUTOARG*/
 
    //====== Mux
    wire [1:0] 		qm;
-   //            z      a      b      sel
-   udp_mux2  m0 (qm[0], in[0], in[2], in[4]);
-   udp_mux2  m1 (qm[1], in[1], in[3], in[4]);
+   //       delay      z      a      b      sel
+   udp_mux2 #(0.1) m0 (qm[0], in[0], in[2], in[4]);
+   udp_mux2 #0.1   m1 (qm[1], in[1], in[3], in[4]);
 
 `define verilatorxx
 `ifdef verilatorxx

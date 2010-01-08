@@ -694,7 +694,7 @@ modFront<modulep>:
 
 udpFront<modulep>:
 		yPRIMITIVE lifetimeE idAny
-			{ $$ = new AstModule($1,*$3); $$->inLibrary(true);
+			{ $$ = new AstPrimitive($1,*$3); $$->inLibrary(true);
 			  $$->modTrace(false);
 			  $$->addStmtp(new AstPragma($1,AstPragmaType::INLINE_MODULE));
 			  PARSEP->fileline()->tracingOn(false);
@@ -708,6 +708,7 @@ parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 	|	'#' '(' cellpinList ')'			{ $$ = $3; }
 	//			// Parentheses are optional around a single parameter
 	|	'#' yaINTNUM				{ $$ = new AstPin($1,1,"",new AstConst($1,*$2)); }
+	|	'#' yaFLOATNUM				{ $$ = new AstPin($1,1,"",new AstConst($1,AstConst::Unsized32(),(int)(($2<0)?($2-0.5):($2+0.5)))); }
 	|	'#' idClassSel				{ $$ = new AstPin($1,1,"",$2); }
 	//			// Not needed in Verilator:
 	//			// Side effect of combining *_instantiations
@@ -1655,6 +1656,8 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment
 	//UNSUP	data_type				{ PINDONE($1->fileline(),"",$1);  GRAMMARP->pinNumInc(); }
 	//
 	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
+	//			// Floatnum should only occur with UDPs, but since ports aren't floats, it's legal to round always
+	|	yaFLOATNUM				{ $$ = new AstPin($<fl>1,PINNUMINC(),"",new AstConst($<fl>1,AstConst::Unsized32(),(int)(($1<0)?($1-0.5):($1+0.5)))); }
 	;
 
 //************************************************
