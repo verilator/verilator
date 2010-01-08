@@ -437,8 +437,12 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	putfs(nodep,nodep->hiername());
-	puts(nodep->varp()->prettyName());
+	if (nodep->varScopep())
+	    putfs(nodep,nodep->varScopep()->prettyName());
+	else {
+	    putfs(nodep,nodep->hiername());
+	    puts(nodep->varp()->prettyName());
+	}
     }
     virtual void visit(AstVarXRef* nodep, AstNUser*) {
 	putfs(nodep,nodep->dotted());
