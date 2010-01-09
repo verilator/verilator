@@ -5,7 +5,7 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   q0, q1, q2, q3, q4, q5,
+   q0, q1, q2, q3, q4, q5, q6a, q6b,
    // Inputs
    clk, d, rst0_n
    );
@@ -46,6 +46,15 @@ module t (/*AUTOARG*/
    // verilator lint_on CDCRSTLOGIC
    output wire  q5;
    Flop flop5 (.q(q5), .rst_n(rst5_waive_n), .clk(clk), .d(d));
+
+   // Bad - for graph test - logic feeds two signals, three destinations
+   wire rst6_bad_n = rst0_n ^ rst1_n;
+   wire rst6a_bad_n = rst6_bad_n ^ $c1("0");  // $c prevents optimization
+   wire rst6b_bad_n = rst6_bad_n ^ $c1("1");
+   output wire  q6a;
+   output wire  q6b;
+   Flop flop6a (.q(q6a), .rst_n(rst6a_bad_n), .clk(clk), .d(d));
+   Flop flop6v (.q(q6b), .rst_n(rst6b_bad_n), .clk(clk), .d(d));
 
    initial begin
       $display("%%Error: Not a runnable test");

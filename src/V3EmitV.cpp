@@ -312,7 +312,8 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstUCFunc* nodep, AstNUser*) {
 	putfs(nodep,"$c(");
-	nodep->bodysp()->iterateAndNext(*this); puts(")\n");
+	nodep->bodysp()->iterateAndNext(*this);
+	puts(")");
     }
 
     // Operators
@@ -488,9 +489,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
 public:
-    EmitVBaseVisitor() {
+    EmitVBaseVisitor(AstSenTree* domainp=NULL) {   // Domain for printing one a ALWAYS under a ACTIVE
 	m_suppressSemi = false;
-	m_sensesp = NULL;
+	m_sensesp = domainp;
     }
     virtual ~EmitVBaseVisitor() {}
 };
@@ -597,8 +598,9 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
     }
 
 public:
-    EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix, bool user3mark)
-	: m_formatter(os, prefix), m_user3mark(user3mark) {
+    EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix,
+			 AstSenTree* domainp, bool user3mark)
+	: EmitVBaseVisitor(domainp), m_formatter(os, prefix), m_user3mark(user3mark) {
 	if (user3mark) { AstUser3InUse::check(); }
 	nodep->accept(*this);
     }
@@ -631,6 +633,7 @@ void V3EmitV::verilogForTree(AstNode* nodep, ostream& os) {
     EmitVStreamVisitor(nodep, os);
 }
 
-void V3EmitV::verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix, bool user3mark) {
-    EmitVPrefixedVisitor(nodep, os, prefix, user3mark);
+void V3EmitV::verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix,
+				  AstSenTree* domainp, bool user3mark) {
+    EmitVPrefixedVisitor(nodep, os, prefix, domainp, user3mark);
 }
