@@ -67,6 +67,9 @@ private:
     }
 
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
+	if (nodep->castCase() && nodep->castCase()->casex()) {
+	    nodep->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n");
+	}
 	// Detect multiple defaults
 	bool hitDefault = false;
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {

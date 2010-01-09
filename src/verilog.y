@@ -1911,7 +1911,7 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 
 caseStart<casep>:		// IEEE: part of case_statement
 	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
-	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); $1->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)\n"); }
+	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); }
 	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
 	;
 
