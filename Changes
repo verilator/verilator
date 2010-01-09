@@ -49,6 +49,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix Verilator core dump on wide integer divides, bug178. [Byron Bradley]
 
+**** Fix lint_off/lint_on meta comments on same line as warning.
+
 * Verilator 3.720 2009/10/26
 
 **   Support little endian bit vectors ("reg [0:2] x;").

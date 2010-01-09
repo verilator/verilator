@@ -270,8 +270,9 @@ public:
 
     // METHODS
     void	v3errorEnd(ostringstream& str);
-    inline bool operator==(FileLine rhs) { return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename); }
-
+    inline bool operator==(FileLine rhs) {
+	return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename && m_warnOn==rhs.m_warnOn);
+    }
     static void deleteAllRemaining();
 };
 ostream& operator<<(ostream& os, FileLine* fileline);

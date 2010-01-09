@@ -122,11 +122,12 @@ void FileLine::warnLintOff(bool flag) {
 }
 
 FileLine* FileLine::copyOrSameFileLine() {
+    // When a fileline is "used" to produce a node, calls this function.
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
-    // same pointer as long as we're on the same line.
+    // same pointer as long as we're on the same line, file & warn state.
     static FileLine* lastNewp = NULL;
-    if (lastNewp && *lastNewp == *this) {
+    if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
 	return lastNewp;
     }
     FileLine* newp = new FileLine(this);
