@@ -58,21 +58,21 @@ public:
 };
 
 //######################################################################
-// Support classes
+// Graph support classes
 
 class CdcEitherVertex : public V3GraphVertex {
     AstScope*	m_scopep;
     AstNode*	m_nodep;
     AstSenTree*	m_srcDomainp;
-    bool	m_srcDomainSet;
     AstSenTree*	m_dstDomainp;
+    bool	m_srcDomainSet;
     bool	m_dstDomainSet;
     bool	m_asyncPath;
 public:
     CdcEitherVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep)
 	: V3GraphVertex(graphp), m_scopep(scopep), m_nodep(nodep)
-	, m_srcDomainp(NULL), m_srcDomainSet(false)
-	, m_dstDomainp(NULL), m_dstDomainSet(false)
+	, m_srcDomainp(NULL), m_dstDomainp(NULL)
+	, m_srcDomainSet(false), m_dstDomainSet(false)
 	, m_asyncPath(false) {}
     virtual ~CdcEitherVertex() {}
     // Accessors
@@ -119,6 +119,43 @@ public:
     virtual string dotColor() const { return safe() ? "black" : "yellow"; }
     bool safe() const { return m_safe; }
     void clearSafe(AstNode* nodep) { m_safe = false; nodep->user3(true); }
+};
+
+//######################################################################
+
+class CdcDumpVisitor : public CdcBaseVisitor {
+private:
+    // NODE STATE
+    //Entire netlist:
+    // {statement}Node::user3p	-> bool, indicating not safe
+    ofstream*		m_ofp;		// Output file
+    string		m_prefix;
+
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	*m_ofp<<m_prefix;
+	if (nodep->user3()) *m_ofp<<" %%";
+	else *m_ofp<<"  ";
+	*m_ofp<<nodep->prettyTypeName()<<" "<<endl;
+	string lastPrefix = m_prefix;
+	m_prefix = lastPrefix + "1:";
+	nodep->op1p()->iterateAndNext(*this);
+	m_prefix = lastPrefix + "2:";
+	nodep->op2p()->iterateAndNext(*this);
+	m_prefix = lastPrefix + "3:";
+	nodep->op3p()->iterateAndNext(*this);
+	m_prefix = lastPrefix + "4:";
+	nodep->op4p()->iterateAndNext(*this);
+	m_prefix = lastPrefix;
+    }
+
+public:
+    // CONSTUCTORS
+    CdcDumpVisitor(AstNode* nodep, ofstream* ofp, const string& prefix) {
+	m_ofp = ofp;
+	m_prefix = prefix;
+	nodep->accept(*this);
+    }
+    virtual ~CdcDumpVisitor() {}
 };
 
 //######################################################################
@@ -181,14 +218,151 @@ private:
 	return vertexp;
     }
 
+    void warnAndFile(AstNode* nodep, V3ErrorCode code, const string& msg) {
+	static bool told_file = false;
+	nodep->v3warnCode(code,msg);
+	if (!told_file) {
+	    told_file = 1;
+	    cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
+	}
+	*m_ofp<<"%Warning-"<<code.ascii()<<": "<<nodep->fileline()<<" "<<msg<<endl;
+    }
+
+    void clearNodeSafe(AstNode* nodep) {
+	// Need to not clear if warnings are off (rather than when report it)
+	// as bypassing this warning may turn up another path that isn't warning off'ed.
+	if (m_logicVertexp && !nodep->fileline()->warnIsOff(V3ErrorCode::CDCRSTLOGIC)) {
+	    UINFO(9,"Clear safe "<<nodep<<endl);
+	    m_logicVertexp->clearSafe(nodep);
+	}
+    }
+
+    string spaces(int level) { string out; while (level--) out+=" "; return out; }
+
     string pad(unsigned column, const string& in) {
 	string out = in;
 	while (out.length()<column) out += ' ';
 	return out;
     }
 
-    void analyze();
-    void analyzeReset();
+    void analyze() {
+	UINFO(3,__FUNCTION__<<": "<<endl);
+	//if (debug()>6) m_graph.dump();
+	if (debug()>6) m_graph.dumpDotFilePrefixed("cdc_pre");
+	m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
+	m_graph.dumpDotFilePrefixed("cdc_simp");
+	//
+	analyzeReset();
+    }
+
+    //----------------------------------------
+    // RESET REPORT
+
+    void analyzeReset() {
+	// Find all async reset wires, and trace backwards
+	// userClearVertices is very slow, so we use a generation count instead
+	m_graph.userClearVertices();  // user1: uint32_t - was analyzed generation
+	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
+	    if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
+		if (vvertexp->cntAsyncRst()) {
+		    m_userGeneration++;  // Effectively a userClearVertices()
+		    UINFO(9, "   Trace One async: "<<vvertexp<<endl);
+		    // Twice, as we need to detect, then propagate
+		    CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
+		    if (markp) { // Mark is non-NULL if something bad on this path
+			UINFO(9, "   Trace One bad! "<<vvertexp<<endl);
+			m_userGeneration++;  // Effectively a userClearVertices()
+			traceAsyncRecurse(vvertexp, true);
+			m_userGeneration++;  // Effectively a userClearVertices()
+			dumpAsync(vvertexp, markp);
+		    }
+		}
+	    }
+	}
+    }
+
+    CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
+	// Return vertex of any dangerous stuff attached, or NULL if OK
+	// If mark, also mark the output even if nothing dangerous below
+	CdcEitherVertex* mark_outp = NULL;
+	UINFO(9,"      Trace: "<<vertexp<<endl);
+
+	if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
+	vertexp->user(m_userGeneration);
+
+	if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
+	    // Any logic considered bad, at the moment, anyhow
+	    if (!vvertexp->safe() && !mark_outp) mark_outp = vvertexp;
+	    // And keep tracing back so the user can understand what's up
+	}
+	else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
+	    if (mark) vvertexp->asyncPath(true);
+	    // If primary I/O, it's ok here back
+	    if (vvertexp->varScp()->varp()->isInput()) return false;
+	    // Also ok if from flop, but partially trace the flop so more obvious to users
+	    if (vvertexp->fromFlop()) {
+		//for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+		//    CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
+		//    eFromVertexp->asyncPath(true);
+		//}
+		return false;
+	    }
+	}
+
+	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+	    CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
+	    CdcEitherVertex* submarkp = traceAsyncRecurse(eFromVertexp, mark);
+	    if (submarkp && !mark_outp) mark_outp = submarkp;
+	}
+
+	if (mark) vertexp->asyncPath(true);
+	return mark_outp;
+    }
+
+    void dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp) {
+	AstNode* nodep = vertexp->varScp();
+	*m_ofp<<"\n";
+	*m_ofp<<"\n";
+	AstNode* targetp = vertexp->nodep();
+	if (V3GraphEdge* edgep = vertexp->outBeginp()) {
+	    CdcEitherVertex* eToVertexp = (CdcEitherVertex*)edgep->top();
+	    targetp = eToVertexp->nodep();
+	}
+	warnAndFile(markp->nodep(),V3ErrorCode::CDCRSTLOGIC,"Logic in path that feeds async reset, via signal: "+nodep->prettyName());
+	*m_ofp<<"Fanout: "<<vertexp->cntAsyncRst()<<"  Target: "<<targetp->fileline()<<endl;
+	dumpAsyncRecurse(vertexp," +--", " |  ");
+    }
+    void dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& blank) {
+	// Return true if any dangerous stuff attached
+	// If mark, also mark the output even if nothing dangerous below
+	if (vertexp->user()>=m_userGeneration) return;   // Processed - prevent loop
+	vertexp->user(m_userGeneration);
+	if (!vertexp->asyncPath()) return;  // Not part of path
+
+	*m_ofp<<V3OutFile::indentSpaces(40)<<" "<<blank<<"\n";
+
+	// Dump single variable/logic block
+	// See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
+	AstNode* nodep = vertexp->nodep();
+	string front = pad(40,nodep->fileline()->ascii()+":");
+	front += " "+prefix+" ";
+	if (nodep->castVarScope()) *m_ofp<<front<<"Variable: "<<nodep->prettyName()<<endl;
+	else {
+	    V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix+" ", true);
+	    if (debug()) {
+		CdcDumpVisitor visitor (nodep, m_ofp, front+"DBG: ");
+	    }
+	}
+
+	// Now do the other logic in the path
+	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+	    CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
+	    dumpAsyncRecurse(eFromVertexp, blank+" +--", blank+" |  ");
+	}
+    }
+
+    //----------------------------------------
+    // EDGE REPORTS
 
     void edgeReport() {
 	// Make report of all signal names and what clock edges they have
@@ -237,8 +411,6 @@ private:
 	    *ofp << *it;
 	}
     }
-
-    string spaces(int level) { string out; while (level--) out+=" "; return out; }
 
     void edgeDomainRecurse(CdcEitherVertex* vertexp, bool traceDests, int level) {
 	// Scan back to inputs/outputs, flops, and compute clock domain information
@@ -308,29 +480,6 @@ private:
 		UINFO(9,spaces(level)+"     Tracesrc "<<vertexp);
 		if (senoutp) V3EmitV::verilogForTree(senoutp, cout); cout<<endl;
 	    }
-	}
-    }
-
-    CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark);
-    void dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp);
-    void dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& blank);
-
-    void warnAndFile(AstNode* nodep, V3ErrorCode code, const string& msg) {
-	static bool told_file = false;
-	nodep->v3warnCode(code,msg);
-	if (!told_file) {
-	    told_file = 1;
-	    cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
-	}
-	*m_ofp<<"%Warning-"<<code.ascii()<<": "<<nodep->fileline()<<" "<<msg<<endl;
-    }
-
-    void clearNodeSafe(AstNode* nodep) {
-	// Need to not clear if warnings are off (rather than when report it)
-	// as bypassing this warning may turn up another path that isn't warning off'ed.
-	if (m_logicVertexp && !nodep->fileline()->warnIsOff(V3ErrorCode::CDCRSTLOGIC)) {
-	    UINFO(9,"Clear safe "<<nodep<<endl);
-	    m_logicVertexp->clearSafe(nodep);
 	}
     }
 
@@ -473,158 +622,6 @@ public:
 	if (m_ofp) { delete m_ofp; m_ofp = NULL; }
     }
 };
-
-//######################################################################
-// Cdc class functions
-
-class CdcDumpVisitor : public CdcBaseVisitor {
-private:
-    // NODE STATE
-    //Entire netlist:
-    // {statement}Node::user3p	-> bool, indicating not safe
-    ofstream*		m_ofp;		// Output file
-    string		m_prefix;
-
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	*m_ofp<<m_prefix;
-	if (nodep->user3()) *m_ofp<<" %%";
-	else *m_ofp<<"  ";
-	*m_ofp<<nodep->prettyTypeName()<<" "<<endl;
-	string lastPrefix = m_prefix;
-	m_prefix = lastPrefix + "1:";
-	nodep->op1p()->iterateAndNext(*this);
-	m_prefix = lastPrefix + "2:";
-	nodep->op2p()->iterateAndNext(*this);
-	m_prefix = lastPrefix + "3:";
-	nodep->op3p()->iterateAndNext(*this);
-	m_prefix = lastPrefix + "4:";
-	nodep->op4p()->iterateAndNext(*this);
-	m_prefix = lastPrefix;
-    }
-
-public:
-    // CONSTUCTORS
-    CdcDumpVisitor(AstNode* nodep, ofstream* ofp, const string& prefix) {
-	m_ofp = ofp;
-	m_prefix = prefix;
-	nodep->accept(*this);
-    }
-    virtual ~CdcDumpVisitor() {}
-};
-
-//######################################################################
-
-void CdcVisitor::analyze() {
-    UINFO(3,__FUNCTION__<<": "<<endl);
-    //if (debug()>6) m_graph.dump();
-    if (debug()>6) m_graph.dumpDotFilePrefixed("cdc_pre");
-    m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
-    m_graph.dumpDotFilePrefixed("cdc_simp");
-    //
-    analyzeReset();
-}
-
-void CdcVisitor::analyzeReset() {
-    // Find all async reset wires, and trace backwards
-    // userClearVertices is very slow, so we use a generation count instead
-    m_graph.userClearVertices();  // user1: uint32_t - was analyzed generation
-    for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
-	if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
-	    if (vvertexp->cntAsyncRst()) {
-		m_userGeneration++;  // Effectively a userClearVertices()
-		UINFO(9, "   Trace One async: "<<vvertexp<<endl);
-		// Twice, as we need to detect, then propagate
-		CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
-		if (markp) { // Mark is non-NULL if something bad on this path
-		    UINFO(9, "   Trace One bad! "<<vvertexp<<endl);
-		    m_userGeneration++;  // Effectively a userClearVertices()
-		    traceAsyncRecurse(vvertexp, true);
-		    m_userGeneration++;  // Effectively a userClearVertices()
-		    dumpAsync(vvertexp, markp);
-		}
-	    }
-	}
-    }
-}
-
-CdcEitherVertex* CdcVisitor::traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
-    // Return vertex of any dangerous stuff attached, or NULL if OK
-    // If mark, also mark the output even if nothing dangerous below
-    CdcEitherVertex* mark_outp = NULL;
-    UINFO(9,"      Trace: "<<vertexp<<endl);
-
-    if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
-    vertexp->user(m_userGeneration);
-
-    if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
-	// Any logic considered bad, at the moment, anyhow
-	if (!vvertexp->safe() && !mark_outp) mark_outp = vvertexp;
-	// And keep tracing back so the user can understand what's up
-    }
-    else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
-	if (mark) vvertexp->asyncPath(true);
-	// If primary I/O, it's ok here back
-	if (vvertexp->varScp()->varp()->isInput()) return false;
-	// Also ok if from flop
-	if (vvertexp->fromFlop()) return false;
-    }
-
-    for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
-	CdcEitherVertex* submarkp = traceAsyncRecurse(eFromVertexp, mark);
-	if (submarkp && !mark_outp) mark_outp = submarkp;
-    }
-
-    if (mark) vertexp->asyncPath(true);
-    return mark_outp;
-}
-
-//----------------------------------------------------------------------
-
-void CdcVisitor::dumpAsync(CdcVarVertex* vertexp, CdcEitherVertex* markp) {
-    AstNode* nodep = vertexp->varScp();
-    *m_ofp<<"\n";
-    *m_ofp<<"\n";
-    AstNode* targetp = vertexp->nodep();
-    if (V3GraphEdge* edgep = vertexp->outBeginp()) {
-	CdcEitherVertex* eToVertexp = (CdcEitherVertex*)edgep->top();
-	targetp = eToVertexp->nodep();
-    }
-    warnAndFile(markp->nodep(),V3ErrorCode::CDCRSTLOGIC,"Logic in path that feeds async reset, via signal: "+nodep->prettyName());
-    *m_ofp<<"Fanout: "<<vertexp->cntAsyncRst()<<"  Target: "<<targetp->fileline()<<endl;
-    dumpAsyncRecurse(vertexp," +--", " |  ");
-}
-
-void CdcVisitor::dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& blank) {
-    // Return true if any dangerous stuff attached
-    // If mark, also mark the output even if nothing dangerous below
-    if (vertexp->user()>=m_userGeneration) return;   // Processed - prevent loop
-    vertexp->user(m_userGeneration);
-    if (!vertexp->asyncPath()) return;  // Not part of path
-
-    *m_ofp<<V3OutFile::indentSpaces(40)<<" "<<blank<<"\n";
-
-    // Dump single variable/logic block
-    // See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
-    {
-	AstNode* nodep = vertexp->nodep();
-	string front = pad(40,nodep->fileline()->ascii()+":");
-	front += " "+prefix+" ";
-	if (nodep->castVarScope()) *m_ofp<<front<<"Variable: "<<nodep->prettyName()<<endl;
-	else {
-	    V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix+" ", true);
-	    if (debug()) {
-		CdcDumpVisitor visitor (nodep, m_ofp, front+"DBG: ");
-	    }
-	}
-    }
-
-    // Now do the other logic in the path
-    for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
-	dumpAsyncRecurse(eFromVertexp, blank+" +--", blank+" |  ");
-    }
-}
 
 //######################################################################
 // Cdc class functions
