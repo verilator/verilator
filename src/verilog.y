@@ -2701,7 +2701,7 @@ tableEntryList<nodep>:	// IEEE: { combinational_entry | sequential_entry }
 	;
 
 tableEntry<nodep>:	// IEEE: combinational_entry + sequential_entry
-		yaTABLELINE				{ $$ = new AstUdpTableLine(CRELINE(),*$1); }
+		yaTABLELINE				{ $$ = new AstUdpTableLine($<fl>1,*$1); }
 	|	error					{ $$ = NULL; }
 	;
 

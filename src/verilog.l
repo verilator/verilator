@@ -736,28 +736,28 @@ escid	\\[^ \t\f\r\n]+
   \" 			{ yy_push_state(STRING); yymore(); }
 
   [0-9]*?['']s?[bcodhBCODH][ \t]*[A-Fa-f0-9xXzZ_?]*	{
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9]*?['']s?[01xXzZ]	{	/* SystemVerilog */
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   /* Note below is constructed to not match the ' that begins a '(  or '{ */
   [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+	{
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]	{
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*[ \t]*['']s	{
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*		{
-			  FL; yylval.nump = PARSEP->newNumber(PARSEP->fileline(),(char*)yytext);
+			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
@@ -803,7 +803,7 @@ escid	\\[^ \t\f\r\n]+
   /* Tables */
 <TABLE>\\{crnl}		{ yymore(); NEXTLINE(); }
 <TABLE>{crnl}		{ NEXTLINE(); yymore(); }
-<TABLE>";"		{ yylval.strp = PARSEP->newString(yytext,yyleng); return yaTABLELINE; }
+<TABLE>";"		{ FL; yylval.strp = PARSEP->newString(yytext,yyleng); return yaTABLELINE; }
 <TABLE>"endtable"	{ yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>. 		{ yymore(); }
 <TABLE><<EOF>>		{ yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); }
