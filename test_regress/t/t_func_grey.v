@@ -1,9 +1,41 @@
-// -*- Verilog -*-
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
-//====================================================================
+
+module t_func (/*AUTOARG*/
+   // Inputs
+   clk
+   );
+
+   // surefire lint_off _NETNM
+   // surefire lint_off STMINI
+
+   input clk;
+   integer _mode;   initial _mode = 0;
+
+   wire [2:0] b3; reg [2:0] g3;
+   wire [5:0] b6; reg [5:0] g6;
+
+   t_func_grey2bin #(3) g2b3 (.b(b3), .g(g3));
+   t_func_grey2bin #(6) g2b6 (.b(b6), .g(g6));
+
+   always @ (posedge clk) begin
+      if (_mode==0) begin
+	 _mode <= 1;
+	 g3 <= 3'b101;
+	 g6 <= 6'b110101;
+      end
+      else if (_mode==1) begin
+	 if (b3 !== 3'b110) $stop;
+	 if (b6 !== 6'b100110) $stop;
+	 _mode <= 2;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
+      end
+   end
+
+endmodule
 
 // Module gray2bin
 // convert an arbitrary width gray coded number to binary. The conversion

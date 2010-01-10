@@ -4,13 +4,10 @@
 // without warranty, 2003 by Wilson Snyder.
 
 module t_arith(/*AUTOARG*/
-   // Outputs
-   passed,
    // Inputs
    clk
    );
    input clk;
-   output passed;  reg passed; initial passed = 0;
    reg 	 _ranit;
 
    reg [2:0] xor3;
@@ -48,7 +45,6 @@ module t_arith(/*AUTOARG*/
    always @ (posedge clk) begin
       if (!_ranit) begin
 	 _ranit <= 1;
-	 $write("[%0t] t_arith: Running\n",$time);
 
 	 if (rep6 != 6'b111111) $stop;
 	 if (!one) $stop;
@@ -56,9 +52,7 @@ module t_arith(/*AUTOARG*/
 
 	 if (( 1'b0 ? 3'h3 : 1'b0 ? 3'h2 : 1'b1 ? 3'h1 : 3'h0) !== 3'h1) $stop;
 	 // verilator lint_off WIDTH
-	 // surefire lint_off CNDWID
 	 if (( 8'h10 + 1'b0 ? 8'he : 8'hf) !== 8'he) $stop;  // + is higher than ?
-	 // surefire lint_on CNDWID
 	 // verilator lint_on WIDTH
 
 	 // surefire lint_off SEQASS
@@ -101,11 +95,6 @@ module t_arith(/*AUTOARG*/
          mb = 3'h4;
 	 mc = 10'h5;
 
-	 // surefire lint_off ASWESB
-	 // surefire lint_off ASWESS
-	 // surefire lint_off ASWEMB
-	 // surefire lint_off CWECBB
-
          mr1 = ma * mb; 	 // Lint ASWESB: Assignment width mismatch
 	 mr2 = 30'h5 * mc; 	 // Lint ASWESB: Assignment width mismatch
 	 if (mr1 !== 5'd12) $stop;
@@ -122,8 +111,8 @@ module t_arith(/*AUTOARG*/
 	 // Test display extraction widthing
 	 $display("[%0t] %x %x %x(%d)", $time, shq[2:0], shq[2:0]<<2, xor3[2:0], xor3[2:0]);
 
-	 $write("[%0t] t_arith: Passed\n",$time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 

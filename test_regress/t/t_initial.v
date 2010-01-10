@@ -3,14 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_initial(/*AUTOARG*/
-   // Outputs
-   passed,
+module t_initial (/*AUTOARG*/
    // Inputs
    clk
    );
    input clk;
-   output passed;  reg passed; initial passed = 0;
    reg 	 _ranit;
 
    `include "t_initial_inc.v"
@@ -23,7 +20,6 @@ module t_initial(/*AUTOARG*/
    always @ (posedge clk) begin
       if (!_ranit) begin
 	 _ranit <= 1;
-	 $write("[%0t] t_initial: Running\n",$time);
 
 	 // Test $time
 	 // surefire lint_off CWECBB
@@ -41,8 +37,8 @@ module t_initial(/*AUTOARG*/
 `endif
 	 user_loaded_value <= 2;
 
-	 $write("[%0t] t_initial: Passed\n",$time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 

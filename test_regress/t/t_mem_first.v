@@ -4,14 +4,11 @@
 // without warranty, 2003 by Wilson Snyder.
 
 module t_mem (/*AUTOARG*/
-   // Outputs
-   passed,
    // Inputs
    clk
    );
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
    integer _mode;	initial _mode = 0;
 
    reg [7:0]  mem_narrow [0:31];  //surefire lint_off_line RD_WRT WRTWRT NBAJAM
@@ -40,7 +37,6 @@ module t_mem (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (_mode!=0) begin
-	 $write("[%0t] t_mem: Running\n", $time);
 	 wrd0[0] = 32'h1;
 	 //
 	 for (i=0; i<32; i=i+1) begin   //surefire lint_off_line STMFOR
@@ -98,8 +94,8 @@ module t_mem (/*AUTOARG*/
 	 //$write ("VW %x %x\n", vec_wide[34:32], vec_wide[31:0]);
 	 if (vec_wide != {4'b101_1,31'd0}) $stop;
 	 //
-	 $write("[%0t] t_mem: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
       _mode <= _mode + 1;
    end
