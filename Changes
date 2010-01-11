@@ -41,6 +41,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix creating implicit variables for expressions, bug196. [Byron Bradley]
 
+**** Fix duplicate implicit variables under generates, bug201. [Byron Bradley]
+
 **** Fix tracing with --pins-bv 1, bug195.  [Michael S]
 
 **** Fix MinGW compilation, bug184. [by Shankar Giri]

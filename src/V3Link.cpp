@@ -191,9 +191,12 @@ private:
 	    m_modp->addStmtp(newp);
 	    // Link it to signal list
 	    IdState old_id = m_idState;
+	    V3SymTable* old_varsp = m_curVarsp;
 	    m_idState = ID_FIND;
+	    m_curVarsp = symsFind(m_modp);  // Must add the variable under the module; curVarsp might be lower now
 	    newp->accept(*this);
 	    m_idState = old_id;
+	    m_curVarsp = old_varsp;
 	}
     }
 
