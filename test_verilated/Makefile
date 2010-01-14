@@ -26,7 +26,7 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 
 VERILATOR_SW +=
 ifeq ($(VERILATOR_NO_DEBUG),)
-  VERILATOR_SW += --debug
+  VERILATOR_SW += --debug --no-dump-tree
 endif
 
 PERL_PACKAGES_OK := $(shell $(PERL) -e 'eval "use Bit::Vector; print 1;";')

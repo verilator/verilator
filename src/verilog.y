@@ -2015,8 +2015,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_STOP parenE				{ $$ = new AstStop($1); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); }
 	//
-	|	yD_SFORMAT '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
-	|	yD_SWRITE  '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	//
 	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
