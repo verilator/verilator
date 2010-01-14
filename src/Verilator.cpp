@@ -295,7 +295,7 @@ void process () {
 
     // Make large low-fanin logic blocks into lookup tables
     // This should probably be done much later, once we have common logic elimination.
-    if (v3Global.opt.oTable()) {
+    if (!v3Global.opt.lintOnly() && v3Global.opt.oTable()) {
 	V3Table::tableAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("table.tree"));
     }

@@ -1167,8 +1167,6 @@ private:
 	    const AstSenItem* ritemp = rhsp->castSenItem();
 	    if (litemp && ritemp) {
 		// Looks visually better if we keep sorted by name
-		if (litemp->edgeType() < ritemp->edgeType()) return true;
-		if (litemp->edgeType() > ritemp->edgeType()) return false;
 		if (!litemp->varrefp() &&  ritemp->varrefp()) return true;
 		if ( litemp->varrefp() && !ritemp->varrefp()) return false;
 		if (litemp->varrefp() && ritemp->varrefp()) {
@@ -1178,6 +1176,10 @@ private:
 		    if (litemp->varrefp()->varScopep() < ritemp->varrefp()->varScopep()) return true;
 		    if (litemp->varrefp()->varScopep() > ritemp->varrefp()->varScopep()) return false;
 		}
+		// Sort by edge, AFTER variable, as we want multiple edges for same var adjacent
+		// note the SenTree optimizer requires this order (more general firsst, less general last)
+		if (litemp->edgeType() < ritemp->edgeType()) return true;
+		if (litemp->edgeType() > ritemp->edgeType()) return false;
 	    }
 	    return false;
 	}
