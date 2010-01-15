@@ -109,18 +109,19 @@ public:
 };
 
 class CdcLogicVertex : public CdcEitherVertex {
-    bool	m_safe;
+    bool	m_hazard;
     bool	m_isFlop;
 public:
     CdcLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstSenTree* sensenodep)
-	: CdcEitherVertex(graphp,scopep,nodep), m_safe(true), m_isFlop(false)
+	: CdcEitherVertex(graphp,scopep,nodep), m_hazard(false), m_isFlop(false)
 	{ srcDomainp(sensenodep); dstDomainp(sensenodep); }
     virtual ~CdcLogicVertex() {}
     // Accessors
     virtual string name() const { return (cvtToStr((void*)nodep())+"@"+scopep()->prettyName()); }
-    virtual string dotColor() const { return safe() ? "black" : "yellow"; }
-    bool safe() const { return m_safe; }
-    void clearSafe(AstNode* nodep) { m_safe = false; nodep->user3(true); }
+    virtual string dotColor() const { return hazard() ? "black" : "yellow"; }
+    bool hazard() const { return m_hazard; }
+    void setHazard(AstNode* nodep) { m_hazard = true; nodep->user3(true); }
+    void clearHazard() { m_hazard = false; }
     bool isFlop() const { return m_isFlop; }
     void isFlop(bool flag) { m_isFlop = flag; }
 };
@@ -131,7 +132,7 @@ class CdcDumpVisitor : public CdcBaseVisitor {
 private:
     // NODE STATE
     //Entire netlist:
-    // {statement}Node::user3p	-> bool, indicating not safe
+    // {statement}Node::user3p	-> bool, indicating not hazard
     ofstream*		m_ofp;		// Output file
     string		m_prefix;
 
@@ -279,13 +280,13 @@ private:
 	*m_ofp<<"%Warning-"<<code.ascii()<<": "<<nodep->fileline()<<" "<<msg<<endl;
     }
 
-    void clearNodeSafe(AstNode* nodep) {
+    void setNodeHazard(AstNode* nodep) {
 	// Need to not clear if warnings are off (rather than when report it)
 	// as bypassing this warning may turn up another path that isn't warning off'ed.
 	if (!m_domainp || m_domainp->hasCombo()) { // Source flop logic in a posedge block is OK for reset (not async though)
 	    if (m_logicVertexp && !nodep->fileline()->warnIsOff(V3ErrorCode::CDCRSTLOGIC)) {
-		UINFO(9,"Clear safe "<<nodep<<endl);
-		m_logicVertexp->clearSafe(nodep);
+		UINFO(9,"Set hazard "<<nodep<<endl);
+		m_logicVertexp->setHazard(nodep);
 	    }
 	}
     }
@@ -343,7 +344,7 @@ private:
     }
 
     CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
-	// Return vertex of any dangerous stuff attached, or NULL if OK
+	// Return vertex of any hazardous stuff attached, or NULL if OK
 	if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
 	vertexp->user(m_userGeneration);
 
@@ -355,7 +356,7 @@ private:
 
 	if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
 	    // Any logic considered bad, at the moment, anyhow
-	    if (!vvertexp->safe() && !mark_outp) mark_outp = vvertexp;
+	    if (vvertexp->hazard() && !mark_outp) mark_outp = vvertexp;
 	    // And keep tracing back so the user can understand what's up
 	}
 	else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
@@ -410,7 +411,7 @@ private:
     bool dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix, const string& sep, int level) {
 	// level=0 is special, indicates to dump destination flop
 	// Return true if printed anything
-	// If mark, also mark the output even if nothing dangerous below
+	// If mark, also mark the output even if nothing hazardous below
 	if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
 	vertexp->user(m_userGeneration);
 	if (!vertexp->asyncPath() && level!=0) return false;  // Not part of path
@@ -442,6 +443,12 @@ private:
 
 	nextsep = " | ";
 	if (level) *m_ofp<<V3OutFile::indentSpaces(filelineWidth())<<" "<<prefix<<nextsep<<"\n";
+
+	if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
+	    // Now that we've printed a path with this hazard, don't bother to print any more
+	    // Otherwise, we'd get a path for almost every destination flop
+	    vvertexp->clearHazard();
+	}
 	return true;
     }
 
@@ -640,7 +647,7 @@ private:
 	iterateNewStmt(nodep);
     }
 
-    // Math that shouldn't cause us to clear safe
+    // Math that shouldn't cause us to clear hazard
     virtual void visit(AstConst* nodep, AstNUser*) { }
     virtual void visit(AstReplicate* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -652,11 +659,11 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstSel* nodep, AstNUser*) {
-	if (!nodep->lsbp()->castConst()) clearNodeSafe(nodep);
+	if (!nodep->lsbp()->castConst()) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeSel* nodep, AstNUser*) {
-	if (!nodep->bitp()->castConst()) clearNodeSafe(nodep);
+	if (!nodep->bitp()->castConst()) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
 
@@ -668,7 +675,7 @@ private:
     //--------------------
     // Default
     virtual void visit(AstNodeMath* nodep, AstNUser*) {
-	clearNodeSafe(nodep);
+	setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -696,7 +703,7 @@ public:
 	*m_ofp<<"Each dump below traces logic from inputs/source flops to destination flop(s).\n";
 	*m_ofp<<"First source logic is listed, then a variable that logic generates,\n";
 	*m_ofp<<"repeating recursively forwards to the destination flop(s).\n";
-	*m_ofp<<"%% Indicates the operator considered potentially unsafe.\n";
+	*m_ofp<<"%% Indicates the operator considered potentially hazardous.\n";
 
 	nodep->accept(*this);
 	analyze();
