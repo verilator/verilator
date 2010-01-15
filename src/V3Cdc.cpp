@@ -207,9 +207,11 @@ private:
     // NODE STATE
     //Entire netlist:
     // AstVarScope::user1p	-> CdcVarVertex* for usage var, 0=not set yet
+    // AstVarScope::user2	-> bool  Used in sensitivity list
     // {statement}Node::user1p	-> CdcLogicVertex* for this statement
     // AstNode::user3		-> bool  True indicates to print %% (via V3EmitV)
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
 
     // STATE
@@ -219,7 +221,7 @@ private:
     AstNodeModule*	m_modp;		// Current module
     AstSenTree*		m_domainp;	// Current sentree
     bool		m_inDly;	// In delayed assign
-    int			m_senNumber;	// Number of senitems
+    int			m_inSenItem;	// Number of senitems
     string		m_ofFilename;	// Output filename
     ofstream*		m_ofp;		// Output file
     uint32_t		m_userGeneration; // Generation count to avoid slow userClearVertices
@@ -237,7 +239,6 @@ private:
 		m_logicVertexp->dstDomainp(m_domainp);
 		m_logicVertexp->dstDomainSet(true);
 	    }
-	    m_senNumber = 0;
 	    nodep->iterateChildren(*this);
 	    m_logicVertexp = NULL;
 
@@ -266,7 +267,13 @@ private:
 		}
 	    }
 	}
-	if (m_senNumber > 1) vertexp->cntAsyncRst(vertexp->cntAsyncRst()+1);
+	if (m_inSenItem) {
+	    varscp->user2(true);  // It's like a clock...
+	    // TODO: In the future we could mark it here and do normal clock tree glitch checks also
+	} else if (varscp->user2()) {  // It was detected in a sensitivity list earlier
+	    // And now it's used as logic.  So must be a reset.
+	    vertexp->cntAsyncRst(vertexp->cntAsyncRst()+1);
+	}
 	return vertexp;
     }
 
@@ -591,11 +598,13 @@ private:
     virtual void visit(AstActive* nodep, AstNUser*) {
 	// Create required blocks and add to module
 	UINFO(4,"  BLOCK  "<<nodep<<endl);
+	AstNode::user2ClearTree();
 	m_domainp = nodep->sensesp();
 	if (!m_domainp || m_domainp->hasCombo() || m_domainp->hasClocked()) {  // IE not hasSettle/hasInitial
 	    iterateNewStmt(nodep);
 	}
 	m_domainp = NULL;
+	AstNode::user2ClearTree();
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	if (m_scopep) {
@@ -626,8 +635,9 @@ private:
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	// Note we look at only AstSenItems, not AstSenGate's
 	// The gating term of a AstSenGate is normal logic
-	m_senNumber++;
+	m_inSenItem = true;
 	nodep->iterateChildren(*this);
+	m_inSenItem = false;
     }
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	iterateNewStmt(nodep);
@@ -690,7 +700,7 @@ public:
 	m_modp = NULL;
 	m_domainp = NULL;
 	m_inDly = false;
-	m_senNumber = 0;
+	m_inSenItem = 0;
 	m_userGeneration = 0;
 	m_filelineWidth = 0;
 
