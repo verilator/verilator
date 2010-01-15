@@ -33,7 +33,7 @@ class V3EmitV {
 public:
     static void emitv();
     static void verilogForTree(AstNode* nodep, ostream& os=cout);
-    static void verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix,
+    static void verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
 				    AstSenTree* domainp, bool user3percent);
 };
 

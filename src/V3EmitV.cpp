@@ -543,6 +543,7 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
 class EmitVPrefixedFormatter : public V3OutFormatter {
     ostream&	m_os;
     string	m_prefix;	// What to print at beginning of each line
+    int		m_flWidth;	// Padding of fileline
     int		m_column;	// Rough location; need just zero or non-zero
     FileLine*	m_prefixFl;
     // METHODS
@@ -554,7 +555,7 @@ class EmitVPrefixedFormatter : public V3OutFormatter {
 	    if (m_column == 0) {
 		m_column = 10;
 		m_os<<m_prefixFl->ascii()+":";
-		m_os<<V3OutFile::indentSpaces(40-(m_prefixFl->ascii().length()+1));
+		m_os<<V3OutFile::indentSpaces(m_flWidth-(m_prefixFl->ascii().length()+1));
 		m_os<<" ";
 		m_os<<m_prefix;
 	    }
@@ -566,8 +567,8 @@ public:
     void prefixFl(FileLine* fl) { m_prefixFl = fl; }
     FileLine* prefixFl() const { return m_prefixFl; }
     int column() const { return m_column; }
-    EmitVPrefixedFormatter(ostream& os, const string& prefix)
-	: V3OutFormatter("__STREAM", true), m_os(os), m_prefix(prefix) {
+    EmitVPrefixedFormatter(ostream& os, const string& prefix, int flWidth)
+	: V3OutFormatter("__STREAM", true), m_os(os), m_prefix(prefix), m_flWidth(flWidth) {
 	m_column = 0;
 	m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of NULL to avoid NULL checks
     }
@@ -598,9 +599,9 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
     }
 
 public:
-    EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix,
+    EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
 			 AstSenTree* domainp, bool user3mark)
-	: EmitVBaseVisitor(domainp), m_formatter(os, prefix), m_user3mark(user3mark) {
+	: EmitVBaseVisitor(domainp), m_formatter(os, prefix, flWidth), m_user3mark(user3mark) {
 	if (user3mark) { AstUser3InUse::check(); }
 	nodep->accept(*this);
     }
@@ -633,7 +634,7 @@ void V3EmitV::verilogForTree(AstNode* nodep, ostream& os) {
     EmitVStreamVisitor(nodep, os);
 }
 
-void V3EmitV::verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix,
+void V3EmitV::verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
 				  AstSenTree* domainp, bool user3mark) {
-    EmitVPrefixedVisitor(nodep, os, prefix, domainp, user3mark);
+    EmitVPrefixedVisitor(nodep, os, prefix, flWidth, domainp, user3mark);
 }

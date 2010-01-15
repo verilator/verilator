@@ -110,15 +110,19 @@ public:
 
 class CdcLogicVertex : public CdcEitherVertex {
     bool	m_safe;
+    bool	m_isFlop;
 public:
     CdcLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstSenTree* sensenodep)
-	: CdcEitherVertex(graphp,scopep,nodep), m_safe(true) { srcDomainp(sensenodep); dstDomainp(sensenodep); }
+	: CdcEitherVertex(graphp,scopep,nodep), m_safe(true), m_isFlop(false)
+	{ srcDomainp(sensenodep); dstDomainp(sensenodep); }
     virtual ~CdcLogicVertex() {}
     // Accessors
     virtual string name() const { return (cvtToStr((void*)nodep())+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return safe() ? "black" : "yellow"; }
     bool safe() const { return m_safe; }
     void clearSafe(AstNode* nodep) { m_safe = false; nodep->user3(true); }
+    bool isFlop() const { return m_isFlop; }
+    void isFlop(bool flag) { m_isFlop = flag; }
 };
 
 //######################################################################
@@ -159,6 +163,42 @@ public:
 };
 
 //######################################################################
+
+class CdcWidthVisitor : public CdcBaseVisitor {
+private:
+    int		m_maxLineno;
+    int		m_maxFilenameLen;
+
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	// Keeping line+filename lengths separate is much faster than calling ascii().length()
+	if (nodep->fileline()->lineno() >= m_maxLineno) {
+	    m_maxLineno = nodep->fileline()->lineno()+1;
+	}
+	if (nodep->fileline()->filename().length() >= m_maxFilenameLen) {
+	    m_maxFilenameLen = nodep->fileline()->filename().length()+1;
+	}
+    }
+public:
+    // CONSTUCTORS
+    CdcWidthVisitor(AstNode* nodep) {
+	m_maxLineno = 0;
+	m_maxFilenameLen = 0;
+	nodep->accept(*this);
+    }
+    virtual ~CdcWidthVisitor() {}
+    // ACCESSORS
+    int maxWidth() {
+	int width=1;
+	width += m_maxFilenameLen;
+	width += 1;  // The :
+	width += cvtToStr(m_maxLineno).length();
+	width += 1;  // Final :
+	return width;
+    }
+};
+
+//######################################################################
 // Cdc class functions
 
 class CdcVisitor : public CdcBaseVisitor {
@@ -182,6 +222,7 @@ private:
     string		m_ofFilename;	// Output filename
     ofstream*		m_ofp;		// Output file
     uint32_t		m_userGeneration; // Generation count to avoid slow userClearVertices
+    int			m_filelineWidth;  // Characters in longest fileline
 
     // METHODS
     void iterateNewStmt(AstNode* nodep) {
@@ -189,6 +230,7 @@ private:
 	    UINFO(4,"   STMT "<<nodep<<endl);
 	    m_logicVertexp = new CdcLogicVertex(&m_graph, m_scopep, nodep, m_domainp);
 	    if (m_domainp && m_domainp->hasClocked()) {  // To/from a flop
+		m_logicVertexp->isFlop(true);
 		m_logicVertexp->srcDomainp(m_domainp);
 		m_logicVertexp->srcDomainSet(true);
 		m_logicVertexp->dstDomainp(m_domainp);
@@ -264,6 +306,14 @@ private:
 	m_graph.dumpDotFilePrefixed("cdc_simp");
 	//
 	analyzeReset();
+    }
+
+    int filelineWidth() {
+	if (!m_filelineWidth) {
+	    CdcWidthVisitor visitor (v3Global.rootp());
+	    m_filelineWidth = visitor.maxWidth();
+	}
+	return m_filelineWidth;
     }
 
     //----------------------------------------
@@ -344,9 +394,15 @@ private:
 	*m_ofp<<"\n";
 	*m_ofp<<"\n";
 	CdcEitherVertex* targetp = vertexp;  // One example destination flop (of possibly many)
-	if (V3GraphEdge* edgep = vertexp->outBeginp()) {
+	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
 	    CdcEitherVertex* eToVertexp = (CdcEitherVertex*)edgep->top();
-	    targetp = eToVertexp;
+	    if (!eToVertexp) targetp = eToVertexp;
+	    if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(eToVertexp)) {
+		if (vvertexp->isFlop()) {
+		    targetp = eToVertexp;
+		    break;
+		}
+	    }  // else it might be random logic that's not relevant
 	}
 	warnAndFile(markp->nodep(),V3ErrorCode::CDCRSTLOGIC,"Logic in path that feeds async reset, via signal: "+nodep->prettyName());
 	dumpAsyncRecurse(targetp, "", "   ",0);
@@ -372,19 +428,20 @@ private:
 	// Dump single variable/logic block
 	// See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
 	AstNode* nodep = vertexp->nodep();
-	string front = pad(40,nodep->fileline()->ascii()+":")+" "+prefix+" +- ";
+	string front = pad(filelineWidth(),nodep->fileline()->ascii()+":")+" "+prefix+" +- ";
 	if (nodep->castVarScope()) {
 	    *m_ofp<<front<<"Variable: "<<nodep->prettyName()<<endl;
 	}
 	else {
-	    V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix+" +- ", vertexp->srcDomainp(), true);
+	    V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix+" +- ", filelineWidth(),
+					 vertexp->srcDomainp(), true);
 	    if (debug()) {
 		CdcDumpVisitor visitor (nodep, m_ofp, front+"DBG: ");
 	    }
 	}
 
 	nextsep = " | ";
-	if (level) *m_ofp<<V3OutFile::indentSpaces(40)<<" "<<prefix<<nextsep<<"\n";
+	if (level) *m_ofp<<V3OutFile::indentSpaces(filelineWidth())<<" "<<prefix<<nextsep<<"\n";
 	return true;
     }
 
@@ -428,7 +485,8 @@ private:
 		    if (vvertexp->srcDomainp()) V3EmitV::verilogForTree(vvertexp->srcDomainp(), os);
 		    os<<"  DST=";
 		    if (vvertexp->dstDomainp()) V3EmitV::verilogForTree(vvertexp->dstDomainp(), os);
-		    os<<"\n";
+		    os<<setw(0);
+		    os<<endl;
 		    report.push_back(os.str());
 		}
 	    }
@@ -627,6 +685,7 @@ public:
 	m_inDly = false;
 	m_senNumber = 0;
 	m_userGeneration = 0;
+	m_filelineWidth = 0;
 
 	// Make report of all signal names and what clock edges they have
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc.txt";
@@ -643,7 +702,7 @@ public:
 	analyze();
 	//edgeReport();  // Not useful at the moment
 
-	if (0) { *m_ofp<<"\nDBG-test-dumper\n"; V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ",NULL,true); *m_ofp<<endl; }
+	if (0) { *m_ofp<<"\nDBG-test-dumper\n"; V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ",40,NULL,true); *m_ofp<<endl; }
     }
     virtual ~CdcVisitor() {
 	if (m_ofp) { delete m_ofp; m_ofp = NULL; }
