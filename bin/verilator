@@ -1450,12 +1450,14 @@ functions, the Verilog signals must be declared with /*verilator public*/.
 See also the public task feature; writing a accessor may result in cleaner
 code.
 
+=item `VERILATOR
+
 =item `verilator
 
 =item `verilator3
 
-The verilator and verilator3 defines are set by default so you may `ifdef
-around compiler specific constructs.
+The VERILATOR, verilator and verilator3 defines are set by default so you
+may `ifdef around compiler specific constructs.
 
 =item `verilog
 
@@ -2549,9 +2551,9 @@ with '%' to see what lines Verilator believes need more coverage.
 Translate on/off pragmas are generally a bad idea, as it's easy to have
 mismatched pairs, and you can't see what another tool sees by just
 preprocessing the code.  Instead, use the preprocessor; Verilator defines
-the "verilator" define for you, so just wrap the code in a ifndef region:
+the "VERILATOR" define for you, so just wrap the code in a ifndef region:
 
-   `ifndef verilator
+   `ifndef VERILATOR
       Something_Verilator_Dislikes;
    `endif
 

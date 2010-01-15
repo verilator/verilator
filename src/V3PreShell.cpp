@@ -62,6 +62,7 @@ protected:
 	    s_preprocp->debug(debug());
 	    // Default defines
 	    FileLine* prefl = new FileLine("INTERNAL_VERILATOR_DEFINE",0);
+	    s_preprocp->defineCmdLine(prefl,"VERILATOR", "1");  // LEAK_OK
 	    s_preprocp->defineCmdLine(prefl,"verilator", "1");  // LEAK_OK
 	    s_preprocp->defineCmdLine(prefl,"verilator3", "1");  // LEAK_OK
 	    s_preprocp->defineCmdLine(prefl,"systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK

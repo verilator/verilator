@@ -42,7 +42,7 @@ module t;
 multiline", $time);
 
       // Str check
-`ifndef nc	// NC-Verilog 5.3 chokes on this test
+`ifndef NC	// NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;
 `endif
       $write("*-* All Finished *-*\n");

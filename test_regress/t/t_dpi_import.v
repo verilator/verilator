@@ -5,6 +5,16 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
+`ifdef VCS
+ `define NO_SHORTREAL
+`endif
+`ifdef NC
+ `define NO_SHORTREAL
+`endif
+`ifdef VERILATOR
+ `define NO_SHORTREAL
+`endif
+
 module t ();
 
    // Allowed import return types:
@@ -28,9 +38,13 @@ module t ();
    import "DPI-C" pure function shortint     dpii_f_shortint (input shortint     i);
    import "DPI-C" pure function longint      dpii_f_longint  (input longint      i);
    import "DPI-C" pure function chandle      dpii_f_chandle  (input chandle      i);
-   //import "DPI-C" pure function real      dpii_f_real        (input real      i);
-   //import "DPI-C" pure function shortreal dpii_f_shortreal   (input shortreal i);
-   //import "DPI-C" pure function string    dpii_f_string      (input string    i);
+`ifndef VERILATOR
+   import "DPI-C" pure function string       dpii_f_string   (input string       i);
+   import "DPI-C" pure function real         dpii_f_real     (input real         i);
+`endif
+`ifndef NO_SHORTREAL
+   import "DPI-C" pure function shortreal    dpii_f_shortreal(input shortreal    i);
+`endif
 
    import "DPI-C" pure function void dpii_v_bit      (input bit       i, output bit       o);
    import "DPI-C" pure function void dpii_v_int      (input int       i, output int       o);
@@ -38,9 +52,13 @@ module t ();
    import "DPI-C" pure function void dpii_v_shortint (input shortint  i, output shortint  o);
    import "DPI-C" pure function void dpii_v_longint  (input longint   i, output longint   o);
    import "DPI-C" pure function void dpii_v_chandle  (input chandle   i, output chandle   o);
-   //import "DPI-C" pure function void dpii_v_real     (input real      i, output real      o);
-   //import "DPI-C" pure function void dpii_v_shortreal(input shortreal i, output shortreal o);
-   //import "DPI-C" pure function void dpii_v_string   (input string    i, output string    o);
+`ifndef VERILATOR
+   import "DPI-C" pure function void dpii_v_string   (input string    i, output string    o);
+   import "DPI-C" pure function void dpii_v_real     (input real      i, output real      o);
+`endif
+`ifndef NO_SHORTREAL
+   import "DPI-C" pure function void dpii_v_shortreal(input shortreal i, output shortreal o);
+`endif
 
    import "DPI-C" function void dpii_f_void ();
 
@@ -68,6 +86,13 @@ module t ();
    shortint	i_s,	o_s;
    longint	i_l,	o_l;
    chandle	i_c,	o_c;
+`ifndef VERILATOR
+   string 	i_n,	o_n;
+   real 	i_g,	o_g;
+`endif
+`ifndef NO_SHORTREAL
+   shortreal 	i_f,	o_f;
+`endif
 
    bit [127:0] wide;
 
@@ -103,19 +128,35 @@ module t ();
       if (o_b33 !== ~i_b33) $stop;
       if (o_b64 !== ~i_b64) $stop;
 
-      if (dpii_f_bit     (i_b) !== ~i_b) $stop;
-      if (dpii_f_int     (i_i) !== ~i_i) $stop;
-      if (dpii_f_byte    (i_y) !== ~i_y) $stop;
-      if (dpii_f_shortint(i_s) !== ~i_s) $stop;
-      if (dpii_f_longint (i_l) !== ~i_l) $stop;
-      if (dpii_f_chandle (i_c) !== i_c) $stop;
+      if (dpii_f_bit      (i_b) !== ~i_b) $stop;
+      if (dpii_f_int      (i_i) !== ~i_i) $stop;
+      if (dpii_f_byte     (i_y) !== ~i_y) $stop;
+      if (dpii_f_shortint (i_s) !== ~i_s) $stop;
+      if (dpii_f_longint  (i_l) !== ~i_l) $stop;
+      if (dpii_f_chandle  (i_c) !== i_c) $stop;
+`ifndef VERILATOR
+      if (dpii_f_string   (i_n) != i_n) $stop;
+      if (dpii_f_real     (i_g) != i_g+1.5) $stop;
+`endif
+`ifndef NO_SHORTREAL
+      if (dpii_f_shortreal(i_f) != i_f+1.5) $stop;
+`endif
 
-      dpii_v_bit     (i_b,o_b); if (o_b !== ~i_b) $stop;
-      dpii_v_int     (i_i,o_i); if (o_i !== ~i_i) $stop;
-      dpii_v_byte    (i_y,o_y); if (o_y !== ~i_y) $stop;
-      dpii_v_shortint(i_s,o_s); if (o_s !== ~i_s) $stop;
-      dpii_v_longint (i_l,o_l); if (o_l !== ~i_l) $stop;
-      dpii_v_chandle (i_c,o_c); if (o_c !== i_c) $stop;
+      dpii_v_bit      (i_b,o_b); if (o_b !== ~i_b) $stop;
+      dpii_v_int      (i_i,o_i); if (o_i !== ~i_i) $stop;
+      dpii_v_byte     (i_y,o_y); if (o_y !== ~i_y) $stop;
+      dpii_v_shortint (i_s,o_s); if (o_s !== ~i_s) $stop;
+      dpii_v_longint  (i_l,o_l); if (o_l !== ~i_l) $stop;
+      dpii_v_chandle  (i_c,o_c); if (o_c !== i_c) $stop;
+`ifndef VERILATOR
+ `ifndef VCS  // Strange link error
+      dpii_v_string   (i_n,o_n); if (o_n != i_n) $stop;
+ `endif
+      dpii_v_real     (i_g,o_g); if (o_g != i_g+1.5) $stop;
+`endif
+`ifndef NO_SHORTREAL
+      dpii_v_shortreal(i_f,o_f); if (o_f != i_f+1.5) $stop;
+`endif
 
       dpii_f_void();
       dpii_t_void();

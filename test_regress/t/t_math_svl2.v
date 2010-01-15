@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
 	    if ('1 !== {66{1'b1}}) $stop;
 	    if ('x !== {66{1'bx}}) $stop;
 	    if ('z !== {66{1'bz}}) $stop;
-`ifndef nc	// NC-Verilog 5.50-s09 chokes on this test
+`ifndef NC	// NC-Verilog 5.50-s09 chokes on this test
 	    if ("\v" != 8'd11) $stop;
 	    if ("\f" != 8'd12) $stop;
 	    if ("\a" != 8'd7) $stop;

@@ -44,6 +44,9 @@ extern "C" {
     extern short int     dpii_f_shortint(short int i);
     extern long long     dpii_f_longint (long long i);
     extern void*         dpii_f_chandle (void* i);
+    extern const char*   dpii_f_string  (const char* i);
+    extern double        dpii_f_real    (double i);
+    extern float         dpii_f_shortreal(float i);
 
     extern void dpii_v_bit	(unsigned char i, unsigned char *o);
     extern void dpii_v_int	(int i,		int *o);
@@ -51,6 +54,9 @@ extern "C" {
     extern void dpii_v_shortint	(short int i,	short int *o);
     extern void dpii_v_longint	(long long i,	long long *o);
     extern void dpii_v_chandle	(void* i,	void* *o);
+    extern void dpii_v_string   (const char* i, const char** o);
+    extern void dpii_v_real     (double i,      double* o);
+    extern void dpii_v_shortreal(float i,       float* o);
 
     extern void dpii_f_void	();
     extern int dpii_t_void	();
@@ -77,6 +83,9 @@ char		dpii_f_byte (char i)		{ return ~i; }
 short int	dpii_f_shortint(short int i)	{ return ~i; }
 long long	dpii_f_longint (long long i)	{ return ~i; }
 void*		dpii_f_chandle (void* i)	{ return i; }
+const char*	dpii_f_string  (const char* i)	{ return i; }
+double		dpii_f_real    (double i)	{ return i+1.5; }
+float		dpii_f_shortreal(float i)	{ return i+1.5; }
 
 void dpii_v_bit	(unsigned char i, unsigned char *o)	{ *o = SV_MASK(1) & ~i; }
 void dpii_v_int (int i, int *o)				{ *o = ~i; }
@@ -84,6 +93,9 @@ void dpii_v_byte (char i, char *o)			{ *o = ~i; }
 void dpii_v_shortint (short int i, short int *o)	{ *o = ~i; }
 void dpii_v_longint (long long i, long long *o)		{ *o = ~i; }
 void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
+void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
+void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
+void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
 
 //======================================================================
 

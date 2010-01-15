@@ -261,11 +261,11 @@ sub new {
 	ivrun_flags => [],
 	# VCS
 	vcs => 0,
-	vcs_flags => [split(/\s+/,"+cli -I +define+vcs+1 -q -sverilog -CFLAGS '-DVCS' ")],
+	vcs_flags => [split(/\s+/,"+cli -I +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
 	vcs_flags2 => [],  # Overridden in some sim files
 	# NC
 	nc => 0,
-	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+nc=1 -q +assert +sv -c")],
+	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c ")],
 	nc_flags2 => [],  # Overridden in some sim files
 	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
