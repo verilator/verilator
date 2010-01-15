@@ -228,7 +228,7 @@ public:
 	static const char* names[] = {
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "double", "short int", "float", "long long",
-	    "char*",
+	    "const char*",
 	    "dpiScope", "const char*",
 	    ""
 	};
@@ -253,23 +253,23 @@ public:
 	default: return 0;
 	}
     }
-    int isSigned() const {
+    bool isSigned() const {
 	return m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER;
     }
-    int isFourstate() const {
+    bool isFourstate() const {
 	return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
     }
-    int isZeroInit() const { // Otherwise initializes to X
+    bool isZeroInit() const { // Otherwise initializes to X
 	return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT
 		|| m_e==STRING);
     }
-    int isSloppy() const { // Don't be as anal about width warnings
+    bool isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
     }
-    int isBitLogic() const { // Don't be as anal about width warnings
+    bool isBitLogic() const { // Don't be as anal about width warnings
 	return (m_e==LOGIC || m_e==BIT);
     }
-    int isDpiUnsupported() const {
+    bool isDpiUnsupported() const {
 	return (m_e==LOGIC || m_e==TIME || m_e==REALTIME);
     }
   };

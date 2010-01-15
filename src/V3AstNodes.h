@@ -1590,7 +1590,7 @@ struct AstFOpen : public AstNodeStmt {
 	setOp3p(modep);
     }
     ASTNODE_NODE_FUNCS(FOpen, FOPEN)
-    virtual string verilogKwd() const { return "$fclose"; }
+    virtual string verilogKwd() const { return "$fopen"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isSplittable() const { return false; }

@@ -82,6 +82,8 @@ module t (/*AUTOARG*/
 
 	    con__ascii = "abcdefghijklmnop";
 	    if ( con__ascii !== {"abcd","efgh","ijkl","mnop"}) $stop;
+	    con__ascii = "abcdefghijklm";
+	    if ( con__ascii !== {24'h0,"a","bcde","fghi","jklm"}) $stop;
 
 	    if ( 3'dx !== 3'hx) $stop;
 

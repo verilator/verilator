@@ -74,6 +74,7 @@ public:
     void emitVarCtors();
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
+	// Other abbrevs: "C"har, "S"hort, "F"loat, "G"double, stri"N"g
 	puts (nodep->isWide()?"W":(nodep->isQuad()?"Q":"I"));
     }
     void emitScIQW(AstVar* nodep) {
