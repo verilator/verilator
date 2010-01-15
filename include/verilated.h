@@ -35,7 +35,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
+// <iostream> avoided to reduce compile time
+// <string> avoided to reduce compile time
 using namespace std;
 
 //=========================================================================

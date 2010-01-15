@@ -29,6 +29,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add experimental clock domain crossing checks.
 
+***  Speed compiles by avoiding including the STL iostream header.
+     Application programs may need to include it themselves to avoid errors.
+
 **** Support optional cell parenthesis, bug179. [by Byron Bradley]
 
 **** Support for loop i++, ++i, i--, --i, bug175. [by Byron Bradley]

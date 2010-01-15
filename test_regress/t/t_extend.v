@@ -30,9 +30,9 @@ module t (/*AUTOARG*/
 	 c_worked <= 0;
       end
       if (cyc == 8'd2) begin
-`ifdef verilator
-	 $c("cout<<\"Calling $c, calling $c...\"<<endl;");
-	 $c("cout<<\"Cyc=\"<<dec<<(int)(",cyc,")<<endl;");
+`ifdef VERILATOR
+	 $c("VL_PRINTF(\"Calling $c, calling $c...\\n\");");
+	 $c("VL_PRINTF(\"Cyc=%d\\n\",",cyc,");");
 	 c_worked <= $c("my_function()");
 	 c_wider <= $c9("0x10");
 `else

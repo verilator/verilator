@@ -32,8 +32,8 @@ module t_initial (/*AUTOARG*/
 	 if (user_loaded_value!=1) $stop;
 
 	 // Test $c
-`ifdef verilator
-	 $c ("cout<<\"Hi From C++\"<<endl;");
+`ifdef VERILATOR
+	 $c ("VL_PRINTF(\"Hi From C++\\n\");");
 `endif
 	 user_loaded_value <= 2;
 

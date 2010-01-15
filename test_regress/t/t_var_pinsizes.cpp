@@ -24,7 +24,7 @@ int main() {
     Verilated::debug(0);
     tb  = new VM_PREFIX("tb");
 
-    cout << "*-* All Finished *-*" << endl;
+    VL_PRINTF("*-* All Finished *-*\n");
     tb->final();
     return 0;
 }

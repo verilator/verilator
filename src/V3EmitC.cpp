@@ -705,10 +705,10 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");
 
-	puts("VL_DEBUG_IF(cout<<\"  ");
+	puts("VL_DEBUG_IF(VL_PRINTF(\"  ");
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
-	     +"\"<<endl; );\n");
+	     +"\\n\"); );\n");
 
 	if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
@@ -771,8 +771,8 @@ class EmitCImp : EmitCStmts {
 		    if (nodep->lhsp()->castVarRef()) {
 			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
 		    }
-		    puts(")) cout<<\"\tCHANGE: "+nodep->fileline()->ascii()
-			 +varname+"\"<<endl; );\n");
+		    puts(")) VL_PRINTF(\"\tCHANGE: "+nodep->fileline()->ascii()
+			 +varname+"\\n\"); );\n");
 		}
 	    }
 	}
@@ -1435,12 +1435,12 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
     puts("// Evaluate till stable\n");
-    puts("VL_DEBUG_IF(cout<<\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\"<<endl; );\n");
+    puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
 #ifndef NEW_ORDERING
     puts("int __VclockLoop = 0;\n");
     puts("IData __Vchange=1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
-    puts(    "VL_DEBUG_IF(cout<<\" Clock loop\"<<endl;);\n");
+    puts(    "VL_DEBUG_IF(VL_PRINTF(\" Clock loop\\n\"););\n");
 #endif
     puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "_eval(vlSymsp);\n");

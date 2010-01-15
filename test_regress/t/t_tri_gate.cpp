@@ -53,7 +53,7 @@ int main() {
     }
 
     if(pass) {
-	cout << "*-* All Finished *-*" << endl;
+	VL_PRINTF("*-* All Finished *-*\n");
 	tb->final();
     } else {
 	vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from tristate test\n");
