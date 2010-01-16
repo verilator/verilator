@@ -534,7 +534,7 @@ private:
 		if (nodep->initp()->widthSized()) {
 		    width = mwidth = nodep->initp()->width();
 		} else {
-		    if (nodep->initp()->width()>32) nodep->initp()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)\n");
+		    if (nodep->initp()->width()>32) nodep->initp()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
 		    width = 32;
 		    mwidth = nodep->initp()->widthMin();
 		}
@@ -928,7 +928,7 @@ private:
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
 	if (nodep->taskp()->width()==0) {
 	    if (m_taskDepth > 100) {
-		nodep->v3error("Unsupported: Recursive function or task call\n");
+		nodep->v3error("Unsupported: Recursive function or task call");
 		nodep->width(1,1);
 		nodep->taskp()->width(1,1);
 		return;

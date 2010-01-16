@@ -267,7 +267,7 @@ private:
 	    }
 	}
 	if (argp) {
-	    argp->v3error("Extra arguments for $display format\n");
+	    argp->v3error("Extra arguments for $display format");
 	}
     }
 

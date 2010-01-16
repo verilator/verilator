@@ -112,7 +112,7 @@ private:
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (m_senip) {
-	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion\n");
+	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
 	}
 	// Block is the new expression to evaluate
 	AstNode* blockp = nodep->propp()->unlinkFrBack();

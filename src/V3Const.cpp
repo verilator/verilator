@@ -394,13 +394,13 @@ private:
     void replaceNumSigned(AstNodeBiop* nodep, uint32_t val) {
 	// We allow both sides to be constant, as one may have come from parameter propagation, etc.
 	if (m_warn && !(nodep->lhsp()->castConst() && nodep->rhsp()->castConst())) {
-	    nodep->v3warn(UNSIGNED,"Comparison is constant due to unsigned arithmetic\n");
+	    nodep->v3warn(UNSIGNED,"Comparison is constant due to unsigned arithmetic");
 	}
 	replaceNum(nodep, val); nodep=NULL;
     }
     void replaceNumLimited(AstNodeBiop* nodep, uint32_t val) {
 	// Avoids gcc warning about same
-	if (m_warn) nodep->v3warn(CMPCONST,"Comparison is constant due to limited range\n");
+	if (m_warn) nodep->v3warn(CMPCONST,"Comparison is constant due to limited range");
 	replaceNum(nodep, val); nodep=NULL;
     }
     void replaceZero(AstNode* nodep) {

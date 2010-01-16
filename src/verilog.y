@@ -1842,7 +1842,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//UNSUP	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control
-	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement.\n"); }
+	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement."); }
 	//UNSUP	event_control stmtBlock			{ UNSUP }
 	//UNSUP	cycle_delay stmtBlock			{ UNSUP }
 	//
@@ -2008,7 +2008,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
-	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++.\n"); }
+	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++."); }
 	|	yD_FFLUSH '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); }
@@ -2062,7 +2062,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
-	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")\n"); }
+	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
@@ -2109,7 +2109,7 @@ lifetimeE:			// IEEE: [lifetime]
 
 lifetime:			// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC			 		{ $1->v3error("Unsupported: Static in this context\n"); }
+		ySTATIC			 		{ $1->v3error("Unsupported: Static in this context"); }
 	|	yAUTOMATIC		 		{ }
 	;
 

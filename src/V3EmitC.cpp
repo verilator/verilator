@@ -282,7 +282,7 @@ public:
 
     void checkMaxWords(AstNode* nodep) {
 	if (nodep->widthWords() > VL_TO_STRING_MAX_WORDS) {
-	    nodep->v3error("String of "<<nodep->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h\n");
+	    nodep->v3error("String of "<<nodep->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h");
 	}
     }
     virtual void visit(AstFOpen* nodep, AstNUser*) {
@@ -455,7 +455,7 @@ public:
     }
     virtual void visit(AstMulS* nodep, AstNUser* vup) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h\n");
+	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop(), vup);
     }
@@ -1205,7 +1205,7 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
     }
     if (elistp != NULL) {
 	// expectFormat also checks this, and should have found it first, so internal
-	elistp->v3error("Internal: Extra arguments for $display format\n");
+	elistp->v3error("Internal: Extra arguments for $display format");
     }
     displayEmit(nodep, isScan);
 }
