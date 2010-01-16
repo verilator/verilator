@@ -79,17 +79,25 @@
 
 #ifdef VL_UINTS_DEFINED
 #elif defined(__CYGWIN__)
+
 # include <stdint.h>
 typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
-typedef unsigned long           uint32_t;	///< 32-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
-typedef long  			vlsint32_t;	///< 32-bit signed type
-typedef unsigned long           vluint32_t;	///< 32-bit unsigned type
+# ifdef __uint32_t_defined      		// Newer Cygwin uint32_t in stdint.h as an unsigned int
+typedef int32_t			vlsint32_t;	///< 32-bit signed type
+typedef uint32_t		vluint32_t;	///< 32-bit unsigned type
+# else				 		// Older Cygwin has long==uint32_t
+typedef unsigned long		uint32_t;	///< 32-bit unsigned type (backward compatibility)
+typedef long			vlsint32_t;	///< 32-bit signed type
+typedef unsigned long		vluint32_t;	///< 32-bit unsigned type
+# endif
 typedef long long		vlsint64_t;	///< 64-bit signed type
 typedef unsigned long long      vluint64_t;	///< 64-bit unsigned type
+
 #elif defined(_WIN32) && defined(_MSC_VER)
+
 typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
 typedef unsigned int		uint32_t;	///< 32-bit unsigned type (backward compatibility)
@@ -99,7 +107,9 @@ typedef int			vlsint32_t;	///< 32-bit signed type
 typedef unsigned int            vluint32_t;	///< 32-bit unsigned type
 typedef __int64			vlsint64_t;	///< 64-bit signed type
 typedef unsigned __int64        vluint64_t;	///< 64-bit unsigned type
+
 #else // Linux or compliant Unix flavors, -m64
+
 # include <stdint.h>	// Linux and most flavors
 # include <inttypes.h>	// Solaris
 typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
