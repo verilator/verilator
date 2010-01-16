@@ -39,9 +39,9 @@
 #define VL_SC_BV_DATAP(bv) (VlScBvExposer::sp_datap(bv))
 class VlScBvExposer : public sc_bv_base {
 public:
-    static uint32_t* sp_datap(const sc_bv_base& base) {
+    static vluint32_t* sp_datap(const sc_bv_base& base) {
 	return static_cast<const VlScBvExposer*>(&base)->sp_datatp(); }
-    uint32_t* sp_datatp() const { return (uint32_t*)(m_data); }
+    vluint32_t* sp_datatp() const { return (vluint32_t*)(m_data); }
     // Above reads this protected element in sc_bv_base:
     //   sc_digit* m_data; // data array
 };

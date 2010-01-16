@@ -179,8 +179,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     }
 
     // +1 word as we may shift during normalization
-    uint32_t un[VL_MULS_MAX_WORDS+1]; // Fixed size, as MSVC++ doesn't allow [words] here
-    uint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
+    vluint32_t un[VL_MULS_MAX_WORDS+1]; // Fixed size, as MSVC++ doesn't allow [words] here
+    vluint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
     for (int i=0; i<words; i++) { un[i]=vn[i]=0; }
@@ -188,7 +188,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
     int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
-    uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
+    vluint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw-1; i>0; i--) {
 	vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i-1] >> (32-s)));
     }
