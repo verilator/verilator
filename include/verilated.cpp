@@ -144,6 +144,15 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 }
 
 //===========================================================================
+// Debug
+
+void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
+    VL_PRINTF("  Data: w%d: ", lbits);
+    for (int i=VL_WORDS_I(lbits)-1; i>=0; i--) { VL_PRINTF("%08x ",iwp[i]); }
+    VL_PRINTF("\n");
+}
+
+//===========================================================================
 // Slow math
 
 WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus) {

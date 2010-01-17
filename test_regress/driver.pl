@@ -44,6 +44,7 @@ my $opt_benchmark;
 my @opt_tests;
 my $opt_gdb;
 my $opt_gdbbt;
+my $opt_gdbsim;
 my $opt_iv;
 my $opt_jobs = 1;
 my $opt_nc;
@@ -62,6 +63,7 @@ if (! GetOptions (
 		  "debug"	=> \&debug,
 		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
+		  "gdbsim!"	=> \$opt_gdbsim,
 		  "help"	=> \&usage,
 		  "iverilog!"	=> \$opt_iv,
 		  "j=i"		=> \$opt_jobs,
@@ -531,7 +533,8 @@ sub execute {
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
-		    cmd=>["$self->{obj_dir}/$param{VM_PREFIX}",
+		    cmd=>[(($opt_gdbsim ? "gdbrun ":"")
+			   ."$self->{obj_dir}/$param{VM_PREFIX}"),
 			  @{$param{all_run_flags}},
 			  ],
 		    %param,
@@ -1143,12 +1146,16 @@ specifies the number of simulation cycles (for tests that support it).
 
 =item --gdb
 
-Run verilator under the debugger.
+Run Verilator under the debugger.
 
 =item --gdbbt
 
-Run verilator under the debugger, only to print backtrace information.
+Run Verilator under the debugger, only to print backtrace information.
 Requires --debug.
+
+=item --gdbsim
+
+Run Verilator generated executable under the debugger.
 
 =item --help
 
