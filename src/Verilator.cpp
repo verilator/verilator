@@ -356,6 +356,8 @@ void process () {
     // Clock domain crossing analysis
     if (v3Global.opt.cdc()) {
 	V3Cdc::cdcAll(v3Global.rootp());
+	V3Error::abortIfErrors();
+	return;
     }
 
     // Reorder assignments in pipelined blocks
@@ -527,6 +529,8 @@ void process () {
 	// Makefile must be after all other emitters
 	V3EmitMk::emitmk(v3Global.rootp());
     }
+
+    // Note early return above when opt.cdc()
 }
 
 //######################################################################
@@ -550,8 +554,11 @@ int main(int argc, char** argv, char** env) {
     if (v3Global.opt.coverage() && !v3Global.opt.systemPerl() && !v3Global.opt.lintOnly()) {
 	v3fatal("Unsupported: Coverage analysis requires --sp output.");
     }
-    if (!v3Global.opt.outFormatOk() && !v3Global.opt.preprocOnly() && !v3Global.opt.lintOnly()) {
-	v3fatal("verilator: Need --cc, --sc, --sp, --lint-only or --E option");
+    if (!v3Global.opt.outFormatOk()
+	&& !v3Global.opt.preprocOnly()
+	&& !v3Global.opt.lintOnly()
+	&& !v3Global.opt.cdc()) {
+	v3fatal("verilator: Need --cc, --sc, --sp, --cdc, --lint-only or --E option");
     }
     // Check environment
     V3Options::getenvSYSTEMC();
@@ -566,6 +573,7 @@ int main(int argc, char** argv, char** env) {
     if (v3Global.opt.skipIdentical()
 	&& !v3Global.opt.preprocOnly()
 	&& !v3Global.opt.lintOnly()
+	&& !v3Global.opt.cdc()
 	&& V3File::checkTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__verFiles.dat", argString)) {
 	UINFO(1,"--skip-identical: No change to any source files, exiting\n");
 	exit(0);
@@ -593,10 +601,11 @@ int main(int argc, char** argv, char** env) {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",99));
     V3Error::abortIfWarnings();
 
-    if (!v3Global.opt.lintOnly() && v3Global.opt.makeDepend()) {
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()
+	&& v3Global.opt.makeDepend()) {
 	V3File::writeDepend(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__ver.d");
     }
-    if (!v3Global.opt.lintOnly()
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()
 	&& (v3Global.opt.skipIdentical() || v3Global.opt.makeDepend())) {
 	V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__verFiles.dat", argString);
     }

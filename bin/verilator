@@ -314,9 +314,9 @@ Specifies C++ without SystemC output mode; see also --sc and --sp.
 =item --cdc
 
 Experimental.  Perform some clock domain crossing checks and issue related
-warnings.  Additional warning information is written to the file
-{prefix}__cdc.txt.  Generally used with --lint-only.  Enables CDCRSTLOGIC
-warning.
+warnings (CDCRSTLOGIC) and then exit; if warnings other than CDC warnings
+are needed make a second run with --lint-only.  Additional warning
+information is also written to the file {prefix}__cdc.txt.
 
 Currently only checks some items that other CDC tools missed; if you have
 interest in adding more traditional CDC checks, please contact the authors.
