@@ -180,7 +180,7 @@ private:
 	    m_setRefLvalue = true;
 	    nodep->lhsp()->iterateAndNext(*this);
 	    m_setRefLvalue = false;
-	    nodep->exprsp()->iterateAndNext(*this);
+	    nodep->fmtp()->iterateAndNext(*this);
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }

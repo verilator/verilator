@@ -311,22 +311,16 @@ private:
 	nodep->iterateChildren(*this);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-
-    void expectNodeDisplay(AstNodeDisplay* nodep) {
-	// AstSFormat also handled here
+    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
-	if ((nodep->castDisplay() && nodep->castDisplay()->displayType().needScopeTracking())
+	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
 	    || nodep->formatScopeTracking()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
-    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	expectNodeDisplay(nodep);
-    }
     virtual void visit(AstDisplay* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this);
-	expectNodeDisplay(nodep);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
 	if (!m_assertp
 	    && (nodep->displayType() == AstDisplayType::INFO

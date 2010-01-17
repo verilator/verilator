@@ -63,7 +63,8 @@ public:
 				 && v3Global.opt.outputSplit() < splitSize()); }
 
     // METHODS
-    void displayNode(AstNode* nodep, const string& vformat, AstNode* exprsp, bool isScan);
+    void displayNode(AstNode* nodep, AstScopeName* scopenamep,
+		     const string& vformat, AstNode* exprsp, bool isScan);
     void displayEmit(AstNode* nodep, bool isScan);
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 		    string vfmt, char fmtLetter);
@@ -203,9 +204,9 @@ public:
 	puts(");\n");
     }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
-	string text = nodep->text();
+	string text = nodep->fmtp()->text();
 	if (nodep->addNewline()) text += "\n";
-	displayNode(nodep, text, nodep->exprsp(), false);
+	displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// For use under AstCCalls for dpiImports.  ScopeNames under displays are handled in AstDisplay
@@ -214,13 +215,13 @@ public:
 	}
     }
     virtual void visit(AstSFormat* nodep, AstNUser*) {
-	displayNode(nodep, nodep->text(), nodep->exprsp(), false);
+	displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);
     }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
-	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
+	displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstSScanF* nodep, AstNUser*) {
-	displayNode(nodep, nodep->text(), nodep->exprsp(), true);
+	displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
 	string prefix;
@@ -1150,7 +1151,8 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
     *elistp = (*elistp)->nextp();
 }
 
-void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exprsp,
+void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
+			     const string& vformat, AstNode* exprsp,
 			     bool isScan) {
     AstNode* elistp = exprsp;
 
@@ -1193,8 +1195,6 @@ void EmitCStmts::displayNode(AstNode* nodep, const string& vformat, AstNode* exp
 	    case 'm': {
 		emitDispState.pushFormat("%S");
 		emitDispState.pushArg(NULL, "vlSymsp->name()");
-		if (!nodep->castNodeDisplay()) nodep->v3fatalSrc("Non-Display with %m");
-		AstScopeName* scopenamep = nodep->castNodeDisplay()->scopeNamep();
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
 		emitDispState.pushFormat(scopenamep->scopePrettyName());
 		break;

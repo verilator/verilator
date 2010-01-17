@@ -1404,7 +1404,7 @@ private:
 	}
     }
 
-    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
+    virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	// Substitute constants into displays.  The main point of this is to
 	// simplify assertion methodologies which call functions with display's.
 	// This eliminates a pile of wide temps, and makes the C a whole lot more readable.

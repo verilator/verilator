@@ -61,12 +61,12 @@ private:
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
 	nodep->displayType(AstDisplayType::WRITE);
-	nodep->text(assertDisplayMessage(nodep, prefix, nodep->text()));
-	AstNode* timesp = nodep->exprsp(); if (timesp) timesp->unlinkFrBack();
+	nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
+	AstNode* timesp = nodep->fmtp()->exprsp(); if (timesp) timesp->unlinkFrBack();
 	timesp = timesp->addNext(new AstTime(nodep->fileline()));
-	nodep->exprsp(timesp);
-	if (!nodep->scopeNamep() && nodep->formatScopeTracking()) {
-	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
+	nodep->fmtp()->exprsp(timesp);
+	if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
+	    nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
 

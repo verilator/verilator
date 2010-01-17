@@ -1506,14 +1506,38 @@ public:
     void	ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
 
-struct AstDisplay : public AstNodeDisplay {
+class AstSFormatF : public AstNode {
+    // Convert format to string, generally under a AstDisplay or AstSFormat
+    string	m_text;
+public:
+    AstSFormatF(FileLine* fl, const string& text, AstNode* exprsp)
+	: AstNode(fl), m_text(text) {
+	addNOp1p(exprsp); addNOp2p(NULL); }
+    ASTNODE_NODE_FUNCS(SFormatF, SFORMATF)
+    virtual string name() const { return m_text; }
+    virtual int instrCount() const { return instrCountPli(); }
+    virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool same(AstNode* samep) const { return text()==samep->castSFormatF()->text(); }
+    void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
+    AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Expressions to output
+    string text() const { return m_text; }		// * = Text to display
+    void text(const string& text) { m_text=text; }
+    AstScopeName* scopeNamep() const { return op2p()->castScopeName(); }
+    void scopeNamep(AstNode* nodep) { setNOp2p(nodep); }
+    bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
+	return (name().find("%m") != string::npos || name().find("%M") != string::npos); }
+};
+
+struct AstDisplay : public AstNode {
     // Parents: stmtlist
-    // Children: file which must be a varref, MATH to print
+    // Children: file which must be a varref
+    // Children: SFORMATF to generate print string
 private:
     AstDisplayType	m_displayType;
 public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
-	: AstNodeDisplay (fileline, text, exprsp) {
+	: AstNode (fileline) {
+	setNOp1p(new AstSFormatF(fileline,text,exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
     }
@@ -1526,24 +1550,25 @@ public:
     virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: $display makes output
     virtual bool isUnlikely() const { return true; }
-    virtual V3Hash sameHash() const { return V3Hash(text()); }
-    virtual bool same(AstNode* samep) const {
-	return displayType()==samep->castDisplay()->displayType()
-	    && text()==samep->castDisplay()->text(); }
-    // op1,op2 used by AstNodeDisplay
+    virtual V3Hash sameHash() const { return V3Hash(displayType()); }
+    virtual bool same(AstNode* samep) const { return displayType()==samep->castDisplay()->displayType(); }
+    virtual int instrCount()	const { return instrCountPli(); }
     AstDisplayType	displayType()	const { return m_displayType; }
     void	displayType(AstDisplayType type) { m_displayType = type; }
     bool	addNewline() const { return displayType().addNewline(); }  // * = Add a newline for $display
+    void	fmtp(AstSFormatF* nodep) { addOp1p(nodep); }	// op1 = To-String formatter
+    AstSFormatF* fmtp() const { return op1p()->castSFormatF(); }
     AstNode*	filep() const { return op3p(); }
     void 	filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
 
-struct AstSFormat : public AstNodeDisplay {
+struct AstSFormat : public AstNode {
     // Parents: statement container
     // Children: string to load
-    // Children: varrefs to print
+    // Children: SFORMATF to generate print string
     AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
-	: AstNodeDisplay (fileline, text, exprsp) {
+	: AstNode (fileline) {
+	setOp1p(new AstSFormatF(fileline,text,exprsp));
 	setOp3p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SFormat, SFORMAT)
@@ -1555,10 +1580,11 @@ struct AstSFormat : public AstNodeDisplay {
     virtual bool isSplittable() const { return true; }
     virtual bool isOutputter() const { return false; }
     virtual bool cleanOut() { return false; }
-    virtual V3Hash sameHash() const { return V3Hash(text()); }
-    virtual bool same(AstNode* samep) const {
-	return text()==samep->castSFormat()->text(); }
-    // op1,op2 used by AstNodeDisplay
+    virtual int instrCount()	const { return instrCountPli(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    void	fmtp(AstSFormatF* nodep) { addOp1p(nodep); }	// op1 = To-String formatter
+    AstSFormatF* fmtp() const { return op1p()->castSFormatF(); }
     AstNode*	lhsp() const { return op3p(); }
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };

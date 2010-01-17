@@ -2064,6 +2064,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
+	//|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,$4); }  // Have AST, just need testing and debug
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }

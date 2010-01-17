@@ -196,7 +196,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts(");\n");
     }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
-	visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
+	visitNodeDisplay(nodep, nodep->filep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
 	visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
@@ -205,7 +205,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	visitNodeDisplay(nodep, nodep->fromp(), nodep->text(), nodep->exprsp());
     }
     virtual void visit(AstSFormat* nodep, AstNUser*) {
-	visitNodeDisplay(nodep, nodep->lhsp(), nodep->text(), nodep->exprsp());
+	visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
     virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
 	visitNodeDisplay(nodep, NULL, nodep->text(), nodep->exprsp());

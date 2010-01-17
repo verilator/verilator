@@ -240,7 +240,7 @@ private:
 	nodep->iterateChildren(*this);
 	insureClean(nodep->condp());
     }
-    virtual void visit(AstNodeDisplay* nodep, AstNUser*) {
+    virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->exprsp());
     }
