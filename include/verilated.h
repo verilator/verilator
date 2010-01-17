@@ -42,14 +42,15 @@ using namespace std;
 //=========================================================================
 // Basic types
 
+//		     P		// Packed data of bit type (C/S/I/Q/W)
 typedef vluint8_t    CData;	///< Verilated pack data, 1-8 bits
 typedef vluint16_t   SData;	///< Verilated pack data, 9-16 bits
 typedef vluint32_t   IData;	///< Verilated pack data, 17-32 bits
 typedef vluint64_t   QData;	///< Verilated pack data, 33-64 bits
 typedef vluint32_t   WData;	///< Verilated pack data, >64 bits, as an array
 //	float	     F		// No typedef needed; Verilator uses float
-//	double	     G		// No typedef needed; Verilator uses double
-//	string	     N		// No typedef needed; Verilator uses double
+//	double	     D		// No typedef needed; Verilator uses double
+//	string	     N		// No typedef needed; Verilator uses string
 
 typedef const WData* WDataInP;	///< Array input to a function
 typedef       WData* WDataOutP;	///< Array output from a function

@@ -88,7 +88,7 @@ module t ();
    chandle	i_c,	o_c;
 `ifndef VERILATOR
    string 	i_n,	o_n;
-   real 	i_g,	o_g;
+   real 	i_d,	o_d;
 `endif
 `ifndef NO_SHORTREAL
    shortreal 	i_f,	o_f;
@@ -136,7 +136,7 @@ module t ();
       if (dpii_f_chandle  (i_c) !== i_c) $stop;
 `ifndef VERILATOR
       if (dpii_f_string   (i_n) != i_n) $stop;
-      if (dpii_f_real     (i_g) != i_g+1.5) $stop;
+      if (dpii_f_real     (i_d) != i_d+1.5) $stop;
 `endif
 `ifndef NO_SHORTREAL
       if (dpii_f_shortreal(i_f) != i_f+1.5) $stop;
@@ -152,7 +152,7 @@ module t ();
  `ifndef VCS  // Strange link error
       dpii_v_string   (i_n,o_n); if (o_n != i_n) $stop;
  `endif
-      dpii_v_real     (i_g,o_g); if (o_g != i_g+1.5) $stop;
+      dpii_v_real     (i_d,o_d); if (o_d != i_d+1.5) $stop;
 `endif
 `ifndef NO_SHORTREAL
       dpii_v_shortreal(i_f,o_f); if (o_f != i_f+1.5) $stop;

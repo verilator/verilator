@@ -18,17 +18,21 @@ if (!-r "$root/.git") {
     ### Must trim output before and after our file list
     #my $files = "*/*.c* */*.h test_regress/t/*.c* test_regress/t/*.h";
     # src isn't clean, and probably doesn't need to be (yet?)
-    my $files = "include/*.c* include/*.h test_c/*.c* test_c/*.h  test_regress/t/*.c* test_regress/t/*.h";
+    my $files = "include/*.c* include/*.h test_c/*.c* test_regress/t/*.c* test_regress/t/*.h";
     my $cmd = "cd $root && fgrep -n int $files | sort";
     print "C $cmd\n";
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	next if $line !~ /uint\d+_t/;
+	$line =~ s!//.*$!!;
+	next if $line !~ /uint\d+_t\b/;
 	next if $line =~ /vl[su]int\d+_t/;
 	next if $line =~ /typedef/;
 	next if $line =~ m!include/svdpi.h!;  # Not ours
-	$names{$1} = 1 if $line =~ /^([^:]+)/;
+	if ($line =~ /^([^:]+)/) {
+	    $names{$1} = 1;
+	    print $line;
+	}
     }
     if (keys %names) {
 	$Self->error("Files with uint32*_t instead of vluint32s: ",join(' ',sort keys %names));
