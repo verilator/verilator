@@ -1090,6 +1090,11 @@ private:
 	    nodep->v3error("Expecting expression to be constant, but variable isn't const: "<<nodep->itemp()->prettyName());
 	}
     }
+
+    // virtual void visit(AstCvtPackString* nodep, AstNUser*) {
+    // Not constant propagated (for today) because AstMath::isOpaque is set
+    // Someday if lower is constant, convert to quoted "string".
+
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	// Don't iterate children, don't want to loose VarRef.
 	if (nodep->attrType()==AstAttrType::BITS) {
@@ -1504,7 +1509,7 @@ private:
     TREEOP1("AstSel{warnSelect(nodep)}",	"NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
     TREEOP("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
-    TREEOP("AstNodeUniop{$lhsp.castConst}",	"replaceConst(nodep)");
+    TREEOP("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP("AstAdd   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP("AstAnd   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");

@@ -861,6 +861,14 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		      +","+cvtToStr(basicp->widthWords()));
 	    puts(");\n");
 	}
+    } else if (basicp && basicp->isOpaque()) {
+	// strings and other fundamental c types
+	puts(nodep->vlArgType(true,false));
+	// This isn't very robust and may need cleanup for other data types
+	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
+	}
+	puts(";\n");
     } else {
 	// Arrays need a small alignment, but may need different padding after.
 	// For example three VL_SIG8's needs alignment 1 but size 3.
@@ -1226,6 +1234,9 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 	    if (varp->isIO() && modp->isTop() && optSystemC()) {
 		// System C top I/O doesn't need loading, as the lower level subinst code does it.
 	    }
+	    else if (varp->basicp() && varp->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+		// Constructor deals with it
+	    }
 	    else if (varp->isParam()) {
 		if (!varp->hasSimpleInit()) nodep->v3fatalSrc("No init for a param?");
 		//puts("// parameter "+varp->name()+" = "+varp->initp()->name()+"\n");
@@ -1483,8 +1494,9 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
     for (int isstatic=1; isstatic>=0; isstatic--) {
 	if (prefixIfImp!="" && !isstatic) continue;
-	for (int size=0; size<8; size++) {
-	    if (size==3) continue;
+	const int sortmax = 9;
+	for (int sort=0; sort<sortmax; sort++) {
+	    if (sort==3) continue;
 	    for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
 		if (AstVar* varp = nodep->castVar()) {
 		    bool doit = true;
@@ -1498,15 +1510,16 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;
 		    if (doit) {
 			int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-			int sortbytes = 7;
+			int sortbytes = sortmax-1;
 			if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
-			else if (varp->dtypeSkipRefp()->castArrayDType()) sortbytes=7;
+			else if (varp->dtypeSkipRefp()->castArrayDType()) sortbytes=8;
+			else if (varp->basicp() && varp->basicp()->isOpaque()) sortbytes=7;
 			else if (varp->isScBv()) sortbytes=6;
 			else if (sigbytes==8) sortbytes=5;
 			else if (sigbytes==4) sortbytes=4;
 			else if (sigbytes==2) sortbytes=2;
 			else if (sigbytes==1) sortbytes=1;
-			if (size==sortbytes) {
+			if (sort==sortbytes) {
 			    emitVarDecl(varp, prefixIfImp);
 			}
 		    }
@@ -1556,7 +1569,11 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     ofp()->putsIntTopInclude();
-    puts("#include \"verilated.h\"\n");
+    if (v3Global.needHeavy()) {
+	puts("#include \"verilatedheavy.h\"\n");
+    } else {
+	puts("#include \"verilated.h\"\n");
+    }
     if (v3Global.opt.coverage()) {
 	puts("#include \"SpCoverage.h\"\n");
     }

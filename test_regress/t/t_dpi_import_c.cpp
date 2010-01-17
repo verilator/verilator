@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <svdpi.h>
+#include <cstring>
 
 //======================================================================
 
@@ -63,6 +64,8 @@ extern "C" {
     extern int dpii_t_void_context ();
     extern int dpii_t_int	(int i,		int *o);
 
+    extern int dpii_f_strlen (const char* i);
+
     extern int dpii_fa_bit(int i);
 }
 #endif
@@ -96,6 +99,8 @@ void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
 void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
 void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
+
+int  dpii_f_strlen (const char* i) { return strlen(i); }
 
 //======================================================================
 

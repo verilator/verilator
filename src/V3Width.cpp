@@ -481,6 +481,9 @@ private:
 	    nodep->width(selwidth,selwidth);
 	}
     } 
+    virtual void visit(AstCvtPackString* nodep, AstNUser* vup) {
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->width(32,1);	// Approximation, unsized 32
@@ -947,11 +950,22 @@ private:
 		    if (accept_mode) {
 			// Prelim may cause the node to get replaced; we've lost our
 			// pointer, so need to iterate separately later
+			if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
+			    && !pinp->castCvtPackString()
+			    && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
+			    AstNRelinker handle;
+			    pinp->unlinkFrBack(&handle);  // No next, that's the next pin
+			    AstNode* newp = new AstCvtPackString(pinp->fileline(), pinp);
+			    handle.relink(newp);
+			    pinp = newp;
+			}
 			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
 		    } else {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
 			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
-			widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
+			if (portp->basicp() && !portp->basicp()->isOpaque()) {
+			    widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
+			}
 		    }
 		}
 	    }

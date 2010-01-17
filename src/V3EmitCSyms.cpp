@@ -181,6 +181,12 @@ void EmitCSyms::emitSymHdr() {
     puts("#define _"+symClassName()+"_H_\n");
     puts("\n");
 
+    if (v3Global.needHeavy()) {
+	puts("#include \"verilatedheavy.h\"\n");
+    } else {
+	puts("#include \"verilated.h\"\n");
+    }
+
     // for
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {

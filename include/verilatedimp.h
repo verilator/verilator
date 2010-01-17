@@ -30,6 +30,7 @@
 
 #include "verilatedos.h"
 #include "verilated.h"
+#include "verilatedheavy.h"
 
 #include <map>
 #include <vector>

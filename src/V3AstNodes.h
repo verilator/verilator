@@ -228,7 +228,7 @@ private:
 	setSignedState(signst);
 	if (!rangep) {  // Set based on keyword properties
 	    // V3Width will pull from this width
-	    if (keyword().width() > 1) rangep = new AstRange(fileline(), keyword().width()-1, 0);
+	    if (keyword().width() > 1 && !isOpaque()) rangep = new AstRange(fileline(), keyword().width()-1, 0);
 	    width(keyword().width(), keyword().width());
 	} else {
 	    widthFrom(rangep);  // Maybe unknown if parameters underneath it
@@ -254,6 +254,7 @@ public:
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     AstBasicDTypeKwd keyword() const { return m_keyword; }  // Avoid using - use isSomething accessors instead
     bool	isBitLogic() const { return keyword().isBitLogic(); }
+    bool	isOpaque() const { return keyword().isOpaque(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     bool	isZeroInit() const { return keyword().isZeroInit(); }
     int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
@@ -2418,6 +2419,20 @@ public:
     virtual void dump(ostream& str=cout);
     //
     int size()	const { return m_size; }
+};
+
+struct AstCvtPackString : public AstNodeUniop {
+    // Convert to Verilator Packed Pack (aka Pack)
+    AstCvtPackString(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	width(64,64); }  // Really, width should be dtypep -> STRING
+    ASTNODE_NODE_FUNCS(CvtPackString, CVTPACKSTRING)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%f$_CAST(%l)"; }
+    virtual string emitC() { return "VL_CVT_PACK_STR_N%lq(%lW, %li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
 };
 
 struct AstFEof : public AstNodeUniop {

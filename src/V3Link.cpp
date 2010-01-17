@@ -503,15 +503,6 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstBasicDType* nodep, AstNUser*) {
-	if (m_idState==ID_RESOLVE && nodep->keyword()==AstBasicDTypeKwd::STRING) {
-	    if (!(m_ftaskp && m_ftaskp->dpiImport() && 0/*UNIMP*/)) {
-		nodep->v3error("Unsupported: SystemVerilog 'string' anywhere but DPI import __format");
-	    }
-	}
-	nodep->iterateChildren(*this);
-    }
-
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
 	m_cellp = nodep;

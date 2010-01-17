@@ -44,6 +44,7 @@ class V3Global {
     int		m_debugFileNumber;	// Number to append to debug files created
     bool	m_assertWidthsSame;	// Tree should have width()==widthMin()
     bool	m_needHInlines;		// Need __Inlines file
+    bool	m_needHeavy;		// Need verilatedheavy.h include
     bool	m_dpi;			// Need __Dpi include files
 
 public:
@@ -57,6 +58,7 @@ public:
 	m_debugFileNumber = 0;
 	m_assertWidthsSame = false;
 	m_needHInlines = false;
+	m_needHeavy = false;
 	m_dpi = false;
     }
     void clear() {
@@ -78,6 +80,8 @@ public:
     }
     bool needHInlines() const { return m_needHInlines; }
     void needHInlines(bool flag) { m_needHInlines=flag; }
+    bool needHeavy() const { return m_needHeavy; }
+    void needHeavy(bool flag) { m_needHeavy=flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
 };

@@ -616,6 +616,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 // File I/O
 
 void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
+    // See also VL_DATA_TO_STRING_NW
     int lsb=obits-1;
     bool start=true;
     char* destp = destoutp;
@@ -899,6 +900,29 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
     }
     _VL_CLEAN_INPLACE_W(rbits,rwp);
     return 1;
+}
+
+//===========================================================================
+// Heavy functions
+
+string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) {
+    // See also _VL_VINT_TO_STRING
+    char destout[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    int obits = lwords * VL_WORDSIZE;
+    int lsb=obits-1;
+    bool start=true;
+    char* destp = destout;
+    int len = 0;
+    for (; lsb>=0; lsb--) {
+	lsb = (lsb / 8) * 8; // Next digit
+	IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
+	if (!start || charval) {
+	    *destp++ = (charval==0)?' ':charval;
+	    len++;
+	    start = false;	// Drop leading 0s
+	}
+    }
+    return string(destout, len);
 }
 
 //===========================================================================

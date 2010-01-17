@@ -272,6 +272,9 @@ public:
     bool isDpiUnsupported() const {
 	return (m_e==LOGIC || m_e==TIME || m_e==REALTIME);
     }
+    bool isOpaque() const {  // IE not a simple number we can bit optimize
+	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR);
+    }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
@@ -918,6 +921,9 @@ struct AstNodeMath : public AstNode {
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() = 0; // True if output has extra upper bits zero
+    // Someday we will generically support data types on every math node
+    // Until then isOpaque indicates we shouldn't constant optimize this node type
+    bool isOpaque() { return castCvtPackString(); }
 };
 
 struct AstNodeTermop : public AstNodeMath {

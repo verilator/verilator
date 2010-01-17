@@ -1843,6 +1843,11 @@ full nor unique.
 
 All specify blocks and timing checks are ignored.
 
+=item string
+
+String is supported only to the point that they can be passed to DPI
+imports.
+
 =item timeunit, timeprecision
 
 All timing control statements are ignored.

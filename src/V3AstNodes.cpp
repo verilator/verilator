@@ -108,10 +108,14 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
     string arg;
     if (isWide() && isInOnly()) arg += "const ";
     AstBasicDType* bdtypep = basicp();
+    bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
 	arg += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
 	arg += "const VerilatedScope*";
+    } else if (strtype) {
+	if (isInOnly()) arg += "const ";
+	arg += "string";
     } else if (widthMin() <= 8) {
 	arg += "CData";
     } else if (widthMin() <= 16) {
@@ -123,11 +127,11 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
     } else if (isWide()) {
 	arg += "WData";  // []'s added later
     }
-    if (isWide()) {
+    if (isWide() && !strtype) {
 	arg += " (& "+name();
 	arg += ")["+cvtToStr(widthWords())+"]";
     } else {
-	if (isOutput()) arg += "&";
+	if (isOutput() || (strtype && isInput())) arg += "&";
 	if (named) arg += " "+name();
     }
     return arg;

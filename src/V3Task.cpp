@@ -592,6 +592,9 @@ private:
 		stmt += "(void*)";
 	    }
 	    stmt += portp->name()+frSuffix;
+	    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING) {
+		stmt += ".c_str()";
+	    }
 	}
 	stmt += ";\n";
 	return new AstCStmt(portp->fileline(), stmt);

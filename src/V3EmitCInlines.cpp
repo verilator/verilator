@@ -47,12 +47,18 @@ class EmitCInlines : EmitCBaseVisitor {
     // VISITORS
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// All wide constants load into variables, so we can just hunt for them
+	nodep->iterateChildren(*this);
 	if (nodep->widthWords() >= EMITCINLINES_NUM_CONSTW ) {
 	    if (int(m_wordWidths.size()) <= nodep->widthWords()) {
 		m_wordWidths.resize(nodep->widthWords()+5);
 	    }
 	    ++ m_wordWidths.at(nodep->widthWords());
 	    v3Global.needHInlines(true);
+	}
+    }
+    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+	if (nodep->keyword() == AstBasicDTypeKwd::STRING) {
+	    v3Global.needHeavy(true);  // #include <string> via verilatedheavy.h when we create symbol file
 	}
     }
 

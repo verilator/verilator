@@ -110,6 +110,8 @@ private:
     virtual void visit(AstNeq* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstNeqCase* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
     virtual void visit(AstNeqWild* nodep, AstNUser*){		signed_Ou_Ix(nodep); }
+    // ...    Opaque returns, so arbitrary
+    virtual void visit(AstCvtPackString* nodep, AstNUser*){	signed_Ou_Ix(nodep); }
 
     //========
     // Signed: Output signed
