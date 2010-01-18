@@ -98,6 +98,8 @@ module t ();
 
    bit [127:0] wide;
 
+   bit [6*8:1] string6;
+
    initial begin
       wide = 128'h36f3e51d15caff7a73c48afee4ffcb57;
 
@@ -165,6 +167,11 @@ module t ();
       if (dpii_f_strlen ("stri")!=4) $stop;
       if (dpii_f_strlen ("string_l")!=8) $stop;
       if (dpii_f_strlen ("string_len")!=10) $stop;
+      string6 = "hello6";
+`ifdef VERILATOR
+      string6 = $c48(string6); // Don't optimize away - want to see the constant conversion function
+`endif
+      if (dpii_f_strlen (string6) != 6) $stop;
 
       dpii_f_void();
       dpii_t_void();

@@ -83,6 +83,34 @@ public:
     virtual int instrCount() const { return widthInstrs(); }
 };
 
+struct AstConstString : public AstNodeMath {
+    // A constant string
+private:
+    string	m_name;
+public:
+    AstConstString(FileLine* fl, const string& name)
+	: AstNodeMath(fl), m_name(name) {
+	rewidth();
+    }
+    void rewidth() {
+	if (m_name.length()==0) {
+	    width(1,1);  // 0 width isn't allowed due to historic special cases
+	} else {
+	    width(m_name.length()*8, m_name.length()*8);
+	}
+    }
+    ASTNODE_NODE_FUNCS(ConstString, CONSTSTRING)
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(name()); }
+    virtual bool same(AstNode* samep) const {
+	return name()==samep->castConstString()->name(); }
+    virtual int instrCount() const { return 2; }  // C just loads a pointer
+    virtual string name() const { return m_name; }
+    void name(const string& flag) { m_name = flag; rewidth(); }
+};
+
 struct AstRange : public AstNode {
     // Range specification, for use under variables and cells
 private:
@@ -1511,10 +1539,12 @@ public:
 
 class AstSFormatF : public AstNode {
     // Convert format to string, generally under a AstDisplay or AstSFormat
+    // Also used as "real" function for /*verilator sformat*/ functions
     string	m_text;
+    bool	m_hidden;	// Under display, etc
 public:
-    AstSFormatF(FileLine* fl, const string& text, AstNode* exprsp)
-	: AstNode(fl), m_text(text) {
+    AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp)
+	: AstNode(fl), m_text(text), m_hidden(hidden) {
 	addNOp1p(exprsp); addNOp2p(NULL); }
     ASTNODE_NODE_FUNCS(SFormatF, SFORMATF)
     virtual string name() const { return m_text; }
@@ -1530,6 +1560,7 @@ public:
     void scopeNamep(AstNode* nodep) { setNOp2p(nodep); }
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
 	return (name().find("%m") != string::npos || name().find("%M") != string::npos); }
+    bool hidden() const { return m_hidden; }
 };
 
 struct AstDisplay : public AstNode {
@@ -1541,7 +1572,7 @@ private:
 public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
 	: AstNode (fileline) {
-	setNOp1p(new AstSFormatF(fileline,text,exprsp));
+	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
     }
@@ -1573,7 +1604,7 @@ struct AstSFormat : public AstNode {
     // Children: SFORMATF to generate print string
     AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
 	: AstNode (fileline) {
-	setOp1p(new AstSFormatF(fileline,text,exprsp));
+	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setOp3p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SFormat, SFORMAT)

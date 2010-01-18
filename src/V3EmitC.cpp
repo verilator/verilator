@@ -563,6 +563,9 @@ public:
 	    emitConstant(nodep, NULL, "");
 	}
     }
+    virtual void visit(AstConstString* nodep, AstNUser*) {
+	putsQuoted(nodep->name());
+    }
 
     // Just iterate
     virtual void visit(AstNetlist* nodep, AstNUser*) {

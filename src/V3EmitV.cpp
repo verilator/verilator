@@ -456,6 +456,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstConst* nodep, AstNUser*) {
 	putfs(nodep,nodep->num().ascii(true,true));
     }
+    virtual void visit(AstConstString* nodep, AstNUser*) {
+	putfs(nodep,"");
+	putsQuoted(nodep->name());
+    }
 
     // Just iterate
     virtual void visit(AstTopScope* nodep, AstNUser*) {

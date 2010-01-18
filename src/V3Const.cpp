@@ -432,6 +432,15 @@ private:
 	replaceNum(nodep, num); nodep=NULL;
     }
 
+    void replaceConstString (AstNode* oldp, const string& num) {
+	// Replace oldp node with a constant set to specified value
+	UASSERT (oldp, "Null old\n");
+	AstNode* newp = new AstConstString(oldp->fileline(), num);
+	if (debug()>5) oldp->dumpTree(cout,"  const_old: ");
+	if (debug()>5) newp->dumpTree(cout,"       _new: ");
+	oldp->replaceWith(newp);
+	oldp->deleteTree(); oldp=NULL;
+    }
     //----------------------------------------
     // Replacement functions.
     // These all take a node and replace it with something else
@@ -1459,6 +1468,12 @@ private:
 	    nodep->text(dispout);
 	    //UINFO(9,"  Display out "<<nodep->text()<<endl);
 	}
+	if (!nodep->exprsp()
+	    && nodep->name().find("%") == string::npos
+	    && !nodep->hidden()) {
+	    // Just a simple constant string - the formatting is pointless
+	    replaceConstString(nodep, nodep->name()); nodep=NULL;
+	}
     }
 
     virtual void visit(AstFuncRef* nodep, AstNUser*) {
@@ -1712,6 +1727,9 @@ private:
     TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");
     TREEOPV("AstLogIff{$lhsp, $rhsp}",		"AstLogNot{AstXor{$lhsp,$rhsp}}");
+    // Strings
+    TREEOP ("AstCvtPackString{$lhsp.castConst}",	"replaceConstString(nodep, nodep->lhsp()->castConst()->num().toString())");
+
 
     // Possible futures:
     // (a?(b?y:x):y) -> (a&&!b)?x:y

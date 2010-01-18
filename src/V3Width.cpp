@@ -448,6 +448,9 @@ private:
 	// We don't size the constant until we commit the widths, as need parameters
 	// to remain unsized, and numbers to remain unsized to avoid backp() warnings
     }
+    virtual void visit(AstConstString* nodep, AstNUser* vup) {
+	nodep->rewidth();
+    }
     virtual void visit(AstRand* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
 	    nodep->width(32,32);  // Says the spec
@@ -962,7 +965,7 @@ private:
 			    string format;
 			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
 			    else pinp->v3error("Format to $display-like function must have constant format string");
-			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, argsp);
+			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
 			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
 				newp->scopeNamep(new AstScopeName(newp->fileline()));
 			    }
