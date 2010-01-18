@@ -287,6 +287,11 @@ private:
 	    m_varp->attrIsolateAssign(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
+	else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrSFormat(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
     }
 
     virtual void visit(AstDefImplicitDType* nodep, AstNUser*) {

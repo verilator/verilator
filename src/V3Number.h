@@ -149,6 +149,7 @@ public:
     vlsint32_t toSInt() const;
     vluint64_t toUQuad() const;
     vlsint64_t toSQuad() const;
+    string toString() const;
     uint32_t toHash() const;
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;

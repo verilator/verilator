@@ -217,6 +217,9 @@ public:
     virtual void visit(AstSFormat* nodep, AstNUser*) {
 	displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);
     }
+    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+	displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
+    }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
 	displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
@@ -1079,6 +1082,9 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    putbs(",");
 	    dispp->lhsp()->iterate(*this);
 	    putbs(",");
+	} else if (AstSFormatF* dispp = nodep->castSFormatF()) {
+	    if (dispp) {}
+	    puts("VL_SFORMATF_NX(");
 	} else {
 	    isStmt = true;
 	    nodep->v3fatalSrc("Unknown displayEmit node type");

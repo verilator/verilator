@@ -589,6 +589,7 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator public_flat*/"		{ FL; return yVL_PUBLIC_FLAT; }
   "/*verilator public_module*/"		{ FL; return yVL_PUBLIC_MODULE; }
   "/*verilator sc_clock*/"		{ FL; return yVL_CLOCK; }
+  "/*verilator sformat*/"		{ FL; return yVL_SFORMAT; }
   "/*verilator systemc_clock*/"		{ FL; return yVL_CLOCK; }
   "/*verilator tracing_off*/"		{PARSEP->fileline()->tracingOn(false); }
   "/*verilator tracing_on*/"		{PARSEP->fileline()->tracingOn(true); }

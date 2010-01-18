@@ -517,6 +517,23 @@ vlsint64_t V3Number::toSQuad() const {
     return (vlsint64_t)(extended);
 }
 
+string V3Number::toString() const {
+    UASSERT(!isFourState(),"toString with 4-state "<<*this);
+    // Spec says always drop leading zeros, this isn't quite right, we space pad.
+    int bit=this->width()-1;
+    bool start=true;
+    while ((bit%8)!=7) bit++;
+    string str;
+    for (; bit>=0; bit -= 8) {
+	int v = bitsValue(bit-7, 8);
+	if (!start || v) {
+	    str += (char)((v==0)?' ':v);
+	    start = false;	// Drop leading 0s
+	}
+    }
+    return str;
+}
+
 uint32_t V3Number::toHash() const {
     return m_value[0];
 }

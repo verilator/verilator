@@ -1227,6 +1227,15 @@ DPI compatible but is easier to read and better supports multiple designs.
     Vour::publicSetBool(value);
     // or top->publicSetBool(value);
 
+Verilator also allows writing $display like functions using this syntax:
+
+   import "DPI-C" function void
+         \$my_display (input string formatted /*verilator sformat*/ );
+
+The /*verilator sformat*/ indicates that this function accepts a $display
+like format specifier followed by any number of arguments to satisfy the
+format.
+
 Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
 
@@ -1621,10 +1630,17 @@ using the --public switch.
 
 =item /*verilator sc_clock*/
 
-Used after a input declaration to indicate the signal should be declared in
-SystemC as a sc_clock instead of a bool.  This was needed in SystemC 1.1
-and 1.2 only; versions 2.0 and later do not require clock pins to be
-sc_clocks and this is no longer needed.
+Rarely needed.  Used after a input declaration to indicate the signal
+should be declared in SystemC as a sc_clock instead of a bool.  This was
+needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
+clock pins to be sc_clocks and this is no longer needed.
+
+=item /*verilator sformat*/
+
+Attached to the final input of a function or task "input string" to
+indicate the function or task should pass all remaining arguments through
+$sformatf.  This allows creation of DPI functions with $display like
+behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 
 =item /*verilator tracing_off*/
 

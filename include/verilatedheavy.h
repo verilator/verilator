@@ -34,6 +34,7 @@
 #include <string>
 
 //======================================================================
+// Conversion functions
 
 extern string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp);
 inline string VL_CVT_PACK_STR_NQ(QData lhs) {
@@ -44,5 +45,7 @@ inline string VL_CVT_PACK_STR_NI(IData lhs) {
     IData lw[1];  lw[0] = lhs;
     return VL_CVT_PACK_STR_NW(1, lw);
 }
+
+extern string VL_SFORMATF_NX(const char* formatp, ...);
 
 #endif // Guard

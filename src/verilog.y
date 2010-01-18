@@ -416,6 +416,7 @@ class AstSenTree;
 %token<fl>		yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
 %token<fl>		yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
 %token<fl>		yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
+%token<fl>		yVL_SFORMAT		"/*verilator sformat*/"
 %token<fl>		yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fl>		yVL_PUBLIC		"/*verilator public*/"
 %token<fl>		yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
@@ -1525,6 +1526,7 @@ sigAttr<nodep>:
 	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC); }
 	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT); }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
+	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
 	;
 
 rangeListE<rangep>:		// IEEE: [{packed_dimension}]

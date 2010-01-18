@@ -179,14 +179,15 @@ public:
 	VAR_CLOCK_ENABLE,		// V3LinkParse moves to AstVar::attrClockEn
 	VAR_PUBLIC,			// V3LinkParse moves to AstVar::sigPublic
 	VAR_PUBLIC_FLAT,		// V3LinkParse moves to AstVar::sigPublic
-	VAR_ISOLATE_ASSIGNMENTS		// V3LinkParse moves to AstVar::attrIsolateAssign
+	VAR_ISOLATE_ASSIGNMENTS,	// V3LinkParse moves to AstVar::attrIsolateAssign
+	VAR_SFORMAT			// V3LinkParse moves to AstVar::attrSFormat
     };
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
 	    "BITS", "VAR_BASE",
 	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
-	    "VAR_ISOLATE_ASSIGNMENTS"
+	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SFORMAT"
 	};
 	return names[m_e];
     };

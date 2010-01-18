@@ -513,6 +513,7 @@ private:
     bool	m_funcReturn:1;	// Return variable for a function
     bool	m_attrClockEn:1;// User clock enable attribute
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
+    bool	m_attrSFormat:1;// User sformat attribute
     bool	m_fileDescr:1;	// File descriptor
     bool	m_isConst:1;	// Table contains constant data
     bool	m_isStatic:1;	// Static variable
@@ -525,7 +526,7 @@ private:
 	m_usedClock=false; m_usedParam=false;
 	m_sigPublic=false; m_sigModPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
-	m_attrClockEn=false; m_attrIsolateAssign=false;
+	m_attrClockEn=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false;
 	m_trace=false;
     }
@@ -584,6 +585,7 @@ public:
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
+    void	attrSFormat(bool flag) { m_attrSFormat = flag; }
     void	usedClock(bool flag) { m_usedClock = flag; }
     void	usedParam(bool flag) { m_usedParam = flag; }
     void	sigPublic(bool flag) { m_sigPublic = flag; }
@@ -638,6 +640,7 @@ public:
     bool	attrClockEn() const { return m_attrClockEn; }
     bool	attrFileDescr() const { return m_fileDescr; }
     bool	attrScClocked() const { return m_scClocked; }
+    bool	attrSFormat() const { return m_attrSFormat; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
@@ -1518,6 +1521,7 @@ public:
     virtual int instrCount() const { return instrCountPli(); }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const { return text()==samep->castSFormatF()->text(); }
+    virtual string verilogKwd() const { return "$sformatf"; }
     void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
     AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Expressions to output
     string text() const { return m_text; }		// * = Text to display
@@ -1543,6 +1547,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Display, DISPLAY)
     virtual void dump(ostream& str);
+    virtual bool broken() const { return !fmtp(); }
     virtual string verilogKwd() const { return (filep() ? (string)"$f"+(string)displayType().ascii()
 						: (string)"$"+(string)displayType().ascii()); }
     virtual bool isGateOptimizable() const { return false; }
@@ -1572,6 +1577,7 @@ struct AstSFormat : public AstNode {
 	setOp3p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SFormat, SFORMAT)
+    virtual bool broken() const { return !fmtp(); }
     virtual string verilogKwd() const { return "$sformat"; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }

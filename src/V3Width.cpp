@@ -60,21 +60,22 @@
 //######################################################################
 // Width state, as a visitor of each AstNode
 
-    enum Stage { PRELIM=1,FINAL=2,BOTH=3 };
+enum Stage { PRELIM=1,FINAL=2,BOTH=3 };
 
-    class WidthVP : public AstNUser {
-	// Parameters to pass down hierarchy with visit functions.
-	int	m_width;	// Expression width, for (2+2), it's 32 bits
-	int	m_minWidth;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
-	Stage	m_stage;	// If true, report errors
-    public:
-	WidthVP(int width, int minWidth, Stage stage) : m_width(width), m_minWidth(minWidth), m_stage(stage) {}
-	int width() const { return m_width; }
-	int widthMin() const { return m_minWidth?m_minWidth:m_width; }
-	bool prelim() const { return m_stage&1; }
-	bool final() const { return m_stage&2; }
-    };
+class WidthVP : public AstNUser {
+    // Parameters to pass down hierarchy with visit functions.
+    int	m_width;	// Expression width, for (2+2), it's 32 bits
+    int	m_minWidth;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
+    Stage	m_stage;	// If true, report errors
+public:
+    WidthVP(int width, int minWidth, Stage stage) : m_width(width), m_minWidth(minWidth), m_stage(stage) {}
+    int width() const { return m_width; }
+    int widthMin() const { return m_minWidth?m_minWidth:m_width; }
+    bool prelim() const { return m_stage&1; }
+    bool final() const { return m_stage&2; }
+};
 
+//######################################################################
 
 class WidthVisitor : public AstNVisitor {
 private:
@@ -943,16 +944,36 @@ private:
 	// And do the arguments to the task/function too
 	for (int accept_mode=1; accept_mode>=0; accept_mode--) {  // Avoid duplicate code; just do inner stuff twice
 	    V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-	    for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+	    bool lastloop = false;
+	    for (V3TaskConnects::iterator it=tconnects.begin(); !lastloop && it!=tconnects.end(); ++it) {
 		AstVar* portp = it->first;
 		AstNode* pinp = it->second;
 		if (pinp!=NULL) {  // Else argument error we'll find later
 		    if (accept_mode) {
 			// Prelim may cause the node to get replaced; we've lost our
 			// pointer, so need to iterate separately later
-			if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
+			if (portp->attrSFormat()
+			    && (!pinp->castSFormatF() || pinp->nextp())) {  // Not already done
+			    UINFO(4,"   sformat via metacomment: "<<nodep<<endl);
+			    AstNRelinker handle;
+			    pinp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
+			    AstNode* argsp = NULL;
+			    if (pinp->nextp()) argsp = pinp->nextp()->unlinkFrBackWithNext();
+			    string format;
+			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
+			    else pinp->v3error("Format to $display-like function must have constant format string");
+			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, argsp);
+			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
+				newp->scopeNamep(new AstScopeName(newp->fileline()));
+			    }
+			    handle.relink(newp);
+			    // Connection list is now incorrect (has extra args in it).
+			    lastloop = true;  // so exit early; next loop will correct it
+			}
+			else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
 			    && !pinp->castCvtPackString()
 			    && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
+			    UINFO(4,"   Add CvtPackString: "<<pinp<<endl);
 			    AstNRelinker handle;
 			    pinp->unlinkFrBack(&handle);  // No next, that's the next pin
 			    AstNode* newp = new AstCvtPackString(pinp->fileline(), pinp);

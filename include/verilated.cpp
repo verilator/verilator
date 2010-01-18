@@ -692,6 +692,16 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, destp, output.length(), output.c_str());
 }
 
+string VL_SFORMATF_NX(const char* formatp, ...) {
+    va_list ap;
+    va_start(ap,formatp);
+    string output;
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    return output;
+}
+
 void VL_WRITEF(const char* formatp, ...) {
     va_list ap;
     va_start(ap,formatp);

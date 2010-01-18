@@ -1168,6 +1168,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Find ports
     //map<string,int> name_to_pinnum;
     int tpinnum = 0;	// Note grammar starts pin counting at one
+    AstVar* sformatp = NULL;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
 	if (AstVar* portp = stmtp->castVar()) {
 	    if (portp->isIO()) {
@@ -1176,6 +1177,11 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 		// That'll require a AstTpin or somesuch which will replace the ppinnum counting
 		//name_to_pinnum.insert(make_pair(portp->name(), tpinnum));
 		tpinnum++;
+		if (portp->attrSFormat()) {
+		    sformatp = portp;
+		} else if (sformatp) {
+		    nodep->v3error("/*verilator sformat*/ can only be applied to last argument of a function");
+		}
 	    }
 	}
     }
@@ -1184,15 +1190,17 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     int ppinnum = 0;
     for (AstNode* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()) {
 	if (ppinnum >= tpinnum) {
-	    // Use v3warn so we'll only get the error once for each function
-	    pinp->v3error("Too many arguments in function call to "<<nodep->taskp()->prettyTypeName());
-	    // We'll just delete them; seems less error prone than making a false argument
-	    pinp->unlinkFrBackWithNext()->deleteTree(); pinp=NULL;
-	    break;
-	} else {
-	    tconnects[ppinnum].second = pinp;
-	    ppinnum++;
+	    if (sformatp) {
+		tconnects.push_back(make_pair(sformatp, (AstNode*)NULL));
+	    } else {
+		pinp->v3error("Too many arguments in function call to "<<nodep->taskp()->prettyTypeName());
+		// We'll just delete them; seems less error prone than making a false argument
+		pinp->unlinkFrBackWithNext()->deleteTree(); pinp=NULL;
+		break;
+	    }
 	}
+	tconnects[ppinnum].second = pinp;
+	ppinnum++;
     }
 	
     while (ppinnum < tpinnum) {

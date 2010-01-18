@@ -95,7 +95,7 @@ private:
 	CleanState clstate = getCleanState(nodep);
 	if (clstate==CLEAN) return true;
 	if (clstate==DIRTY) return false;
-	nodep->v3fatalSrc("Unknown clean state on node.");
+	nodep->v3fatalSrc("Unknown clean state on node: "+nodep->prettyTypeName());
 	return false;
     }
     void setClean(AstNode* nodep, bool isClean) {
@@ -243,6 +243,7 @@ private:
     virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->exprsp());
+	setClean(nodep, true);  // generates a string, so not relevant
     }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
