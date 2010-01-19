@@ -830,7 +830,11 @@ public:
 void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Outputting this data type");
     if (nodep->isIO()) {
+	bool isArray = !nodep->dtypeSkipRefp()->castBasicDType();
 	if (nodep->isSc()) {
+	    if (isArray) {
+		nodep->v3error("Unsupported: SystemC inputs and outputs must be simple data types; no arrays");
+	    }
 	    m_ctorVarsVec.push_back(nodep);
 	    ofp()->putAlign(nodep->isStatic(), 4);	// sc stuff is a structure, so bigger alignment
 	    if (nodep->attrScClocked() && nodep->isInput()) {
@@ -858,14 +862,24 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    else if (nodep->widthMin() <= 8) puts("8");
 	    else if (nodep->widthMin() <= 16) puts("16");
 
-	    if (!nodep->isWide())
-		puts("("+nodep->name()
-		     +","+cvtToStr(basicp->msb())
-		     +","+cvtToStr(basicp->lsb()));
-	    else puts("W("+nodep->name()
-		      +","+cvtToStr(basicp->msb())
-		      +","+cvtToStr(basicp->lsb())
-		      +","+cvtToStr(basicp->widthWords()));
+	    if (isArray) {
+		if (nodep->isWide()) puts("W");
+		puts("("+nodep->name());
+		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
+		}
+		puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
+		if (basicp->isWide()) puts(","+cvtToStr(basicp->widthWords()));
+	    } else {
+		if (!basicp->isWide())
+		    puts("("+nodep->name()
+			 +","+cvtToStr(basicp->msb())
+			 +","+cvtToStr(basicp->lsb()));
+		else puts("W("+nodep->name()
+			  +","+cvtToStr(basicp->msb())
+			  +","+cvtToStr(basicp->lsb())
+			  +","+cvtToStr(basicp->widthWords()));
+	    }
 	    puts(");\n");
 	}
     } else if (basicp && basicp->isOpaque()) {

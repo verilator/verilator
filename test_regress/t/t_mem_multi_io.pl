@@ -8,13 +8,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 verilator_flags2 => ["-sp"],
-	 fails=>$Self->{v3},
-	 nc=>0,
-	 expect=>
-'%Error: t/t_mem_multi_io_bad.v:\d+: Unsupported: SystemC inputs and outputs must be simple data types; no arrays
-%Error: Exiting due to.*',
+	 # Disable inlining, this test is trivial without it
+	 verilator_flags2 => ["-Oi --trace"],
 	 );
+
+execute (
+	 check_finished=>1,
+     );
 
 ok(1);
 1;

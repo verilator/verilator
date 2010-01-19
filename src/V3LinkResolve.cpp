@@ -84,8 +84,9 @@ private:
 
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->isIO() && !nodep->dtypeSkipRefp()->castBasicDType()) {
-	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types; no arrays");
+	if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType() ||
+			       nodep->dtypeSkipRefp()->castArrayDType())) {
+	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
 	}
 	if (m_ftaskp) nodep->funcLocal(true);
 	if (nodep->isSigModPublic()) {

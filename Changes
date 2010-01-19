@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support assignments of multidimensional slices, bug170. [by Byron Bradley]
 
+***  Support multidimensional inputs/outputs, bug171. [by Byron Bradley]
+
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
 ***  Support declarations in loop initializers, bug172.  [by Byron Bradley]
