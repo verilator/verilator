@@ -1055,7 +1055,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	// NOP
     } else {
 	// Format
-	bool isStmt;
+	bool isStmt = false;
 	if (AstFScanF* dispp = nodep->castFScanF()) {
 	    isStmt = false;
 	    puts("VL_FSCANF_IX(");
@@ -1086,6 +1086,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    dispp->lhsp()->iterate(*this);
 	    putbs(",");
 	} else if (AstSFormatF* dispp = nodep->castSFormatF()) {
+	    isStmt = false;
 	    if (dispp) {}
 	    puts("VL_SFORMATF_NX(");
 	} else {
