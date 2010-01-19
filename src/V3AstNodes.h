@@ -401,12 +401,16 @@ struct AstEnumDType : public AstNodeDType {
 struct AstArraySel : public AstNodeSel {
     // Parents: math|stmt
     // Children: varref|arraysel, math
+private:
+    unsigned m_start;
+    unsigned m_length;
+public:
     AstArraySel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-	:AstNodeSel(fl, fromp, bitp) {
+	:AstNodeSel(fl, fromp, bitp), m_start(0), m_length(1) {
 	if (fromp) widthSignedFrom(fromp);
     }
     AstArraySel(FileLine* fl, AstNode* fromp, int bit)
-	:AstNodeSel(fl, fromp, new AstConst(fl,bit)) {
+	:AstNodeSel(fl, fromp, new AstConst(fl,bit)), m_start(0), m_length(1) {
 	if (fromp) widthSignedFrom(fromp);
     }
     ASTNODE_NODE_FUNCS(ArraySel, ARRAYSEL)
@@ -422,9 +426,14 @@ struct AstArraySel : public AstNodeSel {
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
+    unsigned length() { return m_length; }
+    void     length(unsigned length) { m_length = length; }
+    void     start(unsigned start) { m_start = start; }
+    unsigned start() { return m_start; }
     // Special operators
     static int dimension(AstNode* nodep); ///< How many dimensions is this reference from the base variable?
     static AstNode* baseFromp(AstNode* nodep);	///< What is the base variable (or const) this dereferences?
+    virtual void dump(ostream& str);
 };
 
 struct AstWordSel : public AstNodeSel {
@@ -603,6 +612,7 @@ public:
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeDimensionp(int depth) const;
+    uint32_t	dimensions() const;
     AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
     void	initp(AstNode* nodep) { setOp3p(nodep); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }

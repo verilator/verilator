@@ -15,6 +15,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **   Support direct programming interface (DPI) "import" and "export".
      Includes an extension to map user $system PLI calls to the DPI.
 
+***  Support assignments of multidimensional slices, bug170. [by Byron Bradley]
+
 ***  Support "reg [1:0][1:0][1:0]" and "reg x [3][2]", bug176.  [Byron Bradley]
 
 ***  Support declarations in loop initializers, bug172.  [by Byron Bradley]

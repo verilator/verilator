@@ -1228,8 +1228,10 @@ struct AstNodeSel : public AstNodeBiop {
     AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodeBiop(fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
-    AstNode* fromp()		const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
-    AstNode* bitp()		const { return op2p()->castNode(); }	// op2 = Msb selection expression
+    AstNode* fromp() const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
+    AstNode* bitp() const { return op2p()->castNode(); }	// op2 = Msb selection expression
+    void bitp(AstNode* nodep) { setOp2p(nodep); }
     int	     bitConst()	const;
 };
 

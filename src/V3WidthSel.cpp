@@ -80,10 +80,6 @@ private:
 	//UINFO(9,"SCD\n"); if (debug()>=9) nodep->backp()->dumpTree(cout,"-selcheck: ");
 	AstNodeDType* ddtypep = varp->dtypeDimensionp(dimension);
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
-	    if (rangedSelect) {
-		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<varp->prettyName());
-		return NULL;
-	    }
 	    return adtypep;
 	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
@@ -247,7 +243,17 @@ private:
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, msb!=lsb);
-	if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
+	    if (adtypep) {}
+	    if (msb!=lsb) {
+		AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
+		newp->start(lsb);
+		newp->length((msb - lsb) + 1);
+		nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	    } else {
+		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<varp->prettyName());
+	    }
+	} else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (adtypep) {} // Unused
 	    if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap

@@ -74,6 +74,7 @@
 #include "V3Premit.h"
 #include "V3Scope.h"
 #include "V3Signed.h"
+#include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitAs.h"
 #include "V3Stats.h"
@@ -279,6 +280,10 @@ void process () {
     // Loop unrolling & convert FORs to WHILEs
     V3Unroll::unrollAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unroll.tree"));
+
+    // Expand slices of arrays
+    V3Slice::sliceAll(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("slices.tree"));
 
     // Convert case statements to if() blocks.  Must be after V3Unknown
     V3Case::caseAll(v3Global.rootp());

@@ -206,6 +206,7 @@ RAW_OBJS = \
 	V3Premit.o \
 	V3Scope.o \
 	V3Signed.o \
+	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
 	V3Stats.o \

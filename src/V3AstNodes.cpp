@@ -258,6 +258,23 @@ uint32_t AstVar::arrayElements() const {
     return entries;
 }
 
+uint32_t AstVar::dimensions() const {
+    // How many array dimensions does this Var have?
+    uint32_t dim = 0;
+    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
+	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	    dim += 1;
+	    dtypep = adtypep->dtypep();
+	}
+	else {
+	    // AstBasicDType - nothing below, 1
+	    break;
+	}
+    }
+    return dim;
+}
+
 // Special operators
 int AstArraySel::dimension(AstNode* nodep) {
     // How many dimensions is this reference from the base variable?
@@ -445,6 +462,10 @@ void AstNode::dump(ostream& os) {
     if (name()!="") os<<"  "<<AstNode::quoteName(name());
 }
 
+void AstArraySel::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" [start:"<<start()<<"] [length:"<<length()<<"]";
+}
 void AstAttrOf::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<attrType().ascii()<<"]";
