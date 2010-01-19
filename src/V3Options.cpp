@@ -320,15 +320,13 @@ void V3Options::setenvStr(const string& envvar, const string& value, const strin
     } else {
 	UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
-//setenv() replaced by putenv() in MinGW environment. Prototype is different
-//putenv() requires NAME=VALUE format
 #if !defined (__MINGW32__)
     setenv(envvar.c_str(),value.c_str(),true);
 #else
-    int len = value.size() + envvar.size() + 5;
-    char *str = new char[len];
-    sprintf(str,"%s=%s", envvar.c_str(), value.c_str());
-    putenv(str);
+    //setenv() replaced by putenv() in MinGW environment. Prototype is different
+    //putenv() requires NAME=VALUE format
+    string vareq = envvar + "=" + value;
+    putenv(vareq.c_str());
 #endif
 }
 
