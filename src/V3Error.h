@@ -252,7 +252,6 @@ public:
     string ascii() const;
     const string filename () const { return m_filename; }
     const string filebasename () const;
-    const char* cfilename () const { return m_filename.c_str(); }
     const string profileFuncname() const;
     void warnOff(V3ErrorCode code, bool flag) { m_warnOn.set(code,!flag); }	// Turn on/off warning messages on this line.
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
