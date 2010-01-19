@@ -449,7 +449,7 @@ inline bool V3Options::wildmatchi(const char* s, const char* p) {
 	    return true;
 	}
     }
-    return(*s == '\0' || *s == '[');
+    return (*s == '\0');
 }
 
 bool V3Options::wildmatch(const char* s, const char* p) {
@@ -467,7 +467,7 @@ bool V3Options::wildmatch(const char* s, const char* p) {
 	    return true;
 	}
     }
-    return(*s == '\0' || *s == '[');
+    return (*s == '\0');
 }
 
 string V3Options::downcase(const string& str) {

@@ -965,6 +965,13 @@ sub files_identical {
 	    warn ("%Warning: Line ".($l+1)." mismatches; $fn1 != $fn2\n"
 		  ."F1: ".($l1[$l]||"*EOF*\n")
 		  ."F2: ".($l2[$l]||"*EOF*\n"));
+	    if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
+		warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
+		eval "use File::Copy;";
+		File::Copy::copy($fn1,$fn2);
+	    } else {
+		warn "To update reference: HARNESS_UPDATE_GOLDEN=1 {command}\n";
+	    }
 	    return 0;
 	}
     }

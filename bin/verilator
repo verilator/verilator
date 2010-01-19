@@ -57,7 +57,10 @@ push @ARGV, (split ' ',$ENV{VERILATOR_TEST_FLAGS}||"");
 
 # We sneak a look at the flags so we can do some pre-environment checks
 # All flags will hit verilator...
-@Opt_Verilator_Sw = @ARGV;
+foreach my $sw (@ARGV) {
+    $sw = "'$sw'" if $sw =~ m![^---a-zA-Z0-9_/\\:.+]!;
+    push @Opt_Verilator_Sw, $sw;
+}
 
 Getopt::Long::config ("no_auto_abbrev","pass_through");
 if (! GetOptions (
