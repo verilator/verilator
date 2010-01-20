@@ -13,6 +13,8 @@ module t (/*AUTOARG*/
    reg  vector;	// OK, as not public
    reg  switch /*verilator public*/;	// Bad
 
-   initial $stop;
-
+   initial begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
 endmodule
