@@ -162,7 +162,7 @@ private:
 
     bool commentTokenMatch(string& cmdr, const char* strg);
     string trimWhitespace(const string& strg, bool trailing);
-    void unputString(const string& strg);
+    void unputString(const string& strg, bool first=false);
 
     void parsingOn() {
 	m_off--;
@@ -173,7 +173,7 @@ private:
 
 public:
     // METHODS, called from upper level shell
-    virtual void openFile(FileLine* fl, const string& filename);
+    virtual void openFile(FileLine* fl, V3InFilter* filterp, const string& filename);
     virtual bool isEof() const { return (m_lexp==NULL); }
     virtual string getline();
     virtual void insertUnreadback(const string& text) { m_lineCmt += text; }
@@ -402,14 +402,16 @@ const char* V3PreProcImp::tokenName(int tok) {
     }
 }
 
-void V3PreProcImp::unputString(const string& strg) {
+void V3PreProcImp::unputString(const string& strg, bool first) {
     // We used to just m_lexp->unputString(strg.c_str());
     // However this can lead to "flex scanner push-back overflow"
     // so instead we scan from a temporary buffer, then on EOF return.
     // This is also faster than the old scheme, amazingly.
-    if (m_lexp->m_bufferStack.empty() || m_lexp->m_bufferStack.top()!=m_lexp->currentBuffer()) {
-	fileline()->v3fatalSrc("bufferStack missing current buffer; will return incorrectly");
-	// Hard to debug lost text as won't know till much later
+    if (!first) {  // Else the initial creation
+	if (m_lexp->m_bufferStack.empty() || m_lexp->m_bufferStack.top()!=m_lexp->currentBuffer()) {
+	    fileline()->v3fatalSrc("bufferStack missing current buffer; will return incorrectly");
+	    // Hard to debug lost text as won't know till much later
+	}
     }
     m_lexp->scanBytes(strg);
 }
@@ -576,15 +578,17 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 //**********************************************************************
 // Parser routines
 
-void V3PreProcImp::openFile(FileLine* fl, const string& filename) {
+void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
     if (fl) {
 	m_fileline = new FileLine(fl);
     }
 
     V3File::addSrcDepend(filename);
-    FILE* fp = fopen (filename.c_str(), "r");
-    if (!fp) {
+
+    string wholefile;
+    bool ok = filterp->readWholefile(filename, wholefile/*ref*/);
+    if (!ok) {
 	fileline()->v3error("File not found: "+filename+"\n");
 	return;
     }
@@ -601,7 +605,7 @@ void V3PreProcImp::openFile(FileLine* fl, const string& filename) {
 	addLineComment(0);
     }
 
-    m_lexp = new V3PreLex (fp);
+    m_lexp = new V3PreLex();
     m_lexp->m_keepComments = keepComments();
     m_lexp->m_pedantic = pedantic();
     m_lexp->m_curFilelinep = new FileLine(filename, 1);
@@ -609,6 +613,7 @@ void V3PreProcImp::openFile(FileLine* fl, const string& filename) {
     addLineComment(1); // Enter
 
     yy_flex_debug = (debug()>4)?1:0;
+    unputString(wholefile,true);
 }
 
 void V3PreProcImp::insertUnreadbackAtBol(const string& text) {

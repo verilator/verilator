@@ -33,6 +33,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add experimental clock domain crossing checks.
 
+***  Add experimental --pipe-filter to filter all Verilog input.
+
 ***  Speed compiles by avoiding including the STL iostream header.
      Application programs may need to include it themselves to avoid errors.
 

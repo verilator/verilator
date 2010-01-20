@@ -798,6 +798,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-pins-bv") && (i+1)<argc ) {
 		shift; m_pinsBv = atoi(argv[i]);
 	    }
+	    else if ( !strcmp (sw, "-pipe-filter") && (i+1)<argc ) {
+		shift; m_pipeFilter = argv[i];
+	    }
 	    else if ( !strcmp (sw, "-prefix") && (i+1)<argc ) {
 		shift; m_prefix = argv[i];
 		if (m_modPrefix=="") m_modPrefix = m_prefix;

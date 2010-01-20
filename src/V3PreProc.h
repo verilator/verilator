@@ -30,6 +30,8 @@
 #include <map>
 #include <iostream>
 
+class V3InFilter;
+
 class V3PreProc {
     // This defines a preprocessor.  Functions are virtual so implementation can be hidden.
     // After creating, call open(), then getline() in a loop.  The class will to the rest...
@@ -48,7 +50,7 @@ public:
 
     // ACCESSORS
     // Insert given file into this point in input stream
-    virtual void openFile(FileLine* fileline, const string& filename)=0;
+    virtual void openFile(FileLine* fileline, V3InFilter* filterp, const string& filename)=0;
     virtual string getline()=0;		// Return next line/lines. (Null if done.)
     virtual bool isEof() const =0;		// Return true on EOF.
     virtual void insertUnreadback(const string& text) = 0;

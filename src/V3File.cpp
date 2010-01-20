@@ -25,13 +25,27 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <iomanip>
 #include <memory>
+#include <map>
+
+#if defined(__unix__)
+# define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
+#endif
+
+#ifdef INFILTER_PIPE
+# include <sys/wait.h>
+#endif
 
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3PreShell.h"
 #include "V3Ast.h"
+
+#define INFILTER_IPC_BUFSIZ 64*1024  // For debug, try this as a small number
+#define INFILTER_CACHE_MAX  64*1024  // Maximum bytes to cache if same file read twice
 
 //######################################################################
 // V3File Internal state
@@ -250,6 +264,249 @@ void V3File::createMakeDir() {
 	mkdir(v3Global.opt.makeDir().c_str());
 #endif
     }
+}
+
+//######################################################################
+// V3InFilterImp
+
+class V3InFilterImp {
+    typedef map<string,string> FileContentsMap;
+
+    FileContentsMap	m_contentsMap;	// Cache of file contents
+    bool		m_readEof;	// Received EOF on read
+#ifdef INFILTER_PIPE
+    pid_t		m_pid;		// fork() process id
+#else
+    int			m_pid;		// fork() process id - always zero as disabled
+#endif
+    bool		m_pidExited;
+    int			m_pidStatus;
+    int			m_writeFd;	// File descriptor TO filter
+    int			m_readFd;	// File descriptor FROM filter
+
+private:
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
+    bool readContents(const string& filename, string& out) {
+	if (m_pid) return readContentsFilter(filename,out);
+	else return readContentsFile(filename,out);
+    }
+    bool readContentsFile(const string& filename, string& out) {
+	int fd = open (filename.c_str(), O_RDONLY);
+	if (!fd) return false;
+	m_readEof = false;
+	out = readBlocks(fd, -1);
+	close(fd);
+	return true;
+    }
+    bool readContentsFilter(const string& filename, string& out) {
+	if (filename!="" || out!="") {}  // Prevent unused
+#ifdef INFILTER_PIPE
+	writeFilter("read \""+filename+"\"\n");
+	string line = readFilterLine();
+	if (line.find("Content-Length") != string::npos) {
+	    int len = 0;
+	    sscanf(line.c_str(), "Content-Length: %d\n", &len);
+	    out = readBlocks(m_readFd, len);
+	    return true;
+	} else {
+	    if (line!="") v3error("--pipe-filter protocol error, unexpected: "<<line);
+	    return false;
+	}
+#else
+	v3fatalSrc("--pipe-filter not implemented on this platform");
+	return false;
+#endif
+    }
+
+    void checkFilter(bool hang) {
+#ifdef INFILTER_PIPE
+	if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang?0:WNOHANG)) {
+	    UINFO(1,"--pipe-filter: Exited, status "<<m_pidStatus<<" exit="<<WEXITSTATUS(m_pidStatus)<<" err"<<strerror(errno)<<endl);
+	    m_readEof = true;
+	    m_pidExited = true;
+	}
+#endif
+    }
+
+    string readBlocks(int fd, int size=-1) {
+	string out;
+	char buf[INFILTER_IPC_BUFSIZ];
+	while (!m_readEof && (size<0 || size>(int)out.length())) {
+	    int todo = INFILTER_IPC_BUFSIZ;
+	    if (size>0 && size<INFILTER_IPC_BUFSIZ) todo = size;
+	    int got = read (fd, buf, todo);
+	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
+	    if (got>0) out.append(buf, got);
+	    else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+		checkFilter(false); usleep(1000); continue;
+	    } else { m_readEof = true; break; }
+	}
+	return out;
+    }
+    string readFilterLine() {
+	// Slow, but we don't need it much
+	UINFO(9,"readFilterLine\n");
+	string line;
+	while (!m_readEof) {
+	    string c = readBlocks(m_readFd, 1);
+	    line += c;
+	    if (c == "\n") {
+		if (line == "\n") { line=""; continue; }
+		else break;
+	    }
+	}
+	UINFO(6,"filter-line-in: "<<line);
+	return line;
+    }
+    void writeFilter(const string& out) {
+	if (debug()>=6) { UINFO(6,"filter-out: "<<out); if (out[out.length()-1]!='\n') cout<<endl; }
+	if (!m_pid) { v3error("--pipe-filter: write to closed file\n"); m_readEof = true; stop(); }
+	unsigned offset = 0;
+	while (!m_readEof && out.length()>offset) {
+	    int got = write (m_writeFd, (out.c_str())+offset, out.length()-offset);
+	    //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
+	    if (got>0) offset += got;
+	    else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+		checkFilter(false); usleep(1000); continue;
+	    }
+	    else break;
+	}
+    }
+
+    // Start the filter
+    void start(const string& command) {
+	if (command=="") {
+	    m_pid = 0;  // Disabled
+	} else {
+	    startFilter(command);
+	}
+    }
+    void startFilter(const string& command) {
+	if (command=="") {} // Prevent Unused
+#ifdef INFILTER_PIPE
+	int fd_stdin[2], fd_stdout[2];
+	static const int P_RD = 0;
+	static const int P_WR = 1;
+
+	if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
+	    v3fatal("--pipe-filter: Can't pipe: "<<strerror(errno));
+	}
+	if (fd_stdin[P_RD]<=2 || fd_stdin[P_WR]<=2
+	    || fd_stdout[P_RD]<=2 || fd_stdout[P_WR]<=2) {
+	    // We'd have to rearrange all of the FD usages in this case.
+	    // Too unlikely; verilator isn't a daemon.
+	    v3fatal("--pipe-filter: stdin/stdout closed before pipe opened\n");
+	}
+
+	UINFO(1,"--pipe-filter: /bin/sh -c "<<command<<endl);
+
+	pid_t pid = fork();
+	if (pid < 0) v3fatal("--pipe-filter: fork failed: "<<strerror(errno));
+	if (pid == 0) {  // Child
+	    UINFO(6,"In child\n");
+	    close(fd_stdin[P_WR]);
+	    dup2(fd_stdin[P_RD], 0);
+	    close(fd_stdout[P_RD]);
+	    dup2(fd_stdout[P_WR], 1);
+	    // And stderr comes from parent
+
+	    execl("/bin/sh", "sh", "-c", command.c_str(), NULL);
+	    // Don't use v3fatal, we don't share the common structures any more
+	    fprintf(stderr,"--pipe-filter: exec failed: %s\n",strerror(errno));
+	    _exit(10);
+	}
+	else {  // Parent
+	    UINFO(6,"In parent, child pid "<<pid
+		  <<" stdin "<<fd_stdin[P_WR]<<"->"<<fd_stdin[P_RD]
+		  <<" stdout "<<fd_stdout[P_WR]<<"->"<<fd_stdout[P_RD]<<endl);
+	    m_pid = pid;
+	    m_pidExited = false;
+	    m_pidStatus = 0;
+	    m_writeFd = fd_stdin[P_WR];
+	    m_readFd = fd_stdout[P_RD];
+	    m_readEof = false;
+
+	    close(fd_stdin[P_RD]);
+	    close(fd_stdout[P_WR]);
+
+	    int flags = fcntl(m_readFd,F_GETFL,0);
+	    fcntl(m_readFd, F_SETFL, flags | O_NONBLOCK);
+
+	    flags = fcntl(m_writeFd,F_GETFL,0);
+	    fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
+	}
+	UINFO(6,"startFilter complete\n");
+#else
+	v3fatalSrc("--pipe-filter not implemented on this platform");
+#endif
+    }
+
+    void stop() {
+	if (m_pid) stopFilter();
+    }
+    void stopFilter() {
+	UINFO(6,"Stopping filter process\n");
+#ifdef INFILTER_PIPE
+	close(m_writeFd);
+	checkFilter(true);
+	if (!WIFEXITED(m_pidStatus) || WEXITSTATUS(m_pidStatus)!=0) {
+	    v3fatal("--pipe-filter returned bad status");
+	}
+	m_pid = 0;
+	close(m_readFd);
+	UINFO(6,"Closed\n");
+#else
+	v3fatalSrc("--pipe-filter not implemented on this platform");
+#endif
+    }
+
+protected:
+    friend class V3InFilter;
+    // Read file contents and return it
+    bool readWholefile(const string& filename, string& out) {
+	FileContentsMap::iterator it = m_contentsMap.find(filename);
+	if (it != m_contentsMap.end()) {
+	    out = it->second;
+	    return true;
+	}
+	if (!readContents(filename, out)) return false;
+	if (out.length() < INFILTER_CACHE_MAX) {
+	    // Cache small files (only to save space)
+	    // It's quite common to `include "timescale" thousands of times
+	    // This isn't so important if it's just a open(), but filtering can be slow
+	    m_contentsMap.insert(make_pair(filename,out));
+	}
+	return true;
+    }
+    // CONSTRUCTORS
+    V3InFilterImp(const string& command) {
+	m_readEof = false;
+	m_pid = 0;
+	m_pidExited = false;
+	m_pidStatus = 0;
+	m_writeFd = 0;
+	m_readFd = 0;
+	start(command);
+    }
+    ~V3InFilterImp() { stop(); }
+};
+
+//######################################################################
+// V3InFilter
+// Just dispatch to the implementation
+
+V3InFilter::V3InFilter(const string& command) { m_impp = new V3InFilterImp(command); }
+V3InFilter::~V3InFilter() { if (m_impp) delete m_impp; m_impp=NULL; }
+
+bool V3InFilter::readWholefile(const string& filename, string& out) {
+    if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
+    return m_impp->readWholefile(filename, out);
 }
 
 //######################################################################

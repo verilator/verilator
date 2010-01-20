@@ -231,6 +231,7 @@ descriptions in the next sections for more information.
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
     --pins-uint8                Specify types for top level ports
+    --pipe-filter <command>	Filter all input through a script
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
@@ -572,6 +573,23 @@ wide should use sc_bv's instead of uint32/uint64_t's.  The default is
 Specifies SystemC inputs/outputs that are smaller than the --pins-bv
 setting and 8 bits or less should use uint8_t instead of uint32_t.
 Likewise pins of width 9-16 will use uint16_t instead of uint32_t.
+
+=item --pipe-filter I<command>
+
+Rarely needed and experimental.  Verilator will spawn the specified command
+as a subprocess pipe, to allow the command to perform custom edits on the
+Verilog code before it reaches Verilator.
+
+Before reading each Verilog file, Verilator will pass the file name to the
+subprocess' stdin with 'read_verilog "<filename>"'.  The filter may then
+read the file and perform any filtering it desires, and feeds the new file
+contents back to Verilator on stdout with 'Content-Length'.  Output to
+stderr from the filter feeds through to Verilator's stdout and if the
+filter exits with non-zero status Verilator terminates.  See the
+t/t_pipe_filter test for an example.
+
+To debug the output of the filter, try using the -E option to see
+preprocessed output.
 
 =item --prefix I<topname>
 

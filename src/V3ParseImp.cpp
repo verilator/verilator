@@ -104,7 +104,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     }
 
     // Preprocess into m_ppBuffer
-    V3PreShell::preproc(fileline, modfilename, this);
+    V3PreShell::preproc(fileline, modfilename, m_filterp, this);
 
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
 	// Create output file with all the preprocessor output we buffered up
@@ -151,8 +151,8 @@ void V3ParseImp::lexFile(const string& modname) {
 //======================================================================
 // V3Parse functions
 
-V3Parse::V3Parse(AstNetlist* rootp) {
-    m_impp = new V3ParseImp (rootp);
+V3Parse::V3Parse(AstNetlist* rootp, V3InFilter* filterp) {
+    m_impp = new V3ParseImp (rootp, filterp);
 }
 V3Parse::~V3Parse() {
     delete m_impp; m_impp = NULL;

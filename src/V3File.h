@@ -72,6 +72,23 @@ public:
 };
 
 //============================================================================
+// V3InFilter: Read a input file, possibly filtering it, and caching contents
+
+class V3InFilterImp;
+
+class V3InFilter {
+    V3InFilterImp* m_impp;
+public:
+    // METHODS
+    // Read file contents and return it.  Return true on success.   
+    bool readWholefile(const string& filename, string& out);
+
+    // CONSTRUCTORS
+    V3InFilter(const string& command);
+    ~V3InFilter();
+};
+
+//============================================================================
 // V3OutFormatter: A class for automatic indentation of C++ or Verilog code.
 
 class V3OutFormatter {

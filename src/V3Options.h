@@ -136,8 +136,9 @@ class V3Options {
     string	m_bin;		// main switch: --bin {binary}
     string	m_flags;	// main switch: -f {name}
     string	m_makeDir;	// main switch: -Mdir
-    string	m_prefix;	// main switch: --prefix
     string	m_modPrefix;	// main switch: --mod-prefix
+    string	m_pipeFilter;	// main switch: --pipe-filter
+    string	m_prefix;	// main switch: --prefix
     string	m_xAssign;	// main switch: --x-assign
     string	m_topModule;	// main switch: --top-module
 
@@ -244,8 +245,9 @@ class V3Options {
     int    compLimitParens() const { return m_compLimitParens; }
 
     string makeDir() const { return m_makeDir; }
-    string prefix() const { return m_prefix; }
     string modPrefix() const { return m_modPrefix; }
+    string pipeFilter() const { return m_pipeFilter; }
+    string prefix() const { return m_prefix; }
     string topModule() const { return m_topModule; }
     string xAssign() const { return m_xAssign; }
 

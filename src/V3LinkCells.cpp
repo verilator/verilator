@@ -96,6 +96,8 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
+    V3InFilter*		m_filterp;	// Parser filter
+
     // Below state needs to be preserved between each module call.
     AstNodeModule*	m_modp;		// Current module
     V3SymTable  	m_mods;		// Symbol table of all module names
@@ -174,7 +176,7 @@ private:
 	    AstNodeModule* modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
 	    if (!modp) {
 		// Read-subfile
-		V3Parse parser (v3Global.rootp());
+		V3Parse parser (v3Global.rootp(), m_filterp);
 		parser.parseFile(nodep->fileline(), nodep->modName(), false);
 		V3Error::abortIfErrors();
 		// We've read new modules, grab new pointers to their names
@@ -269,7 +271,8 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkCellsVisitor(AstNetlist* rootp) {
+    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp) {
+	m_filterp = filterp;
 	m_modp = NULL;
 	m_libVertexp = NULL;
 	m_topVertexp = NULL;
@@ -281,7 +284,7 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkCells::link(AstNetlist* rootp) {
+void V3LinkCells::link(AstNetlist* rootp, V3InFilter* filterp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkCellsVisitor visitor (rootp);
+    LinkCellsVisitor visitor (rootp, filterp);
 }

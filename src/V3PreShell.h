@@ -28,6 +28,7 @@
 #include "V3Error.h"
 
 class V3ParseImp;
+class V3InFilter;
 
 //============================================================================
 
@@ -35,7 +36,7 @@ class V3PreShell {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);
-    static void preproc(FileLine* fileline, const string& module, V3ParseImp* parsep);
+    static void preproc(FileLine* fileline, const string& module, V3InFilter* filterp, V3ParseImp* parsep);
     static void preprocInclude(FileLine* fileline, const string& module);
     static string dependFiles() { return ""; }   // Perl only
     static void defineCmdLine(const string& name, const string& value);

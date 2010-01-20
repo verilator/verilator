@@ -28,6 +28,7 @@
 #include "V3Global.h"
 
 class AstNetlist;
+class V3InFilter;
 class V3ParseImp;
 
 //============================================================================
@@ -39,7 +40,7 @@ private:
 public:
     // CONSTRUCTORS
     // We must allow reading multiple files into one parser
-    V3Parse(AstNetlist* rootp);
+    V3Parse(AstNetlist* rootp, V3InFilter* filterp);
     ~V3Parse();
 
     // METHODS

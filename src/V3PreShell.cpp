@@ -43,6 +43,7 @@ protected:
 
     static V3PreShellImp s_preImp;
     static V3PreProc*	s_preprocp;
+    static V3InFilter*	s_filterp;
 
     //---------------------------------------
     // METHODS
@@ -70,12 +71,13 @@ protected:
 	}
     }
 
-    void preproc (FileLine* fl, const string& modname, V3ParseImp* parsep) {
+    void preproc (FileLine* fl, const string& modname, V3InFilter* filterp, V3ParseImp* parsep) {
 	// Preprocess the given module, putting output in vppFilename
 	UINFONL(1,"  Preprocessing "<<modname<<endl);
 
 	// Preprocess
-	preprocOpen(fl, modname, "Cannot find file containing module: ");
+	s_filterp = filterp;
+	preprocOpen(fl, s_filterp, modname, "Cannot find file containing module: ");
 	while (!s_preprocp->isEof()) {
 	    string line = s_preprocp->getline();
 	    V3Parse::ppPushText(parsep, line);
@@ -83,10 +85,10 @@ protected:
     }
 
     void preprocInclude (FileLine* fl, const string& modname) {
-	preprocOpen(fl, modname, "Cannot find include file: ");
+	preprocOpen(fl, s_filterp, modname, "Cannot find include file: ");
     }
 
-    void preprocOpen (FileLine* fl, const string& modname, const string& errmsg) {
+    void preprocOpen (FileLine* fl, V3InFilter* filterp, const string& modname, const string& errmsg) {
 	// Allow user to put `defined names on the command line instead of filenames,
 	// then convert them properly.
 	string ppmodname = s_preprocp->removeDefines (modname);
@@ -96,15 +98,17 @@ protected:
 	if (filename=="") return;  // Not found
 
 	UINFO(2,"    Reading "<<filename<<endl);
-	s_preprocp->openFile(fl, filename);
+	s_preprocp->openFile(fl, filterp, filename);
     }
 
     // CONSTRUCTORS
     V3PreShellImp() {}
+    ~V3PreShellImp() {}
 };
 
 V3PreShellImp V3PreShellImp::s_preImp;
 V3PreProc* V3PreShellImp::s_preprocp = NULL;
+V3InFilter* V3PreShellImp::s_filterp = NULL;
 
 //######################################################################
 // Perl class functions
@@ -112,8 +116,8 @@ V3PreProc* V3PreShellImp::s_preprocp = NULL;
 void V3PreShell::boot(char** env) {
     V3PreShellImp::s_preImp.boot(env);
 }
-void V3PreShell::preproc(FileLine* fl, const string& modname, V3ParseImp* parsep) {
-    V3PreShellImp::s_preImp.preproc(fl, modname, parsep);
+void V3PreShell::preproc(FileLine* fl, const string& modname, V3InFilter* filterp, V3ParseImp* parsep) {
+    V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep);
 }
 void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);

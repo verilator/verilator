@@ -98,7 +98,9 @@ void V3Global::readFiles() {
     //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
     AstUser4InUse	inuser4;
 
-    V3Parse parser (v3Global.rootp());
+    V3InFilter filter (v3Global.opt.pipeFilter());
+
+    V3Parse parser (v3Global.rootp(), &filter);
     // Read top module
     for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
 	 it != v3Global.opt.vFiles().end(); ++it) {
@@ -119,7 +121,7 @@ void V3Global::readFiles() {
 
     if (!v3Global.opt.preprocOnly()) {
 	// Resolve all modules cells refer to
-	V3LinkCells::link(v3Global.rootp());
+	V3LinkCells::link(v3Global.rootp(), &filter);
     }
 }
 

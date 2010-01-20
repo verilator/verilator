@@ -125,6 +125,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	test_regress/t/*.mem \
 	test_regress/t/*.out \
 	test_regress/t/*.pl \
+	test_regress/t/*.pf \
 	test_regress/t/*.v* \
 	verilator.* \
 

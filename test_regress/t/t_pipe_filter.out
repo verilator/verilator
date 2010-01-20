@@ -1,0 +1,52 @@
+`line 1 "t/t_pipe_filter.v" 1
+
+
+
+
+
+
+
+
+
+example line 10;
+example line 11;
+
+ 
+`line 13 "t/t_pipe_filter.v" 0
+`line 1 "t/t_pipe_filter_inc.v" 1
+int lint_off_line_7 = 1;
+int lint_off_line_8 = 1;
+
+
+
+
+
+inc line 6;
+inc line 7;  
+inc line 8;  
+inc line 9;
+`line 12 "t/t_pipe_filter_inc.v" 2
+`line 13 "t/t_pipe_filter.v" 0
+
+
+ 
+`line 15 "t/t_pipe_filter.v" 0
+`line 1 "t/t_pipe_filter_inc.v" 1
+int lint_off_line_7 = 1;
+int lint_off_line_8 = 1;
+
+
+
+
+
+inc line 6;
+inc line 7;  
+inc line 8;  
+inc line 9;
+`line 12 "t/t_pipe_filter_inc.v" 2
+`line 15 "t/t_pipe_filter.v" 0
+
+
+example line 15;
+example line 16;
+`line 19 "t/t_pipe_filter.v" 2

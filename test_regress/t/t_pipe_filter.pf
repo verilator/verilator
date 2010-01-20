@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+# DESCRIPTION: Verilator: Verilog Test example --pipe-filter script
+#
+# Copyright 2010 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+
+use IO::File;
+use strict;
+
+our $Debug = 0;
+
+autoflush STDOUT;
+
+print STDERR "t_pipe_filter.pf: Hello in Perl\n" if $Debug;
+while (defined(my $cmd = <STDIN>)) {
+    print STDERR "t_pipe_filter.pf: gotcmd: $cmd" if $Debug;
+    if ($cmd =~ /^read "(.*)"/) {
+	my $filename = $1;
+	open(my $fh, "<$filename")
+	    or die "t_pipe_filter.pf: %Error: $! $filename\n";
+
+	my $wholefile="";
+	# It's faster to slurp the whole file then scan (if needed),
+	# then to read it into an array with getlines
+	{ local $/; undef $/; $wholefile = <$fh>; }
+	close $fh;
+
+	if ($wholefile =~ /example_lint/) {  # else short circuit
+	    my $lineno = 1; my $pos=0;
+	    my @prefixes;
+	    while (1) {
+		my $newpos=index($wholefile,"\n",$pos);
+		last if $newpos<$pos;
+		my $line = substr($wholefile,$pos,$newpos-$pos);
+		if ($line =~ /example_lint/) {
+		    # We don't have a way to specify this yet, so just for now
+		    #print STDERR $line;
+		    push @prefixes, "int lint_off_line_${lineno} = 1;\n";
+		}
+		$lineno++;
+		$pos = $newpos+1;
+	    }
+	    #print STDERR "Line count: $lineno\n";
+	    $wholefile = join('',@prefixes) . $wholefile;
+	}
+
+	print STDOUT "Content-Length: ".length($wholefile)."\n".$wholefile."\n";
+    } else {
+	die "t_pipe_filter.pf: %Error: Unknown command: $cmd\n";
+    }
+}
+
+print STDOUT "t_pipe_filter.pf: Fin\n" if $Debug;
+exit(0);
