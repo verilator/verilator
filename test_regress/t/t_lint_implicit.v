@@ -11,5 +11,8 @@ module t (a,z);
 
    or   OR0 (nt0, a, b);
 
+   logic [1:0] dummy_ip;
+   assign {dummy1, dummy2} = dummy_ip;
+
    assign z = nt0;
 endmodule

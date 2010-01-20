@@ -16,6 +16,8 @@ compile (
 '%Warning-IMPLICIT: t/t_lint_implicit.v:\d+: Signal definition not found, creating implicitly: b
 %Warning-IMPLICIT: Use .* to disable this message.
 %Warning-IMPLICIT: t/t_lint_implicit.v:\d+: Signal definition not found, creating implicitly: nt0
+%Warning-IMPLICIT: t/t_lint_implicit.v:\d+: Signal definition not found, creating implicitly: dummy1
+%Warning-IMPLICIT: t/t_lint_implicit.v:\d+: Signal definition not found, creating implicitly: dummy2
 %Error: Exiting due to.*',
 	 ) if $Self->{v3};
 

@@ -604,9 +604,7 @@ private:
 	// Deal with implicit definitions
 	// We used to nodep->allowImplicit() here, but it turns out
 	// normal "assigns" can also make implicit wires.  Yuk.
-	if (AstVarRef* forrefp = nodep->lhsp()->castVarRef()) {
-	    createImplicitVar(forrefp, false);
-	}
+	pinImplicitExprRecurse(nodep->lhsp());
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
