@@ -286,7 +286,7 @@ private:
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
-			findvarp->fileline()->warnStateInherit(nodep->fileline());
+			nodep->fileline()->modifyStateInherit(nodep->fileline());
 			nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    } else {
 			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName());

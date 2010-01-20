@@ -781,6 +781,7 @@ public:
     string	prettyName() const { return prettyName(name()); }
     string	prettyTypeName() const;			// "VARREF name" for error messages
     FileLine*	fileline() const { return m_fileline; }
+    void	fileline(FileLine* fl) { m_fileline=fl; }
     int		width() const { return m_width; }
     bool	width1() const { return width()==1; }
     int		widthWords() const { return VL_WORDS_I(width()); }

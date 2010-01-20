@@ -174,11 +174,11 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
     return false;
 }
 
-void FileLine::warnStateInherit(const FileLine& from) {
+void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
-	if (from.warnIsOff(code)) {
+	if (fromp->warnIsOff(code)) {
 	    this->warnOff(code, true);
 	}
     }

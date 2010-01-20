@@ -243,6 +243,7 @@ public:
     FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOn=fromp->m_warnOn; }
     FileLine (EmptySecret);
     ~FileLine() { }
+    static void deleteAllRemaining();
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
@@ -258,21 +259,27 @@ public:
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn=from.m_warnOn; }
-    void warnStateInherit(const FileLine& from);
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 
-    // Boolean ACCESSORS/METHODS
+    // Specific flag ACCESSORS/METHODS
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { m_warnOn.set(V3ErrorCode::I_COVERAGE,flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
     void tracingOn(bool flag) { m_warnOn.set(V3ErrorCode::I_TRACING,flag); }
 
-    // METHODS
-    void	v3errorEnd(ostringstream& str);
+    // METHODS - Called from netlist
+    // Merge warning disables from another fileline
+    void modifyStateInherit(const FileLine* fromp);
+    // Change the current fileline due to actions discovered after parsing
+    // and may have side effects on other nodes sharing this FileLine.
+    // Use only when this is intended 
+    void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code,flag); }
+
+    // OPERATORS
+    void v3errorEnd(ostringstream& str);
     inline bool operator==(FileLine rhs) {
 	return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename && m_warnOn==rhs.m_warnOn);
     }
-    static void deleteAllRemaining();
 };
 ostream& operator<<(ostream& os, FileLine* fileline);
 

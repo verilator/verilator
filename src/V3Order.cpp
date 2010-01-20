@@ -399,7 +399,7 @@ private:
 	} else if (nodep->varp()->isSigPublic()) {
 	    nodep->v3warn(UNOPT,"Signal unoptimizable: Feedback to public clock or circular logic: "<<nodep->prettyName());
 	    if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
-		nodep->fileline()->warnOff(V3ErrorCode::UNOPT, true);  // Complain just once
+		nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT, true);  // Complain just once
 		// Give the user an example.
 		bool tempWeight = (edgep && edgep->weight()==0);
 		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
@@ -411,7 +411,7 @@ private:
 	    // First v3warn not inside warnIsOff so we can see the suppressions with --debug
 	    nodep->v3warn(UNOPTFLAT,"Signal unoptimizable: Feedback to clock or circular logic: "<<nodep->prettyName());
 	    if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
-		nodep->fileline()->warnOff(V3ErrorCode::UNOPTFLAT, true);  // Complain just once
+		nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);  // Complain just once
 		// Give the user an example.
 		bool tempWeight = (edgep && edgep->weight()==0);
 		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
