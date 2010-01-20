@@ -1945,10 +1945,10 @@ caseCondList<nodep>:		// IEEE: part of case_item
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
 for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
 	//			// IEEE: for_variable_declaration
-		data_type idAny/*new*/ '=' expr ';'
-			{ VARDTYPE($1);
-			  $$ = VARDONEA(*$2,NULL,NULL);
-			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
+		varRESET data_type idAny/*new*/ '=' expr ';'
+			{ VARDTYPE($2);
+			  $$ = VARDONEA(*$3,NULL,NULL);
+			  $$->addNext(new AstAssign($4,new AstVarRef($4,*$3,true),$5));}
 	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
 	//UNSUP: List of initializations
 	;
