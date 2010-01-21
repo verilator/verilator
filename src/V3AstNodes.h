@@ -32,7 +32,7 @@
 
 #define ASTNODE_NODE_FUNCS(name,ucname)	\
     virtual ~Ast ##name() {} \
-    virtual AstType type() const { return AstType:: ucname; } \
+    virtual AstType type() const { return AstType::at ##ucname; } \
     virtual AstNode* clone() { return new Ast ##name (*this); } \
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); } \
     Ast ##name * cloneTree(bool cloneNext) { return AstNode::cloneTree(cloneNext)->cast ##name(); }

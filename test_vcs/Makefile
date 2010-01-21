@@ -48,7 +48,7 @@ novcs:
 vcs:	vcs_passed.log
 
 simv:	$(V_FILES) ../test_v/input.vc
-	vcs +cli -I +define+vcs+1 -f ../test_v/input.vc -q bench.v
+	vcs +cli -I -sverilog +define+VCS+1 -f ../test_v/input.vc -q bench.v
 
 vcs_passed.log	: simv
 	-rm -f test_passed.log

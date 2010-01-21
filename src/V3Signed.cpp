@@ -303,21 +303,21 @@ private:
 	    AstNode* newp = NULL;
 	    // Given a signed/unsigned node type, create the opposite type
 	    switch (nodep->type()) {
-	    case AstType::GT:	   newp = new AstGtS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::GTS:	   newp = new AstGt	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::GTE:	   newp = new AstGteS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::GTES:	   newp = new AstGte	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::LT:	   newp = new AstLtS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::LTS:	   newp = new AstLt	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::LTE:	   newp = new AstLteS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::LTES:	   newp = new AstLte	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::DIV:	   newp = new AstDivS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::DIVS:	   newp = new AstDiv	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::MODDIV:  newp = new AstModDivS(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::MODDIVS: newp = new AstModDiv (nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::MUL:	   newp = new AstMulS	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::MULS:	   newp = new AstMul	(nodep->fileline(), lhsp, rhsp); break;
-	    case AstType::SHIFTRS: newp = new AstShiftR	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atGT:		newp = new AstGtS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atGTS:	newp = new AstGt	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atGTE:	newp = new AstGteS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atGTES:	newp = new AstGte	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atLT:		newp = new AstLtS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atLTS:	newp = new AstLt	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atLTE:	newp = new AstLteS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atLTES:	newp = new AstLte	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atDIV:	newp = new AstDivS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atDIVS:	newp = new AstDiv	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atMODDIV:	newp = new AstModDivS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atMODDIVS: 	newp = new AstModDiv 	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atMUL:	newp = new AstMulS	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atMULS:	newp = new AstMul	(nodep->fileline(), lhsp, rhsp); break;
+	    case AstType::atSHIFTRS:	newp = new AstShiftR	(nodep->fileline(), lhsp, rhsp); break;
 	    default:
 		nodep->v3fatalSrc("Node needs sign change, but bad case: "<<nodep<<endl);
 		break;

@@ -1346,7 +1346,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     emitCellCtors(modp);
     emitSensitives();
     emitVarResets(modp);
-    emitTextSection(AstType::SCCTOR);
+    emitTextSection(AstType::atSCCTOR);
     if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
     puts("}\n");
 }
@@ -1395,7 +1395,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
     puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
-    emitTextSection(AstType::SCDTOR);
+    emitTextSection(AstType::atSCDTOR);
     if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
     puts("}\n");
 }
@@ -1622,7 +1622,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     puts("\n//----------\n\n");
-    emitTextSection(AstType::SCHDR);
+    emitTextSection(AstType::atSCHDR);
 
     if (optSystemC() && modp->isTop()) {
 	puts("SC_MODULE("+modClassName(modp)+") {\n");
@@ -1728,7 +1728,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     puts("\n// USER METHODS\n");
     if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
-    emitTextSection(AstType::SCINT);
+    emitTextSection(AstType::atSCINT);
 
     puts("\n// API METHODS\n");
     if (modp->isTop()) {
@@ -1791,7 +1791,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 	puts("SP_MODULE_CONTINUED("+modClassName(modp)+");\n");
     }
 
-    emitTextSection(AstType::SCIMPHDR);
+    emitTextSection(AstType::atSCIMPHDR);
 
     if (m_slow && splitFilenum()==0) {
 	puts("\n//--------------------\n");
@@ -1800,7 +1800,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     }
 
     if (m_fast && splitFilenum()==0) {
-	emitTextSection(AstType::SCIMP);
+	emitTextSection(AstType::atSCIMP);
 	emitStaticDecl(modp);
     }
 

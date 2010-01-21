@@ -157,9 +157,10 @@ sub write_types {
     my $fh = open_file(@_);
 
     printf $fh "    enum en {\n";
+    # Add "at" prefix to avoid conflicting with FOPEN and other macros in include files
     foreach my $type (sort (keys %Classes)) {
 	next if $type =~ /^Node/;
-	print $fh "\t",uc $type,",\n";
+	print $fh "\tat",uc $type,",\n";
     }
     printf $fh "\t_ENUM_END\n";
     printf $fh "    };\n";
