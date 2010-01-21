@@ -182,6 +182,8 @@ C++, and linked with the Verilated files.
 
 The resulting executable will perform the actual simulation.
 
+To get started, jump down to "EXAMPLE C++ EXECUTION".
+
 =head1 ARGUMENT SUMMARY
 
 This is a short summary of the arguments to Verilator.  See the detailed
@@ -1186,7 +1188,7 @@ Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an
 order of magnitude.
 
-=head1 DPI (DIRECT PROGRAMMING INTERFACE)
+=head1 DIRECT PROGRAMMING INTERFACE (DPI)
 
 Verilator supports SystemVerilog Direct Programming Interface import and
 export statements.  Only the SystemVerilog form ("DPI-C") is supported, not
@@ -1288,21 +1290,61 @@ The target system may also require edits to the Makefiles, the simple
 Makefiles produced by Verilator presume the target system is the same type
 as the build system.
 
+=head1 CONFIGURATION FILES
+
+In addition to the command line, warnings and other features may be
+controlled by configuration files, typically named with the .vlt
+extension. An example:
+
+  `verilator_config
+  lint_off -msg WIDTH
+  lint_off -msg CASEX  -file "silly_vendor_code.v"
+
+This disables WIDTH warnings globally, and CASEX for a specific file.
+
+Configuration files are parsed after the normal Verilog preprocessing, so
+`ifdefs, `defines, and comments may be used as if it were normal Verilog
+code.
+
+The grammar of configuration commands is as follows:
+
+=over 4
+
+=item `verilator_config
+
+Take remaining text up the the next `verilog mode switch and treat it as
+Verilator configuration commands.
+
+=item coverage_off [-file "<filename>" [-lines <line> [ - <line> ]]]
+
+Disable coverage for the specified filename (or all files if ommitted) and
+range of line numbers (or all lines if ommitted).  Often used to ignore an
+entire module for coverage analysis purposes.
+
+=item lint_off -msg <message> [-file "<filename>" [-lines <line> [ - <line>]]]
+
+Disables the specified lint warning in the specified filename (or all files
+if ommitted) and range of line numbers (or all lines if ommitted).
+
+=item tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
+
+Disable waveform tracing for all future signals declared in the specified
+filename (or all files if ommitted) and range of line numbers (or all lines
+if ommitted).
+
+=back
+
 =head1 VERILOG 2001 (IEEE 1364-2001) SUPPORT
 
-Verilator supports almost all Verilog 2001 language features.  This
-includes signed numbers, "always @*", comma separated sensitivity lists,
-generate statements, multidimensional arrays, localparam, and C-style
-declarations inside port lists.
+Verilator supports most Verilog 2001 language features.  This includes
+signed numbers, "always @*", generate statements, multidimensional arrays,
+localparam, and C-style declarations inside port lists.
 
 =head1 VERILOG 2005 (IEEE 1364-2005) SUPPORT
 
-Verilator supports the `begin_keywords and `end_keywords compiler
-directives.
-
-Verilator supports $clog2.
-
-Verilator partially supports the uwire keyword.
+Verilator supports most Verilog 2005 language features.  This includes the
+`begin_keywords and `end_keywords compiler directives, $clog2, and the
+uwire keyword.
 
 =head1 SYSTEMVERILOG 2005 (IEEE 1800-2005) SUPPORT
 
@@ -1488,6 +1530,11 @@ code.
 
 The VERILATOR, verilator and verilator3 defines are set by default so you
 may `ifdef around compiler specific constructs.
+
+=item `verilator_config
+
+Take remaining text up the the next `verilog mode switch and treat it as
+Verilator configuration commands.
 
 =item `verilog
 

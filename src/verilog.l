@@ -133,7 +133,7 @@ void yyerrorf(const char* format, ...) {
 
 %s V95 V01 V05 S05
 %s STRING ATTRMODE TABLE
-%s PSL
+%s PSL VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
@@ -149,6 +149,22 @@ escid	\\[^ \t\f\r\n]+
 
 <INITIAL>.|\n 		{BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
+  /************************************************************************/
+  /* Verilator control files */
+<VLT>{
+  {ws}			{ }	/* otherwise ignore white-space */
+  {crnl}		{ NEXTLINE(); }		/* Count line numbers */
+
+  "coverage_off"	{ FL; return yVLT_COVERAGE_OFF; }
+  "lint_off"		{ FL; return yVLT_LINT_OFF; }
+  "tracing_off"		{ FL; return yVLT_TRACING_OFF; }
+
+  -?"-file"		{ FL; return yVLT_D_FILE; }
+  -?"-lines"		{ FL; return yVLT_D_LINES; }
+  -?"-msg"		{ FL; return yVLT_D_MSG; }
+}
+
+  /************************************************************************/
   /* Verilog 1995 */
 <V95,V01,V05,S05,PSL>{
   {ws}			{ }	/* otherwise ignore white-space */
@@ -723,7 +739,7 @@ escid	\\[^ \t\f\r\n]+
 }
 
   /* Identifiers and numbers */
-<V95,V01,V05,S05,PSL>{
+<V95,V01,V05,S05,PSL,VLT>{
   {escid}		{ FL; yylval.strp = PARSEP->newString
 	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
 			  return yaID__LEX;
@@ -813,7 +829,7 @@ escid	\\[^ \t\f\r\n]+
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
-<V95,V01,V05,S05,PSL,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<V95,V01,V05,S05,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"				{ } // Verilog-XL compatibility
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ PARSEP->inCellDefine(true); }
@@ -861,6 +877,7 @@ escid	\\[^ \t\f\r\n]+
   "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
   "`systemc_implementation"		{ BEGIN SYSCIMP; }
   "`systemc_interface"			{ BEGIN SYSCINT; }
+  "`verilator_config"			{ BEGIN VLT; }
   "`verilog"				{ BEGIN PARSEP->lastVerilogState(); }
 }
 
@@ -881,7 +898,7 @@ escid	\\[^ \t\f\r\n]+
   /************************************************************************/
   /* Default rules - leave last */
 
-<V95,V01,V05,S05,PSL>{
+<V95,V01,V05,S05,PSL,VLT>{
   "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
   "//"[^\n]*		{ }  /* throw away single line comments */
   .			{ FL; return yytext[0]; }	/* return single char ops. */

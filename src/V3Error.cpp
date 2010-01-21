@@ -28,6 +28,7 @@
 # include "V3Ast.h"
 # include "V3Global.h"
 # include "V3Stats.h"
+# include "V3Config.h"
 #endif
 
 //======================================================================
@@ -126,6 +127,9 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
+#ifndef _V3ERROR_NO_GLOBAL_
+    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
+#endif
     static FileLine* lastNewp = NULL;
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
 	return lastNewp;

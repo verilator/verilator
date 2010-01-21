@@ -248,13 +248,13 @@ public:
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif
-    static FileLine& defaultFileLine() { return s_defaultFileLine; }
     int lineno () const { return m_lineno; }
     string ascii() const;
     const string filename () const { return m_filename; }
     const string filebasename () const;
     const string profileFuncname() const;
-    void warnOff(V3ErrorCode code, bool flag) { m_warnOn.set(code,!flag); }	// Turn on/off warning messages on this line.
+    void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.
+    void warnOff(V3ErrorCode code, bool flag) { warnOn(code,!flag); }
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
@@ -263,9 +263,14 @@ public:
 
     // Specific flag ACCESSORS/METHODS
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
-    void coverageOn(bool flag) { m_warnOn.set(V3ErrorCode::I_COVERAGE,flag); }
+    void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE,flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
-    void tracingOn(bool flag) { m_warnOn.set(V3ErrorCode::I_TRACING,flag); }
+    void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING,flag); }
+
+    // METHODS - Global
+    static void globalWarnLintOff(bool flag) { s_defaultFileLine.warnLintOff(flag); }
+    static void globalWarnOff(V3ErrorCode code, bool flag) { s_defaultFileLine.warnOff(code, flag); }
+    static bool globalWarnOff(const string& code, bool flag) { return s_defaultFileLine.warnOff(code, flag); }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline

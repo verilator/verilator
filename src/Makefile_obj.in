@@ -161,6 +161,7 @@ RAW_OBJS = \
 	V3ClkGater.o \
 	V3Clock.o \
 	V3Combine.o \
+	V3Config.o \
 	V3Const__gen.o \
 	V3Coverage.o \
 	V3CoverageJoin.o \

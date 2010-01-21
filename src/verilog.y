@@ -28,6 +28,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Config.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
 
 #define YYERROR_VERBOSE 1
@@ -210,6 +211,14 @@ class AstSenTree;
 %token<strp>		yaSCIMPH	"`systemc_interface BLOCK"
 %token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
+
+%token<fl>		yVLT_COVERAGE_OFF "coverage_off"
+%token<fl>		yVLT_LINT_OFF	"lint_off"
+%token<fl>		yVLT_TRACING_OFF "tracing_off"
+
+%token<fl>		yVLT_D_FILE	"--file"
+%token<fl>		yVLT_D_LINES	"--lines"
+%token<fl>		yVLT_D_MSG	"--msg"
 
 %token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
 %token<strp>		yaD_DPI		"${dpi-sys}"
@@ -578,6 +587,8 @@ description:			// ==IEEE: description
 	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
 	//UNSUP	bind_directive				{ }
 	//	unsupported	// IEEE: config_declaration
+				// Verilator only
+	|	vltItem					{ }
 	|	error					{ }
 	;
 
@@ -2978,6 +2989,24 @@ pslSere<nodep>:
 pslExpr<nodep>:
 		exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
 	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, AstConst::LogicTrue())); }
+	;
+
+//**********************************************************************
+// VLT Files
+
+vltItem:
+		vltOffFront				{ V3Config::addIgnore($1,"*",0,0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING	{ V3Config::addIgnore($1,*$3,0,0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,*$3,$5->toUInt(),$5->toUInt()+1); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,*$3,$5->toUInt(),$7->toUInt()+1); }
+	;
+
+vltOffFront<errcodeen>:
+		yVLT_COVERAGE_OFF			{ $$ = V3ErrorCode::I_COVERAGE; }
+	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
+	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
+			{ $$ = V3ErrorCode((*$3).c_str());
+			  if ($$ == V3ErrorCode::ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;
 
 //**********************************************************************

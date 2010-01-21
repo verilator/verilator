@@ -748,22 +748,22 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strncmp (sw, "-Wno-",5) )	{
 		if (!strcmp (sw, "-Wno-lint")) {
-		    FileLine::defaultFileLine().warnLintOff(true);
+		    FileLine::globalWarnLintOff(true);
 		}
 		else {
 		    string msg = sw+strlen("-Wno-");
-		    if (!(FileLine::defaultFileLine().warnOff(msg, true))) {
+		    if (!(FileLine::globalWarnOff(msg, true))) {
 			fl->v3fatal("Unknown warning specified: "<<sw);
 		    }
 		}
 	    }
 	    else if ( !strncmp (sw, "-Wwarn-",5) )	{
 		if (!strcmp (sw, "-Wwarn-lint")) {
-		    FileLine::defaultFileLine().warnLintOff(false);
+		    FileLine::globalWarnLintOff(false);
 		}
 		else {
 		    string msg = sw+strlen("-Wwarn-");
-		    if (!(FileLine::defaultFileLine().warnOff(msg, false))) {
+		    if (!(FileLine::globalWarnOff(msg, false))) {
 			fl->v3fatal("Unknown warning specified: "<<sw);
 		    }
 		}
