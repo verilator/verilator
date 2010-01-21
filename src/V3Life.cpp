@@ -329,7 +329,7 @@ private:
 	// Has to be direct assignment without any EXTRACTing.
 	if (nodep->lhsp()->castVarRef() && !m_sideEffect) {
 	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
-	    if (!vscp) vscp->v3fatalSrc("Scope lost on variable");
+	    if (!vscp) nodep->v3fatalSrc("Scope lost on variable");
 	    m_lifep->simpleAssign(vscp, nodep);
 	} else {
 	    nodep->lhsp()->iterateAndNext(*this);
