@@ -532,18 +532,18 @@ private:
 	AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
 	if (nodep->isParam() && bdtypep && bdtypep->implicit()) {
 	    width = mwidth = 0;
-	    if (nodep->initp()) {
-		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
+	    if (nodep->valuep()) {
+		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
 		// Although nodep will get a different width for parameters just below,
 		// we want the init numbers to retain their width/minwidth until parameters are replaced.
 		// This prevents width warnings at the location the parameter is substituted in
-		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
-		if (nodep->initp()->widthSized()) {
-		    width = mwidth = nodep->initp()->width();
+		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
+		if (nodep->valuep()->widthSized()) {
+		    width = mwidth = nodep->valuep()->width();
 		} else {
-		    if (nodep->initp()->width()>32) nodep->initp()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
+		    if (nodep->valuep()->width()>32) nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
 		    width = 32;
-		    mwidth = nodep->initp()->widthMin();
+		    mwidth = nodep->valuep()->widthMin();
 		}
 	    }
 	    // Parameter sizes can come from the thing they get assigned from
@@ -556,14 +556,14 @@ private:
 	else { // non param or sized param
 	    nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    width = nodep->dtypep()->width(); mwidth = nodep->dtypep()->widthMin();
-	    if (nodep->initp()) {
-		nodep->initp()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
+	    if (nodep->valuep()) {
+		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
 		//if (debug()) nodep->dumpTree(cout,"  final: ");
 	    }
 	}
 	nodep->width(width,mwidth);
-	// See above note about initp()->...FINAL
-	if (nodep->initp()) widthCheck(nodep,"Initial value",nodep->initp(),width,mwidth);
+	// See above note about valuep()->...FINAL
+	if (nodep->valuep()) widthCheck(nodep,"Initial value",nodep->valuep(),width,mwidth);
 	UINFO(4,"varWidthed "<<nodep<<endl);
 	//if (debug()) nodep->dumpTree(cout,"  InitOut: ");
     }
@@ -593,16 +593,16 @@ private:
 	V3Number one (nodep->fileline(), nodep->width(), 1);
 	map<V3Number,AstEnumItem*> inits;
 	for (AstEnumItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
-	    if (itemp->initp()) {
-		if (debug()>=9) { UINFO(0,"EnumInit "<<itemp<<endl); itemp->initp()->dumpTree(cout,"-EnumInit: "); }
-		V3Const::constifyParamsEdit(itemp->initp()); // itemp may change
-		if (!itemp->initp()->castConst()) {
-		    itemp->initp()->v3error("Enum value isn't a constant");
-		    itemp->initp()->unlinkFrBack()->deleteTree();
+	    if (itemp->valuep()) {
+		if (debug()>=9) { UINFO(0,"EnumInit "<<itemp<<endl); itemp->valuep()->dumpTree(cout,"-EnumInit: "); }
+		V3Const::constifyParamsEdit(itemp->valuep()); // itemp may change
+		if (!itemp->valuep()->castConst()) {
+		    itemp->valuep()->v3error("Enum value isn't a constant");
+		    itemp->valuep()->unlinkFrBack()->deleteTree();
 		}
 	    }
-	    if (!itemp->initp()) itemp->initp(new AstConst(itemp->fileline(), num));
-	    num.opAssign(itemp->initp()->castConst()->num());
+	    if (!itemp->valuep()) itemp->valuep(new AstConst(itemp->fileline(), num));
+	    num.opAssign(itemp->valuep()->castConst()->num());
 	    // Look for duplicates
 	    if (inits.find(num) != inits.end()) {
 		itemp->v3error("Overlapping enumeration value: "<<itemp->prettyName());
@@ -610,16 +610,16 @@ private:
 	    } else {
 		inits.insert(make_pair(num,itemp));
 	    }
-	    num.opAdd(one, itemp->initp()->castConst()->num());
+	    num.opAdd(one, itemp->valuep()->castConst()->num());
 	}
     }
     virtual void visit(AstEnumItem* nodep, AstNUser* vup) {
 	int width = vup->c()->width();
 	int mwidth = vup->c()->widthMin();
 	nodep->width(width, mwidth);
-	if (nodep->initp()) {
-	    nodep->initp()->iterateAndNext(*this,WidthVP(width,mwidth,BOTH).p());
-	    widthCheck(nodep,"Enum value",nodep->initp(),width,mwidth);
+	if (nodep->valuep()) {
+	    nodep->valuep()->iterateAndNext(*this,WidthVP(width,mwidth,BOTH).p());
+	    widthCheck(nodep,"Enum value",nodep->valuep(),width,mwidth);
 	}
     }
     virtual void visit(AstEnumItemRef* nodep, AstNUser* vup) {
@@ -632,7 +632,7 @@ private:
 	    if (!enump) nodep->v3fatalSrc("EnumItem not under a Enum");
 	    enump->iterate(*this);
 	}
-	nodep->widthFrom(nodep->itemp()->initp());
+	nodep->widthFrom(nodep->itemp()->valuep());
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());

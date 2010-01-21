@@ -352,8 +352,8 @@ public:
     void name(const string& flag) { m_name = flag; }
     AstRange* rangep() const { return op1p()->castRange(); } // op1 = Range for name appending
     void rangep(AstNode* nodep) { addOp1p(nodep); }
-    AstNode* initp() const { return op2p(); } // op2 = Value
-    void initp(AstNode* nodep) { addOp2p(nodep); }
+    AstNode* valuep() const { return op2p(); } // op2 = Value
+    void valuep(AstNode* nodep) { addOp2p(nodep); }
 };
 
 struct AstEnumItemRef : public AstNodeMath {
@@ -613,8 +613,8 @@ public:
     AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeDimensionp(int depth) const;
     uint32_t	dimensions() const;
-    AstNode* 	initp()		const { return op3p()->castNode(); }	// op3 = Initial value that never changes (static const)
-    void	initp(AstNode* nodep) { setOp3p(nodep); }
+    AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
+    void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than a AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }

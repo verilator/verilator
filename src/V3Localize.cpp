@@ -132,7 +132,7 @@ private:
     void moveVars() {
 	for (vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
 	    AstVar* nodep = *it;
-	    if (nodep->initp()) clearOptimizable(nodep,"HasInitValue");
+	    if (nodep->valuep()) clearOptimizable(nodep,"HasInitValue");
 	    if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep,"NoStdAssign");
 	    VarFlags flags (nodep);
 	    if ((nodep->isMovableToBlock() // Blocktemp

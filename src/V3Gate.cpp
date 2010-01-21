@@ -437,7 +437,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 	    if (vvertexp->inEmpty()) {
 		vvertexp->clearReducible("inEmpty");	// Can't deal with no sources
 		if (!vvertexp->isTop()		// Ok if top inputs are driverless
-		    && !vvertexp->varScp()->varp()->initp()
+		    && !vvertexp->varScp()->varp()->valuep()
 		    && !vvertexp->varScp()->varp()->isSigPublic()) {
 		    UINFO(4, "No drivers "<<vvertexp->varScp()<<endl);
 		    if (0) {

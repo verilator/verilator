@@ -196,7 +196,7 @@ private:
 	    string name = m_cellp->name() + "__DOT__" + nodep->name();
 	    if (!nodep->isFuncLocal()) nodep->inlineAttrReset(name);
 	    if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
-	    if (debug()>=9) { nodep->initp()->dumpTree(cout,"varchangei:"); }
+	    if (debug()>=9) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
 	}
 	if (nodep) nodep->iterateChildren(*this);
     }

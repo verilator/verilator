@@ -243,10 +243,10 @@ private:
 	    AstNode* addp = NULL;
 	    for (int i=msb; i!=(lsb+increment); i+=increment, offset_from_init++) {
 		string name = nodep->name() + cvtToStr(i);
-		AstNode* initp = NULL;
-		if (nodep->initp()) initp = new AstAdd(nodep->fileline(), nodep->initp()->cloneTree(true),
-						       new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
-		addp = addp->addNextNull(new AstEnumItem(nodep->fileline(), name, NULL, initp));
+		AstNode* valuep = NULL;
+		if (nodep->valuep()) valuep = new AstAdd(nodep->fileline(), nodep->valuep()->cloneTree(true),
+							 new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
+		addp = addp->addNextNull(new AstEnumItem(nodep->fileline(), name, NULL, valuep));
 	    }
 	    nodep->replaceWith(addp);
 	    nodep->deleteTree();

@@ -196,7 +196,7 @@ private:
 					     new AstBasicDType(fl, AstLogicPacked(), m_outVarps.size()),
 					     new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
 	chgVarp->isConst(true);
-	chgVarp->initp(new AstInitArray (nodep->fileline(), NULL));
+	chgVarp->valuep(new AstInitArray (nodep->fileline(), NULL));
 	m_modp->addStmtp(chgVarp);
 	AstVarScope* chgVscp = new AstVarScope (chgVarp->fileline(), m_scopep, chgVarp);
 	m_scopep->addVarp(chgVscp);
@@ -241,7 +241,7 @@ private:
 						 new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
-	    tablevarp->initp(new AstInitArray (nodep->fileline(), NULL));
+	    tablevarp->valuep(new AstInitArray (nodep->fileline(), NULL));
 	    m_modp->addStmtp(tablevarp);
 	    AstVarScope* tablevscp = new AstVarScope(tablevarp->fileline(), m_scopep, tablevarp);
 	    m_scopep->addVarp(tablevscp);
@@ -323,7 +323,7 @@ private:
 		    setp = new AstConst (outnump->fileline(), *outnump);
 		}
 		// Note InitArray requires us to have the values in inValue order
-		m_tableVarps[outnum]->varp()->initp()->castInitArray()->addInitsp(setp);
+		m_tableVarps[outnum]->varp()->valuep()->castInitArray()->addInitsp(setp);
 		outnum++;
 	    }
 
@@ -331,7 +331,7 @@ private:
 		if (inValue != inValueNextInitArray++)
 		    nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
 		AstNode* setp = new AstConst (nodep->fileline(), outputChgMask);
-		chgVscp->varp()->initp()->castInitArray()->addInitsp(setp);
+		chgVscp->varp()->valuep()->castInitArray()->addInitsp(setp);
 	    }
 	} // each value
     }
@@ -345,8 +345,8 @@ private:
 	    AstVar* var2p = vsc2p->varp();
 	    if (var1p->width() == var2p->width()
 		&& var1p->arrayElements() == var2p->arrayElements()) {
-		AstNode* init1p = var1p->initp()->castInitArray();
-		AstNode* init2p = var2p->initp()->castInitArray();
+		AstNode* init1p = var1p->valuep()->castInitArray();
+		AstNode* init2p = var2p->valuep()->castInitArray();
 		if (init1p->sameTree(init2p)) {
 		    UINFO(8,"   Duplicate table var "<<vsc2p<<" == "<<vsc1p<<endl);
 		    vsc1p->unlinkFrBack()->deleteTree();

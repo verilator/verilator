@@ -1064,14 +1064,14 @@ private:
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
 	if (!m_cpp && nodep->varp()->hasSimpleInit() && !nodep->backp()->castAttrOf()) {
-	    //if (debug()) nodep->varp()->initp()->dumpTree(cout,"  visitvaref: ");
-	    nodep->varp()->initp()->iterateAndNext(*this);
-	    if (operandConst(nodep->varp()->initp())
+	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
+	    nodep->varp()->valuep()->iterateAndNext(*this);
+	    if (operandConst(nodep->varp()->valuep())
 		&& !nodep->lvalue()
 		&& ((v3Global.opt.oConst() && !m_params // Can reduce constant wires into equations
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
-		AstConst* constp = nodep->varp()->initp()->castConst();
+		AstConst* constp = nodep->varp()->valuep()->castConst();
 		const V3Number& num = constp->num();
 		//UINFO(2,"constVisit "<<(void*)constp<<" "<<num<<endl);
 		replaceNum(nodep, num); nodep=NULL;
@@ -1086,11 +1086,11 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
-	if (nodep->itemp()->initp()) {
-	    //if (debug()) nodep->varp()->initp()->dumpTree(cout,"  visitvaref: ");
-	    nodep->itemp()->initp()->iterateAndNext(*this);
-	    if (AstConst* initp = nodep->itemp()->initp()->castConst()) {
-		const V3Number& num = initp->num();
+	if (nodep->itemp()->valuep()) {
+	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
+	    nodep->itemp()->valuep()->iterateAndNext(*this);
+	    if (AstConst* valuep = nodep->itemp()->valuep()->castConst()) {
+		const V3Number& num = valuep->num();
 		replaceNum(nodep, num); nodep=NULL;
 		did=true;
 	    }
@@ -1317,7 +1317,7 @@ private:
 	    && m_modp && operandConst(nodep->rhsp())
 	    && !nodep->rhsp()->castConst()->num().isFourState()
 	    && varrefp		// Don't do messes with BITREFs/ARRAYREFs
-	    && !varrefp->varp()->initp()  // Not already constified
+	    && !varrefp->varp()->valuep()  // Not already constified
 	    && !varrefp->varScopep()	// Not scoped (or each scope may have different initial value)
 	    && !m_params) {
 	    // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
@@ -1333,7 +1333,7 @@ private:
 	    nodep->unlinkFrBack()->deleteTree();  nodep=NULL;
 	    // Set the initial value right in the variable so we can constant propagate
 	    AstNode* initvaluep = exprp->cloneTree(false);
-	    varrefp->varp()->initp(initvaluep);
+	    varrefp->varp()->valuep(initvaluep);
 	}
     }
 
@@ -1785,7 +1785,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
 	// If a var wants to be constified, it's really a param, and
 	// we want the value to be constant.  We aren't passed just the
 	// init value because we need widthing above to handle the var's type.
-	if (varp->initp()) visitor.mainAcceptEdit(varp->initp());
+	if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
     } else {
 	nodep = visitor.mainAcceptEdit(nodep);
     }

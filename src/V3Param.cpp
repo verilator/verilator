@@ -278,7 +278,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		pinp->v3error("Attempted parameter setting of non-parameter: Param "<<pinp->name()<<" of "<<nodep->prettyName());
 	    } else {
 		AstConst* constp = pinp->exprp()->castConst();
-		AstConst* origconstp = modvarp->initp()->castConst();
+		AstConst* origconstp = modvarp->valuep()->castConst();
 		if (!constp) {
 		    //if (debug()) pinp->dumpTree(cout,"error:");
 		    pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
@@ -352,9 +352,9 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		    if (modvarp) {
 			AstConst* constp = pinp->exprp()->castConst();
 			// Remove any existing parameter
-			if (modvarp->initp()) modvarp->initp()->unlinkFrBack()->deleteTree();
+			if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
 			// Set this parameter to value requested by cell
-			modvarp->initp(constp->cloneTree(false));
+			modvarp->valuep(constp->cloneTree(false));
 		    }
 		}
 	    } else {

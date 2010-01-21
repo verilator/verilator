@@ -1592,7 +1592,7 @@ delayrange<dtypep>:
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-		sigId sigAttrListE '=' expr		{ $$ = $1; $1->addAttrsp($2); $$->initp($4); }
+		sigId sigAttrListE '=' expr		{ $$ = $1; $1->addAttrsp($2); $$->valuep($4); }
 	//UNSUP:  exprOrDataType instead of expr
 	;
 
@@ -2233,7 +2233,7 @@ tf_port_itemAssignment<varp>:	// IEEE: part of tf_port_item, which has assignmen
 		id variable_dimensionListE sigAttrListE
 			{ $$ = VARDONEA(*$1, $2, $3); }
 	|	id variable_dimensionListE sigAttrListE '=' expr
-			{ $$ = VARDONEA(*$1, $2, $3); $$->initp($5); }
+			{ $$ = VARDONEA(*$1, $2, $3); $$->valuep($5); }
 	;
 
 parenE:

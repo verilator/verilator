@@ -1263,9 +1263,9 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 	    }
 	    else if (varp->isParam()) {
 		if (!varp->hasSimpleInit()) nodep->v3fatalSrc("No init for a param?");
-		//puts("// parameter "+varp->name()+" = "+varp->initp()->name()+"\n");
+		//puts("// parameter "+varp->name()+" = "+varp->valuep()->name()+"\n");
 	    }
-	    else if (AstInitArray* initarp = varp->initp()->castInitArray()) {
+	    else if (AstInitArray* initarp = varp->valuep()->castInitArray()) {
 		AstConst* constsp = initarp->initsp()->castConst();
 		if (AstArrayDType* arrayp = varp->dtypeSkipRefp()->castArrayDType()) {
 		    for (int i=0; i<arrayp->elementsConst(); i++) {
@@ -1682,18 +1682,18 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstVar* varp = nodep->castVar()) {
 	    if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
-		if (!varp->initp()) nodep->v3fatalSrc("No init for a param?");
+		if (!varp->valuep()) nodep->v3fatalSrc("No init for a param?");
 		// These should be static const values, however microsloth VC++ doesn't
 		// support them.  They also cause problems with GDB under GCC2.95.
 		if (varp->isWide()) {   // Unsupported for output
 		    puts("// enum WData "+varp->name()+"  //wide");
-		} else if (!varp->initp()->castConst()) {   // Unsupported for output
+		} else if (!varp->valuep()->castConst()) {   // Unsupported for output
 		    puts("// enum IData "+varp->name()+"  //not simple value");
 		} else {
 		    puts("enum ");
 		    puts(varp->isQuad()?"_QData":"_IData");
 		    puts(""+varp->name()+" { "+varp->name()+" = ");
-		    varp->initp()->iterateAndNext(*this);
+		    varp->valuep()->iterateAndNext(*this);
 		    puts("};");
 		}
 		puts("\n");
