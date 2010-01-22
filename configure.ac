@@ -15,7 +15,6 @@ AC_ARG_ENABLE(defenv,
 AC_SUBST(CFG_WITH_DEFENV)
 
 dnl Compiler flags
-CXX=g++
 CFLAGS=-I${includedir}
 CPPFLAGS=-I${includedir}
 CXXFLAGS=-I${includedir}
