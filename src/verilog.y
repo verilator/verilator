@@ -96,11 +96,6 @@ public:
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
-    AstNode* newVarInit(FileLine* fileline, AstNode* varp, AstNode* initp) {
-	return new AstInitial(fileline, new AstAssign(fileline,
-						      new AstVarRef(fileline, varp->name(),true),
-						      initp));
-    }	
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
@@ -817,13 +812,13 @@ port<nodep>:			// ==IEEE: port
 			{ $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
 	|	portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5));     $$->addNextNull(GRAMMARP->newVarInit($6,$$,$7)); }
+			{ $$=$3; VARDTYPE($2); AstVar* vp=VARDONEP($$,$4,$5); $$->addNextNull(vp); vp->valuep($7); }
 	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
+			{ $$=$3; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
 	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6));     $$->addNextNull(GRAMMARP->newVarInit($7,$$,$8)); }
+			{ $$=$3; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); $$->addNextNull(GRAMMARP->newVarInit($5,$$,$6)); }
+			{ $$=$3; /*VARDTYPE-same*/ AstVar* vp=VARDONEP($$,$3,$4); $$->addNextNull(vp); vp->valuep($6); }
  	;
  
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
@@ -1115,8 +1110,7 @@ variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
 		id variable_dimensionListE sigAttrListE
 			{ $$ = VARDONEA(*$1,$2,$3); }
 	|	id variable_dimensionListE sigAttrListE '=' variable_declExpr
-			{ $$ = VARDONEA(*$1,$2,$3);
-			  $$->addNext(new AstInitial($4,new AstAssign($4, new AstVarRef($4, *$1, true), $5))); }
+			{ $$ = VARDONEA(*$1,$2,$3); $$->valuep($5); }
 	|	idSVKwd					{ $$ = NULL; }
 	//
 	//			// IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
@@ -2195,7 +2189,7 @@ tf_item_declarationVerilator<nodep>:	// Verilator extensions
 tf_port_listE<nodep>:		// IEEE: tf_port_list + empty
 	//			// Empty covered by tf_port_item
 		{VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
-			tf_port_listList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+			tf_port_listList		{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
 	;
 
 tf_port_listList<nodep>:	// IEEE: part of tf_port_list
