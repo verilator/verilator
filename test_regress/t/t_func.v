@@ -5,35 +5,35 @@
 
 module t;
    reg [2:0] value;
-   reg [31:0] global;
+   reg [31:0] rglobal;
    reg [31:0] vec [1:0];
    reg [31:0] n;
 
    initial begin
-      global = 1;
+      rglobal = 1;
       value = 2;
       if (add(value) != 3'd3) $stop;
-      if (global != 2) $stop;
+      if (rglobal != 2) $stop;
       if (add(add(3'd1)) != 3'd3) $stop;
-      if (global != 4) $stop;
+      if (rglobal != 4) $stop;
       if (munge4(4'b0010) != 4'b1011) $stop;
       if (toint(2) != 3) $stop;
-      if (global != 5) $stop;
+      if (rglobal != 5) $stop;
       setit;
-      incr(global,global,32'h10);
-      if (global != 32'h17) $stop;
+      incr(rglobal,rglobal,32'h10);
+      if (rglobal != 32'h17) $stop;
       nop(32'h11);
       empty;
       empty();
 
-      global = 32'h00000001;
-      flipupperbit(global,4'd4);
-      flipupperbit(global,4'd12);
-      if (global !== 32'h10100001) $stop;
+      rglobal = 32'h00000001;
+      flipupperbit(rglobal,4'd4);
+      flipupperbit(rglobal,4'd12);
+      if (rglobal !== 32'h10100001) $stop;
 
       if (nil_func(32'h12,32'h12) != 32'h24) $stop;
-      nil_task(32'h012,32'h112,global);
-      if (global !== 32'h124) $stop;
+      nil_task(32'h012,32'h112,rglobal);
+      if (rglobal !== 32'h124) $stop;
 
       vec[0] = 32'h333;
       vec[1] = 32'habc;
@@ -58,7 +58,7 @@ module t;
 	 begin : named
 	    reg [31:0] flocal;
 	    flocal = 1;
-	    global = global + flocal;
+	    rglobal = rglobal + flocal;
 	 end : named	// SystemVerilog end labels
       end
    endfunction
@@ -77,8 +77,8 @@ module t;
    task setit;
       reg [31:0] temp;
       begin
-	 temp = global + 32'h1;
-	 global = temp + 32'h1;
+	 temp = rglobal + 32'h1;
+	 rglobal = temp + 32'h1;
       end
    endtask
 

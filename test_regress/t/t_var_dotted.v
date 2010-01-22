@@ -30,8 +30,8 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       //$write("[%0t] cyc%0d: %0x %0x %0x %0x\n", $time, cyc, outb0c0, outb0c1, outb1c0, outb1c1);
       if (cyc==2) begin
-	 if (global_cell.global  != 32'hf00d) $stop;
-	 if (global_cell2.global != 32'hf22d) $stop;
+	 if (global_cell.globali  != 32'hf00d) $stop;
+	 if (global_cell2.globali != 32'hf22d) $stop;
 	 if (outb0c0 != 32'h00) $stop;
 	 if (outb0c1 != 32'h01) $stop;
 	 if (outb1c0 != 32'h10) $stop;
@@ -91,8 +91,8 @@ endmodule
 module global_mod;
    `INLINE_MODULE
    parameter INITVAL = 0;
-   integer global;
-   initial global = INITVAL;
+   integer globali;
+   initial globali = INITVAL;
 endmodule
 
 module ma (
@@ -154,8 +154,8 @@ module mc (output reg [31:0] out);
    always @ (posedge t.clk) begin
       //$write("[%0t] %m: Got reachup, cyc=%0d\n", $time, reach_up_cyc);
       if (reach_up_cyc==2) begin
-	 if (global_cell.global != 32'hf00d) $stop;
-	 if (global_cell2.global != 32'hf33d) $stop;
+	 if (global_cell.globali != 32'hf00d) $stop;
+	 if (global_cell2.globali != 32'hf33d) $stop;
       end
       if (reach_up_cyc==4) begin
 	 out[15:12] <= {P2[3:0]+P3[3:0]+4'd1};

@@ -17,7 +17,10 @@ module t (/*AUTOARG*/
 `end_keywords
 `begin_keywords "1364-2005"
   integer final; initial final = 1;
- `begin_keywords "1800-2005"
+`end_keywords
+`begin_keywords "1800-2005"
+  integer global; initial global = 1;
+ `begin_keywords "1800-2009"
   final begin
      $write("*-* All Finished *-*\n");
   end
