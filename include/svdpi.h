@@ -7,10 +7,8 @@
  * This file contains the constant definitions, structure definitions,
  * and routine declarations used by SystemVerilog DPI.
  *
- * This file is from the SystemVerilog IEEE 1800-2005 Annex G,
- * with modifications to support Verilator.
+ * This file is from the SystemVerilog IEEE 1800-2009 Annex I.
  */
-
 
 #ifndef INCLUDED_SVDPI
 #define INCLUDED_SVDPI
@@ -19,7 +17,7 @@
 extern "C" {
 #endif
 
-/* Ensure that size-critical types are defined on all OS platforms. */
+/* Define size-critical types on all OS platforms. */
 #if defined (_MSC_VER)
 typedef unsigned __int64 uint64_t;
 typedef unsigned __int32 uint32_t;
@@ -47,7 +45,6 @@ typedef signed __int8 int8_t;
 #define DPI_DLLESPEC __declspec(dllexport)
 #else
 #define DPI_DLLESPEC
-
 #endif
 
 /* Use to mark a function as external */
@@ -80,9 +77,9 @@ typedef svScalar svLogic; /* scalar */
  */
 #ifndef VPI_VECVAL
 #define VPI_VECVAL
-typedef struct vpi_vecval {
-    uint32_t a;
-    uint32_t b;
+typedef struct t_vpi_vecval {
+    uint32_t aval;
+    uint32_t bval;
 } s_vpi_vecval, *p_vpi_vecval;
 #endif
 
@@ -112,7 +109,7 @@ typedef uint32_t svBitVecVal;
  * Implementation-dependent representation.
  */
 /*
- * Return implementation version information string ("P1800-2005" or "SV3.1a").
+ * Return implementation version information string ("1800-2005" or "SV3.1a").
  */
 XXTERN const char* svDpiVersion();
 
@@ -163,14 +160,13 @@ XXTERN void svPutPartselLogic(svLogicVecVal* d, const svLogicVecVal s, int i, in
  * packed part of an array (which is one-dimensional).
  * Dimensions > 0 refer to the unpacked part of an array.
  */
-
 /* h= handle to open array, d=dimension */
 XXTERN int svLeft(const svOpenArrayHandle h, int d);
 XXTERN int svRight(const svOpenArrayHandle h, int d);
 XXTERN int svLow(const svOpenArrayHandle h, int d);
 XXTERN int svHigh(const svOpenArrayHandle h, int d);
 XXTERN int svIncrement(const svOpenArrayHandle h, int d);
-XXTERN int svLength(const svOpenArrayHandle h, int d);
+XXTERN int svSize(const svOpenArrayHandle h, int d);
 XXTERN int svDimensions(const svOpenArrayHandle h);
 
 /*
@@ -211,6 +207,7 @@ XXTERN void svPutBitArrElem2VecVal(const svOpenArrayHandle d, const svBitVecVal*
         int indx1, int indx2);
 XXTERN void svPutBitArrElem3VecVal(const svOpenArrayHandle d, const svBitVecVal* s,
         int indx1, int indx2, int indx3);
+
 XXTERN void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
         int indx1, ...);
 XXTERN void svPutLogicArrElem1VecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
@@ -224,44 +221,43 @@ XXTERN void svPutLogicArrElem3VecVal(const svOpenArrayHandle d, const svLogicVec
 XXTERN void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         int indx1, ...);
 XXTERN void svGetBitArrElem1VecVal(svBitVecVal* d, const svOpenArrayHandle s,
+        int indx1);
+XXTERN void svGetBitArrElem2VecVal(svBitVecVal* d, const svOpenArrayHandle s,
+        int indx1, int indx2);
+XXTERN void svGetBitArrElem3VecVal(svBitVecVal* d, const svOpenArrayHandle s,
+        int indx1, int indx2, int indx3);
+XXTERN void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s,
+        int indx1, ...);
+XXTERN void svGetLogicArrElem1VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
+        int indx1);
+XXTERN void svGetLogicArrElem2VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
+        int indx1, int indx2);
+XXTERN void svGetLogicArrElem3VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
+        int indx1, int indx2, int indx3);
 
-        int      indx1);
-XXTERN void      svGetBitArrElem2VecVal(svBitVecVal* d, const svOpenArrayHandle s,
-        int      indx1, int indx2);
-XXTERN void      svGetBitArrElem3VecVal(svBitVecVal* d, const svOpenArrayHandle s,
-        int      indx1, int indx2, int indx3);
-XXTERN void      svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s,
-        int      indx1, ...);
-XXTERN void      svGetLogicArrElem1VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
-        int      indx1);
-XXTERN void      svGetLogicArrElem2VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
-        int      indx1, int indx2);
-XXTERN void      svGetLogicArrElem3VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
-        int      indx1, int indx2, int indx3);
-
-XXTERN    svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...);
-XXTERN    svBit svGetBitArrElem1(const svOpenArrayHandle s, int indx1);
-XXTERN    svBit svGetBitArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
-XXTERN    svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
-           int indx3);
-XXTERN    svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...);
-XXTERN    svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1);
-XXTERN    svLogic svGetLogicArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
-XXTERN    svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
-           int indx3);
-XXTERN    void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1,
-           ...);
-XXTERN    void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1);
-XXTERN    void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1,
-           int indx2);
-XXTERN    void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1,
-           int indx2, int indx3);
-XXTERN    void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...);
-XXTERN    void svPutBitArrElem1(const svOpenArrayHandle d, svBit value, int indx1);
-XXTERN    void svPutBitArrElem2(const svOpenArrayHandle d, svBit value, int indx1,
-           int indx2);
-XXTERN    void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1,
-           int indx2, int indx3);
+XXTERN   svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...);
+XXTERN   svBit svGetBitArrElem1(const svOpenArrayHandle s, int indx1);
+XXTERN   svBit svGetBitArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
+XXTERN   svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
+          int indx3);
+XXTERN   svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...);
+XXTERN   svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1);
+XXTERN   svLogic svGetLogicArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
+XXTERN   svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
+          int indx3);
+XXTERN   void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1,
+          ...);
+XXTERN   void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1);
+XXTERN   void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1,
+          int indx2);
+XXTERN   void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1,
+          int indx2, int indx3);
+XXTERN   void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...);
+XXTERN   void svPutBitArrElem1(const svOpenArrayHandle d, svBit value, int indx1);
+XXTERN   void svPutBitArrElem2(const svOpenArrayHandle d, svBit value, int indx1,
+          int indx2);
+XXTERN   void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1,
+          int indx2, int indx3);
 
 /* Functions for working with DPI context */
 
@@ -276,8 +272,8 @@ XXTERN svScope svGetScope();
 /*
  * Set context for subsequent export function execution.
  * This function must be called before calling an export function, unless
- * the export function is called while executing an extern function. In that
- * case the export function shall inherit the scope of the surrounding extern
+ * the export function is called while executing an import function. In that
+ * case the export function shall inherit the scope of the surrounding import
  * function. This is known as the "default scope".
  * The return is the previous active scope (per svGetScope)
  */
@@ -319,7 +315,7 @@ XXTERN int svPutUserData(const svScope scope, void *userKey, void* userData);
 XXTERN void* svGetUserData(const svScope scope, void* userKey);
 
 /*
- * Returns the file and line number in the SV code from which the extern call
+ * Returns the file and line number in the SV code from which the import call
  * was made. If this information available, returns TRUE and updates fileName
  * and lineNumber to the appropriate values. Behavior is unpredictable if
  * fileName or lineNumber are not appropriate pointers. If this information is
@@ -347,17 +343,143 @@ XXTERN void svAckDisabledState();
 
 /*
  **********************************************************
- * DEPRECATED PORTION OF FILE REMOVED.
+ * DEPRECATED PORTION OF FILE STARTS FROM HERE.
+ * IEEE-1800-compliant tools may not provide
+ * support for the following functionality.
+ **********************************************************
+ */
+
+/*
+ * Canonical representation of packed arrays
+ * 2-state and 4-state vectors, modeled upon PLI's avalue/bvalue
+ */
+#define SV_CANONICAL_SIZE(WIDTH) (((WIDTH)+31)>>5)
+typedef unsigned int svBitVec32;/* (a chunk of) packed bit array */
+typedef struct { unsigned int c; unsigned int d;}
+svLogicVec32; /* (a chunk of) packed logic array */
+
+/* reference to a standalone packed array */
+typedef void* svBitPackedArrRef;
+typedef void* svLogicPackedArrRef;
+
+/*
+ * total size in bytes of the simulator's representation of a packed array
+ * width in bits
+ */
+XXTERN int svSizeOfBitPackedArr(int width);
+XXTERN int svSizeOfLogicPackedArr(int width);
+
+/* Translation between the actual representation and the canonical representation */
+
+/* s=source, d=destination, w=width */
+/* actual <-- canonical */
+XXTERN void svPutBitVec32(svBitPackedArrRef d, const svBitVec32* s, int w);
+XXTERN void svPutLogicVec32(svLogicPackedArrRef d, const svLogicVec32* s, int w);
+
+/* canonical <-- actual */
+XXTERN void svGetBitVec32(svBitVec32* d, const svBitPackedArrRef s, int w);
+XXTERN void svGetLogicVec32(svLogicVec32* d, const svLogicPackedArrRef s, int w);
+
+/*
+ * Bit-select functions
+ * Packed arrays are assumed to be indexed n-1:0,
+ * where 0 is the index of LSB
+ */
+
+/* s=source, i=bit-index */
+XXTERN svBit svGetSelectBit(const svBitPackedArrRef s, int i);
+XXTERN svLogic svGetSelectLogic(const svLogicPackedArrRef s, int i);
+
+/* d=destination, i=bit-index, s=scalar */
+XXTERN void svPutSelectBit(svBitPackedArrRef d, int i, svBit s);
+XXTERN void svPutSelectLogic(svLogicPackedArrRef d, int i, svLogic s);
+
+/*
+ * functions for part-select
+ *
+ * a narrow (<=32 bits) part-select is copied between
+ * the implementation representation and a single chunk of
+ * canonical representation
+ * Normalized ranges and indexing [n-1:0] are used for both arrays:
+ * the array in the implementation representation and the canonical array.
+ *
+ * s=source, d=destination, i=starting bit index, w=width
+ * like for variable part-selects; limitations: w <= 32
+ */
+
+/* canonical <-- actual */
+XXTERN void svGetPartSelectBit(svBitVec32* d, const svBitPackedArrRef s,
+        int i, int w);
+XXTERN svBitVec32 svGetBits(const svBitPackedArrRef s, int i, int w);
+XXTERN svBitVec32 svGet32Bits(const svBitPackedArrRef s, int i); /* 32-bits */
+
+XXTERN uint64_t svGet64Bits(const svBitPackedArrRef s, int i);
+
+/* 64-bits */
+XXTERN void svGetPartSelectLogic(svLogicVec32* d, const svLogicPackedArrRef s,
+        int i, int w);
+/* actual <-- canonical */
+XXTERN void svPutPartSelectBit(svBitPackedArrRef d, const svBitVec32 s,
+        int i, int w);
+XXTERN void svPutPartSelectLogic(svLogicPackedArrRef d, const svLogicVec32 s,
+        int i, int w);
+
+/*
+ * Functions for open array translation between simulator and canonical
+ * representations. These functions copy the whole packed array in either
+ * direction. The user is responsible for allocating an array in the
+ * canonical representation.
+ */
+
+/* s=source, d=destination */
+/* actual <-- canonical */
+XXTERN void svPutBitArrElemVec32(const svOpenArrayHandle d, const svBitVec32* s,
+        int indx1, ...);
+XXTERN void svPutBitArrElem1Vec32(const svOpenArrayHandle d, const svBitVec32* s,
+        int indx1);
+XXTERN void svPutBitArrElem2Vec32(const svOpenArrayHandle d, const svBitVec32* s,
+        int indx1, int indx2);
+XXTERN void svPutBitArrElem3Vec32(const svOpenArrayHandle d, const svBitVec32* s,
+        int indx1, int indx2, int indx3);
+XXTERN void svPutLogicArrElemVec32(const svOpenArrayHandle d, const svLogicVec32* s,
+        int indx1, ...);
+XXTERN void svPutLogicArrElem1Vec32(const svOpenArrayHandle d, const svLogicVec32* s,
+        int indx1);
+XXTERN void svPutLogicArrElem2Vec32(const svOpenArrayHandle d, const svLogicVec32* s,
+        int indx1, int indx2);
+XXTERN void svPutLogicArrElem3Vec32(const svOpenArrayHandle d, const svLogicVec32* s,
+        int indx1, int indx2, int indx3);
+
+/* canonical <-- actual */
+XXTERN void svGetBitArrElemVec32(svBitVec32* d, const svOpenArrayHandle s,
+        int indx1, ...);
+XXTERN void svGetBitArrElem1Vec32(svBitVec32* d, const svOpenArrayHandle s,
+        int indx1);
+XXTERN void svGetBitArrElem2Vec32(svBitVec32* d, const svOpenArrayHandle s,
+        int indx1, int indx2);
+XXTERN void svGetBitArrElem3Vec32(svBitVec32* d, const svOpenArrayHandle s,
+        int indx1, int indx2, int indx3);
+XXTERN void svGetLogicArrElemVec32(svLogicVec32* d, const svOpenArrayHandle s,
+        int indx1, ...);
+XXTERN void svGetLogicArrElem1Vec32(svLogicVec32* d, const svOpenArrayHandle s,
+        int indx1);
+XXTERN void svGetLogicArrElem2Vec32(svLogicVec32* d, const svOpenArrayHandle s,
+        int indx1, int indx2);
+XXTERN void svGetLogicArrElem3Vec32(svLogicVec32* d, const svOpenArrayHandle s,
+        int indx1, int indx2, int indx3);
+
+/*
+ **********************************************************
  * DEPRECATED PORTION OF FILE ENDS HERE.
  **********************************************************
  */
 
 #undef DPI_EXTERN
 
-#ifdef    DPI_PROTOTYPES
-#undef    DPI_PROTOTYPES
-#undef    XXTERN
-#undef    EETERN
+#ifdef DPI_PROTOTYPES
+#undef DPI_PROTOTYPES
+#undef XXTERN
+#undef EETERN
 #endif
 
 #ifdef __cplusplus

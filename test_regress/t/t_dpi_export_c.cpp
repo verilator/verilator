@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <svdpi.h>
+#include <cstring>
 
 //======================================================================
 
@@ -91,6 +92,8 @@ int dpix_run_tests() {
 # endif
     }
 #endif
+
+    CHECK_RESULT (strcmp(svDpiVersion(), "1800-2005"), 0);
 
     CHECK_RESULT (dpix_int123(), 0x123 );
 
