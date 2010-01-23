@@ -2846,15 +2846,15 @@ faster than many popular commercial simulators.
 
 Many people have provided ideas and other assistance with Verilator.
 
-The major corporate sponsors of Verilator, by providing funds or equipment
-grants include Compaq Corporation, Digital Equipment Corporation, Intel
-Corporation, Maker Communications, MicroTune Inc., Sun Microsystems,
-Nauticus Networks, and SiCortex Inc.
+The major corporate sponsors of Verilator, by providing significant
+contributions of time or funds include include Compaq Corporation, Digital
+Equipment Corporation, Intel Corporation, Mindspeed Technologies Inc.,
+MicroTune Inc., picoChip Designs Ltd., Sun Microsystems, Nauticus Networks,
+and SiCortex Inc.
 
-The people who have contributed code or other major functionality are Byron
-Bradley, Lane Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major
-testers include Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and
-Gene Weber.
+The people who have contributed major functionality are Byron Bradley, Lane
+Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major testers include
+Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and Gene Weber.
 
 Some of the people who have provided ideas and feedback for Verilator
 include David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm, J
