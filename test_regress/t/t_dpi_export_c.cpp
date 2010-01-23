@@ -93,7 +93,12 @@ int dpix_run_tests() {
     }
 #endif
 
-    CHECK_RESULT (strcmp(svDpiVersion(), "1800-2005"), 0);
+#ifndef CADENCE // Unimplemented; how hard is it?
+    printf ("svDpiVersion: %s\n",svDpiVersion());
+    CHECK_RESULT (strcmp(svDpiVersion(), "1800-2005")==0
+		  || strcmp(svDpiVersion(), "P1800-2005")==0
+		  , 1);
+#endif
 
     CHECK_RESULT (dpix_int123(), 0x123 );
 
