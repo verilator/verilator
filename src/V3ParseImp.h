@@ -220,6 +220,10 @@ class V3ParseImp {
     int		m_inBeginKwd;		// Inside a `begin_keywords
     int		m_lastVerilogState;	// Last LEX state in `begin_keywords
 
+    bool	m_ahead;		// aheadToken is valid
+    int		m_aheadToken;		// Token we read ahead
+    V3ParseBisonYYSType m_aheadVal;	// aheadToken's value
+
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
     deque<FileLine>  m_lintState;	// Current lint state for save/restore
@@ -317,6 +321,8 @@ public:
 	m_inLibrary = false;
 	m_inBeginKwd = 0;
 	m_lastVerilogState = stateVerilogRecent();
+	m_ahead = false;
+	m_aheadToken = 0;
     }
     ~V3ParseImp();
     void parserClear();

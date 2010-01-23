@@ -490,12 +490,12 @@ escid	\\[^ \t\f\r\n]+
   /* SystemVerilog 2009 */
 <S09,PSL>{
   /*     Keywords */
+  "global"	 	{ FL; return yGLOBAL__LEX; }
   /*     Generic unsupported warnings */
   "accept_on"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "checker"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "endchecker"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "eventually"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "global"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "implies"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "let"		 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "nexttime"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
@@ -941,8 +941,38 @@ int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 
 int V3ParseImp::lexToken() {
     // called from lexToBison, has a "this"
-    // yylvalp is global
-    int token = yylexThis();
+    // Fetch next token from prefetch or real lexer
+    int token;
+    if (m_ahead) {
+	// We prefetched an extra token, give it back
+	m_ahead = false;
+	token = m_aheadToken;
+	yylval = m_aheadVal;
+    } else {
+	// Parse new token
+	token = yylexThis();
+	//yylval // Set by yylexThis()
+    }
+    // If a paren, read another
+    if (token == yGLOBAL__LEX
+	// Never put yID_* here; below symbol table resolution would break
+	) {
+	if (debugFlex()) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
+	V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
+	int nexttok = yylexThis();
+	m_ahead = true;
+	m_aheadToken = nexttok;
+	m_aheadVal = yylval;
+	yylval = curValue;
+	// Now potentially munge the current token
+	if (token == yGLOBAL__LEX) {
+	    if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
+	    else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }  // Avoid 2009 "global" conflicting with old code when we can
+	}
+	// If add to above "else if", also add to "if (token" further above
+    }
+    // If an id, change the type based on symbol table
+    // Note above sometimes converts yGLOBAL to a yaID__LEX
     if (token == yaID__LEX) {
 	AstNode* scp;
 	if (V3SymTable* look_underp = SYMP->nextId()) {

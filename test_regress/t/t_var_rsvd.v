@@ -15,6 +15,9 @@ module t (/*AUTOARG*/
    reg  vector;	// OK, as not public
    reg  switch /*verilator public*/;	// Bad
 
+   // global is a 1800-2009 reserved word, but we allow it when possible.
+   reg  global;
+
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;
