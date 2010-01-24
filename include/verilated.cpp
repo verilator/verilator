@@ -24,7 +24,7 @@
 //=========================================================================
 
 #define _VERILATED_CPP_
-#include "verilatedimp.h"
+#include "verilated_imp.h"
 #include <cctype>
 #include <vector>
 

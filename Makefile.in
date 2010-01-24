@@ -136,7 +136,7 @@ INST_PROJ_FILES = \
 	include/verilated.[chv]* \
 	include/verilated.mk \
 	include/verilatedos.[chv]* \
-	include/verilatedsc.[chv]* \
+	include/verilated_sc.[chv]* \
 
 INST_PROJ_BIN_FILES = \
 	verilator_bin \

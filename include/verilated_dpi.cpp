@@ -23,9 +23,9 @@
 ///
 //=========================================================================
 
-#define _VERILATEDDPI_CPP_
+#define _VERILATED_DPI_CPP_
 #include "verilatedos.h"
-#include "verilatedimp.h"
+#include "verilated_imp.h"
 
 // On MSVC++ we need svdpi.h to declare exports, not imports
 #define DPI_PROTOTYPES

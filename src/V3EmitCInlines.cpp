@@ -58,7 +58,7 @@ class EmitCInlines : EmitCBaseVisitor {
     }
     virtual void visit(AstBasicDType* nodep, AstNUser*) {
 	if (nodep->keyword() == AstBasicDTypeKwd::STRING) {
-	    v3Global.needHeavy(true);  // #include <string> via verilatedheavy.h when we create symbol file
+	    v3Global.needHeavy(true);  // #include <string> via verilated_heavy.h when we create symbol file
 	}
     }
 

@@ -24,8 +24,8 @@
 //*************************************************************************
 
 
-#ifndef _VERILATEDSC_H_
-#define _VERILATEDSC_H_ 1 ///< Header Guard
+#ifndef _VERILATED_SC_H_
+#define _VERILATED_SC_H_ 1 ///< Header Guard
 
 #include "verilatedos.h"
 #include "systemc.h"

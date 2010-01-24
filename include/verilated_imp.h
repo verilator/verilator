@@ -21,16 +21,16 @@
 //=========================================================================
 
 
-#ifndef _VERILATEDIMP_H_
-#define _VERILATEDIMP_H_ 1 ///< Header Guard
+#ifndef _VERILATED_IMP_H_
+#define _VERILATED_IMP_H_ 1 ///< Header Guard
 
-#if !defined(_VERILATED_CPP_) && !defined(_VERILATEDDPI_CPP_)
-# error "verilatedimp.h only to be included by verilated*.cpp internals"
+#if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_)
+# error "verilated_imp.h only to be included by verilated*.cpp internals"
 #endif
 
 #include "verilatedos.h"
 #include "verilated.h"
-#include "verilatedheavy.h"
+#include "verilated_heavy.h"
 
 #include <map>
 #include <vector>

@@ -182,7 +182,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n");
 
     if (v3Global.needHeavy()) {
-	puts("#include \"verilatedheavy.h\"\n");
+	puts("#include \"verilated_heavy.h\"\n");
     } else {
 	puts("#include \"verilated.h\"\n");
     }

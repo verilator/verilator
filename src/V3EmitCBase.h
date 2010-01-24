@@ -70,7 +70,7 @@ public:
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
 	puts("#include \"systemc.h\"\n");
-	puts("#include \"verilatedsc.h\"\n");
+	puts("#include \"verilated_sc.h\"\n");
     }
 };
 
@@ -81,7 +81,7 @@ public:
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
 	puts("#include \"systemperl.h\"\n");
-	puts("#include \"verilatedsc.h\"\n");
+	puts("#include \"verilated_sc.h\"\n");
     }
 };
 
