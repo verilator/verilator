@@ -366,7 +366,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 				       (QData)(ld/VL_TIME_MULTIPLIER),
 				       (QData)(ld%VL_TIME_MULTIPLIER));
 		    } else {
-			vl_fatal(__FILE__,__LINE__,"","%%Error: Unsupported VL_TIME_MULTIPLIER");
+			vl_fatal(__FILE__,__LINE__,"","Unsupported VL_TIME_MULTIPLIER");
 		    }
 		    int needmore = width-digits;
 		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
@@ -398,7 +398,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    }
 		    break;
 		default:
-		    string msg = string("%%Error: Unknown _vl_vsformat code: ")+pos[0]+"\n";
+		    string msg = string("Unknown _vl_vsformat code: ")+pos[0];
 		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
 		    break;
 		} // switch
@@ -589,7 +589,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    break;
 		}
 		default:
-		    string msg = string("%%Error: Unknown _vl_vsscanf code: ")+pos[0]+"\n";
+		    string msg = string("Unknown _vl_vsscanf code: ")+pos[0];
 		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
 		    break;
 		} // switch
@@ -1027,7 +1027,7 @@ void VerilatedScope::exportInsert(bool finalize, const char* namep, void* cb) {
 
 void* VerilatedScope::exportFindNullError(int funcnum) const {
     // Slowpath - Called only when find has failed
-    string msg = (string("%Error: Testbench C called '")
+    string msg = (string("Testbench C called '")
 		  +VerilatedImp::exportName(funcnum)
 		  +"' but scope wasn't set, perhaps due to dpi import call without 'context'");
     vl_fatal("unknown",0,"", msg.c_str());
@@ -1036,7 +1036,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) const {
 
 void* VerilatedScope::exportFindError(int funcnum) const {
     // Slowpath - Called only when find has failed
-    string msg = (string("%Error: Testbench C called '")
+    string msg = (string("Testbench C called '")
 		  +VerilatedImp::exportName(funcnum)
 		  +"' but this DPI export function exists only in other scopes, not scope '"
 		  +name()+"'");
