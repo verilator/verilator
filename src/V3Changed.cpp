@@ -115,7 +115,7 @@ private:
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
 	m_scopetopp = scopep;
 	// Create change detection function
-	m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "bool");
+	m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "IData");
 	m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
 	m_chgFuncp->symProlog(true);
 	m_chgFuncp->declPrivate(true);
