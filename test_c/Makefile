@@ -31,8 +31,7 @@ test_debug:     prep_dbg compile run
 test_valgrind:  prep_vg  compile run
 
 VERILATOR_FLAGS = --cc -f $(VERILATOR_ROOT)/test_v/input.vc top.v
-#Note turning on traces requires SystemPerl to be installed
-#VERILATOR_FLAGS += --trace
+VERILATOR_FLAGS += --trace
 
 prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG)       $(VERILATOR_FLAGS)

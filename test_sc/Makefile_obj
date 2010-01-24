@@ -16,9 +16,7 @@ default: simx
 include Vtop.mk
 
 #######################################################################
-# Use sp_log.cpp, so we can get output in sim.log
 
-CPPFLAGS += -DUTIL_PRINTF=printf
 CPPFLAGS += -Wno-deprecated
 CPPFLAGS += $(SYSTEMC_CXX_FLAGS)
 
@@ -27,11 +25,9 @@ LDFLAGS += $(SYSTEMC_CXX_FLAGS)
 #######################################################################
 # Linking final exe -- presumes have a sim_main.cpp
 
-SP_SRCS = verilated.o
-
 SC_LIB = $(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)/libsystemc.a
 
-simx: sc_main.o $(SP_SRCS) \
+simx: sc_main.o $(VK_GLOBAL_OBJS) \
 	  $(VM_PREFIX)__ALL.a $(SC_LIB)
 	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(SC_LIBS) $(LIBS) 2>&1 | c++filt
 

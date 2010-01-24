@@ -660,11 +660,11 @@ designs with only one top.
 
 Adds waveform tracing code to the model.  Verilator will generate
 additional {prefix}__Trace*.cpp files that will need to be compiled.  In
-addition Sp.cpp (for SystemC traces) or SpTraceVcdC.c (for C++ only) from
-the SystemPerl kit's src directory must be compiled and linked in.  If
-using the Verilator generated Makefiles, these will be added as source
-targets for you.  If you're not using the Verilator makefiles, you will
-need to add these to your Makefile manually.
+addition verilated_vcd_sc.cpp (for SystemC traces) or verilated_vcd_c.c
+(for both) must be compiled and linked in.  If using the Verilator
+generated Makefiles, these will be added as source targets for you.  If
+you're not using the Verilator makefiles, you will need to add these to
+your Makefile manually.
 
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
@@ -2527,31 +2527,30 @@ maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
 
-See the next question for tracing in SystemPerl mode.
+See the next question for tracing in SystemC mode.
 
-Add the --trace switch to Verilator, and make sure the SystemPerl package
-is installed. SystemC itself does not need to be installed for C++ only
-tracing.  You do not even need to compile SystemPerl; you may simply untar
-the SystemPerl kit and point the SYSTEMPERL environment variable to the
-untarred directory.
+Add the --trace switch to Verilator, and in your top level C code, call
+Verilated::traceEverOn(true).  Then create a VerilatedVcdCFile object, and
+in your main loop call "trace_object->dump(time)" every time step, and
+finally call "trace_object->close()".  For an example, see below and the
+test_c/sim_main.cpp file of the distribution.
 
-In your top level C code, call Verilated::traceEverOn(true).  Then create a
-SpTraceVcdC object, and in your main loop call "trace_object->dump(time)"
-every time step, and finally call "trace_object->close()".  For an example,
-see below and the test_c/sim_main.cpp file of the distribution.
-
-You also need to compile SpTraceVcdC.cpp and add it to your link.  This is
-done for you if using the Verilator --exe flag.
+You also need to compile verilated_vcd_c.cpp and add it to your link.  This
+is done for you if using the Verilator --exe flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-    #include "SpTraceVcdC.h"
+Note also older versions of Verilator used the SystemPerl package and
+SpTraceVcdCFile class.  This still works, but is depreciated as it requires
+strong coupling between the Verilator and SystemPerl versions.
+
+    #include "verilated_vcd_c.h"
     ...
     int main(int argc, char **argv, char **env) {
         ...
         Verilated::traceEverOn(true);
-        SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
+        VerilatedVcdCFile* tfp = new VerilatedVcdCFile;
         topp->trace (tfp, 99);
         tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
@@ -2562,32 +2561,30 @@ trace file if you want all data to land in the same output file.
         tfp->close();
     }
 
-=item How do I generate waveforms (traces) in SystemC/SystemPerl?
+=item How do I generate waveforms (traces) in SystemC?
 
-Add the --trace switch to Verilator, and make sure the SystemPerl package
-is installed.
-
-In your top level C sc_main code, include SpTraceVcd.h.  Then call
-Verilated::traceEverOn(true).  Then create a SpTraceFile object as you
-would create a normal SystemC trace file.  For an example, see the call to
-SpTraceFile in the test_sp/sc_main.cpp file of the distribution, and below.
+Add the --trace switch to Verilator, and in your top level C sc_main code,
+include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
+create a VerilatedVcdSc object as you would create a normal SystemC trace
+file.  For an example, see the call to VerilatedVcdSc in the
+test_sp/sc_main.cpp file of the distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
 your SystemC settings.
 
-You'll then need to compile in Sp.cpp, which includes SpTraceVcd.cpp among
-other things.
+You also need to compile verilated_vcd_sc.cpp and add it to your link.
+This is done for you if using the Verilator --exe flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-    #include "SpTraceVcd.h"
+    #include "verilated_vcd_sc.h"
     ...
     int main(int argc, char **argv, char **env) {
         ...
         Verilated::traceEverOn(true);
-        SpTraceFile* tfp = new SpTraceFile;
+        VerilatedVcdSc* tfp = new VerilatedVcdSc;
         topp->trace (tfp, 99);
         tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
@@ -2604,9 +2601,9 @@ commercial offerings.
 
 =item How do I reduce the size of large waveform (trace) files?
 
-First, instead of calling SpTraceVcdCFile->open at the beginning of time,
+First, instead of calling VerilatedVcdC->open at the beginning of time,
 delay calling it until the time stamp where you want to tracing to begin.
-Likewise you can also call SpTraceVcdCFile->open before the end of time
+Likewise you can also call VerilatedVcdC->open before the end of time
 (perhaps a short period after you detect a verification error.)
 
 Next, add /*verilator tracing_off*/ to any very low level modules you never
@@ -2620,9 +2617,12 @@ network disk.  Network disks are generally far slower.
 =item How do I do coverage analysis?
 
 Verilator supports both block (line) coverage and user inserted functional
-coverage.  First, run verilator with the --coverage option.  If you're
-using your own makefile, compile the model with the GCC flag
--DSP_COVERAGE_ENABLE (if using Verilator's, it will do this for you.)
+coverage.  Both currently require SystemPerl output mode and the SystemPerl
+package.
+
+First, run verilator with the --coverage option.  If you're using your own
+makefile, compile the model with the GCC flag -DSP_COVERAGE_ENABLE (if
+using Verilator's, it will do this for you.)
 
 Run your tests in different directories.  Each test will create a
 logs/coverage.pl file.
@@ -2839,7 +2839,7 @@ performance gain.
 In 2009, major SystemVerilog and DPI language support was added.
 
 Currently, various language features and performance enhancements are added
-as the need arises.  Verilator is now about 2x faster than in 2002, and is
+as the need arises.  Verilator is now about 3x faster than in 2002, and is
 faster than many popular commercial simulators.
 
 =head1 CONTRIBUTORS

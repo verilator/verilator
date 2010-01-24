@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.800***
 
+**   SystemPerl is no longer required for tracing.
+     Applications must use VerilatedVcdC class in place of SpTraceVcdC.
+
 **   SystemVerilog 1800-2009 is now the default language.
      Thus "global" etc are now keywords.  See the --language option.
 

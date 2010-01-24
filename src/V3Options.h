@@ -205,7 +205,7 @@ class V3Options {
     bool systemC() const { return m_systemC; }
     bool systemPerl() const { return m_systemPerl; }
     bool usingSystemCLibs() const { return !lintOnly() && (systemPerl() || systemC()); }
-    bool usingSystemPerlLibs() const { return !lintOnly() && (systemPerl() || trace()); }
+    bool usingSystemPerlLibs() const { return !lintOnly() && (systemPerl() || coverage()); }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
@@ -278,6 +278,9 @@ class V3Options {
     bool oSubst() const { return m_oSubst; }
     bool oSubstConst() const { return m_oSubstConst; }
     bool oTable() const { return m_oTable; }
+
+    // METHODS (uses above)
+    string traceClassBase() const { return systemPerl() ? "SpTraceVcd" : "VerilatedVcd"; }
 
     // METHODS (from main)
     static string version();

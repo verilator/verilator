@@ -29,6 +29,7 @@ test_debug:    precopy prep_dbg    preproc compile run
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --sc $(V_FLAGS) top.v
+VERILATOR_FLAGS += --trace
 
 precopy: obj_dir obj_dir/sc_main.cpp
 obj_dir/sc_main.cpp: ../test_sp/sc_main.cpp

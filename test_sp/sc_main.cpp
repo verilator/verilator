@@ -19,6 +19,7 @@
 # include "SpCoverage.h"
 #else
 # include "systemc.h"		// SystemC global header
+# include "verilated_vcd_sc.h"	// Tracing
 #endif
 
 #include "Vtop.h"		// Top level header, generated from verilog
@@ -118,7 +119,11 @@ int sc_main(int argc, char* argv[]) {
 
 #if WAVES
     cout << "Enabling waves...\n";
+# ifdef SYSTEMPERL
     SpTraceFile* tfp = new SpTraceFile;
+# else
+    VerilatedVcdSc* tfp = new VerilatedVcdSc;
+# endif
     top->trace (tfp, 99);
     tfp->open ("vlt_dump.vcd");
 #endif
@@ -156,7 +161,7 @@ int sc_main(int argc, char* argv[]) {
 #endif
 
     if (!passed) {
-	UTIL_PRINTF ("A Test failed!!\n");
+	VL_PRINTF ("A Test failed!!\n");
 	abort();
     }
 

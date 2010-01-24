@@ -1614,11 +1614,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	}
     }
     if (v3Global.opt.trace()) {
-	if (optSystemPerl()) {
-	    puts("class SpTraceVcd;\n");
-	} else {
-	    puts("class SpTraceVcdCFile;\n");
-	}
+	puts("class "+v3Global.opt.traceClassBase()+";\n");
     }
 
     puts("\n//----------\n\n");
@@ -1723,7 +1719,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
     if (v3Global.opt.trace() && !optSystemPerl()) {
 	if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
-	puts("void trace (SpTraceVcdCFile* tfp, int levels, int options=0);\n");
+	puts("void trace (VerilatedVcdC* tfp, int levels, int options=0);\n");
     }
 
     puts("\n// USER METHODS\n");
@@ -1756,9 +1752,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     if (!optSystemPerl() && v3Global.opt.trace()) {
 	ofp()->putsPrivate(false);  // public:
-	puts("static void traceInit (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void traceFull (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void traceChg  (SpTraceVcd* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceInit ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceFull ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
+	puts("static void traceChg  ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
     }
 
     puts("} VL_ATTR_ALIGNED(64);\n");
@@ -1920,8 +1916,9 @@ class EmitCTrace : EmitCStmts {
 	// Includes
 	if (optSystemPerl()) {
 	    puts("#include \"SpTraceVcd.h\"\n");
+	} else {
+	    puts("#include \"verilated_vcd_c.h\"\n");
 	}
-	puts("#include \"SpTraceVcdC.h\"\n");
 	puts("#include \""+ symClassName() +".h\"\n");
 	puts("\n");
     }
@@ -1933,7 +1930,7 @@ class EmitCTrace : EmitCStmts {
 	if (optSystemPerl()) {
 	    puts("SpTraceFile* tfp, int, int) {\n");
 	} else {
-	    puts("SpTraceVcdCFile* tfp, int, int) {\n");
+	    puts("VerilatedVcdC* tfp, int, int) {\n");
 	}
 	puts(  "tfp->spTrace()->addCallback ("
 	       "&"+topClassName()+"::traceInit"
@@ -1941,23 +1938,20 @@ class EmitCTrace : EmitCStmts {
 	       +", &"+topClassName()+"::traceChg, this);\n");
 	puts("}\n");
 
-	puts("void "+topClassName()+"::traceInit(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
+	puts("void "+topClassName()+"::traceInit("
+	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 
-	//Future; need to wait to estabilish backwards compatibility
-	puts("#if defined(SPTRACEVCDC_VERSION) && SPTRACEVCDC_VERSION >= 1330\n");
 	puts("vcdp->scopeEscape(' ');\n");
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
 	puts("vcdp->scopeEscape('.');\n");  // Restore so SystemPerl traced files won't break
-	puts("#else\n");
-	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
-	puts("#endif\n");
 	puts("}\n");
 
-	puts("void "+topClassName()+"::traceFull(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
+	puts("void "+topClassName()+"::traceFull("
+	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
@@ -1970,7 +1964,8 @@ class EmitCTrace : EmitCStmts {
     void emitTraceFast() {
 	puts("\n//======================\n\n");
 
-	puts("void "+topClassName()+"::traceChg(SpTraceVcd* vcdp, void* userthis, uint32_t code) {\n");
+	puts("void "+topClassName()+"::traceChg("
+	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	puts("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");

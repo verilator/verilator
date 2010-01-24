@@ -339,7 +339,8 @@ private:
     AstCFunc* newCFunc(AstCFuncType type, const string& name, AstCFunc* basep) {
 	AstCFunc* funcp = new AstCFunc(basep->fileline(), name, basep->scopep());
 	funcp->slow(basep->slow());
-	funcp->argTypes(EmitCBaseVisitor::symClassVar()+", SpTraceVcd* vcdp, uint32_t code");
+	funcp->argTypes(EmitCBaseVisitor::symClassVar()
+			+", "+v3Global.opt.traceClassBase()+"* vcdp, uint32_t code");
 	funcp->funcType(type);
 	funcp->symProlog(true);
 	basep->addNext(funcp);

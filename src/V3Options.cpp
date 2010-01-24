@@ -406,7 +406,7 @@ string V3Options::getenvSYSTEMPERL_INCLUDE() {
 	// We warn about $SYSTEMPERL instead of _INCLUDE since that's more likely
 	// what users will want to set.
 	if (var == "") {
-	    v3fatal("Need $SYSTEMPERL and $SYSTEMPERL_INCLUDE in environment for --sp or --trace\n"
+	    v3fatal("Need $SYSTEMPERL and $SYSTEMPERL_INCLUDE in environment for --sp or --coverage\n"
 		    "Probably System-Perl isn't installed, see http://www.veripool.org/systemperl\n");
 	}
 	else if (var != "" && !V3Options::fileStatNormal(var+"/systemperl.h")) {

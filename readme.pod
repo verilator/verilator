@@ -78,14 +78,14 @@ SYSTEMC_ARCH to the architecture name you used with SystemC, generally
 
 =item
 
-If you will be using SystemC, download and install Verilog-Perl,
-L<http://www.veripool.org/verilog-perl>.
+If you will be using SystemPerl or coverage, download and install
+Verilog-Perl, L<http://www.veripool.org/verilog-perl>.
 
 =item
 
-If you will be using SystemC, download and install System-Perl,
-L<http://www.veripool.org/systemperl>.  Note you'll need to set a
-C<SYSTEMPERL> environment variable to point to the downloaded kit.
+If you will be using SystemPerl or coverage, download and install
+System-Perl, L<http://www.veripool.org/systemperl>.  Note you'll need to
+set a C<SYSTEMPERL> environment variable to point to the downloaded kit.
 Optionally also set C<SYSTEMPERL_INCLUDE> to point to the installed
 headers.
 

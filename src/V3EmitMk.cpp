@@ -85,7 +85,10 @@ public:
 			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
 		    }
 		    else if (v3Global.opt.trace()) {
-			putMakeClassEntry(of, "SpTraceVcdC.cpp");
+			putMakeClassEntry(of, "verilated_vcd_c.cpp");
+			if (v3Global.opt.systemC()) {
+			    putMakeClassEntry(of, "verilated_vcd_sc.cpp");
+			}
 		    }
 		}
 		else if (support==2 && slow) {
@@ -187,7 +190,7 @@ public:
 	    }
 
 	    of.puts("\n### Link rules... (from --exe)\n");
-	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(SP_SRCS) $(VM_PREFIX)__ALL.a\n");
+	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
 	    of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS) 2>&1 | c++filt\n");
 	    of.puts("\n");
 	}

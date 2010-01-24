@@ -1,0 +1,138 @@
+#!/usr/bin/perl -w
+######################################################################
+#
+# Copyright 2010-2010 by Wilson Snyder.  This package is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+# DESCRIPTION: Diff Verilator includes against SystemPerl include files
+
+use Getopt::Long;
+use IO::File;
+use strict;
+
+our $Debug;
+our $Bad;
+
+if (! GetOptions (
+	  #"help"	=> \&usage,
+	  "debug"	=> sub { $Debug = 1; },
+    )) {
+    die "usage();"
+}
+
+diff("$ARGV[0]/include/verilated_vcd_c.h",	"$ARGV[1]/src/SpTraceVcdC.h");
+diff("$ARGV[0]/include/verilated_vcd_sc.h",	"$ARGV[1]/src/SpTraceVcd.h");
+diff("$ARGV[0]/include/verilated_vcd_c.cpp",	"$ARGV[1]/src/SpTraceVcdC.cpp");
+diff("$ARGV[0]/include/verilated_vcd_sc.cpp",	"$ARGV[1]/src/SpTraceVcd.cpp");
+
+exit(10) if $Bad;
+
+sub diff {
+    my $a=shift;
+    my $b=shift;
+
+    my $ta = "/tmp/spdiff.$$.a";
+    my $tb = "/tmp/spdiff.$$.b";
+
+    prep($a,$ta);
+    prep($b,$tb);
+
+    system("diff -u -w $ta $tb");
+}
+
+sub prep {
+    my $filename = shift;
+    my $wfilename = shift;
+
+    my $sp;
+    if ($filename =~ m!src/Sp!) {
+	$sp = "Sp";
+    } elsif ($filename =~ m!include/verilated!) {
+    } else {
+	die "%Error: Not sure if Sp/Verilated: $filename,\n";
+    }
+
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename";
+    my $fho = IO::File->new(">$wfilename") or die "%Error: $! writing $wfilename";
+
+    my @wf;
+    my $off;
+    while (defined(my $line = $fh->getline)) {
+	if ($line =~ m!// *SPDIFF_OFF!) {
+	    $off = 1;
+	    next;
+	} elsif ($line =~ m!// *SPDIFF_ON!) {
+	    $off = 0;
+	    next;
+	}
+	next if $off;
+
+	next if $line =~ /compile-command:/;
+	$line =~ s/SP_ABORT.*// if $sp;
+	$line =~ s/SP_NOTICE.*// if $sp;
+	$line =~ s/vl_fatal.*// if !$sp;
+	$line =~ s/VL_PRINT.*// if !$sp;
+
+	push @wf, $line;
+
+	my $check = $line;
+	$check =~ s/\bspace//i;
+	$check =~ s/\bsplit//i;
+	$check =~ s/"SP_TRACE"//;
+
+	if ($sp && $check =~ /Verilat/i
+	    && $check !~ /and newer/) {
+	    warn "%Warning: $filename:$.: Verilator text in Sp version: $line";
+	    $Bad = 1;
+	} elsif (!$sp && $check =~ /\b(Sp|SP)/
+		 ) {
+	    warn "%Warning: $filename:$.: Sp text in Verilator version: $line";
+	    $Bad = 1;
+	} elsif (!$sp && $check =~ /\<uint[0-9]+_t/) {
+	    warn "%Warning: $filename:$.: uint in Verilator version: $line";
+	    $Bad = 1;
+	}
+    }
+    !$off or die "%Error: $filename: SPDIFF_OFF block never terminated\n";
+
+    my $wholefile = join('',@wf);
+
+    if ($sp) {
+	$wholefile =~ s/SPTRACEVCDC_VERSION/VERILATED_VCD_VERSION/g;
+	$wholefile =~ s/SPTRACEVCDC_/VERILATED_VCD_C_/g;
+	$wholefile =~ s/SPTRACEVCD_TEST/VERILATED_VCD_TEST/g;
+	$wholefile =~ s/SPTRACEVCD_/VERILATED_VCD_SC_/g;
+
+	#
+	$wholefile =~ s/\bSpTraceFile\b/VerilatedVcdSc/g;
+	$wholefile =~ s/\bSpTraceFileC\b/VerilatedVcdC/g;
+	$wholefile =~ s/\bSpTraceVcd\b/VerilatedVcd/g;
+	$wholefile =~ s/\bSpTraceVcdCFile\b/VerilatedVcdC/g;
+	#
+	$wholefile =~ s/\bSpTraceCallInfo\b/VerilatedVcdCallInfo/g;
+	$wholefile =~ s/\bSpTraceCallback_t/VerilatedVcdCallback_t/g;
+	$wholefile =~ s/\bSpTraceVcd_/VerilatedVcd_/g;
+	$wholefile =~ s/\bSpTraceVcdSig\b/VerilatedVcdSig/g;
+	$wholefile =~ s/\bSpScBvExposer/VlScBvExposer/g;
+	#
+	$wholefile =~ s/\b(uint[0-9]+_t)/vl$1/g;
+	#
+	$wholefile =~ s/\bSP_SC_BV/VL_SC_BV/g;
+	$wholefile =~ s/\bSP_UNLIKELY/VL_UNLIKELY/g;
+    }
+
+    $fho->print($wholefile);
+}
+
+# Local Variables:
+# compile-command: "./spdiff $SYP $V4"
+# End:

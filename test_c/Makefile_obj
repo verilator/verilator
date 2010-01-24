@@ -29,12 +29,7 @@ endif
 #######################################################################
 # Linking final exe -- presumes have a sim_main.cpp
 
-SP_SRCS = verilated.o
-ifeq ($(VM_TRACE),1)
- SP_SRCS += SpTraceVcdC.o
-endif
-
-simx: sim_main.o $(SP_SRCS) $(VM_PREFIX)__ALL.a
+simx: sim_main.o $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a
 	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 
 sim_main.o: sim_main.cpp $(VM_PREFIX).h

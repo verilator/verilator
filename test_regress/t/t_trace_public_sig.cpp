@@ -4,7 +4,7 @@
 // without warranty, 2008 by Wilson Snyder.
 
 #include <verilated.h>
-#include <SpTraceVcdC.h>
+#include <verilated_vcd_c.h>
 
 #include "Vt_trace_public_sig.h"
 #include "Vt_trace_public_sig_t.h"
@@ -23,7 +23,7 @@ int main(int argc, char **argv, char **env) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
 
-    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
+    VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp,99);
     tfp->open("obj_dir/t_trace_public_sig/simx.vcd");
 

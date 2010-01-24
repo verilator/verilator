@@ -39,6 +39,13 @@
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
 using namespace std;
 
+//=============================================================================
+// Switches
+
+#if VM_TRACE		// Verilator tracing requested
+# define WAVES 1	// Set backward compatibility flag as in systemperl.h
+#endif
+
 //=========================================================================
 // Basic types
 
@@ -57,6 +64,8 @@ typedef       WData* WDataOutP;	///< Array output from a function
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedVcd;
+class VerilatedVcdC;
 
 //=========================================================================
 /// Base class for all Verilated module classes

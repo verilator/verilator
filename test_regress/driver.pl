@@ -462,7 +462,7 @@ sub compile {
 	    $self->error("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
-	elsif ($self->{trace} && !$Have_System_Perl) {
+	elsif ($self->{coverage} && !$Have_System_Perl) {
 	    $self->error("Test requires SystemPerl; ignore error since not installed\n");
 	    return 1;
 	}
@@ -729,7 +729,7 @@ sub _make_main {
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"systemperl.h\"\n" if $self->sp;
-    print $fh "#include \"SpTraceVcdC.h\"\n" if $self->{trace} && !$self->sp;
+    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && !$self->sp;
     print $fh "#include \"SpTraceVcd.h\"\n" if $self->{trace} && $self->sp;
 
     print $fh "$VM_PREFIX * topp;\n";
@@ -774,7 +774,7 @@ sub _make_main {
 	if ($self->{sp}) {
 	    $fh->print("    SpTraceFile* tfp = new SpTraceFile;\n");
 	} else {
-	    $fh->print("    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;\n");
+	    $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n");
 	}
 	$fh->print("    topp->trace (tfp, 99);\n");
 	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");

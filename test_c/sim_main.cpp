@@ -8,7 +8,7 @@
 #include <verilated.h>		// Defines common routines
 #include "Vtop.h"		// From Verilating "top.v"
 #if VM_TRACE
-# include <SpTraceVcdC.h>	// Trace file format header (from SystemPerl)
+# include <verilated_vcd_c.h>	// Trace file format header
 #endif
 
 Vtop *top;			// Instantiation of module
@@ -28,8 +28,8 @@ int main(int argc, char **argv, char **env) {
 
 #if VM_TRACE			// If verilator was invoked with --trace
     Verilated::traceEverOn(true);	// Verilator must compute traced signals
-    cout << "Enabling waves...\n";
-    SpTraceVcdCFile* tfp = new SpTraceVcdCFile;
+    VL_PRINTF("Enabling waves...\n");
+    VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace (tfp, 99);	// Trace 99 levels of hierarchy
     tfp->open ("vlt_dump.vcd");	// Open the dump file
 #endif

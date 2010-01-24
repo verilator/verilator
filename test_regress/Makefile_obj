@@ -50,7 +50,7 @@ ifeq ($(VM_SP_OR_SC),1)
 endif
 
 #Default compile, using normal make rules
-#$(VM_PREFIX): $(SP_SRCS) $(VK_OBJS)
+#$(VM_PREFIX): $(VK_GLOBAL_OBJS) $(VK_OBJS)
 #	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 
 #Our own compile rules; Faster compile, all in one file
