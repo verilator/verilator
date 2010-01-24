@@ -26,6 +26,12 @@
 #define _VERILATEDDPI_CPP_
 #include "verilatedos.h"
 #include "verilatedimp.h"
+
+// On MSVC++ we need svdpi.h to declare exports, not imports
+#define DPI_PROTOTYPES
+#define XXTERN DPI_EXTERN DPI_DLLESPEC
+#define EETERN DPI_EXTERN DPI_DLLESPEC
+
 #include "svdpi.h"
 
 //======================================================================
@@ -33,7 +39,7 @@
 
 // Not supported yet
 #define _VL_SVDPI_UNIMP() \
-    vl_fatal(__FILE__,__LINE__,"",Verilated::catName("%%Error: Unsupported DPI function: ",__func__))
+    vl_fatal(__FILE__,__LINE__,"",Verilated::catName("%%Error: Unsupported DPI function: ",VL_FUNC))
 
 // Function requires a "context" in the import declaration
 #define _VL_SVDPI_CONTEXT_WARN() \
@@ -43,8 +49,6 @@
 //======================================================================
 //======================================================================
 // DPI ROUTINES
-
-// Version
 
 const char* svDpiVersion() {
     return "1800-2005";

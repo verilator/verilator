@@ -75,6 +75,21 @@
 #define VL_UL(c) ((IData)(c##UL))	///< Add appropriate suffix to 32-bit constant
 
 //=========================================================================
+// Warning disabled
+
+#ifndef VL_WARNINGS
+# ifdef _MSC_VER
+#  pragma warning(disable:4100)	// C4100: unreferenced formal parameter (L4)
+#  pragma warning(disable:4127)	// C4127: conditional expression is constant (L4)
+#  pragma warning(disable:4146)	// C4146: unary minus operator applied to unsigned type, result still unsigned
+#  pragma warning(disable:4189)	// C4189: local variable is initialized but not referenced (L4)
+#  pragma warning(disable:4244)	// C4244: conversion from 'uint64_t' to 'uint_32_t', possible loss of data
+#  pragma warning(disable:4245)	// C4245: conversion from 'int' to 'unsigned', signed/unsigned mismatch
+#  pragma warning(disable:4996)	// C4996: sscanf/fopen/etc may be unsafe
+# endif
+#endif
+
+//=========================================================================
 // Basic integer types
 
 #ifdef VL_UINTS_DEFINED
@@ -98,15 +113,15 @@ typedef unsigned long long      vluint64_t;	///< 64-bit unsigned type
 
 #elif defined(_WIN32) && defined(_MSC_VER)
 
-typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
-typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
-typedef unsigned int		uint32_t;	///< 32-bit unsigned type (backward compatibility)
-typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
-typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
-typedef int			vlsint32_t;	///< 32-bit signed type
-typedef unsigned int            vluint32_t;	///< 32-bit unsigned type
-typedef __int64			vlsint64_t;	///< 64-bit signed type
-typedef unsigned __int64        vluint64_t;	///< 64-bit unsigned type
+typedef unsigned __int8		uint8_t;	///< 8-bit unsigned type (backward compatibility)
+typedef unsigned __int16	uint16_t;	///< 16-bit unsigned type (backward compatibility)
+typedef unsigned __int32	uint32_t;	///< 32-bit unsigned type (backward compatibility)
+typedef unsigned __int8		vluint8_t;	///< 8-bit unsigned type
+typedef unsigned __int16	vluint16_t;	///< 16-bit unsigned type
+typedef signed   __int32	vlsint32_t;	///< 32-bit signed type
+typedef unsigned __int32	vluint32_t;	///< 32-bit unsigned type
+typedef signed   __int64	vlsint64_t;	///< 64-bit signed type
+typedef unsigned __int64	vluint64_t;	///< 64-bit unsigned type
 
 #else // Linux or compliant Unix flavors, -m64
 

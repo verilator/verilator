@@ -61,6 +61,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix tracing with --pins-bv 1, bug195.  [Michael S]
 
+**** Fix MSVC++ 2008 compile issues, bug209.  [Amir Gonnen]
+
 **** Fix MinGW compilation, bug184. [by Shankar Giri]
 
 **** Fix Cygwin 1.7.x compiler error with uint32_t, bug204.  [Ivan Djordjevic]

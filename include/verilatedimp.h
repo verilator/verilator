@@ -80,7 +80,7 @@ public: // But only for verilated*.cpp
 	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
     }
     static string argPlusMatch(const char* prefixp) {
-	int len = strlen(prefixp);
+	size_t len = strlen(prefixp);
 	if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
 	    s_s.m_argVecLoaded = true;  // Complain only once
 	    vl_fatal("unknown",0,"",

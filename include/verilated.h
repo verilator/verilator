@@ -305,8 +305,8 @@ extern IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WData
 #define VL_BITISSETLIMIT_W(data,width,bit) (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
 /// Create two 32-bit words from quadword
-#define VL_SET_WQ(owp,data)	{ owp[0]=(data); owp[1]=((data)>>VL_WORDSIZE); }
-#define VL_SET_WI(owp,data)	{ owp[0]=(data); owp[1]=0; }
+#define VL_SET_WQ(owp,data)	{ owp[0]=(IData)(data); owp[1]=(IData)((data)>>VL_WORDSIZE); }
+#define VL_SET_WI(owp,data)	{ owp[0]=(IData)(data); owp[1]=0; }
 #define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
 #define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
 
@@ -339,11 +339,11 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION>20011000)
-# define VL_TIME_I(ign) ((IData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q(ign) ((QData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_I() ((IData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q() ((QData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
 #else
-# define VL_TIME_I(ign) ((IData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q(ign) ((QData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_I() ((IData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q() ((QData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
 extern double sc_time_stamp();
 #endif
 
@@ -610,7 +610,7 @@ static inline IData VL_REDXOR_64(QData r) {
     return __builtin_parityll(r);
 #else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4)); r=(r^(r>>8)); r=(r^(r>>16)); r=(r^(r>>32));
-    return r;
+    return (IData)r;
 #endif
 }
 static inline IData VL_REDXOR_W(int words, WDataInP lwp) {
@@ -629,7 +629,7 @@ static inline IData VL_COUNTONES_I(IData lhs) {
     return r;
 }
 static inline IData VL_COUNTONES_Q(QData lhs) {
-    return VL_COUNTONES_I(lhs) + VL_COUNTONES_I(lhs>>32);
+    return VL_COUNTONES_I((IData)lhs) + VL_COUNTONES_I((IData)(lhs>>32));
 }
 static inline IData VL_COUNTONES_W(int words, WDataInP lwp) {
     IData r = 0;
@@ -876,7 +876,7 @@ static inline WDataOutP VL_ADD_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
 static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP rwp){
     QData carry = 0;
     for (int i=0; i<words; i++) {
-	carry = carry + (QData)(lwp[i]) + (QData)(~rwp[i]);
+	carry = carry + (QData)(lwp[i]) + (QData)(IData)(~rwp[i]);
 	if (i==0) carry++;  // Negation of temp2
 	owp[i] = (carry & VL_ULL(0xffffffff));
 	carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -896,7 +896,7 @@ static inline QData  VL_UNARYMIN_Q(QData data) { return -data; }
 static inline WDataOutP VL_UNARYMIN_W(int words, WDataOutP owp,WDataInP lwp){
     QData carry = 0;
     for (int i=0; i<words; i++) {
-	carry = carry + (QData)(~lwp[i]);
+	carry = carry + (QData)(IData)(~lwp[i]);
 	if (i==0) carry++;  // Negation of temp2
 	owp[i] = (carry & VL_ULL(0xffffffff));
 	carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -954,7 +954,7 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
     if ((lneg ^ rneg) & 1) {      // Negate output  (not using UNARYMIN, as owp==lwp)
 	QData carry = 0;
 	for (int i=0; i<words; i++) {
-	    carry = carry + (QData)(~owp[i]);
+	    carry = carry + (QData)(IData)(~owp[i]);
 	    if (i==0) carry++;  // Negation of temp2
 	    owp[i] = (carry & VL_ULL(0xffffffff));
 	    carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -1501,15 +1501,15 @@ inline IData VL_VALUEPLUSARGS_IQ(int rbits, const char* prefixp, char fmt, QData
     return v;
 }
 inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, CData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(CData)qd;
     return v;
 }
 inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, SData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(SData)qd;
     return v;
 }
 inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, IData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=qd;
+    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(IData)qd;
     return v;
 }
 

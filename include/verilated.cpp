@@ -409,7 +409,8 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 }
 
 static inline bool _vl_vsss_eof(FILE* fp, int& floc) {
-    return fp ? feof(fp) : (floc<0);
+    if (fp) return feof(fp) ? 1 : 0;  // 1:0 to prevent MSVC++ warning
+    else return (floc<0);
 }
 static inline void _vl_vsss_advance(FILE* fp, int& floc) {
     if (fp) fgetc(fp);
@@ -540,7 +541,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_skipspace(fp,floc,fromp);
 		    _vl_vsss_read(fp,floc,fromp, tmp, NULL);
 		    if (!tmp[0]) goto done;
-		    int pos = strlen(tmp)-1;
+		    int pos = ((int)strlen(tmp))-1;
 		    int lsb = 0;
 		    for (int i=0; i<obits && pos>=0; pos--) {
 			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[pos]); lsb+=8;
@@ -570,21 +571,21 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_skipspace(fp,floc,fromp);
 		    _vl_vsss_read(fp,floc,fromp, tmp, "01xXzZ?_");
 		    if (!tmp[0]) goto done;
-		    _vl_vsss_based(owp,obits, 1, tmp, 0, strlen(tmp));
+		    _vl_vsss_based(owp,obits, 1, tmp, 0, (int)strlen(tmp));
 		    break;
 		}
 		case 'o': {
 		    _vl_vsss_skipspace(fp,floc,fromp);
 		    _vl_vsss_read(fp,floc,fromp, tmp, "01234567xXzZ?_");
 		    if (!tmp[0]) goto done;
-		    _vl_vsss_based(owp,obits, 3, tmp, 0, strlen(tmp));
+		    _vl_vsss_based(owp,obits, 3, tmp, 0, (int)strlen(tmp));
 		    break;
 		}
 		case 'x': {
 		    _vl_vsss_skipspace(fp,floc,fromp);
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789abcdefABCDEFxXzZ?_");
 		    if (!tmp[0]) goto done;
-		    _vl_vsss_based(owp,obits, 4, tmp, 0, strlen(tmp));
+		    _vl_vsss_based(owp,obits, 4, tmp, 0, (int)strlen(tmp));
 		    break;
 		}
 		default:
@@ -689,7 +690,7 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
-    _VL_STRING_TO_VINT(obits, destp, output.length(), output.c_str());
+    _VL_STRING_TO_VINT(obits, destp, (int)output.length(), output.c_str());
 }
 
 string VL_SFORMATF_NX(const char* formatp, ...) {
@@ -845,7 +846,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 			} else {
 			    WDataOutP datap = &((WDataOutP)(memp))[ entry*VL_WORDS_I(width) ];
 			    if (!innum) { VL_ZERO_RESET_W(width, datap); }
-			    _VL_SHIFTL_INPLACE_W(width, datap, shift);
+			    _VL_SHIFTL_INPLACE_W(width, datap, (IData)shift);
 			    datap[0] |= value;
 			}
 			if (value>=(1<<shift)) {
@@ -865,7 +866,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 
     // Final checks
     fclose(fp);
-    if (end != (IData)(~ VL_ULL(0))  && addr != (end+1)) {
+    if (end != VL_UL(0xffffffff) && addr != (end+1)) {
 	vl_fatal (ofilenamez, linenum, "", "$readmem file ended before specified ending-address");
     }
 }
@@ -890,17 +891,17 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
 	VL_SET_WQ(rwp,ld);
 	break;
     case 'b':
-	_vl_vsss_based(rwp,rbits, 1, dp, 0, strlen(dp));
+	_vl_vsss_based(rwp,rbits, 1, dp, 0, (int)strlen(dp));
 	break;
     case 'o':
-	_vl_vsss_based(rwp,rbits, 3, dp, 0, strlen(dp));
+	_vl_vsss_based(rwp,rbits, 3, dp, 0, (int)strlen(dp));
 	break;
     case 'h': //FALLTHRU
     case 'x':
-	_vl_vsss_based(rwp,rbits, 4, dp, 0, strlen(dp));
+	_vl_vsss_based(rwp,rbits, 4, dp, 0, (int)strlen(dp));
 	break;
     case 's':
-	for (int i=0, lsb=0, pos=strlen(dp)-1; i<rbits && pos>=0; pos--) {
+	for (int i=0, lsb=0, pos=((int)strlen(dp))-1; i<rbits && pos>=0; pos--) {
 	    _vl_vsss_setbit(rwp,rbits,lsb, 8, dp[pos]); lsb+=8;
 	}
 	break;
@@ -942,8 +943,8 @@ const char* Verilated::catName(const char* n1, const char* n2) {
     // Returns new'ed data
     // Used by symbol table creation to make module names
     static char* strp = NULL;
-    static int   len  = -1;
-    int newlen = strlen(n1)+strlen(n2)+2;
+    static size_t len  = 0;
+    size_t newlen = strlen(n1)+strlen(n2)+2;
     if (newlen > len) {
 	if (strp) delete [] strp;
 	strp = new char[newlen];
