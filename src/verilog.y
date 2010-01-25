@@ -1548,7 +1548,7 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
 
 wirerangeE<dtypep>:
 		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
-	|	anyrange 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1); }  // not implicit
+	|	rangeList 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1); }  // not implicit
 	//			// Verilator doesn't support 2D wiring yet
 	//UNSUP	rangeListE				{ $$ = $1; }
 	;
