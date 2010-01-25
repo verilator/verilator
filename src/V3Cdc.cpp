@@ -168,7 +168,7 @@ public:
 class CdcWidthVisitor : public CdcBaseVisitor {
 private:
     int		m_maxLineno;
-    unsigned	m_maxFilenameLen;
+    size_t	m_maxFilenameLen;
 
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -190,12 +190,12 @@ public:
     virtual ~CdcWidthVisitor() {}
     // ACCESSORS
     int maxWidth() {
-	int width=1;
+	size_t width=1;
 	width += m_maxFilenameLen;
 	width += 1;  // The :
 	width += cvtToStr(m_maxLineno).length();
 	width += 1;  // Final :
-	return width;
+	return (int)width;
     }
 };
 

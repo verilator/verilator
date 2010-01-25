@@ -343,7 +343,11 @@ private:
 	    int got = read (fd, buf, todo);
 	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) out.append(buf, got);
-	    else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+	    else if (errno == EINTR || errno == EAGAIN
+#ifdef EWOULDBLOCK
+		     || errno == EWOULDBLOCK
+#endif
+		) {
 		checkFilter(false); usleep(1000); continue;
 	    } else { m_readEof = true; break; }
 	}
@@ -372,7 +376,11 @@ private:
 	    int got = write (m_writeFd, (out.c_str())+offset, out.length()-offset);
 	    //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) offset += got;
-	    else if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+	    else if (errno == EINTR || errno == EAGAIN
+#ifdef EWOULDBLOCK
+		     || errno == EWOULDBLOCK
+#endif
+		) {
 		checkFilter(false); usleep(1000); continue;
 	    }
 	    else break;

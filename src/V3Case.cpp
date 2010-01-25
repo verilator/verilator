@@ -136,7 +136,7 @@ private:
     // Per-CASE
     int		m_caseWidth;	// Width of valueItems
     int		m_caseItems;	// Number of caseItem unique values
-    int		m_caseNoOverlapsAllCovered;	// Proven to be synopsys parallel_case compliant
+    bool	m_caseNoOverlapsAllCovered;	// Proven to be synopsys parallel_case compliant
     AstNode*	m_valueItem[1<<CASE_OVERLAP_WIDTH];  // For each possible value, the case branch we need
 
     // METHODS

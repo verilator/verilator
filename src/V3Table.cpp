@@ -123,7 +123,7 @@ private:
 	// Also sets m_outVarps
 
 	// Calc data storage in bytes
-	int chgWidth = m_outVarps.size();	// Width of one change-it-vector
+	size_t chgWidth = m_outVarps.size();	// Width of one change-it-vector
 	if (chgWidth<8) chgWidth = 8;
 	double space = (pow((double)2,((double)(m_inWidth)))
 			*(double)(m_outWidth+chgWidth));

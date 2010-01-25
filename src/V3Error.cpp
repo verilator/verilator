@@ -258,7 +258,7 @@ string V3Error::lineStr (const char* filename, int lineno) {
     if (fnslashp) filename = fnslashp+1;
     out<<filename<<":"<<dec<<lineno<<":";
     const char* spaces = "                    ";
-    int numsp = out.str().length(); if (numsp>20) numsp = 20;
+    size_t numsp = out.str().length(); if (numsp>20) numsp = 20;
     out<<(spaces + numsp);
     return out.str();
 }

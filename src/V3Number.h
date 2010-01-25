@@ -91,7 +91,7 @@ private:
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     bool bitIsXZ(int bit) const {
 	if (bit>=m_width) return bitIsXZ(m_width-1);
-	return ( (m_valueX[bit/32] & (1UL<<(bit&31))) );
+	return ( (m_valueX[bit/32] & (1UL<<(bit&31))) && 1);
     }
     bool bitIsZ (int bit) const {
 	if (bit>=m_width) return bitIsZ(m_width-1);

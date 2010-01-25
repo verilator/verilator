@@ -79,6 +79,7 @@
 
 #ifndef VL_WARNINGS
 # ifdef _MSC_VER
+#  pragma warning(disable:4099)	// C4099: type name first seen using 'class' now seen using 'struct' (V3AstNode)
 #  pragma warning(disable:4100)	// C4100: unreferenced formal parameter (L4)
 #  pragma warning(disable:4127)	// C4127: conditional expression is constant (L4)
 #  pragma warning(disable:4146)	// C4146: unary minus operator applied to unsigned type, result still unsigned

@@ -925,7 +925,7 @@ struct AstNodeMath : public AstNode {
     virtual bool cleanOut() = 0; // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() { return castCvtPackString(); }
+    bool isOpaque() { return castCvtPackString()!=NULL; }
 };
 
 struct AstNodeTermop : public AstNodeMath {
@@ -1273,7 +1273,7 @@ public:
     // op1 = Output variable (functions only, NULL for tasks)
     AstNode*	fvarp() 	const { return op1p()->castNode(); }
     void 	addFvarp(AstNode* nodep) { addNOp1p(nodep); }
-    bool	isFunction() const { return fvarp(); }
+    bool	isFunction() const { return fvarp()!=NULL; }
     // op3 = Statements/Ports/Vars
     AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op3 = List of statements
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }

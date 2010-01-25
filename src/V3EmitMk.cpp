@@ -155,7 +155,7 @@ public:
 
 	of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
 	of.puts("VM_USER_CLASSES = \\\n");
-	for (V3StringSet::iterator it = v3Global.opt.cppFiles().begin();
+	for (V3StringSet::const_iterator it = v3Global.opt.cppFiles().begin();
 	     it != v3Global.opt.cppFiles().end(); ++it) {
 	    string cppfile = *it;
 	    of.puts("\t"+V3Options::filenameNonExt(cppfile)+" \\\n");
@@ -181,7 +181,7 @@ public:
 	    of.puts("\n### Executable rules... (from --exe)\n");
 	    of.puts("VPATH += $(VM_USER_DIR)\n");
 	    of.puts("\n");
-	    for (V3StringSet::iterator it = v3Global.opt.cppFiles().begin();
+	    for (V3StringSet::const_iterator it = v3Global.opt.cppFiles().begin();
 		 it != v3Global.opt.cppFiles().end(); ++it) {
 		string cppfile = *it;
 		string basename = V3Options::filenameNonExt(cppfile);

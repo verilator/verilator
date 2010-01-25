@@ -449,7 +449,7 @@ private:
 		    // Build a new IF statement
 		    FileLine* fl = addp->fileline();
 		    AstNode* condp = NULL;
-		    for (ActCodeSet::iterator csit = actset.begin(); csit!=actset.end(); ++csit) {
+		    for (ActCodeSet::const_iterator csit = actset.begin(); csit!=actset.end(); ++csit) {
 			uint32_t acode = *csit;
 			AstNode* selp = new AstSel (fl, new AstVarRef(fl, m_activityVscp, false),
 						    new AstConst(fl, acode),

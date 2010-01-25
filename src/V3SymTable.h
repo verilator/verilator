@@ -109,7 +109,7 @@ class V3SymTable : public AstNUser {
 	if (user4p_is_table) { AstUser4InUse::check(); }
 	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
 	    os<<indent<<it->first;
-	    for (int i=it->first.length(); i<30; ++i) os<<" ";
+	    for (size_t i=it->first.length(); i<30; ++i) os<<" ";
 	    if (user4p_is_table) {
 		V3SymTable* belowp = (it->second)->user4p()->castSymTable();
 		os<<setw(10)<<(void*)(belowp)<<setw(0)<<"  "<<it->second<<endl;

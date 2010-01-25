@@ -89,10 +89,11 @@ private:
     // METHODS
     V3SymTable* symsFindNew(AstNode* nodep, V3SymTable* upperVarsp) {
 	// Find or create symbol table for this node
-	if (V3SymTable* symsp = nodep->user4p()->castSymTable()) {
+	V3SymTable* symsp = nodep->user4p()->castSymTable();
+	if (symsp) {
 	    return symsp;
 	} else {
-	    V3SymTable* symsp = new V3SymTable(nodep, upperVarsp);
+	    symsp = new V3SymTable(nodep, upperVarsp);
 	    m_delSymps.push_back(symsp);
 	    nodep->user4p(symsp);
 	    return symsp;

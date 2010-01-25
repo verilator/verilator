@@ -96,7 +96,7 @@ public:
 	if (m_name.length()==0) {
 	    width(1,1);  // 0 width isn't allowed due to historic special cases
 	} else {
-	    width(m_name.length()*8, m_name.length()*8);
+	    width(((int)m_name.length())*8, ((int)m_name.length())*8);
 	}
     }
     ASTNODE_NODE_FUNCS(ConstString, CONSTSTRING)
