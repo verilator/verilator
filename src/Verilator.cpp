@@ -21,7 +21,7 @@
 
 #include "V3Global.h"
 #include "V3Ast.h"
-#include <time.h>
+#include <ctime>
 #include <sys/stat.h>
 
 #include "V3Active.h"
