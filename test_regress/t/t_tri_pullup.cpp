@@ -29,7 +29,9 @@ bool check() {
 	printf("FAIL: ");
 	pass = false;
     }
+#ifdef TEST_VERBOSE
     printf("OE=%d A=%d X=%d Y=%d Z=%d\n", tb->OE, tb->A, tb->X, tb->Y, tb->Z);
+#endif
     return pass;
 }
 

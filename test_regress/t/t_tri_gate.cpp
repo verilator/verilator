@@ -32,7 +32,9 @@ bool check() {
 	pass = false;
 	printf("FAIL: ");
     }
+#ifdef TEST_VERBOSE
     printf("SEL=%d A=%d W=%d X=%d Y=%d Z=%d\n", tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z);
+#endif
     return pass;
 }
 
