@@ -660,7 +660,7 @@ designs with only one top.
 
 Adds waveform tracing code to the model.  Verilator will generate
 additional {prefix}__Trace*.cpp files that will need to be compiled.  In
-addition verilated_vcd_sc.cpp (for SystemC traces) or verilated_vcd_c.c
+addition verilated_vcd_sc.cpp (for SystemC traces) or verilated_vcd_c.cpp
 (for both) must be compiled and linked in.  If using the Verilator
 generated Makefiles, these will be added as source targets for you.  If
 you're not using the Verilator makefiles, you will need to add these to
@@ -2530,7 +2530,7 @@ maximum typically needed.
 See the next question for tracing in SystemC mode.
 
 Add the --trace switch to Verilator, and in your top level C code, call
-Verilated::traceEverOn(true).  Then create a VerilatedVcdCFile object, and
+Verilated::traceEverOn(true).  Then create a VerilatedVcdC object, and
 in your main loop call "trace_object->dump(time)" every time step, and
 finally call "trace_object->close()".  For an example, see below and the
 test_c/sim_main.cpp file of the distribution.
@@ -2542,7 +2542,7 @@ Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
 Note also older versions of Verilator used the SystemPerl package and
-SpTraceVcdCFile class.  This still works, but is depreciated as it requires
+SpTraceVcdC class.  This still works, but is depreciated as it requires
 strong coupling between the Verilator and SystemPerl versions.
 
     #include "verilated_vcd_c.h"
@@ -2550,7 +2550,7 @@ strong coupling between the Verilator and SystemPerl versions.
     int main(int argc, char **argv, char **env) {
         ...
         Verilated::traceEverOn(true);
-        VerilatedVcdCFile* tfp = new VerilatedVcdCFile;
+        VerilatedVcdC* tfp = new VerilatedVcdC;
         topp->trace (tfp, 99);
         tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
