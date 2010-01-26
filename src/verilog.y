@@ -114,19 +114,24 @@ public:
 	return pkgp;
     }
     AstNodeDType* addRange(AstBasicDType* dtypep, AstRange* rangesp) {
-	// If dtypep isn't basic, then call createArray() instead
+	// If dtypep isn't basic, don't use this, call createArray() instead
 	if (!rangesp) {
 	    return dtypep;
 	} else {
-	    // Only the first range becomes the basicdtype range; everything else is arraying
+	    // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
+	    // then [1:1] becomes the basicdtype range; everything else is arraying
+	    // the final [5:5][4:4] will be passed in another call to createArray
 	    AstRange* rangearraysp = NULL;
 	    if (dtypep->rangep()) {
 		rangearraysp = rangesp;  // Already a range; everything is an array
 	    } else {
-		if (rangesp->nextp()) {
-		    rangearraysp = rangesp->nextp()->unlinkFrBackWithNext()->castRange();
+		AstRange* finalp = rangesp;
+		while (finalp->nextp()) finalp=finalp->nextp()->castRange();
+		if (finalp != rangesp) {
+		    finalp->unlinkFrBack();
+		    rangearraysp = rangesp;
 		}
-		dtypep->rangep(rangesp);
+		dtypep->rangep(finalp);
 	       	dtypep->implicit(false);
 	    }
 	    return createArray(dtypep, rangearraysp);
@@ -1549,8 +1554,6 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
 wirerangeE<dtypep>:
 		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
 	|	rangeList 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1); }  // not implicit
-	//			// Verilator doesn't support 2D wiring yet
-	//UNSUP	rangeListE				{ $$ = $1; }
 	;
 
 // IEEE: select
