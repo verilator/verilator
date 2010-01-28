@@ -593,6 +593,15 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
 	return;
     }
 
+    // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
+    // This will also strip them from strings, but strings aren't supposed to be multi-line without a "\"
+    string wholefilecr;
+    size_t wholesize = wholefile.length();
+    for (size_t i=0; i<wholesize; i++) {  // Not a c_str(), as we keep '\0's for now.
+	if (wholefile[i] != '\r' && wholefile[i] != '\0') wholefilecr += wholefile[i];
+    }
+    wholefile.resize(0); // free memory
+
     if (m_lexp) {
 	// We allow the same include file twice, because occasionally it pops
 	// up, with guards preventing a real recursion.
@@ -613,7 +622,7 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
     addLineComment(1); // Enter
 
     yy_flex_debug = (debug()>4)?1:0;
-    unputString(wholefile,true);
+    unputString(wholefilecr,true);
 }
 
 void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
