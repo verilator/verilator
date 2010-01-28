@@ -807,7 +807,7 @@ sub _make_main {
 
     if ($self->{trace}) {
 	$fh->print("#if VM_TRACE\n");
-	$fh->print("	tfp->close();\n");
+	$fh->print("	if (tfp) tfp->close();\n");
 	$fh->print("#endif //VM_TRACE\n");
     }
     $fh->print("\n");
@@ -840,7 +840,7 @@ sub _print_advance_time {
 	    print $fh "	${set}eval();\n";
 	    if ($self->{trace} && !$self->{sp}) {
 		$fh->print("#if VM_TRACE\n");
-		$fh->print("	tfp->dump (main_time);\n");
+		$fh->print("	if (tfp) tfp->dump (main_time);\n");
 		$fh->print("#endif //VM_TRACE\n");
 	    }
 	}

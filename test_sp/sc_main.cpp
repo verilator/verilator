@@ -134,11 +134,11 @@ int sc_main(int argc, char* argv[]) {
     cout <<("Test beginning...\n");
 
     reset_l = 1;
-    while (VL_TIME_Q() < 60 && !passed) {
+    while (VL_TIME_Q() < 60 && !passed && !Verilated::gotFinish()) {
 #if WAVES
 	// Flush the wave files each cycle so we can immediately see the output
 	// Don't do this in "real" programs, do it in a abort() handler instead
-	tfp->flush();
+	if (tfp) tfp->flush();
 #endif
 	if (VL_TIME_Q() > 10) {
 	    reset_l = 1;	// Deassert reset
@@ -157,7 +157,7 @@ int sc_main(int argc, char* argv[]) {
     //==========
     //  Close Waves
 #if WAVES
-    tfp->close();
+    if (tfp) tfp->close();
 #endif
 
     if (!passed) {

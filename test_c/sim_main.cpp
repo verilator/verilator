@@ -39,7 +39,7 @@ int main(int argc, char **argv, char **env) {
     top->clk = 0;
     top->passed = 0;
 
-    while (main_time < 60 && !top->passed) {
+    while (main_time < 60 && !top->passed && !Verilated::gotFinish()) {
 
 	if ((main_time % 10) == 3) {	// Toggle clock
 	    top->clk = 1;
@@ -55,7 +55,7 @@ int main(int argc, char **argv, char **env) {
 
 	top->eval();		// Evaluate model
 #if VM_TRACE
-	tfp->dump (main_time);	// Create waveform trace for this timestamp
+	if (tfp) tfp->dump (main_time);	// Create waveform trace for this timestamp
 #endif
 
 	// Read outputs
@@ -70,7 +70,7 @@ int main(int argc, char **argv, char **env) {
     top->final();
 
 #if VM_TRACE
-    tfp->close();
+    if (tfp) tfp->close();
 #endif
 
     if (!top->passed) {
