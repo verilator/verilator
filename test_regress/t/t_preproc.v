@@ -30,7 +30,7 @@
 
 text.
 
-`define FOOBAR  foo /*but not */ bar   /* or this either */
+`define FOOBAR  foo /*this */ bar   /* this too */
 `define FOOBAR2  foobar2 // but not
 `FOOBAR
 `FOOBAR2
@@ -155,3 +155,48 @@ Line_Preproc_Check `__LINE__
 // bug191
 `define bug191(bits) $display("bits %d %d", $bits(foo), `bits);
 `bug191(10)
+
+//======================================================================
+// bug202
+`define FC_INV3(out, in)					\
+  `ifdef DC							\
+     cell \inv_``out <$typeof(out)> (.a(<in>), .o(<out>));	\
+      /* multi-line comment					\
+	 multi-line comment */					\
+  `else								\
+    `ifdef MACRO_ATTRIBUTE					\
+      (* macro_attribute = `"INV (out``,in``)`" *)		\
+    `endif							\
+     assign out = ~in ;						\
+  `endif
+
+`FC_INV3(a3,b3)
+
+`define /* multi	\
+	 line1*/	\
+ bug202( i /*multi	\
+	   line2*/	\
+     )			\
+   /* multi		\
+      line 3*/		\
+   def i		\
+
+`bug202(foo)
+
+//======================================================================
+
+`define CMT1 // verilator NOT IN DEFINE
+`define CMT2 /* verilator PART OF DEFINE */
+`define CMT3 /* verilator NOT PART
+	        OF DEFINE */
+`define CMT4 /* verilator PART \
+	        OF DEFINE */
+1 `CMT1 (nodef)
+2 `CMT2 (hasdef)
+3 `CMT3 (nodef)
+4 `CMT4 (nodef)
+`define NL HAS a NEW \
+LINE
+`NL
+
+//======================================================================

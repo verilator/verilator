@@ -119,6 +119,7 @@ class V3PreLex {
     int		m_parenLevel;	// Parenthesis counting inside def args
     int		m_pslParenLevel;// PSL Parenthesis (){} counting, so we can find final ;
     bool	m_pslMoreNeeded;// Next // comment is really psl
+    bool	m_defCmtSlash;	// /*...*/ comment in define had \ ending
     string	m_defValue;	// Definition value being built.
 
     // CONSTRUCTORS
@@ -127,6 +128,7 @@ class V3PreLex {
 	m_pedantic = false;
 	m_formalLevel = 0;
 	m_parenLevel = 0;
+	m_defCmtSlash = false;
 	m_pslParenLevel = 0;
 	m_pslMoreNeeded = false;
     }

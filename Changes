@@ -50,6 +50,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support for loop i++, ++i, i--, --i, bug175. [by Byron Bradley]
 
+**** Support 1800-2009 /*comments*/ in define values.
+
 **** Add Makefile VM_GLOBAL_FAST, listing objects needed to link executables.
 
 **** Add --bbox-unsup option to black-box unsupported UDP tables.

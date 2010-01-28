@@ -146,6 +146,7 @@ struct V3PreProcImp : public V3PreProc {
     const char* tokenName(int tok);
     int getRawToken();
     int getToken();
+    void debugToken(int tok, const char* cmtp);
     void parseTop();
     void parseUndef();
 
@@ -679,7 +680,8 @@ int V3PreProcImp::getRawToken() {
 	    m_lineAdd--;
 	    m_rawAtBol = true;
 	    yytext=(char*)"\n"; yyleng=1;
-	    return (VP_TEXT);
+	    if (debug()) debugToken(VP_WHITE, "LNA");
+	    return (VP_WHITE);
 	}
 	if (m_lineCmt!="") {
 	    // We have some `line directive or other processed data to return to the user.
@@ -696,6 +698,7 @@ int V3PreProcImp::getRawToken() {
 		V3PreLex::s_currentLexp->appendDefValue(yytext,yyleng);
 		goto next_tok;
 	    } else {
+		if (debug()) debugToken(VP_TEXT, "LCM");
 		return (VP_TEXT);
 	    }
 	}
@@ -706,15 +709,7 @@ int V3PreProcImp::getRawToken() {
 	V3PreLex::s_currentLexp = m_lexp;   // Tell parser where to get/put data
 	int tok = yylex();
 
-	if (debug()>4) {
-	    string buf = string (yytext, yyleng);
-	    string::size_type pos;
-	    while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
-	    while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
-	    fprintf (stderr, "%d: RAW %s s%d dr%d:  <%d>%-10s: %s\n",
-		     fileline()->lineno(), m_off?"of":"on", m_state, (int)m_defRefs.size(),
-		     m_lexp->currentStartState(), tokenName(tok), buf.c_str());
-	}
+	if (debug()) debugToken(tok, "RAW");
 
 	// On EOF, try to pop to upper level includes, as needed.
 	if (tok==VP_EOF) {
@@ -724,6 +719,18 @@ int V3PreProcImp::getRawToken() {
 
 	if (yyleng) m_rawAtBol = (yytext[yyleng-1]=='\n');
 	return tok;
+    }
+}
+
+void V3PreProcImp::debugToken(int tok, const char* cmtp) {
+    if (debug()>4) {
+	string buf = string (yytext, yyleng);
+	string::size_type pos;
+	while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
+	while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
+	fprintf (stderr, "%d: %s %s s%d dr%d:  <%d>%-10s: %s\n",
+		 fileline()->lineno(), cmtp, m_off?"of":"on", m_state, (int)m_defRefs.size(),
+		 m_lexp->currentStartState(), tokenName(tok), buf.c_str());
     }
 }
 
@@ -803,6 +810,11 @@ int V3PreProcImp::getToken() {
 		else fileline()->v3fatalSrc("Bad case\n");
 		goto next_tok;
 	    }
+	    else if (tok==VP_TEXT) {
+		// IE, something like comment between define and symbol
+		if (!m_off) return tok;
+		else goto next_tok;
+	    }
 	    else {
 		fileline()->v3error("Expecting define name. Found: "<<tokenName(tok));
 		goto next_tok;
@@ -833,13 +845,17 @@ int V3PreProcImp::getToken() {
 		string formals = m_formals;
 		string value = m_lexp->m_defValue;
 		// Remove returns
-		for (unsigned i=0; i<formals.length(); i++) {
+		// Not removing returns in values has two problems,
+		// 1. we need to correct line numbers with `line after each substitution
+		// 2. Substituting in " .... " with embedded returns requires \ escape.
+		//    This is very difficult in the presence of `".
+		for (size_t i=0; i<formals.length(); i++) {
 		    if (formals[i] == '\n') {
 			formals[i] = ' ';
 			newlines += "\n";
 		    }
 		}
-		for (unsigned i=0; i<value.length(); i++) {
+		for (size_t i=0; i<value.length(); i++) {
 		    if (value[i] == '\n') {
 			value[i] = ' ';
 			newlines += "\n";
@@ -853,7 +869,8 @@ int V3PreProcImp::getToken() {
 		    define(fileline(), m_lastSym, value, formals, false);
 		}
 	    } else {
-		fileline()->v3fatalSrc("Bad define text\n");
+		string msg = string("Bad define text, unexpected ")+tokenName(tok)+"\n";
+		fileline()->v3fatalSrc(msg);
 	    }
 	    m_state = ps_TOP;
 	    // DEFVALUE is terminated by a return, but lex can't return both tokens.

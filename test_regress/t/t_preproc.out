@@ -78,7 +78,7 @@ text.
 
  
  
-foo  bar
+foo  bar   
 foobar2
 
  
@@ -203,4 +203,54 @@ x,y)--bee  submacro has comma paren
 
  
 $display("bits %d %d", $bits(foo), `10);
-`line 158 "t/t_preproc.v" 2
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+ 							          	       					   
+`line 173 "t/t_preproc.v" 0
+								      					           		     
+`line 173 "t/t_preproc.v" 0
+							      assign a3 = ~b3 ;						   
+
+ 
+	\
+ 
+
+
+
+
+
+
+		    def foo
+
+
+
+ 
+ 
+ 
+
+
+ 
+
+1 /*verilator NOT IN DEFINE*/ (nodef)
+2 /*verilator PART OF DEFINE*/ (hasdef)
+3 /*verilator NOT PART OF DEFINE*/ (nodef)
+4 /*verilator PART OF DEFINE*/ (nodef)
+ 
+
+HAS a NEW  LINE
+
+
+`line 203 "t/t_preproc.v" 2
