@@ -247,6 +247,7 @@ sub new {
 	make_main => 1,		# Make __main.cpp
 	sim_time => 1100,
 	benchmark => $opt_benchmark,
+	run_env => '',
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc "
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
@@ -502,10 +503,14 @@ sub execute {
     return 1 if $self->errors;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
+
+    my $run_env = $param{run_env};
+    $run_env .= ' ' if $run_env;
+
     if ($param{iv}) {
 	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
-		    cmd=>["$self->{obj_dir}/simiv",
+		    cmd=>[$run_env."$self->{obj_dir}/simiv",
 			  @{$param{ivrun_flags}},
 			  @{$param{all_run_flags}},
 			  ]);
@@ -513,7 +518,7 @@ sub execute {
     if ($param{nc}) {
 	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
-		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
+		    cmd=>[$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{ncrun_flags}},
 			  @{$param{all_run_flags}},
 			  ]);
@@ -522,7 +527,7 @@ sub execute {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
-		    cmd=>["./simv",
+		    cmd=>[$run_env."./simv",
 			  @{$param{all_run_flags}},
 		          ],
 		    %param,
@@ -533,7 +538,8 @@ sub execute {
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
-		    cmd=>[(($opt_gdbsim ? "gdbrun ":"")
+		    cmd=>[($run_env
+			   .($opt_gdbsim ? "gdbrun ":"")
 			   ."$self->{obj_dir}/$param{VM_PREFIX}"),
 			  @{$param{all_run_flags}},
 			  ],
@@ -666,44 +672,46 @@ sub _run {
     return if $self->errors;
 
     # Read the log file a couple of times to allow for NFS delays
-    for (my $try=7; $try>=0; $try--) {
-	sleep 1 if ($try!=7);
-	my $moretry = $try!=0;
+    if ($param{check_finished} || $param{expect}) {
+	for (my $try=7; $try>=0; $try--) {
+	    sleep 1 if ($try!=7);
+	    my $moretry = $try!=0;
 
-	my $fh = IO::File->new("<$param{logfile}");
-	next if !$fh && $moretry;
-	local $/; undef $/;
-	my $wholefile = <$fh>;
-	$fh->close();
+	    my $fh = IO::File->new("<$param{logfile}");
+	    next if !$fh && $moretry;
+	    local $/; undef $/;
+	    my $wholefile = <$fh>;
+	    $fh->close();
 
-	# Strip debugging comments
-	$wholefile =~ s/^- [^\n]+\n//mig;
-	$wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
-	$wholefile =~ s/^dot [^\n]+\n//mig;
+	    # Strip debugging comments
+	    $wholefile =~ s/^- [^\n]+\n//mig;
+	    $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
+	    $wholefile =~ s/^dot [^\n]+\n//mig;
 
-        # Finished?
-	if ($param{check_finished} && $wholefile !~ /\*\-\* All Finished \*\-\*/) {
-	    next if $moretry;
-	    $self->error("Missing All Finished\n");
-	}
-	if ($param{expect}) {
-	    # Compare
-	    my $quoted = quotemeta ($param{expect});
-	    my $bad = ($wholefile !~ /$param{expect}/ms
-		       && $wholefile !~ /$quoted/ms);
-	    if ($bad) {
-		#print "**BAD  $self->{name} $param{logfile} MT $moretry  $try\n";
+	    # Finished?
+	    if ($param{check_finished} && $wholefile !~ /\*\-\* All Finished \*\-\*/) {
 		next if $moretry;
-		$self->error("Mismatch in output from $param{cmd}[0]\n");
-		print "GOT:\n";
-		print $wholefile;
-		print "ENDGOT\n";
-		print "EXPECT:\n";
-		print $param{expect};
-		print "ENDEXPECT\n";
+		$self->error("Missing All Finished\n");
 	    }
+	    if ($param{expect}) {
+		# Compare
+		my $quoted = quotemeta ($param{expect});
+		my $bad = ($wholefile !~ /$param{expect}/ms
+			   && $wholefile !~ /$quoted/ms);
+		if ($bad) {
+		    #print "**BAD  $self->{name} $param{logfile} MT $moretry  $try\n";
+		    next if $moretry;
+		    $self->error("Mismatch in output from $param{cmd}[0]\n");
+		    print "GOT:\n";
+		    print $wholefile;
+		    print "ENDGOT\n";
+		    print "EXPECT:\n";
+		    print $param{expect};
+		    print "ENDEXPECT\n";
+		}
+	    }
+	    last;
 	}
-	last;
     }
 }
 

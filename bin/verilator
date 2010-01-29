@@ -156,9 +156,9 @@ Verilator - Convert Verilog code to C++/SystemC
 
     verilator --help
     verilator --version
-    verilator --cc [options] [top_level.v] [opt_c_files.cpp/c/cc]
-    verilator --sc [options] [top_level.v] [opt_c_files.cpp/c/cc]
-    verilator --sp [options] [top_level.v] [opt_c_files.cpp/c/cc]
+    verilator --cc [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
+    verilator --sc [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
+    verilator --sp [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
     verilator --lint-only ...
 
 =head1 DESCRIPTION
@@ -197,6 +197,7 @@ descriptions in the next sections for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
+    -CFLAGS <flags>		C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -218,6 +219,8 @@ descriptions in the next sections for more information.
     -I<dir>                     Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
+    -LDFLAGS <flags>		Linker pre-object flags for makefile
+    -LDLIBS <flags>		Linker library flags for makefile
     --language <lang>           Language standard to parse
     --lint-only                 Lint, but do not make output
     --MMD                       Create .d dependency files
@@ -277,7 +280,15 @@ Specifies optional C++ files to be linked in with the Verilog code.  If any
 C++ files are specified in this way, Verilator will include a make rule
 that generates a I<module> executable.  Without any C++ files, Verilator
 will stop at the I<module>__ALL.a library, and presume you'll continue
-linking with make rules you write yourself.
+linking with make rules you write yourself.  See also the -CFLAGS option.
+
+=item {file.a/.o/.so}
+
+Specifies optional object or library files to be linked in with the Verilog
+code, as a shorthand for -LDFLAGS "<file>".  If any files are specified in
+this way, Verilator will include a make rule that uses these files when
+linking the I<module> executable.  This generally is only useful when used
+with the --exe option.
 
 =item --assert
 
@@ -312,6 +323,12 @@ Rarely needed.  Override the default filename for Verilator itself.  When a
 dependency (.d) file is created, this filename will become a source
 dependency, such that a change in this binary will have make rebuild the
 output files.
+
+=item -CFLAGS I<flags>
+
+Add specified C compiler flags to the generated makefiles.  When make is
+run on the generated makefile these will be passed to the C++ compiler
+(gcc/g++/msvc++).
 
 =item --cc
 
@@ -475,6 +492,16 @@ this number of operations would result, the module is not inlined.  Larger
 values, or a value <= 1 will inline everything, will lead to longer compile
 times, but potentially faster runtimes.  This setting is ignored for very
 small modules; they will always be inlined, if allowed.
+
+=item -LDFLAGS I<flags>
+
+Add specified C linker flags to the generated makefiles.  When make is run
+on the generated makefile these will be passed to the C++ linker (ld)
+*after* the primary file being linked.  This flag is called -LDFLAGS as
+that's the traditional name in simulators; it's would have been better
+called LDLIBS as that's the Makefile variable it controls.  (In Make,
+LDFLAGS is before the first object, LDLIBS after.  -L libraries need to be
+in the Make variable LDLIBS, not LDFLAGS.)
 
 =item --language I<value>
 

@@ -151,8 +151,23 @@ public:
 	of.puts("# Module prefix (from --prefix)\n");
 	of.puts(string("VM_MODPREFIX = ")+v3Global.opt.modPrefix()+"\n");
 
-	V3StringSet dirs;
+	of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
+	of.puts("VM_USER_CFLAGS = \\\n");
+	for (V3StringSet::const_iterator it = v3Global.opt.cFlags().begin();
+	     it != v3Global.opt.cFlags().end(); ++it) {
+	    of.puts("\t"+*it+" \\\n");
+	}
+	of.puts("\n");
 
+	of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
+	of.puts("VM_USER_LDLIBS = \\\n");
+	for (V3StringSet::const_iterator it = v3Global.opt.ldLibs().begin();
+	     it != v3Global.opt.ldLibs().end(); ++it) {
+	    of.puts("\t"+*it+" \\\n");
+	}
+	of.puts("\n");
+
+	V3StringSet dirs;
 	of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
 	of.puts("VM_USER_CLASSES = \\\n");
 	for (V3StringSet::const_iterator it = v3Global.opt.cppFiles().begin();

@@ -97,6 +97,16 @@ void V3Options::addCppFile(const string& filename) {
 	m_cppFiles.insert(filename);
     }
 }
+void V3Options::addCFlags(const string& filename) {
+    if (m_cFlags.find(filename) == m_cFlags.end()) {
+	m_cFlags.insert(filename);
+    }
+}
+void V3Options::addLdLibs(const string& filename) {
+    if (m_ldLibs.find(filename) == m_ldLibs.end()) {
+	m_ldLibs.insert(filename);
+    }
+}
 void V3Options::addFuture(const string& flag) {
     if (m_futures.find(flag) == m_futures.end()) {
 	m_futures.insert(flag);
@@ -538,6 +548,11 @@ bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
     return false;
 }
 
+bool V3Options::suffixed(const char* sw, const char* arg) {
+    if (strlen(arg) > strlen(sw)) return false;
+    return (0==strcmp(sw+strlen(sw)-strlen(arg), arg));
+}
+
 void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
@@ -717,11 +732,19 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		}
 	    }
 	    // Parameterized switches
+	    else if ( !strcmp (sw, "-CFLAGS") && (i+1)<argc ) {
+		shift;
+		addCFlags(argv[i]);
+	    }
 	    else if ( !strncmp (sw, "-D", 2)) {
 		addDefine (string (sw+strlen("-D")));
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDir (string (sw+strlen("-I")));
+	    }
+	    else if ( !strcmp (sw, "-LDFLAGS") && (i+1)<argc ) {
+		shift;
+		addLdLibs(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-Mdir") && (i+1)<argc ) {
 		shift; m_makeDir = argv[i];
@@ -829,12 +852,18 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	else {
 	    // Filename
 	    string filename = filenameSubstitute(argv[i]);
-	    if (filename.find(".cpp") != string::npos
-		|| filename.find(".cxx") != string::npos
-		|| filename.find(".cc") != string::npos
-		|| filename.find(".sp") != string::npos) {
+	    if (suffixed(filename.c_str(), ".cpp")
+		|| suffixed(filename.c_str(), ".cxx")
+		|| suffixed(filename.c_str(), ".cc")
+		|| suffixed(filename.c_str(), ".sp")) {
 		V3Options::addCppFile(filename);
-	    } else {
+	    }
+	    else if (suffixed(filename.c_str(), ".a")
+		     || suffixed(filename.c_str(), ".o")
+		     || suffixed(filename.c_str(), ".so")) {
+		V3Options::addLdLibs(filename);
+	    }
+	    else {
 		V3Options::addVFile(filename);
 	    }
 	    shift;

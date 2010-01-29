@@ -86,6 +86,8 @@ class V3Options {
     V3OptionsImp*	m_impp;		// Slow hidden options
 
     V3StringSet	m_cppFiles;	// argument: C++ files to link against
+    V3StringSet	m_cFlags;	// argument: user CFLAGS
+    V3StringSet	m_ldLibs;	// argument: user LDFLAGS
     V3StringSet	m_futures;	// argument: -Wfuture- list
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
     V3StringList m_vFiles;	// argument: Verilog files to read
@@ -176,6 +178,7 @@ class V3Options {
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
+    bool suffixed(const char* sw, const char* arg);
 
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
@@ -192,6 +195,8 @@ class V3Options {
 
     // METHODS
     void addCppFile(const string& filename);
+    void addCFlags(const string& filename);
+    void addLdLibs(const string& filename);
     void addLibraryFile(const string& filename);
     void addVFile(const string& filename);
 
@@ -254,6 +259,8 @@ class V3Options {
     string xAssign() const { return m_xAssign; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
+    const V3StringSet& cFlags() const { return m_cFlags; }
+    const V3StringSet& ldLibs() const { return m_ldLibs; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3LangCode& language() const { return m_language; }

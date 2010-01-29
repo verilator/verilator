@@ -43,6 +43,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add experimental config files to filter warnings outside of the source.
 
+***  Add -CFLAGS, -LDFLAGS, <file>.a, <file>.o, and <file>.so options.
+
 ***  Speed compiles by avoiding including the STL iostream header.
      Application programs may need to include it themselves to avoid errors.
 
