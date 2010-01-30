@@ -750,6 +750,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		shift; m_makeDir = argv[i];
 		addIncDir (string (m_makeDir));	 // Need to find generated files there too
 	    }
+	    else if ( !strcmp (sw, "-o") && (i+1)<argc ) {
+		shift; m_exeName = argv[i];
+	    }
 	    else if ( !strncmp (sw, "-U", 2)) {
 		V3PreShell::undef (string (sw+strlen("-U")));
 	    }

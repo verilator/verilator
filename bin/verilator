@@ -232,6 +232,7 @@ descriptions in the next sections for more information.
     -O0                         Disable optimizations
     -O3                         High performance optimizations
     -O<optimization-letter>     Selectable optimizations
+    -o <executable>		Name of final executable
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
@@ -563,6 +564,11 @@ optimization selected based on the letter passed.  A lowercase letter
 disables an optimization, an upper case letter enables it.  This is
 intended for debugging use only; see the source code for version-dependent
 mappings of optimizations to -O letters.
+
+=item -o <executable>
+
+Specify the name for the final executable built if using --exe.  Defaults
+to the --prefix if not specified.
 
 =item --output-split I<bytes>
 

@@ -119,7 +119,7 @@ public:
 	of.puts("\n");
 
 	if (v3Global.opt.exe()) {
-	    of.puts("default: "+v3Global.opt.prefix()+"\n");
+	    of.puts("default: "+v3Global.opt.exeName()+"\n");
 	} else {
 	    of.puts("default: "+v3Global.opt.prefix()+"__ALL.a\n");
 	}
@@ -205,7 +205,7 @@ public:
 	    }
 
 	    of.puts("\n### Link rules... (from --exe)\n");
-	    of.puts(v3Global.opt.prefix()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
+	    of.puts(v3Global.opt.exeName()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
 	    of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS) 2>&1 | c++filt\n");
 	    of.puts("\n");
 	}

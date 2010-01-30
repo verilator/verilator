@@ -537,10 +537,11 @@ sub execute {
     if ($param{vlt}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
+	$param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
 		    cmd=>[($run_env
 			   .($opt_gdbsim ? "gdbrun ":"")
-			   ."$self->{obj_dir}/$param{VM_PREFIX}"),
+			   .$param{executable}),
 			  @{$param{all_run_flags}},
 			  ],
 		    %param,

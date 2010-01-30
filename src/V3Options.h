@@ -138,6 +138,7 @@ class V3Options {
     int		m_compLimitParens;	// compiler selection options
 
     string	m_bin;		// main switch: --bin {binary}
+    string	m_exeName;	// main switch: -o {name}
     string	m_flags;	// main switch: -f {name}
     string	m_makeDir;	// main switch: -Mdir
     string	m_modPrefix;	// main switch: --mod-prefix
@@ -251,6 +252,7 @@ class V3Options {
     int    compLimitBlocks() const { return m_compLimitBlocks; }
     int    compLimitParens() const { return m_compLimitParens; }
 
+    string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
     string makeDir() const { return m_makeDir; }
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
