@@ -56,6 +56,12 @@ LDFLAGS  += $(M32)
 # These aren't ever set by Verilator, so users are free to override them.
 CPPFLAGS += $(USER_CPPFLAGS)
 LDFLAGS  += $(USER_LDFLAGS)
+LDLIBS   += $(USER_LDLIBS)
+
+# Add flags from -CFLAGS and -LDFLAGS on Verilator command line
+CPPFLAGS += $(VM_USER_CFLAGS)
+LDFLAGS  += $(VM_USER_LDFLAGS)
+LDLIBS   += $(VM_USER_LDLIBS)
 
 # See the benchmarking section of bin/verilator.
 # Support class optimizations.  This includes the tracing and symbol table.
@@ -109,10 +115,6 @@ endif
 
 ifeq ($(VM_SC),1)
   LIBS   += -lm -lstdc++
- ifeq ($(VM_TRACE),1)
-  CPPFLAGS += -I$(SYSTEMPERL_INCLUDE)
-  VPATH    +=   $(SYSTEMPERL_INCLUDE)
- endif
 endif
 
 #######################################################################
@@ -120,10 +122,6 @@ endif
 
 ifeq ($(VM_PCLI),1)
   LIBS   += -lm -lstdc++
- ifeq ($(VM_TRACE),1)
-  CPPFLAGS += -I$(SYSTEMPERL_INCLUDE)
-  VPATH    +=   $(SYSTEMPERL_INCLUDE)
- endif
 endif
 
 #######################################################################
