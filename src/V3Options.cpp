@@ -594,76 +594,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    bool flag = true;
 	    // Allow gnu -- switches
 	    if (sw[0]=='-' && sw[1]=='-') ++sw;
-	    // Switch tests
-	    if ( !strcmp (sw, "-debug") ) {
-		setDebugMode(3);
-	    }
-	    else if ( !strcmp (sw, "-debugi") ) {
-		shift;
-		setDebugMode(atoi(argv[i]));
-	    }
-	    else if ( !strncmp (sw, "-debugi-", strlen("-debugi-"))) {
-		const char* src = sw+strlen("-debugi-");
-		shift;
-		setDebugSrcLevel(src, atoi(argv[i]));
-	    }
-	    else if ( !strcmp (sw, "-error-limit") ) {
-		shift;
-		m_errorLimit = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-inline-mult") ) {
-		shift;
-		m_inlineMult = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-language") ) {
-		shift;
-		V3LangCode optval = V3LangCode(argv[i]);
-		if (optval.legal()) {
-		    m_language = optval;
-		} else {
-		    fl->v3fatal("Unknown language specified: "<<argv[i]);
-		}
-	    }
-	    else if ( !strcmp (sw, "-output-split") ) {
-		shift;
-		m_outputSplit = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-output-split-cfuncs") ) {
-		shift;
-		m_outputSplitCFuncs = atoi(argv[i]);
-		if (m_outputSplitCFuncs && (!m_outputSplitCTrace
-					    || m_outputSplitCTrace>m_outputSplitCFuncs)) {
-		    m_outputSplitCTrace = m_outputSplitCFuncs;
-		}
-	    }
-	    else if ( !strcmp (sw, "-output-split-ctrace") ) { // Undocumented optimization tweak
-		shift;
-		m_outputSplitCTrace = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-trace-depth") ) {
-		shift;
-		m_traceDepth = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-unroll-count") ) { // Undocumented optimization tweak
-		shift;
-		m_unrollCount = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-unroll-stmts") ) {	// Undocumented optimization tweak
-		shift;
-		m_unrollStmts = atoi(argv[i]);
-	    }
-	    else if ( !strcmp (sw, "-v") ) {
-		shift;
-		V3Options::addLibraryFile(filenameSubstitute(argv[i]));
-	    }
-	    else if ( !strcmp (sw, "-V") ) {
-		showVersion(true);
-		exit(0);
-	    }
-	    else if ( !strcmp (sw, "-version") ) {
-		showVersion(false);
-		exit(0);
-	    }
+	    if (0) {}
 	    // Single switches
 	    else if ( !strcmp (sw, "-E") )			{ m_preprocOnly = true; }
 	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_makeDepend = flag; }
@@ -739,12 +670,41 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strncmp (sw, "-D", 2)) {
 		addDefine (string (sw+strlen("-D")));
 	    }
+	    else if ( !strcmp (sw, "-debug") ) {
+		setDebugMode(3);
+	    }
+	    else if ( !strcmp (sw, "-debugi") && (i+1)<argc ) {
+		shift;
+		setDebugMode(atoi(argv[i]));
+	    }
+	    else if ( !strncmp (sw, "-debugi-", strlen("-debugi-"))) {
+		const char* src = sw+strlen("-debugi-");
+		shift;
+		setDebugSrcLevel(src, atoi(argv[i]));
+	    }
+	    else if ( !strcmp (sw, "-error-limit") && (i+1)<argc ) {
+		shift;
+		m_errorLimit = atoi(argv[i]);
+	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDir (string (sw+strlen("-I")));
+	    }
+	    else if ( !strcmp (sw, "-inline-mult") && (i+1)<argc ) {
+		shift;
+		m_inlineMult = atoi(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-LDFLAGS") && (i+1)<argc ) {
 		shift;
 		addLdLibs(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-language") && (i+1)<argc ) {
+		shift;
+		V3LangCode optval = V3LangCode(argv[i]);
+		if (optval.legal()) {
+		    m_language = optval;
+		} else {
+		    fl->v3fatal("Unknown language specified: "<<argv[i]);
+		}
 	    }
 	    else if ( !strcmp (sw, "-Mdir") && (i+1)<argc ) {
 		shift; m_makeDir = argv[i];
@@ -753,8 +713,48 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-o") && (i+1)<argc ) {
 		shift; m_exeName = argv[i];
 	    }
+	    else if ( !strcmp (sw, "-output-split") && (i+1)<argc ) {
+		shift;
+		m_outputSplit = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-output-split-cfuncs") && (i+1)<argc ) {
+		shift;
+		m_outputSplitCFuncs = atoi(argv[i]);
+		if (m_outputSplitCFuncs && (!m_outputSplitCTrace
+					    || m_outputSplitCTrace>m_outputSplitCFuncs)) {
+		    m_outputSplitCTrace = m_outputSplitCFuncs;
+		}
+	    }
+	    else if ( !strcmp (sw, "-output-split-ctrace") ) { // Undocumented optimization tweak
+		shift;
+		m_outputSplitCTrace = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-trace-depth") && (i+1)<argc ) {
+		shift;
+		m_traceDepth = atoi(argv[i]);
+	    }
 	    else if ( !strncmp (sw, "-U", 2)) {
 		V3PreShell::undef (string (sw+strlen("-U")));
+	    }
+	    else if ( !strcmp (sw, "-unroll-count") ) { // Undocumented optimization tweak
+		shift;
+		m_unrollCount = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-unroll-stmts") ) {	// Undocumented optimization tweak
+		shift;
+		m_unrollStmts = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-v") && (i+1)<argc ) {
+		shift;
+		V3Options::addLibraryFile(filenameSubstitute(argv[i]));
+	    }
+	    else if ( !strcmp (sw, "-V") ) {
+		showVersion(true);
+		exit(0);
+	    }
+	    else if ( !strcmp (sw, "-version") ) {
+		showVersion(false);
+		exit(0);
 	    }
 	    else if ( !strncmp (sw, "-Werror-",strlen("-Werror-")) )	{
 		string msg = sw+strlen("-Werror-");
@@ -844,7 +844,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		    fl->v3fatal("Unknown setting for --x-assign: "<<argv[i]);
 		}
 	    }
-	    else if ( !strcmp (sw, "-y")) {
+	    else if ( !strcmp (sw, "-y") && (i+1)<argc ) {
 		shift; addIncDir (string (argv[i]));
 	    }
 	    else {
