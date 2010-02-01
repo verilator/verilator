@@ -161,7 +161,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     *ofp<<"# DESCR"<<"IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."<<endl;
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
-#if !defined (__MINGW32__)
+#ifndef __WIN32
     sync();  // Push files so sizes look correct
 #endif
     for (set<DependFile>::iterator iter=m_filenameList.begin();
@@ -258,7 +258,7 @@ void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {
 	created = true;
-#if !defined (__MINGW32__)
+#ifndef __WIN32
 	mkdir(v3Global.opt.makeDir().c_str(), 0777);
 #else
 	mkdir(v3Global.opt.makeDir().c_str());

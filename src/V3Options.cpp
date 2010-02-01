@@ -23,8 +23,8 @@
 #include "verilatedos.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#if !defined(__MINGW32__)
-#include <sys/utsname.h>
+#if !defined(__WIN32)
+# include <sys/utsname.h>
 #endif
 #include <cctype>
 #include <dirent.h>
@@ -330,7 +330,7 @@ void V3Options::setenvStr(const string& envvar, const string& value, const strin
     } else {
 	UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
-#if !defined (__MINGW32__)
+#ifndef __WIN32
     setenv(envvar.c_str(),value.c_str(),true);
 #else
     //setenv() replaced by putenv() in MinGW environment. Prototype is different
@@ -367,6 +367,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         // Hardcoded with MINGW current version. Would like a better way.
         string sysname = "MINGW32_NT-5.0";
         var = "mingw32";
+#elsif defined (__WIN32)
+        string sysname = "WIN32";
+        var = "win32";
 #else
 	struct utsname uts;
 	uname(&uts);
