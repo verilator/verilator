@@ -125,6 +125,7 @@ sub prep {
 	$wholefile =~ s/\bSpScBvExposer/VlScBvExposer/g;
 	#
 	$wholefile =~ s/\b(uint[0-9]+_t)/vl$1/g;
+	$wholefile =~ s/%ll/%" VL_PRI64 "/g;
 	#
 	$wholefile =~ s/\bSP_SC_BV/VL_SC_BV/g;
 	$wholefile =~ s/\bSP_UNLIKELY/VL_UNLIKELY/g;

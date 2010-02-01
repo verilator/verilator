@@ -344,14 +344,14 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    }
 		    break;
 		case 'd': { // Signed decimal
-		    int digits=sprintf(tmp,"%lld",(vlsint64_t)(VL_EXTENDS_QQ(lbits,lbits,ld)));
+		    int digits=sprintf(tmp,"%" VL_PRI64 "d",(vlsint64_t)(VL_EXTENDS_QQ(lbits,lbits,ld)));
 		    int needmore = width-digits;
 		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
 		    output += tmp;
 		    break;
 		}
 		case 'u': { // Unsigned decimal
-		    int digits=sprintf(tmp,"%llu",ld);
+		    int digits=sprintf(tmp,"%" VL_PRI64 "u",ld);
 		    int needmore = width-digits;
 		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
 		    output += tmp;
@@ -360,9 +360,9 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		case 't': { // Time
 		    int digits;
 		    if (VL_TIME_MULTIPLIER==1) {
-			digits=sprintf(tmp,"%llu",ld);
+			digits=sprintf(tmp,"%" VL_PRI64 "u",ld);
 		    } else if (VL_TIME_MULTIPLIER==1000) {
-			digits=sprintf(tmp,"%llu.%03llu",
+			digits=sprintf(tmp,"%" VL_PRI64 "u.%03" VL_PRI64 "u",
 				       (QData)(ld/VL_TIME_MULTIPLIER),
 				       (QData)(ld%VL_TIME_MULTIPLIER));
 		    } else {
@@ -553,7 +553,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    vlsint64_t ld;
-		    sscanf(tmp,"%lld",&ld);
+		    sscanf(tmp,"%" VL_PRI64 "d",&ld);
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
@@ -563,7 +563,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    QData ld;
-		    sscanf(tmp,"%llu",&ld);
+		    sscanf(tmp,"%" VL_PRI64 "u",&ld);
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
@@ -887,7 +887,7 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
 	break;
     case 'd':
 	vlsint64_t ld;
-	sscanf(dp,"%lld",&ld);
+	sscanf(dp,"%" VL_PRI64 "d",&ld);
 	VL_SET_WQ(rwp,ld);
 	break;
     case 'b':

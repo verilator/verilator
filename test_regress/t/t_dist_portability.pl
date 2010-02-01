@@ -15,6 +15,13 @@ my $Debug;
 if (!-r "$root/.git") {
     $Self->skip("Not in a git repository");
 } else {
+    uint();
+    printfll();
+}
+
+ok(1);
+
+sub uint {
     ### Must trim output before and after our file list
     #my $files = "*/*.c* */*.h test_regress/t/*.c* test_regress/t/*.h";
     # src isn't clean, and probably doesn't need to be (yet?)
@@ -31,7 +38,7 @@ if (!-r "$root/.git") {
 	next if $line =~ m!include/svdpi.h!;  # Not ours
 	if ($line =~ /^([^:]+)/) {
 	    $names{$1} = 1;
-	    print $line;
+	    print "$line\n";
 	}
     }
     if (keys %names) {
@@ -39,5 +46,22 @@ if (!-r "$root/.git") {
     }
 }
 
-ok(1);
+sub printfll {
+    my $files = "src/*.c* src/*.h include/*.c* include/*.h test_c/*.c* test_regress/t/*.c* test_regress/t/*.h";
+    my $cmd = "cd $root && fgrep -n ll $files | sort";
+    print "C $cmd\n";
+    my $grep = `$cmd`;
+    my %names;
+    foreach my $line (split /\n/, $grep) {
+	next if $line !~ /%[^ ]*ll/;
+	if ($line =~ /^([^:]+)/) {
+	    $names{$1} = 1;
+	    print "$line\n";
+	}
+    }
+    if (keys %names) {
+	$Self->error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
+    }
+}
+
 1;

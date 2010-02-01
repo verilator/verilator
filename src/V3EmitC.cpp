@@ -531,17 +531,17 @@ public:
 	    }
 	    for (int word=VL_WORDS_I(nodep->num().minWidth())-1; word>0; word--) {
 		// Only 32 bits - llx + long long here just to appease CPP format warning
-		ofp()->printf(",0x%08llx", (long long)(nodep->num().dataWord(word)));
+		ofp()->printf(",0x%08" VL_PRI64 "x", (long long)(nodep->num().dataWord(word)));
 	    }
-	    ofp()->printf(",0x%08llx)", (long long)(nodep->num().dataWord(0)));
+	    ofp()->printf(",0x%08" VL_PRI64 "x)", (long long)(nodep->num().dataWord(0)));
 	} else if (nodep->isQuad()) {
 	    vluint64_t num = nodep->toUQuad();
-	    if (num<10) ofp()->printf("VL_ULL(%lld)", (long long)num);
-	    else ofp()->printf("VL_ULL(0x%llx)", (long long)num);
+	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "d)", (long long)num);
+	    else ofp()->printf("VL_ULL(0x%" VL_PRI64 "x)", (long long)num);
 	} else {
 	    uint32_t num = nodep->toUInt();
 	    if (num<10) puts(cvtToStr(num));
-	    else ofp()->printf("0x%llx", (long long)num);
+	    else ofp()->printf("0x%" VL_PRI64 "x", (long long)num);
 	    //Unneeded-Causes %lx format warnings:
 	    //  if (!nodep->num().isSigned() && (num & (1UL<<31))) puts("U");
 	}

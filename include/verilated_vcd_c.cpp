@@ -202,7 +202,7 @@ void VerilatedVcd::printStr (const char* str) {
 
 void VerilatedVcd::printQuad (vluint64_t n) {
     char buf [100];
-    sprintf(buf,"%llu",(long long unsigned)n);
+    sprintf(buf,"%" VL_PRI64 "u",(long long unsigned)n);
     printStr(buf);
 }
 

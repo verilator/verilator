@@ -137,6 +137,16 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #endif
 
 //=========================================================================
+// Printing printf/scanf formats
+// Alas cinttypes isn't that standard yet
+
+#ifdef _WIN32
+# define VL_PRI64 "I64"
+#else // Linux or compliant Unix flavors
+# define VL_PRI64 "ll"
+#endif
+
+//=========================================================================
 // Integer size macros
 
 #define VL_BYTESIZE 8			///< Bits in a byte

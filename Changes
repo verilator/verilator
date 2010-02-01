@@ -70,7 +70,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix MSVC++ 2008 compile issues, bug209.  [Amir Gonnen]
 
-**** Fix MinGW compilation, bug184. [by Shankar Giri]
+**** Fix MinGW compilation, bug184, bug214. [by Shankar Giri, Amir Gonnen]
 
 **** Fix Cygwin 1.7.x compiler error with uint32_t, bug204.  [Ivan Djordjevic]
 

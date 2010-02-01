@@ -55,7 +55,8 @@ extern "C" {
 
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-	printf("%%Error: %s:%d: GOT = %llx   EXP = %llx\n", __FILE__,__LINE__, (long long)(got), (long long)(exp)); \
+	printf("%%Error: %s:%d: GOT = %" VL_PRI64 "x   EXP = %" VL_PRI64 "x\n", \
+	       __FILE__,__LINE__, (long long)(got), (long long)(exp));	\
 	return __LINE__; \
     }
 #define CHECK_RESULT_NNULL(got) \
