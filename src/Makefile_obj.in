@@ -82,7 +82,8 @@ endif
 #LIBS += -ldl
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
 
-LIBS = -lm -lfl
+# -lfl not needed as Flex invoked with %nowrap option
+LIBS = -lm
 
 CPPFLAGSNOWALL += -MMD
 CPPFLAGSNOWALL += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
