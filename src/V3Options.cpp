@@ -144,13 +144,13 @@ string V3Options::allArgsString() {
 
 V3LangCode::V3LangCode (const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
-    for (int codei=V3LangCode::ERROR; codei<V3LangCode::MAX; ++codei) {
+    for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::MAX; ++codei) {
 	V3LangCode code = (V3LangCode)codei;
 	if (0==strcasecmp(textp,code.ascii())) {
 	    m_e = code; return;
 	}
     }
-    m_e = V3LangCode::ERROR;
+    m_e = V3LangCode::L_ERROR;
 }
 
 //######################################################################

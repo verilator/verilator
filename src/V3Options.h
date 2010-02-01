@@ -37,7 +37,7 @@
 class V3LangCode {
 public:
     enum en {
-	ERROR,  // Must be first.
+	L_ERROR,  // Must be first.
 	L1364_1995,
 	L1364_2001,
 	L1364_2005,
@@ -59,10 +59,10 @@ public:
 	return names[m_e];
     };
     static V3LangCode mostRecent() { return V3LangCode(L1800_2009); }
-    bool legal() const { return m_e != ERROR; }
+    bool legal() const { return m_e != L_ERROR; }
     //
     enum en m_e;
-    inline V3LangCode () : m_e(ERROR) {}
+    inline V3LangCode () : m_e(L_ERROR) {}
     inline V3LangCode (en _e) : m_e(_e) {}
     V3LangCode (const char* textp);	// Return matching code or ERROR
     explicit inline V3LangCode (int _e) : m_e(static_cast<en>(_e)) {}
