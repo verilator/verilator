@@ -84,12 +84,6 @@ protected:
 void VerilatedVcd::open (const char* filename) {
     if (isOpen()) return;
 
-    // Assertions, as we cast enum to vluint32_t pointers in AutoTrace.pm
-    enum VerilatedVcd_enumtest { FOO = 1 };
-    if (sizeof(VerilatedVcd_enumtest) != sizeof(vluint32_t)) {
-	vl_fatal(__FILE__,__LINE__,"", "Internal: VerilatedVcd::open cast assumption violated");
-    }
-
     // Set member variables
     m_filename = filename;
     s_vcdVecp.push_back(this);
