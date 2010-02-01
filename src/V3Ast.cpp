@@ -44,11 +44,13 @@ uint32_t AstUser1InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser2InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser3InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 uint32_t AstUser4InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
+uint32_t AstUser5InUse::s_userCntGbl=0;	// Hot cache line, leave adjacent
 
 bool AstUser1InUse::s_userBusy=false;
 bool AstUser2InUse::s_userBusy=false;
 bool AstUser3InUse::s_userBusy=false;
 bool AstUser4InUse::s_userBusy=false;
+bool AstUser5InUse::s_userBusy=false;
 
 //######################################################################
 // V3AstType
@@ -83,6 +85,8 @@ void AstNode::init() {
     m_user3Cnt = 0;
     m_user4p = NULL;
     m_user4Cnt = 0;
+    m_user5p = NULL;
+    m_user5Cnt = 0;
 }
 
 string AstNode::encodeName(const string& namein) {
@@ -954,6 +958,7 @@ void AstNode::dumpPtrs(ostream& os) {
     if (user2p()) os<<" user2p="<<(void*)user2p();
     if (user3p()) os<<" user3p="<<(void*)user3p();
     if (user4p()) os<<" user4p="<<(void*)user4p();
+    if (user5p()) os<<" user5p="<<(void*)user5p();
     if (m_iterpp) {
 	os<<" iterpp="<<(void*)m_iterpp;
 	os<<"*="<<(void*)*m_iterpp;

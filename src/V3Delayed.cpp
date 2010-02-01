@@ -76,7 +76,7 @@ private:
     //  AstVarScope::user1p()	-> AstVarScope*.  Points to temp var created.
     //  AstVarScope::user2p()	-> AstActive*.  Points to activity block of signal
     //  AstVarScope::user4p()	-> AstAlwaysPost*.  Post block for this variable
-    //  AstVar::user1()		-> VarUsage. Tracks delayed vs non-delayed usage
+    //  AstVarScope::user5()	-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user2()		-> bool.  Set true if already made warning
     //  AstVar::user4()		-> int.   Vector number, for assignment creation
     //  AstVarRef::user2()	-> bool.  Set true if already processed
@@ -88,6 +88,7 @@ private:
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
     AstUser4InUse	m_inuser4;
+    AstUser5InUse	m_inuser5;
 
     enum VarUsage { VU_NONE=0, VU_DLY=1, VU_NONDLY=2 };
 
@@ -110,11 +111,11 @@ private:
 	return level;
     }
 
-    void markVarUsage(AstVar* nodep, uint32_t flags) {
+    void markVarUsage(AstVarScope* nodep, uint32_t flags) {
 	//UINFO(4," MVU "<<flags<<" "<<nodep<<endl);
-	nodep->user1( nodep->user1() | flags );
-	if ((nodep->user1() & VU_DLY) && (nodep->user1() & VU_NONDLY)) {
-	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->prettyName());
+	nodep->user5( nodep->user5() | flags );
+	if ((nodep->user5() & VU_DLY) && (nodep->user5() & VU_NONDLY)) {
+	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->varp()->prettyName());
 	}
     }
     AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/) {
@@ -349,7 +350,7 @@ private:
 
 	    if (m_inDly && nodep->lvalue()) {
 		UINFO(4,"AssignDlyVar: "<<nodep<<endl);
-		markVarUsage(nodep->varp(), VU_DLY);
+		markVarUsage(nodep->varScopep(), VU_DLY);
 		if (!m_activep) nodep->v3fatalSrc("<= not under sensitivity block");
 		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
 		AstVarScope* oldvscp = nodep->varScopep();
@@ -411,7 +412,7 @@ private:
 		//UINFO(9,"NBA "<<nodep<<endl);
 		if (!m_inInitial) {
 		    UINFO(4,"AssignNDlyVar: "<<nodep<<endl);
-		    markVarUsage(nodep->varp(), VU_NONDLY);
+		    markVarUsage(nodep->varScopep(), VU_NONDLY);
 		}
 	    }
 	}

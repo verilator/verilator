@@ -550,6 +550,17 @@ public:
     static void clear()  { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check()	 { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
+class AstUser5InUse : AstUserInUseBase {
+protected:
+    friend class AstNode;
+    static uint32_t	s_userCntGbl;	// Count of which usage of userp() this is
+    static bool		s_userBusy;	// Count is in use
+public:
+    AstUser5InUse()      { allocate(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~AstUser5InUse()     { free    (5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void clear()  { clearcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    static void check()	 { checkcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+};
 
 //######################################################################
 // AstNVisitor -- Allows new functions to be called on each node
@@ -685,6 +696,8 @@ class AstNode {
     uint32_t	m_user3Cnt;	// Mark of when userp was set
     uint32_t	m_user4Cnt;	// Mark of when userp was set
     AstNUser*	m_user4p;	// Pointer to any information the user iteration routine wants
+    AstNUser*	m_user5p;	// Pointer to any information the user iteration routine wants
+    uint32_t	m_user5Cnt;	// Mark of when userp was set
 
     // METHODS
     void	op1p(AstNode* nodep) { m_op1p = nodep; if (nodep) nodep->m_backp = this; }
@@ -831,6 +844,14 @@ public:
     int		user4() const { return user4p()->castInt(); }
     void	user4(int val) { user4p(AstNUser::fromInt(val)); }
     static void	user4ClearTree() { AstUser4InUse::clear(); }
+
+    AstNUser*	user5p() const {
+	//UASSERT_STATIC(AstUser5InUse::s_userBusy, "user5p set w/o busy");
+	return ((m_user5Cnt==AstUser5InUse::s_userCntGbl)?m_user5p:NULL); }
+    void	user5p(void* userp) { m_user5p=(AstNUser*)(userp); m_user5Cnt=AstUser5InUse::s_userCntGbl; }
+    int		user5() const { return user5p()->castInt(); }
+    void	user5(int val) { user5p(AstNUser::fromInt(val)); }
+    static void	user5ClearTree() { AstUser5InUse::clear(); }
 
     vluint64_t	editCount() const { return m_editCount; }
     void	editCountInc() { m_editCount = ++s_editCntGbl; }  // Preincrement, so can "watch AstNode::s_editCntGbl=##"

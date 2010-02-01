@@ -116,7 +116,7 @@ nested items (for example an AstFor under an AstFor) the variable needs to
 be save-set-restored in the AstFor visitor, otherwise exiting the lower for
 will loose the upper for's setting.
 
-2. User() attributes.  Each node has 4 ->user() number or ->userp() pointer
+2. User() attributes.  Each node has 5 ->user() number or ->userp() pointer
 utility values (a common technique lifted from graph traversal packages).
 A visitor first clears the one it wants to use by calling
 AstNode::user#ClearTree(), then it can mark any node's user() with whatever
