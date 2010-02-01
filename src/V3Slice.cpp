@@ -56,7 +56,7 @@ class SliceCloneVisitor : public AstNVisitor {
 
     // STATE
     vector<vector<unsigned> >	m_selBits;	// Indexes of the ArraySel we are expanding
-    unsigned			m_vecIdx;	// Current vector index
+    int				m_vecIdx;	// Current vector index
     unsigned			m_depth;	// Number of ArraySel's from the VarRef
     AstVarRef*			m_refp;		// VarRef under this ArraySel
 
@@ -73,7 +73,7 @@ class SliceCloneVisitor : public AstNVisitor {
 	    // This is the top of an ArraySel, setup
 	    m_refp = nodep->user1p()->castNode()->castVarRef();
 	    m_vecIdx += 1;
-	    if (m_vecIdx == m_selBits.size()) {
+	    if (m_vecIdx == (int)m_selBits.size()) {
 		m_selBits.push_back(vector<unsigned>());
 		AstVar* varp = m_refp->varp();
 		int dimensions = varp->dimensions();
@@ -174,7 +174,7 @@ class SliceVisitor : public AstNVisitor {
 		if (fromp) ++dim;
 	    }
 	} while (fromp && selp);
-	if (!m_assignp->user1p()) nodep->v3fatalSrc("Couldn't find VarRef under the ArraySel");
+	if (!nodep->user1p()) nodep->v3fatalSrc("Couldn't find VarRef under the ArraySel");
 	return dim;
     }
 
@@ -232,7 +232,7 @@ class SliceVisitor : public AstNVisitor {
 	    if (dimensions > 0) {
 		AstNode* newp = insertImplicit(nodep->cloneTree(false), 1, dimensions);
 		nodep->replaceWith(newp); nodep = NULL;
-		newp->iterateChildren(*this);
+		newp->accept(*this);
 	    }
 	}
     }
@@ -276,6 +276,12 @@ class SliceVisitor : public AstNVisitor {
 	    m_assignp->v3error("Unsupported: Assignment between packed arrays of different dimensions");
 	}
 	nodep->iterateChildren(*this);
+    }
+
+    virtual void visit(AstNodeCond* nodep, AstNUser*) {
+	// The conditional must be a single bit so only look at the expressions
+	nodep->expr1p()->accept(*this);
+	nodep->expr2p()->accept(*this);
     }
 
     // Return the first AstVarRef under the node
