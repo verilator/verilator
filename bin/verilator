@@ -190,14 +190,15 @@ This is a short summary of the arguments to Verilator.  See the detailed
 descriptions in the next sections for more information.
 
     {file.v}                    Verilog top level filenames
-    {file.c/cc/cpp}             Optional C++ files to link in
+    {file.c/cc/cpp}             Optional C++ files to compile in
+    {file.a/o/so}               Optional C++ files to link in
 
     --assert                    Enable all assertions
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
-    -CFLAGS <flags>		C++ Compiler flags for makefile
+     -CFLAGS <flags>		C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -205,23 +206,26 @@ descriptions in the next sections for more information.
     --coverage-line             Enable line coverage
     --coverage-toggle           Enable toggle coverage
     --coverage-user             Enable PSL/SVL user coverage
-    -D<var>[=<value>]           Set preprocessor define
+     -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
+     +define+<var>+<value>      Set preprocessor define
     --dump-tree                 Enable dumping .tree files
-    -E                          Preprocess, but do not compile
+     -E                          Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
-    -f <file>                   Parse options from a file
+     -f <file>                  Parse options from a file
     --help                      Display this help.
-    -I<dir>                     Directory to search for includes
+     -I<dir>                    Directory to search for includes
+     +incdir+<dir>              Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
-    -LDFLAGS <flags>		Linker pre-object flags for makefile
-    -LDLIBS <flags>		Linker library flags for makefile
+     -LDFLAGS <flags>		Linker pre-object flags for makefile
+     -LDLIBS <flags>		Linker library flags for makefile
     --language <lang>           Language standard to parse
+     +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -229,10 +233,11 @@ descriptions in the next sections for more information.
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
-    -O0                         Disable optimizations
-    -O3                         High performance optimizations
-    -O<optimization-letter>     Selectable optimizations
-    -o <executable>		Name of final executable
+     +notimingchecks            Ignored
+     -O0                        Disable optimizations
+     -O3                        High performance optimizations
+     -O<optimization-letter>    Selectable optimizations
+     -o <executable>		Name of final executable
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
@@ -246,26 +251,21 @@ descriptions in the next sections for more information.
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
-    -sv                         Enable SystemVerilog parsing
+     -sv                        Enable SystemVerilog parsing
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
-    -U<var>                     Undefine preprocessor define
+     -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
     --unroll-stmts <stmts>      Tune maximum loop body size
-    -V                          Verbose version and config
-    -v <filename>               Verilog library
-    -Werror-<message>           Convert warning to error
-    -Wfuture-<message>          Disable unknown message warnings
-    -Wno-<message>              Disable warning
-    -Wno-lint                   Disable all lint warnings
-    -x-assign <mode>            Initially assign Xs to this value
-    -y <dir>                    Directory to search for modules
-
-    +define+<var>+<value>       Set preprocessor define
-    +incdir+<dir>               Directory to search for includes
-    +libext+<ext>+[ext]...      Extensions for finding modules
-    +notimingchecks             Ignored
+     -V                         Verbose version and config
+     -v <filename>              Verilog library
+     -Werror-<message>          Convert warning to error
+     -Wfuture-<message>         Disable unknown message warnings
+     -Wno-<message>             Disable warning
+     -Wno-lint                  Disable all lint warnings
+     -x-assign <mode>           Initially assign Xs to this value
+     -y <dir>                   Directory to search for modules
 
 =head1 ARGUMENTS
 
@@ -436,6 +436,11 @@ the comment "DefaultClock":
    // psl default clock = posedge clk;
    // psl cover {cyc==9} report "DefaultClock,expect=1";
 
+=item -DI<var>=I<value>
+
+Defines the given preprocessor symbol.  Same as +define; +define is fairly
+standard across Verilog tools while -D is an alias for GCC compatibility.
+
 =item --debug
 
 Select the debug built image of Verilator (if available), and enable more
@@ -451,6 +456,11 @@ changing debug verbosity.  Enabled automatically when --debug specified.
 
 Rarely needed - for developer use.  Set internal debugging level globally
 or on the specified source file to the specified level.
+
+=item +define+I<var>+I<value>
+
+Defines the given preprocessor symbol.  Same as -D; +define is fairly
+standard across Verilog tools while -D is an alias for GCC compatibility.
 
 =item --dump-tree
 
@@ -474,9 +484,28 @@ After this number of errors or warnings are encountered, exit.  Defaults to
 Generate a executable.  You will also need to pass additional .cpp files on
 the command line that implement the main loop for your simulation.
 
+=item -f I<file>
+
+Read the specified file, and act as if all text inside it was specified as
+command line parameters.  Note -f is fairly standard across Verilog tools.
+
 =item --help
 
 Displays this message and program version and exits.
+
+=item -II<dir>
+
+Add the directory to the list of directories that should be searched for
+include directories or libraries.  Same as +incdir and -y; +incdir and -y
+are fairly standard across Verilog tools while -I is an alias for GCC
+compatibility.
+
+=item +incdir+I<dir>
+
+Add the directory to the list of directories that should be searched for
+include directories or libraries.  Same as -I and -y; +incdir and -y
+are fairly standard across Verilog tools while -I is an alias for GCC
+compatibility.
 
 =item --inhibit-sim
 
@@ -511,6 +540,12 @@ The language value must be "1364-1995", "1364-2001", "1364-2001",
 "1364-2005", or "1800-2005".  This should only be used for legacy code, as
 the preferable option is to edit the code to repair new keywords, or add
 appropriate `begin_keywords.
+
+=item +libext+I<ext>+I<ext>...
+
+Specify the extensions that should be used for finding modules.  If for
+example module I<x> is referenced, look in I<x>.I<ext>.  Note +libext+ is
+fairly standard across Verilog tools.
 
 =item --lint-only
 
@@ -547,6 +582,10 @@ Backward compatible alias for "--pins-bv 33".
 
 Rarely needed.  Disables skipping execution of Verilator if all source
 files are identical, and all output files exist with newer dates.
+
+=item +notimingchecks
+
+Ignored for compatibility with other simulators.
 
 =item -O0
 
@@ -709,6 +748,10 @@ Specify the number of levels deep to enable tracing, for example
 entire model.  Using a small number will decrease visibility, but greatly
 improve runtime and trace file size.
 
+=item -UI<var>
+
+Undefines the given preprocessor symbol.
+
 =item --unroll-count I<loops>
 
 Rarely needed.  Specifies the maximum number of loop iterations that may be
@@ -718,6 +761,17 @@ unrolled.  See also BLKLOOPINIT warning.
 
 Rarely needed.  Specifies the maximum number of statements in a loop for
 that loop to be unrolled. See also BLKLOOPINIT warning.
+
+=item -V
+
+Shows the verbose version, including configuration information compiled
+into Verilator.  (Similar to perl -V.)
+
+=item -v I<filename>
+
+Read the filename as a Verilog library.  Any modules in the file may be
+used to resolve cell instantiations in the top level module, else ignored.
+Note -v is fairly standard across Verilog tools.
 
 =item -Werror-I<message>
 
@@ -775,57 +829,12 @@ sequence.  Use the system's srand48() or for Windows srand() function to do
 this.  You'll probably also want to print any seeds selected, and code to
 enable rerunning with that same seed so you can reproduce bugs.
 
-=back
-
-=head1 VERILOG ARGUMENTS
-
-The following arguments are compatible with GCC, VCS and most Verilog
-programs.
-
-=over 4
-
-=item +define+I<var>+I<value>
-
-=item -DI<var>=I<value>
-
-Defines the given preprocessor symbol.
-
-=item -f I<file>
-
-Read the specified file, and act as if all text inside it was
-specified as command line parameters.
-
-=item +incdir+I<dir>
-
-=item -II<dir>
-
 =item -y I<dir>
 
-Add the directory to the list of directories that should be searched
-for include directories or libraries.
-
-=item +libext+I<ext>+I<ext>...
-
-Specify the extensions that should be used for finding modules.  If for
-example module I<x> is referenced, look in I<x>.I<ext>.
-
-=item +notimingchecks
-
-Ignored for compatibility with other simulators.
-
-=item -UI<var>
-
-Undefines the given preprocessor symbol.
-
-=item -V
-
-Shows the verbose version, including configuration information compiled
-into Verilator.  (Similar to perl -V.)
-
-=item -v I<filename>
-
-Read the filename as a Verilog library.  Any modules in the file may be
-used to resolve cell instantiations in the top level module, else ignored.
+Add the directory to the list of directories that should be searched for
+include directories or libraries.  Same as +incdir and -I; +incdir and +y
+are fairly standard across Verilog tools while -I is an alias for GCC
+compatibility.
 
 =back
 
