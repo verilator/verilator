@@ -26,6 +26,7 @@ SP_INCLUDER     = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
 VK_CPPFLAGS_ALWAYS += \
 		-MMD \
 		-I$(VERILATOR_ROOT)/include \
+		-I$(VERILATOR_ROOT)/include/vltstd \
 		-DVL_PRINTF=printf \
 		-DVM_TRACE=$(VM_TRACE) \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
@@ -44,6 +45,7 @@ CPPFLAGS += -I. $(VK_CPPFLAGS_ALWAYS) $(VK_CPPFLAGS_WALL)
 
 VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
+VPATH += $(VERILATOR_ROOT)/include/vltstd
 
 #OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE
 #OPT = -ggdb -DPRINTINITSTR

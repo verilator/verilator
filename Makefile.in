@@ -113,6 +113,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	include/*.[chv]* \
 	include/*.in \
 	include/.*ignore \
+	include/vltstd/*.[chv]* \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/bisonpre src/*fix \
 	src/*.pl src/*.pod \
@@ -258,9 +259,10 @@ installman: $(VL_INST_MAN_FILES)
 	done
 
 installdata:
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include $(DESTDIR)$(pkgdatadir)/examples
-	cp -r include/* $(DESTDIR)$(pkgdatadir)/include
-	cp -r ${srcdir}/include/* $(DESTDIR)$(pkgdatadir)/include
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd $(DESTDIR)$(pkgdatadir)/examples
+	cp -r include/*.* $(DESTDIR)$(pkgdatadir)/include
+	cp -r ${srcdir}/include/*.* $(DESTDIR)$(pkgdatadir)/include
+	cp -r ${srcdir}/include/vltstd/*.* $(DESTDIR)$(pkgdatadir)/include/vltstd
 	cp -r ${srcdir}/test_c  $(DESTDIR)$(pkgdatadir)/examples
 	cp -r ${srcdir}/test_sc $(DESTDIR)$(pkgdatadir)/examples
 	cp -r ${srcdir}/test_sp $(DESTDIR)$(pkgdatadir)/examples

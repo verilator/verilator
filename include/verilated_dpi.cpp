@@ -32,7 +32,7 @@
 #define XXTERN DPI_EXTERN DPI_DLLESPEC
 #define EETERN DPI_EXTERN DPI_DLLESPEC
 
-#include "svdpi.h"
+#include "vltstd/svdpi.h"
 
 //======================================================================
 // Internal macros

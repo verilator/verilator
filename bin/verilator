@@ -1286,6 +1286,17 @@ The /*verilator sformat*/ indicates that this function accepts a $display
 like format specifier followed by any number of arguments to satisfy the
 format.
 
+=head2 DPI Header Isolation
+
+Verilator places the IEEE standard header files such as svdpi.h into a
+separate include directory, vltstd (VeriLaTor STandarD).  When compiling
+most applications $VERILATOR_ROOT/include/vltstd would be in the include
+path along with the normal $VERILATOR_ROOT/include.  However, when
+compiling Verilated models into other simulators which have their own
+svdpi.h and similar standard files with different contents, the vltstd
+directory should not be included to prevent picking up incompatible
+definitions.
+
 =head2 Public Functions 
 
 Instead of DPI exporting, there's also Verilator public functions, which
