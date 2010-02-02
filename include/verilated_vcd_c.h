@@ -32,8 +32,6 @@
 #include <map>
 using namespace std;
 
-#define VERILATED_VCD_VERSION 1333	// Version number of this file AS_AN_INTEGER
-
 class VerilatedVcd;
 class VerilatedVcdCallInfo;
 
