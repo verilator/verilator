@@ -123,7 +123,7 @@ private:
 	// LOWEDGE:  ~var
 	AstNode* newp = NULL;
 	AstVarScope* clkvscp = nodep->varrefp()->varScopep();
-	if (nodep->edgeType()==AstEdgeType::POSEDGE) {
+	if (nodep->edgeType()==AstEdgeType::ET_POSEDGE) {
 	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
 	    newp = new AstAnd(nodep->fileline(),
 			      new AstVarRef(nodep->fileline(),
@@ -131,23 +131,23 @@ private:
 			      new AstNot(nodep->fileline(),
 					 new AstVarRef(nodep->fileline(),
 						       lastVscp, false)));
-	} else if (nodep->edgeType()==AstEdgeType::NEGEDGE) {
+	} else if (nodep->edgeType()==AstEdgeType::ET_NEGEDGE) {
 	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
 	    newp = new AstAnd(nodep->fileline(),
 			      new AstNot(nodep->fileline(),
 					 new AstVarRef(nodep->fileline(),
 						       nodep->varrefp()->varScopep(), false)),
 			      new AstVarRef(nodep->fileline(), lastVscp, false));
-	} else if (nodep->edgeType()==AstEdgeType::BOTHEDGE) {
+	} else if (nodep->edgeType()==AstEdgeType::ET_BOTHEDGE) {
 	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);
 	    newp = new AstXor(nodep->fileline(),
 			      new AstVarRef(nodep->fileline(),
 					    nodep->varrefp()->varScopep(), false),
 			      new AstVarRef(nodep->fileline(), lastVscp, false));
-	} else if (nodep->edgeType()==AstEdgeType::HIGHEDGE) {
+	} else if (nodep->edgeType()==AstEdgeType::ET_HIGHEDGE) {
 	    newp = new AstVarRef(nodep->fileline(),
 				 clkvscp, false);
-	} else if (nodep->edgeType()==AstEdgeType::LOWEDGE) {
+	} else if (nodep->edgeType()==AstEdgeType::ET_LOWEDGE) {
 	    newp = new AstNot(nodep->fileline(),
 			      new AstVarRef(nodep->fileline(),
 					    clkvscp, false));
@@ -506,7 +506,7 @@ private:
 	ifstmtp->addNext(new AstIf(fl,
 				   new AstLt (fl, new AstConst(fl, 100),
 					      new AstVarRef(fl, countVarp, false)),
-				   (new AstDisplay (fl, AstDisplayType::DISPLAY,
+				   (new AstDisplay (fl, AstDisplayType::DT_DISPLAY,
 						    "%%Error: Verilated model didn't converge", NULL, NULL))
 				   ->addNext(new AstStop (fl)),
 				   NULL));

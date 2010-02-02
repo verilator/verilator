@@ -1172,19 +1172,19 @@ public:
     }
     AstSenItem(FileLine* fl, Combo)
 	: AstNodeSenItem(fl) {
-	m_edgeType = AstEdgeType::COMBO;
+	m_edgeType = AstEdgeType::ET_COMBO;
     }
     AstSenItem(FileLine* fl, Initial)
 	: AstNodeSenItem(fl) {
-	m_edgeType = AstEdgeType::INITIAL;
+	m_edgeType = AstEdgeType::ET_INITIAL;
     }
     AstSenItem(FileLine* fl, Settle)
 	: AstNodeSenItem(fl) {
-	m_edgeType = AstEdgeType::SETTLE;
+	m_edgeType = AstEdgeType::ET_SETTLE;
     }
     AstSenItem(FileLine* fl, Never)
 	: AstNodeSenItem(fl) {
-	m_edgeType = AstEdgeType::NEVER;
+	m_edgeType = AstEdgeType::ET_NEVER;
     }
     ASTNODE_NODE_FUNCS(SenItem, SENITEM)
     virtual void dump(ostream& str);
@@ -1197,10 +1197,10 @@ public:
     AstNodeVarRef* varrefp()	const { return op1p()->castNodeVarRef(); }	// op1 = Signal sensitized
     //
     virtual bool isClocked() const { return edgeType().clockedStmt(); }
-    virtual bool isCombo() const { return edgeType()==AstEdgeType::COMBO; }
-    virtual bool isInitial() const { return edgeType()==AstEdgeType::INITIAL; }
-    virtual bool isSettle() const { return edgeType()==AstEdgeType::SETTLE; }
-    virtual bool isNever() const { return edgeType()==AstEdgeType::NEVER; }
+    virtual bool isCombo() const { return edgeType()==AstEdgeType::ET_COMBO; }
+    virtual bool isInitial() const { return edgeType()==AstEdgeType::ET_INITIAL; }
+    virtual bool isSettle() const { return edgeType()==AstEdgeType::ET_SETTLE; }
+    virtual bool isNever() const { return edgeType()==AstEdgeType::ET_NEVER; }
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }
 };
 
@@ -1515,8 +1515,8 @@ public:
     virtual string  verilogKwd() const { return casez()?"casez":casex()?"casex":"case"; }
     virtual bool same(AstNode* samep) const {
 	return m_casex==samep->castCase()->m_casex; }
-    bool	casex()	const { return m_casex==AstCaseType::CASEX; }
-    bool	casez()	const { return m_casex==AstCaseType::CASEZ; }
+    bool	casex()	const { return m_casex==AstCaseType::CT_CASEX; }
+    bool	casez()	const { return m_casex==AstCaseType::CT_CASEZ; }
     bool	fullPragma()	const { return m_fullPragma; }
     void	fullPragma(bool flag)	{ m_fullPragma=flag; }
     bool	parallelPragma()	const { return m_parallelPragma; }
@@ -3294,7 +3294,7 @@ private:
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
-	m_funcType = AstCFuncType::NORMAL;
+	m_funcType = AstCFuncType::FT_NORMAL;
 	m_scopep = scopep;
 	m_name = name;
 	m_rtnType = rtnType;
@@ -3331,7 +3331,7 @@ public:
     AstScope*	scopep() const { return m_scopep; }
     void	scopep(AstScope* nodep) { m_scopep = nodep; }
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }
-    bool	dontCombine() const { return m_dontCombine || funcType()!=AstCFuncType::NORMAL; }
+    bool	dontCombine() const { return m_dontCombine || funcType()!=AstCFuncType::FT_NORMAL; }
     void	dontCombine(bool flag) { m_dontCombine = flag; }
     bool	skipDecl() const { return m_skipDecl; }
     void	skipDecl(bool flag) { m_skipDecl = flag; }

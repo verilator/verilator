@@ -458,7 +458,7 @@ private:
 			else condp = selp;
 		    }
 		    AstIf* ifp = new AstIf (fl, condp, NULL, NULL);
-		    ifp->branchPred(AstBranchPred::UNLIKELY);
+		    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 		    m_chgFuncp->addStmtsp(ifp);
 		    lastactp = &actset;
 		    ifnodep = ifp;

@@ -81,7 +81,7 @@ public:
 class AstCFuncType {
 public:
     enum en {
-	NORMAL,
+	FT_NORMAL,
 	TRACE_INIT,
 	TRACE_INIT_SUB,
 	TRACE_FULL,
@@ -110,19 +110,19 @@ public:
 // REMEMBER to edit the strings below too
     enum en {
 	// These must be in general -> most specific order, as we sort by it in V3Const::visit AstSenTre
-	ILLEGAL,
+	ET_ILLEGAL,
 	// Involving a variable
-	ANYEDGE,	// Default for sensitivities; rip them out
-	BOTHEDGE,	// POSEDGE | NEGEDGE
-	POSEDGE,
-	NEGEDGE,
-	HIGHEDGE,	// Is high now (latches)
-	LOWEDGE,	// Is low now (latches)
+	ET_ANYEDGE,	// Default for sensitivities; rip them out
+	ET_BOTHEDGE,	// POSEDGE | NEGEDGE
+	ET_POSEDGE,
+	ET_NEGEDGE,
+	ET_HIGHEDGE,	// Is high now (latches)
+	ET_LOWEDGE,	// Is low now (latches)
 	// Not involving anything
-	COMBO,		// Sensitive to all combo inputs to this block
-	INITIAL,	// User initial statements
-	SETTLE,		// Like combo but for initial wire resolutions after initial statement
-	NEVER		// Never occurs (optimized away)
+	ET_COMBO,	// Sensitive to all combo inputs to this block
+	ET_INITIAL,	// User initial statements
+	ET_SETTLE,	// Like combo but for initial wire resolutions after initial statement
+	ET_NEVER	// Never occurs (optimized away)
     };
     enum en m_e;
     bool clockedStmt() const {
@@ -134,15 +134,15 @@ public:
     }
     AstEdgeType invert() const {
 	switch (m_e) {
-	case ANYEDGE:	return ANYEDGE;
-	case BOTHEDGE:	return BOTHEDGE;
-	case POSEDGE:	return NEGEDGE;
-	case NEGEDGE:	return POSEDGE;
-	case HIGHEDGE:	return LOWEDGE;
-	case LOWEDGE:	return HIGHEDGE;
+	case ET_ANYEDGE:	return ET_ANYEDGE;
+	case ET_BOTHEDGE:	return ET_BOTHEDGE;
+	case ET_POSEDGE:	return ET_NEGEDGE;
+	case ET_NEGEDGE:	return ET_POSEDGE;
+	case ET_HIGHEDGE:	return ET_LOWEDGE;
+	case ET_LOWEDGE:	return ET_HIGHEDGE;
 	default: UASSERT_STATIC(0,"Inverting bad edgeType()");
 	};
-	return AstEdgeType::ILLEGAL;
+	return AstEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
 	static const char* names[] = {
@@ -172,7 +172,7 @@ public:
 class AstAttrType {
 public:
     enum en {
-	BITS,				// V3Const converts to constant
+	EXPR_BITS,			// V3Const converts to constant
 	//
 	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	VAR_CLOCK,			// V3LinkParse moves to AstVar::attrScClocked
@@ -185,7 +185,7 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "BITS", "VAR_BASE",
+	    "EXPR_BITS", "VAR_BASE",
 	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
 	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SFORMAT"
 	};
@@ -335,20 +335,20 @@ public:
 class AstBranchPred {
 public:
     enum en {
-	UNKNOWN=0,
-	LIKELY,
-	UNLIKELY,
+	BP_UNKNOWN=0,
+	BP_LIKELY,
+	BP_UNLIKELY,
 	_ENUM_END
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstBranchPred () : m_e(UNKNOWN) {}
+    inline AstBranchPred () : m_e(BP_UNKNOWN) {}
     inline AstBranchPred (en _e) : m_e(_e) {}
     explicit inline AstBranchPred (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
     AstBranchPred invert() const {
-	if (m_e==UNLIKELY) return LIKELY;
-	else if (m_e==LIKELY) return UNLIKELY;
+	if (m_e==BP_UNLIKELY) return BP_LIKELY;
+	else if (m_e==BP_LIKELY) return BP_UNLIKELY;
 	else return m_e;
     }
     const char* ascii() const {
@@ -366,9 +366,9 @@ public:
 class AstCaseType {
 public:
     enum en {
-	CASE,
-	CASEX,
-	CASEZ
+	CT_CASE,
+	CT_CASEX,
+	CT_CASEZ
     };
     enum en m_e;
     inline AstCaseType () {}
@@ -385,20 +385,20 @@ public:
 class AstDisplayType {
 public:
     enum en {
-	DISPLAY,
-	WRITE,
-	INFO,
-	ERROR,
-	WARNING,
-	FATAL
+	DT_DISPLAY,
+	DT_WRITE,
+	DT_INFO,
+	DT_ERROR,
+	DT_WARNING,
+	DT_FATAL
     };
     enum en m_e;
     inline AstDisplayType () {}
     inline AstDisplayType (en _e) : m_e(_e) {}
     explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
-    bool addNewline() const { return m_e!=WRITE; }
-    bool needScopeTracking() const { return m_e!=DISPLAY && m_e!=WRITE; }
+    bool addNewline() const { return m_e!=DT_WRITE; }
+    bool needScopeTracking() const { return m_e!=DT_DISPLAY && m_e!=DT_WRITE; }
     const char* ascii() const {
 	static const char* names[] = {
 	    "display","write","info","error","warning","fatal"};
@@ -413,15 +413,14 @@ public:
 class AstParseRefExp {
 public:
     enum en {
-	NONE,	// Used in V3LinkParse only
-	VAR_MEM,
-	VAR_ANY,
-	TASK,
-	FUNC,
-	_ENUM_END
+	PX_NONE,	// Used in V3LinkParse only
+	PX_VAR_MEM,
+	PX_VAR_ANY,
+	PX_TASK,
+	PX_FUNC
     };
     enum en m_e;
-    inline AstParseRefExp() : m_e(NONE) {}
+    inline AstParseRefExp() : m_e(PX_NONE) {}
     inline AstParseRefExp (en _e) : m_e(_e) {}
     explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }

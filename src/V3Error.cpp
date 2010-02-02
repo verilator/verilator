@@ -41,10 +41,10 @@ int V3Error::s_warnCount = 0;
 int V3Error::s_debugDefault = 0;
 int V3Error::s_tellManual = 0;
 ostringstream V3Error::s_errorStr;		// Error string being formed
-V3ErrorCode V3Error::s_errorCode = V3ErrorCode::FATAL;
-bool V3Error::s_describedEachWarn[V3ErrorCode::MAX];
+V3ErrorCode V3Error::s_errorCode = V3ErrorCode::EC_FATAL;
+bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
-bool V3Error::s_pretendError[V3ErrorCode::MAX];
+bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 
 struct v3errorIniter {
     v3errorIniter() {  V3Error::init(); }
@@ -56,13 +56,13 @@ v3errorIniter v3errorInit;
 
 V3ErrorCode::V3ErrorCode(const char* msgp) {
     // Return error encoding for given string, or ERROR, which is a bad code
-    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (0==strcasecmp(msgp,code.ascii())) {
 	    m_e = code; return;
 	}
     }
-    m_e = V3ErrorCode::ERROR;
+    m_e = V3ErrorCode::EC_ERROR;
 }
 
 //######################################################################
@@ -73,7 +73,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
     m_filename="COMMAND_LINE";
 
     m_warnOn=0;
-    for (int codei=V3ErrorCode::MIN; codei<V3ErrorCode::MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	warnOff(code, code.defaultsOff());
     }
@@ -107,7 +107,7 @@ void FileLine::lineDirective(const char* textp) {
 
 bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code (msg.c_str());
-    if (code < V3ErrorCode::FIRST_WARN) {
+    if (code < V3ErrorCode::EC_FIRST_WARN) {
 	return false;
     } else {
 	warnOff(code, flag);
@@ -116,7 +116,7 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 }
 
 void FileLine::warnLintOff(bool flag) {
-    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (code.lintError()) warnOff(code, flag);
     }
@@ -180,7 +180,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 
 void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
-    for (int codei=V3ErrorCode::FIRST_WARN; codei<V3ErrorCode::MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (fromp->warnIsOff(code)) {
 	    this->warnOff(code, true);
@@ -242,13 +242,13 @@ void FileLine::deleteAllRemaining() {
 // V3Error class functions
 
 void V3Error::init() {
-    for (int i=0; i<V3ErrorCode::MAX; i++) {
+    for (int i=0; i<V3ErrorCode::_ENUM_MAX; i++) {
 	s_describedEachWarn[i] = false;
 	s_pretendError[i] = V3ErrorCode(i).pretendError();
     }
 
-    if (string(V3ErrorCode(V3ErrorCode::MAX).ascii()) != " MAX") {
-	v3fatalSrc("Enum table in V3ErrorCode::ascii() is munged");
+    if (string(V3ErrorCode(V3ErrorCode::_ENUM_MAX).ascii()) != " MAX") {
+	v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
     }
 }
 
@@ -288,22 +288,22 @@ void V3Error::abortIfWarnings() {
 }
 
 bool V3Error::isError(V3ErrorCode code) {
-    if (code==V3ErrorCode::SUPPRESS) return false;
-    else if (code==V3ErrorCode::INFO) return false;
-    else if (code==V3ErrorCode::FATAL) return true;
-    else if (code==V3ErrorCode::FATALSRC) return true;
-    else if (code==V3ErrorCode::ERROR) return true;
-    else if (code<V3ErrorCode::FIRST_WARN
+    if (code==V3ErrorCode::EC_SUPPRESS) return false;
+    else if (code==V3ErrorCode::EC_INFO) return false;
+    else if (code==V3ErrorCode::EC_FATAL) return true;
+    else if (code==V3ErrorCode::EC_FATALSRC) return true;
+    else if (code==V3ErrorCode::EC_ERROR) return true;
+    else if (code<V3ErrorCode::EC_FIRST_WARN
 	     || s_pretendError[code]) return true;
     else return false;
 }
 
 string V3Error::msgPrefix(V3ErrorCode code) {
-    if (code==V3ErrorCode::SUPPRESS) return "-arning-suppressed: ";
-    else if (code==V3ErrorCode::INFO) return "-Info: ";
-    else if (code==V3ErrorCode::FATAL) return "%Error: ";
-    else if (code==V3ErrorCode::FATALSRC) return "%Error: Internal Error: ";
-    else if (code==V3ErrorCode::ERROR) return "%Error: ";
+    if (code==V3ErrorCode::EC_SUPPRESS) return "-arning-suppressed: ";
+    else if (code==V3ErrorCode::EC_INFO) return "-Info: ";
+    else if (code==V3ErrorCode::EC_FATAL) return "%Error: ";
+    else if (code==V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
+    else if (code==V3ErrorCode::EC_ERROR) return "%Error: ";
     else if (isError(code)) return "%Error-"+(string)code.ascii()+": ";
     else return "%Warning-"+(string)code.ascii()+": ";
 }
@@ -336,29 +336,29 @@ string V3Error::v3sform (const char* format, ...) {
 }
 
 void V3Error::suppressThisWarning() {
-    if (s_errorCode>=V3ErrorCode::FIRST_WARN) {
+    if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN) {
 	V3Stats::addStatSum(string("Warnings, Suppressed ")+s_errorCode.ascii(), 1);
-	s_errorCode=V3ErrorCode::SUPPRESS;
+	s_errorCode=V3ErrorCode::EC_SUPPRESS;
     }
 }
 
 void V3Error::v3errorEnd (ostringstream& sstr) {
 #ifdef __COVERITY__
-    if (s_errorCode==V3ErrorCode::FATAL) __coverity_panic__(x);
+    if (s_errorCode==V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
-    if (s_errorCode!=V3ErrorCode::SUPPRESS
+    if (s_errorCode!=V3ErrorCode::EC_SUPPRESS
 	// On debug, show only non default-off warning to prevent pages of warnings
 	|| (debug() && !s_errorCode.defaultsOff())) {
 	cerr<<msgPrefix()<<sstr.str();
 	if (sstr.str()[sstr.str().length()-1] != '\n') {
 	    cerr<<endl;
 	}
-	if (s_errorCode!=V3ErrorCode::SUPPRESS
-	    && s_errorCode!=V3ErrorCode::INFO) {
+	if (s_errorCode!=V3ErrorCode::EC_SUPPRESS
+	    && s_errorCode!=V3ErrorCode::EC_INFO) {
 	    if (!s_describedEachWarn[s_errorCode]
 		&& !s_pretendError[s_errorCode]) {
 		s_describedEachWarn[s_errorCode] = true;
-		if (s_errorCode>=V3ErrorCode::FIRST_WARN && !s_describedWarnings) {
+		if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN && !s_describedWarnings) {
 		    cerr<<msgPrefix()<<"Use \"/* verilator lint_off "<<s_errorCode.ascii()
 			<<" */\" and lint_on around source to disable this message."<<endl;
 		    s_describedWarnings = true;
@@ -380,8 +380,8 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 	    }
 	    if (isError(s_errorCode)) incErrors();
 	    else incWarnings();
-	    if (s_errorCode==V3ErrorCode::FATAL
-		|| s_errorCode==V3ErrorCode::FATALSRC) {
+	    if (s_errorCode==V3ErrorCode::EC_FATAL
+		|| s_errorCode==V3ErrorCode::EC_FATALSRC) {
 		static bool inFatal = false;
 		if (!inFatal) {
 		    inFatal = true;

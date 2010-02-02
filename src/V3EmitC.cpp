@@ -371,11 +371,11 @@ public:
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	puts("if (");
-	if (nodep->branchPred() != AstBranchPred::UNKNOWN) {
+	if (nodep->branchPred() != AstBranchPred::BP_UNKNOWN) {
 	    puts(nodep->branchPred().ascii()); puts("(");
 	}
 	nodep->condp()->iterateAndNext(*this);
-	if (nodep->branchPred() != AstBranchPred::UNKNOWN) puts(")");
+	if (nodep->branchPred() != AstBranchPred::BP_UNKNOWN) puts(")");
 	puts(") {\n");
 	nodep->ifsp()->iterateAndNext(*this);
 	if (nodep->elsesp()) {

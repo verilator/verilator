@@ -69,9 +69,9 @@ private:
     }
 
     void checkExpected(AstNode* nodep) {
-	if (m_exp != AstParseRefExp::NONE) {
+	if (m_exp != AstParseRefExp::PX_NONE) {
 	    nodep->v3fatalSrc("Tree syntax error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type());
-	    m_exp = AstParseRefExp::NONE;
+	    m_exp = AstParseRefExp::PX_NONE;
 	}
     }
 
@@ -84,9 +84,9 @@ private:
 	    // Due to a need to get the arguments, the ParseRefs are under here,
 	    // rather than the NodeFTaskRef under the ParseRef.
 	    if (nodep->namep()) {
-		m_exp = AstParseRefExp::FUNC;
+		m_exp = AstParseRefExp::PX_FUNC;
 		nodep->namep()->accept(*this);  // No next, we don't want to do the edit
-		m_exp = AstParseRefExp::NONE;
+		m_exp = AstParseRefExp::PX_NONE;
 		if (!m_baseTextp) nodep->v3fatalSrc("No TEXT found to indicate function name");
 		nodep->name(m_baseTextp->text());
 		nodep->dotted(m_dotText);
@@ -112,14 +112,14 @@ private:
 	    // Process lower nodes
 	    m_dotText = "";
 	    m_baseTextp = NULL;
-	    if (m_exp == AstParseRefExp::FUNC) {
+	    if (m_exp == AstParseRefExp::PX_FUNC) {
 		lhsp->accept(*this);
 		// Return m_dotText to invoker
-	    } else if (nodep->expect() == AstParseRefExp::VAR_MEM
-		       || nodep->expect() == AstParseRefExp::VAR_ANY) {
+	    } else if (nodep->expect() == AstParseRefExp::PX_VAR_MEM
+		       || nodep->expect() == AstParseRefExp::PX_VAR_ANY) {
 		m_exp = nodep->expect();
 		lhsp->accept(*this);
-		m_exp = AstParseRefExp::NONE;
+		m_exp = AstParseRefExp::PX_NONE;
 		if (!m_baseTextp) nodep->v3fatalSrc("No TEXT found to indicate function name");
 		if (m_dotText == "") {
 		    AstNode* newp = new AstVarRef(nodep->fileline(), m_baseTextp->text(), false);  // lvalue'ness computed later
@@ -133,7 +133,7 @@ private:
 	    }
 	    nodep->deleteTree(); nodep=NULL;
 	}
-	if (m_exp != AstParseRefExp::FUNC) {  // Fuctions need to look at the name themself
+	if (m_exp != AstParseRefExp::PX_FUNC) {  // Fuctions need to look at the name themself
 	    m_dotText = oldText;
 	    m_inModDot = oldDot;
 	    m_exp = oldExp;
@@ -177,14 +177,14 @@ private:
 		    nodep->v3error("Unsupported: Non-constant inside []'s in the cell part of a dotted reference");
 		}
 		// And pass up m_dotText
-	    } else if (m_exp==AstParseRefExp::FUNC) {
+	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
 		nodep->v3error("Syntax Error: Range selection '[]' is not allowed as part of function names");
 	    } else {
 		nodep->lhsp()->iterateAndNext(*this);
 		AstParseRefExp lastExp = m_exp;
 		AstText* lasttextp = m_baseTextp;
 		{
-		    m_exp = AstParseRefExp::NONE;
+		    m_exp = AstParseRefExp::PX_NONE;
 		    nodep->rhsp()->iterateAndNext(*this);
 		}
 		m_baseTextp = lasttextp;
@@ -198,16 +198,16 @@ private:
 	    nodep->user1(true);   // Process only once.
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
-	    } else if (m_exp==AstParseRefExp::FUNC) {
+	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed as part of function names");
-	    } else if (m_exp==AstParseRefExp::VAR_MEM) {
+	    } else if (m_exp==AstParseRefExp::PX_VAR_MEM) {
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed when expecting memory reference");
 	    } else {
 		nodep->lhsp()->iterateAndNext(*this);
 		AstParseRefExp lastExp = m_exp;
 		AstText* lasttextp = m_baseTextp;
 		{
-		    m_exp = AstParseRefExp::NONE;
+		    m_exp = AstParseRefExp::PX_NONE;
 		    nodep->rhsp()->iterateAndNext(*this);
 		    nodep->thsp()->iterateAndNext(*this);
 		}
@@ -219,7 +219,7 @@ private:
     virtual void visit(AstText* nodep, AstNUser*) {
 	if (!nodep->user1()) {
 	    nodep->user1(true);   // Process only once.
-	    if (m_exp != AstParseRefExp::NONE) {
+	    if (m_exp != AstParseRefExp::PX_NONE) {
 		UINFO(7,"      "<<nodep<<endl);
 		if (m_inModDot) {  // Dotted part, just pass up
 		    m_dotText = nodep->text();
@@ -339,7 +339,7 @@ public:
     // CONSTUCTORS
     LinkParseVisitor(AstNetlist* rootp) {
 	m_inModDot = false;
-	m_exp = AstParseRefExp::NONE;
+	m_exp = AstParseRefExp::PX_NONE;
 	m_baseTextp = NULL;
 	m_varp = NULL;
 	rootp->accept(*this);

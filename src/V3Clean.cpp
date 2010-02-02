@@ -52,7 +52,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // TYPES
-    enum CleanState { UNKNOWN, CLEAN, DIRTY };
+    enum CleanState { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
     // STATE
     AstNodeModule* m_modp;
@@ -93,15 +93,15 @@ private:
     }
     bool isClean(AstNode* nodep) {
 	CleanState clstate = getCleanState(nodep);
-	if (clstate==CLEAN) return true;
-	if (clstate==DIRTY) return false;
+	if (clstate==CS_CLEAN) return true;
+	if (clstate==CS_DIRTY) return false;
 	nodep->v3fatalSrc("Unknown clean state on node: "+nodep->prettyTypeName());
 	return false;
     }
     void setClean(AstNode* nodep, bool isClean) {
 	computeCppWidth (nodep);  // Just to be sure it's in widthMin
 	bool wholeUint = ((nodep->widthMin() % VL_WORDSIZE) == 0);  //32,64,...
-	setCleanState(nodep, ((isClean||wholeUint) ? CLEAN:DIRTY));
+	setCleanState(nodep, ((isClean||wholeUint) ? CS_CLEAN:CS_DIRTY));
     }
 
     // Operate on nodes

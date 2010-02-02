@@ -44,7 +44,7 @@ public:
 	L1800_2005,
 	L1800_2009,
 	// ***Add new elements below also***
-	MAX
+	_ENUM_END
     };
     const char* ascii() const {
 	const char* names[] = {

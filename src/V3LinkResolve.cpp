@@ -324,10 +324,10 @@ private:
 	nodep->iterateChildren(*this);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
 	if (!m_assertp
-	    && (nodep->displayType() == AstDisplayType::INFO
-		|| nodep->displayType() == AstDisplayType::WARNING
-		|| nodep->displayType() == AstDisplayType::ERROR
-		|| nodep->displayType() == AstDisplayType::FATAL)) {
+	    && (nodep->displayType() == AstDisplayType::DT_INFO
+		|| nodep->displayType() == AstDisplayType::DT_WARNING
+		|| nodep->displayType() == AstDisplayType::DT_ERROR
+		|| nodep->displayType() == AstDisplayType::DT_FATAL)) {
 	    nodep->v3error(nodep->verilogKwd()+" only allowed under an assertion.");
 	}
     }

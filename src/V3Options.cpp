@@ -144,7 +144,7 @@ string V3Options::allArgsString() {
 
 V3LangCode::V3LangCode (const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
-    for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::MAX; ++codei) {
+    for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::_ENUM_END; ++codei) {
 	V3LangCode code = (V3LangCode)codei;
 	if (0==strcasecmp(textp,code.ascii())) {
 	    m_e = code; return;
@@ -762,7 +762,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strncmp (sw, "-Werror-",strlen("-Werror-")) )	{
 		string msg = sw+strlen("-Werror-");
 		V3ErrorCode code (msg.c_str());
-		if (code == V3ErrorCode::ERROR) {
+		if (code == V3ErrorCode::EC_ERROR) {
 		    if (!isFuture(msg)) {
 			fl->v3fatal("Unknown warning specified: "<<sw);
 		    }

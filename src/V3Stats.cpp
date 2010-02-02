@@ -125,9 +125,9 @@ private:
 	} else {
 	    // See which path we want to take
 	    bool takeElse = false;
-	    if (!nodep->elsesp() || (nodep->branchPred()==AstBranchPred::LIKELY)) {
+	    if (!nodep->elsesp() || (nodep->branchPred()==AstBranchPred::BP_LIKELY)) {
 		// Always take the if
-	    } else if (!nodep->ifsp() || (nodep->branchPred()==AstBranchPred::UNLIKELY)) {
+	    } else if (!nodep->ifsp() || (nodep->branchPred()==AstBranchPred::BP_UNLIKELY)) {
 		// Always take the else
 	    } else {
 		// Take the longer path

@@ -60,7 +60,7 @@ private:
 		+"\\n");
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
-	nodep->displayType(AstDisplayType::WRITE);
+	nodep->displayType(AstDisplayType::DT_WRITE);
 	nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
 	AstNode* timesp = nodep->fmtp()->exprsp(); if (timesp) timesp->unlinkFrBack();
 	timesp = timesp->addNext(new AstTime(nodep->fileline()));
@@ -95,7 +95,7 @@ private:
     }
 
     AstNode* newFireAssert(AstNode* nodep, const string& message) {
-	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::ERROR, message, NULL, NULL);
+	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::DT_ERROR, message, NULL, NULL);
 	AstNode* bodysp = dispp;
 	replaceDisplay(dispp, "%%Error");   // Convert to standard DISPLAY format
 	bodysp->addNext(new AstStop (nodep->fileline()));
@@ -134,7 +134,7 @@ private:
 	if (stmtsp) bodysp = bodysp->addNext(stmtsp);
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
 	bodysp = ifp;
-	if (nodep->castPslAssert()) ifp->branchPred(AstBranchPred::UNLIKELY);
+	if (nodep->castPslAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	AstNode* newp = new AstAlways (nodep->fileline(),
 				       sentreep,
@@ -166,7 +166,7 @@ private:
 
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, passsp, failsp);
 	AstNode* newp = ifp;
-	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::UNLIKELY);
+	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	// Install it
 	nodep->replaceWith(newp);
@@ -215,7 +215,7 @@ private:
 					    new AstLogNot (nodep->fileline(), ohot),
 					    newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),
 					    NULL);
-		    ifp->branchPred(AstBranchPred::UNLIKELY);
+		    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 		    nodep->addNotParallelp(ifp);
 		}
 	    }
@@ -226,12 +226,12 @@ private:
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	// Replace the special types with standard text
-	if (nodep->displayType()==AstDisplayType::INFO) {
+	if (nodep->displayType()==AstDisplayType::DT_INFO) {
 	    replaceDisplay(nodep, "-Info");
-	} else if (nodep->displayType()==AstDisplayType::WARNING) {
+	} else if (nodep->displayType()==AstDisplayType::DT_WARNING) {
 	    replaceDisplay(nodep, "%%Warning");
-	} else if (nodep->displayType()==AstDisplayType::ERROR
-		   || nodep->displayType()==AstDisplayType::FATAL) {
+	} else if (nodep->displayType()==AstDisplayType::DT_ERROR
+		   || nodep->displayType()==AstDisplayType::DT_FATAL) {
 	    replaceDisplay(nodep, "%%Error");
 	}
     }

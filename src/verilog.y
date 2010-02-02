@@ -92,7 +92,7 @@ public:
 	return new AstText(fileline, newtext);
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
-	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::ERROR,  "", NULL,NULL);
+	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::DT_ERROR,  "", NULL,NULL);
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
@@ -1711,16 +1711,16 @@ senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 	;
 
 senitemVar<senitemp>:
-		idClassSel				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ANYEDGE,$1); }
+		idClassSel				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ET_ANYEDGE,$1); }
 	;
 
 senitemEdge<senitemp>:		// IEEE: part of event_expression
-		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$2); }
-	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$2); }
-	|	yEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::BOTHEDGE,$2); }
-	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::POSEDGE,$3); }
-	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::NEGEDGE,$3); }
-	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::BOTHEDGE,$3); }
+		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_POSEDGE,$2); }
+	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_NEGEDGE,$2); }
+	|	yEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_BOTHEDGE,$2); }
+	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_POSEDGE,$3); }
+	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_NEGEDGE,$3); }
+	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_BOTHEDGE,$3); }
 	//UNSUP	yIFF...
 	;
 
@@ -1922,9 +1922,9 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 	;
 
 caseStart<casep>:		// IEEE: part of case_statement
-	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASE,$3,NULL); }
-	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEX,$3,NULL); }
-	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CASEZ,$3,NULL); }
+	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASE,$3,NULL); }
+	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASEX,$3,NULL); }
+	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASEZ,$3,NULL); }
 	;
 
 caseAttrE:
@@ -1981,16 +1981,16 @@ for_step<nodep>:		// IEEE: for_step
 // Functions/tasks
 
 taskRef<ftaskrefp>:		// IEEE: part of tf_call
-		idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),NULL);}
-	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::TASK, $1),$3);}
-	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::TASK, $2),NULL);}
-	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::TASK, $2),$4);}
+		idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),NULL);}
+	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),$3);}
+	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),NULL);}
+	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),$4);}
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
 funcRef<ftaskrefp>:		// IEEE: part of tf_call
-		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::FUNC, $1), $3); }
-	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($3,new AstParseRef($2->fileline(), AstParseRefExp::FUNC, $2), $4); $$->packagep($1); }
+		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::PX_FUNC, $1), $3); }
+	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($3,new AstParseRef($2->fileline(), AstParseRefExp::PX_FUNC, $2), $4); $$->packagep($1); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -2030,22 +2030,22 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	//
-	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"", NULL,NULL); }
-	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$3,NULL,$4); }
+	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,"", NULL,NULL); }
+	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,*$3,NULL,$4); }
 	|	yD_WRITE    parenE					{ $$ = NULL; } // NOP
-	|	yD_WRITE    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$3,NULL,$4); }
-	|	yD_FDISPLAY '(' idClassSel ')'			 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,"",$3,NULL); }
-	|	yD_FDISPLAY '(' idClassSel ',' str commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DISPLAY,*$5,$3,$6); }
-	|	yD_FWRITE   '(' idClassSel ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::WRITE,  *$5,$3,$6); }
-	|	yD_INFO	    parenE					{ $$ = new AstDisplay($1,AstDisplayType::INFO,   "", NULL,NULL); }
-	|	yD_INFO	    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::INFO,   *$3,NULL,$4); }
-	|	yD_WARNING  parenE					{ $$ = new AstDisplay($1,AstDisplayType::WARNING,"", NULL,NULL); }
-	|	yD_WARNING  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::WARNING,*$3,NULL,$4); }
+	|	yD_WRITE    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  *$3,NULL,$4); }
+	|	yD_FDISPLAY '(' idClassSel ')'			 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,"",$3,NULL); }
+	|	yD_FDISPLAY '(' idClassSel ',' str commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,*$5,$3,$6); }
+	|	yD_FWRITE   '(' idClassSel ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  *$5,$3,$6); }
+	|	yD_INFO	    parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   "", NULL,NULL); }
+	|	yD_INFO	    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   *$3,NULL,$4); }
+	|	yD_WARNING  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,"", NULL,NULL); }
+	|	yD_WARNING  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,*$3,NULL,$4); }
 	|	yD_ERROR    parenE					{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE					{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
-	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_ERROR    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
 	//
 	|	yD_READMEMB '(' expr ',' varRefMem ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')'			{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -2062,7 +2062,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
 	//
-	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::BITS,$3); }
+	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
@@ -2786,12 +2786,12 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 
 // VarRef to a Memory
 varRefMem<parserefp>:
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::VAR_MEM, $1); }
+		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_MEM, $1); }
 	;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
 idClassSel<parserefp>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::VAR_ANY, $1); }
+		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_ANY, $1); }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
 	//UNSUP	yTHIS '.' idDotted			{ UNSUP }
 	//UNSUP	ySUPER '.' idDotted			{ UNSUP }
@@ -3005,7 +3005,7 @@ vltOffFront<errcodeen>:
 	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
-			  if ($$ == V3ErrorCode::ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;
 
 //**********************************************************************

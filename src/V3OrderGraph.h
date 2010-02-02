@@ -73,7 +73,7 @@ enum OrderLoopId {
 
 struct OrderVEdgeType {
     enum en {
-	UNKNOWN = 0,
+	VERTEX_UNKNOWN = 0,
 	VERTEX_INPUTS,
 	VERTEX_SETTLE,
 	VERTEX_LOGIC,

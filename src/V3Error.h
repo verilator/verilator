@@ -34,13 +34,13 @@
 class V3ErrorCode {
 public:
     enum en {
-	MIN=0,		// Keep first
+	EC_MIN=0,	// Keep first
 	//
-	SUPPRESS,	// Warning suppressed by user
-	INFO,		// General information out
-	FATAL,		// Kill the program
-	FATALSRC,	// Kill the program, for internal source errors
-	ERROR,		// General error out, can't suppress
+	EC_SUPPRESS,	// Warning suppressed by user
+	EC_INFO,	// General information out
+	EC_FATAL,	// Kill the program
+	EC_FATALSRC,	// Kill the program, for internal source errors
+	EC_ERROR,	// General error out, can't suppress
 	// Boolean information we track per-line, but aren't errors
 	I_COVERAGE,	// Coverage is on/off from /*verilator coverage_on/off*/
 	I_TRACING,	// Tracing is on/off from /*verilator tracing_on/off*/
@@ -49,7 +49,7 @@ public:
 	E_TASKNSVAR,	// Error: Task I/O not simple
 	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
 	// Warning codes:
-	FIRST_WARN,	// Just a code so the program knows where to start warnings
+	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	CASEINCOMPLETE,	// Case statement has missing values
@@ -77,7 +77,7 @@ public:
 	VARHIDDEN,	// Hiding variable
 	WIDTH,		// Width mismatch
 	WIDTHCONCAT,	// Unsized numbers/parameters in concatenations
-	MAX
+	_ENUM_MAX
 	// ***Add new elements below also***
     };
     enum en m_e;
@@ -115,7 +115,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE || m_e==MODDUP || m_e==SYMRSVDWORD); }
     // Warnings to mention manual
-    bool mentionManual() const { return ( m_e==FATALSRC || pretendError() ); }
+    bool mentionManual() const { return ( m_e==EC_FATALSRC || pretendError() ); }
 
     // Warnings that are lint only
     bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
@@ -138,8 +138,8 @@ class V3Error {
     // Base class for any object that wants debugging and error reporting
   private:
     static bool 	s_describedWarnings;	// Told user how to disable warns
-    static bool 	s_describedEachWarn[V3ErrorCode::MAX]; // Told user specifics about this warning
-    static bool 	s_pretendError[V3ErrorCode::MAX]; // Pretend this warning is an error
+    static bool 	s_describedEachWarn[V3ErrorCode::_ENUM_MAX]; // Told user specifics about this warning
+    static bool 	s_pretendError[V3ErrorCode::_ENUM_MAX]; // Pretend this warning is an error
     static int		s_debugDefault;		// Default debugging level
     static int		s_errCount;		// Error count
     static int		s_warnCount;		// Error count
@@ -189,11 +189,11 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 // Careful, you can't put () around msg, as you would in most macro definitions
 #define v3warnCode(code,msg) v3errorEnd(((V3Error::v3errorPrep(code)<<msg),V3Error::v3errorStr()));
 #define v3warn(code,msg) v3warnCode(V3ErrorCode::code,msg)
-#define v3info(msg)  v3warn(INFO,msg)
-#define v3fatal(msg) v3warn(FATAL,msg)
-#define v3error(msg) v3warn(ERROR,msg)
+#define v3info(msg)  v3warn(EC_INFO,msg)
+#define v3fatal(msg) v3warn(EC_FATAL,msg)
+#define v3error(msg) v3warn(EC_ERROR,msg)
 // Use this instead of fatal() to mention the source code line.
-#define v3fatalSrc(msg) v3warn(FATALSRC,__FILE__<<":"<<dec<<__LINE__<<": "<<msg)
+#define v3fatalSrc(msg) v3warn(EC_FATALSRC,__FILE__<<":"<<dec<<__LINE__<<": "<<msg)
 
 #define UINFO(level,stmsg) {if(debug()>=(level)) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
 #define UINFONL(level,stmsg) {if(debug()>=(level)) { cout<<stmsg; } }
@@ -225,7 +225,7 @@ class FileLine {
     // File and line number of an object, mostly for error reporting
     int		m_lineno;
     string	m_filename;
-    bitset<V3ErrorCode::MAX>	m_warnOn;
+    bitset<V3ErrorCode::_ENUM_MAX>	m_warnOn;
     static FileLine s_defaultFileLine;
     struct EmptySecret {};
 protected:

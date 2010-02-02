@@ -1106,7 +1106,7 @@ private:
 
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	// Don't iterate children, don't want to loose VarRef.
-	if (nodep->attrType()==AstAttrType::BITS) {
+	if (nodep->attrType()==AstAttrType::EXPR_BITS) {
 	    if (!nodep->fromp() || !nodep->fromp()->widthMin()) nodep->v3fatalSrc("Unsized expression");
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->widthMin());
 	    replaceNum(nodep, num); nodep=NULL;
@@ -1278,16 +1278,16 @@ private:
 		    if ((litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameTree(ritemp->varrefp()))
 			|| (!litemp->varrefp() && !ritemp->varrefp())) {
 			// We've sorted in the order ANY, BOTH, POS, NEG, so we don't need to try opposite orders
-			if ((   litemp->edgeType()==AstEdgeType::ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY
-			    || (litemp->edgeType()==AstEdgeType::BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
-			    || (litemp->edgeType()==AstEdgeType::POSEDGE    // POS  or NEG -> BOTH
-				&& ritemp->edgeType()==AstEdgeType::NEGEDGE)
+			if ((   litemp->edgeType()==AstEdgeType::ET_ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY
+			    || (litemp->edgeType()==AstEdgeType::ET_BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
+			    || (litemp->edgeType()==AstEdgeType::ET_POSEDGE    // POS  or NEG -> BOTH
+				&& ritemp->edgeType()==AstEdgeType::ET_NEGEDGE)
 			    || (litemp->edgeType()==ritemp->edgeType())	// Identical edges
 			    ) {
 			    // Fix edge of old node
-			    if (litemp->edgeType()==AstEdgeType::POSEDGE
-				&& ritemp->edgeType()==AstEdgeType::NEGEDGE)
-				litemp->edgeType(AstEdgeType::BOTHEDGE);
+			    if (litemp->edgeType()==AstEdgeType::ET_POSEDGE
+				&& ritemp->edgeType()==AstEdgeType::ET_NEGEDGE)
+				litemp->edgeType(AstEdgeType::ET_BOTHEDGE);
 			    // Remove redundant node
 			    ritemp->unlinkFrBack()->deleteTree(); ritemp=NULL; cmpp=NULL;
 			    // Try to collapse again
