@@ -122,13 +122,8 @@ int dpix_run_tests() {
     CHECK_RESULT (dpix_f_longint(1), 0xfffffffffffffffeULL);
     CHECK_RESULT (dpix_f_chandle((void*)(12345)), (void*)(12345));
 
-#ifdef VERILATOR
-    if (int bad=check_sub("top.v.a",1)) return bad;
-    if (int bad=check_sub("top.v.b",2)) return bad;
-#else
     if (int bad=check_sub("top.t.a",1)) return bad;
     if (int bad=check_sub("top.t.b",2)) return bad;
-#endif
 
     return -1;  // OK status
 }

@@ -999,8 +999,12 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
     char* namep = new char[strlen(prefixp)+strlen(suffixp)+2];
-    strcpy(namep, prefixp);
-    strcat(namep, suffixp);
+    if (!*prefixp && *suffixp && suffixp[0]=='.') {  // Special case of top module with empty name - drop the dots
+	strcpy(namep, suffixp+1);
+    } else {
+	strcpy(namep, prefixp);
+	strcat(namep, suffixp);
+    }
     m_namep = namep;
     VerilatedImp::scopeInsert(this);
 }

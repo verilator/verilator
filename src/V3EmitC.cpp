@@ -1712,7 +1712,11 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("VL_CTOR("+modClassName(modp)+");\n");
 	puts("~"+modClassName(modp)+"();\n");
     } else {
-	if (modp->isTop()) puts("/// Construct the model; called by application code\n");
+	if (modp->isTop()) {
+	    puts("/// Construct the model; called by application code\n");
+	    puts("/// The special name "" may be used to make a wrapper with a\n");
+	    puts("/// single model invisible WRT DPI scope names.\n");
+	}
 	puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
 	if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
 	puts("~"+modClassName(modp)+"();\n");
