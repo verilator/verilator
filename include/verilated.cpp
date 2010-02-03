@@ -775,7 +775,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
     FILE* fp = fopen(ofilenamez, "r");
-    if (!fp) {
+    if (VL_UNLIKELY(!fp)) {
 	// We don't report the Verilog source filename as it slow to have to pass it down
 	vl_fatal (ofilenamez, 0, "", "$readmem file not found");
 	return;
@@ -794,7 +794,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     // with changing buffer sizes dynamically, etc.
     while (1) {
 	int c = fgetc(fp);
-	if (c==EOF) break;
+	if (VL_UNLIKELY(c==EOF)) break;
 	//printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n", linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
 	if (c=='\n') { linenum++; ignore_to_eol=false; if (innum) reading_addr=false; innum=false; }
 	else if (c=='\t' || c==' ' || c=='\r' || c=='\f') { if (innum) reading_addr=false; innum=false; }

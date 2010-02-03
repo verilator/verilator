@@ -92,7 +92,7 @@ private:
     void bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
-	if (m_writep > (m_wrBufp+(bufferSize()-bufferInsertSize()))) {
+	if (VL_UNLIKELY(m_writep > (m_wrBufp+(bufferSize()-bufferInsertSize())))) {
 	    bufferFlush();
 	}
     }

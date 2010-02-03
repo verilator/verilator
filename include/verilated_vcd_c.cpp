@@ -203,7 +203,7 @@ void VerilatedVcd::printQuad (vluint64_t n) {
 void VerilatedVcd::printTime (vluint64_t timeui) {
     // VCD file format specification does not allow non-integers for timestamps
     // Dinotrace doesn't mind, but Cadence vvision seems to choke
-    if (timeui < m_timeLastDump) {
+    if (VL_UNLIKELY(timeui < m_timeLastDump)) {
 	timeui = m_timeLastDump;
 	static bool backTime = false;
 	if (!backTime) {
@@ -219,7 +219,7 @@ void VerilatedVcd::bufferFlush () {
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
-    if (!isOpen()) return;
+    if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
     while (1) {
 	size_t remaining = (m_writep - wp);
@@ -502,7 +502,7 @@ void VerilatedVcd::addCallback (
     VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb, VerilatedVcdCallback_t changecb,
     void* userthis)
 {
-    if (isOpen()) {
+    if (VL_UNLIKELY(isOpen())) {
 	string msg = (string)"Internal: "+__FILE__+"::"+__FUNCTION__+" called with already open file";
 	vl_fatal(__FILE__,__LINE__,"",msg.c_str());
     }
@@ -524,12 +524,12 @@ void VerilatedVcd::dumpFull (vluint64_t timeui) {
 
 void VerilatedVcd::dump (vluint64_t timeui) {
     if (!isOpen()) return;
-    if (m_fullDump) {
+    if (VL_UNLIKELY(m_fullDump)) {
 	m_fullDump = false;	// No need for more full dumps
 	dumpFull(timeui);
 	return;
     }
-    if (m_rolloverMB && m_wroteBytes > this->m_rolloverMB) {
+    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > this->m_rolloverMB)) {
 	openNext(true);
 	if (!isOpen()) return;
     }

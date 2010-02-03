@@ -685,14 +685,14 @@ static inline IData VL_ONEHOT0_W(int words, WDataInP lwp) {
 
 static inline IData VL_CLOG2_I(IData lhs) {
     // There are faster algorithms, or fls GCC4 builtins, but rarely used
-    if (!lhs) return 0;
+    if (VL_UNLIKELY(!lhs)) return 0;
     lhs--;
     int shifts=0;
     for (; lhs!=0; shifts++) lhs = lhs >> 1;
     return shifts;
 }
 static inline IData VL_CLOG2_Q(QData lhs) {
-    if (!lhs) return 0;
+    if (VL_UNLIKELY(!lhs)) return 0;
     lhs--;
     int shifts=0;
     for (; lhs!=0; shifts++) lhs = lhs >> VL_ULL(1);
@@ -976,25 +976,25 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
 }
 
 static inline IData VL_DIVS_III(int lbits, IData lhs,IData rhs) {
-    if (rhs==0) return 0;
+    if (VL_UNLIKELY(rhs==0)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline QData VL_DIVS_QQQ(int lbits, QData lhs,QData rhs) {
-    if (rhs==0) return 0;
+    if (VL_UNLIKELY(rhs==0)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed / rhs_signed;
 }
 static inline IData VL_MODDIVS_III(int lbits, IData lhs,IData rhs) {
-    if (rhs==0) return 0;
+    if (VL_UNLIKELY(rhs==0)) return 0;
     vlsint32_t lhs_signed = VL_EXTENDS_II(32, lbits, lhs);
     vlsint32_t rhs_signed = VL_EXTENDS_II(32, lbits, rhs);
     return lhs_signed % rhs_signed;
 }
 static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs,QData rhs) {
-    if (rhs==0) return 0;
+    if (VL_UNLIKELY(rhs==0)) return 0;
     vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);
     vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);
     return lhs_signed % rhs_signed;
@@ -1040,7 +1040,7 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
 }
 
 static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
-    if (lhs==0) return 0;
+    if (VL_UNLIKELY(lhs==0)) return 0;
     IData power = lhs;
     IData out = 1;
     for (int i=0; i<rbits; i++) {
@@ -1053,7 +1053,7 @@ static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
 #define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
 
 static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
-    if (lhs==0) return 0;
+    if (VL_UNLIKELY(lhs==0)) return 0;
     QData power = lhs;
     QData out = VL_ULL(1);
     for (int i=0; i<rbits; i++) {
@@ -1383,7 +1383,7 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits,int,int,WDataOutP owp,WDataInP 
 
 static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData rd) {
     int word = VL_BITWORD_I(rd);
-    if ((int)rd>lbits) {
+    if (VL_UNLIKELY((int)rd>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
 	// We return all 1's as that's more likely to find bugs (?) than 0's.
     } else {
@@ -1399,7 +1399,7 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData
 
 static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP lwp, IData lsb, IData width) {
     int msb = lsb+width-1;
-    if (msb>lbits) {
+    if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I((int)lsb)) {
 	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
@@ -1413,7 +1413,7 @@ static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP lwp, IData ls
 
 static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP lwp, IData lsb, IData width) {
     int msb = lsb+width-1;
-    if (msb>lbits) {
+    if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I((int)lsb)) {
 	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
@@ -1435,7 +1435,7 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP lwp, IData ls
 static inline WDataOutP VL_SEL_WWII(int obits,int lbits,int,int,WDataOutP owp,WDataInP lwp, IData lsb, IData width) {
     int msb = lsb+width-1;
     int word_shift = VL_BITWORD_I(lsb);
-    if (msb>lbits) { // Outside bounds,
+    if (VL_UNLIKELY(msb>lbits)) { // Outside bounds,
 	for (int i=0; i<VL_WORDS_I(obits)-1; i++) owp[i] = ~0;
 	owp[VL_WORDS_I(obits)-1] = VL_MASK_I(obits);
     } else if (VL_BITBIT_I(lsb)==0) {
