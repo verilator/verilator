@@ -913,6 +913,12 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
     return 1;
 }
 
+const char* vl_mc_scan_plusargs(const char* prefixp) {
+    string match = VerilatedImp::argPlusMatch(prefixp);
+    if (match == "") return 0;
+    else return match.c_str()+strlen(prefixp)+1; // +1 to skip the "+"
+}
+
 //===========================================================================
 // Heavy functions
 

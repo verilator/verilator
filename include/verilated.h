@@ -303,6 +303,7 @@ extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
 
 extern IData VL_TESTPLUSARGS_I(const char* formatp);
 extern IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp);
+extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 //=========================================================================
 // Base macros

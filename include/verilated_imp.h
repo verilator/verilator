@@ -80,6 +80,7 @@ public: // But only for verilated*.cpp
 	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
     }
     static string argPlusMatch(const char* prefixp) {
+	// Note prefixp does not include the leading "+"
 	size_t len = strlen(prefixp);
 	if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
 	    s_s.m_argVecLoaded = true;  // Complain only once
@@ -134,7 +135,7 @@ public: // But only for verilated*.cpp
     }
     static inline const VerilatedScope* scopeFind(const char* namep) {
 	ScopeNameMap::iterator it=s_s.m_nameMap.find(namep);
-	if (it != s_s.m_nameMap.end()) return it->second;
+	if (VL_LIKELY(it != s_s.m_nameMap.end())) return it->second;
 	else return NULL;
     }
     static void scopeErase(const VerilatedScope* scopep) {
@@ -174,7 +175,7 @@ public: // But only for verilated*.cpp
     }
     static int exportFind(const char* namep) {
 	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
-	if (it != s_s.m_exportMap.end()) return it->second;
+	if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
 	string msg = (string("%Error: Testbench C called ")+namep
 		      +" but no such DPI export function name exists in ANY model");
 	vl_fatal("unknown",0,"", msg.c_str());
