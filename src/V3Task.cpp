@@ -580,6 +580,7 @@ private:
 	// Create assignment from internal format into DPI temporary
 	bool bitvec = (portp->basicp()->isBitLogic() && portp->width() > 32);
 	string stmt;
+	string ket;
 	// Someday we'll have better type support, and this can make variables and casts.
 	// But for now, we'll just text-bash it.
 	if (bitvec) {
@@ -589,14 +590,15 @@ private:
 	    if (isPtr) stmt += "*"; // DPI outputs are pointers
 	    stmt += portp->name()+toSuffix+" = ";
 	    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-		stmt += "(void*)";
+		stmt += "VL_CVT_Q_VP(";
+		ket += ")";
 	    }
 	    stmt += portp->name()+frSuffix;
 	    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING) {
 		stmt += ".c_str()";
 	    }
 	}
-	stmt += ";\n";
+	stmt += ket + ";\n";
 	return new AstCStmt(portp->fileline(), stmt);
     }
 
@@ -604,10 +606,13 @@ private:
 	// Create assignment from DPI temporary into internal format
 	AstVar* portp = portvscp->varp();
 	string stmt;
+	string ket;
 	if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-	    stmt += "(QData)";
+	    stmt += "VL_CVT_VP_Q(";
+	    ket += ")";
 	}
 	stmt += frName;
+	stmt += ket;
 	// Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
 	int cwidth = VL_WORDSIZE; if (portp->basicp()) cwidth = portp->basicp()->keyword().width();
 	if (portp->basicp() && portp->basicp()->isBitLogic()) cwidth = VL_WORDSIZE*portp->widthWords();

@@ -17,6 +17,12 @@
 #include <svdpi.h>
 #include <cstring>
 
+#ifdef _WIN32
+# define T_PRI64 "I64"
+#else // Linux or compliant Unix flavors
+# define T_PRI64 "ll"
+#endif
+
 //======================================================================
 
 #if defined(VERILATOR)
@@ -53,10 +59,14 @@ extern "C" {
 
 //======================================================================
 
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-	printf("%%Error: %s:%d: GOT = %" VL_PRI64 "x   EXP = %" VL_PRI64 "x\n", \
-	       __FILE__,__LINE__, (long long)(got), (long long)(exp));	\
+#define CHECK_RESULT(type, got, exp)		\
+    if ((got) != (exp)) { 			\
+	printf("%%Error: %s:%d:", __FILE__,__LINE__);	\
+	union { type a; long long l; } u;	\
+	u.l = 0; u.a = got;			\
+	printf(" GOT = %" T_PRI64 "x", u.l);	\
+	u.l = 0; u.a = exp;			\
+	printf("  EXP = %" T_PRI64 "x\n", u.l); \
 	return __LINE__; \
     }
 #define CHECK_RESULT_NNULL(got) \
@@ -73,10 +83,10 @@ static int check_sub(const char* name, int i) {
     CHECK_RESULT_NNULL (scope);
     svScope prev = svGetScope();
     svScope sout = svSetScope(scope);
-    CHECK_RESULT(sout, prev);
-    CHECK_RESULT(svGetScope(), scope);
+    CHECK_RESULT(svScope, sout, prev);
+    CHECK_RESULT(svScope, svGetScope(), scope);
     int out = dpix_sub_inst(100*i);
-    CHECK_RESULT(out, 100*i + i);
+    CHECK_RESULT(int, out, 100*i + i);
 
     return 0; // OK
 }
@@ -96,31 +106,32 @@ int dpix_run_tests() {
 
 #ifndef CADENCE // Unimplemented; how hard is it?
     printf ("svDpiVersion: %s\n",svDpiVersion());
-    CHECK_RESULT (strcmp(svDpiVersion(), "1800-2005")==0
+    CHECK_RESULT (bool,
+		  strcmp(svDpiVersion(), "1800-2005")==0
 		  || strcmp(svDpiVersion(), "P1800-2005")==0
 		  , 1);
 #endif
 
-    CHECK_RESULT (dpix_int123(), 0x123 );
+    CHECK_RESULT (int, dpix_int123(), 0x123 );
 
 #ifndef CADENCE  // No export calls from an import
     int o;
     dpix_t_int(0x456, &o);
-    CHECK_RESULT (o, ~0x456UL);
+    CHECK_RESULT (unsigned long, o, ~0x456UL);
 
     dpix_t_renamed(0x456, &o);
-    CHECK_RESULT (o, 0x458UL);
+    CHECK_RESULT (int, o, 0x458UL);
 #endif
 
-    CHECK_RESULT (dpix_f_bit(1), 0x0);
-    CHECK_RESULT (dpix_f_bit(0), 0x1);
+    CHECK_RESULT (int, dpix_f_bit(1), 0x0);
+    CHECK_RESULT (int, dpix_f_bit(0), 0x1);
     // Simulators disagree over the next three's sign extension unless we mask the upper bits
-    CHECK_RESULT (dpix_f_int(1) & 0xffffffffUL, 0xfffffffeUL);
-    CHECK_RESULT (dpix_f_byte(1) & 0xffUL, 0xfe);
-    CHECK_RESULT (dpix_f_shortint(1) & 0xffffUL, 0xfffeUL);
+    CHECK_RESULT (int, dpix_f_int(1) & 0xffffffffUL, 0xfffffffeUL);
+    CHECK_RESULT (int, dpix_f_byte(1) & 0xffUL, 0xfe);
+    CHECK_RESULT (int, dpix_f_shortint(1) & 0xffffUL, 0xfffeUL);
 
-    CHECK_RESULT (dpix_f_longint(1), 0xfffffffffffffffeULL);
-    CHECK_RESULT (dpix_f_chandle((void*)(12345)), (void*)(12345));
+    CHECK_RESULT (unsigned long long, dpix_f_longint(1), 0xfffffffffffffffeULL);
+    CHECK_RESULT (void*, dpix_f_chandle((void*)(12345)), (void*)(12345));
 
     if (int bad=check_sub("top.t.a",1)) return bad;
     if (int bad=check_sub("top.t.b",2)) return bad;

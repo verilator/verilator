@@ -60,8 +60,9 @@ obj_dbg:
 opt: ../verilator_bin
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
 ../verilator_bin: ../verilator_bin_dbg
-	cp -p $< $@
-	@-cp -p $<.exe $@.exe
+	-rm -rf $@ $@.exe
+	-cp -p $< $@
+	-cp -p $<.exe $@.exe
 else
 ../verilator_bin: obj_opt prefiles
 	cd obj_opt && $(MAKE) -j 1             TGT=../$@ -f ../Makefile_obj serial

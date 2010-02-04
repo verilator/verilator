@@ -323,8 +323,12 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 // Use a union to avoid cast-to-different-size warnings
 /// Return FILE* from QData
 static inline FILE*  VL_CVT_Q_FP(QData lhs) { union { FILE* fp; QData q; } u; u.q=lhs; return u.fp; }
+/// Return void* from QData
+static inline void*  VL_CVT_Q_VP(QData lhs) { union { void* fp; QData q; } u; u.q=lhs; return u.fp; }
 /// Return QData from FILE*
 static inline QData  VL_CVT_FP_Q(FILE* fp) { union { FILE* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
+/// Return QData from void*
+static inline QData  VL_CVT_VP_Q(void* fp) { union { void* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
