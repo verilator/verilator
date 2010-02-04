@@ -37,7 +37,11 @@
 # define VL_ATTR_ALIGNED(alignment) __attribute__ ((aligned (alignment)))
 # define VL_ATTR_ALWINLINE __attribute__ ((always_inline))
 # define VL_ATTR_NORETURN __attribute__ ((noreturn))
-# define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
+# ifdef _WIN32
+#  define VL_ATTR_PRINTF(fmtArgNum)  // GCC with MS runtime will fool the print arg checker
+# else
+#  define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
+# endif
 # define VL_ATTR_UNUSED __attribute__ ((unused))
 # define VL_FUNC  __func__
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)

@@ -367,7 +367,7 @@ string V3Options::getenvSYSTEMC_ARCH() {
         // Hardcoded with MINGW current version. Would like a better way.
         string sysname = "MINGW32_NT-5.0";
         var = "mingw32";
-#elsif defined (_WIN32)
+#elif defined (_WIN32)
         string sysname = "WIN32";
         var = "win32";
 #else
