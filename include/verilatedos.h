@@ -34,19 +34,32 @@
 // Compiler pragma abstraction
 
 #ifdef __GNUC__
-# define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
 # define VL_ATTR_ALIGNED(alignment) __attribute__ ((aligned (alignment)))
+# define VL_ATTR_ALWINLINE __attribute__ ((always_inline))
 # define VL_ATTR_NORETURN __attribute__ ((noreturn))
+# define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
 # define VL_ATTR_UNUSED __attribute__ ((unused))
 # define VL_FUNC  __func__
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)
 # define VL_UNLIKELY(x)	__builtin_expect(!!(x), 0)
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p),0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p),1)
+#elif defined(_MSC_VER)
+# define VL_ATTR_ALIGNED(alignment)
+# define VL_ATTR_ALWINLINE
+# define VL_ATTR_NORETURN
+# define VL_ATTR_PRINTF(fmtArgNum)
+# define VL_ATTR_UNUSED
+# define VL_FUNC  __FUNCTION__
+# define VL_LIKELY(x)	(!!(x))
+# define VL_UNLIKELY(x)	(!!(x))
+# define VL_PREFETCH_RD(p)
+# define VL_PREFETCH_RW(p)
 #else
-# define VL_ATTR_PRINTF(fmtArgNum)	///< Function with printf format checking
 # define VL_ATTR_ALIGNED(alignment)	///< Align structure to specified byte alignment
+# define VL_ATTR_ALWINLINE		///< Inline, even when not optimizing
 # define VL_ATTR_NORETURN		///< Function does not ever return
+# define VL_ATTR_PRINTF(fmtArgNum)	///< Function with printf format checking
 # define VL_ATTR_UNUSED			///< Function that may be never used
 # define VL_FUNC "__func__"		///< Name of current function for error macros
 # define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true than false

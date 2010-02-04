@@ -1217,10 +1217,12 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 	    case 'x': displayArg(nodep,&elistp,isScan, vfmt,'x'); break;
 	    case 's': displayArg(nodep,&elistp,isScan, vfmt,'s'); break;
 	    case 'm': {
-		emitDispState.pushFormat("%S");
-		emitDispState.pushArg(NULL, "vlSymsp->name()");
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
-		emitDispState.pushFormat(scopenamep->scopePrettyName());
+		string suffix = scopenamep->scopePrettyName();
+		if (suffix=="") emitDispState.pushFormat("%S");
+		else emitDispState.pushFormat("%N");  // Add a . when needed
+		emitDispState.pushArg(NULL, "vlSymsp->name()");
+		emitDispState.pushFormat(suffix);
 		break;
 	    }
 	    case 'u':

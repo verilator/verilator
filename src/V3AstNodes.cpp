@@ -337,6 +337,8 @@ string AstScopeName::scopePrettyName() const {
     }
     // TOP will be replaced by top->name()
     if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
+    if (out.substr(0,7) == "__DOT__") out.replace(0,7,"");
+    if (out.substr(0,1) == ".") out.replace(0,1,"");
     return AstNode::prettyName(out);
 }
 

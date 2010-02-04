@@ -39,7 +39,7 @@
 
 // Not supported yet
 #define _VL_SVDPI_UNIMP() \
-    vl_fatal(__FILE__,__LINE__,"",Verilated::catName("%%Error: Unsupported DPI function: ",VL_FUNC))
+    vl_fatal(__FILE__,__LINE__,"",(string("%%Error: Unsupported DPI function: ")+VL_FUNC).c_str())
 
 // Function requires a "context" in the import declaration
 #define _VL_SVDPI_CONTEXT_WARN() \

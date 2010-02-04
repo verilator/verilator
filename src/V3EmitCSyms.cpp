@@ -290,7 +290,8 @@ void EmitCSyms::emitSymImp() {
 	} else {
 	    ofp()->printf("\t%c %-30s ", comma, scopep->nameDotless().c_str());
 	    puts("(Verilated::catName(topp->name(),");
-	    putsQuoted("."+scopep->prettyName());
+	    // The "." is added by catName
+	    putsQuoted(scopep->prettyName());
 	    puts("))\n");
 	    comma=',';
 	}

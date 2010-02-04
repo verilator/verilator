@@ -308,6 +308,11 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    case '%':
 		output += '%';
 		break;
+	    case 'N': { // "C" string with name of module, add . if needed
+		const char* cstrp = va_arg(ap, const char*);
+		if (VL_LIKELY(*cstrp)) { output += cstrp; output += '.'; }
+		break;
+	    }
 	    case 'S': { // "C" string
 		const char* cstrp = va_arg(ap, const char*);
 		output += cstrp;
@@ -957,6 +962,7 @@ const char* Verilated::catName(const char* n1, const char* n2) {
 	len = newlen;
     }
     strcpy(strp,n1);
+    if (*n1) strcat(strp,".");
     strcat(strp,n2);
     return strp;
 }
@@ -1005,12 +1011,9 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
     char* namep = new char[strlen(prefixp)+strlen(suffixp)+2];
-    if (!*prefixp && *suffixp && suffixp[0]=='.') {  // Special case of top module with empty name - drop the dots
-	strcpy(namep, suffixp+1);
-    } else {
-	strcpy(namep, prefixp);
-	strcat(namep, suffixp);
-    }
+    strcpy(namep, prefixp);
+    if (*prefixp && *suffixp) strcat(namep,".");
+    strcat(namep, suffixp);
     m_namep = namep;
     VerilatedImp::scopeInsert(this);
 }
