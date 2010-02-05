@@ -1018,7 +1018,7 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
     VerilatedImp::scopeInsert(this);
 }
 
-void VerilatedScope::exportInsert(bool finalize, const char* namep, void* cb) {
+void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
     int funcnum = VerilatedImp::exportInsert(namep);

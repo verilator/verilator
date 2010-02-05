@@ -158,7 +158,7 @@ public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp);
-    void exportInsert(bool finalize, const char* namep, void* cb);
+    void exportInsert(int finalize, const char* namep, void* cb);
     // ACCESSORS
     const char* name() const { return m_namep; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
