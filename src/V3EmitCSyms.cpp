@@ -181,6 +181,12 @@ void EmitCSyms::emitSymHdr() {
     puts("#define _"+symClassName()+"_H_\n");
     puts("\n");
 
+    if (optSystemPerl()) puts("#include \"systemperl.h\"\n");
+    else if (optSystemC()) puts("#include \"systemc.h\"\n");
+
+    if (optSystemPerl() || optSystemC()) {
+	puts("#include \"verilated_sc.h\"\n");
+    }
     if (v3Global.needHeavy()) {
 	puts("#include \"verilated_heavy.h\"\n");
     } else {
