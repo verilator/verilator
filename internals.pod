@@ -73,7 +73,7 @@ algorithmic stage.  An example:
 
 =over 4
 
-"1:2:" indicates the hiearchy the VAR is op2p under the MODULE.
+"1:2:" indicates the hierarchy the VAR is op2p under the MODULE.
 
 "VAR" is the AstNodeType.
 

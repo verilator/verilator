@@ -144,7 +144,7 @@ string AstNode::dedotName(const string& namein) {
 }
 
 string AstNode::vcdName(const string& namein) {
-    // VCD tracing expects space to separate hiearchy
+    // VCD tracing expects space to separate hierarchy
     // Dots are reserved for dots the user put in the name
     string pretty = namein;
     string::size_type pos;
