@@ -97,7 +97,7 @@ if ($#opt_tests<0) {
 mkdir "obj_dir";
 mkdir "logs";
 
-my $leftcnt=0; my $okcnt=0; my $failcnt=0;
+my $leftcnt=0; my $okcnt=0; my $failcnt=0; my $skcnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
@@ -123,6 +123,8 @@ sub one_test {
 	     $test->read;
 	     if ($test->ok) {
 		 $test->oprint("Test PASSED\n");
+	     } elsif ($test->skips && !$test->errors) {
+		 $test->oprint("%Skip: $test->{skips}\n");
 	     } else {
 		 $test->error("Missing ok\n") if !$test->errors;
 		 $test->oprint("%Error: $test->{errors}\n");
@@ -134,6 +136,8 @@ sub one_test {
 	     $test->read_status;
 	     if ($test->ok) {
 		 $okcnt++;
+	     } elsif ($test->skips && !$test->errors) {
+		 $skcnt++;
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
@@ -144,7 +148,7 @@ sub one_test {
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
 	     $leftcnt--;
-	     print "==SUMMARY: Left $leftcnt  Passed $okcnt  Failed $failcnt\n";
+	     print "==SUMMARY: Left $leftcnt  Passed $okcnt  Skipped $skcnt  Failed $failcnt\n";
 	 },
 	 )->ready();
 }
@@ -209,12 +213,12 @@ sub report {
 
     $fh->print("\n");
     $fh->print("="x70,"\n");
-    $fh->print("TESTS Passed $okcnt  Failed $failcnt\n");
+    $fh->print("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt\n");
     foreach my $f (@$fails) {
 	chomp $f;
 	$fh->print("$f\n");
     }
-    $fh->print("TESTS Passed $okcnt  Failed $failcnt\n");
+    $fh->print("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt\n");
 }
 
 #######################################################################
@@ -325,8 +329,8 @@ sub error {
 sub skip {
     my $self = shift;
     my $msg = join('',@_);
-    warn "%Warning: Skip: $self->{mode}/$self->{name}: ".$msg."\n";
-    $self->{errors} ||= "Skip: ".$msg;
+    warn "%Skip: $self->{mode}/$self->{name}: ".$msg."\n";
+    $self->{skips} ||= "Skip: ".$msg;
 }
 
 sub prep {
@@ -371,7 +375,7 @@ sub read_status {
 sub compile {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);	   # Default arguments are from $self
-    return 1 if $self->errors;
+    return 1 if $self->errors || $self->skips;
     $self->oprint("Compile\n");
 
     my $checkflags = join(' ',@{$param{v_flags}},
@@ -460,11 +464,11 @@ sub compile {
 		      ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
 		      );
 	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
-	    $self->error("Test requires SystemC; ignore error since not installed\n");
+	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
 	elsif ($self->{coverage} && !$Have_System_Perl) {
-	    $self->error("Test requires SystemPerl; ignore error since not installed\n");
+	    $self->skip("Test requires SystemPerl; ignore error since not installed\n");
 	    return 1;
 	}
 
@@ -472,7 +476,7 @@ sub compile {
 		    fails=>$param{fails},
 		    expect=>$param{expect},
 		    cmd=>\@vlargs);
-	return 1 if $self->errors;
+	return 1 if $self->errors || $self->skips;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
 	    if ($param{make_main}) {
@@ -500,7 +504,7 @@ sub compile {
 
 sub execute {
     my $self = (ref $_[0]? shift : $Self);
-    return 1 if $self->errors;
+    return 1 if $self->errors || $self->skips;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     $self->oprint("Run\n");
 
@@ -551,7 +555,7 @@ sub execute {
 
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
-    return 1 if $self->errors;
+    return 1 if $self->errors || $self->skips;
     return 1 if !$self->{vlt};
 
     my %param = (%{$self}, @_);	   # Default arguments are from $self
@@ -596,13 +600,18 @@ sub inline_checks {
 sub ok {
     my $self = (ref $_[0]? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
-    $self->{ok} = 0 if $self->{errors};
+    $self->{ok} = 0 if $self->{errors} || $self->{skips};
     return $self->{ok};
 }
 
 sub errors {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{errors};
+}
+
+sub skips {
+    my $self = (ref $_[0]? shift : $Self);
+    return $self->{skips};
 }
 
 sub top_filename {
@@ -670,7 +679,7 @@ sub _run {
     if ($param{fails} && !$status) {
 	$self->error("Exec of $param{cmd}[0] ok, but expected to fail\n");
     }
-    return if $self->errors;
+    return if $self->errors || $self->skips;
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
@@ -1050,6 +1059,7 @@ sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
+    return if $self->errors || $self->skips;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
@@ -1062,6 +1072,7 @@ sub file_grep {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
+    return if $self->errors || $self->skips;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
