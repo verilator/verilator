@@ -5,11 +5,15 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.800***
 
+Application visible changes:
+
 **   SystemPerl is no longer required for tracing.
      Applications must use VerilatedVcdC class in place of SpTraceVcdC.
 
 **   SystemVerilog 1800-2009 is now the default language.
      Thus "global" etc are now keywords.  See the --language option.
+
+New features:
 
 **   Support SystemVerilog types "byte", "chandle", "int", "longint",
      "shortint", "time", "var" and "void" in variables and functions.
@@ -35,7 +39,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support 1800-2009 define defaults and `undefineall.
 
-***  Add VARHIDDEN warning when signal name hides module name.
+***  Add -CFLAGS, -LDFLAGS, <file>.a, <file>.o, and <file>.so options.
+
+***  Speed compiles by avoiding including the STL iostream header.
+     Application programs may need to include it themselves to avoid errors.
 
 ***  Add experimental clock domain crossing checks.
 
@@ -43,10 +50,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add experimental config files to filter warnings outside of the source.
 
-***  Add -CFLAGS, -LDFLAGS, <file>.a, <file>.o, and <file>.so options.
-
-***  Speed compiles by avoiding including the STL iostream header.
-     Application programs may need to include it themselves to avoid errors.
+***  Add VARHIDDEN warning when signal name hides module name.
 
 **** Support optional cell parenthesis, bug179. [by Byron Bradley]
 
@@ -60,11 +64,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Add -Wno-MODDUP option to allow duplicate modules.
 
-**** Fix creating implicit variables for expressions, bug196. [Byron Bradley]
+Bug fixes:
 
-**** Fix duplicate implicit variables under generates, bug201. [Byron Bradley]
+**** Fix implicit variable issues, bug196, bug201. [Byron Bradley]
 
-**** Fix for variable typing, bug205.  [by Byron Bradley]
+**** Fix 'for' variable typing, bug205.  [by Byron Bradley]
 
 **** Fix tracing with --pins-bv 1, bug195.  [Michael S]
 

@@ -159,7 +159,7 @@ Verilator - Convert Verilog code to C++/SystemC
     verilator --cc [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
     verilator --sc [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
     verilator --sp [options] [top_level.v] [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --lint-only ...
+    verilator --lint-only    [top_level.v]...
 
 =head1 DESCRIPTION
 
@@ -183,6 +183,7 @@ C++, and linked with the Verilated files.
 The resulting executable will perform the actual simulation.
 
 To get started, jump down to "EXAMPLE C++ EXECUTION".
+
 
 =head1 ARGUMENT SUMMARY
 
@@ -266,6 +267,7 @@ descriptions in the next sections for more information.
      -Wno-lint                  Disable all lint warnings
      -x-assign <mode>           Initially assign Xs to this value
      -y <dir>                   Directory to search for modules
+
 
 =head1 ARGUMENTS
 
@@ -838,6 +840,7 @@ compatibility.
 
 =back
 
+
 =head1 EXAMPLE C++ EXECUTION
 
 We'll compile this example into C++.
@@ -894,6 +897,7 @@ And we get as output
 Really, you're better off writing a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
 the test_c directory in the distribution for an example.
+
 
 =head1 EXAMPLE SYSTEMC EXECUTION
 
@@ -965,6 +969,7 @@ Really, you're better off using a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
 the test_sp directory in the distribution for an example.
 
+
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 -x-assign=fast
@@ -1019,6 +1024,7 @@ Verilog line numbers on which most of the time is being spent.
 When done, please let the author know the results.  I like to keep tabs on
 how Verilator compares, and may be able to suggest additional improvements.
 
+
 =head1 FILES
 
 All output files are placed in the output directory name specified with the
@@ -1067,6 +1073,7 @@ After running Make, the C++ compiler should produce the following:
     {prefix}				// Final executable (w/--exe argument)
     {prefix}__ALL.a			// Library of all Verilated objects
     {prefix}{misc}.o			// Intermediate objects
+
 
 =head1 ENVIRONMENT
 
@@ -1139,6 +1146,7 @@ Verilator was compiled).
 
 =back
 
+
 =head1 CONNECTING TO C++
 
 Verilator creates a .h and .cpp file for the top level module and all
@@ -1194,6 +1202,7 @@ You call the eval() method to evaluate the model.  When the simulation is
 complete call the final() method to wrap up any SystemVerilog final blocks,
 and complete any assertions.
 
+
 =head1 CONNECTING TO SYSTEMC
 
 Verilator will convert the top level module to a SC_MODULE.  This module
@@ -1208,6 +1217,7 @@ uint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
 Lower modules are not pure SystemC code.  This is a feature, as using the
 SystemC pin interconnect scheme everywhere would reduce performance by an
 order of magnitude.
+
 
 =head1 DIRECT PROGRAMMING INTERFACE (DPI)
 
@@ -1302,6 +1312,7 @@ definitions.
 Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
 
+
 =head1 CROSS COMPILATION
 
 Verilator supports cross-compiling Verilated code.  This is generally used
@@ -1351,6 +1362,7 @@ For larger designs you'll want to automate this using makefiles, which pull
 the names of the .cpp files to compile in from the make variables generated
 in obj_dir/Vour_classes.mk.
 
+
 =head1 CONFIGURATION FILES
 
 In addition to the command line, warnings and other features may be
@@ -1395,6 +1407,7 @@ if ommitted).
 
 =back
 
+
 =head1 LANGUAGE STANDARD SUPPORT
 
 =head2 Verilog 2001 (IEEE 1364-2001) Support
@@ -1415,11 +1428,12 @@ Verilator currently has some support for SystemVerilog synthesis
 constructs. As SystemVerilog features enter common usage they are added;
 please file a bug if a feature you need is missing.
 
-Verilator supports ==? and !=? operators, $bits, $countones, $error,
-$fatal, $info, $isunknown, $onehot, $onehot0, $unit, $warning, always_comb,
-always_ff, always_latch, bit, byte, chandle, do-while, export, final,
-import, int, logic, longint, package, program, shortint, time, var, void,
-priority case/if, and unique case/if.
+Verilator supports ==? and !=? operators, ++ and -- in some contexts,
+$bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
+$unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
+do-while, enum, export, final, import, int, logic, longint, package,
+program, shortint, time, typedef, var, void, priority case/if, and unique
+case/if.
 
 It also supports .name and .* interconnection.
 
@@ -1431,6 +1445,10 @@ the enclosed coverage tests for the syntax which is allowed.
 Verilator implements a full SystemVerilog 2009 preprocessor, including
 function call-like preprocessor defines, default define arguments,
 `__FILE__, `__LINE__ and `undefineall.
+
+Verilator currently has some support for SystemVerilog 2009 synthesis
+constructs. As SystemVerilog features enter common usage they are added;
+please file a bug if a feature you need is missing.
 
 =head2 Sugar/PSL Support
 
@@ -1474,6 +1492,7 @@ failed" error message.
 Verilator likewise also asserts any "unique" or "priority" SystemVerilog
 keywords on case statements.  However, "unique if" and "priority if" are
 currently simply ignored.
+
 
 =head1 LANGUAGE EXTENSIONS
 
@@ -1785,6 +1804,7 @@ Re-enable waveform tracing for all future signals that are declared.
 
 =back
 
+
 =head1 LANGUAGE LIMITATIONS
 
 There are some limitations and lack of features relative to a commercial
@@ -2078,6 +2098,7 @@ VL_TIME_MULTIPLER can be defined at compile time to move the decimal point
 when displaying all times, model wide.
 
 =back
+
 
 =head1 ERRORS AND WARNINGS
 
@@ -2525,6 +2546,7 @@ program above:
 
 =back
 
+
 =head1 FAQ/FREQUENTLY ASKED QUESTIONS
 
 =over 4
@@ -2848,6 +2870,7 @@ SystemC module *may* be faster.)
 
 =back
 
+
 =head1 BUGS
 
 First, check the the coding limitations section.
@@ -2874,6 +2897,7 @@ Finally, report the bug using the bug tracker at
 L<http://www.veripool.org/verilator>.  The bug will become publicly
 visible; if this is unacceptable, mail the bug report to
 C<wsnyder@wsnyder.org>.
+
 
 =head1 HISTORY
 
@@ -2904,6 +2928,7 @@ In 2009, major SystemVerilog and DPI language support was added.
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is
 faster than many popular commercial simulators.
+
 
 =head1 CONTRIBUTORS
 
@@ -2942,6 +2967,7 @@ Xiaoliang.
 
 Thanks all.
 
+
 =head1 DISTRIBUTION
 
 The latest version is available from L<http://www.veripool.org/>.
@@ -2963,7 +2989,7 @@ Major concepts by Paul Wasson and Duane Galbi.
 
 L<verilator_profcfunc>, L<systemperl>, L<vcoverage>, L<make>
 
-And verilator_internals.txt in the distribution.
+And internals.txt in the distribution.
 
 =cut
 

@@ -45,10 +45,10 @@ Verilator is developed and has primary testing on:
 
     SuSE 11.1 AMD64 i686-linux-2.6.27, GCC 4.3.2
 
-Versions have also built on Redhat Linux, Windows under Cygwin, Macs, HPUX
-and Solaris.  It should run with minor porting on any Linix-ish platform.
-Verilator also works on Windows under MinGW (gcc -mno-cygwin).  Verilated
-output (not Verilator itself) compiles under MSVC++ 2008.
+Versions have also built on Redhat Linux, Macs OS-X, HPUX and Solaris.  It
+should run with minor porting on any Linix-ish platform.  Verilator also
+works on Windows under Cygwin, and Windows under MinGW (gcc -mno-cygwin).
+Verilated output (not Verilator itself) compiles under MSVC++ 2008.
 
 =head1 INSTALLATION
 
@@ -164,11 +164,11 @@ or reading verilator.txt in the same directory as this README.
 
 =head1 DIRECTORY STRUCTURE
 
-The directories in the kit de-taring are as follows:
+The directories in the kit after de-taring are as follows:
 
-    bin/verilator               => Compiler Wrapper invoked on user Verilog code
+    bin/verilator               => Compiler Wrapper invoked to Verilate code
     include/                    => Files that should be in your -I compiler path
-    include/verilated.cpp       => Global routines to link into your simulator
+    include/verilated*.cpp      => Global routines to link into your simulator
     include/verilated.h         => Global headers
     include/verilated.v         => Stub defines for linting
     include/verilated.mk        => Common makefile
@@ -184,4 +184,3 @@ The directories in the kit de-taring are as follows:
 =head1 LIMITATIONS
 
 See verilator.txt (or execute C<bin/verilator --help>) for limitations.
-
