@@ -24,9 +24,9 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 DEBUG_ON = --debug --trace-dups
 
 ######################################################################
-test_default:  prep        preproc compile     run coverage
-test_debug:    prep_dbg    preproc compile_dbg run coverage
-test_nopublic: prep_dbg_np preproc compile_dbg run coverage
+test_default:  precopy prep        preproc compile     run coverage
+test_debug:    precopy prep_dbg    preproc compile_dbg run coverage
+test_nopublic: precopy prep_dbg_np preproc compile_dbg run coverage
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 
@@ -34,6 +34,11 @@ V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 # Avoid using these settings in real application Makefiles!
 VERILATOR_FLAGS = --public --output-split-cfuncs 1000 --output-split 1000 \
 	--sp --coverage --stats --trace $(V_FLAGS) top.v
+
+precopy: obj_dir obj_dir/sc_main.cpp
+obj_dir/sc_main.cpp: ../test_sc/sc_main.cpp
+	mkdir -p obj_dir
+	cp $^ $@
 
 prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)

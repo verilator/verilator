@@ -31,6 +31,4 @@ simx: sc_main.o $(VK_GLOBAL_OBJS) \
 	  $(VM_PREFIX)__ALL.a $(SC_LIB)
 	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(SC_LIBS) $(LIBS) 2>&1 | c++filt
 
-VPATH += ../test_sp
-
 sc_main.o: sc_main.cpp $(VM_PREFIX).h
