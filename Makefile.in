@@ -145,8 +145,6 @@ INST_PROJ_BIN_FILES = \
 
 DISTFILES := $(DISTFILES_INC)
 
-VL_INST_MAN_FILES = verilator.1
-
 ifeq ($(OBJCACHE_JOBS),)
 ifneq ($(OBJCACHE_HOSTS),)
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
@@ -238,11 +236,25 @@ internals.txt: internals.pod
 	-rm -f $@
 	$(POD2TEXT) --loose $< > $@
 
-# See uninstall also
+# See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 	verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
+
+# See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
+VL_INST_MAN_FILES = verilator.1
+
+VL_INST_INC_FILES = \
+	include/*.[chv]*  include/verilated.mk \
+	include/vltstd/*.[chv]* \
+
+VL_INST_DATA_FILES = \
+	test_v/*.[chv]* \
+	test_c/*.[chv]*   test_c/Makefile  test_c/Makefile_obj  \
+	test_sc/*.[chv]*  test_sc/Makefile test_sc/Makefile_obj \
+	test_sp/*.[chv]*  test_sp/Makefile test_sp/Makefile_obj \
+
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
@@ -259,16 +271,35 @@ installman: $(VL_INST_MAN_FILES)
 	done
 
 installdata:
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd $(DESTDIR)$(pkgdatadir)/examples
-	cp -r include/*.* $(DESTDIR)$(pkgdatadir)/include
-	cp -r ${srcdir}/include/*.* $(DESTDIR)$(pkgdatadir)/include
-	cp -r ${srcdir}/include/vltstd/*.* $(DESTDIR)$(pkgdatadir)/include/vltstd
-	cp -r ${srcdir}/test_c  $(DESTDIR)$(pkgdatadir)/examples
-	cp -r ${srcdir}/test_sc $(DESTDIR)$(pkgdatadir)/examples
-	cp -r ${srcdir}/test_sp $(DESTDIR)$(pkgdatadir)/examples
-	cp -r ${srcdir}/test_v  $(DESTDIR)$(pkgdatadir)/examples
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd
+	for p in $(VL_INST_INC_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
+	done
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_c
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sc
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sp
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_v
+	for p in $(VL_INST_DATA_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/examples/$$p; \
+	done
 
-VL_INST_DATA_FILES = verilator.1
+# We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
+uninstall:
+	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_BIN_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_BIN_FILES)
+	-cd $(DESTDIR)$(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
+	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/examples && rm -f $(VL_INST_DATA_FILES)
+	-rmdir $(DESTDIR)$(pkgdatadir)/bin
+	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
+	-rmdir $(DESTDIR)$(pkgdatadir)/include
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/test_c
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/test_sc
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/test_sp
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/test_v
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples
+	-rmdir $(DESTDIR)$(pkgdatadir)
+
 install: all_nomsg installbin installman installdata install-msg
 
 install-here: installman ftp
@@ -312,11 +343,6 @@ install-msg:
 	@echo
 	@echo "See 'verilator.txt' for documentation."
 	@echo
-
-uninstall:
-	-cd $(DESTDIR)$(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
-	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_BIN_FILES)
-	-rm -f $(DESTDIR)$(pkgdatadir)
 
 # autoheader might not change config_build.h.in, so touch a stamp file.
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \
