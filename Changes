@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.80***
 
+**** Skip SystemC tests if not installed.  [Iztok Jeras]
+
 **** Fix make uninstall, bug216.  [Iztok Jeras]
 
 * Verilator 3.800 2010/02/07

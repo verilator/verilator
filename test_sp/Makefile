@@ -24,9 +24,15 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 DEBUG_ON = --debug --trace-dups
 
 ######################################################################
+ifneq ($(SYSTEMPERL),)
 test_default:  precopy prep        preproc compile     run coverage
 test_debug:    precopy prep_dbg    preproc compile_dbg run coverage
 test_nopublic: precopy prep_dbg_np preproc compile_dbg run coverage
+else
+test_default:  nosp
+test_debug:    nosp
+test_nopublic: nosp
+endif
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 
@@ -66,6 +72,11 @@ coverage:
 
 obj_dir:
 	mkdir $@
+
+nosp:
+	@echo
+	@echo %Skip: SYSTERMPERL not in environment
+	@echo
 
 ######################################################################
 

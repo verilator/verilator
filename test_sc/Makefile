@@ -24,8 +24,13 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 DEBUG_ON = --debug
 
 ######################################################################
+ifneq ($(SYSTEMC),)
 test_default:  precopy prep        preproc compile run
 test_debug:    precopy prep_dbg    preproc compile run
+else
+test_default:  nosc
+test_debug:    nosc
+endif
 
 V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 VERILATOR_FLAGS = --sc $(V_FLAGS) top.v
@@ -51,6 +56,11 @@ run:
 
 obj_dir:
 	mkdir $@
+
+nosc:
+	@echo
+	@echo %Skip: SYSTEMC not in environment
+	@echo
 
 ######################################################################
 
