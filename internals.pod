@@ -40,7 +40,134 @@ Modify the later visitor functions to process the new feature as needed.
 
 =back
 
-=head1 DEBUG OUTPUT/ TREE FILES
+=head1 CODE FLOWS
+
+=head2 Verilator Flow
+
+The main flow of Verilator can be followed by reading the Verilator.cpp
+process() function:
+
+First, the files specified on the command line are read.  Reading involves
+preprocessing, then lexical analysis with Flex and parsing with Bison.
+This produces an abstract syntax tree (AST) representation of the design,
+which is what is visible in the .tree files described below.
+
+Cells are then linked, which will read and parse additional files as above.
+
+Functions, variable and other references are linked to their definitions.
+
+Parameters are resolved and the design is elaborated.
+
+Verilator then performs many additional edits and optimizations on the
+hierarchical design.  This includes coverage, assertions, X elimination,
+inlining, constant propagation, and dead code elimination.
+
+References in the design are then psudo-flattened.  Each module's variables
+and functions get "Scope" references.  A scope reference is an occurrence of
+that un-flattened variable in the flattened hierarchy.  A module that occurs
+only once in the hierarchy will have a single scope and single VarScope for
+each variable.  A module that occurs twice will have a scope for each
+occurrence, and two VarScopes for each variable.  This allows optimizations
+to proceed across the flattened design, while still preserving the
+hierarchy.
+
+Additional edits and optimizations proceed on the psudo-flat design.  These
+include module references, function inlining, loop unrolling, variable
+lifetime analysis, lookup table creation, always splitting, and logic gate
+simplifications (pushing inverters, etc).
+
+Verilator orders the code.  Best case, this results in a single "eval"
+function which has all always statements flowing from top to bottom with no
+loops.
+
+Verilator mostly removes the flattening, so that code may be shared between
+multiple invocations of the same module.  It localizes variables, combines
+identical functions, expands macros to C primitives, adds branch prediction
+hints, and performs additional constant propagation.
+
+Verilator finally writes the C++ modules.
+
+=head2 Verilated Flow
+
+The evaluation loop outputted by Verilator is designed to allow a single
+function to perform evaluation under most situations.
+
+On the first evaluation, the Verilated code calls initial blocks, and then
+"settles" the modules, by evaluating functions (from always statements)
+until all signals are stable.
+
+On other evaluations, the Verilated code detects what input signals have
+changes.  If any are clocks, it calls the appropriate sequential functions
+(from always @ posedge statements).  Interspersed with sequential functions
+it calls combo functions (from always @*).  After this is complete, it
+detects any changes due to combo loops or internally generated clocks, and
+if one is found must reevaluate the model again.
+
+For SystemC code, the eval() function is wrapped in a SystemC SC_METHOD,
+sensitive to all inputs.  (Ideally it would only be sensitive to clocks and
+combo inputs, but tracing requires all signals to cause evaluation, and the
+performance difference is small.)
+
+If tracing is enabled, a callback examines all variables in the design for
+changes, and writes the trace for each change.  To accelerate this process
+the evaluation process records a bitmask of variables that might have
+changed; if clear, checking those signals for changes may be skipped.
+
+=head1 VISITOR FUNCTIONS
+
+=head2 Passing Variables
+
+There's three ways data is passed between visitor functions.
+
+1. A visitor-class member variable.  This is generally for passing "parent"
+information down to children.  m_modp is a common example.  It's set to
+NULL in the constructor, where that node (AstModule visitor) sets it, then
+the children are iterated, then it's cleared.  Children under an AstModule
+will see it set, while nodes elsewhere will see it clear.  If there can be
+nested items (for example an AstFor under an AstFor) the variable needs to
+be save-set-restored in the AstFor visitor, otherwise exiting the lower for
+will loose the upper for's setting.
+
+2. User() attributes.  Each node has 5 ->user() number or ->userp() pointer
+utility values (a common technique lifted from graph traversal packages).
+A visitor first clears the one it wants to use by calling
+AstNode::user#ClearTree(), then it can mark any node's user() with whatever
+data it wants.  Readers just call nodep->user(), but may need to cast
+appropriately, so you'll often see nodep->userp()->castSOMETYPE().  At the
+top of each visitor are comments describing how the user() stuff applies to
+that visitor class.  For example:
+
+    // NODE STATE
+    // Cleared entire netlist
+    //   AstModule::user1p()     // bool. True to inline this module
+
+This says that at the AstNetlist user1ClearTree() is called.  Each
+AstModule's is user1() is used to indicate if we're going to inline it.
+
+These comments are important to make sure a user#() on a given AstNode type
+is never being used for two different purposes.
+
+Note that calling user#ClearTree is fast, it doesn't walk the tree, so it's
+ok to call fairly often.  For example, it's commonly called on every
+module.
+
+3. Parameters can be passed between the visitors in close to the "normal"
+function caller to callee way.  This is the second "vup" parameter that is
+ignored on most of the visitor functions.  V3Width does this, but it proved
+more messy than the above and is deprecated.  (V3Width was nearly the first
+module written.  Someday this scheme may be removed, as it slows the
+program down to have to pass vup everywhere.)
+
+=head1 TESTING
+
+To write a test see notes in the forum and in the verilator.txt manual.
+
+Note you can run the regression tests in parallel; see the
+test_regress/driver.pl script -j flag.
+
+=head1 DEBUGGING
+
+=head2 --debug
 
 When you run with --debug there are two primary output file types placed into
 the obj_dir, .tree and .dot files.
@@ -94,59 +221,7 @@ variable is an output.
 
 =back
 
-=head1 TESTING
-
-To write a test see notes in the forum and in the verilator.txt manual.
-
-Note you can run the regression tests in parallel; see the
-test_regress/driver.pl script -j flag.
-
-=head1 VISITOR FUNCTIONS
-
-=head2 Passing Variables
-
-There's three ways data is passed between visitor functions.
-
-1. A visitor-class member variable.  This is generally for passing "parent"
-information down to children.  m_modp is a common example.  It's set to
-NULL in the constructor, where that node (AstModule visitor) sets it, then
-the children are iterated, then it's cleared.  Children under an AstModule
-will see it set, while nodes elsewhere will see it clear.  If there can be
-nested items (for example an AstFor under an AstFor) the variable needs to
-be save-set-restored in the AstFor visitor, otherwise exiting the lower for
-will loose the upper for's setting.
-
-2. User() attributes.  Each node has 5 ->user() number or ->userp() pointer
-utility values (a common technique lifted from graph traversal packages).
-A visitor first clears the one it wants to use by calling
-AstNode::user#ClearTree(), then it can mark any node's user() with whatever
-data it wants.  Readers just call nodep->user(), but may need to cast
-appropriately, so you'll often see nodep->userp()->castSOMETYPE().  At the
-top of each visitor are comments describing how the user() stuff applies to
-that visitor class.  For example:
-
-    // NODE STATE
-    // Cleared entire netlist
-    //   AstModule::user1p()     // bool. True to inline this module
-
-This says that at the AstNetlist user1ClearTree() is called.  Each
-AstModule's is user1() is used to indicate if we're going to inline it.
-
-These comments are important to make sure a user#() on a given AstNode type
-is never being used for two different purposes.
-
-Note that calling user#ClearTree is fast, it doesn't walk the tree, so it's
-ok to call fairly often.  For example, it's commonly called on every
-module.
-
-3. Parameters can be passed between the visitors in close to the "normal"
-function caller to callee way.  This is the second "vup" parameter that is
-ignored on most of the visitor functions.  V3Width does this, but it proved
-more messy than the above and is deprecated.  (V3Width was nearly the first
-module written.  Someday this scheme may be removed, as it slows the
-program down to have to pass vup everywhere.)
-
-=head1 DEBUGGING WITH GDB
+=head2 Debugging with GDB
 
 The test_regress/driver.pl script accepts --debug --gdb to start Verilator
 under gdb.  You can also use --debug --gdbbt to just backtrace and then
