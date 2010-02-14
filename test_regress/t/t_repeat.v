@@ -13,7 +13,10 @@ module t (/*AUTOARG*/);
 	 repeat (0) $stop;
 	 repeat (-1) $stop;
 	 negcnt = 'sb111;
+	 // Not all commercial simulators agree on the below stopping or not
+	 // verilator lint_off WIDTH
 	 repeat (negcnt) $stop;
+	 // verilator lint_on  WIDTH
 	 repeat (5) begin
 	    repeat (2) begin
 	       times = times + 1;

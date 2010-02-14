@@ -185,6 +185,9 @@ private:
 	    for (AstNode* bodp = bodysp; bodp; bodp=bodp->nextp()) {
 		bodySize++;
 	    }
+	    for (AstNode* bodp = incp; bodp; bodp=bodp->nextp()) {
+		bodySize++;
+	    }
 	    if (bodySize > v3Global.opt.unrollStmts())
 		return cantUnroll(nodep, "too many statements");
 	}
@@ -195,6 +198,7 @@ private:
 	m_ignoreIncp = incp;
 	precondsp->iterateAndNext(*this);
 	bodysp->iterateAndNext(*this);
+	incp->iterateAndNext(*this);
 	m_varModeCheck = false;
 	m_ignoreIncp = NULL;
 	if (m_varAssignHit) return cantUnroll(nodep, "genvar assigned *inside* loop");
@@ -230,6 +234,10 @@ private:
 	if (bodysp) {
 	    bodysp->unlinkFrBackWithNext();
 	    stmtsp = stmtsp->addNextNull(bodysp);  // Maybe null if no body
+	}
+	if (incp && !nodep->castGenFor()) {  // Generates don't need to increment loop index
+	    incp->unlinkFrBackWithNext();
+	    stmtsp = stmtsp->addNextNull(incp);  // Maybe null if no body
 	}
 	// If it's a While, then incp is already part of bodysp.
 	V3Number loopValue(nodep->fileline(), m_forVarp->width());  // May differ in size from numInitp
@@ -279,7 +287,6 @@ private:
 		}
 	    }
 	}
-	// Leaving the iterator at the final value is handled by the increment statements being left the final body
 	// Replace the FOR()
 	if (newbodysp) nodep->replaceWith(newbodysp);
 	else nodep->unlinkFrBack();
@@ -303,9 +310,13 @@ private:
 	    if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
 	    // Grab assignment
 	    AstNode* incp = NULL;  // Should be last statement
-	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
-	    if (incp) { V3Const::constifyEdit(incp); incp=NULL; }
-	    for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
+	    if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
+	    if (nodep->incsp()) incp = nodep->incsp();
+	    else {
+		for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
+		if (incp) { V3Const::constifyEdit(incp); incp=NULL; }
+		for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
+	    }
 	    // And check it
 	    if (forUnrollCheck(nodep, initp,
 			       nodep->precondsp(), nodep->condp(),

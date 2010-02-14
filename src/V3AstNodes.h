@@ -1846,14 +1846,6 @@ struct AstGenFor : public AstNodeFor {
     ASTNODE_NODE_FUNCS(GenFor, GENFOR)
 };
 
-struct AstFor : public AstNodeFor {
-    AstFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
-	   AstNode* incsp, AstNode* bodysp)
-	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
-    }
-    ASTNODE_NODE_FUNCS(For, FOR)
-};
-
 struct AstRepeat : public AstNodeStmt {
     AstRepeat(FileLine* fileline, AstNode* countp, AstNode* bodysp)
 	: AstNodeStmt(fileline) {
@@ -1869,22 +1861,54 @@ struct AstRepeat : public AstNodeStmt {
 };
 
 struct AstWhile : public AstNodeStmt {
-    AstWhile(FileLine* fileline, AstNode* condp, AstNode* bodysp)
+    AstWhile(FileLine* fileline, AstNode* condp, AstNode* bodysp, AstNode* incsp=NULL)
 	: AstNodeStmt(fileline) {
-	setOp2p(condp); addNOp3p(bodysp);
+	setOp2p(condp); addNOp3p(bodysp); addNOp4p(incsp);
     }
     ASTNODE_NODE_FUNCS(While, WHILE)
     AstNode*	precondsp()	const { return op1p()->castNode(); }	// op1= prepare statements for condition (exec every loop)
     AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
     AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
+    AstNode*	incsp()		const { return op4p()->castNode(); }	// op4= increment (if from a FOR loop)
     void	addPrecondsp(AstNode* newp)	{ addOp1p(newp); }
     void	addBodysp(AstNode* newp)	{ addOp3p(newp); }
+    void	addIncsp(AstNode* newp)		{ addOp4p(newp); }
     virtual bool isGateOptimizable() const { return false; }
     virtual int instrCount()	const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
+};
+
+struct AstBreak : public AstNodeStmt {
+    AstBreak(FileLine* fileline)
+	: AstNodeStmt (fileline) {}
+    ASTNODE_NODE_FUNCS(Break, BREAK)
+    virtual string verilogKwd() const { return "break"; };
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+};
+
+struct AstContinue : public AstNodeStmt {
+    AstContinue(FileLine* fileline)
+	: AstNodeStmt (fileline) {}
+    ASTNODE_NODE_FUNCS(Continue, CONTINUE)
+    virtual string verilogKwd() const { return "continue"; };
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+};
+
+struct AstReturn : public AstNodeStmt {
+    AstReturn(FileLine* fileline, AstNode* lhsp=NULL)
+	: AstNodeStmt (fileline) {
+	setNOp1p(lhsp);
+    }
+    ASTNODE_NODE_FUNCS(Return, RETURN)
+    virtual string verilogKwd() const { return "return"; };
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    AstNode*	lhsp() const { return op1p(); }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstGenIf : public AstNodeIf {
@@ -1899,6 +1923,53 @@ struct AstIf : public AstNodeIf {
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
     }
     ASTNODE_NODE_FUNCS(If, IF)
+};
+
+struct AstJumpLabel : public AstNodeStmt {
+    // Jump point declaration
+    // Separate from AstJumpGo; as a declaration can't be deleted
+    // Parents:  {statement list}
+    // Children: {statement list, with JumpGo below}
+private:
+    int		m_labelNum;	// Set by V3EmitCSyms to tell final V3Emit what to increment
+public:
+    AstJumpLabel(FileLine* fl, AstNode* stmtsp)
+	: AstNodeStmt(fl) ,m_labelNum(0) {
+	addNOp1p(stmtsp);
+    }
+    virtual int instrCount()	const { return 0; }
+    ASTNODE_NODE_FUNCS(JumpLabel, JUMPLABEL)
+    virtual bool maybePointedTo() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    // op1 = Statements
+    AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
+    void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    int labelNum() const { return m_labelNum; }
+    void labelNum(int flag) { m_labelNum=flag; }
+};
+
+struct AstJumpGo : public AstNodeStmt {
+    // Jump point; branch up to the JumpLabel
+    // Parents:  {statement list}
+private:
+    AstJumpLabel*	m_labelp;	// [After V3Jump] Pointer to declaration
+public:
+    AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
+	: AstNodeStmt(fl) {
+	m_labelp = labelp;
+    }
+    ASTNODE_NODE_FUNCS(JumpGo, JUMPGO)
+    virtual bool broken() const { return !labelp()->brokeExistsAbove(); }
+    virtual void cloneRelink() { if (m_labelp->clonep()) m_labelp = m_labelp->clonep()->castJumpLabel(); }
+    virtual void dump(ostream& str);
+    virtual int instrCount()	const { return instrCountBranch(); }
+    virtual V3Hash sameHash() const { return V3Hash(labelp()); }
+    virtual bool same(AstNode* samep) const {  // Also same if identical tree structure all the way down, but hard to detect
+	return labelp()==samep->castJumpGo()->labelp(); }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    AstJumpLabel* labelp() const { return m_labelp; }
 };
 
 struct AstUntilStable : public AstNodeStmt {

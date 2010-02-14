@@ -360,12 +360,22 @@ public:
 	    puts(")); }\n");
 	}
     }
+    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+	puts("goto __Vlabel"+cvtToStr(nodep->labelp()->labelNum())+";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	puts("{\n");
+	nodep->stmtsp()->iterateAndNext(*this);
+	puts("}\n");
+	puts("__Vlabel"+cvtToStr(nodep->labelNum())+": ;\n");
+    }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");
 	nodep->condp()->iterateAndNext(*this);
 	puts(") {\n");
 	nodep->bodysp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	nodep->precondsp()->iterateAndNext(*this);  // Need to recompute before next loop
 	puts("}\n");
     }

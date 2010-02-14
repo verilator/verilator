@@ -170,6 +170,7 @@ private:
 	m_inWhilep = NULL;
 	startStatement(nodep);
 	nodep->bodysp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {

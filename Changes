@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.80***
 
+***  Support "break", "continue", "return".
+
 **** Skip SystemC tests if not installed.  [Iztok Jeras]
 
 **** Fix make uninstall, bug216.  [Iztok Jeras]

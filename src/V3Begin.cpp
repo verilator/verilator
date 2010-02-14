@@ -135,53 +135,6 @@ private:
 	    m_modp->addStmtp(nodep);
 	}
     }
-    virtual void visit(AstFor* nodep, AstNUser*) {
-	// So later optimizations don't need to deal with them,
-	//    FOR(init,cond,assign,body) -> init,WHILE(cond) { body, assign }
-	AstNode* initsp = nodep->initsp(); if (initsp) initsp->unlinkFrBackWithNext();
-	AstNode* condp = nodep->condp(); if (condp) condp->unlinkFrBackWithNext();
-	AstNode* incsp = nodep->incsp(); if (incsp) incsp->unlinkFrBackWithNext();
-	AstNode* bodysp = nodep->bodysp(); if (bodysp) bodysp->unlinkFrBackWithNext();
-	bodysp = bodysp->addNext(incsp);
-	AstNode* newp = new AstWhile(nodep->fileline(),
-				     condp,
-				     bodysp);
-	initsp = initsp->addNext(newp);
-	newp = initsp;
-	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep=NULL;
-    }
-    virtual void visit(AstRepeat* nodep, AstNUser*) {
-	// So later optimizations don't need to deal with them,
-	//    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
-	// Note var can be signed or unsigned based on original number.
-	AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
-   	string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
-	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name, AstLogicPacked(), countp->width());
-	m_modp->addStmtp(varp);
-	AstNode* initsp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
-					countp);
-	AstNode* decp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
-				      new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
-						 new AstConst(nodep->fileline(), 1)));
-	AstNode* condp;
-	if (countp->isSigned()) {
-	    condp = new AstGtS(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
-			       new AstConst(nodep->fileline(), 0));
-	} else {
-	    condp = new AstGt (nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
-			       new AstConst(nodep->fileline(), 0));
-	}
-	AstNode* bodysp = nodep->bodysp(); if (bodysp) bodysp->unlinkFrBackWithNext();
-	bodysp = bodysp->addNext(decp);
-	AstNode* newp = new AstWhile(nodep->fileline(),
-				     condp,
-				     bodysp);
-	initsp = initsp->addNext(newp);
-	newp = initsp;
-	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep=NULL;
-    }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline

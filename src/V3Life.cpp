@@ -288,6 +288,7 @@ private:
     // STATE
     LifeState*	m_statep;	// Current state
     bool	m_sideEffect;	// Side effects discovered in assign RHS
+    bool	m_noopt;	// Disable optimization of variables in this block
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
@@ -327,7 +328,7 @@ private:
 	    V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	}
 	// Has to be direct assignment without any EXTRACTing.
-	if (nodep->lhsp()->castVarRef() && !m_sideEffect) {
+	if (nodep->lhsp()->castVarRef() && !m_sideEffect && !m_noopt) {
 	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
 	    if (!vscp) nodep->v3fatalSrc("Scope lost on variable");
 	    m_lifep->simpleAssign(vscp, nodep);
@@ -388,6 +389,7 @@ private:
 	{
 	    m_lifep = bodyLifep;
 	    nodep->bodysp()->iterateAndNext(*this);
+	    nodep->incsp()->iterateAndNext(*this);
 	    m_lifep = prevLifep;
 	}
 	UINFO(4,"   joinfor"<<endl);
@@ -395,6 +397,25 @@ private:
 	condLifep->lifeToAbove();
 	bodyLifep->lifeToAbove();
 	delete condLifep;
+	delete bodyLifep;
+    }
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	// As with While's we can't predict if a JumpGo will kill us or not
+	// It's worse though as an IF(..., JUMPGO) may change the control flow.
+	// Just don't optimize blocks with labels; they're rare - so far.
+	LifeBlock* prevLifep = m_lifep;
+	LifeBlock* bodyLifep = new LifeBlock (prevLifep, m_statep);
+	bool prev_noopt = m_noopt;
+	{
+	    m_lifep = bodyLifep;
+	    m_noopt = true;
+	    nodep->stmtsp()->iterateAndNext(*this);
+	    m_lifep = prevLifep;
+	    m_noopt = prev_noopt;
+	}
+	UINFO(4,"   joinjump"<<endl);
+	// For the next assignments, clear any variables that were read or written in the block
+	bodyLifep->lifeToAbove();
 	delete bodyLifep;
     }
     virtual void visit(AstCCall* nodep, AstNUser*) {
@@ -432,6 +453,7 @@ public:
 	UINFO(4,"  LifeVisitor on "<<nodep<<endl);
 	m_statep = statep;
 	m_sideEffect = false;
+	m_noopt = false;
 	{
 	    m_lifep = new LifeBlock (NULL, m_statep);
 	    nodep->accept(*this);

@@ -10,6 +10,7 @@ module t;
    localparam P5 = f_while(7);
    localparam P16 = f_for(P4);
    localparam P18 = f_case(P4);
+   localparam P6 = f_return(P4);
    localparam P3 = 3;
 
    initial begin
@@ -19,6 +20,7 @@ module t;
       if (P3 !== 3) $stop;
       if (P4 !== 4) $stop;
       if (P5 !== 5) $stop;
+      if (P6 !== 6) $stop;
       if (P8 !== 8) $stop;
       if (P16 !== 16) $stop;
       if (P18 !== 18) $stop;
@@ -68,5 +70,18 @@ module t;
 	32'd1234: begin $display("never get here"); $stop; end
 	default: f_case = 99;
       endcase
+   endfunction
+
+   function integer f_return(input [31:0] a);
+      integer out = 2;
+      while (1) begin
+	 out = out+1;
+	 if (a>1) break;
+      end
+      while (1) begin
+	 out = out+1;
+	 if (a>1) return 2+out;
+      end
+      f_return = 0;
    endfunction
 endmodule

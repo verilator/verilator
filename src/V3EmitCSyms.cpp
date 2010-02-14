@@ -75,6 +75,7 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeFuncs		m_scopeFuncs;	// Each {scope,dpiexportfunc}
     V3LanguageWords 	m_words;	// Reserved word detector
     int		m_coverBins;		// Coverage bin number
+    int		m_labelNum;		// Next label number
 
     // METHODS
     void emitSymHdr();
@@ -114,6 +115,7 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nameCheck(nodep);
 	m_modp = nodep;
+	m_labelNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
@@ -138,6 +140,10 @@ class EmitCSyms : EmitCBaseVisitor {
 	    nodep->binNum(m_coverBins++);
 	}
     }
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	nodep->labelNum(++m_labelNum);
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
 	    m_dpis.push_back(nodep);
@@ -160,6 +166,7 @@ public:
 	m_funcp = NULL;
 	m_modp = NULL;
 	m_coverBins = 0;
+	m_labelNum = 0;
 	nodep->accept(*this);
     }
 };

@@ -143,6 +143,7 @@ private:
 
     //=======
     // These have proper signedness set when they were created.
+    virtual void visit(AstReturn* nodep, AstNUser*) {		nodep->iterateChildren(*this); }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {	nodep->iterateChildren(*this); }
 
     // Inherit from others

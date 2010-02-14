@@ -96,6 +96,7 @@ private:
     // ** only when m_warn/m_expensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
+    // AstJumpLabel::user4	-> bool.  Set when AstJumpGo uses this label
 
     // STATE
     bool	m_params;	// If true, propogate parameterized and true numbers only
@@ -1487,7 +1488,8 @@ private:
 	nodep->iterateChildren(*this);
 	if (nodep->condp()->isZero()) {
 	    UINFO(4,"WHILE(0) => nop "<<nodep<<endl);
-	    nodep->unlinkFrBack();
+	    if (nodep->precondsp()) nodep->replaceWith(nodep->precondsp());
+	    else nodep->unlinkFrBack();
 	    nodep->deleteTree(); nodep=NULL;
 	}
 	else if (operandBoolShift(nodep->condp())) {
@@ -1498,6 +1500,30 @@ private:
     // These are converted by V3Param.  Don't constify as we don't want the from() VARREF to disappear, if any
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {}
+
+    //-----
+    // Jump elimination
+
+    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (m_expensive) { nodep->labelp()->user4(true); }
+    }
+
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	// Because JumpLabels disable many optimizations,
+	// remove JumpLabels that are not pointed to by any AstJumpGos
+	// Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
+	nodep->iterateChildren(*this);
+	// AstJumpGo's below here that point to this node will set user4
+	if (m_expensive && !nodep->user4()) {
+	    UINFO(4,"JUMPLABEL => unused "<<nodep<<endl);
+	    AstNode* underp = NULL;
+	    if (nodep->stmtsp()) underp = nodep->stmtsp()->unlinkFrBackWithNext();
+	    if (underp) nodep->replaceWith(underp);
+	    else nodep->unlinkFrBack();
+	    nodep->deleteTree(); nodep=NULL;
+	}
+    }
 
     //-----
     // Below lines are magic expressions processed by astgen

@@ -52,6 +52,7 @@ private:
     static const int FLAG_IN_TREE	= 0x02;		// Is in netlist tree
     static const int FLAG_LINKABLE	= 0x04;		// Is in netlist tree, can be linked to
     static const int FLAG_LEAKED	= 0x08;		// Known to have been leaked
+    static const int FLAG_UNDER_NOW	= 0x10;		// Is in tree as parent of current node
 public:
     // METHODS
     static void deleted(const AstNode* nodep) {
@@ -72,6 +73,15 @@ public:
 	}
 	if (iter == s_nodes.end()) {
 	    s_nodes.insert(make_pair(nodep,FLAG_ALLOCATED));
+	}
+    }
+    static void setUnder(const AstNode* nodep, bool flag) {
+	// Called by BrokenCheckVisitor when each node entered/exited
+	if (!okIfLinkedTo(nodep)) return;
+	NodeMap::iterator iter = s_nodes.find(nodep);
+	if (iter!=s_nodes.end()) {
+	    iter->second &= ~FLAG_UNDER_NOW;
+	    if (flag) iter->second |=  FLAG_UNDER_NOW;
 	}
     }
     static void addInTree(AstNode* nodep, bool linkable) {
@@ -109,6 +119,14 @@ public:
 #endif
 	if (!(iter->second & FLAG_IN_TREE)) return false;
 	if (!(iter->second & FLAG_LINKABLE)) return false;
+	return true;
+    }
+    static bool okIfBelow(const AstNode* nodep) {
+	// Must be linked to and below current node
+	if (!okIfLinkedTo(nodep)) return false;
+	NodeMap::iterator iter = s_nodes.find(nodep);
+	if (iter == s_nodes.end()) return false;
+	if (!(iter->second & FLAG_UNDER_NOW)) return false;
 	return true;
     }
     static void prepForTree() {
@@ -152,6 +170,10 @@ bool AstNode::brokeExists() const {
     // Called by node->broken() routines to do table lookup
     return BrokenTable::okIfLinkedTo(this);
 }
+bool AstNode::brokeExistsAbove() const {
+    // Called by node->broken() routines to do table lookup
+    return BrokenTable::okIfBelow(this);
+}
 
 //######################################################################
 
@@ -180,6 +202,7 @@ public:
 class BrokenCheckVisitor : public AstNVisitor {
 private:
     virtual void visit(AstNode* nodep, AstNUser*) {
+	BrokenTable::setUnder(nodep,true);
 	if (nodep->broken()) {
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)\n");
 	}
@@ -192,6 +215,7 @@ private:
 	    }
 	}
 	nodep->iterateChildren(*this);
+	BrokenTable::setUnder(nodep,false);
     }
 public:
     // CONSTUCTORS

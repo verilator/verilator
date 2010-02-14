@@ -761,6 +761,7 @@ public:
     AstNode*	clonep() const { return ((m_cloneCnt==s_cloneCntGbl)?m_clonep:NULL); }
     AstNode*	firstAbovep() const { return ((backp() && backp()->nextp()!=this) ? backp() : NULL); }  // Returns NULL when second or later in list
     bool	brokeExists() const;
+    bool	brokeExistsAbove() const;
 
     // CONSTRUCTORS
     virtual ~AstNode();
@@ -870,6 +871,7 @@ public:
     AstNode*	addNext(AstNode* newp);		// Returns this, adds to end of list
     AstNode*	addNextNull(AstNode* newp);	// Returns this, adds to end of list, NULL is OK
     void	addNextHere(AstNode* newp);	// Adds after speced node
+    void	addPrev(AstNode* newp) { replaceWith(newp); newp->addNext(this); }
     void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
     void	v3errorEnd(ostringstream& str) const;

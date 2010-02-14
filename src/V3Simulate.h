@@ -88,6 +88,7 @@ private:
     bool	m_inDlyAssign;		///< Under delayed assignment
     int		m_instrCount;		///< Number of nodes
     int		m_dataCount;		///< Bytes of data
+    AstJumpGo*	m_jumpp;		///< Jump label we're branching from
     // Simulating:
     deque<V3Number*>	m_numFreeps;	///< List of all numbers free and not in use
     deque<V3Number*>	m_numAllps; 	///< List of all numbers free and in use
@@ -230,8 +231,14 @@ private:
 	    : v3Global.opt.unrollCount();
     }
 
+    bool jumpingOver(AstNode* nodep) {
+	// True to jump over this node - all visitors must call this up front
+	return (m_jumpp && m_jumpp->labelp()!=nodep);
+    }
+
     // VISITORS
     virtual void visit(AstAlways* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	checkNodeInfo(nodep);
 	nodep->iterateChildren(*this);
     }
@@ -239,6 +246,7 @@ private:
 	// Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
 	AstNode* vscp = varOrScope(nodep);
 
@@ -285,16 +293,19 @@ private:
 	}
     }
     virtual void visit(AstVarXRef* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (m_scoped) {  badNodeType(nodep); return; }
 	else { clearOptimizable(nodep,"Language violation: Dotted hierarchical references not allowed in constant functions"); }
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (!m_params) { badNodeType(nodep); return; }
 	if (nodep->dpiImport()) { clearOptimizable(nodep,"DPI import functions aren't simulatable"); }
 	checkNodeInfo(nodep);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	UINFO(5,"   IF "<<nodep<<endl);
 	checkNodeInfo(nodep);
 	if (m_checkOnly) {
@@ -364,6 +375,7 @@ private:
 	}
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
 	if (nodep->castAssignDly()) {
 	    if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non dly assigns");
@@ -400,6 +412,7 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	UINFO(5,"   CASE "<<nodep<<endl);
 	checkNodeInfo(nodep);
 	if (m_checkOnly) {
@@ -436,12 +449,30 @@ private:
 
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
 	// Real handling is in AstNodeCase
+	if (jumpingOver(nodep)) return;
 	checkNodeInfo(nodep);
 	nodep->iterateChildren(*this);
     }
 
     virtual void visit(AstComment*, AstNUser*) {}
 
+    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
+	checkNodeInfo(nodep);
+	if (!m_checkOnly) {
+	    UINFO(5,"   JUMP GO "<<nodep<<endl);
+	    m_jumpp = nodep;
+	}
+    }
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
+	checkNodeInfo(nodep);
+	nodep->iterateChildren(*this);
+	if (m_jumpp && m_jumpp->labelp() == nodep) {
+	    UINFO(5,"   JUMP DONE "<<nodep<<endl);
+	    m_jumpp = NULL;
+	}
+    }
     virtual void visit(AstStop* nodep, AstNUser*) {
 	if (m_params) {  // This message seems better than an obscure $stop
 	    // The spec says $stop is just ignored, it seems evil to ignore assertions
@@ -479,6 +510,7 @@ private:
 
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	// Doing lots of Whiles is slow, so only for parameters
+	if (jumpingOver(nodep)) return;
 	UINFO(5,"   WHILE "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
 	checkNodeInfo(nodep);
@@ -489,12 +521,19 @@ private:
 	    while (1) {
 		UINFO(5,"    WHILE-ITER "<<nodep<<endl);
 		nodep->precondsp()->iterateAndNext(*this);
+		if (jumpingOver(nodep)) break;
 		nodep->condp()->iterateAndNext(*this);
+		if (jumpingOver(nodep)) break;
 		if (!optimizable()) break;
 		if (!fetchNumber(nodep->condp())->isNeqZero()) {
 		    break;
 		}
 		nodep->bodysp()->iterateAndNext(*this);
+		if (jumpingOver(nodep)) break;
+		nodep->incsp()->iterateAndNext(*this);
+		if (jumpingOver(nodep)) break;
+
+		// Prep for next loop
 		if (loops++ > unrollCount()*16) {
 		    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "+cvtToStr(unrollCount()));
 		    break;
@@ -504,6 +543,7 @@ private:
     }
 
     virtual void visit(AstFuncRef* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
 	AstNodeFTask* funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
@@ -540,6 +580,7 @@ private:
     }
 
     virtual void visit(AstVar* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (!m_params) { badNodeType(nodep); return; }
     }
 
@@ -548,19 +589,29 @@ private:
     //   AstCoverInc, AstDisplay, AstArraySel, AstStop, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     virtual void visit(AstNode* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	badNodeType(nodep);
     }
 
+private:
+    // MEMBERS - called by constructor
+    void setMode(bool scoped, bool checkOnly, bool params) {
+	m_checkOnly = checkOnly;
+	m_scoped = scoped;
+	m_params = params;
+    }
+    void mainGuts(AstNode* nodep) {
+	nodep->accept(*this);
+	if (m_jumpp) {
+	    m_jumpp->v3fatalSrc("JumpGo branched to label that wasn't found");
+	    m_jumpp = NULL;
+	}
+    }
 public:
     // CONSTRUCTORS
     SimulateVisitor() {
 	setMode(false,false,false);
 	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
-    }
-    void setMode(bool scoped, bool checkOnly, bool params) {
-	m_checkOnly = checkOnly;
-	m_scoped = scoped;
-	m_params = params;
     }
     void clear() {
 	m_whyNotOptimizable = "";
@@ -570,6 +621,7 @@ public:
 	m_inDlyAssign = false;
 	m_instrCount = 0;
 	m_dataCount = 0;
+	m_jumpp = NULL;
 
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	AstNode::user2ClearTree();	// user2p() used on entire tree
@@ -580,15 +632,15 @@ public:
     }
     void mainTableCheck   (AstNode* nodep) {
 	setMode(true/*scoped*/,true/*checking*/, false/*params*/);
-	nodep->accept(*this);
+	mainGuts(nodep);
     }
     void mainTableEmulate (AstNode* nodep) {
 	setMode(true/*scoped*/,false/*checking*/, false/*params*/);
-	nodep->accept(*this);
+	mainGuts(nodep);
     }
     void mainParamEmulate (AstNode* nodep) {
 	setMode(false/*scoped*/,false/*checking*/, true/*params*/);
-	nodep->accept(*this);
+	mainGuts(nodep);
     }
     virtual ~SimulateVisitor() {
 	for (deque<V3Number*>::iterator it = m_numAllps.begin(); it != m_numAllps.end(); ++it) {

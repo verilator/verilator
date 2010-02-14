@@ -264,6 +264,7 @@ class AstSenTree;
 %token<fl>		yAUTOMATIC	"automatic"
 %token<fl>		yBEGIN		"begin"
 %token<fl>		yBIT		"bit"
+%token<fl>		yBREAK		"break"
 %token<fl>		yBUF		"buf"
 %token<fl>		yBUFIF0		"bufif0"
 %token<fl>		yBUFIF1		"bufif1"
@@ -275,6 +276,7 @@ class AstSenTree;
 %token<fl>		yCLOCKING	"clocking"
 %token<fl>		yCMOS		"cmos"
 %token<fl>		yCONTEXT	"context"
+%token<fl>		yCONTINUE	"continue"
 %token<fl>		yCOVER		"cover"
 %token<fl>		yDEFAULT	"default"
 %token<fl>		yDEFPARAM	"defparam"
@@ -340,6 +342,7 @@ class AstSenTree;
 %token<fl>		yRCMOS		"rcmos"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
+%token<fl>		yRETURN		"return"
 %token<fl>		yRNMOS		"rnmos"
 %token<fl>		yRPMOS		"rpmos"
 %token<fl>		yRTRAN		"rtran"
@@ -1436,6 +1439,7 @@ genvar_iteration<nodep>:	// ==IEEE: genvar_iteration
 	|	varRefBase yP_SRIGHTEQ	expr		{ $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
 	|	varRefBase yP_SSRIGHTEQ	expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
 	//			// inc_or_dec_operator
+	// When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstMathStmt?
 	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
 	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
 	|	varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
@@ -1831,7 +1835,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	statementVerilatorPragmas			{ $$ = $1; }
 	//
 	//			// IEEE: disable_statement
-	//UNSUP	yDISABLE hierarchical_identifier/*task_or_block*/ ';'	{ UNSUP }
+	//UNSUP	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ UNSUP }
 	//UNSUP	yDISABLE yFORK ';'			{ UNSUP }
 	//			// IEEE: event_trigger
 	//UNSUP	yP_MINUSGT hierarchical_identifier/*event*/ ';'	{ UNSUP }
@@ -1842,15 +1846,15 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initalization
 	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstFor($1,NULL,$4,$6,$8));}
+							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
 	|	yDO stmtBlock yWHILE '(' expr ')'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	//UNSUP	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' stmt	{ UNSUP }
 	//
 	//			// IEEE: jump_statement
-	//UNSUP	yRETURN ';'				{ UNSUP }
-	//UNSUP	yRETURN expr ';'			{ UNSUP }
-	//UNSUP	yBREAK ';'				{ UNSUP }
-	//UNSUP	yCONTINUE ';'				{ UNSUP }
+	|	yRETURN ';'				{ $$ = new AstReturn($1); }
+	|	yRETURN expr ';'			{ $$ = new AstReturn($1,$2); }
+	|	yBREAK ';'				{ $$ = new AstBreak($1); }
+	|	yCONTINUE ';'				{ $$ = new AstContinue($1); }
 	//
 	//UNSUP	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control

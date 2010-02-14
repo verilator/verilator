@@ -52,8 +52,8 @@
 #include "V3File.h"
 #include "V3Cdc.h"
 #include "V3Gate.h"
-#include "V3Graph.h"
 #include "V3GenClk.h"
+#include "V3Graph.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Life.h"
@@ -61,9 +61,10 @@
 #include "V3Link.h"
 #include "V3LinkCells.h"
 #include "V3LinkDot.h"
+#include "V3LinkJump.h"
+#include "V3LinkLValue.h"
 #include "V3LinkLevel.h"
 #include "V3LinkParse.h"
-#include "V3LinkLValue.h"
 #include "V3LinkResolve.h"
 #include "V3Localize.h"
 #include "V3Name.h"
@@ -143,6 +144,8 @@ void process () {
     V3LinkResolve::linkResolve(v3Global.rootp());
     // Set Lvalue's in variable refs
     V3LinkLValue::linkLValue(v3Global.rootp());
+    // Convert return/continue/disable to jumps
+    V3LinkJump::linkJump(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("link.tree"));
     V3Error::abortIfErrors();
 

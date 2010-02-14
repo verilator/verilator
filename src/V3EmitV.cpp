@@ -135,6 +135,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->rhsp()->iterateAndNext(*this);
 	if (!m_suppressSemi) puts(";\n");
     }
+    virtual void visit(AstBreak* nodep, AstNUser*) {
+	putbs("break");
+	if (!m_suppressSemi) puts(";\n");
+    }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	// AstSenItem is called for dumping in isolation by V3Order
 	putfs(nodep,"@(");
@@ -179,6 +183,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstComment* nodep, AstNUser*) {
 	puts((string)"// "+nodep->name()+"\n");
 	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstContinue* nodep, AstNUser*) {
+	putbs("continue");
+	if (!m_suppressSemi) puts(";\n");
     }
     virtual void visit(AstCoverDecl*, AstNUser*) {}  // N/A
     virtual void visit(AstCoverInc*, AstNUser*) {}  // N/A
@@ -236,6 +244,14 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
 	puts(");\n");
     }
+    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+	putbs("disable "+cvtToStr((void*)(nodep->labelp()))+";\n");
+    }
+    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+	putbs("begin : "+cvtToStr((void*)(nodep))+"\n");
+	if (nodep->stmtsp()) nodep->stmtsp()->iterateChildren(*this);
+	puts("end\n");
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
@@ -272,6 +288,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->condp()->iterateAndNext(*this);
 	puts(") begin\n");
 	nodep->bodysp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	nodep->precondsp()->iterateAndNext(*this);  // Need to recompute before next loop
 	putfs(nodep,"end\n");
     }
@@ -286,6 +303,11 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	    nodep->elsesp()->iterateAndNext(*this);
 	}
 	putqs(nodep,"end\n");
+    }
+    virtual void visit(AstReturn* nodep, AstNUser*) {
+	putfs(nodep,"return ");
+	nodep->lhsp()->iterateAndNext(*this);
+	puts(";\n");
     }
     virtual void visit(AstStop* nodep, AstNUser*) {
 	putfs(nodep,"$stop;\n");

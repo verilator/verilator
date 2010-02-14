@@ -1039,7 +1039,7 @@ private:
 	// Create output variable
 	string namePrefix = "__Vfunc_"+nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++);
 	AstVarScope* outvscp = createVarScope (funcp->fvarp()->castVar(),
-					       namePrefix+"__out");
+					       namePrefix+"__Vfuncout");
 	// Create cloned statements
 	if (debug()>=9) { nodep->taskp()->dumpTree(cout,"-oldfunc:"); }
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked?");
@@ -1127,6 +1127,7 @@ private:
 	// Body insert just before themselves
 	m_insStmtp = NULL;	// First thing should be new statement
 	nodep->bodysp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	// Done the loop
 	m_insStmtp = NULL;	// Next thing should be new statement
     }

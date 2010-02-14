@@ -194,8 +194,9 @@ RAW_OBJS = \
 	V3Link.o \
 	V3LinkCells.o \
 	V3LinkDot.o \
-	V3LinkLevel.o \
+	V3LinkJump.o \
 	V3LinkLValue.o \
+	V3LinkLevel.o \
 	V3LinkParse.o \
 	V3LinkResolve.o \
 	V3Localize.o \

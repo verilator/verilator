@@ -75,6 +75,13 @@ private:
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
+    virtual void visit(AstInitial* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	// Initial assignments under function/tasks can just be simple assignments without the initial
+	if (m_ftaskp) {
+	    nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); nodep=NULL;
+	}
+    }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	if (m_assertp) nodep->v3error("Assert not allowed under another assert");
 	m_assertp = nodep;

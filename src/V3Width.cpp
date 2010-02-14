@@ -84,6 +84,7 @@ private:
     bool	m_paramsOnly;	// Computing parameter value; limit operation
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
     AstNodeCase* m_casep;	// Current case statement CaseItem is under
+    AstFunc*	m_funcp;	// Current function
 
     // CLASSES
 #define ANYSIZE 0
@@ -711,6 +712,7 @@ private:
 	nodep->precondsp()->iterateAndNext(*this);
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->bodysp()->iterateAndNext(*this);
+	nodep->incsp()->iterateAndNext(*this);
 	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like an if() condition.
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
@@ -924,6 +926,20 @@ private:
 		nodep->width(nodep->fvarp()->width(), nodep->fvarp()->width());
 	    }
 	}
+	m_funcp = NULL;
+    }
+    virtual void visit(AstReturn* nodep, AstNUser* vup) {
+	if (!m_funcp) { 
+	    if (nodep->lhsp()) {  // Return w/o value ok other places
+		nodep->v3error("Return with return value isn't underneath a function");
+	    }
+	} else {
+	    if (nodep->lhsp()) {
+		// Function hasn't been widthed, so make it so.
+		nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
+		nodep->widthSignedFrom(m_funcp->fvarp());
+	    }
+	}
     }
     virtual void visit(AstFuncRef* nodep, AstNUser* vup) {
 	visit(nodep->castNodeFTaskRef(), vup);
@@ -1028,6 +1044,7 @@ public:
 	m_taskDepth = 0;
 	m_cellRangep = NULL;
 	m_casep = NULL;
+	m_funcp = NULL;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {
 	return nodep->acceptSubtreeReturnEdits(*this, WidthVP(ANYSIZE,0,BOTH).p());
