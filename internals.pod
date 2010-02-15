@@ -113,9 +113,22 @@ changes, and writes the trace for each change.  To accelerate this process
 the evaluation process records a bitmask of variables that might have
 changed; if clear, checking those signals for changes may be skipped.
 
-=head1 VISITOR FUNCTIONS
+=head1 CODING CONVENTIONS
 
-=head2 Passing Variables
+=head2 Indentation style
+
+To match the indentation of Verilator C++ sources, use 4 spaces per level,
+and leave tabs at 8 columns, so every other indent level is a tab stop.
+
+In Emacs, use in your ~/.emacs
+
+    (c-set-style "cc-mode")
+
+This sets indentation to the cc-mode defaults.  (Verilator predates a
+CC-mode change of several years ago which overrides the defaults with GNU
+style indentation; the c-set-style undoes that.)
+
+=head2 Visitor Functions
 
 There's three ways data is passed between visitor functions.
 
