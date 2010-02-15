@@ -344,21 +344,15 @@ install-msg:
 	@echo "See 'verilator.txt' for documentation."
 	@echo
 
-# autoheader might not change config_build.h.in, so touch a stamp file.
-IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in ${srcdir}/*/*/*.in \
-	*.in */*.in */*.in
+IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
 
-${srcdir}/config_build.h.in: stamp-h.in
-${srcdir}/stamp-h.in: configure.ac $(wildcard $(IN_WILD))
+# autoheader might not change config_build.h.in, so touch it
+${srcdir}/config_build.h: ${srcdir}/config_build.h.in configure
 	cd ${srcdir} && autoheader
-	echo timestamp > ${srcdir}/stamp-h.in
-config_build.h: stamp-h
-stamp-h: config_build.h.in config.status
+	touch $@
+Makefile: Makefile.in config.status $(IN_WILD)
 	./config.status
-Makefile: Makefile.in config.status
-	./config.status
-src/Makefile: src/Makefile.in config.status
-	./config.status
+src/Makefile: src/Makefile.in Makefile
 config.status: configure
 	./config.status --recheck
 configure: configure.ac

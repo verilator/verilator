@@ -122,7 +122,8 @@ and leave tabs at 8 columns, so every other indent level is a tab stop.
 
 In Emacs, use in your ~/.emacs
 
-    (c-set-style "cc-mode")
+  (add-hook 'c-mode-common-hook '(lambda ()
+				   (c-set-style "cc-mode"))))
 
 This sets indentation to the cc-mode defaults.  (Verilator predates a
 CC-mode change of several years ago which overrides the defaults with GNU
