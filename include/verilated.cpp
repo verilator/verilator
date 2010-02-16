@@ -920,8 +920,12 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
 
 const char* vl_mc_scan_plusargs(const char* prefixp) {
     string match = VerilatedImp::argPlusMatch(prefixp);
-    if (match == "") return 0;
-    else return match.c_str()+strlen(prefixp)+1; // +1 to skip the "+"
+    static VL_THREAD char outstr[VL_VALUE_STRING_MAX_WIDTH];
+    if (match == "") return NULL;
+    strncpy(outstr, match.c_str()+strlen(prefixp)+1, // +1 to skip the "+"
+	    VL_VALUE_STRING_MAX_WIDTH);
+    outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
+    return outstr;
 }
 
 //===========================================================================
