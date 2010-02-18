@@ -2742,9 +2742,14 @@ specifyJunk:
 	;
 
 specparam_declaration<nodep>:		// ==IEEE: specparam_declaration
-		ySPECPARAM junkToSemi ';'		{ $$ = NULL; }
+		ySPECPARAM junkToSemiList ';'		{ $$ = NULL; }
 	;
 
+junkToSemiList:
+		junkToSemi 				{ } /* ignored */
+	|	junkToSemiList junkToSemi		{ } /* ignored */
+ 	;
+ 
 junkToSemi:
 		BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE)	{ }
 	|	error {}
