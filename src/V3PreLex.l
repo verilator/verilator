@@ -154,6 +154,7 @@ psl		[p]sl
 
 	/* Reading definition value */
 <DEFVAL>"/*"		{ LEXP->m_defCmtSlash=false; yy_push_state(DEFCMT); yymore(); }  /* Special comment parser */
+<DEFVAL>"//"[^\n\r]*[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); }  /* Spec says // not part of define value */
 <DEFVAL>"//"[^\n\r]*	{ return (VP_COMMENT);}
 <DEFVAL>{drop}		{ }
 <DEFVAL><<EOF>>		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); } /* Technically illegal, but people complained */

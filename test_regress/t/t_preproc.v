@@ -191,12 +191,57 @@ Line_Preproc_Check `__LINE__
 	        OF DEFINE */
 `define CMT4 /* verilator PART \
 	        OF DEFINE */
+`define CMT5 // CMT NOT \
+  also in  // BUT TEXT IS \
+  also3  // CMT NOT
+
 1 `CMT1 (nodef)
 2 `CMT2 (hasdef)
 3 `CMT3 (nodef)
 4 `CMT4 (nodef)
+5 `CMT5 (nodef)
 `define NL HAS a NEW \
 LINE
 `NL
+
+//======================================================================
+
+`define msg_fatal(log, msg)  \
+   do \
+      /* synopsys translate_off */ \
+`ifdef NEVER \
+  `error "WTF" \
+`else \
+      if (start(`__FILE__, `__LINE__)) begin \
+`endif \
+	 message(msg); \
+      end \
+      /* synopsys translate_on */ \
+   while(0)
+
+`define msg_scen_(cl)   cl``_scen
+`define MSG_MACRO_TO_STRING(x) `"x`"
+
+EXP: clxx_scen
+`msg_scen_(clxx)
+EXP: clxx_scen
+`MSG_MACRO_TO_STRING(`msg_scen_(clxx))
+`define mf(clx) `msg_fatal(this.log, {"Blah-", `MSG_MACRO_TO_STRING(`msg_scen_(clx)), " end"});
+EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " end"}); end  while(0);
+`mf(clx)
+
+//======================================================================
+
+`define makedefine(name) \
+   `define def_``name   This is name \
+   `define def_``name``_2 This is name``_2 \
+
+`makedefine(fooed)
+`ifndef def_fooed  `error "No def_fooed" `endif
+//`ifndef def_fooed_2  `error "No def_fooed_2" `endif
+EXP: This is fooed
+`def_fooed
+EXP: This is fooed_2
+`def_fooed_2
 
 //======================================================================

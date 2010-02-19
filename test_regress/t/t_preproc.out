@@ -244,13 +244,64 @@ $display("bits %d %d", $bits(foo), `10);
 
  
 
+ 
+
+
+
 1 /*verilator NOT IN DEFINE*/ (nodef)
 2 /*verilator PART OF DEFINE*/ (hasdef)
 3 /*verilator NOT PART OF DEFINE*/ (nodef)
 4 /*verilator PART OF DEFINE*/ (nodef)
+5 also in     also3 (nodef)
  
 
 HAS a NEW  LINE
 
 
-`line 203 "t/t_preproc.v" 2
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+EXP: clxx_scen
+clxx_scen
+EXP: clxx_scen
+"clxx_scen"
+ 
+EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " end"}); end  while(0);
+do                  
+`line 231 "t/t_preproc.v" 0
+        if (start("t/t_preproc.v", 231)) begin    	 message({"Blah-", "clx_scen", " end"});        end             while(0);
+
+
+
+ 
+
+
+
+ 
+
+     
+`line 241 "t/t_preproc.v" 0
+
+
+EXP: This is fooed
+This is fooed      
+
+EXP: This is fooed_2
+This is fooed_2
+
+
+`line 250 "t/t_preproc.v" 2

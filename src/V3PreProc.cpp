@@ -71,7 +71,7 @@ class V3DefineRef {
     string	m_name;		// Define last name being defined
     string	m_params;	// Define parameter list for next expansion
     string	m_nextarg;	// String being built for next argument
-    int		m_parenLevel;	// Parenthesis counting inside def args
+    int		m_parenLevel;	// Parenthesis counting inside def args (for PARENT not child)
 
     vector<string> m_args;	// List of define arguments
 public:
@@ -80,9 +80,10 @@ public:
     string nextarg() const { return m_nextarg; }
     void nextarg(const string& value) { m_nextarg = value; }
     int parenLevel() const { return m_parenLevel; }
+    void parenLevel(int value) { m_parenLevel = value; }
     vector<string>& args() { return m_args; }
-    V3DefineRef(const string& name, const string& params, int pl)
-	: m_name(name), m_params(params), m_parenLevel(pl) {}
+    V3DefineRef(const string& name, const string& params)
+	: m_name(name), m_params(params), m_parenLevel(0) {}
     ~V3DefineRef() {}
 };
 
@@ -1054,7 +1055,9 @@ int V3PreProcImp::getToken() {
 		    }
 		    else {  // Found, with parameters
 			UINFO(4,"Defref `"<<name<<" => parameterized"<<endl);
-			m_defRefs.push(V3DefineRef(name, params, m_lexp->m_parenLevel));
+			// The CURRENT macro needs the paren saved, it's not a property of the child macro
+			if (!m_defRefs.empty()) m_defRefs.top().parenLevel(m_lexp->m_parenLevel);
+			m_defRefs.push(V3DefineRef(name, params));
 			m_state = ps_DEFPAREN;  m_stateFor = tok;
 			m_lexp->pushStateDefArg(0);
 			goto next_tok;
