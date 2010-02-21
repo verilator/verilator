@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix make uninstall, bug216.  [Iztok Jeras]
 
+**** Fix parametrized defines with empty arguments.
+
 * Verilator 3.800 2010/02/07
 
 Application visible changes:

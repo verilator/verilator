@@ -864,6 +864,7 @@ escid	\\[^ \t\f\r\n]+
   "`celldefine"				{ PARSEP->inCellDefine(true); }
   "`default_decay_time"{ws}+[^\n\r]*	{ } // Verilog spec - delays only
   "`default_nettype"{ws}+[a-zA-Z0-9]*	{ yyerrorf("Unsupported: Verilog 2001 directive not implemented: %s",yytext); } // Verilog 2001
+  "`default_trireg_strength"{ws}+[^\n\r]*	{ yyerrorf("Unsupported: Verilog optional directive not implemented: %s",yytext); }
   "`delay_mode_distributed"		{ } // Verilog spec - delays only
   "`delay_mode_path"			{ } // Verilog spec - delays only
   "`delay_mode_unit"			{ } // Verilog spec - delays only

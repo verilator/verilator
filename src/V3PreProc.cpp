@@ -511,7 +511,9 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	    if (*cp=='"') quote=!quote;
 	    if (*cp) token += *cp;
 	}
-	if (refp->args().size() > numArgs) {
+	if (refp->args().size() > numArgs
+	    // `define X() is ok to call with nothing
+	    && !(refp->args().size()==1 && numArgs==0 && trimWhitespace(refp->args()[0],false)=="")) {
 	    fileline()->v3error("Define passed too many arguments: "+refp->name()+"\n");
 	    return " `"+refp->name()+" ";
 	}
