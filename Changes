@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support "break", "continue", "return".
 
+**** Support "`default_nettype none|wire".  [Dominic Plunkett]
+
 **** Skip SystemC tests if not installed.  [Iztok Jeras]
 
 **** Fix make uninstall, bug216.  [Iztok Jeras]

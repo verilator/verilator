@@ -185,7 +185,13 @@ private:
 	// Create implicit after warning
 	if (linkVarName(forrefp)) { forrefp=NULL; return; }
 	if (!forrefp->varp()) {
-	    if (!noWarn) forrefp->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<forrefp->prettyName());
+	    if (!noWarn) {
+		if (forrefp->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
+		    forrefp->v3error("Signal definition not found, and implicit disabled with `default_nettype: "<<forrefp->prettyName());
+		} else {
+		    forrefp->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<forrefp->prettyName());
+		}
+	    }
 	    AstVar* newp = new AstVar (forrefp->fileline(), AstVarType::WIRE,
 				       forrefp->name(), AstLogicPacked(), 1);
 

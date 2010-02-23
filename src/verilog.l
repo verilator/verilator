@@ -863,7 +863,9 @@ escid	\\[^ \t\f\r\n]+
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ PARSEP->inCellDefine(true); }
   "`default_decay_time"{ws}+[^\n\r]*	{ } // Verilog spec - delays only
-  "`default_nettype"{ws}+[a-zA-Z0-9]*	{ yyerrorf("Unsupported: Verilog 2001 directive not implemented: %s",yytext); } // Verilog 2001
+  "`default_nettype"{ws}+"wire"		{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,true); }
+  "`default_nettype"{ws}+"none"		{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,false); }
+  "`default_nettype"{ws}+[a-zA-Z0-9]*	{ yyerrorf("Unsupported: `default_nettype of other than none or wire: %s",yytext); }
   "`default_trireg_strength"{ws}+[^\n\r]*	{ yyerrorf("Unsupported: Verilog optional directive not implemented: %s",yytext); }
   "`delay_mode_distributed"		{ } // Verilog spec - delays only
   "`delay_mode_path"			{ } // Verilog spec - delays only
@@ -888,7 +890,7 @@ escid	\\[^ \t\f\r\n]+
   "`psl"				{ if (PARSEP->optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
   "`remove_gatenames"			{ } // Verilog-XL compatibility
   "`remove_netnames"			{ } // Verilog-XL compatibility
-  "`resetall"				{ }
+  "`resetall"				{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,true); } // Rest handled by preproc
   "`suppress_faults"			{ } // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*		{ } // Verilog spec - not supported
 
