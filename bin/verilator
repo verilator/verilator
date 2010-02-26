@@ -878,7 +878,7 @@ section below for descriptions of some of the files that were created.
 We then can compile it
 
     cd obj_dir
-    make -f Vour.mk Vour
+    make -j -f Vour.mk Vour
 
 (Verilator included a default compile rule and link rule, since we used
 --exe and passed a .cpp file on the Verilator command line.  You can also
@@ -944,9 +944,8 @@ Verilator by replacing the verilator --sp flag in the previous step with
 
 We then can compile it
 
-    make -f Vour.mk Vour__ALL.a
-    make -f Vour.mk ../sc_main.o
-    make -f Vour.mk verilated.o
+    make -j -f Vour.mk Vour__ALL.a
+    make -j -f Vour.mk ../sc_main.o verilated.o
 
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
