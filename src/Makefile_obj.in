@@ -121,6 +121,7 @@ HEADERS = $(wildcard V*.h v*.h)
 
 ASTGEN = $(srcdir)/astgen
 BISONPRE = $(srcdir)/bisonpre
+FLEXFIX = $(srcdir)/flexfix
 
 ######################################################################
 #### Top level
@@ -296,15 +297,15 @@ V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
-V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp
-	$(PERL) $(srcdir)/flexfix <$< >$@
+V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
+	$(PERL) $(FLEXFIX) V3Lexer <$< >$@
 
 V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
-V3PreLex.yy.cpp:	V3PreLex_pregen.yy.cpp
-	$(PERL) $(srcdir)/flexfix <$< >$@
+V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
+	$(PERL) $(FLEXFIX) V3PreLex <$< >$@
 
 ######################################################################
 ######################################################################

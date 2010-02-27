@@ -90,18 +90,27 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 # define YY_BUF_SIZE 16384
 #endif
 
+// Older flex'es don't have this defined, so make everyone happy
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 extern int yylex();
 extern void yyrestart(FILE*);
 extern char* yytext;
-extern int yyleng;
+extern yy_size_t yyleng;
+
 YY_BUFFER_STATE yy_create_buffer ( FILE *file, int size );
 void yy_switch_to_buffer( YY_BUFFER_STATE new_buffer );
 void yy_delete_buffer( YY_BUFFER_STATE b );
 
 //======================================================================
-// Class entry for each per-lexter state
 
 #define KEEPCMT_SUB 2
+
+//======================================================================
+// Class entry for each per-lexter state
 
 class V3PreLex {
   public:	// Used only by V3PreLex.cpp and V3PreProc.cpp
