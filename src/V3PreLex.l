@@ -33,6 +33,11 @@ V3PreLex* V3PreLex::s_currentLexp = NULL;	// Current lexing point
 
 #define LEXP V3PreLex::s_currentLexp
 
+// Accessors, because flex keeps changing the type of yyleng
+char* yyourtext() { return yytext; }
+size_t yyourleng() { return yyleng; }
+void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=size; }
+
 // Prevent conflicts from perl version
 static void linenoInc()  {LEXP->incLineno();}
 static bool optPsl() { return V3PreProc::optPsl(); }
