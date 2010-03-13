@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Skip SystemC tests if not installed.  [Iztok Jeras]
 
+**** Fix flushing VCD buffers on $stop.  [Ashutosh Das]
+
 **** Fix Mac OS-X compile issues, bug217.  [Joshua Wise, Trevor Williams]
 
 **** Fix make uninstall, bug216.  [Iztok Jeras]

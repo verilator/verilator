@@ -62,6 +62,8 @@ typedef vluint32_t   WData;	///< Verilated pack data, >64 bits, as an array
 typedef const WData* WDataInP;	///< Array input to a function
 typedef       WData* WDataOutP;	///< Array output from a function
 
+typedef void (*VerilatedVoidCb)(void);
+
 class SpTraceVcd;
 class SpTraceVcdCFile;
 class VerilatedVcd;
@@ -182,7 +184,11 @@ public:  // But internals only - called from VerilatedModule's
 struct Verilated {
     // MEMBERS
 private:
+    // Slow path variables
     static int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
+    static VerilatedVoidCb  s_flushCb;		///< Flush callback function
+
+    // Fast path
     static int		s_debug;		///< See accessors... only when VL_DEBUG set
     static bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
     static bool		s_gotFinish;		///< A $finish statement executed
@@ -224,6 +230,9 @@ public:
     /// Enable/disable assertions
     static void assertOn(bool flag) { s_assertOn=flag; }
     static bool assertOn() { return s_assertOn; }
+    /// Flush callback for VCD waves
+    static void flushCb(VerilatedVoidCb cb);
+    static void flushCall() { if (s_flushCb) (*s_flushCb)(); }
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);

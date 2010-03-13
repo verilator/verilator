@@ -33,7 +33,11 @@
 //===========================================================================
 // Global variables
 
+// Slow path variables
 int  Verilated::s_randReset = 0;
+VerilatedVoidCb Verilated::s_flushCb = NULL;
+
+// Keep below together in one cache line
 int  Verilated::s_debug = 1;
 bool Verilated::s_calcUnusedSigs = false;
 bool Verilated::s_gotFinish = false;
@@ -53,6 +57,7 @@ void vl_finish (const char* filename, int linenum, const char* hier) {
     VL_PRINTF("- %s:%d: Verilog $finish\n", filename, linenum);
     if (Verilated::gotFinish()) {
 	VL_PRINTF("- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
+	Verilated::flushCall();
 	exit(0);
     }
     Verilated::gotFinish(true);
@@ -62,6 +67,7 @@ void vl_finish (const char* filename, int linenum, const char* hier) {
 #ifndef VL_USER_STOP		// Define this to override this function
 void vl_stop (const char* filename, int linenum, const char* hier) {
     Verilated::gotFinish(true);
+    Verilated::flushCall();
     vl_fatal (filename,linenum,hier,"Verilog $stop");
 }
 #endif
@@ -71,6 +77,7 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
     if (0 && hier) {}
     Verilated::gotFinish(true);
     VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
+    Verilated::flushCall();
     abort();
 }
 #endif
@@ -969,6 +976,15 @@ const char* Verilated::catName(const char* n1, const char* n2) {
     if (*n1) strcat(strp,".");
     strcat(strp,n2);
     return strp;
+}
+
+void Verilated::flushCb(VerilatedVoidCb cb) {
+    if (s_flushCb == cb) {}  // Ok - don't duplicate
+    else if (!s_flushCb) { s_flushCb=cb; }
+    else {
+	// Someday we may allow multiple callbacks ala atexit(), but until then
+	vl_fatal("unknown",0,"", "Verilated::flushCb called twice with different callbacks");
+    }
 }
 
 void Verilated::commandArgs(int argc, const char** argv) {

@@ -88,6 +88,11 @@ void VerilatedVcd::open (const char* filename) {
     m_filename = filename;
     s_vcdVecp.push_back(this);
 
+    // SPDIFF_OFF
+    // Set callback so an early exit will flush us
+    Verilated::flushCb(&flush_all);
+
+    // SPDIFF_ON
     openNext (m_rolloverMB!=0);
     if (!isOpen()) return;
 
