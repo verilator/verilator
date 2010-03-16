@@ -941,28 +941,51 @@ void OrderVisitor::processBrokeLoop() {
 // Clock propagation
 
 void OrderVisitor::processInputs() {
-    m_graph.userClearVertices();  // Vertex::user()   // true if added as begin/end
+    m_graph.userClearVertices();  // Vertex::user()   // true if processed
+    // Start at input vertex, process from input-to-output order
+    m_inputsVxp->isFromInput(true);  // By definition
     processInputsIterate(m_inputsVxp);
 }
 
 void OrderVisitor::processInputsIterate(OrderEitherVertex* vertexp) {
     // Propagate PrimaryIn through simple assignments
     if (vertexp->user()) return;  // Already processed
-    //UINFO(9," InIt "<<vertexp<<endl);
-    vertexp->user(true);
-    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(vertexp)) {
-	vvertexp->isFromInput(true);
-    }
-    for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
-	if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
-	    processInputsIterate(vvertexp);
+    if (0 && debug()>=9) {
+	UINFO(9," InIt "<<vertexp<<endl);
+	if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
+	    vvertexp->nodep()->dumpTree(cout,"-            TT: ");
 	}
-	if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
-	    if (AstNodeAssign* nodep = vvertexp->nodep()->castNodeAssign()) {
-		if (nodep->lhsp()->castVarRef()
-		    && nodep->rhsp()->castVarRef()) {
-		    UINFO(9,"   Input reassignment: "<<vvertexp<<endl);
+    }
+    vertexp->user(true);  // Processing
+    // First handle all inputs to this vertex, in most cases they'll be already processed earlier
+    // Also, determine if this vertex is an input
+    int inonly = 1;  // 0=no, 1=maybe, 2=yes until a no
+    for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
+	OrderEitherVertex* frVertexp = (OrderEitherVertex*)edgep->fromp();
+	processInputsIterate(frVertexp);
+	if (frVertexp->isFromInput()) {
+	    if (inonly==1) inonly = 2;
+	} else if (dynamic_cast<OrderVarPostVertex*>(frVertexp)) {
+	    // Ignore post assignments, just for ordering
+	} else {
+	    //UINFO(9,"    InItStopDueTo "<<frVertexp<<endl);
+	    inonly = 0;
+	    break;
+	}
+    }
+    if (inonly == 2) {  // Set it.  Note may have already been set earlier, too
+	UINFO(9,"   Input reassignment: "<<vertexp<<endl);
+	vertexp->isFromInput(true);
+    }
+    // If we're still an input, process all targets of this vertex
+    if (vertexp->isFromInput()) {
+	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+	    OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
+	    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
+		processInputsIterate(vvertexp);
+	    }
+	    if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
+		if (vvertexp->nodep()->castNodeAssign()) {
 		    processInputsIterate(vvertexp);
 		}
 	    }

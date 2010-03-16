@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Skip SystemC tests if not installed.  [Iztok Jeras]
 
+**** Fix clock-gates with non-AND complex logic, bug220. [Ashutosh Das]
+
 **** Fix flushing VCD buffers on $stop.  [Ashutosh Das]
 
 **** Fix Mac OS-X compile issues, bug217.  [Joshua Wise, Trevor Williams]

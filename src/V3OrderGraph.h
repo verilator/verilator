@@ -132,10 +132,11 @@ class OrderEitherVertex : public V3GraphVertex {
     AstScope*	m_scopep;	// Scope the vertex is in
     AstSenTree*	m_domainp;	// Clock domain (NULL = to be computed as we iterate)
     OrderLoopId	m_inLoop;	// Loop number vertex is in
+    bool	m_isFromInput;	// From input, or derrived therefrom (conservatively false)
 public:
     OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
 	: V3GraphVertex(graphp), m_scopep(scopep), m_domainp(domainp)
-	, m_inLoop(LOOPID_UNKNOWN) {
+	, m_inLoop(LOOPID_UNKNOWN), m_isFromInput(false) {
     }
     virtual ~OrderEitherVertex() {}
     // Methods
@@ -148,12 +149,16 @@ public:
     AstSenTree* domainp() const { return m_domainp; }
     OrderLoopId	inLoop() const { return m_inLoop; }
     void inLoop(OrderLoopId inloop) { m_inLoop = inloop; }
+    void isFromInput(bool flag) { m_isFromInput=flag; }
+    bool isFromInput() const { return m_isFromInput; }
 };
 
 class OrderInputsVertex : public OrderEitherVertex {
 public:
     OrderInputsVertex(V3Graph* graphp, AstSenTree* domainp)
-	: OrderEitherVertex(graphp, NULL, domainp) {}
+	: OrderEitherVertex(graphp, NULL, domainp) {
+	isFromInput(true);  // By definition
+    }
     virtual ~OrderInputsVertex() {}
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_INPUTS; }
     virtual string name() const { return "*INPUTS*"; }
@@ -195,11 +200,10 @@ class OrderVarVertex : public OrderEitherVertex {
     AstVarScope* m_varScp;
     OrderVarVertex*	m_pilNewVertexp;	// for processInsLoopNewVar
     bool	 m_isClock;	// Used as clock
-    bool	 m_isFromInput;	// From input, or derrived therefrom (conservatively false)
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
 	: OrderEitherVertex(graphp, scopep, NULL), m_varScp(varScp)
-	, m_pilNewVertexp(NULL), m_isClock(false), m_isFromInput(false)
+	, m_pilNewVertexp(NULL), m_isClock(false)
 	{}
     virtual ~OrderVarVertex() {}
     virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
@@ -208,8 +212,6 @@ public:
     AstVarScope* varScp() const { return m_varScp; }
     void isClock(bool flag) { m_isClock=flag; }
     bool isClock() const { return m_isClock; }
-    void isFromInput(bool flag) { m_isFromInput=flag; }
-    bool isFromInput() const { return m_isFromInput; }
     OrderVarVertex* pilNewVertexp() const { return m_pilNewVertexp; }
     void pilNewVertexp (OrderVarVertex* vertexp) { m_pilNewVertexp = vertexp; }
 };
