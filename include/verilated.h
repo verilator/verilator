@@ -151,11 +151,12 @@ class VerilatedSyms {
 
 class VerilatedScope {
     // Fastpath:
-    VerilatedSyms* m_symsp;	///< Symbol table
-    void**	m_callbacksp;	///< Callback table pointer (Fastpath)
-    int		m_funcnumMax;	///< Maxium function number stored (Fastpath)
+    VerilatedSyms*	m_symsp;	///< Symbol table
+    void**		m_callbacksp;	///< Callback table pointer (Fastpath)
+    int			m_funcnumMax;	///< Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
-    const char* m_namep;	///< Scope name (Slowpath)
+    const char* 	m_namep;	///< Scope name (Slowpath)
+
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();

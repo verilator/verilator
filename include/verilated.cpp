@@ -1078,10 +1078,11 @@ void* VerilatedScope::exportFindError(int funcnum) const {
 }
 
 void VerilatedScope::scopeDump() const {
-    VL_PRINTF("    SCOPE: %s\n", name());
+    VL_PRINTF("    SCOPE %p: %s\n", this, name());
     for (int i=0; i<m_funcnumMax; i++) {
 	if (m_callbacksp && m_callbacksp[i]) {
-	    VL_PRINTF("       DPI-EXPORT: %s\n", VerilatedImp::exportName(i));
+	    VL_PRINTF("       DPI-EXPORT %p: %s\n",
+		      m_callbacksp[i], VerilatedImp::exportName(i));
 	}
     }
 }
