@@ -3,11 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.80***
+* Verilator 3.801 2010/03/17
 
 ***  Support "break", "continue", "return".
 
-**** Support "`default_nettype none|wire".  [Dominic Plunkett]
+***  Support "`default_nettype none|wire".  [Dominic Plunkett]
 
 **** Skip SystemC tests if not installed.  [Iztok Jeras]
 
