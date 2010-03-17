@@ -1819,14 +1819,17 @@ program will find for you.
 Verilator supports only the Synthesis subset with a few minor additions
 such as $stop, $finish and $display.  That is, you cannot use hierarchical
 references, events or similar features of the Verilog language.  It also
-simulates as Synopsys's Design Compiler would; namely a block of the form
+simulates as Synopsys's Design Compiler would; namely a block of the form:
 
 	always @ (x)   y = x & z;
 
-will recompute y when there is a change in x or a change in z, which is
-what Design Compiler will synthesize.  A compliant simulator would only
-calculate y if x changes.  (Use verilog-mode's /*AS*/ or Verilog 2001's
-always @* to prevent these issues.)
+This will recompute y when there is even a potential for change in x or a
+change in z, that is when the flops computing x or z evaluate (which is
+what Design Compiler will synthesize.)  A compliant simulator would only
+calculate y if x changes.  Use verilog-mode's /*AS*/ or Verilog 2001's
+always @* to reduce missing activity items.  Avoid putting $displays in
+combo blocks, as they may print multiple times when not desired, even on
+compliant simulators as event ordering is not specified.
 
 =head2 Dotted cross-hierarchy references
 
