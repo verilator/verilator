@@ -31,6 +31,7 @@
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_heavy.h"
+#include "verilated_syms.h"
 
 #include <map>
 #include <vector>
@@ -40,13 +41,6 @@ class VerilatedScope;
 
 //======================================================================
 // Types
-
-struct VerilatedCStrCmp {
-    // For ordering maps keyed by const char*'s
-    bool operator() (const char *a, const char *b) const {
-	return std::strcmp(a, b) < 0;
-    }
-};
 
 class VerilatedImp {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.

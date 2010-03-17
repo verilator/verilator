@@ -274,12 +274,12 @@ private:
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
-	    m_varp->sigPublic(true); m_varp->sigModPublic(true);
+	    m_varp->sigUserPublic(true); m_varp->sigModPublic(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
-	    m_varp->sigPublic(true);
+	    m_varp->sigUserPublic(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {

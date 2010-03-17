@@ -1017,12 +1017,14 @@ VerilatedScope::VerilatedScope() {
     m_callbacksp = NULL;
     m_namep = NULL;
     m_funcnumMax = 0;
+    m_varsp = NULL;
 }
 
 VerilatedScope::~VerilatedScope() {
     VerilatedImp::scopeErase(this);
     if (m_namep) { delete [] m_namep; m_namep = NULL; }
     if (m_callbacksp) { delete [] m_callbacksp; m_callbacksp = NULL; }
+    if (m_varsp) { delete m_varsp; m_varsp = NULL; }
     m_funcnumMax = 0;  // Force callback table to empty
 }
 
@@ -1058,6 +1060,46 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
     }
 }
 
+void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype, int dims, ...) {
+    // Grab dimensions
+    // In the future we may just create a large table at emit time and statically construct from that.
+    if (!finalize) return;
+
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap();
+    VerilatedVar var (namep, datap, vltype);
+
+    va_list ap;
+    va_start(ap,dims);
+    for (int i=0; i<dims; ++i) {
+	int msb = va_arg(ap,int);
+	int lsb = va_arg(ap,int);
+	if (i==0) {
+	    var.m_range.m_lhs = msb;
+	    var.m_range.m_rhs = lsb;
+	} else if (i==1) {
+	    var.m_array.m_lhs = msb;
+	    var.m_array.m_rhs = lsb;
+	} else {
+	    // We could have a linked list of ranges, but really this whole thing needs
+	    // to be generalized to support structs and unions, etc.
+	    vl_fatal(__FILE__,__LINE__,"",(string("Unsupported multi-dimensional public varInsert: ")+namep).c_str());
+	}
+    }
+    va_end(ap);
+
+    m_varsp->insert(make_pair(namep,var));
+}
+
+VerilatedVar* VerilatedScope::varFind(const char* namep) const {
+    if (VL_LIKELY(m_varsp)) {
+	VerilatedVarNameMap::iterator it = m_varsp->find(namep);
+	if (VL_LIKELY(it != m_varsp->end())) {	
+	    return &(it->second);
+	}
+    }
+    return NULL;
+}
+
 void* VerilatedScope::exportFindNullError(int funcnum) const {
     // Slowpath - Called only when find has failed
     string msg = (string("Testbench C called '")
@@ -1083,6 +1125,12 @@ void VerilatedScope::scopeDump() const {
 	if (m_callbacksp && m_callbacksp[i]) {
 	    VL_PRINTF("       DPI-EXPORT %p: %s\n",
 		      m_callbacksp[i], VerilatedImp::exportName(i));
+	}
+    }
+    if (varsp()) {
+	for (VerilatedVarNameMap::const_iterator it = varsp()->begin();
+	     it != varsp()->end(); ++it) {
+	    VL_PRINTF("       VAR %p: %s\n", &(it->second), it->first);
 	}
     }
 }

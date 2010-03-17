@@ -66,8 +66,21 @@ typedef void (*VerilatedVoidCb)(void);
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedVar;
+class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
+
+enum VerilatedVarType {
+    VLVT_UNKNOWN=0,
+    VLVT_PTR,		// Pointer to something
+    VLVT_UINT8,		// AKA CData
+    VLVT_UINT16,	// AKA SData
+    VLVT_UINT32,	// AKA IData
+    VLVT_UINT64,	// AKA QData
+    VLVT_WDATA,		// AKA WData
+    VLVT_STRING		// C++ string
+};
 
 //=========================================================================
 /// Base class for all Verilated module classes
@@ -155,6 +168,7 @@ class VerilatedScope {
     void**		m_callbacksp;	///< Callback table pointer (Fastpath)
     int			m_funcnumMax;	///< Maxium function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
+    VerilatedVarNameMap* m_varsp;	///< Variable map
     const char* 	m_namep;	///< Scope name (Slowpath)
 
 public:  // But internals only - called from VerilatedModule's
@@ -162,9 +176,12 @@ public:  // But internals only - called from VerilatedModule's
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp);
     void exportInsert(int finalize, const char* namep, void* cb);
+    void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype, int dims, ...);
     // ACCESSORS
     const char* name() const { return m_namep; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
+    VerilatedVar* varFind(const char* namep) const;
+    VerilatedVarNameMap* varsp() const { return m_varsp; }
     void* exportFindError(int funcnum) const;
     void* exportFindNullError(int funcnum) const;
     void scopeDump() const;

@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.8***
+
+***  Support runtime access to public signal names.
+
 * Verilator 3.801 2010/03/17
 
 ***  Support "break", "continue", "return".

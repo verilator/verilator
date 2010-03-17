@@ -137,6 +137,31 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
     return arg;
 }
 
+string AstVar::vlEnumType() const {
+    string arg;
+    AstBasicDType* bdtypep = basicp();
+    bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
+    if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
+	return "VLVT_PTR";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
+	return "VLVT_PTR";
+    } else if (strtype) {
+	arg += "VLVT_STRING";
+    } else if (widthMin() <= 8) {
+	arg += "VLVT_UINT8";
+    } else if (widthMin() <= 16) {
+	arg += "VLVT_UINT16";
+    } else if (widthMin() <= VL_WORDSIZE) {
+	arg += "VLVT_UINT32";
+    } else if (isQuad()) {
+	arg += "VLVT_UINT64";
+    } else if (isWide()) {
+	arg += "VLVT_WDATA";
+    }
+    // else return "VLVT_UNKNOWN"
+    return arg;
+}
+
 string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
@@ -348,6 +373,8 @@ string AstScopeName::scopeSymName() const {
 	out += textp->text();
     }
     if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
+    if (out.substr(0,7) == "__DOT__") out.replace(0,7,"");
+    if (out.substr(0,1) == ".") out.replace(0,1,"");
     string::size_type pos;
     while ((pos=out.find(".")) != string::npos) {
 	out.replace(pos, 1, "__");

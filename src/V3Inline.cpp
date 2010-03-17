@@ -57,6 +57,7 @@ private:
     //   AstNodeModule::user1p()	// bool. True to inline this module (from InlineMarkVisitor)
     // Cleared each cell
     //   AstVar::user2p()	// AstVarRef*/AstConst*  Points to signal this is a direct connect to
+    //   AstVar::user3()	// bool    Don't alias the user4, keep it as signal
 
     // STATE
     AstNodeModule*	m_modp;		// Current module
@@ -151,6 +152,10 @@ private:
 		UINFO(6,"One-to-one "<<connectRefp<<endl);
 		UINFO(6,"       -to "<<pinNewVarp<<endl);
 		pinNewVarp->user2p(connectRefp);
+		// Public output inside the cell must go via an assign rather than alias
+		// Else the public logic will set the alias, loosing the value to be propagated up
+		// (InOnly isn't a problem as the AssignAlias will create the assignment for us)
+		pinNewVarp->user3(pinNewVarp->isSigUserPublic() && pinNewVarp->isOutOnly());
 	    }
 	    // Cleanup var names, etc, to not conflict
 	    m_cellp = nodep;
@@ -175,6 +180,7 @@ private:
 		// user2p is either a const or a var.
 		AstConst*  exprconstp  = nodep->user2p()->castNode()->castConst();
 		AstVarRef* exprvarrefp = nodep->user2p()->castNode()->castVarRef();
+		UINFO(1,"connectto: "<<nodep->user2p()->castNode()<<endl);
 		if (!exprconstp && !exprvarrefp) {
 		    nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
 		}
@@ -182,6 +188,15 @@ private:
 		    m_modp->addStmtp(new AstAssignW(nodep->fileline(),
 						    new AstVarRef(nodep->fileline(), nodep, true),
 						    exprconstp->cloneTree(true)));
+		} else if (nodep->user3()) {
+		    // Public variable at the lower module end - we need to make sure we propagate
+		    // the logic changes up and down; if we aliased, we might remove the change detection
+		    // on the output variable.
+		    UINFO(9,"public pin assign: "<<exprvarrefp<<endl);
+		    if (nodep->isInput()) nodep->v3fatalSrc("Outputs only - inputs use AssignAlias");
+		    m_modp->addStmtp(new AstAssignW(nodep->fileline(),
+						    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+						    new AstVarRef(nodep->fileline(), nodep, false)));
 		} else {
 		    m_modp->addStmtp(new AstAssignAlias(nodep->fileline(),
 							new AstVarRef(nodep->fileline(), nodep, true),
@@ -216,8 +231,9 @@ private:
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (m_cellp) {
-	    if (nodep->varp()->user2p()  // It's being converted to a alias.
-		&& !nodep->backp()->castAssignAlias()) { 	// Don't constant propagate aliases
+	    if (nodep->varp()->user2p()  // It's being converted to an alias.
+		&& !nodep->varp()->user3()
+		&& !nodep->backp()->castAssignAlias()) { 	// Don't constant propagate aliases (we just made)
 		AstConst*  exprconstp  = nodep->varp()->user2p()->castNode()->castConst();
 		AstVarRef* exprvarrefp = nodep->varp()->user2p()->castNode()->castVarRef();
 		if (exprconstp) {

@@ -45,13 +45,24 @@ class EmitCSyms : EmitCBaseVisitor {
     AstUser1InUse	m_inuser1;
 
     // TYPES
+    struct ScopeNameData { string m_symName; string m_prettyName;
+	ScopeNameData(const string& symName, const string& prettyName)
+	    : m_symName(symName), m_prettyName(prettyName) {}
+    };
     struct ScopeFuncData { AstScopeName* m_scopep; AstCFunc* m_funcp; AstNodeModule* m_modp;
 	ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
 	    : m_scopep(scopep), m_funcp(funcp), m_modp(modp) {}
     };
+    struct ScopeVarData { string m_scopeName; string m_varBasePretty; AstVar* m_varp;
+	AstNodeModule* m_modp;  AstScope* m_scopep;
+	ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp, AstNodeModule* modp, AstScope* scopep)
+	    : m_scopeName(scopeName), m_varBasePretty(varBasePretty), m_varp(varp), m_modp(modp), m_scopep(scopep) {}
+    };
     typedef map<string,ScopeFuncData> ScopeFuncs;
-    typedef map<string,AstScopeName*> ScopeNames;
+    typedef map<string,ScopeVarData> ScopeVars;
+    typedef map<string,ScopeNameData> ScopeNames;
     typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
+    typedef pair<AstNodeModule*,AstVar*> ModVarPair;
     struct CmpName {
 	inline bool operator () (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
 	    return lhsp.first->name() < rhsp.first->name();
@@ -71,8 +82,10 @@ class EmitCSyms : EmitCBaseVisitor {
     AstNodeModule*	m_modp;		// Current module
     vector<ScopeModPair>  m_scopes;	// Every scope by module
     vector<AstCFunc*>	m_dpis;		// DPI functions
+    vector<ModVarPair>	m_modVars;	// Each public {mod,var}
     ScopeNames		m_scopeNames;	// Each unique AstScopeName
-    ScopeFuncs		m_scopeFuncs;	// Each {scope,dpiexportfunc}
+    ScopeFuncs		m_scopeFuncs;	// Each {scope,dpi-export-func}
+    ScopeVars		m_scopeVars;	// Each {scope,public-var}
     V3LanguageWords 	m_words;	// Reserved word detector
     int		m_coverBins;		// Coverage bin number
     int		m_labelNum;		// Next label number
@@ -95,10 +108,65 @@ class EmitCSyms : EmitCBaseVisitor {
 	}
     }
 
+    void varsExpand() {
+	// We didn'e have all m_scopes loaded when we encountered variables, so expand them now
+	// It would be less code if each module inserted its own variables.
+	// Someday.  For now public isn't common.
+	for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+	    AstScope* scopep = it->first;  AstNodeModule* smodp = it->second;
+	    for (vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end(); ++it) {
+		AstNodeModule* modp = it->first;
+		if (modp == smodp) {
+		    AstVar* varp = it->second;
+		    // Need to split the module + var name into the original-ish full scope and variable name under that scope.
+		    // The module instance name is included later, when we know the scopes this module is under
+		    string whole = scopep->name()+"__DOT__"+varp->name();
+		    string scpName;
+		    string varBase;
+		    if (whole.substr(0,10) == "__DOT__TOP") whole.replace(0,10,"");
+		    string::size_type pos = whole.rfind("__DOT__");
+		    if (pos != string::npos) {
+			scpName = whole.substr(0,pos);
+			varBase = whole.substr(pos+strlen("__DOT__"));
+		    } else {
+			varBase = whole;
+		    }
+		    //UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"  Var "<<varBase<<endl);
+		    string varBasePretty = AstNode::prettyName(varBase);
+		    string scpPretty = AstNode::prettyName(scpName);
+		    string scpSym;
+		    {
+			string out = scpName;
+			string::size_type pos;
+			while ((pos=out.find("__PVT__")) != string::npos) {
+			    out.replace(pos, 7, "");
+			}
+			if (out.substr(0,10) == "TOP__DOT__") out.replace(0,10,"");
+			if (out.substr(0,4) == "TOP.") out.replace(0,4,"");
+			while ((pos=out.find(".")) != string::npos) {
+			    out.replace(pos, 1, "__");
+			}
+			while ((pos=out.find("__DOT__")) != string::npos) {
+			    out.replace(pos, 7, "__");
+			}
+			scpSym = out;
+		    }
+		    //UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
+		    if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
+			m_scopeNames.insert(make_pair(scpSym, ScopeNameData(scpSym, scpPretty)));
+		    }
+		    m_scopeVars.insert(make_pair(scpSym + " " + varp->name(),
+						 ScopeVarData(scpSym, varBasePretty, varp, modp, scopep)));
+		}
+	    }
+	}
+    }
+
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Collect list of scopes
 	nodep->iterateChildren(*this);
+	varsExpand();
 
 	// Sort by names, so line/process order matters less
 	sort(m_scopes.begin(), m_scopes.end(), CmpName());
@@ -125,13 +193,20 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	string name = nodep->scopeSymName();
+	//UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettyName()<<" ss "<<name<<endl);
 	if (m_scopeNames.find(name) == m_scopeNames.end()) {
-	    m_scopeNames.insert(make_pair(name, nodep));
+	    m_scopeNames.insert(make_pair(name, ScopeNameData(name, nodep->scopePrettyName())));
 	}
 	if (nodep->dpiExport()) {
 	    if (!m_funcp) nodep->v3fatalSrc("ScopeName not under DPI function");
 	    m_scopeFuncs.insert(make_pair(name + " " + m_funcp->name(),
 					  ScopeFuncData(nodep, m_funcp, m_modp)));
+	}
+    }
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->isSigUserPublic()) {
+	    m_modVars.push_back(make_pair(m_modp, nodep));
 	}
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
@@ -255,7 +330,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// SCOPE NAMES\n");
     for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	puts("VerilatedScope __Vscope_"+it->second->scopeSymName()+";\n");
+	puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
     }
 
     puts("\n// CREATORS\n");
@@ -345,8 +420,8 @@ void EmitCSyms::emitSymImp() {
 
     puts("// Setup scope names\n");
     for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	puts("__Vscope_"+it->second->scopeSymName()+".configure(this,name(),");
-	putsQuoted(it->second->scopePrettyName());
+	puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
+	putsQuoted(it->second.m_prettyName);
 	puts(");\n");
     }
 
@@ -366,6 +441,55 @@ void EmitCSyms::emitSymImp() {
 		puts(funcp->name());
 		puts("));\n");
 	    }
+	}
+	// It would be less code if each module inserted its own variables.
+	// Someday.  For now public isn't common.
+	for (ScopeVars::iterator it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
+	    AstNodeModule* modp = it->second.m_modp;
+	    AstScope* scopep = it->second.m_scopep;
+	    AstVar* varp = it->second.m_varp;
+	    //
+	    int dim=0;
+	    string bounds;
+	    if (AstBasicDType* basicp = varp->basicp()) {
+		// Range is always first, it's not in "C" order
+		if (basicp->rangep()) {
+		    bounds += " ,"; bounds += cvtToStr(basicp->rangep()->msbConst());
+		    bounds += ","; bounds += cvtToStr(basicp->rangep()->lsbConst());
+		    dim++;
+		}
+		for (AstNodeDType* dtypep=varp->dtypep(); dtypep; ) {
+		    dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
+		    if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+			bounds += " ,"; bounds += cvtToStr(adtypep->arrayp()->msbConst());
+			bounds += ","; bounds += cvtToStr(adtypep->arrayp()->lsbConst());
+			dim++;
+			dtypep = adtypep->dtypep();
+		    }
+		    else break; // AstBasicDType - nothing below, 1
+		}
+	    }
+	    //
+	    if (dim>2) {
+		puts("//UNSUP ");  // VerilatedImp can't deal with >2d arrays
+	    }
+	    puts("__Vscope_"+it->second.m_scopeName+".varInsert(__Vfinal,");
+	    putsQuoted(it->second.m_varBasePretty);
+	    puts(", &(");
+	    if (modp->isTop()) {
+		puts(scopep->nameDotless());
+		puts("p->");
+	    } else {
+		puts(scopep->nameDotless());
+		puts(".");
+	    }
+	    puts(varp->name());
+	    puts("), ");
+	    puts(varp->vlEnumType());  // VLVT_UINT32 etc
+	    puts(",");
+	    puts(cvtToStr(dim));
+	    puts(bounds);
+	    puts(");\n");
 	}
 	puts("}\n");
     }
