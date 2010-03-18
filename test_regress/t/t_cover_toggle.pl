@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 verilator_flags2 => [$Self->{v3}?'--sp --coverage-toggle --stats':''],
+	 verilator_flags2 => ['--sp --coverage-toggle --stats'],
 	 );
 
 execute (
@@ -18,7 +18,8 @@ execute (
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
-file_grep ($Self->{stats}, qr/Coverage, Toggle points joined\s+25/i);
+file_grep ($Self->{stats}, qr/Coverage, Toggle points joined\s+25/i)
+    if $Self->{vlt};
 
 ok(1);
 1;

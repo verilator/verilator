@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{golden_out} ||= "t/$Self->{name}.out";
 
 compile (
-	 v_flags2 => [$Self->{v3}?"--stats --O3 -x-assign fast":""],
+	 verilator_flags2 => ["--stats --O3 -x-assign fast"],
 	 );
 
 execute (

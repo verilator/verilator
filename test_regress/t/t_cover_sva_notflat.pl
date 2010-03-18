@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => [$Self->{v3}?'--assert --sp --coverage-user':''],
+	 verilator_flags2 => ['--assert --sp --coverage-user'],
 	 );
 
 execute (
@@ -20,7 +20,8 @@ execute (
 # Allow old Perl format dump, or new binary dump
 # Check that the hierarchy doesn't include __PVT__
 # Otherwise our coverage reports would look really ugly
-file_grep ($Self->{coverage_filename}, qr/(top\.v\.sub.*.cyc_eq_5)/);
+file_grep ($Self->{coverage_filename}, qr/(top\.v\.sub.*.cyc_eq_5)/)
+    if $Self->{vlt};
 
 ok(1);
 1;

@@ -37,10 +37,14 @@ module t (clk);
             if ( cyc >= 4 ) begin
 	       dindex = dindex + 2; //*** Error line
 	       $display("%m: DIndex increment %d", cyc);
+`ifdef VERILATOR
 	       $c("VL_PRINTF(\"Hello1?\\n\");");
+`endif
             end
+`ifdef VERILATOR
 	    $c("VL_PRINTF(\"Hello2?\\n\");");
 	    $c("VL_PRINTF(\"Hello3?\\n\");");
+`endif
 	 end
       end
    endtask

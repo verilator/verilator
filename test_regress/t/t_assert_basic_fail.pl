@@ -16,7 +16,7 @@ compile (
 	 );
 
 execute (
-	 fails => 1,
+	 fails => $Self->{vlt},
 	 );
 
 ok(1);

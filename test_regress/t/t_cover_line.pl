@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 verilator_flags2 => [$Self->{v3}?'--sp --coverage-line':''],
+	 verilator_flags2 => ['--sp --coverage-line'],
 	 );
 
 execute (

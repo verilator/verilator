@@ -1,0 +1,59 @@
+#!/usr/bin/perl -w
+# See copyright, etc in below POD section.
+######################################################################
+
+require 5.006_001;
+use strict;
+
+#======================================================================
+# main
+
+delete $ENV{MODULE_VERSION};
+_setup_modules();
+module('add','axiom-athdl');
+exec('atsim',@ARGV);
+
+#######################################################################
+# Modules package
+
+sub _setup_modules {
+    # Load the 'module' command into the environment
+    my $init = "$ENV{MODULESHOME}/init/perl";
+    (-f $init) or die "%Error: Script not found: $init,";
+    require $init;
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+invoke_atsim - Invoke tool under "modules" command
+
+=head1 SYNOPSIS
+
+  invoke_atsim  {ncv arguments}
+
+=head1 DESCRIPTION
+
+=head1 DISTRIBUTION
+
+Copyright 2005-2010 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./invoke_atsim -help"
+### End:

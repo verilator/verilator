@@ -12,7 +12,7 @@ my $pubtask = ($Self->{v3} && verilator_version() =~ /\(public_tasks\)/);  # TBD
 top_filename("t/t_func_public.v");
 
 compile (
-	 v_flags2 => [($pubtask?'-DVERILATOR_PUBLIC_TASKS':''), "--trace"],
+	 verilator_flags2 => [($pubtask?'-DVERILATOR_PUBLIC_TASKS':''), "--trace"],
 	 fails => $fail,
 	 );
 

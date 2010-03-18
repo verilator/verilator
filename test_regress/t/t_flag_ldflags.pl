@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 $Self->_run (cmd=>["cd $Self->{obj_dir}"
 		   ." && g++ -c ../../t/t_flag_ldflags_a.cpp"
 		   ." && ar r t_flag_ldflags_a.a t_flag_ldflags_a.o"

@@ -16,7 +16,7 @@ compile (
 
 execute (
 	 check_finished=>0,
-	 fails=>1,
+	 fails=> $Self->{vlt},
 	 expect=>
 '%Error: t_assert_synth.v:\d+: Assertion failed in top.v: synthesis full_case'
 	 );

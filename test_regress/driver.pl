@@ -40,6 +40,7 @@ our @Orig_ARGV = @ARGV;
 our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
 
 $Debug = 0;
+my $opt_atsim;
 my $opt_benchmark;
 my @opt_tests;
 my $opt_gdb;
@@ -61,6 +62,7 @@ Getopt::Long::config ("pass_through");
 if (! GetOptions (
 		  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "debug"	=> \&debug,
+		  "atsim|athdl!"=> \$opt_atsim,
 		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
 		  "gdbsim!"	=> \$opt_gdbsim,
@@ -86,7 +88,7 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
+if (!$opt_atsim && !$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
     $opt_vlt = 1;
 }
 
@@ -101,6 +103,7 @@ my $leftcnt=0; my $okcnt=0; my $failcnt=0; my $skcnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
+    one_test(pl_filename => $testpl, atsim=>1) if $opt_atsim;
     one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
     one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
@@ -261,6 +264,12 @@ sub new {
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
 	all_run_flags => [],
+        # ATSIM
+	atsim => 0,
+	atsim_flags => [split(/\s+/,"-c +sv +define+atsim"),
+			"+sv_dir+$self->{obj_dir}/.athdl_compile"],
+	atsim_flags2 => [],  # Overridden in some sim files
+	atsimrun_flags => [],
         # IV
 	iv => 0,
 	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
@@ -288,6 +297,7 @@ sub new {
 	%$self};
     bless $self, $class;
 
+    $self->{mode} ||= "atsim" if $self->{atsim};
     $self->{mode} ||= "vcs" if $self->{vcs};
     $self->{mode} ||= "vlt" if $self->{vlt};
     $self->{mode} ||= "nc" if $self->{nc};
@@ -387,6 +397,20 @@ sub compile {
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
+    if ($param{atsim}) {
+	$self->_make_top();
+	$self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
+		    fails=>$param{fails},
+		    cmd=>[($ENV{VERILATOR_ATSIM}||"atsim"),
+			  @{$param{atsim_flags}},
+			  @{$param{atsim_flags2}},
+			  @{$param{v_flags}},
+			  @{$param{v_flags2}},
+			  $param{top_filename},
+			  $param{top_shell_filename},
+			  @{$param{v_other_filenames}},
+			  ]);
+    }
     if ($param{vcs}) {
 	$self->_make_top();
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
@@ -511,6 +535,14 @@ sub execute {
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
 
+    if ($param{atsim}) {
+	$self->_run(logfile=>"$self->{obj_dir}/atsim_sim.log",
+		    fails=>$param{fails},
+		    cmd=>["echo q | ".$run_env."$self->{obj_dir}/athdl_sv",
+			  @{$param{atsimrun_flags}},
+			  @{$param{all_run_flags}},
+			  ]);
+    }
     if ($param{iv}) {
 	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
@@ -522,7 +554,7 @@ sub execute {
     if ($param{nc}) {
 	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
-		    cmd=>[$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
+		    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
 			  @{$param{ncrun_flags}},
 			  @{$param{all_run_flags}},
 			  ]);
@@ -531,7 +563,7 @@ sub execute {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
-		    cmd=>[$run_env."./simv",
+		    cmd=>["echo q | ".$run_env."./simv",
 			  @{$param{all_run_flags}},
 		          ],
 		    %param,
@@ -1165,6 +1197,10 @@ driver.pl invokes Verilator or another simulator on each little test file.
 =head1 ARGUMENTS
 
 =over 4
+
+=item --atsim
+
+Run using ATSIM.
 
 =item --benchmark [<cycles>]
 

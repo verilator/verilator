@@ -12,7 +12,7 @@ module t (
 
    chk chk (.clk	(clk),
 	    .rst_l	(1'b1),
-	    .expr	(|crc),
+	    .expr	(|crc)
 	    );
 
    always @ (posedge clk) begin

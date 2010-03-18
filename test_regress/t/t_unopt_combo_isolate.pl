@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_unopt_combo.v");
 
 compile (
-	 v_flags2 => ['+define+ISOLATE --stats'],
+	 verilator_flags2 => ['+define+ISOLATE --stats'],
 	 );
 
 if ($Self->{v3}) {

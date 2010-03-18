@@ -7,15 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->skip("Verilator only test") if !$Self->{vlt};
+
 compile (
-	 fails=>$Self->{v3},
-	 nc=>0,  # Need to get it not to give the prompt
+	 fails=>1,
 	 expect=>
 '%Error-MODDUP: t/t_mod_dup_bad.v:\d+: Duplicate declaration of module: a
 %Error-MODDUP: t/t_mod_dup_bad.v:\d+: ... Location of original declaration
 .*
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
 
 ok(1);
 1;

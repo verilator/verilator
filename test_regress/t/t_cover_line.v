@@ -48,7 +48,11 @@ module t (/*AUTOARG*/
 	    toggle <= '1;
 	 end
 	 else if (cyc==5) begin
+`ifdef VERILATOR
 	    $c("call_task();");
+`else
+	    call_task();
+`endif
 	 end
 	 else if (cyc==10) begin
 	    $write("*-* All Finished *-*\n");

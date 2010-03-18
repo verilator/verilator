@@ -9,25 +9,45 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-`begin_keywords "1364-1995"
-  integer signed; initial signed = 1;
-`end_keywords
-`begin_keywords "1364-2001"
-  integer bit; initial bit = 1;
-`end_keywords
-`begin_keywords "1364-2005"
-  integer final; initial final = 1;
-`end_keywords
-`begin_keywords "1800-2005"
-  integer global; initial global = 1;
- `begin_keywords "1800-2009"
-  final begin
-     $write("*-* All Finished *-*\n");
-  end
- `end_keywords
-`end_keywords
+   s1 s1 ();
+   s2 s2 ();
+   s3 s3 ();
+   s4 s4 ();
+   s5 s5 ();
 
    initial begin
       $finish;
    end
 endmodule
+
+`begin_keywords "1364-1995"
+module s1;
+  integer signed; initial signed = 1;
+endmodule
+`end_keywords
+
+`begin_keywords "1364-2001"
+module s2;
+  integer bit; initial bit = 1;
+endmodule
+`end_keywords
+
+`begin_keywords "1364-2005"
+module s3;
+  integer final; initial final = 1;
+endmodule
+`end_keywords
+
+`begin_keywords "1800-2005"
+module s4;
+  integer global; initial global = 1;
+endmodule
+`end_keywords
+
+`begin_keywords "1800-2009"
+module s5;
+ final begin
+    $write("*-* All Finished *-*\n");
+ end
+endmodule
+`end_keywords
