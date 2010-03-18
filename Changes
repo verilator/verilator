@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support runtime access to public signal names.
 
+**** Fix "make install" with configure outside srcdir.  [Stefan Wallentowitz]
+
 * Verilator 3.801 2010/03/17
 
 ***  Support "break", "continue", "return".

@@ -59,9 +59,9 @@ sub test {
 	my $bin1 = $prefix."/bin";
 	my $bin2 = $prefix."/share/bin";
 	IO::File->new(">$testdir/foo.v")->print('module t; initial begin $display("HELLO WORLD"); end endmodule'."\n");
-	run("cd $testdir && PATH=$bin1:$bin2:\$PATH verilator --cc --exe foo.v");
+	run("cd $testdir && PATH=$bin1:$bin2:\$PATH verilator --cc foo.v");
 	run("cd $testdir/obj_dir && PATH=$bin1:$bin2:\$PATH make -f Vfoo.mk");
-	#Need .c file for this to work
+	#Need .c file, and --exe for this to work
 	#run("cd $testdir && PATH=$bin1:$bin2:\$PATH obj_dir/Vfoo");
     }
 }

@@ -245,11 +245,15 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_MAN_FILES = verilator.1
 
-VL_INST_INC_FILES = \
-	include/*.[chv]*  include/verilated.mk \
+VL_INST_INC_BLDDIR_FILES = \
+	include/verilated.mk \
+
+# Files under srcdir, instead of build time
+VL_INST_INC_SRCDIR_FILES = \
+	include/*.[chv]* \
 	include/vltstd/*.[chv]* \
 
-VL_INST_DATA_FILES = \
+VL_INST_DATA_SRCDIR_FILES = \
 	test_v/*.[chv]* \
 	test_c/*.[chv]*   test_c/Makefile  test_c/Makefile_obj  \
 	test_sc/*.[chv]*  test_sc/Makefile test_sc/Makefile_obj \
@@ -272,14 +276,19 @@ installman: $(VL_INST_MAN_FILES)
 
 installdata:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd
-	for p in $(VL_INST_INC_FILES) ; do \
+	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
+	done
+	cd $(srcdir) \
+	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
 	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_c
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sc
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sp
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_v
-	for p in $(VL_INST_DATA_FILES) ; do \
+	cd $(srcdir) \
+	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/examples/$$p; \
 	done
 
@@ -288,8 +297,9 @@ uninstall:
 	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_BIN_FILES)
 	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_BIN_FILES)
 	-cd $(DESTDIR)$(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
-	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_FILES)
-	-cd $(DESTDIR)$(pkgdatadir)/examples && rm -f $(VL_INST_DATA_FILES)
+	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_BLDDIR_FILES)
+	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_SRCDIR_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/examples && rm -f $(VL_INST_DATA_SRCDIR_FILES)
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
@@ -337,11 +347,8 @@ ftp: info
 install-msg:
 	@echo "Installed!"
 	@echo
-	@echo "Add to your startup file (for bash or csh, as appropriate):"
-	@echo "	export VERILATOR_ROOT="`pwd`
-	@echo "	setenv VERILATOR_ROOT "`pwd` " ; export VERILATOR_ROOT "
-	@echo
-	@echo "See 'verilator.txt' for documentation."
+	@echo "Fod documentation see 'man verilator' or 'verilator --help'"
+	@echo "For forums and to report bugs see http://www.veripool.org/verilator"
 	@echo
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
