@@ -990,8 +990,9 @@ private:
 			    lastloop = true;  // so exit early; next loop will correct it
 			}
 			else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
-			    && !pinp->castCvtPackString()
-			    && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
+				 && !pinp->castCvtPackString()
+				 && !pinp->castSFormatF()  // Already generates a string
+				 && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
 			    UINFO(4,"   Add CvtPackString: "<<pinp<<endl);
 			    AstNRelinker handle;
 			    pinp->unlinkFrBack(&handle);  // No next, that's the next pin
