@@ -151,6 +151,7 @@ class SliceVisitor : public AstNVisitor {
     AstNode*		m_assignp;	// Assignment we are under
     AstNodeVarRef*	m_lhsVarRefp;	// Var on the LHS
     bool		m_extend;	// We have found an extend node
+    bool		m_assignError;	// True if the current assign already has an error
 
     // METHODS
     static int debug() {
@@ -239,8 +240,18 @@ class SliceVisitor : public AstNVisitor {
 
     virtual void visit(AstExtend* nodep, AstNUser*) {
 	m_extend = true;
-	if (m_assignp && m_assignp->user2() > 1) {
+	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
 	    m_assignp->v3error("Unsupported: Assignment between packed arrays of different dimensions");
+	    m_assignError = true;
+	}
+	nodep->iterateChildren(*this);
+    }
+
+    virtual void visit(AstConst* nodep, AstNUser*) {
+	m_extend = true;
+	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
+	    m_assignp->v3error("Unsupported: Assignment between a constant and an array slice");
+	    m_assignError = true;
 	}
 	nodep->iterateChildren(*this);
     }
@@ -258,13 +269,15 @@ class SliceVisitor : public AstNVisitor {
 	int clones = countClones(nodep);
 	if (m_assignp->user2() > 0 && m_assignp->user2() != clones) {
 	    m_assignp->v3error("Slices of arrays in assignments must have the same unpacked dimensions");
-	} else if (m_assignp->user2() == 0) {
+	} else if (m_assignp->user2() == 0 && !m_assignError) {
 	    if (m_extend && clones > 1) {
 		m_assignp->v3error("Unsupported: Assignment between packed arrays of different dimensions");
+		m_assignError = true;
 	    }
 	    if (clones > 1 && !refp->lvalue() && refp->varp() == m_lhsVarRefp->varp() && !m_assignp->castAssignDly()) {
 	        // LHS Var != RHS Var for a non-delayed assignment
 		m_assignp->v3error("Unsupported: Slices in a non-delayed assignment with the same Var on both sides");
+		m_assignError = true;
 	    }
 	    m_assignp->user2(clones);
 	}
@@ -272,8 +285,9 @@ class SliceVisitor : public AstNVisitor {
 
     virtual void visit(AstSel* nodep, AstNUser*) {
 	m_extend = true;
-	if (m_assignp && m_assignp->user2() > 1) {
+	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
 	    m_assignp->v3error("Unsupported: Assignment between packed arrays of different dimensions");
+	    m_assignError = true;
 	}
 	nodep->iterateChildren(*this);
     }
@@ -314,6 +328,7 @@ class SliceVisitor : public AstNVisitor {
     void findImplicit(AstNodeAssign* nodep) {
 	if (m_assignp) nodep->v3fatalSrc("Found a NodeAssign under another NodeAssign");
 	m_assignp = nodep;
+	m_assignError = false;
 	m_extend = false;
 	nodep->user1(true);
 	// Record the LHS Var so we can check if the Var on the RHS is the same
