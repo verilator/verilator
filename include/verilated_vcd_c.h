@@ -99,6 +99,7 @@ private:
     void closePrev();
     void closeErr();
     void openNext();
+    void makeNameMap();
     void printIndent (int levelchange);
     void printStr (const char* str);
     void printQuad (vluint64_t n);
