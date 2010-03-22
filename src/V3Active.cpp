@@ -197,7 +197,6 @@ private:
     // STATE
     ActiveNamer	m_namer;	// Tracking of active names
     AstCFunc*   m_scopeFinalp;	// Final function for this scope
-    AstAlways*	m_alwaysp;	// Under always
     bool	m_itemCombo;	// Found a SenItem combo
     bool	m_itemSequent;	// Found a SenItem sequential
 
@@ -285,11 +284,9 @@ private:
 	}
 
 	// Read sensitivitues
-	m_alwaysp = nodep;
 	m_itemCombo = false;
 	m_itemSequent = false;
 	nodep->sensesp()->iterateAndNext(*this);
-	m_alwaysp = NULL;
 	bool combo = m_itemCombo;
 	bool sequent = m_itemSequent;
 
@@ -366,7 +363,6 @@ public:
     // CONSTUCTORS
     ActiveVisitor(AstNetlist* nodep) {
 	m_scopeFinalp = NULL;
-	m_alwaysp = NULL;
 	m_itemCombo = false;
 	m_itemSequent = false;
 	nodep->accept(*this);
