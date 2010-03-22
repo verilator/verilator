@@ -833,7 +833,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 		} else {
 		    needinc = true;
 		    //printf(" Value width=%d  @%x = %c\n", width, addr, c);
-		    if (addr >= (IData)(depth+array_lsb) || addr < (IData)(array_lsb)) {
+		    if (VL_UNLIKELY(addr >= (IData)(depth+array_lsb) || addr < (IData)(array_lsb))) {
 			vl_fatal (ofilenamez, linenum, "", "$readmem file address beyond bounds of array");
 		    } else {
 			int entry = addr - array_lsb;
@@ -861,7 +861,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 			    _VL_SHIFTL_INPLACE_W(width, datap, (IData)shift);
 			    datap[0] |= value;
 			}
-			if (value>=(1<<shift)) {
+			if (VL_UNLIKELY(value>=(1<<shift))) {
 			    vl_fatal (ofilenamez, linenum, "", "$readmemb (binary) file contains hex characters");
 			}
 		    }
@@ -878,7 +878,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 
     // Final checks
     fclose(fp);
-    if (end != VL_UL(0xffffffff) && addr != (end+1)) {
+    if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end+1))) {
 	vl_fatal (ofilenamez, linenum, "", "$readmem file ended before specified ending-address");
     }
 }
@@ -1049,10 +1049,10 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
 	// Alternative is to dynamically stretch the array, which is more code, and slower.
 	if (funcnum >= m_funcnumMax) { m_funcnumMax = funcnum+1; }
     } else {
-	if (funcnum >= m_funcnumMax) {
+	if (VL_UNLIKELY(funcnum >= m_funcnumMax)) {
 	    vl_fatal(__FILE__,__LINE__,"","Internal: Bad funcnum vs. pre-finalize maximum");
 	}
-	if (!m_callbacksp) { // First allocation
+	if (VL_UNLIKELY(!m_callbacksp)) { // First allocation
 	    m_callbacksp = new void* [m_funcnumMax];
 	    memset(m_callbacksp, 0, m_funcnumMax*sizeof(void*));
 	}
