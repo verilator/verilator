@@ -134,10 +134,9 @@ INST_PROJ_FILES = \
 	bin/verilator \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
-	include/verilated.[chv]* \
 	include/verilated.mk \
-	include/verilatedos.[chv]* \
-	include/verilated_*.[chv]* \
+	include/*.[chv]* \
+	include/vltstd/*.[chv]* \
 
 INST_PROJ_BIN_FILES = \
 	verilator_bin \
@@ -316,6 +315,7 @@ install-here: installman ftp
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 DIRPROJECT := $(shell project_dir --project)
+VERILATOR_CAD_DIR = $(CAD_DIR)/verilator/$(DISTNAMEREV)/$(DIRPROJECT_ARCH)
 INST_PROJ_CVS = cp_if_cvs_diff
 
 install-project: dist
@@ -340,6 +340,34 @@ endif
 	for p in $(INST_PROJ_BIN_FILES) ; do \
 	  $(INST_PROJ_CVS) $$p $(DIRPROJECT)/hw/utils/verilator/$$p-$(DIRPROJECT_ARCH); \
 	done
+
+install-cadtools: dist
+	@echo "Install-project to $(CAD_DIR)"
+	strip verilator_bin*
+	$(MAKE) install-cadtools-quick
+	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
+	for p in verilator.1 ; do \
+	  $(INSTALL_PROGRAM) -m 0666 $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
+	done
+	$(INST_PROJ_CVS) $(DISTNAME).tgz $(VERILATOR_CAD_DIR)/verilator.tgz
+	rm $(DISTNAME).tgz
+
+install-cadtools-quick:
+ifeq ($(CFG_WITH_DEFENV),yes)
+	@echo "%Error: Reconfigure with './configure --disable-defenv' to avoid hardcoded paths."
+	false
+endif
+	@echo "Install-cadtools-quick (no strip) to $(VERILATOR_CAD_DIR)"
+	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/include/vltstd
+	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/bin
+	for p in $(INST_PROJ_FILES) ; do \
+	  $(INST_PROJ_CVS) $$p $(VERILATOR_CAD_DIR)/$$p; \
+	done
+	for p in $(INST_PROJ_BIN_FILES) ; do \
+	  $(INST_PROJ_CVS) $$p $(VERILATOR_CAD_DIR)/$$p; \
+	done
+
+# VERILATOR_AUTHOR_SITE
 endif
 
 ftp: info
@@ -409,6 +437,7 @@ DISTCONFIG = ${srcdir}/src/config_build.h.in
 DISTTITLE := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
 DISTNAME := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
 DISTDATEPRE := $(shell sed -e '/DTVERSION/!d' -e 's/.*\([1-2][0-9][0-9][0-9].[0-9]*[0-9].[0-9]*[0-9]\).*/\1/' -e q $(DISTCONFIG))
+DISTNAMEREV := $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q src/config_rev.h)
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 DISTDATE := $(subst /,-,$(DISTDATEPRE))
