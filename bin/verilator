@@ -2600,8 +2600,8 @@ allows you to modify Verilator for internal use without distributing the
 modified version.  But please contribute back to the community!
 
 One limit is that you cannot under either license release a commercial
-simulation product incorporating Verilator without making the source code
-available.
+Verilog simulation product incorporating Verilator without making the
+source code available.
 
 =item Why is Verilation so slow?
 

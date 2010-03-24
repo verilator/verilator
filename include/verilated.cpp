@@ -38,7 +38,7 @@ int  Verilated::s_randReset = 0;
 VerilatedVoidCb Verilated::s_flushCb = NULL;
 
 // Keep below together in one cache line
-int  Verilated::s_debug = 1;
+int  Verilated::s_debug = 0;
 bool Verilated::s_calcUnusedSigs = false;
 bool Verilated::s_gotFinish = false;
 bool Verilated::s_assertOn = true;
