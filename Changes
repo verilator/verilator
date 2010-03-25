@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Improve error handling on slices of arrays, bug226. [by Bryon Bradley]
 
+**** Report errors when extra underscores used in meta-comments.
+
 **** Fix "make install" with configure outside srcdir.  [Stefan Wallentowitz]
 
 **** Fix trace files with empty modules crashing some viewers.
