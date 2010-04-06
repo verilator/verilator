@@ -371,6 +371,13 @@ void V3PreProcImp::comment(const string& text) {
 	    //}
 	    // else ignore the comment we don't recognize
 	} // else no assertions
+    } else if ((pos=cmd.find("public_flat_rw")) != string::npos) {
+	// "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
+	cmd = cmd.substr(pos+strlen("public_flat_rw"));
+	while (isspace(cmd[0])) cmd = cmd.substr(1);
+	if ((pos=cmd.find("*/")) != string::npos)
+	    cmd.replace(pos, 2, "");
+	insertUnreadback ("/*verilator public_flat_rw*/ "+cmd+" /**/");
     } else {
 	insertUnreadback ("/*verilator "+cmd+"*/");
     }

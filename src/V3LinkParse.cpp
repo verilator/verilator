@@ -274,12 +274,22 @@ private:
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
-	    m_varp->sigUserPublic(true); m_varp->sigModPublic(true);
+	    m_varp->sigUserRWPublic(true); m_varp->sigModPublic(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
-	    m_varp->sigUserPublic(true);
+	    m_varp->sigUserRWPublic(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->sigUserRdPublic(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->sigUserRWPublic(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
 	else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
@@ -291,6 +301,20 @@ private:
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
 	    m_varp->attrSFormat(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+    }
+
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	// AlwaysPublic was attached under a var, but it's a statement that should be
+	// at the same level as the var
+	nodep->iterateChildren(*this);
+	if (m_varp) {
+	    nodep->unlinkFrBack();
+	    m_varp->addNext(nodep);
+	    // lvalue is true, because we know we have a verilator public_flat_rw
+	    // but someday we may be more general
+	    bool lvalue = m_varp->isSigUserRWPublic();
+	    nodep->addStmtp(new AstVarRef(nodep->fileline(), m_varp, lvalue));
 	}
     }
 

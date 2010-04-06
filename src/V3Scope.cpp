@@ -165,6 +165,14 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	// Add to list of blocks under this scope
+	UINFO(4,"    Move "<<nodep<<endl);
+	AstNode* clonep = nodep->cloneTree(false);
+	nodep->user2p(clonep);
+	m_scopep->addActivep(clonep);
+	clonep->iterateChildren(*this);	// We iterate under the *clone*
+    }
     virtual void visit(AstCoverToggle* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
@@ -289,6 +297,9 @@ private:
 	movedDeleteOrIterate(nodep);
     }
     virtual void visit(AstAlways* nodep, AstNUser*) {
+	movedDeleteOrIterate(nodep);
+    }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
 	movedDeleteOrIterate(nodep);
     }
     virtual void visit(AstCoverToggle* nodep, AstNUser*) {

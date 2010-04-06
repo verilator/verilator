@@ -149,6 +149,8 @@ public:
 	if (decind) ofp()->blockDec();
 	if (!m_suppressSemi) puts(";\n");
     }
+    virtual void visit(AstAlwaysPublic*, AstNUser*) {
+    }
     virtual void visit(AstCCall* nodep, AstNUser*) {
 	puts(nodep->hiername());
 	puts(nodep->funcp()->name());

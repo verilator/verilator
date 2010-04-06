@@ -133,6 +133,9 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	nodep->v3fatalSrc("Node should have been under ACTIVE");
+    }
     virtual void visit(AstFinal* nodep, AstNUser*) {
 	nodep->v3fatalSrc("Node should have been deleted");
     }

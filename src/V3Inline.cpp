@@ -155,7 +155,7 @@ private:
 		// Public output inside the cell must go via an assign rather than alias
 		// Else the public logic will set the alias, loosing the value to be propagated up
 		// (InOnly isn't a problem as the AssignAlias will create the assignment for us)
-		pinNewVarp->user3(pinNewVarp->isSigUserPublic() && pinNewVarp->isOutOnly());
+		pinNewVarp->user3(pinNewVarp->isSigUserRWPublic() && pinNewVarp->isOutOnly());
 	    }
 	    // Cleanup var names, etc, to not conflict
 	    m_cellp = nodep;

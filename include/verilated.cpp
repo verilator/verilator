@@ -995,6 +995,10 @@ void Verilated::scopesDump() {
     VerilatedImp::scopesDump();
 }
 
+const VerilatedScope* Verilated::scopeFind(const char* namep) {
+    return VerilatedImp::scopeFind(namep);
+}
+
 int Verilated::exportFuncNum(const char* namep) {
     return VerilatedImp::exportFind(namep);
 }
@@ -1008,6 +1012,23 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     if (m_namep) free((void*)m_namep); m_namep=NULL;
+}
+
+//======================================================================
+// VerilatedVar:: Methods
+
+vluint32_t VerilatedVar::entSize() const {
+    vluint32_t size = 1;
+    switch (vltype()) {
+    case VLVT_PTR:	size=sizeof(void*); break;
+    case VLVT_UINT8:	size=sizeof(CData); break;
+    case VLVT_UINT16:	size=sizeof(SData); break;
+    case VLVT_UINT32:	size=sizeof(IData); break;
+    case VLVT_UINT64:	size=sizeof(QData); break;
+    case VLVT_WDATA:	size=VL_WORDS_I(range().bits())*sizeof(IData); break;
+    default:		size=0; break;
+    }
+    return size;
 }
 
 //======================================================================
@@ -1060,13 +1081,14 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
     }
 }
 
-void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype, int dims, ...) {
+void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
+			       VerilatedVarType vltype, int vlflags, int dims, ...) {
     // Grab dimensions
     // In the future we may just create a large table at emit time and statically construct from that.
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap();
-    VerilatedVar var (namep, datap, vltype);
+    VerilatedVar var (namep, datap, vltype, (VerilatedVarFlags)vlflags, dims);
 
     va_list ap;
     va_start(ap,dims);

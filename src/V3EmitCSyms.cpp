@@ -205,7 +205,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->isSigUserPublic()) {
+	if (nodep->isSigUserRdPublic()) {
 	    m_modVars.push_back(make_pair(m_modp, nodep));
 	}
     }
@@ -486,6 +486,10 @@ void EmitCSyms::emitSymImp() {
 	    puts(varp->name());
 	    puts("), ");
 	    puts(varp->vlEnumType());  // VLVT_UINT32 etc
+	    puts(",");
+	    puts(varp->vlEnumDir());  // VLVD_IN etc
+	    if (varp->isSigUserRWPublic()) puts("|VLVF_PUB_RW");
+	    else if (varp->isSigUserRdPublic()) puts("|VLVF_PUB_RD");
 	    puts(",");
 	    puts(cvtToStr(dim));
 	    puts(bounds);

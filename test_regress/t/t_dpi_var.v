@@ -44,11 +44,17 @@ module t (/*AUTOARG*/
       end
    end
 
+
+   always @(posedge t.monclk) begin
+      mon_eval();
+   end
+
 endmodule
 
 import "DPI-C" context function void mon_scope_name (input string formatted /*verilator sformat*/ );
 import "DPI-C" context function void mon_register_b(string name, int isOut);
 import "DPI-C" context function void mon_register_done();
+import "DPI-C" context function void mon_eval();
 
 module sub (/*AUTOARG*/
    // Outputs
@@ -60,16 +66,12 @@ module sub (/*AUTOARG*/
 `systemc_imp_header
   void mon_class_name(const char* namep);
   void mon_register_a(const char* namep, void* sigp, bool isOut);
-  bool mon_eval();
 `verilog
 
-   input int in   /*verilator public_flat*/;
-   output int fr_a /*verilator public_flat*/;
-   output int fr_b /*verilator public_flat*/;
+   input int in   /*verilator public_flat_rd*/;
+   output int fr_a /*verilator public_flat_rw @(posedge t.monclk)*/;
+   output int fr_b /*verilator public_flat_rw @(posedge t.monclk)*/;
    output int fr_chk;
-
-   reg [3:0]  onearray [1:2] /*verilator public_flat*/;
-   reg [3:0]  twoarray [1:2][3:4] /*verilator public_flat*/;
 
    always @* fr_chk = in + 1;
 
@@ -84,17 +86,6 @@ module sub (/*AUTOARG*/
       mon_register_b("in", 0);
       mon_register_b("fr_b", 1);
       mon_register_done();
-   end
-
-   always @(posedge t.monclk) begin
-      // Hack - Write all outputs, so the data will get scheduled to propagate out of this module
-      // FUTURE Long term, we should detect a public signal has been written
-      // with a new value, and create an event that flips monclk automatically
-      if ($c1("mon_eval()")) begin
-	 // This code doesn't execute, just is here so verilator schedules the code.
-	 fr_a = 0;
-	 fr_b = 0;
-      end
    end
 
 endmodule

@@ -632,6 +632,8 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator parallel_case*/"		{ FL; return yVL_PARALLEL_CASE; }
   "/*verilator public*/"		{ FL; return yVL_PUBLIC; }
   "/*verilator public_flat*/"		{ FL; return yVL_PUBLIC_FLAT; }
+  "/*verilator public_flat_rd*/"	{ FL; return yVL_PUBLIC_FLAT_RD; }
+  "/*verilator public_flat_rw*/"	{ FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"		{ FL; return yVL_PUBLIC_MODULE; }
   "/*verilator sc_clock*/"		{ FL; return yVL_CLOCK; }
   "/*verilator sformat*/"		{ FL; return yVL_SFORMAT; }
@@ -645,7 +647,8 @@ escid	\\[^ \t\f\r\n]+
   "/*verilator lint_restore*/"		{PARSEP->verilatorCmtLintRestore(); }
   "/*verilator lint_save*/"		{PARSEP->verilatorCmtLintSave(); }
 
-  "/*"[^*]*"*/"				{PARSEP->verilatorCmtBad(yytext); }
+  "/**/"				{ }
+  "/*"[^*]+"*/"				{PARSEP->verilatorCmtBad(yytext); }
 }
 
   /************************************************************************/

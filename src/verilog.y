@@ -434,6 +434,8 @@ class AstSenTree;
 %token<fl>		yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fl>		yVL_PUBLIC		"/*verilator public*/"
 %token<fl>		yVL_PUBLIC_FLAT		"/*verilator public_flat*/"
+%token<fl>		yVL_PUBLIC_FLAT_RD	"/*verilator public_flat_rd*/"
+%token<fl>		yVL_PUBLIC_FLAT_RW	"/*verilator public_flat_rw*/"
 %token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
 
 %token<fl>		yP_TICK		"'"
@@ -1541,6 +1543,10 @@ sigAttr<nodep>:
 	|	yVL_CLOCK_ENABLE			{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK_ENABLE); }
 	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC); }
 	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT); }
+	|	yVL_PUBLIC_FLAT_RD			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RD); }
+	|	yVL_PUBLIC_FLAT_RW			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); }
+	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW);
+							  $$ = $$->addNext(new AstAlwaysPublic($1,$2,NULL)); }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
 	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
 	;
@@ -1678,6 +1684,12 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment
 
 //************************************************
 // EventControl lists
+
+attr_event_control<sentreep>:	// ==IEEE: event_control
+		'@' '(' event_expression ')'		{ $$ = new AstSenTree($1,$3); }
+	|	'@' '(' '*' ')'				{ $$ = NULL; }
+	|	'@' '*'					{ $$ = NULL; }
+	;
 
 event_controlE<sentreep>:
 		/* empty */				{ $$ = NULL; }

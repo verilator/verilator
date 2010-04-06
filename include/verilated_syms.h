@@ -57,6 +57,7 @@ public:
     ~VerilatedRange() {}
     int lhs() const { return m_lhs; }
     int rhs() const { return m_rhs; }
+    int bits() const { return (VL_LIKELY(m_lhs>=m_rhs)?(m_lhs-m_rhs+1):(m_rhs-m_lhs+1)); }
 };
 
 //===========================================================================
@@ -65,20 +66,27 @@ public:
 class VerilatedVar {
     void*		m_datap;	// Location of data
     VerilatedVarType	m_vltype;	// Data type
+    VerilatedVarFlags	m_vlflags;	// Direction
     VerilatedRange	m_range;	// First range
     VerilatedRange	m_array;	// Array
+    int			m_dims;		// Dimensions
     const char*		m_namep;	// Name - slowpath
 protected:
     friend class VerilatedScope;
-    VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype)
-	: m_datap(datap), m_vltype(vltype), m_namep(namep) {}
+    VerilatedVar(const char* namep, void* datap,
+		 VerilatedVarType vltype, VerilatedVarFlags vlflags, int dims)
+	: m_datap(datap), m_vltype(vltype), m_vlflags(vlflags), m_dims(dims), m_namep(namep) {}
 public:
     ~VerilatedVar() {}
     void* datap() const { return m_datap; }
     VerilatedVarType vltype() const { return m_vltype; }
+    VerilatedVarFlags vldir() const { return (VerilatedVarFlags)((int)m_vlflags & VLVF_MASK_DIR); }
+    vluint32_t entSize() const;
+    bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     const VerilatedRange& range() const { return m_range; }
     const VerilatedRange& array() const { return m_array; }
-    const char* namep() const { return m_namep; }
+    const char* name() const { return m_namep; }
+    int dims() const { return m_dims; }
 };
 
 //======================================================================

@@ -642,6 +642,9 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	iterateNewStmt(nodep);
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	// CDC doesn't care about public variables
+    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	iterateNewStmt(nodep);
     }

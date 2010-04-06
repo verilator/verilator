@@ -100,11 +100,11 @@ void mon_register_done() {
     }
 }
 
-bool mon_eval() {
+extern "C" void mon_eval();
+void mon_eval() {
     // Callback from always@ negedge
     mon_do(&mons[0]);
     mon_do(&mons[1]);
-    return false;
 }
 
 //======================================================================

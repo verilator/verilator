@@ -162,6 +162,18 @@ string AstVar::vlEnumType() const {
     return arg;
 }
 
+string AstVar::vlEnumDir() const {
+    if (isInout()) {
+	return "VLVD_INOUT";
+    } else if (isInOnly()) {
+	return "VLVD_IN";
+    } else if (isOutOnly()) {
+	return "VLVD_OUT";
+    } else {
+	return "VLVD_NODIR";
+    }
+}
+
 string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;

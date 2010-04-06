@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support runtime access to public signal names.
 
+***  Add /*verilator public_flat_rw*/ for timing-specific access.
+
 **** Improve error handling on slices of arrays, bug226. [by Bryon Bradley]
 
 **** Report errors when extra underscores used in meta-comments.

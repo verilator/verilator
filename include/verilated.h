@@ -82,6 +82,17 @@ enum VerilatedVarType {
     VLVT_STRING		// C++ string
 };
 
+enum VerilatedVarFlags {
+    VLVD_IN=1,		// == vpiInput
+    VLVD_OUT=2,		// == vpiOutput
+    VLVD_INOUT=3,	// == vpiInOut
+    VLVD_NODIR=5,	// == vpiNoDirection
+    VLVF_MASK_DIR=7,	// Bit mask for above directions
+    // Flags
+    VLVF_PUB_RD=(1<<8),	// Public readable
+    VLVF_PUB_RW=(1<<9)	// Public writable
+};
+
 //=========================================================================
 /// Base class for all Verilated module classes
 
@@ -151,6 +162,9 @@ public:
 #ifndef VL_PRINTF
 # define VL_PRINTF printf	///< Print ala printf; may redefine if desired
 #endif
+#ifndef VL_VPRINTF
+# define VL_VPRINTF vprintf	///< Print ala vprintf; may redefine if desired
+#endif
 
 //===========================================================================
 /// Verilator symbol table base class
@@ -176,7 +190,8 @@ public:  // But internals only - called from VerilatedModule's
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp);
     void exportInsert(int finalize, const char* namep, void* cb);
-    void varInsert(int finalize, const char* namep, void* datap, VerilatedVarType vltype, int dims, ...);
+    void varInsert(int finalize, const char* namep, void* datap,
+		   VerilatedVarType vltype, int vlflags, int dims, ...);
     // ACCESSORS
     const char* name() const { return m_namep; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
@@ -264,6 +279,8 @@ public:
     // METHODS - INTERNAL USE ONLY
     // Internal: Create a new module name by concatenating two strings
     static const char* catName(const char* n1, const char* n2); // Returns new'ed data
+    // Internal: Find scope
+    static const VerilatedScope* scopeFind(const char* namep);
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() { return t_dpiScopep; }
     static void dpiScope(const VerilatedScope* scopep) { t_dpiScopep=scopep; }

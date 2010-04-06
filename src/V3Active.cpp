@@ -263,22 +263,14 @@ private:
     }
 
     // METHODS
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    void visitAlways(AstNode* nodep, AstSenTree* oldsensesp) {
 	// Move always to appropriate ACTIVE based on its sense list
-	UINFO(4,"    ALW   "<<nodep<<endl);
-	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
-
-	if (!nodep->bodysp()) {
-	    // Empty always.  Kill it.
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
-	    return;
-	}
-	if (nodep->sensesp()
-	    && nodep->sensesp()->sensesp()
-	    && nodep->sensesp()->sensesp()->castSenItem()
-	    && nodep->sensesp()->sensesp()->castSenItem()->isNever()) {
+	if (oldsensesp
+	    && oldsensesp->sensesp()
+	    && oldsensesp->sensesp()->castSenItem()
+	    && oldsensesp->sensesp()->castSenItem()->isNever()) {
 	    // Never executing.  Kill it.
-	    if (nodep->sensesp()->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
+	    if (oldsensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    return;
 	}
@@ -286,7 +278,7 @@ private:
 	// Read sensitivitues
 	m_itemCombo = false;
 	m_itemSequent = false;
-	nodep->sensesp()->iterateAndNext(*this);
+	oldsensesp->iterateAndNext(*this);
 	bool combo = m_itemCombo;
 	bool sequent = m_itemSequent;
 
@@ -308,15 +300,15 @@ private:
 	    // always (posedge RESET) { if (RESET).... }  we know RESET is true.
 	    // Summarize a long list of combo inputs as just "combo"
 #ifndef __COVERITY__ // Else dead code on next line.
-	    if (combo) nodep->sensesp()->addSensesp
+	    if (combo) oldsensesp->addSensesp
 			   (new AstSenItem(nodep->fileline(),AstSenItem::Combo()));
 #endif
-	    wantactivep = m_namer.getActive(nodep->fileline(), nodep->sensesp());
+	    wantactivep = m_namer.getActive(nodep->fileline(), oldsensesp);
 	}
 
 	// Delete sensitivity list
-	if (AstNode* oldsense = nodep->sensesp()) {
-	    oldsense->unlinkFrBackWithNext()->deleteTree(); oldsense=NULL;
+	if (oldsensesp) {
+	    oldsensesp->unlinkFrBackWithNext()->deleteTree(); oldsensesp=NULL;
 	}
 
 	// Move node to new active
@@ -327,6 +319,24 @@ private:
 	if (combo && !sequent) {
 	    ActiveDlyVisitor dlyvisitor (nodep);
 	}
+    }
+    virtual void visit(AstAlways* nodep, AstNUser*) {
+	// Move always to appropriate ACTIVE based on its sense list
+	UINFO(4,"    ALW   "<<nodep<<endl);
+	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
+
+	if (!nodep->bodysp()) {
+	    // Empty always.  Kill it.
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    return;
+	}
+	visitAlways(nodep, nodep->sensesp());
+    }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	// Move always to appropriate ACTIVE based on its sense list
+	UINFO(4,"    ALWPub   "<<nodep<<endl);
+	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
+	visitAlways(nodep, nodep->sensesp());
     }
     virtual void visit(AstSenGate* nodep, AstNUser*) {
 	AstSenItem* subitemp = nodep->sensesp();

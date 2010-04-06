@@ -1770,6 +1770,18 @@ signal.  This will not declare this module public, which means the name of
 the signal or path to it may change based upon the module inlining which
 takes place.
 
+=item /*verilator public_flat_rd*/ (variable)
+
+Used after a input, output, register, or wire declaration to indicate the
+signal should be declared public_flat (see above), but read-only.
+
+=item /*verilator public_flat_rw @(<edge_list>) */ (variable)
+
+Used after a input, output, register, or wire declaration to indicate the
+signal should be declared public_flat_rd (see above), and also writable,
+where writes should be considered to have the timing specified by the given
+sensitivity edge list.
+
 =item /*verilator public_module*/
 
 Used after a module statement to indicate the module should not be inlined

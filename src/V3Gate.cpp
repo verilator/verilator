@@ -357,6 +357,12 @@ private:
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	iterateNewStmt(nodep, (nodep->isJustOneBodyStmt()?NULL:"Multiple Stmts"), NULL);
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	bool lastslow = m_inSlow;
+	m_inSlow = true;
+	iterateNewStmt(nodep, "AlwaysPublic", NULL);
+	m_inSlow = lastslow;
+    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	iterateNewStmt(nodep, "User C Function", "User C Function");
     }

@@ -666,6 +666,9 @@ private:
 	iterateNewStmt(nodep);
 	m_inPost = false;
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	iterateNewStmt(nodep);
+    }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
 	iterateNewStmt(nodep);
     }

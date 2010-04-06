@@ -544,7 +544,8 @@ private:
     bool	m_scSensitive:1;// SystemC sensitive() needed
     bool	m_sigPublic:1;	// User C code accesses this signal or is top signal
     bool	m_sigModPublic:1;// User C code accesses this signal and module
-    bool	m_sigUserPublic:1; // User C code accesses this signal
+    bool	m_sigUserRdPublic:1; // User C code accesses this signal, read only
+    bool	m_sigUserRWPublic:1; // User C code accesses this signal, read-write
     bool	m_usedClock:1;	// Signal used as a clock
     bool	m_usedParam:1;	// Parameter is referenced (on link; later signals not setup)
     bool	m_funcLocal:1;	// Local variable for a function
@@ -562,7 +563,7 @@ private:
 	m_primaryIO=false;
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false;
-	m_sigPublic=false; m_sigModPublic=false; m_sigUserPublic=false;
+	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false;
@@ -608,7 +609,8 @@ public:
     string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
     string	vlArgType(bool named, bool forReturn) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
-    string	vlEnumType() const;  // Return VerilatorImp enum name for argument: VLVT_UINT32, etc
+    string	vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
+    string	vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     void	combineType(AstVarType type);
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
@@ -630,7 +632,8 @@ public:
     void	usedParam(bool flag) { m_usedParam = flag; }
     void	sigPublic(bool flag) { m_sigPublic = flag; }
     void	sigModPublic(bool flag) { m_sigModPublic = flag; }
-    void	sigUserPublic(bool flag) { m_sigUserPublic = flag; if (flag) m_sigPublic = flag; }
+    void	sigUserRdPublic(bool flag) { m_sigUserRdPublic = flag; if (flag) sigPublic(true); }
+    void	sigUserRWPublic(bool flag) { m_sigUserRWPublic = flag; if (flag) sigUserRdPublic(true); }
     void	sc(bool flag) { m_sc = flag; }
     void	scSensitive(bool flag) { m_scSensitive = flag; }
     void	primaryIO(bool flag) { m_primaryIO = flag; }
@@ -673,7 +676,8 @@ public:
     bool	isScSensitive() const { return m_scSensitive; }
     bool	isSigPublic()  const;
     bool	isSigModPublic() const { return m_sigModPublic; }
-    bool	isSigUserPublic() const { return m_sigUserPublic; }
+    bool	isSigUserRdPublic() const { return m_sigUserRdPublic; }
+    bool	isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool	isTrace() const { return m_trace; }
     bool	isConst() const { return m_isConst; }
     bool	isStatic() const { return m_isStatic; }
@@ -703,7 +707,8 @@ public:
 	combineType(typevarp->varType());
 	if (typevarp->isSigPublic()) sigPublic(true);
 	if (typevarp->isSigModPublic()) sigModPublic(true);
-	if (typevarp->isSigUserPublic()) sigUserPublic(true);
+	if (typevarp->isSigUserRdPublic()) sigUserRdPublic(true);
+	if (typevarp->isSigUserRWPublic()) sigUserRWPublic(true);
 	if (typevarp->attrScClocked()) attrScClocked(true);
     }
     void	inlineAttrReset(const string& name) {
@@ -1262,6 +1267,24 @@ struct AstAlways : public AstNode {
 	addNOp1p(sensesp); addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Always, ALWAYS)
+    //
+    AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
+    AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
+    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    // Special accessors
+    bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
+};
+
+struct AstAlwaysPublic : public AstNodeStmt {
+    // "Fake" sensitivity created by /*verilator public_flat_rw @(edgelist)*/
+    // Body statements are just AstVarRefs to the public signals
+    AstAlwaysPublic(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+	: AstNodeStmt(fl) {
+	addNOp1p(sensesp); addNOp2p(bodysp);
+    }
+    ASTNODE_NODE_FUNCS(AlwaysPublic, ALWAYSPUBLIC)
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
     //
     AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate

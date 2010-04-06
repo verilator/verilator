@@ -109,6 +109,14 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->bodysp()->iterateAndNext(*this);
 	putqs(nodep,"end\n");
     }
+    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+	putfs(nodep,"/*verilator public_flat_rw ");
+	if (m_sensesp) m_sensesp->iterateAndNext(*this);  // In active
+	else nodep->sensesp()->iterateAndNext(*this);
+	putqs(nodep," ");
+	nodep->bodysp()->iterateAndNext(*this);
+	putqs(nodep,"*/\n");
+    }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	nodep->lhsp()->iterateAndNext(*this);
 	putfs(nodep," "+nodep->verilogKwd()+" ");
