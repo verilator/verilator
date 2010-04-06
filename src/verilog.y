@@ -1671,13 +1671,18 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment
 	|	'.' idSVKwd				{ $$ = NULL; PINNUMINC(); }
 	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = NULL; PINNUMINC(); }
+	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
+	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
+	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
 	//			// For parameters
 	//UNSUP	'.' idAny '(' data_type ')'		{ PINDONE($1,$2,$4);  GRAMMARP->pinNumInc(); }
 	//			// For parameters
 	//UNSUP	data_type				{ PINDONE($1->fileline(),"",$1);  GRAMMARP->pinNumInc(); }
 	//
 	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
+	//UNSUP	expr ':' expr				{ }
+	//UNSUP	expr ':' expr ':' expr			{ }
 	//			// Floatnum should only occur with UDPs, but since ports aren't floats, it's legal to round always
 	|	yaFLOATNUM				{ $$ = new AstPin($<fl>1,PINNUMINC(),"",new AstConst($<fl>1,AstConst::Unsized32(),(int)(($1<0)?($1-0.5):($1+0.5)))); }
 	;
@@ -2903,14 +2908,11 @@ concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
 
 property_spec<nodep>:			// IEEE: property_spec
 	//UNSUP: This rule has been super-specialized to what is supported now
-		'@' '(' senitemEdge ')' property_specDisable expr	{ $$ = new AstPslClocked($1,$3,$5,$6); }
+		'@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' expr
+			{ $$ = new AstPslClocked($1,$3,$8,$10); }
 	|	'@' '(' senitemEdge ')' expr		{ $$ = new AstPslClocked($1,$3,NULL,$5); }
-	|	property_specDisable expr	 	{ $$ = new AstPslClocked($2->fileline(),NULL,$1,$2); }
+	|	yDISABLE yIFF '(' expr ')' expr	 	{ $$ = new AstPslClocked($4->fileline(),NULL,$4,$6); }
 	|	expr	 				{ $$ = new AstPslClocked($1->fileline(),NULL,NULL,$1); }
-	;
-
-property_specDisable<nodep>:		// IEEE: part of property_spec
-		yDISABLE yIFF '(' expr ')'		{ $$ = $4; }
 	;
 
 immediate_assert_statement<nodep>:	// ==IEEE: immediate_assert_statement
