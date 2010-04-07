@@ -260,7 +260,7 @@ public:
     static const char* tokenName(int tok);
 
     void ppPushText(const string& text) { m_ppBuffers.push_back(text); }
-    int ppInputToLex(char* buf, int max_size);
+    size_t ppInputToLex(char* buf, size_t max_size);
 
     static V3ParseImp* parsep() { return s_parsep; }
 
@@ -278,7 +278,7 @@ public:
 	m_stringps.push_back(strp);
 	return strp;
     }
-    string* newString(const char* text, int length) {
+    string* newString(const char* text, size_t length) {
 	string* strp = new string (text, length);
 	m_stringps.push_back(strp);
 	return strp;
@@ -307,7 +307,7 @@ public:
     void statePushVlg();	// Parser -> lexer communication
     void statePop();	// Parser -> lexer communication
     int stateVerilogRecent();	// Parser -> lexer communication
-    int flexPpInputToLex(char* buf, int max_size) { return ppInputToLex(buf,max_size); }
+    size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
 
     //==== Symbol tables
     V3ParseSym* symp() { return &m_sym; }

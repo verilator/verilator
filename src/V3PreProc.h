@@ -29,6 +29,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include <iostream>
 
 class V3InFilter;

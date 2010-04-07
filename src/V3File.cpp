@@ -44,6 +44,8 @@
 #include "V3PreShell.h"
 #include "V3Ast.h"
 
+// If change this code, run a test with the below size set very small
+//#define INFILTER_IPC_BUFSIZ 16
 #define INFILTER_IPC_BUFSIZ 64*1024  // For debug, try this as a small number
 #define INFILTER_CACHE_MAX  64*1024  // Maximum bytes to cache if same file read twice
 
@@ -271,6 +273,7 @@ void V3File::createMakeDir() {
 
 class V3InFilterImp {
     typedef map<string,string> FileContentsMap;
+    typedef V3InFilter::StrList StrList;
 
     FileContentsMap	m_contentsMap;	// Cache of file contents
     bool		m_readEof;	// Received EOF on read
@@ -292,27 +295,27 @@ private:
 	return level;
     }
 
-    bool readContents(const string& filename, string& out) {
-	if (m_pid) return readContentsFilter(filename,out);
-	else return readContentsFile(filename,out);
+    bool readContents(const string& filename, StrList& outl) {
+	if (m_pid) return readContentsFilter(filename,outl);
+	else return readContentsFile(filename,outl);
     }
-    bool readContentsFile(const string& filename, string& out) {
+    bool readContentsFile(const string& filename, StrList& outl) {
 	int fd = open (filename.c_str(), O_RDONLY);
 	if (!fd) return false;
 	m_readEof = false;
-	out = readBlocks(fd, -1);
+	readBlocks(fd, -1, outl);
 	close(fd);
 	return true;
     }
-    bool readContentsFilter(const string& filename, string& out) {
-	if (filename!="" || out!="") {}  // Prevent unused
+    bool readContentsFilter(const string& filename, StrList& outl) {
+	if (filename!="" || outl.empty()) {}  // Prevent unused
 #ifdef INFILTER_PIPE
 	writeFilter("read \""+filename+"\"\n");
 	string line = readFilterLine();
 	if (line.find("Content-Length") != string::npos) {
 	    int len = 0;
 	    sscanf(line.c_str(), "Content-Length: %d\n", &len);
-	    out = readBlocks(m_readFd, len);
+	    readBlocks(m_readFd, len, outl);
 	    return true;
 	} else {
 	    if (line!="") v3error("--pipe-filter protocol error, unexpected: "<<line);
@@ -334,15 +337,19 @@ private:
 #endif
     }
 
-    string readBlocks(int fd, int size=-1) {
+    string readBlocks(int fd, int size, StrList& outl) {
 	string out;
 	char buf[INFILTER_IPC_BUFSIZ];
-	while (!m_readEof && (size<0 || size>(int)out.length())) {
-	    int todo = INFILTER_IPC_BUFSIZ;
+	ssize_t sizegot = 0;
+	while (!m_readEof && (size<0 || size>sizegot)) {
+	    ssize_t todo = INFILTER_IPC_BUFSIZ;
 	    if (size>0 && size<INFILTER_IPC_BUFSIZ) todo = size;
-	    int got = read (fd, buf, todo);
+	    ssize_t got = read (fd, buf, todo);
 	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
-	    if (got>0) out.append(buf, got);
+	    if (got>0) {
+		outl.push_back(string(buf, got));
+		sizegot += got;
+	    }
 	    else if (errno == EINTR || errno == EAGAIN
 #ifdef EWOULDBLOCK
 		     || errno == EWOULDBLOCK
@@ -358,9 +365,11 @@ private:
 	UINFO(9,"readFilterLine\n");
 	string line;
 	while (!m_readEof) {
-	    string c = readBlocks(m_readFd, 1);
-	    line += c;
-	    if (c == "\n") {
+	    StrList outl;
+	    readBlocks(m_readFd, 1, outl);
+	    string onechar = listString(outl);
+	    line += onechar;
+	    if (onechar == "\n") {
 		if (line == "\n") { line=""; continue; }
 		else break;
 	    }
@@ -477,20 +486,34 @@ private:
 protected:
     friend class V3InFilter;
     // Read file contents and return it
-    bool readWholefile(const string& filename, string& out) {
+    bool readWholefile(const string& filename, StrList& outl) {
 	FileContentsMap::iterator it = m_contentsMap.find(filename);
 	if (it != m_contentsMap.end()) {
-	    out = it->second;
+	    outl.push_back(it->second);
 	    return true;
 	}
-	if (!readContents(filename, out)) return false;
-	if (out.length() < INFILTER_CACHE_MAX) {
+	if (!readContents(filename, outl)) return false;
+	if (listSize(outl) < INFILTER_CACHE_MAX) {
 	    // Cache small files (only to save space)
 	    // It's quite common to `include "timescale" thousands of times
 	    // This isn't so important if it's just a open(), but filtering can be slow
-	    m_contentsMap.insert(make_pair(filename,out));
+	    m_contentsMap.insert(make_pair(filename,listString(outl)));
 	}
 	return true;
+    }
+    size_t listSize(StrList& sl) {
+	size_t out = 0;
+	for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
+	    out += it->length();
+	}
+	return out;
+    }
+    string listString(StrList& sl) {
+	string out;
+	for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
+	    out += *it;
+	}
+	return out;
     }
     // CONSTRUCTORS
     V3InFilterImp(const string& command) {
@@ -512,9 +535,9 @@ protected:
 V3InFilter::V3InFilter(const string& command) { m_impp = new V3InFilterImp(command); }
 V3InFilter::~V3InFilter() { if (m_impp) delete m_impp; m_impp=NULL; }
 
-bool V3InFilter::readWholefile(const string& filename, string& out) {
+bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl) {
     if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
-    return m_impp->readWholefile(filename, out);
+    return m_impp->readWholefile(filename, outl);
 }
 
 //######################################################################

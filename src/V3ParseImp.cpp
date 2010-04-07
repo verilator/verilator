@@ -66,12 +66,12 @@ V3ParseImp::~V3ParseImp() {
     if (debug()>=9) { UINFO(0,"~V3ParseImp\n"); symp()->dump(cout, "-vpi: "); }
 }
 
-int V3ParseImp::ppInputToLex(char* buf, int max_size) {
-    int got = 0;
+size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
+    size_t got = 0;
     while (got < max_size	// Haven't got enough
 	   && !m_ppBuffers.empty()) {	// And something buffered
 	string front = m_ppBuffers.front(); m_ppBuffers.pop_front();
-	int len = front.length();
+	size_t len = front.length();
 	if (len > (max_size-got)) {  // Front string too big
 	    string remainder = front.substr(max_size-got);
 	    front = front.substr(0, max_size-got);

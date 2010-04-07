@@ -23,12 +23,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cstdarg>
 #include <unistd.h>
 #include <fstream>
 #include <stack>
 #include <vector>
 #include <map>
+#include <list>
 
 #include "V3Error.h"
 #include "V3Global.h"
@@ -108,6 +110,7 @@ public:
 struct V3PreProcImp : public V3PreProc {
     // TYPES
     typedef std::map<string,V3Define> DefinesMap;
+    typedef V3InFilter::StrList StrList;
 
     // debug() -> see V3PreShellImp::debug
 
@@ -165,7 +168,7 @@ private:
 
     bool commentTokenMatch(string& cmdr, const char* strg);
     string trimWhitespace(const string& strg, bool trailing);
-    void unputString(const string& strg, bool first=false);
+    void unputString(const string& strg);
 
     void parsingOn() {
 	m_off--;
@@ -414,18 +417,19 @@ const char* V3PreProcImp::tokenName(int tok) {
     }
 }
 
-void V3PreProcImp::unputString(const string& strg, bool first) {
+void V3PreProcImp::unputString(const string& strg) {
+    // Note: The preliminary call in ::openFile bypasses this function
     // We used to just m_lexp->unputString(strg.c_str());
     // However this can lead to "flex scanner push-back overflow"
     // so instead we scan from a temporary buffer, then on EOF return.
     // This is also faster than the old scheme, amazingly.
-    if (!first) {  // Else the initial creation
+    if (1) {
 	if (m_lexp->m_bufferStack.empty() || m_lexp->m_bufferStack.top()!=m_lexp->currentBuffer()) {
 	    fileline()->v3fatalSrc("bufferStack missing current buffer; will return incorrectly");
 	    // Hard to debug lost text as won't know till much later
 	}
     }
-    m_lexp->scanBytes(strg);
+    m_lexp->scanBytes(strg.c_str(), strg.length());
 }
 
 string V3PreProcImp::trimWhitespace(const string& strg, bool trailing) {
@@ -600,21 +604,13 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
 
     V3File::addSrcDepend(filename);
 
-    string wholefile;
+    // Read a list<string> with the whole file.
+    StrList wholefile;
     bool ok = filterp->readWholefile(filename, wholefile/*ref*/);
     if (!ok) {
 	fileline()->v3error("File not found: "+filename+"\n");
 	return;
     }
-
-    // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
-    // This will also strip them from strings, but strings aren't supposed to be multi-line without a "\"
-    string wholefilecr;
-    size_t wholesize = wholefile.length();
-    for (size_t i=0; i<wholesize; i++) {  // Not a c_str(), as we keep '\0's for now.
-	if (wholefile[i] != '\r' && wholefile[i] != '\0') wholefilecr += wholefile[i];
-    }
-    wholefile.resize(0); // free memory
 
     if (m_lexp) {
 	// We allow the same include file twice, because occasionally it pops
@@ -636,7 +632,30 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
     addLineComment(1); // Enter
 
     yy_flex_debug = (debug()>4)?1:0;
-    unputString(wholefilecr,true);
+
+    // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
+    // This will also strip them from strings, but strings aren't supposed to be multi-line without a "\"
+    for (StrList::iterator it=wholefile.begin(); it!=wholefile.end(); ++it) {
+	// We don't test for \0 as we allow and strip mid-string '\0's (for now).
+	// We also edit in place.  This is nasty to other users of the string, but
+	// there aren't any, and it avoids needing 2x the memory on very large files.
+	const char* sp = it->data();
+	const char* ep = sp + it->length();
+	char* cp = (char*) sp;
+	for (; sp<ep; sp++) {
+	    if (*sp != '\r' && *sp != '\0') {
+		*cp++ = *sp;
+	    }
+	}
+	size_t len = cp - it->data();
+	// Truncate old string
+	it->erase(len);
+
+	// Push the data to an internal buffer.
+	m_lexp->scanBytesBack(*it);
+	// Reclaim memory; the push saved the string contents for us
+	*it = "";
+    }
 }
 
 void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
@@ -771,7 +790,7 @@ int V3PreProcImp::getToken() {
 	    // We're off or processed the comment specially.  If there are newlines
 	    // in it, we also return the newlines as TEXT so that the linenumber
 	    // count is maintained for downstream tools
-	    for (int len=0; len<yyourleng(); len++) { if (yyourtext()[len]=='\n') m_lineAdd++; }
+	    for (size_t len=0; len<yyourleng(); len++) { if (yyourtext()[len]=='\n') m_lineAdd++; }
 	    goto next_tok;
 	}
 	if (tok==VP_LINE) {

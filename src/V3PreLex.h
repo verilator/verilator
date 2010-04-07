@@ -27,6 +27,7 @@
 #ifndef _VPREPROCLEX_H_		// Guard
 #define _VPREPROCLEX_H_ 1
 
+#include <deque>
 #include <stack>
 
 #include "V3Error.h"
@@ -112,7 +113,7 @@ void yy_delete_buffer( YY_BUFFER_STATE b );
 #define KEEPCMT_SUB 2
 
 //======================================================================
-// Class entry for each per-lexter state
+// Class entry for each per-lexer state
 
 class V3PreLex {
   public:	// Used only by V3PreLex.cpp and V3PreProc.cpp
@@ -120,6 +121,7 @@ class V3PreLex {
 
     // Parse state
     stack<YY_BUFFER_STATE> m_bufferStack; // Stack of inserted text above current point
+    deque<string>	m_buffers;	///< Buffer of characters to process
 
     // State to lexer
     static V3PreLex* s_currentLexp;	// Current lexing point
@@ -143,13 +145,15 @@ class V3PreLex {
 	m_defCmtSlash = false;
 	m_pslParenLevel = 0;
 	m_pslMoreNeeded = false;
+	initFirstBuffer();
     }
     ~V3PreLex() {
 	while (!m_bufferStack.empty()) { yy_delete_buffer(m_bufferStack.top()); m_bufferStack.pop(); }
     }
+    void initFirstBuffer();
 
     // Called by V3PreLex.l from lexer
-    void appendDefValue(const char* text, int len);
+    void appendDefValue(const char* text, size_t len);
     void lineDirective(const char* text);
     void incLineno() { m_curFilelinep->incLineno(); }
     // Called by V3PreProc.cpp to inform lexer
@@ -157,10 +161,13 @@ class V3PreLex {
     void pushStateDefForm();
     void pushStateDefValue();
     void pushStateIncFilename();
-    void scanBytes(const string& strg);
+    void scanBytes(const char* strp, size_t len);
+    void scanBytesBack(const string& str);
+    size_t inputToLex(char* buf, size_t max_size);
     /// Called by VPreproc.cpp to get data from lexer
     YY_BUFFER_STATE currentBuffer();
     int	 currentStartState();
+    void dumpSummary();
     void dumpStack();
 };
 

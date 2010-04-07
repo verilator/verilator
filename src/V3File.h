@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <stack>
 #include <set>
+#include <list>
 #include <fstream>
 
 //============================================================================
@@ -79,9 +80,12 @@ class V3InFilterImp;
 class V3InFilter {
     V3InFilterImp* m_impp;
 public:
+    // TYPES
+    typedef list<string> StrList;
+
     // METHODS
     // Read file contents and return it.  Return true on success.   
-    bool readWholefile(const string& filename, string& out);
+    bool readWholefile(const string& filename, StrList& outl);
 
     // CONSTRUCTORS
     V3InFilter(const string& command);

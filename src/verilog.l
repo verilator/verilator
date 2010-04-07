@@ -144,6 +144,7 @@ crnl	[\r]*[\n]
 id	[a-zA-Z_][a-zA-Z0-9_$]*
 	/* escaped identifier */
 escid	\\[^ \t\f\r\n]+
+word	[a-zA-Z0-9_]+
 
 %%
 
@@ -832,12 +833,14 @@ escid	\\[^ \t\f\r\n]+
 <STRING>\" 		{ yy_pop_state();
 			  FL; yylval.strp = PARSEP->newString(yytext+1,yyleng-2);
 			  return yaSTRING; }
+<STRING>{word}		{ yymore(); }
 <STRING>.		{ yymore(); }
 
   /************************************************************************/
   /* Attributes */
 <ATTRMODE>{crnl}	{ yymore(); NEXTLINE(); }
 <ATTRMODE>"*)"		{ yy_pop_state(); }
+<ATTRMODE>{word}	{ yymore(); }
 <ATTRMODE>. 		{ yymore(); }
 <ATTRMODE><<EOF>>	{ yyerrorf("EOF in (*");
 			  yyleng = 0; yy_pop_state(); }
