@@ -1389,20 +1389,20 @@ Verilator configuration commands.
 
 =item coverage_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-Disable coverage for the specified filename (or all files if ommitted) and
-range of line numbers (or all lines if ommitted).  Often used to ignore an
+Disable coverage for the specified filename (or all files if omitted) and
+range of line numbers (or all lines if omitted).  Often used to ignore an
 entire module for coverage analysis purposes.
 
 =item lint_off -msg <message> [-file "<filename>" [-lines <line> [ - <line>]]]
 
 Disables the specified lint warning in the specified filename (or all files
-if ommitted) and range of line numbers (or all lines if ommitted).
+if omitted) and range of line numbers (or all lines if omitted).
 
 =item tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
 Disable waveform tracing for all future signals declared in the specified
-filename (or all files if ommitted) and range of line numbers (or all lines
-if ommitted).
+filename (or all files if omitted) and range of line numbers (or all lines
+if omitted).
 
 =back
 
@@ -1644,7 +1644,7 @@ Often used to ignore an entire module for coverage analysis purposes.
 
 =item /*verilator coverage_on*/
 
-Specifies that following lines of code should have coverage reenabled (if
+Specifies that following lines of code should have coverage re-enabled (if
 appropriate --coverage flags are passed) after being disabled earlier with
 /*verilator coverage_off*/.
 

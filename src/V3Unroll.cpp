@@ -349,7 +349,7 @@ private:
 				      nodep->incsp(), nodep->bodysp())) {
 		pushDeletep(nodep); nodep=NULL; // Did replacement
 	    } else {
-		nodep->v3error("For loop doesn't have genvar index, or is misformed");
+		nodep->v3error("For loop doesn't have genvar index, or is malformed");
 	    }
 	}
     }
