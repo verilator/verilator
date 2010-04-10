@@ -204,13 +204,17 @@ public:
 
 struct AstArrayDType : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
-    AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep)
-	: AstNodeDType(fl) {
+private:
+    bool m_packed;
+public:
+    AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep, bool isPacked=false)
+	: AstNodeDType(fl), m_packed(isPacked) {
 	setOp1p(dtypep);
 	setOp2p(rangep);
 	widthSignedFrom(dtypep);
     }
     ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
+    virtual void dump(ostream& str);
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -225,6 +229,7 @@ struct AstArrayDType : public AstNodeDType {
     int		lsb() const { return arrayp()->lsbConst(); }
     int		elementsConst() const { return arrayp()->elementsConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
+    bool	isPacked() const { return m_packed; }
 };
 
 struct AstBasicDType : public AstNodeDType {

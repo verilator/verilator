@@ -503,6 +503,10 @@ void AstNode::dump(ostream& os) {
     if (name()!="") os<<"  "<<AstNode::quoteName(name());
 }
 
+void AstArrayDType::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (isPacked()) str<<" [PACKED]";
+}
 void AstArraySel::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" [start:"<<start()<<"] [length:"<<length()<<"]";
