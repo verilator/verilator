@@ -54,6 +54,14 @@ class SliceCloneVisitor : public AstNVisitor {
     //  AstArraySel::user1p()	    -> AstVarRef. The VarRef that the final ArraySel points to
     //  AstNodeAssign::user2()	    -> int. The number of clones needed for this assign
 
+    // ENUMS
+    enum RedOp {		// The type of unary operation to be expanded
+	REDOP_UNKNOWN,		// Unknown/Unsupported
+	REDOP_OR,		// Or Reduction
+	REDOP_AND,		// And Reduction
+	REDOP_XOR,		// Xor Reduction
+	REDOP_XNOR};		// Xnor Reduction
+
     // STATE
     vector<vector<unsigned> >	m_selBits;	// Indexes of the ArraySel we are expanding
     int				m_vecIdx;	// Current vector index
@@ -78,7 +86,7 @@ class SliceCloneVisitor : public AstNVisitor {
 		AstVar* varp = m_refp->varp();
 		pair<uint32_t,uint32_t> arrDim = varp->dimensions();
 		uint32_t dimensions = arrDim.first + arrDim.second;
-		for (int i = 0; i < dimensions; ++i) {
+		for (uint32_t i = 0; i < dimensions; ++i) {
 		    m_selBits[m_vecIdx].push_back(0);
 		}
 	    }
@@ -113,6 +121,7 @@ class SliceCloneVisitor : public AstNVisitor {
     }
 
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+	if (nodep->user2() < 2) return; // Don't need clones
 	m_selBits.clear();
 	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
 	for (int i = 0; i < nodep->user2(); ++i) {
@@ -125,13 +134,60 @@ class SliceCloneVisitor : public AstNVisitor {
 	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
     }
 
+    virtual void visit(AstNodeUniop* nodep, AstNUser*) {
+	if (nodep->user2() < 2) return; // Don't need clones
+	m_selBits.clear();
+	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
+
+	// Figure out what type of operation this is so we don't have to cast on
+	// every clone.
+	RedOp redOpType = REDOP_UNKNOWN;
+	if (nodep->castRedOr()) redOpType = REDOP_OR;
+	else if (nodep->castRedAnd()) redOpType = REDOP_AND;
+	else if (nodep->castRedXor()) redOpType = REDOP_XOR;
+	else if (nodep->castRedXnor()) redOpType = REDOP_XNOR;
+
+	AstNode* lhsp = NULL;
+	AstNode* rhsp = NULL;
+	for (int i = 0; i < nodep->user2(); ++i) {
+	    // Clone the node and iterate over the clone
+	    m_vecIdx = -1;
+	    AstNodeUniop* clonep = nodep->cloneTree(false)->castNodeUniop();
+	    clonep->iterateChildren(*this);
+	    if (!lhsp) lhsp = clonep;
+	    else rhsp = clonep;
+	    if (lhsp && rhsp) {
+		switch (redOpType) {
+		case REDOP_OR:
+		    lhsp = new AstLogOr(nodep->fileline(), lhsp, rhsp);
+		    break;
+		case REDOP_AND:
+		    lhsp = new AstLogAnd(nodep->fileline(), lhsp, rhsp);
+		    break;
+		case REDOP_XOR:
+		    lhsp = new AstXor(nodep->fileline(), lhsp, rhsp);
+		    break;
+		case REDOP_XNOR:
+		    lhsp = new AstXnor(nodep->fileline(), lhsp, rhsp);
+		    break;
+		default: // REDOP_UNKNOWN
+		    nodep->v3fatalSrc("Unsupported: Unary operation on multiple packed dimensions");
+		    break;
+		}
+		rhsp = NULL;
+	    }
+	}
+	nodep->addNextHere(lhsp);
+	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
+    }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }
 public:
     // CONSTUCTORS
-    SliceCloneVisitor(AstNodeAssign* assignp) {
+    SliceCloneVisitor(AstNode* assignp) {
 	assignp->accept(*this);
     }
     virtual ~SliceCloneVisitor() {}
@@ -143,10 +199,14 @@ class SliceVisitor : public AstNVisitor {
     // NODE STATE
     // Cleared on netlist
     //  AstNodeAssign::user1()	    -> bool.  True if find is complete
-    //  AstNodeAssign::user2()	    -> int. The number of clones needed for this assign
+    //  AstUniop::user1()	    -> bool.  True if find is complete
     //  AstArraySel::user1p()	    -> AstVarRef. The VarRef that the final ArraySel points to
+    //  AstNode::user2()	    -> int. The number of clones needed for this node
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
+
+    // TYPEDEFS
+    typedef pair<uint32_t, uint32_t> ArrayDimensions;	// Array Dimensions (packed, unpacked)
 
     // STATE
     AstNode*		m_assignp;	// Assignment we are under
@@ -180,15 +240,13 @@ class SliceVisitor : public AstNVisitor {
 	return dim;
     }
 
-    AstNode* insertImplicit(AstVarRef* nodep, unsigned start, unsigned count) {
+    AstArraySel* insertImplicit(AstNode* nodep, unsigned start, unsigned count) {
 	// Insert any implicit slices as explicit slices (ArraySel nodes).
-	// Return a new pointer to replace fromp() in the ArraySel.
-	AstVarRef* fromp = nodep;
-	if (!fromp) nodep->v3fatalSrc("NULL VarRef passed to insertImplicit");
-	AstVar* varp = fromp->varp();
-	// Get the DType and insert a new ArraySel
-	AstArraySel* topp = NULL;
-	AstArraySel* bottomp = NULL;
+	// Return a new pointer to replace nodep() in the ArraySel.
+	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
+	if (!refp) nodep->v3fatalSrc("No VarRef in user1 of node "<<nodep);
+	AstVar* varp = refp->varp();
+	AstNode* topp = nodep;
 	for (unsigned i = start; i < start + count; ++i) {
 	    AstNodeDType* dtypep = varp->dtypeDimensionp(i-1);
 	    AstArrayDType* adtypep = dtypep->castArrayDType();
@@ -199,17 +257,13 @@ class SliceVisitor : public AstNVisitor {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
 	    }
-	    AstArraySel* newp = new AstArraySel(nodep->fileline(), fromp, new AstConst(nodep->fileline(),lsb));
+	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp, new AstConst(nodep->fileline(),lsb));
+	    newp->user1p(refp);
 	    newp->start(lsb);
 	    newp->length(msb - lsb + 1);
-	    if (!topp) topp = newp;
-	    fromp = newp->fromp()->unlinkFrBack()->castVarRef();
-
-	    if (bottomp) bottomp->fromp(newp);
-	    bottomp = newp;
+	    topp = newp->castNode();
 	}
-	bottomp->fromp(fromp);
-	return topp;
+	return topp->castArraySel();
     }
 
     int countClones(AstArraySel* nodep) {
@@ -233,7 +287,9 @@ class SliceVisitor : public AstNVisitor {
 	    pair<uint32_t,uint32_t> arrDim = nodep->varp()->dimensions();
 	    uint32_t dimensions = arrDim.first + arrDim.second;
 	    if (dimensions > 0) {
-		AstNode* newp = insertImplicit(nodep->cloneTree(false), 1, dimensions);
+		AstVarRef* clonep = nodep->cloneTree(false);
+		clonep->user1p(nodep);
+		AstNode* newp = insertImplicit(clonep, 1, dimensions);
 		nodep->replaceWith(newp); nodep = NULL;
 		newp->accept(*this);
 	    }
@@ -265,9 +321,8 @@ class SliceVisitor : public AstNVisitor {
 	pair<uint32_t,uint32_t> arrDim = refp->varp()->dimensions();
 	uint32_t implicit = (arrDim.first + arrDim.second) - dim;
 	if (implicit > 0) {
-	    AstNode* backp = refp->backp();
-	    AstNode* newp = insertImplicit(refp->cloneTree(false), dim+1, implicit);
-	    backp->castArraySel()->fromp()->replaceWith(newp);
+	    AstArraySel* newp = insertImplicit(nodep->cloneTree(false), dim+1, implicit);
+	    nodep->replaceWith(newp); nodep = newp;
 	}
 	int clones = countClones(nodep);
 	if (m_assignp->user2() > 0 && m_assignp->user2() != clones) {
@@ -278,7 +333,7 @@ class SliceVisitor : public AstNVisitor {
 		m_assignError = true;
 	    }
 	    if (clones > 1 && !refp->lvalue() && refp->varp() == m_lhsVarRefp->varp() && !m_assignp->castAssignDly()) {
-	        // LHS Var != RHS Var for a non-delayed assignment
+		// LHS Var != RHS Var for a non-delayed assignment
 		m_assignp->v3error("Unsupported: Slices in a non-delayed assignment with the same Var on both sides");
 		m_assignError = true;
 	    }
@@ -340,9 +395,7 @@ class SliceVisitor : public AstNVisitor {
 	// Iterate children looking for ArraySel nodes. From that we get the number of elements
 	// in the array so we know how many times we need to clone this assignment.
 	nodep->iterateChildren(*this);
-	if (nodep->user2() > 1) {
-	    SliceCloneVisitor scv(nodep);
-	}
+	if (nodep->user2() > 1) SliceCloneVisitor scv(nodep);
 	m_assignp = NULL;
     }
 
@@ -350,6 +403,60 @@ class SliceVisitor : public AstNVisitor {
 	if (!nodep->user1()) {
 	    // Hasn't been searched for implicit slices yet
 	    findImplicit(nodep);
+	}
+    }
+
+    void expandUniOp(AstNodeUniop* nodep) {
+	nodep->user1(true);
+	unsigned dim = 0;
+	if (AstArraySel* selp = nodep->lhsp()->castArraySel()) {
+	    // We have explicit dimensions, either packed or unpacked
+	    dim = explicitDimensions(selp);
+	}
+	if (dim == 0 && !nodep->lhsp()->castVarRef()) {
+	    // No ArraySel or VarRef, not something we can expand
+	    nodep->iterateChildren(*this);
+	} else {
+	    AstVarRef* refp = findVarRefRecurse(nodep->lhsp());
+	    ArrayDimensions varDim = refp->varp()->dimensions();
+	    if ((int)(dim - varDim.second) < 0) {
+		// Unpacked dimensions are referenced first, make sure we have them all
+		nodep->v3error("Unary operator used across unpacked dimensions");
+	    } else if ((int)(dim - (varDim.first + varDim.second)) < 0) {
+		// Implicit packed dimensions are allowed, make them explicit
+		uint32_t newDim = (varDim.first + varDim.second) - dim;
+		AstNode* clonep = nodep->lhsp()->cloneTree(false);
+		clonep->user1p(refp);
+		AstNode* newp = insertImplicit(clonep, dim+1, newDim);
+		nodep->lhsp()->replaceWith(newp); refp = NULL;
+		int clones = countClones(nodep->lhsp()->castArraySel());
+		nodep->user2(clones);
+		SliceCloneVisitor scv(nodep);
+	    }
+	}
+    }
+
+    virtual void visit(AstRedOr* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    expandUniOp(nodep);
+	}
+    }
+
+    virtual void visit(AstRedAnd* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    expandUniOp(nodep);
+	}
+    }
+
+    virtual void visit(AstRedXor* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    expandUniOp(nodep);
+	}
+    }
+
+    virtual void visit(AstRedXnor* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    expandUniOp(nodep);
 	}
     }
 
@@ -372,6 +479,6 @@ public:
 // Link class functions
 
 void V3Slice::sliceAll(AstNetlist* rootp) {
-    UINFO(4,__FUNCTION__<<": "<<endl);
+    UINFO(2,__FUNCTION__<<": "<<endl);
     SliceVisitor visitor(rootp);
 }

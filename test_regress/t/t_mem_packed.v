@@ -91,4 +91,78 @@ module t (/*AUTOARG*/
       end
    end
 
+   // Test for mixed implicit/explicit dimensions and all implicit packed
+   logic [3:0][7:0][1:0] vld [1:0][1:0];
+   logic [3:0][7:0][1:0] vld2;
+
+   // There are specific nodes for Or, Xor, Xnor and And
+   logic            vld_or;
+   logic            vld2_or;
+   assign vld_or = |vld[0][0];
+   assign vld2_or = |vld2;
+
+   logic            vld_xor;
+   logic            vld2_xor;
+   assign vld_xor = ^vld[0][0];
+   assign vld2_xor = ^vld2;
+
+   logic            vld_xnor;
+   logic            vld2_xnor;
+   assign vld_xnor = ~^vld[0][0];
+   assign vld2_xnor = ~^vld2;
+
+   logic            vld_and;
+   logic            vld2_and;
+   assign vld_and = &vld[0][0];
+   assign vld2_and = &vld2;
+
+   // Test an AstNodeUniop that shouldn't be expanded
+   logic [3:0][7:0][1:0] vld2_inv;
+   assign vld2_inv = ~vld2;
+
+   initial begin
+      for (int i=0; i<4; i=i+2) begin
+         for (int j=0; j<8; j=j+2) begin
+	    vld[0][0][i][j] = 2'b00;
+	    vld[0][0][i+1][j+1] = 2'b00;
+	    vld2[i][j] = 2'b00;
+	    vld2[i+1][j+1] = 2'b00;
+	 end
+      end
+   end
+
+   logic [3:0] expect_cyc; initial expect_cyc = 'd15;
+
+   always @(posedge clk) begin
+      expect_cyc <= expect_cyc + 1;
+      for (int i=0; i<4; i=i+1) begin
+         for (int j=0; j<8; j=j+1) begin
+	    vld[0][0][i][j] <= vld[0][0][i][j] + 1;
+	    vld2[i][j] <= vld2[i][j] + 1;
+	 end
+      end
+      if (cyc % 8 == 0) begin
+	 vld[0][0][0][0] <= vld[0][0][0][0] - 1;
+	 vld2[0][0] <= vld2[0][0] - 1;
+      end
+      if (expect_cyc < 8 && !vld_xor) $stop;
+      else if (expect_cyc > 7 && vld_xor) $stop;
+
+      if (expect_cyc < 8 && vld_xnor) $stop;
+      else if (expect_cyc > 7 && !vld_xnor) $stop;
+
+      if (expect_cyc == 15 && vld_or) $stop;
+      else if (expect_cyc == 11 && vld_or) $stop;
+      else if (expect_cyc != 15 && expect_cyc != 11 && !vld_or) $stop;
+
+      if (expect_cyc == 10 && !vld_and) $stop;
+      else if (expect_cyc == 14 && !vld_and) $stop;
+      else if (expect_cyc != 10 && expect_cyc != 14 && vld_and) $stop;
+
+      if (vld_xor != vld2_xor) $stop;
+      if (vld_xnor != vld2_xnor) $stop;
+      if (vld_or != vld2_or) $stop;
+      if (vld_and != vld2_and) $stop;
+   end
+
 endmodule

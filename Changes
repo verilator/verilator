@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Report errors when extra underscores used in meta-comments.
 
+**** Fix bit reductions on multi-packed dimensions, bug227. [by Bryon Bradley]
+
 **** Fix "make install" with configure outside srcdir.  [Stefan Wallentowitz]
 
 **** Fix trace files with empty modules crashing some viewers.
