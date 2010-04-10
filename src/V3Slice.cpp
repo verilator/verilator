@@ -76,7 +76,8 @@ class SliceCloneVisitor : public AstNVisitor {
 	    if (m_vecIdx == (int)m_selBits.size()) {
 		m_selBits.push_back(vector<unsigned>());
 		AstVar* varp = m_refp->varp();
-		int dimensions = varp->dimensions();
+		pair<uint32_t,uint32_t> arrDim = varp->dimensions();
+		uint32_t dimensions = arrDim.first + arrDim.second;
 		for (int i = 0; i < dimensions; ++i) {
 		    m_selBits[m_vecIdx].push_back(0);
 		}
@@ -229,7 +230,8 @@ class SliceVisitor : public AstNVisitor {
 	// The LHS/RHS of an Assign may be to a Var that is an array. In this
 	// case we need to create a slice accross the entire Var
 	if (m_assignp && !nodep->backp()->castArraySel()) {
-	    uint32_t dimensions = nodep->varp()->dimensions();
+	    pair<uint32_t,uint32_t> arrDim = nodep->varp()->dimensions();
+	    uint32_t dimensions = arrDim.first + arrDim.second;
 	    if (dimensions > 0) {
 		AstNode* newp = insertImplicit(nodep->cloneTree(false), 1, dimensions);
 		nodep->replaceWith(newp); nodep = NULL;
@@ -260,7 +262,8 @@ class SliceVisitor : public AstNVisitor {
 	if (!m_assignp) return;
 	unsigned dim = explicitDimensions(nodep);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
-	unsigned implicit = refp->varp()->dimensions() - dim;
+	pair<uint32_t,uint32_t> arrDim = refp->varp()->dimensions();
+	uint32_t implicit = (arrDim.first + arrDim.second) - dim;
 	if (implicit > 0) {
 	    AstNode* backp = refp->backp();
 	    AstNode* newp = insertImplicit(refp->cloneTree(false), dim+1, implicit);

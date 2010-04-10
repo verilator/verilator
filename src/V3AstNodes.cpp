@@ -295,13 +295,15 @@ uint32_t AstVar::arrayElements() const {
     return entries;
 }
 
-uint32_t AstVar::dimensions() const {
-    // How many array dimensions does this Var have?
-    uint32_t dim = 0;
+pair<uint32_t,uint32_t> AstVar::dimensions() const {
+    // How many array dimensions (packed,unpacked) does this Var have?
+    uint32_t packed = 0;
+    uint32_t unpacked = 0;
     for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
-	    dim += 1;
+	    if (adtypep->isPacked()) packed += 1;
+	    else unpacked += 1;
 	    dtypep = adtypep->dtypep();
 	}
 	else {
@@ -309,7 +311,7 @@ uint32_t AstVar::dimensions() const {
 	    break;
 	}
     }
-    return dim;
+    return make_pair(packed, unpacked);
 }
 
 // Special operators
