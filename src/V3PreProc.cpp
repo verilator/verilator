@@ -636,20 +636,25 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
     // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
     // This will also strip them from strings, but strings aren't supposed to be multi-line without a "\"
     for (StrList::iterator it=wholefile.begin(); it!=wholefile.end(); ++it) {
-	// We don't test for \0 as we allow and strip mid-string '\0's (for now).
-	// We also edit in place.  This is nasty to other users of the string, but
-	// there aren't any, and it avoids needing 2x the memory on very large files.
+	// We don't end-loop at \0 as we allow and strip mid-string '\0's (for now).
+	bool strip = false;
 	const char* sp = it->data();
 	const char* ep = sp + it->length();
-	char* cp = (char*) sp;
-	for (; sp<ep; sp++) {
-	    if (*sp != '\r' && *sp != '\0') {
-		*cp++ = *sp;
+	// Only process if needed, as saves extra string allocations
+	for (const char* cp=sp; cp<ep; cp++) {
+	    if (VL_UNLIKELY(*cp == '\r' || *cp == '\0')) {
+		strip = true; break;
 	    }
 	}
-	size_t len = cp - it->data();
-	// Truncate old string
-	it->erase(len);
+	if (strip) {
+	    string out;  out.reserve(it->length());
+	    for (const char* cp=sp; cp<ep; cp++) {
+		if (!(*cp == '\r' || *cp == '\0')) {
+		    out += *cp;
+		}
+	    }
+	    *it = out;
+	}
 
 	// Push the data to an internal buffer.
 	m_lexp->scanBytesBack(*it);
