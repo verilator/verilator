@@ -15,7 +15,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include <svdpi.h>
+#include "svdpi.h"
 
 //======================================================================
 

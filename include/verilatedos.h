@@ -146,6 +146,14 @@ typedef unsigned __int32	vluint32_t;	///< 32-bit unsigned type
 typedef signed   __int64	vlsint64_t;	///< 64-bit signed type
 typedef unsigned __int64	vluint64_t;	///< 64-bit unsigned type
 
+# ifndef _SSIZE_T_DEFINED
+#  ifdef  _WIN64
+typedef signed   __int64        ssize_t;        ///< signed size_t; returned from read()
+#  else
+typedef signed   __int32        ssize_t;        ///< signed size_t; returned from read()
+#  endif
+# endif
+
 #else // Linux or compliant Unix flavors, -m64
 
 # include <stdint.h>	// Linux and most flavors

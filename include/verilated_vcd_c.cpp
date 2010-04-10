@@ -260,10 +260,10 @@ void VerilatedVcd::bufferFlush () {
     if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
     while (1) {
-	size_t remaining = (m_writep - wp);
+	ssize_t remaining = (m_writep - wp);
 	if (remaining==0) break;
 	errno = 0;
-	int got = write (m_fd, wp, remaining);
+	ssize_t got = write (m_fd, wp, remaining);
 	if (got>0) {
 	    wp += got;
 	    m_wroteBytes += got;

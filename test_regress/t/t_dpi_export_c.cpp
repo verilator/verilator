@@ -14,8 +14,8 @@
 //*************************************************************************
 
 #include <cstdio>
-#include <svdpi.h>
 #include <cstring>
+#include "svdpi.h"
 
 #ifdef _WIN32
 # define T_PRI64 "I64"
