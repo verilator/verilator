@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix parsing single files > 2GB.  [Jeffrey Short]
 
+**** Fix installing data files as non-executable, bug168. [by Ahmed El-Mahmoudy]
+
 * Verilator 3.801 2010/03/17
 
 ***  Support "break", "continue", "return".

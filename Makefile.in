@@ -270,17 +270,17 @@ installbin:
 installman: $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(mandir)/man1/$$p; \
+	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
 installdata:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
+	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
 	cd $(srcdir) \
 	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
+	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_c
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sc
@@ -288,7 +288,7 @@ installdata:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_v
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/examples/$$p; \
+	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/examples/$$p; \
 	done
 
 # We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
@@ -323,7 +323,7 @@ install-project: dist
 	strip verilator_bin*
 	$(MAKE) install-project-quick
 	for p in verilator.1 ; do \
-	  $(INSTALL_PROGRAM) -m 0666 $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
+	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
 	rm $(DISTNAME).tgz
@@ -347,7 +347,7 @@ install-cadtools: dist
 	$(MAKE) install-cadtools-quick
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
 	for p in verilator.1 ; do \
-	  $(INSTALL_PROGRAM) -m 0666 $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
+	  $(INSTALL_DATA) $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(VERILATOR_CAD_DIR)/verilator.tgz
 	rm $(DISTNAME).tgz
