@@ -343,7 +343,7 @@ private:
 	ssize_t sizegot = 0;
 	while (!m_readEof && (size<0 || size>sizegot)) {
 	    ssize_t todo = INFILTER_IPC_BUFSIZ;
-	    if (size>0 && size<INFILTER_IPC_BUFSIZ) todo = size;
+	    if (size>0 && size<todo) todo = size;
 	    ssize_t got = read (fd, buf, todo);
 	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) {

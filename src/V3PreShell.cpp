@@ -48,9 +48,12 @@ protected:
     //---------------------------------------
     // METHODS
 
-    static int debug() {
+    static int debug(bool reset=false) {
 	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	if (VL_UNLIKELY(level < 0) || reset) {
+	    level = v3Global.opt.debugSrcLevel(__FILE__);
+	    if (s_preprocp) s_preprocp->debug(debug());
+	}
 	return level;
     }
 
@@ -72,6 +75,8 @@ protected:
     }
 
     void preproc (FileLine* fl, const string& modname, V3InFilter* filterp, V3ParseImp* parsep) {
+	debug(true);  // Recheck if debug on - first check was before command line passed
+
 	// Preprocess the given module, putting output in vppFilename
 	UINFONL(1,"  Preprocessing "<<modname<<endl);
 
