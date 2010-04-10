@@ -28,7 +28,7 @@ long long get_memory_usage() {
     if (!fp) return 0;
 
     int		ps_ign;
-    long long	ps_vsize, ps_rss;
+    vluint64_t	ps_vsize, ps_rss;
     int items = fscanf(fp, ("%d (%*[^) ]) %*1s %d %*d %*d %*d %*d %u"
 			    " %u %u %u %u %d %d %d %d"
 			    " %*d %*d %*u %*u %d %" VL_PRI64 "u %" VL_PRI64 "u "),
@@ -61,7 +61,7 @@ void make_and_destroy () {
 }
 
 int main (int argc, char *argv[]) {
-    long long firstUsage = get_memory_usage();
+    vluint64_t firstUsage = get_memory_usage();
 
     // Warmup phase
     for (int i=0; i<1000; i++) {
@@ -77,7 +77,7 @@ int main (int argc, char *argv[]) {
 	}
     }
 
-    long long leaked = get_memory_usage() - firstUsage;
+    vluint64_t leaked = get_memory_usage() - firstUsage;
     if (leaked > 64*1024) {  // Have to allow some slop for this code.
 	printf ("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n", leaked, leaked/loops);
 	vl_fatal(__FILE__,__LINE__,"top", "Leaked memory\n");

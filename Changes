@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add /*verilator public_flat_rw*/ for timing-specific public access.
 
+***  Fix word size to match uint64_t on -m64 systems, bug238. [Joe Eiler]
+
 **** Improve error handling on slices of arrays, bug226. [by Bryon Bradley]
 
 **** Report errors when extra underscores used in meta-comments.

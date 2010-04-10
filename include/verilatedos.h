@@ -126,8 +126,13 @@ typedef unsigned long		uint32_t;	///< 32-bit unsigned type (backward compatibili
 typedef long			vlsint32_t;	///< 32-bit signed type
 typedef unsigned long		vluint32_t;	///< 32-bit unsigned type
 # endif
+# if defined(__WORDSIZE) && (__WORDSIZE == 64)
+typedef long			vlsint64_t;	///< 64-bit signed type
+typedef unsigned long		vluint64_t;	///< 64-bit unsigned type
+# else
 typedef long long		vlsint64_t;	///< 64-bit signed type
-typedef unsigned long long      vluint64_t;	///< 64-bit unsigned type
+typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
+# endif
 
 #elif defined(_WIN32) && defined(_MSC_VER)
 
@@ -149,8 +154,13 @@ typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
 typedef uint16_t		vluint16_t;	///< 32-bit unsigned type
 typedef int			vlsint32_t;	///< 32-bit signed type
 typedef uint32_t		vluint32_t;	///< 32-bit signed type
+# if defined(__WORDSIZE) && (__WORDSIZE == 64)
+typedef long			vlsint64_t;	///< 64-bit signed type
+typedef unsigned long		vluint64_t;	///< 64-bit unsigned type
+# else
 typedef long long		vlsint64_t;	///< 64-bit signed type
 typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
+# endif
 #endif
 
 //=========================================================================
@@ -160,7 +170,11 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #ifdef _WIN32
 # define VL_PRI64 "I64"
 #else // Linux or compliant Unix flavors
-# define VL_PRI64 "ll"
+# if defined(__WORDSIZE) && (__WORDSIZE == 64)
+#  define VL_PRI64 "l"
+# else
+#  define VL_PRI64 "ll"
+# endif
 #endif
 
 //=========================================================================
