@@ -128,8 +128,7 @@ private:
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	if (nodep->isCircular()) {
 	    UINFO(8,"  CIRC "<<nodep<<endl);
-	    if (!nodep->user1()) {
-		nodep->user1(true);
+	    if (!nodep->user1Inc()) {
 		genChangeDet(nodep);
 	    }
 	}

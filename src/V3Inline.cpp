@@ -371,7 +371,7 @@ private:
 	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
-	nodep->modp()->user3( nodep->modp()->user3() + 1);
+	nodep->modp()->user3Inc();
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstPragma* nodep, AstNUser*) {

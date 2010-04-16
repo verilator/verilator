@@ -177,8 +177,7 @@ private:
     // VISITORS  //========== Case assertions
     virtual void visit(AstCase* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user1()) {
-	    nodep->user1(true);
+	if (!nodep->user1Inc()) {
 	    bool has_default=false;
 	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 		if (itemp->isDefault()) has_default=true;

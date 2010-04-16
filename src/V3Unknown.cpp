@@ -322,8 +322,7 @@ private:
 
     void visit(AstSel* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user1()) {
-	    nodep->user1(1);
+	if (!nodep->user1Inc()) {
 	    // Guard against reading/writing past end of bit vector array
 	    int maxmsb = 0;
 	    bool lvalue = false;
@@ -373,8 +372,7 @@ private:
 
     virtual void visit(AstArraySel* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->user1()) {
-	    nodep->user1(1);
+	if (!nodep->user1Inc()) {
 	    if (debug()==9) nodep->dumpTree(cout,"-in: ");
 	    // Guard against reading/writing past end of arrays
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());

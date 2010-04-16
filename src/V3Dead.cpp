@@ -95,31 +95,31 @@ private:
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	nodep->modp()->user1(nodep->modp()->user1() + 1);
+	nodep->modp()->user1Inc();
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->varScopep()) {
-	    nodep->varScopep()->user1(nodep->varScopep()->user1() + 1);
-	    nodep->varScopep()->varp()->user1(nodep->varScopep()->varp()->user1() + 1);
+	    nodep->varScopep()->user1Inc();
+	    nodep->varScopep()->varp()->user1Inc();
 	}
 	if (nodep->varp()) {
-	    nodep->varp()->user1(nodep->varp()->user1() + 1);
+	    nodep->varp()->user1Inc();
 	}
 	if (nodep->packagep()) {
-	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
+	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->packagep()) {
-	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
+	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstRefDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->packagep()) {
-	    nodep->packagep()->user1(nodep->packagep()->user1() + 1);
+	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {

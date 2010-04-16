@@ -77,8 +77,7 @@ private:
 
     // VISITs
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    nodep->user1(true);   // Process only once.
+	if (!nodep->user1Inc()) {  // Process only once.
 	    UINFO(5,"   "<<nodep<<endl);
 	    checkExpected(nodep);
 	    // Due to a need to get the arguments, the ParseRefs are under here,
@@ -165,8 +164,7 @@ private:
 	}
     }
     virtual void visit(AstSelBit* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    nodep->user1(true);   // Process only once.
+	if (!nodep->user1Inc()) {  // Process only once.
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		m_dotText = "";
 		nodep->lhsp()->iterateAndNext(*this);
@@ -194,8 +192,7 @@ private:
     }
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	// Excludes simple AstSel, see above
-	if (!nodep->user1()) {
-	    nodep->user1(true);   // Process only once.
+	if (!nodep->user1Inc()) {  // Process only once.
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
 	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
@@ -217,8 +214,7 @@ private:
 	}
     }
     virtual void visit(AstText* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    nodep->user1(true);   // Process only once.
+	if (!nodep->user1Inc()) {  // Process only once.
 	    if (m_exp != AstParseRefExp::PX_NONE) {
 		UINFO(7,"      "<<nodep<<endl);
 		if (m_inModDot) {  // Dotted part, just pass up

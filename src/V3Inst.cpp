@@ -89,8 +89,7 @@ private:
 	if (nodep->modVarp()->isOutOnly() && nodep->exprp()->castConst())
 	    nodep->v3error("Output port is connected to a constant pin, electrical short");
 	// Use user1p on the PIN to indicate we created an assign for this pin
-	if (!nodep->user1()) {
-	    nodep->user1(1);
+	if (!nodep->user1Inc()) {
 	    // Simplify it
 	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp);
 	    // Make a ASSIGNW (expr, pin)

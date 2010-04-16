@@ -109,8 +109,7 @@ private:
 	}
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    nodep->user1(1);
+	if (!nodep->user1Inc()) {
 	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterate(*this);
 	    if (nodep->aboveCellp()) nodep->aboveCellp()->iterate(*this);
 	    // Always recompute name (as many level above scope may have changed)

@@ -375,7 +375,7 @@ private:
     OrderLoopId processMoveLoopCurrent();
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
-	modp->user3(1+modp->user3());
+	modp->user3Inc();
 	int funcnum = modp->user3();
 	string name = (domainp->hasCombo() ? "_combo"
 		       : (domainp->hasInitial() ? "_initial"
