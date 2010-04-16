@@ -47,6 +47,8 @@
 class ExpandVisitor : public AstNVisitor {
 private:
     // NODE STATE
+    //  AstNode::user1()	-> bool.  Processed
+    AstUser1InUse	m_inuser1;
 
     // STATE
     AstNode*		m_stmtp;	// Current statement
@@ -76,12 +78,14 @@ private:
     }
 
     void insertBefore (AstNode* placep, AstNode* newp) {
+	newp->user1(1);  // Already processed, don't need to re-iterate
 	AstNRelinker linker;
 	placep->unlinkFrBack(&linker);
 	newp->addNext(placep);
 	linker.relink(newp);
     }
     void replaceWithDelete (AstNode* nodep, AstNode* newp) {
+	newp->user1(1);  // Already processed, don't need to re-iterate
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); nodep=NULL;
     }
@@ -306,6 +310,7 @@ private:
 
     // VISITORS
     virtual void visit(AstExtend* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(EXTEND)
@@ -344,6 +349,7 @@ private:
     }
 
     virtual void visit(AstSel* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	// Remember, Sel's may have non-integer rhs, so need to optimize for that!
 	if (nodep->widthMin()!=(int)nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
@@ -640,6 +646,7 @@ private:
     }
 
     virtual void visit(AstConcat* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
@@ -679,6 +686,7 @@ private:
     }
 
     virtual void visit(AstReplicate* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
@@ -740,6 +748,7 @@ private:
     }
 
     virtual void visit(AstChangeXor* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	UINFO(8,"    Wordize ChangeXor "<<nodep<<endl);
 	// -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
@@ -754,6 +763,7 @@ private:
     }
 
     void visitEqNeq(AstNodeBiop* nodep) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize EQ/NEQ "<<nodep<<endl);
@@ -779,6 +789,7 @@ private:
     virtual void visit(AstNeq* nodep, AstNUser*) { visitEqNeq (nodep); }
 
     virtual void visit(AstRedOr* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDOR "<<nodep<<endl);
@@ -802,6 +813,7 @@ private:
 	}
     }
     virtual void visit(AstRedAnd* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDAND "<<nodep<<endl);
@@ -830,6 +842,7 @@ private:
 	}
     }
     virtual void visit(AstRedXor* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDXOR "<<nodep<<endl);
@@ -840,6 +853,7 @@ private:
 		newp = (newp==NULL) ? eqp : (new AstXor (nodep->fileline(), newp, eqp));
 	    }
 	    newp = new AstRedXor (nodep->fileline(), newp);
+	    UINFO(8,"    Wordize REDXORnew "<<newp<<endl);
 	    replaceWithDelete(nodep, newp); nodep=NULL;
 	}
 	// We don't reduce non-wide XORs, as its more efficient to use a temp register,
@@ -847,11 +861,13 @@ private:
     }
 
     virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	m_stmtp = nodep;
 	nodep->iterateChildren(*this);
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+	if (nodep->user1Inc()) return;  // Process once
 	m_stmtp = nodep;
 	nodep->iterateChildren(*this);
 	bool did = false;
