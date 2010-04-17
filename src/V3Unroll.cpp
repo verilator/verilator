@@ -82,6 +82,20 @@ private:
 	    : v3Global.opt.unrollCount();
     }
 
+    bool bodySizeOverRecurse(AstNode* nodep, int& bodySize, int bodyLimit) {
+	if (!nodep) return false;
+	bodySize++;
+	// Exit once exceeds limits, rather than always total
+	// so don't go O(n^2) when can't unroll
+	if (bodySize > bodyLimit) return true;
+	if (bodySizeOverRecurse(nodep->op1p(), bodySize, bodyLimit)) return true;
+	if (bodySizeOverRecurse(nodep->op2p(), bodySize, bodyLimit)) return true;
+	if (bodySizeOverRecurse(nodep->op3p(), bodySize, bodyLimit)) return true;
+	if (bodySizeOverRecurse(nodep->op4p(), bodySize, bodyLimit)) return true;
+	// Tail recurse.
+	return bodySizeOverRecurse(nodep->nextp(), bodySize, bodyLimit);
+    }
+
     bool forUnrollCheck(AstNode* nodep,
 			AstNode* initp,	// Maybe under nodep (no nextp), or standalone (ignore nextp)
 			AstNode* precondsp, AstNode* condp,
@@ -174,22 +188,19 @@ private:
 	//
 	if (!m_generate) {
 	    UINFO(8, "         ~Iters: "<<((valStop - valInit)/valInc)<<" c="<<unrollCount()<<endl);
-	    if (((valStop - valInit)/valInc) > unrollCount())
+	    int loops = ((valStop - valInit)/valInc);
+	    if (loops > unrollCount())
 		return cantUnroll(nodep, "too many iterations");
 
 	    // Less than 10 statements in the body?
 	    int bodySize = 0;
-	    for (AstNode* bodp = precondsp; bodp; bodp=bodp->nextp()) {
-		bodySize++;
-	    }
-	    for (AstNode* bodp = bodysp; bodp; bodp=bodp->nextp()) {
-		bodySize++;
-	    }
-	    for (AstNode* bodp = incp; bodp; bodp=bodp->nextp()) {
-		bodySize++;
-	    }
-	    if (bodySize > v3Global.opt.unrollStmts())
+	    int bodyLimit = v3Global.opt.unrollStmts();
+	    if (loops>0) bodyLimit = v3Global.opt.unrollStmts() / loops;
+	    if (bodySizeOverRecurse(precondsp, bodySize/*ref*/, bodyLimit)
+		|| bodySizeOverRecurse(bodysp, bodySize/*ref*/, bodyLimit)
+		|| bodySizeOverRecurse(incp, bodySize/*ref*/, bodyLimit)) {
 		return cantUnroll(nodep, "too many statements");
+	    }
 	}
 	//
 	// Now, make sure there's no assignment to this variable in the loop
