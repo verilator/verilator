@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix bit reductions on multi-packed dimensions, bug227. [by Bryon Bradley]
 
+**** Fix removing $fscanf if assigned to unused var, bug248. [Ashutosh Das]
+
 **** Fix "make install" with configure outside srcdir.  [Stefan Wallentowitz]
 
 **** Fix loop unroller out of memory; change --unroll-stmts.  [Ashutosh Das]

@@ -14,9 +14,14 @@ module t;
       outfile = $fopen("obj_dir/t_sys_file_scan/t_sys_file_scan_test.log", "w");
 
       count = 1234;
-      $display("count == %d, infile %d, outfile %d", count, infile, outfile);
+`ifdef TEST_VERBOSE
+      $display("-count == %d, infile %d, outfile %d", count, infile, outfile);
+`endif
       count = $fscanf(infile, "%d\n", a);
-      $display("count == %d, infile %d, outfile %d", count, infile, outfile);
+`ifdef TEST_VERBOSE
+      // Ifdefing this out gave bug248
+      $display("-count == %d, infile %d, outfile %d", count, infile, outfile);
+`endif
       $fwrite(outfile, "# a\n");
       $fwrite(outfile, "%d\n", a);
       $fclose(infile);

@@ -145,13 +145,10 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this);
 	}
     }
-    virtual void visit(AstUCFunc* nodep, AstNUser*) {
-	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
-	nodep->iterateChildren(*this);
-    }
 
     //-----
     virtual void visit(AstNode* nodep, AstNUser*) {
+	if (nodep->isOutputter()) m_sideEffect=true;
 	nodep->iterateChildren(*this);
     }
 
