@@ -2635,8 +2635,10 @@ in your main loop call "trace_object->dump(time)" every time step, and
 finally call "trace_object->close()".  For an example, see below and the
 test_c/sim_main.cpp file of the distribution.
 
-You also need to compile verilated_vcd_c.cpp and add it to your link.  This
-is done for you if using the Verilator --exe flag.
+You also need to compile verilated_vcd_c.cpp and add it to your link,
+preferably by adding the dependancies in $(VK_GLOBAL_OBJS) to your
+Makefile's link rule.  This is done for you if using the Verilator --exe
+flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
@@ -2673,8 +2675,10 @@ Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
 your SystemC settings.
 
-You also need to compile verilated_vcd_sc.cpp and add it to your link.
-This is done for you if using the Verilator --exe flag.
+You also need to compile verilated_vcd_sc.cpp and verilated_vcd_c.cpp and
+add them to your link, preferably by adding the dependancies in
+$(VK_GLOBAL_OBJS) to your Makefile's link rule.  This is done for you if
+using the Verilator --exe flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
@@ -2780,7 +2784,9 @@ simulator knows the current time.  See the "CONNECTING TO C++" examples.
 =item Why do I get "undefined reference to `VL_RAND_RESET_I' or `Verilated::...'"?
 
 You need to link your compiled Verilated code against the verilated.cpp
-file found in the include directory of the Verilator kit.
+file found in the include directory of the Verilator kit.  This is one
+target in the $(VK_GLOBAL_OBJS) make variable, which should be part of your
+Makefile's link rule.
 
 =item Is the PLI supported?
 
