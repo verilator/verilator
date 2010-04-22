@@ -11,11 +11,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Fix word size to match uint64_t on -m64 systems, bug238. [Joe Eiler]
 
-**** Improve error handling on slices of arrays, bug226. [by Bryon Bradley]
+**** Improve error handling on slices of arrays, bug226. [by Byron Bradley]
 
 **** Report errors when extra underscores used in meta-comments.
 
-**** Fix bit reductions on multi-packed dimensions, bug227. [by Bryon Bradley]
+**** Fix bit reductions on multi-packed dimensions, bug227. [by Byron Bradley]
 
 **** Fix removing $fscanf if assigned to unused var, bug248. [Ashutosh Das]
 

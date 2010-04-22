@@ -134,7 +134,8 @@ class SliceCloneVisitor : public AstNVisitor {
 	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
     }
 
-    virtual void visit(AstNodeUniop* nodep, AstNUser*) {
+    // Not all Uniop nodes should be cloned down to a single bit
+    void cloneUniop(AstNodeUniop* nodep) {
 	if (nodep->user2() < 2) return; // Don't need clones
 	m_selBits.clear();
 	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
@@ -179,6 +180,22 @@ class SliceCloneVisitor : public AstNVisitor {
 	}
 	nodep->addNextHere(lhsp);
 	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
+    }
+
+    virtual void visit(AstRedOr* nodep, AstNUser*) {
+	cloneUniop(nodep);
+    }
+
+    virtual void visit(AstRedAnd* nodep, AstNUser*) {
+	cloneUniop(nodep);
+    }
+
+    virtual void visit(AstRedXor* nodep, AstNUser*) {
+	cloneUniop(nodep);
+    }
+
+    virtual void visit(AstRedXnor* nodep, AstNUser*) {
+	cloneUniop(nodep);
     }
 
     virtual void visit(AstNode* nodep, AstNUser*) {
