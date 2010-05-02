@@ -2636,7 +2636,7 @@ finally call "trace_object->close()".  For an example, see below and the
 test_c/sim_main.cpp file of the distribution.
 
 You also need to compile verilated_vcd_c.cpp and add it to your link,
-preferably by adding the dependancies in $(VK_GLOBAL_OBJS) to your
+preferably by adding the dependencies in $(VK_GLOBAL_OBJS) to your
 Makefile's link rule.  This is done for you if using the Verilator --exe
 flag.
 
@@ -2676,7 +2676,7 @@ question, however the timescale and timeprecision will not inherited from
 your SystemC settings.
 
 You also need to compile verilated_vcd_sc.cpp and verilated_vcd_c.cpp and
-add them to your link, preferably by adding the dependancies in
+add them to your link, preferably by adding the dependencies in
 $(VK_GLOBAL_OBJS) to your Makefile's link rule.  This is done for you if
 using the Verilator --exe flag.
 
