@@ -1034,6 +1034,7 @@ private:
 	AstNodeFTask* funcp = nodep->taskp();
 	if (!funcp) nodep->v3fatalSrc("unlinked");
 	if (!funcp->isFunction()) nodep->v3fatalSrc("func reference to non-function");
+	if (!m_scopep) nodep->v3fatalSrc("func ref not under scope");
 	// Inline func refs in the function
 	iterateIntoFTask(funcp);
 	// Create output variable

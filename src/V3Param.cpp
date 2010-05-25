@@ -52,10 +52,11 @@
 class ParamVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    //	 AstNodeModule::user4()	// bool	  True if parameters numbered
+    //	 AstNodeModule::user5()	// bool	  True if parameters numbered
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
     //				//        (0=not processed, 1=iterated, but no number, 65+ parameter numbered)
     AstUser4InUse	m_inuser4;
+    AstUser5InUse	m_inuser5;
     // User1/2/3 used by constant function simulations
 
     // STATE
@@ -130,8 +131,8 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (!nodep->user4()) {
-	    nodep->user4(1);  // Mark done - Note values >1 used for letter numbering
+	if (!nodep->user5()) {
+	    nodep->user5(1);  // Mark done
 	    nodep->iterateChildren(*this);
 	    if (nodep->isParam()) {
 		if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
