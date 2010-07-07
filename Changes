@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix some constant parameter functions causing crash, bug253. [Nick Bowler]
 
+**** Fix do {...} while() not requiring final semicolon.
+
 * Verilator 3.802 2010/05/01
 
 ***  Support runtime access to public signal names.
