@@ -111,6 +111,7 @@ void yy_delete_buffer( YY_BUFFER_STATE b );
 //======================================================================
 
 #define KEEPCMT_SUB 2
+#define KEEPCMT_EXP 3
 
 //======================================================================
 // Class entry for each per-lexer state
@@ -121,7 +122,7 @@ class V3PreLex {
 
     // Parse state
     stack<YY_BUFFER_STATE> m_bufferStack; // Stack of inserted text above current point
-    deque<string>	m_buffers;	///< Buffer of characters to process
+    deque<string>	m_buffers;	// Buffer of characters to process
 
     // State to lexer
     static V3PreLex* s_currentLexp;	// Current lexing point
@@ -135,6 +136,7 @@ class V3PreLex {
     bool	m_pslMoreNeeded;// Next // comment is really psl
     bool	m_defCmtSlash;	// /*...*/ comment in define had \ ending
     string	m_defValue;	// Definition value being built.
+    int		m_enterExit;	// For VL_LINE, the enter/exit level
 
     // CONSTRUCTORS
     V3PreLex() {
@@ -143,6 +145,7 @@ class V3PreLex {
 	m_formalLevel = 0;
 	m_parenLevel = 0;
 	m_defCmtSlash = false;
+	m_enterExit = 0;
 	m_pslParenLevel = 0;
 	m_pslMoreNeeded = false;
 	initFirstBuffer();
@@ -153,9 +156,11 @@ class V3PreLex {
     void initFirstBuffer();
 
     // Called by V3PreLex.l from lexer
+    FileLine* curFilelinep() { return m_curFilelinep; }
+    void curFilelinep(FileLine* fl) { m_curFilelinep = fl; }
     void appendDefValue(const char* text, size_t len);
-    void lineDirective(const char* text);
-    void incLineno() { m_curFilelinep->incLineno(); }
+    void lineDirective(const char* textp);
+    void incLineno() { curFilelinep()->incLineno(); }
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);
     void pushStateDefForm();
@@ -167,6 +172,7 @@ class V3PreLex {
     /// Called by VPreproc.cpp to get data from lexer
     YY_BUFFER_STATE currentBuffer();
     int	 currentStartState();
+    string currentUnreadChars();
     void dumpSummary();
     void dumpStack();
 };

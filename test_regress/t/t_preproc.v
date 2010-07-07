@@ -59,7 +59,7 @@ Line_Preproc_Check `__LINE__
 `define nosubst NOT_SUBSTITUTED
 `define WITHTICK "`nosubst"
 "Inside: `nosubst"
-`WITHTICK		  
+`WITHTICK
 
 `define withparam(a, b) a b LLZZ a b
 `withparam(x,y)
@@ -79,10 +79,10 @@ Line_Preproc_Check `__LINE__
 $display(`msg(left side, right side))
 
 `define foo(f) f``_suffix
-`foo(bar)  
+`foo(bar)  more
 
 `define zap(which)   \
-   	$c("Zap(\"",which,"\");");
+	$c("Zap(\"",which,"\");");
 `zap(bug1);
 `zap("bug2");
 
@@ -155,6 +155,14 @@ Line_Preproc_Check `__LINE__
 // bug191
 `define bug191(bits) $display("bits %d %d", $bits(foo), `bits);
 `bug191(10)
+
+//======================================================================
+// 1800-2009
+`define UDALL
+`ifndef PREDEF_COMMAND_LINE `error "Test setup error, PREDEF_COMMAND_LINE pre-missing" `endif
+`undefineall
+`ifdef UDALL `error "undefineall failed" `endif
+`ifndef PREDEF_COMMAND_LINE `error "Deleted too much, no PREDEF_COMMAND_LINE" `endif
 
 //======================================================================
 // bug202
@@ -244,4 +252,8 @@ EXP: This is fooed
 EXP: This is fooed_2
 `def_fooed_2
 
+//======================================================================
+`define NOPARAM() np
+`NOPARAM()
+`NOPARAM( )
 //======================================================================

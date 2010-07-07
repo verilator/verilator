@@ -14,7 +14,7 @@ if (!$Self->{v3}) {
     ok(1);
 } else {
     compile (
-	     v_flags2 => ['-DDEF_A0 -E'],
+	     v_flags2 => ['-DDEF_A0 -DPREDEF_COMMAND_LINE -E'],
 	     verilator_make_gcc=>0,
 	     stdout_filename => $stdout_filename,
 	     );

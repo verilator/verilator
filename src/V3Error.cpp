@@ -79,7 +79,13 @@ FileLine::FileLine(FileLine::EmptySecret) {
     }
 }
 
-void FileLine::lineDirective(const char* textp) {
+string FileLine::lineDirectiveStrg(int enterExit) const {
+    char numbuf[20]; sprintf(numbuf, "%d", lineno());
+    char levelbuf[20]; sprintf(levelbuf, "%d", enterExit);
+    return ((string)"`line "+numbuf+" \""+filename()+"\" "+levelbuf+"\n");
+}
+
+void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     // Handle `line directive
     // Skip `line
     while (*textp && isspace(*textp)) textp++;
@@ -102,6 +108,12 @@ void FileLine::lineDirective(const char* textp) {
 	strfn = strfn.substr(0, textp-fn);
 	this->filename(strfn);
     }
+
+    // Grab level
+    while (*textp && (isspace(*textp) || *textp=='"')) textp++;
+    if (isdigit(*textp)) enterExitRef = atoi(textp);
+    else enterExitRef = 0;
+
     //printf ("PPLINE %d '%s'\n", s_lineno, s_filename.c_str());
 }
 

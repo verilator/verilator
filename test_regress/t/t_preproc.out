@@ -105,7 +105,7 @@ deep deep
  
  
 "Inside: `nosubst"
-"`nosubst"		  
+"`nosubst"
 
  
 x y LLZZ x y
@@ -125,7 +125,7 @@ x  y LLZZ "a" y
 $display("left side: \"right side\"")
 
  
-bar_suffix  
+bar_suffix  more
 
  
 
@@ -207,6 +207,20 @@ $display("bits %d %d", $bits(foo), `10);
 
 
  
+    
+`line 162 "t/t_preproc.v" 0
+
+
+    
+`line 164 "t/t_preproc.v" 0
+
+    
+`line 165 "t/t_preproc.v" 0
+
+
+
+
+ 
 
 
 
@@ -219,9 +233,9 @@ $display("bits %d %d", $bits(foo), `10);
 
 
  							          	       					   
-`line 173 "t/t_preproc.v" 0
+`line 181 "t/t_preproc.v" 0
 								      					           		     
-`line 173 "t/t_preproc.v" 0
+`line 181 "t/t_preproc.v" 0
 							      assign a3 = ~b3 ;						   
 
  
@@ -282,8 +296,8 @@ EXP: clxx_scen
  
 EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " end"}); end  while(0);
 do                  
-`line 231 "t/t_preproc.v" 0
-        if (start("t/t_preproc.v", 231)) begin    	 message({"Blah-", "clx_scen", " end"});        end             while(0);
+`line 239 "t/t_preproc.v" 0
+        if (start("t/t_preproc.v", 239)) begin    	 message({"Blah-", "clx_scen", " end"});        end             while(0);
 
 
 
@@ -294,7 +308,7 @@ do
  
 
      
-`line 241 "t/t_preproc.v" 0
+`line 249 "t/t_preproc.v" 0
 
 
 EXP: This is fooed
@@ -304,4 +318,8 @@ EXP: This is fooed_2
 This is fooed_2
 
 
-`line 250 "t/t_preproc.v" 2
+ 
+np
+np
+
+`line 262 "t/t_preproc.v" 2

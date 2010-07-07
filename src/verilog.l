@@ -53,7 +53,8 @@ extern void yyerrorf(const char* format, ...);
 
 void V3ParseImp::ppline (const char* textp) {
     // Handle `line directive
-    fileline()->lineDirective(textp);
+    int enterExit;
+    fileline()->lineDirective(textp, enterExit/*ref*/);
 }
 
 void V3ParseImp::verilatorCmtLint(const char* textp, bool warnOff) {

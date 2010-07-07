@@ -1,3 +1,8 @@
+%option noyywrap align interactive
+%option stack
+%option noc++
+%option prefix="V3PreLex"
+%{
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex verilog preprocessor
  *
@@ -20,12 +25,6 @@
  * lost characters.
  **************************************************************************/
 
-%option noyywrap align interactive
-%option stack
-%option noc++
-%option prefix="V3PreLex"
-%{
-
 #include "V3PreProc.h"
 #include "V3PreLex.h"
 
@@ -45,8 +44,8 @@ void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=siz
 static void linenoInc()  {LEXP->incLineno();}
 static bool optPsl() { return V3PreProc::optPsl(); }
 static bool pedantic() { return LEXP->m_pedantic; }
-static void yyerror(char* msg) { LEXP->m_curFilelinep->v3error(msg); }
-static void yyerrorf(const char* msg) { LEXP->m_curFilelinep->v3error(msg); }
+static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
+static void yyerrorf(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t,l); }
 static int  pslParenLevel()    { return LEXP->m_pslParenLevel; }
 static void pslParenLevelInc() { LEXP->m_pslParenLevel++; }
@@ -104,11 +103,11 @@ psl		[p]sl
 
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ static string rtnfile;
-			  rtnfile = '"'; rtnfile += LEXP->m_curFilelinep->filename().c_str();
+			  rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename().c_str();
 			  rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
 			  return (VP_STRING); }
 <INITIAL>"`__LINE__"	{ static char buf[10];
-			  sprintf(buf, "%d",LEXP->m_curFilelinep->lineno());
+			  sprintf(buf, "%d",LEXP->curFilelinep()->lineno());
 	                  yytext = buf; yyleng = strlen(yytext);
 			  return (VP_TEXT); }
 <INITIAL>"`error"	{ if (!pedantic()) return (VP_ERROR); else return(VP_DEFREF); }
@@ -361,9 +360,9 @@ int V3PreLex::currentStartState() {
 }
 
 void V3PreLex::lineDirective(const char* textp) {
-    m_curFilelinep->lineDirective(textp);
+    curFilelinep()->lineDirective(textp, m_enterExit/*ref*/);
     // Make sure we have a dependency on whatever file was specified
-    V3File::addSrcDepend(m_curFilelinep->filename());
+    V3File::addSrcDepend(curFilelinep()->filename());
 }
 
 void V3PreLex::dumpSummary() {

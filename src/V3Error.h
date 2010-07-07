@@ -236,7 +236,7 @@ protected:
     friend class V3PreLex;
     void lineno(int num) { m_lineno = num; }
     void filename(const string& name) { m_filename = name; }
-    void lineDirective(const char* textp);
+    void lineDirective(const char* textp, int& enterExitRef);
     void incLineno() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
@@ -254,6 +254,7 @@ public:
     const string filename () const { return m_filename; }
     const string filebasename () const;
     const string profileFuncname() const;
+    string lineDirectiveStrg(int enter_exit_level) const;
     void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code,!flag); }
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
