@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    input clk;
    reg 	 _ranit;
 
-   `include "t_initial_inc.v"
+   `include "t_initial_inc.vh"
 
    // surefire lint_off STMINI
    initial assign user_loaded_value = 1;

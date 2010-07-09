@@ -9,15 +9,15 @@
 
  
 `line 9 "t/t_preproc.v" 0
-`line 1 "t/t_preproc_inc2.v" 1
+`line 1 "t/t_preproc_inc2.vh" 1
 
 
 
-At file "t/t_preproc_inc2.v"  line 4
+At file "t/t_preproc_inc2.vh"  line 4
  
  
-`line 6 "t/t_preproc_inc2.v" 0
-`line 1 "t/t_preproc_inc3.v" 1
+`line 6 "t/t_preproc_inc2.vh" 0
+`line 1 "t/t_preproc_inc3.vh" 1
 `line 2 "inc3_a_filename_from_line_directive" 0
 
 
@@ -40,9 +40,9 @@ At file "t/t_preproc_inc2.v"  line 4
 `line 17 "inc3_a_filename_from_line_directive" 0
 
 `line 18 "inc3_a_filename_from_line_directive" 2
-`line 6 "t/t_preproc_inc2.v" 0
+`line 6 "t/t_preproc_inc2.vh" 0
 
-`line 7 "t/t_preproc_inc2.v" 2
+`line 7 "t/t_preproc_inc2.vh" 2
 `line 9 "t/t_preproc.v" 0
 
 

@@ -13,5 +13,5 @@
 `endif // guard
 
 `ifdef not_defined
- `include "NotToBeInced.v"
+ `include "NotToBeInced.vh"
 `endif

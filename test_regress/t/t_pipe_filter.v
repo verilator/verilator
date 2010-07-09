@@ -10,9 +10,9 @@
 example line 10;
 example line 11;
 
-`include "t_pipe_filter_inc.v"
+`include "t_pipe_filter_inc.vh"
 // Twice to check caching of includes
-`include "t_pipe_filter_inc.v"
+`include "t_pipe_filter_inc.vh"
 
 example line 15;
 example line 16;
