@@ -32,8 +32,12 @@
 
 #include "V3Error.h"
 
+//======================================================================
+
+class V3PreProcImp;
+
 // Token codes
-// If changing, see V3Pre.cpp's V3PreImp::tokenName()
+// If changing, see V3PreProc.cpp's V3PreProcImp::tokenName()
 #define VP_EOF		0
 
 #define VP_INCLUDE	256
@@ -160,7 +164,7 @@ class V3PreLex {
     void curFilelinep(FileLine* fl) { m_curFilelinep = fl; }
     void appendDefValue(const char* text, size_t len);
     void lineDirective(const char* textp);
-    void incLineno() { curFilelinep()->incLineno(); }
+    void linenoInc() { curFilelinep()->linenoInc(); }
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);
     void pushStateDefForm();

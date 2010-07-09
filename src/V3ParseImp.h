@@ -249,7 +249,7 @@ public:
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
     void ppline (const char* text);
-    void incLineno() { fileline()->incLineno(); }
+    void linenoInc() { fileline()->linenoInc(); }
     void verilatorCmtLint(const char* text, bool on);
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();

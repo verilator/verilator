@@ -391,28 +391,28 @@ void V3PreProcImp::comment(const string& text) {
 
 const char* V3PreProcImp::tokenName(int tok) {
     switch (tok) {
-    case VP_EOF		: return("EOF");
-    case VP_INCLUDE	: return("INCLUDE");
-    case VP_IFDEF	: return("IFDEF");
-    case VP_IFNDEF	: return("IFNDEF");
-    case VP_ENDIF	: return("ENDIF");
-    case VP_UNDEF	: return("UNDEF");
+    case VP_COMMENT	: return("COMMENT");
+    case VP_DEFARG	: return("DEFARG");
+    case VP_DEFFORM	: return("DEFFORM");
     case VP_DEFINE	: return("DEFINE");
+    case VP_DEFREF	: return("DEFREF");
+    case VP_DEFVALUE	: return("DEFVALUE");
     case VP_ELSE	: return("ELSE");
     case VP_ELSIF	: return("ELSIF");
-    case VP_LINE	: return("LINE");
-    case VP_SYMBOL	: return("SYMBOL");
-    case VP_STRING	: return("STRING");
-    case VP_DEFFORM	: return("DEFFORM");
-    case VP_DEFVALUE	: return("DEFVALUE");
-    case VP_COMMENT	: return("COMMENT");
-    case VP_TEXT	: return("TEXT");
-    case VP_WHITE	: return("WHITE");
-    case VP_DEFREF	: return("DEFREF");
-    case VP_DEFARG	: return("DEFARG");
+    case VP_ENDIF	: return("ENDIF");
+    case VP_EOF		: return("EOF");
     case VP_ERROR	: return("ERROR");
-    case VP_UNDEFINEALL	: return("UNDEFINEALL");
+    case VP_IFDEF	: return("IFDEF");
+    case VP_IFNDEF	: return("IFNDEF");
+    case VP_INCLUDE	: return("INCLUDE");
+    case VP_LINE	: return("LINE");
     case VP_PSL		: return("PSL");
+    case VP_STRING	: return("STRING");
+    case VP_SYMBOL	: return("SYMBOL");
+    case VP_TEXT	: return("TEXT");
+    case VP_UNDEF	: return("UNDEF");
+    case VP_UNDEFINEALL	: return("UNDEFINEALL");
+    case VP_WHITE	: return("WHITE");
     default: return("?");
     }
 }

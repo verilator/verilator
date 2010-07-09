@@ -41,7 +41,7 @@ size_t yyourleng() { return yyleng; }
 void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=size; }
 
 // Prevent conflicts from perl version
-static void linenoInc()  {LEXP->incLineno();}
+static void linenoInc()  {LEXP->linenoInc();}
 static bool optPsl() { return V3PreProc::optPsl(); }
 static bool pedantic() { return LEXP->m_pedantic; }
 static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
@@ -145,7 +145,7 @@ psl		[p]sl
 <DEFFPAR><<EOF>>	{ yy_pop_state(); return VP_DEFFORM; }  /* empty formals */
 <DEFFPAR>.		{ yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
 
-	/* Reading definition formals */
+	/* Reading definition formals (declaration of a define) */
 <DEFFORM>[(]		{ appendDefValue(yytext,yyleng); yyleng=0; ++LEXP->m_formalLevel; }
 <DEFFORM>[)]		{ appendDefValue(yytext,yyleng); yyleng=0; if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; } }
 <DEFFORM>"/*"		{ yy_push_state(CMTMODE); yymore(); }
@@ -161,7 +161,7 @@ psl		[p]sl
 <DEFFORM>[\\][^\n\r]	|
 <DEFFORM>.		{ appendDefValue(yytext,yyleng); }
 
-	/* Reading definition value */
+	/* Reading definition value (declaration of a define's text) */
 <DEFVAL>"/*"		{ LEXP->m_defCmtSlash=false; yy_push_state(DEFCMT); yymore(); }  /* Special comment parser */
 <DEFVAL>"//"[^\n\r]*[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\n",1); }  /* Spec says // not part of define value */
 <DEFVAL>"//"[^\n\r]*	{ return (VP_COMMENT);}

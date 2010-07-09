@@ -42,7 +42,7 @@ extern void yyerrorf(const char* format, ...);
 
 //======================================================================
 
-#define NEXTLINE() {PARSEP->incLineno();}
+#define NEXTLINE() {PARSEP->linenoInc();}
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
 #define FL { yylval.fl = CRELINE(); }

@@ -234,21 +234,26 @@ protected:
     // We are storing pointers, so we CAN'T change them after initial reading.
     friend class V3ParseImp;
     friend class V3PreLex;
+    friend class V3PreProcImp;
     void lineno(int num) { m_lineno = num; }
     void filename(const string& name) { m_filename = name; }
     void lineDirective(const char* textp, int& enterExitRef);
-    void incLineno() { m_lineno++; }
+    void linenoInc() { m_lineno++; }
+    void linenoIncInPlace() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
     FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOn=s_defaultFileLine.m_warnOn; }
     FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOn=fromp->m_warnOn; }
     FileLine (EmptySecret);
     ~FileLine() { }
+    FileLine* create(const string& filename, int lineno) { return new FileLine(filename,lineno); }
+    FileLine* create(int lineno) { return create(filename(), lineno); }
     static void deleteAllRemaining();
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif
+
     int lineno () const { return m_lineno; }
     string ascii() const;
     const string filename () const { return m_filename; }
