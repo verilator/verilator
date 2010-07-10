@@ -17,6 +17,7 @@ module t;
 `define thru(x) x
 `define thruthru `ls `rs	// Doesn't expand
 `define msg(x,y) `"x: `\`"y`\`"`"
+`define left(m,left) m // The 'left' as the variable name shouldn't match the "left" in the `" string
    initial begin
       //$display(`msg( \`, \`));  // Illegal
       $display(`msg(pre `thru(thrupre `thru(thrumid) thrupost) post,right side));
@@ -27,13 +28,23 @@ module t;
       $display(`msg( prep ( midp1 `ls midp2 ( outp ) ) , `rs ));
       $display(`msg(`noarg,`noarg`noarg));
       $display(`msg( `thruthru , `thruthru ));   // Results vary between simulators
+      $display(`left(`msg( left side , right side ), left_replaced));
+      //$display(`msg( `"tickquoted_left`", `"tickquoted_right`" ));  // Syntax error
+`ifndef VCS  // Sim bug - wrong number of arguments, but we're right
       $display(`msg(`thru(),));  // Empty
+`endif
       $display(`msg(`thru(left side),`thru(right side)));
       $display(`msg( `thru( left side ) , `thru( right side ) ));
+`ifndef NC
+      $display(`"standalone`");
+`endif
 
+`ifdef VERILATOR
+      // Illegal on some simulators, as the "..." crosses two lines
 `define twoline first \
  second
       $display(`msg(twoline, `twoline));
+`endif
 
       $display("Line %0d File \"%s\"",`__LINE__,`__FILE__);
 

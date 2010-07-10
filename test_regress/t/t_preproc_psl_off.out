@@ -5,16 +5,20 @@
 
 
 
+`line 7 "t/t_preproc_psl.v" 0
 /*verilator metacomment preserved*/
 
+`line 9 "t/t_preproc_psl.v" 0
 /*verilator metacomment also_preserved*/
 
+`line 11 "t/t_preproc_psl.v" 0
 Hello in t_preproc_psl.v
    
    
    
    
 
+`line 17 "t/t_preproc_psl.v" 0
    
    
    
@@ -22,49 +26,65 @@ Hello in t_preproc_psl.v
    
    
 
+`line 28 "t/t_preproc_psl.v" 0
+
+`line 28 "t/t_preproc_psl.v" 0
+
+`line 28 "t/t_preproc_psl.v" 0
+
+`line 28 "t/t_preproc_psl.v" 0
 
 
-
-
-
+`line 29 "t/t_preproc_psl.v" 0
  29
 
+`line 31 "t/t_preproc_psl.v" 0
    
    
    
 
+`line 40 "t/t_preproc_psl.v" 0
+
+`line 40 "t/t_preproc_psl.v" 0
+
+`line 40 "t/t_preproc_psl.v" 0
+
+`line 40 "t/t_preproc_psl.v" 0
+
+`line 40 "t/t_preproc_psl.v" 0
 
 
-
-
-
-
+`line 41 "t/t_preproc_psl.v" 0
  41
 
+`line 43 "t/t_preproc_psl.v" 0
    
 
-   
-   
-   
-
-
-   
+`line 45 "t/t_preproc_psl.v" 0
    
    
    
 
 
+`line 50 "t/t_preproc_psl.v" 0
+   
+   
+   
+   
 
+
+
+`line 57 "t/t_preproc_psl.v" 0
  
    
 
-`line 59 "t/t_preproc_psl.v" 0
 
 
-
+`line 62 "t/t_preproc_psl.v" 0
  
    
 
+`line 65 "t/t_preproc_psl.v" 0
  
   `psl
 psl assert always sig!=90;
@@ -72,5 +92,7 @@ psl assert always sig!=90;
 
 
 
+`line 72 "t/t_preproc_psl.v" 0
 72
-`line 73 "t/t_preproc_psl.v" 2
+
+`line 74 "t/t_preproc_psl.v" 2

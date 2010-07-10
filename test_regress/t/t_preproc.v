@@ -1,8 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module
-//
-//
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2004-2007 by Wilson Snyder.
+// without warranty, 2000-2010 by Wilson Snyder.
 
 //===========================================================================
 // Includes
@@ -46,6 +44,7 @@ text.
 
 /*******COMMENT*****/
 `MULTILINE
+`MOREMULTILINE
 Line_Preproc_Check `__LINE__
 
 //===========================================================================
@@ -86,14 +85,57 @@ $display(`msg(left side, right side))
 `zap(bug1);
 `zap("bug2");
 
+/* Define inside comment: `DEEPER and `WITHTICK */
+// More commentary: `zap(bug1); `zap("bug2");
+
+//======================================================================
+// display passthru
+
+`define ls left_side
+`define rs right_side
+`define noarg  na
+`define thru(x) x
+`define thruthru `ls `rs	// Doesn't expand
+`define msg(x,y) `"x: `\`"y`\`"`"
+   initial begin
+      //$display(`msg( \`, \`));  // Illegal
+      $display(`msg(pre `thru(thrupre `thru(thrumid) thrupost) post,right side));
+      $display(`msg(left side,right side));
+      $display(`msg( left side , right side ));
+      $display(`msg( `ls , `rs ));
+      $display(`msg( `noarg , `rs ));
+      $display(`msg( prep ( midp1 `ls midp2 ( outp ) ) , `rs ));
+      $display(`msg(`noarg,`noarg`noarg));
+      $display(`msg( `thruthru , `thruthru ));   // Results vary between simulators
+      $display(`msg(`thru(),));  // Empty
+      $display(`msg(`thru(left side),`thru(right side)));
+      $display(`msg( `thru( left side ) , `thru( right side ) ));
+      $display(`"standalone`");
+
+      // Unspecified when the stringification has multiple lines
+`define twoline first \
+      second
+      $display(`msg(twoline, `twoline));
+      //$display(`msg(left side, \ right side \ ));  // Not sure \{space} is legal.
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+endmodule
+
+//======================================================================
 // rt.cpan.org bug34429
+
 `define ADD_UP(a,c)          \
 wire  tmp_``a = a; \
 wire  tmp_``c = tmp_``a + 1; \
 assign c = tmp_``c ;
 
-`ADD_UP(d1,o1)   // expansion is OK
-`ADD_UP( d2 , o2 )  // expansion is bad
+module add1 ( input wire d1, output wire o1);
+ `ADD_UP(d1,o1)   // expansion is OK
+endmodule
+module add2 ( input wire d2, output wire o2);
+ `ADD_UP( d2 , o2 )  // expansion is bad
+endmodule
 
  `define check(mod, width, flopname, gate, path) \
    generate for (i=0; i<(width); i=i+1) begin \
@@ -108,6 +150,17 @@ assign c = tmp_``c ;
 
    `check(m5kc_fcl, 3, _ctl_mvldx_m1, `CK_fr,	`MF._ctl_mvldx_m1)	// ignorecmt
 
+//======================================================================
+// Quotes are legal in protected blocks.  Grr.
+module prot();
+`protected
+    I!#r#e6<_Q{{E2+]I3<[3s)1@D|'E''i!O?]jD>Jo_![Cl)
+    #nj1]p,3^1~,="E@QZB\T)eU\pC#C|7=\$J$##A[@-@{Qk]
+`endprotected
+endmodule
+//"
+
+//======================================================================
 // macro call with define that has comma
 `define REG_H   6
 `define REG_L   7
@@ -119,9 +172,38 @@ assign c = tmp_``c ;
 
 `EX_READ((`_HL + 1)) and `EX_WRITE((`_HL), rdata)
 `EX_READ(`_HL + 1)
-`EX_WRITE(`_HL, rdata) 
+`EX_WRITE(`_HL, rdata)  more
 
-//===========================================================================
+//======================================================================
+// include of parameterized file
+`define INCNAME "t_preproc_inc4.vh"
+`include `INCNAME
+`ifndef T_PREPROC_INC4
+ `error "No Inc4"
+`endif
+`undef T_PREPROC_INC4
+
+`ifdef NOT_DEFINED_INC
+ `include NOT_DEFINED_INC
+`endif
+
+//======================================================================
+// macro call with , in {}
+
+`define xxerror(logfile, msg) $blah(logfile,msg)
+`xxerror("ab,cd","e,f");
+`xxerror(this.logfile, vec);
+`xxerror(this.logfile, vec[1,2,3]);
+`xxerror(this.logfile, {blah.name(), " is not foo"});
+
+//======================================================================
+// pragma/default net type
+
+`pragma foo = 1
+`default_nettype none
+`default_nettype uwire
+
+//======================================================================
 // Ifdef
 
 `define EMPTY_TRUE
@@ -142,6 +224,25 @@ Line_Preproc_Check `__LINE__
   y   //Too
   )
 Line_Preproc_Check `__LINE__
+
+//======================================================================
+// defines split arguments
+
+`define BEGIN begin
+`define END end
+`define BEGINEND `BEGIN`END
+`define quoteit(x) `"x`"
+`BEGIN`END   // 2001 spec doesn't require two tokens, so "beginend" ok
+`BEGINEND    // 2001 spec doesn't require two tokens, so "beginend" ok
+`quoteit(`BEGIN`END)  // No space "beginend"
+
+//======================================================================
+// bug106
+`define \esc`def got_escaped
+`ifdef \esc`def
+  `\esc`def
+`endif
+Not a \`define
 
 //======================================================================
 // misparsed comma in submacro
@@ -256,4 +357,55 @@ EXP: This is fooed_2
 `define NOPARAM() np
 `NOPARAM()
 `NOPARAM( )
+//======================================================================
+// It's unclear if the spec allows this; is text_macro_idenitfier before or after substitution?
+`define NODS_DEFINED
+`define NODS_INDIRECT(x) x
+`ifndef `NODS_INDIRECT(NODS_DEFINED)
+   `error "Indirect failed"
+`endif
+`ifdef `NODS_INDIRECT(NODS_UNDEFINED)
+   `error "Indirect2 failed"
+`endif
+//======================================================================
+// Metaprogramming
+`define REPEAT_0(d)
+`define REPEAT_1(d) d
+`define REPEAT_2(d) `REPEAT_1(d)d
+`define REPEAT_3(d) `REPEAT_2(d)d
+`define REPEAT_4(d) `REPEAT_3(d)d
+
+`define CONCAT(a, b) a``b
+`define REPEATC(n, d) `CONCAT(`REPEAT_, n)(d)
+`define REPEATT(n, d) `REPEAT_``n(d)
+
+`REPEATC(3, hello3 )
+`REPEATT(4, hello4 )
+//======================================================================
+// Include from stringification
+`undef T_PREPROC_INC4
+`define NODS_CONC_VH(m) `"m.vh`"
+`include `NODS_CONC_VH(t_preproc_inc4)
+`ifndef T_PREPROC_INC4 `error_here `endif
+//======================================================================
+// Defines doing defines
+// Note the newline on the end - required to form the end of a define
+`define DEFINEIT(d) d \
+
+`define _DEFIF_Z_0 1
+`define DEFIF_NZ(d,n) `undef d `ifndef _DEFIF_Z_``n `DEFINEIT(`define d 1) `endif
+`DEFIF_NZ(TEMP,1)
+`ifndef TEMP  `error "bad" `endif
+`DEFIF_NZ(TEMP,0)
+`ifdef TEMP  `error "bad0" `endif
+Line_Preproc_Check `__LINE__
+//======================================================================
+// Quoted multiline - track line numbers, and insure \\n gets propagated
+`define MULQUOTE "FOO \
+  BAR "
+`define MULQUOTE2(mq) `MULQUOTE mq `MULQUOTE
+Line_Preproc_Check `__LINE__
+`MULQUOTE2("arg_line1 \
+  arg_line2")
+Line_Preproc_Check `__LINE__
 //======================================================================

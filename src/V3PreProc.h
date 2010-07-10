@@ -32,6 +32,9 @@
 #include <list>
 #include <iostream>
 
+// Compatibility with Verilog-Perl's preprocessor
+#define fatalSrc(msg) v3fatalSrc(msg)
+
 class V3InFilter;
 
 class V3PreProc {
@@ -40,14 +43,14 @@ class V3PreProc {
 
 protected:
     // STATE
-    FileLine*	m_fileline;	// Last token's starting point
     int		m_debug;	// Debugging
 
 public:
     // CONSTANTS
     enum MiscConsts {
 	DEFINE_RECURSION_LEVEL_MAX = 50,	// How many `def substitutions before an error
-	INCLUDE_DEPTH_MAX = 500			// How many `includes deep before an error
+	INCLUDE_DEPTH_MAX = 500,		// How many `includes deep before an error
+	NEWLINES_VS_TICKLINE = 20		// Use `line in place of this many newlines
     };
 
     // ACCESSORS
@@ -60,11 +63,12 @@ public:
     int debug() const { return m_debug; }
     void debug(int level) { m_debug = level; }
 
-    FileLine* fileline() { return m_fileline; }	// File/Line number for last getline call
+    FileLine* fileline();	///< File/Line number for last getline call
 
     // CONTROL METHODS
     // These options control how the parsing proceeds
     int keepComments() { return 2; }		// Return comments, 0=no, 1=yes, 2=callback
+    bool keepWhitespace() { return false; }
     bool lineDirectives() { return true; }	// Insert `line directives
     bool pedantic() { return false; }		// Obey standard; Don't substitute `error
     static bool optPsl();
@@ -83,12 +87,16 @@ public:
     }
     virtual string removeDefines(const string& text)=0;	// Remove defines in a text string
 
+    // UTILITIES
+    void error(string msg) { fileline()->v3error(msg); }	///< Report a error
+    void fatal(string msg) { fileline()->v3fatalSrc(msg); }	///< Report a fatal error
+
 protected:
     // CONSTUCTORS
-    V3PreProc(FileLine* fl) {
-	m_fileline=fl;
+    V3PreProc() {
 	m_debug=0;
     };
+    void configure(FileLine* fl);
 public:
     static V3PreProc* createPreProc(FileLine* fileline);
     virtual ~V3PreProc() {}

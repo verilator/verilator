@@ -13,21 +13,23 @@ compile (
 execute (
 	 check_finished=>1,
 	 expect=>quotemeta(
-'pre thrupre thrumid thrupost post: "right side"
+qq{pre thrupre thrumid thrupost post: "right side"
 left side: "right side"
-left side : "right side "
-left_side : "right_side "
-na : "right_side "
-prep ( midp1 left_side midp2 ( outp ) ) : "right_side "
+left side: "right side"
+left_side: "right_side"
+na: "right_side"
+prep ( midp1 left_side midp2 ( outp ) ): "right_side"
 na: "nana"
-`ls `rs : "`ls `rs "
+left_side right_side: "left_side right_side"
+left side: "right side"
 : ""
 left side: "right side"
-left side  : "right side  "
+left side: "right side"
+standalone
 twoline: "first   second"
-Line 38 File "t/t_pp_display.v"
+Line 49 File "t/t_pp_display.v"
 *-* All Finished *-*
-'));
+}));
 
 ok(1);
 1;

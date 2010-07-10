@@ -5,6 +5,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.8****
 
+***  Fix preprocessor preservation of newlines across macro substitutions.
+
+**** Fix preprocessor stringification of nested macros.
+
 **** Fix some constant parameter functions causing crash, bug253. [Nick Bowler]
 
 **** Fix do {...} while() not requiring final semicolon.
