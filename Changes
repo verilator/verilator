@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.8****
+
+**** Increase define recursions before error.  [Paul Liu]
+
 * Verilator 3.803 2010/07/10
 
 ***  Fix preprocessor preservation of newlines across macro substitutions.

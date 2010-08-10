@@ -48,7 +48,7 @@ protected:
 public:
     // CONSTANTS
     enum MiscConsts {
-	DEFINE_RECURSION_LEVEL_MAX = 50,	// How many `def substitutions before an error
+	DEFINE_RECURSION_LEVEL_MAX = 1000,	// How many `def substitutions before an error
 	INCLUDE_DEPTH_MAX = 500,		// How many `includes deep before an error
 	NEWLINES_VS_TICKLINE = 20		// Use `line in place of this many newlines
     };
