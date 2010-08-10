@@ -118,7 +118,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/bisonpre src/*fix \
 	src/*.pl src/*.pod \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
-	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh test_*/vlint \
+	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
 	test_verilated/vgen*.pl \
 	test_regress/t/*.cpp \
 	test_regress/t/*.h \
