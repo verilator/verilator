@@ -207,6 +207,7 @@ descriptions in the next sections for more information.
     --coverage-line             Enable line coverage
     --coverage-toggle           Enable toggle coverage
     --coverage-user             Enable PSL/SVL user coverage
+    --coverage-underscore       Enable covarge of _signals
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions
@@ -256,6 +257,7 @@ descriptions in the next sections for more information.
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
+    --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
     --unroll-stmts <stmts>      Tune maximum loop body size
@@ -425,6 +427,11 @@ counting such behavior.
 
 A /*verilator coverage_off/on */ comment pair can be used around signals
 that do not need toggle analysis, such as RAMs and register files.
+
+=item --coverage-underscore
+
+Enable coverage of signals that start with an underscore. Normally, these
+signals are not covered.  See also --trace-underscore.
 
 =item --coverage-user
 
@@ -749,6 +756,11 @@ Specify the number of levels deep to enable tracing, for example
 --trace-level 1 to only see the top level's signals.  Defaults to the
 entire model.  Using a small number will decrease visibility, but greatly
 improve runtime and trace file size.
+
+=item --trace-underscore
+
+Enable tracing of signals that start with an underscore. Normally, these
+signals are not output during tracing.  See also --coverage-underscore.
 
 =item -UI<var>
 

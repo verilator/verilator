@@ -81,10 +81,12 @@ private:
 	string prettyName = nodep->prettyName();
 	if (!nodep->isToggleCoverable())
 	    return "Not relevant signal type";
-	if (prettyName.c_str()[0] == '_')
-	    return "Leading underscore";
-	if (prettyName.find("._") != string::npos)
-	    return "Inlined leading underscore";
+	if (!v3Global.opt.coverageUnderscore()) {
+	    if (prettyName.c_str()[0] == '_')
+	        return "Leading underscore";
+	    if (prettyName.find("._") != string::npos)
+	        return "Inlined leading underscore";
+	}
 	if ((nodep->width()*nodep->arrayElements()) > 256) return "Wide bus/array > 256 bits";
 	// We allow this, though tracing doesn't
 	// if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";

@@ -611,6 +611,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-coverage", flag/*ref*/) )	{ coverage(flag); }
 	    else if ( onoff   (sw, "-coverage-line", flag/*ref*/) ){ m_coverageLine = flag; }
 	    else if ( onoff   (sw, "-coverage-toggle", flag/*ref*/) ){ m_coverageToggle = flag; }
+	    else if ( onoff   (sw, "-coverage-underscore", flag/*ref*/) ){ m_coverageUnderscore = flag; }
 	    else if ( onoff   (sw, "-coverage-user", flag/*ref*/) ){ m_coverageUser = flag; }
 	    else if ( onoff   (sw, "-covsp", flag/*ref*/) )	{ }  // TBD
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
@@ -634,6 +635,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( !strcmp (sw, "-sv") )				{ m_language = V3LangCode::L1800_2005; }
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
+	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
@@ -993,6 +995,7 @@ V3Options::V3Options() {
     m_autoflush = false;
     m_coverageLine = false;
     m_coverageToggle = false;
+    m_coverageUnderscore = false;
     m_coverageUser = false;
     m_debugCheck = false;
     m_dumpTree = false;
@@ -1014,6 +1017,7 @@ V3Options::V3Options() {
     m_systemPerl = false;
     m_trace = false;
     m_traceDups = false;
+    m_traceUnderscore = false;
     m_underlineZero = false;
 
     m_errorLimit = 50;

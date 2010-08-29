@@ -103,6 +103,7 @@ class V3Options {
     bool	m_cdc;		// main switch: --cdc
     bool	m_coverageLine;	// main switch: --coverage-block
     bool	m_coverageToggle;// main switch: --coverage-toggle
+    bool	m_coverageUnderscore;// main switch: --coverage-underscore
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
     bool	m_dumpTree;	// main switch: --dump-tree
@@ -122,6 +123,7 @@ class V3Options {
     bool	m_stats;	// main switch: --stats
     bool	m_trace;	// main switch: --trace
     bool	m_traceDups;	// main switch: --trace-dups
+    bool	m_traceUnderscore;// main switch: --trace-underscore
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
 
     int		m_errorLimit;	// main switch: --error-limit
@@ -222,12 +224,14 @@ class V3Options {
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
+    bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool dumpTree() const { return m_dumpTree; }
     bool exe() const { return m_exe; }
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
+    bool traceUnderscore() const { return m_traceUnderscore; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
     bool pinsUint8() const { return m_pinsUint8; }

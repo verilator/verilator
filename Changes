@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.8****
 
+***  Support tracing/coverage of underscore signals, bug280.  [by Jason McMullan]
+
 **** Increase define recursions before error.  [Paul Liu]
 
 * Verilator 3.803 2010/07/10

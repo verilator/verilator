@@ -69,10 +69,12 @@ private:
 	string prettyName = nodep->prettyName();
 	if (!nodep->isTrace())
 	    return "Verilator trace_off";
-	if (prettyName.c_str()[0] == '_')
-	    return "Leading underscore";
-	if (prettyName.find("._") != string::npos)
-	    return "Inlined leading underscore";
+	if (!v3Global.opt.traceUnderscore()) {
+	    if (prettyName.c_str()[0] == '_')
+	        return "Leading underscore";
+	    if (prettyName.find("._") != string::npos)
+	        return "Inlined leading underscore";
+        }
 	if (nodep->width() > 256) return "Wide bus > 256 bits";
 	if (nodep->arrayElements() > 32) return "Wide memory > 32 ents";
 	if (!(nodep->dtypeSkipRefp()->castBasicDType()
