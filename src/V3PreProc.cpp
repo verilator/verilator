@@ -770,7 +770,7 @@ int V3PreProcImp::getRawToken() {
 	    m_lineAdd--;
 	    m_rawAtBol = true;
 	    yyourtext("\n",1);
-	    if (debug()) debugToken(VP_WHITE, "LNA");
+	    if (debug()>=5) debugToken(VP_WHITE, "LNA");
 	    return (VP_WHITE);
 	}
 	if (m_lineCmt!="") {
@@ -788,7 +788,7 @@ int V3PreProcImp::getRawToken() {
 		V3PreLex::s_currentLexp->appendDefValue(yyourtext(),yyourleng());
 		goto next_tok;
 	    } else {
-		if (debug()) debugToken(VP_TEXT, "LCM");
+		if (debug()>=5) debugToken(VP_TEXT, "LCM");
 		return (VP_TEXT);
 	    }
 	}
@@ -797,7 +797,7 @@ int V3PreProcImp::getRawToken() {
 	// Snarf next token from the file
 	int tok = m_lexp->lex();
 
-	if (debug()) debugToken(tok, "RAW");
+	if (debug()>=5) debugToken(tok, "RAW");
 
 	// A EOF on an include, so we can print `line and detect mis-matched "s
 	if (tok==VP_EOF) {
@@ -810,7 +810,7 @@ int V3PreProcImp::getRawToken() {
 }
 
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
-    if (debug()>4) {
+    if (debug()>=5) {
 	string buf = string (yyourtext(), yyourleng());
 	string::size_type pos;
 	while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
@@ -928,7 +928,7 @@ int V3PreProcImp::getStateToken() {
 	case ps_DEFFORM: {
 	    if (tok==VP_DEFFORM) {
 		m_formals = m_lexp->m_defValue;
-		if (debug()) cout<<"DefFormals='"<<V3PreLex::cleanDbgStrg(m_formals)<<"'\n";
+		if (debug()>=5) cout<<"DefFormals='"<<V3PreLex::cleanDbgStrg(m_formals)<<"'\n";
 		stateChange(ps_DEFVALUE);
 		m_lexp->pushStateDefValue();
 		goto next_tok;
@@ -945,8 +945,8 @@ int V3PreProcImp::getStateToken() {
 	    static string newlines;
 	    newlines = "\n";  // Always start with trailing return
 	    if (tok == VP_DEFVALUE) {
-		if (debug()) cout<<"DefValue='"<<V3PreLex::cleanDbgStrg(m_lexp->m_defValue)
-				 <<"'  formals='"<<V3PreLex::cleanDbgStrg(m_formals)<<"'\n";
+		if (debug()>=5) cout<<"DefValue='"<<V3PreLex::cleanDbgStrg(m_lexp->m_defValue)
+				    <<"'  formals='"<<V3PreLex::cleanDbgStrg(m_formals)<<"'\n";
 		// Add any formals
 		string formals = m_formals;
 		string value = m_lexp->m_defValue;
@@ -1333,7 +1333,7 @@ string V3PreProcImp::getline() {
     while (NULL==(rtnp=strchr(m_lineChars.c_str(),'\n')) && !gotEof) {
 	string buf;
 	int tok = getFinalToken(buf/*ref*/);
-	if (debug()>4) {
+	if (debug()>=5) {
 	    fprintf (stderr,"%d: GETFETC:  %-10s: %s\n",
 		     m_lexp->m_tokFilelinep->lineno(), tokenName(tok), V3PreLex::cleanDbgStrg(buf).c_str());
 	}
@@ -1359,9 +1359,5 @@ string V3PreProcImp::getline() {
     if (debug()>=4) fprintf (stderr,"%d: GETLINE:  %s\n",
 			     m_lexp->m_tokFilelinep->lineno(),
 			     V3PreLex::cleanDbgStrg(theLine).c_str());
-    if (debug()>=4) fprintf (stderr,"%d: GETLINE len %d FC %d\n",
-			     m_lexp->m_tokFilelinep->lineno(),
-			     (int)(theLine.length()),
-			     (int)(theLine.length()>0?theLine[0]:-1));
     return theLine;
 }
