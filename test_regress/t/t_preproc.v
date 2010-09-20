@@ -409,3 +409,44 @@ Line_Preproc_Check `__LINE__
   arg_line2")
 Line_Preproc_Check `__LINE__
 //======================================================================
+// bug283
+
+`define A a
+`define B b
+`define C c
+// EXP: abc
+`define C5 `A``b```C
+`C5
+`undef A
+`undef B
+`undef C
+
+`define XTYPE sonet
+`define XJOIN(__arg1, __arg2) __arg1``__arg2
+`define XACTION `XJOIN(`XTYPE, _frame)
+EXP: sonet_frame
+`XACTION
+//
+`define XFRAME frame
+`define XACTION2 `XJOIN(sonet_, `XFRAME)
+EXP: sonet_frame
+`XACTION2
+// This result varies between simulators
+`define sonet_frame other_frame
+`define XACTION3 `XTYPE``_frame
+EXP: sonet_frame
+`XACTION3
+
+// The existance of non-existance of a base define can make a difference
+`define QA_b zzz
+`define Q1 `QA``_b
+EXP: module zzz ; endmodule
+module `Q1 ; endmodule
+module `Q1 ; endmodule
+
+`define QA a
+EXP: module a_b ; endmodule
+module `Q1 ; endmodule
+module `Q1 ; endmodule
+
+//======================================================================

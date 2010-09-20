@@ -63,6 +63,8 @@ class V3PreProcImp;
 #define VP_DEFFORM	309
 #define VP_STRIFY	310
 #define VP_BACKQUOTE	311
+#define VP_SYMBOL_JOIN	312
+#define VP_DEFREF_JOIN	313
 
 #define VP_PSL		350
 

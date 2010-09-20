@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support tracing/coverage of underscore signals, bug280.  [by Jason McMullan]
 
+**** Fix preprocessor `` of existing base define, bug283.  [Usha Priyadharshini]
+
 **** Increase define recursions before error.  [Paul Liu]
 
 **** On core dump, print debug suggestions.

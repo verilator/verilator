@@ -654,4 +654,52 @@ Line_Preproc_Check 407
 Line_Preproc_Check 410
 
 
-`line 413 "t/t_preproc.v" 2
+
+`line 414 "t/t_preproc.v" 0
+ 
+ 
+ 
+
+`line 418 "t/t_preproc.v" 0
+ 
+abc
+ 
+ 
+ 
+
+`line 424 "t/t_preproc.v" 0
+ 
+ 
+ 
+EXP: sonet_frame
+sonet_frame
+
+`line 430 "t/t_preproc.v" 0
+ 
+ 
+EXP: sonet_frame
+sonet_frame
+
+`line 435 "t/t_preproc.v" 0
+ 
+ 
+EXP: sonet_frame
+sonet_frame
+
+
+`line 441 "t/t_preproc.v" 0
+ 
+ 
+EXP: module zzz ; endmodule
+module zzz ; endmodule
+module zzz ; endmodule
+
+`line 447 "t/t_preproc.v" 0
+ 
+EXP: module a_b ; endmodule
+module a_b ; endmodule
+module a_b ; endmodule
+
+
+
+`line 454 "t/t_preproc.v" 2
