@@ -614,7 +614,9 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    else if ( onoff   (sw, "-coverage-underscore", flag/*ref*/) ){ m_coverageUnderscore = flag; }
 	    else if ( onoff   (sw, "-coverage-user", flag/*ref*/) ){ m_coverageUser = flag; }
 	    else if ( onoff   (sw, "-covsp", flag/*ref*/) )	{ }  // TBD
+	    else if ( !strcmp (sw, "-debug-abort") )		{ abort(); } // Undocumented, see also --debug-core-dump
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
+	    else if ( !strcmp (sw, "-debug-core-dump") )	{ char* zp=NULL; *zp=0; }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag; }
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }

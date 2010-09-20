@@ -137,6 +137,15 @@ sub run {
 	    warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
 	    warn "%Error: $command\n";
 	}
+	if ($status & 255) {
+	    if (($status & 255) == 8 || ($status & 255) == 11) { # SIGFPA or SIGSEGV
+		warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
+	    } elsif (($status & 255) == 6) {  # SIGABRT
+		warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;
+	    } else {
+		warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
+	    }
+	}
 	die "%Error: Command Failed $command\n";
     }
 }

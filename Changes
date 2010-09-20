@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Increase define recursions before error.  [Paul Liu]
 
+**** On core dump, print debug suggestions.
+
 * Verilator 3.803 2010/07/10
 
 ***  Fix preprocessor preservation of newlines across macro substitutions.
