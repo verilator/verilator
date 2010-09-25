@@ -862,7 +862,7 @@ void OrderVisitor::processInsLoopEdge(V3GraphEdge* oldEdgep) {
 		OrderLoopEndVertex* endp = m_pmlLoopEndps[fromId];
 		newFromp = endp;
 		// If it goes from(to) a cutable VarVertex inside the Begin/End block,
-		// we can't loose the variable, as we might need to cut that variable out
+		// we can't lose the variable, as we might need to cut that variable out
 		// in the next pass of processLoops, and processBrokeLoops needs the var pointer.
 		// We'll make another VarVertex (dup of the one "inside" the loop)
 		// and point to it.

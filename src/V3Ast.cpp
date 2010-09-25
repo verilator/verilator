@@ -813,7 +813,7 @@ void AstNode::iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup) {
 AstNode* AstNode::acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
     // Some visitors perform tree edits (such as V3Const), and may even
     // replace/delete the exact nodep that the visitor is called with.  If
-    // this happens, the parent will loose the handle to the node that was
+    // this happens, the parent will lose the handle to the node that was
     // processed.
     // To solve this, this function returns the pointer to the replacement node,
     // which in many cases is just the same node that was passed in.

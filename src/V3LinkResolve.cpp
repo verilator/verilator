@@ -196,7 +196,7 @@ private:
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	if (!nodep->attrp()) {
 	    nodep->iterateChildren(*this);
-	    // Constification may change the fromp() to a constant, which will loose the
+	    // Constification may change the fromp() to a constant, which will lose the
 	    // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
 	    // So we replicate it in another node
 	    // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's

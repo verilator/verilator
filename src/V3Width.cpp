@@ -327,7 +327,7 @@ private:
 	    if (nodep->lsbp()->castConst() && nodep->msbConst() > frommsb) {
 		// See also warning in V3Const
 		// We need to check here, because the widthCheck may silently
-		// add another SEL which will loose the out-of-range check
+		// add another SEL which will lose the out-of-range check
 		nodep->v3error("Selection index out of range: "
  			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
 			       <<" outside "<<frommsb<<":"<<fromlsb);

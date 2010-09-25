@@ -1106,7 +1106,7 @@ private:
     // Someday if lower is constant, convert to quoted "string".
 
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
-	// Don't iterate children, don't want to loose VarRef.
+	// Don't iterate children, don't want to lose VarRef.
 	if (nodep->attrType()==AstAttrType::EXPR_BITS) {
 	    if (!nodep->fromp() || !nodep->fromp()->widthMin()) nodep->v3fatalSrc("Unsized expression");
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->widthMin());

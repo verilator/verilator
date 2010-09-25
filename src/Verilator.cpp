@@ -178,7 +178,7 @@ void process () {
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("widthcommit.tree"));
 
     // Coverage insertion
-    //    Before we do dead code elimination and inlining, or we'll loose it.
+    //    Before we do dead code elimination and inlining, or we'll lose it.
     if (v3Global.opt.coverage()) {
 	V3Coverage::coverage(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("coverage.tree"));

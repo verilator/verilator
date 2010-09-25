@@ -130,7 +130,7 @@ private:
 				      AstLogicPacked(), prep->width());
 	    m_modp->addStmtp(varp);
 
-	    AstNode* abovep = prep->backp();  // Grab above point before loose it w/ next replace
+	    AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace
 	    prep->replaceWith(new AstVarRef(fl, varp, true));
 	    AstNode* newp = new AstIf(fl, condp,
 				      (needDly

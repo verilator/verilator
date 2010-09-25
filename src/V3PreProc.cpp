@@ -879,7 +879,7 @@ int V3PreProcImp::getStateToken() {
 	    if (defExists(name)) {   // JOIN(DEFREF)
 		// Put back the `` and process the defref
 		UINFO(5,"```: define "<<name<<" exists, expand first\n");
-		m_defPutJoin = true;  // After define, unputString("``").  Not now as would loose yyourtext()
+		m_defPutJoin = true;  // After define, unputString("``").  Not now as would lose yyourtext()
 		UINFO(5,"TOKEN now DEFREF\n");
 		tok = VP_DEFREF;
 	    } else {  // DEFREF(JOIN)
