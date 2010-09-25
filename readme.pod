@@ -72,15 +72,14 @@ Download the latest package from that site, and decompress.
 
 If you will be using SystemC (vs straight C++ output), download SystemC
 2.0.1 from L<http://www.systemc.org>.  Follow their installation
-instructions.  As described in the System-Perl README, you will need to set
-SYSTEMC and/or SYSTEMC_KIT to point to this download.  Also, set
-SYSTEMC_ARCH to the architecture name you used with SystemC, generally
-'linux' or 'cygwin'.
+instructions.  You will need to set the SYSTEMC environment variable to
+point to this download.  Also, setenv SYSTEMC_ARCH to the architecture name
+you used with SystemC, generally 'linux' or 'cygwin'.
 
-=item
-
-If you will be using SystemPerl or coverage, download and install
-Verilog-Perl, L<http://www.veripool.org/verilog-perl>.
+Verilator assumes you did a make in the SystemC kit directory and SYSTEMC
+points to that directory.  There must be appropriate files in
+C<$SYSTEMC/include> and C<$SYSTEMC/lib-linux> for SystemC compilation to
+work.
 
 =item
 
@@ -100,7 +99,7 @@ You now have to decide how you're going to eventually install the kit.
 
 Our personal favorite is to always run Verilator from the kit directory.
 This allows the easiest experimentation and upgrading.  It's also how most
-EDA tools operate; you just point to the tarball.
+EDA tools operate; to run any of them you point to the tarball.
 
     export VERILATOR_ROOT=`pwd`   # if your shell is bash
     setenv VERILATOR_ROOT `pwd`   # if your shell is csh
@@ -119,11 +118,9 @@ most GNU tools support:
     unsetenv VERILATOR_ROOT   # if your shell is csh
     ./configure --prefix /opt/verilator-VERSION
 
-Finally, if you are configuring Verilator to be part of a RPM or other
-distribution package system, you may want to tune the various install
-directories and use the --enable-defenv configure flag.  This will take the
-current value of VERILATOR_ROOT, SYSTEMC, SYSTEMC_ARCH, SYSTEMPERL, and
-SYSTEMPERL_INCLUDE and build them as defaults into the executable.
+Note Verilator builds the current value of VERILATOR_ROOT, SYSTEMC,
+SYSTEMC_ARCH, SYSTEMPERL, and SYSTEMPERL_INCLUDE as defaults into the
+executable, so try to have them correct before configuring.
 
 =item
 
@@ -141,16 +138,15 @@ unsigned long uint32_t;}.
 
 =item
 
-If you used the VERILATOR_ROOT sheme you're done.  Programs should set the
+If you used the VERILATOR_ROOT scheme you're done.  Programs should set the
 environment variable VERILATOR_ROOT to point to this distribution, then
 execute $VERILATOR_ROOT/bin/verilator, which will find the path to all
 needed files.
 
-If you used the prefix scheme, now do a C<make install>.
-
-Verilator assumes you did a make in the SystemC kit directory.  If not, you
-will need to populate C<$SYSTEMC/include> and C<$SYSTEMC/lib-linux>
-appropriately.
+If you used the prefix scheme, now do a C<make install>.  To run verilator,
+have the verilator binary directory in your PATH (this should already be
+true if using the default configure), and make sure VERILATOR_ROOT is not
+set.
 
 =back
 
