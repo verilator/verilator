@@ -10,10 +10,10 @@
 `line 7 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc2.vh" 1
 
-`line 3 "t/t_preproc.v" 0
+`line 3 "t/t_preproc_inc2.vh" 0
 
 
-`line 4 "t/t_preproc.v" 0
+`line 4 "t/t_preproc_inc2.vh" 0
 At file "t/t_preproc_inc2.vh"  line 4
  
  
@@ -288,11 +288,11 @@ begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 `line 180 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
 
-`line 3 "t/t_preproc.v" 0
+`line 3 "t/t_preproc_inc4.vh" 0
 
 
 
-`line 5 "t/t_preproc.v" 0
+`line 5 "t/t_preproc_inc4.vh" 0
  
 
 `line 7 "t/t_preproc_inc4.vh" 2
@@ -612,11 +612,11 @@ hello4hello4hello4hello4
 `line 388 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
 
-`line 3 "t/t_preproc.v" 0
+`line 3 "t/t_preproc_inc4.vh" 0
 
 
 
-`line 5 "t/t_preproc.v" 0
+`line 5 "t/t_preproc_inc4.vh" 0
  
 
 `line 7 "t/t_preproc_inc4.vh" 2

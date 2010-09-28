@@ -1359,7 +1359,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
 		if (debug()>=5) fprintf(stderr,"%d: FIN: readjust, fin at %d  request at %d\n",
 					m_lexp->m_tokFilelinep->lineno(),
 					m_finFilelinep->lineno(), m_lexp->m_tokFilelinep->lineno());
-		m_finFilelinep = m_finFilelinep->create(m_lexp->m_tokFilelinep->lineno());
+		m_finFilelinep = m_finFilelinep->create(m_lexp->m_tokFilelinep->filename(),m_lexp->m_tokFilelinep->lineno());
 		if (outBehind > 0 && outBehind <= (int)V3PreProc::NEWLINES_VS_TICKLINE) {
 		    // Output stream is behind, send newlines to get back in sync
 		    // (Most likely because we're completing a disabled `endif)
