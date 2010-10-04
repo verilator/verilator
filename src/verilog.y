@@ -826,11 +826,11 @@ port<nodep>:			// ==IEEE: port
 	|	portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$3; VARDTYPE($2); AstVar* vp=VARDONEP($$,$4,$5); $$->addNextNull(vp); vp->valuep($7); }
 	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
+			{ $$=$4; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
 	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
+			{ $$=$4; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; /*VARDTYPE-same*/ AstVar* vp=VARDONEP($$,$3,$4); $$->addNextNull(vp); vp->valuep($6); }
+			{ $$=$2; /*VARDTYPE-same*/ AstVar* vp=VARDONEP($$,$3,$4); $$->addNextNull(vp); vp->valuep($6); }
  	;
  
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
