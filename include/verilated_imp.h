@@ -49,7 +49,7 @@ class VerilatedImp {
     typedef vector<string> ArgVec;
     typedef map<pair<const void*,void*>,void*> UserMap;
     typedef map<const char*, const VerilatedScope*, VerilatedCStrCmp>  ScopeNameMap;
-    typedef map<const char*, int>  ExportNameMap;
+    typedef map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
 
     // MEMBERS
     static VerilatedImp	s_s;		///< Static Singleton; One and only static this

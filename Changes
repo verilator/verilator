@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix segfault on SystemVerilog "output wire foo=0", bug291.  [Joshua Wise]
 
+**** Fix DPI export name not found, msg369.  [Terry Chen]
+
 * Verilator 3.804 2010/09/20
 
 ***  Support tracing/coverage of underscore signals, bug280.  [by Jason McMullan]
