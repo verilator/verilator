@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.80****
 
+**** Add warning when directory contains spaces, msg378.  [Salman Sheikh]
+
 **** Fix wrong filename on include file errors, bug289. [Brad Parker]
 
 **** Fix segfault on SystemVerilog "output wire foo=0", bug291.  [Joshua Wise]
