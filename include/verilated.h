@@ -942,14 +942,11 @@ static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
     return(owp);
 }
 
-// Optimization bug in GCC 2.96 and presumably all-pre GCC 3 versions need this workaround
-#if 1 //defined(__GNUC__) && __GNUC__ < 3
+// Optimization bug in GCC 2.96 and presumably all-pre GCC 3 versions need this workaround,
+// we can't just
+//# define VL_UNARYMIN_I(data) (-(data))
 static inline IData  VL_UNARYMIN_I(IData data) { return -data; }
 static inline QData  VL_UNARYMIN_Q(QData data) { return -data; }
-#else
-# define VL_UNARYMIN_I(IData data) (-(data))
-# define VL_UNARYMIN_Q(QData data) (-(data))
-#endif
 
 static inline WDataOutP VL_UNARYMIN_W(int words, WDataOutP owp,WDataInP lwp){
     QData carry = 0;
