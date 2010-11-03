@@ -182,6 +182,7 @@ class V3Options {
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
     bool suffixed(const char* sw, const char* arg);
+    string parseFileArg(const string& optdir, const string& relfilename);
 
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
@@ -301,8 +302,8 @@ class V3Options {
     string allArgsString();	///< Return all passed arguments as simple string
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
-    void parseOptsList (FileLine* fl, int argc, char** argv);
-    void parseOptsFile (FileLine* fl, const string& filename);
+    void parseOptsList (FileLine* fl, const string& optdir, int argc, char** argv);
+    void parseOptsFile (FileLine* fl, const string& filename, bool rel);
 
     // METHODS (generic string utilities)
     static bool wildmatch(const char* s, const char* p);
@@ -315,6 +316,7 @@ class V3Options {
     static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
     static string filenameDir (const string& filename);	///< Return directory part of filename
     static string filenameSubstitute (const string& filename);	///< Return filename with env vars removed
+    static bool   filenameIsRel (const string& filename);	///< True if relative
     static void   unlinkRegexp(const string& dir, const string& regexp);
 
     // METHODS (environment)

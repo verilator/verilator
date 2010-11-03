@@ -1,0 +1,5 @@
+// DESCRIPTION: Verilator: Verilog Test module
+
++define+GOT_DEF4=1
++incdir+.
+t_flag_f_tsub.v

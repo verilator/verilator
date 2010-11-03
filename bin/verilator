@@ -227,6 +227,7 @@ descriptions in the next sections for more information.
      -E                          Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
+     -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
     --help                      Display this help.
      -I<dir>                    Directory to search for includes
@@ -502,10 +503,18 @@ After this number of errors or warnings are encountered, exit.  Defaults to
 Generate a executable.  You will also need to pass additional .cpp files on
 the command line that implement the main loop for your simulation.
 
+=item -F I<file>
+
+Read the specified file, and act as if all text inside it was specified as
+command line parameters.  Any relative paths are relative to the directory
+containing the specified file.  Note -F is fairly standard across Verilog
+tools.
+
 =item -f I<file>
 
 Read the specified file, and act as if all text inside it was specified as
-command line parameters.  Note -f is fairly standard across Verilog tools.
+command line parameters.  Any relative paths are relative to the current
+directory.  Note -f is fairly standard across Verilog tools.
 
 =item --help
 

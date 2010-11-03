@@ -213,6 +213,10 @@ string V3Options::filenameSubstitute (const string& filename) {
     return out;
 }
 
+bool V3Options::filenameIsRel(const string& filename) {
+    return (filename.length()>0 && filename[0] != '/');
+}
+
 bool V3Options::fileStatDir(const string& filename) {
     struct stat	m_stat;		// Stat information
     int err = stat(filename.c_str(), &m_stat);
@@ -520,7 +524,7 @@ string V3Options::argString (int argc, char** argv) {
 void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
     // Parse all options
     // Inital entry point from Verilator.cpp
-    parseOptsList (fl, argc, argv);
+    parseOptsList (fl, ".", argc, argv);
 
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
@@ -556,7 +560,7 @@ bool V3Options::suffixed(const char* sw, const char* arg) {
     return (0==strcmp(sw+strlen(sw)-strlen(arg), arg));
 }
 
-void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
+void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
@@ -572,7 +576,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		addDefine (string (sw+strlen("+define+")));
 	    }
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
-		addIncDir (filenameSubstitute(string (sw+strlen("+incdir+"))));
+		addIncDir (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
 	    }
 	    else if ( !strncmp (sw, "+libext+", 8)) {
 		string exts = string(sw+strlen("+libext+"));
@@ -694,7 +698,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		m_errorLimit = atoi(argv[i]);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
-		addIncDir (string (sw+strlen("-I")));
+		addIncDir (parseFileArg(optdir, string (sw+strlen("-I"))));
 	    }
 	    else if ( !strcmp (sw, "-inline-mult") && (i+1)<argc ) {
 		shift;
@@ -753,7 +757,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	    }
 	    else if ( !strcmp (sw, "-v") && (i+1)<argc ) {
 		shift;
-		V3Options::addLibraryFile(filenameSubstitute(argv[i]));
+		V3Options::addLibraryFile(parseFileArg(optdir,argv[i]));
 	    }
 	    else if ( !strcmp (sw, "-V") ) {
 		showVersion(true);
@@ -815,9 +819,13 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		    fl->v3fatal("Unknown setting for --compiler: "<<argv[i]);
 		}
 	    }
+	    else if ( !strcmp (sw, "-F") && (i+1)<argc ) {
+		shift;
+		parseOptsFile(fl, parseFileArg(optdir,argv[i]), true);
+	    }
 	    else if ( !strcmp (sw, "-f") && (i+1)<argc ) {
 		shift;
-		parseOptsFile(fl, filenameSubstitute(argv[i]));
+		parseOptsFile(fl, parseFileArg(optdir,argv[i]), false);
 	    }
 	    else if ( !strcmp (sw, "-gdb") && (i+1)<argc ) {
 		shift; // Used only in perl shell
@@ -852,7 +860,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 		}
 	    }
 	    else if ( !strcmp (sw, "-y") && (i+1)<argc ) {
-		shift; addIncDir (string (argv[i]));
+		shift; addIncDir (parseFileArg(optdir,string (argv[i])));
 	    }
 	    else {
 		fl->v3fatal ("Invalid Option: "<<argv[i]);
@@ -861,7 +869,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 	} // - options
 	else {
 	    // Filename
-	    string filename = filenameSubstitute(argv[i]);
+	    string filename = parseFileArg(optdir,argv[i]);
 	    if (suffixed(filename.c_str(), ".cpp")
 		|| suffixed(filename.c_str(), ".cxx")
 		|| suffixed(filename.c_str(), ".cc")
@@ -884,7 +892,7 @@ void V3Options::parseOptsList(FileLine* fl, int argc, char** argv) {
 
 //======================================================================
 
-void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
+void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Read the specified -f filename and process as arguments
     UINFO(1,"Reading Options File "<<filename<<endl);
 
@@ -946,12 +954,25 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename) {
 	startpos = endpos;
     }
 
+    // Path
+    string optdir = (rel ? V3Options::filenameDir(filename) : ".");
+
     // Convert to argv style arg list and parse them
     char* argv [args.size()+1];
     for (unsigned i=0; i<args.size(); ++i) {
 	argv[i] = (char*)args[i].c_str();
     }
-    parseOptsList(fl, args.size(), argv);
+    parseOptsList(fl, optdir, args.size(), argv);
+}
+
+//======================================================================
+
+string V3Options::parseFileArg(const string& optdir, const string& relfilename) {
+    string filename = V3Options::filenameSubstitute(relfilename);
+    if (optdir != "." && filenameIsRel(filename)) {
+	filename = optdir + "/" + filename;
+    }
+    return filename;
 }
 
 //======================================================================
