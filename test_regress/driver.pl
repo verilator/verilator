@@ -66,6 +66,7 @@ if (! GetOptions (
 		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
 		  "gdbsim!"	=> \$opt_gdbsim,
+		  "golden!"	=> sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
 		  "help"	=> \&usage,
 		  "iverilog!"	=> \$opt_iv,
 		  "j=i"		=> \$opt_jobs,
@@ -1020,7 +1021,7 @@ sub files_identical {
 		eval "use File::Copy;";
 		File::Copy::copy($fn1,$fn2);
 	    } else {
-		warn "To update reference: HARNESS_UPDATE_GOLDEN=1 {command}\n";
+		warn "To update reference: HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n";
 	    }
 	    return 0;
 	}
@@ -1219,6 +1220,10 @@ Requires --debug.
 =item --gdbsim
 
 Run Verilator generated executable under the debugger.
+
+=item --golden
+
+Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
 
 =item --help
 
