@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add -F option to read relative option files, bug297. [Neil Hamilton]
 
+***  Suppress WIDTH warnings when adding/subtracting 1'b1.
+
 * Verilator 3.805 2010/11/02
 
 **** Add warning when directory contains spaces, msg378.  [Salman Sheikh]
