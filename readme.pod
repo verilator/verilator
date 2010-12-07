@@ -97,6 +97,14 @@ C<cd> to the Verilator directory containing this README.
 
 You now have to decide how you're going to eventually install the kit.
 
+Note Verilator builds the current value of VERILATOR_ROOT, SYSTEMC,
+SYSTEMC_ARCH, SYSTEMPERL, and SYSTEMPERL_INCLUDE as defaults into the
+executable, so try to have them correct before configuring.
+
+=over 4
+
+=item 1.
+
 Our personal favorite is to always run Verilator from the kit directory.
 This allows the easiest experimentation and upgrading.  It's also how most
 EDA tools operate; to run any of them you point to the tarball.
@@ -105,11 +113,32 @@ EDA tools operate; to run any of them you point to the tarball.
     setenv VERILATOR_ROOT `pwd`   # if your shell is csh
     ./configure
 
+=item 2.
+
+To install globally onto a "cad" disk with multiple versions of every tool,
+and add it to path using Modules/modulecmd:
+
+    unset VERILATOR_ROOT      # if your shell is bash
+    unsetenv VERILATOR_ROOT   # if your shell is csh
+    # For the tarball, use the version number instead of git describe
+    ./configure --prefix /CAD_DISK/verilator/`git describe | sed "s/verilator_//"`
+
+    After installing you'll want a module file like the following:
+
+    set install_root /CAD_DISK/verilator/{version-number-used-above}
+    setenv VERILATOR_ROOT $install_root
+    prepend-path PATH $install_root/bin
+    prepend-path MANPATH $install_root/man
+
+=item 3.
+
 The next option is to install it globally, using the normal system paths:
 
     unset VERILATOR_ROOT      # if your shell is bash
     unsetenv VERILATOR_ROOT   # if your shell is csh
     ./configure
+
+=item 4.
 
 Alternatively you can configure a prefix that install will populate, as
 most GNU tools support:
@@ -118,9 +147,7 @@ most GNU tools support:
     unsetenv VERILATOR_ROOT   # if your shell is csh
     ./configure --prefix /opt/verilator-VERSION
 
-Note Verilator builds the current value of VERILATOR_ROOT, SYSTEMC,
-SYSTEMC_ARCH, SYSTEMPERL, and SYSTEMPERL_INCLUDE as defaults into the
-executable, so try to have them correct before configuring.
+=back
 
 =item
 
