@@ -113,9 +113,20 @@ sub debug {
 sub verilator_bin {
     my $bin = "";
     # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
-    $bin .= $ENV{VERILATOR_ROOT}."/" if defined($ENV{VERILATOR_ROOT});
-    $bin .= ($ENV{VERILATOR_BIN}
-	     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
+    my $basename = ($ENV{VERILATOR_BIN}
+		    || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
+    if (defined($ENV{VERILATOR_ROOT})) {
+	my $dir = $ENV{VERILATOR_ROOT}."/";
+	if (-x "$basename") {
+	    $bin = $basename;
+	} elsif (-x "$dir/bin/$basename") {  # From a "make install" into VERILATOR_ROOT
+	    $bin = "$dir/bin/$basename";
+	} else {
+	    $bin = "$dir/$basename";  # From pointing to kit directory
+	}
+    } else {
+	$bin = $basename;
+    }
     return $bin;
 }
 
@@ -126,6 +137,7 @@ sub verilator_bin {
 sub run {
     # Run command, check errors
     my $command = shift;
+    $! = undef;  # Cleanup -x
     print "\t$command\n" if $Debug>=3;
     system($command);
     my $status = $?;

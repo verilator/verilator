@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Suppress WIDTH warnings when adding/subtracting 1'b1.
 
+**** When running with VERILATOR_ROOT, optionally find binaries under bin.
+
 * Verilator 3.805 2010/11/02
 
 **** Add warning when directory contains spaces, msg378.  [Salman Sheikh]
