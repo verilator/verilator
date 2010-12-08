@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add -F option to read relative option files, bug297. [Neil Hamilton]
 
+***  Support ++,--,+= etc as standalone statements.  [Alex Solomatnikov]
+
 ***  Suppress WIDTH warnings when adding/subtracting 1'b1.
 
 **** When running with VERILATOR_ROOT, optionally find binaries under bin.

@@ -2053,6 +2053,12 @@ supply1, task, time, tri, typedef, var, vectored, while, wire, xnor, xor
 
 Generally supported.
 
+=item ++, -- operators
+
+Increment/decrement can only be used as standalone statements or in for
+loops.  They cannot be used as side effect operators inside more complicate
+expressions ("a = b++;").
+
 =item chandle
 
 Treated as a "longint"; does not yet warn about operations that are

@@ -90,6 +90,21 @@ module t (/*AUTOARG*/
 	    // Wide decimal
 	    if ( 94'd12345678901234567890123456789 != 94'h27e41b3246bec9b16e398115) $stop;
 	    if (-94'sd123456789012345678901234567 != 94'h3f99e1020ea70d57d360b479) $stop;
+
+	    // Increments
+	    w32 = 12; w32++;  if (w32 != 13) $stop;
+	    w32 = 12; ++w32;  if (w32 != 13) $stop;
+	    w32 = 12; w32--;  if (w32 != 11) $stop;
+	    w32 = 12; --w32;  if (w32 != 11) $stop;
+	    w32 = 12; w32 += 2; if (w32 != 14) $stop;
+	    w32 = 12; w32 -= 2; if (w32 != 10) $stop;
+	    w32 = 12; w32 *= 2; if (w32 != 24) $stop;
+	    w32 = 12; w32 /= 2; if (w32 != 6) $stop;
+	    w32 = 12; w32 &= 6; if (w32 != 4) $stop;
+	    w32 = 12; w32 |= 15; if (w32 != 15) $stop;
+	    w32 = 12; w32 ^= 15; if (w32 != 3) $stop;
+	    w32 = 12; w32 >>= 1; if (w32 != 6) $stop;
+	    w32 = 12; w32 <<= 1; if (w32 != 24) $stop;
 	 end
 	 if (cyc==2) begin
 	    win <= 32'h123123;

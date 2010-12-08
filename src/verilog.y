@@ -1830,7 +1830,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
 							{ $$ = new AstIf($2,$4,$6,$8); }
 	//
-	//UNSUP	finc_or_dec_expression ';'		{ }
+	|	finc_or_dec_expression ';'		{ $$ = $1; }
 	//			// IEEE: inc_or_dec_expression
 	//			// Below under expr
 	//
@@ -1920,17 +1920,38 @@ foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of exp
 	|	'{' variable_lvalueConcList '}' '=' delayE expr	{ $$ = new AstAssign($4,$2,$6); }
 	//
 	//UNSUP	~f~exprLvalue '=' delay_or_event_controlE expr { UNSUP }
-	//UNSUP	~f~exprLvalue yP_PLUSEQ    expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_MINUSEQ   expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_TIMESEQ   expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_DIVEQ     expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_MODEQ     expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_ANDEQ     expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_OREQ      expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_XOREQ     expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_SLEFTEQ   expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_SRIGHTEQ  expr		{ UNSUP }
-	//UNSUP	~f~exprLvalue yP_SSRIGHTEQ expr		{ UNSUP }
+	//UNSUP	~f~exprLvalue yP_PLUS(etc) expr		{ UNSUP }
+	|	idClassSel yP_PLUSEQ    expr		{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_MINUSEQ   expr		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_TIMESEQ   expr		{ $$ = new AstAssign($2,$1,new AstMul    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_DIVEQ     expr		{ $$ = new AstAssign($2,$1,new AstDiv    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_MODEQ     expr		{ $$ = new AstAssign($2,$1,new AstModDiv ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_ANDEQ     expr		{ $$ = new AstAssign($2,$1,new AstAnd    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_OREQ      expr		{ $$ = new AstAssign($2,$1,new AstOr     ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_XOREQ     expr		{ $$ = new AstAssign($2,$1,new AstXor    ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_SLEFTEQ   expr		{ $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_SRIGHTEQ  expr		{ $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
+	|	idClassSel yP_SSRIGHTEQ expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
+	//
+	|	'{' variable_lvalueConcList '}' yP_PLUSEQ    expr	{ $$ = new AstAssign($4,$2,new AstAdd    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_MINUSEQ   expr	{ $$ = new AstAssign($4,$2,new AstSub    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_TIMESEQ   expr	{ $$ = new AstAssign($4,$2,new AstMul    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_DIVEQ     expr	{ $$ = new AstAssign($4,$2,new AstDiv    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_MODEQ     expr	{ $$ = new AstAssign($4,$2,new AstModDiv ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_ANDEQ     expr	{ $$ = new AstAssign($4,$2,new AstAnd    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_OREQ      expr	{ $$ = new AstAssign($4,$2,new AstOr     ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_XOREQ     expr	{ $$ = new AstAssign($4,$2,new AstXor    ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_SLEFTEQ   expr	{ $$ = new AstAssign($4,$2,new AstShiftL ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_SRIGHTEQ  expr	{ $$ = new AstAssign($4,$2,new AstShiftR ($4,$2->cloneTree(true),$5)); }
+	|	'{' variable_lvalueConcList '}' yP_SSRIGHTEQ expr	{ $$ = new AstAssign($4,$2,new AstShiftRS($4,$2->cloneTree(true),$5)); }
+	;
+
+finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
+	//UNSUP: Generic scopes in incrementes
+		varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
+	|	varRefBase yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
+	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
+	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
 	;
 
 //************************************************
