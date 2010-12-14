@@ -116,7 +116,7 @@ sub verilator_bin {
     my $basename = ($ENV{VERILATOR_BIN}
 		    || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
     if (defined($ENV{VERILATOR_ROOT})) {
-	my $dir = $ENV{VERILATOR_ROOT}."/";
+	my $dir = $ENV{VERILATOR_ROOT};
 	if (-x "$basename") {
 	    $bin = $basename;
 	} elsif (-x "$dir/bin/$basename") {  # From a "make install" into VERILATOR_ROOT
