@@ -21,7 +21,8 @@ export VERILATOR_ROOT
 # Pick up PERL and other variable settings
 include $(VERILATOR_ROOT)/include/verilated.mk
 
-DEBUG_ON = --debug --trace-dups
+DEBUG_QUIET = --debug --debugi 0 --gdbbt --no-dump-tree
+DEBUG_ON = --debug --trace-dups --gdbbt
 #DEBUG = $(DEBUG_ON)
 VALGRIND_ON = $(DEBUG_ON) --gdb "valgrind -v --leak-check=yes"
 
@@ -33,8 +34,10 @@ test_valgrind:  prep_vg  compile run
 VERILATOR_FLAGS = --cc -f $(VERILATOR_ROOT)/test_v/input.vc top.v
 VERILATOR_FLAGS += --trace
 
+#prep: Is the very first time we've executed Verilator after building
+#so we make sure to run with --gdbbt, so if it dumps we'll get a trace.
 prep:
-	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG)       $(VERILATOR_FLAGS)
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_QUIET) $(VERILATOR_FLAGS)
 prep_dbg:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON)    $(VERILATOR_FLAGS)
 prep_vg:

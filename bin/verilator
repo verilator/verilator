@@ -78,15 +78,17 @@ if (! GetOptions (
 }
 
 # Determine runtime flags and run
+if ($opt_gdbbt && !gdb_works()) {
+    warn "-Info: --gdbbt ignored: gdb doesn't seem to be working\n" if $Debug;
+    $opt_gdbbt = 0;
+}
 if ($opt_gdbbt && !$opt_gdb && $Debug) {
     # Run under GDB to get gdbbt
     run ("gdb ".verilator_bin()
-	 ." --batch --quiet"
+	 ." --batch --quiet --return-child-result"
 	 ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
 	 ." -ex 'set width 0'"
-	 ." -ex 'bt'"
-	 ." -ex 'c'");
-    die "%Error: --gdbbt looses the exit status; so must assume run went badly...";
+	 ." -ex 'bt'");
 } else {
     # Normal, non gdb
     run (($opt_gdb?"$opt_gdb ":"")
@@ -117,9 +119,7 @@ sub verilator_bin {
 		    || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
     if (defined($ENV{VERILATOR_ROOT})) {
 	my $dir = $ENV{VERILATOR_ROOT};
-	if (-x "$basename") {
-	    $bin = $basename;
-	} elsif (-x "$dir/bin/$basename") {  # From a "make install" into VERILATOR_ROOT
+	if (-x "$dir/bin/$basename") {  # From a "make install" into VERILATOR_ROOT
 	    $bin = "$dir/bin/$basename";
 	} else {
 	    $bin = "$dir/$basename";  # From pointing to kit directory
@@ -133,6 +133,17 @@ sub verilator_bin {
 #######################################################################
 #######################################################################
 # Utilities
+
+sub gdb_works {
+    $! = undef;  # Cleanup -x
+    system("gdb /bin/echo"
+	   ." --batch-silent --quiet --return-child-result"
+	   ." -ex 'run -n'"  # `echo -n`
+	   ." -ex 'set width 0'"
+	   ." -ex 'bt'");
+    my $status = $?;
+    return $status==0;
+}
 
 sub run {
     # Run command, check errors
@@ -241,6 +252,7 @@ descriptions in the next sections for more information.
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
+    --gdbbt                     Run Verilator under GDB for backtrace 
     --help                      Display this help.
      -I<dir>                    Directory to search for includes
      +incdir+<dir>              Directory to search for includes
@@ -527,6 +539,12 @@ tools.
 Read the specified file, and act as if all text inside it was specified as
 command line parameters.  Any relative paths are relative to the current
 directory.  Note -f is fairly standard across Verilog tools.
+
+=item --gdbbt
+
+If --debug is specified, run Verilator underneath a GDB process and print
+a backtrace on exit.  Without --debug or if GDB doesn't seem to work, this
+flag is ignored.
 
 =item --help
 
