@@ -323,7 +323,7 @@ class V3Options {
     // Most of these may be built into the executable with --enable-defenv,
     // see the README.  If adding new variables, also see src/Makefile_obj.in
     // Also add to V3Options::showVersion()
-    static string getenvPERL() { return getenvStr("PERL","perl"); }
+    static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMPERL();

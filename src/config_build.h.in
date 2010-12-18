@@ -29,11 +29,13 @@
 
 //**********************************************************************
 //**** Functions
-//* Set define if we have function: strdup (string)
+
+// Set define if we have function: strdup (string)
 #define HAVE_STRDUP 0
 
 //**********************************************************************
 //**** Headers
+
 // Set define if we have header: <fcntl.h>
 #define HAVE_FCNTL_H 0
 

@@ -344,6 +344,10 @@ void V3Options::setenvStr(const string& envvar, const string& value, const strin
 #endif
 }
 
+string V3Options::getenvPERL() {
+    return getenvStr("PERL","perl");
+}
+
 string V3Options::getenvSYSTEMC() {
     string var = getenvStr("SYSTEMC","");
     if (var == "" && string(DEFENV_SYSTEMC) != "") {
@@ -1008,6 +1012,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMPERL         = " << getenvStr("SYSTEMPERL","")<<endl;
     cout << "    SYSTEMPERL_INCLUDE = " << getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
     cout << "    VERILATOR_ROOT     = " << getenvStr("VERILATOR_ROOT","")<<endl;
+    cout << "    VERILATOR_BIN      = " << getenvStr("VERILATOR_BIN","")<<endl;  // wrapper uses this
 }
 
 //======================================================================
