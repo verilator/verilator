@@ -10,10 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} or $Self->skip("Verilator only test");
 
 compile (
-	 v_flags2 => ["--debug-sigsegv"],
+	 v_flags2 => ["--debug-fatalsrc"],
 	 fails=>$Self->{v3},
 	 expect=>
-'%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt
+'%Error: Internal Error: .*: --debug-fatal-src
+%Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.
 %Error: Command Failed.*',
 	 );
 
