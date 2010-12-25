@@ -16,7 +16,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Suppress WIDTH warnings when adding/subtracting 1'b1.
 
-***  With --Wall, add DEFPARAM warning to find deprecated defparam statements.
+***  With --Wall, add DEFPARAM warning on deprecated defparam statements.
+
+***  With --Wall, add INCABSPATH warning on `include with absolute paths.
 
 **** When running with VERILATOR_ROOT, optionally find binaries under bin.
 

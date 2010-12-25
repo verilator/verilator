@@ -68,6 +68,7 @@ public:
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
+	INCABSPATH,	// Include has absolute path
 	LITENDIAN,	// Little bit endian vector
 	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
@@ -103,6 +104,7 @@ public:
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM",
 	    "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+	    "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
@@ -132,6 +134,7 @@ public:
 				      || m_e==WIDTH); }
     // Warnings that are style only
     bool styleError() const { return ( m_e==DEFPARAM
+				       || m_e==INCABSPATH
 				       || m_e==VARHIDDEN ); }
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }

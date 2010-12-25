@@ -90,6 +90,9 @@ protected:
     }
 
     void preprocInclude (FileLine* fl, const string& modname) {
+	if (modname[0]=='/' || modname[0]=='\\') {
+	    fl->v3warn(INCABSPATH,"`include with absolute path should be relative, and use +include: "<<modname);
+	}
 	preprocOpen(fl, s_filterp, modname, "Cannot find include file: ");
     }
 
