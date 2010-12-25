@@ -1372,6 +1372,58 @@ Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
 
 
+=head1 VERIFICATION PROCEDURAL INTERACE (VPI)
+
+Verilator supports a very limited subset of the VPI.  This subset allows
+inspection, examination, value change callbacks, and depositing of values
+to public signals only.
+
+To access signals via the VPI, Verilator must be told exactly which signals
+are to be accessed.  This is done using the Verilator public pragmas
+documented below.
+
+Verilator has an important difference from an event based simulator; signal
+values that are changed by the VPI will not immediately propagate their
+values, instead the top level header file's eval() method must be called.
+Normally this would be part of the normal evaluation (IE the next clock
+edge), not as part of the value change.  This makes the performance of VPI
+routines extremely fast compared to event based simulators, but can confuse
+some test-benches that expect immediate propagation.
+
+Note the VPI by it's specified implementation will always be much slower
+than accessing the Verilator values by direct reference
+(structure->module->signame), as the VPI accessors perform lookup in
+functions at runtime requiring at best hundreds of instructions, while the
+direct references are evaluated by the compiler and result in only a couple
+of instructions.
+
+=head2 VPI Example
+
+In the below example, we have readme marked read-only, and writeme which if
+written from outside the model will have the same semantics as if it
+changed on the specified clock edge.
+
+    module t;
+       reg readme   /*verilator public_flat_rd*/;
+       reg writeme  /*verilator public_flat_rw @(posedge clk) */;
+    endmodule
+
+There are many online tutorials and books on the VPI, but an example that
+accesses the above would be:
+
+void read_and_check() {
+    vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.readme", NULL);
+    if (!vh1) { error... }
+    const char* name = vpi_get_str(vpiName, vh1);
+    printf("Module name: %s\n");  // Prints "readme"
+
+    s_vpi_value v;
+    v.format = vpiIntVal;
+    vpi_get_value(vh1, &v);
+    printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
+}
+
+
 =head1 CROSS COMPILATION
 
 Verilator supports cross-compiling Verilated code.  This is generally used
@@ -2856,11 +2908,11 @@ Makefile's link rule.
 
 =item Is the PLI supported?
 
-No, but the DPI is.
+Only somewhat.  More specifically, the common PLI-ish calls $display,
+$finish, $stop, $time, $write are converted to C++ equivalents.  You can
+also use the "import DPI" SystemVerilog feature to call C code (see the
+chapter above).  There is also limited VPI access to public signals.
 
-More specifically, the common PLI-ish calls $display, $finish, $stop,
-$time, $write are converted to C++ equivalents.  You can also use the
-"import DPI" SystemVerilog feature to call C code (see the chapter above).
 If you want something more complex, since Verilator emits standard C++
 code, you can simply write your own C++ routines that can access and modify
 signal values without needing any PLI interface code, and call it with

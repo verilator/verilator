@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.80***
 
+**   Add limited support for VPI access to public signals, see docs.
+
 ***  Add -F option to read relative option files, bug297. [Neil Hamilton]
 
 ***  Support ++,--,+= etc as standalone statements.  [Alex Solomatnikov]

@@ -391,6 +391,9 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 //=========================================================================
 // Pli macros
 
+#ifndef VL_TIME_PRECISION
+# define VL_TIME_PRECISION -12	///< Timescale units only for for VPI return - picoseconds
+#endif
 #ifndef VL_TIME_MULTIPLIER
 # define VL_TIME_MULTIPLIER 1
 #endif
