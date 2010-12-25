@@ -49,6 +49,7 @@ public:
 	E_MULTITOP,	// Error: Multiple top level modules
 	E_TASKNSVAR,	// Error: Task I/O not simple
 	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
+	//
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
@@ -60,6 +61,7 @@ public:
 	CDCRSTLOGIC,	// Logic in async reset path
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
+	DEFPARAM,	// Style: Defparam
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
 	GENCLK,		// Generated Clock
@@ -96,10 +98,11 @@ public:
 	    // Errors
 	    "MULTITOP", "TASKNSVAR", "BLKLOOPINIT",
 	    // Warnings
-	    " FIRST_WARN",
+	    " EC_FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
-	    "COMBDLY", "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+	    "COMBDLY", "DEFPARAM",
+	    "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN", "REDEFMACRO",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
@@ -109,7 +112,7 @@ public:
 	return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const { return ( m_e==IMPERFECTSCH ); }
+    bool defaultsOff() const { return ( m_e==IMPERFECTSCH || styleError()); }
     // Warnings that warn about nasty side effects
     bool dangerous() const { return ( m_e==COMBDLY ); }
     // Warnings we'll present to the user as errors
@@ -127,6 +130,8 @@ public:
 				      || m_e==UNDRIVEN || m_e==UNSIGNED
 				      || m_e==UNUSED || m_e==VARHIDDEN
 				      || m_e==WIDTH); }
+    // Warnings that are style only
+    bool styleError() const { return ( m_e==DEFPARAM); }
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
@@ -265,6 +270,7 @@ public:
     bool warnOff(const string& code, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
+    void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn=from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
 
@@ -276,6 +282,7 @@ public:
 
     // METHODS - Global
     static void globalWarnLintOff(bool flag) { s_defaultFileLine.warnLintOff(flag); }
+    static void globalWarnStyleOff(bool flag) { s_defaultFileLine.warnStyleOff(flag); }
     static void globalWarnOff(V3ErrorCode code, bool flag) { s_defaultFileLine.warnOff(code, flag); }
     static bool globalWarnOff(const string& code, bool flag) { return s_defaultFileLine.warnOff(code, flag); }
 

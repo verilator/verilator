@@ -659,6 +659,7 @@ private:
     virtual void visit(AstDefParam* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_PARAM) {
+	    nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->name()<<"(...etc...))");
 	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->path());
 	    AstCell* cellp = foundp->castCell();
 	    if (!cellp) {

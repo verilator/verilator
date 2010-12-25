@@ -301,6 +301,7 @@ descriptions in the next sections for more information.
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
      -Wno-lint                  Disable all lint warnings
+     -Wno-style                 Disable all style warnings
      -x-assign <mode>           Initially assign Xs to this value
      -y <dir>                   Directory to search for modules
 
@@ -608,6 +609,9 @@ fairly standard across Verilog tools.
 
 Check the files for lint violations only, do not create any other output.
 
+You may also want the -Wwarn-style option to enable messages that are
+considered stylistic and not enabled by default.
+
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
 
@@ -855,18 +859,37 @@ Disable the specified warning message.
 
 =item -Wno-lint
 
-Disable all lint related warning messages.  This is equivalent to
-"-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX
--Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-UNDRIVEN -Wno-UNSIGNED
--Wno-UNUSED -Wno-VARHIDDEN -Wno-WIDTH".
+Disable all lint related warning messages, and all style warnings.  This is
+equivalent to "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX
+-Wno-CASEWITHX -Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-UNDRIVEN
+-Wno-UNSIGNED -Wno-UNUSED -Wno-VARHIDDEN -Wno-WIDTH" plus the list shown
+for Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
 received from third parties.
 
+=item -Wno-style
+
+Disable all code style related warning messages (note by default they are already disabled).  This is equivalent to
+"-Wno-DEFPARAM".
+
 =item -Wwarn-I<message>
 
 Enables the specified warning message.
+
+=item -Wwarn-lint
+
+Enable all lint related warning messages (note by default they are already
+enabled), but do not affect style messages.  This is equivalent to
+"-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
+-Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-UNDRIVEN
+-Wwarn-UNSIGNED -Wwarn-UNUSED -Wwarn-VARHIDDEN -Wwarn-WIDTH".
+
+=item -Wwarn-style
+
+Enable all code style related warning messages.  This is equivalent to
+"-WDEFPARAM".
 
 =item -x-assign 0
 
@@ -2359,6 +2382,14 @@ L<http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item DEFPARAM
+
+Warns that the "defparam" statement was deprecated in Verilog 2001 and all
+designs should now be using the #(...) format to specify parameters.
+
+Disabled by default as this is a code style warning, it will simulate
+correctly.
 
 =item GENCLK
 

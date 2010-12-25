@@ -791,6 +791,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "-Wno-",5) )	{
 		if (!strcmp (sw, "-Wno-lint")) {
 		    FileLine::globalWarnLintOff(true);
+		    FileLine::globalWarnStyleOff(true);
+		}
+		else if (!strcmp (sw, "-Wno-style")) {
+		    FileLine::globalWarnStyleOff(true);
 		}
 		else {
 		    string msg = sw+strlen("-Wno-");
@@ -802,6 +806,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "-Wwarn-",5) )	{
 		if (!strcmp (sw, "-Wwarn-lint")) {
 		    FileLine::globalWarnLintOff(false);
+		}
+		else if (!strcmp (sw, "-Wwarn-style")) {
+		    FileLine::globalWarnStyleOff(false);
 		}
 		else {
 		    string msg = sw+strlen("-Wwarn-");

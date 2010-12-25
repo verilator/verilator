@@ -134,6 +134,13 @@ void FileLine::warnLintOff(bool flag) {
     }
 }
 
+void FileLine::warnStyleOff(bool flag) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (code.styleError()) warnOff(code, flag);
+    }
+}
+
 FileLine* FileLine::copyOrSameFileLine() {
     // When a fileline is "used" to produce a node, calls this function.
     // Return this, or a copy of this
