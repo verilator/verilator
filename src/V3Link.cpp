@@ -227,6 +227,12 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(2,"Link Module: "<<nodep<<endl);
+	if (m_idState == ID_FIND) {
+	    if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()) {
+		nodep->v3warn(DECLFILENAME, "Filename '"<<nodep->fileline()->filebasenameNoExt()
+			      <<"' does not match "<<nodep->typeName()<<" name: "<<nodep->prettyName());
+	    }
+	}
 	AstCell* upperCellp = m_cellp;
 	V3SymTable* upperVarsp = m_curVarsp;
 	{

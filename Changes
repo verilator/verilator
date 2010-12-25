@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Suppress WIDTH warnings when adding/subtracting 1'b1.
 
+***  With --Wall, add DECLFILENAME warning on modules not matching filename.
+
 ***  With --Wall, add DEFPARAM warning on deprecated defparam statements.
 
 ***  With --Wall, add INCABSPATH warning on `include with absolute paths.

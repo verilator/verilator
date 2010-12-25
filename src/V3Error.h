@@ -62,6 +62,7 @@ public:
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
 	DEFPARAM,	// Style: Defparam
+	DECLFILENAME,	// Declaration doesn't match filename
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
 	GENCLK,		// Generated Clock
@@ -102,7 +103,7 @@ public:
 	    " EC_FIRST_WARN",
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
-	    "COMBDLY", "DEFPARAM",
+	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
@@ -134,6 +135,7 @@ public:
 				      || m_e==WIDTH); }
     // Warnings that are style only
     bool styleError() const { return ( m_e==DEFPARAM
+				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
 				       || m_e==VARHIDDEN ); }
   };
@@ -267,6 +269,7 @@ public:
     string ascii() const;
     const string filename () const { return m_filename; }
     const string filebasename () const;
+    const string filebasenameNoExt () const;
     const string profileFuncname() const;
     string lineDirectiveStrg(int enter_exit_level) const;
     void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.

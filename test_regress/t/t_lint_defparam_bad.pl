@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_lint_defparam.v");
 
 compile (
-	 v_flags2 => ["--lint-only -Wwarn-style"],
+	 v_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
 	 fails=>1,
 	 expect=>
 '%Warning-DEFPARAM: t/t_lint_defparam.v:\d+: Suggest replace defparam with Verilog 2001 #\(.P\(...etc...\)\)

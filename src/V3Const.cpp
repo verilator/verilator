@@ -855,10 +855,10 @@ private:
 	// Run it - may be unoptimizable due to large for loop, etc
 	simvis.mainParamEmulate(nodep);
 	if (!simvis.optimizable()) {
-		    AstNode* errorp = simvis.whyNotNodep(); if (!errorp) errorp = nodep;
+	    AstNode* errorp = simvis.whyNotNodep(); if (!errorp) errorp = nodep;
 	    nodep->v3error("Expecting expression to be constant, but can't determine constant for "
 			   <<nodep->prettyTypeName()<<endl
-			   <<V3Error::msgPrefix()<<errorp->fileline()<<"... Location of non-constant "
+			   <<V3Error::msgPrefix(V3ErrorCode::EC_ERROR)<<errorp->fileline()<<"... Location of non-constant "
 			   <<errorp->prettyTypeName()<<": "<<simvis.whyNotMessage());
 	    replaceZero(nodep); nodep=NULL;
 	} else {

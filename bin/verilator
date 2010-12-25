@@ -877,7 +877,8 @@ received from third parties.
 =item -Wno-style
 
 Disable all code style related warning messages (note by default they are
-already disabled).  This is equivalent to "-Wno-DEFPARAM -Wno-VARHIDDEN".
+already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
+-Wno-INCABSPATH -Wno-VARHIDDEN".
 
 =item -Wwarn-I<message>
 
@@ -894,7 +895,7 @@ enabled), but do not affect style messages.  This is equivalent to
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn-DEFPARAM -Wwarn-VARHIDDEN".
+"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-VARHIDDEN".
 
 =item -x-assign 0
 
@@ -2387,6 +2388,16 @@ L<http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item DECLFILENAME
+
+Warns that a module or other declaration's name doesn't match the filename
+with path and extension stripped that it is declared in.  The filename a
+modules/interfaces/programs is declared in should match the name of the
+module etc. so that -y directory searching will work.
+
+Disabled by default as this is a code style warning, it will simulate
+correctly.
 
 =item DEFPARAM
 

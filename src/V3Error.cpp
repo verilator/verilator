@@ -167,13 +167,19 @@ const string FileLine::filebasename() const {
     return name;
 }
 
-const string FileLine::profileFuncname() const {
-    // Return string that is OK as a function name - for profiling
-    string name  = filebasename();
+const string FileLine::filebasenameNoExt() const {
+    string name = filebasename();
     string::size_type pos;
     if ((pos = name.find(".")) != string::npos) {
 	name = name.substr(0,pos);
     }
+    return name;
+}
+
+const string FileLine::profileFuncname() const {
+    // Return string that is OK as a function name - for profiling
+    string name  = filebasenameNoExt();
+    string::size_type pos;
     while ((pos = name.find_first_not_of("abcdefghijlkmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789_"))
 	   != string::npos) {
 	name.replace(pos, 1, "_");
