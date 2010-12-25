@@ -772,6 +772,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		showVersion(false);
 		exit(0);
 	    }
+	    else if ( !strcmp (sw, "-Wall") )	{
+		FileLine::globalWarnLintOff(false);
+		FileLine::globalWarnStyleOff(false);
+	    }
 	    else if ( !strncmp (sw, "-Werror-",strlen("-Werror-")) )	{
 		string msg = sw+strlen("-Werror-");
 		V3ErrorCode code (msg.c_str());

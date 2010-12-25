@@ -609,8 +609,8 @@ fairly standard across Verilog tools.
 
 Check the files for lint violations only, do not create any other output.
 
-You may also want the -Wwarn-style option to enable messages that are
-considered stylistic and not enabled by default.
+You may also want the -Wall option to enable messages that are considered
+stylistic and not enabled by default.
 
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
@@ -839,6 +839,11 @@ Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
 
+=item -Wall
+
+Enable all warnings, including code style warnings that are normally
+disabled by default.
+
 =item -Werror-I<message>
 
 Convert the specified warning message into a error message.  This is
@@ -862,7 +867,7 @@ Disable the specified warning message.
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX
 -Wno-CASEWITHX -Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-UNDRIVEN
--Wno-UNSIGNED -Wno-UNUSED -Wno-VARHIDDEN -Wno-WIDTH" plus the list shown
+-Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown
 for Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
@@ -871,8 +876,8 @@ received from third parties.
 
 =item -Wno-style
 
-Disable all code style related warning messages (note by default they are already disabled).  This is equivalent to
-"-Wno-DEFPARAM".
+Disable all code style related warning messages (note by default they are
+already disabled).  This is equivalent to "-Wno-DEFPARAM -Wno-VARHIDDEN".
 
 =item -Wwarn-I<message>
 
@@ -884,12 +889,12 @@ Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
 -Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-UNDRIVEN
--Wwarn-UNSIGNED -Wwarn-UNUSED -Wwarn-VARHIDDEN -Wwarn-WIDTH".
+-Wwarn-UNSIGNED -Wwarn-UNUSED -Wwarn-WIDTH".
 
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-WDEFPARAM".
+"-Wwarn-DEFPARAM -Wwarn-VARHIDDEN".
 
 =item -x-assign 0
 
@@ -951,7 +956,7 @@ We'll compile this example into C++.
 Now we run Verilator on our little example.
 
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
-    $VERILATOR_ROOT/bin/verilator --cc our.v --exe sim_main.cpp
+    $VERILATOR_ROOT/bin/verilator -Wall --cc our.v --exe sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
@@ -1013,7 +1018,7 @@ This is an example similar to the above, but using SystemPerl.
 Now we run Verilator on our little example.
 
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
-    $VERILATOR_ROOT/bin/verilator --sp our.v
+    $VERILATOR_ROOT/bin/verilator -Wall --sp our.v
 
 Then we convert the SystemPerl output to SystemC.
 
@@ -2626,7 +2631,7 @@ the same name as a variable in the upper level module or begin/end block
 (thus hiding the upper variable from being able to be used.)  Rename the
 variable to avoid confusion when reading the code.
 
-Ignoring this warning will only suppress the lint check, it will simulate
+Disabled by default as this is a code style warning, it will simulate
 correctly.
 
 =item WIDTH

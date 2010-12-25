@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => ["--lint-only"],
+	 v_flags2 => ["--lint-only -Wall"],
 	 fails=>$Self->{v3},
 	 expect=>
 '%Warning-VARHIDDEN: t/t_var_bad_hide2.v:\d+: Declaration of signal hides declaration in upper scope: t

@@ -7,8 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **   Add limited support for VPI access to public signals, see docs.
 
-**   Add -Wwarn-style, -Wno-style to enable code style warnings that are
-     added to this release and disabled by default.
+**   Add -Wall, -Wwarn-style, -Wno-style to enable code style warnings
+     that have been added to this release, and disabled by default.
 
 ***  Add -F option to read relative option files, bug297. [Neil Hamilton]
 
@@ -16,9 +16,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Suppress WIDTH warnings when adding/subtracting 1'b1.
 
-***  Add optional DEFPARAM warning to find deprecated defparam statements.
+***  With --Wall, add DEFPARAM warning to find deprecated defparam statements.
 
 **** When running with VERILATOR_ROOT, optionally find binaries under bin.
+
+**** The VARHIDDEN warning is now disabled by default, use -Wall to enable.
 
 * Verilator 3.805 2010/11/02
 

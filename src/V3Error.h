@@ -128,10 +128,11 @@ public:
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN
 				      || m_e==UNDRIVEN || m_e==UNSIGNED
-				      || m_e==UNUSED || m_e==VARHIDDEN
+				      || m_e==UNUSED
 				      || m_e==WIDTH); }
     // Warnings that are style only
-    bool styleError() const { return ( m_e==DEFPARAM); }
+    bool styleError() const { return ( m_e==DEFPARAM
+				       || m_e==VARHIDDEN ); }
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
