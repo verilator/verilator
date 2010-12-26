@@ -493,6 +493,7 @@ word	[a-zA-Z0-9_]+
 <S09,PSL>{
   /*     Keywords */
   "global"	 	{ FL; return yGLOBAL__LEX; }
+  "unique0"	 	{ FL; return yUNIQUE0; }
   /*     Generic unsupported warnings */
   "accept_on"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "checker"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
@@ -511,7 +512,6 @@ word	[a-zA-Z0-9_]+
   "strong"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "sync_accept_on" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "sync_reject_on" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "unique0"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "until"		{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "until_with"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "untyped"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }

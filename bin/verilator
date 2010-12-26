@@ -231,7 +231,7 @@ descriptions in the next sections for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
-     -CFLAGS <flags>		C++ Compiler flags for makefile
+     -CFLAGS <flags>            C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --compiler <compiler-name>  Tune for specified C++ compiler
@@ -247,19 +247,19 @@ descriptions in the next sections for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
      +define+<var>+<value>      Set preprocessor define
     --dump-tree                 Enable dumping .tree files
-     -E                          Preprocess, but do not compile
+     -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
     --gdbbt                     Run Verilator under GDB for backtrace 
-    --help                      Display this help.
+    --help                      Display this help
      -I<dir>                    Directory to search for includes
      +incdir+<dir>              Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
-     -LDFLAGS <flags>		Linker pre-object flags for makefile
-     -LDLIBS <flags>		Linker library flags for makefile
+     -LDFLAGS <flags>           Linker pre-object flags for makefile
+     -LDLIBS <flags>            Linker library flags for makefile
     --language <lang>           Language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
@@ -273,12 +273,12 @@ descriptions in the next sections for more information.
      -O0                        Disable optimizations
      -O3                        High performance optimizations
      -O<optimization-letter>    Selectable optimizations
-     -o <executable>		Name of final executable
+     -o <executable>            Name of final executable
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
     --pins-uint8                Specify types for top level ports
-    --pipe-filter <command>	Filter all input through a script
+    --pipe-filter <command>     Filter all input through a script
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs

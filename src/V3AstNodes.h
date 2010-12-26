@@ -1538,11 +1538,15 @@ private:
     AstCaseType	m_casex;		// 0=case, 1=casex, 2=casez
     bool	m_fullPragma;		// Synthesis full_case
     bool	m_parallelPragma;	// Synthesis parallel_case
+    bool	m_uniquePragma;		// unique case
+    bool	m_unique0Pragma;	// unique0 case
+    bool	m_priorityPragma;	// priority case
 public:
     AstCase(FileLine* fileline, AstCaseType casex, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
 	m_casex=casex;
 	m_fullPragma=false; m_parallelPragma=false;
+	m_uniquePragma=false; m_unique0Pragma=false; m_priorityPragma=false;
     }
     ASTNODE_NODE_FUNCS(Case, CASE)
     virtual string  verilogKwd() const { return casez()?"casez":casex()?"casex":"case"; }
@@ -1554,6 +1558,12 @@ public:
     void	fullPragma(bool flag)	{ m_fullPragma=flag; }
     bool	parallelPragma()	const { return m_parallelPragma; }
     void	parallelPragma(bool flag) { m_parallelPragma=flag; }
+    bool	uniquePragma() const { return m_uniquePragma; }
+    void	uniquePragma(bool flag) { m_uniquePragma=flag; }
+    bool	unique0Pragma()	const { return m_unique0Pragma; }
+    void	unique0Pragma(bool flag) { m_unique0Pragma=flag; }
+    bool	priorityPragma() const { return m_priorityPragma; }
+    void	priorityPragma(bool flag) { m_priorityPragma=flag; }
 };
 
 struct AstCaseItem : public AstNode {
@@ -1952,10 +1962,22 @@ struct AstGenIf : public AstNodeIf {
 };
 
 struct AstIf : public AstNodeIf {
+private:
+    bool	m_uniquePragma;		// unique case
+    bool	m_unique0Pragma;	// unique0 case
+    bool	m_priorityPragma;	// priority case
+public:
     AstIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
+	m_uniquePragma=false; m_unique0Pragma=false; m_priorityPragma=false;
     }
     ASTNODE_NODE_FUNCS(If, IF)
+    bool	uniquePragma() const { return m_uniquePragma; }
+    void	uniquePragma(bool flag) { m_uniquePragma=flag; }
+    bool	unique0Pragma()	const { return m_unique0Pragma; }
+    void	unique0Pragma(bool flag) { m_unique0Pragma=flag; }
+    bool	priorityPragma() const { return m_priorityPragma; }
+    void	priorityPragma(bool flag) { m_priorityPragma=flag; }
 };
 
 struct AstJumpLabel : public AstNodeStmt {

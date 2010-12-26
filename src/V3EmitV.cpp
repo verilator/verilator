@@ -166,7 +166,13 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
-	putfs(nodep,nodep->verilogKwd());
+	putfs(nodep,"");
+	if (AstCase* casep = nodep->castCase()) {
+	    if (casep->priorityPragma()) puts("priority ");
+	    if (casep->uniquePragma()) puts("unique ");
+	    if (casep->unique0Pragma()) puts("unique0 ");
+	}
+	puts(nodep->verilogKwd());
 	puts(" (");
 	nodep->exprp()->iterateAndNext(*this);
 	puts(")\n");
@@ -301,7 +307,13 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putfs(nodep,"end\n");
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
-	putfs(nodep,"if (");
+	putfs(nodep,"");
+	if (AstIf* ifp = nodep->castIf()) {
+	    if (ifp->priorityPragma()) puts("priority ");
+	    if (ifp->uniquePragma()) puts("unique ");
+	    if (ifp->unique0Pragma()) puts("unique0 ");
+	}
+	puts("if (");
 	nodep->condp()->iterateAndNext(*this);
 	puts(") begin\n");
 	nodep->ifsp()->iterateAndNext(*this);

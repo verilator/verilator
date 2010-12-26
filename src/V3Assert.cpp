@@ -182,7 +182,7 @@ private:
 	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 		if (itemp->isDefault()) has_default=true;
 	    }
-	    if (nodep->fullPragma()) {
+	    if (nodep->fullPragma() || nodep->priorityPragma()) {
 		// Simply need to add a default if there isn't one already
 		m_statAsFull++;
 		if (!has_default) {
@@ -190,7 +190,7 @@ private:
 						     newFireAssert(nodep, "synthesis full_case, but non-match found")));
 		}
 	    }
-	    if (nodep->parallelPragma()) {
+	    if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
 		// Need to check that one, and only one of the case items match at any moment
 		// If there's a default, we allow none to match, else exactly one must match
 		m_statAsFull++;
@@ -207,7 +207,8 @@ private:
 			    else propp = onep;
 			}
 		    }
-		    AstNode* ohot = (has_default
+		    bool allow_none = has_default || nodep->unique0Pragma();
+		    AstNode* ohot = (allow_none
 				     ? (new AstOneHot0(nodep->fileline(), propp))->castNode()
 				     : (new AstOneHot (nodep->fileline(), propp))->castNode());
 		    AstIf* ifp = new AstIf (nodep->fileline(),

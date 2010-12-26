@@ -38,7 +38,7 @@ class V3Lexer;
 //======================================================================
 // Types (between parser & lexer)
 
-typedef enum { uniq_NONE, uniq_UNIQUE, uniq_PRIORITY } V3UniqState;
+typedef enum { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState;
 
 typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 

@@ -369,6 +369,7 @@ class AstSenTree;
 %token<fl>		yTRUE		"true"
 %token<fl>		yTYPEDEF	"typedef"
 %token<fl>		yUNIQUE		"unique"
+%token<fl>		yUNIQUE0	"unique0"
 %token<fl>		yUNSIGNED	"unsigned"
 %token<fl>		yVAR		"var"
 %token<fl>		yVECTORED	"vectored"
@@ -1819,16 +1820,23 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
-							  if ($1 == uniq_UNIQUE) $2->parallelPragma(true);
-							  if ($1 == uniq_PRIORITY) $2->fullPragma(true); }
+							  if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
 	//UNSUP	caseStart caseAttrE yMATCHES case_patternListE yENDCASE	{ }
 	//UNSUP	caseStart caseAttrE yINSIDE  case_insideListE yENDCASE	{ }
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-							{ $$ = new AstIf($2,$4,$6,NULL); }
+							{ $$ = new AstIf($2,$4,$6,NULL);
+							  if ($1 == uniq_UNIQUE) $$->castIf()->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) $$->castIf()->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) $$->castIf()->priorityPragma(true); }
 	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
-							{ $$ = new AstIf($2,$4,$6,$8); }
+							{ $$ = new AstIf($2,$4,$6,$8);
+							  if ($1 == uniq_UNIQUE) $$->castIf()->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) $$->castIf()->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) $$->castIf()->priorityPragma(true); }
 	//
 	|	finc_or_dec_expression ';'		{ $$ = $1; }
 	//			// IEEE: inc_or_dec_expression
@@ -1961,6 +1969,7 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 		/*empty*/				{ $$ = uniq_NONE; }
 	|	yPRIORITY				{ $$ = uniq_PRIORITY; }
 	|	yUNIQUE					{ $$ = uniq_UNIQUE; }
+	|	yUNIQUE0				{ $$ = uniq_UNIQUE0; }
 	;
 
 caseStart<casep>:		// IEEE: part of case_statement
