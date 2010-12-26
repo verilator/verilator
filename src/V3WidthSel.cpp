@@ -100,6 +100,13 @@ private:
 	// have to deal with signed math and related 32bit sign extension problems
 	if (rhs == 0) {
 	    return lhsp;
+	} else if (lhsp->castConst()) {
+	    // Optional vs just making add/sub below, but saves constification some work
+	    V3Number num (lhsp->fileline(), lhsp->width());
+	    num.opSub(lhsp->castConst()->num(), V3Number(lhsp->fileline(), 32, rhs));
+	    num.isSigned(lhsp->isSigned());
+	    AstNode* newp = new AstConst(lhsp->fileline(), num);
+	    return newp;
 	} else if (rhs > 0) {
 	    // We must make sure sub gets sign of original value
 	    AstNode* newp = new AstSub(lhsp->fileline(), lhsp,
