@@ -16,7 +16,7 @@ compile (
     make_top_shell => 0,
     make_main => 0,
     expect=>
-'%Warning-INCABSPATH: t/t_lint_incabspath.v:\d+: `include with absolute path should be relative, and use \+include: /dev/null
+'%Warning-INCABSPATH: t/t_lint_incabspath.v:\d+: Suggest `include with absolute path be made relative, and use \+include: /dev/null
 %Warning-INCABSPATH: Use .* to disable this message.
 %Error: Exiting due to.*',
     ) if $Self->{v3};
