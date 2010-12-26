@@ -240,6 +240,7 @@ class FileLine {
     int		m_lineno;
     string	m_filename;
     bitset<V3ErrorCode::_ENUM_MAX>	m_warnOn;
+    // Consider moving opt.language() into here, so can know language per-node
     static FileLine s_defaultFileLine;
     struct EmptySecret {};
 protected:

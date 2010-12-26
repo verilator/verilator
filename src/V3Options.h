@@ -150,6 +150,7 @@ class V3Options {
     string	m_xAssign;	// main switch: --x-assign
     string	m_topModule;	// main switch: --top-module
 
+    // Consider moving m_language into FileLine, so can know language per-node
     V3LangCode	m_language;	// main switch: --language
 
     // MEMBERS (optimizations)
