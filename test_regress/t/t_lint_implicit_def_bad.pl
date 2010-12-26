@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => ["--lint-only"],
+	 v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
 	 fails=>1,
 	 expect=>
 '%Warning-IMPLICIT: t/t_lint_implicit_def_bad.v:\d+: Signal definition not found, creating implicitly: imp_warn

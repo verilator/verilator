@@ -2573,7 +2573,7 @@ cases would result in simulator mismatches.
 
 Warns that the specified signal is never sourced.
 
-Ignoring this warning will only suppress the lint check, it will simulate
+Disabled by default as this is a code style warning, it will simulate
 correctly.
 
 =item UNOPT
@@ -2659,7 +2659,7 @@ correctly.
 Warns that the specified signal is never sinked.  This is a future message,
 currently Verilator will not produce this warning.
 
-Ignoring this warning will only suppress the lint check, it will simulate
+Disabled by default as this is a code style warning, it will simulate
 correctly.
 
 =item VARHIDDEN

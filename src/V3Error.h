@@ -132,13 +132,14 @@ public:
 				      || m_e==CMPCONST
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN
-				      || m_e==UNDRIVEN || m_e==UNSIGNED
-				      || m_e==UNUSED
+				      || m_e==UNSIGNED
 				      || m_e==WIDTH); }
     // Warnings that are style only
     bool styleError() const { return ( m_e==DEFPARAM
 				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
+				       || m_e==UNDRIVEN
+				       || m_e==UNUSED
 				       || m_e==VARHIDDEN ); }
   };
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
