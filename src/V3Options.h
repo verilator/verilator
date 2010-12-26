@@ -127,6 +127,7 @@ class V3Options {
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
 
     int		m_errorLimit;	// main switch: --error-limit
+    int		m_ifDepth;	// main switch: --if-depth
     int		m_inlineMult;	// main switch: --inline-mult
     int		m_outputSplit;	// main switch: --output-split
     int		m_outputSplitCFuncs;// main switch: --output-split-cfuncs
@@ -245,6 +246,7 @@ class V3Options {
     bool inhibitSim() const { return m_inhibitSim; }
 
     int	   errorLimit() const { return m_errorLimit; }
+    int	   ifDepth() const { return m_ifDepth; }
     int	   inlineMult() const { return m_inlineMult; }
     int	   outputSplit() const { return m_outputSplit; }
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }

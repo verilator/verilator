@@ -63,9 +63,8 @@ public:
 	COMBDLY,	// Combinatorial delayed assignment
 	DEFPARAM,	// Style: Defparam
 	DECLFILENAME,	// Declaration doesn't match filename
-	STMTDLY,	// Delayed statement
-	SYMRSVDWORD,	// Symbol is Reserved Word
 	GENCLK,		// Generated Clock
+	IFDEPTH,	// If statements too deep
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
@@ -74,6 +73,8 @@ public:
 	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
 	REDEFMACRO,	// Redefining existing define macro
+	STMTDLY,	// Delayed statement
+	SYMRSVDWORD,	// Symbol is Reserved Word
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
@@ -104,10 +105,11 @@ public:
 	    "BLKANDNBLK",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
-	    "STMTDLY", "SYMRSVDWORD", "GENCLK", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
-	    "INCABSPATH",
+	    "GENCLK",
+	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN", "REDEFMACRO",
+	    "STMTDLY", "SYMRSVDWORD", 
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"

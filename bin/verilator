@@ -255,6 +255,7 @@ descriptions in the next sections for more information.
     --gdbbt                     Run Verilator under GDB for backtrace 
     --help                      Display this help
      -I<dir>                    Directory to search for includes
+    --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
@@ -557,6 +558,11 @@ Add the directory to the list of directories that should be searched for
 include directories or libraries.  Same as +incdir and -y; +incdir and -y
 are fairly standard across Verilog tools while -I is an alias for GCC
 compatibility.
+
+=item --if-depth I<value>
+
+Rarely needed.  Set the depth at which the IFDEPTH warning will fire,
+defaults to 0 which disables this warning.
 
 =item +incdir+I<dir>
 
@@ -2419,6 +2425,16 @@ additional ones.)
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item IFDEPTH
+
+Warns that if/if else statements have exceeded the depth specified with
+--if-depth, as they are likely to result in slow priority encoders.  Unique
+and priority if statements are ignored.  Solutions include changing the
+code to a case statement, or a SystemVerilog 'unique if' or 'priority if'.
+
+Disabled by default as this is a code style warning, it will simulate
+correctly.
 
 =item IMPERFECTSCH
 

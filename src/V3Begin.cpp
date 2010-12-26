@@ -53,6 +53,7 @@ private:
     string		m_namedScope;	// Name of begin blocks above us
     string		m_unnamedScope;	// Name of begin blocks, including unnamed blocks
     int			m_repeatNum;	// Repeat counter
+    int			m_ifDepth;	// Current if depth
 
     // METHODS
     static int debug() {
@@ -152,6 +153,21 @@ private:
 	// any BEGINs, but V3Coverage adds them all under the module itself.
 	nodep->iterateChildren(*this);
     }
+    // VISITORS - LINT CHECK
+    virtual void visit(AstIf* nodep, AstNUser*) { // Note not AstNodeIf; other types don't get covered
+	// Check IFDEPTH warning - could be in other transform files if desire
+	int prevIfDepth = m_ifDepth;
+	if (m_ifDepth == -1 || v3Global.opt.ifDepth()<1) { // Turned off
+	} else if (nodep->uniquePragma() || nodep->unique0Pragma() || nodep->priorityPragma()) {
+	    m_ifDepth = -1;
+	} else if (++m_ifDepth > v3Global.opt.ifDepth()) {
+	    nodep->v3warn(IFDEPTH,"Deep 'if' statement; suggest unique/priority to avoid slow logic");
+	    nodep->fileline()->warnOn(V3ErrorCode::IFDEPTH, false);  // Warn only once
+	    m_ifDepth = -1;
+	}
+	nodep->iterateChildren(*this);
+	m_ifDepth = prevIfDepth;
+     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
@@ -161,6 +177,7 @@ public:
 	m_modp = NULL;
 	m_ftaskp = NULL;
 	m_repeatNum = 0;
+	m_ifDepth = 0;
 	nodep->accept(*this);
     }
     virtual ~BeginVisitor() {}

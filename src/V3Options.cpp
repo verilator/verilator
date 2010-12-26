@@ -705,6 +705,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDir (parseFileArg(optdir, string (sw+strlen("-I"))));
 	    }
+	    else if ( !strcmp (sw, "-if-depth") && (i+1)<argc ) {
+		shift;
+		m_ifDepth = atoi(argv[i]);
+	    }
 	    else if ( !strcmp (sw, "-inline-mult") && (i+1)<argc ) {
 		shift;
 		m_inlineMult = atoi(argv[i]);
@@ -1061,6 +1065,7 @@ V3Options::V3Options() {
     m_underlineZero = false;
 
     m_errorLimit = 50;
+    m_ifDepth = 0;
     m_inlineMult = 2000;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
