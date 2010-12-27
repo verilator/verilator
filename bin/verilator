@@ -960,10 +960,15 @@ We'll compile this example into C++.
       }
     EOF
 
-Now we run Verilator on our little example.
+If you installed Verilator from sources, or a tarball, but not as part of
+your operating system (as an RPM), first you need to point to the kit:
 
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
-    $VERILATOR_ROOT/bin/verilator -Wall --cc our.v --exe sim_main.cpp
+    export PATH=$VERILATOR_ROOT/bin:$PATH
+
+Now we run Verilator on our little example.
+    
+    verilator -Wall --cc our.v --exe sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
@@ -1022,10 +1027,15 @@ This is an example similar to the above, but using SystemPerl.
       }
     EOF
 
-Now we run Verilator on our little example.
+If you installed Verilator from sources, or a tarball, but not as part of
+your operating system (as an RPM), first you need to point to the kit:
 
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
-    $VERILATOR_ROOT/bin/verilator -Wall --sp our.v
+    export PATH=$VERILATOR_ROOT/bin:$PATH
+
+Now we run Verilator on our little example.
+
+    verilator -Wall --sp our.v
 
 Then we convert the SystemPerl output to SystemC.
 
@@ -1236,7 +1246,8 @@ for debugging and selecting between multiple operating system builds.
 Specifies the directory containing the distribution kit.  This is used to
 find the executable, Perl library, and include files.  If not specified, it
 will come from a default optionally specified at configure time (before
-Verilator was compiled).
+Verilator was compiled).  It should not be spefified if using a precompiled
+Verilator RPM as the hardcoded value should be correct.
 
 =back
 
