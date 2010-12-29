@@ -93,7 +93,7 @@ public:
 class ConstVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // ** only when m_warn/m_expensive is set.  If state is needed other times,
+    // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p		-> Used by ConstVarMarkVisitor/ConstVarFindVisitor
     // AstJumpLabel::user4	-> bool.  Set when AstJumpGo uses this label
@@ -103,8 +103,8 @@ private:
     bool	m_required;	// If true, must become a constant
     bool	m_wremove;	// Inside scope, no assignw removal
     bool	m_warn;		// Output warnings
-    bool	m_cpp;		// C++ conversions only
-    bool	m_expensive;	// Enable computationally expensive optimizations
+    bool	m_doV;		// Verilog, not C++ conversion
+    bool	m_doExpensive;	// Enable computationally expensive optimizations
     AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
 
@@ -289,7 +289,7 @@ private:
 	// SEL(EXTEND(any,width,...),(width-1),0) -> ...
 	// Since select's return unsigned, this is always an extend
 	AstExtend* extendp = nodep->fromp()->castExtend();
-	return (!m_cpp
+	return (m_doV
 		&& extendp
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
@@ -724,7 +724,7 @@ private:
 		return true;
 	    }
 	}
-	else if (!m_cpp && nodep->lhsp()->castConcat()) {
+	else if (m_doV && nodep->lhsp()->castConcat()) {
 	    bool need_temp = false;
 	    if (m_warn && !nodep->castAssignDly()) {  // Is same var on LHS and RHS?
 		// Note only do this (need user4) when m_warn, which is
@@ -1064,12 +1064,13 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
-	if (!m_cpp && nodep->varp()->hasSimpleInit() && !nodep->backp()->castAttrOf()) {
+	if (m_doV && nodep->varp()->hasSimpleInit() && !nodep->backp()->castAttrOf()) {
 	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
 	    nodep->varp()->valuep()->iterateAndNext(*this);
 	    if (operandConst(nodep->varp()->valuep())
 		&& !nodep->lvalue()
-		&& ((v3Global.opt.oConst() && !m_params // Can reduce constant wires into equations
+		&& ((!m_params // Can reduce constant wires into equations
+		     && v3Global.opt.oConst()
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
 		AstConst* constp = nodep->varp()->valuep()->castConst();
@@ -1202,7 +1203,7 @@ private:
 
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (m_expensive) {
+	if (m_doExpensive) {
 	    //cout<<endl; nodep->dumpTree(cout,"ssin: ");
 	    // Optimize ideas for the future:
 	    //   SENTREE(... SENGATE(x,a), SENGATE(SENITEM(x),b) ...)  => SENGATE(x,OR(a,b))
@@ -1314,13 +1315,12 @@ private:
 	nodep->iterateChildren(*this);
 	if (replaceNodeAssign(nodep)) return;
 	AstNodeVarRef* varrefp = nodep->lhsp()->castVarRef();  // Not VarXRef, as different refs may set different values to each hierarchy
-	if (m_wremove
+	if (m_wremove && !m_params
 	    && m_modp && operandConst(nodep->rhsp())
 	    && !nodep->rhsp()->castConst()->num().isFourState()
 	    && varrefp		// Don't do messes with BITREFs/ARRAYREFs
 	    && !varrefp->varp()->valuep()  // Not already constified
-	    && !varrefp->varScopep()	// Not scoped (or each scope may have different initial value)
-	    && !m_params) {
+	    && !varrefp->varScopep()) {	// Not scoped (or each scope may have different initial value)
 	    // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
 	    UINFO(4,"constAssignW "<<nodep<<endl);
 	    // Make a initial assignment
@@ -1506,7 +1506,7 @@ private:
 
     virtual void visit(AstJumpGo* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (m_expensive) { nodep->labelp()->user4(true); }
+	if (m_doExpensive) { nodep->labelp()->user4(true); }
     }
 
     virtual void visit(AstJumpLabel* nodep, AstNUser*) {
@@ -1515,7 +1515,7 @@ private:
 	// Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
 	nodep->iterateChildren(*this);
 	// AstJumpGo's below here that point to this node will set user4
-	if (m_expensive && !nodep->user4()) {
+	if (m_doExpensive && !nodep->user4()) {
 	    UINFO(4,"JUMPLABEL => unused "<<nodep<<endl);
 	    AstNode* underp = NULL;
 	    if (nodep->stmtsp()) underp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -1546,7 +1546,7 @@ private:
 
     // Lint Checks
     //    v--- *1* These ops are always first, as we warn before replacing
-    //    v--- *V* This op is a verilog op, ignore when in m_cpp mode
+    //    v--- *V* This op is a verilog op, only in m_doV mode
     TREEOP1("AstSel{warnSelect(nodep)}",	"NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
     TREEOP("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
@@ -1781,15 +1781,34 @@ private:
     }
 
 public:
+    // Processing Mode Enum
+    enum ProcMode {
+	PROC_PARAMS,
+	PROC_V_WARN,
+	PROC_V_NOWARN,
+	PROC_V_EXPENSIVE,
+	PROC_CPP
+    };
+    
     // CONSTUCTORS
-    ConstVisitor(bool params, bool expensive, bool warn, bool cpp) {
-	m_params = params; m_required = params;
-	m_expensive = expensive;
-	m_warn = warn;
-	m_cpp = cpp;
-	m_wremove = true;
+    ConstVisitor(ProcMode pmode) {
+	m_params = false;
+	m_required = false;
+	m_doV = false;
+	m_doExpensive = false;
+	m_warn = false;
+	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;
 	m_scopep = NULL;
+	//
+	switch (pmode) {
+	case PROC_PARAMS:	m_doV = true;  m_params = true; m_required = true; break;
+	case PROC_V_WARN:	m_doV = true;  m_warn = true; break;
+	case PROC_V_NOWARN:	m_doV = true;  break;
+	case PROC_V_EXPENSIVE:	m_doV = true;  m_doExpensive = true; break;
+	case PROC_CPP:		m_doV = false; break;
+	default:		v3fatalSrc("Bad case"); break;
+	}
     }
     virtual ~ConstVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
@@ -1806,7 +1825,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     // Resize even if the node already has a width, because burried in the treee we may
     // have a node we just created with signing, etc, that isn't sized yet.
     nodep = V3Width::widthParamsEdit(nodep); // Make sure we've sized everything first
-    ConstVisitor visitor (true,false,false,false);
+    ConstVisitor visitor (ConstVisitor::PROC_PARAMS);
     if (AstVar* varp=nodep->castVar()) {
 	// If a var wants to be constified, it's really a param, and
 	// we want the value to be constant.  We aren't passed just the
@@ -1820,34 +1839,34 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     return nodep;
 }
 
-void V3Const::constifyAll(AstNetlist* nodep) {
-    // Only call from Verilator.cpp, as it uses user#'s
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (false,true,false,false);
-    (void)visitor.mainAcceptEdit(nodep);
-}
-
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (false,false,true,false);
+    ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
     (void)visitor.mainAcceptEdit(nodep);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (false,false,false,true);
+    ConstVisitor visitor (ConstVisitor::PROC_CPP);
     (void)visitor.mainAcceptEdit(nodep);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
-    ConstVisitor visitor (false,false,false,false);
+    ConstVisitor visitor (ConstVisitor::PROC_V_NOWARN);
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }
 
+void V3Const::constifyAll(AstNetlist* nodep) {
+    // Only call from Verilator.cpp, as it uses user#'s
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
+    (void)visitor.mainAcceptEdit(nodep);
+}
+
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {
-    ConstVisitor visitor (false,true,false,false);
+    ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
 }

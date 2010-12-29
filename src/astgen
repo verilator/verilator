@@ -285,7 +285,7 @@ sub tree_line {
 	(::subclasses_of($type)) or $self->error("Unknown AstNode type: $type: in $func");
 
 	my $mif = "";
-	$mif = "!m_cpp" if $cpp;
+	$mif = "m_doV" if $cpp;
 	$subnodes =~ s/,,/__ESCAPEDCOMMA__/g;
 	foreach my $subnode (split /\s*,\s*/, $subnodes) {
 	    $subnode =~ s/__ESCAPEDCOMMA__/,/g;
