@@ -1613,6 +1613,8 @@ private:
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
     TREEOP ("AstNodeCond{$condp.isNeqZero,    $expr1p, $expr2p}", "replaceWChild(nodep,$expr1p)");
+    TREEOPC("AstNodeCond{$condp.isZero,       $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr2p)");
+    TREEOPC("AstNodeCond{$condp.isNeqZero,    $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr1p)");
     TREEOP ("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
     TREEOP ("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstOr {$condp, $expr2p}");  // a?1:b == a|b
@@ -1792,7 +1794,7 @@ public:
     // Processing Mode Enum
     enum ProcMode {
 	PROC_PARAMS,
-	PROC_V_LIVE,
+	PROC_LIVE,
 	PROC_V_WARN,
 	PROC_V_NOWARN,
 	PROC_V_EXPENSIVE,
@@ -1813,7 +1815,7 @@ public:
 	//
 	switch (pmode) {
 	case PROC_PARAMS:	m_doV = true;  m_doNConst = true; m_params = true; m_required = true; break;
-	case PROC_V_LIVE:	m_doV = true;  break;
+	case PROC_LIVE:		break;
 	case PROC_V_WARN:	m_doV = true;  m_doNConst = true; m_warn = true; break;
 	case PROC_V_NOWARN:	m_doV = true;  m_doNConst = true; break;
 	case PROC_V_EXPENSIVE:	m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
@@ -1874,7 +1876,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // This only pushes constants up, doesn't make any other edits
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_V_LIVE);
+    ConstVisitor visitor (ConstVisitor::PROC_LIVE);
     (void)visitor.mainAcceptEdit(nodep);
 }
 
