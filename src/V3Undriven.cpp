@@ -131,7 +131,7 @@ public:
     void reportViolations() {
 	// Combine bits into overall state
 	AstVar* nodep = m_varp;
-	if (!nodep->isParam()) {
+	if (!nodep->isParam() && !nodep->isGenVar()) {
 	    bool allU=true;
 	    bool allD=true;
 	    bool anyU=m_usedWhole;
