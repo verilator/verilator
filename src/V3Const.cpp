@@ -103,8 +103,9 @@ private:
     bool	m_required;	// If true, must become a constant
     bool	m_wremove;	// Inside scope, no assignw removal
     bool	m_warn;		// Output warnings
-    bool	m_doV;		// Verilog, not C++ conversion
     bool	m_doExpensive;	// Enable computationally expensive optimizations
+    bool	m_doNConst;	// Enable non-constant-child simplifications
+    bool	m_doV;		// Verilog, not C++ conversion
     AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
 
@@ -1070,6 +1071,7 @@ private:
 	    if (operandConst(nodep->varp()->valuep())
 		&& !nodep->lvalue()
 		&& ((!m_params // Can reduce constant wires into equations
+		     && m_doNConst
 		     && v3Global.opt.oConst()
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
@@ -1122,8 +1124,9 @@ private:
     }
     virtual void visit(AstSenItem* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->sensp()->castConst()
-	    || (nodep->varrefp() && nodep->varrefp()->varp()->isParam())) {
+	if (m_doNConst
+	    && (nodep->sensp()->castConst()
+		|| (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
 	    // Constants in sensitivity lists may be removed (we'll simplify later)
 	    if (nodep->isClocked()) {  // A constant can never get a pos/negexge
 		if (onlySenItemInSenTree(nodep)) {
@@ -1136,7 +1139,7 @@ private:
 		nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
 		nodep->deleteTree(); nodep=NULL;
 	    }
-	} else if (nodep->sensp()->castNot()) {
+	} else if (m_doNConst && nodep->sensp()->castNot()) {
 	    // V3Gate may propagate NOTs into clocks... Just deal with it
 	    AstNode* sensp = nodep->sensp();
 	    AstNode* lastSensp = sensp;
@@ -1306,16 +1309,16 @@ private:
     // Zero elimination
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	replaceNodeAssign(nodep);
+	if (m_doNConst && replaceNodeAssign(nodep)) return;
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
 	// Don't perform any optimizations, keep the alias around
     }
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (replaceNodeAssign(nodep)) return;
+	if (m_doNConst && replaceNodeAssign(nodep)) return;
 	AstNodeVarRef* varrefp = nodep->lhsp()->castVarRef();  // Not VarXRef, as different refs may set different values to each hierarchy
-	if (m_wremove && !m_params
+	if (m_wremove && !m_params && m_doNConst
 	    && m_modp && operandConst(nodep->rhsp())
 	    && !nodep->rhsp()->castConst()->num().isFourState()
 	    && varrefp		// Don't do messes with BITREFs/ARRAYREFs
@@ -1340,77 +1343,79 @@ private:
 
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (AstConst* constp = nodep->condp()->castConst()) {
-	    AstNode* keepp = NULL;
-	    if (constp->isZero()) {
-		UINFO(4,"IF(0,{any},{x}) => {x}: "<<nodep<<endl);
-		keepp = nodep->elsesp();
-	    } else {
-		UINFO(4,"IF(!0,{x},{any}) => {x}: "<<nodep<<endl);
-		keepp = nodep->ifsp();
+	if (m_doNConst) {
+	    if (AstConst* constp = nodep->condp()->castConst()) {
+		AstNode* keepp = NULL;
+		if (constp->isZero()) {
+		    UINFO(4,"IF(0,{any},{x}) => {x}: "<<nodep<<endl);
+		    keepp = nodep->elsesp();
+		} else {
+		    UINFO(4,"IF(!0,{x},{any}) => {x}: "<<nodep<<endl);
+		    keepp = nodep->ifsp();
+		}
+		if (keepp) {
+		    keepp->unlinkFrBackWithNext();
+		    nodep->replaceWith(keepp);
+		} else {
+		    nodep->unlinkFrBack();
+		}
+		nodep->deleteTree(); nodep=NULL;
 	    }
-	    if (keepp) {
-		keepp->unlinkFrBackWithNext();
-		nodep->replaceWith(keepp);
-	    } else {
-		nodep->unlinkFrBack();
+	    else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
+		// Empty block, remove it
+		// Note if we support more C++ then there might be side effects in the condition itself
+		nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    }
-	    nodep->deleteTree(); nodep=NULL;
-	}
-	else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
-	    // Empty block, remove it
-	    // Note if we support more C++ then there might be side effects in the condition itself
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
-	}
-	else if (!afterComment(nodep->ifsp())) {
-	    UINFO(4,"IF({x}) NULL {...} => IF(NOT{x}}: "<<nodep<<endl);
-	    AstNode* condp = nodep->condp();
-	    AstNode* elsesp = nodep->elsesp();
-	    condp->unlinkFrBackWithNext();
-	    elsesp->unlinkFrBackWithNext();
-	    if (nodep->ifsp()) { nodep->ifsp()->unlinkFrBackWithNext()->deleteTree(); }  // Must have been comment
-	    nodep->condp(new AstLogNot(condp->fileline(), condp));  // LogNot, as C++ optimization also possible
-	    nodep->addIfsp(elsesp);
-	}
-	else if (((nodep->condp()->castNot() && nodep->condp()->width()==1)
-		  || (nodep->condp()->castLogNot()))
-		 && nodep->ifsp() && nodep->elsesp()) {
-	    UINFO(4,"IF(NOT {x})  => IF(x) swapped if/else"<<nodep<<endl);
-	    AstNode* condp = nodep->condp()->castNot()->lhsp()->unlinkFrBackWithNext();
-	    AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
-	    AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
-	    AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
-	    ifp->branchPred(nodep->branchPred().invert());
-	    nodep->replaceWith(ifp);
-	    nodep->deleteTree(); nodep=NULL;
-	}
-	else if (ifSameAssign(nodep)) {
-	    UINFO(4,"IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})"<<endl);
-	    AstNodeAssign* ifp   = nodep->ifsp()->castNodeAssign();
-	    AstNodeAssign* elsep = nodep->elsesp()->castNodeAssign();
-	    ifp->unlinkFrBack();
-	    AstNode* condp = nodep->condp()->unlinkFrBack();
-	    AstNode* truep = ifp->rhsp()->unlinkFrBack();
-	    AstNode* falsep = elsep->rhsp()->unlinkFrBack();
-	    ifp->rhsp(new AstCond(truep->fileline(),
-				  condp, truep, falsep));
-	    nodep->replaceWith(ifp);
-	    nodep->deleteTree(); nodep=NULL;
-	}
-	else if (0	// Disabled, as vpm assertions are faster without due to short-circuiting
-		 && operandIfIf(nodep)) {
-	    UINFO(0,"IF({a}) IF({b}) => IF({a} && {b})"<<endl);
-	    AstNodeIf* lowerIfp = nodep->ifsp()->castNodeIf();
-	    AstNode* condp = nodep->condp()->unlinkFrBack();
-	    AstNode* lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
-	    AstNode* lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
-	    nodep->condp(new AstLogAnd(lowerIfp->fileline(),
-				       condp, lowerCondp));
-	    lowerIfp->replaceWith(lowerIfsp);
-	    lowerIfp->deleteTree(); lowerIfp=NULL;
-	}
-	else if (operandBoolShift(nodep->condp())) {
-	    replaceBoolShift(nodep->condp());
+	    else if (!afterComment(nodep->ifsp())) {
+		UINFO(4,"IF({x}) NULL {...} => IF(NOT{x}}: "<<nodep<<endl);
+		AstNode* condp = nodep->condp();
+		AstNode* elsesp = nodep->elsesp();
+		condp->unlinkFrBackWithNext();
+		elsesp->unlinkFrBackWithNext();
+		if (nodep->ifsp()) { nodep->ifsp()->unlinkFrBackWithNext()->deleteTree(); }  // Must have been comment
+		nodep->condp(new AstLogNot(condp->fileline(), condp));  // LogNot, as C++ optimization also possible
+		nodep->addIfsp(elsesp);
+	    }
+	    else if (((nodep->condp()->castNot() && nodep->condp()->width()==1)
+		      || (nodep->condp()->castLogNot()))
+		     && nodep->ifsp() && nodep->elsesp()) {
+		UINFO(4,"IF(NOT {x})  => IF(x) swapped if/else"<<nodep<<endl);
+		AstNode* condp = nodep->condp()->castNot()->lhsp()->unlinkFrBackWithNext();
+		AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
+		AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
+		AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
+		ifp->branchPred(nodep->branchPred().invert());
+		nodep->replaceWith(ifp);
+		nodep->deleteTree(); nodep=NULL;
+	    }
+	    else if (ifSameAssign(nodep)) {
+		UINFO(4,"IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})"<<endl);
+		AstNodeAssign* ifp   = nodep->ifsp()->castNodeAssign();
+		AstNodeAssign* elsep = nodep->elsesp()->castNodeAssign();
+		ifp->unlinkFrBack();
+		AstNode* condp = nodep->condp()->unlinkFrBack();
+		AstNode* truep = ifp->rhsp()->unlinkFrBack();
+		AstNode* falsep = elsep->rhsp()->unlinkFrBack();
+		ifp->rhsp(new AstCond(truep->fileline(),
+				      condp, truep, falsep));
+		nodep->replaceWith(ifp);
+		nodep->deleteTree(); nodep=NULL;
+	    }
+	    else if (0	// Disabled, as vpm assertions are faster without due to short-circuiting
+		     && operandIfIf(nodep)) {
+		UINFO(0,"IF({a}) IF({b}) => IF({a} && {b})"<<endl);
+		AstNodeIf* lowerIfp = nodep->ifsp()->castNodeIf();
+		AstNode* condp = nodep->condp()->unlinkFrBack();
+		AstNode* lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
+		AstNode* lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
+		nodep->condp(new AstLogAnd(lowerIfp->fileline(),
+					   condp, lowerCondp));
+		lowerIfp->replaceWith(lowerIfsp);
+		lowerIfp->deleteTree(); lowerIfp=NULL;
+	    }
+	    else if (operandBoolShift(nodep->condp())) {
+		replaceBoolShift(nodep->condp());
+	    }
 	}
     }
 
@@ -1423,7 +1428,7 @@ private:
 	for (AstNode* argp = nodep->exprsp(); argp; argp=argp->nextp()) {
 	    if (argp->castConst()) { anyconst=true; break; }
 	}
-	if (anyconst) {
+	if (m_doNConst && anyconst) {
 	    //UINFO(9,"  Display in  "<<nodep->text()<<endl);
 	    string dispout = "";
 	    string fmt = "";
@@ -1486,14 +1491,16 @@ private:
 
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->condp()->isZero()) {
-	    UINFO(4,"WHILE(0) => nop "<<nodep<<endl);
-	    if (nodep->precondsp()) nodep->replaceWith(nodep->precondsp());
-	    else nodep->unlinkFrBack();
-	    nodep->deleteTree(); nodep=NULL;
-	}
-	else if (operandBoolShift(nodep->condp())) {
-	    replaceBoolShift(nodep->condp());
+	if (m_doNConst) {
+	    if (nodep->condp()->isZero()) {
+		UINFO(4,"WHILE(0) => nop "<<nodep<<endl);
+		if (nodep->precondsp()) nodep->replaceWith(nodep->precondsp());
+		else nodep->unlinkFrBack();
+		nodep->deleteTree(); nodep=NULL;
+	    }
+	    else if (operandBoolShift(nodep->condp())) {
+		replaceBoolShift(nodep->condp());
+	    }
 	}
     }
 
@@ -1547,77 +1554,78 @@ private:
     // Lint Checks
     //    v--- *1* These ops are always first, as we warn before replacing
     //    v--- *V* This op is a verilog op, only in m_doV mode
+    //    v--- *C* This op works on all constant children, allowed in m_doConst mode
     TREEOP1("AstSel{warnSelect(nodep)}",	"NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
-    TREEOP("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
-    TREEOP("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
+    TREEOPC("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
+    TREEOPC("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
     // Zero on one side or the other
-    TREEOP("AstAdd   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstAnd   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstLogAnd{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstLogOr {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstDiv   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstMul   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstMulS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstPow   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstPowS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstOr    {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstShiftL{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP("AstXor   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstXnor  {$lhsp.isZero, $rhsp}",	"AstNot{$rhsp}");
-    TREEOP("AstSub   {$lhsp.isZero, $rhsp}",	"AstUnaryMin{$rhsp}");
-    TREEOP("AstAdd   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP("AstLogAnd{$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP("AstLogOr {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstMul   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP("AstMulS  {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP("AstOr    {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstShiftL{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstShiftR{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstShiftRS{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstSub   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstXor   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstXnor  {$lhsp, $rhsp.isZero}",	"AstNot{$lhsp}");
+    TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstPow   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstPowS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstShiftL{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstXnor  {$lhsp.isZero, $rhsp}",	"AstNot{$rhsp}");
+    TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",	"AstUnaryMin{$rhsp}");
+    TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstOr    {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstShiftL{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstShiftR{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstShiftRS{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstXnor  {$lhsp, $rhsp.isZero}",	"AstNot{$lhsp}");
     // Non-zero on one side or the other
-    TREEOP("AstAnd   {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstLogAnd{$lhsp.isNeqZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstOr    {$lhsp.isAllOnes, $rhsp}",	"replaceWLhs(nodep)"); //->allOnes
-    TREEOP("AstLogOr {$lhsp.isNeqZero, $rhsp}",	"replaceNum(nodep,1)");
-    TREEOP("AstAnd   {$lhsp, $rhsp.isAllOnes}",	"replaceWLhs(nodep)");
-    TREEOP("AstLogAnd{$lhsp, $rhsp.isNeqZero}",	"replaceWLhs(nodep)");
-    TREEOP("AstOr    {$lhsp, $rhsp.isAllOnes}",	"replaceWRhs(nodep)"); //->allOnes
-    TREEOP("AstLogOr {$lhsp, $rhsp.isNeqZero}",	"replaceNum(nodep,1)");
-    TREEOP("AstXor   {$lhsp.isAllOnes, $rhsp}",	"AstNot{$rhsp}");
-    TREEOP("AstXnor  {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstMul   {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstMulS  {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP("AstDiv   {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
-    TREEOP("AstDivS  {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
-    TREEOP("AstMul   {operandIsPowTwo($lhsp), $rhsp}",	"replaceMulShift(nodep)");  // a*2^n -> a<<n
-    TREEOP("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}",	"replaceDivShift(nodep)");  // a/2^n -> a>>n
-    TREEOP("AstPow   {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
-    TREEOP("AstPowS  {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp}",	"replaceWLhs(nodep)"); //->allOnes
+    TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",	"replaceNum(nodep,1)");
+    TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",	"replaceWLhs(nodep)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",	"replaceWLhs(nodep)");
+    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes}",	"replaceWRhs(nodep)"); //->allOnes
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero}",	"replaceNum(nodep,1)");
+    TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",	"AstNot{$rhsp}");
+    TREEOP ("AstXnor  {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
+    TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
+    TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",	"replaceWLhs(nodep)");
+    TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}",	"replaceMulShift(nodep)");  // a*2^n -> a<<n
+    TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}",	"replaceDivShift(nodep)");  // a/2^n -> a>>n
+    TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP ("AstPowS  {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
-    TREEOP("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
-    TREEOP("AstNodeCond{$condp.isNeqZero,    $expr1p, $expr2p}", "replaceWChild(nodep,$expr1p)");
-    TREEOP("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
-    TREEOP("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
-    TREEOP("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstOr {$condp, $expr2p}");  // a?1:b == a|b
-    TREEOP("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstAnd{$condp, $expr1p}");  // a?b:0 == a&b
-    TREEOP("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a|b
-    TREEOP("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&b
-    TREEOP("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
+    TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
+    TREEOP ("AstNodeCond{$condp.isNeqZero,    $expr1p, $expr2p}", "replaceWChild(nodep,$expr1p)");
+    TREEOP ("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
+    TREEOP ("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstOr {$condp, $expr2p}");  // a?1:b == a|b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstAnd{$condp, $expr1p}");  // a?b:0 == a&b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a|b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&b
+    TREEOP ("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets constant red remove the shift
-    TREEOP("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",	"swapSides(nodep)");
-    TREEOP("AstNodeBiComAsv{operandAsvConst(nodep)}",	"replaceAsv(nodep)");
-    TREEOP("AstNodeBiComAsv{operandAsvSame(nodep)}",	"replaceAsv(nodep)");
-    TREEOP("AstNodeBiComAsv{operandAsvLUp(nodep)}",	"replaceAsvLUp(nodep)");
-    TREEOP("AstNodeBiComAsv{operandAsvRUp(nodep)}",	"replaceAsvRUp(nodep)");
+    TREEOP ("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",	"swapSides(nodep)");
+    TREEOP ("AstNodeBiComAsv{operandAsvConst(nodep)}",	"replaceAsv(nodep)");
+    TREEOP ("AstNodeBiComAsv{operandAsvSame(nodep)}",	"replaceAsv(nodep)");
+    TREEOP ("AstNodeBiComAsv{operandAsvLUp(nodep)}",	"replaceAsvLUp(nodep)");
+    TREEOP ("AstNodeBiComAsv{operandAsvRUp(nodep)}",	"replaceAsvRUp(nodep)");
     //    v--- *1* as These ops are always first, as we warn before replacing
     TREEOP1("AstLt   {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,0)");
     TREEOP1("AstGte  {$lhsp, $rhsp.isZero}",		"replaceNumSigned(nodep,1)");
@@ -1669,30 +1677,30 @@ private:
     // Identical operands on both sides
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
-    TREEOP("AstAnd    {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
-    TREEOP("AstChangeXor{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstDiv    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstDivS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstOr     {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
-    TREEOP("AstSub    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstXnor   {operandsSame($lhsp,,$rhsp)}",	"replaceAllOnes(nodep)");
-    TREEOP("AstXor    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstEq     {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
-    TREEOP("AstEqCase {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstEqWild {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstGt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstGtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstGte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstGteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstLt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstLtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstLte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
-    TREEOP("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstNeqWild{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
-    TREEOP("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
-    TREEOP("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
+    TREEOP ("AstAnd    {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
+    TREEOP ("AstChangeXor{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstDiv    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstDivS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstOr     {operandsSame($lhsp,,$rhsp)}",	"replaceWLhs(nodep)");
+    TREEOP ("AstSub    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstXnor   {operandsSame($lhsp,,$rhsp)}",	"replaceAllOnes(nodep)");
+    TREEOP ("AstXor    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstEq     {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
+    TREEOP ("AstEqCase {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstEqWild {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstGt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstGtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstGte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstGteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstLt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstLtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstLte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstNeqWild{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
+    TREEOP ("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");
     ///=== Verilog operators
     // Comparison against 1'b0/1'b1; must be careful about widths.
     // These use Not, so must be Verilog only
@@ -1746,7 +1754,7 @@ private:
     TREEOPV("AstSel{operandSelExtend(nodep)}",	"replaceWChild(nodep, nodep->fromp()->castExtend()->lhsp())");
     TREEOPV("AstSel{operandSelFull(nodep)}",	"replaceWChild(nodep, nodep->fromp())");
     TREEOPV("AstSel{$fromp.castSel}",		"replaceSelSel(nodep)");
-    TREEOPV("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
+    TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
     // Conversions
@@ -1754,7 +1762,7 @@ private:
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");
     TREEOPV("AstLogIff{$lhsp, $rhsp}",		"AstLogNot{AstXor{$lhsp,$rhsp}}");
     // Strings
-    TREEOP ("AstCvtPackString{$lhsp.castConst}",	"replaceConstString(nodep, nodep->lhsp()->castConst()->num().toString())");
+    TREEOPC("AstCvtPackString{$lhsp.castConst}",	"replaceConstString(nodep, nodep->lhsp()->castConst()->num().toString())");
 
 
     // Possible futures:
@@ -1784,6 +1792,7 @@ public:
     // Processing Mode Enum
     enum ProcMode {
 	PROC_PARAMS,
+	PROC_V_LIVE,
 	PROC_V_WARN,
 	PROC_V_NOWARN,
 	PROC_V_EXPENSIVE,
@@ -1794,19 +1803,21 @@ public:
     ConstVisitor(ProcMode pmode) {
 	m_params = false;
 	m_required = false;
-	m_doV = false;
 	m_doExpensive = false;
+	m_doNConst = false;
+	m_doV = false;
 	m_warn = false;
 	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;
 	m_scopep = NULL;
 	//
 	switch (pmode) {
-	case PROC_PARAMS:	m_doV = true;  m_params = true; m_required = true; break;
-	case PROC_V_WARN:	m_doV = true;  m_warn = true; break;
-	case PROC_V_NOWARN:	m_doV = true;  break;
-	case PROC_V_EXPENSIVE:	m_doV = true;  m_doExpensive = true; break;
-	case PROC_CPP:		m_doV = false; break;
+	case PROC_PARAMS:	m_doV = true;  m_doNConst = true; m_params = true; m_required = true; break;
+	case PROC_V_LIVE:	m_doV = true;  break;
+	case PROC_V_WARN:	m_doV = true;  m_doNConst = true; m_warn = true; break;
+	case PROC_V_NOWARN:	m_doV = true;  m_doNConst = true; break;
+	case PROC_V_EXPENSIVE:	m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
+	case PROC_CPP:		m_doV = false; m_doNConst = true; break;
 	default:		v3fatalSrc("Bad case"); break;
 	}
     }
@@ -1856,6 +1867,15 @@ AstNode* V3Const::constifyEdit(AstNode* nodep) {
     ConstVisitor visitor (ConstVisitor::PROC_V_NOWARN);
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;
+}
+
+void V3Const::constifyAllLive(AstNetlist* nodep) {
+    // Only call from Verilator.cpp, as it uses user#'s
+    // This only pushes constants up, doesn't make any other edits
+    // IE doesn't prune dead statements, as we need to do some usability checks after this
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    ConstVisitor visitor (ConstVisitor::PROC_V_LIVE);
+    (void)visitor.mainAcceptEdit(nodep);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {

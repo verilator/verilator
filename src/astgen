@@ -268,8 +268,8 @@ sub tree_line {
     $func =~ s!\s*//.*$!!;
     $func =~ s!\s*;\s*$!!;
 
-    if ($func =~ /TREEOP(1?)(V?)\s*\(\s*  \"([^\"]*)\"  \s*,\s* \"([^\"]*)\"  \s*\)/sx) {
-	my $order = $1; my $cpp = $2; my $from = $3; my $to = $4;
+    if ($func =~ /TREEOP(1?)([VC]?)\s*\(\s*  \"([^\"]*)\"  \s*,\s* \"([^\"]*)\"  \s*\)/sx) {
+	my $order = $1; my $doflag = $2; my $from = $3; my $to = $4;
 	#$self->print("// $from $to\n");
 	if (!$self->{did_out_tree}) {
 	    $self->{did_out_tree} = 1;
@@ -284,8 +284,11 @@ sub tree_line {
 	my $subnodes = $2;
 	(::subclasses_of($type)) or $self->error("Unknown AstNode type: $type: in $func");
 
-	my $mif = "";
-	$mif = "m_doV" if $cpp;
+	my $mif;
+	if ($doflag eq '') { $mif = "m_doNConst"; }
+	elsif ($doflag eq 'V') { $mif = "m_doV"; }
+	elsif ($doflag eq 'C') { $mif = ""; }
+	else { die; }
 	$subnodes =~ s/,,/__ESCAPEDCOMMA__/g;
 	foreach my $subnode (split /\s*,\s*/, $subnodes) {
 	    $subnode =~ s/__ESCAPEDCOMMA__/,/g;

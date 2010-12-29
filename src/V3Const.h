@@ -34,6 +34,8 @@ public:
     // Force this cell node's parameter list to become a constant
     // Return new node that may have replaced nodep
     static AstNode* constifyParamsEdit(AstNode* nodep);
+    // Only do constant pushing, without removing dead logic
+    static void constifyAllLive(AstNetlist* nodep);
     // Everything that's possible
     static void constifyAll(AstNetlist* nodep);
     // Also, warn
