@@ -85,6 +85,7 @@
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
+#include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
@@ -183,6 +184,15 @@ void process () {
 	V3Coverage::coverage(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("coverage.tree"));
     }
+
+    // Push constants, but only true constants preserving liveness
+    // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
+    V3Const::constifyAllLive(v3Global.rootp());
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+    // Signal based lint checks, no change to structures
+    // Must be before first constification pass drops dead code
+    V3Undriven::undrivenAll(v3Global.rootp());
 
     // Assertion insertion
     //    After we've added block coverage, but before other nasty transforms

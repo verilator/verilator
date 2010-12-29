@@ -884,7 +884,7 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-INCABSPATH -Wno-VARHIDDEN".
+-Wno-INCABSPATH -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
 
 =item -Wwarn-I<message>
 
@@ -901,7 +901,8 @@ enabled), but do not affect style messages.  This is equivalent to
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-VARHIDDEN".
+"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-UNDRIVEN
+-Wwarn-UNUSED -Wwarn-VARHIDDEN".
 
 =item -x-assign 0
 
@@ -2582,7 +2583,9 @@ cases would result in simulator mismatches.
 
 =item UNDRIVEN
 
-Warns that the specified signal is never sourced.
+Warns that the specified signal is never sourced.  Verilator is fairly
+liberal in the usage calculations; making a signal public, or loading only
+a single array element marks the entire signal as driven.
 
 Disabled by default as this is a code style warning, it will simulate
 correctly.
@@ -2667,8 +2670,9 @@ correctly.
 
 =item UNUSED
 
-Warns that the specified signal is never sinked.  This is a future message,
-currently Verilator will not produce this warning.
+Warns that the specified signal is never sinked.  Verilator is fairly
+liberal in the usage calculations; making a signal public, or accessing
+only a single array element marks the entire signal as used.
 
 Disabled by default as this is a code style warning, it will simulate
 correctly.
