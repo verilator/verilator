@@ -1683,7 +1683,7 @@ struct AstSysIgnore : public AstNode {
     // Parents: stmtlist
     // Children: varrefs or exprs
     AstSysIgnore(FileLine* fileline, AstNode* exprsp)
-	: AstNode (fileline) { setNOp1p(exprsp); }
+	: AstNode (fileline) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysIgnore, SYSIGNORE)
     virtual string verilogKwd() const { return "$ignored"; }
     virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
