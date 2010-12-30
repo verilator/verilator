@@ -2414,7 +2414,9 @@ simulators.
 Warns that a module or other declaration's name doesn't match the filename
 with path and extension stripped that it is declared in.  The filename a
 modules/interfaces/programs is declared in should match the name of the
-module etc. so that -y directory searching will work.
+module etc. so that -y directory searching will work.  This warning is
+printed for only the first mismatching module in any given file, and -v
+library files are ignored.
 
 Disabled by default as this is a code style warning, it will simulate
 correctly.

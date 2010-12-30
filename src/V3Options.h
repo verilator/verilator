@@ -276,6 +276,7 @@ class V3Options {
     const V3LangCode& language() const { return m_language; }
 
     bool isFuture(const string& flag) const;
+    bool isLibraryFile(const string& filename) const;
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }

@@ -115,6 +115,9 @@ void V3Options::addFuture(const string& flag) {
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
 }
+bool V3Options::isLibraryFile(const string& filename) const {
+    return m_libraryFiles.find(filename) != m_libraryFiles.end();
+}
 
 void V3Options::addLibraryFile(const string& filename) {
     if (m_libraryFiles.find(filename) == m_libraryFiles.end()) {
