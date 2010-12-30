@@ -60,7 +60,8 @@ class V3ConfigIgnores {
     IgnLines::const_iterator m_lastIt;	// Point with next linenumber > current line number
     IgnLines::const_iterator m_lastEnd;	// Point with end()
 
-    IgnFiles		m_ignFiles;	// Ignores for each filename
+    IgnFiles		m_ignWilds;	// Ignores for each wildcarded filename
+    IgnFiles		m_ignFiles;	// Ignores for each non-wildcarded filename
     
     static V3ConfigIgnores s_singleton;	// Singleton (not via local static, as that's slow)
 
@@ -68,13 +69,13 @@ class V3ConfigIgnores {
     ~V3ConfigIgnores() {}
 
     // METHODS
-    inline IgnLines* findLines(const string& filename) {
-	IgnFiles::iterator it = m_ignFiles.find(filename);
-	if (it != m_ignFiles.end()) {
+    inline IgnLines* findWilds(const string& wildname) {
+	IgnFiles::iterator it = m_ignWilds.find(wildname);
+	if (it != m_ignWilds.end()) {
 	    return &(it->second);
 	} else {
-	    m_ignFiles.insert(make_pair(filename, IgnLines()));
-	    it = m_ignFiles.find(filename);
+	    m_ignWilds.insert(make_pair(wildname, IgnLines()));
+	    it = m_ignWilds.find(wildname);
 	    return &(it->second);
 	}
     }
@@ -82,23 +83,35 @@ class V3ConfigIgnores {
 	// Given a filename, find all wildcard matches against it and build
 	// hash with the specific filename.  This avoids having to wildmatch
 	// more than once against any filename.
-	IgnLines* linesp = findLines(filename);
-	m_lastIt = linesp->begin();
-	m_lastEnd = linesp->end();
+	IgnFiles::iterator it = m_ignFiles.find(filename);
+	if (it == m_ignFiles.end()) {
+	    // Haven't seen this filename before
+	    m_ignFiles.insert(make_pair(filename, IgnLines()));
+	    it = m_ignFiles.find(filename);
+	    // Make new list for this file of all matches
+	    for (IgnFiles::iterator fnit = m_ignWilds.begin(); fnit != m_ignWilds.end(); ++fnit) {
+		if (V3Options::wildmatch(filename.c_str(), fnit->first.c_str())) {
+		    for (IgnLines::iterator lit = fnit->second.begin(); lit != fnit->second.end(); ++lit) {
+			it->second.insert(*lit);
+		    }
+		}
+	    }
+	}
+	m_lastIt = it->second.begin();
+	m_lastEnd = it->second.end();
     }
 
 public:
     inline static V3ConfigIgnores& singleton() { return s_singleton; }
 
-    void addIgnore(V3ErrorCode code, string filename, int lineno, bool on) {
+    void addIgnore(V3ErrorCode code, string wildname, int lineno, bool on) {
 	// Insert
-	IgnLines* linesp = findLines(filename);
-	UINFO(9,"config addIgnore "<<filename<<":"<<lineno<<", "<<code<<", "<<on<<endl); 
+	IgnLines* linesp = findWilds(wildname);
+	UINFO(9,"config addIgnore "<<wildname<<":"<<lineno<<", "<<code<<", "<<on<<endl);
 	linesp->insert(V3ConfigLine(code, lineno, on));
-	if (m_lastFilename == filename) {
-	    // Flush the match cache, due to a change in the rules.
-	    m_lastFilename = " ";
-	}
+	// Flush the match cache, due to a change in the rules.
+	m_ignFiles.clear();
+	m_lastFilename = " ";
     }
     inline void applyIgnores(FileLine* filelinep) {
 	// HOT routine, called each parsed token line
