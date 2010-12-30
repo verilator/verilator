@@ -44,6 +44,7 @@ public:
 	// Boolean information we track per-line, but aren't errors
 	I_COVERAGE,	// Coverage is on/off from /*verilator coverage_on/off*/
 	I_TRACING,	// Tracing is on/off from /*verilator tracing_on/off*/
+	I_LINT,		// All lint messages
 	I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
 	// Error codes:
 	E_MULTITOP,	// Error: Multiple top level modules
@@ -97,7 +98,7 @@ public:
 	    // Leading spaces indicate it can't be disabled.
 	    " MIN", " SUPPRESS", " INFO", " FATAL", " FATALSRC", " ERROR",
 	    // Boolean
-	    " I_COVERAGE", " I_TRACING", " I_DEF_NETTYPE_WIRE",
+	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
 	    // Errors
 	    "MULTITOP", "TASKNSVAR", "BLKLOOPINIT",
 	    // Warnings

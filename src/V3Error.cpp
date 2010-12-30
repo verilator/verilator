@@ -117,30 +117,6 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     //printf ("PPLINE %d '%s'\n", s_lineno, s_filename.c_str());
 }
 
-bool FileLine::warnOff(const string& msg, bool flag) {
-    V3ErrorCode code (msg.c_str());
-    if (code < V3ErrorCode::EC_FIRST_WARN) {
-	return false;
-    } else {
-	warnOff(code, flag);
-	return true;
-    }
-}
-
-void FileLine::warnLintOff(bool flag) {
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	if (code.lintError()) warnOff(code, flag);
-    }
-}
-
-void FileLine::warnStyleOff(bool flag) {
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	if (code.styleError()) warnOff(code, flag);
-    }
-}
-
 FileLine* FileLine::copyOrSameFileLine() {
     // When a fileline is "used" to produce a node, calls this function.
     // Return this, or a copy of this
@@ -196,10 +172,35 @@ ostream& operator<<(ostream& os, FileLine* fileline) {
     return(os);
 }
 
+bool FileLine::warnOff(const string& msg, bool flag) {
+    V3ErrorCode code (msg.c_str());
+    if (code < V3ErrorCode::EC_FIRST_WARN) {
+	return false;
+    } else {
+	warnOff(code, flag);
+	return true;
+    }
+}
+
+void FileLine::warnLintOff(bool flag) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (code.lintError()) warnOff(code, flag);
+    }
+}
+
+void FileLine::warnStyleOff(bool flag) {
+    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+	V3ErrorCode code = (V3ErrorCode)codei;
+	if (code.styleError()) warnOff(code, flag);
+    }
+}
+
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!m_warnOn.test(code)) return true;
     // UNOPTFLAT implies UNOPT
     if (code==V3ErrorCode::UNOPT && !m_warnOn.test(V3ErrorCode::UNOPTFLAT)) return true;
+    if ((code.lintError() || code.styleError()) && !m_warnOn.test(V3ErrorCode::I_LINT)) return true;
     return false;
 }
 

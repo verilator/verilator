@@ -1553,11 +1553,14 @@ or all files if omitted) and range of line numbers (or all lines if
 omitted).  Often used to ignore an entire module for coverage analysis
 purposes.
 
-=item lint_off -msg <message> [-file "<filename>" [-lines <line> [ - <line>]]]
+=item lint_off [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-Disables the specified lint warning in the specified filename (or wildcard
+Disables the specified lint warning, in the specified filename (or wildcard
 with '*' or '?', or all files if omitted) and range of line numbers (or all
 lines if omitted).
+
+If the -msg is omitted, all lint warnings are disabled.  This will override
+all later lint warning enables for the specified region.
 
 =item tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
