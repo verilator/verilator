@@ -34,10 +34,15 @@ module sub;
    
    wire       unu3;  // Totally unused
 
+   wire [3:0] mixed;  // [3] unused & undr, [2] unused, [1] undr, [0] ok
+   assign mixed[2] = 0;
+   assign mixed[0] = 0;
+
    localparam THREE = 3;
 
    initial begin
       if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
       if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
+      if (0 && mixed[1:0] != 0) begin end
    end
 endmodule

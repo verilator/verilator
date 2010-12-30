@@ -75,15 +75,19 @@ public:
 private:
     // METHODS
     inline bool bitNumOk(int bit) const { return (bit*FLAGS_PER_BIT < (int)m_flags.size()); }
-    inline bool usedFlag(int bit) { return m_flags[bit*FLAGS_PER_BIT + FLAG_USED]; }
-    inline bool drivenFlag(int bit) { return m_flags[bit*FLAGS_PER_BIT + FLAG_DRIVEN]; }
-    string bitNames(int index) {
+    inline bool usedFlag(int bit) { return m_usedWhole || m_flags[bit*FLAGS_PER_BIT + FLAG_USED]; }
+    inline bool drivenFlag(int bit) { return m_drivenWhole || m_flags[bit*FLAGS_PER_BIT + FLAG_DRIVEN]; }
+    enum BitNamesWhich { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
+    string bitNames(BitNamesWhich which) {
 	string bits="";
 	bool prev = false;
 	int msb = 0;
 	// bit==-1 loops below; we do one extra iteration so end with prev=false
 	for (int bit=(m_flags.size()/FLAGS_PER_BIT)-1; bit >= -1; --bit) {
-	    if (bit>=0 && !m_flags[bit*FLAGS_PER_BIT + index]) {
+	    if (bit>=0
+		&& ((which == BN_UNUSED && !usedFlag(bit) && drivenFlag(bit))
+		    || (which == BN_UNDRIVEN && usedFlag(bit) && !drivenFlag(bit))
+		    || (which == BN_BOTH && !usedFlag(bit) && !drivenFlag(bit)))) {
 		if (!prev) { prev=true; msb = bit; }
 	    } else if (prev) {
 		AstBasicDType* bdtypep = m_varp->basicp();
@@ -136,33 +140,46 @@ public:
 	    bool allD=true;
 	    bool anyU=m_usedWhole;
 	    bool anyD=m_drivenWhole;
+	    bool anyUnotD=false;
+	    bool anyDnotU=false;
+	    bool anynotDU=false;
 	    for (unsigned bit=0; bit<m_flags.size()/FLAGS_PER_BIT; bit++) {
-		allU &= usedFlag(bit);
-		anyU |= usedFlag(bit);
-		allD &= drivenFlag(bit);
-		anyD |= drivenFlag(bit);
+		bool used = usedFlag(bit);
+		bool driv = drivenFlag(bit);
+		allU &= used;
+		anyU |= used;
+		allD &= driv;
+		anyD |= driv;
+		anyUnotD |= used && !driv;
+		anyDnotU |= !used && driv;
+		anynotDU |= !used && !driv;
 	    }
 	    if (allU) m_usedWhole = true;
 	    if (allD) m_drivenWhole = true;
 	    // Test results
-	    if (m_usedWhole && m_drivenWhole) {
-		// Ignore
-	    }
-	    else if (!anyU && !anyD) {
-		nodep->v3warn(UNDRIVEN, "Signal is not driven, nor used: "<<nodep->prettyName());
-	    }
-	    else {
-		if (!m_usedWhole && !anyU) {
-		    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
-		} else if (!m_usedWhole) {
-		    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyName()
-				  <<bitNames(FLAG_USED));
+	    if (allU && allD) {
+		// It's fine
+	    } else if (!anyD && !anyU) {
+		// UNDRIVEN is considered more serious - as is more likely a bug,
+		// thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
+		nodep->v3warn(UNUSED, "Signal is not driven, nor used: "<<nodep->prettyName());
+	    } else if (allD && !anyU) {
+		nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
+	    } else if (!anyD && allU) {
+		nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyName());
+	    } else {
+		// Bits have different dispositions
+		if (anynotDU) {
+		    nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "<<nodep->prettyName()
+				  <<bitNames(BN_BOTH));
 		}
-		if (!m_drivenWhole && !anyD) {
-		    nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyName());
-		} else if (!m_drivenWhole) {
+		if (anyDnotU) {
+		    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyName()
+				  <<bitNames(BN_UNUSED));
+		}
+		if (anyUnotD) {
 		    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "<<nodep->prettyName()
-				  <<bitNames(FLAG_DRIVEN));
+				  <<bitNames(BN_UNDRIVEN));
 		}
 	    }
 	}
