@@ -123,6 +123,7 @@ private:
 
     virtual void visit(AstUdpTable* nodep, AstNUser*) {
 	if (!v3Global.opt.bboxUnsup()) {
+	    // If we support primitives, update V3Undriven to remove special case
 	    nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.");
 	}
     }

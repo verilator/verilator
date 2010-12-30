@@ -256,6 +256,9 @@ private:
 	else entryp->usedWhole();
     }
 
+    // Until we support tables, primitives will have undriven and unused I/Os
+    virtual void visit(AstPrimitive* nodep, AstNUser*) {}
+
     // Coverage artifacts etc shouldn't count as a sink
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {}
     virtual void visit(AstCoverInc* nodep, AstNUser*) {}
