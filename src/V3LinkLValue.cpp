@@ -154,6 +154,12 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+	// Can't know if lvalue or not; presume so as stricter
+	bool last_setRefLvalue = m_setRefLvalue;
+	nodep->iterateChildren(*this);
+	m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{

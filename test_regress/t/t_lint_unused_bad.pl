@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-    v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
+    v_flags2 => ["--lint-only --bbox-sys -Wall -Wno-DECLFILENAME"],
     fails=>1,
     verilator_make_gcc => 0,
     make_top_shell => 0,

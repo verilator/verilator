@@ -1679,6 +1679,22 @@ struct AstSFormat : public AstNode {
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
 
+struct AstSysIgnore : public AstNode {
+    // Parents: stmtlist
+    // Children: varrefs or exprs
+    AstSysIgnore(FileLine* fileline, AstNode* exprsp)
+	: AstNode (fileline) { setNOp1p(exprsp); }
+    ASTNODE_NODE_FUNCS(SysIgnore, SYSIGNORE)
+    virtual string verilogKwd() const { return "$ignored"; }
+    virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
+    virtual bool isPredictOptimizable() const { return false; }  // Though deleted before opt
+    virtual bool isSplittable() const { return false; }  // Though deleted before opt
+    virtual bool isOutputter() const { return true; }  // Though deleted before opt
+    virtual int instrCount()	const { return instrCountPli(); }
+    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    void 	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
+};
+
 struct AstFClose : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref

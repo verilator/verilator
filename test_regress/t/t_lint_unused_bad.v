@@ -18,6 +18,10 @@ module t (/*AUTOARG*/
    // Check we don't warn about unused UDP signals
    udp_mux2 udpsub (out, in, in, in);
 
+   // Check ignoreds mark as used
+   reg 	  sysused;
+   initial $bboxed(sysused);
+
 endmodule
 
 module sub;

@@ -276,6 +276,12 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->msbp()) { putbs(","); nodep->msbp()->iterateChildren(*this); }
 	puts(");\n");
     }
+    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+	putfs(nodep,nodep->verilogKwd());
+	putbs(" (");
+	nodep->exprsp()->iterateChildren(*this);
+	puts(");\n");
+    }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	putfs(nodep,"for (");
 	m_suppressSemi = true;

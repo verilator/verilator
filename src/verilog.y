@@ -2063,8 +2063,8 @@ function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as f
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
-		yaD_IGNORE  parenE			{ $$ = NULL; }
-	|	yaD_IGNORE  '(' exprList ')'		{ $$ = NULL; }
+		yaD_IGNORE  parenE			{ $$ = new AstSysIgnore($<fl>1,NULL); }
+	|	yaD_IGNORE  '(' exprList ')'		{ $$ = new AstSysIgnore($<fl>1,$3); }
 	//
 	|	yaD_DPI parenE				{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); }

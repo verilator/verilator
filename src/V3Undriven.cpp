@@ -197,6 +197,7 @@ private:
 
     // STATE
     vector<UndrivenVarEntry*>	m_entryps;	// Nodes to delete when we are finished
+    bool		m_markBoth;	// Mark as driven+used
 
     // METHODS
     static int debug() {
@@ -242,8 +243,8 @@ private:
 	if (varrefp && constp && !constp->num().isFourState()) {
 	    UndrivenVarEntry* entryp = getEntryp (varrefp->varp());
 	    int lsb = constp->toUInt();
-	    if (varrefp->lvalue()) entryp->drivenBit(lsb, nodep->width());
-	    else entryp->usedBit(lsb, nodep->width());
+	    if (m_markBoth || varrefp->lvalue()) entryp->drivenBit(lsb, nodep->width());
+	    if (m_markBoth || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
 	} else {
 	    // else other varrefs handled as unknown mess in AstVarRef
 	    nodep->iterateChildren(*this);
@@ -252,8 +253,16 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// Any variable
 	UndrivenVarEntry* entryp = getEntryp (nodep->varp());
-	if (nodep->lvalue()) entryp->drivenWhole();
-	else entryp->usedWhole();
+	if (m_markBoth || nodep->lvalue()) entryp->drivenWhole();
+	if (m_markBoth || !nodep->lvalue()) entryp->usedWhole();
+    }
+
+    // Don't know what black boxed calls do, assume in+out
+    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+	bool prevMark = m_markBoth;
+	m_markBoth = true;
+	nodep->iterateChildren(*this);
+	m_markBoth = prevMark;
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
@@ -274,6 +283,7 @@ private:
 public:
     // CONSTUCTORS
     UndrivenVisitor(AstNetlist* nodep) {
+	m_markBoth = false;
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->accept(*this);
     }

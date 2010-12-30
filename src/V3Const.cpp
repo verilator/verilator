@@ -1508,6 +1508,14 @@ private:
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {}
 
+    // Ignored, can eliminate early
+    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (m_doNConst) {
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+    }
+
     //-----
     // Jump elimination
 
