@@ -42,6 +42,7 @@ int V3Error::s_debugDefault = 0;
 int V3Error::s_tellManual = 0;
 ostringstream V3Error::s_errorStr;		// Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::EC_FATAL;
+bool V3Error::s_errorSuppressed = false;
 bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
@@ -313,8 +314,8 @@ void V3Error::abortIfWarnings() {
     }
 }
 
-bool V3Error::isError(V3ErrorCode code) {
-    if (code==V3ErrorCode::EC_SUPPRESS) return false;
+bool V3Error::isError(V3ErrorCode code, bool supp) {
+    if (supp) return false;
     else if (code==V3ErrorCode::EC_INFO) return false;
     else if (code==V3ErrorCode::EC_FATAL) return true;
     else if (code==V3ErrorCode::EC_FATALSRC) return true;
@@ -324,13 +325,13 @@ bool V3Error::isError(V3ErrorCode code) {
     else return false;
 }
 
-string V3Error::msgPrefix(V3ErrorCode code) {
-    if (code==V3ErrorCode::EC_SUPPRESS) return "-arning-suppressed: ";
+string V3Error::msgPrefix(V3ErrorCode code, bool supp) {
+    if (supp) return "-arning-suppressed: ";
     else if (code==V3ErrorCode::EC_INFO) return "-Info: ";
     else if (code==V3ErrorCode::EC_FATAL) return "%Error: ";
     else if (code==V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
     else if (code==V3ErrorCode::EC_ERROR) return "%Error: ";
-    else if (isError(code)) return "%Error-"+(string)code.ascii()+": ";
+    else if (isError(code, supp)) return "%Error-"+(string)code.ascii()+": ";
     else return "%Warning-"+(string)code.ascii()+": ";
 }
 
@@ -364,7 +365,7 @@ string V3Error::v3sform (const char* format, ...) {
 void V3Error::suppressThisWarning() {
     if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN) {
 	V3Stats::addStatSum(string("Warnings, Suppressed ")+s_errorCode.ascii(), 1);
-	s_errorCode=V3ErrorCode::EC_SUPPRESS;
+	s_errorSuppressed = true;
     }
 }
 
@@ -372,15 +373,14 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 #ifdef __COVERITY__
     if (s_errorCode==V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
-    if (s_errorCode!=V3ErrorCode::EC_SUPPRESS
+    if (!s_errorSuppressed
 	// On debug, show only non default-off warning to prevent pages of warnings
 	|| (debug() && !s_errorCode.defaultsOff())) {
 	cerr<<msgPrefix()<<sstr.str();
 	if (sstr.str()[sstr.str().length()-1] != '\n') {
 	    cerr<<endl;
 	}
-	if (s_errorCode!=V3ErrorCode::EC_SUPPRESS
-	    && s_errorCode!=V3ErrorCode::EC_INFO) {
+	if (!s_errorSuppressed && s_errorCode!=V3ErrorCode::EC_INFO) {
 	    if (!s_describedEachWarn[s_errorCode]
 		&& !s_pretendError[s_errorCode]) {
 		s_describedEachWarn[s_errorCode] = true;
@@ -404,7 +404,7 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		    s_tellManual = 2;
 		}
 	    }
-	    if (isError(s_errorCode)) incErrors();
+	    if (isError(s_errorCode, s_errorSuppressed)) incErrors();
 	    else incWarnings();
 	    if (s_errorCode==V3ErrorCode::EC_FATAL
 		|| s_errorCode==V3ErrorCode::EC_FATALSRC) {

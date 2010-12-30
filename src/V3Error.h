@@ -36,7 +36,6 @@ public:
     enum en {
 	EC_MIN=0,	// Keep first
 	//
-	EC_SUPPRESS,	// Warning suppressed by user
 	EC_INFO,	// General information out
 	EC_FATAL,	// Kill the program
 	EC_FATALSRC,	// Kill the program, for internal source errors
@@ -96,7 +95,7 @@ public:
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
-	    " MIN", " SUPPRESS", " INFO", " FATAL", " FATALSRC", " ERROR",
+	    " MIN", " INFO", " FATAL", " FATALSRC", " ERROR",
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
 	    // Errors
@@ -162,6 +161,7 @@ class V3Error {
     static int 		s_tellManual;		// Tell user to see manual, 0=not yet, 1=doit, 2=disable
     static ostringstream s_errorStr;		// Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
+    static bool		s_errorSuppressed;	// Error being formed should be suppressed
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
 
     V3Error() { cerr<<("Static class"); abort(); }
@@ -171,7 +171,7 @@ class V3Error {
     // ACCESSORS
     static void		debugDefault(int level) { s_debugDefault = level; }
     static int		debugDefault() { return s_debugDefault; }
-    static string	msgPrefix(V3ErrorCode code=s_errorCode);	// returns %Error/%Warn
+    static string	msgPrefix(V3ErrorCode code=s_errorCode, bool supp=s_errorSuppressed);	// returns %Error/%Warn
     static int		errorCount() { return s_errCount; }
     static int		warnCount() { return s_warnCount; }
     static int		errorOrWarnCount() { return errorCount()+warnCount(); }
@@ -183,7 +183,7 @@ class V3Error {
     static void		abortIfWarnings();
     static void		suppressThisWarning();	// Suppress next %Warn if user has it off
     static void		pretendError(V3ErrorCode code, bool flag) { s_pretendError[code]=flag; }
-    static bool		isError(V3ErrorCode code);
+    static bool		isError(V3ErrorCode code, bool supp);
     static string 	v3sform (const char* format, ...);
     static string	lineStr (const char* filename, int lineno);
     static V3ErrorCode	errorCode() { return s_errorCode; }
@@ -191,7 +191,7 @@ class V3Error {
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static ostringstream& v3errorPrep (V3ErrorCode code) {
-	s_errorStr.str(""); s_errorCode=code; return s_errorStr; }
+	s_errorStr.str(""); s_errorCode=code; s_errorSuppressed=false; return s_errorStr; }
     static ostringstream& v3errorStr () { return s_errorStr; }
     static void	vlAbort();
     static void	v3errorEnd(ostringstream& sstr);	// static, but often overridden in classes.
