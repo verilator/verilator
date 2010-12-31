@@ -872,9 +872,9 @@ Disable the specified warning message.
 
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX
--Wno-CASEWITHX -Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-UNDRIVEN
--Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown
-for Wno-style.
+-Wno-CASEWITHX -Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-SYNCASYNCNET
+-Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for
+Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -884,7 +884,8 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-INCABSPATH -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-INCABSPATH -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
+-Wno-VARHIDDEN".
 
 =item -Wwarn-I<message>
 
@@ -895,14 +896,14 @@ Enables the specified warning message.
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
--Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-UNDRIVEN
--Wwarn-UNSIGNED -Wwarn-UNUSED -Wwarn-WIDTH".
+-Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-UNSIGNED
+-Wwarn-WIDTH".
 
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-UNDRIVEN
--Wwarn-UNUSED -Wwarn-VARHIDDEN".
+"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-SYNCASYNCNET
+-Wwarn-UNDRIVEN -Wwarn-UNUSED -Wwarn-VARHIDDEN".
 
 =item -x-assign 0
 
@@ -2564,6 +2565,18 @@ Error that a symbol matches a C++ reserved word and using this as a symbol
 name would result in odd C compiler errors.  You may disable this error
 message as you would disable warnings, but the symbol will be renamed by
 Verilator to avoid the conflict.
+
+=item SYNCASYNCNET
+
+Warns that the specified net is used in at least two different always
+statements with posedge/negedges (i.e. a flop).  One usage has the signal
+in the sensitivity list and body, probably as a async reset, and the other
+usage has the signal only in the body, probably as a sync reset.  Mixing
+sync and async resets is usually a mistake.  The warning may be disabled
+with a lint_off pragma around the net, or either flopped block.
+
+Disabled by default as this is a code style warning; it will simulate
+correctly.
 
 =item TASKNSVAR
 

@@ -86,19 +86,25 @@ class GateVarVertex : public GateEitherVertex {
     AstVarScope* m_varScp;
     bool	 m_isTop;
     bool	 m_isClock;
+    AstNode*	 m_rstSyncNodep;	// Used as reset and not in SenItem, in clocked always
+    AstNode*	 m_rstAsyncNodep;	// Used as reset and in SenItem, in clocked always
 public:
     GateVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
 	: GateEitherVertex(graphp, scopep), m_varScp(varScp), m_isTop(false)
-	, m_isClock(false) {}
+	, m_isClock(false), m_rstSyncNodep(NULL), m_rstAsyncNodep(NULL) {}
     virtual ~GateVarVertex() {}
     // Accessors
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const { return (cvtToStr((void*)m_varScp)+" "+varScp()->name()); }
     virtual string dotColor() const { return "blue"; }
-    void	setIsTop() { m_isTop = true; }
-    void	setIsClock() { m_isClock = true; setConsumed("isclk"); }
     bool isTop() const { return m_isTop; }
+    void setIsTop() { m_isTop = true; }
     bool isClock() const { return m_isClock; }
+    void setIsClock() { m_isClock = true; setConsumed("isclk"); }
+    AstNode* rstSyncNodep() const { return m_rstSyncNodep; }
+    void rstSyncNodep(AstNode* nodep) { m_rstSyncNodep=nodep; }
+    AstNode* rstAsyncNodep() const { return m_rstAsyncNodep; }
+    void rstAsyncNodep(AstNode* nodep) { m_rstAsyncNodep=nodep; }
 };
 
 class GateLogicVertex : public GateEitherVertex {
@@ -236,7 +242,10 @@ private:
     //Entire netlist:
     // AstVarScope::user1p	-> GateVarVertex* for usage var, 0=not set yet
     // {statement}Node::user1p	-> GateLogicVertex* for this statement
+    // AstVarScope::user2	-> bool: Signal used in SenItem in *this* always statement
+    // AstVar::user2		-> bool: Warned about SYNCASYNCNET
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
@@ -286,12 +295,12 @@ private:
 	    }
 	    if (varscp->varp()->isUsedClock()) 	vertexp->setConsumed("clock");
 	}
-	if (m_inSenItem) vertexp->setIsClock();
 	return vertexp;
     }
 
     void optimizeSignals(bool allowMultiIn);
     void optimizeElimVar(AstVarScope* varscp, AstNode* logicp, AstNode* consumerp);
+    void warnSignals();
     void consumedMark();
     void consumedMarkRecurse(GateEitherVertex* vertexp);
     void consumedMove();
@@ -310,6 +319,8 @@ private:
 	optimizeSignals(false);
 	// Then propagate more complicated equations
 	optimizeSignals(true);
+	// Warn
+	warnSignals();
 	consumedMark();
 	m_graph.dumpDotFilePrefixed("gate_opt");
 	// Rewrite assignments
@@ -334,7 +345,9 @@ private:
 	UINFO(4,"  BLOCK  "<<nodep<<endl);
 	m_activeReducible = !(nodep->hasClocked());  // Seq logic outputs aren't reducible
 	m_activep = nodep;
+	AstNode::user2ClearTree();
 	nodep->iterateChildren(*this);
+	AstNode::user2ClearTree();
 	m_activep = NULL;
 	m_activeReducible = true;
     }
@@ -343,14 +356,24 @@ private:
 	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block\n");
 	    AstVarScope* varscp = nodep->varScopep();
 	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
-	    GateVarVertex* varvertexp = makeVarVertex(varscp);
+	    GateVarVertex* vvertexp = makeVarVertex(varscp);
 	    UINFO(5," VARREF to "<<varscp<<endl);
+	    if (m_inSenItem) vvertexp->setIsClock();
+	    // For SYNCASYNCNET
+	    if (m_inSenItem) varscp->user2(true);
+	    else if (m_activep && m_activep->hasClocked() && !nodep->lvalue()) {
+		if (varscp->user2()) {
+		    if (!vvertexp->rstSyncNodep()) vvertexp->rstSyncNodep(nodep);
+		} else {
+		    if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
+		}
+	    }
 	    // We use weight of one; if we ref the var more than once, when we simplify,
 	    // the weight will increase
 	    if (nodep->lvalue()) {
-		new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
+		new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
 	    } else {
-		new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, 1);
+		new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
 	    }
 	}
     }
@@ -449,7 +472,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 		    if (0) {
 			// If we warned here after constant propagation, what the user considered
 			// reasonable logic may have disappeared.  Issuing a warning would
-			// thus be confusing.
+			// thus be confusing.  V3Undriven now handles this.
 			vvertexp->varScp()->varp()->v3warn(UNDRIVEN,"Signal has no drivers "
 							   <<vvertexp->scopep()->prettyName()<<"."
 							   <<vvertexp->varScp()->varp()->prettyName());
@@ -638,6 +661,34 @@ void GateVisitor::consumedMove() {
 		UINFO(8,"    Remove unconsumed "<<nodep<<endl);
 		nodep->unlinkFrBack();
 		pushDeletep(nodep); nodep=NULL;
+	    }
+	}
+    }
+}
+
+//----------------------------------------------------------------------
+
+void GateVisitor::warnSignals() {
+    AstNode::user2ClearTree();
+    for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
+	if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+	    AstVarScope* vscp = vvertexp->varScp();
+	    AstNode* sp = vvertexp->rstSyncNodep();
+	    AstNode* ap = vvertexp->rstAsyncNodep();
+	    if (ap && sp && !vscp->varp()->user2()) {
+		// This is somewhat wrong, as marking one flop as ok for sync
+		// may mean a different flop now fails.  However it's a pain to
+		// then report a warning in a new place - we should report them all at once.
+		// Instead we'll disable if any disabled
+		if (!vscp->fileline()->warnIsOff(V3ErrorCode::SYNCASYNCNET)
+		    && !ap->fileline()->warnIsOff(V3ErrorCode::SYNCASYNCNET)
+		    && !sp->fileline()->warnIsOff(V3ErrorCode::SYNCASYNCNET)
+		    ) {
+		    vscp->varp()->user2(true);  // Warn only once per signal
+		    vscp->v3warn(SYNCASYNCNET,"Signal flopped as both synchronous and async: "<<vscp->prettyName());
+		    ap->v3warn(SYNCASYNCNET,"... Location of async usage");
+		    sp->v3warn(SYNCASYNCNET,"... Location of sync usage");
+		}
 	    }
 	}
     }

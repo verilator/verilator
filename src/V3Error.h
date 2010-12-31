@@ -75,6 +75,7 @@ public:
 	REDEFMACRO,	// Redefining existing define macro
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
+	SYNCASYNCNET,	// Mixed sync + async reset
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
@@ -109,7 +110,7 @@ public:
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN", "REDEFMACRO",
-	    "STMTDLY", "SYMRSVDWORD", 
+	    "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"
@@ -138,6 +139,7 @@ public:
     bool styleError() const { return ( m_e==DEFPARAM
 				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
+				       || m_e==SYNCASYNCNET
 				       || m_e==UNDRIVEN
 				       || m_e==UNUSED
 				       || m_e==VARHIDDEN ); }

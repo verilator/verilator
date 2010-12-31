@@ -26,6 +26,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  With --Wall, add INCABSPATH warning on `include with absolute paths.
 
+***  With --Wall, add SYNCASYNCNET warning on mixed sync/async reset nets.
+
 ***  With --Wall, add UNDRIVEN warning on undriven nets.
 
 ***  With --Wall, add UNUSED warning on unused nets.
