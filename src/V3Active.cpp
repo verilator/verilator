@@ -160,16 +160,25 @@ public:
 
 class ActiveDlyVisitor : public ActiveBaseVisitor {
 private:
+    bool m_combo;	// Combo logic
     // VISITORS
     virtual void visit(AstAssignDly* nodep, AstNUser*) {
-	// Convert to a non-delayed assignment
-	UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
-	nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) blocks should be non-delayed assignments (=).");
-	AstNode* newp = new AstAssign (nodep->fileline(),
-				       nodep->lhsp()->unlinkFrBack(),
-				       nodep->rhsp()->unlinkFrBack());
-	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep = NULL;
+	if (m_combo) {
+	    // Convert to a non-delayed assignment
+	    UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
+	    nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).");
+	    AstNode* newp = new AstAssign (nodep->fileline(),
+					   nodep->lhsp()->unlinkFrBack(),
+					   nodep->rhsp()->unlinkFrBack());
+	    nodep->replaceWith(newp);
+	    nodep->deleteTree(); nodep = NULL;
+	}
+    }
+    virtual void visit(AstAssign* nodep, AstNUser*) {
+	if (!m_combo) {
+	    // Convert to a non-delayed assignment
+	    nodep->v3warn(BLKSEQ,"Blocking assignments (=) in sequential (flop or latch) block; suggest delayed assignments (<=).");
+	}
     }
     // Empty visitors, speed things up
     virtual void visit(AstNodeMath* nodep, AstNUser*) {}
@@ -179,7 +188,8 @@ private:
     }
 public:
     // CONSTUCTORS
-    ActiveDlyVisitor(AstNode* nodep) {
+    ActiveDlyVisitor(AstNode* nodep, bool combo) {
+	m_combo = combo;
 	nodep->accept(*this);
     }
     virtual ~ActiveDlyVisitor() {}
@@ -317,7 +327,10 @@ private:
 
 	// Warn and/or convert any delayed assignments
 	if (combo && !sequent) {
-	    ActiveDlyVisitor dlyvisitor (nodep);
+	    ActiveDlyVisitor dlyvisitor (nodep, true);
+	}
+	else if (!combo && sequent) {
+	    ActiveDlyVisitor dlyvisitor (nodep, false);
 	}
     }
     virtual void visit(AstAlways* nodep, AstNUser*) {

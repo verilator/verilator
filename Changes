@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 **   Add -Wall, -Wwarn-style, -Wno-style to enable code style warnings
      that have been added to this release, and disabled by default:
 
+***  With --Wall, add BLKSEQ warning on blocking assignments in seq blocks.
+
 ***  With --Wall, add DECLFILENAME warning on modules not matching filename.
 
 ***  With --Wall, add DEFPARAM warning on deprecated defparam statements.

@@ -1248,7 +1248,7 @@ for debugging and selecting between multiple operating system builds.
 Specifies the directory containing the distribution kit.  This is used to
 find the executable, Perl library, and include files.  If not specified, it
 will come from a default optionally specified at configure time (before
-Verilator was compiled).  It should not be spefified if using a precompiled
+Verilator was compiled).  It should not be specified if using a pre-compiled
 Verilator RPM as the hardcoded value should be correct.
 
 =back
@@ -1420,7 +1420,7 @@ Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
 
 
-=head1 VERIFICATION PROCEDURAL INTERACE (VPI)
+=head1 VERIFICATION PROCEDURAL INTERFACE (VPI)
 
 Verilator supports a very limited subset of the VPI.  This subset allows
 inspection, examination, value change callbacks, and depositing of values
@@ -2328,6 +2328,20 @@ inside a public task.
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item BLKSEQ
+
+This indicates that a blocking assignment (=) is used in a sequential
+block.  Generally non-blocking/delayed assignments (<=) are used in
+sequential blocks, to avoid the possibility of simulator races.  It can be
+reasonable to do this if the generated signal is used ONLY later in the
+same block, however this style is generally discouraged as it is error
+prone.
+
+      always @ (posedge clk)  foo = ...
+
+Disabled by default as this is a code style warning; it will simulate
+correctly.
 
 =item BLKLOOPINIT
 
