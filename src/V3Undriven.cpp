@@ -72,6 +72,7 @@ public:
 	}
     }
     ~UndrivenVarEntry() {}
+
 private:
     // METHODS
     inline bool bitNumOk(int bit) const { return (bit*FLAGS_PER_BIT < (int)m_flags.size()); }
@@ -284,7 +285,6 @@ public:
     // CONSTUCTORS
     UndrivenVisitor(AstNetlist* nodep) {
 	m_markBoth = false;
-	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->accept(*this);
     }
     virtual ~UndrivenVisitor() {

@@ -5,6 +5,7 @@
 *.vcd
 csrc
 vcs.key
+ucli.key
 *.daidir
 simv
 obj_*

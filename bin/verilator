@@ -2421,7 +2421,7 @@ module etc. so that -y directory searching will work.  This warning is
 printed for only the first mismatching module in any given file, and -v
 library files are ignored.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item DEFPARAM
@@ -2429,7 +2429,7 @@ correctly.
 Warns that the "defparam" statement was deprecated in Verilog 2001 and all
 designs should now be using the #(...) format to specify parameters.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item GENCLK
@@ -2452,7 +2452,7 @@ Warns that if/if else statements have exceeded the depth specified with
 and priority if statements are ignored.  Solutions include changing the
 code to a case statement, or a SystemVerilog 'unique if' or 'priority if'.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item IMPERFECTSCH
@@ -2491,7 +2491,7 @@ Instead of using absolute paths, relative paths (preferably without any
 directory specified whatever) should be used, and +include used on the
 command line to specify the top include source directory.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item LITENDIAN
@@ -2594,7 +2594,7 @@ Warns that the specified signal is never sourced.  Verilator is fairly
 liberal in the usage calculations; making a signal public, or loading only
 a single array element marks the entire signal as driven.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item UNOPT
@@ -2681,7 +2681,7 @@ Warns that the specified signal is never sinked.  Verilator is fairly
 liberal in the usage calculations; making a signal public, or accessing
 only a single array element marks the entire signal as used.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item VARHIDDEN
@@ -2691,7 +2691,7 @@ the same name as a variable in the upper level module or begin/end block
 (thus hiding the upper variable from being able to be used.)  Rename the
 variable to avoid confusion when reading the code.
 
-Disabled by default as this is a code style warning, it will simulate
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item WIDTH

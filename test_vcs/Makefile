@@ -5,7 +5,7 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2011 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -72,5 +72,5 @@ nc_passed.log: $(V_FILES) ../test_v/input.vc
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_dir *.log *.dmp *.vpd simv* vcs.key csrc INCA_libs
+	-rm -rf obj_dir *.log *.dmp *.vpd simv* *.key csrc INCA_libs
 
