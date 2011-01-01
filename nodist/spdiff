@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 ######################################################################
 #
-# Copyright 2010-2010 by Wilson Snyder.  This package is free software; you
+# Copyright 2010-2011 by Wilson Snyder.  This package is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -81,6 +81,7 @@ sub prep {
 	$line =~ s/SP_NOTICE.*// if $sp;
 	$line =~ s/vl_fatal.*// if !$sp;
 	$line =~ s/VL_PRINT.*// if !$sp;
+	$line =~ s/Copyright \d+-\d+/Copyright #-#/g;
 
 	push @wf, $line;
 
