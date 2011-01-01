@@ -160,7 +160,9 @@ public:
 
 class ActiveDlyVisitor : public ActiveBaseVisitor {
 private:
-    bool m_combo;	// Combo logic
+    bool 	m_combo;	// Combo logic
+    AstNode*	m_alwaysp;	// Always we're under
+    AstNode*	m_assignp;	// In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep, AstNUser*) {
 	if (m_combo) {
@@ -176,12 +178,30 @@ private:
     }
     virtual void visit(AstAssign* nodep, AstNUser*) {
 	if (!m_combo) {
-	    // Convert to a non-delayed assignment
-	    nodep->v3warn(BLKSEQ,"Blocking assignments (=) in sequential (flop or latch) block; suggest delayed assignments (<=).");
+	    AstNode* las = m_assignp;
+	    m_assignp = nodep;
+	    nodep->lhsp()->iterateAndNext(*this);
+	    m_assignp = las;
 	}
     }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	AstVar* varp=nodep->varp();
+	if (!m_combo
+	    && m_assignp
+	    && !varp->isUsedLoopIdx() // Ignore loop indicies
+	    && !varp->isTemp()
+	    ) {
+	    // Allow turning off warnings on the always, or the variable also
+	    if (!m_alwaysp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
+		&& !m_assignp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
+		&& !varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
+		) {
+		m_alwaysp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Complain just once for the entire always
+		varp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
+		nodep->v3warn(BLKSEQ,"Blocking assignments (=) in sequential (flop or latch) block; suggest delayed assignments (<=).");
+	    }
+	}
+    }
     //--------------------
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -189,7 +209,9 @@ private:
 public:
     // CONSTUCTORS
     ActiveDlyVisitor(AstNode* nodep, bool combo) {
+	m_alwaysp = nodep;
 	m_combo = combo;
+	m_assignp = NULL;
 	nodep->accept(*this);
     }
     virtual ~ActiveDlyVisitor() {}

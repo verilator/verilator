@@ -553,6 +553,7 @@ private:
     bool	m_sigUserRWPublic:1; // User C code accesses this signal, read-write
     bool	m_usedClock:1;	// Signal used as a clock
     bool	m_usedParam:1;	// Parameter is referenced (on link; later signals not setup)
+    bool	m_usedLoopIdx:1; // Variable subject of for unrolling
     bool	m_funcLocal:1;	// Local variable for a function
     bool	m_funcReturn:1;	// Return variable for a function
     bool	m_attrClockEn:1;// User clock enable attribute
@@ -567,7 +568,7 @@ private:
 	m_input=false; m_output=false; m_tristate=false;
 	m_primaryIO=false;
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
-	m_usedClock=false; m_usedParam=false;
+	m_usedClock=false; m_usedParam=false; m_usedLoopIdx=false;
 	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrIsolateAssign=false; m_attrSFormat=false;
@@ -635,6 +636,7 @@ public:
     void	attrSFormat(bool flag) { m_attrSFormat = flag; }
     void	usedClock(bool flag) { m_usedClock = flag; }
     void	usedParam(bool flag) { m_usedParam = flag; }
+    void	usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
     void	sigPublic(bool flag) { m_sigPublic = flag; }
     void	sigModPublic(bool flag) { m_sigModPublic = flag; }
     void	sigUserRdPublic(bool flag) { m_sigUserRdPublic = flag; if (flag) sigPublic(true); }
@@ -675,6 +677,7 @@ public:
     bool	isBitLogic() const { AstBasicDType* bdtypep = basicp(); return bdtypep && bdtypep->isBitLogic(); }
     bool	isUsedClock() const { return m_usedClock; }
     bool	isUsedParam() const { return m_usedParam; }
+    bool	isUsedLoopIdx() const { return m_usedLoopIdx; }
     bool	isSc() const { return m_sc; }
     bool	isScQuad() const;
     bool	isScBv() const;

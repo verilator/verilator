@@ -250,6 +250,9 @@ private:
 	    incp->unlinkFrBackWithNext();
 	    stmtsp = stmtsp->addNextNull(incp);  // Maybe null if no body
 	}
+	// Mark variable to disable some later warnings
+	m_forVarp->usedLoopIdx(true);
+
 	// If it's a While, then incp is already part of bodysp.
 	V3Number loopValue(nodep->fileline(), m_forVarp->width());  // May differ in size from numInitp
 	loopValue.opAssign(numInit);
