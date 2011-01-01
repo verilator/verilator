@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: List of To Do issues.
 //
-// Copyright 2004-2010 by Wilson Snyder. This program is free software; you can
+// Copyright 2004-2011 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -62,7 +62,7 @@ Usability:
 	* Print version/etc message at runtime. (4.000?)
 	  Include number of lines of code, percent comments, code complexity measurement
 	  <-80chars------------------------------------------------------------------->
-	  Verilator 3.600 - fast, free, open-sourced.  Copyright 2001-2010.
+	  Verilator 3.600 - fast, free, open-sourced.  Copyright 2001-2011.
 	  Verilated #### modules, #### instances, ##### sigs,
 	  	    #### non-comment lines, ##### ops, ### KB model size
 	* Default the --l2name to remove extra "v" level of hierarchy (flag to make "top")
