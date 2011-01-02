@@ -10,6 +10,7 @@ BEGIN {
     }
 }
 
+use Cwd;
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
@@ -50,6 +51,7 @@ my $opt_iv;
 my $opt_jobs = 1;
 my $opt_nc;
 my $opt_optimize;
+my $opt_site;
 my $opt_stop;
 my $opt_trace;
 my $opt_vlt;
@@ -72,6 +74,7 @@ if (! GetOptions (
 		  "j=i"		=> \$opt_jobs,
 		  "nc!"		=> \$opt_nc,
 		  "optimize:s"	=> \$opt_optimize,
+		  "site!"	=> \$opt_site,
 		  "stop!"	=> \$opt_stop,
 		  "trace!"	=> \$opt_trace,
 		  "v3!"		=> \$opt_vlt,  # Old
@@ -93,8 +96,17 @@ if (!$opt_atsim && !$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
     $opt_vlt = 1;
 }
 
+our @Test_Dirs = "t";
+push @Test_Dirs, split(/:/,$ENV{VERILATOR_TESTS_SITE})
+    if (($#opt_tests<0 ? $opt_site : 1) && $ENV{VERILATOR_TESTS_SITE});
+
 if ($#opt_tests<0) {
-    push @opt_tests, glob ("t/t_*.pl");
+    my %uniq;
+    foreach my $dir (@Test_Dirs) {
+	my @stats = stat($dir);  # Uniquify by inode, so different paths to same place get combined
+	next if !$stats[1] || $uniq{$stats[1]}++;
+	push @opt_tests, glob ("${dir}/t_*.pl");
+    }
 }
 
 mkdir "obj_dir";
@@ -120,7 +132,7 @@ sub one_test {
 	(
 	 run_on_start => sub {
 	     print ("="x70,"\n");
-	     my $test = new VTest(@params);
+	     my $test = VTest->new(@params);
 	     $test->oprint("="x50,"\n");
 	     unlink $test->{status_filename};
 	     $test->prep;
@@ -136,7 +148,7 @@ sub one_test {
 	     $test->write_status;
 	 },
 	 run_on_finish => sub {
-	     my $test = new VTest(@params);
+	     my $test = VTest->new(@params);
 	     $test->read_status;
 	     if ($test->ok) {
 		 $okcnt++;
@@ -232,9 +244,10 @@ sub report {
 # Test class
 
 package VTest;
-use Data::Dumper;
 use Carp;
 use Cwd;
+use Data::Dumper;
+use File::Spec;
 
 use vars qw ($Self $Self);
 use strict;
@@ -243,10 +256,20 @@ sub new {
     my $class = shift;
     my $self = {@_};
 
-    $self->{name} ||= $1 if $self->{pl_filename} =~ m!.*/([^/]*)\.pl$!;
+    $self->{name} ||= $2 if $self->{pl_filename} =~ m!^(.*/)?([^/]*)\.pl$!;
     $self->{obj_dir} ||= "obj_dir/$self->{name}";
-    $self->{t_dir} ||= cwd()."/t";  # Used both absolutely and under obj_dir
-
+    foreach my $dir (@::Test_Dirs) {
+	# t_dir used both absolutely and under obj_dir
+	if (-e "$dir/$self->{name}.pl") {
+	    # Note most tests require error messages of the form t/x.v
+	    # Therefore pl_filename must be t/ for local tests
+	    $self->{pl_filename} = File::Spec->abs2rel("$dir/$self->{name}.pl");
+	    # t_dir must be absolute - used under t or under obj_dir
+	    $self->{t_dir} ||= File::Spec->rel2abs($dir);
+	    last;
+	}
+    }
+    $self->{t_dir} or die "%Error: Can't locate dir for $self->{name},";
     $self = {
 	name => undef, 		# Set below, name of this test
 	mode => "",
@@ -258,6 +281,8 @@ sub new {
 	run_env => '',
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc "
+				 .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
+				   ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
 				 .($opt_trace ? " +define+WAVES=1":"")
@@ -972,7 +997,7 @@ sub _sp_preproc {
 sub _read_inputs {
     my $self = shift;
     my $filename = $self->{top_filename};
-    $filename = "t/$filename" if !-r $filename;
+    $filename = "$self->{t_dir}/$filename" if !-r $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (defined(my $line = $fh->getline)) {
 	if ($line =~ /^\s*input\s*(\S+)\s*(\/[^\/]+\/|)\s*;/) {
@@ -1243,9 +1268,13 @@ use those optimization settings
 
 Run using NC-Verilog.
 
+=item --site
+
+Run site specific tests also.
+
 =item --stop
 
-Stop on the first error
+Stop on the first error.
 
 =item --vcs
 
@@ -1276,6 +1305,10 @@ Command to use to invoke Icarus Verilog.
 =item VERILATOR_NCVERILOG
 
 Command to use to invoke ncverilog.
+
+=item VERILATOR_TESTS_SITE
+
+With --site, directory of tests to be added to testlist.
 
 =item VERILATOR_VCS
 
