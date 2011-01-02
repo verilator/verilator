@@ -872,6 +872,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-top-module") && (i+1)<argc ) {
 		shift; m_topModule = argv[i];
 	    }
+	    else if ( !strcmp (sw, "-unused-regexp") && (i+1)<argc ) {
+		shift; m_unusedRegexp = argv[i];
+	    }
 	    else if ( !strcmp (sw, "-x-assign") && (i+1)<argc) {
 		shift;
 		if (!strcmp (argv[i], "0")) { m_xAssign="0"; }
@@ -1083,6 +1086,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
+    m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 
     m_language = V3LangCode::mostRecent();

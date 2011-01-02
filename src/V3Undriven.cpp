@@ -133,6 +133,11 @@ public:
 	    }
 	}
     }
+    bool unusedMatch(AstVar* nodep) {
+	const char* regexpp = v3Global.opt.unusedRegexp().c_str();
+	if (!regexpp || !*regexpp) return false;
+	return V3Options::wildmatch(nodep->prettyName().c_str(), regexpp);
+    }
     void reportViolations() {
 	// Combine bits into overall state
 	AstVar* nodep = m_varp;
@@ -163,18 +168,22 @@ public:
 	    } else if (!anyD && !anyU) {
 		// UNDRIVEN is considered more serious - as is more likely a bug,
 		// thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
-		nodep->v3warn(UNUSED, "Signal is not driven, nor used: "<<nodep->prettyName());
+		if (!unusedMatch(nodep)) {
+		    nodep->v3warn(UNUSED, "Signal is not driven, nor used: "<<nodep->prettyName());
+		}
 	    } else if (allD && !anyU) {
-		nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
+		if (!unusedMatch(nodep)) {
+		    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
+		}
 	    } else if (!anyD && allU) {
 		nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyName());
 	    } else {
 		// Bits have different dispositions
-		if (anynotDU) {
+		if (anynotDU && !unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "<<nodep->prettyName()
 				  <<bitNames(BN_BOTH));
 		}
-		if (anyDnotU) {
+		if (anyDnotU && !unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyName()
 				  <<bitNames(BN_UNUSED));
 		}

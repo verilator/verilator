@@ -22,6 +22,8 @@ module t (/*AUTOARG*/
    reg 	  sysused;
    initial $bboxed(sysused);
 
+   wire   _unused_ok;
+
 endmodule
 
 module sub;

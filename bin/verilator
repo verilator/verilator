@@ -296,6 +296,7 @@ descriptions in the next sections for more information.
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
     --unroll-stmts <stmts>      Tune maximum loop body size
+    --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
      -Werror-<message>          Convert warning to error
@@ -833,6 +834,12 @@ unrolled.  See also BLKLOOPINIT warning.
 
 Rarely needed.  Specifies the maximum number of statements in a loop for
 that loop to be unrolled. See also BLKLOOPINIT warning.
+
+=item --unused-regexp I<regexp>
+
+Rarely needed.  Specifies a simple regexp with * and ? that if a signal
+name matches will suppress the UNUSED warning.  Defaults to "*unused*".
+Setting it to "" disables matching.
 
 =item -V
 
@@ -2705,11 +2712,29 @@ correctly.
 =item UNUSED
 
 Warns that the specified signal is never sinked.  Verilator is fairly
-liberal in the usage calculations; making a signal public, or accessing
-only a single array element marks the entire signal as used.
+liberal in the usage calculations; making a signal public, a signal
+matching --unused-regexp ("*unused*") or accessing only a single array
+element marks the entire signal as used.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
+
+A recommended style for unused nets is to put at the bottom of a file code
+similar to the following:
+
+    wire _unused_ok = &{1'b0,
+    			sig_not_used_a,
+    			sig_not_used_yet_b,  // To be fixed
+    			1'b0};
+
+The reduction AND and constant zeros mean the net will always be zero, so
+won't use simulation time.  The redundant leading and trailing zeros avoid
+syntax errors if there are no signals between them.  The magic name
+"unused" (-unused-regexp) is recognized by Verilator and suppresses
+warnings; if using other lint tools, either teach to tool to ignore signals
+with "unused" in the name, or put the appropriate lint_off around the wire.
+Having unused signals in one place makes it easy to find what is unused,
+and reduces the number of lint_off pragmas, reducing bugs.
 
 =item VARHIDDEN
 

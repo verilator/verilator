@@ -147,8 +147,9 @@ class V3Options {
     string	m_modPrefix;	// main switch: --mod-prefix
     string	m_pipeFilter;	// main switch: --pipe-filter
     string	m_prefix;	// main switch: --prefix
-    string	m_xAssign;	// main switch: --x-assign
     string	m_topModule;	// main switch: --top-module
+    string	m_unusedRegexp;	// main switch: --unused-regexp
+    string	m_xAssign;	// main switch: --x-assign
 
     // Consider moving m_language into FileLine, so can know language per-node
     V3LangCode	m_language;	// main switch: --language
@@ -266,6 +267,7 @@ class V3Options {
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
     string topModule() const { return m_topModule; }
+    string unusedRegexp() const { return m_unusedRegexp; }
     string xAssign() const { return m_xAssign; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
