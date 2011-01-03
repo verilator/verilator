@@ -12,7 +12,7 @@
 #
 #****************************************************************************/
 
-default: test_default
+default: show_config test_default
 
 # This must point to the root of the VERILATOR kit
 VERILATOR_ROOT := $(shell pwd)/..
@@ -34,7 +34,12 @@ test_valgrind:  prep_vg  compile run
 VERILATOR_FLAGS = --cc -f $(VERILATOR_ROOT)/test_v/input.vc top.v
 VERILATOR_FLAGS += --trace
 
-#prep: Is the very first time we've executed Verilator after building
+#show_config: Is the very first time we've executed Verilator after building
+#so we make sure to run with --gdbbt, so if it dumps we'll get a trace.
+show_config:
+	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_QUIET) -V
+
+#prep: Is the very first time we're running a Verilation
 #so we make sure to run with --gdbbt, so if it dumps we'll get a trace.
 prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_QUIET) $(VERILATOR_FLAGS)
