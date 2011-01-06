@@ -50,6 +50,7 @@ private:
     AstModule*		m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     AstWhile*	 	m_loopp;	// Current loop
+    bool		m_loopInc;	// In loop increment
     int			m_repeatNum;	// Repeat counter
     BeginStack		m_beginStack;	// All begin blocks above current node
     
@@ -136,6 +137,7 @@ private:
 				  AstLogicPacked(), 32);
 	varp->isSigned(true);
 	varp->dtypep()->isSigned(true);
+	varp->usedLoopIdx(true);
 	m_modp->addStmtp(varp);
 	AstNode* initsp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
 					countp);
@@ -158,8 +160,15 @@ private:
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	// Don't need to track AstRepeat/AstFor as they have already been converted
 	AstWhile* lastLoopp = m_loopp;
+	bool lastInc = m_loopInc;
 	m_loopp = nodep;
-	nodep->iterateChildren(*this);
+	m_loopInc = false;
+	nodep->precondsp()->iterateAndNext(*this);
+	nodep->condp()->iterateAndNext(*this);
+	nodep->bodysp()->iterateAndNext(*this);
+	m_loopInc = true;
+	nodep->incsp()->iterateAndNext(*this);
+	m_loopInc = lastInc;
 	m_loopp = lastLoopp;
     }
     virtual void visit(AstReturn* nodep, AstNUser*) {
@@ -202,7 +211,11 @@ private:
 	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
     }
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
+    }
 
+    virtual void visit(AstConst* nodep, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
     }
@@ -212,6 +225,7 @@ public:
 	m_modp = NULL;
 	m_ftaskp = NULL;
 	m_loopp = NULL;
+	m_loopInc = false;
 	m_repeatNum = 0;
 	nodep->accept(*this);
     }
