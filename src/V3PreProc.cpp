@@ -848,8 +848,13 @@ int V3PreProcImp::getStateToken() {
 		if (m_lexp->m_keepComments == KEEPCMT_SUB) {
 		    string rtn; rtn.assign(yyourtext(),yyourleng());
 		    comment(rtn);
-		} else {
+		    // Need to insure "foo/**/bar" becomes two tokens
+		    insertUnreadback (" ");
+		} else if (m_lexp->m_keepComments) {
 		    return (tok);
+		} else {
+		    // Need to insure "foo/**/bar" becomes two tokens
+		    insertUnreadback (" ");
 		}
 	    }
 	    // We're off or processed the comment specially.  If there are newlines

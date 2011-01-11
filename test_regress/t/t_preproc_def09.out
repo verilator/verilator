@@ -1,14 +1,15 @@
 `line 1 "t/t_preproc_def09.v" 1
+ 
+
+`line 3 "t/t_preproc_def09.v" 0
+ 
+ 
 
 
 
-
-
-
-
-
-
-`line 10 "t/t_preproc_def09.v" 0
+`line 8 "t/t_preproc_def09.v" 0
+ 
+ 
  
 'initial $display("start", "msg1" , "msg2", "end");'
 'initial $display("start", "msg1"  , "msg2" , "end");'
@@ -20,12 +21,12 @@
 'initial $display("start",  , , "end");'
 'initial $display("start",  , , "end");'
 'initial $display("start",  , , "end");'
+ 
+ 
+ 
 
-
-
-
-
-`line 26 "t/t_preproc_def09.v" 0
+`line 25 "t/t_preproc_def09.v" 0
+ 
  
 '$display(5,,2,,3);'
 '$display(5,,2,,3);'
@@ -33,7 +34,7 @@
 '$display(1 ,,"B",,3 );'
 '$display(5,,2,,);'
 '$display(5,,2,,);'
-
+ 
 
 `line 35 "t/t_preproc_def09.v" 0
  
@@ -50,21 +51,21 @@
 '$display(1 ,,0,,"C");'
 '$display(5,,0,,"C");'
 '$display(5,,0,,"C");'
-
+ 
 
 `line 50 "t/t_preproc_def09.v" 0
  
 'b + 1 + 42 + a'
 'b + 1 + 42 + a'
 
-
-`line 55 "t/t_preproc_def09.v" 0
+`line 54 "t/t_preproc_def09.v" 0
+ 
  
 '"==)" "((((" () ';
 '"==)" "((((" () ';
 
-
-`line 60 "t/t_preproc_def09.v" 0
+`line 59 "t/t_preproc_def09.v" 0
+ 
  
 
 
@@ -79,6 +80,7 @@
 '(6) (eq=al) ZOT'
 HERE-71 - Line71
 
-
+`line 73 "t/t_preproc_def09.v" 0
+ 
 
 `line 75 "t/t_preproc_def09.v" 2

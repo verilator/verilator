@@ -1,39 +1,38 @@
 `line 1 "t/t_preproc.v" 1
+ 
+ 
+ 
 
-
-
-
-
-
-`line 7 "t/t_preproc.v" 0
+`line 5 "t/t_preproc.v" 0
+ 
+ 
  
 `line 7 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc2.vh" 1
-
-`line 3 "t/t_preproc_inc2.vh" 0
-
-
-`line 4 "t/t_preproc_inc2.vh" 0
+ 
+`line 2 "t/t_preproc_inc2.vh" 0
+ 
+ 
 At file "t/t_preproc_inc2.vh"  line 4
  
  
 `line 6 "t/t_preproc_inc2.vh" 0
 `line 1 "t/t_preproc_inc3.vh" 1
 `line 2 "inc3_a_filename_from_line_directive" 0
-
-
-
+ 
+ 
+ 
 
 `line 6 "inc3_a_filename_from_line_directive" 0
  
   
   
-  
+   
   At file "inc3_a_filename_from_line_directive"  line 10
 
 `line 12 "inc3_a_filename_from_line_directive" 0
    
- 
+  
 
 `line 15 "inc3_a_filename_from_line_directive" 0
  
@@ -48,23 +47,24 @@ At file "t/t_preproc_inc2.vh"  line 4
 `line 7 "t/t_preproc.v" 0
 
 
-
-
+`line 9 "t/t_preproc.v" 0
+ 
+ 
 
 `line 12 "t/t_preproc.v" 0
-/*verilator pass_thru comment*/
+/*verilator pass_thru comment*/ 
 
 `line 14 "t/t_preproc.v" 0
-/*verilator pass_thru_comment2*/
+/*verilator pass_thru_comment2*/ 
 
-
-
+`line 16 "t/t_preproc.v" 0
+ 
+ 
 
 `line 19 "t/t_preproc.v" 0
  
  
-
-`line 22 "t/t_preproc.v" 0
+ 
    wire [3:0] q = {
 		     1'b1    ,
 		       1'b0  ,
@@ -78,7 +78,7 @@ text.
 `line 31 "t/t_preproc.v" 0
  
  
-foo  bar   
+foo   bar    
 foobar2
 
 `line 36 "t/t_preproc.v" 0
@@ -92,8 +92,8 @@ foobar2
 
 
 
-
-`line 46 "t/t_preproc.v" 0
+`line 45 "t/t_preproc.v" 0
+ 
 first part 
 `line 46 "t/t_preproc.v" 0
   		second part 
@@ -108,7 +108,8 @@ first part
 		       c}
 Line_Preproc_Check 48
 
-
+`line 50 "t/t_preproc.v" 0
+ 
 
 `line 52 "t/t_preproc.v" 0
  
@@ -160,11 +161,13 @@ bar_suffix  more
 `line 86 "t/t_preproc.v" 0
 	$c("Zap(\"","bug2","\");");;
 
+`line 88 "t/t_preproc.v" 0
+ 
+ 
 
-
-
-
-
+`line 91 "t/t_preproc.v" 0
+ 
+ 
 
 `line 94 "t/t_preproc.v" 0
  
@@ -174,7 +177,7 @@ bar_suffix  more
  
  
    initial begin
-      
+       
       $display("pre thrupre thrumid thrupost post: \"right side\"");
       $display("left side: \"right side\"");
       $display("left side: \"right side\"");
@@ -182,25 +185,26 @@ bar_suffix  more
       $display("na: \"right_side\"");
       $display("prep ( midp1 left_side midp2 ( outp ) ): \"right_side\"");
       $display("na: \"nana\"");
-      $display("left_side right_side: \"left_side right_side\"");   
-      $display(": \"\"");  
+      $display("left_side right_side: \"left_side right_side\"");    
+      $display(": \"\"");   
       $display("left side: \"right side\"");
       $display("left side: \"right side\"");
       $display("standalone");
 
 `line 115 "t/t_preproc.v" 0
-      
+       
  
 
       $display("twoline: \"first        second\"");
-      
+       
       $write("*-* All Finished *-*\n");
       $finish;
    end
 endmodule
 
-
-
+`line 125 "t/t_preproc.v" 0
+ 
+ 
 
 `line 128 "t/t_preproc.v" 0
  
@@ -216,7 +220,7 @@ wire  tmp_d1 = d1;
 `line 134 "t/t_preproc.v" 0
 wire  tmp_o1 = tmp_d1 + 1; 
 `line 134 "t/t_preproc.v" 0
-assign o1 = tmp_o1 ;   
+assign o1 = tmp_o1 ;    
 endmodule
 module add2 ( input wire d2, output wire o2);
  
@@ -225,7 +229,7 @@ wire  tmp_d2 = d2;
 `line 137 "t/t_preproc.v" 0
 wire  tmp_o2 = tmp_d2 + 1; 
 `line 137 "t/t_preproc.v" 0
-assign o2 = tmp_o2 ;  
+assign o2 = tmp_o2 ;   
 endmodule
 
 `line 140 "t/t_preproc.v" 0
@@ -235,8 +239,8 @@ endmodule
 
 
 
-
-`line 147 "t/t_preproc.v" 0
+`line 146 "t/t_preproc.v" 0
+ 
   
   
   
@@ -250,11 +254,11 @@ endmodule
 `line 151 "t/t_preproc.v" 0
       psl cover { ~m5k.f .ctl._ctl_mvldx_m1.d[i] &  m5k.f .ctl._ctl_mvldx_m1.q[i] & !m5k.f .ctl._ctl_mvldx_m1.cond & ((m5k.f .ctl.alive & m5k.f .ctl.alive_m1))} report "fondNoFall: m5kc_fcl._ctl_mvldx_m1"; 
 `line 151 "t/t_preproc.v" 0
-   end endgenerate	
+   end endgenerate	 
 
-
-
-`line 155 "t/t_preproc.v" 0
+`line 153 "t/t_preproc.v" 0
+ 
+ 
 module prot();
 `protected
     I!#r#e6<_Q{{E2+]I3<[3s)1@D|'E''i!O?]jD>Jo_![Cl)
@@ -262,11 +266,11 @@ module prot();
 `endprotected
 `line 160 "t/t_preproc.v" 0
 endmodule
+ 
 
-
-
-
-`line 165 "t/t_preproc.v" 0
+`line 163 "t/t_preproc.v" 0
+ 
+ 
  
  
  
@@ -280,17 +284,17 @@ begin addr <= (({regs[6], regs[7]} + 1)); rd <= 1; end and begin addr <= (({regs
 begin addr <= ({regs[6], regs[7]} + 1); rd <= 1; end
 begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 
-
-
-`line 179 "t/t_preproc.v" 0
+`line 177 "t/t_preproc.v" 0
+ 
+ 
  
  
 `line 180 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
-
-`line 3 "t/t_preproc_inc4.vh" 0
-
-
+ 
+`line 2 "t/t_preproc_inc4.vh" 0
+ 
+ 
 
 `line 5 "t/t_preproc_inc4.vh" 0
  
@@ -310,8 +314,9 @@ begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
   
 
 
-
-
+`line 190 "t/t_preproc.v" 0
+ 
+ 
 
 `line 193 "t/t_preproc.v" 0
  
@@ -320,16 +325,18 @@ $blah(this.logfile,vec);
 $blah(this.logfile,vec[1,2,3]);
 $blah(this.logfile,{blah.name(), " is not foo"});
 
-
-
+`line 199 "t/t_preproc.v" 0
+ 
+ 
 
 `line 202 "t/t_preproc.v" 0
 `pragma foo = 1
 `default_nettype none
 `default_nettype uwire
 
-
-
+`line 206 "t/t_preproc.v" 0
+ 
+ 
 
 `line 209 "t/t_preproc.v" 0
  
@@ -339,11 +346,12 @@ $blah(this.logfile,{blah.name(), " is not foo"});
 `line 213 "t/t_preproc.v" 0
 Line_Preproc_Check 213
 
-
-
+`line 215 "t/t_preproc.v" 0
+ 
+ 
 
 `line 218 "t/t_preproc.v" 0
- 
+    
 
 
 (p,q)
@@ -354,21 +362,22 @@ Line_Preproc_Check 213
 (x,y)
 Line_Preproc_Check 226
 
-
-
+`line 228 "t/t_preproc.v" 0
+ 
+ 
 
 `line 231 "t/t_preproc.v" 0
  
  
  
  
-beginend   
 beginend    
-"beginend"  
+beginend     
+"beginend"   
 
-
-
-`line 241 "t/t_preproc.v" 0
+`line 239 "t/t_preproc.v" 0
+ 
+ 
  
  
   `\esc`def
@@ -376,24 +385,24 @@ beginend
 `line 245 "t/t_preproc.v" 0
 Not a \`define
 
-
-
-`line 249 "t/t_preproc.v" 0
+`line 247 "t/t_preproc.v" 0
+ 
+ 
  
  
  
  
 x,y)--bee  submacro has comma paren
 
-
-
-`line 257 "t/t_preproc.v" 0
+`line 255 "t/t_preproc.v" 0
+ 
+ 
  
 $display("bits %d %d", $bits(foo), `10);
 
-
-
-`line 262 "t/t_preproc.v" 0
+`line 260 "t/t_preproc.v" 0
+ 
+ 
  
     
 
@@ -401,9 +410,9 @@ $display("bits %d %d", $bits(foo), `10);
     
     
 
-
-
-`line 270 "t/t_preproc.v" 0
+`line 268 "t/t_preproc.v" 0
+ 
+ 
  
 
 
@@ -441,7 +450,8 @@ $display("bits %d %d", $bits(foo), `10);
 
 `line 284 "t/t_preproc.v" 0
  
-	\
+ 	\
+ 
  
 
 
@@ -450,16 +460,15 @@ $display("bits %d %d", $bits(foo), `10);
 
 
 `line 293 "t/t_preproc.v" 0
-
-`line 293 "t/t_preproc.v" 0
    
 `line 293 "t/t_preproc.v" 0
-		
+ 		
 `line 293 "t/t_preproc.v" 0
    def i		
 
 
-
+`line 295 "t/t_preproc.v" 0
+ 
 
 `line 297 "t/t_preproc.v" 0
  
@@ -475,17 +484,17 @@ $display("bits %d %d", $bits(foo), `10);
 
 
 `line 307 "t/t_preproc.v" 0
-1 /*verilator NOT IN DEFINE*/ (nodef)
-2 /*verilator PART OF DEFINE*/ (hasdef)
+1 /*verilator NOT IN DEFINE*/  (nodef)
+2 /*verilator PART OF DEFINE*/  (hasdef)
 3 
 `line 309 "t/t_preproc.v" 0
 /*verilator NOT PART
- OF DEFINE*/ (nodef)
+ OF DEFINE*/  (nodef)
 `line 310 "t/t_preproc.v" 0
 4 
 `line 310 "t/t_preproc.v" 0
 /*verilator PART 
- OF DEFINE*/ (nodef)
+ OF DEFINE*/  (nodef)
 `line 311 "t/t_preproc.v" 0
 5 also in  
 `line 311 "t/t_preproc.v" 0
@@ -496,7 +505,8 @@ HAS a NEW
 `line 314 "t/t_preproc.v" 0
 LINE
 
-
+`line 316 "t/t_preproc.v" 0
+ 
 
 `line 318 "t/t_preproc.v" 0
  
@@ -527,7 +537,7 @@ EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " 
 `line 340 "t/t_preproc.v" 0
    do 
 `line 340 "t/t_preproc.v" 0
-       
+        
 `line 340 "t/t_preproc.v" 0
   
 `line 340 "t/t_preproc.v" 0
@@ -543,11 +553,12 @@ EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " 
 `line 340 "t/t_preproc.v" 0
       end 
 `line 340 "t/t_preproc.v" 0
-       
+        
 `line 340 "t/t_preproc.v" 0
    while(0);
 
-
+`line 342 "t/t_preproc.v" 0
+ 
 
 `line 344 "t/t_preproc.v" 0
  
@@ -562,21 +573,19 @@ EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " 
 
 `line 349 "t/t_preproc.v" 0
      
-
-`line 351 "t/t_preproc.v" 0
+ 
 EXP: This is fooed
 This is fooed
 EXP: This is fooed_2
 This is fooed_2
 
-
-`line 357 "t/t_preproc.v" 0
+`line 356 "t/t_preproc.v" 0
+ 
  
 np
 np
-
-
-`line 362 "t/t_preproc.v" 0
+ 
+ 
  
  
  
@@ -586,9 +595,9 @@ np
  
     
 
-
-
-`line 372 "t/t_preproc.v" 0
+`line 370 "t/t_preproc.v" 0
+ 
+ 
  
  
  
@@ -603,18 +612,17 @@ np
 `line 382 "t/t_preproc.v" 0
 hello3hello3hello3
 hello4hello4hello4hello4
-
-
-`line 386 "t/t_preproc.v" 0
+ 
+ 
  
  
  
 `line 388 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
-
-`line 3 "t/t_preproc_inc4.vh" 0
-
-
+ 
+`line 2 "t/t_preproc_inc4.vh" 0
+ 
+ 
 
 `line 5 "t/t_preproc_inc4.vh" 0
  
@@ -624,10 +632,9 @@ hello4hello4hello4hello4
 
 `line 389 "t/t_preproc.v" 0
    
-
-
-
-`line 393 "t/t_preproc.v" 0
+ 
+ 
+ 
  
 
  
@@ -639,9 +646,8 @@ hello4hello4hello4hello4
      
      
 Line_Preproc_Check 401
-
-
-`line 404 "t/t_preproc.v" 0
+ 
+ 
  
 
  
@@ -652,15 +658,14 @@ Line_Preproc_Check 407
   BAR "
 `line 410 "t/t_preproc.v" 0
 Line_Preproc_Check 410
-
-
+ 
+ 
 
 `line 414 "t/t_preproc.v" 0
  
  
  
-
-`line 418 "t/t_preproc.v" 0
+ 
  
 abc
  
@@ -679,15 +684,14 @@ sonet_frame
  
 EXP: sonet_frame
 sonet_frame
-
-`line 435 "t/t_preproc.v" 0
+ 
  
  
 EXP: sonet_frame
 sonet_frame
 
-
-`line 441 "t/t_preproc.v" 0
+`line 440 "t/t_preproc.v" 0
+ 
  
  
 EXP: module zzz ; endmodule
@@ -700,6 +704,10 @@ EXP: module a_b ; endmodule
 module a_b ; endmodule
 module a_b ; endmodule
 
+`line 452 "t/t_preproc.v" 0
+ 
+ 
+integer foo;
+ 
 
-
-`line 454 "t/t_preproc.v" 2
+`line 457 "t/t_preproc.v" 2
