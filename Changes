@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix block comment not separating identifiers, bug311. [Gene Sullivan]
 
+**** Fix warnings to point to lowest net usage, not upper level ports.
+
 * Verilator 3.810 2011/01/03
 
 **   Add limited support for VPI access to public signals, see docs.

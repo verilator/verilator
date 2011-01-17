@@ -719,6 +719,12 @@ private:
 		// Prevent a infinite loop...
 		substp->v3fatalSrc("Replacing node with itself; perhaps circular logic?");
 	    }
+	    // Which fileline() to use?
+	    // If replacing with logic, an error/warning is likely to want to point to the logic
+	    // IE what we're replacing with.
+	    // However a VARREF should point to the original as it's otherwise confusing
+	    // to throw warnings that point to a PIN rather than where the pin us used.
+	    if (substp->castVarRef()) substp->fileline(nodep->fileline());
 	    nodep->replaceWith(substp);
 	    nodep->deleteTree(); nodep=NULL;
 	}
