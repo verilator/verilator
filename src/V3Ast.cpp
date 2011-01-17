@@ -192,6 +192,7 @@ string AstNode::prettyName(const string& namein) {
 	}
     }
     if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
+    if (pretty.substr(0,5) == "TOP->") pretty.replace(0,5,"");
     return pretty;
 }
 

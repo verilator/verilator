@@ -11,7 +11,7 @@ top_filename("t/t_unopt_converge.v");
 
 compile (
 	 fails=>1,
-	 expect=> '%Warning-UNOPT: t/t_unopt_converge.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: TOP->x
+	 expect=> '%Warning-UNOPT: t/t_unopt_converge.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: x
 .*
 %Error: Exiting due to '
      ) if $Self->{v3};
