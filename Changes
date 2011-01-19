@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.81***
 
+**** Throw UNUSED/UNDRIVEN only once per net in a parametrized module.
+
 **** Fix false BLKSEQ on non-unrolled for loop indexes.  [Jeff Winston]
 
 **** Fix block comment not separating identifiers, bug311. [Gene Sullivan]

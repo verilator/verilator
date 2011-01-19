@@ -162,7 +162,7 @@ private:
 	    m_ifDepth = -1;
 	} else if (++m_ifDepth > v3Global.opt.ifDepth()) {
 	    nodep->v3warn(IFDEPTH,"Deep 'if' statement; suggest unique/priority to avoid slow logic");
-	    nodep->fileline()->warnOn(V3ErrorCode::IFDEPTH, false);  // Warn only once
+	    nodep->fileline()->modifyWarnOff(V3ErrorCode::IFDEPTH, true);  // Warn only once
 	    m_ifDepth = -1;
 	}
 	nodep->iterateChildren(*this);

@@ -33,6 +33,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <vector>
 
@@ -47,11 +48,14 @@ class LinkParseVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on netlist
-    //  AstNode::user()		-> bool.  True if processed
+    //  AstNode::user1()	-> bool.  True if processed
+    //  AstNode::user2()	-> bool.  True if fileline recomputed
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // TYPES
     typedef map <pair<void*,string>,AstTypedef*> ImplTypedefMap;
+    typedef set <FileLine*> FileLineSet;
 
     // STATE
     string	m_dotText;	// Dotted module text we are building for a dotted node, passed up
@@ -60,12 +64,28 @@ private:
     AstText*	m_baseTextp;	// Lowest TEXT node that needs replacement with varref
     AstVar*	m_varp;		// Variable we're under
     ImplTypedefMap	m_implTypedef;	// Created typedefs for each <container,name>
+    FileLineSet		m_filelines;	// Filelines that have been seen
 
     // METHODS
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
+    }
+
+    void cleanFileline(AstNode* nodep) {
+	if (!nodep->user2Inc()) {  // Process once
+	    // We make all filelines unique per AstNode.  This allows us to
+	    // later turn off messages on a fileline when an issue is found
+	    // so that messages on replicated blocks occur only once,
+	    // without suppressing other token's messages as a side effect.
+	    // We could have verilog.l create a new one on every token,
+	    // but that's a lot more structures than only doing AST nodes.
+	    if (m_filelines.find(nodep->fileline()) != m_filelines.end()) {
+		nodep->fileline(new FileLine(nodep->fileline()));
+	    }
+	    m_filelines.insert(nodep->fileline());
+	}
     }
 
     void checkExpected(AstNode* nodep) {
@@ -78,6 +98,7 @@ private:
     // VISITs
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (!nodep->user1Inc()) {  // Process only once.
+	    cleanFileline(nodep);
 	    UINFO(5,"   "<<nodep<<endl);
 	    checkExpected(nodep);
 	    // Due to a need to get the arguments, the ParseRefs are under here,
@@ -141,6 +162,7 @@ private:
     }
     virtual void visit(AstDot* nodep, AstNUser*) {
 	UINFO(5,"     "<<nodep<<endl);
+	cleanFileline(nodep);
 	if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 	    m_dotText = "";
 	    nodep->lhsp()->iterateAndNext(*this);
@@ -165,6 +187,7 @@ private:
     }
     virtual void visit(AstSelBit* nodep, AstNUser*) {
 	if (!nodep->user1Inc()) {  // Process only once.
+	    cleanFileline(nodep);
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		m_dotText = "";
 		nodep->lhsp()->iterateAndNext(*this);
@@ -193,6 +216,7 @@ private:
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	// Excludes simple AstSel, see above
 	if (!nodep->user1Inc()) {  // Process only once.
+	    cleanFileline(nodep);
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
 	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
@@ -215,6 +239,7 @@ private:
     }
     virtual void visit(AstText* nodep, AstNUser*) {
 	if (!nodep->user1Inc()) {  // Process only once.
+	    cleanFileline(nodep);
 	    if (m_exp != AstParseRefExp::PX_NONE) {
 		UINFO(7,"      "<<nodep<<endl);
 		if (m_inModDot) {  // Dotted part, just pass up
@@ -228,6 +253,7 @@ private:
     }
     virtual void visit(AstEnumItem* nodep, AstNUser*) {
 	// Expand ranges
+	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->rangep()) {
 	    if (!nodep->rangep()->msbp()->castConst()
@@ -251,12 +277,14 @@ private:
 
 
     virtual void visit(AstVar* nodep, AstNUser*) {
+	cleanFileline(nodep);
 	m_varp = nodep;
 	nodep->iterateChildren(*this);
 	m_varp = NULL;
     }
 
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
+	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
@@ -303,6 +331,7 @@ private:
     virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
 	// AlwaysPublic was attached under a var, but it's a statement that should be
 	// at the same level as the var
+	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (m_varp) {
 	    nodep->unlinkFrBack();
@@ -315,6 +344,7 @@ private:
     }
 
     virtual void visit(AstDefImplicitDType* nodep, AstNUser*) {
+	cleanFileline(nodep);
 	UINFO(8,"   DEFIMPLICIT "<<nodep<<endl);
 	// Must remember what names we've already created, and combine duplicates
 	// so that for "var enum {...} a,b" a & b will share a common typedef
@@ -351,6 +381,7 @@ private:
 
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
+	cleanFileline(nodep);
 	checkExpected(nodep);  // So we detect node types we forgot to list here
 	nodep->iterateChildren(*this);
     }

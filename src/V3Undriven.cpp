@@ -170,27 +170,36 @@ public:
 		// thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
 		if (!unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Signal is not driven, nor used: "<<nodep->prettyName());
+		    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
 		}
 	    } else if (allD && !anyU) {
 		if (!unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
+		    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
 		}
 	    } else if (!anyD && allU) {
 		nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyName());
+		nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
 	    } else {
 		// Bits have different dispositions
+		bool setU=false; bool setD=false;
 		if (anynotDU && !unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "<<nodep->prettyName()
 				  <<bitNames(BN_BOTH));
+		    setU=true;
 		}
 		if (anyDnotU && !unusedMatch(nodep)) {
 		    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyName()
 				  <<bitNames(BN_UNUSED));
+		    setU=true;
 		}
 		if (anyUnotD) {
 		    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "<<nodep->prettyName()
 				  <<bitNames(BN_UNDRIVEN));
+		    setD=true;
 		}
+		if (setU) nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
+		if (setD) nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
 	    }
 	}
     }
