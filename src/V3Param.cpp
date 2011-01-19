@@ -131,8 +131,7 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (!nodep->user5()) {
-	    nodep->user5(1);  // Mark done
+	if (!nodep->user5Inc()) {  // Process once
 	    nodep->iterateChildren(*this);
 	    if (nodep->isParam()) {
 		if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }

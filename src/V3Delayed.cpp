@@ -345,9 +345,7 @@ private:
 	m_nextDlyp = NULL;
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
-	if (!nodep->user2()) {  // Not done yet
-	    nodep->user2(true);
-
+	if (!nodep->user2Inc()) {  // Not done yet
 	    if (m_inDly && nodep->lvalue()) {
 		UINFO(4,"AssignDlyVar: "<<nodep<<endl);
 		markVarUsage(nodep->varScopep(), VU_DLY);
