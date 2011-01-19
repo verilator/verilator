@@ -74,7 +74,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	putfs(nodep, nodep->isFunction() ? "function":"task");
 	puts(" ");
-	puts(nodep->name());
+	puts(nodep->prettyName());
 	puts(";\n");
 	putqs(nodep, "begin\n");  // Only putfs the first time for each visitor; later for same node is putqs
 	nodep->stmtsp()->iterateAndNext(*this);
@@ -472,17 +472,17 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstTypedef* nodep, AstNUser*) {
 	putfs(nodep,"typedef ");
 	nodep->dtypep()->iterateAndNext(*this); puts(" ");
-	puts(nodep->name());
+	puts(nodep->prettyName());
 	puts(";\n");
     }
     virtual void visit(AstBasicDType* nodep, AstNUser*) {
 	if (nodep->isSigned()) putfs(nodep,"signed ");
 	putfs(nodep,nodep->prettyName());
-	if (nodep->rangep()) { nodep->rangep()->iterateAndNext(*this); puts(" "); }
+	if (nodep->rangep()) { puts(" "); nodep->rangep()->iterateAndNext(*this); puts(" "); }
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
-	if (nodep->dotted()!="") { putfs(nodep,nodep->dotted()); puts("."); puts(nodep->name()); }
-	else { putfs(nodep,nodep->name()); }
+	if (nodep->dotted()!="") { putfs(nodep,nodep->dotted()); puts("."); puts(nodep->prettyName()); }
+	else { putfs(nodep,nodep->prettyName()); }
 	puts("(");
 	nodep->pinsp()->iterateAndNext(*this);
 	puts(")");
@@ -520,7 +520,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putfs(nodep,nodep->verilogKwd());
 	puts(" ");
 	nodep->dtypep()->iterateAndNext(*this); puts(" ");
-	puts(nodep->name());
+	puts(nodep->prettyName());
 	puts(";\n");
     }
     virtual void visit(AstActive* nodep, AstNUser*) {
