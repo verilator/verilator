@@ -151,7 +151,7 @@ const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
 //======================================================================
 // Macro functions
 
-#define CRELINE() (PARSEP->copyOrSameFileLine())
+#define CRELINE() (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
 
 #define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; VARRESET(); VARDECL(decl); }	// Start of pinlist
 #define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; VARRESET(); VARDECL(decl); }	// Not in a pinlist
@@ -160,7 +160,7 @@ const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
 #define VARIO(type) { GRAMMARP->m_varIO = AstVarType::type; }
 #define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); }
 
-#define VARDONEA(name,array,attrs) GRAMMARP->createVariable(CRELINE(),(name),(array),(attrs))
+#define VARDONEA(fl,name,array,attrs) GRAMMARP->createVariable((fl),(name),(array),(attrs))
 #define VARDONEP(portp,array,attrs) GRAMMARP->createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
 #define PINNUMINC() (GRAMMARP->m_pinNum++)
 
@@ -777,10 +777,10 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PARSEP->instantCb(CRELINE(), $2, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PARSEP->instantCb(CRELINE(), $2, $5, $6); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PARSEP->instantCb($<fl>2, $2, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PARSEP->instantCb($<fl>2, $2, $5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PINNUMINC(); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension }
@@ -849,8 +849,8 @@ port_declNetE:			// IEEE: part of port_declaration, optional net type
  	;
  
 portSig<nodep>:
-		id/*port*/				{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
-	|	idSVKwd					{ $$ = new AstPort(CRELINE(),PINNUMINC(),*$1); }
+		id/*port*/				{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
+	|	idSVKwd					{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
  	;
 
 //**********************************************************************
@@ -926,7 +926,7 @@ list_of_genvar_identifiers<nodep>:	// IEEE: list_of_genvar_identifiers (for decl
 genvar_identifierDecl<nodep>:		// IEEE: genvar_identifier (for declaration)
 		id/*new-genvar_identifier*/ sigAttrListE
 			{ VARRESET_NONLIST(GENVAR); VARDTYPE(new AstBasicDType($<fl>1,AstBasicDTypeKwd::INTEGER));
-			  $$ = VARDONEA(*$1, NULL, $2); }
+			  $$ = VARDONEA($<fl>1, *$1, NULL, $2); }
 	;
 
 local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
@@ -1121,9 +1121,9 @@ list_of_variable_decl_assignments<nodep>:	// ==IEEE: list_of_variable_decl_assig
 
 variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
 		id variable_dimensionListE sigAttrListE
-			{ $$ = VARDONEA(*$1,$2,$3); }
+			{ $$ = VARDONEA($<fl>1,*$1,$2,$3); }
 	|	id variable_dimensionListE sigAttrListE '=' variable_declExpr
-			{ $$ = VARDONEA(*$1,$2,$3); $$->valuep($5); }
+			{ $$ = VARDONEA($<fl>1,*$1,$2,$3); $$->valuep($5); }
 	|	idSVKwd					{ $$ = NULL; }
 	//
 	//			// IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
@@ -1144,9 +1144,9 @@ list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifie
 
 tf_variable_identifier<varp>:		// IEEE: part of list_of_tf_variable_identifiers
 		id variable_dimensionListE sigAttrListE
-			{ $$ = VARDONEA(*$1, $2, $3); }
+			{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
 	|	id variable_dimensionListE sigAttrListE '=' expr
-			{ $$ = VARDONEA(*$1, $2, $3);
+			{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
 			  $$->addNext(new AstAssign($4, new AstVarRef($4, *$1, true), $5)); }
 	;
 
@@ -1384,7 +1384,7 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	//	';'		// is included in
 	//			// IEEE: generate_block
-		genItem					{ $$ = new AstBegin(CRELINE(),"genblk",$1); }
+		genItem					{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
@@ -1515,18 +1515,18 @@ netSigList<varp>:		// IEEE: list_of_port_identifiers
 	;
 
 netSig<varp>:			// IEEE: net_decl_assignment -  one element from list_of_port_identifiers
-		netId sigAttrListE			{ $$ = VARDONEA(*$1, NULL, $2); }
-	|	netId sigAttrListE '=' expr		{ $$ = VARDONEA(*$1, NULL, $2); $$->addNext(new AstAssignW($3,new AstVarRef($3,$$->name(),true),$4)); }
-	|	netId rangeList sigAttrListE		{ $$ = VARDONEA(*$1, $2, $3); }
+		netId sigAttrListE			{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); }
+	|	netId sigAttrListE '=' expr		{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); $$->addNext(new AstAssignW($3,new AstVarRef($3,$$->name(),true),$4)); }
+	|	netId rangeList sigAttrListE		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
 	;
 
 netId<strp>:
-		id/*new-net*/				{ $$ = $1; }
-	|	idSVKwd					{ $$ = $1; }
+		id/*new-net*/				{ $$ = $1; $<fl>$=$<fl>1; }
+	|	idSVKwd					{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
 sigId<varp>:
-		id					{ $$ = VARDONEA(*$1, NULL, NULL); }
+		id					{ $$ = VARDONEA($<fl>1,*$1, NULL, NULL); }
 	;
 
 sigAttrListE<nodep>:
@@ -1564,7 +1564,7 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
 
 wirerangeE<dtypep>:
 		/* empty */    		               	{ $$ = new AstBasicDType(CRELINE(), LOGIC); }  // not implicit
-	|	rangeList 				{ $$ = GRAMMARP->addRange(new AstBasicDType(CRELINE(), LOGIC),$1,false); }  // not implicit
+	|	rangeList 				{ $$ = GRAMMARP->addRange(new AstBasicDType($1->fileline(), LOGIC),$1,false); }  // not implicit
 	;
 
 // IEEE: select
@@ -1646,8 +1646,8 @@ instnameList<nodep>:
 	;
 
 instnameParen<nodep>:
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($3,       *$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2); }
-	|	id instRangeE 				{ $$ = new AstCell(CRELINE(),*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2); }
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2); }
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
 	;
 
@@ -1733,7 +1733,7 @@ senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 	;
 
 senitemVar<senitemp>:
-		idClassSel				{ $$ = new AstSenItem(CRELINE(),AstEdgeType::ET_ANYEDGE,$1); }
+		idClassSel				{ $$ = new AstSenItem($1->fileline(),AstEdgeType::ET_ANYEDGE,$1); }
 	;
 
 senitemEdge<senitemp>:		// IEEE: part of event_expression
@@ -2008,7 +2008,7 @@ for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declarat
 	//			// IEEE: for_variable_declaration
 		varRESET data_type idAny/*new*/ '=' expr ';'
 			{ VARDTYPE($2);
-			  $$ = VARDONEA(*$3,NULL,NULL);
+			  $$ = VARDONEA($<fl>3,*$3,NULL,NULL);
 			  $$->addNext(new AstAssign($4,new AstVarRef($4,*$3,true),$5));}
 	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
 	//UNSUP: List of initializations
@@ -2032,10 +2032,10 @@ for_step<nodep>:		// IEEE: for_step
 // Functions/tasks
 
 taskRef<ftaskrefp>:		// IEEE: part of tf_call
-		idDotted		 		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),NULL);}
-	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),$3);}
-	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),NULL);}
-	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef(CRELINE(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),$4);}
+		idDotted		 		{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),NULL);}
+	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),$3);}
+	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),NULL);}
+	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),$4);}
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -2281,9 +2281,9 @@ tf_port_itemDir:		// IEEE: part of tf_port_item, direction
 
 tf_port_itemAssignment<varp>:	// IEEE: part of tf_port_item, which has assignment
 		id variable_dimensionListE sigAttrListE
-			{ $$ = VARDONEA(*$1, $2, $3); }
+			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); }
 	|	id variable_dimensionListE sigAttrListE '=' expr
-			{ $$ = VARDONEA(*$1, $2, $3); $$->valuep($5); }
+			{ $$ = VARDONEA($<fl>1, *$1, $2, $3); $$->valuep($5); }
 	;
 
 parenE:
@@ -2819,8 +2819,8 @@ idAny<strp>:			// Any kind of identifier
 
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
 	//			// yBIT, yBYTE won't work here as causes conflicts
-		yDO					{ static string s = "do"   ; $$ = &s; ERRSVKWD($1,*$$); }
-	|	yFINAL					{ static string s = "final"; $$ = &s; ERRSVKWD($1,*$$); }
+		yDO					{ static string s = "do"   ; $$ = &s; ERRSVKWD($1,*$$); $<fl>$=$<fl>1; }
+	|	yFINAL					{ static string s = "final"; $$ = &s; ERRSVKWD($1,*$$); $<fl>$=$<fl>1; }
 	;
 
 variable_lvalue<nodep>:		// IEEE: variable_lvalue or net_lvalue
@@ -2872,7 +2872,7 @@ idDottedMore<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstText(CRELINE(),*$1); }
+		id						{ $$ = new AstText($<fl>1,*$1); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }
@@ -2883,7 +2883,7 @@ idArrayed<nodep>:		// IEEE: id + select
 
 // VarRef without any dots or vectorizaion
 varRefBase<varrefp>:
-		id					{ $$ = new AstVarRef(CRELINE(),*$1,false);}
+		id					{ $$ = new AstVarRef($<fl>1,*$1,false);}
 	;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
@@ -3091,7 +3091,7 @@ void V3ParseImp::parserClear() {
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
     FileLine* newfl = new FileLine (fileline);
     newfl->warnOff(V3ErrorCode::WIDTH, true);
-    AstNode* nodep = new AstConst(newfl, V3Number(fileline));
+    AstNode* nodep = new AstConst(newfl, V3Number(newfl));
     // Adding a NOT is less work than figuring out how wide to make it
     if (value) nodep = new AstNot(newfl, nodep);
     nodep = new AstAssignW(newfl, new AstVarRef(fileline, name, true),
