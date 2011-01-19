@@ -65,9 +65,9 @@ class CdcEitherVertex : public V3GraphVertex {
     AstNode*	m_nodep;
     AstSenTree*	m_srcDomainp;
     AstSenTree*	m_dstDomainp;
-    bool	m_srcDomainSet;
-    bool	m_dstDomainSet;
-    bool	m_asyncPath;
+    bool	m_srcDomainSet:1;
+    bool	m_dstDomainSet:1;
+    bool	m_asyncPath:1;
 public:
     CdcEitherVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep)
 	: V3GraphVertex(graphp), m_scopep(scopep), m_nodep(nodep)
@@ -109,11 +109,12 @@ public:
 };
 
 class CdcLogicVertex : public CdcEitherVertex {
-    bool	m_hazard;
-    bool	m_isFlop;
+    bool	m_hazard:1;
+    bool	m_isFlop:1;
 public:
     CdcLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstSenTree* sensenodep)
-	: CdcEitherVertex(graphp,scopep,nodep), m_hazard(false), m_isFlop(false)
+	: CdcEitherVertex(graphp,scopep,nodep)
+	, m_hazard(false), m_isFlop(false)
 	{ srcDomainp(sensenodep); dstDomainp(sensenodep); }
     virtual ~CdcLogicVertex() {}
     // Accessors
@@ -132,7 +133,7 @@ class CdcDumpVisitor : public CdcBaseVisitor {
 private:
     // NODE STATE
     //Entire netlist:
-    // {statement}Node::user3p	-> bool, indicating not hazard
+    // {statement}Node::user3	-> bool, indicating not hazard
     ofstream*		m_ofp;		// Output file
     string		m_prefix;
 
@@ -290,9 +291,12 @@ private:
     void setNodeHazard(AstNode* nodep) {
 	// Need to not clear if warnings are off (rather than when report it)
 	// as bypassing this warning may turn up another path that isn't warning off'ed.
+	// We can't modifyWarnOff here, as one instantiation might not be an issue until we find a hitting flop
+	// Furthermore, a module like a "Or" module would only get flagged once,
+	// even though the signals feeding it are radically different.
 	if (!m_domainp || m_domainp->hasCombo()) { // Source flop logic in a posedge block is OK for reset (not async though)
 	    if (m_logicVertexp && !nodep->fileline()->warnIsOff(V3ErrorCode::CDCRSTLOGIC)) {
-		UINFO(9,"Set hazard "<<nodep<<endl);
+		UINFO(8,"Set hazard "<<nodep<<endl);
 		m_logicVertexp->setHazard(nodep);
 	    }
 	}
@@ -335,7 +339,7 @@ private:
 	    if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
 		if (vvertexp->cntAsyncRst()) {
 		    m_userGeneration++;  // Effectively a userClearVertices()
-		    UINFO(9, "   Trace One async: "<<vvertexp<<endl);
+		    UINFO(8, "   Trace One async: "<<vvertexp<<endl);
 		    // Twice, as we need to detect, then propagate
 		    CdcEitherVertex* markp = traceAsyncRecurse(vvertexp, false);
 		    if (markp) { // Mark is non-NULL if something bad on this path
@@ -351,7 +355,8 @@ private:
     }
 
     CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
-	// Return vertex of any hazardous stuff attached, or NULL if OK
+	// First pass: Return vertex of any hazardous stuff attached, or NULL if OK
+	// If first pass returns true, second pass calls asyncPath() on appropriate nodes
 	if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
 	vertexp->user(m_userGeneration);
 
