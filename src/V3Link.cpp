@@ -55,9 +55,11 @@ private:
     //   AstNodeModule::user4p() // V3SymTable*    Module's Symbol table
     //   AstNodeFTask::user4p()	// V3SymTable*    Local Symbol table
     //   AstBegin::user4p()	// V3SymTable*    Local Symbol table
+    //   AstVar::user5p()	// AstPin*	  True if port attached to a pin
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
     AstUser4InUse	m_inuser4;
+    AstUser5InUse	m_inuser5;
 
     // ENUMS
     enum IdState {		// Which loop through the tree
@@ -551,6 +553,7 @@ private:
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
 	m_cellp = nodep;
+	AstNode::user5ClearTree();
 	if (m_idState==ID_FIND) {
 	    // Add to list of all cells, for error checking and defparam's
 	    findAndInsertAndCheck(nodep, nodep->name());
@@ -635,6 +638,12 @@ private:
 		nodep->v3error("Pin is not an in/out/inout/param: "<<nodep->prettyName());
 	    } else {
 		nodep->modVarp(refp);
+		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
+		    nodep->v3error("Duplicate pin connection: "<<nodep->prettyName());
+		    refp->user5p()->castNode()->v3error("... Location of original pin connection");
+		} else {
+		    refp->user5p(nodep);
+		}
 	    }
 	    nodep->iterateChildren(*this);
 	}
