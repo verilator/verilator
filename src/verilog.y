@@ -1667,11 +1667,12 @@ cellpinItList<pinp>:		// IEEE: list_of_port_connections + list_of_parameter_assi
 	;
 
 cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment + empty
-		/* empty: ',,' is legal */		{ $$ = NULL; PINNUMINC(); }
+				// Note empty can match either () or (,); V3LinkCells cleans up ()
+		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
-	|	'.' idSVKwd				{ $$ = NULL; PINNUMINC(); }
+	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
 	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
-	|	'.' idAny '(' ')'			{ $$ = NULL; PINNUMINC(); }
+	|	'.' idAny '(' ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
 	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }

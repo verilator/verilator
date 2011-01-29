@@ -193,6 +193,18 @@ private:
 		new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
 	    }
 	}
+	// Remove AstCell(AstPin("",NULL)), it's a side effect of how we parse "()"
+	// the empty middle is identical to the empty rule that must find pins in "(,)".
+	if (nodep->pinsp() && !nodep->pinsp()->nextp()
+	    && nodep->pinsp()->name() == ""
+	    && !nodep->pinsp()->exprp()) {
+	    pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
+	}
+	if (nodep->paramsp() && !nodep->paramsp()->nextp()
+	    && nodep->paramsp()->name() == ""
+	    && !nodep->paramsp()->exprp()) {
+	    pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
+	}
 	// Convert .* to list of pins
 	bool pinStar = false;
 	for (AstPin* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {

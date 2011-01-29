@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.81***
 
-**** Report errors on duplicated pins, bug321.  [Christian Leber]
+**** Report errors on duplicated or empty pins, bug321.  [Christian Leber]
 
 **** Throw UNUSED/UNDRIVEN only once per net in a parametrized module.
 

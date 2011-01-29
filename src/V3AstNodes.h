@@ -921,7 +921,7 @@ public:
     bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin
+    AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin, NULL if unconnected
     AstVar*	modVarp()	const { return m_modVarp; }		// [After Link] Pointer to variable
     void  	modVarp(AstVar* varp) { m_modVarp=varp; }
     bool	svImplicit()	const { return m_svImplicit; }
