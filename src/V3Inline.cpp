@@ -140,6 +140,10 @@ private:
 		if (!connectRefp->castConst() && !connectRefp->castVarRef()) {
 		    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
 		}
+		if (pinNewVarp->isOutOnly() && connectRefp->castConst()) {
+		    pinp->v3error("Output port is connected to a constant pin, electrical short");
+		}
+
 		// Propagate any attributes across the interconnect
 		pinNewVarp->propagateAttrFrom(pinOldVarp);
 		if (connectRefp->castVarRef()) {
