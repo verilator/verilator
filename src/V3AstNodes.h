@@ -912,7 +912,9 @@ public:
 	,m_name(name), m_svImplicit(false) {
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
-	setNOp1p(exprp); }
+	setNOp1p(exprp);
+	if (exprp) widthSignedFrom(exprp);
+    }
     ASTNODE_NODE_FUNCS(Pin, PIN)
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modVarp && !m_modVarp->brokeExists()); }
