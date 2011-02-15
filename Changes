@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.81***
+* Verilator 3.811 2011/02/14
 
 **** Report errors on duplicated or empty pins, bug321.  [Christian Leber]
 
