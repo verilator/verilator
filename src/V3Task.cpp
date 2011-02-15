@@ -380,7 +380,10 @@ private:
 		UINFO(9, "      pin "<<pinp<<endl);
 		pinp->unlinkFrBack();   // Relinked to assignment below
 		//
-		if (portp->isInout()) {
+		if ((portp->isInout()||portp->isOutput()) && pinp->castConst()) {
+		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
+		}
+		else if (portp->isInout()) {
 		    if (AstVarRef* varrefp = pinp->castVarRef()) {
 			// Connect to this exact variable
 			AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
@@ -389,9 +392,6 @@ private:
 		    } else {
 			pinp->v3warn(E_TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
 		    }
-		}
-		else if (portp->isOutput() && outvscp) {
-		    refp->v3error("Outputs not allowed in function declarations");
 		}
 		else if (portp->isOutput()) {
 		    // Make output variables
@@ -456,7 +456,7 @@ private:
 	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
 	}
 	//
-	if (debug()>=9) { beginp->dumpTree(cout,"-iotask: "); }
+	if (debug()>=9) { beginp->dumpTreeAndNext(cout,"-iotask: "); }
 	return beginp;
     }
 
@@ -481,7 +481,10 @@ private:
 	    } else {
 		UINFO(9, "     Port "<<portp<<endl);
 		UINFO(9, "      pin "<<pinp<<endl);
-		if (portp->isInout()) {
+		if ((portp->isInout()||portp->isOutput()) && pinp->castConst()) {
+		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
+		}
+		else if (portp->isInout()) {
 		    if (pinp->castVarRef()) {
 			// Connect to this exact variable
 		    } else {
@@ -536,7 +539,7 @@ private:
 	    ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, true));
 	}
 
-	if (debug()>=9) { beginp->dumpTree(cout,"-nitask: "); }
+	if (debug()>=9) { beginp->dumpTreeAndNext(cout,"-nitask: "); }
 	return beginp;
     }
 
@@ -1011,40 +1014,22 @@ private:
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstTaskRef* nodep, AstNUser*) {
-	iterateIntoFTask(nodep->taskp());	// First, do hierarchical funcs
-	UINFO(4," Task REF   "<<nodep<<endl);
-	if (debug()>=9) { nodep->dumpTree(cout,"-inltask:"); }
-	// Create cloned statements
-	string namePrefix = "__Vtask_"+nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++);
-	AstNode* beginp;
-	if (m_statep->ftaskNoInline(nodep->taskp())) {
-	    beginp = createNonInlinedFTask(nodep, namePrefix, NULL);
-	} else {
-	    beginp = createInlinedFTask(nodep, namePrefix, NULL);
-	}
-	// Replace the ref
-	nodep->replaceWith(beginp);
-	nodep->deleteTree(); nodep=NULL;
-    }
-    virtual void visit(AstFuncRef* nodep, AstNUser*) {
-	UINFO(4," Func REF   "<<nodep<<endl);
-	if (debug()>=9) { nodep->dumpTree(cout,"-preref:"); }
-	// First, do hierarchical funcs
-	AstNodeFTask* funcp = nodep->taskp();
-	if (!funcp) nodep->v3fatalSrc("unlinked");
-	if (!funcp->isFunction()) nodep->v3fatalSrc("func reference to non-function");
-	if (!m_scopep) nodep->v3fatalSrc("func ref not under scope");
-	// Inline func refs in the function
-	iterateIntoFTask(funcp);
-	// Create output variable
-	string namePrefix = "__Vfunc_"+nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++);
-	AstVarScope* outvscp = createVarScope (funcp->fvarp()->castVar(),
-					       namePrefix+"__Vfuncout");
-	// Create cloned statements
-	if (debug()>=9) { nodep->taskp()->dumpTree(cout,"-oldfunc:"); }
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked?");
-
+	iterateIntoFTask(nodep->taskp());	// First, do hierarchical funcs
+	UINFO(4," FTask REF   "<<nodep<<endl);
+	if (debug()>=9) { nodep->dumpTree(cout,"-inlfunc:"); }
+	if (!m_scopep) nodep->v3fatalSrc("func ref not under scope");
+	string namePrefix = ((nodep->castFuncRef()?"__Vfunc_":"__Vtask_")
+			     +nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++));
+	// Create output variable
+	AstVarScope* outvscp = NULL;
+	if (nodep->taskp()->isFunction()) {
+	    // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
+	    outvscp = createVarScope (nodep->taskp()->fvarp()->castVar(),
+				      namePrefix+"__Vfuncout");
+	}
+	// Create cloned statements
 	AstNode* beginp;
 	if (m_statep->ftaskNoInline(nodep->taskp())) {
 	    // This may share VarScope's with a public task, if any.  Yuk.
@@ -1053,13 +1038,20 @@ private:
 	    beginp = createInlinedFTask(nodep, namePrefix, outvscp);
 	}
 	// Replace the ref
-	AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
-	nodep->replaceWith(outrefp);
-	// Insert new statements
-	insertBeforeStmt(nodep, beginp);
+	if (nodep->castFuncRef()) {
+	    if (!nodep->taskp()->isFunction()) nodep->v3fatalSrc("func reference to non-function");
+	    AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
+	    nodep->replaceWith(outrefp);
+	    // Insert new statements
+	    insertBeforeStmt(nodep, beginp);
+	} else {
+	    // outvscp maybe non-NULL if calling a function in a taskref,
+	    // but if so we want to simply ignore the function result
+	    nodep->replaceWith(beginp);
+	}
 	// Cleanup
 	nodep->deleteTree(); nodep=NULL;
-	UINFO(4,"  Func REF Done.\n");
+	UINFO(4,"  FTask REF Done.\n");
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	UINFO(4," Inline   "<<nodep<<endl);

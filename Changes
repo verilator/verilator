@@ -7,7 +7,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Report errors on duplicated or empty pins, bug321.  [Christian Leber]
 
+**** Report error on function call output tied to constant.  [Bernard Deadman]
+
 **** Throw UNUSED/UNDRIVEN only once per net in a parametrized module.
+
+**** Fix internal error on functions called as SV tasks.  [Bernard Deadman]
 
 **** Fix internal error on non-inlined inout pins.  [Jeff Winston]
 

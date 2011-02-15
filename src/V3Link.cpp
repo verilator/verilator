@@ -500,6 +500,7 @@ private:
 		if (!taskp) { nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName()); }
 		nodep->taskp(taskp);
 		nodep->packagep(packageFor(taskp));
+		if (taskp->castTask() && nodep->castFuncRef()) nodep->v3error("Illegal call of a task as a function: "<<nodep->prettyName());
 	    }
 	}
 	nodep->iterateChildren(*this);

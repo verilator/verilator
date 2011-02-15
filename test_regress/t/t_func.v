@@ -47,6 +47,14 @@ module t;
       nil();
       if (n !== 10) $stop;
 
+      // Functions called as tasks
+      rglobal = 32'h4;
+      if (inc_and_return(32'h2) != 32'h6) $stop;
+      if (rglobal !== 32'h6) $stop;
+      rglobal = 32'h6;
+      inc_and_return(32'h3);
+      if (rglobal !== 32'h9) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
@@ -131,6 +139,12 @@ module t;
    function integer toint;
       input integer fa;
       toint = fa + 32'h1;
+   endfunction
+
+   function [31:0] inc_and_return;
+      input [31:0] inc;
+      rglobal = rglobal + inc;
+      return rglobal;
    endfunction
 
 endmodule
