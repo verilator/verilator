@@ -252,7 +252,7 @@ descriptions in the next sections for more information.
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
-    --gdbbt                     Run Verilator under GDB for backtrace 
+    --gdbbt                     Run Verilator under GDB for backtrace
     --help                      Display this help
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
@@ -976,7 +976,7 @@ your operating system (as an RPM), first you need to point to the kit:
     export PATH=$VERILATOR_ROOT/bin:$PATH
 
 Now we run Verilator on our little example.
-    
+
     verilator -Wall --cc our.v --exe sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
@@ -1410,6 +1410,38 @@ The /*verilator sformat*/ indicates that this function accepts a $display
 like format specifier followed by any number of arguments to satisfy the
 format.
 
+=head2 DPI Context Functions
+
+Verilator supports IEEE DPI Context Functions.  Context imports pass the
+simulator context, including calling scope name, and filename and line
+number to the C code.  For example, in Verilog:
+
+   import "DPI-C" context function int dpic_line();
+   initial $display("This is line %d, again, line %d\n", `line, dpic_line());
+
+This will call C++ code which may then use the svGet* functions to read
+information, in this case the line number of the Verilog statement that
+invoked the dpic_line function:
+
+   int dpic_line() {
+       // Get a scope:  svScope scope = svGetScope();
+
+       const char* scopenamep = svGetNameFromScope(scope);
+       assert(scopenamep);
+
+       const char* filenamep = "";
+       int lineno = 0;
+       if (svGetCallerInfo(&filenamep, &lineno)) {
+           printf("dpic_line called from scope %s on line %d\n",
+              scopenamep, lineno);
+           return lineno;
+       } else {
+           return 0;
+       }
+   }
+
+See the IEEE Standard for more information.
+
 =head2 DPI Header Isolation
 
 Verilator places the IEEE standard header files such as svdpi.h into a
@@ -1421,7 +1453,7 @@ svdpi.h and similar standard files with different contents, the vltstd
 directory should not be included to prevent picking up incompatible
 definitions.
 
-=head2 Public Functions 
+=head2 Public Functions
 
 Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
@@ -2080,7 +2112,7 @@ of the form:
 
     inout driver;
     wire driver = (enable) ? output_value : 1'bz;
-    
+
 Will be converted to
 
     input driver__in;     // Value being driven in from "external" drivers
