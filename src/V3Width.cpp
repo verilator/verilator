@@ -1007,6 +1007,15 @@ private:
 		    } else {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
 			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
+			if ((portp->isOutput() || portp->isInout())
+			    && pinp->width() != portp->width()) {
+			    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
+					  <<" requires "<<pinp->width()
+					  <<" bits, but connection's "<<pinp->prettyTypeName()
+					  <<" generates "<<portp->width()<<" bits.");
+			    // otherwise would need some mess to force both sides to proper size
+			    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
+			}
 			if (portp->basicp() && !portp->basicp()->isOpaque()) {
 			    widthCheck(nodep,"Function Argument",pinp,portp->width(),portp->widthMin());
 			}
