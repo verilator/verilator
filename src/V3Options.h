@@ -134,6 +134,8 @@ class V3Options {
     int		m_outputSplitCTrace;// main switch: --output-split-ctrace
     int		m_pinsBv;	// main switch: --pins-bv
     int		m_traceDepth;	// main switch: --trace-depth
+    int		m_traceMaxArray;// main switch: --trace-max-array
+    int		m_traceMaxWidth;// main switch: --trace-max-width
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts
 
@@ -255,6 +257,8 @@ class V3Options {
     int	   outputSplitCTrace() const { return m_outputSplitCTrace; }
     int	   pinsBv() const { return m_pinsBv; }
     int	   traceDepth() const { return m_traceDepth; }
+    int	   traceMaxArray() const { return m_traceMaxArray; }
+    int	   traceMaxWidth() const { return m_traceMaxWidth; }
     int	   unrollCount() const { return m_unrollCount; }
     int	   unrollStmts() const { return m_unrollStmts; }
 

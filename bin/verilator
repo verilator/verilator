@@ -292,6 +292,8 @@ descriptions in the next sections for more information.
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
+    --trace-max-array <bits>    Maximum bit width for tracing
+    --trace-max-width <depth>   Maximum array depth for tracing
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
@@ -816,6 +818,18 @@ Specify the number of levels deep to enable tracing, for example
 entire model.  Using a small number will decrease visibility, but greatly
 improve runtime and trace file size.
 
+=item --trace-max-array I<bits>
+
+Rarely needed.  Specify the maximum array depth of a signal that may be
+traced.  Defaults to 32, as tracing large arrays may greatly slow traced
+simulations.
+
+=item --trace-max-width I<depth>
+
+Rarely needed.  Specify the maximum bit width of a signal that may be
+traced.  Defaults to 256, as tracing large vectors may greatly slow traced
+simulations.
+
 =item --trace-underscore
 
 Enable tracing of signals that start with an underscore. Normally, these
@@ -865,11 +879,11 @@ example C<-Werror-NOUNOPTFLAT>.
 
 =item -Wfuture-I<message>
 
-Suppress unknown Verilator comments or warning messages with the given
-message code.  This is used to allow code written with pragmas for a later
-version of Verilator to run under a older version; add -Wfuture- arguments
-for each message code or comment that the new version supports which the
-older version does not support.
+Rarely needed.  Suppress unknown Verilator comments or warning messages
+with the given message code.  This is used to allow code written with
+pragmas for a later version of Verilator to run under a older version; add
+-Wfuture- arguments for each message code or comment that the new version
+supports which the older version does not support.
 
 =item -Wno-I<message>
 

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.8****
 
+***  Add --trace-max-width and --trace-max-array, bug 319.  [Alex Solomatnikov]
+
 **** Support $bits(data_type), bug327.  [Alex Solomatnikov]
 
 **** Accelerate bit-selected inversions.

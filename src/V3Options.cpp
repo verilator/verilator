@@ -756,6 +756,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		m_traceDepth = atoi(argv[i]);
 	    }
+	    else if ( !strcmp (sw, "-trace-max-array") && (i+1)<argc ) {
+		shift;
+		m_traceMaxArray = atoi(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-trace-max-width") && (i+1)<argc ) {
+		shift;
+		m_traceMaxWidth = atoi(argv[i]);
+	    }
 	    else if ( !strncmp (sw, "-U", 2)) {
 		V3PreShell::undef (string (sw+strlen("-U")));
 	    }
@@ -1077,6 +1085,8 @@ V3Options::V3Options() {
     m_outputSplitCFuncs = 0;
     m_outputSplitCTrace = 0;
     m_traceDepth = 0;
+    m_traceMaxArray = 32;
+    m_traceMaxWidth = 256;
     m_unrollCount = 64;
     m_unrollStmts = 30000;
 

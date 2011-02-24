@@ -75,8 +75,8 @@ private:
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";
         }
-	if (nodep->width() > 256) return "Wide bus > 256 bits";
-	if (nodep->arrayElements() > 32) return "Wide memory > 32 ents";
+	if ((int)nodep->width() > v3Global.opt.traceMaxWidth()) return "Wide bus > --trace-max-width bits";
+	if ((int)nodep->arrayElements() > v3Global.opt.traceMaxArray()) return "Wide memory > --trace-max-array ents";
 	if (!(nodep->dtypeSkipRefp()->castBasicDType()
 	      || (nodep->dtypeSkipRefp()->castArrayDType()
 		  && nodep->dtypeSkipRefp()->castArrayDType()->dtypeSkipRefp()->castBasicDType()))) {
