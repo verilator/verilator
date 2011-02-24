@@ -976,6 +976,7 @@ struct AstNodeUniop : public AstNodeMath {
 	setOp1p(lhsp); }
     ASTNODE_BASE_FUNCS(NodeUniop)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
+    void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     // METHODS
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
     virtual bool cleanLhs() = 0;

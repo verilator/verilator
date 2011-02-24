@@ -1078,6 +1078,20 @@ private:
 	fromp->widthSignedFrom(nodep);
 	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
     }
+    void replaceSelIntoUniop(AstSel* nodep) {
+	// SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
+	AstNodeUniop* fromp = nodep->fromp()->unlinkFrBack()->castNodeUniop();
+	if (!fromp) nodep->v3fatalSrc("Called on non biop");
+	AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
+	AstNode* widthp = nodep->widthp()->unlinkFrBack();
+	//
+	AstNode* bilhsp = fromp->lhsp()->unlinkFrBack();
+	//
+	fromp->lhsp(new AstSel(nodep->fileline(),
+			       bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
+	fromp->widthSignedFrom(nodep);
+	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
+    }
 
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -1786,9 +1800,14 @@ private:
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
     // V3Tristate requires selects below BufIf1.
-    // We can probably extend this to additional logical operators, but only definite
+    // Also do additional operators that are bit-independent, but only definite
     // win if bit select is a constant (otherwise we may need to compute bit index several times)
-    TREEOPV("AstSel{$fromp.castBufIf1}",	"replaceSelIntoBiop(nodep)");
+    TREEOPV("AstSel{$fromp.castBufIf1}",		"replaceSelIntoBiop(nodep)");
+    TREEOPV("AstSel{$fromp.castNot}",			"replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castAnd,$lhsp.castConst}",	"replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castOr,$lhsp.castConst}",	"replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castXor,$lhsp.castConst}",	"replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castXnor,$lhsp.castConst}",	"replaceSelIntoUniop(nodep)");
     // Conversions
     TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");
