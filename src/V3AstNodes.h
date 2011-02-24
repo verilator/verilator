@@ -3152,6 +3152,19 @@ struct AstReplicate : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
+struct AstBufIf1 : public AstNodeBiop {
+    // lhs is enable, rhs is data to drive
+    AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	if (lhsp) widthSignedFrom(lhsp); }
+    ASTNODE_NODE_FUNCS(BufIf1, BUFIF1)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opBufIf1(lhs,rhs); }
+    virtual string emitVerilog() { return "bufif(%r,%l)"; }
+    virtual string emitC() { V3ERROR_NA; return false;}  // Lclean || Rclean
+    virtual string emitSimpleOperator() { V3ERROR_NA; return false;}  // Lclean || Rclean
+    virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean || Rclean
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+};
 struct AstFGetS : public AstNodeBiop {
     AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(FGetS, FGETS)

@@ -1061,6 +1061,24 @@ private:
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
 
+    void replaceSelIntoBiop(AstSel* nodep) {
+	// SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
+	AstNodeBiop* fromp = nodep->fromp()->unlinkFrBack()->castNodeBiop();
+	if (!fromp) nodep->v3fatalSrc("Called on non biop");
+	AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
+	AstNode* widthp = nodep->widthp()->unlinkFrBack();
+	//
+	AstNode* bilhsp = fromp->lhsp()->unlinkFrBack();
+	AstNode* birhsp = fromp->rhsp()->unlinkFrBack();
+	//
+	fromp->lhsp(new AstSel(nodep->fileline(),
+			       bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
+	fromp->rhsp(new AstSel(nodep->fileline(),
+			       birhsp, lsbp, widthp));
+	fromp->widthSignedFrom(nodep);
+	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
+    }
+
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
@@ -1767,6 +1785,10 @@ private:
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
+    // V3Tristate requires selects below BufIf1.
+    // We can probably extend this to additional logical operators, but only definite
+    // win if bit select is a constant (otherwise we may need to compute bit index several times)
+    TREEOPV("AstSel{$fromp.castBufIf1}",	"replaceSelIntoBiop(nodep)");
     // Conversions
     TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");

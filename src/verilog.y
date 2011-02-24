@@ -2682,46 +2682,58 @@ gateUnsupList<nodep>:
 	;
 
 gateBuf<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,$6); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateBufif0<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), $6)); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); }
 	;
 gateBufif1<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, $6, new AstConst($3,V3Number($3,"1'bz")))); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8,$6)); }
 	;
 gateNot<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateNotif0<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstConst($3,V3Number($3,"1'bz")), new AstNot($3, $6))); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); }
 	;
 gateNotif1<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstAssignW ($3,$4,new AstCond($3,$8, new AstNot($3,$6), new AstConst($3,V3Number($3,"1'bz")))); }
+		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); }
 	;
 gateAnd<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
+		gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
+			{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateNand<nodep>:
-	 	gateIdE instRangeE '(' idClassSel ',' gateAndPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+	 	gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateOr<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,$6); }
+		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
+			{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateNor<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' gateOrPinList ')'		{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gateXor<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,$6); }
+		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
+			{ $$ = new AstAssignW ($3,$4,$6); }
 	;
 gateXnor<nodep>:
-		gateIdE instRangeE '(' idClassSel ',' gateXorPinList ')'	{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
 	;
 gatePullup<nodep>:
-		gateIdE instRangeE '(' idClassSel ')'	{ $$ = new AstPull ($3, $4, true); }
+		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); }
 	;
 gatePulldown<nodep>:
-		gateIdE instRangeE '(' idClassSel ')'	{ $$ = new AstPull ($3, $4, false); }
+		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); }
 	;
 gateUnsup<nodep>:
 		gateIdE instRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); }

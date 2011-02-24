@@ -159,8 +159,8 @@ private:
 	// assign x = (OE) ? 'hz :  y;
 
 	// see if this a COND and separate out the __en logic from the output logic if it is
-	if (nodep->rhsp()->castCond()) {
-	    AstCond* condp = nodep->rhsp()->castCond();
+	if (AstCond* condp = nodep->rhsp()->castCond()) {
+	    //if (debug()>=9) nodep->dumpTree(cout,"-   cond-in: ");
 	    AstNode* oep = condp->condp();
 	    AstNode* expr1p = condp->expr1p();
 	    AstNode* expr2p = condp->expr2p();
@@ -192,17 +192,44 @@ private:
 
 	    // replace the old assign logic with the new one
 	    AstAssignW* newassp = new AstAssignW(nodep->fileline(), outp,outrhsp);
+	    //if (debug()>=9) newassp->dumpTreeAndNext(cout,"-   cond-out: ");
 	    nodep->replaceWith(newassp);
 	    nodep->deleteTree(); nodep=NULL;
 	    newassp->iterateChildren(*this);
 
-	} else {
+	}
+	// How about a tri gate?
+	else if (AstBufIf1* bufp = nodep->rhsp()->castBufIf1()) {
+	    //if (debug()>=9) nodep->dumpTree(cout,"-   tri-in : ");
+	    AstNode* enrhsp = bufp->lhsp()->unlinkFrBack();
+	    AstNode* outrhsp = bufp->rhsp()->unlinkFrBack();
+
+	    AstNode* outp = nodep->lhsp()->unlinkFrBack();;
+	    AstVarRef* outrefp = NULL;
+	    if (outp->castVarRef()) {
+		outrefp = outp->castVarRef();
+	    } else if (outp->castSel()) {
+		outrefp = outp->castSel()->fromp()->castVarRef();
+	    } else {
+		nodep->v3error("Can't find LHS varref");
+	    }
+
+	    createEnableVar(outp, outrefp, enrhsp, outrhsp->width());
+
+	    // replace the old assign logic with the new one
+	    AstAssignW* newassp = new AstAssignW(nodep->fileline(), outp,outrhsp);
+	    //if (debug()>=9) newassp->dumpTreeAndNext(cout,"-   tri-out: ");
+	    nodep->replaceWith(newassp);
+	    nodep->deleteTree(); nodep=NULL;
+	    newassp->iterateChildren(*this);
+	}
+	else {
 	    nodep->iterateChildren(*this);
 	}
     }
 
     AstVar* createEnableVar(AstNode* outp, AstVarRef* outrefp, AstNode* enrhsp, int width, string suffix="") {
-	// this function creates an  __en Var that cooresponds to
+	// this function creates an  __en Var that corresponds to
 	// the outp and outrefp and creates an assignw to enrhsp
         AstVar* enp = new AstVar (outrefp->varp()->fileline(),
 				  AstVarType::MODULETEMP,
@@ -218,10 +245,14 @@ private:
 		enrhsp->v3error("Don't know how to deal with selection logic wider than 1 bit");
 	    }
 	}
+
+	AstNode* newassp = new AstAssignW (enp->fileline(),
+					   new AstVarRef (enp->fileline(), enp, true),
+					   enrhsp);
+	if (debug()>=9) enp->dumpTreeAndNext(cout,"-   cev-out: ");
+	if (debug()>=9) newassp->dumpTreeAndNext(cout,"-   cev-out: ");
         m_modp->addStmtp(enp);
-        m_modp->addStmtp(new AstAssignW (enp->fileline(),
-					 new AstVarRef (enp->fileline(), enp, true),
-					 enrhsp));
+        m_modp->addStmtp(newassp);
 
 	outrefp->user1p(enp); // put __en signal into varref for later usage
 	outrefp->varp()->user1p(enp); // put __en signal into var as well in the event this is a single lhs driver and this needs passed up one level

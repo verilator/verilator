@@ -98,6 +98,7 @@ private:
     virtual void visit(AstLogOr* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstLogIf* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     virtual void visit(AstLogIff* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
+    virtual void visit(AstBufIf1* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
     // ...    These shouldn't matter, just make unsigned
     virtual void visit(AstScopeName* nodep, AstNUser*) {	signed_Ou_Ix(nodep); }
     virtual void visit(AstText* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support $bits(data_type), bug327.  [Alex Solomatnikov]
 
+**** Fix concatenates and vectored bufif1, bug326. [Iztok Jeras]
+
 * Verilator 3.811 2011/02/14
 
 **** Report errors on duplicated or empty pins, bug321.  [Christian Leber]

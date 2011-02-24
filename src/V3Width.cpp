@@ -143,6 +143,7 @@ private:
     virtual void visit(AstOr* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstXnor* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstXor* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
+    virtual void visit(AstBufIf1* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
     // Multiple possible reasonable division width conversions.  Just keep our code simple, they aren't common.
     virtual void visit(AstModDiv* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstModDivS* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
