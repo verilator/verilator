@@ -2115,6 +2115,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
 	//
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
+	|	yD_BITS '(' data_type ')'		{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }

@@ -48,6 +48,7 @@ module t (/*AUTOARG*/);
       if (three != 3'b111) $stop;
 
       if ($bits(sized_based_on_enum) != 8) $stop;
+      if ($bits(three_t) != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
