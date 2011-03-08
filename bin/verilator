@@ -968,7 +968,7 @@ We'll compile this example into C++.
 
     cat <<EOF >our.v
       module our;
-         initial begin \$display("Hello World"); \$finish; end
+         initial begin $display("Hello World"); $finish; end
       endmodule
     EOF
 
@@ -1033,7 +1033,7 @@ This is an example similar to the above, but using SystemPerl.
       module our (clk);
          input clk;  // Clock is required to get initial activation
          always @ (posedge clk)
-            begin \$display("Hello World"); \$finish; end
+            begin $display("Hello World"); $finish; end
       endmodule
     EOF
 
