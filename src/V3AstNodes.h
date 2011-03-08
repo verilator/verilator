@@ -559,6 +559,8 @@ private:
     bool	m_attrClockEn:1;// User clock enable attribute
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_attrSFormat:1;// User sformat attribute
+    bool	m_didSigning:1;	// V3Signed completed; can skip iteration
+    bool	m_didWidth:1;	// V3Width completed; can skip iteration
     bool	m_fileDescr:1;	// File descriptor
     bool	m_isConst:1;	// Table contains constant data
     bool	m_isStatic:1;	// Static variable
@@ -572,6 +574,7 @@ private:
 	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrIsolateAssign=false; m_attrSFormat=false;
+	m_didSigning=false; m_didWidth=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false;
 	m_trace=false;
     }
@@ -634,6 +637,10 @@ public:
     void	attrScClocked(bool flag) { m_scClocked = flag; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void	attrSFormat(bool flag) { m_attrSFormat = flag; }
+    void	didSigning(bool flag) { m_didSigning=flag; }
+    bool	didSigning() const { return m_didSigning; }
+    void	didWidth(bool flag) { m_didWidth=flag; }
+    bool	didWidth() const { return m_didWidth; }
     void	usedClock(bool flag) { m_usedClock = flag; }
     void	usedParam(bool flag) { m_usedParam = flag; }
     void	usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }

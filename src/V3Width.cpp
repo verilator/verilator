@@ -528,7 +528,18 @@ private:
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width
 	// We can't skip this step when width()!=0, as creating a AstVar
-	// with non-constant range gets size 1, not size 0.
+	// with non-constant range gets size 1, not size 0.  So use didWidth().
+	if (nodep->didWidth()) {  // Early exit if have circular parameter definition
+	    if (!nodep->width()) {
+		if (!nodep->valuep()) nodep->v3fatalSrc("circular, but without value");
+		nodep->v3error("Variable's initial value is circular: "<<nodep->prettyName());
+		pushDeletep(nodep->valuep()->unlinkFrBack());
+		nodep->valuep(new AstConst(nodep->fileline(), 1));
+	    } else {
+		return;
+	    }
+	}
+	nodep->didWidth(true);
 	int width=1; int mwidth=1;
 	// Parameters if implicit untyped inherit from what they are assigned to
 	AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();

@@ -149,6 +149,9 @@ private:
 
     // Inherit from others
     virtual void visit(AstVar* nodep, AstNUser*) {
+	// Avoid recursion; can't use user() as they're all full, and anyhow this is often called
+	if (nodep->didSigning()) return;
+	nodep->didSigning(true);
 	nodep->iterateChildren(*this);
 	nodep->signedFrom(nodep->dtypep());
     }
