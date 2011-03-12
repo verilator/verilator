@@ -187,8 +187,9 @@ private:
 	UINFO(8,"     In Numbers: for (v="<<valInit<<"; v<"<<valStop<<"; v=v+"<<valInc<<")\n");
 	//
 	if (!m_generate) {
-	    UINFO(8, "         ~Iters: "<<((valStop - valInit)/valInc)<<" c="<<unrollCount()<<endl);
 	    int loops = ((valStop - valInit)/valInc);
+	    if (loops < 0) { loops += (1ULL<<constStopp->width()); } // Will roll around
+	    UINFO(8, "         ~Iters: "<<loops<<" c="<<unrollCount()<<endl);
 	    if (loops > unrollCount())
 		return cantUnroll(nodep, "too many iterations");
 

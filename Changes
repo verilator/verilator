@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support $bits(data_type), bug327.  [Alex Solomatnikov]
 
+**** Support loop unrolling on width mismatches, bug 333. [Joe Eiler]
+
 **** Accelerate bit-selected inversions.
 
 **** Add error on circular parameter definitions, bug329. [Alex Solomatnikov]

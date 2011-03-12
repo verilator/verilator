@@ -62,7 +62,7 @@ module t (/*AUTOARG*/
 
 	 // We never read past bounds, or get unspecific results
 	 // We also never read lowest indexes, as writing outside of range may corrupt them
-	 if (index0>=0+1 && index0<=2 && index1>=1+1 && index1<=3 && index2>=2+1 && index2<=5) begin
+	 if (index0>=0+1 && index0<=2 && index1>=1+1 /*&& index1<=3 CMPCONST*/ && index2>=2+1 && index2<=5) begin
 	    narrow <= ({narrow[6:0], narrow[7]^narrow[0]}
 		       ^ {memn[index0][index1][index2]});
 	    wread   = memw[index0][index1][index2];

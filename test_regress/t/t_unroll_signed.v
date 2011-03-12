@@ -118,6 +118,29 @@ module t (/*AUTOARG*/
 	   if (total != -28) $stop;
 	end
 	//===
+	10: begin
+	   // mostly cover a small index
+	   total = 0;
+	   for (i3=0; i3<3'd7; i3=i3+3'd1) begin
+	      total = total - {29'd0,i3} -1;
+	      dly_to_insure_was_unrolled[i3[0]] <= 0;
+	   end
+	   if (total != -28) $stop;
+	end
+	//===
+	11: begin
+	   // width violation on <, causes extend
+	   total = 0;
+	   for (i3=3'd0; i3<7; i3=i3+1) begin
+	      total = total - {29'd0,i3} -1;
+	      dly_to_insure_was_unrolled[i3[0]] <= 0;
+	   end
+	   if (total != -28) $stop;
+	end
+	//===
+	// width violation on <, causes extend signed
+	// Unsupported as yet
+	//===
 	19: begin
 	   $write("*-* All Finished *-*\n");
 	   $finish;

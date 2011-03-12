@@ -555,6 +555,12 @@ bool V3Number::isNeqZero() const {
     }
     return false;
 }
+bool V3Number::isBitsZero(int msb, int lsb) const {
+    for (int i=lsb; i<=msb; i++) {
+	if (VL_UNLIKELY(!bitIs0(i))) return false;
+    }
+    return true;
+}
 bool V3Number::isEqOne() const {
     if (m_value[0]!=1 || m_valueX[0]) return false;
     for (int i=1; i<words(); i++) {

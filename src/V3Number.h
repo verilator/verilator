@@ -138,6 +138,7 @@ public:
     bool isAllZ() const { for(int i=0;i<width();i++) { if(!bitIsZ(i)){return false;} } return true; }
     bool isEqZero() const;
     bool isNeqZero() const;
+    bool isBitsZero(int msb, int lsb) const;
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth=0) const;
     bool isCaseEq(const V3Number& rhsp) const;  // operator==

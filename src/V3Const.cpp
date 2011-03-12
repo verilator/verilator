@@ -290,13 +290,61 @@ private:
 	// SEL(EXTEND(any,width,...),(width-1),0) -> ...
 	// Since select's return unsigned, this is always an extend
 	AstExtend* extendp = nodep->fromp()->castExtend();
-	return (m_doV
-		&& extendp
-		&& nodep->lsbp()->castConst()
-		&& nodep->widthp()->castConst()
-		&& nodep->lsbConst()==0
-		&& (int)nodep->widthConst()==extendp->lhsp()->width()
-		);
+	if (!(m_doV
+	      && extendp
+	      && nodep->lsbp()->castConst()
+	      && nodep->widthp()->castConst()
+	      && nodep->lsbConst()==0
+	      && (int)nodep->widthConst()==extendp->lhsp()->width()
+		)) return false;
+	replaceWChild(nodep, extendp->lhsp()); nodep=NULL;
+	return true;
+    }
+    bool operandSelBiLower(AstSel* nodep) {
+	// SEL(ADD(a,b),(width-1),0) -> ADD(SEL(a),SEL(b))
+	// Add or any operation which doesn't care if we discard top bits
+	AstNodeBiop* bip = nodep->fromp()->castNodeBiop();
+	if (!(m_doV
+	      && bip
+	      && nodep->lsbp()->castConst()
+	      && nodep->widthp()->castConst()
+	      && nodep->lsbConst()==0
+		)) return false;
+	if (debug()>=9) nodep->dumpTree(cout,"SEL(BI)-in:");
+	AstNode* bilhsp = bip->lhsp()->unlinkFrBack();
+	AstNode* birhsp = bip->rhsp()->unlinkFrBack();
+	bip->lhsp(new AstSel(nodep->fileline(), bilhsp, 0, nodep->widthConst()));
+	bip->rhsp(new AstSel(nodep->fileline(), birhsp, 0, nodep->widthConst()));
+	if (debug()>=9) bip->dumpTree(cout,"SEL(BI)-ou:");
+	replaceWChild(nodep, bip); nodep=NULL;
+	return true;
+    }
+
+    bool operandBiExtendConst(AstNodeBiop* nodep) {
+	// Loop unrolling likes standalone compares
+	// EQ(EXTEND(xx{width3}), const{width32}) -> EQ(xx{3},const{3})
+	// Beware that the constant must have zero bits (+ 1 if signed) or compare
+	// would be incorrect
+	AstExtend* extendp = nodep->lhsp()->castExtend();
+	if (!extendp) return false;
+	AstNode* smallerp = extendp->lhsp();
+	int subsize = smallerp->width();
+	AstConst* constp = nodep->rhsp()->castConst();
+	if (!constp) return false;
+	if (!constp->num().isBitsZero(constp->width()-1, subsize)) return false;
+	//
+	if (debug()>=9) nodep->dumpTree(cout,"BI(EXTEND)-in:");
+	smallerp->unlinkFrBack();
+	extendp->unlinkFrBack()->deleteTree();  // aka nodep->lhsp.
+	nodep->lhsp(smallerp);
+
+	constp->unlinkFrBack();
+	V3Number num (constp->fileline(), subsize);
+	num.opAssign(constp->num());
+	nodep->rhsp(new AstConst(constp->fileline(), num));
+	constp->deleteTree();  constp=NULL;
+	if (debug()>=9) nodep->dumpTree(cout,"BI(EXTEND)-ou:");
+	return true;
     }
 
     AstNode* afterComment(AstNode* nodep) {
@@ -1716,6 +1764,13 @@ private:
     TREEOP ("AstShiftL{operandShiftShift(nodep)}",	"replaceShiftShift(nodep)");
     TREEOP ("AstShiftR{operandShiftShift(nodep)}",	"replaceShiftShift(nodep)");
     TREEOP ("AstWordSel{operandWordOOB(nodep)}",	"replaceZero(nodep)");
+    // Compress out EXTENDs to appease loop unroller
+    TREEOPV("AstEq    {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstNeq   {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstGt    {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstGte   {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstLt    {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstLte   {$lhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
     // Identical operands on both sides
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
@@ -1793,9 +1848,15 @@ private:
     TREEOPV("AstReplicate{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}",	"replaceWLhs(nodep)");  // {1{lhs}}->lhs
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
-    TREEOPV("AstSel{operandSelExtend(nodep)}",	"replaceWChild(nodep, nodep->fromp()->castExtend()->lhsp())");
+    TREEOPV("AstSel{operandSelExtend(nodep)}",	"DONE");
     TREEOPV("AstSel{operandSelFull(nodep)}",	"replaceWChild(nodep, nodep->fromp())");
     TREEOPV("AstSel{$fromp.castSel}",		"replaceSelSel(nodep)");
+    TREEOPV("AstSel{$fromp.castAdd, operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castAnd, operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castOr,  operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castSub, operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castXnor,operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}",	"DONE");
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
