@@ -110,8 +110,8 @@ if ($#opt_tests<0) {
 }
 
 mkdir "obj_dir";
-mkdir "logs";
 
+our $Log_Filename = "obj_dir/driver_".strftime("%Y%m%d_%H%M%S.log", localtime);
 my $leftcnt=0; my $okcnt=0; my $failcnt=0; my $skcnt=0;
 my @fails;
 
@@ -161,6 +161,7 @@ sub one_test {
 		 push @fails, "\t\tmake$j && test_regress/"
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
 		 $failcnt++;
+		 report(\@fails, $Log_Filename);
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
 	     $leftcnt--;
@@ -170,7 +171,7 @@ sub one_test {
 }
 
 report(\@fails, undef);
-report(\@fails, "obj_dir/driver_".strftime("%Y%m%d_%H%M%S.log", localtime));
+report(\@fails, $Log_Filename);
 
 exit(10) if $failcnt;
 
