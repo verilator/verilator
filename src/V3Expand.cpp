@@ -127,18 +127,18 @@ private:
 	} else if (nodep->isQuad() && word==0) {
 	    AstNode* quadfromp = nodep->cloneTree(true);
 	    quadfromp->width(VL_QUADSIZE,quadfromp->widthMin());
-	    return new AstCast (nodep->fileline(),
-				quadfromp,
-				VL_WORDSIZE);
+	    return new AstCCast (nodep->fileline(),
+				 quadfromp,
+				 VL_WORDSIZE);
 	} else if (nodep->isQuad() && word==1) {
 	    AstNode* quadfromp = nodep->cloneTree(true);
 	    quadfromp->width(VL_QUADSIZE,quadfromp->widthMin());
-	    return new AstCast (nodep->fileline(),
-				new AstShiftR (nodep->fileline(),
-					       quadfromp,
-					       new AstConst (nodep->fileline(), VL_WORDSIZE),
-					       VL_WORDSIZE),
-				VL_WORDSIZE);
+	    return new AstCCast (nodep->fileline(),
+				 new AstShiftR (nodep->fileline(),
+						quadfromp,
+						new AstConst (nodep->fileline(), VL_WORDSIZE),
+						VL_WORDSIZE),
+				 VL_WORDSIZE);
 	} else if (!nodep->isWide() && !nodep->isQuad() && word==0) {
 	    return nodep->cloneTree(true);
 	} else { // Out of bounds
@@ -324,7 +324,7 @@ private:
 		    nodep->v3fatalSrc("extending larger thing into smaller?");
 		} else {
 		    UINFO(8,"    EXTEND(q<-l) "<<nodep<<endl);
-		    newp = new AstCast (nodep->fileline(), lhsp, nodep);
+		    newp = new AstCCast (nodep->fileline(), lhsp, nodep);
 		}
 	    } else { // Long
 		if (lhsp->isQuad() || lhsp->isWide()) {
@@ -366,7 +366,7 @@ private:
 	    AstNode* lowwordp = new AstWordSel (nodep->fromp()->fileline(),
 						nodep->fromp()->cloneTree(true),
 						newSelBitWord(nodep->lsbp(), 0));
-	    if (nodep->isQuad() && !lowwordp->isQuad()) lowwordp = new AstCast(nodep->fileline(), lowwordp, nodep);
+	    if (nodep->isQuad() && !lowwordp->isQuad()) lowwordp = new AstCCast(nodep->fileline(), lowwordp, nodep);
 	    AstNode* lowp = new AstShiftR (nodep->fileline(),
 					   lowwordp,
 					   newSelBitBit(nodep->lsbp()),
@@ -379,7 +379,7 @@ private:
 		    new AstWordSel (nodep->fromp()->fileline(),
 				    nodep->fromp()->cloneTree(true),
 				    newSelBitWord(nodep->lsbp(), 1));
-		if (nodep->isQuad() && !midwordp->isQuad()) midwordp = new AstCast(nodep->fileline(), midwordp, nodep);
+		if (nodep->isQuad() && !midwordp->isQuad()) midwordp = new AstCCast(nodep->fileline(), midwordp, nodep);
 		// If we're selecting bit zero, then all 32 bits in word 1 get shifted << by 32 bits
 		// else we need to form the lower word, so we << by 31 or less
 		// nbitsfromlow <= (lsb==0) ? 64-bitbit(lsb) : 32-bitbit(lsb)
@@ -417,7 +417,7 @@ private:
 		    new AstWordSel (nodep->fromp()->fileline(),
 				    nodep->fromp()->cloneTree(true),
 				    newSelBitWord(nodep->lsbp(), 2));
-		if (nodep->isQuad() && !hiwordp->isQuad()) hiwordp = new AstCast(nodep->fileline(), hiwordp, nodep);
+		if (nodep->isQuad() && !hiwordp->isQuad()) hiwordp = new AstCCast(nodep->fileline(), hiwordp, nodep);
 		AstNode* himayp =
 		    new AstShiftL (nodep->fileline(),
 				   hiwordp,
@@ -445,14 +445,14 @@ private:
 	    UINFO(8,"    SEL->SHIFT "<<nodep<<endl);
 	    AstNode* fromp = nodep->fromp()->unlinkFrBack();
 	    AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
-	    if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCast(nodep->fileline(), fromp, nodep);
+	    if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCCast(nodep->fileline(), fromp, nodep);
 	    AstNode* newp = new AstShiftR (nodep->fileline(),
 					   fromp,
 					   dropCondBound(lsbp),
 					   nodep->width());
 	    newp->widthSignedFrom(nodep);
 	    if (!nodep->isQuad() && fromp->isQuad()) {
-		newp = new AstCast (newp->fileline(), newp, nodep);
+		newp = new AstCCast (newp->fileline(), newp, nodep);
 	    }
 	    newp->widthSignedFrom(nodep);
 	    replaceWithDelete(nodep,newp); nodep=NULL;
@@ -546,7 +546,7 @@ private:
 		destp->deleteTree(); destp=NULL;
 	    } else {
 		UINFO(8,"    ASSIGNSEL(const,narrow) "<<nodep<<endl);
-		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep);
+		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
 		AstNode* oldvalp = destp->cloneTree(true);
 		fixCloneLvalue(oldvalp);
 		if (!ones) oldvalp = new AstAnd (lhsp->fileline(),
@@ -620,7 +620,7 @@ private:
 		V3Number maskwidth (nodep->fileline(), destp->widthMin());
 		for (int bit=0; bit<(int)lhsp->widthConst(); bit++) maskwidth.setBit(bit,1);
 
-		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep);
+		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
 		if (!ones)
 		    oldvalp = new AstAnd (lhsp->fileline(),
 					  new AstNot (lhsp->fileline(),
@@ -655,8 +655,8 @@ private:
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    int rhsshift = rhsp->widthMin();
-	    if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep);
-	    if (nodep->isQuad() && !rhsp->isQuad()) rhsp = new AstCast(nodep->fileline(), rhsp, nodep);
+	    if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCCast(nodep->fileline(), lhsp, nodep);
+	    if (nodep->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
 	    AstNode* newp = new AstOr (nodep->fileline(),
 				       new AstShiftL (nodep->fileline(),
 						      lhsp,
@@ -703,7 +703,7 @@ private:
 		AstConst* constp = nodep->rhsp()->castConst();
 		if (!constp) nodep->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
 		uint32_t times = constp->toUInt();
-		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCast(nodep->fileline(), lhsp, nodep);
+		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCCast(nodep->fileline(), lhsp, nodep);
 		newp = lhsp->cloneTree(true);
 		for (unsigned repnum=1; repnum<times; repnum++) {
 		    int rhsshift = repnum*lhswidth;

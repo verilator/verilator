@@ -475,7 +475,7 @@ public:
 	}
 	visit(nodep->castNodeBiop(), vup);
     }
-    virtual void visit(AstCast* nodep, AstNUser*) {
+    virtual void visit(AstCCast* nodep, AstNUser*) {
 	// Extending a value of the same word width is just a NOP.
 	if (nodep->size()>VL_WORDSIZE) {
 	    puts("(QData)(");

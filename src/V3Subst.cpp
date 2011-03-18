@@ -304,7 +304,7 @@ private:
 	if (debug()>5) nodep->dumpTree(cout,"  substw_old: ");
 	AstNode* newp = substp->cloneTree(true);
 	if (!nodep->isQuad() && newp->isQuad()) {
-	    newp = new AstCast (newp->fileline(), newp, nodep);
+	    newp = new AstCCast (newp->fileline(), newp, nodep);
 	}
 	if (debug()>5)  newp->dumpTree(cout,"       w_new: ");
 	nodep->replaceWith(newp);

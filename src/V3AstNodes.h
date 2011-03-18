@@ -2622,27 +2622,27 @@ struct AstOneHot0 : public AstNodeUniop {
     virtual int instrCount()	const { return widthInstrs()*3; }
 };
 
-struct AstCast : public AstNodeUniop {
+struct AstCCast : public AstNodeUniop {
     // Cast to appropriate data type
 private:
     int		m_size;
 public:
-    AstCast(FileLine* fl, AstNode* lhsp, int setwidth) : AstNodeUniop(fl, lhsp) {
+    AstCCast(FileLine* fl, AstNode* lhsp, int setwidth) : AstNodeUniop(fl, lhsp) {
 	m_size=setwidth;
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    AstCast(FileLine* fl, AstNode* lhsp, AstNode* widthFromp) : AstNodeUniop(fl, lhsp) {
+    AstCCast(FileLine* fl, AstNode* lhsp, AstNode* widthFromp) : AstNodeUniop(fl, lhsp) {
 	if (widthFromp) { widthSignedFrom(widthFromp); }
 	m_size=width();
     }
-    ASTNODE_NODE_FUNCS(Cast, CAST)
+    ASTNODE_NODE_FUNCS(CCast, CCAST)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%f$_CAST(%l)"; }
     virtual string emitC() { return "VL_CAST_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}  // Special cased in V3Cast
     virtual V3Hash sameHash() const { return V3Hash(size()); }
-    virtual bool same(AstNode* samep) const { return size()==samep->castCast()->size(); }
+    virtual bool same(AstNode* samep) const { return size()==samep->castCCast()->size(); }
     virtual void dump(ostream& str=cout);
     //
     int size()	const { return m_size; }

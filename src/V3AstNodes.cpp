@@ -522,7 +522,7 @@ void AstBasicDType::dump(ostream& str) {
     str<<" ["<<keyword().ascii()<<"]";
     if (implicit()) str<<" [IMPLICIT]";
 }
-void AstCast::dump(ostream& str) {
+void AstCCast::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" sz"<<size();
 }

@@ -77,7 +77,7 @@ private:
 	AstNRelinker relinkHandle;
 	nodep->unlinkFrBack(&relinkHandle);
 	//
-	AstCast* castp = new AstCast (nodep->fileline(), nodep, needsize);
+	AstCCast* castp = new AstCCast (nodep->fileline(), nodep, needsize);
 	castp->width(needsize, nodep->widthMin());
 	relinkHandle.relink(castp);
 	//if (debug()>8) castp->dumpTree(cout,"-castins: ");
@@ -97,13 +97,13 @@ private:
 	    insertCast(nodep, castSize(nodep->backp()));
 	}
     }
-    void insureLower32Cast(AstCast* nodep) {
+    void insureLower32Cast(AstCCast* nodep) {
 	// If we have uint64 = CAST(uint64(x)) then the upcasting
 	// really needs to be CAST(uint64(CAST(uint32(x))).
 	// Otherwise a (uint64)(a>b) would return wrong value, as
 	// less than has undeterministic signedness.
 	if (nodep->isQuad() && !nodep->lhsp()->isQuad()
-	    && !nodep->lhsp()->castCast()) {
+	    && !nodep->lhsp()->castCCast()) {
 	    insertCast(nodep->lhsp(), VL_WORDSIZE);
 	}
     }
@@ -130,7 +130,7 @@ private:
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
 	if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
     }
-    virtual void visit(AstCast* nodep, AstNUser*) {
+    virtual void visit(AstCCast* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	insureLower32Cast(nodep);
 	nodep->user1(1);
@@ -149,7 +149,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (!nodep->lvalue()
-	    && !nodep->backp()->castCast()
+	    && !nodep->backp()->castCCast()
 	    && nodep->backp()->castNodeMath()
 	    && nodep->backp()->width()
 	    && castSize(nodep) != castSize(nodep->varp())) {
