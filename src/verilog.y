@@ -1078,6 +1078,31 @@ signing<signstate>:		// ==IEEE: signing
 //************************************************
 // Data Types
 
+casting_type<dtypep>:		// IEEE: casting_type
+		simple_type				{ $$ = $1; }
+	//			// IEEE: constant_primary
+	//			// In expr:cast this is expanded to just "expr"
+	//
+	//			// IEEE: signing
+	//See where casting_type used
+	//^^	ySIGNED					{ $$ = new AstSigned($1,$3); }
+	//^^	yUNSIGNED				{ $$ = new AstUnsigned($1,$3); }
+	//UNSUP	ySTRING					{ $$ = $1; }
+	//UNSUP	yCONST__ETC/*then `*/			{ $$ = $1; }
+	;
+
+simple_type<dtypep>:		// ==IEEE: simple_type
+	//			// IEEE: integer_type
+		integer_atom_type			{ $$ = $1; }
+	|	integer_vector_type			{ $$ = $1; }
+	//UNSUP	non_integer_type			{ $$ = $1; }
+	//			// IEEE: ps_type_identifier
+	//			// IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
+	|	ps_type					{ $$ = $1; }
+	//			// { generate_block_identifer ... } '.'
+	//			// Need to determine if generate_block_identifier can be lex-detected
+	;
+
 data_type<dtypep>:		// ==IEEE: data_type
 	//			// This expansion also replicated elsewhere, IE data_type__AndID
 		data_typeNoRef				{ $$ = $1; }
@@ -2455,7 +2480,10 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'_' '(' statePushVlg expr statePop ')'	{ $$ = $4; }	// Arbitrary Verilog inside PSL
 	//
 	//			// IEEE: cast/constant_cast
-	//UNSUP	casting_type yP_TICK '(' expr ')'	{ UNSUP }
+	|	casting_type yP_TICK '(' expr ')'	{ $$ = new AstCast($2,$4,$1); }
+	//			// expanded from casting_type
+	|	ySIGNED	     yP_TICK '(' expr ')'	{ $$ = new AstSigned($1,$4); }
+	|	yUNSIGNED    yP_TICK '(' expr ')'	{ $$ = new AstUnsigned($1,$4); }
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
 	//UNSUP	~l~expr yP_TICK '(' expr ')'		{ UNSUP }

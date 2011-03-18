@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support loop unrolling on width mismatches, bug 333. [Joe Eiler]
 
+**** Support simple cast operators, bug335.  [Alex Solomatnikov]
+
 **** Accelerate bit-selected inversions.
 
 **** Add error on circular parameter definitions, bug329. [Alex Solomatnikov]

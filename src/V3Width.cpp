@@ -524,6 +524,25 @@ private:
 	nodep->iterateChildren(*this, vup);
 	nodep->widthFrom(nodep->dtypep()->skipRefp());
     }
+    virtual void visit(AstCast* nodep, AstNUser* vup) {
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	// When more general casts are supported, the cast elimination will be done later.
+	// For now, replace it ASAP, so widthing can propagate easily
+	// The cast may change signing, but we don't know the sign yet.  Make it so.
+	// Note we don't sign lhsp() that would make the algorithm O(n^2) if lots of casting.
+	V3Width::widthParamsEdit(nodep->dtypep()); // MAY CHANGE dtypep()
+	AstBasicDType* basicp = nodep->dtypep()->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Casting non-simple data type");
+	nodep->widthSignedFrom(basicp);
+	widthCheck(nodep,"Cast",nodep->lhsp(),nodep->width(),nodep->width(),true);
+	AstNode* newp = nodep->lhsp()->unlinkFrBack();
+	if (basicp->isSigned()) {
+	    newp = new AstSigned(nodep->fileline(), newp);
+	} else {
+	    newp = new AstUnsigned(nodep->fileline(), newp);
+	}
+	nodep->replaceWith(newp);
+    }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width

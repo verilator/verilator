@@ -163,6 +163,11 @@ private:
 	nodep->itemp()->iterate(*this);
 	nodep->signedFrom(nodep->itemp());
     }
+    virtual void visit(AstCast* nodep, AstNUser*) {
+	nodep->lhsp()->iterate(*this);
+	nodep->dtypep()->iterate(*this);
+	nodep->signedFrom(nodep->dtypep());
+    }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	// The node got setup with the signed state of the node.
 	// However a later operation may have changed the node->signed w/o changing

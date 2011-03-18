@@ -2235,6 +2235,11 @@ Increment/decrement can only be used as standalone statements or in for
 loops.  They cannot be used as side effect operators inside more complicate
 expressions ("a = b++;").
 
+=item cast operator
+
+Casting is supported only between simple scalar types, signed and unsigned,
+not arrays nor structs.
+
 =item chandle
 
 Treated as a "longint"; does not yet warn about operations that are

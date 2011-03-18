@@ -2622,8 +2622,23 @@ struct AstOneHot0 : public AstNodeUniop {
     virtual int instrCount()	const { return widthInstrs()*3; }
 };
 
+struct AstCast : public AstNode {
+    // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
+    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtypep) : AstNode(fl) {
+	setOp1p(lhsp); setOp2p(dtypep);
+	if (dtypep) { widthSignedFrom(dtypep); }
+    }
+    ASTNODE_NODE_FUNCS(Cast, CAST)
+    virtual string emitVerilog() { return "((%r)'(%l))"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    AstNode* lhsp() const { return op1p(); }
+    AstNodeDType* dtypep() const { return op2p()->castNodeDType(); }
+};
+
 struct AstCCast : public AstNodeUniop {
-    // Cast to appropriate data type
+    // Cast to C-based data type
 private:
     int		m_size;
 public:
