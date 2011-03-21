@@ -536,14 +536,18 @@ the command line that implement the main loop for your simulation.
 
 Read the specified file, and act as if all text inside it was specified as
 command line parameters.  Any relative paths are relative to the directory
-containing the specified file.  Note -F is fairly standard across Verilog
-tools.
+containing the specified file.  See also -f. Note -F is fairly standard
+across Verilog tools.
 
 =item -f I<file>
 
 Read the specified file, and act as if all text inside it was specified as
 command line parameters.  Any relative paths are relative to the current
-directory.  Note -f is fairly standard across Verilog tools.
+directory.  See also -F. Note -f is fairly standard across Verilog tools.
+
+The file may contain // comments which are ignored to the end of the line.
+Any $VAR, $(VAR), or ${VAR} will be replaced with the specified environment
+variable.
 
 =item --gdbbt
 

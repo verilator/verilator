@@ -194,18 +194,33 @@ string V3Options::filenameNonExt (const string& filename) {
 
 string V3Options::filenameSubstitute (const string& filename) {
     string out;
+    enum { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
-	if (filename[pos] == '$') {
+        if ((filename[pos] == '$') && (pos+1 < filename.length())) {
+	    switch (filename[pos+1]) {
+	        case '{': brackets = CURLY; break;
+	        case '(': brackets = PAREN; break;
+	        default: brackets = NONE; break;
+	    }
+	    if (brackets != NONE) pos = pos+1;
 	    string::size_type endpos = pos+1;
-	    while ((endpos+1) < filename.length()
-		   && (isalnum(filename[endpos+1]) || filename[endpos+1]=='_'))
+	    while (((endpos+1) < filename.length()) &&
+		   (((brackets==NONE) && (isalnum(filename[endpos+1]) || filename[endpos+1]=='_')) ||
+		    ((brackets==CURLY) && (filename[endpos+1]!='}')) ||
+		    ((brackets==PAREN) && (filename[endpos+1]!=')'))))
 		++endpos;
+	    // Catch bracket errors
+	    if (((brackets==CURLY) && (filename[endpos+1]!='}')) ||
+		((brackets==PAREN) && (filename[endpos+1]!=')'))) {
+	      v3fatal("Unmatched brackets in variable substitution in file: "+filename);
+	    }
 	    string envvar = filename.substr(pos+1,endpos-pos);
 	    const char* envvalue = NULL;
 	    if (envvar != "") envvalue = getenv(envvar.c_str());
 	    if (envvalue) {
 		out += envvalue;
-		pos = endpos;
+		if (brackets==NONE) pos = endpos;
+		else pos = endpos+1;
 	    } else {
 		out += filename[pos];  // *pos == '$'
 	    }
@@ -214,6 +229,7 @@ string V3Options::filenameSubstitute (const string& filename) {
 	}
     }
     return out;
+
 }
 
 bool V3Options::filenameIsRel(const string& filename) {
