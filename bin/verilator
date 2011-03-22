@@ -306,6 +306,7 @@ descriptions in the next sections for more information.
      -Wno-<message>             Disable warning
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
+     -Wno-fatal                 Disable fatal exit on warnings
      -x-assign <mode>           Initially assign Xs to this value
      -y <dir>                   Directory to search for modules
 
@@ -911,6 +912,14 @@ Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
 -Wno-INCABSPATH -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
 -Wno-VARHIDDEN".
+
+=item -Wno-fatal
+
+When warnings are detected, print them, but do not exit the simulator.
+
+Having warning messages in builds is sloppy.  It is strongly recommended
+you cleanup your code, use inline lint_off, or use -Wno-... flags rather
+than using this option.
 
 =item -Wwarn-I<message>
 

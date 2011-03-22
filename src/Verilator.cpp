@@ -630,6 +630,8 @@ int main(int argc, char** argv, char** env) {
 	V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__verFiles.dat", argString);
     }
 
+    // Final writing shouldn't throw warnings, but...
+    V3Error::abortIfWarnings();
 #ifdef VL_LEAK_CHECKS
     // Cleanup memory for valgrind leak analysis
     v3Global.clear();

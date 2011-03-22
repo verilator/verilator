@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --trace-max-width and --trace-max-array, bug 319.  [Alex Solomatnikov]
 
+***  Add --Wno-fatal to turn off abort on warnings. [by Stefan Wallentowitz]
+
 **** Support ${...} and $(...) env vars in .vc files.  [by Stefan Wallentowitz]
 
 **** Support $bits(data_type), bug327.  [Alex Solomatnikov]

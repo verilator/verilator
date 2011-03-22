@@ -831,6 +831,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		else if (!strcmp (sw, "-Wno-style")) {
 		    FileLine::globalWarnStyleOff(true);
 		}
+		else if (!strcmp (sw, "-Wno-fatal")) {
+		    m_warnFatal = false;
+		}
 		else {
 		    string msg = sw+strlen("-Wno-");
 		    if (!(FileLine::globalWarnOff(msg, true))) {
@@ -1080,6 +1083,7 @@ V3Options::V3Options() {
     m_makeDepend = true;
     m_makePhony = false;
     m_outFormatOk = false;
+    m_warnFatal = true;
     m_pinsBv = 65;
     m_profileCFuncs = false;
     m_preprocOnly = false;

@@ -309,7 +309,7 @@ void V3Error::abortIfErrors() {
 }
 
 void V3Error::abortIfWarnings() {
-    if (errorOrWarnCount()) {
+    if (v3Global.opt.warnFatal() ? errorOrWarnCount() : errorCount()) {
 	v3fatal ("Exiting due to "<<dec<<errorOrWarnCount()<<" warning(s)\n");
     }
 }
