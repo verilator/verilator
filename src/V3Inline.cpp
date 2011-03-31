@@ -184,7 +184,7 @@ private:
 		// user2p is either a const or a var.
 		AstConst*  exprconstp  = nodep->user2p()->castNode()->castConst();
 		AstVarRef* exprvarrefp = nodep->user2p()->castNode()->castVarRef();
-		UINFO(1,"connectto: "<<nodep->user2p()->castNode()<<endl);
+		UINFO(8,"connectto: "<<nodep->user2p()->castNode()<<endl);
 		if (!exprconstp && !exprvarrefp) {
 		    nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
 		}

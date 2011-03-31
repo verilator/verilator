@@ -617,7 +617,7 @@ appropriate `begin_keywords.
 
 Specify the extensions that should be used for finding modules.  If for
 example module I<x> is referenced, look in I<x>.I<ext>.  Note +libext+ is
-fairly standard across Verilog tools.
+fairly standard across Verilog tools.  Defaults to .v and .sv.
 
 =item --lint-only
 

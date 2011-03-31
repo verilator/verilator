@@ -1011,6 +1011,30 @@ V3Number& V3Number::opLteS (const V3Number& lhs, const V3Number& rhs) {
     return opGteS(rhs,lhs);
 }
 
+V3Number& V3Number::opRotR (const V3Number& lhs, const V3Number& rhs) {
+    // L(lhs) bit return
+    if (rhs.isFourState()) return setAllBitsX();
+    setZero();
+    uint32_t rhsval = rhs.toUInt();
+    for (int bit=0; bit<this->width(); bit++) {
+	setBit(bit,lhs.bitIs((bit + rhsval) % this->width()));
+    }
+    return *this;
+}
+
+V3Number& V3Number::opRotL (const V3Number& lhs, const V3Number& rhs) {
+    // L(lhs) bit return
+    if (rhs.isFourState()) return setAllBitsX();
+    setZero();
+    uint32_t rhsval = rhs.toUInt();
+    for (int bit=0; bit<this->width(); bit++) {
+	if (bit >= (int)rhsval) {
+	    setBit(bit,lhs.bitIs((bit - rhsval) % this->width()));
+	}
+    }
+    return *this;
+}
+
 V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
@@ -1038,8 +1062,8 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opShiftL (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
-    uint32_t rhsval = rhs.toUInt();
     setZero();
+    uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
 	if (bit >= (int)rhsval) {
 	    setBit(bit,lhs.bitIs(bit - rhsval));
@@ -1051,6 +1075,15 @@ V3Number& V3Number::opShiftL (const V3Number& lhs, const V3Number& rhs) {
 //======================================================================
 // Ops - Arithmetic
 
+V3Number& V3Number::opAbsS (const V3Number& lhs) {
+    // op i, L(lhs) bit return
+    if (lhs.isFourState()) return setAllBitsX();
+    if (lhs.isNegative()) {
+	return opUnaryMin(lhs);
+    } else {
+	return opAssign(lhs);
+    }
+}
 V3Number& V3Number::opUnaryMin (const V3Number& lhs) {
     // op i, L(lhs) bit return
     if (lhs.isFourState()) return setAllBitsX();

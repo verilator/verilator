@@ -202,6 +202,7 @@ public:
     V3Number& opLogNot	(const V3Number& lhs);
     V3Number& opLogAnd	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogOr	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opAbsS    (const V3Number& lhs);
     V3Number& opUnaryMin(const V3Number& lhs);
     V3Number& opAdd	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSub	(const V3Number& lhs, const V3Number& rhs);
@@ -218,6 +219,8 @@ public:
     V3Number& opXor	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXnor	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opOr	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opRotR	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opRotL	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftRS	(const V3Number& lhs, const V3Number& rhs); // Arithmetic w/carry
     V3Number& opShiftL	(const V3Number& lhs, const V3Number& rhs);
