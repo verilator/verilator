@@ -1125,6 +1125,7 @@ V3Options::V3Options() {
     // Default +libext+
     addLibExt("");  // So include "filename.v" will find the same file
     addLibExt(".v");
+    addLibExt(".sv");
     // Default -I
     addIncDir(".");	// Looks better than {long_cwd_path}/...
 }
