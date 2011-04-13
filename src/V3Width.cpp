@@ -616,6 +616,7 @@ private:
     }
 
     virtual void visit(AstEnumDType* nodep, AstNUser* vup) {
+	UINFO(5,"  ENUMDTYPE "<<nodep<<endl);
 	nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->widthFrom(nodep->dtypep());
 	// Assign widths
@@ -646,6 +647,7 @@ private:
 	}
     }
     virtual void visit(AstEnumItem* nodep, AstNUser* vup) {
+	UINFO(5,"   ENUMITEM "<<nodep<<endl);
 	int width = vup->c()->width();
 	int mwidth = vup->c()->widthMin();
 	nodep->width(width, mwidth);
@@ -657,12 +659,13 @@ private:
     virtual void visit(AstEnumItemRef* nodep, AstNUser* vup) {
 	if (nodep->itemp()->width()==0) {
 	    // We need to do the whole enum en-mass
-	    AstNode* enump = nodep;
+	    AstNode* enump = nodep->itemp();
+	    if (!enump) nodep->v3fatalSrc("EnumItemRef not linked");
 	    for (; enump; enump=enump->backp()) {
 		if (enump->castEnumDType()) break;
 	    }
-	    if (!enump) nodep->v3fatalSrc("EnumItem not under a Enum");
-	    enump->iterate(*this);
+	    if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to a Enum");
+	    enump->iterate(*this,vup);
 	}
 	nodep->widthFrom(nodep->itemp()->valuep());
     }

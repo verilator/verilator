@@ -122,6 +122,12 @@ private:
 	    nodep->packagep()->user1Inc();
 	}
     }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (nodep->packagep()) {
+	    nodep->packagep()->user1Inc();
+	}
+    }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	m_vscsp.push_back(nodep);

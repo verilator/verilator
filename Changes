@@ -3,9 +3,13 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.813****
+
+**** Fix error on enum references to other packages, bug339. [Alex Solomatnikov]
+
 * Verilator 3.812 2011/04/06
 
-***  Add --trace-max-width and --trace-max-array, bug 319.  [Alex Solomatnikov]
+***  Add --trace-max-width and --trace-max-array, bug319.  [Alex Solomatnikov]
 
 ***  Add --Wno-fatal to turn off abort on warnings. [by Stefan Wallentowitz]
 
@@ -13,7 +17,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support $bits(data_type), bug327.  [Alex Solomatnikov]
 
-**** Support loop unrolling on width mismatches, bug 333. [Joe Eiler]
+**** Support loop unrolling on width mismatches, bug333. [Joe Eiler]
 
 **** Support simple cast operators, bug335.  [Alex Solomatnikov]
 

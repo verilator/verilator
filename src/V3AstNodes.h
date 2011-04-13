@@ -364,9 +364,10 @@ public:
 struct AstEnumItemRef : public AstNodeMath {
 private:
     AstEnumItem* m_itemp;	// [AfterLink] Pointer to item
+    AstPackage*	m_packagep;	// Package hierarchy
 public:
-    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp)
-	: AstNodeMath(fl), m_itemp(itemp) {
+    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstPackage* packagep)
+	: AstNodeMath(fl), m_itemp(itemp), m_packagep(packagep) {
 	if (m_itemp) widthSignedFrom(m_itemp);
     }
     ASTNODE_NODE_FUNCS(EnumItemRef, ENUMITEMREF)
@@ -381,6 +382,8 @@ public:
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
 struct AstEnumDType : public AstNodeDType {

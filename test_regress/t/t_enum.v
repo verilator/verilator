@@ -3,6 +3,13 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2009 by Wilson Snyder.
 
+typedef enum logic [4:0]
+     {
+      BIT0 = 5'd0,
+      BIT1 = 5'd1,
+      BIT2 = 5'd2
+      } three_t;
+
 module t (/*AUTOARG*/);
 
    localparam FIVE = 5;
@@ -49,6 +56,10 @@ module t (/*AUTOARG*/);
 
       if ($bits(sized_based_on_enum) != 8) $stop;
       if ($bits(three_t) != 3) $stop;
+
+      if (FIVE[BIT0] != 1'b1) $stop;
+      if (FIVE[BIT1] != 1'b0) $stop;
+      if (FIVE[BIT2] != 1'b1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

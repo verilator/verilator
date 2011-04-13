@@ -134,7 +134,7 @@ private:
 		nodep->packagep(packageFor(varp));
 	    }
 	    else if (AstEnumItem* valuep = foundp->castEnumItem()) {
-		AstNode* newp = new AstEnumItemRef(nodep->fileline(), valuep);
+		AstNode* newp = new AstEnumItemRef(nodep->fileline(), valuep, packageFor(valuep));
 		nodep->replaceWith(newp);
 		nodep->deleteTree(); nodep=NULL;
 		return true; // Edited
