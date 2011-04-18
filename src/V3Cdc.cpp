@@ -46,6 +46,8 @@
 #include "V3EmitV.h"
 #include "V3File.h"
 
+#define CDC_WEIGHT_ASYNC	0x1000	// Weight for edges that feed async logic
+
 //######################################################################
 
 class CdcBaseVisitor : public AstNVisitor {
@@ -314,7 +316,9 @@ private:
 	UINFO(3,__FUNCTION__<<": "<<endl);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("cdc_pre");
-	m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
+	//
+	m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);  // This will MAX across edge weights
+	//
 	m_graph.dumpDotFilePrefixed("cdc_simp");
 	//
 	analyzeReset();
@@ -411,12 +415,15 @@ private:
 	    CdcEitherVertex* eToVertexp = (CdcEitherVertex*)edgep->top();
 	    if (!eToVertexp) targetp = eToVertexp;
 	    if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(eToVertexp)) {
-		if (vvertexp->isFlop()) {
+		if (vvertexp->isFlop()  // IE the target flop that is upsetting us
+		    && edgep->weight() >= CDC_WEIGHT_ASYNC) {  // And this signal feeds an async reset line
 		    targetp = eToVertexp;
+		    //UINFO(9," targetasync  "<<targetp->name()<<" "<<" from "<<vertexp->name()<<endl);
 		    break;
 		}
 	    }  // else it might be random logic that's not relevant
 	}
+	//UINFO(9," finalflop  "<<targetp->name()<<" "<<targetp->nodep()->fileline()<<endl);
 	warnAndFile(markp->nodep(),V3ErrorCode::CDCRSTLOGIC,"Logic in path that feeds async reset, via signal: "+nodep->prettyName());
 	dumpAsyncRecurse(targetp, "", "   ",0);
     }
@@ -618,8 +625,9 @@ private:
 	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
 	    CdcVarVertex* varvertexp = makeVarVertex(varscp);
 	    UINFO(5," VARREF to "<<varscp<<endl);
-	    // We use weight of one; if we ref the var more than once, when we simplify,
-	    // the weight will increase
+	    // We use weight of one for normal edges,
+	    // Weight of CDC_WEIGHT_ASYNC to indicate feeds async (for reporting)
+	    // When simplify we'll take the MAX weight
 	    if (nodep->lvalue()) {
 		new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
 		if (m_inDly) {
@@ -628,7 +636,13 @@ private:
 		    varvertexp->srcDomainSet(true);
 		}
 	    } else {
-		new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, 1);
+		if (varvertexp->cntAsyncRst()) {
+		    //UINFO(9," edgeasync "<<varvertexp->name()<<" to "<<m_logicVertexp<<endl);
+		    new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, CDC_WEIGHT_ASYNC);
+		} else {
+		    //UINFO(9," edgena    "<<varvertexp->name()<<" to "<<m_logicVertexp<<endl);
+		    new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, 1);
+		}
 	    }
 	}
     }
