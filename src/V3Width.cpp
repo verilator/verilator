@@ -390,47 +390,20 @@ private:
 	// Just a quick check as after V3Param these nodes instead are AstSel's
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelBit should disappear after widthSel");
-	if (vup->c()->prelim()) {
-	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p()); // from
-	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p()); // bit
-	}
     }
     virtual void visit(AstSelExtract* nodep, AstNUser* vup) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelExtract should disappear after widthSel");
-	if (vup->c()->prelim()) {
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	}
     }
 
     virtual void visit(AstSelPlus* nodep, AstNUser* vup) {
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelPlus should disappear after widthSel");
-	if (vup->c()->prelim()) {
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->bitp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    if (AstConst* constp = nodep->widthp()->castConst()) {
-		int width = constp->toSInt();
-		nodep->width(width,width);
-	    }
-	}
     }
     virtual void visit(AstSelMinus* nodep, AstNUser* vup) {
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelMinus should disappear after widthSel");
-	if (vup->c()->prelim()) {
-	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->bitp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->widthp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    if (AstConst* constp = nodep->widthp()->castConst()) {
-		int width = constp->toSInt();
-		nodep->width(width,width);
-	    }
-	}
     }
 
     virtual void visit(AstExtend* nodep, AstNUser* vup) {
