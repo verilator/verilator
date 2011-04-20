@@ -476,6 +476,12 @@ private:
 
     void edgeReport() {
 	// Make report of all signal names and what clock edges they have
+	//
+	// Due to flattening, many interesting direct-connect signals are
+	// lost, so we can't make a report showing I/Os for a low level
+	// module.  Disabling flattening though makes us consider each
+	// signal in it's own unique clock domain.
+
 	UINFO(3,__FUNCTION__<<": "<<endl);
 
 	// Trace all sources and sinks
@@ -505,6 +511,10 @@ private:
 
 		    ostringstream os;
 		    os.setf(ios::left);
+		    // Module name - doesn't work due to flattening having lost the original
+		    // so we assume the modulename matches the filebasename
+		    string fname = vvertexp->varScp()->fileline()->filebasename() + ":";
+		    os<<"  "<<setw(20)<<fname;
 		    os<<"  "<<setw(8)<<whatp;
 		    os<<"  "<<setw(40)<<vvertexp->varScp()->prettyName();
 		    os<<"  SRC=";
@@ -739,7 +749,7 @@ public:
 
 	nodep->accept(*this);
 	analyze();
-	//edgeReport();  // Not useful at the moment
+	if (debug()>=1) edgeReport();  // Not useful to users at the moment
 
 	if (0) { *m_ofp<<"\nDBG-test-dumper\n"; V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ",40,NULL,true); *m_ofp<<endl; }
     }
