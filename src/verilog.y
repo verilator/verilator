@@ -833,7 +833,7 @@ port<nodep>:			// ==IEEE: port
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
 			{ $$=$2; /*VARDTYPE-same*/ AstVar* vp=VARDONEP($$,$3,$4); $$->addNextNull(vp); vp->valuep($6); }
  	;
- 
+
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
 	//			// Per spec, if direction given default the nettype.
@@ -842,12 +842,12 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 	|	port_direction net_type			{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARNET
 	|	net_type				{ } // net_type calls VARNET
  	;
- 
+
 port_declNetE:			// IEEE: part of port_declaration, optional net type
 		/* empty */				{ }
 	|	net_type				{ } // net_type calls VARNET
  	;
- 
+
 portSig<nodep>:
 		id/*port*/				{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
 	|	idSVKwd					{ $$ = new AstPort($<fl>1,PINNUMINC(),*$1); }
@@ -2838,7 +2838,7 @@ junkToSemiList:
 		junkToSemi 				{ } /* ignored */
 	|	junkToSemiList junkToSemi		{ } /* ignored */
  	;
- 
+
 junkToSemi:
 		BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE)	{ }
 	|	error {}
@@ -3109,7 +3109,7 @@ vltOffFront<errcodeen>:
 
 int V3ParseImp::bisonParse() {
     if (PARSEP->debugBison()>=9) yydebug = 1;
-    return yyparse();       
+    return yyparse();
 }
 
 const char* V3ParseImp::tokenName(int token) {
