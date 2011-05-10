@@ -3184,9 +3184,9 @@ struct AstBufIf1 : public AstNodeBiop {
     ASTNODE_NODE_FUNCS(BufIf1, BUFIF1)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opBufIf1(lhs,rhs); }
     virtual string emitVerilog() { return "bufif(%r,%l)"; }
-    virtual string emitC() { V3ERROR_NA; return false;}  // Lclean || Rclean
+    virtual string emitC() { V3ERROR_NA; return "";}  // Lclean || Rclean
     virtual string emitSimpleOperator() { V3ERROR_NA; return false;}  // Lclean || Rclean
-    virtual bool cleanOut() {V3ERROR_NA; return false;}  // Lclean || Rclean
+    virtual bool cleanOut() {V3ERROR_NA; return "";}  // Lclean || Rclean
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };

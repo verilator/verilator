@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix CDCRSTLOGIC report showing endpoint flops without resets.
 
+**** Fix compiler warnings on SPARC, bug288. [Ahmed El-Mahmoudy]
+
 * Verilator 3.812 2011/04/06
 
 ***  Add --trace-max-width and --trace-max-array, bug319.  [Alex Solomatnikov]
