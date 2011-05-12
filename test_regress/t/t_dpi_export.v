@@ -23,6 +23,7 @@ module t;
    function int	dpix_int123();  dpix_int123 = 32'h123;   endfunction
 
    export "DPI-C" function dpix_f_bit;
+   export "DPI-C" function dpix_f_bit15;
    export "DPI-C" function dpix_f_int;
    export "DPI-C" function dpix_f_byte;
    export "DPI-C" function dpix_f_shortint;
@@ -30,6 +31,7 @@ module t;
    export "DPI-C" function dpix_f_chandle;
 
    function bit		dpix_f_bit     (bit	 i);  dpix_f_bit      = ~i;   endfunction
+   function bit [14:0]	dpix_f_bit15  (bit [14:0] i); dpix_f_bit15    = ~i;   endfunction
    function int		dpix_f_int     (int	 i);  dpix_f_int      = ~i;   endfunction
    function byte	dpix_f_byte    (byte	 i);  dpix_f_byte     = ~i;   endfunction
    function shortint	dpix_f_shortint(shortint i);  dpix_f_shortint = ~i;   endfunction
