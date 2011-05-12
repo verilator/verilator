@@ -1792,14 +1792,17 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 	puts("//############################################################\n");
 	puts("#sp implementation\n");
     }
+    if (v3Global.dpi()) {
+	// do this before including our main .h file so that any references to
+	// types defined in svdpi.h are available
+	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
+	puts("\n");
+    }
     ofp()->printf("#include \"%-20s // For This\n",
 		  (modClassName(modp)+".h\"").c_str());
 
     // Us
     puts("#include \""+ symClassName() +".h\"\n");
-    if (v3Global.dpi()) {
-	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
-    }
 
     if (optSystemPerl() && (splitFilenum() || !m_fast)) {
 	puts("\n");
