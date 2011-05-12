@@ -1619,7 +1619,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (v3Global.needHInlines()) {   // Set by V3EmitCInlines; should have been called before us
 	puts("#include \""+topClassName()+"__Inlines.h\"\n");
     }
-    // No __Dpi.h needed, we've shimmed it all into the interface
+    if (v3Global.dpi()) {
+	// do this before including our main .h file so that any references to
+	// types defined in svdpi.h are available
+	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
+	puts("\n");
+    }
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");
@@ -1791,12 +1796,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     if (optSystemPerl()) {
 	puts("//############################################################\n");
 	puts("#sp implementation\n");
-    }
-    if (v3Global.dpi()) {
-	// do this before including our main .h file so that any references to
-	// types defined in svdpi.h are available
-	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
-	puts("\n");
     }
     ofp()->printf("#include \"%-20s // For This\n",
 		  (modClassName(modp)+".h\"").c_str());
