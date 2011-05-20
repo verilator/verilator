@@ -3296,25 +3296,30 @@ Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major testers include
 Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and Gene Weber.
 
 Some of the people who have provided ideas and feedback for Verilator
-include David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm, J
+include: David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm, J
 Baxter, Jeremy Bennett, David Black, Gregg Bouchard, Christopher Boumenot,
-Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee, Lawrence Butcher,
-Chris Candler, Lauren Carlson, Donal Casey, Robert A. Clark, Allan
-Cochrane, Gunter Dannoritzer, Bernard Deadman, John Deroo, John Dickol,
-Danny Ding, Alex Duller, Jeff Dutton, Robert Farrell, Eugen Fekete, Andrea
-Foletto, Bob Fredieu, Shankar Giri, Sam Gladstone, Chitlesh Goorah, Thomas
-Hawkins, David Hewson, Jae Hossell, Ben Jackson, Mike Kagen, Guy-Armand
-Kamendje, Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan Katz, Sol Katzman,
-Jonathan Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki, Steve Lang,
-Stephane Laurent, Charlie Lind, Dan Lussier, Fred Ma, Duraid Madina, Mark
-Marshall, Wim Michiels, Dennis Muhlestein, John Murphy, Richard Myers,
-Dimitris Nalbantis, Paul Nitza, Pete Nixon, Lisa Noack, Mark Nodine,
-Andreas Olofsson, Niranjan Prabhu, Oleg Rodionov, John Sanguinetti, Mike
-Shinkarovsky, Rafael Shirakawa, Rodney Sinclair, Brian Small, Art Stamness,
-John Stroebel, Emerson Suguimoto, Renga Sundararajan, Stefan Thiede, Gary
-Thomas, Steve Tong, Holger Waechtler, Shawn Wang, Greg Waters, Eugene
-Weber, Leon Wildman, Gerald Williams, Jeff Winston, Johan Wouters, and Ding
-Xiaoliang.
+Nick Bowler, Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee,
+Lawrence Butcher, Chris Candler, Lauren Carlson, Donal Casey, Terry Chen,
+Robert A. Clark, Allan Cochrane, Gunter Dannoritzer, Ashutosh Das, Bernard
+Deadman, John Deroo, John Dickol, Danny Ding, Ivan Djordjevic, Alex Duller,
+Jeff Dutton, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy, Robert Farrell,
+Eugen Fekete, Andrea Foletto, Bob Fredieu, Shankar Giri, Sam Gladstone,
+Amir Gonnen, Chitlesh Goorah, Neil Hamilton, Thomas Hawkins, David Hewson,
+Jae Hossell, Ben Jackson, Iztok Jeras, Mike Kagen, Guy-Armand Kamendje,
+Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan Katz, Sol Katzman, Jonathan
+Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki, Steve Lang, Stephane
+Laurent, Christian Leber, Charlie Lind, Paul Liu, Dan Lussier, Fred Ma,
+Duraid Madina, Mark Marshall, Jason McMullan, Wim Michiels, Dennis
+Muhlestein, John Murphy, Richard Myers, Dimitris Nalbantis, Paul Nitza,
+Pete Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Brad Parker, Dominic
+Plunkett, Niranjan Prabhu, Usha Priyadharshini, Oleg Rodionov, John
+Sanguinetti, Salman Sheikh, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey
+Short, Rodney Sinclair, Brian Small, Alex Solomatnikov, Art Stamness, John
+Stroebel, Emerson Suguimoto, Gene Sullivan, Renga Sundararajan, Stefan
+Thiede, Gary Thomas, Steve Tong, Holger Waechtler, Stefan Wallentowitz,
+Shawn Wang, Greg Waters, Eugene Weber, David Welch, Leon Wildman, Gerald
+Williams, Trevor Williams, Jeff Winston, Joshua Wise, Johan Wouters, and
+Ding Xiaoliang.
 
 Thanks all.
 

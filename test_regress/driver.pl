@@ -409,11 +409,10 @@ sub read_status {
 #----------------------------------------------------------------------
 # Methods invoked by tests
 
-sub compile {
+sub compile_vlt_flags {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     return 1 if $self->errors || $self->skips;
-    $self->oprint("Compile\n");
 
     my $checkflags = join(' ',@{$param{v_flags}},
 			  @{$param{v_flags2}},
@@ -423,6 +422,48 @@ sub compile {
     $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
+
+    $opt_gdb="gdbrun" if defined $opt_gdb;
+    my @verilator_flags = @{$param{verilator_flags}};
+    unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
+    unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
+    unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
+    unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
+    unshift @verilator_flags, "--trace" if $opt_trace;
+    if (defined $opt_optimize) {
+	my $letters = "";
+	if ($opt_optimize =~ /[a-zA-Z]/) {
+	    $letters = $opt_optimize;
+	} else {  # Randomly turn on/off different optimizations
+	    foreach my $l ('a'..'z') {
+		$letters .= ((rand() > 0.5) ? $l : uc $l);
+	    }
+	    unshift @verilator_flags, "--trace" if rand() > 0.5;
+	    unshift @verilator_flags, "--coverage" if rand() > 0.5;
+	}
+	unshift @verilator_flags, "--O".$letters;
+    }
+
+    my @cmdargs = ("perl","../bin/verilator",
+		   "--prefix ".$param{VM_PREFIX},
+		   @verilator_flags,
+		   @{$param{verilator_flags2}},
+		   @{$param{v_flags}},
+		   @{$param{v_flags2}},
+		   $param{top_filename},
+		   @{$param{v_other_filenames}},
+		   ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
+	);
+    return @cmdargs;
+}
+
+sub compile {
+    my $self = (ref $_[0]? shift : $Self);
+    my %param = (%{$self}, @_);	   # Default arguments are from $self
+    return 1 if $self->errors || $self->skips;
+    $self->oprint("Compile\n");
+
+    compile_vlt_flags(%param);
 
     if ($param{atsim}) {
 	$self->_make_top();
@@ -483,37 +524,8 @@ sub compile {
 		    cmd=>\@cmd);
     }
     if ($param{vlt}) {
-	$opt_gdb="gdbrun" if defined $opt_gdb;
-	my @verilator_flags = @{$param{verilator_flags}};
-	unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
-	unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
-	unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
-	unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
-	unshift @verilator_flags, "--trace" if $opt_trace;
-	if (defined $opt_optimize) {
-	    my $letters = "";
-	    if ($opt_optimize =~ /[a-zA-Z]/) {
-		$letters = $opt_optimize;
-	    } else {  # Randomly turn on/off different optimizations
-		foreach my $l ('a'..'z') {
-		    $letters .= ((rand() > 0.5) ? $l : uc $l);
-		}
-		unshift @verilator_flags, "--trace" if rand() > 0.5;
-		unshift @verilator_flags, "--coverage" if rand() > 0.5;
-	    }
-	    unshift @verilator_flags, "--O".$letters;
-	}
+	my @cmdargs = $self->compile_vlt_flags(%param);
 
-	my @vlargs = ("perl","../bin/verilator",
-		      "--prefix ".$self->{VM_PREFIX},
-		      @verilator_flags,
-		      @{$param{verilator_flags2}},
-		      @{$param{v_flags}},
-		      @{$param{v_flags2}},
-		      $param{top_filename},
-		      @{$param{v_other_filenames}},
-		      ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
-		      );
 	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
@@ -526,7 +538,7 @@ sub compile {
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
-		    cmd=>\@vlargs);
+		    cmd=>\@cmdargs);
 	return 1 if $self->errors || $self->skips;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
