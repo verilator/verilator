@@ -123,8 +123,11 @@ int dpix_run_tests() {
     CHECK_RESULT (int, o, 0x458UL);
 #endif
 
+    svBitVecVal vec10[1] = {0x10};
+
     CHECK_RESULT (int, dpix_f_bit(1), 0x0);
     CHECK_RESULT (int, dpix_f_bit(0), 0x1);
+    CHECK_RESULT (int, dpix_f_bit15(vec10) & 0x7fUL, 0x6f);
     // Simulators disagree over the next three's sign extension unless we mask the upper bits
     CHECK_RESULT (int, dpix_f_int(1) & 0xffffffffUL, 0xfffffffeUL);
     CHECK_RESULT (int, dpix_f_byte(1) & 0xffUL, 0xfe);

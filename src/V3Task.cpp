@@ -605,7 +605,7 @@ private:
 	return new AstCStmt(portp->fileline(), stmt);
     }
 
-    AstNode* createAssignDpiToInternal(AstVarScope* portvscp, const string& frName) {
+    AstNode* createAssignDpiToInternal(AstVarScope* portvscp, const string& frName, bool cvt) {
 	// Create assignment from DPI temporary into internal format
 	AstVar* portp = portvscp->varp();
 	string stmt;
@@ -614,6 +614,8 @@ private:
 	    stmt += "VL_CVT_VP_Q(";
 	    ket += ")";
 	}
+	if (!cvt
+	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1) stmt += "*";  // it's a svBitVecVal
 	stmt += frName;
 	stmt += ket;
 	// Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
@@ -680,7 +682,7 @@ private:
 		    argnodesp = argnodesp->addNextNull(refp);
 
 		    if (portp->isInput()) {
-			dpip->addStmtsp(createAssignDpiToInternal(outvscp, portp->name()));
+			dpip->addStmtsp(createAssignDpiToInternal(outvscp, portp->name(), false));
 		    }
 		}
 	    }
@@ -795,7 +797,7 @@ private:
 	    if (AstVar* portp = stmtp->castVar()) {
 		if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())) {
 		    AstVarScope* portvscp = portp->user2p()->castNode()->castVarScope();  // Remembered when we created it earlier
-		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt"));
+		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt",true));
 		}
 	    }
 	}

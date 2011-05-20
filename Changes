@@ -7,7 +7,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix error on enum references to other packages, bug339. [Alex Solomatnikov]
 
+**** Fix DPI undeclared svBitVecVal compile error, bug346. [Chandan Egbert]
+
+**** Fix DPI bit vector compile errors, bug347. [Chandan Egbert]
+
 **** Fix CDCRSTLOGIC report showing endpoint flops without resets.
+
+**** Fix compiler warnings on SPARC, bug288. [Ahmed El-Mahmoudy]
 
 * Verilator 3.812 2011/04/06
 
