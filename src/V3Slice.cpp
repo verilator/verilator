@@ -53,6 +53,7 @@ class SliceCloneVisitor : public AstNVisitor {
     // Inputs:
     //  AstArraySel::user1p()	    -> AstVarRef. The VarRef that the final ArraySel points to
     //  AstNodeAssign::user2()	    -> int. The number of clones needed for this assign
+    //  AstArraySel::user3()	    -> bool.  Error detected
 
     // ENUMS
     enum RedOp {		// The type of unary operation to be expanded
@@ -221,6 +222,7 @@ class SliceVisitor : public AstNVisitor {
     //  AstNode::user2()	    -> int. The number of clones needed for this node
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // TYPEDEFS
     typedef pair<uint32_t, uint32_t> ArrayDimensions;	// Array Dimensions (packed, unpacked)
@@ -332,6 +334,7 @@ class SliceVisitor : public AstNVisitor {
 
     virtual void visit(AstArraySel* nodep, AstNUser*) {
 	if (!m_assignp) return;
+	if (nodep->user3()) return;  // Prevent recursion on just created nodes
 	unsigned dim = explicitDimensions(nodep);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
 	pair<uint32_t,uint32_t> arrDim = refp->varp()->dimensions();
@@ -339,16 +342,18 @@ class SliceVisitor : public AstNVisitor {
 	if (implicit > 0) {
 	    AstArraySel* newp = insertImplicit(nodep->cloneTree(false), dim+1, implicit);
 	    nodep->replaceWith(newp); nodep = newp;
+	    nodep->user3(true);
 	}
 	int clones = countClones(nodep);
 	if (m_assignp->user2() > 0 && m_assignp->user2() != clones) {
 	    m_assignp->v3error("Slices of arrays in assignments must have the same unpacked dimensions");
-	} else if (m_assignp->user2() == 0 && !m_assignError) {
-	    if (m_extend && clones > 1) {
+	} else if (!m_assignp->user2()) {
+	    if (m_extend && clones > 1 && !m_assignError) {
 		m_assignp->v3error("Unsupported: Assignment between packed arrays of different dimensions");
 		m_assignError = true;
 	    }
-	    if (clones > 1 && !refp->lvalue() && refp->varp() == m_lhsVarRefp->varp() && !m_assignp->castAssignDly()) {
+	    if (clones > 1 && !refp->lvalue() && refp->varp() == m_lhsVarRefp->varp()
+		&& !m_assignp->castAssignDly() && !m_assignError) {
 		// LHS Var != RHS Var for a non-delayed assignment
 		m_assignp->v3error("Unsupported: Slices in a non-delayed assignment with the same Var on both sides");
 		m_assignError = true;

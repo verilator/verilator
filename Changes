@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix error on enum references to other packages, bug339. [Alex Solomatnikov]
 
+***  Fix out of memory on slice syntax error, bug354.  [Alex Solomatnikov]
+
 **** Fix DPI undeclared svBitVecVal compile error, bug346. [Chandan Egbert]
 
 **** Fix DPI bit vector compile errors, bug347. [Chandan Egbert]
