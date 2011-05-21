@@ -1633,6 +1633,6 @@ static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o,
 
 #undef _END
 
-// Debugging
+//======================================================================
 
 #endif /*_VERILATED_H_*/

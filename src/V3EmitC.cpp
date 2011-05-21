@@ -1803,6 +1803,11 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     // Us
     puts("#include \""+ symClassName() +".h\"\n");
 
+    if (v3Global.dpi()) {
+	puts("\n");
+	puts("#include \"verilated_dpi.h\"\n");
+    }
+
     if (optSystemPerl() && (splitFilenum() || !m_fast)) {
 	puts("\n");
 	puts("SP_MODULE_CONTINUED("+modClassName(modp)+");\n");

@@ -587,8 +587,12 @@ private:
 	// Someday we'll have better type support, and this can make variables and casts.
 	// But for now, we'll just text-bash it.
 	if (bitvec) {
-	    // We only support quads, so don't need to sweat longer stuff
-	    stmt += "VL_SET_WQ("+portp->name()+toSuffix+", "+portp->name()+frSuffix+")";
+	    if (portp->isWide()) {
+		stmt += ("VL_SET_SVBV_W("+cvtToStr(portp->width())
+			 +", "+portp->name()+toSuffix+", "+portp->name()+frSuffix+")");
+	    } else {
+		stmt += "VL_SET_WQ("+portp->name()+toSuffix+", "+portp->name()+frSuffix+")";
+	    }
 	} else {
 	    if (isPtr) stmt += "*"; // DPI outputs are pointers
 	    stmt += portp->name()+toSuffix+" = ";
@@ -615,7 +619,8 @@ private:
 	    ket += ")";
 	}
 	if (!cvt
-	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1) stmt += "*";  // it's a svBitVecVal
+	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && !portp->isWide())
+	    stmt += "*";  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is
 	stmt += frName;
 	stmt += ket;
 	// Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.

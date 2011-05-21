@@ -328,7 +328,6 @@ class SliceVisitor : public AstNVisitor {
 	    m_assignp->v3error("Unsupported: Assignment between a constant and an array slice");
 	    m_assignError = true;
 	}
-	nodep->iterateChildren(*this);
     }
 
     virtual void visit(AstArraySel* nodep, AstNUser*) {

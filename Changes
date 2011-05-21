@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.813****
 
+**** Support bit vectors > 64 bits wide in DPI import and exports.
+
 **** Fix error on enum references to other packages, bug339. [Alex Solomatnikov]
 
 **** Fix DPI undeclared svBitVecVal compile error, bug346. [Chandan Egbert]
