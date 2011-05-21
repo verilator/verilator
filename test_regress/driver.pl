@@ -304,8 +304,9 @@ sub new {
 	ivrun_flags => [],
 	# VCS
 	vcs => 0,
-	vcs_flags => [split(/\s+/,"+cli -I +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
+	vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -I +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
 	vcs_flags2 => [],  # Overridden in some sim files
+	vcsrun_flags => [split(/\s+/,"+vcs+lic_wait")],
 	# NC
 	nc => 0,
 	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c ")],
@@ -603,6 +604,7 @@ sub execute {
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
 		    cmd=>["echo q | ".$run_env."./simv",
+			  @{$param{vcsrun_flags}},
 			  @{$param{all_run_flags}},
 		          ],
 		    %param,

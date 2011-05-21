@@ -8,20 +8,8 @@ use strict;
 #======================================================================
 # main
 
-delete $ENV{MODULE_VERSION};
-_setup_modules();
-module('add','synopsys-vcs');
+eval `modulecmd perl add synopsys-vcs`;
 exec('vcs',@ARGV);
-
-#######################################################################
-# Modules package
-
-sub _setup_modules {
-    # Load the 'module' command into the environment
-    my $init = "$ENV{MODULESHOME}/init/perl";
-    (-f $init) or die "%Error: Script not found: $init,";
-    require $init;
-}
 
 #######################################################################
 __END__
