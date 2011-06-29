@@ -144,6 +144,14 @@ int dpix_run_tests() {
 	CHECK_RESULT(int, o_vec95[1], ~i_vec95[1]);
 	CHECK_RESULT(int, o_vec95[2], (~i_vec95[2])&0x7fffffffUL);
     }
+    {
+	svBitVecVal i_vec96[3] = {0xf2912312,0xab782a12,0x8a413bd9};
+	svBitVecVal o_vec96[3] = {0,0,0};
+	dpix_t_bit96(i_vec96, o_vec96);
+	CHECK_RESULT(int, o_vec96[0], ~i_vec96[0]);
+	CHECK_RESULT(int, o_vec96[1], ~i_vec96[1]);
+	CHECK_RESULT(int, o_vec96[2], ~i_vec96[2]);
+    }
 
     if (int bad=check_sub("top.t.a",1)) return bad;
     if (int bad=check_sub("top.t.b",2)) return bad;

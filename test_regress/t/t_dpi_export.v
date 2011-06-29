@@ -40,6 +40,8 @@ module t;
 
    export "DPI-C" task dpix_t_bit95;
    task dpix_t_bit95(input bit [94:0] i, output bit [94:0] o);  o = ~i; endtask
+   export "DPI-C" task dpix_t_bit96;
+   task dpix_t_bit96(input bit [95:0] i, output bit [95:0] o);  o = ~i; endtask
 
    int lineno;
 

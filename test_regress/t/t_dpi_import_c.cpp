@@ -106,6 +106,11 @@ void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o)	{
     o[1] = ~i[1];
     o[2] = SV_MASK(95-64) & ~i[2];
 }
+void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o)	{
+    o[0] = ~i[0];
+    o[1] = ~i[1];
+    o[2] = ~i[2];
+}
 
 int  dpii_f_strlen (const char* i) { return strlen(i); }
 

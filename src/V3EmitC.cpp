@@ -127,6 +127,7 @@ public:
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
 	} else if (nodep->isWide()
 		   && nodep->lhsp()->castVarRef()
+		   && !nodep->rhsp()->castCMath()
 		   && !nodep->rhsp()->castVarRef()
 		   && !nodep->rhsp()->castArraySel()) {
 	    // Wide functions assign into the array directly, don't need separate assign statement
