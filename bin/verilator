@@ -268,7 +268,7 @@ descriptions in the next sections for more information.
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
     --mod-prefix <topname>      Name to prepend to lower classes
-    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
+    --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
      -O0                        Disable optimizations
@@ -713,7 +713,7 @@ Backward compatible alias for "--pins-bv 65".  Note that's a 65, not a 64.
 =item --pins-bv I<width>
 
 Specifies SystemC inputs/outputs of greater than or equal to I<width> bits
-wide should use sc_bv's instead of uint32/uint64_t's.  The default is
+wide should use sc_bv's instead of uint32/vluint64_t's.  The default is
 "--pins-bv 65".  Versions before Verilator 3.671 defaulted to "--pins-bv
 33".  The more sc_bv is used, the worse for performance.
 
@@ -1352,7 +1352,7 @@ will plug directly into a SystemC netlist.
 The SC_MODULE gets the same pinout as the Verilog module, with the
 following type conversions: Pins of a single bit become bool.  Pins 2-32
 bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
-uint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
+vluint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
 (Uints simulate the fastest so are used where possible.)
 
 Lower modules are not pure SystemC code.  This is a feature, as using the
@@ -3182,7 +3182,7 @@ as you would any other member variable.
 
 Signals are the smallest of 8 bit chars, 16 bit shorts, 32 bit longs, or 64
 bit long longs that fits the width of the signal.  Generally, you can use
-just uint32_t's for 1 to 32 bits, or uint64_t for 1 to 64 bits, and the
+just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and the
 compiler will properly up-convert smaller entities.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.

@@ -832,8 +832,8 @@ sub decl_text {
     my $varref = $Vars{$var};
     if ($Opt_Sc) {
 	(!$varref->{signed}) or die "%Error: No signed SystemC yet\n";
-	my $type = ((   ($varref->{val}->Size == 32) && "uint32_t")
-		    || (($varref->{val}->Size == 64) && "uint64_t"));
+	my $type = ((   ($varref->{val}->Size == 32) && "sc_dt::uint32")
+		    || (($varref->{val}->Size == 64) && "sc_dt::uint64"));
 	$type or die "%Error: Unknown Size ".$varref->{val}->Size,",";
 	return sprintf "  %s<%s> %s; //=%s"
 	    , $decl_with, $type, $var, $varref->{val}->to_Hex;
