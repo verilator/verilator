@@ -202,7 +202,6 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
     if (!basicp()) arg = "UNKNOWN";
-    if (isWide()) v3error("Unsupported: DPI functions with vectored outputs > 32-bits");
     if (basicp()->isBitLogic()) {
 	if (widthMin() == 1) {
 	    arg = "unsigned char";

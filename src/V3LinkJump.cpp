@@ -211,6 +211,27 @@ private:
 	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
     }
+    virtual void visit(AstDisable* nodep, AstNUser*) {
+	UINFO(8,"   DISABLE "<<nodep<<endl);
+	nodep->iterateChildren(*this);
+	AstBegin* beginp = NULL;
+	for (BeginStack::reverse_iterator it = m_beginStack.rbegin(); it != m_beginStack.rend(); ++it) {
+	    UINFO(9,"    UNDERBLK  "<<*it<<endl);
+	    if ((*it)->name() == nodep->name()) {
+		beginp = *it;
+		break;
+	    }
+	}
+	//if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout,"  labeli: "); }
+	if (!beginp) { nodep->v3error("disable isn't underneath a begin with name: "<<nodep->name()); }
+	else {
+	    // Jump to the end of the named begin
+	    AstJumpLabel* labelp = findAddLabel(beginp, false);
+	    nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
+	}
+	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	//if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout,"  labelo: "); }
+    }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }

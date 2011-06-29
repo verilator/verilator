@@ -217,6 +217,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	}
 	puts(");\n");
     }
+    virtual void visit(AstDisable* nodep, AstNUser*) {
+	putbs("disable "+nodep->name()+";\n");
+    }
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	visitNodeDisplay(nodep, nodep->filep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }

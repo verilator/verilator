@@ -3,13 +3,21 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.813****
+* Verilator 3.814****
+
+***  Support disable for loop escapes.
+
+* Verilator 3.813 2011/06/28
+
+***  Support bit vectors > 64 bits wide in DPI import and exports.
+
+***  Fix out of memory on slice syntax error, bug354.  [Alex Solomatnikov]
 
 **** Fix error on enum references to other packages, bug339. [Alex Solomatnikov]
 
 **** Fix DPI undeclared svBitVecVal compile error, bug346. [Chandan Egbert]
 
-**** Fix DPI bit vector compile errors, bug347. [Chandan Egbert]
+**** Fix DPI bit vector compile errors, bug347, bug359. [Chandan Egbert]
 
 **** Fix CDCRSTLOGIC report showing endpoint flops without resets.
 

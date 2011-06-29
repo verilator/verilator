@@ -127,6 +127,7 @@ public:
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
 	} else if (nodep->isWide()
 		   && nodep->lhsp()->castVarRef()
+		   && !nodep->rhsp()->castCMath()
 		   && !nodep->rhsp()->castVarRef()
 		   && !nodep->rhsp()->castArraySel()) {
 	    // Wide functions assign into the array directly, don't need separate assign statement
@@ -1802,6 +1803,11 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     // Us
     puts("#include \""+ symClassName() +".h\"\n");
+
+    if (v3Global.dpi()) {
+	puts("\n");
+	puts("#include \"verilated_dpi.h\"\n");
+    }
 
     if (optSystemPerl() && (splitFilenum() || !m_fast)) {
 	puts("\n");

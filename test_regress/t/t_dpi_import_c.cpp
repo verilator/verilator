@@ -33,13 +33,14 @@
 extern "C" {
 
     extern unsigned char dpii_f_bit     (unsigned char i);
-    extern svBitVecVal   dpii_f_bit8    (const svBitVecVal *i);
-    extern svBitVecVal   dpii_f_bit9    (const svBitVecVal *i);
-    extern svBitVecVal   dpii_f_bit16   (const svBitVecVal *i);
-    extern svBitVecVal   dpii_f_bit17   (const svBitVecVal *i);
-    extern svBitVecVal   dpii_f_bit32   (const svBitVecVal *i);
-    extern long long     dpii_f_bit33   (const svBitVecVal *i);
-    extern long long     dpii_f_bit64   (const svBitVecVal *i);
+    extern svBitVecVal   dpii_f_bit8    (const svBitVecVal* i);
+    extern svBitVecVal   dpii_f_bit9    (const svBitVecVal* i);
+    extern svBitVecVal   dpii_f_bit16   (const svBitVecVal* i);
+    extern svBitVecVal   dpii_f_bit17   (const svBitVecVal* i);
+    extern svBitVecVal   dpii_f_bit32   (const svBitVecVal* i);
+    extern long long     dpii_f_bit33   (const svBitVecVal* i);
+    extern long long     dpii_f_bit64   (const svBitVecVal* i);
+    extern long long     dpii_f_bit95   (const svBitVecVal* i, svBitVecVal* o);
     extern int           dpii_f_int     (int i);
     extern char          dpii_f_byte    (char i);
     extern short int     dpii_f_shortint(short int i);
@@ -49,7 +50,7 @@ extern "C" {
     extern double        dpii_f_real    (double i);
     extern float         dpii_f_shortreal(float i);
 
-    extern void dpii_v_bit	(unsigned char i, unsigned char *o);
+    extern void dpii_v_bit	(unsigned char i, unsigned char* o);
     extern void dpii_v_int	(int i,		int *o);
     extern void dpii_v_byte	(char i,	char *o);
     extern void dpii_v_shortint	(short int i,	short int *o);
@@ -99,6 +100,17 @@ void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
 void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
 void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
+
+void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o)	{
+    o[0] = ~i[0];
+    o[1] = ~i[1];
+    o[2] = SV_MASK(95-64) & ~i[2];
+}
+void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o)	{
+    o[0] = ~i[0];
+    o[1] = ~i[1];
+    o[2] = ~i[2];
+}
 
 int  dpii_f_strlen (const char* i) { return strlen(i); }
 

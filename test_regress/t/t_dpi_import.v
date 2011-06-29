@@ -59,6 +59,8 @@ module t ();
 `ifndef NO_SHORTREAL
    import "DPI-C" pure function void dpii_v_shortreal(input shortreal i, output shortreal o);
 `endif
+   import "DPI-C" pure function void dpii_v_bit95    (input bit [95-1:0] i, output bit [95-1:0] o);
+   import "DPI-C" pure function void dpii_v_bit96    (input bit [96-1:0] i, output bit [96-1:0] o);
 
    import "DPI-C" pure function int dpii_f_strlen (input string i);
 
@@ -82,6 +84,8 @@ module t ();
    bit [31:0]	i_b32,	o_b32;
    bit [32:0]	i_b33,	o_b33;
    bit [63:0]	i_b64,	o_b64;
+   bit [94:0]	i_b95,	o_b95;
+   bit [95:0]	i_b96,	o_b96;
 
    int		i_i,	o_i;
    byte		i_y,	o_y;
@@ -111,6 +115,8 @@ module t ();
       i_b32 = {1'b1,wide[32-2:0]};
       i_b33 = {1'b1,wide[33-2:0]};
       i_b64 = {1'b1,wide[64-2:0]};
+      i_b95 = {1'b1,wide[95-2:0]};
+      i_b96 = {1'b1,wide[96-2:0]};
 
       i_i = {1'b1,wide[32-2:0]};
       i_y = {1'b1,wide[8-2:0]};
@@ -159,6 +165,8 @@ module t ();
 `ifndef NO_SHORTREAL
       dpii_v_shortreal(i_f,o_f); if (o_f != i_f+1.5) $stop;
 `endif
+      dpii_v_bit95    (i_b95,o_b95); if (o_b95 !== ~i_b95) $stop;
+      dpii_v_bit96    (i_b96,o_b96); if (o_b96 !== ~i_b96) $stop;
 
       if (dpii_f_strlen ("")!=0) $stop;
       if (dpii_f_strlen ("s")!=1) $stop;

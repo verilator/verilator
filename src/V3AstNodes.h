@@ -1973,6 +1973,18 @@ struct AstContinue : public AstNodeStmt {
     virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
+struct AstDisable : public AstNodeStmt {
+private:
+    string	m_name;		// Name of block
+public:
+    AstDisable(FileLine* fileline, const string& name)
+	: AstNodeStmt(fileline), m_name(name) {}
+    ASTNODE_NODE_FUNCS(Disable, DISABLE)
+    virtual string name()	const { return m_name; }		// * = Block name
+    void name(const string& flag) { m_name=flag; }
+    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+};
+
 struct AstReturn : public AstNodeStmt {
     AstReturn(FileLine* fileline, AstNode* lhsp=NULL)
 	: AstNodeStmt (fileline) {
