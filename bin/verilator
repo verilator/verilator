@@ -2258,6 +2258,13 @@ not arrays nor structs.
 Treated as a "longint"; does not yet warn about operations that are
 specified as illegal on chandles.
 
+=item disable
+
+Disable statements may be used only if the block being disabled is a block
+the disable statement itself is inside.  This is commonly used to provide
+loop break and continue functionality before SystemVerilog added the break
+and continue keywords.
+
 =item priority if, unique if
 
 Priority and unique if's are treated as normal ifs and not asserted to be

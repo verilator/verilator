@@ -1886,7 +1886,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	statementVerilatorPragmas			{ $$ = $1; }
 	//
 	//			// IEEE: disable_statement
-	//UNSUP	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ UNSUP }
+	|	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ $$ = new AstDisable($1,*$2); }
 	//UNSUP	yDISABLE yFORK ';'			{ UNSUP }
 	//			// IEEE: event_trigger
 	//UNSUP	yP_MINUSGT hierarchical_identifier/*event*/ ';'	{ UNSUP }

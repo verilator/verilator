@@ -92,8 +92,17 @@ module t (/*AUTOARG*/
       input  [3:0] loop_continue;
       integer 	     i;
 
-      // Placeholder
-      return Test0(loop_stop,loop_break,loop_continue);
+      Test1 = 0;
+      begin : outer_block
+         for (i=1; i<20; i=i+1) begin : inner_block
+   	 Test1 = Test1 + 1;
+	 // continue, IE jump to end-of-inner_block.  Must be inside inner_block.
+         if (i[3:0] == loop_continue) disable inner_block;
+	 // break, IE jump to end-of-outer_block.  Must be inside outer_block.
+   	 if (i[3:0] == loop_break) disable outer_block;
+   	 Test1 = Test1 + i[15:0];
+         end : inner_block
+      end : outer_block
    endfunction
 
    function [15:0] Test2;
