@@ -11,7 +11,7 @@
 `ifdef NC
  `define NO_SHORTREAL
 `endif
-`ifdef VERILATOR
+`ifdef VERILATOR  // Unsupported
  `define NO_SHORTREAL
 `endif
 

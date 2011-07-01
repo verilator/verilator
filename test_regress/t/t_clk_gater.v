@@ -86,7 +86,7 @@ module Test (/*AUTOARG*/
    end
 
    reg displayit;
-`ifdef verilator
+`ifdef VERILATOR  // Harder test
    initial displayit = $c1("0");  // Something that won't optimize away
 `else
    initial displayit = '0;
