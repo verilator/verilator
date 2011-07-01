@@ -10,11 +10,7 @@ module t_case_write2_tasks ();
    // verilator lint_off WIDTH
    // verilator lint_off CASEINCOMPLETE
 
-`ifdef verilator
- `define FD_BITS 63:0
-`else
  `define FD_BITS 31:0
-`endif
 
    parameter STRLEN = 78;
    task ozonerab;

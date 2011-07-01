@@ -2697,7 +2697,7 @@ struct AstFEof : public AstNodeUniop {
     ASTNODE_NODE_FUNCS(FEof, FEOF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$feof(%l)"; }
-    virtual string emitC() { return "(%li ? feof(VL_CVT_Q_FP(%li)) : true)"; }
+    virtual string emitC() { return "(%li ? feof(VL_CVT_I_FP(%li)) : true)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
@@ -2710,7 +2710,7 @@ struct AstFGetC : public AstNodeUniop {
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$fgetc(%l)"; }
     // Non-existent filehandle returns EOF
-    virtual string emitC() { return "(%li ? fgetc(VL_CVT_Q_FP(%li)) : -1)"; }
+    virtual string emitC() { return "(%li ? fgetc(VL_CVT_I_FP(%li)) : -1)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*64; }

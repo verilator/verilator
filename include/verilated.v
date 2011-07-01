@@ -27,11 +27,7 @@
   `define coverage_block_off
  `endif
 
- // Hide file descriptor difference
- `ifdef verilator
-  `define verilator_file_descriptor reg [63:0]
- `else
-  `define verilator_file_descriptor integer
- `endif
+ // Hide file descriptor difference - deprecated - for older versions
+ `define verilator_file_descriptor integer
 
 `endif // guard

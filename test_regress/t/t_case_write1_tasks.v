@@ -2497,11 +2497,7 @@ module t_case_write1_tasks ();
    endtask
 
    task big_case;
-`ifdef verilator
-      input  [  63:0] fd;
-`else
       input  [  31:0] fd;
-`endif
       input [  31:0]  foo;
       reg [STRLEN*8: 1] foobar;
       // verilator no_inline_task

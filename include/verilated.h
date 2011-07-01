@@ -364,13 +364,13 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
 #define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
 
+/// Return FILE* from IData
+FILE*  VL_CVT_I_FP(IData lhs);
+/// Return IData from FILE*
+IData  VL_CVT_FP_I(FILE* fp);
 // Use a union to avoid cast-to-different-size warnings
-/// Return FILE* from QData
-static inline FILE*  VL_CVT_Q_FP(QData lhs) { union { FILE* fp; QData q; } u; u.q=lhs; return u.fp; }
 /// Return void* from QData
 static inline void*  VL_CVT_Q_VP(QData lhs) { union { void* fp; QData q; } u; u.q=lhs; return u.fp; }
-/// Return QData from FILE*
-static inline QData  VL_CVT_FP_Q(FILE* fp) { union { FILE* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
 /// Return QData from void*
 static inline QData  VL_CVT_VP_Q(void* fp) { union { void* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
 
