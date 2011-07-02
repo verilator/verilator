@@ -478,12 +478,12 @@ word	[a-zA-Z0-9_]+
 <S05,S09>{
   /*     Keywords */
   "assert"		{ FL; return yASSERT; }
+  "const"		{ FL; return yCONST__LEX; }
   "cover"		{ FL; return yCOVER; }
   "property"		{ FL; return yPROPERTY; }
   /*     Generic unsupported warnings */
   "assume"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
-  "const"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "union"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "within"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
@@ -964,7 +964,8 @@ int V3ParseImp::lexToken() {
 	//yylval // Set by yylexThis()
     }
     // If a paren, read another
-    if (token == yGLOBAL__LEX
+    if (token == yCONST__LEX
+	|| token == yGLOBAL__LEX
 	// Never put yID_* here; below symbol table resolution would break
 	) {
 	if (debugFlex()) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
@@ -975,7 +976,11 @@ int V3ParseImp::lexToken() {
 	m_aheadVal = yylval;
 	yylval = curValue;
 	// Now potentially munge the current token
-	if (token == yGLOBAL__LEX) {
+	if (token == yCONST__LEX) {
+	    //UNSUP if (nexttok == yREF) token = yCONST__REF;
+	    token = yCONST__ETC;
+	}
+	else if (token == yGLOBAL__LEX) {
 	    if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
 	    else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }  // Avoid 2009 "global" conflicting with old code when we can
 	}

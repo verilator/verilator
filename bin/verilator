@@ -1661,7 +1661,7 @@ please file a bug if a feature you need is missing.
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
 $bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
 $unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
-do-while, enum, export, final, import, int, logic, longint, package,
+const, do-while, enum, export, final, import, int, logic, longint, package,
 program, shortint, time, typedef, var, void, priority case/if, and unique
 case/if.
 
@@ -2261,7 +2261,7 @@ specified as illegal on chandles.
 =item disable
 
 Disable statements may be used only if the block being disabled is a block
-the disable statement itself is inside.  This is commonly used to provide
+the disable statement itself is inside.  This was commonly used to provide
 loop break and continue functionality before SystemVerilog added the break
 and continue keywords.
 

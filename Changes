@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.814****
 
+***  Support 'const' variables in limited cases; similar to enums. [Alex Solomatnikov]
+
 ***  Support disable for loop escapes.
 
 ***  Support $fopen and I/O with integer instead of `verilator_file_descriptor.

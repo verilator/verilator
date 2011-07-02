@@ -488,6 +488,10 @@ private:
 	// else width in node is correct; it was set based on keyword().width()
 	// at construction time
     }
+    virtual void visit(AstConstDType* nodep, AstNUser* vup) {
+	nodep->iterateChildren(*this, vup);
+	nodep->widthFrom(nodep->dtypep());
+    }
     virtual void visit(AstRefDType* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this, vup);
 	if (nodep->defp()) nodep->defp()->iterate(*this,vup);

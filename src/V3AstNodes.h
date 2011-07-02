@@ -300,6 +300,25 @@ public:
     void	implicit(bool flag) { m_implicit = flag; }
 };
 
+struct AstConstDType : public AstNodeDType {
+    // const data type, ie "const some_dtype var_name [2:0]"
+    // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
+    // When more generic types are supported AstConstDType will be propagated further.
+    AstConstDType(FileLine* fl, AstNodeDType* dtypep)
+	: AstNodeDType(fl) {
+	setOp1p(dtypep);
+	widthSignedFrom(dtypep);
+    }
+    ASTNODE_NODE_FUNCS(ConstDType, CONSTDTYPE)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+};
+
 struct AstRefDType : public AstNodeDType {
 private:
     AstTypedef*	m_defp;
@@ -677,7 +696,7 @@ public:
     bool	isToggleCoverable() const  { return ((isIO() || isSignal())
 						     && (isIO() || isBitLogic())
 						     // Wrapper would otherwise duplicate wrapped module's coverage
-						     && !isSc() && !isPrimaryIO()); }
+						     && !isSc() && !isPrimaryIO() && !isConst()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool	isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool	isPure() const { return (varType()==AstVarType::XTEMP); }
