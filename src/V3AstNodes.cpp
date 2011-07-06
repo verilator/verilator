@@ -113,6 +113,10 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
 	arg += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
 	arg += "const VerilatedScope*";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::REAL) {
+	arg += "double";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SHORTREAL) {
+	arg += "float";
     } else if (strtype) {
 	if (isInOnly()) arg += "const ";
 	arg += "string";

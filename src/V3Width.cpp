@@ -173,6 +173,14 @@ private:
     virtual void visit(AstShiftR* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
     virtual void visit(AstShiftRS* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
 
+    // Widths: Fixed
+    void width_Ofixed_L(AstNodeUniop* nodep, AstNUser* vup, int width);
+
+    // Widths: Constant, terminal
+    virtual void visit(AstTime* nodep, AstNUser*) {		nodep->width(64,64); }
+    virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {	nodep->width(32,32); }
+    virtual void visit(AstScopeName* nodep, AstNUser* vup) {	nodep->width(64,1); }	// A pointer, but not that it matters
+
     // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep, AstNUser* vup) {
 	// op=cond?expr1:expr2 is a Good large example of the propagation mess
@@ -431,9 +439,6 @@ private:
 	    nodep->width(32,32);  // Says the spec
 	}
     }
-    virtual void visit(AstTime* nodep, AstNUser*) {
-	nodep->width(64,64);
-    }
     virtual void visit(AstUCFunc* nodep, AstNUser* vup) {
 	// Give it the size the user wants.
 	if (vup && vup->c()->prelim()) {
@@ -469,9 +474,6 @@ private:
     }
     virtual void visit(AstText* nodep, AstNUser* vup) {
 	// Only used in CStmts which don't care....
-    }
-    virtual void visit(AstScopeName* nodep, AstNUser* vup) {
-	nodep->width(64,1);	// A pointer, but not that it matters
     }
     virtual void visit(AstArrayDType* nodep, AstNUser* vup) {
 	// Lower datatype determines the width
@@ -828,9 +830,6 @@ private:
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-    }
-    virtual void visit(AstTestPlusArgs* nodep, AstNUser* vup) {
-	nodep->width(32,32);
     }
     virtual void visit(AstValuePlusArgs* nodep, AstNUser* vup) {
 	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1303,6 +1302,15 @@ void WidthVisitor::width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup) {
 	widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
 	widthCheck(nodep,"RHS",nodep->op2p(),width,ewidth);
     }
+}
+
+void WidthVisitor::width_Ofixed_L(AstNodeUniop* nodep, AstNUser* vup, int width) {
+    // Widths: out width = specified width
+    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+    if (vup->c()->prelim()) {
+	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
+    nodep->width(width,width);
 }
 
 void WidthVisitor::width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup) {
