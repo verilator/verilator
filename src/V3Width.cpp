@@ -1453,13 +1453,6 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     return nodep;
 }
 
-AstNode* V3Width::widthParamsEditIfNeed(AstNode* nodep) {
-    if (!nodep->width()) {
-	nodep = V3Width::widthParamsEdit(nodep);
-    }
-    return nodep;
-}
-
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     WidthCommitVisitor visitor (nodep);
