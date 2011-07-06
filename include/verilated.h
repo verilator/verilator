@@ -321,11 +321,13 @@ extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a 
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);
 
 /// File I/O
-extern IData VL_FGETS_IXQ(int obits, void* destp, QData fpq);
+extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
 extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
 extern QData VL_FOPEN_QI(QData ofilename, IData mode);
 inline QData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
+
+extern void VL_FCLOSE_I(IData fdi);
 
 extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 			 WDataInP ofilename, void* memp, IData start, IData end);
@@ -336,9 +338,9 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
     VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
 
 extern void VL_WRITEF(const char* formatp, ...);
-extern void VL_FWRITEF(QData fpq, const char* formatp, ...);
+extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
 
-extern IData VL_FSCANF_IX(QData fpq, const char* formatp, ...);
+extern IData VL_FSCANF_IX(IData fpi, const char* formatp, ...);
 extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
@@ -365,9 +367,8 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
 
 /// Return FILE* from IData
-FILE*  VL_CVT_I_FP(IData lhs);
-/// Return IData from FILE*
-IData  VL_CVT_FP_I(FILE* fp);
+extern FILE*  VL_CVT_I_FP(IData lhs);
+
 // Use a union to avoid cast-to-different-size warnings
 /// Return void* from QData
 static inline void*  VL_CVT_Q_VP(QData lhs) { union { void* fp; QData q; } u; u.q=lhs; return u.fp; }

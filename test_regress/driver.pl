@@ -336,6 +336,7 @@ sub new {
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/vlt_coverage.pl";
     $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
+    $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
     if (!$self->{make_top_shell}) {
 	$self->{top_shell_filename} = $self->{top_filename};
@@ -536,6 +537,11 @@ sub compile {
 	    return 1;
 	}
 
+	if (!$param{fails} && $param{verilator_make_gcc}
+	    && $param{make_main}) {
+	    $self->_make_main();
+	}
+
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
@@ -543,9 +549,6 @@ sub compile {
 	return 1 if $self->errors || $self->skips;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
-	    if ($param{make_main}) {
-		$self->_make_main();
-	    }
 	    if ($self->sp) {
 		$self->_sp_preproc(%param);
 	    }
@@ -806,7 +809,7 @@ sub _make_main {
 
     $self->_read_inputs();
 
-    my $filename = "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
+    my $filename = $self->{main_filename};
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     print $fh "// Test defines\n";
