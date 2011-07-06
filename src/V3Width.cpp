@@ -57,6 +57,10 @@
 #include "V3Const.h"
 #include "V3Task.h"
 
+// More code; this file was getting too large; see actions there
+#define _V3WIDTH_CPP_
+#include "V3WidthCommit.h"
+
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -99,19 +103,16 @@ private:
     // VISITORS
     //   Naming:  width_{output size rule}_{lhs rule}_{rhs rule}
     // Widths: 1 bit out, lhs 1 bit
-    void width_O1_L1(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstLogNot* nodep, AstNUser* vup) {	width_O1_L1(nodep,vup); }
     virtual void visit(AstPslBool* nodep, AstNUser* vup) {	width_O1_L1(nodep,vup); }
 
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit
-    void width_O1_L1_R1(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstLogAnd* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
     virtual void visit(AstLogOr* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
     virtual void visit(AstLogIf* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
     virtual void visit(AstLogIff* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
 
     // Widths: 1 bit out, Any width lhs
-    void width_O1_L(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstRedAnd* nodep, AstNUser* vup) {	width_O1_L(nodep,vup); }
     virtual void visit(AstRedOr* nodep, AstNUser* vup) {	width_O1_L(nodep,vup); }
     virtual void visit(AstRedXnor* nodep, AstNUser* vup){	width_O1_L(nodep,vup); }
@@ -121,7 +122,6 @@ private:
     virtual void visit(AstOneHot0* nodep,AstNUser* vup) {	width_O1_L(nodep,vup); }
 
     // Widths: 1 bit out, lhs width == rhs width
-    void width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstEq* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstEqCase* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
     virtual void visit(AstEqWild* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
@@ -138,7 +138,6 @@ private:
     virtual void visit(AstNeqWild* nodep, AstNUser* vup){	width_O1_L_Rlhs(nodep,vup); }
 
     // Widths: out width = lhs width = rhs width
-    void width_Omax_L_Rlhs(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstAnd* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstOr* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
     virtual void visit(AstXnor* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
@@ -156,25 +155,19 @@ private:
     virtual void visit(AstMulS* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
 
     // Widths: out width = lhs width, but upper matters
-    void width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup);
     virtual void visit(AstNot* nodep, AstNUser* vup) {		width_Olhs_L(nodep,vup); }
     virtual void visit(AstUnaryMin* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
 
     // Widths: out width = lhs width, upper doesn't matter
-    void width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup);
     virtual void visit(AstSigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
     virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
 
     // Widths: Output width from lhs, rhs<33 bits
-    void width_Olhs_L_R32(AstNode* nodep, AstNUser* vup);
     virtual void visit(AstPow* nodep, AstNUser* vup) {		width_Olhs_L_R32(nodep,vup); }
     virtual void visit(AstPowS* nodep, AstNUser* vup) {		width_Olhs_L_R32(nodep,vup); }
     virtual void visit(AstShiftL* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
     virtual void visit(AstShiftR* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
     virtual void visit(AstShiftRS* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
-
-    // Widths: Fixed
-    void width_Ofixed_L(AstNodeUniop* nodep, AstNUser* vup, int width);
 
     // Widths: Constant, terminal
     virtual void visit(AstTime* nodep, AstNUser*) {		nodep->width(64,64); }
@@ -464,7 +457,7 @@ private:
 	    int selwidth = V3Number::log2b(nodep->lhsp()->width())+1;
 	    nodep->width(selwidth,selwidth);
 	}
-    } 
+    }
     virtual void visit(AstCvtPackString* nodep, AstNUser* vup) {
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
@@ -942,7 +935,7 @@ private:
 	m_funcp = NULL;
     }
     virtual void visit(AstReturn* nodep, AstNUser* vup) {
-	if (!m_funcp) { 
+	if (!m_funcp) {
 	    if (nodep->lhsp()) {  // Return w/o value ok other places
 		nodep->v3error("Return with return value isn't underneath a function");
 	    }
@@ -1047,18 +1040,328 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    // METHODS
-    bool widthBad (AstNode* nodep, int expWidth, int expWidthMin);
+    //----------------------------------------------------------------------
+    // METHODs
+
+    bool widthBad (AstNode* nodep, int expWidth, int expWidthMin) {
+	if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
+	if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
+	if (expWidthMin==0) expWidthMin = expWidth;
+	if (nodep->widthSized()  && nodep->width() != expWidthMin) return true;
+	if (!nodep->widthSized() && nodep->widthMin() > expWidthMin) return true;
+	return false;
+    }
+
+    void fixWidthExtend (AstNode* nodep, int expWidth) {
+	// Fix the width mismatch by extending or truncating bits
+	// Truncation is rarer, but can occur:  parameter [3:0] FOO = 64'h12312;
+	// A(CONSTwide)+B becomes  A(CONSTwidened)+B
+	// A(somewide)+B  becomes  A(TRUNC(somewide,width))+B
+	// 		      or       A(EXTRACT(somewide,width,0))+B
+	UINFO(4,"  widthExtend_old: "<<nodep<<endl);
+	AstConst* constp = nodep->castConst();
+	if (constp && !nodep->isSigned()) {
+	    // Save later constant propagation work, just right-size it.
+	    V3Number num (nodep->fileline(), expWidth);
+	    num.opAssign(constp->num());
+	    num.isSigned(nodep->isSigned());
+	    AstNode* newp = new AstConst(nodep->fileline(), num);
+	    constp->replaceWith(newp);
+	    pushDeletep(constp); constp=NULL;
+	    nodep=newp;
+	} else if (expWidth<nodep->width()) {
+	    // Trunc - Extract
+	    AstNRelinker linker;
+	    nodep->unlinkFrBack(&linker);
+	    AstNode* newp = new AstSel(nodep->fileline(), nodep, 0, expWidth);
+	    linker.relink(newp);
+	    nodep=newp;
+	} else {
+	    // Extend
+	    AstNRelinker linker;
+	    nodep->unlinkFrBack(&linker);
+	    AstNode* newp = (nodep->isSigned()
+			     ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
+			     : (new AstExtend (nodep->fileline(), nodep))->castNode());
+	    linker.relink(newp);
+	    nodep=newp;
+	}
+	nodep->width(expWidth,expWidth);
+	UINFO(4,"             _new: "<<nodep<<endl);
+    }
+
+    void fixWidthReduce (AstNode* nodep, int expWidth) {
+	// Fix the width mismatch by adding a reduction OR operator
+	// IF (A(CONSTwide)) becomes  IF (A(CONSTreduced))
+	// IF (A(somewide))  becomes  IF (A(REDOR(somewide)))
+	// Attempt to fix it quietly
+	UINFO(4,"  widthReduce_old: "<<nodep<<endl);
+	AstConst* constp = nodep->castConst();
+	if (constp) {
+	    V3Number num (nodep->fileline(), expWidth);
+	    num.opRedOr(constp->num());
+	    num.isSigned(constp->isSigned());
+	    AstNode* newp = new AstConst(nodep->fileline(), num);
+	    constp->replaceWith(newp);
+	    nodep=newp;
+	} else {
+	    AstNRelinker linker;
+	    nodep->unlinkFrBack(&linker);
+	    AstNode* newp = new AstRedOr(nodep->fileline(), nodep);
+	    linker.relink(newp);
+	    nodep=newp;
+	}
+	nodep->width(expWidth,expWidth);
+	UINFO(4,"             _new: "<<nodep<<endl);
+    }
+
+    bool fixAutoExtend (AstNode*& nodepr, int expWidth) {
+	// For SystemVerilog '0,'1,'x,'z, autoextend and don't warn
+	if (AstConst* constp = nodepr->castConst()) {
+	    if (constp->num().autoExtend() && !constp->num().sized() && constp->width()==1) {
+		// Make it the proper size.  Careful of proper extension of 0's/1's
+		V3Number num (constp->fileline(), expWidth);
+		num.opRepl(constp->num(), expWidth);  // {width{'1}}
+		AstNode* newp = new AstConst(constp->fileline(), num);
+		// Spec says always unsigned with proper width
+		if (debug()>4) constp->dumpTree(cout,"  fixAutoExtend_old: ");
+		if (debug()>4)   newp->dumpTree(cout,"               _new: ");
+		constp->replaceWith(newp);
+		constp->deleteTree(); constp=NULL;
+		// Tell caller the new constp, and that we changed it.
+		nodepr = newp;
+		return true;
+	    }
+	}
+	return false; // No change
+    }
+
     void widthCheck (AstNode* nodep, const char* side,
 		     AstNode* underp, int expWidth, int expWidthMin,
-		     bool ignoreWarn=false);
+		     bool ignoreWarn=false) {
+	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
+	if (expWidthMin==0) expWidthMin = expWidth;
+	bool bad = widthBad(underp,expWidth,expWidthMin);
+	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
+	if (underp->castConst() && underp->castConst()->num().isFromString()
+	    && expWidth > underp->width()
+	    && (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
+	    // reg [31:0] == "foo" we'll consider probably fine.
+	    // Maybe this should be a special warning?  Not for now.
+	    ignoreWarn = true;
+	}
+	if ((nodep->castAdd() && underp->width()==1 && underp->isOne())
+	    || (nodep->castSub() && underp->width()==1 && underp->isOne() && 0==strcmp(side,"RHS"))) {
+	    // "foo + 1'b1", or "foo - 1'b1" are very common, people assume they extend correctly
+	    ignoreWarn = true;
+	}
+
+	if (bad && !ignoreWarn) {
+	    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
+	    nodep->v3warn(WIDTH,"Operator "<<nodep->prettyTypeName()
+			  <<" expects "<<expWidth
+			  <<(expWidth!=expWidthMin?" or "+cvtToStr(expWidthMin):"")
+			  <<" bits on the "<<side<<", but "<<side<<"'s "
+			  <<underp->prettyTypeName()<<" generates "<<underp->width()
+			  <<(underp->width()!=underp->widthMin()
+			     ?" or "+cvtToStr(underp->widthMin()):"")
+			  <<" bits.");
+	}
+	if (bad || underp->width()!=expWidth) {
+	    fixWidthExtend(underp, expWidth); underp=NULL;//Changed
+	}
+    }
+
     void widthCheckReduce (AstNode* nodep, const char* side,
 			   AstNode* underp, int expWidth, int expWidthMin,
-			   bool ignoreWarn=false);
-    void widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth, bool inputPin);
-    bool fixAutoExtend (AstNode*& nodepr, int expWidth);
-    void fixWidthExtend (AstNode* nodep, int expWidth);
-    void fixWidthReduce (AstNode* nodep, int expWidth);
+			   bool ignoreWarn=false) {
+	// Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
+	if (expWidthMin==0) expWidthMin = expWidth;
+	if (expWidth!=1) nodep->v3fatalSrc("Only for binary functions");
+	bool bad = widthBad(underp,expWidth,expWidthMin);
+	if (bad) {
+	    if (!ignoreWarn) {
+		if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
+		nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
+			      <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
+			      <<underp->prettyTypeName()<<" generates "<<underp->width()
+			      <<(underp->width()!=underp->widthMin()
+				 ?" or "+cvtToStr(underp->widthMin()):"")
+			      <<" bits.");
+	    }
+	    fixWidthReduce(underp, expWidth); underp=NULL;//Changed
+	}
+    }
+
+    void widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth, bool inputPin) {
+	// Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
+	bool bad = widthBad(underp,expWidth,expWidth);
+	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
+	if (bad) {
+	    nodep->v3warn(WIDTH,(inputPin?"Input":"Output")
+			  <<" port connection "<<nodep->prettyName()
+			  <<" expects "<<expWidth
+			  <<" bits but connection's "
+			  <<underp->prettyTypeName()<<" generates "<<underp->width()
+			  <<(underp->width()!=underp->widthMin()
+			     ?" or "+cvtToStr(underp->widthMin()):"")
+			  <<" bits.");
+	}
+	// We only fix input mismatches
+	if (bad && inputPin) {
+	    fixWidthExtend(underp, expWidth); underp=NULL;//Changed
+	}
+    }
+
+    void width_O1_L1(AstNode* nodep, AstNUser* vup) {
+	// Widths: 1 bit out, lhs 1 bit
+	// We calculate the width of the UNDER expression.
+	// We then check its width to see if it's legal, and edit if not
+	// We finally set the width of our output
+	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
+	}
+	nodep->width(1,1);
+	if (vup->c()->final()) {
+	    widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
+	}
+    }
+
+    void width_O1_L1_R1(AstNode* nodep, AstNUser* vup) {
+	// Widths: 1 bit out, lhs 1 bit, rhs 1 bit
+	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
+	}
+	nodep->width(1,1);
+	if (vup->c()->final()) {
+	    widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
+	    widthCheckReduce(nodep,"RHS",nodep->op2p(),1,1);
+	}
+    }
+
+    void width_O1_L(AstNode* nodep, AstNUser* vup) {
+	// Widths: 1 bit out, Any width lhs
+	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	}
+	nodep->width(1,1);
+    }
+
+    void width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup) {
+	// Widths: 1 bit out, lhs width == rhs width
+	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	}
+	int width  = max(nodep->op1p()->width(),    nodep->op2p()->width());
+	int ewidth = max(nodep->op1p()->widthMin(), nodep->op2p()->widthMin());
+	nodep->width(1,1);
+	if (vup->c()->final()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
+	    widthCheck(nodep,"RHS",nodep->op2p(),width,ewidth);
+	}
+    }
+
+    void width_Ofixed_L(AstNodeUniop* nodep, AstNUser* vup, int width) {
+	// Widths: out width = specified width
+	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	}
+	nodep->width(width,width);
+    }
+
+    void width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup) {
+	// Widths: out width = lhs width
+	// "Interim results shall take the max of operands, including LHS of assignments"
+	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	}
+	int width  = max(vup->c()->width(),    nodep->lhsp()->width());
+	int ewidth = max(vup->c()->widthMin(), nodep->lhsp()->widthMin());
+	nodep->width(width,ewidth);
+	if (vup->c()->final()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
+	}
+    }
+
+    void width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup) {
+	// Widths: out width = lhs width
+	// It always comes exactly from LHS; ignores any upper operand
+	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	}
+	int width  = nodep->lhsp()->width();
+	int ewidth = nodep->lhsp()->width();  // Not minWidth; force it.
+	nodep->width(width,ewidth);
+	if (vup->c()->final()) {
+	    // Final call, so make sure children check their sizes
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
+	}
+    }
+
+    void width_Olhs_L_R32(AstNode* nodep, AstNUser* vup)  {
+	// Widths: Output width from lhs, rhs<33 bits
+	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
+	if (vup->c()->prelim()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	}
+	int width  = max(vup->c()->width(),    nodep->op1p()->width());
+	int ewidth = max(vup->c()->widthMin(), nodep->op1p()->widthMin());
+	nodep->width(width,ewidth);
+	if (vup->c()->final()) {
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
+	    if (nodep->op2p()->width()>32)
+		nodep->op2p()->v3error("Unsupported: Shifting of by a over 32 bit number isn't supported."
+				       <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+	}
+    }
+
+    void width_Omax_L_Rlhs(AstNode* nodep, AstNUser* vup) {
+	// Widths: out width = lhs width = rhs width
+	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
+	// If errors are off, we need to follow the spec; thus we really need to do the max()
+	// because the rhs could be larger, and we need to have proper editing to get the widths
+	// to be the same for our operations.
+	if (vup->c()->prelim()) {  // First stage evaluation
+	    // Determine expression widths only relying on what's in the subops
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	}
+	int width  = max(vup->c()->width(),    max(nodep->op1p()->width(),    nodep->op2p()->width()));
+	int mwidth = max(vup->c()->widthMin(), max(nodep->op1p()->widthMin(), nodep->op2p()->widthMin()));
+	nodep->width(width,mwidth);
+	if (vup->c()->final()) {
+	    // Final call, so make sure children check their sizes
+	    nodep->op1p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
+	    nodep->op2p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
+	    // Some warning suppressions
+	    bool lhsOk=false; bool rhsOk = false;
+	    if (nodep->castAdd() || nodep->castSub()) {
+		lhsOk = (mwidth == (nodep->op1p()->widthMin()+1));	// Ok if user wants extra bit from carry
+		rhsOk = (mwidth == (nodep->op2p()->widthMin()+1));	// Ok if user wants extra bit from carry
+	    } else if (nodep->castMul() || nodep->castMulS()) {
+		lhsOk = (mwidth >= (nodep->op1p()->widthMin()));
+		rhsOk = (mwidth >= (nodep->op2p()->widthMin()));
+	    }
+	    // Error report and change sizes for suboperands of this node.
+	    widthCheck(nodep,"LHS",nodep->op1p(),width,mwidth,lhsOk);
+	    widthCheck(nodep,"RHS",nodep->op2p(),width,mwidth,rhsOk);
+	}
+    }
 
 public:
     // CONSTUCTORS
@@ -1073,365 +1376,6 @@ public:
 	return nodep->acceptSubtreeReturnEdits(*this, WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual ~WidthVisitor() {}
-};
-
-//----------------------------------------------------------------------
-// METHODs
-
-bool WidthVisitor::widthBad (AstNode* nodep, int expWidth, int expWidthMin) {
-    if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
-    if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
-    if (expWidthMin==0) expWidthMin = expWidth;
-    if (nodep->widthSized()  && nodep->width() != expWidthMin) return true;
-    if (!nodep->widthSized() && nodep->widthMin() > expWidthMin) return true;
-    return false;
-}
-
-void WidthVisitor::fixWidthExtend (AstNode* nodep, int expWidth) {
-    // Fix the width mismatch by extending or truncating bits
-    // Truncation is rarer, but can occur:  parameter [3:0] FOO = 64'h12312;
-    // A(CONSTwide)+B becomes  A(CONSTwidened)+B
-    // A(somewide)+B  becomes  A(TRUNC(somewide,width))+B
-    // 		      or       A(EXTRACT(somewide,width,0))+B
-    UINFO(4,"  widthExtend_old: "<<nodep<<endl);
-    AstConst* constp = nodep->castConst();
-    if (constp && !nodep->isSigned()) {
-	// Save later constant propagation work, just right-size it.
-	V3Number num (nodep->fileline(), expWidth);
-	num.opAssign(constp->num());
-	num.isSigned(nodep->isSigned());
-	AstNode* newp = new AstConst(nodep->fileline(), num);
-	constp->replaceWith(newp);
-	pushDeletep(constp); constp=NULL;
-	nodep=newp;
-    } else if (expWidth<nodep->width()) {
-	// Trunc - Extract
-	AstNRelinker linker;
-	nodep->unlinkFrBack(&linker);
-	AstNode* newp = new AstSel(nodep->fileline(), nodep, 0, expWidth);
-	linker.relink(newp);
-	nodep=newp;
-    } else {
-	// Extend
-	AstNRelinker linker;
-	nodep->unlinkFrBack(&linker);
-	AstNode* newp = (nodep->isSigned()
-			 ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
-			 : (new AstExtend (nodep->fileline(), nodep))->castNode());
-	linker.relink(newp);
-	nodep=newp;
-    }
-    nodep->width(expWidth,expWidth);
-    UINFO(4,"             _new: "<<nodep<<endl);
-}
-
-void WidthVisitor::fixWidthReduce (AstNode* nodep, int expWidth) {
-    // Fix the width mismatch by adding a reduction OR operator
-    // IF (A(CONSTwide)) becomes  IF (A(CONSTreduced))
-    // IF (A(somewide))  becomes  IF (A(REDOR(somewide)))
-    // Attempt to fix it quietly
-    UINFO(4,"  widthReduce_old: "<<nodep<<endl);
-    AstConst* constp = nodep->castConst();
-    if (constp) {
-	V3Number num (nodep->fileline(), expWidth);
-	num.opRedOr(constp->num());
-	num.isSigned(constp->isSigned());
-	AstNode* newp = new AstConst(nodep->fileline(), num);
-	constp->replaceWith(newp);
-	nodep=newp;
-    } else {
-	AstNRelinker linker;
-	nodep->unlinkFrBack(&linker);
-	AstNode* newp = new AstRedOr(nodep->fileline(), nodep);
-	linker.relink(newp);
-	nodep=newp;
-    }
-    nodep->width(expWidth,expWidth);
-    UINFO(4,"             _new: "<<nodep<<endl);
-}
-
-bool WidthVisitor::fixAutoExtend (AstNode*& nodepr, int expWidth) {
-    // For SystemVerilog '0,'1,'x,'z, autoextend and don't warn
-    if (AstConst* constp = nodepr->castConst()) {
-	if (constp->num().autoExtend() && !constp->num().sized() && constp->width()==1) {
-	    // Make it the proper size.  Careful of proper extension of 0's/1's
-	    V3Number num (constp->fileline(), expWidth);
-	    num.opRepl(constp->num(), expWidth);  // {width{'1}}
-	    AstNode* newp = new AstConst(constp->fileline(), num);
-	    // Spec says always unsigned with proper width
-	    if (debug()>4) constp->dumpTree(cout,"  fixAutoExtend_old: ");
-	    if (debug()>4)   newp->dumpTree(cout,"               _new: ");
-	    constp->replaceWith(newp);
-	    constp->deleteTree(); constp=NULL;
-	    // Tell caller the new constp, and that we changed it.
-	    nodepr = newp;
-	    return true;
-	}
-    }
-    return false; // No change
-}
-
-void WidthVisitor::widthCheck (AstNode* nodep, const char* side,
-			      AstNode* underp, int expWidth, int expWidthMin,
-			      bool ignoreWarn) {
-    //UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
-    if (expWidthMin==0) expWidthMin = expWidth;
-    bool bad = widthBad(underp,expWidth,expWidthMin);
-    if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
-    if (underp->castConst() && underp->castConst()->num().isFromString()
-	&& expWidth > underp->width()
-	&& (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
-	// reg [31:0] == "foo" we'll consider probably fine.
-	// Maybe this should be a special warning?  Not for now.
-	ignoreWarn = true;
-    }
-    if ((nodep->castAdd() && underp->width()==1 && underp->isOne())
-	|| (nodep->castSub() && underp->width()==1 && underp->isOne() && 0==strcmp(side,"RHS"))) {
-	// "foo + 1'b1", or "foo - 1'b1" are very common, people assume they extend correctly
-	ignoreWarn = true;
-    }
-	
-    if (bad && !ignoreWarn) {
-	if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-	nodep->v3warn(WIDTH,"Operator "<<nodep->prettyTypeName()
-		      <<" expects "<<expWidth
-		      <<(expWidth!=expWidthMin?" or "+cvtToStr(expWidthMin):"")
-		      <<" bits on the "<<side<<", but "<<side<<"'s "
-		      <<underp->prettyTypeName()<<" generates "<<underp->width()
-		      <<(underp->width()!=underp->widthMin()
-			 ?" or "+cvtToStr(underp->widthMin()):"")
-		      <<" bits.");
-    }
-    if (bad || underp->width()!=expWidth) {
-	fixWidthExtend(underp, expWidth); underp=NULL;//Changed
-    }
-}
-
-void WidthVisitor::widthCheckReduce (AstNode* nodep, const char* side,
-			      AstNode* underp, int expWidth, int expWidthMin,
-			      bool ignoreWarn) {
-    // Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
-    if (expWidthMin==0) expWidthMin = expWidth;
-    if (expWidth!=1) nodep->v3fatalSrc("Only for binary functions");
-    bool bad = widthBad(underp,expWidth,expWidthMin);
-    if (bad) {
-	if (!ignoreWarn) {
-	    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-	    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
-			  <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
-			  <<underp->prettyTypeName()<<" generates "<<underp->width()
-			  <<(underp->width()!=underp->widthMin()
-			     ?" or "+cvtToStr(underp->widthMin()):"")
-			  <<" bits.");
-	}
-	fixWidthReduce(underp, expWidth); underp=NULL;//Changed
-    }
-}
-
-void WidthVisitor::widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth, bool inputPin) {
-    // Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
-    bool bad = widthBad(underp,expWidth,expWidth);
-    if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
-    if (bad) {
-	nodep->v3warn(WIDTH,(inputPin?"Input":"Output")
-		      <<" port connection "<<nodep->prettyName()
-		      <<" expects "<<expWidth
-		      <<" bits but connection's "
-		      <<underp->prettyTypeName()<<" generates "<<underp->width()
-		      <<(underp->width()!=underp->widthMin()
-			 ?" or "+cvtToStr(underp->widthMin()):"")
-		      <<" bits.");
-    }
-    // We only fix input mismatches
-    if (bad && inputPin) {
-	fixWidthExtend(underp, expWidth); underp=NULL;//Changed
-    }
-}
-
-void WidthVisitor::width_O1_L1(AstNode* nodep, AstNUser* vup) {
-    // Widths: 1 bit out, lhs 1 bit
-    // We calculate the width of the UNDER expression.
-    // We then check its width to see if it's legal, and edit if not
-    // We finally set the width of our output
-    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
-    }
-    nodep->width(1,1);
-    if (vup->c()->final()) {
-	widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
-    }
-}
-
-void WidthVisitor::width_O1_L1_R1(AstNode* nodep, AstNUser* vup) {
-    // Widths: 1 bit out, lhs 1 bit, rhs 1 bit
-    if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
-    }
-    nodep->width(1,1);
-    if (vup->c()->final()) {
-	widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
-	widthCheckReduce(nodep,"RHS",nodep->op2p(),1,1);
-    }
-}
-
-void WidthVisitor::width_O1_L(AstNode* nodep, AstNUser* vup) {
-    // Widths: 1 bit out, Any width lhs
-    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-    }
-    nodep->width(1,1);
-}
-
-void WidthVisitor::width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup) {
-    // Widths: 1 bit out, lhs width == rhs width
-    if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-    }
-    int width  = max(nodep->op1p()->width(),    nodep->op2p()->width());
-    int ewidth = max(nodep->op1p()->widthMin(), nodep->op2p()->widthMin());
-    nodep->width(1,1);
-    if (vup->c()->final()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
-	widthCheck(nodep,"RHS",nodep->op2p(),width,ewidth);
-    }
-}
-
-void WidthVisitor::width_Ofixed_L(AstNodeUniop* nodep, AstNUser* vup, int width) {
-    // Widths: out width = specified width
-    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-    }
-    nodep->width(width,width);
-}
-
-void WidthVisitor::width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup) {
-    // Widths: out width = lhs width
-    // "Interim results shall take the max of operands, including LHS of assignments"
-    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-    }
-    int width  = max(vup->c()->width(),    nodep->lhsp()->width());
-    int ewidth = max(vup->c()->widthMin(), nodep->lhsp()->widthMin());
-    nodep->width(width,ewidth);
-    if (vup->c()->final()) {
-	nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
-    }
-}
-
-void WidthVisitor::width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup) {
-    // Widths: out width = lhs width
-    // It always comes exactly from LHS; ignores any upper operand
-    if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-    }
-    int width  = nodep->lhsp()->width();
-    int ewidth = nodep->lhsp()->width();  // Not minWidth; force it.
-    nodep->width(width,ewidth);
-    if (vup->c()->final()) {
-	// Final call, so make sure children check their sizes
-	nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
-    }
-}
-
-void WidthVisitor::width_Olhs_L_R32(AstNode* nodep, AstNUser* vup)  {
-    // Widths: Output width from lhs, rhs<33 bits
-    if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
-    if (vup->c()->prelim()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-    }
-    int width  = max(vup->c()->width(),    nodep->op1p()->width());
-    int ewidth = max(vup->c()->widthMin(), nodep->op1p()->widthMin());
-    nodep->width(width,ewidth);
-    if (vup->c()->final()) {
-	nodep->op1p()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
-	widthCheck(nodep,"LHS",nodep->op1p(),width,ewidth);
-	if (nodep->op2p()->width()>32)
-	    nodep->op2p()->v3error("Unsupported: Shifting of by a over 32 bit number isn't supported."
-				   <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
-    }
-}
-
-void WidthVisitor::width_Omax_L_Rlhs(AstNode* nodep, AstNUser* vup) {
-    // Widths: out width = lhs width = rhs width
-    if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
-    // If errors are off, we need to follow the spec; thus we really need to do the max()
-    // because the rhs could be larger, and we need to have proper editing to get the widths
-    // to be the same for our operations.
-    if (vup->c()->prelim()) {  // First stage evaluation
-	// Determine expression widths only relying on what's in the subops
-	nodep->op1p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-    }
-    int width  = max(vup->c()->width(),    max(nodep->op1p()->width(),    nodep->op2p()->width()));
-    int mwidth = max(vup->c()->widthMin(), max(nodep->op1p()->widthMin(), nodep->op2p()->widthMin()));
-    nodep->width(width,mwidth);
-    if (vup->c()->final()) {
-	// Final call, so make sure children check their sizes
-	nodep->op1p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
-	nodep->op2p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
-	// Some warning suppressions
-	bool lhsOk=false; bool rhsOk = false;
-	if (nodep->castAdd() || nodep->castSub()) {
-	    lhsOk = (mwidth == (nodep->op1p()->widthMin()+1));	// Ok if user wants extra bit from carry
-	    rhsOk = (mwidth == (nodep->op2p()->widthMin()+1));	// Ok if user wants extra bit from carry
-	} else if (nodep->castMul() || nodep->castMulS()) {
-	    lhsOk = (mwidth >= (nodep->op1p()->widthMin()));
-	    rhsOk = (mwidth >= (nodep->op2p()->widthMin()));
-	}
-	// Error report and change sizes for suboperands of this node.
-	widthCheck(nodep,"LHS",nodep->op1p(),width,mwidth,lhsOk);
-	widthCheck(nodep,"RHS",nodep->op2p(),width,mwidth,rhsOk);
-    }
-}
-
-//######################################################################
-
-class WidthCommitVisitor : public AstNVisitor {
-    // Now that all widthing is complete,
-    // Copy all width() to widthMin().  V3Const expects this
-private:
-    // VISITORS
-    virtual void visit(AstConst* nodep, AstNUser*) {
-	nodep->width(nodep->width(),nodep->width());
-	if ((nodep->width() != nodep->num().width()) || !nodep->num().sized()) {
-	    V3Number num (nodep->fileline(), nodep->width());
-	    num.opAssign(nodep->num());
-	    num.isSigned(nodep->isSigned());
-	    AstNode* newp = new AstConst(nodep->fileline(), num);
-	    nodep->replaceWith(newp);
-	    //if (debug()>4) nodep->dumpTree(cout,"  fixConstSize_old: ");
-	    //if (debug()>4)  newp->dumpTree(cout,"              _new: ");
-	    pushDeletep(nodep); nodep=NULL;
-	}
-    }
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	nodep->width(nodep->width(),nodep->width());
-	nodep->iterateChildren(*this);
-    }
-    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
-	// This check could go anywhere after V3Param
-	nodep->v3fatalSrc("Presels should have been removed before this point");
-    }
-public:
-    // CONSTUCTORS
-    WidthCommitVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
-    }
-    virtual ~WidthCommitVisitor() {}
 };
 
 //######################################################################
