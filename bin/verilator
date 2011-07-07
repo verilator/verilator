@@ -1711,8 +1711,8 @@ assertion clocks.
 =head2 Synthesis Directive Assertion Support
 
 With the --assert switch, Verilator reads any "//synopsys full_case" or "//
-synopsys parallel_case" directives.  The same applies to any "//cadence" or
-"// ambit synthesis" directives of the same form.
+synopsys parallel_case" directives.  The same applies to any "// ambit
+synthesis", "//cadence" or "//pragma" directives of the same form.
 
 When these synthesis directives are discovered, Verilator will either
 formally prove the directive to be true, or failing that, will insert the

@@ -393,6 +393,9 @@ void V3PreProcImp::comment(const string& text) {
     } else if (0==(strncmp(cp,"cadence",strlen("cadence")))) {
 	cp+=strlen("cadence");
 	synth = true;
+    } else if (0==(strncmp(cp,"pragma",strlen("pragma")))) {
+	cp+=strlen("pragma");
+	synth = true;
     } else if (0==(strncmp(cp,"ambit synthesis",strlen("ambit synthesis")))) {
 	cp+=strlen("ambit synthesis");
 	synth = true;
