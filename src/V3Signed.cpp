@@ -120,7 +120,7 @@ private:
     //=======
     // Signed: Output signed iff LHS signed; unary operator
     virtual void visit(AstNot* nodep, AstNUser*) {		signed_Olhs(nodep); }
-    virtual void visit(AstUnaryMin* nodep, AstNUser*) {		signed_Olhs(nodep); }
+    virtual void visit(AstNegate* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftL* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftR* nodep, AstNUser*) {		signed_Olhs(nodep); }
 

@@ -156,7 +156,7 @@ private:
 
     // Widths: out width = lhs width, but upper matters
     virtual void visit(AstNot* nodep, AstNUser* vup) {		width_Olhs_L(nodep,vup); }
-    virtual void visit(AstUnaryMin* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
+    virtual void visit(AstNegate* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
 
     // Widths: out width = lhs width, upper doesn't matter
     virtual void visit(AstSigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }

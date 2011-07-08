@@ -203,7 +203,7 @@ public:
     V3Number& opLogAnd	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogOr	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opAbsS    (const V3Number& lhs);
-    V3Number& opUnaryMin(const V3Number& lhs);
+    V3Number& opNegate	(const V3Number& lhs);
     V3Number& opAdd	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSub	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opMul	(const V3Number& lhs, const V3Number& rhs);

@@ -208,12 +208,12 @@ private:
 		    // Then over shifting gives the sign bit, not all zeros
 		    // Note *NOT* clean output -- just like normal shift!
 		    // Create equivalent of VL_SIGNONES_(node_width)
-		    constzerop = new AstUnaryMin (nodep->fileline(),
-						  new AstShiftR(nodep->fileline(),
-								nodep->lhsp()->cloneTree(false),
-								new AstConst(nodep->fileline(),
-									     nodep->widthMin()-1),
-								nodep->width()));
+		    constzerop = new AstNegate (nodep->fileline(),
+						new AstShiftR(nodep->fileline(),
+							      nodep->lhsp()->cloneTree(false),
+							      new AstConst(nodep->fileline(),
+									   nodep->widthMin()-1),
+							      nodep->width()));
 		} else {
 		    V3Number zeronum  (nodep->fileline(), nodep->width(), 0);
 		    constzerop = new AstConst(nodep->fileline(), zeronum);

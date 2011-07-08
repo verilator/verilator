@@ -1079,12 +1079,12 @@ V3Number& V3Number::opAbsS (const V3Number& lhs) {
     // op i, L(lhs) bit return
     if (lhs.isFourState()) return setAllBitsX();
     if (lhs.isNegative()) {
-	return opUnaryMin(lhs);
+	return opNegate(lhs);
     } else {
 	return opAssign(lhs);
     }
 }
-V3Number& V3Number::opUnaryMin (const V3Number& lhs) {
+V3Number& V3Number::opNegate (const V3Number& lhs) {
     // op i, L(lhs) bit return
     if (lhs.isFourState()) return setAllBitsX();
     V3Number notlhs (lhs.m_fileline, width());
@@ -1112,7 +1112,7 @@ V3Number& V3Number::opSub (const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     V3Number negrhs (rhs.m_fileline, rhs.width());
-    negrhs.opUnaryMin(rhs);
+    negrhs.opNegate(rhs);
     return opAdd(lhs, negrhs);
 }
 V3Number& V3Number::opMul (const V3Number& lhs, const V3Number& rhs) {
@@ -1140,12 +1140,12 @@ V3Number& V3Number::opMul (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opMulS (const V3Number& lhs, const V3Number& rhs) {
     // Signed multiply
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
-    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
+    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
+    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     V3Number qNoSign = opMul(lhsNoSign,rhsNoSign);
     if ((lhs.isNegative() && !rhs.isNegative())
 	|| (!lhs.isNegative() && rhs.isNegative())) {
-	opUnaryMin(qNoSign);
+	opNegate(qNoSign);
     } else {
 	opAssign(qNoSign);
     }
@@ -1169,13 +1169,13 @@ V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
     //UINFO(9, ">>divs-start "<<lhs<<" "<<rhs<<endl);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsX();
-    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
-    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
+    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
+    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     V3Number qNoSign = opDiv(lhsNoSign,rhsNoSign);
     //UINFO(9, " >divs-mid "<<lhs<<" "<<rhs<<" "<<qNoSign<<endl);
     if ((lhs.isNegative() && !rhs.isNegative())
 	|| (!lhs.isNegative() && rhs.isNegative())) {
-	opUnaryMin(qNoSign);
+	opNegate(qNoSign);
     } else {
 	opAssign(qNoSign);
     }
@@ -1198,11 +1198,11 @@ V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed moddiv
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsX();
-    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opUnaryMin(lhs);
-    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opUnaryMin(rhs);
+    V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
+    V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     V3Number qNoSign = opModDiv(lhsNoSign,rhsNoSign);
     if (lhs.isNegative()) {	// Just lhs' sign  (*DIFFERENT FROM PERL, which uses rhs sign*)
-	opUnaryMin(qNoSign);
+	opNegate(qNoSign);
     } else {
 	opAssign(qNoSign);
     }

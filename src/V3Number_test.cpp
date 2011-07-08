@@ -51,7 +51,7 @@ void test(string lhss, string op, string rhss, string exps) {
     else if (op=="repl")	gotnum.opRepl		(lhnum,rhnum);
     else if (op=="~")	 	gotnum.opNot		(lhnum);
     else if (op=="!")	 	gotnum.opLogNot		(lhnum);
-    else if (op=="unaryMin") 	gotnum.opUnaryMin	(lhnum);
+    else if (op=="negate") 	gotnum.opNegate		(lhnum);
     else if (op=="+")	 	gotnum.opAdd		(lhnum,rhnum);
     else if (op=="-")	 	gotnum.opSub		(lhnum,rhnum);
     else if (op=="*")	 	gotnum.opMul		(lhnum,rhnum);
@@ -96,8 +96,8 @@ int main() {
     test("32'b0x","|","32'b10","32'b1x");
     test("32'b10","&","32'b11","32'b10");
     test("32'b10","+","32'b10","32'b100");
-    test("3'b000","unaryMin","","3'b000");
-    test("3'b001","unaryMin","","3'b111");
+    test("3'b000","negate","","3'b000");
+    test("3'b001","negate","","3'b111");
     test("32'b11","-","32'b001","32'b10");
     test("3'b000","-","3'b111","3'b001");
     test("3'b000","-","3'b000","3'b000");

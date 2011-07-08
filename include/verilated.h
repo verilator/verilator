@@ -948,11 +948,11 @@ static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
 
 // Optimization bug in GCC 2.96 and presumably all-pre GCC 3 versions need this workaround,
 // we can't just
-//# define VL_UNARYMIN_I(data) (-(data))
-static inline IData  VL_UNARYMIN_I(IData data) { return -data; }
-static inline QData  VL_UNARYMIN_Q(QData data) { return -data; }
+//# define VL_NEGATE_I(data) (-(data))
+static inline IData  VL_NEGATE_I(IData data) { return -data; }
+static inline QData  VL_NEGATE_Q(QData data) { return -data; }
 
-static inline WDataOutP VL_UNARYMIN_W(int words, WDataOutP owp,WDataInP lwp){
+static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp,WDataInP lwp){
     QData carry = 0;
     for (int i=0; i<words; i++) {
 	carry = carry + (QData)(IData)(~lwp[i]);
@@ -999,18 +999,18 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
     IData lneg = VL_SIGN_I(lbits,lwp[words-1]);
     if (lneg) { // Negate lhs
 	lwusp = lwstore;
-	VL_UNARYMIN_W(words, lwstore, lwp);
+	VL_NEGATE_W(words, lwstore, lwp);
 	lwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     IData rneg = VL_SIGN_I(lbits,rwp[words-1]);
     if (rneg) { // Negate rhs
 	rwusp = rwstore;
-	VL_UNARYMIN_W(words, rwstore, rwp);
+	VL_NEGATE_W(words, rwstore, rwp);
 	rwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     VL_MUL_W(words,owp,lwusp,rwusp);
     owp[words-1] &= VL_MASK_I(lbits);  // Clean.  Note it's ok for the multiply to overflow into the sign bit
-    if ((lneg ^ rneg) & 1) {      // Negate output  (not using UNARYMIN, as owp==lwp)
+    if ((lneg ^ rneg) & 1) {      // Negate output  (not using NEGATE, as owp==lwp)
 	QData carry = 0;
 	for (int i=0; i<words; i++) {
 	    carry = carry + (QData)(IData)(~owp[i]);
@@ -1057,12 +1057,12 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataI
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
     if ((lsign && !rsign) || (!lsign && rsign)) {
 	IData qNoSign[VL_MULS_MAX_WORDS];
 	VL_DIV_WWW(lbits,qNoSign,ltup,rtup);
-	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	_VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
 	return owp;
     } else {
 	return VL_DIV_WWW(lbits,owp,ltup,rtup);
@@ -1076,12 +1076,12 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
     if (lsign) {  // Only dividend sign matters for modulus
 	IData qNoSign[VL_MULS_MAX_WORDS];
 	VL_MODDIV_WWW(lbits,qNoSign,ltup,rtup);
-	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	_VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
 	return owp;
     } else {
 	return VL_MODDIV_WWW(lbits,owp,ltup,rtup);

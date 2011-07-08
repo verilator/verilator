@@ -2472,13 +2472,13 @@ struct AstUCFunc : public AstNodeMath {
 //======================================================================
 // Unary ops
 
-struct AstUnaryMin : public AstNodeUniop {
-    AstUnaryMin(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+struct AstNegate : public AstNodeUniop {
+    AstNegate(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    ASTNODE_NODE_FUNCS(UnaryMin, UNARYMIN)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opUnaryMin(lhs); }
+    ASTNODE_NODE_FUNCS(Negate, NEGATE)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
-    virtual string emitC() { return "VL_UNARYMIN_%lq(%lW, %P, %li)"; }
+    virtual string emitC() { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };

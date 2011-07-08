@@ -2377,7 +2377,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: unary_operator primary
 		'+' ~r~expr	%prec prUNARYARITH	{ $$ = $2; }
-	|	'-' ~r~expr	%prec prUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
+	|	'-' ~r~expr	%prec prUNARYARITH	{ $$ = new AstNegate	($1,$2); }
 	|	'!' ~r~expr	%prec prNEGATION	{ $$ = new AstLogNot	($1,$2); }
 	|	'&' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedAnd	($1,$2); }
 	|	'~' ~r~expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }

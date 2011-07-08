@@ -1664,7 +1664,7 @@ private:
     TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstXnor  {$lhsp.isZero, $rhsp}",	"AstNot{$rhsp}");
-    TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",	"AstUnaryMin{$rhsp}");
+    TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",	"AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
