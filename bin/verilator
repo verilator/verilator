@@ -268,7 +268,7 @@ descriptions in the next sections for more information.
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
     --mod-prefix <topname>      Name to prepend to lower classes
-    --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
+    --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
      -O0                        Disable optimizations
@@ -713,7 +713,7 @@ Backward compatible alias for "--pins-bv 65".  Note that's a 65, not a 64.
 =item --pins-bv I<width>
 
 Specifies SystemC inputs/outputs of greater than or equal to I<width> bits
-wide should use sc_bv's instead of uint32/uint64_t's.  The default is
+wide should use sc_bv's instead of uint32/vluint64_t's.  The default is
 "--pins-bv 65".  Versions before Verilator 3.671 defaulted to "--pins-bv
 33".  The more sc_bv is used, the worse for performance.
 
@@ -1352,7 +1352,7 @@ will plug directly into a SystemC netlist.
 The SC_MODULE gets the same pinout as the Verilog module, with the
 following type conversions: Pins of a single bit become bool.  Pins 2-32
 bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
-uint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
+vluint64_t's depending on the --no-pins64 switch.  Wider pins become sc_bv's.
 (Uints simulate the fastest so are used where possible.)
 
 Lower modules are not pure SystemC code.  This is a feature, as using the
@@ -1661,7 +1661,7 @@ please file a bug if a feature you need is missing.
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
 $bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
 $unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
-do-while, enum, export, final, import, int, logic, longint, package,
+const, do-while, enum, export, final, import, int, logic, longint, package,
 program, shortint, time, typedef, var, void, priority case/if, and unique
 case/if.
 
@@ -1711,8 +1711,8 @@ assertion clocks.
 =head2 Synthesis Directive Assertion Support
 
 With the --assert switch, Verilator reads any "//synopsys full_case" or "//
-synopsys parallel_case" directives.  The same applies to any "//cadence" or
-"// ambit synthesis" directives of the same form.
+synopsys parallel_case" directives.  The same applies to any "// ambit
+synthesis", "//cadence" or "//pragma" directives of the same form.
 
 When these synthesis directives are discovered, Verilator will either
 formally prove the directive to be true, or failing that, will insert the
@@ -2261,7 +2261,7 @@ specified as illegal on chandles.
 =item disable
 
 Disable statements may be used only if the block being disabled is a block
-the disable statement itself is inside.  This is commonly used to provide
+the disable statement itself is inside.  This was commonly used to provide
 loop break and continue functionality before SystemVerilog added the break
 and continue keywords.
 
@@ -2313,11 +2313,6 @@ The rarely used optional parameter to $finish and $stop is ignored.
 
 File descriptors passed to the file PLI calls must be file descriptors, not
 MCDs, which includes the mode parameter to $fopen being mandatory.
-Verilator will convert the integer used to hold the file descriptor into a
-internal FILE*. To prevent core dumps due to mis-use, and because integers
-are 32 bits while FILE*s may be 64 bits, the descriptor must be stored in a
-reg [63:0] rather than an integer.  The define `verilator_file_descriptor in
-verilated.v can be used to hide this difference.
 
 =item $fscanf, $sscanf
 
@@ -3182,7 +3177,7 @@ as you would any other member variable.
 
 Signals are the smallest of 8 bit chars, 16 bit shorts, 32 bit longs, or 64
 bit long longs that fits the width of the signal.  Generally, you can use
-just uint32_t's for 1 to 32 bits, or uint64_t for 1 to 64 bits, and the
+just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and the
 compiler will properly up-convert smaller entities.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.

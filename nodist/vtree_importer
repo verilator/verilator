@@ -256,7 +256,7 @@ sub gentree {
   'TRACE'	=> sub { p "TRACE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
   'UCFUNC'	=> sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ")"; },
   'UCSTMT'	=> sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ");";nl; },
-  'UNARYMIN'	=> sub { p " -";p1; },
+  'NEGATE'	=> sub { p " -";p1; },
   'VAR'		=> sub { p_var(); },
   'VARPIN'	=> sub { p "VARPIN what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
   'VARREF'	=> sub { a1; },

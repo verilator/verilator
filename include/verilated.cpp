@@ -26,7 +26,6 @@
 #define _VERILATED_CPP_
 #include "verilated_imp.h"
 #include <cctype>
-#include <vector>
 
 #define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
 
@@ -628,6 +627,10 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 //===========================================================================
 // File I/O
 
+FILE* VL_CVT_I_FP(IData lhs) {
+    return VerilatedImp::fdToFp(lhs);
+}
+
 void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
     // See also VL_DATA_TO_STRING_NW
     int lsb=obits-1;
@@ -655,8 +658,8 @@ void _VL_STRING_TO_VINT(int obits, void* destp, int srclen, const char* srcp) {
     for (; i<bytes; i++) { *op++ = 0; }
 }
 
-IData VL_FGETS_IXQ(int obits, void* destp, QData fpq) {
-    FILE* fp = VL_CVT_Q_FP(fpq);
+IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
+    FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
     // The string needs to be padded with 0's in unused spaces in front of
@@ -692,7 +695,13 @@ QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, filenamez, filenamep);
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
-    return VL_CVT_FP_Q(fopen(filenamez,modez));
+    return VerilatedImp::fdNew(fopen(filenamez,modez));
+}
+void VL_FCLOSE_I(IData fdi) {
+    FILE* fp = VL_CVT_I_FP(fdi);
+    if (VL_UNLIKELY(!fp)) return;
+    fclose(fp);
+    VerilatedImp::fdDelete(fdi);
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
@@ -726,8 +735,8 @@ void VL_WRITEF(const char* formatp, ...) {
     VL_PRINTF("%s", output.c_str());
 }
 
-void VL_FWRITEF(QData fpq, const char* formatp, ...) {
-    FILE* fp = VL_CVT_Q_FP(fpq);
+void VL_FWRITEF(IData fpi, const char* formatp, ...) {
+    FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return;
 
     va_list ap;
@@ -739,8 +748,8 @@ void VL_FWRITEF(QData fpq, const char* formatp, ...) {
     fputs(output.c_str(), fp);
 }
 
-IData VL_FSCANF_IX(QData fpq, const char* formatp, ...) {
-    FILE* fp = VL_CVT_Q_FP(fpq);
+IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) {
+    FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
     va_list ap;

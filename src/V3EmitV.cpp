@@ -483,6 +483,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putfs(nodep,nodep->prettyName());
 	if (nodep->rangep()) { puts(" "); nodep->rangep()->iterateAndNext(*this); puts(" "); }
     }
+    virtual void visit(AstConstDType* nodep, AstNUser*) {
+	putfs(nodep,"const ");
+	nodep->dtypep()->iterateAndNext(*this);
+    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (nodep->dotted()!="") { putfs(nodep,nodep->dotted()); puts("."); puts(nodep->prettyName()); }
 	else { putfs(nodep,nodep->prettyName()); }

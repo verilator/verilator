@@ -48,7 +48,6 @@ class SignedVisitor : public AstNVisitor {
 private:
     // NODE STATE/TYPES
     // STATE
-    int		m_taskDepth;	// Recursion check
     bool	m_paramsOnly;	// Computing parameter value; limit operation
 
     // METHODS - special type detection
@@ -62,8 +61,8 @@ private:
     // VISITORS
     //========
     // Signed: Output explicit by user, Lhs either
-    virtual void visit(AstSigned* nodep, AstNUser*) {		signed_Os_Ix(nodep); }
     virtual void visit(AstUnsigned* nodep, AstNUser*) {		signed_Ou_Ix(nodep); }
+    virtual void visit(AstSigned* nodep, AstNUser*) {		signed_Os_Ix(nodep); }
 
     //========
     // Signed: Output unsigned, Operands either
@@ -121,7 +120,7 @@ private:
     //=======
     // Signed: Output signed iff LHS signed; unary operator
     virtual void visit(AstNot* nodep, AstNUser*) {		signed_Olhs(nodep); }
-    virtual void visit(AstUnaryMin* nodep, AstNUser*) {		signed_Olhs(nodep); }
+    virtual void visit(AstNegate* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftL* nodep, AstNUser*) {		signed_Olhs(nodep); }
     virtual void visit(AstShiftR* nodep, AstNUser*) {		signed_Olhs(nodep); }
 
@@ -291,6 +290,18 @@ private:
     // ShiftRS converts to ShiftR, but not vice-versa
     virtual void visit(AstShiftRS* nodep, AstNUser*) {	checkReplace_Olhs(nodep); }
 
+    // VISITORS - defaults
+    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+	nodep->v3fatalSrc("Visit function missing? Signedness unknown for this node: "<<nodep);
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+
+    //=======
+    // Lower level functions
+
     void checkReplace_Ou_FlavLhsAndRhs(AstNodeBiop* nodep) {
 	// For compares, the output of the comparison is unsigned.
 	// However, we need the appropriate type of compare selected by RHS & LHS
@@ -334,15 +345,6 @@ private:
 	    }
 	    replaceWithSignedVersion(nodep,newp);
 	}
-    }
-
-    // VISITORS - defaults
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
-	nodep->v3fatalSrc("Visit function missing? Signedness unknown for this node: "<<nodep);
-	nodep->iterateChildren(*this);
-    }
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
     }
 
     // COMMON SCHEMES
@@ -392,7 +394,6 @@ public:
     // CONSTRUCTORS
     SignedVisitor(bool paramsOnly) {
 	m_paramsOnly = paramsOnly;
-	m_taskDepth = 0;
     }
     virtual ~SignedVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {

@@ -321,11 +321,13 @@ extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a 
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);
 
 /// File I/O
-extern IData VL_FGETS_IXQ(int obits, void* destp, QData fpq);
+extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
 extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
 extern QData VL_FOPEN_QI(QData ofilename, IData mode);
 inline QData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
+
+extern void VL_FCLOSE_I(IData fdi);
 
 extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 			 WDataInP ofilename, void* memp, IData start, IData end);
@@ -336,9 +338,9 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
     VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
 
 extern void VL_WRITEF(const char* formatp, ...);
-extern void VL_FWRITEF(QData fpq, const char* formatp, ...);
+extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
 
-extern IData VL_FSCANF_IX(QData fpq, const char* formatp, ...);
+extern IData VL_FSCANF_IX(IData fpi, const char* formatp, ...);
 extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
@@ -364,13 +366,12 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
 #define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
 
+/// Return FILE* from IData
+extern FILE*  VL_CVT_I_FP(IData lhs);
+
 // Use a union to avoid cast-to-different-size warnings
-/// Return FILE* from QData
-static inline FILE*  VL_CVT_Q_FP(QData lhs) { union { FILE* fp; QData q; } u; u.q=lhs; return u.fp; }
 /// Return void* from QData
 static inline void*  VL_CVT_Q_VP(QData lhs) { union { void* fp; QData q; } u; u.q=lhs; return u.fp; }
-/// Return QData from FILE*
-static inline QData  VL_CVT_FP_Q(FILE* fp) { union { FILE* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
 /// Return QData from void*
 static inline QData  VL_CVT_VP_Q(void* fp) { union { void* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
 
@@ -947,11 +948,11 @@ static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
 
 // Optimization bug in GCC 2.96 and presumably all-pre GCC 3 versions need this workaround,
 // we can't just
-//# define VL_UNARYMIN_I(data) (-(data))
-static inline IData  VL_UNARYMIN_I(IData data) { return -data; }
-static inline QData  VL_UNARYMIN_Q(QData data) { return -data; }
+//# define VL_NEGATE_I(data) (-(data))
+static inline IData  VL_NEGATE_I(IData data) { return -data; }
+static inline QData  VL_NEGATE_Q(QData data) { return -data; }
 
-static inline WDataOutP VL_UNARYMIN_W(int words, WDataOutP owp,WDataInP lwp){
+static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp,WDataInP lwp){
     QData carry = 0;
     for (int i=0; i<words; i++) {
 	carry = carry + (QData)(IData)(~lwp[i]);
@@ -998,18 +999,18 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
     IData lneg = VL_SIGN_I(lbits,lwp[words-1]);
     if (lneg) { // Negate lhs
 	lwusp = lwstore;
-	VL_UNARYMIN_W(words, lwstore, lwp);
+	VL_NEGATE_W(words, lwstore, lwp);
 	lwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     IData rneg = VL_SIGN_I(lbits,rwp[words-1]);
     if (rneg) { // Negate rhs
 	rwusp = rwstore;
-	VL_UNARYMIN_W(words, rwstore, rwp);
+	VL_NEGATE_W(words, rwstore, rwp);
 	rwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     VL_MUL_W(words,owp,lwusp,rwusp);
     owp[words-1] &= VL_MASK_I(lbits);  // Clean.  Note it's ok for the multiply to overflow into the sign bit
-    if ((lneg ^ rneg) & 1) {      // Negate output  (not using UNARYMIN, as owp==lwp)
+    if ((lneg ^ rneg) & 1) {      // Negate output  (not using NEGATE, as owp==lwp)
 	QData carry = 0;
 	for (int i=0; i<words; i++) {
 	    carry = carry + (QData)(IData)(~owp[i]);
@@ -1056,12 +1057,12 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataI
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
     if ((lsign && !rsign) || (!lsign && rsign)) {
 	IData qNoSign[VL_MULS_MAX_WORDS];
 	VL_DIV_WWW(lbits,qNoSign,ltup,rtup);
-	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	_VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
 	return owp;
     } else {
 	return VL_DIV_WWW(lbits,owp,ltup,rtup);
@@ -1075,12 +1076,12 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), lwstore, lwp)); }
-    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), rwstore, rwp)); }
+    if (lsign) { ltup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp)); }
+    if (rsign) { rtup = _VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp)); }
     if (lsign) {  // Only dividend sign matters for modulus
 	IData qNoSign[VL_MULS_MAX_WORDS];
 	VL_MODDIV_WWW(lbits,qNoSign,ltup,rtup);
-	_VL_CLEAN_INPLACE_W(lbits, VL_UNARYMIN_W(VL_WORDS_I(lbits), owp, qNoSign));
+	_VL_CLEAN_INPLACE_W(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
 	return owp;
     } else {
 	return VL_MODDIV_WWW(lbits,owp,ltup,rtup);

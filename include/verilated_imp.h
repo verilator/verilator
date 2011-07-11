@@ -35,6 +35,7 @@
 
 #include <map>
 #include <vector>
+#include <deque>
 #include <string>
 
 class VerilatedScope;
@@ -62,9 +63,18 @@ class VerilatedImp {
     ExportNameMap	m_exportMap;	///< Map of <export_func_proto, func number>
     int			m_exportNext;	///< Next export funcnum
 
+    // File I/O
+    vector<FILE*>	m_fdps;		///< File descriptors
+    deque<IData>	m_fdFree;	///< List of free descriptors (SLOW - FOPEN/CLOSE only)
+
 public: // But only for verilated*.cpp
     // CONSTRUCTORS
-    VerilatedImp() : m_argVecLoaded(false), m_exportNext(0) {}
+    VerilatedImp() : m_argVecLoaded(false), m_exportNext(0) {
+	m_fdps.resize(3);
+	m_fdps[0] = stdin;
+	m_fdps[1] = stdout;
+	m_fdps[2] = stderr;
+    }
     ~VerilatedImp() {}
 
     // METHODS - arguments
@@ -184,6 +194,34 @@ public: // But only for verilated*.cpp
     }
     // We don't free up m_exportMap until the end, because we can't be sure
     // what other models are using the assigned funcnum's.
+
+public: // But only for verilated*.cpp
+    // METHODS - file IO
+    static IData fdNew(FILE* fp) {
+	if (VL_UNLIKELY(!fp)) return 0;
+	// Bit 31 indicates it's a descriptor not a MCD
+	if (s_s.m_fdFree.empty()) {
+	    // Need to create more space in m_fdps and m_fdFree
+	    size_t start = s_s.m_fdps.size();
+	    s_s.m_fdps.resize(start*2);
+	    for (size_t i=start; i<start*2; i++) s_s.m_fdFree.push_back((IData)i);
+	}
+	IData idx = s_s.m_fdFree.back(); s_s.m_fdFree.pop_back();
+	s_s.m_fdps[idx] = fp;
+	return (idx | (1UL<<31));  // bit 31 indicates not MCD
+    }
+    static void fdDelete(IData fdi) {
+	IData idx = VL_MASK_I(31) & fdi;
+	if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return;
+	if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
+	s_s.m_fdps[idx] = NULL;
+	s_s.m_fdFree.push_back(idx);
+    }
+    static inline FILE* fdToFp(IData fdi) {
+	IData idx = VL_MASK_I(31) & fdi;
+	if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return NULL;
+	return s_s.m_fdps[idx];
+    }
 };
 
 #endif  // Guard

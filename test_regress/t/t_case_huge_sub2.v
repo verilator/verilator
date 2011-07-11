@@ -25,7 +25,7 @@ module t_case_huge_sub2 (/*AUTOARG*/
 
    always @(/*AS*/index) begin
       case (index[7:0])
-`ifdef verilator
+`ifdef VERILATOR // Harder test
 	8'h00: begin outa = $c("0"); end // Makes whole table non-optimizable
 `else
 	8'h00: begin outa = 10'h0; end

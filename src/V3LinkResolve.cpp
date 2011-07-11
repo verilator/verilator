@@ -95,6 +95,9 @@ private:
 			       nodep->dtypeSkipRefp()->castArrayDType())) {
 	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
 	}
+	if (nodep->dtypeSkipRefp()->castConstDType()) {
+	    nodep->isConst(true);
+	}
 	if (m_ftaskp) nodep->funcLocal(true);
 	if (nodep->isSigModPublic()) {
 	    nodep->sigModPublic(false);  // We're done with this attribute

@@ -344,13 +344,11 @@ public:
 	puts(");\n");
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
-	puts("if (");
+	puts("VL_FCLOSE_I(");
 	nodep->filep()->iterateAndNext(*this);
-	puts(") { fclose (VL_CVT_Q_FP(");
-	nodep->filep()->iterateAndNext(*this);
-	puts(")); ");
+	puts("); ");
 	nodep->filep()->iterateAndNext(*this);	// For saftey, so user doesn't later WRITE with it.
-	puts("=0; }\n");
+	puts("=0;\n");
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	if (!nodep->filep()) {
@@ -358,7 +356,7 @@ public:
 	} else {
 	    puts("if (");
 	    nodep->filep()->iterateAndNext(*this);
-	    puts(") { fflush (VL_CVT_Q_FP(");
+	    puts(") { fflush (VL_CVT_I_FP(");
 	    nodep->filep()->iterateAndNext(*this);
 	    puts(")); }\n");
 	}

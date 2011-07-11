@@ -58,7 +58,7 @@ our $Raise_Weight_Max = 50;
  'VREDXNOR'=>	{weight=>1&&1, width=>1, signed=>0, sc=>0, terminal=>0, v=>'(^~ %1)', },
  'VREDXOR'=>	{weight=>1&&1, width=>1, signed=>0, sc=>0, terminal=>0, v=>'(^ %1)', },
  'VNOT'=>	{weight=>1&&3, width=>0, 	    sc=>1, terminal=>0, v=>'(~ %1)', },
- 'VUNARYMIN'=>	{weight=>1&&2, width=>0, 	    sc=>1, terminal=>0, v=>'(- %1)', },
+ 'VNEGATE'=>	{weight=>1&&2, width=>0, 	    sc=>1, terminal=>0, v=>'(- %1)', },
  'VCOUNTONES'=>	{weight=>0&&2, width=>32, signed=>0, sc=>0, terminal=>0, v=>'\$countones(%1)', },  # No ncv support
  'VONEHOT'=>	{weight=>0&&2, width=>1, signed=>0, sc=>0, terminal=>0, v=>'\$onehot(%1)', },  # No ncv support
  'VONEHOT0'=>	{weight=>0&&2, width=>1, signed=>0, sc=>0, terminal=>0, v=>'\$onehot0(%1)', },  # No ncv support
@@ -143,7 +143,7 @@ my %ops2 =
  'VREDXOR'=>	{pl=>'VREDXOR  (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
  'VREDXNOR'=>	{pl=>'VREDXNOR (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
  'VNOT'=>	{pl=>'VNOT     (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg);'},
- 'VUNARYMIN'=>	{pl=>'VUNARYMIN(%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg);'},
+ 'VNEGATE'=>	{pl=>'VNEGATE  (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg);'},
  'VCOUNTONES'=>	{pl=>'VCOUNTONES(%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
  'VONEHOT'=>	{pl=>'VONEHOT  (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
  'VONEHOT0'=>	{pl=>'VONEHOT0 (%tr,%1v);',	rnd=>'%1r=gen_leaf(width=>0);'},
@@ -832,8 +832,8 @@ sub decl_text {
     my $varref = $Vars{$var};
     if ($Opt_Sc) {
 	(!$varref->{signed}) or die "%Error: No signed SystemC yet\n";
-	my $type = ((   ($varref->{val}->Size == 32) && "uint32_t")
-		    || (($varref->{val}->Size == 64) && "uint64_t"));
+	my $type = ((   ($varref->{val}->Size == 32) && "sc_dt::uint32")
+		    || (($varref->{val}->Size == 64) && "sc_dt::uint64"));
 	$type or die "%Error: Unknown Size ".$varref->{val}->Size,",";
 	return sprintf "  %s<%s> %s; //=%s"
 	    , $decl_with, $type, $var, $varref->{val}->to_Hex;
@@ -893,8 +893,8 @@ sub countones {
 }
 
 
-sub VLOGNOT   { $_[0]{val} = makebool(($_[1]->is_empty)?1:0); }
-sub VUNARYMIN { $_[0]{val} = my $o = newsized($_[1]); $o->Negate($_[1]); }
+sub VLOGNOT  { $_[0]{val} = makebool(($_[1]->is_empty)?1:0); }
+sub VNEGATE  { $_[0]{val} = my $o = newsized($_[1]); $o->Negate($_[1]); }
 sub VCOUNTONES { $_[0]{val} = Bit::Vector->new_Dec(32,countones($_[1])); }
 sub VONEHOT  { $_[0]{val} = makebool((countones($_[1])==1)?1:0); }
 sub VONEHOT0 { $_[0]{val} = makebool((countones($_[1])<=1)?1:0); }

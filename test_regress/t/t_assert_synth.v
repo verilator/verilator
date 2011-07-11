@@ -47,7 +47,7 @@ module t (/*AUTOARG*/
       endcase
    end
 
-`ifdef NOT_YET_verilator
+`ifdef NOT_YET_VERILATOR // Unsupported
    // ambit synthesis one_hot "a, b_oh"
    // cadence one_cold "a_l, b_oc_l"
 `endif

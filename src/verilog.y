@@ -274,6 +274,8 @@ class AstSenTree;
 %token<fl>		yCASEZ		"casez"
 %token<fl>		yCHANDLE	"chandle"
 %token<fl>		yCLOCKING	"clocking"
+%token<fl>		yCONST__ETC	"const"
+%token<fl>		yCONST__LEX	"const-in-lex"
 %token<fl>		yCMOS		"cmos"
 %token<fl>		yCONTEXT	"context"
 %token<fl>		yCONTINUE	"continue"
@@ -1269,21 +1271,22 @@ data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	;
 
 data_declarationVarFront:	// IEEE: part of data_declaration
+	//			// Expanded: "constE yVAR lifetimeE data_type"
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-		constE yVAR lifetimeE data_type	 	{ /*VARRESET-in-ddVar*/ VARDTYPE($4); }
-	|	constE yVAR lifetimeE		 	{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstBasicDType($<fl>2, LOGIC_IMPLICIT)); }
-	|	constE yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4),$5,false)); }
+		/**/ 	    yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE($3); }
+	|	/**/ 	    yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT)); }
+	|	/**/ 	    yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,false)); }
+	//
+	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
+	|	yCONST__ETC yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, $4)); }
+	|	yCONST__ETC yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
+ 	|	yCONST__ETC yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,false))); }
 	//
 	//			// Expanded: "constE lifetimeE data_type"
 	|	/**/		      data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($1); }
 	|	/**/	    lifetime  data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($2); }
-	//UNSUP	yCONST__ETC lifetimeE data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($3); }
+	|	yCONST__ETC lifetimeE data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, $3)); }
 	//			// = class_new is in variable_decl_assignment
-	;
-
-constE:				// IEEE: part of data_declaration
-		/* empty */				{ }
-	//UNSUP	yCONST__ETC				{ UNSUP }
 	;
 
 implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
@@ -2374,7 +2377,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: unary_operator primary
 		'+' ~r~expr	%prec prUNARYARITH	{ $$ = $2; }
-	|	'-' ~r~expr	%prec prUNARYARITH	{ $$ = new AstUnaryMin	($1,$2); }
+	|	'-' ~r~expr	%prec prUNARYARITH	{ $$ = new AstNegate	($1,$2); }
 	|	'!' ~r~expr	%prec prNEGATION	{ $$ = new AstLogNot	($1,$2); }
 	|	'&' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedAnd	($1,$2); }
 	|	'~' ~r~expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }

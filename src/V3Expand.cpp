@@ -696,8 +696,7 @@ private:
 	    int lhswidth = lhsp->widthMin();
 	    if (lhswidth==1) {
 		UINFO(8,"    REPLICATE(w1) "<<nodep<<endl);
-		newp = new AstUnaryMin (nodep->fileline(),
-					lhsp);
+		newp = new AstNegate (nodep->fileline(), lhsp);
 	    } else {
 		UINFO(8,"    REPLICATE "<<nodep<<endl);
 		AstConst* constp = nodep->rhsp()->castConst();
@@ -731,7 +730,7 @@ private:
 	for (int w=0; w<rhsp->widthWords(); w++) {
 	    AstNode* newp;
 	    if (lhswidth==1) {
-		newp = new AstUnaryMin (nodep->fileline(), lhsp->cloneTree(true));
+		newp = new AstNegate (nodep->fileline(), lhsp->cloneTree(true));
 		newp->width(VL_WORDSIZE,VL_WORDSIZE);
 	    } else {
 		newp = newAstWordSelClone (lhsp, w);

@@ -5,7 +5,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.814****
 
+***  Support 'const' variables in limited cases; similar to enums. [Alex Solomatnikov]
+
 ***  Support disable for loop escapes.
+
+***  Support $fopen and I/O with integer instead of `verilator_file_descriptor.
+
+**** Use 'vluint64_t' for SystemC instead of (same sized) 'uint64' for MSVC++.
 
 * Verilator 3.813 2011/06/28
 

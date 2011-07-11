@@ -300,6 +300,25 @@ public:
     void	implicit(bool flag) { m_implicit = flag; }
 };
 
+struct AstConstDType : public AstNodeDType {
+    // const data type, ie "const some_dtype var_name [2:0]"
+    // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
+    // When more generic types are supported AstConstDType will be propagated further.
+    AstConstDType(FileLine* fl, AstNodeDType* dtypep)
+	: AstNodeDType(fl) {
+	setOp1p(dtypep);
+	widthSignedFrom(dtypep);
+    }
+    ASTNODE_NODE_FUNCS(ConstDType, CONSTDTYPE)
+    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+};
+
 struct AstRefDType : public AstNodeDType {
 private:
     AstTypedef*	m_defp;
@@ -677,7 +696,7 @@ public:
     bool	isToggleCoverable() const  { return ((isIO() || isSignal())
 						     && (isIO() || isBitLogic())
 						     // Wrapper would otherwise duplicate wrapped module's coverage
-						     && !isSc() && !isPrimaryIO()); }
+						     && !isSc() && !isPrimaryIO() && !isConst()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool	isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool	isPure() const { return (varType()==AstVarType::XTEMP); }
@@ -2453,13 +2472,13 @@ struct AstUCFunc : public AstNodeMath {
 //======================================================================
 // Unary ops
 
-struct AstUnaryMin : public AstNodeUniop {
-    AstUnaryMin(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+struct AstNegate : public AstNodeUniop {
+    AstNegate(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
-    ASTNODE_NODE_FUNCS(UnaryMin, UNARYMIN)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opUnaryMin(lhs); }
+    ASTNODE_NODE_FUNCS(Negate, NEGATE)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
-    virtual string emitC() { return "VL_UNARYMIN_%lq(%lW, %P, %li)"; }
+    virtual string emitC() { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };
@@ -2697,7 +2716,7 @@ struct AstFEof : public AstNodeUniop {
     ASTNODE_NODE_FUNCS(FEof, FEOF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$feof(%l)"; }
-    virtual string emitC() { return "(%li ? feof(VL_CVT_Q_FP(%li)) : true)"; }
+    virtual string emitC() { return "(%li ? feof(VL_CVT_I_FP(%li)) : true)"; }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
@@ -2710,7 +2729,7 @@ struct AstFGetC : public AstNodeUniop {
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$fgetc(%l)"; }
     // Non-existent filehandle returns EOF
-    virtual string emitC() { return "(%li ? fgetc(VL_CVT_Q_FP(%li)) : -1)"; }
+    virtual string emitC() { return "(%li ? fgetc(VL_CVT_I_FP(%li)) : -1)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*64; }

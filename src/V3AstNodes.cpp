@@ -113,6 +113,10 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
 	arg += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
 	arg += "const VerilatedScope*";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::REAL) {
+	arg += "double";
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SHORTREAL) {
+	arg += "float";
     } else if (strtype) {
 	if (isInOnly()) arg += "const ";
 	arg += "string";
@@ -185,7 +189,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     } else if (isWide()) {
 	arg += "uint32_t";  // []'s added later
     } else {
-	arg += "uint64_t";
+	arg += "vluint64_t";
     }
     if (isWide()) {
 	if (forReturn) v3error("Unsupported: Public functions with >64 bit outputs; make an output of a public task instead");
@@ -237,7 +241,7 @@ string AstVar::scType() const {
 	    return "uint32_t";
 	}
     } else {
-	return "uint64_t";
+	return "vluint64_t";
     }
 }
 
@@ -608,7 +612,8 @@ void AstVar::dump(ostream& str) {
 	else if (isInput()) str<<" [I]";
 	else if (isOutput()) str<<" [O]";
     }
-    if (isUsedClock()) str<<" [C]";
+    if (isConst()) str<<" [CONST]";
+    if (isUsedClock()) str<<" [CLK]";
     if (isSigPublic()) str<<" [P]";
     if (isUsedLoopIdx()) str<<" [LOOP]"; 
     if (attrClockEn()) str<<" [aCLKEN]";

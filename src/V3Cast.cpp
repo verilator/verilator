@@ -135,7 +135,7 @@ private:
 	insureLower32Cast(nodep);
 	nodep->user1(1);
     }
-    virtual void visit(AstUnaryMin* nodep, AstNUser*) {
+    virtual void visit(AstNegate* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->lhsp()->widthMin()==1) {
