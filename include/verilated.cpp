@@ -284,12 +284,14 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
     static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
+    const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
     int width = 0;
     const char* pos = formatp;
     for (; *pos; ++pos) {
 	if (!inPct && pos[0]=='%') {
+	    pctp = pos;
 	    inPct = true;
 	    widthSet = false;
 	    width = 0;
@@ -310,6 +312,9 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		inPct = true;  // Get more digits
 		widthSet = true;
 		width = width*10 + (fmt - '0');
+		break;
+	    case '.':
+		inPct = true;  // Get more digits
 		break;
 	    case '%':
 		output += '%';
@@ -357,14 +362,26 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		case 'd': { // Signed decimal
 		    int digits=sprintf(tmp,"%" VL_PRI64 "d",(vlsint64_t)(VL_EXTENDS_QQ(lbits,lbits,ld)));
 		    int needmore = width-digits;
-		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    if (needmore>0) {
+			if (pctp && pctp[0] && pctp[1]=='0') { //%0
+			    output.append(needmore,'0'); // Pre-pad zero
+			} else {
+			    output.append(needmore,' '); // Pre-pad spaces
+			}
+		    }
 		    output += tmp;
 		    break;
 		}
 		case 'u': { // Unsigned decimal
 		    int digits=sprintf(tmp,"%" VL_PRI64 "u",ld);
 		    int needmore = width-digits;
-		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
+		    if (needmore>0) {
+			if (pctp && pctp[0] && pctp[1]=='0') { //%0
+			    output.append(needmore,'0'); // Pre-pad zero
+			} else {
+			    output.append(needmore,' '); // Pre-pad spaces
+			}
+		    }
 		    output += tmp;
 		    break;
 		}

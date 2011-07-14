@@ -472,7 +472,11 @@ string V3Number::displayed(const string& vformat) const {
 	    str = cvtToStr(toUQuad());
 	}
 	int intfmtsize = atoi(fmtsize.c_str());
-	while ((int)(str.length()) < intfmtsize) str = " "+str;
+	bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
+	while ((int)(str.length()) < intfmtsize) {
+	    if (zeropad) str = "0"+str;
+	    else str = " "+str;
+	}
 	return str;
     }
     default:

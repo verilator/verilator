@@ -22,9 +22,11 @@ module t;
       $display("[%0t] Back \\ Quote \"", $time);  // Old bug when \" last on the line.
 
       // Display formatting
-      $display("[%0t] %%X=%X %%D=%D %%0X=%0X %%0O=%0O %%B=%B", $time,
-	       quad[5:0], quad[5:0], quad[5:0], quad[5:0], quad[5:0]);
-      $display("[%0t] %%x=%x %%d=%d %%0x=%0x %%0o=%0o %%b=%b", $time,
+      $display("[%0t] %%X=%X %%0X=%0X %%0O=%0O %%B=%B", $time,
+	       quad[5:0], quad[5:0], quad[5:0], quad[5:0]);
+      $display("[%0t] %%x=%x %%0x=%0x %%0o=%0o %%b=%b", $time,
+	       quad[5:0], quad[5:0], quad[5:0], quad[5:0]);
+      $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d", $time,
 	       quad[5:0], quad[5:0], quad[5:0], quad[5:0], quad[5:0]);
       $display("[%0t] %%x=%x %%0x=%0x %%o=%o %%b=%b", $time,
 	       quad, quad, quad, quad);
