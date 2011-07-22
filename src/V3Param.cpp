@@ -43,7 +43,6 @@
 #include "V3Case.h"
 #include "V3Const.h"
 #include "V3Width.h"
-#include "V3Signed.h"
 #include "V3Unroll.h"
 
 //######################################################################

@@ -101,73 +101,84 @@ private:
     }
 
     // VISITORS
-    //   Naming:  width_{output size rule}_{lhs rule}_{rhs rule}
+    //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
+    //		Where type:
+    //			_O1=boolean (width 1 unsigned)
+    //			_Ou=unsigned
+    //			_Os=signed
+    //			_Ous=unsigned or signed
+    //			_Or=real
+    //			_Ox=anything
+    //		Where _Wlhs = Width comes from LHS
+    //		Where _Wleqrhs = Width matches LHS and RHS
+    //		Where _Slandrhs  = Signed if LHS and RHS
+
     // Widths: 1 bit out, lhs 1 bit
-    virtual void visit(AstLogNot* nodep, AstNUser* vup) {	width_O1_L1(nodep,vup); }
-    virtual void visit(AstPslBool* nodep, AstNUser* vup) {	width_O1_L1(nodep,vup); }
+    virtual void visit(AstLogNot* nodep, AstNUser* vup) {	visit_log_O1_L1rus(nodep,vup); }
+    virtual void visit(AstPslBool* nodep, AstNUser* vup) {	visit_log_O1_L1rus(nodep,vup); }
 
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit
-    virtual void visit(AstLogAnd* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
-    virtual void visit(AstLogOr* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
-    virtual void visit(AstLogIf* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
-    virtual void visit(AstLogIff* nodep, AstNUser* vup) {	width_O1_L1_R1(nodep,vup); }
+    virtual void visit(AstLogAnd* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }
+    virtual void visit(AstLogOr* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }
+    virtual void visit(AstLogIf* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }
+    virtual void visit(AstLogIff* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }
 
     // Widths: 1 bit out, Any width lhs
-    virtual void visit(AstRedAnd* nodep, AstNUser* vup) {	width_O1_L(nodep,vup); }
-    virtual void visit(AstRedOr* nodep, AstNUser* vup) {	width_O1_L(nodep,vup); }
-    virtual void visit(AstRedXnor* nodep, AstNUser* vup){	width_O1_L(nodep,vup); }
-    virtual void visit(AstRedXor* nodep,AstNUser* vup) {	width_O1_L(nodep,vup); }
-    virtual void visit(AstIsUnknown* nodep,AstNUser* vup) {	width_O1_L(nodep,vup); }
-    virtual void visit(AstOneHot* nodep,AstNUser* vup) {	width_O1_L(nodep,vup); }
-    virtual void visit(AstOneHot0* nodep,AstNUser* vup) {	width_O1_L(nodep,vup); }
+    virtual void visit(AstRedAnd* nodep, AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstRedOr* nodep, AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstRedXnor* nodep, AstNUser* vup){	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstRedXor* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstIsUnknown* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstOneHot* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
+    virtual void visit(AstOneHot0* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup); }
 
     // Widths: 1 bit out, lhs width == rhs width
-    virtual void visit(AstEq* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstEqCase* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstEqWild* nodep, AstNUser* vup) {	width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstGt* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstGtS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstGte* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstGteS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstLt* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstLtS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstLte* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstLteS* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstNeq* nodep, AstNUser* vup) {		width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstNeqCase* nodep, AstNUser* vup){	width_O1_L_Rlhs(nodep,vup); }
-    virtual void visit(AstNeqWild* nodep, AstNUser* vup){	width_O1_L_Rlhs(nodep,vup); }
+    virtual void visit(AstEq* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstEqCase* nodep, AstNUser* vup) {	visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstEqWild* nodep, AstNUser* vup) {	visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstGt* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstGtS* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstGte* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstGteS* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstLt* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstLtS* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstLte* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstLteS* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstNeq* nodep, AstNUser* vup) {		visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstNeqCase* nodep, AstNUser* vup){	visit_cmp_O1_LRrus(nodep,vup); }
+    virtual void visit(AstNeqWild* nodep, AstNUser* vup){	visit_cmp_O1_LRrus(nodep,vup); }
 
     // Widths: out width = lhs width = rhs width
-    virtual void visit(AstAnd* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstOr* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstXnor* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstXor* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstBufIf1* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
+    virtual void visit(AstAnd* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstOr* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstXnor* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstXor* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstBufIf1* nodep, AstNUser* vup) {	visit_boolmath_Ous_LRus(nodep,vup); }
     // Multiple possible reasonable division width conversions.  Just keep our code simple, they aren't common.
-    virtual void visit(AstModDiv* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstModDivS* nodep, AstNUser* vup) {	width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstDiv* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstDivS* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
+    virtual void visit(AstModDiv* nodep, AstNUser* vup) {	visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstModDivS* nodep, AstNUser* vup) {	visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstDiv* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstDivS* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
     // Special warning suppression rules
-    virtual void visit(AstSub* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstAdd* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstMul* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
-    virtual void visit(AstMulS* nodep, AstNUser* vup) {		width_Omax_L_Rlhs(nodep,vup); }
+    virtual void visit(AstSub* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstAdd* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstMul* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
+    virtual void visit(AstMulS* nodep, AstNUser* vup) {		visit_boolmath_Ous_LRus(nodep,vup); }
 
     // Widths: out width = lhs width, but upper matters
-    virtual void visit(AstNot* nodep, AstNUser* vup) {		width_Olhs_L(nodep,vup); }
-    virtual void visit(AstNegate* nodep, AstNUser* vup) {	width_Olhs_L(nodep,vup); }
+    virtual void visit(AstNot* nodep, AstNUser* vup) {		visit_math_Orus_Dreplace(nodep,vup); }
+    virtual void visit(AstNegate* nodep, AstNUser* vup) {	visit_math_Orus_Dreplace(nodep,vup); }
 
     // Widths: out width = lhs width, upper doesn't matter
-    virtual void visit(AstSigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
-    virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	width_Olhs_Lforce(nodep,vup); }
+    virtual void visit(AstSigned* nodep, AstNUser* vup) {	visit_Ous_Lus_Wforce(nodep,vup); }
+    virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	visit_Ous_Lus_Wforce(nodep,vup); }
 
     // Widths: Output width from lhs, rhs<33 bits
-    virtual void visit(AstPow* nodep, AstNUser* vup) {		width_Olhs_L_R32(nodep,vup); }
-    virtual void visit(AstPowS* nodep, AstNUser* vup) {		width_Olhs_L_R32(nodep,vup); }
-    virtual void visit(AstShiftL* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
-    virtual void visit(AstShiftR* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
-    virtual void visit(AstShiftRS* nodep, AstNUser* vup) {	width_Olhs_L_R32(nodep,vup); }
+    virtual void visit(AstPow* nodep, AstNUser* vup) {		visit_shift_Ous_Lus_Rus32(nodep,vup); }
+    virtual void visit(AstPowS* nodep, AstNUser* vup) {		visit_shift_Ous_Lus_Rus32(nodep,vup); }
+    virtual void visit(AstShiftL* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
+    virtual void visit(AstShiftR* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
+    virtual void visit(AstShiftRS* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
 
     // Widths: Constant, terminal
     virtual void visit(AstTime* nodep, AstNUser*) {		nodep->width(64,64); }
@@ -1213,7 +1224,7 @@ private:
 	}
     }
 
-    void width_O1_L1(AstNode* nodep, AstNUser* vup) {
+    void visit_log_O1_L1rus(AstNode* nodep, AstNUser* vup) {
 	// Widths: 1 bit out, lhs 1 bit
 	// We calculate the width of the UNDER expression.
 	// We then check its width to see if it's legal, and edit if not
@@ -1228,7 +1239,7 @@ private:
 	}
     }
 
-    void width_O1_L1_R1(AstNode* nodep, AstNUser* vup) {
+    void visit_log_O1_LR1rus(AstNode* nodep, AstNUser* vup) {
 	// Widths: 1 bit out, lhs 1 bit, rhs 1 bit
 	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
 	if (vup->c()->prelim()) {
@@ -1242,7 +1253,7 @@ private:
 	}
     }
 
-    void width_O1_L(AstNode* nodep, AstNUser* vup) {
+    void visit_red_O1_Lrus(AstNode* nodep, AstNUser* vup) {
 	// Widths: 1 bit out, Any width lhs
 	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
 	if (vup->c()->prelim()) {
@@ -1251,7 +1262,7 @@ private:
 	nodep->width(1,1);
     }
 
-    void width_O1_L_Rlhs(AstNode* nodep, AstNUser* vup) {
+    void visit_cmp_O1_LRrus(AstNode* nodep, AstNUser* vup) {
 	// Widths: 1 bit out, lhs width == rhs width
 	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
 	if (vup->c()->prelim()) {
@@ -1278,7 +1289,7 @@ private:
 	nodep->width(width,width);
     }
 
-    void width_Olhs_L(AstNodeUniop* nodep, AstNUser* vup) {
+    void visit_math_Orus_Dreplace(AstNodeUniop* nodep, AstNUser* vup) {
 	// Widths: out width = lhs width
 	// "Interim results shall take the max of operands, including LHS of assignments"
 	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
@@ -1294,7 +1305,7 @@ private:
 	}
     }
 
-    void width_Olhs_Lforce(AstNodeUniop* nodep, AstNUser* vup) {
+    void visit_Ous_Lus_Wforce(AstNodeUniop* nodep, AstNUser* vup) {
 	// Widths: out width = lhs width
 	// It always comes exactly from LHS; ignores any upper operand
 	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
@@ -1311,7 +1322,7 @@ private:
 	}
     }
 
-    void width_Olhs_L_R32(AstNode* nodep, AstNUser* vup)  {
+    void visit_shift_Ous_Lus_Rus32(AstNode* nodep, AstNUser* vup)  {
 	// Widths: Output width from lhs, rhs<33 bits
 	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
 	if (vup->c()->prelim()) {
@@ -1330,7 +1341,7 @@ private:
 	}
     }
 
-    void width_Omax_L_Rlhs(AstNode* nodep, AstNUser* vup) {
+    void visit_boolmath_Ous_LRus(AstNode* nodep, AstNUser* vup) {
 	// Widths: out width = lhs width = rhs width
 	if (!nodep->op2p()) nodep->v3fatalSrc("For binary ops only!");
 	// If errors are off, we need to follow the spec; thus we really need to do the max()
