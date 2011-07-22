@@ -209,7 +209,7 @@ class AstBasicDTypeKwd {
 public:
     enum en {
 	BIT, BYTE, CHANDLE, INT, INTEGER, LOGIC, LONGINT,
-	REAL, SHORTINT, SHORTREAL, TIME,
+	DOUBLE, SHORTINT, FLOAT, TIME,
 	// Closer to a class type, but limited usage
 	STRING,
 	// Internal types for mid-steps
@@ -251,8 +251,8 @@ public:
 	case INTEGER:	return 32;
 	case LOGIC:	return 1;
 	case LONGINT:	return 64;
-	case REAL:	return 64;
-	case SHORTREAL:	return 32;
+	case DOUBLE:	return 64;
+	case FLOAT:	return 32;
 	case SHORTINT:	return 16;
 	case TIME:	return 64;
 	case STRING:	return 64;  // Just the pointer, for today
@@ -267,7 +267,7 @@ public:
     }
     bool isZeroInit() const { // Otherwise initializes to X
 	return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT
-		|| m_e==STRING || m_e==REAL || m_e==SHORTREAL);
+		|| m_e==STRING || m_e==DOUBLE || m_e==FLOAT);
     }
     bool isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
@@ -279,10 +279,10 @@ public:
 	return (m_e==LOGIC || m_e==TIME);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==REAL || m_e==SHORTREAL);
+	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
     }
-    bool isReal() const {
-	return (m_e==REAL);
+    bool isDouble() const {
+	return (m_e==DOUBLE);
     }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
