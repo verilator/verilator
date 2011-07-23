@@ -284,6 +284,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
     static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD char tmpf[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -327,6 +328,16 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    case 'S': { // "C" string
 		const char* cstrp = va_arg(ap, const char*);
 		output += cstrp;
+		break;
+	    }
+	    case 'e':
+	    case 'f':
+	    case 'g': {
+		double d = va_arg(ap, double);
+		strncpy(tmpf, pctp, pos-pctp+1);
+		tmpf[pos-pctp+1] = '\0';
+		sprintf(tmp, tmpf, d);
+		output += tmp;
 		break;
 	    }
 	    default: {

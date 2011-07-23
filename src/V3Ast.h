@@ -56,6 +56,36 @@ public:
 
 //######################################################################
 
+class AstNumeric {
+public:
+    enum en {
+	UNSIGNED,
+	SIGNED,
+	DOUBLE
+	// Limited to 2 bits, unless change V3Ast's packing function
+    };
+    enum en m_e;
+    const char* ascii() const {
+	static const char* names[] = {
+	    "UNSIGNED","SIGNED","DOUBLE"
+	};
+	return names[m_e];
+    };
+    inline AstNumeric () {}
+    inline AstNumeric (en _e) : m_e(_e) {}
+    explicit inline AstNumeric (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+    inline bool isDouble() const { return m_e==DOUBLE; }
+    inline bool isSigned() const { return m_e==SIGNED; }
+    inline bool isUnsigned() const { return m_e==UNSIGNED; }
+  };
+  inline bool operator== (AstNumeric lhs, AstNumeric rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstNumeric lhs, AstNumeric::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstNumeric::en lhs, AstNumeric rhs) { return (lhs == rhs.m_e); }
+  inline ostream& operator<<(ostream& os, AstNumeric rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstPragmaType {
 public:
     enum en {
@@ -689,7 +719,9 @@ class AstNode {
     static int	s_cloneCntGbl;	// Count of which userp is set
 
     // Attributes
-    bool	m_signed:1;	// Node is signed
+    uint32_t	m_numeric:2;	// Node is real/signed - important that bitfields remain unsigned
+    bool	m_didWidth:1;	// Did V3Width computation
+    bool	m_doingWidth:1;	// Inside V3Width
     //		// Space for more bools here
 
     int		m_width;	// Bit width of operation
@@ -812,10 +844,18 @@ public:
     bool	widthSized() const { return !m_widthMin || m_widthMin==m_width; }
     void	width(int width, int sized) { m_width=width; m_widthMin=sized; }
     void	widthFrom(AstNode* fromp) { if (fromp) { m_width=fromp->m_width; m_widthMin=fromp->m_widthMin; }}
-    void	widthSignedFrom(AstNode* fromp) { widthFrom(fromp); signedFrom(fromp); }
-    void	signedFrom(AstNode* fromp) { if (fromp) { m_signed=fromp->m_signed; }}
-    void	isSigned(bool flag) { m_signed=flag; }
-    bool	isSigned() const { return m_signed; }
+    void	widthSignedFrom(AstNode* fromp) { widthFrom(fromp); numericFrom(fromp); }
+    void	numericFrom(AstNode* fromp) { numeric(fromp->numeric()); }
+    void	numeric(AstNumeric flag) { m_numeric = (int)flag; if (flag.isDouble()) width(64,64); }
+    AstNumeric	numeric() const { return AstNumeric(m_numeric); }
+    bool	isDouble() const { return numeric().isDouble(); }
+    bool	isSigned() const { return numeric().isSigned(); }
+    void	isSigned(bool flag) { numeric(flag ? AstNumeric::SIGNED : AstNumeric::UNSIGNED); }
+    bool	isUnsigned() const { return numeric().isUnsigned(); }
+    void	didWidth(bool flag) { m_didWidth=flag; }
+    bool	didWidth() const { return m_didWidth; }
+    void	doingWidth(bool flag) { m_doingWidth=flag; }
+    bool	doingWidth() const { return m_doingWidth; }
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
 
@@ -986,6 +1026,8 @@ struct AstNodeUniop : public AstNodeMath {
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
     virtual bool cleanLhs() = 0;
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
+    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -1008,6 +1050,7 @@ struct AstNodeBiop : public AstNodeMath {
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
     virtual bool sizeMattersRhs() = 0; // True if output result depends on rhs size
     virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }

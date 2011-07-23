@@ -74,7 +74,9 @@ void AstNode::init() {
     m_clonep = NULL;
     m_cloneCnt = 0;
     // Attributes
-    m_signed = false;
+    m_numeric = (int)AstNumeric::UNSIGNED;
+    m_didWidth = false;
+    m_doingWidth = false;
     m_width = 0;
     m_widthMin = 0;
     m_user1p = NULL;
@@ -873,7 +875,7 @@ bool AstNode::sameTreeIter(AstNode* node2p, bool ignNext) {
     if (this==NULL || node2p==NULL) return false;
     if (this->type() != node2p->type()
 	|| this->width() != node2p->width()
-	|| this->isSigned() != node2p->isSigned()
+	|| this->numeric() != node2p->numeric()
 	|| !this->same(node2p)) {
 	return false;
     }

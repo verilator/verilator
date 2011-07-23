@@ -152,20 +152,20 @@ private:
 	if (nodep->didSigning()) return;
 	nodep->didSigning(true);
 	nodep->iterateChildren(*this);
-	nodep->signedFrom(nodep->dtypep());
+	nodep->numericFrom(nodep->dtypep());
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->varp()->iterate(*this);
-	nodep->signedFrom(nodep->varp());
+	nodep->numericFrom(nodep->varp());
     }
     virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
 	nodep->itemp()->iterate(*this);
-	nodep->signedFrom(nodep->itemp());
+	nodep->numericFrom(nodep->itemp());
     }
     virtual void visit(AstCast* nodep, AstNUser*) {
 	nodep->lhsp()->iterate(*this);
 	nodep->dtypep()->iterate(*this);
-	nodep->signedFrom(nodep->dtypep());
+	nodep->numericFrom(nodep->dtypep());
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	// The node got setup with the signed state of the node.
@@ -178,18 +178,18 @@ private:
 	nodep->didSigning(true);
 	nodep->iterateChildren(*this);
 	if (nodep->fvarp()) {
-	    nodep->signedFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
+	    nodep->numericFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
 	}
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->taskp()) nodep->taskp()->iterate(*this);
-	nodep->signedFrom(nodep->taskp());
+	nodep->numericFrom(nodep->taskp());
     }
     virtual void visit(AstRefDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (nodep->defp()) nodep->defp()->iterate(*this);
-	nodep->signedFrom(nodep->skipRefp());
+	nodep->numericFrom(nodep->skipRefp());
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	if (!nodep->castGenIf()) {  // for m_paramsOnly
