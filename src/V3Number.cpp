@@ -306,12 +306,12 @@ V3Number& V3Number::setSingleBits(char value) {
 }
 
 V3Number& V3Number::setAllBits0() {
-  for (int i=0; i<words(); i++) { m_value[i] = m_valueX[i]=0; }
-  return *this;
+    for (int i=0; i<words(); i++) { m_value[i] = m_valueX[i]=0; }
+    return *this;
 }
 V3Number& V3Number::setAllBits1() {
-  for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
-  return *this;
+    for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
+    return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     for (int i=0; i<words(); i++) { m_value[i]=m_valueX[i] = ~0; }

@@ -1624,7 +1624,7 @@ public:
     void	ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
 
-class AstSFormatF : public AstNode {
+struct AstSFormatF : public AstNode {
     // Convert format to string, generally under a AstDisplay or AstSFormat
     // Also used as "real" function for /*verilator sformat*/ functions
     string	m_text;

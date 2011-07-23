@@ -254,6 +254,7 @@ public:
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
     void verilatorCmtBad(const char* text);
+    double parseDouble(const char* text, size_t length);
     void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState=state; }
     bool popBeginKeywords() { if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
     int lastVerilogState() { return m_lastVerilogState; }

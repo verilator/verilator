@@ -812,11 +812,11 @@ word	[a-zA-Z0-9_]+
                           return yaINTNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-			  FL; yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-			  FL; yylval.cdouble = 0;  /* Only for delays, not used yet */
+			  FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
 			}
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
@@ -948,6 +948,20 @@ word	[a-zA-Z0-9_]+
 <*>.|\n     		{ yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); }
 %%
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
+
+double V3ParseImp::parseDouble(const char* textp, size_t length) {
+    char* strgp = new char[strlen(textp)+1];
+    char* dp=strgp;
+    for (const char* sp=textp; sp<(textp+length);) {
+	if (*sp != '_') *dp++ = *sp++;
+	else sp++;
+    }
+    char* endp = strgp;
+    double d = strtod(strgp, &endp);
+    if ((endp-strgp) != length) { yyerrorf("Syntax error parsing real: %s",strgp); }
+    delete strgp;
+    return d;
+}
 
 int V3ParseImp::lexToken() {
     // called from lexToBison, has a "this"
