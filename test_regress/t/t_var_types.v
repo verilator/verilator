@@ -25,8 +25,8 @@ module t (/*AUTOARG*/);
 
    // IEEE: non_integer_type
    //UNSUP shortreal	d_shortreal;
-   //UNSUP real		d_real;
-   //UNSUP realtime	d_realtime;
+   real		d_real;
+   realtime	d_realtime;
 
    // Declarations using var
    var byte 	v_b;

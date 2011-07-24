@@ -135,8 +135,8 @@ private:
 	// Spec says value is integral, if negative is ignored
 	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
 				  AstLogicPacked(), 32);
-	varp->isSigned(true);
-	varp->dtypep()->isSigned(true);
+	varp->numeric(AstNumeric::SIGNED);
+	varp->dtypep()->numeric(AstNumeric::SIGNED);
 	varp->usedLoopIdx(true);
 	m_modp->addStmtp(varp);
 	AstNode* initsp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
@@ -144,7 +144,7 @@ private:
 	AstNode* decp = new AstAssign(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, true),
 				      new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
 						 new AstConst(nodep->fileline(), 1)));
-	AstNode* zerosp = new AstConst(nodep->fileline(), 0); zerosp->isSigned(true);
+	AstNode* zerosp = new AstConst(nodep->fileline(), 0); zerosp->numeric(AstNumeric::SIGNED);
 	AstNode* condp = new AstGtS(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, false),
 				    zerosp);
 	AstNode* bodysp = nodep->bodysp(); if (bodysp) bodysp->unlinkFrBackWithNext();

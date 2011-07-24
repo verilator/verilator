@@ -39,9 +39,7 @@ module t ();
    import "DPI-C" pure function longint      dpii_f_longint  (input longint      i);
    import "DPI-C" pure function chandle      dpii_f_chandle  (input chandle      i);
    import "DPI-C" pure function string       dpii_f_string   (input string       i);
-`ifndef VERILATOR
    import "DPI-C" pure function real         dpii_f_real     (input real         i);
-`endif
 `ifndef NO_SHORTREAL
    import "DPI-C" pure function shortreal    dpii_f_shortreal(input shortreal    i);
 `endif
@@ -53,9 +51,7 @@ module t ();
    import "DPI-C" pure function void dpii_v_longint  (input longint   i, output longint   o);
    import "DPI-C" pure function void dpii_v_chandle  (input chandle   i, output chandle   o);
    import "DPI-C" pure function void dpii_v_string   (input string    i, output string    o);
-`ifndef VERILATOR
    import "DPI-C" pure function void dpii_v_real     (input real      i, output real      o);
-`endif
 `ifndef NO_SHORTREAL
    import "DPI-C" pure function void dpii_v_shortreal(input shortreal i, output shortreal o);
 `endif
@@ -93,9 +89,7 @@ module t ();
    longint	i_l,	o_l;
    chandle	i_c,	o_c;
    string 	i_n,	o_n;
-`ifndef VERILATOR
    real 	i_d,	o_d;
-`endif
 `ifndef NO_SHORTREAL
    shortreal 	i_f,	o_f;
 `endif
@@ -122,6 +116,10 @@ module t ();
       i_y = {1'b1,wide[8-2:0]};
       i_s = {1'b1,wide[16-2:0]};
       i_l = {1'b1,wide[64-2:0]};
+      i_d = 32.1;
+`ifndef NO_SHORTREAL
+      i_f = 30.2;
+`endif
 
       if (dpii_f_bit     (i_b) !== ~i_b) $stop;
       if (dpii_f_bit8    (i_b8) !== ~i_b8) $stop;
@@ -145,9 +143,7 @@ module t ();
       if (dpii_f_longint  (i_l) !== ~i_l) $stop;
       if (dpii_f_chandle  (i_c) !== i_c) $stop;
       if (dpii_f_string   (i_n) != i_n) $stop;
-`ifndef VERILATOR
       if (dpii_f_real     (i_d) != i_d+1.5) $stop;
-`endif
 `ifndef NO_SHORTREAL
       if (dpii_f_shortreal(i_f) != i_f+1.5) $stop;
 `endif
@@ -159,9 +155,7 @@ module t ();
       dpii_v_longint  (i_l,o_l); if (o_l !== ~i_l) $stop;
       dpii_v_chandle  (i_c,o_c); if (o_c !== i_c) $stop;
       dpii_v_string   (i_n,o_n); if (o_n != i_n) $stop;
-`ifndef VERILATOR
       dpii_v_real     (i_d,o_d); if (o_d != i_d+1.5) $stop;
-`endif
 `ifndef NO_SHORTREAL
       dpii_v_shortreal(i_f,o_f); if (o_f != i_f+1.5) $stop;
 `endif

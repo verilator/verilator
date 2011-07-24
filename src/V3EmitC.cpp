@@ -545,6 +545,8 @@ public:
 		ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word)));
 	    }
 	    ofp()->printf(",0x%08" VL_PRI64 "x)", (vluint64_t)(nodep->num().dataWord(0)));
+	} else if (nodep->isDouble()) {
+	    ofp()->printf("%g", nodep->num().toDouble());
 	} else if (nodep->isQuad()) {
 	    vluint64_t num = nodep->toUQuad();
 	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "d)", num);
@@ -2013,7 +2015,9 @@ class EmitCTrace : EmitCStmts {
 	return varp->isSc() && varp->isScBv();
     }
     void emitTraceInitOne(AstTraceDecl* nodep) {
-	if (nodep->isWide()) {
+	if (nodep->isDouble()) {
+	    puts("vcdp->declDouble");
+	} else if (nodep->isWide()) {
 	    puts("vcdp->declArray");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->declQuad ");
@@ -2042,7 +2046,9 @@ class EmitCTrace : EmitCStmts {
 	string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
 			|| m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
 		       ? "full":"chg");
-	if (nodep->isWide() || emitTraceIsScBv(nodep)) {
+	if (nodep->isDouble()) {
+	    puts("vcdp->"+full+"Double");
+	} else if (nodep->isWide() || emitTraceIsScBv(nodep)) {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");

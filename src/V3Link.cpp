@@ -428,7 +428,7 @@ private:
 		if (dtypep) dtypep->unlinkFrBack();
 		else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
 		AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(), dtypep);
-		newvarp->isSigned(nodep->isSigned());
+		if (nodep->isSigned()) newvarp->numeric(AstNumeric::SIGNED);
 		newvarp->funcReturn(true);
 		newvarp->trace(false);  // Not user visible
 		newvarp->attrIsolateAssign(nodep->attrIsolateAssign());

@@ -817,6 +817,8 @@ public:
     static int	instrCountLd() { return 2; }		///< Instruction cycles to load memory
     static int	instrCountMul() { return 3; }		///< Instruction cycles to multiply integers
     static int	instrCountPli() { return 20; }		///< Instruction cycles to call pli routines
+    static int	instrCountDouble() { return 8; }	///< Instruction cycles to convert or do floats
+    static int	instrCountDoubleDiv() { return 40; }	///< Instruction cycles to divide floats
     static int	instrCountCall() { return instrCountBranch()+10; }	///< Instruction cycles to call subroutine
     static int	instrCountTime() { return instrCountCall()+5; }		///< Instruction cycles to determine simulation time
 
@@ -1323,7 +1325,6 @@ private:
     string	m_name;		// Name of task
     string	m_cname;	// Name of task if DPI import
     bool	m_taskPublic:1;	// Public task
-    bool	m_didSigning:1;	// V3Signed completed; can skip iteration
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_prototype:1;	// Just a prototype
     bool	m_dpiExport:1;	// DPI exported
@@ -1334,7 +1335,7 @@ private:
 public:
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
-	, m_name(name), m_taskPublic(false), m_didSigning(false)
+	, m_name(name), m_taskPublic(false)
 	, m_attrIsolateAssign(false), m_prototype(false)
 	, m_dpiExport(false), m_dpiImport(false), m_dpiContext(false)
 	, m_dpiTask(false), m_pure(false) {
@@ -1361,8 +1362,6 @@ public:
     void 	scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
-    void	didSigning(bool flag) { m_didSigning=flag; }
-    bool	didSigning() const { return m_didSigning; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     void	prototype(bool flag) { m_prototype = flag; }

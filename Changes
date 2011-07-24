@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.814****
 
+**   Support 'real' numbers and related functions.
+
 ***  Support 'const' variables in limited cases; similar to enums. [Alex Solomatnikov]
 
 ***  Support disable for loop escapes.

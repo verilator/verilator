@@ -148,17 +148,19 @@ private:
 
     bool isCaseTreeFast(AstCase* nodep) {
 	int width = 0;
+	bool opaque = false;
 	m_caseItems = 0;
 	m_caseNoOverlapsAllCovered = true;
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
 		if (icondp->width() > width) width = icondp->width();
+		if (icondp->isDouble()) opaque = true;
 		if (!icondp->castConst()) width = CASE_BARF;  // Can't parse; not a constant
 		m_caseItems++;
 	    }
 	}
 	m_caseWidth = width;
-	if (width==0 || width > CASE_OVERLAP_WIDTH) {
+	if (width==0 || width > CASE_OVERLAP_WIDTH || opaque) {
 	    m_caseNoOverlapsAllCovered = false;
 	    return false;	// Too wide for analysis
 	}
@@ -348,7 +350,9 @@ private:
 			and1p = cexprp->cloneTree(false);
 			and2p = icondp;
 		    }
-		    AstEq* condp = new AstEq(itemp->fileline(), and1p, and2p);
+		    AstNodeBiop* condp = (and1p->isDouble()
+					  ? (new AstEqD(itemp->fileline(), and1p, and2p))->castNodeBiop()
+					  : (new AstEq(itemp->fileline(), and1p, and2p))->castNodeBiop());
 		    if (!ifexprp) {
 			ifexprp = condp;
 		    } else {

@@ -503,6 +503,7 @@ void AstNode::dump(ostream& os) {
       <<((editCount()>=editCountLast())?"#>":">")
       <<" {"<<dec<<fileline()->lineno()<<"}"
       <<" "<<(isSigned()?"s":"")
+      <<(isDouble()?"d":"")
       <<"w"<<(widthSized()?"":"u")<<width();
     if (!widthSized()) os<<"/"<<widthMin();
     if (name()!="") os<<"  "<<AstNode::quoteName(name());

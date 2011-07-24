@@ -930,8 +930,8 @@ Enables the specified warning message.
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
--Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-UNSIGNED
--Wwarn-WIDTH".
+-Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-REALCVT
+-Wwarn-UNSIGNED -Wwarn-WIDTH".
 
 =item -Wwarn-style
 
@@ -2096,7 +2096,7 @@ that Verilator will print a list of known scopes to help your debugging.
 
 =head2 Floating Point
 
-Floating Point numbers are not synthesizable, and so not supported.
+Floating Point (real) numbers are supported.
 
 =head2 Latches
 
@@ -2335,10 +2335,6 @@ number generator (not one per module).
 Read memory commands should work properly.  Note Verilator and the Verilog
 specification does not include support for readmem to multi-dimensional
 arrays.
-
-=item $realtime
-
-Treated as $time.
 
 =item $test$plusargs, $value$plusargs
 
@@ -2618,6 +2614,11 @@ Often this error is because some low level cell is being read in, but is
 not really needed.  The best solution is to insure that each module is in a
 unique file by the same name.  Otherwise, make sure all library files are
 read in as libraries with -v, instead of automatically with -y.
+
+=item REALCVT
+
+Warns that a real number is being implicitly rounded to an integer, with
+possible loss of precision.
 
 =item REDEFMACRO
 

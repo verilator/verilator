@@ -174,6 +174,7 @@ word	[a-zA-Z0-9_]+
   /*     Extensions to Verilog set, some specified by PSL */
   "$c"[0-9]*		{ FL; return yD_C; }		/*Verilator only*/
   /*     System Tasks */
+  "$bitstoreal"		{ FL; return yD_BITSTOREAL; }
   "$display"		{ FL; return yD_DISPLAY; }
   "$fclose"		{ FL; return yD_FCLOSE; }
   "$fdisplay"		{ FL; return yD_FDISPLAY; }
@@ -187,15 +188,18 @@ word	[a-zA-Z0-9_]+
   "$fullskew"		{ FL; return yaTIMINGSPEC; }
   "$fwrite"		{ FL; return yD_FWRITE; }
   "$hold"		{ FL; return yaTIMINGSPEC; }
+  "$itor"		{ FL; return yD_ITOR; }
   "$nochange"		{ FL; return yaTIMINGSPEC; }
   "$period"		{ FL; return yaTIMINGSPEC; }
   "$random"		{ FL; return yD_RANDOM; }
   "$readmemb"		{ FL; return yD_READMEMB; }
   "$readmemh"		{ FL; return yD_READMEMH; }
-  "$realtime"		{ FL; return yD_TIME; }
+  "$realtime"		{ FL; return yD_REALTIME; }
+  "$realtobits"		{ FL; return yD_REALTOBITS; }
   "$recovery"		{ FL; return yaTIMINGSPEC; }
   "$recrem"		{ FL; return yaTIMINGSPEC; }
   "$removal"		{ FL; return yaTIMINGSPEC; }
+  "$rtoi"		{ FL; return yD_RTOI; }
   "$setup"		{ FL; return yaTIMINGSPEC; }
   "$setuphold"		{ FL; return yaTIMINGSPEC; }
   "$sformat"		{ FL; return yD_SFORMAT; }
@@ -261,6 +265,8 @@ word	[a-zA-Z0-9_]+
   "pulldown"		{ FL; return yPULLDOWN; }
   "pullup"		{ FL; return yPULLUP; }
   "rcmos"		{ FL; return yRCMOS; }
+  "real"		{ FL; return yREAL; }
+  "realtime"		{ FL; return yREALTIME; }
   "reg"			{ FL; return yREG; }
   "repeat"		{ FL; return yREPEAT; }
   "rnmos"		{ FL; return yRNMOS; }
@@ -310,8 +316,6 @@ word	[a-zA-Z0-9_]+
   "medium"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "pull0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "pull1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "real"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "realtime"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "release"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "small"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "strong0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
@@ -950,12 +954,13 @@ word	[a-zA-Z0-9_]+
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 
 double V3ParseImp::parseDouble(const char* textp, size_t length) {
-    char* strgp = new char[strlen(textp)+1];
+    char* strgp = new char[length+1];
     char* dp=strgp;
     for (const char* sp=textp; sp<(textp+length);) {
 	if (*sp != '_') *dp++ = *sp++;
 	else sp++;
     }
+    *dp++ = '\0';
     char* endp = strgp;
     double d = strtod(strgp, &endp);
     if ((endp-strgp) != length) { yyerrorf("Syntax error parsing real: %s",strgp); }

@@ -209,7 +209,6 @@ RAW_OBJS = \
 	V3PreShell.o \
 	V3Premit.o \
 	V3Scope.o \
-	V3Signed.o \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
