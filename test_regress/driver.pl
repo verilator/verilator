@@ -165,7 +165,7 @@ sub one_test {
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
 	     $leftcnt--;
-	     print "==SUMMARY: Left $leftcnt  Passed $okcnt  Skipped $skcnt  Failed $failcnt\n";
+	     print STDERR "==SUMMARY: Left $leftcnt  Passed $okcnt  Skipped $skcnt  Failed $failcnt\n";
 	 },
 	 )->ready();
 }
