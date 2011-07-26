@@ -37,7 +37,6 @@
 #include "V3Const.h"
 #include "V3Ast.h"
 #include "V3Width.h"
-#include "V3Signed.h"
 #include "V3Simulate.h"
 
 //######################################################################
@@ -1783,17 +1782,23 @@ private:
     TREEOP ("AstXnor   {operandsSame($lhsp,,$rhsp)}",	"replaceAllOnes(nodep)");
     TREEOP ("AstXor    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstEq     {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
+    TREEOP ("AstEqD    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP ("AstEqCase {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstEqWild {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstGt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstGtD    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstGtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstGte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstGteD   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstGteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstLt     {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstLtD    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstLtS    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstLte    {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
+    TREEOP ("AstLteD   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstLteS   {operandsSame($lhsp,,$rhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstNeq    {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
+    TREEOP ("AstNeqD   {operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstNeqCase{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstNeqWild{operandsSame($lhsp,,$rhsp)}",	"replaceZero(nodep)");
     TREEOP ("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",	"replaceWLhs(nodep)");

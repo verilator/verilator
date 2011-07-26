@@ -59,7 +59,9 @@ module t (/*AUTOARG*/
 
    reg [7:0] cyc; initial cyc=0;
    always @ (posedge clk) begin
+`ifdef TEST_VERBOSE
       $write("[%0t] rs %x cyc %d cg1f %x cnt %x cg %x\n",$time,reset_l,cyc,clkgate_e1f,count,countgated);
+`endif
       cyc <= cyc + 8'd1;
       case (cyc)
 	8'd00: begin

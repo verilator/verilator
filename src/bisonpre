@@ -9,7 +9,7 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.202';
+$VERSION = '3.307';
 
 our $Self;
 
@@ -74,9 +74,10 @@ sub parameter {
 sub process {
     remove_outputs();
 
-    clean_input($Opt_Input, tmp_prefix().".y");
+    $Self->{bison_version} = bison_version_check();
+    my $supports_report = ($Self->{bison_version} >= 2.3);
 
-    my $supports_report = (bison_version_check() >= 2.3);
+    clean_input($Opt_Input, tmp_prefix().".y");
 
     # Run bison
     my $command = ($Opt_Yacc
@@ -100,11 +101,11 @@ sub process {
 	die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
     }
 
-    clean_output(tmp_prefix().".output",output_prefix().".output", 1);
+    clean_output(tmp_prefix().".output",output_prefix().".output", 1,0);
     warning_check(output_prefix().".output");
 
-    clean_output(tmp_prefix().".c",	output_prefix().".c", 0);
-    clean_output(tmp_prefix().".h",	output_prefix().".h", 0);
+    clean_output(tmp_prefix().".c",	output_prefix().".c", 0,1);
+    clean_output(tmp_prefix().".h",	output_prefix().".h", 0,1);
     remove_tmp();
 }
 
@@ -150,15 +151,17 @@ sub clean_output {
     my $filename = shift;
     my $outname = shift || $filename;
     my $is_output = shift;
+    my $is_c = shift;
     print "  edit $filename $outname\n";
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     my @lines = $fh->getlines;
     $fh->close;
 
-    (my $basename = tmp_prefix().".y") =~ s!.*/!!;
+    (my $basename = tmp_prefix().".") =~ s!.*/!!;
     $basename = quotemeta($basename);
     (my $newbase = $Opt_Input) =~ s!.*/!!;
+    $newbase =~ s/\.y/./;
 
     if ($is_output) {
 	my %state_line; my $l=0;
@@ -173,6 +176,28 @@ sub clean_output {
 		chomp $line;
 		$line .= " // line $state_line{$1}" if $state_line{$1};
 		$line .= "\n";
+	    }
+	    push @out, $line;
+	}
+	@lines = @out; @out = ();
+    }
+    if ($is_c) {
+	my %token_values;
+	my $in_en=0;
+	foreach my $line (@lines) {
+	    $in_en=1 if $line =~ /enum\s+yytokentype/;
+	    $in_en=0 if $line =~ /;/;
+	    $token_values{$2} = $1 if $in_en && $line =~ /\b(\S+) = (\d+)/;
+	}
+	my @out;
+	foreach my $line (@lines) {
+	    if ($line =~ /BISONPRE_TOKEN_NAMES/) {
+		push @out, $line;
+		foreach my $tv (sort keys %token_values) {
+		    push @out, sprintf("\tcase %d: return \"%s\";\n",
+				       $tv, $token_values{$tv});
+		}
+		next;
 	    }
 	    push @out, $line;
 	}
@@ -211,6 +236,7 @@ sub clean_input {
     my $outname = shift || $filename;  # Can == filename if desired
     print "  edit $filename $outname\n";
 
+    $Self->{filename} = $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     my @lines = $fh->getlines;
     $fh->close;
@@ -232,7 +258,7 @@ sub clean_input {
 		$section++;
 		if ($section==2) { $last_rule = undef; }
 	    }
-	    elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S+)>:/$1:/) {
+	    elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S*)>:/$1:/) {
 		!$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
 		$types{$2}{$1} = 1;
 		$rules{$1}{name} = $1;
@@ -272,6 +298,25 @@ sub clean_input {
 
     #use Data::Dumper; print Dumper(\%rules);
 
+    # Replace BISONPRE_VERSION(ver,,...) with expanded list
+    {
+	my @linesin = @lines;  @lines=();  my $l=0;
+	foreach my $line (@linesin) {
+	    $l++;
+	    if ($line =~ /BISONPRE_VERSION/) {
+		($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*([^\),]+)\)\s*$/)
+		    or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
+		my $ver=$1;  my $cmd=$2;
+		if ($Self->{bison_version} >= $1) {
+		    $line = $cmd."\n";
+		} else {
+		    $line = "//NOP: $line";
+		}
+	    }
+	    push @lines, $line;
+	}
+    }
+
     # Replace BISONPRE_NOT(type,...) with expanded list
     {
 	my @linesin = @lines;  @lines=();  my $l=0;
@@ -308,20 +353,7 @@ sub clean_input {
 	foreach my $line (@linesin) {
 	    $l++;
 	    if ($line =~ /BISONPRE_COPY/) {
-		($line =~ s/BISONPRE_COPY\((\S+)\s*,\s*{([^}]*)}\s*\)/{HERE}/)
-		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
-		my $rule = $1;  my $code = $2;
-		$rules{$rule} or die "%Error: $filename:$l: Can't find definition for rule: $rule\n";
-		# Push it all onto one line to avoid error messages changing
-		my $insert = $rules{$rule}{rules_and_productions};
-		$insert =~ s/^\S+://g;	# Strip rule name
-		#print "COPY code $code\n";
-		#print "COPY in   $insert\n";
-		$_=$insert; eval("$code; \$_;");  $insert = $_;
-		#print "COPY out  $insert\n";
-		while ($insert =~ s/[ \t\n]+\n/\n/go) {}
-		while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
-		$line =~ s/{HERE}/$insert/;
+		$line = _bisonpre_copy($line,$l,0);
 	    }
 	    push @lines, $line;
 	}
@@ -346,6 +378,7 @@ sub clean_input {
 	    if ($line =~ m!//BISONPRE_TYPES!) {
 		push @lines, $line;
 		foreach my $type (sort keys %types) {
+		    next if !$type;
 		    my $line = "%type<$type>\t";
 		    foreach my $rule (sort keys %{$types{$type}}) {
 			$line.=" ".$rule;
@@ -370,6 +403,37 @@ sub clean_input {
 	$fh->write($line);
     }
     $fh->close;
+}
+
+sub _bisonpre_copy {
+    my $text = shift;
+    my $l  = shift;
+    my $depth = shift;
+    while ($text =~ /BISONPRE_COPY/) {
+	($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*{([^}]*)}\s*\)/{HERE}/)
+	    or die "%Error: $Self->{filename}:$l: Bad form of BISONPRE_NOT: $text\n";
+	my $once = $1; my $rule = $2;  my $code = $3;
+	$Self->{rules}{$rule} or die "%Error: $Self->{filename}:$l: Can't find definition for rule: $rule\n";
+	if ($depth > 0 && $once) {
+	    # _ONCE means don't inherit
+	    $text =~ s/\|[ \t]+{HERE}//;	# Don't OR in nothing
+	    $text =~ s/{HERE}//;
+	} else {
+	    # Push it all onto one line to avoid error messages changing
+	    my $insert = $Self->{rules}{$rule}{rules_and_productions};
+	    $insert =~ s/^\S+://g;	# Strip rule name
+	    # Recurse so BISONPRE under B
+	    #print "COPY $l code $code\n";
+	    #print "COPY $l in   $insert\n";
+	    $_=$insert; eval("$code; \$_;");  $insert = $_;
+	    #print "COPY $l out  $insert\n";
+	    while ($insert =~ s/[ \t\n]+\n/\n/go) {}
+	    while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
+	    $text =~ s/{HERE}/$insert/;
+	}
+	$depth++;
+    }
+    return $text;
 }
 
 #######################################################################
@@ -416,9 +480,18 @@ rule.  The type will be inserted where /*BISONPRE_TYPES*/ is encountered.
 Copy the rules and productions from the specified rule, filter through the
 Perl code provided in the {} and insert here into the output file.
 
+=item BISONPRE_COPY_ONCE(rule, {code})
+
+As with BISONPRE_COPY, but if called from underneath another BISONPRE_COPY
+rule, ignore it.
+
 =item BISONPRE_NOT(token[, token...])
 
 Create a rule that matches every token except for those specified.
+
+=item BISONPRE_VERSION(ver, cmd)
+
+If the bison version is >= the specified version, include the given command.
 
 =back
 

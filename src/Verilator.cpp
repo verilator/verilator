@@ -74,7 +74,6 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3Scope.h"
-#include "V3Signed.h"
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitAs.h"
@@ -168,9 +167,6 @@ void process () {
     V3Width::width(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("width.tree"));
 
-    // Compute signed/unsigned
-    V3Signed::signedAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("signed.tree"));
     V3Error::abortIfErrors();
 
     // Commit to the widths we've chosen; Make widthMin==width

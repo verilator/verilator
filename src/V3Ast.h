@@ -56,6 +56,36 @@ public:
 
 //######################################################################
 
+class AstNumeric {
+public:
+    enum en {
+	UNSIGNED,
+	SIGNED,
+	DOUBLE
+	// Limited to 2 bits, unless change V3Ast's packing function
+    };
+    enum en m_e;
+    const char* ascii() const {
+	static const char* names[] = {
+	    "UNSIGNED","SIGNED","DOUBLE"
+	};
+	return names[m_e];
+    };
+    inline AstNumeric () {}
+    inline AstNumeric (en _e) : m_e(_e) {}
+    explicit inline AstNumeric (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+    inline bool isDouble() const { return m_e==DOUBLE; }
+    inline bool isSigned() const { return m_e==SIGNED; }
+    inline bool isUnsigned() const { return m_e==UNSIGNED; }
+  };
+  inline bool operator== (AstNumeric lhs, AstNumeric rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstNumeric lhs, AstNumeric::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstNumeric::en lhs, AstNumeric rhs) { return (lhs == rhs.m_e); }
+  inline ostream& operator<<(ostream& os, AstNumeric rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstPragmaType {
 public:
     enum en {
@@ -209,7 +239,7 @@ class AstBasicDTypeKwd {
 public:
     enum en {
 	BIT, BYTE, CHANDLE, INT, INTEGER, LOGIC, LONGINT,
-	REAL, SHORTINT, SHORTREAL, TIME,
+	DOUBLE, SHORTINT, FLOAT, TIME,
 	// Closer to a class type, but limited usage
 	STRING,
 	// Internal types for mid-steps
@@ -251,8 +281,8 @@ public:
 	case INTEGER:	return 32;
 	case LOGIC:	return 1;
 	case LONGINT:	return 64;
-	case REAL:	return 64;
-	case SHORTREAL:	return 32;
+	case DOUBLE:	return 64;
+	case FLOAT:	return 32;
 	case SHORTINT:	return 16;
 	case TIME:	return 64;
 	case STRING:	return 64;  // Just the pointer, for today
@@ -267,7 +297,7 @@ public:
     }
     bool isZeroInit() const { // Otherwise initializes to X
 	return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT
-		|| m_e==STRING || m_e==REAL || m_e==SHORTREAL);
+		|| m_e==STRING || m_e==DOUBLE || m_e==FLOAT);
     }
     bool isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
@@ -279,10 +309,10 @@ public:
 	return (m_e==LOGIC || m_e==TIME);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
-	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==REAL || m_e==SHORTREAL);
+	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
     }
-    bool isReal() const {
-	return (m_e==REAL);
+    bool isDouble() const {
+	return (m_e==DOUBLE);
     }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
@@ -689,7 +719,9 @@ class AstNode {
     static int	s_cloneCntGbl;	// Count of which userp is set
 
     // Attributes
-    bool	m_signed:1;	// Node is signed
+    uint32_t	m_numeric:2;	// Node is real/signed - important that bitfields remain unsigned
+    bool	m_didWidth:1;	// Did V3Width computation
+    bool	m_doingWidth:1;	// Inside V3Width
     //		// Space for more bools here
 
     int		m_width;	// Bit width of operation
@@ -785,6 +817,8 @@ public:
     static int	instrCountLd() { return 2; }		///< Instruction cycles to load memory
     static int	instrCountMul() { return 3; }		///< Instruction cycles to multiply integers
     static int	instrCountPli() { return 20; }		///< Instruction cycles to call pli routines
+    static int	instrCountDouble() { return 8; }	///< Instruction cycles to convert or do floats
+    static int	instrCountDoubleDiv() { return 40; }	///< Instruction cycles to divide floats
     static int	instrCountCall() { return instrCountBranch()+10; }	///< Instruction cycles to call subroutine
     static int	instrCountTime() { return instrCountCall()+5; }		///< Instruction cycles to determine simulation time
 
@@ -812,10 +846,18 @@ public:
     bool	widthSized() const { return !m_widthMin || m_widthMin==m_width; }
     void	width(int width, int sized) { m_width=width; m_widthMin=sized; }
     void	widthFrom(AstNode* fromp) { if (fromp) { m_width=fromp->m_width; m_widthMin=fromp->m_widthMin; }}
-    void	widthSignedFrom(AstNode* fromp) { widthFrom(fromp); signedFrom(fromp); }
-    void	signedFrom(AstNode* fromp) { if (fromp) { m_signed=fromp->m_signed; }}
-    void	isSigned(bool flag) { m_signed=flag; }
-    bool	isSigned() const { return m_signed; }
+    void	widthSignedFrom(AstNode* fromp) { widthFrom(fromp); numericFrom(fromp); }
+    void	numericFrom(AstNode* fromp) { numeric(fromp->numeric()); }
+    void	numeric(AstNumeric flag) { m_numeric = (int)flag; if (flag.isDouble()) width(64,64); }
+    AstNumeric	numeric() const { return AstNumeric(m_numeric); }
+    bool	isDouble() const { return numeric().isDouble(); }
+    bool	isSigned() const { return numeric().isSigned(); }
+    void	isSigned(bool flag) { numeric(flag ? AstNumeric::SIGNED : AstNumeric::UNSIGNED); }
+    bool	isUnsigned() const { return numeric().isUnsigned(); }
+    void	didWidth(bool flag) { m_didWidth=flag; }
+    bool	didWidth() const { return m_didWidth; }
+    void	doingWidth(bool flag) { m_doingWidth=flag; }
+    bool	doingWidth() const { return m_doingWidth; }
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
 
@@ -986,6 +1028,8 @@ struct AstNodeUniop : public AstNodeMath {
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
     virtual bool cleanLhs() = 0;
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
+    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -1008,6 +1052,7 @@ struct AstNodeBiop : public AstNodeMath {
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
     virtual bool sizeMattersRhs() = 0; // True if output result depends on rhs size
     virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -1280,7 +1325,6 @@ private:
     string	m_name;		// Name of task
     string	m_cname;	// Name of task if DPI import
     bool	m_taskPublic:1;	// Public task
-    bool	m_didSigning:1;	// V3Signed completed; can skip iteration
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_prototype:1;	// Just a prototype
     bool	m_dpiExport:1;	// DPI exported
@@ -1291,7 +1335,7 @@ private:
 public:
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
-	, m_name(name), m_taskPublic(false), m_didSigning(false)
+	, m_name(name), m_taskPublic(false)
 	, m_attrIsolateAssign(false), m_prototype(false)
 	, m_dpiExport(false), m_dpiImport(false), m_dpiContext(false)
 	, m_dpiTask(false), m_pure(false) {
@@ -1318,8 +1362,6 @@ public:
     void 	scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
     void	taskPublic(bool flag) { m_taskPublic=flag; }
     bool	taskPublic() const { return m_taskPublic; }
-    void	didSigning(bool flag) { m_didSigning=flag; }
-    bool	didSigning() const { return m_didSigning; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
     void	prototype(bool flag) { m_prototype = flag; }

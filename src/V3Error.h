@@ -73,6 +73,7 @@ public:
 	LITENDIAN,	// Little bit endian vector
 	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
+	REALCVT,	// Real conversion
 	REDEFMACRO,	// Redefining existing define macro
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
@@ -111,7 +112,7 @@ public:
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
-	    "REDEFMACRO",
+	    "REALCVT", "REDEFMACRO",
 	    "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
@@ -135,6 +136,7 @@ public:
 				      || m_e==CMPCONST
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN
+				      || m_e==REALCVT
 				      || m_e==UNSIGNED
 				      || m_e==WIDTH); }
     // Warnings that are style only

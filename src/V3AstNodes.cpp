@@ -113,9 +113,9 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
 	arg += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
 	arg += "const VerilatedScope*";
-    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::REAL) {
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::DOUBLE) {
 	arg += "double";
-    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SHORTREAL) {
+    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::FLOAT) {
 	arg += "float";
     } else if (strtype) {
 	if (isInOnly()) arg += "const ";
@@ -503,6 +503,7 @@ void AstNode::dump(ostream& os) {
       <<((editCount()>=editCountLast())?"#>":">")
       <<" {"<<dec<<fileline()->lineno()<<"}"
       <<" "<<(isSigned()?"s":"")
+      <<(isDouble()?"d":"")
       <<"w"<<(widthSized()?"":"u")<<width();
     if (!widthSized()) os<<"/"<<widthMin();
     if (name()!="") os<<"  "<<AstNode::quoteName(name());

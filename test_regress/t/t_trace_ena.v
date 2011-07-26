@@ -15,12 +15,14 @@ module t (/*AUTOARG*/
    integer b_trace_off;
    // verilator tracing_on
    integer c_trace_on;
+   real	   r;
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 	 b_trace_off <= cyc;
 	 c_trace_on <= b_trace_off;
+	 r <= r + 0.1;
 	 if (cyc==4) begin
 	    if (c_trace_on != 2) $stop;
 	 end

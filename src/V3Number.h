@@ -35,6 +35,7 @@ class V3Number {
     int		m_width;	// Width as specified/calculated.
     bool	m_sized:1;	// True if the user specified the width, else we track it.
     bool	m_signed:1;	// True if signed value
+    bool	m_double:1;	// True if double real value
     bool	m_fromString:1;	// True if from string
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;
@@ -50,6 +51,8 @@ public:
     V3Number& setZero();
     V3Number& setQuad(vluint64_t value);
     V3Number& setLong(uint32_t value);
+    V3Number& setLongS(vlsint32_t value);
+    V3Number& setDouble(double value);
     void setBit (int bit, char value) {		// Note must be pre-zeroed!
 	if (bit>=m_width) return;
 	if (value=='0'||value==0)                       m_value [bit/32] &= ~(1UL<<(bit&31));
@@ -132,6 +135,7 @@ public:
     bool autoExtend() const { return m_autoExtend; }
     bool isFromString() const { return m_fromString; }
     bool isSigned() const { return m_signed; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
+    bool isDouble() const { return m_double; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     bool isNegative() const { return bitIs1(width()-1); }
     bool isFourState() const { for (int i=0;i<words();i++) {if (m_valueX[i]) return true;} return false; }
     bool hasZ() const { for(int i=0;i<words();i++) {if((~m_value[i]) & m_valueX[i]) return true;} return false;}
@@ -151,6 +155,7 @@ public:
     vluint64_t toUQuad() const;
     vlsint64_t toSQuad() const;
     string toString() const;
+    double toDouble() const;
     uint32_t toHash() const;
     uint32_t dataWord(int word) const;
     uint32_t countOnes() const;
@@ -236,6 +241,25 @@ public:
     V3Number& opLte	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteS	(const V3Number& lhs, const V3Number& rhs); // Signed
 
+    // "D" - double (aka real) math
+    V3Number& opIToRD	(const V3Number& lhs);
+    V3Number& opRToIS	(const V3Number& lhs);
+    V3Number& opRToIRoundS (const V3Number& lhs);
+    V3Number& opRealToBits (const V3Number& lhs);
+    V3Number& opBitsToRealD(const V3Number& lhs);
+    V3Number& opNegateD    (const V3Number& lhs);
+    V3Number& opAddD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opSubD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opMulD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opDivD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opPowD	(const V3Number& lhs, const V3Number& rhs);
+    // Comparisons
+    V3Number& opEqD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opNeqD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGtD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGteD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLtD	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLteD	(const V3Number& lhs, const V3Number& rhs);
 };
 inline ostream& operator<<(ostream& os, V3Number rhs) { return os<<rhs.ascii(); }
 

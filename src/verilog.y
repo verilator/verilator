@@ -342,6 +342,8 @@ class AstSenTree;
 %token<fl>		yPULLUP		"pullup"
 %token<fl>		yPURE		"pure"
 %token<fl>		yRCMOS		"rcmos"
+%token<fl>		yREAL		"real"
+%token<fl>		yREALTIME	"realtime"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
 %token<fl>		yRETURN		"return"
@@ -382,6 +384,7 @@ class AstSenTree;
 %token<fl>		yXOR		"xor"
 
 %token<fl>		yD_BITS		"$bits"
+%token<fl>		yD_BITSTOREAL	"$bitstoreal"
 %token<fl>		yD_C		"$c"
 %token<fl>		yD_CLOG2	"$clog2"
 %token<fl>		yD_COUNTONES	"$countones"
@@ -400,11 +403,15 @@ class AstSenTree;
 %token<fl>		yD_FWRITE	"$fwrite"
 %token<fl>		yD_INFO		"$info"
 %token<fl>		yD_ISUNKNOWN	"$isunknown"
+%token<fl>		yD_ITOR		"$itor"
 %token<fl>		yD_ONEHOT	"$onehot"
 %token<fl>		yD_ONEHOT0	"$onehot0"
 %token<fl>		yD_RANDOM	"$random"
 %token<fl>		yD_READMEMB	"$readmemb"
 %token<fl>		yD_READMEMH	"$readmemh"
+%token<fl>		yD_REALTIME	"$realtime"
+%token<fl>		yD_REALTOBITS	"$realtobits"
+%token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SIGNED	"$signed"
 %token<fl>		yD_SSCANF	"$sscanf"
@@ -1067,6 +1074,12 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 	|	yREG					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LOGIC); } // logic==reg
 	;
 
+non_integer_type<bdtypep>:	// ==IEEE: non_integer_type						     
+		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
+	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
+	//UNSUP	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::FLOAT); }
+	;
+
 signingE<signstate>:		// IEEE: signing - plus empty
 		/*empty*/ 				{ $$ = signedst_NOP; }
 	|	signing					{ $$ = $1; }
@@ -1097,7 +1110,7 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 	//			// IEEE: integer_type
 		integer_atom_type			{ $$ = $1; }
 	|	integer_vector_type			{ $$ = $1; }
-	//UNSUP	non_integer_type			{ $$ = $1; }
+	|	non_integer_type			{ $$ = $1; }
 	//			// IEEE: ps_type_identifier
 	//			// IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
 	|	ps_type					{ $$ = $1; }
@@ -1120,7 +1133,7 @@ data_type<dtypep>:		// ==IEEE: data_type
 data_typeBasic<dtypep>:		// IEEE: part of data_type
 		integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3,true); }
 	|	integer_atom_type signingE		{ $1->setSignedState($2); $$ = $1; }
-	//UNSUP	non_integer_type			{ UNSUP }
+	|	non_integer_type			{ $$ = $1; }
 	;
 
 data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc references
@@ -1527,8 +1540,7 @@ delay_value:			// ==IEEE:delay_value
 
 delayExpr:
 		expr					{ }
-	//			// Verilator doesn't support yaFLOATNUM/yaTIMENUM, so not in expr
-	|	yaFLOATNUM 				{ }
+	//			// Verilator doesn't support yaTIMENUM, so not in expr
 	|	yaTIMENUM 				{ }
 	;
 
@@ -1713,8 +1725,6 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment
 	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
 	//UNSUP	expr ':' expr				{ }
 	//UNSUP	expr ':' expr ':' expr			{ }
-	//			// Floatnum should only occur with UDPs, but since ports aren't floats, it's legal to round always
-	|	yaFLOATNUM				{ $$ = new AstPin($<fl>1,PINNUMINC(),"",new AstConst($<fl>1,AstConst::Unsized32(),(int)(($1<0)?($1-0.5):($1+0.5)))); }
 	;
 
 //************************************************
@@ -2144,6 +2154,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	//
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
 	|	yD_BITS '(' data_type ')'		{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
+	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
@@ -2153,10 +2164,14 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
+	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
+	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
+	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
+	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	//|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }  // Have AST, just need testing and debug
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
@@ -2455,7 +2470,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: primary_literal (minus string, which is handled specially)
 	|	yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
-	//UNSUP	yaFLOATNUM				{ UNSUP }
+	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
 	//UNSUP	yaTIMENUM				{ UNSUP }
 	|	strAsInt~noStr__IGNORE~			{ $$ = $1; }
 	//

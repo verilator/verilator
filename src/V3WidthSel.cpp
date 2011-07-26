@@ -111,12 +111,12 @@ private:
 	    // We must make sure sub gets sign of original value
 	    AstNode* newp = new AstSub(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
-	    newp->signedFrom(lhsp);
+	    newp->numericFrom(lhsp);
 	    return newp;
 	} else {  // rhs < 0;
 	    AstNode* newp = new AstAdd(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
-	    newp->signedFrom(lhsp);
+	    newp->numericFrom(lhsp);
 	    return newp;
 	}
     }
@@ -126,7 +126,7 @@ private:
 	AstNode* newp = new AstSub(rhsp->fileline(),
 				   new AstConst(rhsp->fileline(), AstConst::Unsized32(), lhs),
 				   rhsp);
-	newp->signedFrom(rhsp);  // Important as AstSub default is lhs's sign
+	newp->numericFrom(rhsp);  // Important as AstSub default is lhs's sign
 	return newp;
     }
 

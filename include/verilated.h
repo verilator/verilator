@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 // <iostream> avoided to reduce compile time
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
 using namespace std;
@@ -374,6 +375,16 @@ extern FILE*  VL_CVT_I_FP(IData lhs);
 static inline void*  VL_CVT_Q_VP(QData lhs) { union { void* fp; QData q; } u; u.q=lhs; return u.fp; }
 /// Return QData from void*
 static inline QData  VL_CVT_VP_Q(void* fp) { union { void* fp; QData q; } u; u.q=0; u.fp=fp; return u.q; }
+/// Return double from QData (bits, not numerically)
+static inline double VL_CVT_D_Q(QData lhs) { union { double d; QData q; } u; u.q=lhs; return u.d; }
+/// Return QData from double (bits, not numerically)
+static inline QData  VL_CVT_Q_D(double lhs) { union { double d; QData q; } u; u.d=lhs; return u.q; }
+/// Return double from QData (numeric)
+static inline double VL_ITOR_D_I(IData lhs) { return ((double)((vlsint32_t)(lhs))); }
+/// Return QData from double (numeric)
+static inline IData  VL_RTOI_I_D(double lhs) { return ((vlsint32_t)(trunc(lhs))); }
+/// Return QData from double (numeric)
+static inline IData  VL_RTOIROUND_I_D(double lhs) { return ((vlsint32_t)(round(lhs))); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -403,9 +414,11 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION>20011000)
 # define VL_TIME_I() ((IData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
 # define VL_TIME_Q() ((QData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_D() ((double)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
 #else
 # define VL_TIME_I() ((IData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
 # define VL_TIME_Q() ((QData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_D() ((double)(sc_time_stamp()*VL_TIME_MULTIPLIER))
 extern double sc_time_stamp();
 #endif
 

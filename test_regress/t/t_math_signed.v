@@ -43,8 +43,10 @@ module t (/*AUTOARG*/
    integer i;
    initial begin
       if ((-1 >>> 3) != -1) $stop;	// Decimals are signed
+      // verilator lint_off WIDTH
       if ((3'b111  >>> 3) != 0) $stop;	// Based numbers are unsigned
       if ((3'sb111 >>> 3) != -1) $stop;	// Signed based numbers
+      // verilator lint_on WIDTH
       if ( (3'sb000 > 3'sb000)) $stop;
       if (!(3'sb000 > 3'sb111)) $stop;
       if ( (3'sb111 > 3'sb000)) $stop;

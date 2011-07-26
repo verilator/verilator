@@ -27,6 +27,8 @@
 #include <algorithm>
 #include "V3Number.h"
 
+#define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
+
 //######################################################################
 // Read class functions
 // CREATION
@@ -44,6 +46,7 @@ void V3Number::width(int width, bool sized) {
 void V3Number::init (FileLine* fileline, int swidth) {
     m_fileline = fileline;
     m_signed = false;
+    m_double = false;
     m_autoExtend = false;
     m_fromString = false;
     width(swidth);
@@ -298,6 +301,24 @@ V3Number& V3Number::setLong(uint32_t value) {
     m_value[0] = value;
     return *this;
 }
+V3Number& V3Number::setLongS(vlsint32_t value) {
+    for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
+    union { uint32_t u; vlsint32_t s; } u;
+    u.s = value;
+    m_value[0] = u.u;
+    return *this;
+}
+V3Number& V3Number::setDouble(double value) {
+    if (VL_UNLIKELY(width()!=64)) {
+	m_fileline->v3fatalSrc("Real operation on wrong sized number");
+    }
+    m_double = true;
+    union { double d; uint32_t u[2]; } u;
+    u.d = value;
+    for (int i=2; i<words(); i++) m_value[i]=m_valueX[i] = 0;
+    m_value[0] = u.u[0]; m_value[1] = u.u[1];
+    return *this;
+}
 V3Number& V3Number::setSingleBits(char value) {
     for (int i=1/*upper*/; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = (value=='1'||value=='x'||value==1||value==3);
@@ -306,12 +327,12 @@ V3Number& V3Number::setSingleBits(char value) {
 }
 
 V3Number& V3Number::setAllBits0() {
-  for (int i=0; i<words(); i++) { m_value[i] = m_valueX[i]=0; }
-  return *this;
+    for (int i=0; i<words(); i++) { m_value[i] = m_valueX[i]=0; }
+    return *this;
 }
 V3Number& V3Number::setAllBits1() {
-  for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
-  return *this;
+    for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
+    return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     for (int i=0; i<words(); i++) { m_value[i]=m_valueX[i] = ~0; }
@@ -333,6 +354,10 @@ V3Number& V3Number::setMask(int nbits) {
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     ostringstream out;
 
+    if (isDouble()) {
+	out<<toDouble();
+	return out.str();
+    }
     if (prefixed) {
 	if (sized()) {
 	    out<<width()<<"'";
@@ -375,6 +400,9 @@ bool V3Number::displayedFmtLegal(char format) {
     case 'b': return true;
     case 'c': return true;
     case 'd': return true; // Unsigned decimal
+    case 'e': return true;
+    case 'f': return true;
+    case 'g': return true;
     case 'h': return true;
     case 'o': return true;
     case 's': return true;
@@ -390,7 +418,7 @@ string V3Number::displayed(const string& vformat) const {
     UASSERT(pos != vformat.end() && pos[0]=='%', "display with non format argument "<<*this);
     pos++;
     string fmtsize;
-    for (; pos != vformat.end() && isdigit(pos[0]); pos++) {
+    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); pos++) {
 	fmtsize += pos[0];
     }
     string str;
@@ -472,8 +500,19 @@ string V3Number::displayed(const string& vformat) const {
 	    str = cvtToStr(toUQuad());
 	}
 	int intfmtsize = atoi(fmtsize.c_str());
-	while ((int)(str.length()) < intfmtsize) str = " "+str;
+	bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
+	while ((int)(str.length()) < intfmtsize) {
+	    if (zeropad) str = "0"+str;
+	    else str = " "+str;
+	}
 	return str;
+    }
+    case 'e':
+    case 'f':
+    case 'g': {
+	char tmp[MAX_SPRINTF_DOUBLE_SIZE];
+	sprintf(tmp, vformat.c_str(), toDouble());
+	return tmp;
     }
     default:
 	m_fileline->v3fatalSrc("Unknown $display format code for number: %"<<pos[0]);
@@ -488,6 +527,18 @@ uint32_t V3Number::toUInt() const {
     UASSERT(!isFourState(),"toUInt with 4-state "<<*this);
     UASSERT((width()<33 || (width()<65 && m_value[1]==0)), "Value too wide "<<*this);
     return m_value[0];
+}
+
+double V3Number::toDouble() const {
+    if (VL_UNLIKELY(!isDouble())) {
+	m_fileline->v3fatalSrc("Real conversion on non real number");
+    }
+    if (VL_UNLIKELY(width()!=64)) {
+	m_fileline->v3fatalSrc("Real operation on wrong sized number");
+    }
+    union { double d; uint32_t u[2]; } u;
+    u.u[0] = m_value[0]; u.u[1] = m_value[1];
+    return u.d;
 }
 
 vlsint32_t V3Number::toSInt() const {
@@ -1049,7 +1100,7 @@ V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
-    // We presume it is signed; as that's V3Signed's job to convert to opShiftR
+    // We presume it is signed; as that's V3Width's job to convert to opShiftR
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     uint32_t rhsval = rhs.toUInt();
@@ -1433,4 +1484,75 @@ V3Number& V3Number::opCond  (const V3Number& lhs, const V3Number& if1s, const V3
 	}
     }
     return *this;
+}
+
+//======================================================================
+// Ops - Floating point
+
+V3Number& V3Number::opIToRD (const V3Number& lhs) {
+    return setDouble(lhs.toSInt());
+}
+V3Number& V3Number::opRToIS (const V3Number& lhs) {
+    double v = trunc(lhs.toDouble());
+    vlsint32_t i = v; // C converts from double to vlsint32
+    return setLongS(i);
+}
+V3Number& V3Number::opRToIRoundS (const V3Number& lhs) {
+    double v = round(lhs.toDouble());
+    vlsint32_t i = v; // C converts from double to vlsint32
+    return setLongS(i);
+}
+V3Number& V3Number::opRealToBits (const V3Number& lhs) {
+    // Conveniently our internal format is identical so we can copy bits...
+    if (lhs.width()!=64 || this->width()!=64) {
+	m_fileline->v3fatalSrc("Real operation on wrong sized number");
+    }
+    return opAssign(lhs);
+}
+V3Number& V3Number::opBitsToRealD (const V3Number& lhs) {
+    // Conveniently our internal format is identical so we can copy bits...
+    if (lhs.width()!=64 || this->width()!=64) {
+	m_fileline->v3fatalSrc("Real operation on wrong sized number");
+    }
+    return opAssign(lhs);
+}
+V3Number& V3Number::opNegateD (const V3Number& lhs) {
+    return setDouble(- lhs.toDouble());
+}
+V3Number& V3Number::opAddD (const V3Number& lhs, const V3Number& rhs) {
+    return setDouble(lhs.toDouble() + rhs.toDouble());
+}
+V3Number& V3Number::opSubD (const V3Number& lhs, const V3Number& rhs) {
+    return setDouble(lhs.toDouble() - rhs.toDouble());
+}
+V3Number& V3Number::opMulD (const V3Number& lhs, const V3Number& rhs) {
+    return setDouble(lhs.toDouble() * rhs.toDouble());
+}
+V3Number& V3Number::opDivD (const V3Number& lhs, const V3Number& rhs) {
+    // On exceptions, we just generate 'inf' through floating point
+    // IEEE says it's implementation defined what happens
+    return setDouble(lhs.toDouble() / rhs.toDouble());
+}
+V3Number& V3Number::opPowD (const V3Number& lhs, const V3Number& rhs) {
+    // On exceptions, we just generate 'inf' through floating point
+    // IEEE says it's implementation defined what happens
+    return setDouble(pow(lhs.toDouble(), rhs.toDouble()));
+}
+V3Number& V3Number::opEqD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() == rhs.toDouble());
+}
+V3Number& V3Number::opNeqD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() != rhs.toDouble());
+}
+V3Number& V3Number::opGtD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() > rhs.toDouble());
+}
+V3Number& V3Number::opGteD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() >= rhs.toDouble());
+}
+V3Number& V3Number::opLtD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() < rhs.toDouble());
+}
+V3Number& V3Number::opLteD (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toDouble() <= rhs.toDouble());
 }

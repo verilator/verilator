@@ -33,6 +33,37 @@
 
 //######################################################################
 
+/// Remove all $signed, $unsigned, we're done with them.
+
+class WidthRemoveVisitor : public AstNVisitor {
+private:
+    // VISITORS
+    virtual void visit(AstSigned* nodep, AstNUser*) {
+	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); nodep=NULL;
+    }
+    virtual void visit(AstUnsigned* nodep, AstNUser*) {
+	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); nodep=NULL;
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+    void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
+	UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
+	nodep->replaceWith(newp);
+	newp->widthSignedFrom(nodep);
+	pushDeletep(nodep); nodep=NULL;
+    }
+public:
+    // CONSTRUCTORS
+    WidthRemoveVisitor() {}
+    virtual ~WidthRemoveVisitor() {}
+    AstNode* mainAcceptEdit(AstNode* nodep) {
+	return nodep->acceptSubtreeReturnEdits(*this);
+    }
+};
+
+//######################################################################
+
 class WidthCommitVisitor : public AstNVisitor {
     // Now that all widthing is complete,
     // Copy all width() to widthMin().  V3Const expects this
