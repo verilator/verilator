@@ -28,6 +28,10 @@
 // __FILE__ is too long
 #define FILENM "t_vpi_var.cpp"
 
+unsigned int main_time = false;
+unsigned int callback_count = false;
+unsigned int callback_count_half = false;
+
 //======================================================================
 
 
@@ -84,6 +88,46 @@ int _mon_check_callbacks() {
     PLI_INT32 status = vpi_remove_cb(vh);
     CHECK_RESULT_NZ(status);
 
+    return 0;
+}
+
+int _value_callback(p_cb_data cb_data) {
+  CHECK_RESULT(cb_data->value->value.integer+10, main_time);
+  callback_count++;
+  return 0;
+}
+
+int _value_callback_half(p_cb_data cb_data) {
+  CHECK_RESULT(cb_data->value->value.integer*2+10, main_time);
+  callback_count_half++;
+  return 0;
+}
+
+int _mon_check_value_callbacks() {
+    vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.count", NULL);
+    CHECK_RESULT_NZ(vh1);
+
+    s_vpi_value v;
+    v.format = vpiIntVal;
+    vpi_get_value(vh1, &v);
+
+    t_cb_data cb_data;
+    cb_data.reason = cbValueChange;
+    cb_data.cb_rtn = _value_callback;
+    cb_data.obj = vh1;
+    cb_data.value = &v;
+
+    vpiHandle vh = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh);
+
+    vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.half_count", NULL);
+    CHECK_RESULT_NZ(vh1);
+
+    cb_data.obj = vh1;
+    cb_data.cb_rtn = _value_callback_half;
+
+    vh = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh);
     return 0;
 }
 
@@ -246,6 +290,7 @@ int _mon_check_quad() {
 int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_callbacks()) return status;
+    if (int status = _mon_check_value_callbacks()) return status;
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_getput()) return status;
@@ -255,7 +300,6 @@ int mon_check() {
 
 //======================================================================
 
-unsigned int main_time = false;
 
 double sc_time_stamp () {
     return main_time;
@@ -288,12 +332,15 @@ int main(int argc, char **argv, char **env) {
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
 	main_time += 1;
 	topp->eval();
+	VerilatedVpi::callValueCbs();
 	topp->clk = !topp->clk;
 	//mon_do();
 #if VM_TRACE
 	if (tfp) tfp->dump (main_time);
 #endif
     }
+    CHECK_RESULT(callback_count, 501);
+    CHECK_RESULT(callback_count_half, 250);
     if (!Verilated::gotFinish()) {
 	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }

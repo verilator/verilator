@@ -95,9 +95,12 @@ typedef PLI_INT32 (*VerilatedPliCb)(struct t_cb_data *);
 
 class VerilatedVpioCb : public VerilatedVpio {
     t_cb_data		m_cbData;
+    s_vpi_value		m_value;
     QData		m_time;
 public:
-    VerilatedVpioCb(const t_cb_data* cbDatap, QData time) : m_cbData(*cbDatap), m_time(time) {}
+    VerilatedVpioCb(const t_cb_data* cbDatap, QData time) : m_cbData(*cbDatap), m_time(time) {
+	m_cbData.value = &m_value;
+    }
     virtual ~VerilatedVpioCb() {}
     static inline VerilatedVpioCb* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioCb*>((VerilatedVpio*)h); }
     vluint32_t reason() const { return m_cbData.reason; }
@@ -326,6 +329,7 @@ public:
 		    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  value_callback %p %s v[0]=%d\n",
 					      vop,varop->fullname(), *((CData*)newDatap)););
 		    memcpy(prevDatap, newDatap, varop->entSize());
+		    vpi_get_value(vop->cb_datap()->obj, vop->cb_datap()->value);
 		    (vop->cb_rtnp()) (vop->cb_datap());
 		}
 	    }
