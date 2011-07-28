@@ -99,7 +99,7 @@ int sc_main(int argc, char* argv[]) {
     //==========
     //  Waves
 
-#if WAVES
+#if VM_TRACE
     // Before any evaluation, need to know to calculate those signals only used for tracing
     Verilated::traceEverOn(true);
 #endif
@@ -117,7 +117,7 @@ int sc_main(int argc, char* argv[]) {
     //==========
     //  Waves
 
-#if WAVES
+#if VM_TRACE
     cout << "Enabling waves...\n";
 # ifdef SYSTEMPERL
     SpTraceFile* tfp = new SpTraceFile;
@@ -135,7 +135,7 @@ int sc_main(int argc, char* argv[]) {
 
     reset_l = 1;
     while (VL_TIME_Q() < 60 && !passed && !Verilated::gotFinish()) {
-#if WAVES
+#if VM_TRACE
 	// Flush the wave files each cycle so we can immediately see the output
 	// Don't do this in "real" programs, do it in a abort() handler instead
 	if (tfp) tfp->flush();
@@ -156,7 +156,7 @@ int sc_main(int argc, char* argv[]) {
 
     //==========
     //  Close Waves
-#if WAVES
+#if VM_TRACE
     if (tfp) tfp->close();
 #endif
 
@@ -168,7 +168,7 @@ int sc_main(int argc, char* argv[]) {
     //==========
     //  Coverage analysis (since test passed)
     mkdir("logs", 0777);
-#ifdef SYSTEMPERL
+#if VM_COVERAGE
     SpCoverage::write();  // Writes logs/coverage.pl
 #endif
 

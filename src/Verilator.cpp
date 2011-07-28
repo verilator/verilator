@@ -567,9 +567,6 @@ int main(int argc, char** argv, char** env) {
     v3Global.opt.bin(argv[0]);
     string argString = V3Options::argString(argc-1, argv+1);
     v3Global.opt.parseOpts(new FileLine("COMMAND_LINE",0), argc-1, argv+1);
-    if (v3Global.opt.coverage() && !v3Global.opt.systemPerl() && !v3Global.opt.lintOnly()) {
-	v3fatal("Unsupported: Coverage analysis requires --sp output.");
-    }
     if (!v3Global.opt.outFormatOk()
 	&& !v3Global.opt.preprocOnly()
 	&& !v3Global.opt.lintOnly()

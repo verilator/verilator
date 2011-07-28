@@ -13,6 +13,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $fopen and I/O with integer instead of `verilator_file_descriptor.
 
+***  Support coverage in -cc and -sc output modes.  [John Li]
+     Note this requires SystemPerl 1.338 or newer.	
+
 **** Fix vpi_register_cb using bad s_cb_data, bug370.  [by Thomas Watts]
 
 **** Fix $display missing leading zeros in %0d, bug367.  [Alex Solomatnikov]

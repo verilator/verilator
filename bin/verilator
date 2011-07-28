@@ -3054,8 +3054,8 @@ network disk.  Network disks are generally far slower.
 =item How do I do coverage analysis?
 
 Verilator supports both block (line) coverage and user inserted functional
-coverage.  Both currently require SystemPerl output mode and the SystemPerl
-package.
+coverage.  Both require the SystemPerl package to be installed but do not
+require use of the SystemPerl output mode.
 
 First, run verilator with the --coverage option.  If you're using your own
 makefile, compile the model with the GCC flag -DSP_COVERAGE_ENABLE (if

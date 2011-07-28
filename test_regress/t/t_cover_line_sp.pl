@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+top_filename("t/t_cover_line.v");
+
 compile (
 	 verilator_flags2 => ['--sp --coverage-line'],
 	 );

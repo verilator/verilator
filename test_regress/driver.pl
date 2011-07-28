@@ -897,8 +897,12 @@ sub _make_main {
     print $fh '       vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");',"\n";
     print $fh "    }\n";
     print $fh "    topp->final();\n";
-    print $fh "    SpCoverage::write(\"",$self->{coverage_filename},"\");\n" if $self->{coverage};
 
+    if ($self->{coverage}) {
+	$fh->print("#if VM_COVERAGE\n");
+	$fh->print("    SpCoverage::write(\"",$self->{coverage_filename},"\");\n");
+	$fh->print("#endif //VM_COVERAGE\n");
+    }
     if ($self->{trace}) {
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("	if (tfp) tfp->close();\n");
