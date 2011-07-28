@@ -1494,12 +1494,12 @@ V3Number& V3Number::opIToRD (const V3Number& lhs) {
 }
 V3Number& V3Number::opRToIS (const V3Number& lhs) {
     double v = trunc(lhs.toDouble());
-    vlsint32_t i = v; // C converts from double to vlsint32
+    vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS (const V3Number& lhs) {
     double v = round(lhs.toDouble());
-    vlsint32_t i = v; // C converts from double to vlsint32
+    vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRealToBits (const V3Number& lhs) {
