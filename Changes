@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $fopen and I/O with integer instead of `verilator_file_descriptor.
 
+**** Fix vpi_register_cb using bad s_cb_data, bug370.  [by Thomas Watts]
+
 **** Fix $display missing leading zeros in %0d, bug367.  [Alex Solomatnikov]
 
 **** Use 'vluint64_t' for SystemC instead of (same sized) 'uint64' for MSVC++.

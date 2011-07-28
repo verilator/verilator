@@ -19,6 +19,9 @@ module t (/*AUTOARG*/
 
    reg [3:2][61:0] quads	/*verilator public_flat_rw @(posedge clk) */;
 
+   reg [31:0] 	   count	/*verilator public_flat_rd */;
+   reg [31:0] 	   half_count	/*verilator public_flat_rd */;
+   
    integer 	  status;
 
    sub sub();
@@ -34,8 +37,17 @@ module t (/*AUTOARG*/
       if (onebit != 1'b1) $stop;
       if (quads[2] != 62'h12819213_abd31a1c) $stop;
       if (quads[3] != 62'h1c77bb9b_3784ea09) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
+   end
+
+   always @(posedge clk) begin
+      count <= count + 2;
+      if (count[1])
+	half_count <= half_count + 2;
+
+      if (count == 1000) begin
+	 $write("*-* All Finished *-*\n");
+	 $finish;
+      end
    end
 
 endmodule
