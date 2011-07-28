@@ -324,9 +324,10 @@ extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP r
 /// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
-extern QData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
-extern QData VL_FOPEN_QI(QData ofilename, IData mode);
-inline QData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
+extern IData VL_FOPEN_S(const char* filenamep, const char* mode);
+extern IData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
+extern IData VL_FOPEN_QI(QData ofilename, IData mode);
+inline IData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
 
 extern void VL_FCLOSE_I(IData fdi);
 

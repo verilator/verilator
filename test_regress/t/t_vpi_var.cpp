@@ -76,6 +76,35 @@ public:
 	return __LINE__; \
     }
 
+int _mon_check_mcd() {
+    PLI_INT32 status;
+    
+    PLI_UINT32 mcd;
+    PLI_BYTE8* filename = (PLI_BYTE8*)"mcd_open.tmp";
+    mcd = vpi_mcd_open(filename);
+    CHECK_RESULT_NZ(mcd);
+
+    {   // Check it got written
+	FILE* fp = fopen(filename,"r");
+	CHECK_RESULT_NZ(fp);
+	fclose(fp);
+    }
+
+    status = vpi_mcd_printf(mcd, (PLI_BYTE8*)"hello %s", "vpi_mcd_printf");
+    CHECK_RESULT(status, strlen("hello vpi_mcd_printf"));
+
+    status = vpi_mcd_flush(mcd);
+    CHECK_RESULT(status, 0);
+
+    status = vpi_mcd_close(mcd);
+    CHECK_RESULT(status, 0);
+
+    status = vpi_flush();
+    CHECK_RESULT(status, 0);
+
+    return 0;
+}
+
 int _mon_check_callbacks() {
     t_cb_data cb_data;
     cb_data.reason = cbEndOfSimulation;
@@ -289,6 +318,7 @@ int _mon_check_quad() {
 
 int mon_check() {
     // Callback from initial block in monitor
+    if (int status = _mon_check_mcd()) return status;
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;
     if (int status = _mon_check_var()) return status;

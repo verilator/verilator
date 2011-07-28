@@ -714,17 +714,21 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
     return got;
 }
 
-QData VL_FOPEN_QI(QData filename, IData mode) {
+IData VL_FOPEN_QI(QData filename, IData mode) {
     IData fnw[2];  VL_SET_WQ(fnw, filename);
     return VL_FOPEN_WI(2, fnw, mode);
 }
-QData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
+IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
     char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, filenamez, filenamep);
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
-    return VerilatedImp::fdNew(fopen(filenamez,modez));
+    return VL_FOPEN_S(filenamez,modez);
 }
+IData VL_FOPEN_S(const char* filenamep, const char* modep) {
+    return VerilatedImp::fdNew(fopen(filenamep,modep));
+}
+
 void VL_FCLOSE_I(IData fdi) {
     FILE* fp = VL_CVT_I_FP(fdi);
     if (VL_UNLIKELY(!fp)) return;

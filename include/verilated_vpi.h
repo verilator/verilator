@@ -739,18 +739,25 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 
 // I/O routines
 
-//-PLI_UINT32 vpi_mcd_open(PLI_BYTE8 *fileName) {
+PLI_UINT32 vpi_mcd_open(PLI_BYTE8 *filenamep) {
+    return VL_FOPEN_S(filenamep,"wb");
+}
+
+PLI_UINT32 vpi_mcd_close(PLI_UINT32 mcd) {
+    VL_FCLOSE_I(mcd); return 0;
+}
+
+//-PLI_BYTE8 *vpi_mcd_name(PLI_UINT32 mcd) {
 //-    _VL_VPI_UNIMP(); return 0;
 //-}
-//-PLI_UINT32 vpi_mcd_close(PLI_UINT32 mcd) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
-//-PLI_BYTE8 *vpi_mcd_name(PLI_UINT32 cd) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
-//-PLI_INT32 vpi_mcd_printf(PLI_UINT32 mcd, PLI_BYTE8 *format, ...) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
+
+PLI_INT32 vpi_mcd_printf(PLI_UINT32 mcd, PLI_BYTE8 *formatp, ...) {
+    va_list ap;
+    va_start(ap,formatp);
+    int chars = vpi_mcd_vprintf(mcd, formatp, ap);
+    va_end(ap);
+    return chars;
+}
 
 PLI_INT32 vpi_printf(PLI_BYTE8 *formatp, ...) {
     va_list ap;
@@ -764,15 +771,24 @@ PLI_INT32 vpi_vprintf(PLI_BYTE8* formatp, va_list ap) {
     return VL_VPRINTF(formatp, ap);
 }
 
-//-PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8 *format, va_list ap) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
-//-PLI_INT32 vpi_flush(void) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
-//-PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {
-//-    _VL_VPI_UNIMP(); return 0;
-//-}
+PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8 *format, va_list ap) {
+    FILE* fp = VL_CVT_I_FP(mcd);
+    if (VL_UNLIKELY(!fp)) return 0;
+    int chars = vfprintf(fp, format, ap);
+    return chars;
+}
+
+PLI_INT32 vpi_flush(void) {
+    Verilated::flushCall();
+    return 0;
+}
+
+PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {
+    FILE* fp = VL_CVT_I_FP(mcd);
+    if (VL_UNLIKELY(!fp)) return 1;
+    fflush(fp);
+    return 0;
+}
 
 // utility routines
 
