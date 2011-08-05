@@ -696,7 +696,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	// Blow old statements from new body
 	GaterBodyVisitor(alwp,exprp,false);
 
-	m_statGaters++;
+	++m_statGaters;
 	if (debug()>=9) alwp->dumpTree(cout,"  new: ");
     }
 

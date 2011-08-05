@@ -127,7 +127,7 @@ struct V3PreProcImp : public V3PreProc {
 		     ps_DEFNAME_IFDEF, ps_DEFNAME_IFNDEF, ps_DEFNAME_ELSIF,
 		     ps_DEFFORM, ps_DEFVALUE, ps_DEFPAREN, ps_DEFARG,
 		     ps_INCNAME, ps_ERRORNAME, ps_JOIN, ps_STRIFY };
-    const char* procStateName(ProcState s) {
+    static const char* procStateName(ProcState s) {
 	static const char* states[]
 	    = {"ps_TOP",
 	       "ps_DEFNAME_UNDEF", "ps_DEFNAME_DEFINE",

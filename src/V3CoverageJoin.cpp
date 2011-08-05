@@ -97,7 +97,7 @@ private:
 		    removep->unlinkFrBack();  pushDeletep(removep); removep=NULL;
 		    // Remove node from comparison so don't hit it again
 		    hashed.erase(dupit);
-		    m_statToggleJoins++;
+		    ++m_statToggleJoins;
 		}
 	    }
 	}

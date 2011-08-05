@@ -70,7 +70,7 @@ private:
     // MEMBERS
     uint32_t		m_step;		// Processing step, so we can avoid clearUser all the time
     HashMap		m_hashMap;	// Dfa Vertex for each set of NFA vertexes
-    int debug() { return 0; }
+    static int debug() { return 0; }
 
     // METHODS
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
@@ -94,7 +94,7 @@ private:
     }
 
     // Hashing
-    uint32_t hashVertex(V3GraphVertex* vertexp) {
+    static uint32_t hashVertex(V3GraphVertex* vertexp) {
 	union { void* up; struct {uint32_t upper; uint32_t lower;} l;} u;
 	u.l.upper=0; u.l.lower=0; u.up=vertexp;
 	return u.l.upper ^ u.l.lower;
@@ -362,7 +362,7 @@ void DfaGraph::nfaToDfa() {
 class DfaGraphReduce : GraphAlg {
 private:
     // METHODS
-    int debug() { return 0; }
+    static int debug() { return 0; }
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
 
     bool isDead(DfaVertex* vertexp) {
@@ -507,7 +507,7 @@ private:
     DfaVertex* m_tempNewerReject;
 
     // METHODS
-    int debug() { return 9; }
+    static int debug() { return 9; }
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
 
     void add_complement_edges() {

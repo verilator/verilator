@@ -416,9 +416,9 @@ bool V3Number::displayedFmtLegal(char format) {
 string V3Number::displayed(const string& vformat) const {
     string::const_iterator pos = vformat.begin();
     UASSERT(pos != vformat.end() && pos[0]=='%', "display with non format argument "<<*this);
-    pos++;
+    ++pos;
     string fmtsize;
-    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); pos++) {
+    for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); ++pos) {
 	fmtsize += pos[0];
     }
     string str;

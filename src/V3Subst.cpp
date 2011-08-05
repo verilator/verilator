@@ -309,7 +309,7 @@ private:
 	if (debug()>5)  newp->dumpTree(cout,"       w_new: ");
 	nodep->replaceWith(newp);
 	pushDeletep(nodep);  nodep=NULL;
-	m_statSubsts++;
+	++m_statSubsts;
     }
     virtual void visit(AstWordSel* nodep, AstNUser*) {
 	nodep->rhsp()->accept(*this);

@@ -224,7 +224,6 @@ private:
 	}
 	//
 	//=== Setting/not setting boolean: __Vdlyvset__
-	bool sharedVset = false;
 	AstVarScope* setvscp;
 
 	if (nodep->user3p()) {
@@ -232,9 +231,8 @@ private:
 	    // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
 	    // This is good for code like:
 	    //    for (i=0; i<5; i++)  vector[i] <= something;
-	    sharedVset = true;
 	    setvscp = nodep->user3p()->castNode()->castVarScope();
-	    m_statSharedSet++;
+	    ++m_statSharedSet;
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1);

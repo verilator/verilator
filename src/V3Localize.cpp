@@ -141,7 +141,7 @@ private:
 		&& nodep->user1p()) {	// Single cfunc
 		// We don't need to test for tracing; it would be in the tracefunc if it was needed
 		UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
-		m_statLocVars++;
+		++m_statLocVars;
 		AstCFunc* newfuncp = nodep->user1p()->castNode()->castCFunc();
 		nodep->unlinkFrBack();
 		newfuncp->addInitsp(nodep);

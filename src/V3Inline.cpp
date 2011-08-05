@@ -106,7 +106,7 @@ private:
 	    if (m_cellp) nodep->v3error("Cloning should have already been done bottom-up");
 	    UINFO(5," Inline CELL   "<<nodep<<endl);
 	    UINFO(5,"   To MOD      "<<m_modp<<endl);
-	    m_statCells++;
+	    ++m_statCells;
 
 	    // Before cloning simplify pin assignments
 	    // Better off before, as if module has multiple instantiations

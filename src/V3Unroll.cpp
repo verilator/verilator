@@ -259,7 +259,7 @@ private:
 	loopValue.opAssign(numInit);
 
 	AstNode* newbodysp = NULL;
-	m_statLoops++;
+	++m_statLoops;
 	if (stmtsp) {
 	    int times = 0;
 	    while (1) {
@@ -287,7 +287,7 @@ private:
 		    if (newbodysp) newbodysp->addNext(oneloopp);
 		    else newbodysp = oneloopp;
 
-		    m_statIters++;
+		    ++m_statIters;
 		    if (++times > unrollCount()*3) {
 			nodep->v3error("Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "<<unrollCount());
 			break;

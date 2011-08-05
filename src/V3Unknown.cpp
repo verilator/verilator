@@ -289,7 +289,7 @@ private:
 		AstVar* newvarp
 		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,
 				  AstLogicPacked(), nodep->width());
-		m_statUnkVars++;
+		++m_statUnkVars;
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
 		AstNodeVarRef* newref1p = new AstVarRef(nodep->fileline(), newvarp, false);

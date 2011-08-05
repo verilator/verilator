@@ -86,8 +86,8 @@ private:
     NameMap*			m_namemapp;	///< List of names for the header
     static vector<VerilatedVcd*>	s_vcdVecp;	///< List of all created traces
 
-    inline size_t bufferSize() { return 256*1024; }  // See below for slack calculation
-    inline size_t bufferInsertSize() { return 16*1024; }
+    inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
+    inline static size_t bufferInsertSize() { return 16*1024; }
     void bufferFlush();
     void bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information

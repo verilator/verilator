@@ -535,7 +535,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			AstNode* substp = okVisitor.substTree();
 			if (debug()>=5) logicp->dumpTree(cout,"\telimVar:  ");
 			if (debug()>=5) substp->dumpTree(cout,"\t  subst:  ");
-			m_statSigs++;
+			++m_statSigs;
 			while (V3GraphEdge* edgep = vvertexp->outBeginp()) {
 			    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(edgep->top());
 			    AstNode* consumerp = consumeVertexp->nodep();
@@ -557,7 +557,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			    }
 			    // Remove the edge
 			    edgep->unlinkDelete(); edgep=NULL;
-			    m_statRefs++;
+			    ++m_statRefs;
 			}
 			// Remove input links
 			while (V3GraphEdge* edgep = vvertexp->inBeginp()) {

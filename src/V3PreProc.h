@@ -67,10 +67,10 @@ public:
 
     // CONTROL METHODS
     // These options control how the parsing proceeds
-    int keepComments() { return 2; }		// Return comments, 0=no, 1=yes, 2=callback
-    bool keepWhitespace() { return false; }
-    bool lineDirectives() { return true; }	// Insert `line directives
-    bool pedantic() { return false; }		// Obey standard; Don't substitute `error
+    static int keepComments() { return 2; }		// Return comments, 0=no, 1=yes, 2=callback
+    static bool keepWhitespace() { return false; }
+    static bool lineDirectives() { return true; }	// Insert `line directives
+    static bool pedantic() { return false; }		// Obey standard; Don't substitute `error
     static bool optPsl();
 
     // CALLBACK METHODS

@@ -452,10 +452,10 @@ private:
 	if (isCaseTreeFast(nodep) && v3Global.opt.oCase()) {
 	    // It's a simple priority encoder or complete statement
 	    // we can make a tree of statements to avoid extra comparisons
-	    m_statCaseFast++;
+	    ++m_statCaseFast;
 	    replaceCaseFast(nodep); nodep=NULL;
 	} else {
-	    m_statCaseSlow++;
+	    ++m_statCaseSlow;
 	    replaceCaseComplicated(nodep); nodep=NULL;
 	}
     }

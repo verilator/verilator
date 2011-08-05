@@ -176,8 +176,8 @@ public:
 private:
     void createTable(AstAlways* nodep) {
 	// We've determined this table of nodes is optimizable, do it.
-	m_modTables++;
-	m_statTablesCre++;
+	++m_modTables;
+	++m_statTablesCre;
 
 	// Index into our table
 	AstVar* indexVarp = new AstVar (nodep->fileline(), AstVarType::BLOCKTEMP,

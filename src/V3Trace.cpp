@@ -484,7 +484,7 @@ private:
 	    nodep->code(m_code);
 	    m_code += nodep->codeInc();
 	    m_statUniqCodes += nodep->codeInc();
-	    m_statUniqSigs++;
+	    ++m_statUniqSigs;
 	}
 	return nodep->code();
     }
@@ -517,7 +517,7 @@ private:
 	if (!codePreassigned) {
 	    // Add to trace cfuncs
 	    if (needChg) {
-		m_statChgSigs++;
+		++m_statChgSigs;
 		incAddp = nodep->cloneTree(true);
 	    }
 

@@ -157,7 +157,7 @@ private:
 		    // Mark so LifePostElimVisitor will get it
 		    rhsp->varScopep()->user4p(lhsp->varScopep());
 		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
-		    m_statAssnDel++;
+		    ++m_statAssnDel;
 		}
 	    }
 	}

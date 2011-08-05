@@ -70,8 +70,8 @@ protected:
     virtual ~CombBaseVisitor() {}
 
     //***** optimization levels
-    bool emptyFunctionDeletion() { return true; }
-    bool duplicateFunctionCombine() { return true; }
+    static bool emptyFunctionDeletion() { return true; }
+    static bool duplicateFunctionCombine() { return true; }
     // Note this is disabled, it still needed work
     // Also repair it for DPI functions; when make __common need to insure proper
     // flags get inherited from the old to new AstCFunc, and that AstText doesn't
@@ -257,7 +257,7 @@ private:
 	UINFO(5,"     DupFunc "<<hex<<V3Hash(newfuncp->user4p())<<" "<<newfuncp<<endl);
 	UINFO(5,"         and "<<hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
 	// Mark user3p on entire old tree, so we don't process it more
-	m_statCombs++;
+	++m_statCombs;
 	CombMarkVisitor visitor(oldfuncp);
 	m_call.replaceFunc(oldfuncp, newfuncp);
 	oldfuncp->unlinkFrBack();

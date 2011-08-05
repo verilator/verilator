@@ -137,12 +137,12 @@ private:
 	    if (showname.substr(0,4) == "TOP ") showname.replace(0,4,"");
 	    if (!m_initSubFuncp) nodep->v3fatalSrc("NULL");
 	    if (varIgnoreTrace(varp)) {
-		m_statIgnSigs++;
+		++m_statIgnSigs;
 		m_initSubFuncp->addStmtsp(
 		    new AstComment(nodep->fileline(),
 				   "Tracing: "+showname+" // Ignored: "+varIgnoreTrace(varp)));
 	    } else {
-		m_statSigs++;
+		++m_statSigs;
 		AstNode* valuep = NULL;
 		if (nodep->valuep()) valuep=nodep->valuep()->cloneTree(true);
 		else valuep = new AstVarRef(nodep->fileline(), nodep, false);

@@ -413,7 +413,7 @@ private:
 		    newListp = newListp->addNext(nextp);
 		}
 		if (splitAlwaysp) {
-		    m_statSplits++;
+		    ++m_statSplits;
 		    AstAlways* alwaysp = new AstAlways(newListp->fileline(), NULL, NULL);
 		    addAfterp->addNextHere(alwaysp);  addAfterp=alwaysp;
 		    alwaysp->addStmtp(newListp);

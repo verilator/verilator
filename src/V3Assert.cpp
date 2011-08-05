@@ -184,7 +184,7 @@ private:
 	    }
 	    if (nodep->fullPragma() || nodep->priorityPragma()) {
 		// Simply need to add a default if there isn't one already
-		m_statAsFull++;
+		++m_statAsFull;
 		if (!has_default) {
 		    nodep->addItemsp(new AstCaseItem(nodep->fileline(), NULL/*DEFAULT*/,
 						     newFireAssert(nodep, "synthesis full_case, but non-match found")));
@@ -193,7 +193,7 @@ private:
 	    if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
 		// Need to check that one, and only one of the case items match at any moment
 		// If there's a default, we allow none to match, else exactly one must match
-		m_statAsFull++;
+		++m_statAsFull;
 		if (!has_default && !nodep->itemsp()) {
 		    // Not parallel, but harmlessly so.
 		} else {
@@ -241,18 +241,18 @@ private:
 	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
 			nodep->stmtsp(), nodep->name()); nodep=NULL;
-	m_statAsCover++;
+	++m_statAsCover;
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
 			NULL, nodep->name()); nodep=NULL;
-	m_statAsPsl++;
+	++m_statAsPsl;
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	newVAssertion(nodep, nodep->propp()); nodep=NULL;
-	m_statAsSV++;
+	++m_statAsSV;
     }
 
     virtual void visit(AstNodeModule* nodep, AstNUser*) {

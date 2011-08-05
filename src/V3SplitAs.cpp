@@ -185,7 +185,7 @@ private:
 	    // Now isolate the always
 	    if (m_splitVscp) {
 		splitAlways(nodep);
-		m_statSplits++;
+		++m_statSplits;
 	    } else {
 		nodep->user1(true);
 	    }
