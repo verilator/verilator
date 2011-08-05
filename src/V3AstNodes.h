@@ -461,10 +461,10 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
-    unsigned length() { return m_length; }
+    unsigned length() const { return m_length; }
     void     length(unsigned length) { m_length = length; }
     void     start(unsigned start) { m_start = start; }
-    unsigned start() { return m_start; }
+    unsigned start() const { return m_start; }
     // Special operators
     static int dimension(AstNode* nodep); ///< How many dimensions is this reference from the base variable?
     static AstNode* baseFromp(AstNode* nodep);	///< What is the base variable (or const) this dereferences?

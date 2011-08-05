@@ -90,7 +90,7 @@ public:
 	// ***Add new elements below also***
     };
     enum en m_e;
-    inline V3ErrorCode () {}
+    inline V3ErrorCode () : m_e(EC_MIN) {}
     inline V3ErrorCode (en _e) : m_e(_e) {}
     V3ErrorCode (const char* msgp);	// Matching code or ERROR
     explicit inline V3ErrorCode (int _e) : m_e(static_cast<en>(_e)) {}
@@ -315,7 +315,7 @@ public:
 
     // OPERATORS
     void v3errorEnd(ostringstream& str);
-    inline bool operator==(FileLine rhs) {
+    inline bool operator==(FileLine rhs) const {
 	return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename && m_warnOn==rhs.m_warnOn);
     }
 };

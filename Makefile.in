@@ -371,6 +371,15 @@ endif
 # VERILATOR_AUTHOR_SITE
 endif
 
+CPPCHECK = cppcheck
+CPPCHECK_FLAGS = --enable=all --inline-suppr --suppress=unusedScopedObject
+CPPCHECK_CPP = $(wildcard $(srcdir)/include/*.cpp $(srcdir)/src/*.cpp)
+CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))
+
+cppcheck: $(CPPCHECK_DEP)
+%.cppcheck: %.cpp
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -I$(srcdir)/include -I$(srcdir)/src $<
+
 ftp: info
 
 install-msg:

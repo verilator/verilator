@@ -257,7 +257,7 @@ public:
     double parseDouble(const char* text, size_t length);
     void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState=state; }
     bool popBeginKeywords() { if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
-    int lastVerilogState() { return m_lastVerilogState; }
+    int lastVerilogState() const { return m_lastVerilogState; }
     static const char* tokenName(int tok);
 
     void ppPushText(const string& text) { m_ppBuffers.push_back(text); }
@@ -291,12 +291,12 @@ public:
     }
 
     // Return next token, for bison, since bison isn't class based, use a global THIS
-    FileLine* fileline() { return m_fileline; }
-    AstNetlist* rootp() { return m_rootp; }
+    FileLine* fileline() const { return m_fileline; }
+    AstNetlist* rootp() const { return m_rootp; }
     FileLine* copyOrSameFileLine() { return fileline()->copyOrSameFileLine(); }
-    bool inCellDefine() { return m_inCellDefine; }
+    bool inCellDefine() const { return m_inCellDefine; }
     void inCellDefine(bool flag) { m_inCellDefine = flag; }
-    bool inLibrary() { return m_inLibrary; }
+    bool inLibrary() const { return m_inLibrary; }
 
     // Interactions with parser
     int  bisonParse();
@@ -306,8 +306,8 @@ public:
     void lexDestroy();
     void stateExitPsl();	// Parser -> lexer communication
     void statePushVlg();	// Parser -> lexer communication
-    void statePop();	// Parser -> lexer communication
-    int stateVerilogRecent();	// Parser -> lexer communication
+    void statePop();		// Parser -> lexer communication
+    static int stateVerilogRecent();	// Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
 
     //==== Symbol tables
@@ -317,6 +317,7 @@ public:
     // CREATORS
     V3ParseImp(AstNetlist* rootp, V3InFilter* filterp)
 	: m_sym(rootp), m_filterp(filterp) {
+	m_fileline = NULL;
 	m_rootp = rootp; m_lexerp = NULL;
 	m_inCellDefine = false;
 	m_inLibrary = false;

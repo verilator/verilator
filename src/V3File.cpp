@@ -327,6 +327,7 @@ private:
 #endif
     }
 
+    // cppcheck-suppress functionConst
     void checkFilter(bool hang) {
 #ifdef INFILTER_PIPE
 	if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang?0:WNOHANG)) {
@@ -355,6 +356,7 @@ private:
 		     || errno == EWOULDBLOCK
 #endif
 		) {
+		// cppcheck-suppress obsoleteFunctionsusleep
 		checkFilter(false); usleep(1000); continue;
 	    } else { m_readEof = true; break; }
 	}
@@ -390,6 +392,7 @@ private:
 		     || errno == EWOULDBLOCK
 #endif
 		) {
+		// cppcheck-suppress obsoleteFunctionsusleep
 		checkFilter(false); usleep(1000); continue;
 	    }
 	    else break;

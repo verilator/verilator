@@ -528,6 +528,11 @@ string V3Options::version() {
     return ver;
 }
 
+void V3Options::throwSigsegv() {
+    // cppcheck-suppress nullPointer
+    char* zp=NULL; *zp=0;    
+}
+
 //######################################################################
 // V3 Options utilities
 
@@ -643,7 +648,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-covsp", flag/*ref*/) )	{ }  // TBD
 	    else if ( !strcmp (sw, "-debug-abort") )		{ abort(); } // Undocumented, see also --debug-sigsegv
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
-	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ char* zp=NULL; *zp=0; }  // Undocumented, see also --debug-abort
+	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag; }
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
@@ -973,6 +978,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 		break;  // Ignore to EOL
 	    } else if (*pos=='/' && *(pos+1)=='*') {
 		inCmt = true;
+		// cppcheck-suppress StlMissingComparison
 		++pos;
 	    } else {
 		oline += *pos;

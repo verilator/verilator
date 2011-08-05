@@ -1079,6 +1079,7 @@ VerilatedScope::VerilatedScope() {
     m_callbacksp = NULL;
     m_namep = NULL;
     m_funcnumMax = 0;
+    m_symsp = NULL;
     m_varsp = NULL;
 }
 

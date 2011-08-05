@@ -326,6 +326,7 @@ public:
 
 class V3GraphTestImport : public V3GraphTest {
 
+    // cppcheck-suppress functionConst
     void dotImport();
 
 public:

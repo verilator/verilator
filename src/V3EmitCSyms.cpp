@@ -526,8 +526,8 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
     puts("\n");
     
-    bool firstExp = false;
-    bool firstImp = false;
+    int firstExp = 0;
+    int firstImp = 0;
     for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
 	AstCFunc* nodep = *it;
 	if (nodep->dpiExportWrapper()) {

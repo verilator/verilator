@@ -105,7 +105,7 @@ struct OrderVEdgeType {
 	return names[m_e];
     }
     enum en m_e;
-    inline OrderVEdgeType () {}
+    inline OrderVEdgeType () : m_e(VERTEX_UNKNOWN) {}
     inline OrderVEdgeType (en _e) : m_e(_e) {}
     explicit inline OrderVEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }

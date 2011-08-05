@@ -821,7 +821,9 @@ private:
 		AstNodeAssign* asn2ap=nodep->cloneType(lc2p, sel2p)->castNodeAssign();
 		asn1ap->width(msb1-lsb1+1,msb1-lsb1+1);
 		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn1ap);
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn2ap);
 	    } else {
 		if (!m_modp) nodep->v3fatalSrc("Not under module");
@@ -852,12 +854,16 @@ private:
 		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
 		asn2bp->width(msb2-lsb2+1,msb2-lsb2+1);
 		// This order matters
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn1ap);
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn2ap);
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn1bp);
+		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn2bp);
 	    }
-	    if (debug()>=9) newp->dumpTreeAndNext(cout,"     _new: ");
+	    if (debug()>=9 && newp) newp->dumpTreeAndNext(cout,"     _new: ");
 	    nodep->addNextHere(newp);
 	    // Cleanup
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
@@ -1534,7 +1540,7 @@ private:
 				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
 				{   // fmt = out w/ replace % with %% as it must be literal.
 				    fmt = "";
-				    for (string::iterator pos = out.begin(); pos != out.end(); pos++) {
+				    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
 					if (*pos == '%') fmt += '%';
 					fmt += *pos;
 				    }

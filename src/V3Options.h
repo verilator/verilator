@@ -347,6 +347,9 @@ class V3Options {
     string filePath (FileLine* fl, const string& modname, const string& errmsg);
     static bool fileStatDir (const string& filename);
     static bool fileStatNormal (const string& filename);
+
+    // METHODS (other OS)
+    static void throwSigsegv();
 };
 
 //######################################################################

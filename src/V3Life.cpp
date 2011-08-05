@@ -293,6 +293,7 @@ private:
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
     typedef std::map<AstVarScope*, LifeVarEntry> LifeMap;
+    // cppcheck-suppress memleak  // cppcheck bug - it is deleted
     LifeBlock*	m_lifep;	// Current active lifetime map for current scope
 
     // METHODS
@@ -455,6 +456,8 @@ public:
 	m_sideEffect = false;
 	m_noopt = false;
 	{
+	    // Cpp check bug, it is deleted
+	    // cppcheck-suppress leak
 	    m_lifep = new LifeBlock (NULL, m_statep);
 	    nodep->accept(*this);
 	    delete m_lifep; m_lifep=NULL;

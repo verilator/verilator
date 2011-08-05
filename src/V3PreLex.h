@@ -203,7 +203,7 @@ class V3PreLex {
     /// Called by V3PreProc.cpp to get data from lexer
     YY_BUFFER_STATE currentBuffer();
     int  lex();
-    int	 currentStartState();
+    int	 currentStartState() const;
     void dumpSummary();
     void dumpStack();
     void unused();

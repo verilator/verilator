@@ -241,14 +241,17 @@ private:
 	}
 	if (precondsp) {
 	    precondsp->unlinkFrBackWithNext();
+	    // cppcheck-suppress nullPointer  // addNextNull deals with it
 	    stmtsp = stmtsp->addNextNull(precondsp);
 	}
 	if (bodysp) {
 	    bodysp->unlinkFrBackWithNext();
+	    // cppcheck-suppress nullPointer  // addNextNull deals with it
 	    stmtsp = stmtsp->addNextNull(bodysp);  // Maybe null if no body
 	}
 	if (incp && !nodep->castGenFor()) {  // Generates don't need to increment loop index
 	    incp->unlinkFrBackWithNext();
+	    // cppcheck-suppress nullPointer  // addNextNull deals with it
 	    stmtsp = stmtsp->addNextNull(incp);  // Maybe null if no body
 	}
 	// Mark variable to disable some later warnings

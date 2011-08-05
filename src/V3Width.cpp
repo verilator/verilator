@@ -687,7 +687,7 @@ private:
 	bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
 	if (implicitParam) {
 	    AstNumeric rs = AstNumeric::UNSIGNED;
-	    int width=0; int mwidth=0;
+	    int width=0;
 	    if (nodep->valuep()) {
 		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
 		// Although nodep will get a different width for parameters just below,
@@ -697,11 +697,10 @@ private:
 		rs = nodep->numeric();
 		if (!rs.isDouble()) {
 		    if (nodep->valuep()->widthSized()) {
-			width = mwidth = nodep->valuep()->width();
+			width = nodep->valuep()->width();
 		    } else {
 			if (nodep->valuep()->width()>32) nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
 			width = 32;
-			mwidth = nodep->valuep()->widthMin();
 		    }
 		}
 	    }

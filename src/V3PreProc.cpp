@@ -251,6 +251,10 @@ public:
 	m_finAtBol = true;
 	m_defDepth = 0;
 	m_defPutJoin = false;
+	m_finToken = 0;
+	m_finFilelinep = NULL;
+	m_lexp = NULL;
+	m_preprocp = NULL;
     }
     void configure(FileLine* filelinep) {
 	// configure() separate from constructor to avoid calling abstract functions

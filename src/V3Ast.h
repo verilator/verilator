@@ -71,7 +71,7 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstNumeric () {}
+    inline AstNumeric () : m_e(UNSIGNED) {}
     inline AstNumeric (en _e) : m_e(_e) {}
     explicit inline AstNumeric (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -89,6 +89,7 @@ public:
 class AstPragmaType {
 public:
     enum en {
+	ILLEGAL,
 	COVERAGE_BLOCK_OFF,
 	INLINE_MODULE,
 	NO_INLINE_MODULE,
@@ -97,7 +98,7 @@ public:
 	PUBLIC_TASK
     };
     enum en m_e;
-    inline AstPragmaType () {}
+    inline AstPragmaType () : m_e(ILLEGAL) {}
     inline AstPragmaType (en _e) : m_e(_e) {}
     explicit inline AstPragmaType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -120,7 +121,7 @@ public:
 	TRACE_CHANGE_SUB
     };
     enum en m_e;
-    inline AstCFuncType () {}
+    inline AstCFuncType () : m_e(FT_NORMAL) {}
     inline AstCFuncType (en _e) : m_e(_e) {}
     explicit inline AstCFuncType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -188,7 +189,7 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstEdgeType () {}
+    inline AstEdgeType () : m_e(ET_ILLEGAL) {}
     inline AstEdgeType (en _e) : m_e(_e) {}
     explicit inline AstEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -202,6 +203,7 @@ public:
 class AstAttrType {
 public:
     enum en {
+	ILLEGAL,
 	EXPR_BITS,			// V3Const converts to constant
 	//
 	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
@@ -217,14 +219,14 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "EXPR_BITS", "VAR_BASE",
+	    "%E-AT", "EXPR_BITS", "VAR_BASE",
 	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
 	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SFORMAT"
 	};
 	return names[m_e];
     };
-    inline AstAttrType () {}
+    inline AstAttrType () : m_e(ILLEGAL) {}
     inline AstAttrType (en _e) : m_e(_e) {}
     explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -238,6 +240,7 @@ public:
 class AstBasicDTypeKwd {
 public:
     enum en {
+	UNKNOWN,
 	BIT, BYTE, CHANDLE, INT, INTEGER, LOGIC, LONGINT,
 	DOUBLE, SHORTINT, FLOAT, TIME,
 	// Closer to a class type, but limited usage
@@ -250,6 +253,7 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
+	    "%E-unk",
 	    "bit", "byte", "chandle", "int", "integer", "logic", "longint",
 	    "real", "shortint", "shortreal", "time",
 	    "string",
@@ -260,6 +264,7 @@ public:
     };
     const char* dpiType() const {
 	static const char* names[] = {
+	    "%E-unk",
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "short int", "float", "long long",
 	    "const char*",
@@ -268,7 +273,7 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstBasicDTypeKwd () {}
+    inline AstBasicDTypeKwd () : m_e(UNKNOWN) {}
     inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
     explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -351,7 +356,7 @@ public:
 	XTEMP
     };
     enum en m_e;
-    inline AstVarType () {}
+    inline AstVarType () : m_e(UNKNOWN) {}
     inline AstVarType (en _e) : m_e(_e) {}
     explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -409,7 +414,7 @@ public:
 	CT_CASEZ
     };
     enum en m_e;
-    inline AstCaseType () {}
+    inline AstCaseType () : m_e(CT_CASE) {}
     inline AstCaseType (en _e) : m_e(_e) {}
     explicit inline AstCaseType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -431,7 +436,7 @@ public:
 	DT_FATAL
     };
     enum en m_e;
-    inline AstDisplayType () {}
+    inline AstDisplayType () : m_e(DT_DISPLAY) {}
     inline AstDisplayType (en _e) : m_e(_e) {}
     explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -641,7 +646,7 @@ public:
     AstNRelinker() { m_backp=NULL; m_chg=RELINK_BAD; m_iterpp=NULL;}
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
-    void dump(ostream& str=cout);
+    void dump(ostream& str=cout) const;
 };
 inline ostream& operator<<(ostream& os, AstNRelinker& rhs) { rhs.dump(os); return os;}
 
@@ -754,6 +759,7 @@ class AstNode {
     void	deleteTreeIter();
     void	deleteNode();
     static void	relinkOneLink(AstNode*& pointpr, AstNode* newp);
+    // cppcheck-suppress functionConst
     void	debugTreeChange(const char* prefix, int lineno, bool next);
 
 protected:
@@ -945,7 +951,7 @@ public:
     bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
     void	deleteTree();	// Always deletes the next link
     void	checkTree();  // User Interface version
-    void	dumpPtrs(ostream& str=cout);
+    void	dumpPtrs(ostream& str=cout) const;
     void	dumpTree(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeFile(const string& filename, bool append=false);
@@ -1012,6 +1018,7 @@ struct AstNodeTermop : public AstNodeMath {
     ASTNODE_BASE_FUNCS(NodeTermop)
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
+    // cppcheck-suppress functionConst
     void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
 };
 
@@ -1274,6 +1281,7 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
+    // cppcheck-suppress functionConst
     void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
 };
 

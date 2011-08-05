@@ -488,7 +488,7 @@ YY_BUFFER_STATE V3PreLex::currentBuffer() {
     return YY_CURRENT_BUFFER;
 }
 
-int V3PreLex::currentStartState() {
+int V3PreLex::currentStartState() const {
     return YY_START;
 }
 

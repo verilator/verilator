@@ -146,7 +146,9 @@ private:
     }
 public:
     // CONSTRUCTORS
-    CombCallVisitor() {}
+    CombCallVisitor() {
+	m_find = false;
+    }
     virtual ~CombCallVisitor() {}
     void main(AstNetlist* nodep) {
 	nodep->accept(*this);

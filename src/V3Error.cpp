@@ -370,7 +370,7 @@ void V3Error::suppressThisWarning() {
 }
 
 void V3Error::v3errorEnd (ostringstream& sstr) {
-#ifdef __COVERITY__
+#if defined(__COVERITY__) || defined(__cppcheck__)
     if (s_errorCode==V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
     if (!s_errorSuppressed

@@ -98,7 +98,9 @@ class VerilatedVpioCb : public VerilatedVpio {
     s_vpi_value		m_value;
     QData		m_time;
 public:
-    VerilatedVpioCb(const t_cb_data* cbDatap, QData time) : m_cbData(*cbDatap), m_time(time) {
+    // cppcheck-suppress uninitVar  // m_value
+    VerilatedVpioCb(const t_cb_data* cbDatap, QData time)
+	: m_cbData(*cbDatap), m_time(time) {
 	m_cbData.value = &m_value;
     }
     virtual ~VerilatedVpioCb() {}

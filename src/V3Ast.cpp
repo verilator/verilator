@@ -430,7 +430,7 @@ void AstNode::replaceWith(AstNode* newp) {
     repHandle.relink(newp);
 }
 
-void AstNRelinker::dump(ostream& str) {
+void AstNRelinker::dump(ostream& str) const {
     str<<" BK="<<(uint32_t*)m_backp;
     str<<" ITER="<<(uint32_t*)m_iterpp;
     str<<" CHG="<<(m_chg==RELINK_NEXT?"[NEXT] ":"");
@@ -947,7 +947,7 @@ void AstNode::checkTree() {
     }
 }
 
-void AstNode::dumpPtrs(ostream& os) {
+void AstNode::dumpPtrs(ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;
     os<<" back="<<(void*)backp();
     if (nextp()) os<<" next="<<(void*)nextp();

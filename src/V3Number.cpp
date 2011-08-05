@@ -33,28 +33,10 @@
 // Read class functions
 // CREATION
 
-void V3Number::width(int width, bool sized) {
-    // Set width.  Only set m_width here, as we need to tweak vector size
-    if (width) { m_sized = sized; m_width=width; }
-    else { m_sized = false; m_width=1; }
-    if (m_value.size() < (unsigned)(words()+1)) {
-	m_value.resize(words()+1);
-	m_valueX.resize(words()+1);
-    }
-}
-
-void V3Number::init (FileLine* fileline, int swidth) {
-    m_fileline = fileline;
-    m_signed = false;
-    m_double = false;
-    m_autoExtend = false;
-    m_fromString = false;
-    width(swidth);
-    for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
-}
-
 V3Number::V3Number(VerilogString, FileLine* fileline, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
+    // cppcheck bug - doesn't see init() resets these
+    // cppcheck: Member variable 'm_sized/m_width' is not initialized in the constructor
     init(fileline, str.length()*8);
     m_fromString = true;
     for (unsigned pos=0; pos<str.length(); ++pos) {

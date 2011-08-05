@@ -148,7 +148,11 @@ public:
     }
 public:
     // CONSTUCTORS
-    ActiveNamer() {}
+    ActiveNamer() {
+	m_scopep = NULL;
+	m_iActivep = NULL;
+	m_cActivep = NULL;
+    }
     virtual ~ActiveNamer() {}
     void main(AstScope* nodep) {
 	nodep->accept(*this);

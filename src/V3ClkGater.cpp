@@ -315,6 +315,7 @@ public:
 	m_exprp = exprp;
 	m_original = original;
 	m_state = STATE_UNKNOWN;
+	m_cloning = false;
 	if (debug()>=9) nodep->dumpTree(cout,"  GateBodyIn:  ");
 	nodep->bodysp()->iterateAndNext(*this);
 	if (debug()>=9) nodep->dumpTree(cout,"  GateBodyOut: ");

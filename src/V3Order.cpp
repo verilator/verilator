@@ -148,7 +148,7 @@ private:
 
 public:
     OrderMoveDomScope(OrderLoopId inLoop, AstSenTree* domainp, AstScope* scopep)
-	: m_onReadyList(false), m_domainp(domainp), m_inLoop(inLoop) {}
+	: m_onReadyList(false), m_domainp(domainp), m_scopep(scopep), m_inLoop(inLoop) {}
     OrderMoveDomScope* readyDomScopeNextp() const { return m_readyDomScopeE.nextp(); }
     OrderLoopId inLoop() const { return m_inLoop; }
     AstSenTree* domainp() const { return m_domainp; }
@@ -391,8 +391,8 @@ private:
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
 	AstVarScope* nodep = vertexp->varScp();
 	nodep->circular(true);
-	m_statCut[vertexp->type()]++;
-	if (edgep) m_statCut[edgep->type()]++;
+	++m_statCut[vertexp->type()];
+	if (edgep) ++m_statCut[edgep->type()];
 	if (vertexp->isClock()) {
 	    // Seems obvious; no warning yet
 	    //nodep->v3warn(GENCLK,"Signal unoptimizable: Generated clock: "<<nodep->prettyName());
@@ -715,6 +715,9 @@ public:
 	m_settleDomainp = NULL;
 	m_settleVxp = NULL;
 	m_inputsVxp = NULL;
+	m_activeSenVxp = NULL;
+	m_logicVxp = NULL;
+	m_pomNewFuncp = NULL;
 	m_loopIdMax = LOOPID_FIRST;
 	m_pomNewStmts = 0;
 	if (debug()) m_graph.debug(5); // 3 is default if global debug; we want acyc debugging

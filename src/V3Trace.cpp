@@ -71,19 +71,19 @@ class TraceActivityVertex : public V3GraphVertex {
     bool	m_activityCodeValid;
     bool	m_slow;		// If always slow, we can use the same code
 public:
+    enum { ACTIVITY_NEVER =((1UL<<31) - 1) };
+    enum { ACTIVITY_ALWAYS=((1UL<<31) - 2) };
+    enum { ACTIVITY_SLOW=0 };
     TraceActivityVertex(V3Graph* graphp, AstNode* nodep, bool slow)
 	: V3GraphVertex(graphp), m_insertp(nodep) {
 	m_activityCode = 0;
 	m_activityCodeValid = false;
 	m_slow = slow;
     }
-    enum { ACTIVITY_NEVER =((1UL<<31) - 1) };
-    enum { ACTIVITY_ALWAYS=((1UL<<31) - 2) };
-    enum { ACTIVITY_SLOW=0 };
-    class ActivityAlways {};
     TraceActivityVertex(V3Graph* graphp, vlsint32_t code)
-	: V3GraphVertex(graphp) {
-	activityCode(code);
+	: V3GraphVertex(graphp), m_insertp(NULL) {
+	m_activityCode = code;
+	m_activityCodeValid = true;
 	m_slow = false;
     }
     virtual ~TraceActivityVertex() {}

@@ -110,6 +110,7 @@ private:
     void dumpHeader();
     void dumpPrep (vluint64_t timeui);
     void dumpFull (vluint64_t timeui);
+    // cppcheck-suppress functionConst
     void dumpDone ();
     inline void printCode (vluint32_t code) {
 	if (code>=(94*94*94)) *m_writep++ = ((char)((code/94/94/94)%94+33));
@@ -117,7 +118,7 @@ private:
 	if (code>=(94))       *m_writep++ = ((char)((code/94)%94+33));
 	*m_writep++ = ((char)((code)%94+33));
     }
-    string stringCode (vluint32_t code) {
+    static string stringCode (vluint32_t code) {
 	string out;
 	if (code>=(94*94*94)) out += ((char)((code/94/94/94)%94+33));
 	if (code>=(94*94))    out += ((char)((code/94/94)%94+33));
@@ -141,6 +142,8 @@ public:
 	m_evcd = false;
 	m_scopeEscape = '.';  // Backward compatibility
 	m_wroteBytes = 0;
+	m_fd = 0;
+	m_fullDump = true;
     }
     ~VerilatedVcd();
 

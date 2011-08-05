@@ -103,6 +103,7 @@ private:
 	} else {
 	    basep->v3fatalSrc("Strange base function type");
 	}
+	// cppcheck-suppress nullPointer  // above fatal prevents it
 	AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
 	callp->argTypes("vlSymsp, vcdp, code");
 	basep->addStmtsp(callp);

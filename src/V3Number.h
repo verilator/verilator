@@ -42,7 +42,6 @@ class V3Number {
     vector<uint32_t>	m_value;	// The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
     vector<uint32_t>	m_valueX;	// Each bit is true if it's X or Z, 10=z, 11=x
     // METHODS
-    void init(FileLine* fileline, int width);
     V3Number& setSingleBits(char value);
     void opCleanThis();
 public:
@@ -118,6 +117,27 @@ public:
     V3Number(FileLine* fileline, const char* source);	// Create from a verilog 32'hxxxx number.
     V3Number(VerilogString, FileLine* fileline, const string& vvalue);
 
+private:
+    void init(FileLine* fileline, int swidth) {
+	m_fileline = fileline;
+	m_signed = false;
+	m_double = false;
+	m_autoExtend = false;
+	m_fromString = false;
+	width(swidth);
+	for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
+    }
+public:
+    void width(int width, bool sized=true) {
+	// Set width.  Only set m_width here, as we need to tweak vector size
+	if (width) { m_sized = sized; m_width=width; }
+	else { m_sized = false; m_width=1; }
+	if (VL_UNLIKELY(m_value.size() < (unsigned)(words()+1))) {
+	    m_value.resize(words()+1);
+	    m_valueX.resize(words()+1);
+	}
+    }
+
     // SETTERS
     V3Number& setAllBitsX();
     V3Number& setAllBitsZ();
@@ -147,7 +167,6 @@ public:
     bool isEqAllOnes(int optwidth=0) const;
     bool isCaseEq(const V3Number& rhsp) const;  // operator==
     bool isLt(const V3Number& rhsp) const;  // operator<
-    void width(int width, bool sized=true);
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
     uint32_t toUInt() const;

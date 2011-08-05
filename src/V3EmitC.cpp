@@ -55,9 +55,9 @@ public:
     }
 
     // ACCESSORS
-    int	splitFilenum() { return m_splitFilenum; }
+    int	splitFilenum() const { return m_splitFilenum; }
     int	splitFilenumInc() { m_splitSize = 0; return ++m_splitFilenum; }
-    int splitSize() { return m_splitSize; }
+    int splitSize() const { return m_splitSize; }
     void splitSizeInc(AstNode* nodep) { m_splitSize += EmitCBaseCounterVisitor(nodep).count(); }
     bool splitNeeded() { return (splitSize() && v3Global.opt.outputSplit() > 1
 				 && v3Global.opt.outputSplit() < splitSize()); }
@@ -830,6 +830,8 @@ class EmitCImp : EmitCStmts {
 public:
     EmitCImp() {
 	m_modp = NULL;
+	m_slow = false;
+	m_fast = false;
     }
     virtual ~EmitCImp() {}
     void main(AstNodeModule* modp, bool slow, bool fast);
@@ -1424,6 +1426,7 @@ void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
     // Need implementation here.  Be careful of alignment code; needs to be uniquified
     // with module name to avoid multiple symbols.
     //emitVarList(modp->stmtsp(), EVL_ALL, modp->name());
+    puts("");  // NOP for cppcheck, otherwise const function
 }
 
 void EmitCImp::emitTextSection(AstType type) {
