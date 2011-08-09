@@ -642,10 +642,11 @@ private:
 	V3Width::widthParamsEdit(nodep->dtypep()); // MAY CHANGE dtypep()
 	AstBasicDType* basicp = nodep->dtypep()->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Casting non-simple data type");
 	nodep->widthSignedFrom(basicp);
-	AstNode* newp = nodep->lhsp()->unlinkFrBack();
-	if (!basicp->isDouble() && !newp->isDouble()) {
-	    widthCheck(nodep,"Cast",newp,nodep->width(),nodep->width(),true);
+	if (!basicp->isDouble() && !nodep->lhsp()->isDouble()) {
+	    // Note widthCheck might modify nodep->lhsp()
+	    widthCheck(nodep,"Cast",nodep->lhsp(),nodep->width(),nodep->width(),true);
 	}
+	AstNode* newp = nodep->lhsp()->unlinkFrBack();
 	if (basicp->numeric() == newp->numeric()) {
 	    newp = newp; // Can just remove cast
 	} else if (basicp->isDouble() && !newp->isDouble()) {

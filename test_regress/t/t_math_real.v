@@ -19,6 +19,8 @@ module t (/*AUTOARG*/
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
 
+   sub_cast_bug374 sub (.cyc5(cyc[4:0]), .*);
+
    initial begin
       // rtoi truncates
       if ($rtoi(36.7) != 36) $stop;
@@ -132,5 +134,12 @@ module t (/*AUTOARG*/
 	 $finish;
       end
    end
+endmodule
 
+module sub_cast_bug374(input clk, input [4:0] cyc5);
+    integer i;
+
+    always @(posedge clk) begin
+       i <= integer'(cyc5);
+    end
 endmodule
