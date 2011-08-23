@@ -71,7 +71,7 @@ public:
 	m_varIO = AstVarType::UNKNOWN;
 	m_varDTypep = NULL;
 	m_pinNum = -1;
-	m_instModule;
+	m_instModule = "";
 	m_instParamp = NULL;
 	m_modp = NULL;
 	m_modTypeImpNum = 0;

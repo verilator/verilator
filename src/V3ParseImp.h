@@ -316,7 +316,7 @@ public:
 public:
     // CREATORS
     V3ParseImp(AstNetlist* rootp, V3InFilter* filterp)
-	: m_sym(rootp), m_filterp(filterp) {
+	: m_filterp(filterp), m_sym(rootp) {
 	m_fileline = NULL;
 	m_rootp = rootp; m_lexerp = NULL;
 	m_inCellDefine = false;

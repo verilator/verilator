@@ -62,7 +62,7 @@ public:
 void V3ParseImp::stateExitPsl() { parsep()->m_lexerp->stateExitPsl(); }
 void V3ParseImp::statePushVlg() { parsep()->m_lexerp->stateExitPsl(); }
 void V3ParseImp::statePop()	{ parsep()->m_lexerp->statePop(); }
-int V3ParseImp::yylexThis() {     parsep()->m_lexerp->yylex(); }
+int V3ParseImp::yylexThis() {     return parsep()->m_lexerp->yylex(); }
 
 //######################################################################
 // Read class functions

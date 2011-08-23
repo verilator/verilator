@@ -58,7 +58,7 @@ pkgdatadir = @pkgdatadir@
 
 # Compile options
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
-CPPFLAGSNOWALL += @CPPFLAGS@
+CPPFLAGS += @CPPFLAGS@
 LDFLAGS += @LDFLAGS@
 
 #### End of system configuration section. ####
@@ -85,17 +85,18 @@ endif
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = -lm
 
-CPPFLAGSNOWALL += -MMD
-CPPFLAGSNOWALL += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
-CPPFLAGSNOWALL += -DYYDEBUG 	# Required to get nice error messages
-#CPPFLAGSNOWALL += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
-CPPFLAGSNOWALL += $(COPT)
-CPPFLAGS = $(CPPFLAGSNOWALL)
+CPPFLAGS += -MMD
+CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
+CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
+#CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
+CPPFLAGS += $(COPT)
+CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
-CPPFLAGSNOWALL += -MP	# Only works on recent GCC versions
 CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
 #CPPFLAGS += -pedantic-errors
 endif
+CPPFLAGSWALL   = $(CPPFLAGS)
+CPPFLAGSNOWALL = $(CPPFLAGS)
 
 ifneq ($(SYSTEMPERL),)	# Intuit SYSTEMPERL_INCLUDE as it's new
  SYSTEMPERL_INCLUDE ?= $(SYSTEMPERL)/src
@@ -262,9 +263,9 @@ V3Number_test: V3Number_test.o
 	$(PERL) $(ASTGEN) -I$(srcdir) $*.cpp
 
 %.o:	%.cpp
-	$(OBJCACHE) ${CXX} ${CPPFLAGS} -c $<
+	$(OBJCACHE) ${CXX} ${CPPFLAGSWALL} -c $<
 %.o:	%.c
-	$(OBJCACHE) ${CC}  ${CPPFLAGS} -c $<
+	$(OBJCACHE) ${CC}  ${CPPFLAGSWALL} -c $<
 
 V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.821****
 
+**** Fix PowerPC runtime error, bug288. [Ahmed El-Mahmoudy]
+
 **** Fix internal error on integer casts, bug374. [Chandan Egbert]
 
 * Verilator 3.820 2011/07/28

@@ -538,6 +538,7 @@ void V3PreLex::unused() {
     if (0) {
 	// Prevent unused warnings
 	yy_top_state();
+	yyerror((char*)"");
     }
 }
 
