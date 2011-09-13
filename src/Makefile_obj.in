@@ -96,7 +96,7 @@ CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
 #CPPFLAGS += -pedantic-errors
 endif
 CPPFLAGSWALL   = $(CPPFLAGS)
-CPPFLAGSNOWALL = $(CPPFLAGS)
+CPPFLAGSNOWALL = $(CPPFLAGS) -Wno-unused
 
 ifneq ($(SYSTEMPERL),)	# Intuit SYSTEMPERL_INCLUDE as it's new
  SYSTEMPERL_INCLUDE ?= $(SYSTEMPERL)/src
