@@ -292,8 +292,8 @@ descriptions in the next sections for more information.
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
-    --trace-max-array <bits>    Maximum bit width for tracing
-    --trace-max-width <depth>   Maximum array depth for tracing
+    --trace-max-array <depth>   Maximum bit width for tracing
+    --trace-max-width <width>   Maximum array depth for tracing
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
@@ -823,13 +823,13 @@ Specify the number of levels deep to enable tracing, for example
 entire model.  Using a small number will decrease visibility, but greatly
 improve runtime and trace file size.
 
-=item --trace-max-array I<bits>
+=item --trace-max-array I<depth>
 
 Rarely needed.  Specify the maximum array depth of a signal that may be
 traced.  Defaults to 32, as tracing large arrays may greatly slow traced
 simulations.
 
-=item --trace-max-width I<depth>
+=item --trace-max-width I<width>
 
 Rarely needed.  Specify the maximum bit width of a signal that may be
 traced.  Defaults to 256, as tracing large vectors may greatly slow traced
