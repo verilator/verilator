@@ -383,9 +383,9 @@ static inline QData  VL_CVT_Q_D(double lhs) { union { double d; QData q; } u; u.
 /// Return double from QData (numeric)
 static inline double VL_ITOR_D_I(IData lhs) { return ((double)((vlsint32_t)(lhs))); }
 /// Return QData from double (numeric)
-static inline IData  VL_RTOI_I_D(double lhs) { return ((vlsint32_t)(trunc(lhs))); }
+static inline IData  VL_RTOI_I_D(double lhs) { return ((vlsint32_t)(VL_TRUNC(lhs))); }
 /// Return QData from double (numeric)
-static inline IData  VL_RTOIROUND_I_D(double lhs) { return ((vlsint32_t)(round(lhs))); }
+static inline IData  VL_RTOIROUND_I_D(double lhs) { return ((vlsint32_t)(VL_ROUND(lhs))); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)

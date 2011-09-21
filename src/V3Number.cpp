@@ -1475,12 +1475,12 @@ V3Number& V3Number::opIToRD (const V3Number& lhs) {
     return setDouble(lhs.toSInt());
 }
 V3Number& V3Number::opRToIS (const V3Number& lhs) {
-    double v = trunc(lhs.toDouble());
+    double v = VL_TRUNC(lhs.toDouble());
     vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS (const V3Number& lhs) {
-    double v = round(lhs.toDouble());
+    double v = VL_ROUND(lhs.toDouble());
     vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
     return setLongS(i);
 }

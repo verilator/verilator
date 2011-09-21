@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.82***
+
+**** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
+
+
 * Verilator 3.821 2011/09/14
 
 **** Fix PowerPC runtime error, bug288. [Ahmed El-Mahmoudy]

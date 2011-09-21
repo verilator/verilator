@@ -222,5 +222,17 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #define VL_BITBIT_Q(bit)	((bit)&VL_SIZEBITS_Q)	///< Bit number for a bit in a quad
 
 //=========================================================================
+// Floating point
+// #defines, to avoid requiring math.h on all compile runs
+
+#ifdef _MSC_VER
+# define VL_TRUNC(n) (((n)<0) ? ceil((n))     : floor((n)))
+# define VL_ROUND(n) (((n)<0) ? ceil((n)-0.5) : floor((n)+0.5))
+#else
+# define VL_TRUNC(n) trunc(n)
+# define VL_ROUND(n) round(n)
+#endif
+
+//=========================================================================
 
 #endif /*guard*/
