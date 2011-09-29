@@ -2832,6 +2832,90 @@ struct AstFGetC : public AstNodeUniop {
     AstNode*	filep() const { return lhsp(); }
 };
 
+struct AstCeilD : public AstNodeUniop {
+    AstCeilD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(CeilD, CEILD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(ceil(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$ceil(%l)"; }
+    virtual string emitC() { return "ceil(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+struct AstExpD : public AstNodeUniop {
+    AstExpD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(ExpD, EXPD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(exp(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$exp(%l)"; }
+    virtual string emitC() { return "exp(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+struct AstFloorD : public AstNodeUniop {
+    AstFloorD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(FloorD, FLOORD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(floor(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$floor(%l)"; }
+    virtual string emitC() { return "floor(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+struct AstLogD : public AstNodeUniop {
+    AstLogD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(LogD, LOGD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(log(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$ln(%l)"; }
+    virtual string emitC() { return "log(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+struct AstLog10D : public AstNodeUniop {
+    AstLog10D(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(Log10D, LOG10D)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(log10(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$log10(%l)"; }
+    virtual string emitC() { return "log10(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+struct AstSqrtD : public AstNodeUniop {
+    AstSqrtD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+	numeric(AstNumeric::DOUBLE); }
+    ASTNODE_NODE_FUNCS(SqrtD, SQRTD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.setDouble(sqrt(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$sqrt(%l)"; }
+    virtual string emitC() { return "sqrt(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;}
+    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
 //======================================================================
 // Binary ops
 

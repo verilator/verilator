@@ -546,7 +546,7 @@ public:
 	    }
 	    ofp()->printf(",0x%08" VL_PRI64 "x)", (vluint64_t)(nodep->num().dataWord(0)));
 	} else if (nodep->isDouble()) {
-	    ofp()->printf("%g", nodep->num().toDouble());
+	    ofp()->printf("%.17g", nodep->num().toDouble());
 	} else if (nodep->isQuad()) {
 	    vluint64_t num = nodep->toUQuad();
 	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "d)", num);

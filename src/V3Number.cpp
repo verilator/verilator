@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <algorithm>
+#include <iomanip>
 #include "V3Number.h"
 
 #define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
@@ -337,6 +338,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     ostringstream out;
 
     if (isDouble()) {
+	out.precision(17);
 	out<<toDouble();
 	return out.str();
     }

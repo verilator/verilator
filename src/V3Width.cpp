@@ -208,6 +208,13 @@ private:
     virtual void visit(AstPowD* nodep, AstNUser* vup) {		visit_math_Or_LRr(nodep,vup); }
     // Signed/Real: Output real or signed iff LHS signed/real
     virtual void visit(AstNegateD* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
+    // Real: Output real
+    virtual void visit(AstCeilD* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
+    virtual void visit(AstExpD* nodep, AstNUser* vup) {		visit_math_Or_Lr(nodep,vup); }
+    virtual void visit(AstFloorD* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
+    virtual void visit(AstLogD* nodep, AstNUser* vup) {		visit_math_Or_Lr(nodep,vup); }
+    virtual void visit(AstLog10D* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
+    virtual void visit(AstSqrtD* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
  
     // Widths: out signed/unsigned width = lhs width, input un|signed 
     virtual void visit(AstSigned* nodep, AstNUser* vup) {	visit_Ous_Lus_Wforce(nodep,vup,AstNumeric::SIGNED); }
@@ -1188,14 +1195,14 @@ private:
 	nodep->taskp()->iterate(*this);
 	//
 	// And do the arguments to the task/function too
-	for (int accept_mode=1; accept_mode>=0; accept_mode--) {  // Avoid duplicate code; just do inner stuff twice
+	for (int accept_mode=0; accept_mode<3; accept_mode++) {  // Avoid duplicate code; just do inner stuff several times
+	  reloop:
 	    V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-	    bool lastloop = false;
-	    for (V3TaskConnects::iterator it=tconnects.begin(); !lastloop && it!=tconnects.end(); ++it) {
+	    for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 		AstVar* portp = it->first;
 		AstNode* pinp = it->second;
 		if (pinp!=NULL) {  // Else argument error we'll find later
-		    if (accept_mode) {
+		    if (accept_mode==0) {
 			// Prelim may cause the node to get replaced; we've lost our
 			// pointer, so need to iterate separately later
 			if (portp->attrSFormat()
@@ -1214,7 +1221,7 @@ private:
 			    }
 			    handle.relink(newp);
 			    // Connection list is now incorrect (has extra args in it).
-			    lastloop = true;  // so exit early; next loop will correct it
+			    goto reloop;  // so exit early; next loop will correct it
 			}
 			else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
 				 && !pinp->castCvtPackString()
@@ -1228,7 +1235,12 @@ private:
 			    pinp = newp;
 			}
 			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
-		    } else {
+		    } else if (accept_mode==1) {
+			// Change data types based on above accept completion
+			if (portp->isDouble()) {
+			    spliceCvtD(pinp); pinp=NULL;
+			}
+		    } else if (accept_mode==2) {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
 			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
 			if ((portp->isOutput() || portp->isInout())
@@ -1585,20 +1597,18 @@ private:
     }
     void visit_math_Or_LRr(AstNodeBiop* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {  // First stage evaluation
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtD(nodep->lhsp());
 	    checkCvtD(nodep->rhsp());
 	    nodep->numeric(AstNumeric::DOUBLE);
-	    // Determine expression widths only relying on what's in the subops
-	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	}
     }
     void visit_math_Or_Lr(AstNodeUniop* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {  // First stage evaluation
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtD(nodep->lhsp());
 	    nodep->numeric(AstNumeric::DOUBLE);
-	    // Determine expression widths only relying on what's in the subops
-	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	}
     }
 

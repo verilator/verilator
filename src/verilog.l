@@ -175,7 +175,9 @@ word	[a-zA-Z0-9_]+
   "$c"[0-9]*		{ FL; return yD_C; }		/*Verilator only*/
   /*     System Tasks */
   "$bitstoreal"		{ FL; return yD_BITSTOREAL; }
+  "$ceil"		{ FL; return yD_CEIL; }
   "$display"		{ FL; return yD_DISPLAY; }
+  "$exp"		{ FL; return yD_EXP; }
   "$fclose"		{ FL; return yD_FCLOSE; }
   "$fdisplay"		{ FL; return yD_FDISPLAY; }
   "$feof"		{ FL; return yD_FEOF; }
@@ -183,14 +185,18 @@ word	[a-zA-Z0-9_]+
   "$fgetc"		{ FL; return yD_FGETC; }
   "$fgets"		{ FL; return yD_FGETS; }
   "$finish"		{ FL; return yD_FINISH; }
+  "$floor"		{ FL; return yD_FLOOR; }
   "$fopen"		{ FL; return yD_FOPEN; }
   "$fscanf"		{ FL; return yD_FSCANF; }
   "$fullskew"		{ FL; return yaTIMINGSPEC; }
   "$fwrite"		{ FL; return yD_FWRITE; }
   "$hold"		{ FL; return yaTIMINGSPEC; }
   "$itor"		{ FL; return yD_ITOR; }
+  "$ln"			{ FL; return yD_LN; }
+  "$log10"		{ FL; return yD_LOG10; }
   "$nochange"		{ FL; return yaTIMINGSPEC; }
   "$period"		{ FL; return yaTIMINGSPEC; }
+  "$pow"		{ FL; return yD_POW; }
   "$random"		{ FL; return yD_RANDOM; }
   "$readmemb"		{ FL; return yD_READMEMB; }
   "$readmemh"		{ FL; return yD_READMEMH; }
@@ -204,6 +210,7 @@ word	[a-zA-Z0-9_]+
   "$setuphold"		{ FL; return yaTIMINGSPEC; }
   "$sformat"		{ FL; return yD_SFORMAT; }
   "$skew"		{ FL; return yaTIMINGSPEC; }
+  "$sqrt"		{ FL; return yD_SQRT; }
   "$sscanf"		{ FL; return yD_SSCANF; }
   "$stime"		{ FL; return yD_STIME; }
   "$stop"		{ FL; return yD_STOP; }

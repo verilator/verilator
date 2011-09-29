@@ -27,6 +27,7 @@
 #include "V3Error.h"
 #include "V3Number.h"
 #include <vector>
+#include <cmath>
 
 #include "V3Ast__gen_classes.h"	// From ./astgen
 // Things like:
@@ -825,6 +826,7 @@ public:
     static int	instrCountPli() { return 20; }		///< Instruction cycles to call pli routines
     static int	instrCountDouble() { return 8; }	///< Instruction cycles to convert or do floats
     static int	instrCountDoubleDiv() { return 40; }	///< Instruction cycles to divide floats
+    static int	instrCountDoubleTrig() { return 200; }	///< Instruction cycles to do triganomics
     static int	instrCountCall() { return instrCountBranch()+10; }	///< Instruction cycles to call subroutine
     static int	instrCountTime() { return instrCountCall()+5; }		///< Instruction cycles to determine simulation time
 

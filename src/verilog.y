@@ -386,10 +386,12 @@ class AstSenTree;
 %token<fl>		yD_BITS		"$bits"
 %token<fl>		yD_BITSTOREAL	"$bitstoreal"
 %token<fl>		yD_C		"$c"
+%token<fl>		yD_CEIL		"$ceil"
 %token<fl>		yD_CLOG2	"$clog2"
 %token<fl>		yD_COUNTONES	"$countones"
 %token<fl>		yD_DISPLAY	"$display"
 %token<fl>		yD_ERROR	"$error"
+%token<fl>		yD_EXP		"$exp"
 %token<fl>		yD_FATAL	"$fatal"
 %token<fl>		yD_FCLOSE	"$fclose"
 %token<fl>		yD_FDISPLAY	"$fdisplay"
@@ -398,14 +400,18 @@ class AstSenTree;
 %token<fl>		yD_FGETC	"$fgetc"
 %token<fl>		yD_FGETS	"$fgets"
 %token<fl>		yD_FINISH	"$finish"
+%token<fl>		yD_FLOOR	"$floor"
 %token<fl>		yD_FOPEN	"$fopen"
 %token<fl>		yD_FSCANF	"$fscanf"
 %token<fl>		yD_FWRITE	"$fwrite"
 %token<fl>		yD_INFO		"$info"
 %token<fl>		yD_ISUNKNOWN	"$isunknown"
 %token<fl>		yD_ITOR		"$itor"
+%token<fl>		yD_LN		"$ln"
+%token<fl>		yD_LOG10	"$log10"
 %token<fl>		yD_ONEHOT	"$onehot"
 %token<fl>		yD_ONEHOT0	"$onehot0"
+%token<fl>		yD_POW		"$pow"
 %token<fl>		yD_RANDOM	"$random"
 %token<fl>		yD_READMEMB	"$readmemb"
 %token<fl>		yD_READMEMH	"$readmemh"
@@ -414,6 +420,7 @@ class AstSenTree;
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SIGNED	"$signed"
+%token<fl>		yD_SQRT		"$sqrt"
 %token<fl>		yD_SSCANF	"$sscanf"
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
@@ -2152,6 +2159,13 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
 	//
+	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
+	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
+	|	yD_FLOOR '(' expr ')'			{ $$ = new AstFloorD($1,$3); }
+	|	yD_LN '(' expr ')'			{ $$ = new AstLogD($1,$3); }
+	|	yD_LOG10 '(' expr ')'			{ $$ = new AstLog10D($1,$3); }
+	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
+	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
 	|	yD_BITS '(' data_type ')'		{ $$ = new AstAttrOf($1,AstAttrType::EXPR_BITS,$3); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }

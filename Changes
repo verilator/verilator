@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.82***
 
+***  Support $ceil, $floor, etc.  [Alex Solomatnikov]
+
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 
 
