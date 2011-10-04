@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 
+**** Fix autoconf warnings, bug396.  [R. Diez]
+
 
 * Verilator 3.821 2011/09/14
 

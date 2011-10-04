@@ -6,6 +6,7 @@ dnl General Public License Version 3 or the Perl Artistic License Version 2.0.
 
 AC_INIT(src/Verilator.cpp)
 AC_CONFIG_HEADER(src/config_build.h)
+AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
 
 dnl Special Substitutions
 AC_ARG_ENABLE(defenv,
@@ -27,9 +28,11 @@ AC_PROG_INSTALL
 
 AC_LANG_PUSH(C++)
 AC_MSG_CHECKING([that C++ compiler can compile simple program])
-AC_TRY_RUN([int main() { return 0; }],
+AC_RUN_IFELSE(
+           [AC_LANG_SOURCE([int main() { return 0; }])],
            AC_MSG_RESULT(yes),
-           AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]))
+           AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
+	   AC_MSG_RESULT(yes))
 
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
@@ -69,7 +72,7 @@ dnl Other install directories
 pkgdatadir=${datadir}/verilator
 AC_SUBST(pkgdatadir)
 
-AC_OUTPUT(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
+AC_OUTPUT
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Now type 'gmake'])
