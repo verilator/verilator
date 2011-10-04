@@ -178,7 +178,7 @@ exit(10) if $failcnt;
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval => 2);
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
     exit (1);
 }
 

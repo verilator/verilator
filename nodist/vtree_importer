@@ -40,7 +40,7 @@ print '(query-replace-regexp "(\\([0-9a-z_]+\\))" "\\1" nil nil nil)',"\n";
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval => 2);
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
     exit (1);
 }
 

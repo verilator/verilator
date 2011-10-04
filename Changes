@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $ceil, $floor, etc.  [Alex Solomatnikov]
 
+***  Fix --help output to go to stderr, not stdout, bug397.  [R. Diez]
+
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 
 **** Fix autoconf warnings, bug396.  [R. Diez]

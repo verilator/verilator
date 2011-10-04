@@ -235,7 +235,7 @@ write_output_v("vgen.v") if !$Opt_Sc;
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval => 2);
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
     exit (1);
 }
 

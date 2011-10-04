@@ -99,7 +99,7 @@ if ($opt_gdbbt && !$opt_gdb && $Debug) {
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-exitstatus=>2, -verbose=>2);
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
 }
 
 sub debug {
