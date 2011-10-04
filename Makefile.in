@@ -400,8 +400,13 @@ Makefile: Makefile.in config.status $(IN_WILD)
 src/Makefile: src/Makefile.in Makefile
 config.status: configure
 	./config.status --recheck
+
 configure: configure.ac
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+	autoconf --warnings=all
+else
 	autoconf
+endif
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"

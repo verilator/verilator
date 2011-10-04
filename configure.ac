@@ -1,27 +1,32 @@
-dnl DESCRIPTION: Process this file with autoconf to produce a configure script.
-dnl
-dnl Copyright 2003-2011 by Wilson Snyder. Verilator is free software; you can
-dnl redistribute it and/or modify it under the terms of either the GNU Lesser
-dnl General Public License Version 3 or the Perl Artistic License Version 2.0.
+# DESCRIPTION: Process this file with autoconf to produce a configure script.
+#
+# Copyright 2003-2011 by Wilson Snyder. Verilator is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU Lesser
+# General Public License Version 3 or the Perl Artistic License Version 2.0.
 
 AC_INIT(src/Verilator.cpp)
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
 
-dnl Special Substitutions
-AC_ARG_ENABLE(defenv,
-   [AS_HELP_STRING([--disable-defenv], [disable hardcoded default environment variables])],
-   CFG_WITH_DEFENV=$enableval,
-   CFG_WITH_DEFENV=yes)
+# Special Substitutions
+AC_ARG_ENABLE([defenv],
+              [AS_HELP_STRING([--disable-defenv],
+                              [disable using some hardcoded data paths extracted from some default environment variables (the default is to use hardcoded paths)])],
+              [case "${enableval}" in
+                yes) CFG_WITH_DEFENV=yes ;;
+                no)  CFG_WITH_DEFENV=no ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --disable-defenv]) ;;
+               esac],
+              CFG_WITH_DEFENV=yes)
 AC_SUBST(CFG_WITH_DEFENV)
 
-dnl Compiler flags
+# Compiler flags
 CFLAGS=-I${includedir}
 CPPFLAGS=-I${includedir}
 CXXFLAGS=-I${includedir}
 LDFLAGS=-L${libdir}
 
-dnl Checks for programs.
+# Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
@@ -47,33 +52,33 @@ if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
 fi
 
-dnl Checks for libraries.
+# Checks for libraries.
 
-dnl Checks for header files.
+# Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(fcntl.h unistd.h inttypes.h sys/file.h sys/time.h sys/un.h math.h stdint.h mingw/stdint.h)
 
-dnl Checks for typedefs, structures
+# Checks for typedefs, structures
 AC_CHECK_TYPE(size_t,unsigned int)
 AC_CHECK_TYPE(uint_t,unsigned int)
 AC_CHECK_TYPE(ulong_t,unsigned long)
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 
-dnl Checks for compiler characteristics.
+# Checks for compiler characteristics.
 AC_C_INLINE
 
-dnl Checks for library functions.
+# Checks for library functions.
 
-dnl Checks for system services
+# Checks for system services
 
-dnl Other install directories
+# Other install directories
 pkgdatadir=${datadir}/verilator
 AC_SUBST(pkgdatadir)
 
 AC_OUTPUT
 
 AC_MSG_RESULT([])
-AC_MSG_RESULT([Now type 'gmake'])
+AC_MSG_RESULT([Now type 'make' (or sometimes 'gmake') to build Verilator.])
 AC_MSG_RESULT([])
