@@ -7,11 +7,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $ceil, $floor, etc.  [Alex Solomatnikov]
 
-***  Fix --help output to go to stderr, not stdout, bug397.  [R. Diez]
+***  Fix --help output to go to stderr, not stdout, bug397.  [Ruben Diez]
 
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 
-**** Fix autoconf warnings, bug396.  [R. Diez]
+**** Fix autoconf and Makefile warnings, bug396.  [Ruben Diez]
 
 
 * Verilator 3.821 2011/09/14

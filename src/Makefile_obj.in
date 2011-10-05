@@ -60,6 +60,7 @@ pkgdatadir = @pkgdatadir@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CPPFLAGS += @CPPFLAGS@
 LDFLAGS += @LDFLAGS@
+EXEEXT = @EXEEXT@
 
 #### End of system configuration section. ####
 
@@ -140,6 +141,7 @@ clean mostlyclean distclean maintainer-clean::
 distclean maintainer-clean:: clean
 
 maintainer-clean::
+	-rm -f config_rev.h
 
 maintainer-copy::
 
@@ -251,8 +253,9 @@ $(TGT): V3Ast__gen_classes.h $(OBJS)
 	@echo "      Linking $@..."
 	-rm -rf $@ $@.exe
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
-	@-(cp $@.exe $@ || true)
-# ok if cp failes on linux, it's there to insure executable works on NT
+ifneq ($(EXEEXT),)
+	cp $@$(EXEEXT) $@
+endif
 
 V3Number_test: V3Number_test.o
 	${LINK} ${LDFLAGS} -o $@ $^ ${LIBS}

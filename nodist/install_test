@@ -33,12 +33,14 @@ sub test {
     $ENV{VERILATOR_NO_OPT_BUILD} = 1;   # Don't build optimized executables; just slows this down
     run("make distclean") if -r "Makefile";
 
+    my $stage = $ENV{VERILATOR_INSTALL_TEST_STAGE}||0;  # For debugging this process
+
     # Try building from a scratch area
     my $srcdir = getcwd();
     my $blddir  = $srcdir."/test_regress/obj_dir/install_test_bld";
     my $prefix  = $srcdir."/test_regress/obj_dir/install_test_prefix";
     my $testdir = $srcdir."/test_regress/obj_dir/install_test_test";
-    if (1) {
+    if ($stage <= 0) {
 	run("/bin/rm -rf $blddir");
 	run("/bin/mkdir -p $blddir");
 	run("cd $blddir && $srcdir/configure --prefix $prefix");
@@ -46,14 +48,14 @@ sub test {
     }
 
     # Install it under the prefix
-    if (1) {
+    if ($stage <= 1) {
 	run("/bin/rm -rf $prefix");
 	run("/bin/mkdir -p $prefix");
 	run("cd $blddir && make install");
     }
 
     # Run a test using just the path
-    if (1) {
+    if ($stage <= 2) {
 	run("/bin/rm -rf   $testdir");
 	run("/bin/mkdir -p $testdir");
 	my $bin1 = $prefix."/bin";

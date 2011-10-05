@@ -70,7 +70,7 @@ if (! GetOptions (
 		  # "version!"	=> \&version,	# Also passthru'ed
 		  # Switches
 		  "gdb=s"	=> \$opt_gdb,	# Undocumented debugging
-		  "gdbbt!"	=> \$opt_gdbbt,	# Undocumented debugging
+		  "gdbbt!"	=> \$opt_gdbbt,
 		  # Additional parameters
 		  "<>"		=> sub {},	# Ignored
 		  )) {
@@ -125,7 +125,14 @@ sub verilator_bin {
 	    $bin = "$dir/$basename";  # From pointing to kit directory
 	}
     } else {
-	$bin = $basename;
+	if (-x "$RealBin/$basename") {
+	    $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
+	} else {
+	    $bin = $basename;  # Find in PATH
+	}
+	# Note we don't look under bin/$basename which would be right if running
+	# in the kit dir. Running that would likely break, since
+	# VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
     }
     return $bin;
 }

@@ -24,6 +24,7 @@
 srcdir = @srcdir@
 VPATH = @srcdir@
 PERL = @PERL@
+EXEEXT = @EXEEXT@
 
 #### End of system configuration section. ####
 
@@ -65,8 +66,7 @@ opt: ../verilator_bin
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
 ../verilator_bin: ../verilator_bin_dbg
 	-rm -rf $@ $@.exe
-	-cp -p $< $@
-	-cp -p $<.exe $@.exe
+	-cp -p $<$(EXEEXT) $@$(EXEEXT)
 else
 ../verilator_bin: obj_opt prefiles
 	cd obj_opt && $(MAKE) -j 1             TGT=../$@ -f ../Makefile_obj serial
