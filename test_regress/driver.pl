@@ -39,6 +39,7 @@ autoflush STDERR 1;
 
 our @Orig_ARGV = @ARGV;
 our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
+our $Start = time();
 
 $Debug = 0;
 my $opt_atsim;
@@ -228,14 +229,17 @@ sub report {
 	$fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
     }
 
+    my $delta = time() - $Start;
     $fh->print("\n");
     $fh->print("="x70,"\n");
-    $fh->print("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt\n");
+    $fh->printf("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt  Time %d:%02d\n",
+	       int($delta/60),$delta%60);
     foreach my $f (@$fails) {
 	chomp $f;
 	$fh->print("$f\n");
     }
-    $fh->print("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt\n");
+    $fh->printf("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt  Time %d:%02d\n",
+	       int($delta/60),$delta%60);
 }
 
 #######################################################################
