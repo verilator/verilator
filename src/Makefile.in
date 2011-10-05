@@ -51,7 +51,7 @@ ifneq ($(words $(CURDIR)),1)
  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
 
-UNDER_GIT = $(wildcard ../.git/logs/HEAD)
+UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 
 #*********************************************************************
 
@@ -82,9 +82,9 @@ prefiles::
 
 ifneq ($(UNDER_GIT),)	# If local git tree... Else don't burden users
 prefiles:: config_rev.h
-# This output goes into srcdir, as we need to distribute it as part of the kit.
-config_rev.h:	config_rev.pl ../.git/logs/HEAD
-	$(PERL) config_rev.pl . >$@
+# This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
+config_rev.h:	${srcdir}/config_rev.pl ${srcdir}/../.git/logs/HEAD
+	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
 endif
 
 maintainer-copy::
@@ -96,3 +96,6 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	-rm -f Makefile Makefile_obj config_build.h
+
+maintainer-clean::
+	-rm -f config_rev.h

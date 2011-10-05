@@ -141,7 +141,6 @@ clean mostlyclean distclean maintainer-clean::
 distclean maintainer-clean:: clean
 
 maintainer-clean::
-	-rm -f config_rev.h
 
 maintainer-copy::
 
