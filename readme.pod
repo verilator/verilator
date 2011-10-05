@@ -91,6 +91,10 @@ headers.
 
 =item
 
+You will need the C<flex> and C<bison> packages installed.
+
+=item
+
 C<cd> to the Verilator directory containing this README.
 
 =item
