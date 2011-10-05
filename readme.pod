@@ -147,6 +147,9 @@ most GNU tools support:
     unsetenv VERILATOR_ROOT   # if your shell is csh
     ./configure --prefix /opt/verilator-VERSION
 
+Then after installing you will need to add /opt/verilator-VERSION/bin to
+PATH.
+
 =back
 
 =item

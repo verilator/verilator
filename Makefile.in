@@ -202,18 +202,18 @@ test_regress: all_nomsg
 info: $(INFOS)
 
 # Use --no-split to avoid creating filenames > 14 chars.
-verilator.1: bin/verilator
+verilator.1: ${srcdir}/bin/verilator
 	pod2man $< $@
 
-verilator.txt: bin/verilator
+verilator.txt: ${srcdir}/bin/verilator
 	$(POD2TEXT) $< $@
 
-verilator.html: bin/verilator
+verilator.html: ${srcdir}/bin/verilator
 	pod2html $< >$@
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-verilator.pdf: bin/verilator Makefile
-	pod2latex --full --out verilator.tex bin/verilator
+verilator.pdf: ${srcdir}/bin/verilator Makefile
+	pod2latex --full --out verilator.tex ${srcdir}/bin/verilator
 	cat < verilator.tex \
 	   | sed 's/\\begin{document}/\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
@@ -245,6 +245,9 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_MAN_FILES = verilator.1
 
+# Man files can either be part of the original kit, or built in current directory; local one wins
+VL_INST_MAN_FILES_VPATH = $(wildcard $(addprefix $(VPATH),$(VL_INST_MAN_FILES)) $(VL_INST_MAN_FILES))
+
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated.mk \
 
@@ -257,7 +260,7 @@ VL_INST_DATA_SRCDIR_FILES = \
 	test_v/*.[chv]* \
 	test_c/*.[chv]*   test_c/Makefile  test_c/Makefile_obj  \
 	test_sc/*.[chv]*  test_sc/Makefile test_sc/Makefile_obj \
-	test_sp/*.[chv]*  test_sp/Makefile test_sp/Makefile_obj \
+	                  test_sp/Makefile test_sp/Makefile_obj \
 
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
@@ -268,9 +271,9 @@ installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
-installman: $(VL_INST_MAN_FILES)
+installman: info $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
-	for p in $(VL_INST_MAN_FILES) ; do \
+	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
@@ -323,7 +326,7 @@ install-project: dist
 	@echo "Install-project to $(DIRPROJECT)"
 	strip verilator_bin*
 	$(MAKE) install-project-quick
-	for p in verilator.1 ; do \
+	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
 	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
@@ -347,7 +350,7 @@ install-cadtools: dist
 	strip verilator_bin*
 	$(MAKE) install-cadtools-quick
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
-	for p in verilator.1 ; do \
+	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
 	  $(INSTALL_DATA) $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(VERILATOR_CAD_DIR)/verilator.tgz
@@ -451,7 +454,7 @@ DISTCONFIG = ${srcdir}/configure.ac
 
 DISTTITLE := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
 DISTNAME := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
-DISTNAMEREV := $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q src/config_rev.h)
+DISTNAMEREV := $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q ${srcdir}/src/config_rev.h)
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 
