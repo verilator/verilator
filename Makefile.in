@@ -129,7 +129,6 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	test_regress/t/*.pl \
 	test_regress/t/*.pf \
 	test_regress/t/*.v* \
-	verilator.* \
 
 INST_PROJ_FILES = \
 	bin/verilator \
@@ -212,14 +211,15 @@ verilator.txt: bin/verilator
 verilator.html: bin/verilator
 	pod2html $< >$@
 
-verilator.pdf: bin/verilator $(DISTCONFIG)
+# PDF needs DIST variables; but having configure.ac as dependency isn't detected
+verilator.pdf: bin/verilator Makefile
 	pod2latex --full --out verilator.tex bin/verilator
 	cat < verilator.tex \
 	   | sed 's/\\begin{document}/\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage{fancyhdr} \\pagestyle{fancy}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
+	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\lhead[$(DISTTITLE)]{$(DISTTITLE)}\n\\begin{document}/' \
 	   | sed 's/\\tableofcontents/\\begin{titlepage} \\maketitle \\end{titlepage}\n\\tableofcontents/' \
 	   > verilator2.tex
@@ -447,15 +447,13 @@ dist-file-list:
 ######################################################################
 # Distributions
 
-DISTCONFIG = ${srcdir}/src/config_build.h.in
+DISTCONFIG = ${srcdir}/configure.ac
 
-DISTTITLE := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
-DISTNAME := $(shell sed -e '/DTVERSION/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
-DISTDATEPRE := $(shell sed -e '/DTVERSION/!d' -e 's/.*\([1-2][0-9][0-9][0-9].[0-9]*[0-9].[0-9]*[0-9]\).*/\1/' -e q $(DISTCONFIG))
+DISTTITLE := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
+DISTNAME := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
 DISTNAMEREV := $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q src/config_rev.h)
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
-DISTDATE := $(subst /,-,$(DISTDATEPRE))
 
 tag:
 	svnorcvs tag $(DISTTAGNAME)

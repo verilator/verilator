@@ -25,7 +25,10 @@
 //**********************************************************************
 //**** Version and host name
 
-#define DTVERSION	"Verilator 3.822 devel"
+// Autoconf substitutes this with the strings from AC_INIT.
+#define PACKAGE_STRING ""
+
+#define DTVERSION	PACKAGE_STRING
 
 //**********************************************************************
 //**** Functions

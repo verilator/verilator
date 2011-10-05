@@ -4,9 +4,11 @@
 # redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
-AC_INIT(src/Verilator.cpp)
+AC_INIT([Verilator],[3.822 devel])
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
+
+AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 
 # Special Substitutions
 AC_ARG_ENABLE([defenv],

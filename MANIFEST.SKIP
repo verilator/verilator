@@ -24,6 +24,8 @@ src/Makefile_obj$
 include/verilated.mk$
 config.cache$
 config.status$
+verilator.log
+verilator.tex
 verilator_bin.*
 .vcsmx_rebuild$
 autom4te\.cache/
