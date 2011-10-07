@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 compile (
 	 # Amazingly VCS, NC and Verilator all just accept the C file here!
-	 v_flags2 => ["t/t_dpi_import_c.cpp"],
+	 v_flags2 => ["-Wall -Wno-DECLFILENAME t/t_dpi_import_c.cpp"],
 	 );
 
 execute (

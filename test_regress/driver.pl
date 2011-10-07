@@ -65,6 +65,7 @@ Getopt::Long::config ("pass_through");
 if (! GetOptions (
 		  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
 		  "debug"	=> \&debug,
+	  	  #debugi	   see parameter()
 		  "atsim|athdl!"=> \$opt_atsim,
 		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
@@ -84,6 +85,7 @@ if (! GetOptions (
 		  "vcs!"	=> \$opt_vcs,
 		  "verbose!"	=> \$opt_verbose,
 		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
+	  	  #W		   see parameter()
 		  "<>"		=> \&parameter,
 		  )) {
     die "%Error: Bad usage, try '$0 --help'\n";
@@ -204,6 +206,9 @@ sub parameter {
     elsif ($param =~ /^-?-debugi/) {
 	push @Opt_Driver_Verilator_Flags, $param;
 	$_Parameter_Next_Level = $param;
+    }
+    elsif ($param =~ /^-?-W/) {
+	push @Opt_Driver_Verilator_Flags, $param;
     }
     else {
 	die "%Error: Unknown parameter: $param\n";

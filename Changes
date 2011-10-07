@@ -7,9 +7,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Support $ceil, $floor, etc.  [Alex Solomatnikov]
 
-***  Fix --help output to go to stderr, not stdout, bug397.  [Ruben Diez]
-
 ***  Add configure options for cc warnings and extended tests.  [Ruben Diez]
+
+***  Fix UNDRIVEN warnings inside DPI import functions.  [Ruben Diez]
+
+***  Fix --help output to go to stderr, not stdout, bug397.  [Ruben Diez]
 
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 

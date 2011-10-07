@@ -73,11 +73,11 @@ module t ();
    import "DPI-C" dpii_fa_bit =  function int oth_f_int2(input int i);
 
    bit       	i_b,	o_b;
-   bit [7:0]	i_b8,	o_b8;
-   bit [8:0]	i_b9,	o_b9;
-   bit [15:0]	i_b16,	o_b16;
-   bit [16:0]	i_b17,	o_b17;
-   bit [31:0]	i_b32,	o_b32;
+   bit [7:0]    i_b8;
+   bit [8:0]	i_b9;
+   bit [15:0]	i_b16;
+   bit [16:0]   i_b17;
+   bit [31:0]	i_b32;
    bit [32:0]	i_b33,	o_b33;
    bit [63:0]	i_b64,	o_b64;
    bit [94:0]	i_b95,	o_b95;
@@ -87,19 +87,21 @@ module t ();
    byte		i_y,	o_y;
    shortint	i_s,	o_s;
    longint	i_l,	o_l;
+   // verilator lint_off UNDRIVEN
    chandle	i_c,	o_c;
    string 	i_n,	o_n;
+   // verilator lint_on UNDRIVEN
    real 	i_d,	o_d;
 `ifndef NO_SHORTREAL
    shortreal 	i_f,	o_f;
 `endif
 
-   bit [127:0] wide;
+   bit [94:0] wide;
 
    bit [6*8:1] string6;
 
    initial begin
-      wide = 128'h36f3e51d15caff7a73c48afee4ffcb57;
+      wide = 95'h15caff7a73c48afee4ffcb57;
 
       i_b  = 1'b1;
       i_b8  = {1'b1,wide[8-2:0]};

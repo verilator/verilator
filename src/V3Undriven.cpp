@@ -217,6 +217,7 @@ private:
     // STATE
     vector<UndrivenVarEntry*>	m_entryps;	// Nodes to delete when we are finished
     bool		m_markBoth;	// Mark as driven+used
+    AstNodeFTask*	m_taskp;	// Current task
 
     // METHODS
     static int debug() {
@@ -241,12 +242,14 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	UndrivenVarEntry* entryp = getEntryp (nodep);
 	if (nodep->isInput()
-	    || nodep->isSigPublic() || nodep->isSigUserRWPublic()) {
+	    || nodep->isSigPublic() || nodep->isSigUserRWPublic()
+	    || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
 	    entryp->drivenWhole();
 	}
 	if (nodep->isOutput()
 	    || nodep->isSigPublic() || nodep->isSigUserRWPublic()
-	    || nodep->isSigUserRdPublic()) {
+	    || nodep->isSigUserRdPublic()
+	    || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
 	    entryp->usedWhole();
 	}
 	// Discover variables used in bit definitions, etc
@@ -284,6 +287,13 @@ private:
 	m_markBoth = prevMark;
     }
 
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	AstNodeFTask* prevTaskp = m_taskp;
+	m_taskp = nodep;
+	nodep->iterateChildren(*this);
+	m_taskp = prevTaskp;
+    }
+
     // Until we support tables, primitives will have undriven and unused I/Os
     virtual void visit(AstPrimitive* nodep, AstNUser*) {}
 
@@ -303,6 +313,7 @@ public:
     // CONSTUCTORS
     UndrivenVisitor(AstNetlist* nodep) {
 	m_markBoth = false;
+	m_taskp = NULL;
 	nodep->accept(*this);
     }
     virtual ~UndrivenVisitor() {
