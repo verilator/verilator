@@ -88,7 +88,10 @@ pkgdatadir = @pkgdatadir@
 datarootdir = @datarootdir@
 
 # Compile options
+CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
 ######################################################################
@@ -101,8 +104,6 @@ INFOS = README internals.txt verilator.txt verilator.html verilator.1 verilator.
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
-# Files to distribute.
-DISTBIN = $(wildcard bin/verilator-*)
 
 DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	*.in *.ac \
@@ -170,7 +171,7 @@ msg_test:
 	@echo
 
 .PHONY:test
-ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
 test: test_vcs test_c test_sc test_sp test_verilated test_regress
 else
 test: test_c test_sc test_sp
@@ -245,9 +246,6 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_MAN_FILES = verilator.1
 
-# Man files can either be part of the original kit, or built in current directory; local one wins
-VL_INST_MAN_FILES_VPATH = $(wildcard $(addprefix $(VPATH),$(VL_INST_MAN_FILES)) $(VL_INST_MAN_FILES))
-
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated.mk \
 
@@ -271,9 +269,11 @@ installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
-installman: info $(VL_INST_MAN_FILES)
+# Man files can either be part of the original kit, or built in current directory
+# So important we use $< so VPATH is searched
+installman: $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
-	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
+	for p in $< ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
@@ -318,6 +318,8 @@ install: all_nomsg installbin installman installdata install-msg
 install-here: installman ftp
 
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+DISTNAMEREV = $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q ${srcdir}/src/config_rev.h)
+
 DIRPROJECT := $(shell project_dir --project)
 VERILATOR_CAD_DIR = $(CAD_DIR)/verilator/$(DISTNAMEREV)/$(DIRPROJECT_ARCH)
 INST_PROJ_CVS = cp_if_cvs_diff
@@ -326,7 +328,7 @@ install-project: dist
 	@echo "Install-project to $(DIRPROJECT)"
 	strip verilator_bin*
 	$(MAKE) install-project-quick
-	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
+	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
@@ -350,7 +352,7 @@ install-cadtools: dist
 	strip verilator_bin*
 	$(MAKE) install-cadtools-quick
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
-	for p in $(VL_INST_MAN_FILES_VPATH) ; do \
+	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
 	done
 	$(INST_PROJ_CVS) $(DISTNAME).tgz $(VERILATOR_CAD_DIR)/verilator.tgz
@@ -405,7 +407,7 @@ config.status: configure
 	./config.status --recheck
 
 configure: configure.ac
-ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 	autoconf --warnings=all
 else
 	autoconf
@@ -450,11 +452,8 @@ dist-file-list:
 ######################################################################
 # Distributions
 
-DISTCONFIG = ${srcdir}/configure.ac
-
-DISTTITLE := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e 's/v/V/' -e q $(DISTCONFIG))
-DISTNAME := $(shell sed -e '/^AC_INIT/!d' -e 's/[^0-9]*\([0-9.a-z]*\).*/verilator-\1/' -e q $(DISTCONFIG))
-DISTNAMEREV := $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q ${srcdir}/src/config_rev.h)
+DISTTITLE := Verilator $(PACKAGE_VERSION)
+DISTNAME := verilator-$(word 1,$(PACKAGE_VERSION))
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 

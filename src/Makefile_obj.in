@@ -57,6 +57,7 @@ datarootdir = @datarootdir@
 pkgdatadir = @pkgdatadir@
 
 # Compile options
+CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CPPFLAGS += @CPPFLAGS@
 LDFLAGS += @LDFLAGS@
@@ -92,7 +93,7 @@ CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
 CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions
-ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
 #CPPFLAGS += -pedantic-errors
 endif
@@ -252,9 +253,6 @@ $(TGT): V3Ast__gen_classes.h $(OBJS)
 	@echo "      Linking $@..."
 	-rm -rf $@ $@.exe
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
-ifneq ($(EXEEXT),)
-	cp $@$(EXEEXT) $@
-endif
 
 V3Number_test: V3Number_test.o
 	${LINK} ${LDFLAGS} -o $@ $^ ${LIBS}

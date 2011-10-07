@@ -25,13 +25,6 @@ VPATH += ../../$(VM_USER_DIR)
 
 #######################################################################
 
-ifeq ($(VERILATOR_AUTHOR_SITE),1)
-#OBJCACHE := objcache --read --write
-#OBJCACHE_HOSTS :=
-endif
-
-#######################################################################
-
 # Needed by DPI tests
 CPPFLAGS += -DVERILATOR=1
 

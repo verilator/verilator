@@ -33,20 +33,6 @@ default: dbg opt
 debug: dbg
 optimize: opt
 
-ifeq ($(OBJCACHE_HOSTS),)
- ifneq ($(SLCHOOSED_HOST),)
-  ifeq ($(VERILATOR_AUTHOR_SITE),1)
-export OBJCACHE_HOSTS := $(shell rschedule --no-allow-reserved --similar hostnames)
-  endif
- endif
-endif
-
-ifeq ($(OBJCACHE_JOBS),)
-ifneq ($(OBJCACHE_HOSTS),)
-export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
-endif
-endif
-
 ifneq ($(words $(CURDIR)),1)
  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
@@ -69,14 +55,14 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
 	-cp -p $<$(EXEEXT) $@$(EXEEXT)
 else
 ../verilator_bin: obj_opt prefiles
-	cd obj_opt && $(MAKE) -j 1             TGT=../$@ -f ../Makefile_obj serial
-	cd obj_opt && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ -f ../Makefile_obj
+	cd obj_opt && $(MAKE) -j 1  TGT=../$@ -f ../Makefile_obj serial
+	cd obj_opt && $(MAKE)       TGT=../$@ -f ../Makefile_obj
 endif
 
 dbg: ../verilator_bin_dbg
 ../verilator_bin_dbg: obj_dbg prefiles
-	cd obj_dbg && $(MAKE) -j 1             TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
-	cd obj_dbg && $(MAKE) $(OBJCACHE_JOBS) TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
+	cd obj_dbg && $(MAKE) -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	cd obj_dbg && $(MAKE)       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 prefiles::
 

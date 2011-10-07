@@ -13,6 +13,9 @@ LINK = @CXX@
 AR     = ar
 RANLIB = ranlib
 
+CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
+CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+
 ######################################################################
 # Programs
 
@@ -38,7 +41,7 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVM_TRACE=$(VM_TRACE) \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
 
-ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall \
 		-Wno-char-subscripts \
 		-Wno-sign-compare \

@@ -35,7 +35,8 @@ endif
 
 PRODUCTS += --vlt
 
-ifeq ($(VERILATOR_AUTHOR_SITE),1)
+# Run tests in parallel.  Requires Parallel::Forker to be installed.
+ifeq ($(CFG_WITH_LONGTESTS),yes)
  DRIVER_FLAGS += -j 0
 endif
 

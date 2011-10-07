@@ -10,7 +10,8 @@ AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
 
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 
-# Special Substitutions
+# Special Substitutions - CFG_WITH_DEFENV
+AC_MSG_CHECKING(whether to disable hardcoded paths)
 AC_ARG_ENABLE([defenv],
               [AS_HELP_STRING([--disable-defenv],
                               [disable using some hardcoded data paths extracted from some default environment variables (the default is to use hardcoded paths)])],
@@ -21,6 +22,43 @@ AC_ARG_ENABLE([defenv],
                esac],
               CFG_WITH_DEFENV=yes)
 AC_SUBST(CFG_WITH_DEFENV)
+AC_MSG_RESULT($CFG_WITH_DEFENV)
+
+# Special Substitutions - CFG_WITH_CCWARN
+AC_MSG_CHECKING(whether to show and stop on compilation warnings)
+AC_ARG_ENABLE([ccwarn],
+              [AS_HELP_STRING([--enable-ccwarn],
+                              [enable showing and stopping on compilation warnings])],
+              [case "${enableval}" in
+                yes) CFG_WITH_CCWARN=yes ;;
+                no)  CFG_WITH_CCWARN=no ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-ccwarn]) ;;
+               esac],
+              [case "x${VERILATOR_AUTHOR_SITE}" in
+                x)   CFG_WITH_CCWARN=no ;;
+                *)   CFG_WITH_CCWARN=yes ;;
+               esac]
+	      )
+AC_SUBST(CFG_WITH_CCWARN)
+AC_MSG_RESULT($CFG_WITH_CCWARN)
+
+# Special Substitutions - CFG_WITH_LONGTESTS
+AC_MSG_CHECKING(whether to run long tests)
+AC_ARG_ENABLE([longtests],
+              [AS_HELP_STRING([--enable-longtests],
+                              [enable running long developer tests])],
+              [case "${enableval}" in
+                yes) CFG_WITH_LONGTESTS=yes ;;
+                no)  CFG_WITH_LONGTESTS=no ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-longtests]) ;;
+               esac],
+              [case "x${VERILATOR_AUTHOR_SITE}" in
+                x)   CFG_WITH_LONGTESTS=no ;;
+                *)   CFG_WITH_LONGTESTS=yes ;;
+               esac]
+	      )
+AC_SUBST(CFG_WITH_LONGTESTS)
+AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
 # Compiler flags
 CFLAGS=-I${includedir}
