@@ -618,6 +618,11 @@ private:
 	    stmt += "VL_CVT_VP_Q(";
 	    ket += ")";
 	}
+	else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && portp->isQuad()) {
+	    // SV is vector, Verilator isn't
+	    stmt += "VL_SET_QW(";
+	    ket += ")";
+	}
 	if (!cvt
 	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && !portp->isWide())
 	    stmt += "*";  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is

@@ -55,6 +55,7 @@ module t ();
 `ifndef NO_SHORTREAL
    import "DPI-C" pure function void dpii_v_shortreal(input shortreal i, output shortreal o);
 `endif
+   import "DPI-C" pure function void dpii_v_bit64    (input bit [64-1:0] i, output bit [64-1:0] o);
    import "DPI-C" pure function void dpii_v_bit95    (input bit [95-1:0] i, output bit [95-1:0] o);
    import "DPI-C" pure function void dpii_v_bit96    (input bit [96-1:0] i, output bit [96-1:0] o);
 
@@ -161,6 +162,7 @@ module t ();
 `ifndef NO_SHORTREAL
       dpii_v_shortreal(i_f,o_f); if (o_f != i_f+1.5) $stop;
 `endif
+      dpii_v_bit64    (i_b64,o_b64); if (o_b64 !== ~i_b64) $stop;
       dpii_v_bit95    (i_b95,o_b95); if (o_b95 !== ~i_b95) $stop;
       dpii_v_bit96    (i_b96,o_b96); if (o_b96 !== ~i_b96) $stop;
 

@@ -101,6 +101,10 @@ void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
 void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
 
+void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o)	{
+    o[0] = ~i[0];
+    o[1] = ~i[1];
+}
 void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o)	{
     o[0] = ~i[0];
     o[1] = ~i[1];
