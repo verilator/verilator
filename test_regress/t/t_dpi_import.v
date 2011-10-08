@@ -15,7 +15,11 @@
  `define NO_SHORTREAL
 `endif
 
-module t ();
+module t (/*AUTOARG*/
+   // Inputs
+   clk
+   );
+   input clk;
 
    // Allowed import return types:
    //         void, byte, shortint, int, longint, real, shortreal, chandle, and string
@@ -192,6 +196,12 @@ module t ();
 
       $write("*-* All Finished *-*\n");
       $finish;
+   end
+
+   always @ (posedge clk) begin
+      i_b <= ~i_b;
+      // This once mis-threw a BLKSEQ warning
+      dpii_v_bit (i_b,o_b); if (o_b !== ~i_b) $stop;
    end
 
 endmodule

@@ -15,6 +15,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix DPI import output of 64 bits, bug398. [Mike Denio]
 
+**** Fix DPI import false BLKSEQ warnings.  [Alex Solomatnikov]
+
 **** Fix MSVC compile warning with trunc/round, bug394. [Amir Gonnen]
 
 **** Fix autoconf and Makefile warnings, bug396.  [Ruben Diez]

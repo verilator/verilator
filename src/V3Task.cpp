@@ -408,6 +408,7 @@ private:
 		    AstAssign* assp = new AstAssign (pinp->fileline(),
 						     pinp,
 						     new AstVarRef(outvscp->fileline(), outvscp, false));
+		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment BEHIND of all other statements
 		    beginp->addNext(assp);
 		}
@@ -418,6 +419,7 @@ private:
 		    AstAssign* assp = new AstAssign (pinp->fileline(),
 						     new AstVarRef(inVscp->fileline(), inVscp, true),
 						     pinp);
+		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment in FRONT of all other statements
 		    if (AstNode* afterp = beginp->nextp()) {
 			afterp->unlinkFrBackWithNext();
@@ -507,6 +509,7 @@ private:
 		    AstAssign* assp = new AstAssign (pinp->fileline(),
 						     pinp,
 						     new AstVarRef(outvscp->fileline(), outvscp, false));
+		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment BEHIND of all other statements
 		    beginp->addNext(assp);
 		}
