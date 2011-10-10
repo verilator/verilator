@@ -2118,7 +2118,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++."); }
-	|	yD_FFLUSH '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
+	|	yD_FFLUSH '(' idClassSel ')'		{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); }
 	|	yD_STOP parenE				{ $$ = new AstStop($1); }
