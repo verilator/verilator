@@ -7,28 +7,36 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug @Types %Classes);
+use vars qw ($Debug @Types %Classes %ClassRefs %Stages);
 
 #======================================================================
 # main
 
 $Debug = 0;
 my $opt_classes;
+my $opt_report;
 my @Opt_Cpt;
 my @Opt_I;
 Getopt::Long::config ("pass_through", "no_auto_abbrev");
 if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "classes!"	=> \$opt_classes,
-		  "<>"		=> \&parameter,
-		  )) {
+	  "help"	=> \&report,
+	  "debug"	=> \&debug,
+	  "classes!"	=> \$opt_classes,
+	  "report!"	=> \$opt_report,
+	  "<>"		=> \&parameter,
+    )) {
     usage();
 }
 
 read_types("$Opt_I[0]/V3Ast.h");
 read_types("$Opt_I[0]/V3AstNodes.h");
+read_stages("$Opt_I[0]/Verilator.cpp");
+read_refs(glob("$Opt_I[0]/*.y"), glob("$Opt_I[0]/*.h"), glob("$Opt_I[0]/*.cpp"));
+if ($opt_report) {
+    write_report(undef);
+}
 if ($opt_classes) {
+    write_report("V3Ast__gen_report.txt");
     write_classes("V3Ast__gen_classes.h");
     write_visitor("V3Ast__gen_visitor.h");
     write_intf("V3Ast__gen_interface.h");
@@ -85,6 +93,44 @@ sub read_types {
     }
 }
 
+sub read_stages {
+    my $filename = shift;
+
+    my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
+    my $n = 0;
+    while (defined (my $line = $fh->getline())) {
+	$line =~ s/\/\/.*$//;
+	next if $line =~ /^\s*$/;
+	if ($line =~ /^\s*([A-Za-z0-9]+)::/) {
+	    my $stage = $1.".cpp";
+	    if (!defined ($Stages{$stage})) {
+		$Stages{$stage} = $n++;
+	    }
+	}
+    }
+}
+
+sub read_refs {
+    my @filenames = @_;
+
+    foreach my $filename (@filenames) {
+	(my $basename = $filename) =~ s!.*/!!;
+	my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
+	while (defined (my $line = $fh->getline())) {
+	    $line =~ s/\/\/.*$//;
+	    while ($line =~ /\bnew\s*(Ast[A-Za-z0-9_]+)/g) {
+		$ClassRefs{$1}{newed}{$basename} = 1;
+	    }
+	    while ($line =~ /\b(Ast[A-Za-z0-9_]+)/g) {
+		$ClassRefs{$1}{used}{$basename} = 1;
+	    }
+	}
+    }
+    #use Data::Dumper;print Dumper(\%ClassRefs);
+}
+
+#----------------------------------------------------------------------
+
 sub open_file {
     my $filename = shift;
     my $fh = IO::File->new($filename,"w") or die "%Error: $! $filename,";
@@ -107,6 +153,42 @@ sub subclasses_of {
 }
 
 #----------------------------------------------------------------------
+
+sub write_report {
+    my $filename = shift;
+    my $fh = defined($filename) ? open_file($filename) : \*STDOUT;
+
+    $fh->print("Processing stages (approximate, based on order in Verilator.cpp):\n");
+    foreach my $class (sort {$Stages{$a} <=> $Stages{$b}} keys %Stages) {
+	$fh->print("\t$class\n");
+    }
+
+    $fh->print("\nProcessing stages (approximate, based on order in Verilator.cpp):\n");
+    foreach my $type (sort (keys %Classes)) {
+	printf $fh "  class %-20s\n", "Ast${type}";
+	$fh->print("\tparent:\t");
+	foreach my $subclass (subclasses_of($type)) {
+	    next if $subclass eq 'Node';
+	    printf $fh "Ast%-12s ",$subclass;
+	}
+	printf $fh "\n";
+	if (my $refs = $ClassRefs{"Ast${type}"}) {
+	    $fh->print("\tnewed:\t");
+	    foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
+			       keys %{$refs->{newed}}) {
+		$fh->print($stage."  ");
+	    }
+	    $fh->print("\n");
+	    $fh->print("\tused:\t");
+	    foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
+			       keys %{$refs->{used}}) {
+		$fh->print($stage."  ");
+	    }
+	    $fh->print("\n");
+	}
+	$fh->print("\n");
+    }
+}
 
 sub write_classes {
     my $fh = open_file(@_);
@@ -501,7 +583,11 @@ Displays this message and program version and exits.
 
 =item --classes
 
-Makes class declaration files
+Makes class declaration files.
+
+=item --report
+
+Makes a report report.
 
 =back
 
@@ -526,5 +612,5 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 ######################################################################
 ### Local Variables:
-### compile-command: "./astgen "
+### compile-command: "./astgen -I. --report"
 ### End:

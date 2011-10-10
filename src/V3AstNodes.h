@@ -1457,15 +1457,6 @@ struct AstCondBound : public AstNodeCond {
     ASTNODE_NODE_FUNCS(CondBound, CONDBOUND)
 };
 
-struct AstCondD : public AstNodeCond {
-    // Conditional ?: statement, double rhs/lhs/out
-    // Parents:  MATH
-    // Children: MATH
-    AstCondD(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
-	: AstNodeCond(fl, condp, expr1p, expr2p) { numeric(AstNumeric::DOUBLE); }
-    ASTNODE_NODE_FUNCS(CondD, CONDD)
-};
-
 struct AstCoverDecl : public AstNodeStmt {
     // Coverage analysis point declaration
     // Parents:  {statement list}
@@ -3986,25 +3977,6 @@ struct AstCReturn : public AstNodeStmt {
     virtual bool same(AstNode*) const { return true; }
     //
     AstNode*	lhsp() const { return op1p(); }
-};
-
-struct AstCInclude : public AstNode {
-    // C++ use of another class
-    // Parents:  MODULE
-    // Children: None
-private:
-    AstNodeModule*	m_modp;
-public:
-    AstCInclude(FileLine* fl, AstNodeModule* modp)
-	: AstNode(fl) {
-	m_modp = modp;
-    }
-    ASTNODE_NODE_FUNCS(CInclude, CINCLUDE)
-    virtual bool broken() const { return (m_modp && !m_modp->brokeExists()); }
-    virtual void cloneRelink() { if (m_modp && m_modp->clonep()) {
-	m_modp = m_modp->clonep()->castNodeModule();
-    }}
-    AstNodeModule*	modp() const { return m_modp; }
 };
 
 struct AstCMath : public AstNodeMath {
