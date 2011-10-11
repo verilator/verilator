@@ -207,10 +207,10 @@ viewers let us know; ZGRViewer isn't great for large graphs.
 Tree files are dumps of the AST Tree and are produced between every major
 algorithmic stage.  An example:
 
-     NETLIST 0x90fb00 <e1> {0} w0
-    1: MODULE 0x912b20 <e8822> {8} w0  top  L2 [P]
-   *1:2: VAR 0x91a780 <e74#> {22} w70  out_wide [O] WIRE
-    1:2:1: BASICDTYPE 0x91a3c0 <e73> {22} w70  [logic]
+     NETLIST 0x90fb00 <e1> {a0} w0
+    1: MODULE 0x912b20 <e8822> {a8} w0  top  L2 [P]
+   *1:2: VAR 0x91a780 <e74#> {a22} w70  out_wide [O] WIRE
+    1:2:1: BASICDTYPE 0x91a3c0 <e73> {a22} w70  [logic]
 
 =over 4
 
@@ -224,7 +224,8 @@ algorithmic stage.  An example:
 this node.  A trailing # indicates this node changed since the last tree
 dump was made.  You can gdb break on this edit; see below.
 
-"{22}" indicates this node is related to line 22 in the source.
+"{a22}" indicates this node is related to line 22 in the source filename
+"a", where "a" is the first file read, "z" the 36th, and "aa" the 37th.
 
 "w70" indicates the width is 70 bits.  sw70 would be signed 70 bits.
 

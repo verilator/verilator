@@ -80,7 +80,7 @@ int _mon_check_mcd() {
     PLI_INT32 status;
     
     PLI_UINT32 mcd;
-    PLI_BYTE8* filename = (PLI_BYTE8*)"obj_dir/mcd_open.tmp";
+    PLI_BYTE8* filename = (PLI_BYTE8*)"obj_dir/t_vpi_var/mcd_open.tmp";
     mcd = vpi_mcd_open(filename);
     CHECK_RESULT_NZ(mcd);
 

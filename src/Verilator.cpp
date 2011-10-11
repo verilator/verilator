@@ -106,7 +106,7 @@ void V3Global::readFiles() {
     for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
 	 it != v3Global.opt.vFiles().end(); ++it) {
 	string filename = *it;
-	parser.parseFile(new FileLine("CommandLine",0), filename, false);
+	parser.parseFile(new FileLine("COMMAND_LINE",0), filename, false);
     }
 
     // Read libraries
@@ -115,7 +115,7 @@ void V3Global::readFiles() {
     for (V3StringSet::const_iterator it = v3Global.opt.libraryFiles().begin();
 	 it != v3Global.opt.libraryFiles().end(); ++it) {
 	string filename = *it;
-	parser.parseFile(new FileLine("CommandLine",0), filename, true);
+	parser.parseFile(new FileLine("COMMAND_LINE",0), filename, true);
     }
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();

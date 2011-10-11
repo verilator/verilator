@@ -501,7 +501,7 @@ void AstNode::dump(ostream& os) {
 	//<<" "<<(void*)this->m_backp
       <<" <e"<<dec<<editCount()
       <<((editCount()>=editCountLast())?"#>":">")
-      <<" {"<<dec<<fileline()->lineno()<<"}"
+      <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}"
       <<" "<<(isSigned()?"s":"")
       <<(isDouble()?"d":"")
       <<"w"<<(widthSized()?"":"u")<<width();

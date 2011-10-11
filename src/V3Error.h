@@ -28,6 +28,8 @@
 #include <iostream>
 #include <sstream>
 #include <bitset>
+#include <map>
+#include <deque>
 
 //######################################################################
 
@@ -244,14 +246,29 @@ inline uint32_t cvtToHash(void* vp) {
 
 //######################################################################
 
+class FileLine;
+
+class FileLineSingleton {
+protected:
+    friend class FileLine;
+};
+
 class FileLine {
     // File and line number of an object, mostly for error reporting
     int		m_lineno;
-    string	m_filename;
+    int		m_filenameno;
     bitset<V3ErrorCode::_ENUM_MAX>	m_warnOn;
     // Consider moving opt.language() into here, so can know language per-node
-    static FileLine s_defaultFileLine;
+
+    static map<string,int>	s_namemap;	// filenameno for each filename
+    static deque<string>	s_names;	// filename text for each filenameno
+    static FileLine 		s_defaultFileLine;
+
+    static int nameToNumber(const string& filename);
+    static string numberToName(int filenameno) { return s_names[filenameno]; }
+
     struct EmptySecret {};
+
 protected:
     // User routines should never need to change line numbers
     // We are storing pointers, so we CAN'T change them after initial reading.
@@ -259,14 +276,17 @@ protected:
     friend class V3PreLex;
     friend class V3PreProcImp;
     void lineno(int num) { m_lineno = num; }
-    void filename(const string& name) { m_filename = name; }
+    void filename(const string& name) { m_filenameno = nameToNumber(name); }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
     void linenoIncInPlace() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
-    FileLine (const string& filename, int lineno) { m_lineno=lineno; m_filename = filename; m_warnOn=s_defaultFileLine.m_warnOn; }
-    FileLine (FileLine* fromp) { m_lineno=fromp->lineno(); m_filename = fromp->filename(); m_warnOn=fromp->m_warnOn; }
+    FileLine (const string& filename, int lineno) {
+	m_lineno=lineno; m_filenameno = nameToNumber(filename);
+	m_warnOn=s_defaultFileLine.m_warnOn; }
+    FileLine (FileLine* fromp) {
+	m_lineno=fromp->m_lineno; m_filenameno = fromp->m_filenameno; m_warnOn=fromp->m_warnOn; }
     FileLine (EmptySecret);
     ~FileLine() { }
     FileLine* create(const string& filename, int lineno) { return new FileLine(filename,lineno); }
@@ -279,7 +299,8 @@ public:
 
     int lineno () const { return m_lineno; }
     string ascii() const;
-    const string filename () const { return m_filename; }
+    const string filename () const { return numberToName(m_filenameno); }
+    const string filenameLetters() const; 
     const string filebasename () const;
     const string filebasenameNoExt () const;
     const string profileFuncname() const;
@@ -300,10 +321,14 @@ public:
     void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING,flag); }
 
     // METHODS - Global
-    static void globalWarnLintOff(bool flag) { s_defaultFileLine.warnLintOff(flag); }
-    static void globalWarnStyleOff(bool flag) { s_defaultFileLine.warnStyleOff(flag); }
-    static void globalWarnOff(V3ErrorCode code, bool flag) { s_defaultFileLine.warnOff(code, flag); }
-    static bool globalWarnOff(const string& code, bool flag) { return s_defaultFileLine.warnOff(code, flag); }
+    static void globalWarnLintOff(bool flag) {
+	s_defaultFileLine.warnLintOff(flag); }
+    static void globalWarnStyleOff(bool flag) {
+	s_defaultFileLine.warnStyleOff(flag); }
+    static void globalWarnOff(V3ErrorCode code, bool flag) {
+	s_defaultFileLine.warnOff(code, flag); }
+    static bool globalWarnOff(const string& code, bool flag) {
+	return s_defaultFileLine.warnOff(code, flag); }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline
@@ -316,7 +341,7 @@ public:
     // OPERATORS
     void v3errorEnd(ostringstream& str);
     inline bool operator==(FileLine rhs) const {
-	return (m_lineno==rhs.m_lineno && m_filename==rhs.m_filename && m_warnOn==rhs.m_warnOn);
+	return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno && m_warnOn==rhs.m_warnOn);
     }
 };
 ostream& operator<<(ostream& os, FileLine* fileline);

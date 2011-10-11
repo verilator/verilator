@@ -99,7 +99,7 @@ sub filter {
 	next if $line =~ / This=/;
 	$line =~ s/0x[a-f0-9]+/0x/g;
 	$line =~ s/<e[0-9]+\#?>/<e>/g;
-	$line =~ s/{\d+}/{}/g if !$Opt_Lineno;
+	$line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
 	print $f2 $line;
     }
     $f1->close;
