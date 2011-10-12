@@ -16,6 +16,9 @@ RANLIB = ranlib
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
+# Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
+CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
+
 ######################################################################
 # Programs
 
@@ -43,11 +46,7 @@ VK_CPPFLAGS_ALWAYS += \
 
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall \
-		-Wno-char-subscripts \
-		-Wno-sign-compare \
-		-Wno-unused-parameter \
-		-Wno-unused-variable \
-		-Wno-uninitialized \
+		$(CFG_CXXFLAGS_NO_UNUSED) \
 		-Werror
 endif
 

@@ -94,20 +94,40 @@ fi
 
 # Checks for libraries.
 
-# Checks for header files.
-AC_HEADER_STDC
-AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(fcntl.h unistd.h inttypes.h sys/file.h sys/time.h sys/un.h math.h stdint.h mingw/stdint.h)
-
 # Checks for typedefs, structures
 AC_CHECK_TYPE(size_t,unsigned int)
-AC_CHECK_TYPE(uint_t,unsigned int)
-AC_CHECK_TYPE(ulong_t,unsigned long)
 AC_TYPE_SIZE_T
-AC_STRUCT_TM
 
 # Checks for compiler characteristics.
 AC_C_INLINE
+
+AC_DEFUN([_MY_CXX_CHECK_OPT],
+   [# _MY_CXX_CHECK_OPT(flag) -- Check if compiler supports specific options
+    ACO_SAVE_CXXFLAGS="$CXXFLAGS"
+    # -Werror needed otherwise unknown -Wno-div-by-zero won't report problems
+    CXXFLAGS="$CXXFLAGS $1 -Werror"
+    AC_MSG_CHECKING([whether $CXX accepts $1])
+    AC_COMPILE_IFELSE(
+         [AC_LANG_PROGRAM([],[])],
+	 [_my_result=yes],
+	 [_my_result=no])
+    AC_MSG_RESULT($_my_result)
+    if test "$_my_result" = "yes" ; then
+       CFG_CXXFLAGS_NO_UNUSED="$CFG_CXXFLAGS_NO_UNUSED $1"
+    fi
+    CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+   ])# _MY_CXX_CHECK_OPT
+
+# For example, -Wno-div-by-zero isn't in 4.1.2
+_MY_CXX_CHECK_OPT(-Wno-char-subscripts)
+# Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
+# without this flag, even though there's a conditional to prevent the divide.
+_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
+_MY_CXX_CHECK_OPT(-Wno-sign-compare)
+_MY_CXX_CHECK_OPT(-Wno-uninitialized)
+_MY_CXX_CHECK_OPT(-Wno-unused-parameter)
+_MY_CXX_CHECK_OPT(-Wno-unused-variable)
+AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.
 
