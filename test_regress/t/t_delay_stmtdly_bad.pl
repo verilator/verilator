@@ -9,12 +9,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_delay.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 fails=>1,
 	 expect=>
 '%Warning-STMTDLY: t/t_delay.v:\d+: Ignoring delay on this delayed statement.
 .*%Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
 
 ok(1);
 1;

@@ -11,7 +11,7 @@ compile (
 	 verilator_flags2 => ["--stats --profile-cfuncs"],
 	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+10/i);
     file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+10/i);
 }

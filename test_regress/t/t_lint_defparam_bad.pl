@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_lint_defparam.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
     fails=>1,
@@ -19,7 +21,7 @@ compile (
 '%Warning-DEFPARAM: t/t_lint_defparam.v:\d+: Suggest replace defparam with Verilog 2001 #\(.P\(...etc...\)\)
 %Warning-DEFPARAM: Use .* to disable this message.
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+    );
 
 ok(1);
 1;

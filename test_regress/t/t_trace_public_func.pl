@@ -9,20 +9,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_trace_public.v");
 
-if ($Self->{v3}) {
-    compile (
-	     make_top_shell => 0,
-	     make_main => 0,
-	     v_flags2 => ["-DPUB_FUNC --trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
-	     );
+$Self->{vlt} or $Self->skip("Verilator only test");
 
-    execute (
-	     check_finished=>1,
-	     );
+compile (
+    make_top_shell => 0,
+    make_main => 0,
+    v_flags2 => ["-DPUB_FUNC --trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
+    );
 
-    vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		   "t/t_trace_public.out");
-}
+execute (
+    check_finished=>1,
+    );
+
+vcd_identical ("$Self->{obj_dir}/simx.vcd",
+	       "t/t_trace_public.out");
 
 ok(1);
 1;

@@ -11,7 +11,7 @@ compile (
 	 verilator_flags2 => ["--stats"],
 	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep ($Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+4/i);
     file_grep ($Self->{stats}, qr/Optimizations, Lifetime constant prop\s+2/i);
 }

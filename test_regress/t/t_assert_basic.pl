@@ -8,7 +8,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => [$Self->{v3}?'--assert':($Self->{nc}?'+assert':'')],
+	 verilator_flags2 => ['--assert'],
+	 nc_flags2 => ['+assert'],
 	 );
 
 execute (

@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME --if-depth 10"],
     fails=>1,
@@ -17,7 +19,7 @@ compile (
 '%Warning-IFDEPTH: t/t_lint_ifdepth_bad.v:\d+: Deep \'if\' statement; suggest unique/priority to avoid slow logic
 %Warning-IFDEPTH: Use .* to disable this message.
 %Error: Exiting due to.*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

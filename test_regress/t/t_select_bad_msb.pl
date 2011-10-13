@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 fails=>1,
 	 expect=>
 '%Warning-LITENDIAN: t/t_select_bad_msb.v:\d+: Little bit endian vector: MSB < LSB of bit range: 0:22
 .*
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
 
 ok(1);
 1;

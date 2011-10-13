@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_assert_cover.v");
 
 compile (
-	 v_flags2 => [$Self->{v3}?'--assert --sp --coverage-user':''],
+	 verilator_flags2 => ['--assert --sp --coverage-user'],
 	 nc_flags2 => ["+nccovoverwrite +nccoverage+all +nccovtest+$Self->{name}"]
 	 );
 

@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_lint_setout_bad.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Oi"],
     fails=>1,
@@ -18,7 +20,7 @@ compile (
     expect=>
 '%Error: t/t_lint_setout_bad.v:\d+: Output port is connected to a constant pin, electrical short
 .*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

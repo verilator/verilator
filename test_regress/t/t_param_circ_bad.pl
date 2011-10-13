@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only"],
     fails=>1,
@@ -16,7 +18,7 @@ compile (
     expect=>
 '%Error: t/t_param_circ_bad.v:\d+: Variable\'s initial value is circular: X
 %Error: Exiting due to.*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

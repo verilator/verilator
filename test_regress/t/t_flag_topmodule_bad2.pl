@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_flag_topmodule.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 fails=>$Self->{v3},
 	 v_flags2 => ["--top-module notfound"],
@@ -16,7 +18,7 @@ compile (
 	 expect=>
 '%Error: Specified --top-module \'notfound\' was not found in design.
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
 
 ok(1);
 1;

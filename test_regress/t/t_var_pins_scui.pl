@@ -12,11 +12,11 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 top_filename("t/t_var_pinsizes.v");
 
 compile (
-	 v_flags2 => ["-sp -pins-uint8 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+	 verilator_flags2 => ["-sp -pins-uint8 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
 	 make_main => 0,
-	 ) if $Self->{v3};
+	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<bool> \s+ i1;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<uint8_t> \s+ i8;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<uint16_t> \s+ i16;/x);

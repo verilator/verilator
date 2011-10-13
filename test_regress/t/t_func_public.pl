@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => [$Self->{v3}?'+define+VERILATOR_PUBLIC_TASKS':''],
+	 verilator_flags2 => ['+define+VERILATOR_PUBLIC_TASKS'],
 	 fails => $fail,
 	 );
 

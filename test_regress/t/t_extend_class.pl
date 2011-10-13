@@ -7,14 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-if ($Self->{v3}) {
-    compile (
-	     make_flags => "CPPFLAGS_ADD=-I$Self->{t_dir}",
-	     );
-    execute (
-	     check_finished=>1,
-	     );
-}
+$Self->{vlt} or $Self->skip("Verilator only test");
+
+compile (
+    make_flags => "CPPFLAGS_ADD=-I$Self->{t_dir}",
+    );
+
+execute (
+    check_finished=>1,
+    );
 
 ok(1);
 1;

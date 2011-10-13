@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_lint_incabspath.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
     fails=>1,
@@ -19,7 +21,7 @@ compile (
 '%Warning-INCABSPATH: t/t_lint_incabspath.v:\d+: Suggest `include with absolute path be made relative, and use \+include: /dev/null
 %Warning-INCABSPATH: Use .* to disable this message.
 %Error: Exiting due to.*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

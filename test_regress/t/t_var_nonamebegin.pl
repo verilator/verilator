@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-    v_flags2 => [$Self->{v3}?'-trace':''],
+    verilator_flags2 => ['-trace'],
     );
 
 execute (
@@ -24,7 +24,7 @@ t2 {mod}.tsk top.v
 *-* All Finished *-*'),
     );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     vcd_identical ("$Self->{obj_dir}/simx.vcd",
 		   "t/$Self->{name}.out");
 }

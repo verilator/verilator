@@ -7,8 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
-	 ) if $Self->{v3};
+    );
 
 execute (
 	 check_finished=>1,
@@ -16,7 +18,7 @@ execute (
 	 expect=>
 '\*-\* All Finished \*-\*
 Goodbye world, at cycle \d+.*',
-     ) if $Self->{v3};
+    );
 
 ok(1);
 1;

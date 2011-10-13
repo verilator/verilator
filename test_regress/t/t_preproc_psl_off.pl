@@ -7,19 +7,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 top_filename("t/t_preproc_psl.v");
 
-if (!$Self->{v3}) {
-    ok(1);
-} else {
-    compile (
-	     v_flags2 => ['-E'],
-	     verilator_make_gcc=>0,
-	     stdout_filename => $stdout_filename,
-	     );
-    ok(files_identical($stdout_filename, "t/$Self->{name}.out"));
-}
+compile (
+    verilator_flags2 => ['-E'],
+    verilator_make_gcc=>0,
+    stdout_filename => $stdout_filename,
+    );
+
+ok(files_identical($stdout_filename, "t/$Self->{name}.out"));
 
 1;

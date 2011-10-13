@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Wwarn-BLKSEQ -Wwarn-COMBDLY"],
     fails=>1,
@@ -20,7 +22,7 @@ compile (
 %Warning-COMBDLY: \*\*\* See the manual before disabling this,
 %Warning-COMBDLY: else you may end up with different sim results.
 %Error: Exiting due to.*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_unopt_combo.v");
 
 compile (
-	 fails=>$Self->{v3},
+	 fails=>$Self->{vlt},
 	 expect=>
 '%Warning-UNOPTFLAT: t/t_unopt_combo.v:\d+: Signal unoptimizable: Feedback to clock or circular logic: v.c
 %Warning-UNOPTFLAT: Use "/\* verilator lint_off UNOPTFLAT \*/" and lint_on around source to disable this message.
@@ -23,7 +23,7 @@ compile (
 	 );
 
 execute (
-     ) if !$Self->{v3};
+     ) if !$Self->{vlt};
 
 ok(1);
 1;

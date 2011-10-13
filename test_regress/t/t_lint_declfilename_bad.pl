@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_lint_declfilename.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
     v_flags2 => ["--lint-only -Wall"],
     fails=>1,
@@ -19,7 +21,7 @@ compile (
 '%Warning-DECLFILENAME: t/t_lint_declfilename.v:6: Filename \'t_lint_declfilename\' does not match MODULE name: t
 %Warning-DECLFILENAME: Use .* to disable this message.
 %Error: Exiting due to.*',
-    ) if $Self->{v3};
+    );
 
 ok(1);
 1;

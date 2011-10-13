@@ -8,8 +8,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-    v_flags2 => ['+define+PREDEF_COMMAND_LINE',
-		 "--lint-only"],
+    v_flags2 => ['+define+PREDEF_COMMAND_LINE'],
+    verilator_flags2 => ["--lint-only"],
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,

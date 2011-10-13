@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 make_top_shell => 0,
 	 make_main => 0,
@@ -17,7 +19,7 @@ compile (
 '%Warning-REALCVT: t/t_lint_realcvt_bad.v:\d+: Implicit conversion of real to integer
 %Warning-REALCVT: Use .* to disable this message.
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+    );
 
 ok(1);
 1;

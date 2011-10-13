@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_mem_multidim.v");
 
 compile (
-	 v_flags2 => [$Self->{v3}?'--sp --trace':''],
+	 verilator_flags2 => ['--sp --trace'],
 	 );
 
 execute (

@@ -11,7 +11,7 @@ compile (
 	 verilator_flags2 => ["--stats"],
 	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep ($Self->{stats}, qr/Optimizations, Split always\s+0/i);
 }
 

@@ -13,7 +13,7 @@ compile (
 	 verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
 	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+16/i);
 }
 

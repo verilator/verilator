@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 v_flags2 => ["--lint-only --Mdir obj_lint_only"],
 	 fails=>1,
@@ -14,7 +16,7 @@ compile (
 '%Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
 %Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+    );
 
 (!-d "obj_lint_only") or $Self->error("%Error: lint-only shouldn't make output directory");
 ok(1);

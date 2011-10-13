@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_pp_dupdef.v");
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
@@ -19,7 +21,7 @@ compile (
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUPP, with different value: .*
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: .*
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+    );
 
 ok(1);
 1;

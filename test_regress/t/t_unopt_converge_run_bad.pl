@@ -16,7 +16,7 @@ compile (
 execute (
 	 fails=>1,
 	 expect=> '%Error: \S+:\d+: Verilated model didn\'t converge',
-     ) if $Self->{v3};
+     ) if $Self->{vlt};
 
 ok(1);
 1;

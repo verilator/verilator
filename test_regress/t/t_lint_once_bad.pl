@@ -7,10 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} or $Self->skip("Verilator only test");
+
 compile (
 	 make_top_shell => 0,
 	 make_main => 0,
-	 v_flags2 => ["--lint-only -Wwarn-UNUSED"],
+	 verilator_flags2 => ["--lint-only -Wwarn-UNUSED"],
 	 verilator_make_gcc => 0,
 	 fails=>1,
 	 expect=>
@@ -18,7 +20,7 @@ compile (
 %Warning-UNUSED: Use .* to disable this message.
 %Warning-UNUSED: t/t_lint_once_bad.v:\d+: Signal is not driven, nor used: unus2
 %Error: Exiting due to.*',
-	 ) if $Self->{v3};
+	 );
 
 ok(1);
 1;

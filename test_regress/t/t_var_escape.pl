@@ -16,7 +16,7 @@ execute (
 	 check_finished=>1,
 	 );
 
-if ($Self->{v3}) {
+if ($Self->{vlt}) {
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ $sig/);
