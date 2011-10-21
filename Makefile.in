@@ -220,7 +220,7 @@ verilator.pdf: ${srcdir}/bin/verilator Makefile
 	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\usepackage{fancyhdr} \\pagestyle{fancy}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
+	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
 	   | sed 's/\\begin{document}/\\lhead[$(DISTTITLE)]{$(DISTTITLE)}\n\\begin{document}/' \
 	   | sed 's/\\tableofcontents/\\begin{titlepage} \\maketitle \\end{titlepage}\n\\tableofcontents/' \
 	   > verilator2.tex
@@ -452,8 +452,10 @@ dist-file-list:
 ######################################################################
 # Distributions
 
-DISTTITLE := Verilator $(PACKAGE_VERSION)
+DISTTITLE := Verilator $(word 1,$(PACKAGE_VERSION))
 DISTNAME := verilator-$(word 1,$(PACKAGE_VERSION))
+DISTDATEPRE := $(word 2,$(PACKAGE_VERSION))
+DISTDATE := $(subst /,-,$(DISTDATEPRE))
 
 DISTTAGNAME := $(subst .,_,$(subst -,_,$(DISTNAME)))
 
