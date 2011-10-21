@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.82***
+* Verilator 3.822 2011/10/20
 
 ***  Support $ceil, $floor, etc.  [Alex Solomatnikov]
 

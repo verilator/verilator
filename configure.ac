@@ -4,7 +4,7 @@
 # redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
-AC_INIT([Verilator],[3.822 devel])
+AC_INIT([Verilator],[3.823 2011/10/20])
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk)
 
@@ -122,7 +122,8 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
 _MY_CXX_CHECK_OPT(-Wno-char-subscripts)
 # Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
 # without this flag, even though there's a conditional to prevent the divide.
-_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
+# We still don't add no-div-by-zero as it throws message to stdout, though doesn't die.
+#_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
 _MY_CXX_CHECK_OPT(-Wno-sign-compare)
 _MY_CXX_CHECK_OPT(-Wno-uninitialized)
 _MY_CXX_CHECK_OPT(-Wno-unused-parameter)
