@@ -943,8 +943,8 @@ enabled), but do not affect style messages.  This is equivalent to
 =item -Wwarn-style
 
 Enable all code style related warning messages.  This is equivalent to
-"-Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH -Wwarn-SYNCASYNCNET
--Wwarn-UNDRIVEN -Wwarn-UNUSED -Wwarn-VARHIDDEN".
+"-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-INCABSPATH
+-Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN -Wwarn-UNUSED -Wwarn-VARHIDDEN".
 
 =item -x-assign 0
 
@@ -2376,6 +2376,18 @@ compile your design.
 List of all warnings:
 
 =over 4
+
+=item ASSIGNDLY
+
+Warns that you have an assignment statement with a delayed time in front of
+it, for example:
+
+    a <= #100 b;
+    assign #100 a = b;
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators, however at one point this was a common style so disabled by
+default as a code style warning.
 
 =item BLKANDNBLK
 

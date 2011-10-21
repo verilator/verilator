@@ -1527,7 +1527,7 @@ assignOne<nodep>:
 
 delayE:
 		/* empty */				{ }
-	|	delay_control				{ } /* ignored */
+	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Ignoring delay on this assignment/primitive."); } /* ignored */
 	;
 
 delay_control<fl>:	//== IEEE: delay_control

@@ -28,6 +28,7 @@ module t (/*AUTOARG*/
       end
       else if (cyc==3) begin
 	 if (dly0 !== 32'h23) $stop;
+	 if (dly2 !== 32'h25) $stop;
 	 $write("*-* All Finished *-*\n");
 	 #100 $finish;
       end

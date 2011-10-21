@@ -55,6 +55,7 @@ public:
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
+	ASSIGNDLY,	// Assignment delays
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	BLKSEQ,		// Blocking assignments in sequential block
 	CASEINCOMPLETE,	// Case statement has missing values
@@ -107,6 +108,7 @@ public:
 	    "MULTITOP", "TASKNSVAR", "BLKLOOPINIT",
 	    // Warnings
 	    " EC_FIRST_WARN",
+	    "ASSIGNDLY",
 	    "BLKANDNBLK", "BLKSEQ",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
@@ -142,7 +144,8 @@ public:
 				      || m_e==UNSIGNED
 				      || m_e==WIDTH); }
     // Warnings that are style only
-    bool styleError() const { return ( m_e==BLKSEQ
+    bool styleError() const { return ( m_e==ASSIGNDLY  // More than style, but for backward compatibility
+				       || m_e==BLKSEQ
 				       || m_e==DEFPARAM
 				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
