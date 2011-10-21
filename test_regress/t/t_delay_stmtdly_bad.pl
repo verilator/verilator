@@ -15,11 +15,11 @@ compile (
 	 verilator_flags2 => ['-Wall -Wno-DECLFILENAME'],
 	 fails=>1,
 	 expect=>
-'%Warning-ASSIGNDLY: t/t_delay.v:\d+: Ignoring delay on this assignment/primitive.
+'%Warning-ASSIGNDLY: t/t_delay.v:\d+: Unsupported: Ignoring delay on this assignment/primitive.
 %Warning-ASSIGNDLY: Use .*
-%Warning-ASSIGNDLY: t/t_delay.v:\d+: Ignoring delay on this assignment/primitive.
-%Warning-ASSIGNDLY: t/t_delay.v:\d+: Ignoring delay on this assignment/primitive.
-%Warning-STMTDLY: t/t_delay.v:\d+: Ignoring delay on this delayed statement.
+%Warning-ASSIGNDLY: t/t_delay.v:\d+: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: t/t_delay.v:\d+: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-STMTDLY: t/t_delay.v:\d+: Unsupported: Ignoring delay on this delayed statement.
 .*%Error: Exiting due to.*',
 	 );
 

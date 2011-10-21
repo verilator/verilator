@@ -1527,7 +1527,7 @@ assignOne<nodep>:
 
 delayE:
 		/* empty */				{ }
-	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Ignoring delay on this assignment/primitive."); } /* ignored */
+	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Unsupported: Ignoring delay on this assignment/primitive."); } /* ignored */
 	;
 
 delay_control<fl>:	//== IEEE: delay_control
@@ -1929,7 +1929,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//UNSUP	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control
-	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Ignoring delay on this delayed statement."); }
+	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Unsupported: Ignoring delay on this delayed statement."); }
 	//UNSUP	event_control stmtBlock			{ UNSUP }
 	//UNSUP	cycle_delay stmtBlock			{ UNSUP }
 	//
