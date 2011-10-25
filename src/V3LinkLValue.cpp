@@ -65,7 +65,7 @@ private:
 	if (nodep->varp()) {
 	    if (nodep->lvalue() && nodep->varp()->isInOnly()) {
 		if (!m_ftaskp) {
-		    nodep->v3error("Assigning to input variable: "<<nodep->prettyName());
+		    nodep->v3warn(ASSIGNIN,"Assigning to input variable: "<<nodep->prettyName());
 		}
 	    }
 	    if (nodep->lvalue() && nodep->varp()->isConst()

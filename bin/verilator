@@ -2377,6 +2377,17 @@ List of all warnings:
 
 =over 4
 
+=item ASSIGNIN
+
+Error that an assignment is being made to an input signal.  This is almost
+certainly a mistake, though technically legal.
+
+    input a;
+    assign a = 1'b1;
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item ASSIGNDLY
 
 Warns that you have an assignment statement with a delayed time in front of

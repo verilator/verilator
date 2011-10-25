@@ -13,8 +13,8 @@ compile (
 	 v_flags2 => ["--lint-only --Mdir obj_lint_only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
-%Error: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
+'%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
 %Error: Exiting due to.*',
     );
 

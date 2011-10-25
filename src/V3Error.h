@@ -48,14 +48,15 @@ public:
 	I_LINT,		// All lint messages
 	I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
 	// Error codes:
+	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
 	E_MULTITOP,	// Error: Multiple top level modules
 	E_TASKNSVAR,	// Error: Task I/O not simple
-	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
 	//
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
 	ASSIGNDLY,	// Assignment delays
+	ASSIGNIN,	// Assigning to input
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	BLKSEQ,		// Blocking assignments in sequential block
 	CASEINCOMPLETE,	// Case statement has missing values
@@ -105,10 +106,10 @@ public:
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
 	    // Errors
-	    "MULTITOP", "TASKNSVAR", "BLKLOOPINIT",
+	    "BLKLOOPINIT", "MULTITOP", "TASKNSVAR",
 	    // Warnings
 	    " EC_FIRST_WARN",
-	    "ASSIGNDLY",
+	    "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKSEQ",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
@@ -130,7 +131,8 @@ public:
     bool dangerous() const { return ( m_e==COMBDLY ); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==BLKANDNBLK || m_e==IMPURE || m_e==MODDUP || m_e==SYMRSVDWORD); }
+    bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
+					 || m_e==IMPURE || m_e==MODDUP || m_e==SYMRSVDWORD); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==EC_FATALSRC || pretendError() ); }
 

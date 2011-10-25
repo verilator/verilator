@@ -8,8 +8,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Fix "always @ (* )", bug403, bug404.  [Walter Lavino]
 
-**** Fix 3.823 constructor core dump on Debian, bug401.  [Ahmed El-Mahmoudy]
+***  Add ASSIGNIN as suppressable error.  [Jeremy Bennett]
 
+**** Fix 3.823 constructor core dump on Debian, bug401.  [Ahmed El-Mahmoudy]
 
 * Verilator 3.823 2011/10/20
 
