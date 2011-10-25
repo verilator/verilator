@@ -859,8 +859,9 @@ word	[a-zA-Z0-9_]+
 
   /************************************************************************/
   /* Attributes */
+  /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
 <V95,V01,V05,S05,S09>{
-    "(*"/{ws}*[^)]	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*)
+    "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*), but (* attr_spec
 }
 
   /************************************************************************/
