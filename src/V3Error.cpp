@@ -34,11 +34,6 @@
 //======================================================================
 // Statics
 
-map<string,int> FileLine::s_namemap;
-deque<string> FileLine::s_names;
-// s_defaultFileLine must be after s_name* initializer and in same .cpp file
-FileLine FileLine::s_defaultFileLine = FileLine(EmptySecret());
-
 int V3Error::s_errCount = 0;
 int V3Error::s_warnCount = 0;
 int V3Error::s_debugDefault = 0;
@@ -70,30 +65,33 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 }
 
 //######################################################################
+// FileLineSingleton class functions
+
+int FileLineSingleton::nameToNumber(const string& filename) {
+    // Convert filenames to a filenameno
+    // This lets us assign a nice small identifier for debug messages, but more
+    // importantly lets us use a 4 byte int instead of 8 byte pointer in every FileLine.
+    map<string,int>::const_iterator iter = m_namemap.find(filename);
+    if (VL_LIKELY(iter != m_namemap.end())) return iter->second;
+    int num = m_names.size();
+    m_names.push_back(filename);
+    m_namemap.insert(make_pair(filename,num));
+    return num;
+}
+
+//######################################################################
 // FileLine class functions
 
 FileLine::FileLine(FileLine::EmptySecret) {
     // Sort of a singleton
     m_lineno=0;
-    m_filenameno=nameToNumber("AstRoot");
+    m_filenameno=singleton().nameToNumber("AstRoot");
 
     m_warnOn=0;
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	warnOff(code, code.defaultsOff());
     }
-}
-
-int FileLine::nameToNumber(const string& filename) {
-    // Convert filenames to a filenameno
-    // This lets us assign a nice small identifier for debug messages, but more
-    // importantly lets us use a 4 byte int instead of 8 byte pointer in every FileLine.
-    map<string,int>::const_iterator iter = s_namemap.find(filename);
-    if (VL_LIKELY(iter != s_namemap.end())) return iter->second;
-    int num = s_names.size();
-    s_names.push_back(filename);
-    s_namemap.insert(make_pair(filename,num));
-    return num;
 }
 
 const string FileLine::filenameLetters() const {
@@ -291,8 +289,7 @@ void FileLine::deleteAllRemaining() {
 	// Eventually the list will be empty and terminate the loop.
     }
     fileLineLeakChecks.clear();
-    s_names.clear();
-    s_namemap.clear();
+    FileLineSingleton::clear();
 #endif
 }
 

@@ -252,8 +252,17 @@ inline uint32_t cvtToHash(void* vp) {
 class FileLine;
 
 class FileLineSingleton {
+    map<string,int>	m_namemap;	// filenameno for each filename
+    deque<string>	m_names;	// filename text for each filenameno
+    // COSNTRUCTORS
+    FileLineSingleton() { }
+    ~FileLineSingleton() { }
 protected:
     friend class FileLine;
+    // METHODS
+    int nameToNumber(const string& filename);
+    string numberToName(int filenameno) { return m_names[filenameno]; }
+    void clear() { m_namemap.clear(); m_names.clear(); }
 };
 
 class FileLine {
@@ -263,31 +272,33 @@ class FileLine {
     bitset<V3ErrorCode::_ENUM_MAX>	m_warnOn;
     // Consider moving opt.language() into here, so can know language per-node
 
-    static map<string,int>	s_namemap;	// filenameno for each filename
-    static deque<string>	s_names;	// filename text for each filenameno
-    static FileLine 		s_defaultFileLine;
-
-    static int nameToNumber(const string& filename);
-    static string numberToName(int filenameno) { return s_names[filenameno]; }
-
+private:
     struct EmptySecret {};
-
+    inline static FileLineSingleton& singleton() {
+	static FileLineSingleton s;
+	return s;
+    }
+    inline static FileLine& defaultFileLine() {
+	static FileLine* defFilelinep = new FileLine(FileLine::EmptySecret());
+	return *defFilelinep;
+    }
 protected:
     // User routines should never need to change line numbers
     // We are storing pointers, so we CAN'T change them after initial reading.
+    friend class FileLineSingleton;
     friend class V3ParseImp;
     friend class V3PreLex;
     friend class V3PreProcImp;
     void lineno(int num) { m_lineno = num; }
-    void filename(const string& name) { m_filenameno = nameToNumber(name); }
+    void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
     void linenoIncInPlace() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
     FileLine (const string& filename, int lineno) {
-	m_lineno=lineno; m_filenameno = nameToNumber(filename);
-	m_warnOn=s_defaultFileLine.m_warnOn; }
+	m_lineno=lineno; m_filenameno = singleton().nameToNumber(filename);
+	m_warnOn=defaultFileLine().m_warnOn; }
     FileLine (FileLine* fromp) {
 	m_lineno=fromp->m_lineno; m_filenameno = fromp->m_filenameno; m_warnOn=fromp->m_warnOn; }
     FileLine (EmptySecret);
@@ -302,7 +313,7 @@ public:
 
     int lineno () const { return m_lineno; }
     string ascii() const;
-    const string filename () const { return numberToName(m_filenameno); }
+    const string filename () const { return singleton().numberToName(m_filenameno); }
     const string filenameLetters() const; 
     const string filebasename () const;
     const string filebasenameNoExt () const;
@@ -315,7 +326,7 @@ public:
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_warnOn=from.m_warnOn; }
-    void warnResetDefault() { warnStateFrom(s_defaultFileLine); }
+    void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
     // Specific flag ACCESSORS/METHODS
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
@@ -325,13 +336,13 @@ public:
 
     // METHODS - Global
     static void globalWarnLintOff(bool flag) {
-	s_defaultFileLine.warnLintOff(flag); }
+	defaultFileLine().warnLintOff(flag); }
     static void globalWarnStyleOff(bool flag) {
-	s_defaultFileLine.warnStyleOff(flag); }
+	defaultFileLine().warnStyleOff(flag); }
     static void globalWarnOff(V3ErrorCode code, bool flag) {
-	s_defaultFileLine.warnOff(code, flag); }
+	defaultFileLine().warnOff(code, flag); }
     static bool globalWarnOff(const string& code, bool flag) {
-	return s_defaultFileLine.warnOff(code, flag); }
+	return defaultFileLine().warnOff(code, flag); }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline
