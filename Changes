@@ -4,6 +4,9 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
+* Verilator 3.825***
+
+
 * Verilator 3.824 2011/10/25
 
 ***  Fix "always @ (* )", bug403, bug404.  [Walter Lavino]
