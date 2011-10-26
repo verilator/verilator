@@ -23,6 +23,8 @@ if ($Self->{vlt}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<uint32_t> \s+ i32;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<vluint64_t> \s+ i64;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<sc_bv<65>\s> \s+ i65;/x);
+    file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<sc_bv<1>\s> \s+ ibv1;/x);
+    file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_in<sc_bv<16>\s> \s+ ibv16;/x);
 
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<bool> \s+ o1;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<uint8_t> \s+ o8;/x);
@@ -30,6 +32,8 @@ if ($Self->{vlt}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<uint32_t> \s+ o32;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<vluint64_t> \s+ o64;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<sc_bv<65>\s> \s+ o65;/x);
+    file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<sc_bv<1>\s> \s+ obv1;/x);
+    file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.sp", qr/sc_out<sc_bv<16>\s> \s+ obv16;/x);
 }
 
 execute();

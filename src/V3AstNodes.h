@@ -587,6 +587,7 @@ private:
     bool	m_funcLocal:1;	// Local variable for a function
     bool	m_funcReturn:1;	// Return variable for a function
     bool	m_attrClockEn:1;// User clock enable attribute
+    bool	m_attrScBv:1; // User force bit vector attribute
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_attrSFormat:1;// User sformat attribute
     bool	m_fileDescr:1;	// File descriptor
@@ -601,7 +602,7 @@ private:
 	m_usedClock=false; m_usedParam=false; m_usedLoopIdx=false;
 	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
-	m_attrClockEn=false; m_attrIsolateAssign=false; m_attrSFormat=false;
+	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false;
 	m_trace=false;
     }
@@ -664,6 +665,7 @@ public:
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
+    void	attrScBv(bool flag) { m_attrScBv = flag; }
     void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void	attrSFormat(bool flag) { m_attrSFormat = flag; }
     void	usedClock(bool flag) { m_usedClock = flag; }
@@ -724,6 +726,7 @@ public:
     bool	isFuncLocal() const { return m_funcLocal; }
     bool	isFuncReturn() const { return m_funcReturn; }
     bool	attrClockEn() const { return m_attrClockEn; }
+    bool	attrScBv() const { return m_attrScBv; }
     bool	attrFileDescr() const { return m_fileDescr; }
     bool	attrScClocked() const { return m_scClocked; }
     bool	attrSFormat() const { return m_attrSFormat; }

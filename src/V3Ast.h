@@ -215,6 +215,7 @@ public:
 	VAR_PUBLIC_FLAT_RD,		// V3LinkParse moves to AstVar::sigPublic
 	VAR_PUBLIC_FLAT_RW,		// V3LinkParse moves to AstVar::sigPublic
 	VAR_ISOLATE_ASSIGNMENTS,	// V3LinkParse moves to AstVar::attrIsolateAssign
+	VAR_SC_BV,			// V3LinkParse moves to AstVar::attrScBv
 	VAR_SFORMAT			// V3LinkParse moves to AstVar::attrSFormat
     };
     enum en m_e;
@@ -223,7 +224,7 @@ public:
 	    "%E-AT", "EXPR_BITS", "VAR_BASE",
 	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
-	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SFORMAT"
+	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT"
 	};
 	return names[m_e];
     };

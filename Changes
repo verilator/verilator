@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.825***
 
+***  Add sc_bv attribute to force bit vectors, bug402. [by Stefan Wallentowitz]
+
 
 * Verilator 3.824 2011/10/25
 

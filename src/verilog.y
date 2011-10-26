@@ -447,6 +447,7 @@ class AstSenTree;
 %token<fl>		yVL_ISOLATE_ASSIGNMENTS	"/*verilator isolate_assignments*/"
 %token<fl>		yVL_NO_INLINE_MODULE	"/*verilator no_inline_module*/"
 %token<fl>		yVL_NO_INLINE_TASK	"/*verilator no_inline_task*/"
+%token<fl>		yVL_SC_BV		"/*verilator sc_bv*/"
 %token<fl>		yVL_SFORMAT		"/*verilator sformat*/"
 %token<fl>		yVL_PARALLEL_CASE	"/*verilator parallel_case*/"
 %token<fl>		yVL_PUBLIC		"/*verilator public*/"
@@ -1596,6 +1597,7 @@ sigAttr<nodep>:
 	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW);
 							  $$ = $$->addNext(new AstAlwaysPublic($1,$2,NULL)); }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
+	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
 	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
 	;
 

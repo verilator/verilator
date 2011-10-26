@@ -326,6 +326,11 @@ private:
 	    m_varp->attrSFormat(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
+	else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrScBv(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
     }
 
     virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {

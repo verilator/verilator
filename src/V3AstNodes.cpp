@@ -70,7 +70,7 @@ bool AstVar::isScQuad() const {
 }
 
 bool AstVar::isScBv() const {
-    return (isSc() && width() >= v3Global.opt.pinsBv());
+    return ((isSc() && width() >= v3Global.opt.pinsBv()) || m_attrScBv);
 }
 
 void AstVar::combineType(AstVarType type) {

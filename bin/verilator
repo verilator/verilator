@@ -722,7 +722,8 @@ Backward compatible alias for "--pins-bv 65".  Note that's a 65, not a 64.
 Specifies SystemC inputs/outputs of greater than or equal to I<width> bits
 wide should use sc_bv's instead of uint32/vluint64_t's.  The default is
 "--pins-bv 65".  Versions before Verilator 3.671 defaulted to "--pins-bv
-33".  The more sc_bv is used, the worse for performance.
+33".  The more sc_bv is used, the worse for performance.  Use the
+"/*verilator sc_bv*/" attribute to select specific ports to be sc_bv.
 
 =item --pins-uint8
 
@@ -2029,6 +2030,15 @@ Rarely needed.  Used after a input declaration to indicate the signal
 should be declared in SystemC as a sc_clock instead of a bool.  This was
 needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
 clock pins to be sc_clocks and this is no longer needed.
+
+=item /*verilator sc_bv*/
+
+Used after a port declaration.  It sets the port to be of sc_bv<I<width>>
+type, instead of bool, vluint32_t or vluint64_t.  This may be useful if
+the port width is parametrized and different of such modules interface
+a templated module (such as a transactor) or for other reasons.  In general
+you should avoid using this attribute when not necessary as with increasing
+usage of sc_bv the performance increases significantly.
 
 =item /*verilator sformat*/
 

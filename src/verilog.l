@@ -649,6 +649,7 @@ word	[a-zA-Z0-9_]+
   "/*verilator public_flat_rw*/"	{ FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"		{ FL; return yVL_PUBLIC_MODULE; }
   "/*verilator sc_clock*/"		{ FL; return yVL_CLOCK; }
+  "/*verilator sc_bv*/"		{ FL; return yVL_SC_BV; }
   "/*verilator sformat*/"		{ FL; return yVL_SFORMAT; }
   "/*verilator systemc_clock*/"		{ FL; return yVL_CLOCK; }
   "/*verilator tracing_off*/"		{PARSEP->fileline()->tracingOn(false); }
