@@ -47,7 +47,7 @@ private:
     typedef vector<AstBegin*> BeginStack;
 
     // STATE
-    AstModule*		m_modp;		// Current module
+    AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     AstWhile*	 	m_loopp;	// Current loop
     bool		m_loopInc;	// In loop increment
@@ -109,7 +109,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
 	m_repeatNum = 0;
 	nodep->iterateChildren(*this);

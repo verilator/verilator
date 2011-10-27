@@ -3,7 +3,7 @@
 // Use this file as a template for submitting bugs, etc.
 // This module takes a single clock input, and should either
 //	$write("*-* All Finished *-*\n");
-//	$finish
+//	$finish;
 // on success, or $stop.
 //
 // The code as shown applies a random vector to the Test
