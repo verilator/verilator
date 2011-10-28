@@ -563,8 +563,13 @@ private:
 	    nodep->v3fatalSrc("Cell has unlinked module"); // V3LinkCell should have errored out
 	}
 	else {
+	    if (nodep->modp()->castNotFoundModule()) {
+		// Prevent warnings about missing pin connects
+		if (nodep->pinsp()) nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
+		if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
+	    }
 	    // Need to pass the module info to this cell, so we can link up the pin names
-	    if (m_idState==ID_RESOLVE) {
+	    else if (m_idState==ID_RESOLVE) {
 		m_cellVarsp = nodep->modp()->user4p()->castSymTable();
 		UINFO(4,"(Backto) Link Cell: "<<nodep<<endl);
 		//if (debug()) { nodep->dumpTree(cout,"linkcell:"); }

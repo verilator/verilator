@@ -288,7 +288,8 @@ string V3Options::fileExists (const string& filename) {
     return filenameOut;
 }
 
-string V3Options::filePath (FileLine* fl, const string& modname, const string& errmsg) {
+string V3Options::filePath (FileLine* fl, const string& modname,
+			    const string& errmsg) {   // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
@@ -305,7 +306,14 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& e
     }
 
     // Warn and return not found
-    fl->v3error(errmsg+modname);
+    if (errmsg != "") {
+	fl->v3error(errmsg+modname);
+	filePathLookedMsg(fl, modname);
+    }
+    return "";
+}
+
+void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (!shown_notfound_msg) {
 	shown_notfound_msg = true;
@@ -321,7 +329,6 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& e
 	    }
 	}
     }
-    return "";
 }
 
 void V3Options::unlinkRegexp(const string& dir, const string& regexp) {

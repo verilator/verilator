@@ -333,7 +333,8 @@ public:
     // Preprocess and read the Verilog file specified into the netlist database
     int lexToBison();  // Pass token to bison
 
-    void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary);
+    void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+		   const string& errmsg);
 
 private:
     void lexFile(const string& modname);

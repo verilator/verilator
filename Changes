@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add sc_bv attribute to force bit vectors, bug402. [by Stefan Wallentowitz]
 
+**** Fix reporting not found modules if generate-off, bug403. [Jeremy Bennett]
+
 
 * Verilator 3.824 2011/10/25
 

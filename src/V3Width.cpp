@@ -1137,6 +1137,13 @@ private:
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	if (!m_paramsOnly) {
+	    if (nodep->modp()->castNotFoundModule()) {
+		// We've resolved parameters and hit a module that we couldn't resolve.  It's
+		// finally time to report it.
+		// Note only here in V3Width as this is first visitor after V3Dead.
+		nodep->v3error("Cannot find file containing module: "<<nodep->modName());
+		v3Global.opt.filePathLookedMsg(nodep->fileline(), nodep->modName());
+	    }
 	    if (nodep->rangep()) {
 		m_cellRangep = nodep->rangep();
 		nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

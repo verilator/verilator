@@ -345,6 +345,7 @@ class V3Options {
     // METHODS (file utilities using these options)
     string fileExists (const string& filename);
     string filePath (FileLine* fl, const string& modname, const string& errmsg);
+    void filePathLookedMsg(FileLine* fl, const string& modname);
     static bool fileStatDir (const string& filename);
     static bool fileStatNormal (const string& filename);
 

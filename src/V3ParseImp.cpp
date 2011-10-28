@@ -89,7 +89,8 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
     return got;
 }
 
-void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary) {
+void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+			   const string& errmsg) {  // "" for no error, make fake node
     string modname = V3Options::filenameNonExt(modfilename);
 
     UINFO(2,__FUNCTION__<<": "<<modname<<(inLibrary?" [LIB]":"")<<endl);
@@ -104,7 +105,14 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     }
 
     // Preprocess into m_ppBuffer
-    V3PreShell::preproc(fileline, modfilename, m_filterp, this);
+    bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
+    if (!ok) {
+	if (errmsg != "") return;  // Threw error already
+	// Create fake node for later error reporting
+	AstNodeModule* nodep = new AstNotFoundModule(fileline, modname);
+	v3Global.rootp()->addModulep(nodep);
+	return;
+    }
 
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
 	// Create output file with all the preprocessor output we buffered up
@@ -157,8 +165,9 @@ V3Parse::V3Parse(AstNetlist* rootp, V3InFilter* filterp) {
 V3Parse::~V3Parse() {
     delete m_impp; m_impp = NULL;
 }
-void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary) {
-    m_impp->parseFile(fileline, modname, inLibrary);
+void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
+			const string& errmsg) {
+    m_impp->parseFile(fileline, modname, inLibrary, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     impp->ppPushText(text);

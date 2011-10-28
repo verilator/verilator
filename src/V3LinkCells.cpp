@@ -176,8 +176,10 @@ private:
 	    AstNodeModule* modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
 	    if (!modp) {
 		// Read-subfile
+		// If file not found, make AstNotFoundModule, rather than error out.
+		// We'll throw the error when we know the module will really be needed.
 		V3Parse parser (v3Global.rootp(), m_filterp);
-		parser.parseFile(nodep->fileline(), nodep->modName(), false);
+		parser.parseFile(nodep->fileline(), nodep->modName(), false, "");
 		V3Error::abortIfErrors();
 		// We've read new modules, grab new pointers to their names
 		readModNames();

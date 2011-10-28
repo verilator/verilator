@@ -973,6 +973,14 @@ struct AstModule : public AstNodeModule {
     virtual string verilogKwd() const { return "module"; }
 };
 
+struct AstNotFoundModule : public AstNodeModule {
+    // A missing module declaration
+    AstNotFoundModule(FileLine* fl, const string& name)
+	: AstNodeModule (fl,name) {}
+    ASTNODE_NODE_FUNCS(NotFoundModule, NOTFOUNDMODULE)
+    virtual string verilogKwd() const { return "/*not-found-*/ module"; }
+};
+
 struct AstPackage : public AstNodeModule {
     // A package declaration
     AstPackage(FileLine* fl, const string& name)
