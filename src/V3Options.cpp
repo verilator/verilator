@@ -51,17 +51,29 @@ struct V3OptionsImp {
 
     // STATE
     list<string>	m_allArgs;	// List of every argument encountered
-    list<string>	m_incDirs;	// Include directories (ordered)
-    set<string>		m_incDirSet;	// Include directories (for removing duplicates)
+    list<string>	m_incDirUsers;		// Include directories (ordered)
+    set<string>		m_incDirUserSet;	// Include directories (for removing duplicates)
+    list<string>	m_incDirFallbacks;	// Include directories (ordered)
+    set<string>		m_incDirFallbackSet;	// Include directories (for removing duplicates)
     list<string>	m_libExts;	// Library extensions (ordered)
     set<string>		m_libExtSet;	// Library extensions (for removing duplicates)
     DirMap		m_dirMap;	// Directory listing
 
     // ACCESSOR METHODS
-    void addIncDir(const string& incdir) {
-	if (m_incDirSet.find(incdir) == m_incDirSet.end()) {
-	    m_incDirSet.insert(incdir);
-	    m_incDirs.push_back(incdir);
+    void addIncDirUser(const string& incdir) {
+	if (m_incDirUserSet.find(incdir) == m_incDirUserSet.end()) {
+	    m_incDirUserSet.insert(incdir);
+	    m_incDirUsers.push_back(incdir);
+	    m_incDirFallbacks.remove(incdir);  // User has priority over Fallback
+	    m_incDirFallbackSet.erase(incdir);  // User has priority over Fallback
+	}
+    }
+    void addIncDirFallback(const string& incdir) {
+	if (m_incDirUserSet.find(incdir) == m_incDirUserSet.end()) {  // User has priority over Fallback
+	    if (m_incDirFallbackSet.find(incdir) == m_incDirFallbackSet.end()) {
+		m_incDirFallbackSet.insert(incdir);
+		m_incDirFallbacks.push_back(incdir);
+	    }
 	}
     }
     void addLibExt(const string& libext) {
@@ -73,8 +85,11 @@ struct V3OptionsImp {
     V3OptionsImp() {}
 };
 
-void V3Options::addIncDir(const string& incdir) {
-    m_impp->addIncDir(incdir);
+void V3Options::addIncDirUser(const string& incdir) {
+    m_impp->addIncDirUser(incdir);
+}
+void V3Options::addIncDirFallback(const string& incdir) {
+    m_impp->addIncDirFallback(incdir);
 }
 void V3Options::addLibExt(const string& libext) {
     m_impp->addLibExt(libext);
@@ -288,21 +303,33 @@ string V3Options::fileExists (const string& filename) {
     return filenameOut;
 }
 
+string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
+    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+	string fn = filenameFromDirBase(dirname, modname+*extIter);
+	string exists = fileExists(fn);
+	if (exists!="") {
+	    // Strip ./, it just looks ugly
+	    if (exists.substr(0,2)=="./") exists.erase(0,2);
+	    return exists;
+	}
+    }
+    return "";
+}
+
 string V3Options::filePath (FileLine* fl, const string& modname,
 			    const string& errmsg) {   // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    for (list<string>::iterator dirIter=m_impp->m_incDirs.begin(); dirIter!=m_impp->m_incDirs.end(); ++dirIter) {
-	for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
-	    string fn = filenameFromDirBase(*dirIter,modname+*extIter);
-	    string exists = fileExists(fn);
-	    if (exists!="") {
-		// Strip ./, it just looks ugly
-		if (exists.substr(0,2)=="./") exists.erase(0,2);
-		return exists;
-	    }
-	}
+    for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
+	 dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
+	string exists = filePathCheckOneDir(modname, *dirIter);
+	if (exists!="") return exists;
+    }
+    for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
+	 dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
+	string exists = filePathCheckOneDir(modname, *dirIter);
+	if (exists!="") return exists;
     }
 
     // Warn and return not found
@@ -317,15 +344,22 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (!shown_notfound_msg) {
 	shown_notfound_msg = true;
-	if (m_impp->m_incDirs.empty()) {
+	if (m_impp->m_incDirUsers.empty()) {
 	    fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
-	} else {
-	    fl->v3error("Looked in:"<<endl);
-	    for (list<string>::iterator dirIter=m_impp->m_incDirs.begin(); dirIter!=m_impp->m_incDirs.end(); ++dirIter) {
-		for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
-		    string fn = filenameFromDirBase(*dirIter,modname+*extIter);
-		    fl->v3error("      "<<fn<<endl);
-		}
+	}
+	fl->v3error("Looked in:"<<endl);
+	for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
+	     dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
+	    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
+		fl->v3error("      "<<fn<<endl);
+	    }
+	}
+	for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
+	     dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
+	    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
+		fl->v3error("      "<<fn<<endl);
 	    }
 	}
     }
@@ -573,7 +607,7 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
     if (modPrefix()=="") m_modPrefix = prefix();
 
     // Find files in makedir
-    addIncDir(makeDir());
+    addIncDirFallback(makeDir());
 }
 
 //======================================================================
@@ -611,7 +645,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		addDefine (string (sw+strlen("+define+")));
 	    }
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
-		addIncDir (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
+		addIncDirUser (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
 	    }
 	    else if ( !strncmp (sw, "+libext+", 8)) {
 		string exts = string(sw+strlen("+libext+"));
@@ -734,7 +768,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		m_errorLimit = atoi(argv[i]);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
-		addIncDir (parseFileArg(optdir, string (sw+strlen("-I"))));
+		addIncDirUser (parseFileArg(optdir, string (sw+strlen("-I"))));
 	    }
 	    else if ( !strcmp (sw, "-if-depth") && (i+1)<argc ) {
 		shift;
@@ -759,7 +793,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-Mdir") && (i+1)<argc ) {
 		shift; m_makeDir = argv[i];
-		addIncDir (string (m_makeDir));	 // Need to find generated files there too
+		addIncDirFallback (string (m_makeDir));	 // Need to find generated files there too
 	    }
 	    else if ( !strcmp (sw, "-o") && (i+1)<argc ) {
 		shift; m_exeName = argv[i];
@@ -925,7 +959,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		}
 	    }
 	    else if ( !strcmp (sw, "-y") && (i+1)<argc ) {
-		shift; addIncDir (parseFileArg(optdir,string (argv[i])));
+		shift; addIncDirUser (parseFileArg(optdir,string (argv[i])));
 	    }
 	    else {
 		fl->v3fatal ("Invalid Option: "<<argv[i]);
@@ -1140,7 +1174,7 @@ V3Options::V3Options() {
     addLibExt(".v");
     addLibExt(".sv");
     // Default -I
-    addIncDir(".");	// Looks better than {long_cwd_path}/...
+    addIncDirFallback(".");	// Looks better than {long_cwd_path}/...
 }
 
 V3Options::~V3Options() {

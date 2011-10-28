@@ -14,7 +14,7 @@ compile (
 	 fails=>$Self->{v3},
 	 nc=>0,  # Need to get it not to give the prompt
 	 expect=>
-'%Error: Specified --top-module \'a\' isn.t at the top level, it.s under another cell.
+'%Error: Specified --top-module \'a\' isn.t at the top level, it.s under another cell \'a_top\'
 %Error: Exiting due to.*',
 	 );
 

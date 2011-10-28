@@ -569,10 +569,7 @@ Displays this message and program version and exits.
 
 =item -II<dir>
 
-Add the directory to the list of directories that should be searched for
-include directories or libraries.  Same as +incdir and -y; +incdir and -y
-are fairly standard across Verilog tools while -I is an alias for GCC
-compatibility.
+See -y.
 
 =item --if-depth I<value>
 
@@ -581,10 +578,7 @@ defaults to 0 which disables this warning.
 
 =item +incdir+I<dir>
 
-Add the directory to the list of directories that should be searched for
-include directories or libraries.  Same as -I and -y; +incdir and -y
-are fairly standard across Verilog tools while -I is an alias for GCC
-compatibility.
+See -y.
 
 =item --inhibit-sim
 
@@ -973,9 +967,14 @@ enable rerunning with that same seed so you can reproduce bugs.
 =item -y I<dir>
 
 Add the directory to the list of directories that should be searched for
-include directories or libraries.  Same as +incdir and -I; +incdir and +y
-are fairly standard across Verilog tools while -I is an alias for GCC
-compatibility.
+include files or libraries.  The three flags -y, +incdir and -I have
+similar effect; +incdir and +y are fairly standard across Verilog tools while -I
+is an alias for GCC compatibility.
+
+Verilator defaults to the current directory ("-y .") and any specified
+--Mdir, though these default paths are used after any user specified
+directories.  This allows "-y `pwd`" to be used if absolute filenames are
+desired for error messages instead of relative filenames.
 
 =back
 

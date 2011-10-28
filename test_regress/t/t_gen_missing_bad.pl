@@ -16,9 +16,9 @@ compile (
     expect=>
 '%Error: t/t_gen_missing.v:\d+: Cannot find file containing module: foo_not_needed
 %Error: t/t_gen_missing.v:\d+: Looked in:
-%Error: t/t_gen_missing.v:\d+:       foo_not_needed
-%Error: t/t_gen_missing.v:\d+:       foo_not_needed.v
-%Error: t/t_gen_missing.v:\d+:       foo_not_needed.sv
+%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed
+%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed.v
+%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed.sv
 .*%Error: Exiting due to.*',
     );
 

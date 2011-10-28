@@ -178,10 +178,11 @@ class V3Options {
 
   private:
     // METHODS
-    void addArg(const string& incdir);
+    void addArg(const string& flag);
     void addDefine(const string& defline);
     void addFuture(const string& flag);
-    void addIncDir(const string& incdir);
+    void addIncDirUser(const string& incdir);  // User requested
+    void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
     void addLibExt(const string& libext);
     void optimize(int level);
     void showVersion(bool verbose);
@@ -189,6 +190,7 @@ class V3Options {
     bool onoff(const char* sw, const char* arg, bool& flag);
     bool suffixed(const char* sw, const char* arg);
     string parseFileArg(const string& optdir, const string& relfilename);
+    string filePathCheckOneDir(const string& modname, const string& dirname);
 
     static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
