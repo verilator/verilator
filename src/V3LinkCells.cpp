@@ -135,7 +135,15 @@ private:
 		AstNodeModule* modp = vvertexp->modp();
 		modp->level(vvertexp->rank()+1);
 		if (vvertexp == m_topVertexp && modp->level() != 2) {
-		    v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' isn't at the top level, it's under another cell.");
+		    AstNodeModule* abovep = NULL;
+		    if (V3GraphEdge* edgep = vvertexp->inBeginp()) {
+			if (LinkCellsVertex* eFromVertexp = dynamic_cast<LinkCellsVertex*>(edgep->fromp())) {
+			    abovep = eFromVertexp->modp();
+			}
+		    }
+		    v3error("Specified --top-module '"<<v3Global.opt.topModule()
+			    <<"' isn't at the top level, it's under another cell '"
+			    <<(abovep ? abovep->prettyName() : "UNKNOWN")<<"'");
 		}
 	    }
 	}
