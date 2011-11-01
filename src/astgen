@@ -7,7 +7,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug @Types %Classes %ClassRefs %Stages);
+use vars qw ($Debug @Types %Classes %Children %ClassRefs %Stages);
 
 #======================================================================
 # main
@@ -88,6 +88,7 @@ sub read_types {
 		$class =~ s/^Ast//;
 		$inh =~ s/^Ast//;
 		$Classes{$class} = $inh;
+		$Children{$inh}{$class} = 1;
 	    }
 	}
     }
@@ -152,6 +153,22 @@ sub subclasses_of {
     return (reverse @cllist);
 }
 
+sub children_of {
+    my $type = shift;
+
+    my @cllist;
+    my @todo;
+    push @todo, $type;
+    while (my $subclass = shift @todo) {
+	foreach my $child (sort keys %{$::Children{$subclass}}) {
+	    push @todo, $child;
+	    push @cllist, $child;
+	}
+    }
+
+    return (@cllist);
+}
+
 #----------------------------------------------------------------------
 
 sub write_report {
@@ -168,6 +185,12 @@ sub write_report {
 	printf $fh "  class %-20s\n", "Ast${type}";
 	$fh->print("\tparent:\t");
 	foreach my $subclass (subclasses_of($type)) {
+	    next if $subclass eq 'Node';
+	    printf $fh "Ast%-12s ",$subclass;
+	}
+	printf $fh "\n";
+	$fh->print("\tchilds:\t");
+	foreach my $subclass (children_of($type)) {
 	    next if $subclass eq 'Node';
 	    printf $fh "Ast%-12s ",$subclass;
 	}
