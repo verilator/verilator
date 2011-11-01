@@ -973,8 +973,8 @@ is an alias for GCC compatibility.
 
 Verilator defaults to the current directory ("-y .") and any specified
 --Mdir, though these default paths are used after any user specified
-directories.  This allows "-y `pwd`" to be used if absolute filenames are
-desired for error messages instead of relative filenames.
+directories.  This allows '-y "$(pwd)"' to be used if absolute filenames
+are desired for error messages instead of relative filenames.
 
 =back
 

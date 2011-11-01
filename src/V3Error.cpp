@@ -332,13 +332,18 @@ void V3Error::incErrors() {
 
 void V3Error::abortIfErrors() {
     if (errorCount()) {
-	v3fatal ("Exiting due to "<<dec<<errorOrWarnCount()<<" warning(s)\n");
+	abortIfWarnings();
     }
 }
 
 void V3Error::abortIfWarnings() {
-    if (v3Global.opt.warnFatal() ? errorOrWarnCount() : errorCount()) {
-	v3fatal ("Exiting due to "<<dec<<errorOrWarnCount()<<" warning(s)\n");
+    bool exwarn = v3Global.opt.warnFatal() && warnCount();
+    if (errorCount() && exwarn) {
+	v3fatal ("Exiting due to "<<dec<<errorCount()<<" error(s), "<<warnCount()<<" warning(s)\n");
+    } else if (errorCount()) {
+	v3fatal ("Exiting due to "<<dec<<errorCount()<<" error(s)\n");
+    } else if (exwarn) {
+	v3fatal ("Exiting due to "<<dec<<warnCount()<<" warning(s)\n");
     }
 }
 

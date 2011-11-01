@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Search for user -y paths before default current directory.  [Ruben Diez]
 
+**** Indicate 'exiting due to errors' if errors, not warnings. [Ruben Diez]
+
 **** Fix reporting not found modules if generate-off, bug403. [Jeremy Bennett]
 
 
