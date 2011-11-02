@@ -1768,8 +1768,8 @@ event_control<sentreep>:	// ==IEEE: event_control
 
 event_expression<senitemp>:	// IEEE: event_expression - split over several
 		senitem					{ $$ = $1; }
-	|	event_expression yOR senitem		{ $$ = $1;$1->addNext($3); }
-	|	event_expression ',' senitem		{ $$ = $1;$1->addNext($3); }	/* Verilog 2001 */
+	|	event_expression yOR senitem		{ $$ = $1;$1->addNextNull($3); }
+	|	event_expression ',' senitem		{ $$ = $1;$1->addNextNull($3); }	/* Verilog 2001 */
 	;
 
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
@@ -1778,6 +1778,11 @@ senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 	|	'(' senitemVar ')'			{ $$ = $2; }
 	//UNSUP	expr					{ UNSUP }
 	//UNSUP	expr yIFF expr				{ UNSUP }
+	// Since expr is unsupported we allow and ignore constants (removed in V3Const)
+	|	yaINTNUM				{ $$ = NULL; }
+	|	yaFLOATNUM				{ $$ = NULL; }
+	|	'(' yaINTNUM ')'			{ $$ = NULL; }
+	|	'(' yaFLOATNUM ')'			{ $$ = NULL; }
 	;
 
 senitemVar<senitemp>:
