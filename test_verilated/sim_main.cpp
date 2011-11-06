@@ -12,7 +12,7 @@
 
 Vvgen *top;
 
-unsigned int main_time = 0;
+vluint64_t main_time = 0;
 
 double sc_time_stamp () {
     return main_time;

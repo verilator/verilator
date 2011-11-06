@@ -13,10 +13,10 @@
 
 Vtop *top;			// Instantiation of module
 
-unsigned int main_time = 0;	// Current simulation time
+vluint64_t main_time = 0;	// Current simulation time (64-bit unsigned)
 
 double sc_time_stamp () {	// Called by $time in Verilog
-    return main_time;
+    return main_time;		// Note does conversion to real, to match SystemC
 }
 
 int main(int argc, char **argv, char **env) {
@@ -59,7 +59,7 @@ int main(int argc, char **argv, char **env) {
 #endif
 
 	// Read outputs
-	VL_PRINTF ("[%d] %x %x %x %x %x_%08x_%08x\n",
+	VL_PRINTF ("[%" VL_PRI64 "d] %x %x %x %x %x_%08x_%08x\n",
 		   main_time, top->clk, top->reset_l, top->passed,
 		   top->out_small, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
 
