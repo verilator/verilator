@@ -82,6 +82,11 @@ private:
 	    nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
 	    return NULL;
 	}
+	// Skip over variables as we'll just move them in a momement
+	// Also this would otherwise prevent us from using a label twice
+	// see t_func_return test.
+	while (underp && underp->castVar()) underp = underp->nextp();
+	if (underp) UINFO(5,"  Underpoint is "<<underp<<endl);
 
 	if (!underp) {
 	    nodep->v3fatalSrc("Break/disable/continue not under expected statement");
