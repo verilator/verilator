@@ -229,6 +229,7 @@ private:
 
     // STATE
     bool		m_reorder;	// Reorder statements vs. just splitting
+    string		m_noReorderWhy;	// Reason we can't reorder
     VStack		m_stmtStackps;	// Current statements being tracked
     SplitPliVertex*	m_pliVertexp;	// Element specifying PLI ordering
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
@@ -249,6 +250,7 @@ private:
 	m_graph.clear();
 	m_stmtStackps.clear();
 	m_pliVertexp = NULL;
+	m_noReorderWhy = "";
 	AstNode::user1ClearTree();
 	AstNode::user2ClearTree();
 	AstNode::user3ClearTree();
@@ -336,6 +338,7 @@ private:
 	}
 
 	// Weak coloring to determine what needs to remain in order
+	// This follows all step-relevant edges excluding PostEdges, which are done later
 	m_graph.weaklyConnected(&SplitEdge::followScoreboard);
 
 	// Add hard orderings between all nodes of same color, in the order they appeared
@@ -445,14 +448,18 @@ private:
 	    UINFO(9,"  processBlock "<<nodep<<endl);
 	    // Process block and followers
 	    scanBlock(nodep);
-	    // Reorder statements in this block
-	    cleanupBlockGraph(nodep);
-	    reorderBlock(nodep);
-	    // Delete old vertexes and edges only applying to this block
-	    while (firstp->backp()->nextp()==firstp) firstp = firstp->backp();  // Walk back to first in list
-	    for (AstNode* nextp=firstp; nextp; nextp=nextp->nextp()) {
-		SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
-		vvertexp->unlinkDelete(&m_graph);
+	    if (m_noReorderWhy != "") {  // Jump or something nasty
+		UINFO(9,"  NoReorderBlock because "<<m_noReorderWhy<<endl);
+	    } else {
+		// Reorder statements in this block
+		cleanupBlockGraph(nodep);
+		reorderBlock(nodep);
+		// Delete old vertexes and edges only applying to this block
+		while (firstp->backp()->nextp()==firstp) firstp = firstp->backp();  // Walk back to first in list
+		for (AstNode* nextp=firstp; nextp; nextp=nextp->nextp()) {
+		    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
+		    vvertexp->unlinkDelete(&m_graph);
+		}
 	    }
 	}
 	// Again, nodep may no longer be first.
@@ -533,6 +540,15 @@ private:
 		}
 	    }
 	}
+    }
+    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+	// Jumps will disable reordering at all levels
+	// This is overly pessimistic; we could treat jumps as barriers, and
+	// reorder everything between jumps/labels, however jumps are rare
+	// in always, so the performance gain probably isn't worth the work.
+	UINFO(9,"         NoReordering "<<nodep<<endl);
+	m_noReorderWhy = "JumpGo";
+	nodep->iterateChildren(*this);
     }
 
     //--------------------

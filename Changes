@@ -14,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Indicate 'exiting due to errors' if errors, not warnings. [Ruben Diez]
 
+**** Fix bad result with if-else-return optimization, bug420. [Alex Solomatnikov]
+
 **** Fix reporting not found modules if generate-off, bug403. [Jeremy Bennett]
 
 
