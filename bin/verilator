@@ -2985,6 +2985,11 @@ One limit is that you cannot under either license release a commercial
 Verilog simulation product incorporating Verilator without making the
 source code available.
 
+As is standard with Open Source, contributions back to Verilator will be
+placed under the Verilator copyright and LGPL/Artistic license.  Small test
+cases will be released into the public domain so they can be used anywhere,
+large tests under the LGPL/Artistic, unless requested otherwise.
+
 =item Why is Verilation so slow?
 
 Verilator needs more memory than the resulting simulator will require, as
