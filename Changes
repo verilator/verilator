@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Fix reporting not found modules if generate-off, bug403. [Jeremy Bennett]
 
+**** Fix $display with %d following %g. [Holger Wächtler]
+
 
 * Verilator 3.824 2011/10/25
 

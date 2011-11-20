@@ -333,7 +333,9 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    case 'e':
 	    case 'f':
 	    case 'g': {
+		const int lbits = va_arg(ap, int);
 		double d = va_arg(ap, double);
+		if (lbits) {}  // UNUSED - always 64
 		strncpy(tmpf, pctp, pos-pctp+1);
 		tmpf[pos-pctp+1] = '\0';
 		sprintf(tmp, tmpf, d);
