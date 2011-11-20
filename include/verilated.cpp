@@ -937,6 +937,17 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     }
 }
 
+IData VL_SYSTEM_IQ(QData lhs) {
+    IData lhsw[2];  VL_SET_WQ(lhsw, lhs);
+    return VL_SYSTEM_IW(2, lhsw);
+}
+IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) {
+    char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    _VL_VINT_TO_STRING(lhswords*VL_WORDSIZE, filenamez, filenamep);
+    int code = system(filenamez);
+    return code >> 8;  // Want exit status
+}
+
 IData VL_TESTPLUSARGS_I(const char* formatp) {
     string match = VerilatedImp::argPlusMatch(formatp);
     if (match == "") return 0;

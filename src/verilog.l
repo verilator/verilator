@@ -215,6 +215,7 @@ word	[a-zA-Z0-9_]+
   "$stime"		{ FL; return yD_STIME; }
   "$stop"		{ FL; return yD_STOP; }
   "$swrite"		{ FL; return yD_SWRITE; }
+  "$system"		{ FL; return yD_SYSTEM; }
   "$test$plusargs"	{ FL; return yD_TESTPLUSARGS; }
   "$time"		{ FL; return yD_TIME; }
   "$timeskew"		{ FL; return yaTIMINGSPEC; }

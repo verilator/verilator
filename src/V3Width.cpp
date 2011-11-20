@@ -1041,6 +1041,14 @@ private:
     virtual void visit(AstSysIgnore* nodep, AstNUser* vup) {
 	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
+    virtual void visit(AstSystemF* nodep, AstNUser*) {
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->numeric(AstNumeric::UNSIGNED);
+	nodep->width(32,32);
+    }
+    virtual void visit(AstSystemT* nodep, AstNUser*) {
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

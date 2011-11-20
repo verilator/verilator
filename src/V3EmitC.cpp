@@ -361,6 +361,30 @@ public:
 	    puts(")); }\n");
 	}
     }
+    virtual void visit(AstSystemT* nodep, AstNUser*) {
+	puts("(void)VL_SYSTEM_I");
+	emitIQW(nodep->lhsp());
+	puts("(");
+	if (nodep->lhsp()->isWide()) {
+	    puts(cvtToStr(nodep->lhsp()->widthWords()));
+	    putbs(", ");
+	}
+	checkMaxWords(nodep->lhsp());
+	nodep->lhsp()->iterateAndNext(*this);
+	puts(");\n");
+    }
+    virtual void visit(AstSystemF* nodep, AstNUser*) {
+	puts("VL_SYSTEM_I");
+	emitIQW(nodep->lhsp());
+	puts("(");
+	if (nodep->lhsp()->isWide()) {
+	    puts(cvtToStr(nodep->lhsp()->widthWords()));
+	    putbs(", ");
+	}
+	checkMaxWords(nodep->lhsp());
+	nodep->lhsp()->iterateAndNext(*this);
+	puts(")");
+    }
     virtual void visit(AstJumpGo* nodep, AstNUser*) {
 	puts("goto __Vlabel"+cvtToStr(nodep->labelp()->labelNum())+";\n");
     }

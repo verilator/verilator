@@ -1895,6 +1895,45 @@ public:
     AstNode*	msbp() const { return op4p()->castNode(); }
 };
 
+struct AstSystemT : public AstNodeStmt {
+    // $system used as task
+    AstSystemT(FileLine* fileline, AstNode* lhsp)
+	: AstNodeStmt (fileline) {
+	setOp1p(lhsp);
+    }
+    ASTNODE_NODE_FUNCS(SystemT, SYSTEMT)
+    virtual string verilogKwd() const { return "$system"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstNode*	lhsp() const { return op1p(); }
+};
+
+struct AstSystemF : public AstNodeMath {
+    // $system used as function
+    AstSystemF(FileLine* fileline, AstNode* lhsp)
+	: AstNodeMath (fileline) {
+	setOp1p(lhsp);
+    }
+    ASTNODE_NODE_FUNCS(SystemF, SYSTEMF)
+    virtual string verilogKwd() const { return "$system"; }
+    virtual string emitVerilog() { return verilogKwd(); }
+    virtual string emitC() { return "VL_SYSTEM_%nq(%lw, %P)"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isSplittable() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool isUnlikely() const { return true; }
+    virtual bool cleanOut() { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstNode*	lhsp() const { return op1p(); }
+};
+
 struct AstValuePlusArgs : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs

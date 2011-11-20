@@ -425,6 +425,7 @@ class AstSenTree;
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
 %token<fl>		yD_SWRITE	"$swrite"
+%token<fl>		yD_SYSTEM	"$system"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
 %token<fl>		yD_UNIT		"$unit"
@@ -2133,6 +2134,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemT($1,$3); }
 	//
 	|	yD_DISPLAY  parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,"", NULL,NULL); }
 	|	yD_DISPLAY  '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,*$3,NULL,$4); }
@@ -2184,6 +2186,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_FGETS '(' idClassSel ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
+	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemF($1,$3); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
