@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **** Support constants in sensitivity lists, bug412.  [Jeremy Bennett]
 
+**** Support $sscanf with %g. [Holger Wächtler]
+
 **** Indicate 'exiting due to errors' if errors, not warnings. [Ruben Diez]
 
 **** Fix bad result with if-else-return optimization, bug420. [Alex Solomatnikov]

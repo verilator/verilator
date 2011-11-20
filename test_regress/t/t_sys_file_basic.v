@@ -13,6 +13,7 @@ module t;
    reg [8*8:1]	letterq;
    reg [16*8:1]	letterw;
    reg [16*8:1]	letterz;
+   real		r;
 
 `ifdef TEST_VERBOSE
  `define verbose 1'b1
@@ -119,10 +120,11 @@ module t;
 	 if (letterq != 64'h13) $stop;
 	 if (letterw != 128'h55ce14f1a9c29e) $stop;
 
-	 chars = $sscanf("d=-236123",
-			 "d=%d", letterq);
+	 chars = $sscanf("r=0.1 d=-236123",
+			 "r=%g d=%d", r, letterq);
 	 if (`verbose) $write("c=%0d d=%d\n", chars, letterq);
-	 if (chars != 1) $stop;
+	 if (chars != 2) $stop;
+	 if (r != 0.1) $stop;
 	 if (letterq != 64'hfffffffffffc65a5) $stop;
 
 	 // $fscanf

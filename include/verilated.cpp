@@ -598,6 +598,17 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
+		case 'f':
+		case 'e':
+		case 'g': { // Real number
+		    _vl_vsss_skipspace(fp,floc,fromp);
+		    _vl_vsss_read(fp,floc,fromp, tmp, "+-.0123456789eE");
+		    if (!tmp[0]) goto done;
+		    union { double r; vlsint64_t ld; } u;
+		    u.r = strtod(tmp, NULL);
+		    VL_SET_WQ(owp,u.ld);
+		    break;
+		}
 		case 't': // FALLTHRU  // Time
 		case 'u': { // Unsigned decimal
 		    _vl_vsss_skipspace(fp,floc,fromp);
