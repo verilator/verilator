@@ -14,6 +14,7 @@ module t (/*AUTOARG*/
    s3 s3 ();
    s4 s4 ();
    s5 s5 ();
+   s6 s6 ();
 
    initial begin
       $finish;
@@ -49,5 +50,11 @@ module s5;
  final begin
     $write("*-* All Finished *-*\n");
  end
+endmodule
+`end_keywords
+
+`begin_keywords "VAMS-2.3"
+module s6;
+   real foo; initial foo = sqrt(2.0);
 endmodule
 `end_keywords

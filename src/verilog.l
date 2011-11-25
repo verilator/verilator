@@ -134,7 +134,7 @@ void yyerrorf(const char* format, ...) {
 
 %s V95 V01 V05 S05 S09
 %s STRING ATTRMODE TABLE
-%s PSL VLT
+%s VA5 SA9 PSL VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
@@ -168,7 +168,7 @@ word	[a-zA-Z0-9_]+
 
   /************************************************************************/
   /* Verilog 1995 */
-<V95,V01,V05,S05,S09,PSL>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL>{
   {ws}			{ }	/* otherwise ignore white-space */
   {crnl}		{ NEXTLINE(); }		/* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
@@ -341,7 +341,7 @@ word	[a-zA-Z0-9_]+
 }
 
   /* Verilog 2001 */
-<V01,V05,S05,S09,PSL>{
+<V01,V05,VA5,S05,S09,SA9,PSL>{
   /*     System Tasks */
   "$signed"		{ FL; return yD_SIGNED; }
   "$unsigned"		{ FL; return yD_UNSIGNED; }
@@ -372,7 +372,7 @@ word	[a-zA-Z0-9_]+
 }
 
   /* Verilog 2005 */
-<V05,S05,S09,PSL>{
+<V05,S05,S09,SA9,PSL>{
   /*     Keywords */
   "uwire"		{ FL; return yWIRE; }
 }
@@ -531,7 +531,7 @@ word	[a-zA-Z0-9_]+
 }
 
   /* Default PLI rule */
-<V95,V01,V05,S05,S09,PSL>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL>{
   "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
 				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
 				  // Lookup unencoded name including the $, to avoid hitting normal signals
@@ -542,10 +542,103 @@ word	[a-zA-Z0-9_]+
 }
 
   /************************************************************************/
+  /* AMS */
+
+<VA5,SA9>{
+  /*     Generic unsupported warnings */
+   "above"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "abs"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "absdelay"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "abstol"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ac_stim"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "access"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "acos"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "acosh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "aliasparam"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "analog"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "analysis"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "asin"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "asinh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "assert"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "atan"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "atan2"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "atanh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "branch"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ceil"		{ FL; return yD_CEIL; }
+   "connect"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "connectmodule"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "connectrules"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "continuous"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "cos"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "cosh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "cross"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ddt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ddt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ddx"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "discipline"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "discrete"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "domain"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "driver_update"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "endconnectrules"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "enddiscipline"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "endnature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "endparamset"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "exclude"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "exp"		{ FL; return yD_EXP; }
+   "final_step"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "flicker_noise"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "floor"		{ FL; return yD_FLOOR; }
+   "flow"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "from"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ground"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "hypot"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "idt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "idt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "idtmod"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "inf"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "initial_step"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "laplace_nd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "laplace_np"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "laplace_zd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "laplace_zp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "last_crossing"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "limexp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "ln"			{ FL; return yD_LN; }
+   "log"		{ FL; return yD_LOG10; }
+   "max"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "merged"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "min"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "net_resolution"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "noise_table"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "paramset"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "potential"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "pow"		{ FL; return yD_POW; }
+   "resolveto"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "sin"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "sinh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "slew"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "split"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "sqrt"		{ FL; return yD_SQRT; }
+   "string"		{ FL; return ySTRING; }
+   "tan"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "tanh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "timer"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "transition"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "units"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "white_noise"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "wreal"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "zi_nd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "zi_np"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "zi_zd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "zi_zp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+}
+
+  /************************************************************************/
   /* PSL */
 
   /*Entry into PSL; mode change */
-<V95,V01,V05,S05,S09>{
+<V95,V01,V05,VA5,S05,S09,SA9>{
   "psl"			{ yy_push_state(PSL); FL; return yPSL; }
 }
 
@@ -634,7 +727,7 @@ word	[a-zA-Z0-9_]+
   /* Meta comments */
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
-<V95,V01,V05,S05,S09,PSL>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL>{
   "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{ FL; return yVL_CLOCK_ENABLE; }
   "/*verilator coverage_block_off*/"	{ FL; return yVL_COVERAGE_BLOCK_OFF; }
@@ -650,7 +743,7 @@ word	[a-zA-Z0-9_]+
   "/*verilator public_flat_rw*/"	{ FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"		{ FL; return yVL_PUBLIC_MODULE; }
   "/*verilator sc_clock*/"		{ FL; return yVL_CLOCK; }
-  "/*verilator sc_bv*/"		{ FL; return yVL_SC_BV; }
+  "/*verilator sc_bv*/"			{ FL; return yVL_SC_BV; }
   "/*verilator sformat*/"		{ FL; return yVL_SFORMAT; }
   "/*verilator systemc_clock*/"		{ FL; return yVL_CLOCK; }
   "/*verilator tracing_off*/"		{PARSEP->fileline()->tracingOn(false); }
@@ -669,11 +762,11 @@ word	[a-zA-Z0-9_]+
   /************************************************************************/
 
   /* Single character operator thingies */
-<V95,V01,V05,S05,S09>{
+<V95,V01,V05,VA5,S05,S09,SA9>{
   "{"			{ FL; return yytext[0]; }
   "}"			{ FL; return yytext[0]; }
 }
-<V95,V01,V05,S05,S09,PSL>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL>{
   "!"			{ FL; return yytext[0]; }
   "#"			{ FL; return yytext[0]; }
   "$"			{ FL; return yytext[0]; }
@@ -705,7 +798,7 @@ word	[a-zA-Z0-9_]+
   /* Operators and multi-character symbols */
 
   /* Verilog 1995 Operators */
-<V95,V01,V05,S05,S09,PSL>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL>{
   "&&"			{ FL; return yP_ANDAND; }
   "||"			{ FL; return yP_OROR; }
   "<="			{ FL; return yP_LTE; }
@@ -727,7 +820,7 @@ word	[a-zA-Z0-9_]+
 }
 
   /* Verilog 2001 Operators */
-<V01,V05,S05,S09,PSL>{
+<V01,V05,VA5,S05,S09,SA9,PSL>{
   "<<<"			{ FL; return yP_SLEFT; }
   ">>>"			{ FL; return yP_SSRIGHT; }
   "**"			{ FL; return yP_POW; }
@@ -786,7 +879,7 @@ word	[a-zA-Z0-9_]+
 }
 
   /* Identifiers and numbers */
-<V95,V01,V05,S05,S09,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL,VLT>{
   {escid}		{ FL; yylval.strp = PARSEP->newString
 	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
 			  return yaID__LEX;
@@ -862,7 +955,7 @@ word	[a-zA-Z0-9_]+
   /************************************************************************/
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
-<V95,V01,V05,S05,S09>{
+<V95,V01,V05,VA5,S05,S09,SA9>{
     "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*), but (* attr_spec
 }
 
@@ -879,7 +972,7 @@ word	[a-zA-Z0-9_]+
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
-<V95,V01,V05,S05,S09,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"				{ } // Verilog-XL compatibility
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ PARSEP->inCellDefine(true); }
@@ -920,9 +1013,11 @@ word	[a-zA-Z0-9_]+
   "`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"	{ yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2009\"		{ yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
-  "`end_keywords"				{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+  "`begin_keywords"[ \t]*\"1800+VAMS\"		{ yy_push_state(SA9); PARSEP->pushBeginKeywords(YY_START); }
+  "`end_keywords"			{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 
   /* Verilator */
   "`systemc_ctor"			{ BEGIN SYSCCTOR; }
@@ -952,7 +1047,7 @@ word	[a-zA-Z0-9_]+
   /************************************************************************/
   /* Default rules - leave last */
 
-<V95,V01,V05,S05,S09,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,SA9,PSL,VLT>{
   "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
   "//"[^\n]*		{ }  /* throw away single line comments */
   .			{ FL; return yytext[0]; }	/* return single char ops. */

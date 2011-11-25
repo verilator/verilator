@@ -203,8 +203,9 @@ Verilator - Convert Verilog code to C++/SystemC
 =head1 DESCRIPTION
 
 Verilator converts synthesizable (not behavioral) Verilog code, plus some
-Synthesis, SystemVerilog and Sugar/PSL assertions, into C++, SystemC or
-SystemPerl code.  It is not a complete simulator, just a compiler.
+Synthesis, SystemVerilog and a small subset of Verilog AMS and Sugar/PSL
+assertions, into C++, SystemC or SystemPerl code.  It is not a complete
+simulator, just a compiler.
 
 Verilator is invoked with parameters similar to GCC, Cadence
 Verilog-XL/NC-Verilog, or Synopsys's VCS.  It reads the specified Verilog
@@ -610,9 +611,13 @@ in the Make variable LDLIBS, not LDFLAGS.)
 
 Select the language to be used when first processing each Verilog file.
 The language value must be "1364-1995", "1364-2001", "1364-2001",
-"1364-2005", or "1800-2005".  This should only be used for legacy code, as
-the preferable option is to edit the code to repair new keywords, or add
-appropriate `begin_keywords.
+"1364-2005", "1800-2005", "VAMS-2.3".  Verilator also allows the
+non-standard "1800+VAMS" to allow both the full SystemVerilog and
+Verilog-AMS keywords.
+
+The --language flag is only recommended for legacy code, as the preferable
+option is to edit the code to repair new keywords, or add appropriate
+`begin_keywords.
 
 =item +libext+I<ext>+I<ext>...
 
@@ -1684,6 +1689,18 @@ function call-like preprocessor defines, default define arguments,
 Verilator currently has some support for SystemVerilog 2009 synthesis
 constructs. As SystemVerilog features enter common usage they are added;
 please file a bug if a feature you need is missing.
+
+=head2 Verilog AMS Support
+
+Verilator implements a very small subset of Verilog AMS (Verilog Analog and
+Mixed-Signal Extensions) with the subset corresponding to those VMS
+keywords with near equivelents in the Verilog 2005 or SystemVerilog 2009
+languages.
+
+AMS parsing is enabled with "--language VAMS" or "--language 1800+VAMS".
+
+At present Verilator implements ceil, exp, floor, ln, log, pow, sqrt,
+and string.
 
 =head2 Sugar/PSL Support
 

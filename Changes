@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.825***
 
+**   With "--language VAMS" support a touch of Verilog AMS.  [Holger Waechtler]
+
 ***  Add sc_bv attribute to force bit vectors, bug402. [by Stefan Wallentowitz]
 
 **** Search for user -y paths before default current directory.  [Ruben Diez]
