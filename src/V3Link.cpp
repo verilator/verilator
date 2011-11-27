@@ -319,7 +319,8 @@ private:
 		    }
 		} else {
 		    // User can disable the message at either point
-		    if (!nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
+		    if (!(m_ftaskp && m_ftaskp->dpiImport())
+			&& !nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
 			&& !foundp->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
 			nodep->v3warn(VARHIDDEN,"Declaration of signal hides declaration in upper scope: "<<nodep->name());
 			foundp->v3warn(VARHIDDEN,"... Location of original declaration");
