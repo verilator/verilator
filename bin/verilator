@@ -1700,7 +1700,7 @@ languages.
 AMS parsing is enabled with "--language VAMS" or "--language 1800+VAMS".
 
 At present Verilator implements ceil, exp, floor, ln, log, pow, sqrt,
-and string.
+string, and wreal.
 
 =head2 Sugar/PSL Support
 

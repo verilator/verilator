@@ -627,7 +627,7 @@ word	[a-zA-Z0-9_]+
    "transition"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "units"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "white_noise"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "wreal"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "wreal"		{ FL; return yWREAL; }
    "zi_nd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "zi_np"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "zi_zd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }

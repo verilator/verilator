@@ -380,6 +380,7 @@ class AstSenTree;
 %token<fl>		yVOID		"void"
 %token<fl>		yWHILE		"while"
 %token<fl>		yWIRE		"wire"
+%token<fl>		yWREAL		"wreal"
 %token<fl>		yXNOR		"xnor"
 %token<fl>		yXOR		"xor"
 
@@ -1087,6 +1088,8 @@ non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	//UNSUP	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::FLOAT); }
+	//			// VAMS - somewhat hackish
+	|	yWREAL 					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); VARDECL(WIRE); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty

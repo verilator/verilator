@@ -20,6 +20,11 @@ module t (/*AUTOARG*/
       end
    endtask
 
+   wreal wr;
+   assign wr = 1.1;
+
+   sub sub (.*);
+
    initial begin
       check(`__LINE__, sqrt(2.0)	, 1.414);
       check(`__LINE__, pow(2.0,2.0)	, 4.0);
@@ -30,5 +35,13 @@ module t (/*AUTOARG*/
       check(`__LINE__, ceil(2.5)	, 3.0);
       $write("*-* All Finished *-*\n");
       $finish;
+   end
+endmodule
+
+module sub (
+	    input wreal wr
+	    );
+   initial begin
+      if (wr != 1.1) $stop;
    end
 endmodule
