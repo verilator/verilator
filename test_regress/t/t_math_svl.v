@@ -23,7 +23,7 @@ module t (/*AUTOARG*/
    reg 	      wo;
    reg 	      w0;
 
-   always_comb @* begin
+   always @* begin
       lc = $countones(l);
       lo = $onehot(l);
       l0 = $onehot0(l);
@@ -36,11 +36,23 @@ module t (/*AUTOARG*/
    end
 
    integer cyc; initial cyc=1;
+   integer cyc_com;
+   always_comb begin
+      cyc_com = cyc;
+   end
+
+   integer cyc_d1;
    always_ff @ (posedge clk) begin
+      cyc_d1 <= cyc_com;
+   end
+
+   always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 	 //$write("%d %x %d %x %x   %x %d %x %x  %x %d %x %x\n",
 	 //	cyc, l, lc, lo, l0,   q,qc,qo,q0,  w,wc,wo,w0);
+	 if (cyc_com != cyc_com) $stop;
+	 if (cyc_d1 != cyc-1) $stop;
 	 if (cyc==0) begin
 	    // Constification check
 	    if ($countones(32'b11001011101) != 7) $stop;
