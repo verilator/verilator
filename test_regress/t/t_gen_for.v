@@ -94,6 +94,9 @@ module paramed (/*AUTOARG*/
    endgenerate
 
    generate
+   endgenerate
+
+   generate
       if (MODE==0) begin
 	 // Flip bitorder, direct assign method
 	 for (i=0; i<WIDTH; i=i+1) begin
