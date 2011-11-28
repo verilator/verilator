@@ -4,7 +4,12 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
-* Verilator 3.825***
+* Verilator 3.831****
+
+****  Suppress VARHIDDEN on dpi import arguments.  [Ruben Diez]
+
+
+* Verilator 3.830 2011/11/27
 
 **   With "--language VAMS" support a touch of Verilog AMS.  [Holger Waechtler]
 

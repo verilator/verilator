@@ -1375,6 +1375,7 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 
 generate_region<nodep>:		// ==IEEE: generate_region
 		yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
 module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
