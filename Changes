@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Suppress VARHIDDEN on dpi import arguments.  [Ruben Diez]
 
+****  Fix dpi exports with > 32 bit but < 64 bit args, bug423. [Chandan Egbert]
+
 
 * Verilator 3.830 2011/11/27
 

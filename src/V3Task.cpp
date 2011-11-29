@@ -627,7 +627,7 @@ private:
 	    ket += ")";
 	}
 	if (!cvt
-	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && !portp->isWide())
+	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && !portp->isWide() && !portp->isQuad())
 	    stmt += "*";  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is
 	stmt += frName;
 	stmt += ket;
