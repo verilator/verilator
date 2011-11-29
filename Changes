@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix dpi exports with > 32 bit but < 64 bit args, bug423. [Chandan Egbert]
 
+****  Fix array of instantiations with sub-range output, bug414. [Jeremy Bennett]
+
 
 * Verilator 3.830 2011/11/27
 

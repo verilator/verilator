@@ -203,8 +203,10 @@ private:
 		// Arrayed instants: one bit for each of the instants (each assign is 1 pinwidth wide)
 		AstNode* exprp = nodep->exprp()->unlinkFrBack();
 		bool inputPin = nodep->modVarp()->isInput();
-		if (!inputPin && !exprp->castVarRef()) {
+		if (!inputPin && !exprp->castVarRef()
+		    && !exprp->castSel()) {  // V3Const will collapse the SEL with the one we're about to make
 		    nodep->v3error("Unsupported: Per-bit array instantiations with output connections to non-wires.");
+		    // Note spec allows more complicated matches such as slices and such
 		}
 		exprp = new AstSel (exprp->fileline(), exprp,
 				    pinwidth*(m_instNum-m_instLsb),
