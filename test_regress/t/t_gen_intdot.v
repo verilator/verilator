@@ -84,11 +84,23 @@ module Genit (clk, value, result);
    input value;
    output result;
 
+`ifndef ATSIM  // else unsupported
+ `ifndef NC  // else unsupported
+  `define WITH_FOR_GENVAR
+ `endif
+`endif
+
 `define WITH_GENERATE
 `ifdef WITH_GENERATE
+ `ifndef WITH_FOR_GENVAR
    genvar i;
+ `endif
    generate
-      for (i = 0; i < 1; i = i + 1)
+      for (
+ `ifdef WITH_FOR_GENVAR
+	   genvar
+ `endif
+	   i = 0; i < 1; i = i + 1)
 	begin : foo
 	   Test tt (clk, value, result);
 	end

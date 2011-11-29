@@ -102,18 +102,31 @@ private:
 	    }
 
 	    // Remap var names and replace lower Begins
-	    nodep->iterateChildren(*this);
+	    nodep->stmtsp()->iterateAndNext(*this);
 
-	    if (AstNode* stmtsp = nodep->stmtsp()) {
-		stmtsp->unlinkFrBackWithNext();
-		nodep->replaceWith(stmtsp);
-	    } else {
-		nodep->unlinkFrBack();
-	    }
-	    pushDeletep(nodep); nodep=NULL;
 	}
 	m_namedScope = oldScope;
 	m_unnamedScope = oldUnnamed;
+
+	// Don't change var names of generate FOR() variables, but do recurse into a child FOR
+	nodep->flatsp()->iterateAndNext(*this);
+
+	// Cleanup
+	AstNode* addsp = NULL;
+	if (AstNode* stmtsp = nodep->stmtsp()) {
+	    stmtsp->unlinkFrBackWithNext();
+	    addsp = addsp->addNextNull(stmtsp);
+	}
+	if (AstNode* stmtsp = nodep->flatsp()) {
+	    stmtsp->unlinkFrBackWithNext();
+	    addsp = addsp->addNextNull(stmtsp);
+	}
+	if (addsp) {
+	    nodep->replaceWith(addsp);
+	} else {
+	    nodep->unlinkFrBack();
+	}
+	pushDeletep(nodep); nodep=NULL;
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (m_unnamedScope != "") {

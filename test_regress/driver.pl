@@ -302,7 +302,7 @@ sub new {
 	all_run_flags => [],
         # ATSIM
 	atsim => 0,
-	atsim_flags => [split(/\s+/,"-c +sv +define+atsim"),
+	atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
 			"+sv_dir+$self->{obj_dir}/.athdl_compile"],
 	atsim_flags2 => [],  # Overridden in some sim files
 	atsimrun_flags => [],

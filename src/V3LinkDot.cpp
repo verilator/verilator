@@ -479,13 +479,14 @@ private:
 	LinkDotBaseVertex* oldVxp = m_inlineVxp;
 	{
 	    m_beginp = nodep;
-	    // Ignore begin names
+	    // We don't pickup variables (as not supported yet), but do need to find cells
 	    m_inlineVxp = m_statep->insertBegin(m_inlineVxp, m_cellVxp, nodep);
-	    // We don't pickup variables, but do need to find cells
-	    nodep->iterateChildren(*this);
+	    nodep->stmtsp()->iterateAndNext(*this);
 	}
 	m_inlineVxp = oldVxp;
 	m_beginp = oldbegin;
+	//
+	nodep->flatsp()->iterateAndNext(*this);
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (!m_statep->forScopeCreation()

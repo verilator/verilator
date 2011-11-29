@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Suppress VARHIDDEN on dpi import arguments.  [Ruben Diez]
 
+****  Support "generate for (genvar i=0; ...".  [David Kravitz]
+
 ****  Fix dpi exports with > 32 bit but < 64 bit args, bug423. [Chandan Egbert]
 
 ****  Fix array of instantiations with sub-range output, bug414. [Jeremy Bennett]

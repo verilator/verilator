@@ -479,7 +479,7 @@ private:
 	}
 	// Recurse
 	int oldNum = m_beginNum;
-	m_beginNum = 0;
+	if (!nodep->hidden()) m_beginNum = 0;
 	{
 	    // Create symbol table for the task's vars
 	    m_curVarsp = symsFindNew(nodep, upperVarsp);

@@ -660,6 +660,7 @@ void AstNodeFTask::dump(ostream& str) {
 void AstBegin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (unnamed()) str<<" [UNNAMED]";
+    if (hidden()) str<<" [HIDDEN]";
 }
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);

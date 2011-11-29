@@ -385,8 +385,9 @@ private:
 	// anything lower will be renamed "uppernewname.lowerbegin"
 	bool lastBegin = m_inBegin;
 	m_inBegin = true;
-	nodep->iterateChildren(*this);
+	nodep->stmtsp()->iterateAndNext(*this);
 	m_inBegin = lastBegin;
+	nodep->flatsp()->iterateAndNext(*this);
 
 	if (m_varModeReplace && !m_inBegin // no upper begin, excluding this one
 	    ) {

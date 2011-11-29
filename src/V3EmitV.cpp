@@ -82,7 +82,11 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
     virtual void visit(AstBegin* nodep, AstNUser*) {
-	putbs("begin\n");
+	if (nodep->unnamed()) {
+	    putbs("begin\n");
+	} else {
+	    putbs("begin : "+nodep->name()+"\n");
+	}
 	nodep->iterateChildren(*this);
 	puts("end\n");
     }

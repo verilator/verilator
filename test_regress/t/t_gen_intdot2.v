@@ -113,7 +113,7 @@ module Genit (
    // IF
    generate
       for (i = 0; i < 2; i = i + 1)
-	One cellfor20 ();	// genblk5[0..1].cellfor20
+	One cellfor20 ();	// genblk4[0..1].cellfor20
    endgenerate
 `ifdef verilator
    always @ (posedge clk) if (genblk4[0].cellfor20.one !== 1'b1) $stop;

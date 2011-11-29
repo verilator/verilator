@@ -942,7 +942,7 @@ list_of_genvar_identifiers<nodep>:	// IEEE: list_of_genvar_identifiers (for decl
 	|	list_of_genvar_identifiers ',' genvar_identifierDecl	{ $$ = $1->addNext($3); }
 	;
 
-genvar_identifierDecl<nodep>:		// IEEE: genvar_identifier (for declaration)
+genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 		id/*new-genvar_identifier*/ sigAttrListE
 			{ VARRESET_NONLIST(GENVAR); VARDTYPE(new AstBasicDType($<fl>1,AstBasicDTypeKwd::INTEGER));
 			  $$ = VARDONEA($<fl>1, *$1, NULL, $2); }
@@ -1474,12 +1474,22 @@ conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
 
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' generate_block_or_null
-			{ $$ = new AstGenFor($1,$3,$5,$7,$9); }
+			{ AstBegin* blkp = new AstBegin($1,"",NULL);  blkp->hidden(true);
+			  AstNode* initp = $3;  AstNode* varp = $3;
+			  if (varp->castVar()) {  // Genvar
+				initp = varp->nextp();
+				initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
+				blkp->addStmtsp(varp);
+			  }
+			  // Statements are under 'flatsp' so that cells under this
+			  // for loop won't get an extra layer of hierarchy tacked on
+			  blkp->addFlatsp(new AstGenFor($1,initp,$5,$7,$9));
+			  $$ = blkp; }
 	;
 
 genvar_initialization<nodep>:	// ==IEEE: genvar_initalization
 		varRefBase '=' expr			{ $$ = new AstAssign($2,$1,$3); }
-	//UNSUP	yGENVAR genvar_identifierDecl '=' constExpr	{ UNSUP }
+	|	yGENVAR genvar_identifierDecl '=' constExpr	{ $$ = $2; $2->addNext(new AstAssign($3,new AstVarRef($3,$2,true), $4)); }
 	;
 
 genvar_iteration<nodep>:	// ==IEEE: genvar_iteration
@@ -1814,7 +1824,7 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
 	//			// So need begin's even if unnamed to scope variables down
-		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtp($2); SYMP->popScope($1); }
+		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtsp($2); SYMP->popScope($1); }
 	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); }
 	;
 
