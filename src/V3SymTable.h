@@ -32,6 +32,7 @@
 #include <iomanip>
 
 #include "V3Global.h"
+#include "V3Ast.h"
 
 //######################################################################
 // Symbol table

@@ -26,6 +26,7 @@
 #include "verilatedos.h"
 #include "V3Error.h"
 #include "V3List.h"
+#include "V3Ast.h"
 #include <vector>
 #include <algorithm>
 

@@ -29,7 +29,8 @@
 
 #include "V3Error.h"
 #include "V3Options.h"
-#include "V3Ast.h"
+
+class AstNetlist;
 
 //======================================================================
 // Statics
@@ -54,23 +55,22 @@ public:
   public:
     // CREATORS
     V3Global() {
-	m_rootp = new AstNetlist;
 	m_debugFileNumber = 0;
 	m_assertWidthsSame = false;
 	m_needHInlines = false;
 	m_needHeavy = false;
 	m_dpi = false;
+	m_rootp = makeNetlist();
     }
-    void clear() {
-	if (m_rootp) m_rootp->deleteTree(); m_rootp=NULL;
-    }
+    AstNetlist* makeNetlist();
+    void clear();
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
     bool assertWidthsSame() const { return m_assertWidthsSame; }
 
     // METHODS
     void readFiles();
-    void checkTree() { rootp()->checkTree(); }
+    void checkTree();
     void assertWidthsSame(bool flag) { m_assertWidthsSame = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {
 	++m_debugFileNumber;

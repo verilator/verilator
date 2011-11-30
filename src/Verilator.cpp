@@ -94,6 +94,13 @@ V3Global v3Global;
 //######################################################################
 // V3 Class -- top level
 
+AstNetlist* V3Global::makeNetlist() { return new AstNetlist(); }
+void V3Global::checkTree() { rootp()->checkTree(); }
+
+void V3Global::clear() {
+    if (m_rootp) m_rootp->deleteTree(); m_rootp=NULL;
+}
+
 void V3Global::readFiles() {
     // NODE STATE
     //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names

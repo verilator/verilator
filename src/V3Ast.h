@@ -26,6 +26,7 @@
 #include "verilatedos.h"
 #include "V3Error.h"
 #include "V3Number.h"
+#include "V3Global.h"
 #include <vector>
 #include <cmath>
 
