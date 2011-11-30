@@ -202,7 +202,10 @@ ostream& operator<<(ostream& os, FileLine* fileline) {
 
 bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code (msg.c_str());
-    if (code < V3ErrorCode::EC_MIN) {
+    if (code < V3ErrorCode::EC_FIRST_WARN) {
+	return false;
+    } else if (v3Global.opt.lintOnly()   // Lint mode is allowed to suppress some errors
+	       && code < V3ErrorCode::EC_MIN) {
 	return false;
     } else {
 	warnOff(code, flag);
