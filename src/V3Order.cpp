@@ -1444,7 +1444,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    processMoveLoopPop(endp->beginVertexp());
 	}
 	else {
-	    nodep->v3fatalSrc("AstUntilStable node isn't under a OrderLoop{End}Vertex.\n");
+	    nodep->v3fatalSrc("AstUntilStable node isn't under an OrderLoop{End}Vertex.\n");
 	}
 #else
 	nodep->v3fatalSrc("Not implemented");

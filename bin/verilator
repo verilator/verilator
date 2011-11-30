@@ -538,7 +538,7 @@ After this number of errors or warnings are encountered, exit.  Defaults to
 
 =item --exe
 
-Generate a executable.  You will also need to pass additional .cpp files on
+Generate an executable.  You will also need to pass additional .cpp files on
 the command line that implement the main loop for your simulation.
 
 =item -F I<file>
@@ -584,7 +584,7 @@ See -y.
 =item --inhibit-sim
 
 Rarely needed.  Create a "inhibitSim(bool)" function to enable and disable
-evaluation.  This allows a upper level testbench to disable modules that
+evaluation.  This allows an upper level testbench to disable modules that
 are not important in a given simulation, without needing to recompile or
 change the SystemC modules instantiated.
 
@@ -885,7 +885,7 @@ disabled by default.
 
 =item -Werror-I<message>
 
-Convert the specified warning message into a error message.  This is
+Convert the specified warning message into an error message.  This is
 generally to discourage users from violating important site-wide rules, for
 example C<-Werror-NOUNOPTFLAT>.
 
@@ -1797,7 +1797,7 @@ other optimizations.
 If you will be reading or writing any Verilog variables inside the C++
 functions, the Verilog signals must be declared with /*verilator public*/.
 
-You may also append a arbitrary number to $c, generally the width of the
+You may also append an arbitrary number to $c, generally the width of the
 output.  [signal_32_bits = $c32("...");] This allows for compatibility with
 other simulators which require a differently named PLI function name for
 each different output width.
@@ -1853,7 +1853,7 @@ Despite the name of this macro, this also works in pure C++ code.
 
 If you will be reading or writing any Verilog variables in the C++
 functions, the Verilog signals must be declared with /*verilator public*/.
-See also the public task feature; writing a accessor may result in cleaner
+See also the public task feature; writing an accessor may result in cleaner
 code.
 
 =item `VERILATOR
@@ -1984,7 +1984,7 @@ be pure; they cannot reference any variables outside the task itself.
 
 =item /*verilator public*/ (variable)
 
-Used after a input, output, register, or wire declaration to indicate the
+Used after an input, output, register, or wire declaration to indicate the
 signal should be declared so that C code may read or write the value of the
 signal.  This will also declare this module public, otherwise use
 /*verilator public_flat*/.
@@ -2006,7 +2006,7 @@ stack.
 
 Wide variables over 64 bits cannot be function returns, to avoid exposing
 complexities.  However, wide variables can be input/outputs; they will be
-passed as references to an array of 32 bit numbers.
+passed as references to an array of 32-bit numbers.
 
 Generally, only the values of stored state (flops) should be written, as
 the model will NOT notice changes made to variables in these functions.
@@ -2017,7 +2017,7 @@ simulators.
 
 =item /*verilator public_flat*/ (variable)
 
-Used after a input, output, register, or wire declaration to indicate the
+Used after an input, output, register, or wire declaration to indicate the
 signal should be declared so that C code may read or write the value of the
 signal.  This will not declare this module public, which means the name of
 the signal or path to it may change based upon the module inlining which
@@ -2025,12 +2025,12 @@ takes place.
 
 =item /*verilator public_flat_rd*/ (variable)
 
-Used after a input, output, register, or wire declaration to indicate the
+Used after an input, output, register, or wire declaration to indicate the
 signal should be declared public_flat (see above), but read-only.
 
 =item /*verilator public_flat_rw @(<edge_list>) */ (variable)
 
-Used after a input, output, register, or wire declaration to indicate the
+Used after an input, output, register, or wire declaration to indicate the
 signal should be declared public_flat_rd (see above), and also writable,
 where writes should be considered to have the timing specified by the given
 sensitivity edge list.
@@ -2045,7 +2045,7 @@ using the --public switch.
 
 =item /*verilator sc_clock*/
 
-Rarely needed.  Used after a input declaration to indicate the signal
+Rarely needed.  Used after an input declaration to indicate the signal
 should be declared in SystemC as a sc_clock instead of a bool.  This was
 needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
 clock pins to be sc_clocks and this is no longer needed.
@@ -2181,7 +2181,7 @@ Pullup, pulldown, bufif0, bufif1, notif0, notif1 are also supported.
 External logic will be needed to combine these signals with any external
 drivers.
 
-Tristate drivers are not supported inside functions and tasks; a inout
+Tristate drivers are not supported inside functions and tasks; an inout
 there will be considered a two state variable that is read and written
 instead of a four state variable.
 
@@ -2712,7 +2712,7 @@ Verilator to avoid the conflict.
 
 Warns that the specified net is used in at least two different always
 statements with posedge/negedges (i.e. a flop).  One usage has the signal
-in the sensitivity list and body, probably as a async reset, and the other
+in the sensitivity list and body, probably as an async reset, and the other
 usage has the signal only in the body, probably as a sync reset.  Mixing
 sync and async resets is usually a mistake.  The warning may be disabled
 with a lint_off pragma around the net, or either flopped block.
@@ -2891,7 +2891,7 @@ correctly.
 =item WIDTHCONCAT
 
 Warns that based on width rules of Verilog, a concatenate or replication
-has a indeterminate width.  In most cases this violates the Verilog rule
+has an indeterminate width.  In most cases this violates the Verilog rule
 that widths inside concatenates and replicates must be sized, and should be
 fixed in the code.
 
@@ -3014,7 +3014,7 @@ Verilator creates internally all of the state of the resulting simulator in
 order to optimize it.  If it takes more than a minute or so (and you're not
 using --debug since debug is disk bound), see if your machine is paging;
 most likely you need to run it on a machine with more memory.  Verilator is
-a full 64 bit application and may use more than 4GB, but about 1GB is the
+a full 64-bit application and may use more than 4GB, but about 1GB is the
 maximum typically needed.
 
 =item How do I generate waveforms (traces) in C++?
@@ -3136,7 +3136,7 @@ with '%' to see what lines Verilator believes need more coverage.
 Translate on/off pragmas are generally a bad idea, as it's easy to have
 mismatched pairs, and you can't see what another tool sees by just
 preprocessing the code.  Instead, use the preprocessor; Verilator defines
-the "VERILATOR" define for you, so just wrap the code in a ifndef region:
+the "VERILATOR" define for you, so just wrap the code in an ifndef region:
 
    `ifndef VERILATOR
       Something_Verilator_Dislikes;
@@ -3234,14 +3234,14 @@ be accessing with a /*verilator public*/ comment before the closing
 semicolon.  Then scope into the C++ class to read the value of the signal,
 as you would any other member variable.
 
-Signals are the smallest of 8 bit chars, 16 bit shorts, 32 bit longs, or 64
-bit long longs that fits the width of the signal.  Generally, you can use
-just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and the
-compiler will properly up-convert smaller entities.
+Signals are the smallest of 8-bit chars, 16-bit shorts, 32-bit longs, or
+64-bit long longs that fits the width of the signal.  Generally, you can
+use just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and
+the compiler will properly up-convert smaller entities.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.
 Thus to read bits 31:0, access signal[0], and for bits 63:32, access
-signal[1].  Unused bits (for example bit numbers 65-96 of a 65 bit vector)
+signal[1].  Unused bits (for example bit numbers 65-96 of a 65-bit vector)
 will always be zero.  if you change the value you must make sure to pack
 zeros in the unused bits or core-dumps may result.  (Because Verilator
 strips array bound checks where it believes them to be unnecessary.)

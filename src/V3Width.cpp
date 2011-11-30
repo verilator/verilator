@@ -816,7 +816,7 @@ private:
 	    for (; enump; enump=enump->backp()) {
 		if (enump->castEnumDType()) break;
 	    }
-	    if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to a Enum");
+	    if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to an Enum");
 	    enump->iterate(*this,vup);
 	}
 	nodep->widthSignedFrom(nodep->itemp());
@@ -1516,7 +1516,7 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 	    widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
 	    if (nodep->rhsp()->width()>32)
-		nodep->rhsp()->v3error("Unsupported: Shifting of by a over 32 bit number isn't supported."
+		nodep->rhsp()->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
 				       <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
 	}
 	return nodep;  // May edit
