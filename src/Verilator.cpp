@@ -180,7 +180,7 @@ void process () {
 
     // Commit to the widths we've chosen; Make widthMin==width
     V3Width::widthCommit(v3Global.rootp());
-    v3Global.assertWidthsSame(true);
+    v3Global.assertDTypesResolved(true);
     //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("widthcommit.tree"));
 
     // Coverage insertion
@@ -485,7 +485,7 @@ void process () {
 
     // Here down, widthMin() is the Verilog width, and width() is the C++ width
     // Bits between widthMin() and width() are irrelevant, but may be non zero.
-    v3Global.assertWidthsSame(false);
+    v3Global.assertDTypesResolved(false);
 
     // Make all operations a multiple of 32 bits
     V3Clean::cleanAll(v3Global.rootp());

@@ -204,14 +204,14 @@ private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	BrokenTable::setUnder(nodep,true);
 	if (nodep->broken()) {
-	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)\n");
+	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)");
 	}
-	if (v3Global.assertWidthsSame()) {
+	if (v3Global.assertDTypesResolved()) {
 	    if (nodep->width() != nodep->widthMin()) {
-		nodep->v3fatalSrc("Width != WidthMin\n");
+		nodep->v3fatalSrc("Width != WidthMin");
 	    }
 	    if (!nodep->width() && nodep->castNodeMath()) {
-		nodep->v3fatalSrc("Math node has no assigned width\n");
+		nodep->v3fatalSrc("Math node has no assigned width");
 	    }
 	}
 	nodep->iterateChildren(*this);

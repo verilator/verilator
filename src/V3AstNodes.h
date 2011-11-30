@@ -155,10 +155,10 @@ struct AstTypedef : public AstNode {
 private:
     string	m_name;
 public:
-    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtypep)
+    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtp)
 	: AstNode(fl), m_name(name) {
-	setOp1p(dtypep);
-	widthSignedFrom(dtypep);
+	setOp1p(dtp);
+	widthSignedFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(Typedef, TYPEDEF)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
@@ -189,10 +189,10 @@ private:
     string	m_name;
     void*	m_containerp;	// In what scope is the name unique, so we can know what are duplicate definitions (arbitrary value)
 public:
-    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp, AstNodeDType* dtypep)
+    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp, AstNodeDType* dtp)
 	: AstNodeDType(fl), m_name(name), m_containerp(containerp) {
-	setOp1p(dtypep);
-	widthSignedFrom(dtypep);
+	setOp1p(dtp);
+	widthSignedFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(DefImplicitDType, DEFIMPLICITDTYPE)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
@@ -213,11 +213,11 @@ struct AstArrayDType : public AstNodeDType {
 private:
     bool m_packed;
 public:
-    AstArrayDType(FileLine* fl, AstNodeDType* dtypep, AstRange* rangep, bool isPacked=false)
+    AstArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
 	: AstNodeDType(fl), m_packed(isPacked) {
-	setOp1p(dtypep);
+	setOp1p(dtp);
 	setOp2p(rangep);
-	widthSignedFrom(dtypep);
+	widthSignedFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
     virtual void dump(ostream& str);
@@ -312,10 +312,10 @@ struct AstConstDType : public AstNodeDType {
     // const data type, ie "const some_dtype var_name [2:0]"
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
-    AstConstDType(FileLine* fl, AstNodeDType* dtypep)
+    AstConstDType(FileLine* fl, AstNodeDType* dtp)
 	: AstNodeDType(fl) {
-	setOp1p(dtypep);
-	widthSignedFrom(dtypep);
+	setOp1p(dtp);
+	widthSignedFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(ConstDType, CONSTDTYPE)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
@@ -416,9 +416,9 @@ public:
 struct AstEnumDType : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // Children: ENUMVALUEs
-    AstEnumDType(FileLine* fl, AstNodeDType* dtypep, AstNode* itemsp)
+    AstEnumDType(FileLine* fl, AstNodeDType* dtp, AstNode* itemsp)
 	: AstNodeDType(fl)
-	{ setOp1p(dtypep); addNOp2p(itemsp); }
+	{ setOp1p(dtp); addNOp2p(itemsp); }
     ASTNODE_NODE_FUNCS(EnumDType, ENUMDTYPE)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Data type
     void dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -502,7 +502,7 @@ struct AstSelBit : public AstNodePreSel {
     // Gets replaced during link with AstArraySel or AstSel
     AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodePreSel(fl, fromp, bitp, NULL) {
-	width(1,1);
+	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to fixup dtype"); }
     }
     ASTNODE_NODE_FUNCS(SelBit, SELBIT)
     AstNode*	bitp() const { return rhsp(); }
@@ -607,14 +607,14 @@ private:
 	m_trace=false;
     }
 public:
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtypep)
+    AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
-	combineType(type); setOp1p(dtypep);
-	if (dtypep && dtypep->basicp()) {
-	    numericFrom(dtypep);
-	    width(dtypep->basicp()->width(), 0);
+	combineType(type); setOp1p(dtp);
+	if (dtp && dtp->basicp()) {
+	    numericFrom(dtp);
+	    width(dtp->basicp()->width(), 0);
 	} else width(1, 0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstLogicPacked, int wantwidth)
@@ -657,7 +657,7 @@ public:
     AstNodeDType* dtypeDimensionp(int depth) const;
     pair<uint32_t,uint32_t> dimensions() const;
     AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
-    void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than a AstConst
+    void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
@@ -1155,7 +1155,7 @@ public:
 };
 
 struct AstDot : public AstNode {
-    // A dot separating paths in a AstXRef, AstFuncRef or AstTaskRef
+    // A dot separating paths in an AstXRef, AstFuncRef or AstTaskRef
     // These are elimiated in the link stage
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
@@ -1203,7 +1203,7 @@ struct AstFuncRef : public AstNodeFTaskRef {
 };
 
 struct AstDpiExport : public AstNode {
-    // We could put a AstNodeFTaskRef instead of the verilog function name,
+    // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.
     // (Probably AstNodeFTaskRef should be renamed AstNodeFTaskCall and have-a AstNodeFTaskRef)
 private:
@@ -1645,7 +1645,7 @@ public:
 };
 
 struct AstSFormatF : public AstNode {
-    // Convert format to string, generally under a AstDisplay or AstSFormat
+    // Convert format to string, generally under an AstDisplay or AstSFormat
     // Also used as "real" function for /*verilator sformat*/ functions
     string	m_text;
     bool	m_hidden;	// Under display, etc
@@ -2522,7 +2522,7 @@ struct AstTimeD : public AstNodeTermop {
 
 struct AstUCFunc : public AstNodeMath {
     // User's $c function
-    // Perhaps this should be a AstNodeListop; but there's only one list math right now
+    // Perhaps this should be an AstNodeListop; but there's only one list math right now
     AstUCFunc(FileLine* fl, AstNode* exprsp)
 	: AstNodeMath(fl) {
 	addNOp1p(exprsp);
@@ -2801,9 +2801,9 @@ struct AstOneHot0 : public AstNodeUniop {
 
 struct AstCast : public AstNode {
     // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
-    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtypep) : AstNode(fl) {
-	setOp1p(lhsp); setOp2p(dtypep);
-	if (dtypep) { widthSignedFrom(dtypep); }
+    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp) : AstNode(fl) {
+	setOp1p(lhsp); setOp2p(dtp);
+	if (dtp) { widthSignedFrom(dtp); }
     }
     ASTNODE_NODE_FUNCS(Cast, CAST)
     virtual string emitVerilog() { return "((%r)'(%l))"; }
