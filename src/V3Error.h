@@ -49,6 +49,7 @@ public:
 	I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
 	// Error codes:
 	E_BLKLOOPINIT,	// Error: Delayed assignment to array inside for loops
+	E_DETECTARRAY,	// Error: Unsupported: Can't detect changes on arrayed variable
 	E_MULTITOP,	// Error: Multiple top level modules
 	E_TASKNSVAR,	// Error: Task I/O not simple
 	//
@@ -106,7 +107,7 @@ public:
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
 	    // Errors
-	    "BLKLOOPINIT", "MULTITOP", "TASKNSVAR",
+	    "BLKLOOPINIT", "DETECTARRAY", "MULTITOP", "TASKNSVAR",
 	    // Warnings
 	    " EC_FIRST_WARN",
 	    "ASSIGNDLY", "ASSIGNIN",

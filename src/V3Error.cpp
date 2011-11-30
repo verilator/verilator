@@ -55,7 +55,7 @@ v3errorIniter v3errorInit;
 
 V3ErrorCode::V3ErrorCode(const char* msgp) {
     // Return error encoding for given string, or ERROR, which is a bad code
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (0==strcasecmp(msgp,code.ascii())) {
 	    m_e = code; return;
@@ -202,7 +202,7 @@ ostream& operator<<(ostream& os, FileLine* fileline) {
 
 bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code (msg.c_str());
-    if (code < V3ErrorCode::EC_FIRST_WARN) {
+    if (code < V3ErrorCode::EC_MIN) {
 	return false;
     } else {
 	warnOff(code, flag);
@@ -211,14 +211,14 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 }
 
 void FileLine::warnLintOff(bool flag) {
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (code.lintError()) warnOff(code, flag);
     }
 }
 
 void FileLine::warnStyleOff(bool flag) {
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (code.styleError()) warnOff(code, flag);
     }
@@ -234,7 +234,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 
 void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
-    for (int codei=V3ErrorCode::EC_FIRST_WARN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
+    for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (fromp->warnIsOff(code)) {
 	    this->warnOff(code, true);
@@ -396,7 +396,7 @@ string V3Error::v3sform (const char* format, ...) {
 }
 
 void V3Error::suppressThisWarning() {
-    if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN) {
+    if (s_errorCode>=V3ErrorCode::EC_MIN) {
 	V3Stats::addStatSum(string("Warnings, Suppressed ")+s_errorCode.ascii(), 1);
 	s_errorSuppressed = true;
     }

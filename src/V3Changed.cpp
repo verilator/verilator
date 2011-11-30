@@ -73,7 +73,7 @@ private:
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
 	if (!varp->dtypeSkipRefp()->castBasicDType()) {
-	    vscp->v3error("Unsupported: Can't detect changes on arrayed variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
+	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on arrayed variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
 	} else {
 	    string newvarname = "__Vchglast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName();
 	    // Create:  VARREF(_last)
