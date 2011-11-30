@@ -356,8 +356,7 @@ private:
 	    checkCvtUS(nodep->lsbp());
 	    int width = nodep->elementsConst();
 	    if (width > (1<<28)) nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"<<hex<<width);
-	    nodep->numeric(AstNumeric::UNSIGNED);
-	    nodep->width(width,width);
+	    // Note width() not set on range; use elementsConst()
 	    if (nodep->littleEndian()) {
 		nodep->v3warn(LITENDIAN,"Little bit endian vector: MSB < LSB of bit range: "<<nodep->lsbConst()<<":"<<nodep->msbConst());
 	    }
@@ -620,7 +619,7 @@ private:
     virtual void visit(AstBasicDType* nodep, AstNUser* vup) {
 	if (nodep->rangep()) {
 	    nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	    nodep->widthFrom(nodep->rangep());
+	    nodep->width(nodep->rangep()->elementsConst(), nodep->rangep()->elementsConst());
 	}
 	// else width in node is correct; it was set based on keyword().width()
 	// at construction time.  Ditto signed, so "unsigned byte" etc works right.
@@ -1102,7 +1101,7 @@ private:
 	    bool inputPin = nodep->modVarp()->isInput();
 	    int awidth;
 	    if (m_cellRangep) {
-		int numInsts = m_cellRangep->width();
+		int numInsts = m_cellRangep->elementsConst();
 		if (expwidth == pinwidth) {
 		    awidth = pinwidth;	// Arrayed instants: widths match so connect to each instance
 		} else if (expwidth == pinwidth*numInsts) {

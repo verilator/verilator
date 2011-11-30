@@ -130,7 +130,6 @@ public:
 	:AstNode(fl) {
 	m_littleEndian = false;
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
-	width(msb-lsb+1,msb-lsb+1);
     }
     ASTNODE_NODE_FUNCS(Range, RANGE)
     AstNode* msbp() const { return op2p()->castNode(); }	// op2 = Msb expression
@@ -271,7 +270,7 @@ private:
 	    if (keyword().width() > 1 && !isOpaque()) rangep = new AstRange(fileline(), keyword().width()-1, 0);
 	    width(keyword().width(), keyword().width());
 	} else {
-	    widthFrom(rangep);  // Maybe unknown if parameters underneath it
+	    width(rangep->elementsConst(), rangep->elementsConst());  // Maybe unknown if parameters underneath it
 	}
 	setNOp1p(rangep);
     }

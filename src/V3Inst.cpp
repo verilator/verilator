@@ -199,7 +199,7 @@ private:
 	    int expwidth = nodep->exprp()->width();
 	    if (expwidth == pinwidth) {
 		// NOP: Arrayed instants: widths match so connect to each instance
-	    } else if (expwidth == pinwidth*m_cellRangep->width()) {
+	    } else if (expwidth == pinwidth*m_cellRangep->elementsConst()) {
 		// Arrayed instants: one bit for each of the instants (each assign is 1 pinwidth wide)
 		AstNode* exprp = nodep->exprp()->unlinkFrBack();
 		bool inputPin = nodep->modVarp()->isInput();
