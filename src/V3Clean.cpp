@@ -24,7 +24,7 @@
 //	For each math operator, if it requires a clean operand,
 //	and the operand is dirty, insert a CLEAN node.
 //	Resize operands to C++ 32/64/wide types.
-//	Copy all width() values to minWidth() so RANGE, etc can still see orig widths
+//	Copy all width() values to widthMin() so RANGE, etc can still see orig widths
 //
 //*************************************************************************
 
@@ -47,7 +47,7 @@ private:
     // NODE STATE
     // Entire netlist:
     //  AstNode::user()		-> CleanState.  For this node, 0==UNKNOWN
-    //  AstNode::user2()	-> bool.  True indicates minWidth has been propagated
+    //  AstNode::user2()	-> bool.  True indicates widthMin has been propagated
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
 

@@ -394,7 +394,7 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	} else if (nodep->varrefp()) {
 	    // V3LinkResolve should have cleaned most of these up
-	    if (nodep->varrefp()->width()>1) nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
+	    if (!nodep->varrefp()->width1()) nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "
 							    <<nodep->varrefp()->prettyName());
 	    m_itemSequent = true;
 	    nodep->varrefp()->varp()->usedClock(true);

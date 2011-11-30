@@ -932,15 +932,17 @@ public:
     bool	isAllOnes();
     bool	isAllOnesV();  // Verilog width rules apply
 
-    // METHODS
+    // METHODS - dump and error
+    void	v3errorEnd(ostringstream& str) const;
+    virtual void dump(ostream& str=cout);
+
+    // METHODS - Tree modifications
     AstNode*	addNext(AstNode* newp);		// Returns this, adds to end of list
     AstNode*	addNextNull(AstNode* newp);	// Returns this, adds to end of list, NULL is OK
     void	addNextHere(AstNode* newp);	// Adds after speced node
     void	addPrev(AstNode* newp) { replaceWith(newp); newp->addNext(this); }
     void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
-    void	v3errorEnd(ostringstream& str) const;
-    virtual void dump(ostream& str=cout);
     AstNode*	unlinkFrBack(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it.
     AstNode*	unlinkFrBackWithNext(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it, keep entire next list with unlinked node
     void	swapWith(AstNode* bp);
@@ -1493,7 +1495,7 @@ public:
 inline bool AstNode::isZero()     { return (this->castConst() && this->castConst()->num().isEqZero()); }
 inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst()->num().isNeqZero()); }
 inline bool AstNode::isOne()      { return (this->castConst() && this->castConst()->num().isEqOne()); }
-inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->num().isEqAllOnes(this->width())); }
-inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->num().isEqAllOnes(this->widthMin())); }
+inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->isEqAllOnes()); }
+inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
 
 #endif // Guard

@@ -150,7 +150,7 @@ public:
     string displayed(const string& format) const;
     static bool displayedFmtLegal(char format);  // Is this a valid format letter?
     int width() const { return m_width; }
-    int minWidth() const;	// Minimum width that can represent this number (~== log2(num)+1)
+    int widthMin() const;	// Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
     bool autoExtend() const { return m_autoExtend; }
     bool isFromString() const { return m_fromString; }

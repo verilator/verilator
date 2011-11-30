@@ -552,7 +552,7 @@ public:
 	    nodep->v3error("Unsupported: 4-state numbers in this context");
 	} else if (nodep->isWide()) {
 	    putbs("VL_CONST_W_");
-	    puts(cvtToStr(VL_WORDS_I(nodep->num().minWidth())));
+	    puts(cvtToStr(VL_WORDS_I(nodep->num().widthMin())));
 	    puts("X(");
 	    puts(cvtToStr(nodep->widthMin()));
 	    puts(",");
@@ -564,7 +564,7 @@ public:
 	    } else {
 		assigntop->iterateAndNext(*this);
 	    }
-	    for (int word=VL_WORDS_I(nodep->num().minWidth())-1; word>0; word--) {
+	    for (int word=VL_WORDS_I(nodep->num().widthMin())-1; word>0; word--) {
 		// Only 32 bits - llx + long long here just to appease CPP format warning
 		ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word)));
 	    }

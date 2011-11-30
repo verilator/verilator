@@ -85,12 +85,12 @@ enum Stage { PRELIM=1,FINAL=2,BOTH=3 };
 class WidthVP : public AstNUser {
     // Parameters to pass down hierarchy with visit functions.
     int	m_width;	// Expression width, for (2+2), it's 32 bits
-    int	m_minWidth;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
+    int	m_widthMin;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
     Stage	m_stage;	// If true, report errors
 public:
-    WidthVP(int width, int minWidth, Stage stage) : m_width(width), m_minWidth(minWidth), m_stage(stage) {}
+    WidthVP(int width, int widthMin, Stage stage) : m_width(width), m_widthMin(widthMin), m_stage(stage) {}
     int width() const { return m_width; }
-    int widthMin() const { return m_minWidth?m_minWidth:m_width; }
+    int widthMin() const { return m_widthMin?m_widthMin:m_width; }
     bool prelim() const { return m_stage&1; }
     bool final() const { return m_stage&2; }
 };
@@ -526,7 +526,7 @@ private:
 	    if (nodep->num().sized()) {
 		nodep->width(nodep->num().width(), nodep->num().width());
 	    } else {
-		nodep->width(nodep->num().width(), nodep->num().minWidth());
+		nodep->width(nodep->num().width(), nodep->num().widthMin());
 	    }
 	}
 	// We don't size the constant until we commit the widths, as need parameters
@@ -1474,7 +1474,7 @@ private:
 	    checkCvtUS(nodep->lhsp());
 	}
 	int width  = nodep->lhsp()->width();
-	int ewidth = nodep->lhsp()->width();  // Not minWidth; force it.
+	int ewidth = nodep->lhsp()->width();  // Not widthMin; force it.
 	nodep->width(width,ewidth);
 	nodep->numeric(rs_out);
 	if (vup->c()->final()) {

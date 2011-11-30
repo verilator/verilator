@@ -626,7 +626,7 @@ bool V3Number::isLt(const V3Number& rhs) const {
     return 0;
 }
 
-int V3Number::minWidth() const {
+int V3Number::widthMin() const {
     for(int bit=width()-1; bit>0; bit--) {
 	if (!bitIs0(bit)) return bit+1;
     }

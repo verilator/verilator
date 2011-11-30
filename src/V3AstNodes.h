@@ -49,18 +49,18 @@ public:
     AstConst(FileLine* fl, const V3Number& num)
 	:AstNodeMath(fl)
 	 ,m_num(num) {
-	width(m_num.width(), m_num.sized()?0:m_num.minWidth());
+	width(m_num.width(), m_num.sized()?0:m_num.widthMin());
 	numeric(m_num.isDouble() ? AstNumeric::DOUBLE
 		   : m_num.isSigned() ? AstNumeric::SIGNED
 		   : AstNumeric::UNSIGNED);
     }
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.minWidth()); }
+	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.widthMin()); }
     class Unsized32 {};		// for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,m_num.minWidth()); }
+	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,m_num.widthMin()); }
     class RealDouble {};		// for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
 	:AstNodeMath(fl)
@@ -87,6 +87,8 @@ public:
     virtual bool same(AstNode* samep) const {
 	return num().isCaseEq(samep->castConst()->num()); }
     virtual int instrCount() const { return widthInstrs(); }
+    bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
+    bool isEqAllOnesV() const { return num().isEqAllOnes(widthMin()); }
 };
 
 struct AstConstString : public AstNodeMath {
@@ -2595,8 +2597,8 @@ struct AstRedXor : public AstNodeUniop {
     virtual string emitVerilog() { return "%f(^ %l)"; }
     virtual string emitC() { return "VL_REDXOR_%lq(%lW, %P, %li)"; }
     virtual bool cleanOut() {return false;}
-    virtual bool cleanLhs() {return (lhsp()->width()!=1 && lhsp()->width()!=2 && lhsp()->width()!=4
-				     && lhsp()->width()!=8 && lhsp()->width()!=16);}
+    virtual bool cleanLhs() {int w = lhsp()->width();
+	return (w!=1 && w!=2 && w!=4 && w!=8 && w!=16); }
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
 };
