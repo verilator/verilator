@@ -64,7 +64,7 @@ public:
     class RealDouble {};		// for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,64)) { m_num.setDouble(num); numeric(AstNumeric::DOUBLE); }
+	,m_num(V3Number(fl,64)) { m_num.setDouble(num); dtypeChgDouble(); }
     class LogicFalse {};
     AstConst(FileLine* fl, LogicFalse) // Shorthand const 0, know the dtype should be a logic of size 1
 	:AstNodeMath(fl)
@@ -265,7 +265,7 @@ private:
 	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
 	if (signst == signedst_NOP && keyword().isSigned()) signst = signedst_SIGNED;
-	if (keyword().isDouble()) numeric(AstNumeric::DOUBLE);
+	if (keyword().isDouble()) dtypeChgDouble();
 	else setSignedState(signst);
 	if (!rangep) {  // Set based on keyword properties
 	    // V3Width will pull from this width
@@ -503,7 +503,7 @@ struct AstSelBit : public AstNodePreSel {
     // Gets replaced during link with AstArraySel or AstSel
     AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodePreSel(fl, fromp, bitp, NULL) {
-	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to fixup dtype"); }
+	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
     }
     ASTNODE_NODE_FUNCS(SelBit, SELBIT)
     AstNode*	bitp() const { return rhsp(); }
@@ -1280,7 +1280,7 @@ struct AstSenGate : public AstNodeSenItem {
     // AND as applied to a sensitivity list and a gating expression
     // Performing this gating is optional; it may be removed by later optimizations
     AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp) : AstNodeSenItem(fl) {
-	width(1,1); addOp1p(sensesp); setOp2p(rhsp);
+	dtypeChgBool(); addOp1p(sensesp); setOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(SenGate, SENGATE)
     virtual string emitVerilog() { return "(%l) %f&& (%r)"; }
@@ -2509,7 +2509,7 @@ struct AstTime : public AstNodeTermop {
 
 struct AstTimeD : public AstNodeTermop {
     AstTimeD(FileLine* fl)	: AstNodeTermop(fl) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(TimeD, TIMED)
     virtual string emitVerilog() { return "%f$realtime"; }
     virtual string emitC() { return "VL_TIME_D()"; }
@@ -2558,7 +2558,7 @@ struct AstNegate : public AstNodeUniop {
 };
 struct AstNegateD : public AstNodeUniop {
     AstNegateD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(NegateD, NEGATED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegateD(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
@@ -2571,7 +2571,7 @@ struct AstNegateD : public AstNodeUniop {
 };
 struct AstRedAnd : public AstNodeUniop {
     AstRedAnd(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1); numeric(AstNumeric::UNSIGNED); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(RedAnd, REDAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedAnd(lhs); }
     virtual string emitVerilog() { return "%f(& %l)"; }
@@ -2581,7 +2581,7 @@ struct AstRedAnd : public AstNodeUniop {
 };
 struct AstRedOr : public AstNodeUniop {
     AstRedOr(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1); numeric(AstNumeric::UNSIGNED); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(RedOr, REDOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedOr(lhs); }
     virtual string emitVerilog() { return "%f(| %l)"; }
@@ -2591,7 +2591,7 @@ struct AstRedOr : public AstNodeUniop {
 };
 struct AstRedXor : public AstNodeUniop {
     AstRedXor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1); numeric(AstNumeric::UNSIGNED); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(RedXor, REDXOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXor(lhs); }
     virtual string emitVerilog() { return "%f(^ %l)"; }
@@ -2605,7 +2605,7 @@ struct AstRedXor : public AstNodeUniop {
 struct AstRedXnor : public AstNodeUniop {
     // AstRedXnors are replaced with AstRedXors in V3Const.
     AstRedXnor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1); numeric(AstNumeric::UNSIGNED); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(RedXnor, REDXNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXnor(lhs); }
     virtual string emitVerilog() { return "%f(~^ %l)"; }
@@ -2617,7 +2617,7 @@ struct AstRedXnor : public AstNodeUniop {
 
 struct AstLogNot : public AstNodeUniop {
     AstLogNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogNot, LOGNOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLogNot(lhs); }
     virtual string emitVerilog() { return "%f(! %l)"; }
@@ -2663,7 +2663,7 @@ struct AstExtendS : public AstNodeUniop {
 struct AstSigned : public AstNodeUniop {
     // $signed(lhs)
     AstSigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::SIGNED);
+	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
     }
     ASTNODE_NODE_FUNCS(Signed, SIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
@@ -2676,7 +2676,7 @@ struct AstSigned : public AstNodeUniop {
 struct AstUnsigned : public AstNodeUniop {
     // $unsigned(lhs)
     AstUnsigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::UNSIGNED);
+	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
     }
     ASTNODE_NODE_FUNCS(Unsigned, UNSIGNED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
@@ -2711,7 +2711,7 @@ struct AstRToIRoundS : public AstNodeUniop {
 };
 struct AstIToRD : public AstNodeUniop {
     AstIToRD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(IToRD, ITORD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIToRD(lhs); }
     virtual string emitVerilog() { return "%f$itor(%l)"; }
@@ -2733,7 +2733,7 @@ struct AstRealToBits : public AstNodeUniop {
 };
 struct AstBitsToRealD : public AstNodeUniop {
     AstBitsToRealD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(BitsToRealD, BITSTOREALD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opBitsToRealD(lhs); }
     virtual string emitVerilog() { return "%f$bitstoreal(%l)"; }
@@ -2767,7 +2767,7 @@ struct AstCountOnes : public AstNodeUniop {
 struct AstIsUnknown : public AstNodeUniop {
     // True if any unknown bits
     AstIsUnknown(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1);}
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(IsUnknown, ISUNKNOWN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%f$isunknown(%l)"; }
@@ -2778,7 +2778,7 @@ struct AstIsUnknown : public AstNodeUniop {
 struct AstOneHot : public AstNodeUniop {
     // True if only single bit set in vector
     AstOneHot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1);}
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(OneHot, ONEHOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot(lhs); }
     virtual string emitVerilog() { return "%f$onehot(%l)"; }
@@ -2790,7 +2790,7 @@ struct AstOneHot : public AstNodeUniop {
 struct AstOneHot0 : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
     AstOneHot0(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	width(1,1);}
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(OneHot0, ONEHOT0)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot0(lhs); }
     virtual string emitVerilog() { return "%f$onehot0(%l)"; }
@@ -2882,7 +2882,7 @@ struct AstFGetC : public AstNodeUniop {
 
 struct AstCeilD : public AstNodeUniop {
     AstCeilD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(CeilD, CEILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(ceil(lhs.toDouble())); }
@@ -2896,7 +2896,7 @@ struct AstCeilD : public AstNodeUniop {
 
 struct AstExpD : public AstNodeUniop {
     AstExpD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(ExpD, EXPD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(exp(lhs.toDouble())); }
@@ -2910,7 +2910,7 @@ struct AstExpD : public AstNodeUniop {
 
 struct AstFloorD : public AstNodeUniop {
     AstFloorD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(FloorD, FLOORD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(floor(lhs.toDouble())); }
@@ -2924,7 +2924,7 @@ struct AstFloorD : public AstNodeUniop {
 
 struct AstLogD : public AstNodeUniop {
     AstLogD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(LogD, LOGD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(log(lhs.toDouble())); }
@@ -2938,7 +2938,7 @@ struct AstLogD : public AstNodeUniop {
 
 struct AstLog10D : public AstNodeUniop {
     AstLog10D(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(Log10D, LOG10D)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(log10(lhs.toDouble())); }
@@ -2952,7 +2952,7 @@ struct AstLog10D : public AstNodeUniop {
 
 struct AstSqrtD : public AstNodeUniop {
     AstSqrtD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(SqrtD, SQRTD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
 	out.setDouble(sqrt(lhs.toDouble())); }
@@ -2969,7 +2969,7 @@ struct AstSqrtD : public AstNodeUniop {
 
 struct AstLogOr : public AstNodeBiComAsv {
     AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogOr, LOGOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f|| %r)"; }
@@ -2982,7 +2982,7 @@ struct AstLogOr : public AstNodeBiComAsv {
 };
 struct AstLogAnd : public AstNodeBiComAsv {
     AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogAnd, LOGAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f&& %r)"; }
@@ -2995,7 +2995,7 @@ struct AstLogAnd : public AstNodeBiComAsv {
 };
 struct AstLogIf : public AstNodeBiop {
     AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogIf, LOGIF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %f-> %r)"; }
@@ -3008,7 +3008,7 @@ struct AstLogIf : public AstNodeBiop {
 };
 struct AstLogIff : public AstNodeBiCom {
     AstLogIff(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogIff, LOGIFF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%k(%l %f<-> %r)"; }
@@ -3069,7 +3069,7 @@ struct AstXnor : public AstNodeBiComAsv {
 };
 struct AstEq : public AstNodeBiCom {
     AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Eq, EQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f== %r)"; }
@@ -3081,7 +3081,7 @@ struct AstEq : public AstNodeBiCom {
 };
 struct AstEqD : public AstNodeBiCom {
     AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(EqD, EQD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEqD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f== %r)"; }
@@ -3095,7 +3095,7 @@ struct AstEqD : public AstNodeBiCom {
 };
 struct AstNeq : public AstNodeBiCom {
     AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Neq, NEQ)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f!= %r)"; }
@@ -3107,7 +3107,7 @@ struct AstNeq : public AstNodeBiCom {
 };
 struct AstNeqD : public AstNodeBiCom {
     AstNeqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(NeqD, NEQD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeqD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f!= %r)"; }
@@ -3121,7 +3121,7 @@ struct AstNeqD : public AstNodeBiCom {
 };
 struct AstLt : public AstNodeBiop {
     AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Lt, LT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f< %r)"; }
@@ -3133,7 +3133,7 @@ struct AstLt : public AstNodeBiop {
 };
 struct AstLtD : public AstNodeBiop {
     AstLtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LtD, LTD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f< %r)"; }
@@ -3147,7 +3147,7 @@ struct AstLtD : public AstNodeBiop {
 };
 struct AstLtS : public AstNodeBiop {
     AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LtS, LTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f< %r)"; }
@@ -3160,7 +3160,7 @@ struct AstLtS : public AstNodeBiop {
 };
 struct AstGt : public AstNodeBiop {
     AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Gt, GT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f> %r)"; }
@@ -3172,7 +3172,7 @@ struct AstGt : public AstNodeBiop {
 };
 struct AstGtD : public AstNodeBiop {
     AstGtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(GtD, GTD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f> %r)"; }
@@ -3186,7 +3186,7 @@ struct AstGtD : public AstNodeBiop {
 };
 struct AstGtS : public AstNodeBiop {
     AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(GtS, GTS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f> %r)"; }
@@ -3199,7 +3199,7 @@ struct AstGtS : public AstNodeBiop {
 };
 struct AstGte : public AstNodeBiop {
     AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Gte, GTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
@@ -3211,7 +3211,7 @@ struct AstGte : public AstNodeBiop {
 };
 struct AstGteD : public AstNodeBiop {
     AstGteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(GteD, GTED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
@@ -3225,7 +3225,7 @@ struct AstGteD : public AstNodeBiop {
 };
 struct AstGteS : public AstNodeBiop {
     AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(GteS, GTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
@@ -3238,7 +3238,7 @@ struct AstGteS : public AstNodeBiop {
 };
 struct AstLte : public AstNodeBiop {
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(Lte, LTE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
@@ -3250,7 +3250,7 @@ struct AstLte : public AstNodeBiop {
 };
 struct AstLteD : public AstNodeBiop {
     AstLteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LteD, LTED)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
@@ -3264,7 +3264,7 @@ struct AstLteD : public AstNodeBiop {
 };
 struct AstLteS : public AstNodeBiop {
     AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LteS, LTES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
@@ -3332,7 +3332,7 @@ struct AstAdd : public AstNodeBiComAsv {
 };
 struct AstAddD : public AstNodeBiComAsv {
     AstAddD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(AddD, ADDD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAddD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f+ %r)"; }
@@ -3358,7 +3358,7 @@ struct AstSub : public AstNodeBiop {
 };
 struct AstSubD : public AstNodeBiop {
     AstSubD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(SubD, SUBD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSubD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f- %r)"; }
@@ -3385,7 +3385,7 @@ struct AstMul : public AstNodeBiComAsv {
 };
 struct AstMulD : public AstNodeBiComAsv {
     AstMulD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(MulD, MULD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f* %r)"; }
@@ -3425,7 +3425,7 @@ struct AstDiv : public AstNodeBiop {
 };
 struct AstDivD : public AstNodeBiop {
     AstDivD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(DivD, DIVD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f/ %r)"; }
@@ -3489,7 +3489,7 @@ struct AstPow : public AstNodeBiop {
 };
 struct AstPowD : public AstNodeBiop {
     AstPowD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	numeric(AstNumeric::DOUBLE); }
+	dtypeChgDouble(); }
     ASTNODE_NODE_FUNCS(PowD, POWD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowD(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
@@ -3515,7 +3515,7 @@ struct AstPowS : public AstNodeBiop {
 };
 struct AstEqCase : public AstNodeBiCom {
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(EqCase, EQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f=== %r)"; }
@@ -3527,7 +3527,7 @@ struct AstEqCase : public AstNodeBiCom {
 };
 struct AstNeqCase : public AstNodeBiCom {
     AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(NeqCase, NEQCASE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f!== %r)"; }
@@ -3540,7 +3540,7 @@ struct AstNeqCase : public AstNodeBiCom {
 struct AstEqWild : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
     AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(EqWild, EQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f==? %r)"; }
@@ -3552,7 +3552,7 @@ struct AstEqWild : public AstNodeBiop {
 };
 struct AstNeqWild : public AstNodeBiop {
     AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	width(1,1); }
+	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(NeqWild, NEQWILD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f!=? %r)"; }

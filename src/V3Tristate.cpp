@@ -238,7 +238,7 @@ private:
 	enp->varType2Out();
 
 	if (enp->width() != enrhsp->width()) {
-	    if (enrhsp->width()==1) { // it seems from my futzing that the linter guarantees this condition
+	    if (enrhsp->width1()) { // it seems from my futzing that the linter guarantees this condition
 		enrhsp = new AstReplicate(enrhsp->fileline(), enrhsp, new AstConst(enrhsp->fileline(), V3Number(enrhsp->fileline(), 32, enp->width())));
 		enrhsp->width(enp->width(), enp->widthMin());
 	    } else {

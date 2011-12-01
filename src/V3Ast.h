@@ -932,6 +932,10 @@ public:
     bool	isAllOnes();
     bool	isAllOnesV();  // Verilog width rules apply
 
+    // METHODS - data type changes especially for initial creation
+    void	dtypeChgBool()		{ numeric(AstNumeric::UNSIGNED); width(1,1); }
+    void	dtypeChgDouble()	{ numeric(AstNumeric::DOUBLE); }
+
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
     virtual void dump(ostream& str=cout);
@@ -1132,7 +1136,7 @@ struct AstNodeCond : public AstNodeTriop {
 };
 
 struct AstNodePreSel : public AstNode {
-    // Something that becomes a AstSel
+    // Something that becomes an AstSel
     AstNodePreSel(FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
 	: AstNode(fl) {
 	setOp1p(lhs); setOp2p(rhs); setNOp3p(ths); }
