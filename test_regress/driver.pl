@@ -48,6 +48,7 @@ my @opt_tests;
 my $opt_gdb;
 my $opt_gdbbt;
 my $opt_gdbsim;
+my $opt_ghdl;
 my $opt_iv;
 my $opt_jobs = 1;
 my $opt_nc;
@@ -70,6 +71,7 @@ if (! GetOptions (
 		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
 		  "gdbsim!"	=> \$opt_gdbsim,
+		  "ghdl!"	=> \$opt_ghdl,
 		  "golden!"	=> sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
 		  "help"	=> \&usage,
 		  "iverilog!"	=> \$opt_iv,
@@ -95,7 +97,7 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_atsim && !$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
+if (!$opt_atsim && !$opt_ghdl && !$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
     $opt_vlt = 1;
 }
 
@@ -120,6 +122,7 @@ my @fails;
 
 foreach my $testpl (@opt_tests) {
     one_test(pl_filename => $testpl, atsim=>1) if $opt_atsim;
+    one_test(pl_filename => $testpl, ghdl=>1) if $opt_ghdl;
     one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
     one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
@@ -306,6 +309,13 @@ sub new {
 			"+sv_dir+$self->{obj_dir}/.athdl_compile"],
 	atsim_flags2 => [],  # Overridden in some sim files
 	atsimrun_flags => [],
+        # GHDL
+	ghdl => 0,
+	ghdl_work_dir => "$self->{obj_dir}/ghdl_compile",
+	ghdl_flags => [($::Debug?"-v":""),
+		       "--workdir=$self->{obj_dir}/ghdl_compile", ],
+	ghdl_flags2 => [],  # Overridden in some sim files
+	ghdlrun_flags => [],
         # IV
 	iv => 0,
 	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
@@ -335,6 +345,7 @@ sub new {
     bless $self, $class;
 
     $self->{mode} ||= "atsim" if $self->{atsim};
+    $self->{mode} ||= "ghdl" if $self->{ghdl};
     $self->{mode} ||= "vcs" if $self->{vcs};
     $self->{mode} ||= "vlt" if $self->{vlt};
     $self->{mode} ||= "nc" if $self->{nc};
@@ -347,11 +358,6 @@ sub new {
     $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
-    if (!$self->{make_top_shell}) {
-	$self->{top_shell_filename} = $self->{top_filename};
-    } else {
-	$self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
-    }
     return $self;
 }
 
@@ -391,7 +397,6 @@ sub read {
     # Read the control file
     (-r $self->{pl_filename})
 	or return $self->error("Can't open $self->{pl_filename}\n");
-    $Self = $self;
     $Self = $self;
     delete $INC{$self->{pl_filename}};
     require $self->{pl_filename};
@@ -476,6 +481,14 @@ sub compile {
 
     compile_vlt_flags(%param);
 
+    if (!$self->{make_top_shell}) {
+	$param{top_shell_filename}
+	= $self->{top_shell_filename} = $self->{top_filename};
+    } else {
+	$param{top_shell_filename}
+	= $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.".$self->v_suffix;
+    }
+
     if ($param{atsim}) {
 	$self->_make_top();
 	$self->_run(logfile=>"$self->{obj_dir}/atsim_compile.log",
@@ -490,7 +503,25 @@ sub compile {
 			  @{$param{v_other_filenames}},
 			  ]);
     }
-    if ($param{vcs}) {
+    elsif ($param{ghdl}) {
+	mkdir $self->{ghdl_work_dir};
+	$self->_make_top();
+	$self->_run(logfile=>"$self->{obj_dir}/ghdl_compile.log",
+		    fails=>$param{fails},
+		    cmd=>[($ENV{VERILATOR_GHDL}||"ghdl"),
+			  # Add -c here, as having -c twice freaks it out
+			  ((($ENV{VERILATOR_GHDL}||' ') =~ / -c\b/) ? "" : "-c"),
+			  @{$param{ghdl_flags}},
+			  @{$param{ghdl_flags2}},
+			  #@{$param{v_flags}},  # Not supported
+			  #@{$param{v_flags2}}, # Not supported
+			  $param{top_filename},
+			  $param{top_shell_filename},
+			  @{$param{v_other_filenames}},
+			  "-e t",
+			  ]);
+    }
+    elsif ($param{vcs}) {
 	$self->_make_top();
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_compile.log",
 		    fails=>$param{fails},
@@ -504,8 +535,14 @@ sub compile {
 			  @{$param{v_other_filenames}},
 			  ]);
     }
-    if ($param{nc}) {
+    elsif ($param{nc}) {
 	$self->_make_top();
+	my @more_args;
+	if ($self->vhdl) {
+	    ((my $ts = $param{top_shell_filename}) =~ s!\.v!!);
+	    $ts =~ s!.*/!!;;
+	    push @more_args, "-vhdltop", $ts;
+	}
 	$self->_run(logfile=>"$self->{obj_dir}/nc_compile.log",
 		    fails=>$param{fails},
 		    cmd=>[($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
@@ -516,9 +553,10 @@ sub compile {
 			  $param{top_filename},
 			  $param{top_shell_filename},
 			  @{$param{v_other_filenames}},
+			  @more_args
 			  ]);
     }
-    if ($param{iv}) {
+    elsif ($param{iv}) {
 	$self->_make_top();
 	my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
 		   @{$param{iv_flags}},
@@ -534,7 +572,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>\@cmd);
     }
-    if ($param{vlt}) {
+    elsif ($param{vlt}) {
 	my @cmdargs = $self->compile_vlt_flags(%param);
 
 	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
@@ -575,6 +613,9 @@ sub compile {
 			      ]);
 	}
     }
+    else {
+	$self->error("No compile step for this simulator");
+    }
     return 1;
 }
 
@@ -595,7 +636,15 @@ sub execute {
 			  @{$param{all_run_flags}},
 			  ]);
     }
-    if ($param{iv}) {
+    elsif ($param{ghdl}) {
+	$self->_run(logfile=>"$self->{obj_dir}/ghdl_sim.log",
+		    fails=>$param{fails},
+		    cmd=>[$run_env."$self->{obj_dir}/simghdl",
+			  @{$param{ghdlrun_flags}},
+			  @{$param{all_run_flags}},
+			  ]);
+    }
+    elsif ($param{iv}) {
 	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
 		    cmd=>[$run_env."$self->{obj_dir}/simiv",
@@ -603,7 +652,7 @@ sub execute {
 			  @{$param{all_run_flags}},
 			  ]);
     }
-    if ($param{nc}) {
+    elsif ($param{nc}) {
 	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
 		    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
@@ -611,7 +660,7 @@ sub execute {
 			  @{$param{all_run_flags}},
 			  ]);
     }
-    if ($param{vcs}) {
+    elsif ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
@@ -623,7 +672,7 @@ sub execute {
 		    expect=>undef,	# vcs expect isn't the same
 		    );
     }
-    if ($param{vlt}
+    elsif ($param{vlt}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
 	$param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
@@ -635,6 +684,9 @@ sub execute {
 			  ],
 		    %param,
 		    );
+    }
+    else {
+	$self->error("No execute step for this simulator");
     }
 }
 
@@ -703,6 +755,21 @@ sub top_filename {
     my $self = (ref $_[0]? shift : $Self);
     $self->{top_filename} = shift if defined $_[0];
     return $self->{top_filename};
+}
+
+sub vhdl {
+    my $self = (ref $_[0]? shift : $Self);
+    $self->{vhdl} = shift if defined $_[0];
+    if ($self->{vhdl}) {
+	$self->{top_filename} =~ s/\.v$/\.vhdl/;
+    }
+    return $self->{vhdl};
+}
+
+sub v_suffix {
+    my $self = (ref $_[0]? shift : $Self);
+    # Suffix for file type, e.g. .vhdl or .v
+    return $self->{vhdl} ? "vhdl" : "v";
 }
 
 sub sp {
@@ -816,7 +883,11 @@ sub _run {
 sub _make_main {
     my $self = shift;
 
-    $self->_read_inputs();
+    if ($self->vhdl) {
+	$self->_read_inputs_vhdl();
+    } else {
+	$self->_read_inputs_v();
+    }
 
     my $filename = $self->{main_filename};
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
@@ -959,8 +1030,17 @@ sub _print_advance_time {
 
 sub _make_top {
     my $self = shift;
+    if ($self->vhdl) {
+	$self->_make_top_vhdl;
+    } else {
+	$self->_make_top_v;
+    }
+}
 
-    $self->_read_inputs();
+sub _make_top_v {
+    my $self = shift;
+
+    $self->_read_inputs_v();
 
     my $fh = IO::File->new(">$self->{top_shell_filename}") or die "%Error: $! $self->{top_shell_filename},";
     print $fh "module top;\n";
@@ -1007,6 +1087,61 @@ sub _make_top {
     $fh->close();
 }
 
+sub _make_top_vhdl {
+    my $self = shift;
+
+    $self->_read_inputs_vhdl();
+
+    my $fh = IO::File->new(">$self->{top_shell_filename}") or die "%Error: $! $self->{top_shell_filename},";
+    print $fh "library ieee;\n";
+
+    my @ports = sort (keys %{$self->{inputs}});
+
+    print $fh "entity t_ent is\n";
+    if ($#ports >= 0) {
+	print $fh "       port(\n";
+	my $semi = "";
+	foreach my $inp (@ports) {
+	    print $fh "\t${semi}${inp} : in std_logic\n";
+	    $semi=";";
+	}
+	print $fh "    );\n";
+    }
+    print $fh "end;\n";
+
+    print $fh "entity top is\n";
+    print $fh "end;\n";
+
+    # Inst
+    print $fh "architecture t_beh of t_ent is\n";
+    if ($#ports >= 0) {
+	foreach my $inp (@ports) {
+	    print $fh "\tsignal ${inp} : std_logic := '0';\n";
+	}
+    }
+    print $fh "   begin\n";
+
+    print $fh "    t : t_ent\n";
+    if ($#ports >= 0) {
+	print $fh "       port map(\n";
+	my $comma="";
+	foreach my $inp (@ports) {
+	    print $fh "\t${comma}${inp} => ${inp}\n";
+	    $comma=",";
+	}
+	print $fh "    )\n";
+    }
+    print $fh "   ;\n";
+
+    print $fh "   end;\n";
+
+    # Waves TBD
+    # Test TBD
+
+    print $fh "end;\n";
+    $fh->close();
+}
+
 #######################################################################
 
 sub _sp_preproc {
@@ -1025,7 +1160,7 @@ sub _sp_preproc {
 
 #######################################################################
 
-sub _read_inputs {
+sub _read_inputs_v {
     my $self = shift;
     my $filename = $self->{top_filename};
     $filename = "$self->{t_dir}/$filename" if !-r $filename;
@@ -1035,6 +1170,27 @@ sub _read_inputs {
 	    $self->{inputs}{$1} = $1;
 	}
 	if ($line =~ /^\s*(function|task|endmodule)/) {
+	    last;
+	}
+    }
+    $fh->close();
+}
+
+#######################################################################
+
+sub _read_inputs_vhdl {
+    my $self = shift;
+    my $filename = $self->{top_filename};
+    $filename = "$self->{t_dir}/$filename" if !-r $filename;
+    my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
+    while (defined(my $line = $fh->getline)) {
+	# Only supports this form right now:
+	# signal: in ...
+	# signal: out ...
+	if ($line =~ /^\s*(\S+)\s*:\s*(in)\b\s*/) {
+	    $self->{inputs}{$1} = $1;
+	}
+	if ($line =~ /^\s*(architecture)/) {
 	    last;
 	}
     }
@@ -1277,6 +1433,10 @@ Requires --debug.
 
 Run Verilator generated executable under the debugger.
 
+=item --ghdl
+
+Run using GHDL.
+
 =item --golden
 
 Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
@@ -1328,6 +1488,10 @@ Run using Verilator.
 =item SYSTEMC
 
 Root directory name of SystemC kit.
+
+=item VERILATOR_GHDL
+
+Command to use to invoke GHDL.
 
 =item VERILATOR_IVERILOG
 
