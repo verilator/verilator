@@ -133,10 +133,13 @@ $Fork->wait_all();   # Wait for all children to finish
 
 sub one_test {
     my @params = @_;
+    my %params = (@params);
     $leftcnt++;
     $Fork->schedule
 	(
+	 test_pl_filename => $params{pl_filename},
 	 run_on_start => sub {
+	     # Running in context of child, so can't pass data to parent directly
 	     print ("="x70,"\n");
 	     my $test = VTest->new(@params);
 	     $test->oprint("="x50,"\n");
@@ -168,6 +171,11 @@ sub one_test {
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
 		 $failcnt++;
 		 report(\@fails, $Log_Filename);
+		 my $other = "";
+		 foreach my $proc ($Fork->running) {
+		     $other .= "  ".$proc->{test_pl_filename};
+		 }
+		 $test->oprint("Simultaneous running tests:",$other,"\n") if $other;
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
 	     $leftcnt--;

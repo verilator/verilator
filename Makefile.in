@@ -313,7 +313,8 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
 
-install: all_nomsg installbin installman installdata install-msg
+install: all_nomsg install-all
+install-all: installbin installman installdata install-msg
 
 install-here: installman ftp
 

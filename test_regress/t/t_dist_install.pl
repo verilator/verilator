@@ -22,7 +22,7 @@ if (!-r "$root/.git") {
 		check_finished=>0);
     # Install into temp area
     print "Install...\n";
-    $Self->_run (cmd=>["cd $root && make DESTDIR=$destdir install"],
+    $Self->_run (cmd=>["cd $root && make DESTDIR=$destdir install-all"],
 		 check_finished=>0);
 
     # Check we can run a test
