@@ -346,12 +346,14 @@ private:
     }
 
     void process();
+#ifdef NEW_ORDERING
     void processLoops(string stepName, V3EdgeFuncP edgeFuncp);
     void processInsLoop();
     void processInsLoopEdge(V3GraphEdge* edgep);
     void processInsLoopNewEdge(V3GraphEdge* oldEdgep, V3GraphVertex* newFromp, V3GraphVertex* newTop);
     OrderVarVertex* processInsLoopNewVar(OrderVarVertex* oldVertexp, bool& createdr);
     void processBrokeLoop();
+#endif
     void processCircular();
     void processInputs();
     void processInputsIterate(OrderEitherVertex* vertexp);
@@ -562,24 +564,22 @@ private:
 			) {
 			// Inside settlement; we use special variable names to prevent
 			// having extra logic to break arcs within
+#ifdef NEW_ORDERING
 			if (gen) {
 			    // Add edge logic_vertex->logic_generated_var
 			    bool created = false;
 			    OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_SETL, &created);
 			    new OrderComboCutEdge(&m_graph, m_logicVxp, varVxp);
-#ifdef NEW_ORDERING
 			    if (created) new OrderEdge(&m_graph, m_settleVxp, varVxp, WEIGHT_INPUT);
-#endif
 			}
 			if (con) {
 			    // Add edge logic_consumed_var->logic_vertex
 			    bool created = false;
 			    OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_SETL, &created);
 			    new OrderEdge(&m_graph, varVxp, m_logicVxp, WEIGHT_MEDIUM);
-#ifdef NEW_ORDERING
 			    if (created) new OrderEdge(&m_graph, m_settleVxp, varVxp, WEIGHT_INPUT);
-#endif
 			}
+#endif // NEW_ORDERING
 		    } else { // not settle and (combo or inPost)
 			if (gen) {
 			    // Add edge logic_vertex->logic_generated_var
@@ -743,6 +743,7 @@ public:
 //######################################################################
 // Pre-Loop elimination
 
+#ifdef NEW_ORDERING
 void OrderVisitor::processInsLoop() {
     // Input is graph with color() reflecting the sub-graphs we need
     // to loop remove.  Take all the I/O from each subgraph and route
@@ -900,11 +901,12 @@ void OrderVisitor::processInsLoopEdge(V3GraphEdge* oldEdgep) {
 	}
     }
 }
+#endif  // NEW_ORDERING
 
 //######################################################################
 // Pre-Loop elimination
 
-// NEW_ORDERING
+#ifdef NEW_ORDERING
 void OrderVisitor::processBrokeLoop() {
     // Find those loops that were broken
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
@@ -942,6 +944,7 @@ void OrderVisitor::processBrokeLoop() {
 	}
     }
 }
+#endif  // NEW_ORDERING
 
 //######################################################################
 // Clock propagation
@@ -1002,7 +1005,7 @@ void OrderVisitor::processInputsIterate(OrderEitherVertex* vertexp) {
 //######################################################################
 // Circular detection
 
-#ifndef NEW_ORDERING
+#ifndef NEW_ORDERING  // *NOT* new ordering
 void OrderVisitor::processCircular() {
     // Take broken edges and add circular flags
     // The change detect code will use this to force changedets
@@ -1549,6 +1552,7 @@ inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* v
 //######################################################################
 // Top processing
 
+#ifdef NEW_ORDERING
 void OrderVisitor::processLoops(string stepName, V3EdgeFuncP edgeFuncp) {
     UINFO(2,"    "<<stepName<<" Loop Detect...\n");
     m_graph.stronglyConnected(edgeFuncp);
@@ -1571,6 +1575,7 @@ void OrderVisitor::processLoops(string stepName, V3EdgeFuncP edgeFuncp) {
     m_graph.makeEdgesNonCutable(edgeFuncp);
     m_graph.dumpDotFilePrefixed((string)"orderg_"+stepName+"_done", true);
 }
+#endif
 
 void OrderVisitor::process() {
     // Dump data
