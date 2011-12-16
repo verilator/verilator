@@ -223,7 +223,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (nodep->varp()->user4p() != m_curVxp) {
 	    if (m_curVxp->pure()
-		&& !nodep->varp()->isPure()) {
+		&& !nodep->varp()->isXTemp()) {
 		m_curVxp->impure(nodep);
 	    }
 	}

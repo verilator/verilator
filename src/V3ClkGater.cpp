@@ -862,9 +862,9 @@ class GaterVisitor : public GaterBaseVisitor {
 	    m_stmtVscp = NULL;
 	    m_stmtInPli = false;
 	}
-	if (!nodep->isSplittable()) {
+	if (!nodep->isPure()) {
 	    // May also be a new statement (above if); if so we mark it immediately
-	    UINFO(9,"         NotSplittable "<<nodep<<endl);
+	    UINFO(9,"         NotPure "<<nodep<<endl);
 	    scoreboardPli(nodep);
 	}
 	{

@@ -46,7 +46,7 @@
 //			  v1Dly -> S1 -> {empty}
 //  Multiple assignments to the same variable must remain in order
 //
-//  Also vars must not be "public" and we also scoreboard nodep->isSplittable()
+//  Also vars must not be "public" and we also scoreboard nodep->isPure()
 //
 //*************************************************************************
 
@@ -555,7 +555,7 @@ private:
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// **** SPECIAL default type that sets PLI_ORDERING
-	if (!m_stmtStackps.empty() && !nodep->isSplittable()) {
+	if (!m_stmtStackps.empty() && !nodep->isPure()) {
 	    UINFO(9,"         NotSplittable "<<nodep<<endl);
 	    scoreboardPli();
 	}

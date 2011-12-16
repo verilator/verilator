@@ -705,7 +705,7 @@ public:
 						     && !isSc() && !isPrimaryIO() && !isConst()); }
     bool	isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool	isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
-    bool	isPure() const { return (varType()==AstVarType::XTEMP); }
+    bool	isXTemp() const { return (varType()==AstVarType::XTEMP); }
     bool	isParam() const { return (varType()==AstVarType::LPARAM || varType()==AstVarType::GPARAM); }
     bool	isGParam() const { return (varType()==AstVarType::GPARAM); }
     bool	isGenVar() const { return (varType()==AstVarType::GENVAR); }
@@ -1545,7 +1545,7 @@ public:
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isOutputter() const { return true; }
-    // but isSplittable()  true
+    // but isPure()  true
     AstCoverDecl*	declp() const { return m_declp; }	// Where defined
 };
 
@@ -1566,7 +1566,7 @@ struct AstCoverToggle : public AstNodeStmt {
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return true; }
     virtual bool isOutputter() const { return false; }   // Though the AstCoverInc under this is an outputter
-    // but isSplittable()  true
+    // but isPure()  true
     AstCoverInc* incp() const { return op1p()->castCoverInc(); }
     void 	incp(AstCoverInc* nodep) { setOp1p(nodep); }
     AstNode* origp() const { return op2p(); }
@@ -1691,7 +1691,7 @@ public:
 						: (string)"$"+(string)displayType().ascii()); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
+    virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: $display makes output
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(displayType()); }
@@ -1722,7 +1722,7 @@ struct AstSFormat : public AstNode {
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return true; }
-    virtual bool isSplittable() const { return true; }
+    virtual bool isPure() const { return true; }
     virtual bool isOutputter() const { return false; }
     virtual bool cleanOut() { return false; }
     virtual int instrCount()	const { return instrCountPli(); }
@@ -1743,7 +1743,7 @@ struct AstSysIgnore : public AstNode {
     virtual string verilogKwd() const { return "$ignored"; }
     virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
     virtual bool isPredictOptimizable() const { return false; }  // Though deleted before opt
-    virtual bool isSplittable() const { return false; }  // Though deleted before opt
+    virtual bool isPure() const { return false; }  // Though deleted before opt
     virtual bool isOutputter() const { return true; }  // Though deleted before opt
     virtual int instrCount()	const { return instrCountPli(); }
     AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
@@ -1761,7 +1761,7 @@ struct AstFClose : public AstNodeStmt {
     virtual string verilogKwd() const { return "$fclose"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1781,7 +1781,7 @@ struct AstFOpen : public AstNodeStmt {
     virtual string verilogKwd() const { return "$fopen"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1802,7 +1802,7 @@ struct AstFFlush : public AstNodeStmt {
     virtual string verilogKwd() const { return "$fflush"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1830,7 +1830,7 @@ public:
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: has 'visual' ordering
+    virtual bool isPure() const { return false; }	// SPECIAL: has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: makes output
     virtual bool cleanOut() { return false; }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
@@ -1863,7 +1863,7 @@ public:
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: has 'visual' ordering
+    virtual bool isPure() const { return false; }	// SPECIAL: has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: makes output
     virtual bool cleanOut() { return false; }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
@@ -1890,7 +1890,7 @@ public:
     virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1912,7 +1912,7 @@ struct AstSystemT : public AstNodeStmt {
     virtual string verilogKwd() const { return "$system"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1932,7 +1932,7 @@ struct AstSystemF : public AstNodeMath {
     virtual string emitC() { return "VL_SYSTEM_%nq(%lw, %P)"; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual bool isUnlikely() const { return true; }
     virtual bool cleanOut() { return true; }
@@ -2040,7 +2040,7 @@ struct AstBreak : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Break, BREAK)
     virtual string verilogKwd() const { return "break"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstContinue : public AstNodeStmt {
@@ -2049,7 +2049,7 @@ struct AstContinue : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Continue, CONTINUE)
     virtual string verilogKwd() const { return "continue"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstDisable : public AstNodeStmt {
@@ -2061,7 +2061,7 @@ public:
     ASTNODE_NODE_FUNCS(Disable, DISABLE)
     virtual string name()	const { return m_name; }		// * = Block name
     void name(const string& flag) { m_name=flag; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstReturn : public AstNodeStmt {
@@ -2073,7 +2073,7 @@ struct AstReturn : public AstNodeStmt {
     virtual string verilogKwd() const { return "return"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
     AstNode*	lhsp() const { return op1p(); }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstGenIf : public AstNodeIf {
@@ -2145,7 +2145,7 @@ public:
     virtual bool same(AstNode* samep) const {  // Also same if identical tree structure all the way down, but hard to detect
 	return labelp()==samep->castJumpGo()->labelp(); }
     virtual bool isGateOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
@@ -2267,7 +2267,7 @@ struct AstStop : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Stop, STOP)
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
+    virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: $display makes output
     virtual bool isUnlikely() const { return true; }
     virtual int instrCount()	const { return 0; }  // Rarely executes
@@ -2282,7 +2282,7 @@ struct AstFinish : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Finish, FINISH)
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }	// SPECIAL: $display has 'visual' ordering
+    virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
     virtual bool isOutputter() const { return true; }	// SPECIAL: $display makes output
     virtual bool isUnlikely() const { return true; }
     virtual int instrCount()	const { return 0; }  // Rarely executes
@@ -2363,7 +2363,7 @@ public:
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isOutputter() const { return true; }
-    // but isSplittable()  true
+    // but isPure()  true
     // op1 = Statements before the value
     AstNode*	precondsp()	const { return op1p()->castNode(); }	// op1= prepare statements for condition (exec every loop)
     void	addPrecondsp(AstNode* newp) { addOp1p(newp); }
@@ -2533,7 +2533,7 @@ struct AstUCFunc : public AstNodeMath {
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isSubstOptimizable() const { return false; }
@@ -3771,7 +3771,7 @@ struct AstScCtor : public AstNodeText {
     AstScCtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScCtor, SCCTOR)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3779,7 +3779,7 @@ struct AstScDtor : public AstNodeText {
     AstScDtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScDtor, SCDTOR)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3787,7 +3787,7 @@ struct AstScHdr : public AstNodeText {
     AstScHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScHdr, SCHDR)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3795,7 +3795,7 @@ struct AstScImp : public AstNodeText {
     AstScImp(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScImp, SCIMP)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3803,7 +3803,7 @@ struct AstScImpHdr : public AstNodeText {
     AstScImpHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScImpHdr, SCIMPHDR)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3811,7 +3811,7 @@ struct AstScInt : public AstNodeText {
     AstScInt(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScInt, SCINT)
-    virtual bool isSplittable() const { return false; }	// SPECIAL: User may order w/other sigs
+    virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
 };
 
@@ -3825,7 +3825,7 @@ struct AstUCStmt : public AstNodeStmt {
     AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return false; }
+    virtual bool isPure() const { return false; }
     virtual bool isOutputter() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
@@ -4008,7 +4008,7 @@ public:
     AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isSplittable() const { return funcp()->pure(); }
+    virtual bool isPure() const { return funcp()->pure(); }
     virtual bool isOutputter() const { return !(funcp()->pure()); }
     AstCFunc*	funcp() const { return m_funcp; }
     string hiername() const { return m_hiername; }
