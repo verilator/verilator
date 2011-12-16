@@ -195,7 +195,8 @@ private:
 	// *** Special iterator
 	if (!m_isSimple) return;	// Fastpath
 	if (!nodep->isGateOptimizable()
-	    || !nodep->isPure()) {
+	    || !nodep->isPure()
+	    || nodep->isBrancher()) {
 	    UINFO(5, "Non optimizable type: "<<nodep<<endl);
 	    clearSimple("Non optimizable type");
 	}

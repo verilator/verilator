@@ -2040,7 +2040,7 @@ struct AstBreak : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Break, BREAK)
     virtual string verilogKwd() const { return "break"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstContinue : public AstNodeStmt {
@@ -2049,7 +2049,7 @@ struct AstContinue : public AstNodeStmt {
     ASTNODE_NODE_FUNCS(Continue, CONTINUE)
     virtual string verilogKwd() const { return "continue"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstDisable : public AstNodeStmt {
@@ -2061,7 +2061,7 @@ public:
     ASTNODE_NODE_FUNCS(Disable, DISABLE)
     virtual string name()	const { return m_name; }		// * = Block name
     void name(const string& flag) { m_name=flag; }
-    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstReturn : public AstNodeStmt {
@@ -2073,7 +2073,7 @@ struct AstReturn : public AstNodeStmt {
     virtual string verilogKwd() const { return "return"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
     AstNode*	lhsp() const { return op1p(); }
-    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
 struct AstGenIf : public AstNodeIf {
@@ -2145,7 +2145,7 @@ public:
     virtual bool same(AstNode* samep) const {  // Also same if identical tree structure all the way down, but hard to detect
 	return labelp()==samep->castJumpGo()->labelp(); }
     virtual bool isGateOptimizable() const { return false; }
-    virtual bool isPure() const { return false; }	// SPECIAL: We don't process code after breaks
+    virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 

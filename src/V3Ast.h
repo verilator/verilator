@@ -968,6 +968,7 @@ public:
 
     // METHODS - queries
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays
+    virtual bool isBrancher() const { return false; }	// Changes control flow, disable some optimizations
     virtual bool isGateOptimizable() const { return true; }	// Else a AstTime etc that can't be pushed out
     virtual bool isSubstOptimizable() const { return true; }	// Else a AstTime etc that can't be substituted out
     virtual bool isPredictOptimizable() const { return true; }	// Else a AstTime etc which output can't be predicted from input
