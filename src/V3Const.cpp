@@ -104,6 +104,7 @@ private:
     bool	m_warn;		// Output warnings
     bool	m_doExpensive;	// Enable computationally expensive optimizations
     bool	m_doNConst;	// Enable non-constant-child simplifications
+    bool	m_doShort;	// Remove expressions that short circuit
     bool	m_doV;		// Verilog, not C++ conversion
     AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
@@ -228,11 +229,13 @@ private:
     }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
-		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width()));
+		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width())
+		&& isTPure(nodep->lhsp()));
     }
     bool operandHugeShiftR(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
-		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->lhsp()->width()));
+		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->lhsp()->width())
+		&& isTPure(nodep->lhsp()));
     }
     bool operandIsTwo(AstNode* nodep) {
 	return (nodep->castConst()
@@ -353,6 +356,14 @@ private:
 	return nodep;
     }
 
+    bool isTPure(AstNode* nodep) {
+	// Pure checks - if this node and all nodes under it are free of
+	// side effects can do this optimization
+	// Eventually we'll recurse through tree when unknown, memoizing results so far,
+	// but for now can disable en-mass until V3Purify takes effect.
+	return m_doShort || nodep->castVarRef() || nodep->castConst();
+    }
+
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
 	AstNode* basefromp = AstArraySel::baseFromp(nodep);
@@ -454,6 +465,21 @@ private:
     }
     void replaceZero(AstNode* nodep) {
 	replaceNum(nodep, 0); nodep=NULL;
+    }
+    void replaceZeroChkPure(AstNode* nodep, AstNode* checkp) {
+	// For example, "0 * n" -> 0 if n has no side effects
+	// Else strength reduce it to 0 & n.
+	// If ever change the operation note AstAnd rule specially ignores this created pattern
+	if (isTPure(checkp)) {
+	    replaceNum(nodep, 0); nodep=NULL;
+	} else {
+	    AstNode* newp = new AstAnd(nodep->fileline(),
+				       new AstConst(nodep->fileline(), 0),
+				       checkp->unlinkFrBack());
+	    newp->widthSignedFrom(nodep);
+	    nodep->replaceWith(newp);
+	    nodep->deleteTree(); nodep=NULL;
+	}
     }
     void replaceAllOnes (AstNode* nodep) {
 	V3Number ones (nodep->fileline(), nodep->width(), 0);
@@ -1654,28 +1680,28 @@ private:
     TREEOPC("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque()}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, isTPure($rhsp)}",	"replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
     TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstPow   {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstPowS  {$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPow   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPowS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP ("AstShiftL{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
-    TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    TREEOP ("AstShiftL{$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstXnor  {$lhsp.isZero, $rhsp}",	"AstNot{$rhsp}");
     TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",	"AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",	"replaceZeroChkPure(nodep,$lhsp)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",	"replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstLogOr {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
-    TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
-    TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",	"replaceZero(nodep)");
+    TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",	"replaceZeroChkPure(nodep,$lhsp)");
+    TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",	"replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP ("AstShiftL{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
     TREEOP ("AstShiftR{$lhsp, $rhsp.isZero}",	"replaceWLhs(nodep)");
@@ -1686,12 +1712,12 @@ private:
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",	"replaceWRhs(nodep)");
-    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp}",	"replaceWLhs(nodep)"); //->allOnes
+    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",	"replaceWLhs(nodep)"); //->allOnes
     TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",	"replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",	"replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",	"replaceWLhs(nodep)");
-    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes}",	"replaceWRhs(nodep)"); //->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero}",	"replaceNum(nodep,1)");
+    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",	"replaceWRhs(nodep)"); //->allOnes
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp)}",	"replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",	"AstNot{$rhsp}");
     TREEOP ("AstXnor  {$lhsp.isAllOnes, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",	"replaceWRhs(nodep)");
@@ -1710,10 +1736,10 @@ private:
     TREEOPC("AstNodeCond{$condp.isNeqZero,    $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr1p)");
     TREEOP ("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
     TREEOP ("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstOr {$condp, $expr2p}");  // a?1:b == a|b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstAnd{$condp, $expr1p}");  // a?b:0 == a&b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a|b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstLogOr {$condp, $expr2p}");  // a?1:b == a||b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstLogAnd{$condp, $expr1p}");  // a?b:0 == a&&b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstLogOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a||b
+    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstLogAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&&b
     TREEOP ("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets constant red remove the shift
     TREEOP ("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",	"swapSides(nodep)");
@@ -1838,9 +1864,9 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",		"replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",		"replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1}", "AstOr{$lhsp,$rhsp}");
-    TREEOPV("AstLogNot{$lhsp.width1}",		    "AstNot{$lhsp}");
+    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",	"AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
     TREEOPV("AstConcat{operandConcatMove(nodep)}",	"moveConcat(nodep)");
@@ -1928,6 +1954,7 @@ public:
 	m_required = false;
 	m_doExpensive = false;
 	m_doNConst = false;
+	m_doShort = true;	// Presently always done
 	m_doV = false;
 	m_warn = false;
 	m_wremove = true;  // Overridden in visitors

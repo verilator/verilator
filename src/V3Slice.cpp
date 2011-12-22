@@ -161,10 +161,10 @@ class SliceCloneVisitor : public AstNVisitor {
 	    if (lhsp && rhsp) {
 		switch (redOpType) {
 		case REDOP_OR:
-		    lhsp = new AstLogOr(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstOr(nodep->fileline(), lhsp, rhsp);
 		    break;
 		case REDOP_AND:
-		    lhsp = new AstLogAnd(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstAnd(nodep->fileline(), lhsp, rhsp);
 		    break;
 		case REDOP_XOR:
 		    lhsp = new AstXor(nodep->fileline(), lhsp, rhsp);

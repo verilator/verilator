@@ -2967,8 +2967,8 @@ struct AstSqrtD : public AstNodeUniop {
 //======================================================================
 // Binary ops
 
-struct AstLogOr : public AstNodeBiComAsv {
-    AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
+struct AstLogOr : public AstNodeBiop {
+    AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogOr, LOGOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs,rhs); }
@@ -2980,8 +2980,8 @@ struct AstLogOr : public AstNodeBiComAsv {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
 };
-struct AstLogAnd : public AstNodeBiComAsv {
-    AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
+struct AstLogAnd : public AstNodeBiop {
+    AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeChgBool(); }
     ASTNODE_NODE_FUNCS(LogAnd, LOGAND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs,rhs); }

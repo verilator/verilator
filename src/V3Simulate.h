@@ -354,23 +354,69 @@ private:
 				 *fetchNumber(nodep->thsp()));
 	}
     }
+    virtual void visit(AstLogAnd* nodep, AstNUser*) {
+	// Need to short circuit
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
+	    nodep->iterateChildren(*this);
+	} else {
+	    nodep->lhsp()->accept(*this);
+	    if (fetchNumber(nodep->lhsp())->isNeqZero()) {
+		nodep->rhsp()->accept(*this);
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+	    } else {
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a zero
+	    }
+	}
+    }
+    virtual void visit(AstLogOr* nodep, AstNUser*) {
+	// Need to short circuit
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
+	    nodep->iterateChildren(*this);
+	} else {
+	    nodep->lhsp()->accept(*this);
+	    if (fetchNumber(nodep->lhsp())->isNeqZero()) {
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a one
+	    } else {
+		nodep->rhsp()->accept(*this);
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+	    }
+	}
+    }
+    virtual void visit(AstLogIf* nodep, AstNUser*) {
+	// Need to short circuit, same as (!A || B)
+	if (!optimizable()) return;  // Accelerate
+	checkNodeInfo(nodep);
+	if (m_checkOnly) {
+	    nodep->iterateChildren(*this);
+	} else {
+	    nodep->lhsp()->accept(*this);
+	    if (fetchNumber(nodep->lhsp())->isEqZero()) {
+		newNumber(nodep)->opAssign(V3Number(nodep->fileline(), 1, 1));  // a one
+	    } else {
+		nodep->rhsp()->accept(*this);
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+	    }
+	}
+    }
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
-	// We could use above visit(AstNodeTriop), but it's slower even O(n^2) to evaluate
-	// both sides when we really only need to evaluate one side.
+	// We could use above visit(AstNodeTriop), but need to do short circuiting.
+	// It's also slower even O(n^2) to evaluate both sides when we really only need to evaluate one side.
 	if (!optimizable()) return;  // Accelerate
 	checkNodeInfo(nodep);
 	if (m_checkOnly) {
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->condp()->accept(*this);
-	    if (optimizable()) {
-		if (fetchNumber(nodep->condp())->isNeqZero()) {
-		    nodep->expr1p()->accept(*this);
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
-		} else {
-		    nodep->expr2p()->accept(*this);
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
-		}
+	    if (fetchNumber(nodep->condp())->isNeqZero()) {
+		nodep->expr1p()->accept(*this);
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
+	    } else {
+		nodep->expr2p()->accept(*this);
+		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
 	    }
 	}
     }
