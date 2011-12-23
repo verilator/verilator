@@ -332,9 +332,9 @@ private:
 		maxmsb = (varrefp->varp()->width()-1);
 	    } else {
 		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
-		maxmsb = basefromp->widthMin()-1;
+		maxmsb = basefromp->width()-1;
 	    }
-	    int maxlsb = maxmsb - nodep->widthMin() + 1;
+	    int maxlsb = maxmsb - nodep->width() + 1;
 	    if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
 	    V3Number maxlsbnum (nodep->fileline(), nodep->lsbp()->width(), maxlsb);
 
@@ -386,7 +386,7 @@ private:
 		maxmsb = adtypep->elementsConst()-1;
 	    } else if (AstConst* lhconstp = basefromp->castConst()) {
 		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
-		maxmsb = lhconstp->widthMin();
+		maxmsb = lhconstp->width();
 	    } else {
 		nodep->v3fatalSrc("No VarRef or Const under ArraySel\n");
 	    }

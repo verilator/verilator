@@ -621,13 +621,13 @@ private:
 	    stmt += "VL_CVT_VP_Q(";
 	    ket += ")";
 	}
-	else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && portp->isQuad()) {
+	else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->width() != 1 && portp->isQuad()) {
 	    // SV is vector, Verilator isn't
 	    stmt += "VL_SET_QW(";
 	    ket += ")";
 	}
 	if (!cvt
-	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1 && !portp->isWide() && !portp->isQuad())
+	    && portp->basicp() && portp->basicp()->isBitLogic() && portp->width() != 1 && !portp->isWide() && !portp->isQuad())
 	    stmt += "*";  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is
 	stmt += frName;
 	stmt += ket;
@@ -778,7 +778,7 @@ private:
 		    if (args != "") { args+= ", "; }
 		    if (bitvec) {}
 		    else if (portp->isOutput()) args += "&";
-		    else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->widthMin() != 1) args += "&";  // it's a svBitVecVal
+		    else if (portp->basicp() && portp->basicp()->isBitLogic() && portp->width() != 1) args += "&";  // it's a svBitVecVal
 
 		    args += portp->name()+"__Vcvt";
 

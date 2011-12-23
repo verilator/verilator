@@ -237,7 +237,7 @@ private:
 		= new AstVar (fl, AstVarType::MODULETEMP,
 			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
 			      new AstArrayDType (fl,
-						 new AstBasicDType(fl, AstLogicPacked(), outvarp->widthMin()),
+						 new AstBasicDType(fl, AstLogicPacked(), outvarp->width()),
 						 new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);

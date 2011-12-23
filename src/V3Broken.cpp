@@ -207,11 +207,13 @@ private:
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)");
 	}
 	if (v3Global.assertDTypesResolved()) {
-	    if (nodep->width() != nodep->widthMin()) {
-		nodep->v3fatalSrc("Width != WidthMin");
-	    }
 	    if (!nodep->width() && nodep->castNodeMath()) {
 		nodep->v3fatalSrc("Math node has no assigned width");
+	    }
+	}
+	if (v3Global.assertWidthsMatch()) {
+	    if (nodep->width() != nodep->widthMin()) {
+		nodep->v3fatalSrc("Width != WidthMin");
 	    }
 	}
 	nodep->iterateChildren(*this);

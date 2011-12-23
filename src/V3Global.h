@@ -43,7 +43,8 @@ class V3Global {
     // Globals
     AstNetlist*	m_rootp;	// Root of entire netlist
     int		m_debugFileNumber;	// Number to append to debug files created
-    bool	m_assertDTypesResolved;	// Tree should have width()==widthMin()
+    bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
+    bool	m_assertWidthsMatch;	// Tree should have width()==widthMin()
     bool	m_needHInlines;		// Need __Inlines file
     bool	m_needHeavy;		// Need verilated_heavy.h include
     bool	m_dpi;			// Need __Dpi include files
@@ -57,6 +58,7 @@ public:
     V3Global() {
 	m_debugFileNumber = 0;
 	m_assertDTypesResolved = false;
+	m_assertWidthsMatch = false;
 	m_needHInlines = false;
 	m_needHeavy = false;
 	m_dpi = false;
@@ -67,11 +69,13 @@ public:
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
+    bool assertWidthsMatch() const { return m_assertWidthsMatch; }
 
     // METHODS
     void readFiles();
     void checkTree();
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
+    void assertWidthsMatch(bool flag) { m_assertWidthsMatch = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {
 	++m_debugFileNumber;
 	if (newNumber) m_debugFileNumber = newNumber;

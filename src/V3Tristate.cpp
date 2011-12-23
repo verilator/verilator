@@ -239,8 +239,9 @@ private:
 
 	if (enp->width() != enrhsp->width()) {
 	    if (enrhsp->width1()) { // it seems from my futzing that the linter guarantees this condition
-		enrhsp = new AstReplicate(enrhsp->fileline(), enrhsp, new AstConst(enrhsp->fileline(), V3Number(enrhsp->fileline(), 32, enp->width())));
-		enrhsp->width(enp->width(), enp->widthMin());
+		enrhsp = new AstReplicate(enrhsp->fileline(), enrhsp,
+					  new AstConst(enrhsp->fileline(), V3Number(enrhsp->fileline(), 32, enp->width())));
+		enrhsp->width(enp->width(), enp->width());  //minwidth==width
 	    } else {
 		enrhsp->v3error("Don't know how to deal with selection logic wider than 1 bit");
 	    }
@@ -571,7 +572,7 @@ private:
 	    AstVarRef *rp = findVarRef(pinp);
 	    rp->replaceWith(new AstVarRef(nodep->fileline(), enp, true));
 	    rp->deleteTree();
-	    pinp->width(enp->width(),enp->widthMin());
+	    pinp->width(enp->width(),enp->width());  // minwidth==width
 	    pinp->modVarp(enchildp);
 	    m_cellp->addPinsp(pinp);
 	    refp->user1p(enp);

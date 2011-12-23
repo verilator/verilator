@@ -284,7 +284,7 @@ void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* mod
 		    rhsp = new AstExtend (pinp->fileline(), rhsp);
 		}
 	    } else if (pinp->width() < rhsp->width()) {
-		rhsp = new AstSel    (pinp->fileline(), rhsp, 0, pinp->widthMin());
+		rhsp = new AstSel    (pinp->fileline(), rhsp, 0, pinp->width());
 	    }
 	    rhsp->widthSignedFrom(pinp);
 	    assignp = new AstAssignW (pinp->fileline(), pinexprp, rhsp);
