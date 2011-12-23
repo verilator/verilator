@@ -108,14 +108,15 @@ private:
 	    AstNode* newp = new AstConst(lhsp->fileline(), num);
 	    return newp;
 	} else if (rhs > 0) {
-	    // We must make sure sub gets sign of original value
 	    AstNode* newp = new AstSub(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
+	    // We must make sure sub gets sign of original value
 	    newp->numericFrom(lhsp);
 	    return newp;
 	} else {  // rhs < 0;
 	    AstNode* newp = new AstAdd(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
+	    // We must make sure sub gets sign of original value
 	    newp->numericFrom(lhsp);
 	    return newp;
 	}

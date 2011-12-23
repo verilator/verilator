@@ -48,11 +48,12 @@ class EmitCInlines : EmitCBaseVisitor {
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// All wide constants load into variables, so we can just hunt for them
 	nodep->iterateChildren(*this);
-	if (nodep->widthWords() >= EMITCINLINES_NUM_CONSTW ) {
-	    if (int(m_wordWidths.size()) <= nodep->widthWords()) {
-		m_wordWidths.resize(nodep->widthWords()+5);
+	int words = nodep->widthWords();
+	if (words >= EMITCINLINES_NUM_CONSTW ) {
+	    if (int(m_wordWidths.size()) <= words) {
+		m_wordWidths.resize(words+5);
 	    }
-	    ++ m_wordWidths.at(nodep->widthWords());
+	    ++ m_wordWidths.at(words);
 	    v3Global.needHInlines(true);
 	}
     }

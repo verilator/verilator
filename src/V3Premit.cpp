@@ -229,7 +229,6 @@ private:
 					     constwidthp),
 				 nodep,
 				 constzerop);
-		newp->widthSignedFrom(nodep);
 		replaceHandle.relink(newp);
 	    }
 	}
