@@ -1295,6 +1295,7 @@ private:
     // WIDTH METHODs -- all iterate
 
     void visit_Or_Lu64(AstNodeUniop* nodep, AstNUser* vup) {
+	// CALLER: AstBitsToRealD
 	// Real: Output real
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1304,6 +1305,7 @@ private:
 	}
     }
     void visit_Or_Ls32(AstNodeUniop* nodep, AstNUser* vup) {
+	// CALLER: AstIToRD
 	// Real: Output real
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1313,6 +1315,7 @@ private:
 	}
     }
     void visit_Os32_Lr(AstNodeUniop* nodep, AstNUser* vup) {
+	// CALLER: RToI
 	// Real: LHS real
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1322,6 +1325,7 @@ private:
 	}
     }
     void visit_Ou64_Lr(AstNodeUniop* nodep, AstNUser* vup) {
+	// CALLER: RealToBits
 	// Real: LHS real
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1332,6 +1336,7 @@ private:
     }
 
     void visit_log_O1_L1rus(AstNode* nodep, AstNUser* vup) {
+	// CALLER: LogNot, PslBool
 	// Note AstPslBool isn't a AstNodeUniop, or we'd only allow that here
 	// Widths: 1 bit out, lhs 1 bit
 	// Real: Allowed; implicitly compares with zero
@@ -1349,6 +1354,7 @@ private:
 	}
     }
     void visit_log_O1_LR1rus(AstNodeBiop* nodep, AstNUser* vup) {
+	// CALLER: LogAnd, LogOr, LogIf, LogIff
 	// Widths: 1 bit out, lhs 1 bit, rhs 1 bit
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
@@ -1364,6 +1370,7 @@ private:
     }
 
     void visit_red_O1_Lrus(AstNodeUniop* nodep, AstNUser* vup, bool realok) {
+	// CALLER: RedAnd, RedOr, ..., IsUnknown
 	// Widths: 1 bit out, Any width lhs
 	// Signed: Output unsigned, Lhs/Rhs/etc non-real
 	if (vup->c()->prelim()) {
@@ -1373,6 +1380,7 @@ private:
 	nodep->dtypeChgBool();
     }
     void visit_cmp_O1_DSreplace(AstNodeBiop* nodep, AstNUser* vup) {
+	// CALLER: AstEq, AstGt, ..., AstLtS
 	// COMPARES
 	// Widths: 1 bit out, lhs width == rhs width
 	// Signed: if RHS&LHS signed, OPERATOR CHANGES to signed flavor
@@ -1404,6 +1412,8 @@ private:
 	}
     }
     void visit_cmp_O1_LRrus(AstNodeBiop* nodep, AstNUser* vup, bool real_lhs) {
+	// CALLER: (real_lhs=true) EqD, LtD
+	// CALLER: (real_lhs=false) EqCase, NeqCase
 	// Widths: 1 bit out, lhs width == rhs width
 	// Signed doesn't matter
 	// Real if and only if real_lhs set
@@ -1431,6 +1441,8 @@ private:
     }
 
     void visit_math_Orus_Dreplace(AstNodeUniop* nodep, AstNUser* vup, bool real_ok) {
+	// CALLER: (real_ok=false) Not
+	// CALLER: (real_ok=true) Negate
 	// Widths: out width = lhs width
 	// Signed: From lhs
 	// "Interim results shall take the max of operands, including LHS of assignments"
@@ -1460,6 +1472,7 @@ private:
     }
 
     void visit_Ous_Lus_Wforce(AstNodeUniop* nodep, AstNUser* vup, AstNumeric rs_out) {
+	// CALLER: Signed, Unsigned
 	// Widths: out width = lhs width
 	// It always comes exactly from LHS; ignores any upper operand
 	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
@@ -1479,6 +1492,7 @@ private:
     }
 
     void visit_shift_Ous_Lus_Rus32(AstNodeBiop* nodep, AstNUser* vup)  {
+	// CALLER: ShiftL, ShiftR, ShiftRS
 	// Widths: Output width from lhs, rhs<33 bits
 	// Signed: Output signed iff LHS signed; unary operator
 	shift_prelim(nodep,vup);
@@ -1517,6 +1531,7 @@ private:
     }
 
     void visit_boolmath_Ous_LRus(AstNodeBiop* nodep, AstNUser* vup) {
+	// CALLER: And, Or, Xor, ...
 	// Widths: out width = lhs width = rhs width
 	// Signed: if lhs & rhs signed
 	if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
@@ -1554,6 +1569,8 @@ private:
     }
 
     void visit_math_Orus_DSreplace(AstNodeBiop* nodep, AstNUser* vup, bool real_ok) {
+	// CALLER: (real_ok=false) AddS, SubS, ...
+	// CALLER: (real_ok=true) Add, Sub, ...
 	// Widths: out width = lhs width = rhs width
 	// Signed: Replace operator with signed operator, or signed to unsigned
 	// Real: Replace operator with real operator
@@ -1604,6 +1621,7 @@ private:
 	}
     }
     void visit_math_Or_LRr(AstNodeBiop* nodep, AstNUser* vup) {
+	// CALLER: AddD, MulD, ...
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1613,6 +1631,7 @@ private:
 	}
     }
     void visit_math_Or_Lr(AstNodeUniop* nodep, AstNUser* vup) {
+	// CALLER: Negate, Ceil, Log, ...
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtD(nodep->lhsp());
