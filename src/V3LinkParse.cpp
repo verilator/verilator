@@ -362,7 +362,7 @@ private:
 	    // Definition must be inserted right after the variable (etc) that needed it
 	    // AstVar, AstTypedef, AstNodeFTask are common containers
 	    AstNode* backp = nodep->backp();
-	    for (; backp; backp=nodep->backp()) {
+	    for (; backp; backp=backp->backp()) {
 		if (backp->castVar()) break;
 		else if (backp->castTypedef()) break;
 		else if (backp->castNodeFTask()) break;
