@@ -264,7 +264,7 @@ protected:
     friend class FileLine;
     // METHODS
     int nameToNumber(const string& filename);
-    string numberToName(int filenameno) { return m_names[filenameno]; }
+    const string numberToName(int filenameno) const { return m_names[filenameno]; }
     void clear() { m_namemap.clear(); m_names.clear(); }
 };
 
