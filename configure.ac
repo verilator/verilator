@@ -1,6 +1,6 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2011 by Wilson Snyder. Verilator is free software; you can
+# Copyright 2003-2012 by Wilson Snyder. Verilator is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
