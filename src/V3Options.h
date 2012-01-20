@@ -340,6 +340,8 @@ class V3Options {
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
+    static string getenvSYSTEMC_INCLUDE();
+    static string getenvSYSTEMC_LIBDIR();
     static string getenvSYSTEMPERL();
     static string getenvSYSTEMPERL_INCLUDE();
     static string getenvVERILATOR_ROOT();

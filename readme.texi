@@ -106,11 +106,11 @@ Unix system.
 @enumerate
 @item
 If you will be using SystemC (vs straight C++ output), download
-SystemC 2.0.1 from @url{http://www.systemc.org}.  Follow their
-installation instructions.  As described in the System-Perl README,
-you will need to set SYSTEMC and/or SYSTEMC_KIT to point to this
-download.  Also, set SYSTEMC_ARCH to the architecture name you used
-with SystemC, generally 'linux' or 'cygwin'.
+SystemC from @url{http://www.systemc.org}.  Follow their installation
+instructions.  You will need to set SYSTEMC_INCLUDE to point to the
+include directory with systemc.h in it, and SYSTEMC_LIBDIR to points
+to the directory with libsystemc.a in it.  (Older installations may
+set SYSTEMC and SYSTEMC_ARCH instead.)
 
 @item
 If you will be using SystemC, download and install Verilog-Perl,
@@ -132,8 +132,8 @@ Type @samp{./configure} to configure Verilator for your system.
 If you are configuring Verilator to be part of a RPM or other
 distribution package system, you may want to use the --enable-defenv
 configure flag.  This will take the current value of VERILATOR_ROOT,
-SYSTEMC, SYSTEMC_ARCH, SYSTEMPERL, and SYSTEMPERL_INCLUDE and build
-them as defaults into the executable.
+SYSTEMC_INCLUDE, SYSTEMC_LIBDIR, SYSTEMPERL, and SYSTEMPERL_INCLUDE
+and build them as defaults into the executable.
 
 @item
 Type @samp{make} to compile Verilator.
@@ -176,7 +176,7 @@ $VERILATOR_ROOT/bin/verilator, which will find the path to all needed
 files.
 
 Verilator assumes you did a make in the SystemC kit directory.  If not, you will need
-to populate @samp{$SYSTEMC/include} and @samp{$SYSTEMC/lib-linux} appropriately.
+to populate @samp{$SYSTEMC_INCLUDE} and @samp{$SYSTEMC_LIBDIR} appropriately.
 
 If you will be modifying Verilator, you will probably want a second
 stable copy of this kit for others to use while you experiment.

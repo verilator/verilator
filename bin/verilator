@@ -1103,8 +1103,8 @@ We then can compile it
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
-    export SYSTEMC=/path/to/where/systemc/was/built/or/installed
-    g++ -L$SYSTEMC/lib-linux ../sc_main.o Vour__ALL*.o verilated.o \
+    export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
+    g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL*.o verilated.o \
               -o Vour -lsystemc
 
 And now we run it
@@ -1240,23 +1240,38 @@ or ccache; see the documentation for those programs.
 
 =item SYSTEMC
 
-Required for SystemC output mode.  If set, specifies the directory
-containing the SystemC distribution.  This is used to find the SystemC
-include files.  If not specified, it will come from a default optionally
-specified at configure time (before Verilator was compiled).
+Deprecated.  Used only if SYSTEMC_INCLUDE or SYSTEMC_LIBDIR is not set.  If
+set, specifies the directory containing the SystemC distribution.  If not
+specified, it will come from a default optionally specified at configure
+time (before Verilator was compiled).
 
 =item SYSTEMC_ARCH
 
-Specifies the architecture name used by the SystemC kit.  This is the part
-after the dash in the lib-{...} directory name created by a 'make' in the
-SystemC distribution.  If not set, Verilator will try to intuit the proper
-setting, or use the default optionally specified at configure time (before
-Verilator was compiled).  .
+Deprecated.  Used only if SYSTEMC_LIBDIR is not set.  Specifies the
+architecture name used by the SystemC kit.  This is the part after the dash
+in the lib-{...} directory name created by a 'make' in the SystemC
+distribution.  If not set, Verilator will try to intuit the proper setting,
+or use the default optionally specified at configure time (before Verilator
+was compiled).
 
 =item SYSTEMC_CXX_FLAGS
 
 Specifies additional flags that are required to be passed to GCC when
 building the SystemC model.
+
+=item SYSTEMC_INCLUDE
+
+If set, specifies the directory containing the systemc.h header file. If
+not specified, it will come from a default optionally specified at
+configure time (before Verilator was compiled), or computed from
+SYSTEMC/include.
+
+=item SYSTEMC_LIBDIR
+
+If set, specifies the directory containing the libsystemc.a library. If not
+specified, it will come from a default optionally specified at configure
+time (before Verilator was compiled), or compted from
+SYSTEMC/lib-SYSTEMC_ARCH.
 
 =item SYSTEMPERL
 

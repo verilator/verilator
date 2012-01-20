@@ -583,7 +583,7 @@ sub compile {
     elsif ($param{vlt}) {
 	my @cmdargs = $self->compile_vlt_flags(%param);
 
-	if ($self->sc_or_sp && !defined $ENV{SYSTEMC}) {
+	if ($self->sc_or_sp && !defined $ENV{SYSTEMC} && !defined $ENV{SYSTEMC_INCLUDE}) {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
@@ -1495,7 +1495,11 @@ Run using Verilator.
 
 =item SYSTEMC
 
-Root directory name of SystemC kit.
+Root directory name of SystemC kit.  Only used if SYSTEMC_INCLUDE not set.
+
+=item SYSTEMC_INCLUDE
+
+Directory name with systemc.h in it.
 
 =item VERILATOR_GHDL
 

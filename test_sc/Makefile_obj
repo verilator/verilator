@@ -25,7 +25,7 @@ LDFLAGS += $(SYSTEMC_CXX_FLAGS)
 #######################################################################
 # Linking final exe -- presumes have a sim_main.cpp
 
-SC_LIB = $(SYSTEMC)/lib-$(VM_SC_TARGET_ARCH)/libsystemc.a
+SC_LIB = $(SYSTEMC_LIBDIR)/libsystemc.a
 
 simx: sc_main.o $(VK_GLOBAL_OBJS) \
 	  $(VM_PREFIX)__ALL.a $(SC_LIB)

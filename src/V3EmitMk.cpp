@@ -137,6 +137,10 @@ public:
 	of.puts("SYSTEMPERL = "+V3Options::getenvSYSTEMPERL()+"\n");
 	of.puts("# Path to SystemPerl kit includes (from $SYSTEMPERL_INCLUDE)\n");
 	of.puts("SYSTEMPERL_INCLUDE = "+V3Options::getenvSYSTEMPERL_INCLUDE()+"\n");
+	of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
+	of.puts(string("SYSTEMC_INCLUDE ?= ")+V3Options::getenvSYSTEMC_INCLUDE()+"\n");
+	of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
+	of.puts(string("SYSTEMC_LIBDIR ?= ")+V3Options::getenvSYSTEMC_LIBDIR()+"\n");
 
 	of.puts("\n### Switches...\n");
 	of.puts("# SystemPerl output mode?  0/1 (from --sp)\n");
@@ -147,7 +151,7 @@ public:
 	of.puts(string("VM_SP_OR_SC = ")+(v3Global.opt.systemC()?"1":"0")+"\n");
 	of.puts("# Deprecated\n");
 	of.puts(string("VM_PCLI = ")+(v3Global.opt.systemC()?"0":"1")+"\n");
-	of.puts("# SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
+	of.puts("# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
 	of.puts(string("VM_SC_TARGET_ARCH = ")+V3Options::getenvSYSTEMC_ARCH()+"\n");
 
 	of.puts("\n### Vars...\n");

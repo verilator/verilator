@@ -22,9 +22,10 @@ export VERILATOR_ROOT
 include $(VERILATOR_ROOT)/include/verilated.mk
 
 DEBUG_ON = --debug
+SYSTEMC_TESTING ?= $(SYSTEMC)$(SYSTEMC_INCLUDE)
 
 ######################################################################
-ifneq ($(SYSTEMC),)
+ifneq ($(SYSTEMC_TESTING),)
 test_default:  precopy prep        preproc compile run
 test_debug:    precopy prep_dbg    preproc compile run
 else
@@ -59,7 +60,7 @@ obj_dir:
 
 nosc:
 	@echo
-	@echo %Skip: SYSTEMC not in environment
+	@echo %Skip: SYSTEMC_INCLUDE not in environment
 	@echo
 
 ######################################################################

@@ -49,6 +49,12 @@
 #ifndef DEFENV_SYSTEMC_ARCH
 # define DEFENV_SYSTEMC_ARCH ""
 #endif
+#ifndef DEFENV_SYSTEMC_INCLUDE
+# define DEFENV_SYSTEMC_INCLUDE ""
+#endif
+#ifndef DEFENV_SYSTEMC_LIBDIR
+# define DEFENV_SYSTEMC_LIBDIR ""
+#endif
 #ifndef DEFENV_SYSTEMPERL
 # define DEFENV_SYSTEMPERL ""
 #endif

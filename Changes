@@ -6,6 +6,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.831****
 
+**    Support SystemC 2.3.0 prerelease.  This requires setting the new
+      SYSTEMC_INCLUDE and SYSTEMC_LIBDIR variables in place of now
+      deprecated SYSTEMC and SYSTEMC_ARCH.  [Iztok Jeras]
+
 ****  Suppress VARHIDDEN on dpi import arguments.  [Ruben Diez]
 
 ****  Support "generate for (genvar i=0; ...".  [David Kravitz]

@@ -414,13 +414,6 @@ string V3Options::getenvSYSTEMC() {
 	var = DEFENV_SYSTEMC;
 	setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemCLibs()) {
-	if (var == "") {
-	    v3fatal("Need $SYSTEMC in environment\n"
-		    "Probably System-C isn't installed, see http://www.systemc.org\n");
-	}
-    }
     return var;
 }
 
@@ -447,6 +440,47 @@ string V3Options::getenvSYSTEMC_ARCH() {
 	else { var = "linux"; }
 #endif
 	setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
+    }
+    return var;
+}
+
+string V3Options::getenvSYSTEMC_INCLUDE() {
+    string var = getenvStr("SYSTEMC_INCLUDE","");
+    if (var == "" && string(DEFENV_SYSTEMC_INCLUDE) != "") {
+	var = DEFENV_SYSTEMC_INCLUDE;
+	setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
+    }
+    if (var == "") {
+	string sc = getenvSYSTEMC();
+	if (sc != "") var = sc+"/include";
+    }
+    // Only correct or check it if we really need the value
+    if (v3Global.opt.usingSystemCLibs()) {
+	if (var == "") {
+	    v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured\n"
+		    "Probably System-C isn't installed, see http://www.systemc.org\n");
+	}
+    }
+    return var;
+}
+
+string V3Options::getenvSYSTEMC_LIBDIR() {
+    string var = getenvStr("SYSTEMC_LIBDIR","");
+    if (var == "" && string(DEFENV_SYSTEMC_LIBDIR) != "") {
+	var = DEFENV_SYSTEMC_LIBDIR;
+	setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
+    }
+    if (var == "") {
+	string sc = getenvSYSTEMC();
+	string arch = getenvSYSTEMC_ARCH();
+	if (sc != "" && arch != "") var = sc+"/lib-"+arch;
+    }
+    // Only correct or check it if we really need the value
+    if (v3Global.opt.usingSystemCLibs()) {
+	if (var == "") {
+	    v3fatal("Need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
+		    "Probably System-C isn't installed, see http://www.systemc.org\n");
+	}
     }
     return var;
 }
@@ -1096,6 +1130,8 @@ void V3Options::showVersion(bool verbose) {
     cout << "  Compiled in defaults if not in environment:\n";
     cout << "    SYSTEMC            = " << DEFENV_SYSTEMC<<endl;
     cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH<<endl;
+    cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE<<endl;
+    cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR<<endl;
     cout << "    SYSTEMPERL         = " << DEFENV_SYSTEMPERL<<endl;
     cout << "    SYSTEMPERL_INCLUDE = " << DEFENV_SYSTEMPERL_INCLUDE<<endl;
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT<<endl;
@@ -1105,6 +1141,8 @@ void V3Options::showVersion(bool verbose) {
     cout << "    PERL               = " << getenvStr("PERL","")<<endl;
     cout << "    SYSTEMC            = " << getenvStr("SYSTEMC","")<<endl;
     cout << "    SYSTEMC_ARCH       = " << getenvStr("SYSTEMC_ARCH","")<<endl;
+    cout << "    SYSTEMC_INCLUDE    = " << getenvStr("SYSTEMC_INCLUDE","")<<endl;
+    cout << "    SYSTEMC_LIBDIR     = " << getenvStr("SYSTEMC_LIBDIR","")<<endl;
     cout << "    SYSTEMPERL         = " << getenvStr("SYSTEMPERL","")<<endl;
     cout << "    SYSTEMPERL_INCLUDE = " << getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
     cout << "    VERILATOR_ROOT     = " << getenvStr("VERILATOR_ROOT","")<<endl;
