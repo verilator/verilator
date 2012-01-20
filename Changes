@@ -4,7 +4,7 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
-* Verilator 3.831****
+* Verilator 3.831 2012/01/20
 
 **    Support SystemC 2.3.0 prerelease.  This requires setting the new
       SYSTEMC_INCLUDE and SYSTEMC_LIBDIR variables in place of now
@@ -19,6 +19,7 @@ indicates the contributor was also the author of the fix; Thanks!
 ****  Fix array of instantiations with sub-range output, bug414. [Jeremy Bennett]
 
 ****  Fix BLKSEQ warnings on variables declared inside always. [Ruben Diez]
+
 
 * Verilator 3.830 2011/11/27
 
