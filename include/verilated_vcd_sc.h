@@ -76,6 +76,8 @@ private:
 #ifdef NC_SYSTEMC
     // Cadence Incisive has these as abstract functions so we must create them
     virtual void set_time_unit( int exponent10_seconds ) {} // deprecated
+#endif
+#if defined(NC_SYSTEMC) || (SYSTEMC_VERSION>=20111100)
     virtual void set_time_unit( double v, sc_time_unit tu ) {}
 #endif
 
