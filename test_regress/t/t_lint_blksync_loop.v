@@ -73,6 +73,12 @@ module reg_1r1w
 
     integer        x;
 
+    // Message 679
+    always @(posedge clk) begin
+       int tmp = x + 1;
+       if (tmp !== x + 1) $stop;
+    end
+
     always @(posedge clk or negedge rst_l) begin
        if (!rst_l) begin
 	  for (x=0; x<DEPTH; x=x+1) begin // <== VERILATOR FLAGS THIS LINE

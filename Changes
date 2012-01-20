@@ -18,6 +18,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix array of instantiations with sub-range output, bug414. [Jeremy Bennett]
 
+****  Fix BLKSEQ warnings on variables declared inside always. [Ruben Diez]
 
 * Verilator 3.830 2011/11/27
 

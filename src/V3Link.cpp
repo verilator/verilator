@@ -79,6 +79,7 @@ private:
     V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
     int		m_beginNum;	// Begin block number, 0=none seen
     int		m_modBeginNum;	// Begin block number in module, 0=none seen
+    bool	m_inAlways;	// Inside an always
     bool	m_inGenerate;	// Inside a generate
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
@@ -340,6 +341,8 @@ private:
 	    if (nodep->isIO() && !m_ftaskp && !nodep->user2()) {
 		nodep->v3error("Input/output/inout does not appear in port list: "<<nodep->prettyName());
 	    }
+	    // temporaries under an always aren't expected to be blocking
+	    if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
 	    if (nodep->valuep()) {
 		// A variable with a = value can be three things:
 		FileLine* fl = nodep->valuep()->fileline();
@@ -745,7 +748,9 @@ private:
 	visitIterateNoValueMod(nodep);
     }
     virtual void visit(AstAlways* nodep, AstNUser*) {
+	m_inAlways = true;
 	visitIterateNoValueMod(nodep);
+	m_inAlways = false;
     }
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	visitIterateNoValueMod(nodep);
@@ -768,6 +773,7 @@ public:
 	m_paramNum = 0;
 	m_beginNum = 0;
 	m_modBeginNum = 0;
+	m_inAlways = false;
 	m_inGenerate = false;
 	m_valueModp = NULL;
 	//
