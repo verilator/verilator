@@ -26,6 +26,7 @@ module t (/*AUTOARG*/
    integer    i0,i1,i2;
 
    integer    imem[2:0][1:3];
+   reg [2:0]  cstyle[2];
 
    initial begin
       for (i0=0; i0<3; i0=i0+1) begin
@@ -75,6 +76,8 @@ module t (/*AUTOARG*/
 	 memn[index0][index1][index2]   <= {~crc[6:0],crc[7]};
 	 memw[index0][index1][index2]   <= {~crc[7:0],crc};
 	 //$write("Set memw[%d][%d][%d] <= %x\n",index0,index1,index2, {~crc[7:0],crc});
+	 cstyle[cyc[0]] <= cyc[2:0];
+	 if (cyc>20) if (cstyle[~cyc[0]] != (cyc[2:0]-3'b1)) $stop;
       end
       else if (cyc==90) begin
 	 memn[0][1][3] <= memn[0][1][3] ^ 8'ha8;
