@@ -4,6 +4,9 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
+* Verilator 3.832 devel
+
+
 * Verilator 3.831 2012/01/20
 
 **    Support SystemC 2.3.0 prerelease.  This requires setting the new
