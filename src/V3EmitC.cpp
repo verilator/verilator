@@ -1353,7 +1353,7 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		    puts(varp->name());
 		    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
 		    if (zeroit) {
-			puts("= 0;\n");
+			puts(" = 0;\n");
 		    } else {
 			puts(" = VL_RAND_RESET_");
 			emitIQW(varp);

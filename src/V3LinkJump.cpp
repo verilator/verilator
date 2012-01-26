@@ -139,7 +139,7 @@ private:
    	string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
 	// Spec says value is integral, if negative is ignored
 	AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
-				  AstLogicPacked(), 32);
+				  AstBitPacked(), 32);
 	varp->numeric(AstNumeric::SIGNED);
 	varp->dtypep()->numeric(AstNumeric::SIGNED);
 	varp->usedLoopIdx(true);

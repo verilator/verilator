@@ -36,6 +36,7 @@
 
 // Hint class so we can choose constructors
 class AstLogicPacked {};
+class AstBitPacked {};
 
 //######################################################################
 

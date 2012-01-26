@@ -254,6 +254,11 @@ public:
 	init(AstBasicDTypeKwd::LOGIC, signedst_NOP,
 	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
     }
+    AstBasicDType(FileLine* fl, AstBitPacked, int wantwidth)
+	: AstNodeDType(fl) {
+	init(AstBasicDTypeKwd::BIT, signedst_NOP,
+	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
+    }
     // See also addRange in verilog.y
 private:
     void init(AstBasicDTypeKwd kwd, AstSignedState signst, AstRange* rangep) {
@@ -624,6 +629,14 @@ public:
 	init();
 	combineType(type);
 	setOp1p(new AstBasicDType(fl, AstLogicPacked(), wantwidth));
+	width(wantwidth,0);
+    }
+    AstVar(FileLine* fl, AstVarType type, const string& name, AstBitPacked, int wantwidth)
+	:AstNode(fl)
+	, m_name(name) {
+	init();
+	combineType(type);
+	setOp1p(new AstBasicDType(fl, AstBitPacked(), wantwidth));
 	width(wantwidth,0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
