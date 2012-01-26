@@ -6,6 +6,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.832 devel
 
+***   Fix memory delayed assignments from multiple clock domains. [Andrew Ling]
+
+***   Report MULTIDRIVEN on memories set in multiple clock domains.
+
 
 * Verilator 3.831 2012/01/20
 

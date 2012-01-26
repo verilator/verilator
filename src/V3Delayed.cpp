@@ -74,14 +74,15 @@ private:
     // NODE STATE
     // Cleared each module:
     //  AstVarScope::user1p()	-> AstVarScope*.  Points to temp var created.
-    //  AstVarScope::user2p()	-> AstActive*.  Points to activity block of signal
+    //  AstVarScope::user2p()	-> AstActive*.  Points to activity block of signal (valid when AstVarScope::user1p is valid)
     //  AstVarScope::user4p()	-> AstAlwaysPost*.  Post block for this variable
     //  AstVarScope::user5()	-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user2()		-> bool.  Set true if already made warning
     //  AstVar::user4()		-> int.   Vector number, for assignment creation
     //  AstVarRef::user2()	-> bool.  Set true if already processed
+    //  AstAlwaysPost::user2()	-> ActActive*.  Points to activity block of signal (valid when AstAlwaysPost::user4p is valid)
     //  AstAlwaysPost::user4()	-> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
-    // Cleared each scope:
+    // Cleared each scope/active:
     //  AstAssignDly::user3()	-> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user3()	-> AstVarScope*.  __Vdlyvset__ last referenced in IF
     AstUser1InUse	m_inuser1;
@@ -142,6 +143,40 @@ private:
 	AstVarScope* varscp = new AstVarScope (oldvarscp->fileline(), oldvarscp->scopep(), varp);
 	oldvarscp->scopep()->addVarp(varscp);
 	return varscp;
+    }
+
+    AstActive* createActivePost(AstVarRef* varrefp) {
+	AstActive* newactp = new AstActive (varrefp->fileline(), "sequentdly",
+					    m_activep->sensesp());
+	m_activep->addNext(newactp);
+	return newactp;
+    }
+    void checkActivePost(AstVarRef* varrefp, AstActive* oldactivep) {
+	// Check for MULTIDRIVEN, and if so make new sentree that joins old & new sentree
+	if (!oldactivep) varrefp->v3fatalSrc("<= old dly assignment not put under sensitivity block");
+	if (oldactivep->sensesp() != m_activep->sensesp()) {
+	    if (!varrefp->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
+		&& !varrefp->varp()->user2()) {
+		varrefp->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks: "<<varrefp->varp()->prettyName());
+		varrefp->v3warn(MULTIDRIVEN,"... Location of first driving block");
+		oldactivep->v3warn(MULTIDRIVEN,"... Location of other driving block");
+		varrefp->varp()->user2(true);
+	    }
+	    UINFO(4,"AssignDupDlyVar: "<<varrefp<<endl);
+	    UINFO(4,"  Act: "<<m_activep<<endl);
+	    UINFO(4,"  Act: "<<oldactivep<<endl);
+	    // Make a new sensitivity list, which is the combination of both blocks
+	    AstNodeSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
+	    AstNodeSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
+	    AstSenTree* treep = new AstSenTree(m_activep->fileline(), sena);
+	    if (senb) treep->addSensesp(senb);
+	    if (AstSenTree* storep = oldactivep->sensesStorep()) {
+		storep->unlinkFrBack();
+		pushDeletep(storep);
+	    }
+	    oldactivep->sensesStorep(treep);
+	    oldactivep->sensesp(treep);
+	}
     }
 
     AstNode* createDlyArray(AstAssignDly* nodep, AstNode* lhsp) {
@@ -225,6 +260,7 @@ private:
 	//
 	//=== Setting/not setting boolean: __Vdlyvset__
 	AstVarScope* setvscp;
+	AstAssignPre* setinitp = NULL;
 
 	if (nodep->user3p()) {
 	    // Simplistic optimization.  If the previous statement in same scope was also a =>,
@@ -236,11 +272,9 @@ private:
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1);
-	    AstAssignPre* setinitp
-		= new AstAssignPre (nodep->fileline(),
-				    new AstVarRef(nodep->fileline(), setvscp, true),
-				    new AstConst(nodep->fileline(), 0));
-	    m_activep->addStmtsp(setinitp);
+	    setinitp = new AstAssignPre (nodep->fileline(),
+					 new AstVarRef(nodep->fileline(), setvscp, true),
+					 new AstConst(nodep->fileline(), 0));
 	    AstAssign* setassignp
 		= new AstAssign (nodep->fileline(),
 				 new AstVarRef(nodep->fileline(), setvscp, true),
@@ -269,11 +303,18 @@ private:
 	UINFO(9,"   For "<<setvscp<<endl);
 	UINFO(9,"     & "<<varrefp<<endl);
 	AstAlwaysPost* finalp = varrefp->varScopep()->user4p()->castNode()->castAlwaysPost();
-	if (!finalp) {
+	if (finalp) {
+	    AstActive* oldactivep = finalp->user2p()->castNode()->castActive();
+	    checkActivePost(varrefp, oldactivep);
+	    if (setinitp) oldactivep->addStmtsp(setinitp);
+	} else { // first time we've dealt with this memory
 	    finalp = new AstAlwaysPost(nodep->fileline(), NULL/*sens*/, NULL/*body*/);
 	    UINFO(9,"     Created "<<finalp<<endl);
-	    m_activep->addStmtsp(finalp);
+	    AstActive* newactp = createActivePost(varrefp);
+	    newactp->addStmtsp(finalp);
 	    varrefp->varScopep()->user4p(finalp);
+	    finalp->user2p(newactp);
+	    if (setinitp) newactp->addStmtsp(setinitp);
 	}
 	AstIf* postLogicp;
 	if (finalp->user3p()->castNode() == setvscp) {
@@ -292,7 +333,6 @@ private:
 	    finalp->user4p(postLogicp);	// and the associated IF, as we may be able to reuse it
 	}
 	postLogicp->addIfsp(new AstAssign(nodep->fileline(), selectsp, valreadp));
-
 	return newlhsp;
     }
 
@@ -316,6 +356,7 @@ private:
 	m_activep = nodep;
 	bool oldinit = m_inInitial;
 	m_inInitial = nodep->hasInitial();
+	AstNode::user3ClearTree();  // Two sets to same variable in different actives must use different vars.
 	nodep->iterateChildren(*this);
 	m_inInitial = oldinit;
     }
@@ -342,6 +383,7 @@ private:
 	m_inDly = false;
 	m_nextDlyp = NULL;
     }
+
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (!nodep->user2Inc()) {  // Not done yet
 	    if (m_inDly && nodep->lvalue()) {
@@ -354,30 +396,7 @@ private:
 		AstVarScope* dlyvscp = oldvscp->user1p()->castNode()->castVarScope();
 		if (dlyvscp) {  // Multiple use of delayed variable
 		    AstActive* oldactivep = dlyvscp->user2p()->castNode()->castActive();
-		    if (!oldactivep) nodep->v3fatalSrc("<= old dly assignment not put under sensitivity block");
-		    if (oldactivep->sensesp() != m_activep->sensesp()) {
-			if (!nodep->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
-			    && !nodep->varp()->user2()) {
-			    nodep->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks: "<<nodep->varp()->prettyName());
-			    nodep->v3warn(MULTIDRIVEN,"... Location of first driving block");
-			    oldactivep->v3warn(MULTIDRIVEN,"... Location of other driving block");
-			    nodep->varp()->user2(true);
-			}
-			UINFO(4,"AssignDupDlyVar: "<<nodep<<endl);
-			UINFO(4,"  Act: "<<m_activep<<endl);
-			UINFO(4,"  Act: "<<oldactivep<<endl);
-			// Make a new sensitivity list, which is the combination of both blocks
-			AstNodeSenItem* sena = m_activep->sensesp()->sensesp()->cloneTree(true);
-			AstNodeSenItem* senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
-			AstSenTree* treep = new AstSenTree(m_activep->fileline(), sena);
-			if (senb) treep->addSensesp(senb);
-			if (AstSenTree* storep = oldactivep->sensesStorep()) {
-			    storep->unlinkFrBack();
-			    pushDeletep(storep);
-			}
-			oldactivep->sensesStorep(treep);
-			oldactivep->sensesp(treep);
-		    }
+		    checkActivePost(nodep, oldactivep);
 		}
 		if (!dlyvscp) {  // First use of this delayed variable
 		    string newvarname = (string("__Vdly__")+nodep->varp()->shortName());
@@ -393,12 +412,10 @@ private:
 		    postp->lhsp()->user2(true);	// Don't detect this assignment
 		    oldvscp->user1p(dlyvscp);  // So we can find it later
 		    // Make new ACTIVE with identical sensitivity tree
-		    AstActive* newactp = new AstActive (nodep->fileline(), "sequentdly",
-							m_activep->sensesp());
+		    AstActive* newactp = createActivePost(nodep);
+		    dlyvscp->user2p(newactp);
 		    newactp->addStmtsp(prep);	// Add to FRONT of statements
 		    newactp->addStmtsp(postp);
-		    m_activep->addNext(newactp);
-		    dlyvscp->user2p(newactp);
 		}
 		AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, true);
 		newrefp->user2(true);  // No reason to do it again
