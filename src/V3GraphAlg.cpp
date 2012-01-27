@@ -344,8 +344,9 @@ private:
 	// When we hit ourself again, return the list of all loops
 	if (m_done) return;
 
-	m_callTrace.reserve(currentRank+10);   // Leave slop for speed
-	m_callTrace[currentRank++] = vertexp;
+	// Can't just reserve(), unless we modify size() before setting array directly
+	while (m_callTrace.size() <= currentRank) m_callTrace.push_back(vertexp);
+	m_callTrace[currentRank++] = vertexp;	
 
 	if (vertexp->user() == 1) {
 	    for (unsigned i=0; i<currentRank; i++) {

@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Report MULTIDRIVEN on memories set in multiple clock domains.
 
+****  Fix core dump with over 100 deep UNOPTFLAT, bug432.  [Joe Eiler]
+
 
 * Verilator 3.831 2012/01/20
 
