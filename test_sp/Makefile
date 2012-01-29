@@ -75,7 +75,7 @@ obj_dir:
 
 nosp:
 	@echo
-	@echo %Skip: SYSTERMPERL not in environment
+	@echo %Skip: SYSTEMPERL not in environment
 	@echo
 
 ######################################################################
