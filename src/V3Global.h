@@ -41,7 +41,8 @@ class AstNetlist;
 
 class V3Global {
     // Globals
-    AstNetlist*	m_rootp;	// Root of entire netlist
+    AstNetlist*	m_rootp;		// Root of entire netlist
+
     int		m_debugFileNumber;	// Number to append to debug files created
     bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
     bool	m_assertWidthsMatch;	// Tree should have width()==widthMin()

@@ -872,9 +872,6 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     if (nodep->isIO()) {
 	bool isArray = !nodep->dtypeSkipRefp()->castBasicDType();
 	if (nodep->isSc()) {
-	    if (isArray) {
-		nodep->v3error("Unsupported: SystemC inputs and outputs must be simple data types; no arrays");
-	    }
 	    m_ctorVarsVec.push_back(nodep);
 	    ofp()->putAlign(nodep->isStatic(), 4);	// sc stuff is a structure, so bigger alignment
 	    if (nodep->attrScClocked() && nodep->isInput()) {
@@ -889,6 +886,11 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		puts(">\t");
 	    }
 	    puts(nodep->name());
+	    if (isArray) {
+		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
+		}
+	    }
 	    puts(";\n");
 	} else { // C++ signals
 	    ofp()->putAlign(nodep->isStatic(), nodep->dtypeSkipRefp()->widthAlignBytes(),
@@ -961,22 +963,29 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 }
 
 void EmitCStmts::emitVarCtors() {
-    ofp()->indentInc();
-    bool first = true;
-    for (vector<AstVar*>::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
-	if (first) {
-	    first=false;
-	    puts("\n");
-	    puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
-	    puts("  : ");
+    if (!m_ctorVarsVec.empty()) {
+	ofp()->indentInc();
+	puts("\n");
+	puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
+	bool first = true;
+	for (vector<AstVar*>::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
+	    AstVar* varp = *it;
+	    bool isArray = !varp->dtypeSkipRefp()->castBasicDType();
+	    if (isArray) {
+		puts("// Skipping array: ");
+		puts(varp->name());
+		puts("\n");
+	    } else {
+		if (first) { puts("  : "); first=false; }
+		else puts(", ");
+		if (ofp()->exceededWidth()) puts("\n  ");
+		puts(varp->name());
+		puts("("); putsQuoted(varp->name()); puts(")");
+	    }
 	}
-	else puts(", ");
-	if (ofp()->exceededWidth()) puts("\n  ");
-	puts((*it)->name());
-	puts("("); putsQuoted((*it)->name()); puts(")");
+	puts ("\n#endif\n");
+	ofp()->indentDec();
     }
-    if (!first) puts ("\n#endif\n");
-    ofp()->indentDec();
 }
 
 bool EmitCStmts::emitSimpleOk(AstNodeMath* nodep) {
@@ -1500,7 +1509,22 @@ void EmitCImp::emitSensitives() {
 	for (AstNode* nodep=m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	    if (AstVar* varp = nodep->castVar()) {
 		if (varp->isInput() && (varp->isScSensitive() || varp->isUsedClock())) {
-		    puts("sensitive << "+varp->name()+";\n");
+		    int vects = 0;
+		    // This isn't very robust and may need cleanup for other data types
+		    for (AstArrayDType* arrayp=varp->dtypeSkipRefp()->castArrayDType(); arrayp;
+			 arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+			int vecnum = vects++;
+			if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
+			string ivar = string("__Vi")+cvtToStr(vecnum);
+			// MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
+			puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(arrayp->lsb())+";");
+			puts(" for (; "+ivar+"<="+cvtToStr(arrayp->msb()));
+			puts("; ++"+ivar+") {\n");
+		    }
+		    puts("sensitive << "+varp->name());
+		    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
+		    puts(";\n");
+		    for (int v=0; v<vects; ++v) puts( "}}\n");
 		}
 	    }
 	}
