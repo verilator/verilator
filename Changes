@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support arrayed SystemC I/O pins.  [Christophe Joly]
 
+****  Support "snps" directives.  [Dan Katz]
+
 ****  Fix core dump with over 100 deep UNOPTFLAT, bug432.  [Joe Eiler]
 
 

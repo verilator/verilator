@@ -394,6 +394,10 @@ void V3PreProcImp::comment(const string& text) {
 	cp+=strlen("synopsys");
 	synth = true;
 	if (*cp == '_') fileline()->v3error("Extra underscore in meta-comment; use /*synopsys {...}*/ not /*synopsys_{...}*/");
+    } else if (0==(strncmp(cp,"snps",strlen("snps")))) {
+	cp+=strlen("snps");
+	synth = true;
+	if (*cp == '_') fileline()->v3error("Extra underscore in meta-comment; use /*snps {...}*/ not /*snps_{...}*/");
     } else if (0==(strncmp(cp,"cadence",strlen("cadence")))) {
 	cp+=strlen("cadence");
 	synth = true;
