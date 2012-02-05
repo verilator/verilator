@@ -12,7 +12,7 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 compile (
 	 make_top_shell => 0,
 	 make_main => 0,
-	 verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp --debug"],
+	 verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
     );
 
 execute (
