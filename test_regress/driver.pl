@@ -365,7 +365,18 @@ sub new {
     $self->{coverage_filename} ||= "$self->{obj_dir}/vlt_coverage.pl";
     $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
-    ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$/\.v/;
+    ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$//;
+    if (-e ($self->{top_filename}.".vhd")) { # If VHDL file exists
+	$self->{vhdl} = 1;
+        $self->{top_filename} .= ".vhd";
+    } else {
+        $self->{top_filename} .= ".v";
+    }
+    if (!$self->{make_top_shell}) {
+	$self->{top_shell_filename} = $self->{top_filename};
+    } else {
+	$self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
+    }
     return $self;
 }
 
@@ -1170,7 +1181,7 @@ sub _sp_preproc {
 
 sub _read_inputs_v {
     my $self = shift;
-    my $filename = $self->{top_filename};
+    my $filename = $self->top_filename;
     $filename = "$self->{t_dir}/$filename" if !-r $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (defined(my $line = $fh->getline)) {
@@ -1188,7 +1199,7 @@ sub _read_inputs_v {
 
 sub _read_inputs_vhdl {
     my $self = shift;
-    my $filename = $self->{top_filename};
+    my $filename = $self->top_filename;
     $filename = "$self->{t_dir}/$filename" if !-r $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (defined(my $line = $fh->getline)) {

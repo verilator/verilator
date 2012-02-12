@@ -55,8 +55,8 @@ struct V3OptionsImp {
     set<string>		m_incDirUserSet;	// Include directories (for removing duplicates)
     list<string>	m_incDirFallbacks;	// Include directories (ordered)
     set<string>		m_incDirFallbackSet;	// Include directories (for removing duplicates)
-    list<string>	m_libExts;	// Library extensions (ordered)
-    set<string>		m_libExtSet;	// Library extensions (for removing duplicates)
+    list<string>	m_libExtVs;	// Library extensions (ordered)
+    set<string>		m_libExtVSet;	// Library extensions (for removing duplicates)
     DirMap		m_dirMap;	// Directory listing
 
     // ACCESSOR METHODS
@@ -76,10 +76,10 @@ struct V3OptionsImp {
 	    }
 	}
     }
-    void addLibExt(const string& libext) {
-	if (m_libExtSet.find(libext) == m_libExtSet.end()) {
-	    m_libExtSet.insert(libext);
-	    m_libExts.push_back(libext);
+    void addLibExtV(const string& libext) {
+	if (m_libExtVSet.find(libext) == m_libExtVSet.end()) {
+	    m_libExtVSet.insert(libext);
+	    m_libExtVs.push_back(libext);
 	}
     }
     V3OptionsImp() {}
@@ -91,8 +91,8 @@ void V3Options::addIncDirUser(const string& incdir) {
 void V3Options::addIncDirFallback(const string& incdir) {
     m_impp->addIncDirFallback(incdir);
 }
-void V3Options::addLibExt(const string& libext) {
-    m_impp->addLibExt(libext);
+void V3Options::addLibExtV(const string& libext) {
+    m_impp->addLibExtV(libext);
 }
 void V3Options::addDefine(const string& defline) {
     // Split +define+foo=value into the appropriate parts and parse
@@ -304,7 +304,7 @@ string V3Options::fileExists (const string& filename) {
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
-    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 	string fn = filenameFromDirBase(dirname, modname+*extIter);
 	string exists = fileExists(fn);
 	if (exists!="") {
@@ -350,14 +350,14 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 	fl->v3error("Looked in:"<<endl);
 	for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
 	     dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
-	    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
 	}
 	for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
 	     dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
-	    for (list<string>::iterator extIter=m_impp->m_libExts.begin(); extIter!=m_impp->m_libExts.end(); ++extIter) {
+	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
@@ -685,10 +685,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		string exts = string(sw+strlen("+libext+"));
 		string::size_type pos;
 		while ((pos=exts.find("+")) != string::npos) {
-		    addLibExt (exts.substr(0,pos));
+		    addLibExtV (exts.substr(0,pos));
 		    exts = exts.substr(pos+1);
 		}
-		addLibExt (exts);
+		addLibExtV (exts);
 	    }
 	    else if ( !strcmp (sw, "+librescan")) { // NOP
 	    }
@@ -1208,9 +1208,9 @@ V3Options::V3Options() {
 
     optimize(true);
     // Default +libext+
-    addLibExt("");  // So include "filename.v" will find the same file
-    addLibExt(".v");
-    addLibExt(".sv");
+    addLibExtV("");  // So include "filename.v" will find the same file
+    addLibExtV(".v");
+    addLibExtV(".sv");
     // Default -I
     addIncDirFallback(".");	// Looks better than {long_cwd_path}/...
 }

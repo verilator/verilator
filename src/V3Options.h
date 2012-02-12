@@ -183,7 +183,7 @@ class V3Options {
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
-    void addLibExt(const string& libext);
+    void addLibExtV(const string& libext);
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }

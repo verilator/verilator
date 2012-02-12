@@ -33,6 +33,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <fstream>
+#include <sstream>
 
 #include "V3Error.h"
 #include "V3Global.h"

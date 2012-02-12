@@ -964,6 +964,14 @@ public:
 	setNOp1p(exprp);
 	if (exprp) widthSignedFrom(exprp);
     }
+    AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
+	:AstNode(fl), m_svImplicit(false) {
+	m_name = varname->name();
+	m_pinNum = pinNum;
+	m_modVarp = NULL;
+	setNOp1p(exprp);
+	if (exprp) widthSignedFrom(exprp);
+    }
     ASTNODE_NODE_FUNCS(Pin, PIN)
     virtual void dump(ostream& str);
     virtual bool broken() const { return (m_modVarp && !m_modVarp->brokeExists()); }

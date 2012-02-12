@@ -53,6 +53,7 @@ struct V3ParseBisonYYSType {
 	string*		strp;
 	int 		cint;
 	double		cdouble;
+	bool		cbool;
 	V3UniqState	uniqstate;
 	AstSignedState	signstate;
 	V3ImportProperty iprop;

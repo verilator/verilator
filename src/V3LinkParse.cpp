@@ -275,7 +275,6 @@ private:
 	}
     }
 
-
     virtual void visit(AstVar* nodep, AstNUser*) {
 	cleanFileline(nodep);
 	m_varp = nodep;

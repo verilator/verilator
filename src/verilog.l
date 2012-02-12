@@ -1017,7 +1017,7 @@ word	[a-zA-Z0-9_]+
   "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2009\"		{ yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800+VAMS\"		{ yy_push_state(SA9); PARSEP->pushBeginKeywords(YY_START); }
-  "`end_keywords"			{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+  "`end_keywords"				{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 
   /* Verilator */
   "`systemc_ctor"			{ BEGIN SYSCCTOR; }
