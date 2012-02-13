@@ -532,16 +532,16 @@ This switch causes the name.tab.c output to include a list of token names
 in order by their token numbers; this is defined in the array yytname.
 Also generated are #defines for YYNTOKENS, YYNNTS, YYNRULES, and YYNSTATES.
 
-==item -t
-==item --debug
+=item -t
+=item --debug
 
 Passed to bison.
 
 In the parser file, define the macro YYDEBUG to 1 if it is not already
 defined, so that the debugging facilities are compiled.
 
-==item -v
-==item --verbose
+=item -v
+=item --verbose
 
 Passed to bison.
 
