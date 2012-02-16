@@ -27,7 +27,7 @@ config_srcdir = @srcdir@
 ifeq ($(config_srcdir),.)
  srcdir = ..
 else  # Run an experiment
- ifeq ($(shell -e $(config_srcdir)/../Makefile_obj.in),)
+ ifeq ($(wildcard $(config_srcdir)/../Makefile_obj.in),)
    srcdir = $(config_srcdir)
  else
    srcdir = $(config_srcdir)/..
