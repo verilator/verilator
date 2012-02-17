@@ -164,7 +164,7 @@ verilator_exe verilator_bin verilator_bin_dbg:
 	  (cd src && $(MAKE) $(OBJCACHE_JOBS) )
 
 .PHONY:msg_test
-msg_test:
+msg_test: all_nomsg
 	@echo "Build complete!"
 	@echo
 	@echo "Type 'make test' to test."
