@@ -13,6 +13,7 @@ use vars qw ($Debug);
 # main
 
 our $Opt_Stage = 0;
+our $Opt_Jobs = calc_jobs();
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
@@ -21,11 +22,13 @@ if (! GetOptions (
 	  "debug"	=> sub { $Debug = 1; },
 	  "<>"		=> sub { die "%Error: Unknown parameter: $_[0]\n"; },
 	  "stage=i"	=> \$Opt_Stage,
+	  "j=i"		=> \$Opt_Jobs,
     )) {
     die "%Error: Bad usage, try 'install_test --help'\n";
 }
 
 test();
+exit(0);
 
 #######################################################################
 
@@ -47,7 +50,7 @@ sub test {
 	run("/bin/rm -rf $blddir");
 	run("/bin/mkdir -p $blddir");
 	run("cd $blddir && $srcdir/configure --prefix $prefix");
-	run("cd $blddir && make -j");
+	run("cd $blddir && make -j $Opt_Jobs");
     }
 
     # Install it under the prefix
@@ -121,6 +124,16 @@ sub cleanenv {
 
 #######################################################################
 
+sub calc_jobs {
+    my $ok = eval "
+	use Unix::Processors;
+	return Unix::Processors->new->max_online;
+    ";
+    $ok && !$@ or return 1;
+    print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n" if $Debug;
+    return $ok + 1;
+}
+
 sub run {
     # Run a system command, check errors
     my $command = shift;
@@ -156,6 +169,15 @@ required.
 =item --help
 
 Displays this message and program version and exits.
+
+=item -j I<jobs>
+
+Specify make -j flag.  Defaults to number of cores + 1 if Perl's
+Unix::Processors is installed, else 1.
+
+=item -stage I<stage>
+
+Runs a specific test stage (see the script).
 
 =back
 

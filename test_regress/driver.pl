@@ -1467,7 +1467,7 @@ Displays this message and program version and exits.
 =item --j #
 
 Run number of parallel tests, or 0 to determine the count based on the
-number of cores installed.  Requires Parallel::Forker project.
+number of cores installed.  Requires Perl's Parallel::Forker package.
 
 =item --optimize
 
