@@ -838,46 +838,33 @@ private:
 	AstNodeCase* lastCasep = m_casep;
 	m_casep = nodep;
 	nodep->exprp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	for (AstCaseItem* nextp, *itemp = nodep->itemsp(); itemp; itemp=nextp) {
-	    nextp = itemp->nextp()->castCaseItem(); // Prelim may cause the node to get replaced
-	    itemp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p());  itemp=NULL;
+	for (AstCaseItem* nextip, *itemp = nodep->itemsp(); itemp; itemp=nextip) {
+	    nextip = itemp->nextp()->castCaseItem(); // Prelim may cause the node to get replaced
+	    if (!m_casep->castGenCase()) itemp->bodysp()->iterateAndNext(*this);
+	    for (AstNode* nextcp, *condp = itemp->condsp(); condp; condp=nextcp) {
+		nextcp = condp->nextp(); // Prelim may cause the node to get replaced
+		condp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p()); condp=NULL;
+	    }
 	}
+	// Take width as maximum across all items
 	int width = nodep->exprp()->width();
 	int mwidth = nodep->exprp()->widthMin();
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
-	    width = max(width,itemp->width());
-	    mwidth = max(mwidth,itemp->widthMin());
+	    for (AstNode* condp = itemp->condsp(); condp; condp=condp->nextp()) {
+		width = max(width,condp->width());
+		mwidth = max(mwidth,condp->widthMin());
+	    }
 	}
+	// Apply width
 	nodep->exprp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
-	    itemp->iterate(*this,WidthVP(width,mwidth,FINAL).p());
+	    for (AstNode* condp = itemp->condsp(); condp; condp=condp->nextp()) {
+		condp->iterate(*this,WidthVP(width,mwidth,FINAL).p());
+		widthCheck(nodep,"Case Item",condp,width,mwidth);
+	    }
 	}
         widthCheck(nodep,"Case expression",nodep->exprp(),width,mwidth);
 	m_casep = lastCasep;
-    }
-    virtual void visit(AstCaseItem* nodep, AstNUser* vup) {
-	// Same for both prelim() and final()
-	if (!m_casep->castGenCase()) nodep->bodysp()->iterateAndNext(*this);
-	if (!nodep->condsp()) {
-	    // Else "default:" of the case, just return benign value
-	    nodep->width(vup->c()->width(),vup->c()->widthMin());
-	} else {
-	    // Need to look across multiple case values for one set of statements
-	    int width = nodep->condsp()->width();
-	    int mwidth = nodep->condsp()->widthMin();
-	    for (AstNode* nextp, *condp = nodep->condsp(); condp; condp=nextp) {
-		nextp = condp->nextp(); // Prelim may cause the node to get replaced
-		condp->iterate(*this,vup); condp=NULL;
-	    }
-	    for (AstNode* condp = nodep->condsp(); condp; condp=condp->nextp()) {
-		width = max(width,condp->width());
-		mwidth = max(mwidth,condp->widthMin());
-		if (vup->c()->final()) {
-		    widthCheck(nodep,"Case Item",condp,vup->c()->width(),vup->c()->widthMin());
-		}
-	    }
-	    nodep->width(width,mwidth);
-	}
     }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	// TOP LEVEL NODE

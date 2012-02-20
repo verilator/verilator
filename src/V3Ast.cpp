@@ -947,6 +947,10 @@ void AstNode::checkTree() {
     }
 }
 
+void AstNode::dumpCout() { dump(cout); }  // For GDB only
+void AstNode::dumpPtrsCout() const { dumpPtrs(cout); }  // For GDB only
+void AstNode::dumpTreeCout() { dumpTree(cout); }  // For GDB only
+
 void AstNode::dumpPtrs(ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;
     os<<" back="<<(void*)backp();

@@ -247,6 +247,12 @@ what made a <e####> line in the tree dumps):
 
    watch AstNode::s_editCntGbl==####
 
+To print a node:
+
+   p nodep->dumpCout()
+   p nodep->dumpTreeCout()
+   p nodep->dumpPtrsCout()
+
 =head1 DISTRIBUTION
 
 The latest version is available from L<http://www.veripool.org/>.
