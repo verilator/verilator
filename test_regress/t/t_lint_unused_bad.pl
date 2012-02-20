@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} or $Self->skip("Verilator only test");
 
 compile (
-    v_flags2 => ["--lint-only --bbox-sys -Wall -Wno-DECLFILENAME"],
+    v_flags2 => ["--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME"],
     fails=>1,
     verilator_make_gcc => 0,
     make_top_shell => 0,

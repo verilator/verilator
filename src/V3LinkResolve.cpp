@@ -366,8 +366,8 @@ private:
 		    }
 		}
 	    }
+	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
 	}
-	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
     }
 
     virtual void visit(AstScCtor* nodep, AstNUser*) {
