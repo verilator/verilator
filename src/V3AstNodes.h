@@ -244,35 +244,38 @@ struct AstBasicDType : public AstNodeDType {
 private:
     AstBasicDTypeKwd	m_keyword;	// What keyword created it
     bool		m_implicit;	// Implicitly declared
+    int			m_msb;		// MSB when no range attached
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstSignedState signst=signedst_NOP)
 	: AstNodeDType(fl) {
-	init(kwd, signst, NULL);
+	init(kwd, signst, 0, NULL);
     }
     AstBasicDType(FileLine* fl, AstLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::LOGIC, signedst_NOP,
-	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
+	init(AstBasicDTypeKwd::LOGIC, signedst_NOP, wantwidth, NULL);
     }
     AstBasicDType(FileLine* fl, AstBitPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::BIT, signedst_NOP,
-	     ((wantwidth > 1) ? new AstRange(fl, wantwidth-1, 0) : NULL));
+	init(AstBasicDTypeKwd::BIT, signedst_NOP, wantwidth, NULL);
     }
     // See also addRange in verilog.y
 private:
-    void init(AstBasicDTypeKwd kwd, AstSignedState signst, AstRange* rangep) {
+    void init(AstBasicDTypeKwd kwd, AstSignedState signst, int wantwidth, AstRange* rangep) {
 	m_keyword = kwd;
+	m_msb = 0;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
 	m_implicit = false;
 	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
-	    if (!rangep) m_implicit = true;  // Also cleared if range added later
+	    if (!rangep && !wantwidth) m_implicit = true;  // Also cleared if range added later
 	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
 	if (signst == signedst_NOP && keyword().isSigned()) signst = signedst_SIGNED;
 	if (keyword().isDouble()) dtypeChgDouble();
 	else setSignedState(signst);
-	if (!rangep) {  // Set based on keyword properties
+	if (!rangep && wantwidth) { // Constant width
+	    m_msb = wantwidth - 1;
+	    width(wantwidth, wantwidth);
+	} else if (!rangep) {  // Set based on keyword properties
 	    // V3Width will pull from this width
 	    if (keyword().width() > 1 && !isOpaque()) rangep = new AstRange(fileline(), keyword().width()-1, 0);
 	    width(keyword().width(), keyword().width());
@@ -305,14 +308,22 @@ public:
     bool	isOpaque() const { return keyword().isOpaque(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     bool	isZeroInit() const { return keyword().isZeroInit(); }
-    int		msb() const { if (!rangep()) return 0; return rangep()->msbConst(); }
+    bool	isRanged() const { return rangep() || m_msb; }
+    int		msb() const { if (!rangep()) return m_msb; return rangep()->msbConst(); }
     int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
-    int		msbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
+    int		msbEndianed() const { if (!rangep()) return m_msb; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
     int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
     void	implicit(bool flag) { m_implicit = flag; }
+    void	cvtRangeConst() {  // Convert to smaller represenation
+	if (rangep() && rangep()->castConst() && lsb()==0 && !littleEndian()) {
+	    m_msb = msb();
+	    rangep()->deleteTree();
+	    rangep(NULL);
+	}
+    }
 };
 
 struct AstConstDType : public AstNodeDType {

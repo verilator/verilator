@@ -83,7 +83,7 @@ private:
 	    return adtypep;
 	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
-	    if (!adtypep->rangep()) {
+	    if (!adtypep->isRanged()) {
 		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<varp->prettyName());
 		return NULL;
 	    }
@@ -145,13 +145,13 @@ private:
 	AstVar* varp = varFromBasefrom(basefromp);
 	// SUB #'s Not needed when LSB==0 and MSB>=0 (ie [0:-13] must still get added!)
 	if (!varp->basicp()->rangep()) {
-	    // vector without range is ok, for example a INTEGER x; y = x[21:0];
+	    // vector without range, or 0 lsb is ok, for example a INTEGER x; y = x[21:0];
 	    return underp;
 	} else {
 	    if (!varp->basicp()->rangep()->msbp()->castConst()
 		|| !varp->basicp()->rangep()->lsbp()->castConst())
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
-	    if (varp->basicp()->rangep()->littleEndian()) {
+	    if (varp->basicp()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
 		AstNode* newp = newSubNeg(varp->basicp()->msb(), underp);
 		return newp;
@@ -263,7 +263,7 @@ private:
 	    }
 	} else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (adtypep) {} // Unused
-	    if (varp->basicp()->rangep() && varp->basicp()->rangep()->littleEndian()) {
+	    if (varp->basicp()->littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
 	    }
@@ -308,7 +308,7 @@ private:
 	if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    AstSel* newp = NULL;
 	    if (nodep->castSelPlus()) {
-		if (adtypep->rangep() && adtypep->rangep()->littleEndian()) {
+		if (adtypep->littleEndian()) {
 		    // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,
@@ -322,7 +322,7 @@ private:
 				       widthp);
 		}
 	    } else if (nodep->castSelMinus()) {
-		if (adtypep->rangep() && adtypep->rangep()->littleEndian()) {
+		if (adtypep->littleEndian()) {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,

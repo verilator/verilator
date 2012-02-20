@@ -122,7 +122,7 @@ public:
 	    // then [1:1] becomes the basicdtype range; everything else is arraying
 	    // the final [5:5][4:4] will be passed in another call to createArray
 	    AstRange* rangearraysp = NULL;
-	    if (dtypep->rangep()) {
+	    if (dtypep->isRanged()) {
 		rangearraysp = rangesp;  // Already a range; everything is an array
 	    } else {
 		AstRange* finalp = rangesp;

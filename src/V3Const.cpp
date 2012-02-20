@@ -1627,6 +1627,12 @@ private:
 	}
     }
 
+    // Simplify
+    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	nodep->cvtRangeConst();
+    }
+
     //-----
     // Jump elimination
 

@@ -204,6 +204,7 @@ private:
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
 		AstNode* constzerop;
+		int m1value = nodep->widthMin()-1; // Constant of width-1; not changing dtype width
 		if (nodep->signedFlavor()) {
 		    // Then over shifting gives the sign bit, not all zeros
 		    // Note *NOT* clean output -- just like normal shift!
@@ -212,7 +213,7 @@ private:
 						new AstShiftR(nodep->fileline(),
 							      nodep->lhsp()->cloneTree(false),
 							      new AstConst(nodep->fileline(),
-									   nodep->widthMin()-1),
+									   m1value),
 							      nodep->width()));
 		} else {
 		    V3Number zeronum  (nodep->fileline(), nodep->width(), 0);

@@ -193,7 +193,7 @@ private:
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
 	if (AstBasicDType* bdtypep = dtypep->castBasicDType()) {
-	    if (bdtypep->rangep()) {
+	    if (bdtypep->isRanged()) {
 		for (int index_docs=bdtypep->lsb(); index_docs<bdtypep->msb()+1; index_docs++) {
 		    int index_code = index_docs - bdtypep->lsb();
 		    ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",

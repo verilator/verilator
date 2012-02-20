@@ -486,6 +486,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->isSigned()) putfs(nodep,"signed ");
 	putfs(nodep,nodep->prettyName());
 	if (nodep->rangep()) { puts(" "); nodep->rangep()->iterateAndNext(*this); puts(" "); }
+	else if (nodep->msb()) { puts(" ["); puts(cvtToStr(nodep->msb())); puts(":0] "); }
     }
     virtual void visit(AstConstDType* nodep, AstNUser*) {
 	putfs(nodep,"const ");

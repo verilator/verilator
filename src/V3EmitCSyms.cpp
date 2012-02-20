@@ -453,9 +453,9 @@ void EmitCSyms::emitSymImp() {
 	    string bounds;
 	    if (AstBasicDType* basicp = varp->basicp()) {
 		// Range is always first, it's not in "C" order
-		if (basicp->rangep()) {
-		    bounds += " ,"; bounds += cvtToStr(basicp->rangep()->msbConst());
-		    bounds += ","; bounds += cvtToStr(basicp->rangep()->lsbConst());
+		if (basicp->isRanged()) {
+		    bounds += " ,"; bounds += cvtToStr(basicp->msb());
+		    bounds += ","; bounds += cvtToStr(basicp->lsb());
 		    dim++;
 		}
 		for (AstNodeDType* dtypep=varp->dtypep(); dtypep; ) {
