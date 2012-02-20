@@ -510,7 +510,7 @@ void AstNode::dump(ostream& os) {
 }
 
 void AstArrayDType::dump(ostream& str) {
-    this->AstNode::dump(str);
+    this->AstNodeDType::dump(str);
     if (isPacked()) str<<" [PACKED]";
 }
 void AstArraySel::dump(ostream& str) {
@@ -522,7 +522,7 @@ void AstAttrOf::dump(ostream& str) {
     str<<" ["<<attrType().ascii()<<"]";
 }
 void AstBasicDType::dump(ostream& str) {
-    this->AstNode::dump(str);
+    this->AstNodeDType::dump(str);
     str<<" ["<<keyword().ascii()<<"]";
     if (implicit()) str<<" [IMPLICIT]";
 }
@@ -566,7 +566,7 @@ void AstRange::dump(ostream& str) {
     if (littleEndian()) str<<" [LITTLE]";
 }
 void AstRefDType::dump(ostream& str) {
-    this->AstNode::dump(str);
+    this->AstNodeDType::dump(str);
     if (defp()) { str<<" -> "; defp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
@@ -579,6 +579,9 @@ void AstVarXRef::dump(ostream& str) {
     if (varScopep()) { varScopep()->dump(str); }
     else if (varp()) { varp()->dump(str); }
     else { str<<"UNLINKED"; }
+}
+void AstNodeDType::dump(ostream& str) {
+    this->AstNode::dump(str);
 }
 void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);

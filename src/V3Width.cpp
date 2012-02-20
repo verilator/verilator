@@ -240,10 +240,10 @@ private:
     virtual void visit(AstRealToBits* nodep, AstNUser* vup) {	visit_Ou64_Lr(nodep,vup); }
 
     // Widths: Constant, terminal
-    virtual void visit(AstTime* nodep, AstNUser*) {		nodep->numeric(AstNumeric::UNSIGNED); nodep->width(64,64); }
+    virtual void visit(AstTime* nodep, AstNUser*) {		nodep->dtypeChgUInt64(); }
     virtual void visit(AstTimeD* nodep, AstNUser*) {		nodep->dtypeChgDouble(); }
-    virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {	nodep->numeric(AstNumeric::UNSIGNED); nodep->width(32,32); }
-    virtual void visit(AstScopeName* nodep, AstNUser* vup) {	nodep->width(64,1); }	// A pointer, but not that it matters
+    virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {	nodep->dtypeChgSigned32(); }
+    virtual void visit(AstScopeName* nodep, AstNUser* vup) {	nodep->dtypeChgUInt64(); }	// A pointer, but not that it matters
 
     // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep, AstNUser* vup) {
@@ -280,7 +280,7 @@ private:
 	    nodep->expr1p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	    nodep->expr2p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheckReduce(nodep,"Conditional Expression",nodep->condp(),1,0);
+	    widthCheckReduce(nodep,"Conditional Test",nodep->condp(),1,0);
 	    widthCheck(nodep,"Conditional True",nodep->expr1p(),width,mwidth);
 	    widthCheck(nodep,"Conditional False",nodep->expr2p(),width,mwidth);
 	}
@@ -377,7 +377,7 @@ private:
 	    AstConst* widthConstp = nodep->widthp()->castConst();
 	    if (!widthConstp) {
 		nodep->v3error("Width of bit extract isn't a constant");
-		nodep->dtypeChgBool(); return;
+		nodep->dtypeChgLogicBool(); return;
 	    }
 	    int width = nodep->widthConst();
 	    nodep->width(width,width);
@@ -537,8 +537,7 @@ private:
     }
     virtual void visit(AstRand* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
-	    nodep->numeric(AstNumeric::SIGNED);  // Says the spec
-	    nodep->width(32,32);  // Says the spec
+	    nodep->dtypeChgSigned32();  // Says the spec
 	}
     }
     virtual void visit(AstUCFunc* nodep, AstNUser* vup) {
@@ -558,8 +557,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtUS(nodep->lhsp());
-	    nodep->numeric(AstNumeric::UNSIGNED);  // If want otherwise use a dpi import
-	    nodep->width(32,32);
+	    nodep->dtypeChgSigned32();
 	}
     }
     virtual void visit(AstPow* nodep, AstNUser* vup) {
@@ -829,7 +827,7 @@ private:
 	    widthCheckReduce(nodep,"Disable",nodep->disablep(),1,1); // it's like an if() condition.
 	}
 	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
     }
 
     //--------------------
@@ -1017,7 +1015,7 @@ private:
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
 	nodep->strgp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	if (vup->c()->prelim()) {
-	    nodep->width(32,32);
+	    nodep->dtypeChgSigned32();  // Spec says integer return
 	}
 	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
     }
@@ -1025,7 +1023,7 @@ private:
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
 	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	if (vup->c()->prelim()) {
-	    nodep->width(32,32);
+	    nodep->dtypeChgSigned32();  // Spec says integer return
 	}
 	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
     }
@@ -1033,7 +1031,7 @@ private:
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	if (vup->c()->prelim()) {
-	    nodep->width(32,32);
+	    nodep->dtypeChgSigned32();  // Spec says integer return
 	}
     }
     virtual void visit(AstSysIgnore* nodep, AstNUser* vup) {
@@ -1041,8 +1039,7 @@ private:
     }
     virtual void visit(AstSystemF* nodep, AstNUser*) {
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	nodep->numeric(AstNumeric::UNSIGNED);
-	nodep->width(32,32);
+	nodep->dtypeChgSigned32();  // Spec says integer return
     }
     virtual void visit(AstSystemT* nodep, AstNUser*) {
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1055,8 +1052,7 @@ private:
     }
     virtual void visit(AstValuePlusArgs* nodep, AstNUser* vup) {
 	nodep->exprsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	nodep->numeric(AstNumeric::UNSIGNED);
-	nodep->width(32,32);
+	nodep->dtypeChgSigned32();  // Spec says integer return
     }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
 	// TOP LEVEL NODE
@@ -1165,7 +1161,7 @@ private:
 	UINFO(5,"  FTASK "<<nodep<<endl);
 	if (nodep->doingWidth()) {
 	    nodep->v3error("Unsupported: Recursive function or task call");
-	    nodep->dtypeChgBool();
+	    nodep->dtypeChgLogicBool();
 	    nodep->didWidth(true);
 	    return;
 	}
@@ -1320,8 +1316,7 @@ private:
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtD(nodep->lhsp());
-	    nodep->numeric(AstNumeric::SIGNED);
-	    nodep->width(32,32);
+	    nodep->dtypeChgSigned32();
 	}
     }
     void visit_Ou64_Lr(AstNodeUniop* nodep, AstNUser* vup) {
@@ -1330,8 +1325,7 @@ private:
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    checkCvtD(nodep->lhsp());
-	    nodep->numeric(AstNumeric::UNSIGNED);
-	    nodep->width(64,64);
+	    nodep->dtypeChgUInt64();
 	}
     }
 
@@ -1348,7 +1342,7 @@ private:
 	    nodep->op1p()->iterateAndNext(*this,WidthVP(1,0,BOTH).p());
 	    spliceCvtCmpD0(nodep->op1p());
 	}
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
 	if (vup->c()->final()) {
 	    widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
 	}
@@ -1362,7 +1356,7 @@ private:
 	    spliceCvtCmpD0(nodep->lhsp());
 	    spliceCvtCmpD0(nodep->rhsp());
 	}
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
 	if (vup->c()->final()) {
 	    widthCheckReduce(nodep,"LHS",nodep->lhsp(),1,1);
 	    widthCheckReduce(nodep,"RHS",nodep->rhsp(),1,1);
@@ -1377,7 +1371,7 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	}
 	if (!realok) checkCvtUS(nodep->lhsp());
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
     }
     void visit_cmp_O1_DSreplace(AstNodeBiop* nodep, AstNUser* vup) {
 	// CALLER: AstEq, AstGt, ..., AstLtS
@@ -1403,7 +1397,7 @@ private:
 	}
 	int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
 	int ewidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
 	if (vup->c()->final()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
@@ -1431,7 +1425,7 @@ private:
 	}
 	int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
 	int ewidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
-	nodep->dtypeChgBool();
+	nodep->dtypeChgLogicBool();
 	if (vup->c()->final()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());

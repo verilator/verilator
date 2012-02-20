@@ -110,13 +110,13 @@ private:
 	} else if (rhs > 0) {
 	    AstNode* newp = new AstSub(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
-	    // We must make sure sub gets sign of original value
+	    // We must make sure sub gets sign of original value, not from the constant
 	    newp->numericFrom(lhsp);
 	    return newp;
 	} else {  // rhs < 0;
 	    AstNode* newp = new AstAdd(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
-	    // We must make sure sub gets sign of original value
+	    // We must make sure sub gets sign of original value, not from the constant
 	    newp->numericFrom(lhsp);
 	    return newp;
 	}

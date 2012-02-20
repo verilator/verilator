@@ -94,7 +94,11 @@ V3Global v3Global;
 //######################################################################
 // V3 Class -- top level
 
-AstNetlist* V3Global::makeNetlist() { return new AstNetlist(); }
+AstNetlist* V3Global::makeNetlist() {
+    AstNetlist* newp = new AstNetlist();
+    return newp;
+}
+
 void V3Global::checkTree() { rootp()->checkTree(); }
 
 void V3Global::clear() {

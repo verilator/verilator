@@ -29,6 +29,7 @@
 #include "V3Global.h"
 #include <vector>
 #include <cmath>
+#include <map>
 
 #include "V3Ast__gen_classes.h"	// From ./astgen
 // Things like:
@@ -934,8 +935,11 @@ public:
     bool	isAllOnesV();  // Verilog width rules apply
 
     // METHODS - data type changes especially for initial creation
-    void	dtypeChgBool()		{ numeric(AstNumeric::UNSIGNED); width(1,1); }
+    void	dtypeChgLogicBool()	{ numeric(AstNumeric::UNSIGNED); width(1,1); }
     void	dtypeChgDouble()	{ numeric(AstNumeric::DOUBLE); }
+    void	dtypeChgSigned32()	{ numeric(AstNumeric::SIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
+    void	dtypeChgUInt32()	{ numeric(AstNumeric::UNSIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
+    void	dtypeChgUInt64()	{ numeric(AstNumeric::UNSIGNED); width(VL_QUADSIZE,VL_QUADSIZE); }
 
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
@@ -1319,6 +1323,7 @@ struct AstNodeDType : public AstNode {
     AstNodeDType(FileLine* fl) : AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeDType)
     // Accessors
+    virtual void dump(ostream& str);
     virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs to next non-typeref type
     virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
