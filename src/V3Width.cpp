@@ -136,7 +136,7 @@ private:
     virtual void visit(AstLogOr* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }
     virtual void visit(AstLogIf* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }  // Conversion from real not in IEEE, but a fallout
     virtual void visit(AstLogIff* nodep, AstNUser* vup) {	visit_log_O1_LR1rus(nodep,vup); }  // Conversion from real not in IEEE, but a fallout
- 
+
     // Widths: 1 bit out, Any width lhs
     virtual void visit(AstRedAnd* nodep, AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup,false); }
     virtual void visit(AstRedOr* nodep, AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup,false); }
@@ -145,7 +145,7 @@ private:
     virtual void visit(AstIsUnknown* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup,true); }  // Allow real
     virtual void visit(AstOneHot* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup,false); }
     virtual void visit(AstOneHot0* nodep,AstNUser* vup) {	visit_red_O1_Lrus(nodep,vup,false); }
- 
+
     // These have different node types, as they operate differently
     // Must add to case statement below,
     // Widths: 1 bit out, lhs width == rhs width.  real if lhs|rhs real
@@ -199,7 +199,7 @@ private:
     virtual void visit(AstNegate* nodep, AstNUser* vup) {	visit_math_Orus_Dreplace(nodep,vup,true); }
     // Unary never real
     virtual void visit(AstNot* nodep, AstNUser* vup) {		visit_math_Orus_Dreplace(nodep,vup,false); }
- 
+
     // Real: inputs and output real
     virtual void visit(AstAddD* nodep, AstNUser* vup) {		visit_math_Or_LRr(nodep,vup); }
     virtual void visit(AstSubD* nodep, AstNUser* vup) {		visit_math_Or_LRr(nodep,vup); }
@@ -215,18 +215,18 @@ private:
     virtual void visit(AstLogD* nodep, AstNUser* vup) {		visit_math_Or_Lr(nodep,vup); }
     virtual void visit(AstLog10D* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
     virtual void visit(AstSqrtD* nodep, AstNUser* vup) {	visit_math_Or_Lr(nodep,vup); }
- 
-    // Widths: out signed/unsigned width = lhs width, input un|signed 
+
+    // Widths: out signed/unsigned width = lhs width, input un|signed
     virtual void visit(AstSigned* nodep, AstNUser* vup) {	visit_Ous_Lus_Wforce(nodep,vup,AstNumeric::SIGNED); }
     virtual void visit(AstUnsigned* nodep, AstNUser* vup) {	visit_Ous_Lus_Wforce(nodep,vup,AstNumeric::UNSIGNED); }
- 
+
     // Widths: Output width from lhs, rhs<33 bits
     // Signed: If lhs signed
     virtual void visit(AstShiftL* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
     virtual void visit(AstShiftR* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
     // ShiftRS converts to ShiftR, but not vice-versa
     virtual void visit(AstShiftRS* nodep, AstNUser* vup) {	visit_shift_Ous_Lus_Rus32(nodep,vup); }
- 
+
     //========
     // Widths: Output real, input integer signed
     virtual void visit(AstBitsToRealD* nodep, AstNUser* vup) {	visit_Or_Lu64(nodep,vup); }
@@ -235,7 +235,7 @@ private:
     // Widths: Output integer signed, input real
     virtual void visit(AstRToIS* nodep, AstNUser* vup) {	visit_Os32_Lr(nodep,vup); }
     virtual void visit(AstRToIRoundS* nodep, AstNUser* vup) {	visit_Os32_Lr(nodep,vup); }
- 
+
     // Widths: Output integer unsigned, input real
     virtual void visit(AstRealToBits* nodep, AstNUser* vup) {	visit_Ou64_Lr(nodep,vup); }
 
@@ -295,7 +295,7 @@ private:
 	    checkCvtUS(nodep->rhsp());
 	    nodep->width(nodep->lhsp()->width() + nodep->rhsp()->width(),
 			 nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin());
-	    nodep->numeric(AstNumeric::UNSIGNED); 
+	    nodep->numeric(AstNumeric::UNSIGNED);
 	    // Cleanup zero width Verilog2001 {x,{0{foo}}} now,
 	    // otherwise having width(0) will cause later assertions to fire
 	    if (AstReplicate* repp=nodep->lhsp()->castReplicate()) {
@@ -613,6 +613,7 @@ private:
 	// But also cleanup array size
 	nodep->arrayp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->widthFrom(nodep->dtypep());
+	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstBasicDType* nodep, AstNUser* vup) {
 	if (nodep->rangep()) {
@@ -621,15 +622,18 @@ private:
 	}
 	// else width in node is correct; it was set based on keyword().width()
 	// at construction time.  Ditto signed, so "unsigned byte" etc works right.
+	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstConstDType* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this, vup);
 	nodep->widthFrom(nodep->dtypep());
+	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstRefDType* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this, vup);
 	if (nodep->defp()) nodep->defp()->iterate(*this,vup);
 	nodep->widthSignedFrom(nodep->dtypeSkipRefp());
+	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstTypedef* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this, vup);
@@ -1365,7 +1369,7 @@ private:
 	// COMPARES
 	// Widths: 1 bit out, lhs width == rhs width
 	// Signed: if RHS&LHS signed, OPERATOR CHANGES to signed flavor
-	// Real: allowed on RHS, if RHS|LHS is real, both become real, and OPERATOR CHANGES 
+	// Real: allowed on RHS, if RHS|LHS is real, both become real, and OPERATOR CHANGES
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());

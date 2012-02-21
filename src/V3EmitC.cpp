@@ -677,10 +677,10 @@ class EmitCImp : EmitCStmts {
 		    puts(" | (");
 		}
 		changep->lhsp()->iterateAndNext(*this);
-		if (changep->isWide()) puts("["+cvtToStr(word)+"]");
+		if (changep->lhsp()->isWide()) puts("["+cvtToStr(word)+"]");
 		puts(" ^ ");
 		changep->rhsp()->iterateAndNext(*this);
-		if (changep->isWide()) puts("["+cvtToStr(word)+"]");
+		if (changep->lhsp()->isWide()) puts("["+cvtToStr(word)+"]");
 		puts(")");
 	    }
 	}

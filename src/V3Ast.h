@@ -1269,16 +1269,18 @@ private:
     string	m_name;		// Name of variable
     string	m_hiername;	// Scope converted into name-> for emitting
     bool	m_hierThis;	// Hiername points to "this" function
+    void init();
 public:
     AstNodeVarRef(FileLine* fl, const string& name, bool lvalue)
 	: AstNodeMath(fl), m_lvalue(lvalue), m_varp(NULL), m_varScopep(NULL),
 	  m_packagep(NULL), m_name(name), m_hierThis(false) {
+	init();
     }
     AstNodeVarRef(FileLine* fl, const string& name, AstVar* varp, bool lvalue)
 	: AstNodeMath(fl), m_lvalue(lvalue), m_varp(varp), m_varScopep(NULL),
 	  m_packagep(NULL), m_name(name), m_hierThis(false) {
 	// May have varp==NULL
-	if (m_varp) widthSignedFrom((AstNode*)m_varp);
+	init();
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool broken() const;
@@ -1511,5 +1513,7 @@ inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst
 inline bool AstNode::isOne()      { return (this->castConst() && this->castConst()->num().isEqOne()); }
 inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->isEqAllOnes()); }
 inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
+
+inline void AstNodeVarRef::init() { if (m_varp) widthSignedFrom((AstNode*)m_varp); }
 
 #endif // Guard

@@ -68,11 +68,11 @@ public:
     class LogicFalse {};
     AstConst(FileLine* fl, LogicFalse) // Shorthand const 0, know the dtype should be a logic of size 1
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,1,0)) { width(1,0); }
+	,m_num(V3Number(fl,1,0)) { dtypeChgLogicBool(); }
     class LogicTrue {};
     AstConst(FileLine* fl, LogicTrue) // Shorthand const 1, know the dtype should be a logic of size 1
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,1,1)) { width(1,0); }
+	,m_num(V3Number(fl,1,1)) { dtypeChgLogicBool(); }
 
     ASTNODE_NODE_FUNCS(Const, CONST)
     virtual string name()	const { return num().ascii(); }		// * = Value
@@ -496,7 +496,7 @@ struct AstWordSel : public AstNodeSel {
     // Select a single word from a multi-word wide value
     AstWordSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodeSel(fl, fromp, bitp) {
-	width(VL_WORDSIZE,VL_WORDSIZE); // Always used on, and returns word entities
+	dtypeChgUInt32(); // Always used on IData arrays so returns word entities
     }
     ASTNODE_NODE_FUNCS(WordSel, WORDSEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) { V3ERROR_NA; }
@@ -2363,8 +2363,8 @@ public:
     ASTNODE_NODE_FUNCS(TraceDecl, TRACEDECL)
     virtual string name()	const { return m_showname; }
     virtual bool maybePointedTo() const { return true; }
-    string showname()	const { return m_showname; }		// * = Var name
     virtual bool same(AstNode* samep) const { return false; }
+    string showname()	const { return m_showname; }		// * = Var name
     // Details on what we're tracing
     uint32_t	code() const { return m_code; }
     void	code(uint32_t code) { m_code=code; }
