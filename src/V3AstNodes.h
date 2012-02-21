@@ -347,43 +347,43 @@ struct AstConstDType : public AstNodeDType {
 
 struct AstRefDType : public AstNodeDType {
 private:
-    AstTypedef*	m_defp;
-    string	m_name;
+    AstNodeDType* m_defp;	// data type pointed to, BELOW the AstTypedef
+    string	m_name;		// Name of an AstTypedef
     AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
 	: AstNodeDType(fl), m_defp(NULL), m_name(name), m_packagep(NULL) {}
-    AstRefDType(FileLine* fl, AstTypedef* defp)
-	: AstNodeDType(fl), m_defp(defp), m_name(defp->name()), m_packagep(NULL) {
+    AstRefDType(FileLine* fl, AstNodeDType* defp)
+	: AstNodeDType(fl), m_defp(defp), m_packagep(NULL) {
 	widthSignedFrom(defp);
     }
     ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
     // METHODS
     virtual bool broken() const { return m_defp && !m_defp->brokeExists(); }
     virtual void cloneRelink() { if (m_defp && m_defp->clonep()) {
-	m_defp = m_defp->clonep()->castTypedef();
+	m_defp = m_defp->clonep()->castNodeDType();
     }}
     virtual V3Hash sameHash() const { return V3Hash(skipRefp()); }
     virtual bool same(AstNode* samep) const {
 	return skipRefp()->sameTree(samep->castRefDType()->skipRefp()); }
     virtual void dump(ostream& str=cout);
     virtual string name() const { return m_name; }
-    virtual AstBasicDType* basicp() const { return defp() ? dtypep()->basicp() : NULL; }
+    virtual AstBasicDType* basicp() const { return defp() ? defp()->basicp() : NULL; }
     virtual AstNodeDType* skipRefp() const {
 	// Skip past both the Ref and the Typedef
-	if (defp()) return defp()->dtypep()->skipRefp();
+	if (defp()) return defp()->skipRefp();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
-    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+    virtual int widthAlignBytes() const { return dtypeSkipRefp()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) { m_name = flag; }
     AstNodeDType* dtypep() const {
-	if (defp()) return defp()->dtypep();
+	if (defp()) return defp();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
-    AstTypedef* defp() const { return m_defp; }
-    void defp(AstTypedef* nodep) { m_defp=nodep; }
+    AstNodeDType* defp() const { return m_defp; }
+    void defp(AstNodeDType* nodep) { m_defp=nodep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };

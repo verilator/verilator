@@ -1333,6 +1333,7 @@ struct AstNodeDType : public AstNode {
     virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs to next non-typeref type
     virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const = 0; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    virtual bool maybePointedTo() const { return true; }
 };
 
 struct AstNodeSel : public AstNodeBiop {
