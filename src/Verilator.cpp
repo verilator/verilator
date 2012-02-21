@@ -492,7 +492,7 @@ void process () {
     // Bits between widthMin() and width() are irrelevant, but may be non zero.
     v3Global.assertWidthsMatch(false);
 
-    // Make all operations a multiple of 32 bits
+    // Make all math operations either 8, 16, 32 or 64 bits
     V3Clean::cleanAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clean.tree"));
 
