@@ -70,9 +70,20 @@ private:
 	m_modp = NULL;
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	m_ftaskp = nodep;
-	nodep->iterateChildren(*this);
-	m_ftaskp = NULL;
+	UINFO(8,"  "<<nodep<<endl);
+	// BEGIN wrapping a function rename that function, but don't affect the inside function's variables
+	// We then restart with empty naming; so that any begin's inside the function will rename inside the function
+	string oldScope = m_namedScope;
+	string oldUnnamed = m_unnamedScope;
+	{
+	    m_namedScope = "";
+	    m_unnamedScope = "";
+	    m_ftaskp = nodep;
+	    nodep->iterateChildren(*this);
+	    m_ftaskp = NULL;
+	}
+	m_namedScope = oldScope;
+	m_unnamedScope = oldUnnamed;
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	// Begin blocks were only useful in variable creation, change names and delete
@@ -80,7 +91,7 @@ private:
 	string oldScope = m_namedScope;
 	string oldUnnamed = m_unnamedScope;
 	{
-	    //UINFO(8,"nname "<<m_namedScope<<endl);
+	    UINFO(8,"nname "<<m_namedScope<<endl);
 	    if (nodep->name() != "") {  // Else unneeded unnamed block
 		// Create data for dotted variable resolution
 		string dottedname = nodep->name() + "__DOT__";  // So always found
