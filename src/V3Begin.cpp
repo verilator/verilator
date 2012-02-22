@@ -45,9 +45,31 @@
 
 //######################################################################
 
+class BeginState {
+private:
+    // NODE STATE
+    //Entire netlist:
+    // AstNodeFTask::user1	-> bool, 1=processed
+    AstUser1InUse	m_inuser1;
+    bool		m_anyFuncInBegin;
+public:
+    BeginState() {
+	m_anyFuncInBegin = false;
+    }
+    ~BeginState() {}
+    void userMarkChanged(AstNodeFTask* nodep) {
+	nodep->user1(true);
+	m_anyFuncInBegin = true;
+    }
+    bool anyFuncInBegin() const { return m_anyFuncInBegin; }
+};
+
+//######################################################################
+
 class BeginVisitor : public AstNVisitor {
 private:
     // STATE
+    BeginState*		m_statep;	// Current global state
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
     string		m_namedScope;	// Name of begin blocks above us
@@ -71,8 +93,15 @@ private:
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	UINFO(8,"  "<<nodep<<endl);
+	// Rename it
+	if (m_unnamedScope != "") {
+	    nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
+	    UINFO(8,"     rename to "<<nodep->name()<<endl);
+	    m_statep->userMarkChanged(nodep);
+	}
 	// BEGIN wrapping a function rename that function, but don't affect the inside function's variables
 	// We then restart with empty naming; so that any begin's inside the function will rename inside the function
+	// Process children
 	string oldScope = m_namedScope;
 	string oldUnnamed = m_unnamedScope;
 	{
@@ -197,7 +226,8 @@ private:
     }
 public:
     // CONSTUCTORS
-    BeginVisitor(AstNetlist* nodep) {
+    BeginVisitor(AstNetlist* nodep, BeginState* statep) {
+	m_statep = statep;
 	m_modp = NULL;
 	m_ftaskp = NULL;
 	m_repeatNum = 0;
@@ -208,9 +238,42 @@ public:
 };
 
 //######################################################################
+
+class BeginRelinkVisitor : public AstNVisitor {
+    // Replace tasks with new pointer
+private:
+    // NODE STATE
+    //  Input:
+    //   AstNodeFTask::user1p		// Node replaced, rename it
+
+    // VISITORS
+    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+	if (nodep->taskp()->user1()) { // It was converted
+	    UINFO(9, "    relinkFTask "<<nodep<<endl);
+	    nodep->name(nodep->taskp()->name());
+	}
+	nodep->iterateChildren(*this);
+    }
+    //--------------------
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+public:
+    // CONSTUCTORS
+    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) {
+	nodep->accept(*this);
+    }
+    virtual ~BeginRelinkVisitor() {}
+};
+
+//######################################################################
 // Task class functions
 
 void V3Begin::debeginAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    BeginVisitor bvisitor (nodep);
+    BeginState state;
+    { BeginVisitor bvisitor (nodep,&state); }
+    if (state.anyFuncInBegin()) {
+	BeginRelinkVisitor brvisitor (nodep,&state);
+    }
 }

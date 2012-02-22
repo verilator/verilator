@@ -498,7 +498,9 @@ private:
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	if (!m_beginp) {	// For now, we don't support xrefs into functions inside begin blocks
+	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	}
 	// No recursion, we don't want to pick up variables
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
@@ -681,6 +683,9 @@ private:
 	} else if (!m_cellVxp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->taskp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
+	} else if (nodep->dotted()=="" && nodep->taskp()) {
+	    // V3Link should have setup the links
+	    // Might be under a BEGIN we're not processing, so don't relink it
 	} else {
 	    string baddot;
 	    LinkDotBaseVertex* okVxp;
