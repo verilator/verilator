@@ -1139,7 +1139,7 @@ data_type<dtypep>:		// ==IEEE: data_type
 	//			// IEEE: class_type
 	//UNSUP	class_typeWithoutId			{ $$ = $1; }
 	//			// IEEE: ps_covergroup_identifier
-	//UNSUP	ps_covergroup_identifier		{ $$ = $1; }
+	//			// we put covergroups under ps_type, so can ignore this
 	;
 
 data_typeBasic<dtypep>:		// IEEE: part of data_type
@@ -1250,7 +1250,9 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	//
 	|	integer_atom_type signingE		{ $1->setSignedState($2); $$ = $1; }
 	|	integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3,false); }
-	|	yaID__aTYPE rangeListE			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, false); }
+	//			// below can be idAny or yaID__aTYPE
+	//			// IEEE requires a type, though no shift conflict if idAny
+	|	idAny rangeListE			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, false); }
 	;
 
 enum_nameList<nodep>:
