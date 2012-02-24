@@ -34,6 +34,7 @@
 
 //======================================================================
 
+class V3PreLex;
 class V3PreProcImp;
 
 // Token codes
@@ -126,16 +127,23 @@ void yy_delete_buffer( YY_BUFFER_STATE b );
 class VPreStream {
 public:
     FileLine*		m_curFilelinep;	// Current processing point (see also m_tokFilelinep)
+    V3PreLex*		m_lexp;		// Lexer, for resource tracking
     deque<string>	m_buffers;	// Buffer of characters to process
     int			m_ignNewlines;	// Ignore multiline newlines
     bool		m_eof;		// "EOF" buffer
     bool		m_file;		// Buffer is start of new file
     int			m_termState;	// Termination fsm
-    VPreStream(FileLine* fl)
-	: m_curFilelinep(fl), m_ignNewlines(0),
+    VPreStream(FileLine* fl, V3PreLex* lexp)
+	: m_curFilelinep(fl), m_lexp(lexp),
+	  m_ignNewlines(0),
 	  m_eof(false), m_file(false), m_termState(0) {
+	lexStreamDepthAdd(1);
     }
-    ~VPreStream() {}
+    ~VPreStream() {
+	lexStreamDepthAdd(-1);
+    }
+private:
+    void lexStreamDepthAdd(int delta);
 };
 
 //======================================================================
@@ -145,6 +153,7 @@ class V3PreLex {
   public:	// Used only by V3PreLex.cpp and V3PreProc.cpp
     V3PreProcImp*	m_preimpp;	// Preprocessor lexor belongs to
     stack<VPreStream*>	m_streampStack;	// Stack of processing files
+    int			m_streamDepth;	// Depth of stream processing
     YY_BUFFER_STATE	m_bufferState;	// Flex state
     FileLine*		m_tokFilelinep;	// Starting position of current token
 
@@ -166,6 +175,7 @@ class V3PreLex {
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep) {
 	m_preimpp = preimpp;
+	m_streamDepth = 0;
 	m_keepComments = 0;
 	m_keepWhitespace = 1;
 	m_pedantic = false;
@@ -207,6 +217,9 @@ class V3PreLex {
     void dumpSummary();
     void dumpStack();
     void unused();
+    // Called by VPreStream
+    void streamDepthAdd(int delta) { m_streamDepth += delta; }
+    int streamDepth() const { return m_streamDepth; }
     /// Utility
     static int debug();
     static void debug(int level);
@@ -218,5 +231,7 @@ private:
     void initFirstBuffer(FileLine* filelinep);
     void scanSwitchStream(VPreStream* streamp);
 };
+
+inline void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
 
 #endif // Guard

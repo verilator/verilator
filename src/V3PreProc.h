@@ -50,6 +50,8 @@ public:
     enum MiscConsts {
 	DEFINE_RECURSION_LEVEL_MAX = 1000,	// How many `def substitutions before an error
 	INCLUDE_DEPTH_MAX = 500,		// How many `includes deep before an error
+	STREAM_DEPTH_LEVEL_MAX = 2000,		// How many streams deep (sometimes `def deep) before an error
+	//					// Set more than DEFINE_RECURSION_LEVEL_MAX or INCLUDE_DEPTH_MAX
 	NEWLINES_VS_TICKLINE = 20		// Use `line in place of this many newlines
     };
 

@@ -112,7 +112,7 @@ struct V3PreProcImp : public V3PreProc {
     typedef std::map<string,V3Define> DefinesMap;
     typedef V3InFilter::StrList StrList;
 
-    // debug() -> see V3PreShellImp::debug
+    // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
 
     // Defines list
     DefinesMap	m_defines;	///< Map of defines

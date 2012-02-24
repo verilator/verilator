@@ -18,6 +18,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix hang when functions inside begin block. [David Welch]
 
+****  Fix hang on recursive substitution `defines, bug443. [Alex Solomatnikov]
+
+
 * Verilator 3.831 2012/01/20
 
 **    Support SystemC 2.3.0 prerelease.  This requires setting the new
