@@ -81,6 +81,7 @@ quote		[\"]
 tickquote	[`][\"]
 backslash	[\\]
 /* Where we use symb/symbdef, we must also look for a `` join */
+/* Note in the preprocessor \ESCaped is *not* always special; mantis1537/bug441 */
 symb		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n]+)
 symbdef		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n`]+)
 word		[a-zA-Z0-9_]+

@@ -628,16 +628,18 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	string argName;
 	string prev;
 	bool quote = false;
+	bool backslashesc = false;  // In \.....{space} block
 	// Note we go through the loop once more at the NULL end-of-string
 	for (const char* cp=value.c_str(); (*cp) || argName!=""; cp=(*cp?cp+1:cp)) {
-	    //cout << "CH "<<*cp<<"  an "<<argName<<"\n";
-	    if (!quote) {
-		if ( isalpha(*cp) || *cp=='_'
-		     || *cp=='$' // Won't replace system functions, since no $ in argValueByName
-		     || (argName!="" && (isdigit(*cp) || *cp=='$'))) {
-		    argName += *cp;
-		    continue;
-		}
+	    //UINFO(4, "CH "<<*cp<<"  an "<<argName<<endl);
+	    if (!quote && *cp == '\\') { backslashesc = true; }
+	    else if (isspace(*cp)) { backslashesc = false; }
+	    // We don't check for quotes; some simulators expand even inside quotes
+	    if ( isalpha(*cp) || *cp=='_'
+		 || *cp=='$' // Won't replace system functions, since no $ in argValueByName
+		 || (argName!="" && (isdigit(*cp) || *cp=='$'))) {
+		argName += *cp;
+		continue;
 	    }
 	    if (argName != "") {
 		// Found a possible variable substitution
@@ -654,7 +656,11 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	    if (!quote) {
 		// Check for `` only after we've detected end-of-argname
 		if (cp[0]=='`' && cp[1]=='`') {
-		    out += "``";   // `` must get removed later, as `FOO```BAR must pre-expand FOO and BAR
+		    if (backslashesc) {
+			// Don't put out the ``, we're forming an escape which will not expand further later
+		    } else {
+			out += "``";   // `` must get removed later, as `FOO```BAR must pre-expand FOO and BAR
+		    }
 		    cp++;
 		    continue;
 		}
@@ -685,10 +691,16 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 		    continue;
 		}
 	    }
-	    if (cp[0]=='\\' && cp[1]) {
+	    if (cp[0]=='\\' && cp[1]=='\"') {
 		out += cp[0]; // \{any} Put out literal next character
 		out += cp[1];
 		cp++;
+		continue;
+	    }
+	    else if (cp[0]=='\\') {
+		// Normally \{any} would put out literal next character
+		// Instead we allow "`define A(nm) \nm" to expand, per proposed mantis1537
+		out += cp[0];
 		continue;
 	    }
 	    if (*cp=='"') quote=!quote;

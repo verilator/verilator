@@ -137,7 +137,7 @@ firstline comma","line LLZZ firstline comma","line
 
 `line 71 "t/t_preproc.v" 0
  
-x y LLZZ "a" y
+x y LLZZ "x" y   
 
 `line 74 "t/t_preproc.v" 0
  
@@ -398,7 +398,7 @@ x,y)--bee  submacro has comma paren
  
  
  
-$display("bits %d %d", $bits(foo), `10);
+$display("10 %d %d", $bits(foo), 10);
 
 `line 260 "t/t_preproc.v" 0
  
@@ -709,5 +709,86 @@ module a_b ; endmodule
  
 integer foo;
  
+ 
+module t;
+    
+    
+    
+ 
+ 
 
-`line 457 "t/t_preproc.v" 2
+   initial begin : \`LEX_CAT(a[0],_assignment)  
+`line 464 "t/t_preproc.v" 0
+   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`LEX_CAT(a[0],_assignment) ");   end
+    
+    
+    
+    
+ 
+
+   initial begin : \a[0]_assignment_a[1] 
+`line 471 "t/t_preproc.v" 0
+   $write("GOT%%m='%m' EXP='%s'\n", "t.\\a[0]_assignment_a[1] ");   end
+ 
+    
+ 
+ 
+    
+    
+   initial begin : \`CAT(pp,suffix)   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`CAT(pp,suffix) ");   end
+   
+    
+ 
+ 
+
+    
+   initial begin : \`CAT(ff,bb) 
+`line 485 "t/t_preproc.v" 0
+   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`CAT(ff,bb) ");   end
+   
+    
+ 
+
+    
+   initial begin : \`zzz 
+`line 491 "t/t_preproc.v" 0
+   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`zzz ");   end
+ 
+    
+ 
+ 
+
+    
+   initial begin : \`FOO 
+`line 498 "t/t_preproc.v" 0
+    $write("GOT%%m='%m' OTHER_EXP='%s'\n OUR_EXP='%s'", "t.bar ","t.\\`FOO ");  end
+    
+   initial begin : \xx`FOO 
+`line 500 "t/t_preproc.v" 0
+   $write("GOT%%m='%m' EXP='%s'\n", "t.\\xx`FOO ");  end
+   
+    
+    
+ 
+   initial begin : \`UNKNOWN   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`UNKNOWN ");   end
+    
+    
+ 
+   initial begin : \`DEF_NO_EXPAND   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`DEF_NO_EXPAND ");   end
+ 
+    
+    
+    
+ 
+   initial $write("GOT='%s' EXP='%s'\n", "foo bar baz", "foo bar baz");
+ 
+    
+    
+ 
+ 
+   initial $write("GOT='%s' EXP='%s'\n", "foo `A(bar) baz", "foo `A(bar) baz");
+    
+endmodule
+ 
+
+`line 526 "t/t_preproc.v" 2
