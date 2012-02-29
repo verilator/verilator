@@ -683,8 +683,6 @@ public:
     AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
-    AstNodeDType* dtypeDimensionp(int depth) const;
-    pair<uint32_t,uint32_t> dimensions() const;
     AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
@@ -760,7 +758,6 @@ public:
     bool	attrScClocked() const { return m_scClocked; }
     bool	attrSFormat() const { return m_attrSFormat; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
-    uint32_t	arrayElements() const;	// 1, or total multiplication of all dimensions
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
 	// This is getting connected to fromp; keep attributes
@@ -2347,7 +2344,7 @@ public:
 	, m_showname(showname) {
 	widthSignedFrom(varp);
 	m_code = 0;
-	m_codeInc = varp->arrayElements() * varp->widthWords();
+	m_codeInc = varp->dtypep()->arrayElements() * varp->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
 	m_msb = bdtypep ? bdtypep->msbEndianed() : 0; 
 	m_lsb = bdtypep ? bdtypep->lsbEndianed() : 0;

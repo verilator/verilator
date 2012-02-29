@@ -87,7 +87,7 @@ private:
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";
 	}
-	if ((nodep->width()*nodep->arrayElements()) > 256) return "Wide bus/array > 256 bits";
+	if ((nodep->width()*nodep->dtypep()->arrayElements()) > 256) return "Wide bus/array > 256 bits";
 	// We allow this, though tracing doesn't
 	// if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
 	return NULL;

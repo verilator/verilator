@@ -85,7 +85,7 @@ class SliceCloneVisitor : public AstNVisitor {
 	    if (m_vecIdx == (int)m_selBits.size()) {
 		m_selBits.push_back(vector<unsigned>());
 		AstVar* varp = m_refp->varp();
-		pair<uint32_t,uint32_t> arrDim = varp->dimensions();
+		pair<uint32_t,uint32_t> arrDim = varp->dtypep()->dimensions();
 		uint32_t dimensions = arrDim.first + arrDim.second;
 		for (uint32_t i = 0; i < dimensions; ++i) {
 		    m_selBits[m_vecIdx].push_back(0);
@@ -267,7 +267,7 @@ class SliceVisitor : public AstNVisitor {
 	AstVar* varp = refp->varp();
 	AstNode* topp = nodep;
 	for (unsigned i = start; i < start + count; ++i) {
-	    AstNodeDType* dtypep = varp->dtypeDimensionp(i-1);
+	    AstNodeDType* dtypep = varp->dtypep()->dtypeDimensionp(i-1);
 	    AstArrayDType* adtypep = dtypep->castArrayDType();
 	    if (!adtypep) nodep->v3fatalSrc("insertImplicit tried to expand an array without an ArrayDType");
 	    vlsint32_t msb = adtypep->msb();
@@ -303,7 +303,7 @@ class SliceVisitor : public AstNVisitor {
 	// The LHS/RHS of an Assign may be to a Var that is an array. In this
 	// case we need to create a slice accross the entire Var
 	if (m_assignp && !nodep->backp()->castArraySel()) {
-	    pair<uint32_t,uint32_t> arrDim = nodep->varp()->dimensions();
+	    pair<uint32_t,uint32_t> arrDim = nodep->varp()->dtypep()->dimensions();
 	    uint32_t dimensions = arrDim.first + arrDim.second;
 	    if (dimensions > 0) {
 		AstVarRef* clonep = nodep->cloneTree(false);
@@ -337,7 +337,7 @@ class SliceVisitor : public AstNVisitor {
 	if (nodep->user3()) return;  // Prevent recursion on just created nodes
 	unsigned dim = explicitDimensions(nodep);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
-	pair<uint32_t,uint32_t> arrDim = refp->varp()->dimensions();
+	pair<uint32_t,uint32_t> arrDim = refp->varp()->dtypep()->dimensions();
 	uint32_t implicit = (arrDim.first + arrDim.second) - dim;
 	if (implicit > 0) {
 	    AstArraySel* newp = insertImplicit(nodep->cloneTree(false), dim+1, implicit);
@@ -439,7 +439,7 @@ class SliceVisitor : public AstNVisitor {
 	    nodep->iterateChildren(*this);
 	} else {
 	    AstVarRef* refp = findVarRefRecurse(nodep->lhsp());
-	    ArrayDimensions varDim = refp->varp()->dimensions();
+	    ArrayDimensions varDim = refp->varp()->dtypep()->dimensions();
 	    if ((int)(dim - varDim.second) < 0) {
 		// Unpacked dimensions are referenced first, make sure we have them all
 		nodep->v3error("Unary operator used across unpacked dimensions");

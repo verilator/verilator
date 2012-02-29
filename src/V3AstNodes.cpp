@@ -245,7 +245,7 @@ string AstVar::scType() const {
     }
 }
 
-AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
+AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     // dimension passed from AstArraySel::dimension
     // Dimension 0 means the VAR itself, 1 is the closest SEL to the AstVar,
     // which is the lowest in the dtype list.
@@ -258,7 +258,7 @@ AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
     //	      *or*	VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (ARRAYSEL3 (DT))))
     //	   SEL1 needs to select from entire variable which is a pointer to ARRAYSEL0
     int dim = 0;
-    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+    for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    if ((dim++)==dimension) {
@@ -282,9 +282,9 @@ AstNodeDType* AstVar::dtypeDimensionp(int dimension) const {
     return NULL;
 }
 
-uint32_t AstVar::arrayElements() const {
+uint32_t AstNodeDType::arrayElements() {
     uint32_t entries=1;
-    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+    for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    entries *= adtypep->elementsConst();
@@ -298,11 +298,11 @@ uint32_t AstVar::arrayElements() const {
     return entries;
 }
 
-pair<uint32_t,uint32_t> AstVar::dimensions() const {
+pair<uint32_t,uint32_t> AstNodeDType::dimensions() {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
     uint32_t unpacked = 0;
-    for (AstNodeDType* dtypep=this->dtypep(); dtypep; ) {
+    for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    if (adtypep->isPacked()) packed += 1;

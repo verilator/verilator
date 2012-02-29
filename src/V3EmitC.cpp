@@ -322,7 +322,7 @@ public:
 	    AstVarRef* varrefp = nodep->memp()->castVarRef();
 	    if (!varrefp) { nodep->v3error("Readmem loading non-variable"); }
 	    else if (AstArrayDType* adtypep = varrefp->varp()->dtypeSkipRefp()->castArrayDType()) {
-		puts(cvtToStr(varrefp->varp()->arrayElements()));
+		puts(cvtToStr(varrefp->varp()->dtypep()->arrayElements()));
 		array_lsb = adtypep->lsb();
 	    }
 	    else {

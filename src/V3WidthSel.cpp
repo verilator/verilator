@@ -78,7 +78,7 @@ private:
 	// Perform error checks on the node
 	AstVar* varp = varFromBasefrom(basefromp);
 	//UINFO(9,"SCD\n"); if (debug()>=9) nodep->backp()->dumpTree(cout,"-selcheck: ");
-	AstNodeDType* ddtypep = varp->dtypeDimensionp(dimension);
+	AstNodeDType* ddtypep = varp->dtypep()->dtypeDimensionp(dimension);
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    return adtypep;
 	}

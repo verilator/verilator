@@ -457,7 +457,7 @@ private:
 	    //
 	    int frommsb;
 	    int fromlsb;
-	    AstNodeDType* ddtypep = varrp->varp()->dtypeDimensionp(dimension);
+	    AstNodeDType* ddtypep = varrp->varp()->dtypep()->dtypeDimensionp(dimension);
 	    if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 		int outwidth = varrp->width();		// Width of variable
 		frommsb = adtypep->msb();

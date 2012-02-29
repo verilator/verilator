@@ -1334,6 +1334,9 @@ struct AstNodeDType : public AstNode {
     virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const = 0; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     virtual bool maybePointedTo() const { return true; }
+    AstNodeDType* dtypeDimensionp(int depth);
+    pair<uint32_t,uint32_t> dimensions();
+    uint32_t	arrayElements();	// 1, or total multiplication of all dimensions
 };
 
 struct AstNodeSel : public AstNodeBiop {
