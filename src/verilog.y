@@ -3323,7 +3323,3 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
 // --report=lookahead
 // --report=itemset
 // --graph
-//
-// Local Variables:
-// compile-command: "cd obj_dbg ; /usr/bin/bison -y -d -v ../verilog.y ; cat y.output"
-// End:

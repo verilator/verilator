@@ -70,16 +70,16 @@ class DeadVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire Netlist:
-    //  AstNodeModule::user()	-> int. Count of number of cells referencing this module.
-    //  AstVar::user()		-> int. Count of number of references
-    //  AstVarScope::user()	-> int. Count of number of references
+    //  AstNodeModule::user1()	-> int. Count of number of cells referencing this module.
+    //  AstVar::user1()		-> int. Count of number of references
+    //  AstVarScope::user1()	-> int. Count of number of references
     AstUser1InUse	m_inuser1;
 
     // TYPES
     typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
 
     // STATE
-    vector<AstVar*>		m_varsp;	// List of all encountered to avoid another loop through tree
+    vector<AstNode*>		m_varEtcsp;	// List of all encountered to avoid another loop through tree
     vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
     AssignMap			m_assignMap;	// List of all simple assignments for each variable
     bool			m_elimUserVars;	// Allow removal of user's vars
@@ -130,11 +130,15 @@ private:
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	m_vscsp.push_back(nodep);
+	if (mightElim(nodep->varp())) {
+	    m_vscsp.push_back(nodep);
+	}
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	m_varsp.push_back(nodep);
+	if (mightElim(nodep)) {
+	    m_varEtcsp.push_back(nodep);
+	}
     }
 
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
@@ -180,7 +184,7 @@ private:
 	    }
 	}
     }
-    bool canElim(AstVar* nodep) {
+    bool mightElim(AstVar* nodep) {
 	return (!nodep->isSigPublic()	// Can't elim publics!
 		&& !nodep->isIO()
 		&& (nodep->isTemp() || nodep->isParam() || m_elimUserVars));
@@ -189,7 +193,7 @@ private:
 	// Delete any unused varscopes
 	for (vector<AstVarScope*>::iterator it = m_vscsp.begin(); it!=m_vscsp.end(); ++it) {
 	    AstVarScope* vscp = *it;
-	    if (vscp->user1() == 0 && canElim(vscp->varp())) {
+	    if (vscp->user1() == 0) {
 		UINFO(4,"  Dead "<<vscp<<endl);
 		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
 		for (AssignMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
@@ -200,8 +204,8 @@ private:
 		vscp->unlinkFrBack()->deleteTree(); vscp=NULL;
 	    }
 	}
-	for (vector<AstVar*>::iterator it = m_varsp.begin(); it!=m_varsp.end(); ++it) {
-	    if ((*it)->user1() == 0 && canElim((*it))) {
+	for (vector<AstNode*>::iterator it = m_varEtcsp.begin(); it!=m_varEtcsp.end(); ++it) {
+	    if ((*it)->user1() == 0) {
 		UINFO(4,"  Dead "<<(*it)<<endl);
 		(*it)->unlinkFrBack()->deleteTree(); (*it)=NULL;
 	    }
