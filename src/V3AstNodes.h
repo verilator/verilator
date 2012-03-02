@@ -241,6 +241,7 @@ public:
 
 struct AstBasicDType : public AstNodeDType {
     // Builtin atomic/vectored data type
+    // Children: RANGE (converted to constant in V3Width)
 private:
     AstBasicDTypeKwd	m_keyword;	// What keyword created it
     bool		m_implicit;	// Implicitly declared
@@ -446,7 +447,7 @@ struct AstEnumDType : public AstNodeDType {
     virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return dtypep()->skipRefp(); }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return dtypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
 };
 
 //######################################################################

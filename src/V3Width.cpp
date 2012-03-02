@@ -86,7 +86,7 @@ class WidthVP : public AstNUser {
     // Parameters to pass down hierarchy with visit functions.
     int	m_width;	// Expression width, for (2+2), it's 32 bits
     int	m_widthMin;	// Minimum width, for (2+2), it's 2 bits, for 32'2+32'2 it's 32 bits
-    Stage	m_stage;	// If true, report errors
+    Stage m_stage;	// If true, report errors
 public:
     WidthVP(int width, int widthMin, Stage stage) : m_width(width), m_widthMin(widthMin), m_stage(stage) {}
     int width() const { return m_width; }
@@ -243,7 +243,7 @@ private:
     virtual void visit(AstTime* nodep, AstNUser*) {		nodep->dtypeChgUInt64(); }
     virtual void visit(AstTimeD* nodep, AstNUser*) {		nodep->dtypeChgDouble(); }
     virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {	nodep->dtypeChgSigned32(); }
-    virtual void visit(AstScopeName* nodep, AstNUser* vup) {	nodep->dtypeChgUInt64(); }	// A pointer, but not that it matters
+    virtual void visit(AstScopeName* nodep, AstNUser*) {	nodep->dtypeChgUInt64(); }	// A pointer, but not that it matters
 
     // Special cases.  So many....
     virtual void visit(AstNodeCond* nodep, AstNUser* vup) {
