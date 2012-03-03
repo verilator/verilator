@@ -1,0 +1,27 @@
+# DESCRIPTION: Verilator: GDB startup file with useful defines
+#
+# Copyright 2012-2012 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+
+define pn
+  call $arg0->dumpCout()
+end
+document pn
+  Verilator: Print single AstNode NODEP
+end
+
+define pnt
+  call $arg0->dumpTreeCout()
+end
+document pnt
+  Verilator: Print AstNode NODEP's tree
+end
+
+define pnp
+  call $arg0->dumpPtrsCout()
+end
+document pnp
+  Verilator: Print AstNode NODEP internal pointers
+end

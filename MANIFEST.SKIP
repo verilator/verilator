@@ -1,5 +1,6 @@
 ^CVS/
 /CVS/
+\.gdbinit$
 \.git/
 \.svn/
 \.(bak|old)/

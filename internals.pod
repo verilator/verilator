@@ -249,9 +249,9 @@ what made a <e####> line in the tree dumps):
 
 To print a node:
 
-   p nodep->dumpCout()
-   p nodep->dumpTreeCout()
-   p nodep->dumpPtrsCout()
+   call nodep->dumpCout()           # aliased to "pn" in .gdbinit
+   call nodep->dumpTreeCout()       # aliased to "pnt" in .gdbinit
+   call nodep->dumpPtrsCout()       # aliased to "pnp" in .gdbinit
 
 =head1 DISTRIBUTION
 
