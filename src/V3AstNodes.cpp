@@ -523,8 +523,8 @@ void AstAttrOf::dump(ostream& str) {
 }
 void AstBasicDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
-    str<<" ["<<keyword().ascii()<<"]";
-    if (!rangep() && msb()) str<<" range["<<msb()<<":"<<lsb()<<"]";
+    str<<" kwd="<<keyword().ascii();
+    if (!rangep() && msb()) str<<" range=["<<msb()<<":"<<lsb()<<"]";
     if (implicit()) str<<" [IMPLICIT]";
 }
 void AstCCast::dump(ostream& str) {

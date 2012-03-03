@@ -944,7 +944,8 @@ public:
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
     virtual void dump(ostream& str=cout);
-    void	dumpCout(); // For GDB only
+    void	dumpGdb(); // For GDB only
+    void	dumpGdbHeader() const;
 
     // METHODS - Tree modifications
     AstNode*	addNext(AstNode* newp);		// Returns this, adds to end of list
@@ -968,9 +969,8 @@ public:
     void	deleteTree();	// Always deletes the next link
     void	checkTree();  // User Interface version
     void	dumpPtrs(ostream& str=cout) const;
-    void	dumpPtrsCout() const;
     void	dumpTree(ostream& str=cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTreeCout(); // For GDB only
+    void	dumpTreeGdb(); // For GDB only
     void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeFile(const string& filename, bool append=false);
 

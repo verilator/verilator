@@ -245,7 +245,7 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
     // Called on all major tree changers.
     // Only for use for those really nasty bugs relating to internals
     // Note this may be null.
-    //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<": "<<(void*)this<<endl;
+    //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<": "<<(void*)this<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
     //if (debug()) {
     //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
     //	v3Global.rootp()->dumpTree(cout,"-treeChange: ");
@@ -719,6 +719,7 @@ void AstNode::deleteTree() {
     if (!this) return;
     UASSERT(m_backp==NULL,"Delete called on node with backlink still set\n");
     this->debugTreeChange("-delTree:  ", __LINE__, true);
+    this->editCountInc();
     // MUST be depth first!
     deleteTreeIter();
 }
@@ -947,9 +948,21 @@ void AstNode::checkTree() {
     }
 }
 
-void AstNode::dumpCout() { dump(cout); }  // For GDB only
-void AstNode::dumpPtrsCout() const { dumpPtrs(cout); }  // For GDB only
-void AstNode::dumpTreeCout() { dumpTree(cout); }  // For GDB only
+void AstNode::dumpGdb() {  // For GDB only
+    if (!this) { cout<<"This=NULL"<<endl; return; }
+    dumpGdbHeader();
+    dump(cout);
+}
+void AstNode::dumpTreeGdb() {  // For GDB only
+    if (!this) { cout<<"This=NULL"<<endl; return; }
+    dumpGdbHeader();
+    dumpTree(cout);
+}
+void AstNode::dumpGdbHeader() const {  // For GDB only
+    if (!this) { cout<<"This=NULL"<<endl; return; }
+    dumpPtrs(cout);
+    cout<<"  Fileline = "<<fileline()<<endl;
+}
 
 void AstNode::dumpPtrs(ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;

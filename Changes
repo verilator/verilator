@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.832 devel
 
+[run cppcheck]
+
 ***   Fix memory delayed assignments from multiple clock domains. [Andrew Ling]
 
 ***   Report MULTIDRIVEN on memories set in multiple clock domains.
