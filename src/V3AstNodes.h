@@ -48,11 +48,14 @@ private:
 public:
     AstConst(FileLine* fl, const V3Number& num)
 	:AstNodeMath(fl)
-	 ,m_num(num) {
-	width(m_num.width(), m_num.sized()?0:m_num.widthMin());
-	numeric(m_num.isDouble() ? AstNumeric::DOUBLE
-		   : m_num.isSigned() ? AstNumeric::SIGNED
-		   : AstNumeric::UNSIGNED);
+	,m_num(num) {
+	if (m_num.isDouble()) {
+	    dtypeChgDouble();
+	} else {
+	    width(m_num.width(), m_num.sized()?0:m_num.widthMin());
+	    numeric(m_num.isSigned() ? AstNumeric::SIGNED
+		    : AstNumeric::UNSIGNED);
+	}
     }
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
@@ -212,7 +215,7 @@ public:
 struct AstArrayDType : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
 private:
-    bool m_packed;
+    bool		m_packed;
 public:
     AstArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
 	: AstNodeDType(fl), m_packed(isPacked) {
@@ -318,13 +321,7 @@ public:
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
     void	implicit(bool flag) { m_implicit = flag; }
-    void	cvtRangeConst() {  // Convert to smaller represenation
-	if (rangep() && rangep()->castConst() && lsb()==0 && !littleEndian()) {
-	    m_msb = msb();
-	    rangep()->deleteTree();
-	    rangep(NULL);
-	}
-    }
+    void	cvtRangeConst() {}  // Convert to smaller represenation - disabled
 };
 
 struct AstConstDType : public AstNodeDType {
@@ -382,7 +379,7 @@ public:
 	if (defp()) return defp();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
-    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }	// op1 = Range of variable
     AstNodeDType* defp() const { return m_defp; }
     void defp(AstNodeDType* nodep) { m_defp=nodep; }
     AstPackage* packagep() const { return m_packagep; }
@@ -556,7 +553,9 @@ struct AstSel : public AstNodeTriop {
     // Children: varref|arraysel, math, constant math
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
-	if (widthp->castConst()) width(widthp->castConst()->toUInt(), widthp->castConst()->toUInt());
+	if (widthp->castConst()) {
+	    width(widthp->castConst()->toUInt(), widthp->castConst()->toUInt());
+	}
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
 	:AstNodeTriop(fl, fromp,

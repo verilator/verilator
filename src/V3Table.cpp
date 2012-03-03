@@ -189,12 +189,14 @@ private:
 
 	// Change it variable
 	FileLine* fl = nodep->fileline();
+	AstNodeDType* dtypep
+	    = new AstArrayDType (fl,
+				 new AstBasicDType(fl, AstBitPacked(), m_outVarps.size()),
+				 new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	AstVar* chgVarp
 	    = new AstVar (fl, AstVarType::MODULETEMP,
 			  "__Vtablechg" + cvtToStr(m_modTables),
-			  new AstArrayDType (fl,
-					     new AstBasicDType(fl, AstBitPacked(), m_outVarps.size()),
-					     new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
+			  dtypep);
 	chgVarp->isConst(true);
 	chgVarp->valuep(new AstInitArray (nodep->fileline(), NULL));
 	m_modp->addStmtp(chgVarp);
@@ -233,13 +235,15 @@ private:
 	    AstVarScope* outvscp = *it;
 	    AstVar* outvarp = outvscp->varp();
 	    FileLine* fl = nodep->fileline();
+	    AstNodeDType* dtypep
+		= new AstArrayDType (fl,
+				     // FUTURE: If support more types, below can use outvarp->dtype()
+				     new AstBasicDType(fl, AstLogicPacked(), outvarp->width()),
+				     new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	    AstVar* tablevarp
 		= new AstVar (fl, AstVarType::MODULETEMP,
 			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
-			      new AstArrayDType (fl,
-						 // FUTURE: If support more types, below can use outvarp->dtype()
-						 new AstBasicDType(fl, AstLogicPacked(), outvarp->width()),
-						 new AstRange (fl, VL_MASK_I(m_inWidth), 0)));
+			      dtypep);
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
 	    tablevarp->valuep(new AstInitArray (nodep->fileline(), NULL));

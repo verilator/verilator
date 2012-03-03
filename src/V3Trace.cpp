@@ -328,8 +328,7 @@ private:
 		    vvertexp->insertp()->addNextHere
 			(new AstAssign (fl,
 					new AstSel (fl, new AstVarRef(fl, m_activityVscp, true),
-						    new AstConst(fl, acode),
-						    new AstConst(fl, 1)),
+						    acode, 1),
 					new AstConst (fl, AstConst::LogicTrue())));
 		}
 	    }
@@ -452,8 +451,7 @@ private:
 		    for (ActCodeSet::const_iterator csit = actset.begin(); csit!=actset.end(); ++csit) {
 			uint32_t acode = *csit;
 			AstNode* selp = new AstSel (fl, new AstVarRef(fl, m_activityVscp, false),
-						    new AstConst(fl, acode),
-						    new AstConst(fl, 1));
+						    acode, 1);
 			if (condp) condp = new AstOr (fl, condp, selp);
 			else condp = selp;
 		    }

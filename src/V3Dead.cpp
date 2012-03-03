@@ -91,14 +91,18 @@ private:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
+    void checkAll(AstNode* nodep) {
+    }
 
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	nodep->modp()->user1Inc();
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (nodep->varScopep()) {
 	    nodep->varScopep()->user1Inc();
 	    nodep->varScopep()->varp()->user1Inc();
@@ -112,30 +116,35 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (nodep->packagep()) {
 	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstRefDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (nodep->packagep()) {
 	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (nodep->packagep()) {
 	    nodep->packagep()->user1Inc();
 	}
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (mightElim(nodep->varp())) {
 	    m_vscsp.push_back(nodep);
 	}
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
 	if (mightElim(nodep)) {
 	    m_varEtcsp.push_back(nodep);
 	}
@@ -154,12 +163,14 @@ private:
 	} else {  // Track like any other statement
 	    nodep->lhsp()->iterateAndNext(*this);
 	}
+	checkAll(nodep);
     }
 
     //-----
     virtual void visit(AstNode* nodep, AstNUser*) {
 	if (nodep->isOutputter()) m_sideEffect=true;
 	nodep->iterateChildren(*this);
+	checkAll(nodep);
     }
 
     // METHODS

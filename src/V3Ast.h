@@ -291,11 +291,13 @@ public:
 	case INTEGER:	return 32;
 	case LOGIC:	return 1;
 	case LONGINT:	return 64;
-	case DOUBLE:	return 64;
-	case FLOAT:	return 32;
+	case DOUBLE:	return 64;  // opaque
+	case FLOAT:	return 32;  // opaque
 	case SHORTINT:	return 16;
 	case TIME:	return 64;
-	case STRING:	return 64;  // Just the pointer, for today
+	case STRING:	return 64;  // opaque  // Just the pointer, for today
+	case SCOPEPTR:	return 0;   // opaque
+	case CHARPTR:	return 0;   // opaque
 	default: return 0;
 	}
     }
@@ -862,8 +864,6 @@ public:
     void	numericFrom(AstNode* fromp) { numeric(fromp->numeric()); }
     void	numeric(AstNumeric flag) { m_numeric = (int)flag; if (flag.isDouble()) width(64,64); }
     AstNumeric	numeric() const { return AstNumeric(m_numeric); }
-    bool	isDouble() const { return numeric().isDouble(); }
-    bool	isSigned() const { return numeric().isSigned(); }
     void	isSigned(bool flag) { numeric(flag ? AstNumeric::SIGNED : AstNumeric::UNSIGNED); }
     bool	isUnsigned() const { return numeric().isUnsigned(); }
     void	didWidth(bool flag) { m_didWidth=flag; }
@@ -872,6 +872,8 @@ public:
     bool	doingWidth() const { return m_doingWidth; }
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
+    bool	isDouble() const;
+    bool	isSigned() const;
 
     AstNUser*	user1p() const {
 	// Slows things down measurably, so disabled by default
@@ -1511,6 +1513,9 @@ public:
 
 //######################################################################
 // Inline ACCESSORS
+
+inline bool AstNode::isDouble() const { return numeric().isDouble(); }
+inline bool AstNode::isSigned() const { return numeric().isSigned(); }
 
 inline bool AstNode::isZero()     { return (this->castConst() && this->castConst()->num().isEqZero()); }
 inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst()->num().isNeqZero()); }

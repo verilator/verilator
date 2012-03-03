@@ -1154,7 +1154,8 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP		{ UNSUP }
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
 	//UNSUP		{ UNSUP }
-	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),GRAMMARP->m_modp,$1); }
+	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
+										       GRAMMARP->m_modp,$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }

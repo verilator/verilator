@@ -887,7 +887,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    }
 	    puts(nodep->name());
 	    if (isArray) {
-		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
+		     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
 		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 		}
 	    }
@@ -907,7 +908,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    if (isArray) {
 		if (nodep->isWide()) puts("W");
 		puts("("+nodep->name());
-		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
+		     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
 		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 		}
 		puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
@@ -928,7 +930,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	// strings and other fundamental c types
 	puts(nodep->vlArgType(true,false));
 	// This isn't very robust and may need cleanup for other data types
-	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
+	     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
 	puts(";\n");
@@ -953,7 +956,8 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	if (prefixIfImp!="") { puts(prefixIfImp); puts("::"); }
 	puts(nodep->name());
 	// This isn't very robust and may need cleanup for other data types
-	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp; arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
+	     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
 	puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
@@ -2086,7 +2090,8 @@ class EmitCTrace : EmitCStmts {
 	} else {
 	    puts(",-1");
 	}
-	if (nodep->msbEndianed() || nodep->lsbEndianed()) {
+	if (!nodep->isDouble()  // When float/double no longer have widths this can go
+	    && (nodep->msbEndianed() || nodep->lsbEndianed())) {
 	    puts(","+cvtToStr(nodep->msbEndianed())+","+cvtToStr(nodep->lsbEndianed()));
 	}
 	puts(");");
@@ -2112,7 +2117,8 @@ class EmitCTrace : EmitCStmts {
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
-	if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed() || emitTraceIsScBv(nodep)) {
+	if (!nodep->isDouble()  // When float/double no longer have widths this can go
+	    && (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed() || emitTraceIsScBv(nodep))) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");
