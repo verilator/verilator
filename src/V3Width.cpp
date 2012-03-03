@@ -1246,9 +1246,9 @@ private:
 			if ((portp->isOutput() || portp->isInout())
 			    && pinp->width() != portp->width()) {
 			    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
-					  <<" requires "<<pinp->width()
+					  <<" requires "<<portp->width()
 					  <<" bits, but connection's "<<pinp->prettyTypeName()
-					  <<" generates "<<portp->width()<<" bits.");
+					  <<" generates "<<pinp->width()<<" bits.");
 			    // otherwise would need some mess to force both sides to proper size
 			    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
 			}

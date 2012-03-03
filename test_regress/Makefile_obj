@@ -42,7 +42,11 @@ ifeq ($(VM_SP_OR_SC),1)
    LIBS += $(SC_LIBS)
 endif
 
-#Default compile, using normal make rules
+#Default compile, pick up OBJCACHE
+%.o:	%.cpp
+	$(OBJCACHE) $(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $<
+
+#Default link, using normal make rules
 #$(VM_PREFIX): $(VK_GLOBAL_OBJS) $(VK_OBJS)
 #	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
 

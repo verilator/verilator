@@ -11,7 +11,7 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-q{%Error: t/t_func_wide_out_bad.v:\d+: Unsupported: Function output argument 'data' requires 4350 bits, but connection's VARREF 'msg' generates 4352 bits.
+q{%Error: t/t_func_wide_out_bad.v:\d+: Unsupported: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4350 bits.
 %Error: Exiting due to.*},
 	 );
 
