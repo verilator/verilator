@@ -695,16 +695,21 @@ private:
 	AstBasicDType* bdtypep = nodep->dtypep()->castBasicDType();
 	bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
 	if (implicitParam) {
-	    AstNumeric rs = AstNumeric::UNSIGNED;
 	    int width=0;
+	    AstNumeric rs = AstNumeric::UNSIGNED;
 	    if (nodep->valuep()) {
 		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
+		UINFO(9,"implicitParamPRELIMIV "<<nodep->valuep()<<endl);
 		// Although nodep will get a different width for parameters just below,
 		// we want the init numbers to retain their width/minwidth until parameters are replaced.
 		// This prevents width warnings at the location the parameter is substituted in
-		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
-		rs = nodep->numeric();
-		if (!rs.isDouble()) {
+		if (nodep->valuep()->isDouble()) {
+		    nodep->dtypeChgDouble(); bdtypep=NULL;
+		    nodep->dtypep()->dtypeChgDouble(); bdtypep=NULL;
+		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
+		} else {
+		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
+		    rs = nodep->numeric();
 		    if (nodep->valuep()->widthSized()) {
 			width = nodep->valuep()->width();
 		    } else {
@@ -712,24 +717,20 @@ private:
 			width = 32;
 		    }
 		}
-	    }
-	    // Parameter sizes can come from the thing they get assigned from
-	    // They then "stick" to that width.
-	    if (!width) width=32;	// Or, if nothing, they're 32 bits.
-	    // CLEANUP: If we have a TypeOf operator, or make dtype on every AstNode,
-	    // this would be just a copy of the dtype into the var.
-	    if (rs.isDouble()) {
-		AstBasicDType* newp = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::DOUBLE);
-		bdtypep->replaceWith(newp);
-		bdtypep->deleteTree(); bdtypep=NULL;
+		UINFO(9,"implicitParamFromIV "<<nodep->valuep()<<endl);
+		//UINFO below will print variable nodep
 	    } else {
+		// Or, if nothing assigned, they're 32 bits.
+		width=32;
+	    }
+	    if (!nodep->isDouble()) {
 		AstBasicDType* newp = new AstBasicDType(nodep->fileline(), AstLogicPacked(), width);
 		newp->implicit(true);
 		newp->numeric(rs);  // SIGNED or UNSIGNED
 		bdtypep->replaceWith(newp);
 		bdtypep->deleteTree(); bdtypep=NULL;
+		nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    }
-	    nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	}
 	else { // non param or sized param
 	    nodep->dtypep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -741,7 +742,7 @@ private:
 	// See above note about valuep()->...FINAL
 	nodep->widthSignedFrom(nodep->dtypep());
 	if (nodep->valuep()) {
-	    if (implicitParam) {
+	    if (implicitParam && !nodep->isDouble()) {
 		nodep->width(nodep->width(), nodep->valuep()->widthMin());   // Needed as mwidth might not equal width
 	    }
 	    widthCheck(nodep,"Initial value",nodep->valuep(),

@@ -20,10 +20,8 @@ module t (/*AUTOARG*/);
    localparam A1_WIDE = UNSIGNED;
    `ASSERT($bits(A1_WIDE)==64);
 
-`ifdef VERILATOR_BROKEN
    localparam A2_REAL = REAL;
    `ASSERT(A2_REAL == 1.234);
-`endif
 
 `ifdef VERILATOR_BROKEN
    localparam A3_SIGNED = SIGNED;

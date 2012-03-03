@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix expansion of back-slashed escaped macros, bug441. [Alberto Del Rio]
 
+****  Fix inheriting real type across untyped parameters.
+
 ****  Fix core dump with over 100 deep UNOPTFLAT, bug432. [Joe Eiler]
 
 ****  Fix false command not found warning in makefiles. [Ruben Diez]
