@@ -335,7 +335,7 @@ public:
 
 enum AstSignedState {
     // This can't be in the fancy class as the lexer union will get upset
-    signedst_NOP=0, signedst_SIGNED=1, signedst_UNSIGNED=2
+    signedst_NOSIGNED=0, signedst_UNSIGNED=1, signedst_SIGNED=2
 };
 
 //######################################################################

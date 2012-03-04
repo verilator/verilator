@@ -1093,7 +1093,7 @@ non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
-		/*empty*/ 				{ $$ = signedst_NOP; }
+		/*empty*/ 				{ $$ = signedst_NOSIGNED; }
 	|	signing					{ $$ = $1; }
 	;
 

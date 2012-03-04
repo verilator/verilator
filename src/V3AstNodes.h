@@ -248,19 +248,20 @@ struct AstBasicDType : public AstNodeDType {
 private:
     AstBasicDTypeKwd	m_keyword;	// What keyword created it
     bool		m_implicit;	// Implicitly declared
+    bool		m_nosigned;	// Implicit without sign
     int			m_msb;		// MSB when no range attached
 public:
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstSignedState signst=signedst_NOP)
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstSignedState signst=signedst_NOSIGNED)
 	: AstNodeDType(fl) {
 	init(kwd, signst, 0, NULL);
     }
     AstBasicDType(FileLine* fl, AstLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::LOGIC, signedst_NOP, wantwidth, NULL);
+	init(AstBasicDTypeKwd::LOGIC, signedst_NOSIGNED, wantwidth, NULL);
     }
     AstBasicDType(FileLine* fl, AstBitPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::BIT, signedst_NOP, wantwidth, NULL);
+	init(AstBasicDTypeKwd::BIT, signedst_NOSIGNED, wantwidth, NULL);
     }
     // See also addRange in verilog.y
 private:
@@ -269,11 +270,15 @@ private:
 	m_msb = 0;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
 	m_implicit = false;
+	m_nosigned = false;
 	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
 	    if (!rangep && !wantwidth) m_implicit = true;  // Also cleared if range added later
 	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
-	if (signst == signedst_NOP && keyword().isSigned()) signst = signedst_SIGNED;
+	if (signst == signedst_NOSIGNED) {
+	    if (keyword().isSigned()) signst = signedst_SIGNED;
+	    else m_nosigned = true;
+	}
 	if (keyword().isDouble()) dtypeChgDouble();
 	else setSignedState(signst);
 	if (!rangep && wantwidth) { // Constant width
@@ -321,6 +326,7 @@ public:
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
     void	implicit(bool flag) { m_implicit = flag; }
+    bool	nosigned() const { return m_nosigned; }
     void	cvtRangeConst() {}  // Convert to smaller represenation - disabled
 };
 

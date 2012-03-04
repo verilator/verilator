@@ -709,7 +709,8 @@ private:
 		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
 		} else {
 		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,FINAL).p());
-		    rs = nodep->numeric();
+		    if (bdtypep->nosigned()) rs = nodep->valuep()->numeric();
+		    else rs = nodep->numeric();
 		    if (nodep->valuep()->widthSized()) {
 			width = nodep->valuep()->width();
 		    } else {
