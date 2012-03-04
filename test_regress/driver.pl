@@ -316,29 +316,29 @@ sub new {
 	atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
 			"+sv_dir+$self->{obj_dir}/.athdl_compile"],
 	atsim_flags2 => [],  # Overridden in some sim files
-	atsimrun_flags => [],
+	atsim_run_flags => [],
         # GHDL
 	ghdl => 0,
 	ghdl_work_dir => "$self->{obj_dir}/ghdl_compile",
 	ghdl_flags => [($::Debug?"-v":""),
 		       "--workdir=$self->{obj_dir}/ghdl_compile", ],
 	ghdl_flags2 => [],  # Overridden in some sim files
-	ghdlrun_flags => [],
+	ghdl_run_flags => [],
         # IV
 	iv => 0,
 	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
 	iv_flags2 => [],  # Overridden in some sim files
-	ivrun_flags => [],
+	iv_run_flags => [],
 	# VCS
 	vcs => 0,
 	vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -I +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
 	vcs_flags2 => [],  # Overridden in some sim files
-	vcsrun_flags => [split(/\s+/,"+vcs+lic_wait")],
+	vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
 	# NC
 	nc => 0,
 	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c ")],
 	nc_flags2 => [],  # Overridden in some sim files
-	ncrun_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
+	nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
 	vlt => 0,
 	'v3' => 0,
@@ -642,6 +642,7 @@ sub execute {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors || $self->skips;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
+    #   params may be expect or {tool}_expect
     $self->oprint("Run\n");
 
     my $run_env = $param{run_env};
@@ -651,44 +652,56 @@ sub execute {
 	$self->_run(logfile=>"$self->{obj_dir}/atsim_sim.log",
 		    fails=>$param{fails},
 		    cmd=>["echo q | ".$run_env."$self->{obj_dir}/athdl_sv",
-			  @{$param{atsimrun_flags}},
+			  @{$param{atsim_run_flags}},
 			  @{$param{all_run_flags}},
-			  ]);
+		          ],
+		    %param,
+		    expect=>$param{atsim_run_expect},	# non-verilator expect isn't the same
+		    );
     }
     elsif ($param{ghdl}) {
 	$self->_run(logfile=>"$self->{obj_dir}/ghdl_sim.log",
 		    fails=>$param{fails},
 		    cmd=>[$run_env."$self->{obj_dir}/simghdl",
-			  @{$param{ghdlrun_flags}},
+			  @{$param{ghdl_run_flags}},
 			  @{$param{all_run_flags}},
-			  ]);
+		          ],
+		    %param,
+		    expect=>$param{ghdl_run_expect},	# non-verilator expect isn't the same
+		    );
     }
     elsif ($param{iv}) {
 	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
 		    cmd=>[$run_env."$self->{obj_dir}/simiv",
-			  @{$param{ivrun_flags}},
+			  @{$param{iv_run_flags}},
 			  @{$param{all_run_flags}},
-			  ]);
+		          ],
+		    %param,
+		    expect=>$param{iv_run_expect},	# non-verilator expect isn't the same
+		    );
     }
     elsif ($param{nc}) {
 	$self->_run(logfile=>"$self->{obj_dir}/nc_sim.log",
 		    fails=>$param{fails},
 		    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_NCVERILOG}||"ncverilog"),
-			  @{$param{ncrun_flags}},
+			  @{$param{nc_run_flags}},
 			  @{$param{all_run_flags}},
-			  ]);
+		          ],
+		    %param,
+		    expect=>$param{nc_run_expect},	# non-verilator expect isn't the same
+		    );
     }
     elsif ($param{vcs}) {
 	#my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,";
 	#$fh->print("quit\n"); $fh->close;
 	$self->_run(logfile=>"$self->{obj_dir}/vcs_sim.log",
 		    cmd=>["echo q | ".$run_env."./simv",
-			  @{$param{vcsrun_flags}},
+			  @{$param{vcs_run_flags}},
 			  @{$param{all_run_flags}},
 		          ],
 		    %param,
-		    expect=>undef,	# vcs expect isn't the same
+		    expect=>$param{vcs_run_expect},	# non-verilator expect isn't the same
 		    );
     }
     elsif ($param{vlt}
@@ -702,6 +715,7 @@ sub execute {
 			  @{$param{all_run_flags}},
 			  ],
 		    %param,
+		    expect=>$param{expect},		# backward compatible name
 		    );
     }
     else {

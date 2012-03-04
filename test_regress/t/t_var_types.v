@@ -113,19 +113,28 @@ module t (/*AUTOARG*/);
       // verilator lint_on UNSIGNED
 
       // Can't CHECK_ALL(d_chandle), as many operations not legal on chandles
+`ifdef VERILATOR  // else indeterminate
       if ($bits(d_chandle) !== 64) $stop;
+`endif
 
 `define CHECK_P(name,nbits) \
    if (name !== {(nbits){1'b1}}) begin $display("%%Error: Bad size for %s",`"name`"); $stop; end \
 
       //       name              b
       `CHECK_P(p_implicit	,96);
+      `CHECK_P(p_implicit[0]	,1 );
       `CHECK_P(p_explicit	,90);
+      `CHECK_P(p_explicit[0]	,1 );
       `CHECK_P(p_byte		,8 );
+      `CHECK_P(p_byte[0]	,1 );
       `CHECK_P(p_shortint	,16);
+      `CHECK_P(p_shortint[0]	,1 );
       `CHECK_P(p_int		,32);
+      `CHECK_P(p_int[0]		,1 );
       `CHECK_P(p_longint	,64);
+      `CHECK_P(p_longint[0]	,1 );
       `CHECK_P(p_integer	,32);
+      `CHECK_P(p_integer[0]	,1 );
       `CHECK_P(p_bit		,1 );
       `CHECK_P(p_logic		,1 );
       `CHECK_P(p_reg		,1 );
@@ -151,7 +160,9 @@ module t (/*AUTOARG*/);
       `CHECK_F(f_longint	,64,1'b1);
       `CHECK_F(f_integer	,32,1'b0);
       `CHECK_F(f_time		,64,1'b0);
+`ifdef VERILATOR  // else indeterminate
       `CHECK_F(f_chandle	,64,1'b0);
+`endif
       `CHECK_F(f_bit		,1 ,1'b1);
       `CHECK_F(f_logic		,1 ,1'b0);
       `CHECK_F(f_reg		,1 ,1'b0);
