@@ -44,6 +44,9 @@ module t (/*AUTOARG*/);
    localparam reg 	p_reg	= {96{1'b1}};
    localparam bit 	p_bit	= {96{1'b1}};
    localparam logic 	p_logic	= {96{1'b1}};
+   localparam reg [0:0]	p_reg1	= {96{1'b1}};
+   localparam bit [0:0]	p_bit1	= {96{1'b1}};
+   localparam logic [0:0] p_logic1= {96{1'b1}};
    localparam reg [1:0]	p_reg2	= {96{1'b1}};
    localparam bit [1:0]	p_bit2	= {96{1'b1}};
    localparam logic [1:0] p_logic2= {96{1'b1}};
@@ -61,6 +64,9 @@ module t (/*AUTOARG*/);
    function reg 	f_reg;		reg 		lv_reg;		f_reg	 	= lv_reg;	endfunction
    function bit 	f_bit;		bit 		lv_bit;		f_bit	 	= lv_bit;	endfunction
    function logic 	f_logic;	logic 		lv_logic;	f_logic		= lv_logic;	endfunction
+   function reg [0:0]	f_reg1;		reg [0:0]	lv_reg1;	f_reg1	 	= lv_reg1;	endfunction
+   function bit [0:0]	f_bit1;		bit [0:0]	lv_bit1;	f_bit1	 	= lv_bit1;	endfunction
+   function logic [0:0] f_logic1;	logic [0:0] 	lv_logic1;	f_logic1	= lv_logic1;	endfunction
    function reg [1:0]	f_reg2;		reg [1:0]	lv_reg2;	f_reg2	 	= lv_reg2;	endfunction
    function bit [1:0]	f_bit2;		bit [1:0]	lv_bit2;	f_bit2	 	= lv_bit2;	endfunction
    function logic [1:0] f_logic2;	logic [1:0] 	lv_logic2;	f_logic2	= lv_logic2;	endfunction
@@ -123,6 +129,12 @@ module t (/*AUTOARG*/);
       `CHECK_P(p_bit		,1 );
       `CHECK_P(p_logic		,1 );
       `CHECK_P(p_reg		,1 );
+      `CHECK_P(p_bit1		,1 );
+      `CHECK_P(p_logic1		,1 );
+      `CHECK_P(p_reg1		,1 );
+      `CHECK_P(p_bit1[0]	,1 );
+      `CHECK_P(p_logic1[0]	,1 );
+      `CHECK_P(p_reg1[0]	,1 );
       `CHECK_P(p_bit2		,2 );
       `CHECK_P(p_logic2		,2 );
       `CHECK_P(p_reg2		,2 );
@@ -143,6 +155,9 @@ module t (/*AUTOARG*/);
       `CHECK_F(f_bit		,1 ,1'b1);
       `CHECK_F(f_logic		,1 ,1'b0);
       `CHECK_F(f_reg		,1 ,1'b0);
+      `CHECK_F(f_bit1		,1 ,1'b1);
+      `CHECK_F(f_logic1		,1 ,1'b0);
+      `CHECK_F(f_reg1		,1 ,1'b0);
       `CHECK_F(f_bit2		,2 ,1'b1);
       `CHECK_F(f_logic2		,2 ,1'b0);
       `CHECK_F(f_reg2		,2 ,1'b0);

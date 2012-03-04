@@ -144,12 +144,13 @@ private:
 	// Don't report WIDTH warnings etc here, as may be inside a generate branch that will be deleted
 	AstVar* varp = varFromBasefrom(basefromp);
 	// SUB #'s Not needed when LSB==0 and MSB>=0 (ie [0:-13] must still get added!)
-	if (!varp->basicp()->rangep()) {
+	if (!varp->basicp()->isRanged()) {
 	    // vector without range, or 0 lsb is ok, for example a INTEGER x; y = x[21:0];
 	    return underp;
 	} else {
-	    if (!varp->basicp()->rangep()->msbp()->castConst()
-		|| !varp->basicp()->rangep()->lsbp()->castConst())
+	    if (varp->basicp()->rangep()
+		&& (!varp->basicp()->rangep()->msbp()->castConst()
+		    || !varp->basicp()->rangep()->lsbp()->castConst()))
 		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
 	    if (varp->basicp()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)

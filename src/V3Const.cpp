@@ -374,7 +374,7 @@ private:
 	    if (m_warn
 		&& nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
-		&& (!bdtypep->rangep() || bdtypep->msb())) {  // else it's non-resolvable parameterized
+		&& (!bdtypep->isRanged() || bdtypep->msb())) {  // else it's non-resolvable parameterized
 		if (nodep->lsbp()->castConst()->num().isFourState()
 		    || nodep->widthp()->castConst()->num().isFourState()) {
 		    nodep->v3error("Selection index is constantly unknown or tristated: "

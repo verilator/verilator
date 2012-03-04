@@ -496,17 +496,17 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 //======================================================================
 // Per-type Debugging
 
-void AstNode::dump(ostream& os) {
-    os<<typeName()<<" "<<(void*)this
+void AstNode::dump(ostream& str) {
+    str<<typeName()<<" "<<(void*)this
 	//<<" "<<(void*)this->m_backp
-      <<" <e"<<dec<<editCount()
-      <<((editCount()>=editCountLast())?"#>":">")
-      <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}"
-      <<" "<<(isSigned()?"s":"")
-      <<(isDouble()?"d":"")
-      <<"w"<<(widthSized()?"":"u")<<width();
-    if (!widthSized()) os<<"/"<<widthMin();
-    if (name()!="") os<<"  "<<AstNode::quoteName(name());
+       <<" <e"<<dec<<editCount()
+       <<((editCount()>=editCountLast())?"#>":">")
+       <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}"
+       <<" "<<(isSigned()?"s":"")
+       <<(isDouble()?"d":"")
+       <<"w"<<(widthSized()?"":"u")<<width();
+    if (!widthSized()) str<<"/"<<widthMin();
+    if (name()!="") str<<"  "<<AstNode::quoteName(name());
 }
 
 void AstArrayDType::dump(ostream& str) {
@@ -524,7 +524,7 @@ void AstAttrOf::dump(ostream& str) {
 void AstBasicDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
     str<<" kwd="<<keyword().ascii();
-    if (!rangep() && msb()) str<<" range=["<<msb()<<":"<<lsb()<<"]";
+    if (isRanged() && !rangep()) str<<" range=["<<msb()<<":"<<lsb()<<"]";
     if (implicit()) str<<" [IMPLICIT]";
 }
 void AstCCast::dump(ostream& str) {

@@ -951,7 +951,7 @@ void AstNode::checkTree() {
 void AstNode::dumpGdb() {  // For GDB only
     if (!this) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
-    dump(cout);
+    cout<<"  "; dump(cout); cout<<endl;
 }
 void AstNode::dumpTreeGdb() {  // For GDB only
     if (!this) { cout<<"This=NULL"<<endl; return; }

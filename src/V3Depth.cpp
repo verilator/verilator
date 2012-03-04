@@ -68,6 +68,7 @@ private:
 				   // Width, not widthMin, as we may be in middle of BITSEL expression which
 				   // though it's one bit wide, needs the mask in the upper bits.
 				   // (Someday we'll have a valid bitmask instead of widths....)
+				   // See t_func_crc for an example test that requires this
 				   AstLogicPacked(), nodep->width());
 	if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
 	m_funcp->addInitsp(varp);
