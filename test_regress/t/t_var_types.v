@@ -30,8 +30,10 @@ module t (/*AUTOARG*/);
 
    // Declarations using var
    var byte 	v_b;
+`ifndef VCS
    var [2:0] 	v_b3;
    var signed [2:0] v_bs;
+`endif
 
    // verilator lint_off WIDTH
    localparam 		p_implicit = {96{1'b1}};
@@ -51,6 +53,19 @@ module t (/*AUTOARG*/);
    localparam bit [1:0]	p_bit2	= {96{1'b1}};
    localparam logic [1:0] p_logic2= {96{1'b1}};
    // verilator lint_on WIDTH
+
+   byte		v_byte[2];
+   shortint	v_shortint[2];
+   int		v_int[2];
+   longint	v_longint[2];
+   integer	v_integer[2];
+   time		v_time[2];
+   chandle	v_chandle[2];
+   bit		v_bit[2];
+   logic	v_logic[2];
+   reg		v_reg[2];
+   real		v_real[2];
+   realtime	v_realtime[2];
 
    // We do this in two steps so we can check that initialization inside functions works properly
    // verilator lint_off WIDTH
@@ -147,6 +162,22 @@ module t (/*AUTOARG*/);
       `CHECK_P(p_bit2		,2 );
       `CHECK_P(p_logic2		,2 );
       `CHECK_P(p_reg2		,2 );
+
+`define CHECK_B(varname,nbits) \
+   if ($bits(varname) !== nbits) begin $display("%%Error: Bad size for %s",`"varname`"); $stop; end \
+
+      `CHECK_B(v_byte[1]	,8 );
+      `CHECK_B(v_shortint[1]	,16);
+      `CHECK_B(v_int[1]		,32);
+      `CHECK_B(v_longint[1]	,64);
+      `CHECK_B(v_integer[1]	,32);
+      `CHECK_B(v_time[1]	,64);
+       //`CHECK_B(v_chandle[1]
+      `CHECK_B(v_bit[1]		,1 );
+      `CHECK_B(v_logic[1]	,1 );
+      `CHECK_B(v_reg[1]		,1 );
+      //`CHECK_B(v_real[1]	,64);	// $bits not allowed
+      //`CHECK_B(v_realtime[1]	,64);	// $bits not allowed
 
 `define CHECK_F(fname,nbits,zeroinit) \
    if ($bits(fname()) !== nbits) begin $display("%%Error: Bad size for %s",`"fname`"); $stop; end \
