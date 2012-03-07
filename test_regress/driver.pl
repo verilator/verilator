@@ -278,7 +278,19 @@ sub new {
     my $self = {@_};
 
     $self->{name} ||= $2 if $self->{pl_filename} =~ m!^(.*/)?([^/]*)\.pl$!;
-    $self->{obj_dir} ||= "obj_dir/$self->{name}";
+
+    $self->{mode} = "";
+    $self->{mode} ||= "atsim" if $self->{atsim};
+    $self->{mode} ||= "ghdl" if $self->{ghdl};
+    $self->{mode} ||= "vcs" if $self->{vcs};
+    $self->{mode} ||= "vlt" if $self->{vlt};
+    $self->{mode} ||= "nc" if $self->{nc};
+    $self->{mode} ||= "iv" if $self->{iv};
+
+    # For backward compatibility, the verilator tests have no prefix
+    $self->{obj_dir} ||= ("obj_dir/".($self->{mode} eq 'vlt' ? "" : $self->{mode}."_")
+			  ."$self->{name}");
+
     foreach my $dir (@::Test_Dirs) {
 	# t_dir used both absolutely and under obj_dir
 	if (-e "$dir/$self->{name}.pl") {
@@ -291,9 +303,9 @@ sub new {
 	}
     }
     $self->{t_dir} or die "%Error: Can't locate dir for $self->{name},";
+
     $self = {
 	name => undef, 		# Set below, name of this test
-	mode => "",
 	pl_filename => undef,	# Name of .pl file to get setup from
 	make_top_shell => 1,	# Make a default __top.v file
 	make_main => 1,		# Make __main.cpp
@@ -352,12 +364,6 @@ sub new {
 	%$self};
     bless $self, $class;
 
-    $self->{mode} ||= "atsim" if $self->{atsim};
-    $self->{mode} ||= "ghdl" if $self->{ghdl};
-    $self->{mode} ||= "vcs" if $self->{vcs};
-    $self->{mode} ||= "vlt" if $self->{vlt};
-    $self->{mode} ||= "nc" if $self->{nc};
-    $self->{mode} ||= "iv" if $self->{iv};
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
