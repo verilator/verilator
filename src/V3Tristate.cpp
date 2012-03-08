@@ -440,7 +440,8 @@ private:
 			);
 
 		    selp->replaceWith(new AstVarRef(refp->fileline(), newlhsp, true));
-		    selp->deleteTree();
+		    pushDeletep(selp);  // Setting selp here or deleting immediately
+		    // breaks the t_tri_select test, this probably indicates a problem
 		} else {
 		    refp->varp(newlhsp); // assign the new var to the varref
 		    refp->name(newlhsp->name());
@@ -570,7 +571,7 @@ private:
 				      new AstVarRef(nodep->fileline(), enp, true));
 	    AstVarRef *rp = findVarRef(pinp);
 	    rp->replaceWith(new AstVarRef(nodep->fileline(), enp, true));
-	    rp->deleteTree();
+	    rp->deleteTree(); rp=NULL;
 	    pinp->width(enp->width(),enp->width());  // minwidth==width
 	    pinp->modVarp(enchildp);
 	    m_cellp->addPinsp(pinp);
@@ -590,6 +591,9 @@ private:
 public:
     // CONSTUCTORS
     TristateVisitor(AstNode* nodep) {
+	m_modp = NULL;
+	m_cellp = NULL;
+	m_unique = false;
 	nodep->accept(*this);
     }
     virtual ~TristateVisitor() { }
@@ -715,6 +719,7 @@ public:
 	m_modp = NULL;
 	m_cellp = NULL;
 	m_ftaskp = NULL;
+	m_state = CONVERT_VARS;
 	nodep->accept(*this);
     }
     virtual ~InoutVisitor() { }
