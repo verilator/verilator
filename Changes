@@ -4,6 +4,9 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
+* Verilator 3.833 devel
+
+
 * Verilator 3.832 2012/03/07
 
 ***   Fix memory delayed assignments from multiple clock domains. [Andrew Ling]
