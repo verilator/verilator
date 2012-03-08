@@ -247,7 +247,7 @@ descriptions in the next sections for more information.
     --coverage-line             Enable line coverage
     --coverage-toggle           Enable toggle coverage
     --coverage-user             Enable PSL/SVL user coverage
-    --coverage-underscore       Enable covarge of _signals
+    --coverage-underscore       Enable coverage of _signals
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions
@@ -1270,7 +1270,7 @@ SYSTEMC/include.
 
 If set, specifies the directory containing the libsystemc.a library. If not
 specified, it will come from a default optionally specified at configure
-time (before Verilator was compiled), or compted from
+time (before Verilator was compiled), or computed from
 SYSTEMC/lib-SYSTEMC_ARCH.
 
 =item SYSTEMPERL
@@ -1450,6 +1450,26 @@ DPI compatible but is easier to read and better supports multiple designs.
     #include "Vour__Dpi.h"
     Vour::publicSetBool(value);
     // or top->publicSetBool(value);
+
+Note that if the DPI task or function accesses any register or net within the
+RTL, it will require a scope to be set. This can be done using the standard
+functions within svdpi.h, after the module is instantiated, but before the
+task(s) and/or function(s) are called.
+
+For example, if the top level module is instantiated with the name "dut" and
+the name references within tasks are all hierarchical (dotted) names with
+respect to that top level module, then the scope could be set with
+
+    #include "svdpi.h"
+    ...
+    svSetScope (svGetScopeFromName ("dut"));
+
+(Remember that Verilator adds a "V" to the top of the module hierarchy.)
+
+Scope can also be set from within a DPI imported C function that has been
+called from Verilog by querying the scope of that function. See the
+sections on DPI Context Functions and DPI Header Isolation below and the
+comments within the svdpi.h header for more information.
 
 =head2 DPI Display Functions
 
