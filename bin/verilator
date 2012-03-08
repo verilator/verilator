@@ -905,9 +905,9 @@ Disable the specified warning message.
 
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX
--Wno-CASEWITHX -Wno-CMPCONST -Wno-IMPLICIT -Wno-LITENDIAN -Wno-SYNCASYNCNET
--Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for
-Wno-style.
+-Wno-CASEWITHX -Wno-CMPCONST -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN
+-Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus
+the list shown for Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -937,8 +937,8 @@ Enables the specified warning message.
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
 "-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
--Wwarn-CMPCONST -Wwarn-IMPLICIT -Wwarn-LITENDIAN -Wwarn-REALCVT
--Wwarn-UNSIGNED -Wwarn-WIDTH".
+-Wwarn-CMPCONST -Wwarn-ENDLABEL -Wwarn-IMPLICIT -Wwarn-LITENDIAN
+-Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH".
 
 =item -Wwarn-style
 
@@ -2583,6 +2583,14 @@ Warns that the "defparam" statement was deprecated in Verilog 2001 and all
 designs should now be using the #(...) format to specify parameters.
 
 Disabled by default as this is a code style warning; it will simulate
+correctly.
+
+=item ENDLABEL
+
+Warns that a label attached to a "end"-something statement does not match
+the label attached to the block start.
+
+Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
 =item GENCLK

@@ -69,6 +69,7 @@ public:
 	COMBDLY,	// Combinatorial delayed assignment
 	DEFPARAM,	// Style: Defparam
 	DECLFILENAME,	// Declaration doesn't match filename
+	ENDLABEL,	// End lable name mismatch
 	GENCLK,		// Generated Clock
 	IFDEPTH,	// If statements too deep
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
@@ -114,7 +115,7 @@ public:
 	    "BLKANDNBLK", "BLKSEQ",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
-	    "GENCLK",
+	    "ENDLABEL", "GENCLK",
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
@@ -141,6 +142,7 @@ public:
     bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
 				      || m_e==CASEWITHX || m_e==CASEX
 				      || m_e==CMPCONST
+				      || m_e==ENDLABEL
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN
 				      || m_e==REALCVT

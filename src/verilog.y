@@ -96,6 +96,12 @@ public:
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
     }
+    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) { endLabel(fl, nodep->prettyName(), endnamep); }
+    void endLabel(FileLine* fl, string name, string* endnamep) {
+	if (fl && endnamep && *endnamep != "" && name != *endnamep) {
+	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
+	}
+    }
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
@@ -631,7 +637,8 @@ package_declaration:		// ==IEEE: package_declaration
 		packageFront package_itemListE yENDPACKAGE endLabelE
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2);
-			  SYMP->popScope($1); }
+			  SYMP->popScope($1);
+			  GRAMMARP->endLabel($<fl>4,$1,$4); }
 	;
 
 packageFront<modulep>:
@@ -708,13 +715,15 @@ module_declaration:		// ==IEEE: module_declaration
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
-			  SYMP->popScope($1); }
+			  SYMP->popScope($1);
+			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	|	udpFront parameter_port_listE portsStarE ';'
 			module_itemListE yENDPRIMITIVE endLabelE
 			{ $1->modTrace(false);  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
-			  SYMP->popScope($1); }
+			  SYMP->popScope($1);
+			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//
 	//UNSUP	yEXTERN modFront parameter_port_listE portsStarE ';'
 	//UNSUP		{ UNSUP }
@@ -885,7 +894,8 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
-			  SYMP->popScope($1); }
+			  SYMP->popScope($1);
+			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//UNSUP	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
 	//UNSUP		{ PARSEP->symPopScope(VAstType::PROGRAM); }
 	;
@@ -1453,10 +1463,10 @@ genTopBlock<nodep>:
 genItemBegin<nodep>:		// IEEE: part of generate_block
 		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4); }
-	|	id ':' yBEGIN             yEND endLabelE	{ $$ = NULL; }
-	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); }
-	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; }
+	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4); GRAMMARP->endLabel($<fl>6,*$1,$6); }
+	|	id ':' yBEGIN             yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
+	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); GRAMMARP->endLabel($<fl>6,*$3,$6); }
+	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
 
 genItemList<nodep>:
@@ -1827,8 +1837,8 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
 	//			// So need begin's even if unnamed to scope variables down
-		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtsp($2); SYMP->popScope($1); }
-	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); }
+		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtsp($2); SYMP->popScope($1); GRAMMARP->endLabel($<fl>4,$1,$4); }
+	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
 	;
 
 seq_blockFront<beginp>:		// IEEE: part of par_block
@@ -2230,7 +2240,8 @@ list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 
 task_declaration<ftaskp>:	// ==IEEE: task_declaration
 		yTASK lifetimeE taskId tfGuts yENDTASK endLabelE
-			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$); }
+			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$);
+			  GRAMMARP->endLabel($<fl>6,$$,$6); }
 	;
 
 task_prototype<ftaskp>:		// ==IEEE: task_prototype
@@ -2240,7 +2251,8 @@ task_prototype<ftaskp>:		// ==IEEE: task_prototype
 function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
 			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
-			  SYMP->popScope($$); }
+			  SYMP->popScope($$);
+			  GRAMMARP->endLabel($<fl>7,$$,$7); }
 	;
 
 function_prototype<ftaskp>:	// IEEE: function_prototype
@@ -3004,10 +3016,10 @@ strAsText<nodep>:
 		yaSTRING				{ $$ = GRAMMARP->createTextQuoted($<fl>1,*$1);}
 	;
 
-endLabelE:
-		/* empty */				{ }
-	|	':' idAny				{ }
-	//UNSUP	':' yNEW__ETC				{ }
+endLabelE<strp>:
+		/* empty */				{ $$ = NULL; $<fl>$=NULL; }
+	|	':' idAny				{ $$ = $2; $<fl>$=$<fl>2; }
+	//UNSUP	':' yNEW__ETC				{ $$ = $2; $<fl>$=$<fl>2; }
 	;
 
 //************************************************

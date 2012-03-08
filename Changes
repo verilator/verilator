@@ -10,9 +10,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix memory delayed assignments from multiple clock domains. [Andrew Ling]
 
+***   Support arrayed SystemC I/O pins.  [Christophe Joly]
+
 ***   Report MULTIDRIVEN on memories set in multiple clock domains.
 
-***   Support arrayed SystemC I/O pins.  [Christophe Joly]
+***   Report ENDLABEL on mismatching end labels, bug450. [Iztok Jeras]
 
 ****  Fix expansion of back-slashed escaped macros, bug441. [Alberto Del Rio]
 
