@@ -2864,8 +2864,8 @@ public:
 	m_size=setwidth;
 	if (setwidth) { width(setwidth,setwidth); }
     }
-    AstCCast(FileLine* fl, AstNode* lhsp, AstNode* widthFromp) : AstNodeUniop(fl, lhsp) {
-	if (widthFromp) { widthSignedFrom(widthFromp); }
+    AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp) : AstNodeUniop(fl, lhsp) {
+	if (typeFromp) { widthSignedFrom(typeFromp); }
 	m_size=width();
     }
     ASTNODE_NODE_FUNCS(CCast, CCAST)

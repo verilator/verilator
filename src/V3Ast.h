@@ -314,7 +314,7 @@ public:
     bool isSloppy() const { // Don't be as anal about width warnings
 	return !(m_e==LOGIC || m_e==BIT);
     }
-    bool isBitLogic() const { // Don't be as anal about width warnings
+    bool isBitLogic() const { // Bit/logic vector types; can form a packed array
 	return (m_e==LOGIC || m_e==BIT);
     }
     bool isDpiUnsupported() const {
@@ -868,6 +868,7 @@ public:
     bool	isUnsigned() const { return numeric().isUnsigned(); }
     void	didWidth(bool flag) { m_didWidth=flag; }
     bool	didWidth() const { return m_didWidth; }
+    bool	didWidthAndSet() { if (didWidth()) return true; didWidth(true); return false;}
     void	doingWidth(bool flag) { m_doingWidth=flag; }
     bool	doingWidth() const { return m_doingWidth; }
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }

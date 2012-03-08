@@ -262,6 +262,7 @@ class SliceVisitor : public AstNVisitor {
     AstArraySel* insertImplicit(AstNode* nodep, unsigned start, unsigned count) {
 	// Insert any implicit slices as explicit slices (ArraySel nodes).
 	// Return a new pointer to replace nodep() in the ArraySel.
+	UINFO(9,"  insertImplicit "<<nodep<<endl);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
 	if (!refp) nodep->v3fatalSrc("No VarRef in user1 of node "<<nodep);
 	AstVar* varp = refp->varp();
@@ -276,6 +277,7 @@ class SliceVisitor : public AstNVisitor {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
 	    }
+	    UINFO(9,"    ArraySel-child: "<<topp<<endl);
 	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp, new AstConst(nodep->fileline(),lsb));
 	    newp->user1p(refp);
 	    newp->start(lsb);

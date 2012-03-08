@@ -93,7 +93,12 @@ public:
     int widthMin() const { return m_widthMin?m_widthMin:m_width; }
     bool prelim() const { return m_stage&1; }
     bool final() const { return m_stage&2; }
+    char stageAscii() const { return "-PFB"[m_stage]; }
 };
+ostream& operator<<(ostream& str, const WidthVP* vup) {
+    str<<"  VUP(w="<<vup->width()<<",wm="<<vup->widthMin()<<",s="<<vup->stageAscii()<<")";
+    return str;
+}
 
 //######################################################################
 
