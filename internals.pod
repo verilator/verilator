@@ -240,7 +240,7 @@ variable is an output.
 
 The test_regress/driver.pl script accepts --debug --gdb to start Verilator
 under gdb.  You can also use --debug --gdbbt to just backtrace and then
-exit gdb.
+exit gd. To debug the Verilated executable, use --gdbsim.
 
 To break at a specific edit number which changed a node (presumably to find
 what made a <e####> line in the tree dumps):
@@ -249,8 +249,8 @@ what made a <e####> line in the tree dumps):
 
 To print a node:
 
-   call nodep->dumpGdb()      # aliased to "pn" in .gdbinit
-   call nodep->dumpTreeGdb()  # aliased to "pnt" in .gdbinit
+   call nodep->dumpGdb()      # aliased to "pn" in src/.gdbinit
+   call nodep->dumpTreeGdb()  # aliased to "pnt" in src/.gdbinit
 
 =head1 DISTRIBUTION
 

@@ -464,9 +464,8 @@ sub compile_vlt_flags {
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
-    $opt_gdb="gdbrun" if defined $opt_gdb;
     my @verilator_flags = @{$param{verilator_flags}};
-    unshift @verilator_flags, "--gdb $opt_gdb" if $opt_gdb;
+    unshift @verilator_flags, "--gdb" if $opt_gdb;
     unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
     unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
@@ -716,10 +715,12 @@ sub execute {
 	$param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
 		    cmd=>[($run_env
-			   .($opt_gdbsim ? "gdbrun ":"")
-			   .$param{executable}),
+			   .($opt_gdbsim ? ("gdb"||$ENV{VERILATOR_GDB})." " : "")
+			   .$param{executable}
+			   .($opt_gdbsim ? " -ex 'run " : "")),
 			  @{$param{all_run_flags}},
-			  ],
+			  ($opt_gdbsim ? "'" : ""),
+		    ],
 		    %param,
 		    expect=>$param{expect},		# backward compatible name
 		    );

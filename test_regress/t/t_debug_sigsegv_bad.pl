@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 $Self->{vlt} or $Self->skip("Verilator only test");
+$ENV{VERILATOR_TEST_NO_GDB} and $Self->skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
 compile (
 	 verilator_flags2 => ["--debug-sigsegv"],

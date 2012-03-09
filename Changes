@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.833 devel
 
+****  Fix and document --gdb option, bug454. [Jeremy Bennett]
+
 
 * Verilator 3.832 2012/03/07
 

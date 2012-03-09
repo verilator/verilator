@@ -957,8 +957,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		parseOptsFile(fl, parseFileArg(optdir,argv[i]), false);
 	    }
-	    else if ( !strcmp (sw, "-gdb") && (i+1)<argc ) {
-		shift; // Used only in perl shell
+	    else if ( !strcmp (sw, "-gdb") ) {
+		// Used only in perl shell
 	    }
 	    else if ( !strcmp (sw, "-gdbbt")) {
 		// Used only in perl shell

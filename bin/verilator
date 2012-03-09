@@ -69,7 +69,7 @@ if (! GetOptions (
 		  "debug:s"	=> \&debug,
 		  # "version!"	=> \&version,	# Also passthru'ed
 		  # Switches
-		  "gdb=s"	=> \$opt_gdb,	# Undocumented debugging
+		  "gdb!"	=> \$opt_gdb,
 		  "gdbbt!"	=> \$opt_gdbbt,
 		  # Additional parameters
 		  "<>"		=> sub {},	# Ignored
@@ -82,17 +82,24 @@ if ($opt_gdbbt && !gdb_works()) {
     warn "-Info: --gdbbt ignored: gdb doesn't seem to be working\n" if $Debug;
     $opt_gdbbt = 0;
 }
-if ($opt_gdbbt && !$opt_gdb && $Debug) {
+if ($opt_gdb) {
+    # Generic GDB interactive
+    run (("gdb"||$ENV{VERILATOR_GDB})
+	 ." ".verilator_bin()
+	 ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
+	 ." -ex 'set width 0'"
+	 ." -ex 'bt'");
+} elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
-    run ("gdb ".verilator_bin()
+    run ("gdb"
+	 ." ".verilator_bin()
 	 ." --batch --quiet --return-child-result"
 	 ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
 	 ." -ex 'set width 0'"
 	 ." -ex 'bt'");
 } else {
     # Normal, non gdb
-    run (($opt_gdb?"$opt_gdb ":"")
-	 .verilator_bin()
+    run (verilator_bin()
 	 ." ".join(' ',@Opt_Verilator_Sw));
 }
 
@@ -260,6 +267,7 @@ descriptions in the next sections for more information.
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
+    --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --help                      Display this help
      -I<dir>                    Directory to search for includes
@@ -558,11 +566,17 @@ The file may contain // comments which are ignored to the end of the line.
 Any $VAR, $(VAR), or ${VAR} will be replaced with the specified environment
 variable.
 
+=item --gdb
+
+Run Verilator underneath an interactive GDB (or VERILATOR_GDB environment
+variable value) session.  See also --gdbbt.
+
 =item --gdbbt
 
-If --debug is specified, run Verilator underneath a GDB process and print
-a backtrace on exit.  Without --debug or if GDB doesn't seem to work, this
-flag is ignored.
+If --debug is specified, run Verilator underneath a GDB process and print a
+backtrace on exit, then exit GDB immediately.  Without --debug or if GDB
+doesn't seem to work, this flag is ignored.  Intended for easy creation of
+backtraces by users; otherwise see the --gdb flag.
 
 =item --help
 
@@ -1298,6 +1312,11 @@ baseline regression tests.
 
 If set, specifies an alternative name of the Verilator binary.  May be used
 for debugging and selecting between multiple operating system builds.
+
+=item VERILATOR_GDB
+
+If set, the command to run when using the --gdb option, such as "ddd".  If
+not specified, it will use "gdb".
 
 =item VERILATOR_ROOT
 
