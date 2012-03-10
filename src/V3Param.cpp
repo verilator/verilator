@@ -159,6 +159,7 @@ private:
 	nodep->deleteTree(); nodep=NULL;
     }
     virtual void visit(AstGenIf* nodep, AstNUser*) {
+	UINFO(9,"  GENIF "<<nodep<<endl);
 	nodep->condp()->iterateAndNext(*this);
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
 	V3Const::constifyParamsEdit(nodep->condp());  // condp may change
@@ -181,11 +182,13 @@ private:
     virtual void visit(AstGenFor* nodep, AstNUser*) {
 	// We parse a very limited form of FOR, so we don't need to do a full
 	// simulation to unroll the loop
+	UINFO(9,"  GENFOR "<<nodep<<endl);
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
 	// Note V3Unroll will replace some AstVarRef's to the loop variable with constants
 	V3Unroll::unrollGen(nodep); nodep=NULL;
     }
     virtual void visit(AstGenCase* nodep, AstNUser*) {
+	UINFO(9,"  GENCASE "<<nodep<<endl);
 	AstNode* keepp = NULL;
 	nodep->exprp()->iterateAndNext(*this);
 	V3Case::caseLint(nodep);
