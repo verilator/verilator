@@ -3409,43 +3409,44 @@ faster than many popular commercial simulators.
 Many people have provided ideas and other assistance with Verilator.
 
 The major corporate sponsors of Verilator, by providing significant
-contributions of time or funds include include Compaq Corporation, Digital
-Equipment Corporation, Intel Corporation, Mindspeed Technologies Inc.,
-MicroTune Inc., picoChip Designs Ltd., Sun Microsystems, Nauticus Networks,
-and SiCortex Inc.
+contributions of time or funds include include Cavium Networks, Compaq
+Corporation, Digital Equipment Corporation, Embecosm Ltd., Intel
+Corporation, Mindspeed Technologies Inc., MicroTune Inc., picoChip Designs
+Ltd., Sun Microsystems, Nauticus Networks, and SiCortex Inc.
 
-The people who have contributed major functionality are Byron Bradley, Lane
-Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.  Major testers include
-Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels, and Gene Weber.
+The people who have contributed major functionality are Byron Bradley,
+Jeremy Bennett, Lane Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.
+Major testers include Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels,
+Alex Solomatnikov, Sebastien Van Cauwenberghe and Gene Weber.
 
 Some of the people who have provided ideas and feedback for Verilator
-include: David Addison, Hans Van Antwerpen, Vasu Arasanipalai, Jens Arm, J
-Baxter, Jeremy Bennett, David Black, Gregg Bouchard, Christopher Boumenot,
-Nick Bowler, Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee,
-Lawrence Butcher, Chris Candler, Lauren Carlson, Donal Casey, Terry Chen,
-Robert A. Clark, Allan Cochrane, Gunter Dannoritzer, Ashutosh Das, Bernard
-Deadman, John Deroo, John Dickol, Danny Ding, Ivan Djordjevic, Alex Duller,
-Jeff Dutton, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy, Robert Farrell,
-Eugen Fekete, Andrea Foletto, Bob Fredieu, Shankar Giri, Sam Gladstone,
-Amir Gonnen, Chitlesh Goorah, Neil Hamilton, Thomas Hawkins, David Hewson,
-Jae Hossell, Ben Jackson, Iztok Jeras, Mike Kagen, Guy-Armand Kamendje,
-Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan Katz, Sol Katzman, Jonathan
-Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki, Steve Lang, Stephane
-Laurent, Christian Leber, Charlie Lind, Paul Liu, Dan Lussier, Fred Ma,
+include: David Addison, Vasu Arasanipalai, Jens Arm, J Baxter, Jeremy
+Bennett, David Black, Gregg Bouchard, Christopher Boumenot, Nick Bowler,
+Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee, Lawrence Butcher,
+Chris Candler, Lauren Carlson, Donal Casey, Terry Chen, Robert A. Clark,
+Allan Cochrane, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman, Mike
+Denio, John Deroo, John Dickol, Ruben Diez, Danny Ding, Ivan Djordjevic,
+Alex Duller, Jeff Dutton, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy,
+Robert Farrell, Eugen Fekete, Andrea Foletto, Bob Fredieu, Shankar Giri,
+Sam Gladstone, Amir Gonnen, Chitlesh Goorah, Neil Hamilton, Thomas Hawkins,
+David Hewson, Jae Hossell, Ben Jackson, Iztok Jeras, Christophe Joly, Mike
+Kagen, Guy-Armand Kamendje, Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan
+Katz, Sol Katzman, Jonathan Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki,
+David Kravitz, Steve Lang, Stephane Laurent, Walter Lavino, Christian
+Leber, John Li, Charlie Lind, Andrew Ling, Paul Liu, Dan Lussier, Fred Ma,
 Duraid Madina, Mark Marshall, Jason McMullan, Wim Michiels, Dennis
 Muhlestein, John Murphy, Richard Myers, Dimitris Nalbantis, Paul Nitza,
 Pete Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Brad Parker, Dominic
-Plunkett, Niranjan Prabhu, Usha Priyadharshini, Oleg Rodionov, John
-Sanguinetti, Salman Sheikh, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey
-Short, Rodney Sinclair, Brian Small, Alex Solomatnikov, Art Stamness, John
-Stroebel, Emerson Suguimoto, Gene Sullivan, Renga Sundararajan, Stefan
-Thiede, Gary Thomas, Steve Tong, Holger Waechtler, Stefan Wallentowitz,
-Shawn Wang, Greg Waters, Eugene Weber, David Welch, Leon Wildman, Gerald
-Williams, Trevor Williams, Jeff Winston, Joshua Wise, Johan Wouters, and
-Ding Xiaoliang.
+Plunkett, Niranjan Prabhu, Usha Priyadharshini, Alberto Del Rio, Oleg
+Rodionov, John Sanguinetti, Salman Sheikh, Mike Shinkarovsky, Rafael
+Shirakawa, Jeffrey Short, Rodney Sinclair, Brian Small, Alex Solomatnikov,
+Art Stamness, John Stroebel, Emerson Suguimoto, Gene Sullivan, Renga
+Sundararajan, Stefan Thiede, Gary Thomas, Steve Tong, Hans Van Antwerpen,
+Holger Waechtler, Stefan Wallentowitz, Shawn Wang, Greg Waters, Thomas
+Watts, Eugene Weber, David Welch, Leon Wildman, Gerald Williams, Trevor
+Williams, Jeff Winston, Joshua Wise, Johan Wouters, and Ding Xiaoliang.
 
-Thanks all.
-
+Thanks to them, and all those we've missed including above.
 
 =head1 DISTRIBUTION
 
