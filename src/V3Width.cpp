@@ -618,6 +618,7 @@ private:
 	// But also cleanup array size
 	nodep->arrayp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->widthFrom(nodep->dtypep());
+	nodep->numericFrom(nodep->dtypep());
 	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstBasicDType* nodep, AstNUser* vup) {
