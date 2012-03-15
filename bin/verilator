@@ -1934,9 +1934,17 @@ The Verilog code returns to the last language mode specified with
 
 Used after a signal declaration to indicate the signal is used to gate a
 clock, and the user takes responsibility for insuring there are no races
-related to it.  (Typically by adding a latch, and running static timing
-analysis.) This will cause the clock gate to be ignored in the scheduling
-algorithm, improving performance.  It's also a good idea to enable the
+related to it. (Typically by adding a latch, and running static timing
+analysis.) For example:
+
+   reg enable_r /*verilator clock_enable*/;
+   wire gated_clk = clk & enable_r;
+   always_ff @ (posedge clk)
+      enable_r <= enable_early;
+
+The clock_enable attribute will cause the clock gate to be ignored in the
+scheduling algorithm, sometimes required for correct clock behavior, and
+always improving performance.  It's also a good idea to enable the
 IMPERFECTSCH warning, to insure all clock enables are properly recognized.
 
 =item /*verilator coverage_block_off*/
@@ -2253,10 +2261,12 @@ different.)
 
 =head2 Generated Clocks
 
-Verilator attempts to deal with generated clocks correctly, however new
-cases may turn up bugs in the scheduling algorithm.  The safest option is
-to have all clocks as primary inputs to the model, or wires directly
-attached to primary inputs.
+Verilator attempts to deal with generated and enabled clocks correctly,
+however some cases cause problems in the scheduling algorithm which is
+optimized for performance.  The safest option is to have all clocks as
+primary inputs to the model, or wires directly attached to primary inputs.
+For proper behavior clock enables may also need the /*verilator
+clock_enable*/ attribute.
 
 =head2 Ranges must be big-bit-endian
 
