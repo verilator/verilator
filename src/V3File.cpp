@@ -436,7 +436,7 @@ private:
 	    dup2(fd_stdout[P_WR], 1);
 	    // And stderr comes from parent
 
-	    execl("/bin/sh", "sh", "-c", command.c_str(), NULL);
+	    execl("/bin/sh", "sh", "-c", command.c_str(), (char*)NULL);
 	    // Don't use v3fatal, we don't share the common structures any more
 	    fprintf(stderr,"--pipe-filter: exec failed: %s\n",strerror(errno));
 	    _exit(10);
