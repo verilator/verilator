@@ -18,7 +18,7 @@ q{%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'if_cnt_finis
 %Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'generate_if_else_bad' does not match begin label 'generate_if_else'
 %Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 't_bad' does not match begin label 't'
 %Error: Exiting due to.*},
-	 );
+     );
 
 ok(1);
 1;
