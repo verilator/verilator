@@ -525,7 +525,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("extern \"C\" {\n");
     puts("#endif\n");
     puts("\n");
-    
+
     int firstExp = 0;
     int firstImp = 0;
     for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
@@ -571,7 +571,7 @@ void EmitCSyms::emitDpiImp() {
     puts("// or 2. Compile all __Dpi.cpp files in the same compiler run,\n");
     puts("//       and #ifdefs already inserted here will sort everything out.\n");
     puts("\n");
-    
+
     puts("#include \""+topClassName()+"__Dpi.h\"\n");
     puts("#include \""+topClassName()+".h\"\n");
     puts("\n");

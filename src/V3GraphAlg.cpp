@@ -346,7 +346,7 @@ private:
 
 	// Can't just reserve(), unless we modify size() before setting array directly
 	while (m_callTrace.size() <= currentRank) m_callTrace.push_back(vertexp);
-	m_callTrace[currentRank++] = vertexp;	
+	m_callTrace[currentRank++] = vertexp;
 
 	if (vertexp->user() == 1) {
 	    for (unsigned i=0; i<currentRank; i++) {

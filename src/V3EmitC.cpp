@@ -1062,7 +1062,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
 		++pos;
 		switch (pos[0]) {
 		case 'q': emitIQW(detailp); break;
-		case 'w': 
+		case 'w':
 		    COMMA;
 		    puts(cvtToStr(detailp->widthMin()));
 		    needComma = true;

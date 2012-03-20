@@ -326,12 +326,12 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		modp = nodep->modp()->cloneTree(false);
 		modp->name(newname);
 		nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
-		
+
 		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
 		iter = m_modNameMap.find(newname);
 		VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
 		UINFO(4,"     De-parameterize to new: "<<modp<<endl);
-		
+
 		// Grab all I/O so we can remap our pins later
 		// Note we allow multiple users of a parameterized model, thus we need to stash this info.
 		for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -344,10 +344,10 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 			}
 		    }
 		}
-		
+
 		// Relink parameter vars to the new module
 		relinkPins(clonemapp, nodep->paramsp());
-		
+
 		// Assign parameters to the constants specified
 		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		    AstVar* modvarp = pinp->modVarp();
@@ -362,17 +362,17 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	    } else {
 		UINFO(4,"     De-parameterize to old: "<<modp<<endl);
 	    }
-	    
+
 	    // Have child use this module instead.
 	    nodep->modp(modp);
 	    nodep->modName(newname);
-	    
+
 	    // We need to relink the pins to the new module
 	    VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
 	    relinkPins(clonemapp, nodep->pinsp());
 	    UINFO(8,"     Done with "<<modp<<endl);
 	} // if any_overrides
-	
+
 	// Delete the parameters from the cell; they're not relevant any longer.
 	nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
 	UINFO(8,"     Done with "<<nodep<<endl);

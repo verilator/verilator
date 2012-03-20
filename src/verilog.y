@@ -106,7 +106,7 @@ public:
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
     }
-    AstPackage* unitPackage(FileLine* fl) {	
+    AstPackage* unitPackage(FileLine* fl) {
 	// Find one made earlier?
 	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->castPackage();
 	if (!pkgp) {
@@ -1094,7 +1094,7 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 	|	yREG					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::LOGIC); } // logic==reg
 	;
 
-non_integer_type<bdtypep>:	// ==IEEE: non_integer_type						     
+non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	//UNSUP	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::FLOAT); }

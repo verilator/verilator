@@ -620,7 +620,7 @@ void AstVar::dump(ostream& str) {
     if (isConst()) str<<" [CONST]";
     if (isUsedClock()) str<<" [CLK]";
     if (isSigPublic()) str<<" [P]";
-    if (isUsedLoopIdx()) str<<" [LOOP]"; 
+    if (isUsedLoopIdx()) str<<" [LOOP]";
     if (attrClockEn()) str<<" [aCLKEN]";
     if (attrIsolateAssign()) str<<" [aISO]";
     if (attrFileDescr()) str<<" [aFD]";

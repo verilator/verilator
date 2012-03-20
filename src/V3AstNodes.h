@@ -1451,7 +1451,7 @@ struct AstPull : public AstNode {
 private:
     bool m_direction;
 public:
-    AstPull(FileLine* fileline, AstNode* lhsp, bool direction) 
+    AstPull(FileLine* fileline, AstNode* lhsp, bool direction)
 	: AstNode(fileline) {
 	setOp1p(lhsp);
 	m_direction = direction;
@@ -2069,8 +2069,8 @@ struct AstWhile : public AstNodeStmt {
     virtual int instrCount()	const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
+    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
+    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
 
 struct AstBreak : public AstNodeStmt {
@@ -2352,7 +2352,7 @@ public:
 	m_code = 0;
 	m_codeInc = varp->dtypep()->arrayElements() * varp->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
-	m_left = bdtypep ? bdtypep->left() : 0; 
+	m_left = bdtypep ? bdtypep->left() : 0;
 	m_right = bdtypep ? bdtypep->right() : 0;
 	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
 	    m_arrayLsb = adtypep->arrayp()->lsbConst();

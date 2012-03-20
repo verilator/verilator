@@ -53,7 +53,7 @@ private:
     bool		m_loopInc;	// In loop increment
     int			m_repeatNum;	// Repeat counter
     BeginStack		m_beginStack;	// All begin blocks above current node
-    
+
     // METHODS
     static int debug() {
 	static int level = -1;

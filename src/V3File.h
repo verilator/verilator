@@ -84,7 +84,7 @@ public:
     typedef list<string> StrList;
 
     // METHODS
-    // Read file contents and return it.  Return true on success.   
+    // Read file contents and return it.  Return true on success.
     bool readWholefile(const string& filename, StrList& outl);
 
     // CONSTRUCTORS

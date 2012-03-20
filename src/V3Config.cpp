@@ -62,7 +62,7 @@ class V3ConfigIgnores {
 
     IgnFiles		m_ignWilds;	// Ignores for each wildcarded filename
     IgnFiles		m_ignFiles;	// Ignores for each non-wildcarded filename
-    
+
     static V3ConfigIgnores s_singleton;	// Singleton (not via local static, as that's slow)
 
     V3ConfigIgnores() { m_lastLineno = -1; }

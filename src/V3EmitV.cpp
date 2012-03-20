@@ -61,7 +61,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putsNoTracking(AstNode::quoteName(str));
 	putsNoTracking("\"");
     }
-    
+
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

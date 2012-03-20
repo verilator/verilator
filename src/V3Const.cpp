@@ -150,7 +150,7 @@ private:
 	// BIASV(CONSTa,BIASV(b...,BIASV(CONSTc,d...)))	 // hits operandAsvUp
 	// BIASV(CONSTa,BIASV(CONSTc,BIASV(c...,d...)))  // hits operandAsvConst
 	// BIASV(BIASV(CONSTa,CONSTc),BIASV(c...,d...))) // hits normal constant propagation
-	// BIASV(CONST_a_c,BIASV(c...,d...)))	
+	// BIASV(CONST_a_c,BIASV(c...,d...)))
 	//
 	// Idea for the future: All BiComAsvs could be lists, sorted by if they're constant
 	AstNodeBiComAsv* bnodep = nodep->castNodeBiComAsv();
@@ -1382,7 +1382,7 @@ private:
 		    break;
 		}
 	    }
-	    
+
 	    // Pass2, remove dup edges
 	    for (AstNodeSenItem* nextp, * senp = nodep->sensesp()->castNodeSenItem();
 		 senp; senp=nextp) {
@@ -1953,7 +1953,7 @@ public:
 	PROC_V_EXPENSIVE,
 	PROC_CPP
     };
-    
+
     // CONSTUCTORS
     ConstVisitor(ProcMode pmode) {
 	m_params = false;

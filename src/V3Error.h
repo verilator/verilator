@@ -358,7 +358,7 @@ public:
     void modifyStateInherit(const FileLine* fromp);
     // Change the current fileline due to actions discovered after parsing
     // and may have side effects on other nodes sharing this FileLine.
-    // Use only when this is intended 
+    // Use only when this is intended
     void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code,flag); }
 
     // OPERATORS

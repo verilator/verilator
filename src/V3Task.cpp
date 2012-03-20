@@ -137,7 +137,7 @@ public:
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
 	getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-	
+
     void checkPurity(AstNodeFTask* nodep) {
 	checkPurity(nodep, getFTaskVertex(nodep));
     }
@@ -400,7 +400,7 @@ private:
 		    // before here based on this not being a lvalue?
 		    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
 		    V3LinkLValue::linkLValueSet(pinp);
-		    
+
 		    // Even if it's referencing a varref, we still make a temporary
 		    // Else task(x,x,x) might produce incorrect results
 		    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
@@ -452,7 +452,7 @@ private:
 	}
 	// Replace variable refs
 	// Iteration requires a back, so put under temporary node
-	{	
+	{
 	    AstBegin* tempp = new AstBegin(beginp->fileline(),"[EditWrapper]",beginp);
 	    TaskRelinkVisitor visit (tempp);
 	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
@@ -500,7 +500,7 @@ private:
 		    // before here based on this not being a lvalue?
 		    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
 		    V3LinkLValue::linkLValueSet(pinp);
-		
+
 		    // Even if it's referencing a varref, we still make a temporary
 		    // Else task(x,x,x) might produce incorrect results
 		    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
@@ -965,7 +965,7 @@ private:
 	}
 	// Replace variable refs
 	// Iteration requires a back, so put under temporary node
-	{	
+	{
 	    AstBegin* tempp = new AstBegin(cfuncp->fileline(),"[EditWrapper]",cfuncp);
 	    TaskRelinkVisitor visit (tempp);
 	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
@@ -1081,7 +1081,7 @@ private:
 	    if (nodep->dpiExport()) modes++;
 	    if (nodep->taskPublic()) modes++;
 	    if (modes > 1) nodep->v3error("Cannot mix DPI import, DPI export and/or public on same function: "<<nodep->prettyName());
-	    
+
 	    if (nodep->dpiImport() || nodep->dpiExport()
 		|| nodep->taskPublic() || m_statep->ftaskNoInline(nodep)) {
 		// Clone it first, because we may have later FTaskRef's that still need
@@ -1214,7 +1214,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 	tconnects[ppinnum].second = pinp;
 	ppinnum++;
     }
-	
+
     while (ppinnum < tpinnum) {
 	nodep->v3error("Too few arguments in function call to "<<nodep->taskp()->prettyTypeName());
 	UINFO(1,"missing argument for '"<<tconnects[ppinnum].first->prettyName()<<"'"<<endl);

@@ -1173,8 +1173,8 @@ struct AstNodeStmt : public AstNode {
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
-    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
-    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here 
+    virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
+    virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
 
 struct AstNodeAssign : public AstNodeStmt {

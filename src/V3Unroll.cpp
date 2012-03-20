@@ -279,7 +279,7 @@ private:
 		    m_varValuep = new AstConst(nodep->fileline(), loopValue);
 
 		    // Iteration requires a back, so put under temporary node
-		    if (oneloopp) {	
+		    if (oneloopp) {
 			AstBegin* tempp = new AstBegin(oneloopp->fileline(),"[EditWrapper]",oneloopp);
 			m_varModeReplace = true;
 			tempp->stmtsp()->iterateAndNext(*this);
