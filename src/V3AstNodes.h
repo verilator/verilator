@@ -139,8 +139,8 @@ public:
     ASTNODE_NODE_FUNCS(Range, RANGE)
     AstNode* msbp() const { return op2p()->castNode(); }	// op2 = Msb expression
     AstNode* lsbp() const { return op3p()->castNode(); }	// op3 = Lsb expression
-    AstNode* msbEndianedp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
-    AstNode* lsbEndianedp() const { return littleEndian()?msbp():lsbp(); }
+    AstNode* leftp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
+    AstNode* rightp() const { return littleEndian()?msbp():lsbp(); }
     int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
     int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
     int	     elementsConst() const { return (msbConst()>lsbConst()) ? msbConst()-lsbConst()+1 : lsbConst()-msbConst()+1; }
@@ -320,8 +320,8 @@ public:
     bool	isRanged() const { return rangep() || m_msb; }
     int		msb() const { if (!rangep()) return m_msb; return rangep()->msbConst(); }
     int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
-    int		msbEndianed() const { if (!rangep()) return m_msb; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
-    int		lsbEndianed() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
+    int		left() const { if (!rangep()) return m_msb; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
+    int		right() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
     bool	implicit() const { return m_implicit; }
@@ -2339,8 +2339,8 @@ struct AstTraceDecl : public AstNodeStmt {
 private:
     string	m_showname;	// Name of variable
     uint32_t	m_code;		// Trace identifier code; converted to ASCII by trace routines
-    int		m_lsb;		// Property of var the trace details
-    int		m_msb;		// Property of var the trace details
+    int		m_right;	// Property of var the trace details
+    int		m_left;		// Property of var the trace details
     uint32_t	m_arrayLsb;	// Property of var the trace details
     uint32_t	m_arrayMsb;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
@@ -2352,8 +2352,8 @@ public:
 	m_code = 0;
 	m_codeInc = varp->dtypep()->arrayElements() * varp->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
-	m_msb = bdtypep ? bdtypep->msbEndianed() : 0; 
-	m_lsb = bdtypep ? bdtypep->lsbEndianed() : 0;
+	m_left = bdtypep ? bdtypep->left() : 0; 
+	m_right = bdtypep ? bdtypep->right() : 0;
 	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
 	    m_arrayLsb = adtypep->arrayp()->lsbConst();
 	    m_arrayMsb = adtypep->arrayp()->msbConst();
@@ -2372,8 +2372,8 @@ public:
     uint32_t	code() const { return m_code; }
     void	code(uint32_t code) { m_code=code; }
     uint32_t	codeInc() const { return m_codeInc; }
-    int		msbEndianed() const { return m_msb; }  // Note msb maybe < lsb if little endian
-    int		lsbEndianed() const { return m_lsb; }
+    int		left() const { return m_left; }  // Note msb maybe < lsb if little endian
+    int		right() const { return m_right; }
     uint32_t	arrayMsb() const { return m_arrayMsb; }
     uint32_t	arrayLsb() const { return m_arrayLsb; }
     uint32_t	arrayWidth() const { if (!arrayMsb()) return 0; return arrayMsb()-arrayLsb()+1; }

@@ -2076,7 +2076,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->declArray");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->declQuad ");
-	} else if (nodep->msbEndianed() || nodep->lsbEndianed()) {
+	} else if (nodep->left() || nodep->right()) {
 	    puts("vcdp->declBus  ");
 	} else {
 	    puts("vcdp->declBit  ");
@@ -2091,8 +2091,8 @@ class EmitCTrace : EmitCStmts {
 	    puts(",-1");
 	}
 	if (!nodep->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->msbEndianed() || nodep->lsbEndianed())) {
-	    puts(","+cvtToStr(nodep->msbEndianed())+","+cvtToStr(nodep->lsbEndianed()));
+	    && (nodep->left() || nodep->right())) {
+	    puts(","+cvtToStr(nodep->left())+","+cvtToStr(nodep->right()));
 	}
 	puts(");");
     }
@@ -2108,7 +2108,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
-	} else if (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed()) {
+	} else if (nodep->declp()->left() || nodep->declp()->right()) {
 	    puts("vcdp->"+full+"Bus  ");
 	} else {
 	    puts("vcdp->"+full+"Bit  ");
@@ -2118,7 +2118,7 @@ class EmitCTrace : EmitCStmts {
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
 	if (!nodep->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->declp()->msbEndianed() || nodep->declp()->lsbEndianed() || emitTraceIsScBv(nodep))) {
+	    && (nodep->declp()->left() || nodep->declp()->right() || emitTraceIsScBv(nodep))) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");

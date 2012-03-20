@@ -447,11 +447,11 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts("[");
 	if (nodep->msbp()->castConst() && nodep->lsbp()->castConst()) {
 	    // Looks nicer if we print [1:0] rather than [32'sh1:32sh0]
-	    puts(cvtToStr(nodep->msbEndianedp()->castConst()->toSInt())); puts(":");
-	    puts(cvtToStr(nodep->lsbEndianedp()->castConst()->toSInt())); puts("]");
+	    puts(cvtToStr(nodep->leftp()->castConst()->toSInt())); puts(":");
+	    puts(cvtToStr(nodep->rightp()->castConst()->toSInt())); puts("]");
 	} else {
-	    nodep->msbEndianedp()->iterateAndNext(*this); puts(":");
-	    nodep->lsbEndianedp()->iterateAndNext(*this); puts("]");
+	    nodep->leftp()->iterateAndNext(*this); puts(":");
+	    nodep->rightp()->iterateAndNext(*this); puts("]");
 	}
     }
     virtual void visit(AstSel* nodep, AstNUser*) {
