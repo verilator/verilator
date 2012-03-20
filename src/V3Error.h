@@ -257,7 +257,10 @@ inline uint32_t cvtToHash(void* vp) {
 class FileLine;
 
 class FileLineSingleton {
-    map<string,int>	m_namemap;	// filenameno for each filename
+    // TYPES
+    typedef map<string,int> FileNameNumMap;
+    // MEMBERS
+    FileNameNumMap	m_namemap;	// filenameno for each filename
     deque<string>	m_names;	// filename text for each filenameno
     // COSNTRUCTORS
     FileLineSingleton() { }
@@ -268,6 +271,7 @@ protected:
     int nameToNumber(const string& filename);
     const string numberToName(int filenameno) const { return m_names[filenameno]; }
     void clear() { m_namemap.clear(); m_names.clear(); }
+    static const string filenameLetters(int fileno);
 };
 
 class FileLine {
@@ -319,7 +323,7 @@ public:
     int lineno () const { return m_lineno; }
     string ascii() const;
     const string filename () const { return singleton().numberToName(m_filenameno); }
-    const string filenameLetters() const; 
+    const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }
     const string filebasename () const;
     const string filebasenameNoExt () const;
     const string profileFuncname() const;

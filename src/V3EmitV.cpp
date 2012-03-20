@@ -596,7 +596,7 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
     virtual void putbs(const string& str) { puts(str); }
     virtual void putfs(AstNode*, const string& str) { putbs(str); }
     virtual void putqs(AstNode*, const string& str) { putbs(str); }
- public:
+public:
     EmitVStreamVisitor(AstNode* nodep, ostream& os)
 	: m_os(os) {
 	nodep->accept(*this);
@@ -635,7 +635,8 @@ public:
     FileLine* prefixFl() const { return m_prefixFl; }
     int column() const { return m_column; }
     EmitVPrefixedFormatter(ostream& os, const string& prefix, int flWidth)
-	: V3OutFormatter("__STREAM", true), m_os(os), m_prefix(prefix), m_flWidth(flWidth) {
+	: V3OutFormatter("__STREAM", V3OutFormatter::LA_VERILOG)
+	, m_os(os), m_prefix(prefix), m_flWidth(flWidth) {
 	m_column = 0;
 	m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of NULL to avoid NULL checks
     }

@@ -105,11 +105,17 @@ public:
     enum AlignClass {
 	AL_AUTO = 0,
 	AL_STATIC = 1};
+    enum Language {
+	LA_C = 0,
+	LA_VERILOG = 1,
+	LA_MK = 2,
+	LA_XML = 3,
+    };
 
 private:
     // MEMBERS
     string	m_filename;
-    bool	m_verilog;	// Indenting Verilog code
+    Language	m_lang;		// Indenting Verilog code
     int		m_lineno;
     int		m_column;
     int		m_nobreak;	// Basic operator or begin paren, don't break next
@@ -125,7 +131,7 @@ private:
     void putcNoTracking(char chr);
 
 public:
-    V3OutFormatter(const string& filename, bool verilog);
+    V3OutFormatter(const string& filename, Language lang);
     virtual ~V3OutFormatter() {}
     // ACCESSORS
     int  column() const { return m_column; }
@@ -166,11 +172,86 @@ class V3OutFile : public V3OutFormatter {
     // MEMBERS
     FILE*	m_fp;
 public:
-    V3OutFile(const string& filename);
+    V3OutFile(const string& filename, V3OutFormatter::Language lang);
     virtual ~V3OutFile();
 private:
     // CALLBACKS
     virtual void putcOutput(char chr) { fputc(chr, m_fp); }
+};
+
+//######################################################################
+// V3OutCFile: A class for abstracting out SystemC/C++ details
+
+class V3OutCFile : public V3OutFile {
+    int		m_private;
+public:
+    V3OutCFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_C) {
+	resetPrivate();
+    }
+    virtual ~V3OutCFile() {}
+    virtual void putsCellDecl(const string& classname, const string& cellname) {
+	this->printf("%-19s\t%s;\n",
+		     (classname + "*").c_str(),cellname.c_str());
+    }
+    virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
+    virtual void putsIntTopInclude() { }
+    // Print out public/privates
+    void resetPrivate() { m_private = 0; }
+    void putsPrivate(bool setPrivate) {
+	if (setPrivate && m_private!=1) {
+	    puts("private:\n");
+	    m_private = 1;
+	} else if (!setPrivate && m_private!=2) {
+	    puts("public:\n");
+	    m_private = 2;
+	}
+    }
+};
+
+class V3OutScFile : public V3OutCFile {
+public:
+    V3OutScFile(const string& filename) : V3OutCFile(filename) {}
+    virtual ~V3OutScFile() {}
+    virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
+    virtual void putsIntTopInclude() {
+	puts("#include \"systemc.h\"\n");
+	puts("#include \"verilated_sc.h\"\n");
+    }
+};
+
+class V3OutSpFile : public V3OutCFile {
+public:
+    V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
+    virtual ~V3OutSpFile() {}
+    virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
+    virtual void putsIntTopInclude() {
+	puts("#include \"systemperl.h\"\n");
+	puts("#include \"verilated_sc.h\"\n");
+    }
+};
+
+class V3OutVFile : public V3OutFile {
+public:
+    V3OutVFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}
+    virtual ~V3OutVFile() {}
+    virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
+};
+
+class V3OutXmlFile : public V3OutFile {
+public:
+    V3OutXmlFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_XML) {}
+    virtual ~V3OutXmlFile() {}
+    virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
+};
+
+class V3OutMkFile : public V3OutFile {
+public:
+    V3OutMkFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_MK) {}
+    virtual ~V3OutMkFile() {}
+    virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
+    // No automatic indentation yet.
+    void puts(const char* strg) { putsNoTracking(strg); }
+    void puts(const string& strg) { putsNoTracking(strg); }
 };
 
 #endif // Guard

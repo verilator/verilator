@@ -546,8 +546,8 @@ bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl
 //######################################################################
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
-V3OutFormatter::V3OutFormatter(const string& filename, bool verilog)
-    : m_filename(filename), m_verilog(verilog)
+V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
+    : m_filename(filename), m_lang(lang)
     , m_lineno(1), m_column(0)
     , m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
     , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
@@ -560,7 +560,7 @@ const char* V3OutFormatter::indentStr(int num) {
     static char str[MAXSPACE+20];
     char* cp = str;
     if (num>MAXSPACE) num=MAXSPACE;
-    if (!m_verilog) {  // verilogPrefixedTree doesn't want tabs
+    if (!m_lang==LA_VERILOG) {  // verilogPrefixedTree doesn't want tabs
 	while (num>=8) {
 	    *cp++ = '\t';
 	    num -= 8;
@@ -625,8 +625,13 @@ int V3OutFormatter::endLevels (const char *strg) {
 	case ')':
 	    levels-=INDBLK;
 	    break;
+	case '<':
+	    if (m_lang==LA_XML) {
+		if (cp[1] == '/') levels-=INDBLK;
+	    }
+	    break;
 	case 'e':
-	    if (m_verilog && tokenEnd(cp)) {
+	    if (m_lang==LA_VERILOG && tokenEnd(cp)) {
 		levels-=INDBLK;
 	    }
 	    break;
@@ -668,39 +673,53 @@ void V3OutFormatter::puts (const char *strg) {
 	case '{':
 	    indentInc();
 	    break;
+	case '}':
+	    indentDec();
+	    break;
 	case '(':
 	    indentInc();
 	    m_parenVec.push(m_column);
-	    break;
-	case '}':
-	    indentDec();
 	    break;
 	case ')':
 	    if (!m_parenVec.empty()) m_parenVec.pop();
 	    indentDec();
 	    break;
+	case '<':
+	    if (m_lang==LA_XML) {
+		if (cp[1] == '/') {} // Zero as the > will result in net decrease by one
+		else if (cp[1] == '!' || cp[1] == '?') { indentInc(); } // net same indent
+		else { indentInc(); indentInc(); }  // net increase by one
+	    }
+	    break;
+	case '>':
+	    if (m_lang==LA_XML) {
+		indentDec();
+		if (cp>strg && cp[-1]=='/') indentDec();   // < ..... /> stays same level
+	    }
+	    break;
 	case 'b':
-	    if (wordstart && m_verilog && tokenStart(cp,"begin")) {
+	    if (wordstart && m_lang==LA_VERILOG && tokenStart(cp,"begin")) {
 		indentInc();
 	    }
 	    wordstart = false;
 	    break;
 	case 'c':
-	    if (wordstart && m_verilog && (tokenStart(cp,"case")
-					   || tokenStart(cp,"casex")
-					   || tokenStart(cp,"casez"))) {
+	    if (wordstart && m_lang==LA_VERILOG
+		&& (tokenStart(cp,"case")
+		    || tokenStart(cp,"casex")
+		    || tokenStart(cp,"casez"))) {
 		indentInc();
 	    }
 	    wordstart = false;
 	    break;
 	case 'e':
-	    if (wordstart && m_verilog && tokenEnd(cp)) {
+	    if (wordstart && m_lang==LA_VERILOG && tokenEnd(cp)) {
 		indentDec();
 	    }
 	    wordstart = false;
 	    break;
 	case 'm':
-	    if (wordstart && m_verilog && tokenStart(cp,"module")) {
+	    if (wordstart && m_lang==LA_VERILOG && tokenStart(cp,"module")) {
 		indentInc();
 	    }
 	    wordstart = false;
@@ -801,8 +820,8 @@ void V3OutFormatter::printf (const char *fmt...) {
 //######################################################################
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
-V3OutFile::V3OutFile(const string& filename)
-    : V3OutFormatter(filename, false) {
+V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
+    : V3OutFormatter(filename, lang) {
     if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
 	v3fatal("Cannot write "<<filename);
     }
