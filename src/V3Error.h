@@ -271,6 +271,7 @@ protected:
     int nameToNumber(const string& filename);
     const string numberToName(int filenameno) const { return m_names[filenameno]; }
     void clear() { m_namemap.clear(); m_names.clear(); }
+    void fileNameNumMapDumpXml(ostream& os);
     static const string filenameLetters(int fileno);
 };
 
@@ -327,6 +328,7 @@ public:
     const string filebasename () const;
     const string filebasenameNoExt () const;
     const string profileFuncname() const;
+    const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
     string lineDirectiveStrg(int enter_exit_level) const;
     void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code,!flag); }
@@ -352,6 +354,8 @@ public:
 	defaultFileLine().warnOff(code, flag); }
     static bool globalWarnOff(const string& code, bool flag) {
 	return defaultFileLine().warnOff(code, flag); }
+    static void fileNameNumMapDumpXml(ostream& os) {
+	singleton().fileNameNumMapDumpXml(os); }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline

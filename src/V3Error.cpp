@@ -92,6 +92,14 @@ int FileLineSingleton::nameToNumber(const string& filename) {
     return num;
 }
 
+void FileLineSingleton::fileNameNumMapDumpXml(ostream& os) {
+    os<<"<files>\n";
+    for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
+	os<<"<file id=\""<<filenameLetters(it->second)<<"\" filename=\""<<it->first<<"\"/>\n";
+    }
+    os<<"</files>\n";
+}
+
 //######################################################################
 // FileLine class functions
 

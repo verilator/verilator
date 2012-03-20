@@ -1,0 +1,86 @@
+<?xml version="1.0" ?>
+<!-- DESCRIPTION: Verilator output: XML representation of netlist -->
+<verilator_xml>
+    <files>
+        <file id="a" filename="AstRoot"/>
+        <file id="b" filename="COMMAND_LINE"/>
+        <file id="c" filename="INTERNAL_VERILATOR_DEFINE"/>
+        <file id="d" filename="input.vc"/>
+        <file id="e" filename="t/t_xml_first.v"/>
+    </files>
+    <netlist>
+        <module fl="e6" name="t" topModule="1">
+            <var fl="e12" name="clk">
+                <basicDType  fl="e12" name="logic"/>
+            </var>
+            <var fl="e13" name="d">
+                <basicDType  fl="e13" name="logic" left="3" right="0"/>
+            </var>
+            <var fl="e14" name="q">
+                <basicDType  fl="e14" name="logic" left="3" right="0"/>
+            </var>
+            <var fl="e16" name="between">
+                <basicDType  fl="e16" name="logic" left="3" right="0"/>
+            </var>
+            <instance fl="e18" name="cell1" defName="mod1">
+                <port fl="e18" name="q" direction="out" portIndex="1">
+                    <varref fl="e18" name="between"/>
+                </port>
+                <port fl="e21" name="clk" direction="in" portIndex="2">
+                    <varref fl="e21" name="clk"/>
+                </port>
+                <port fl="e22" name="d" direction="in" portIndex="3">
+                    <varref fl="e22" name="d"/>
+                </port>
+            </instance>
+            <instance fl="e24" name="cell2" defName="mod2">
+                <port fl="e24" name="d" direction="in" portIndex="1">
+                    <varref fl="e24" name="between"/>
+                </port>
+                <port fl="e27" name="q" direction="out" portIndex="2">
+                    <varref fl="e27" name="q"/>
+                </port>
+                <port fl="e29" name="clk" direction="in" portIndex="3">
+                    <varref fl="e29" name="clk"/>
+                </port>
+            </instance>
+        </module>
+        <module fl="e33" name="mod1">
+            <var fl="e35" name="clk">
+                <basicDType  fl="e35" name="logic"/>
+            </var>
+            <var fl="e36" name="d">
+                <basicDType  fl="e36" name="logic" left="3" right="0"/>
+            </var>
+            <var fl="e37" name="q">
+                <basicDType  fl="e37" name="logic" left="3" right="0"/>
+            </var>
+            <always fl="e39">
+                <sentree fl="e39">
+                    <senitem fl="e39">
+                        <varref fl="e39" name="clk"/>
+                    </senitem>
+                </sentree>
+                <assigndly fl="e40">
+                    <varref fl="e40" name="d"/>
+                    <varref fl="e40" name="q"/>
+                </assigndly>
+            </always>
+        </module>
+        <module fl="e44" name="mod2">
+            <var fl="e46" name="clk">
+                <basicDType  fl="e46" name="logic"/>
+            </var>
+            <var fl="e47" name="d">
+                <basicDType  fl="e47" name="logic" left="3" right="0"/>
+            </var>
+            <var fl="e48" name="q">
+                <basicDType  fl="e48" name="logic" left="3" right="0"/>
+            </var>
+            <contAssign fl="e51">
+                <varref fl="e51" name="d"/>
+                <varref fl="e51" name="q"/>
+            </contAssign>
+        </module>
+    </netlist>
+</verilator_xml>

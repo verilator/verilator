@@ -726,6 +726,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag; }
+	    else if ( onoff   (sw, "-dump-tree-more", flag/*ref*/) )	{ m_dumpTreeMore = m_dumpTree = flag; }  // Undocumented
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
 	    else if ( onoff   (sw, "-inhibit-sim", flag/*ref*/)){ m_inhibitSim = flag; }
@@ -747,6 +748,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
+	    else if ( onoff   (sw, "-xml-only", flag/*ref*/) )		{ m_xmlOnly = flag; }  // Undocumented, still experimental
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
 		for (const char* cp=sw+strlen("-O"); *cp; ++cp) {
@@ -1161,6 +1163,7 @@ V3Options::V3Options() {
     m_coverageUser = false;
     m_debugCheck = false;
     m_dumpTree = false;
+    m_dumpTreeMore = false;
     m_exe = false;
     m_ignc = false;
     m_l2Name = true;
@@ -1182,6 +1185,7 @@ V3Options::V3Options() {
     m_traceDups = false;
     m_traceUnderscore = false;
     m_underlineZero = false;
+    m_xmlOnly = false;
 
     m_errorLimit = 50;
     m_ifDepth = 0;

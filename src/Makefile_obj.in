@@ -182,6 +182,7 @@ RAW_OBJS = \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
 	V3EmitV.o \
+	V3EmitXml.o \
 	V3Error.o \
 	V3Expand.o \
 	V3File.o \

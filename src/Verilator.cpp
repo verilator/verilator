@@ -48,6 +48,7 @@
 #include "V3EmitC.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
+#include "V3EmitXml.h"
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Cdc.h"
@@ -142,6 +143,8 @@ void V3Global::readFiles() {
 //######################################################################
 
 void process () {
+    bool dumpMore = v3Global.opt.dumpTreeMore();
+
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("cells.tree"));
@@ -149,14 +152,19 @@ void process () {
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkparse.tree"));
     // Cross-link signal names
     V3Link::link(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkmain.tree"));
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrearrayed(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
     // Correct state we couldn't know at parse time, repair SEL's
     V3LinkResolve::linkResolve(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkresolve.tree"));
     // Set Lvalue's in variable refs
     V3LinkLValue::linkLValue(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linklvalue.tree"));
     // Convert return/continue/disable to jumps
     V3LinkJump::linkJump(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("link.tree"));
@@ -173,7 +181,7 @@ void process () {
 
     // Remove any modules that were parameterized and are no longer referenced.
     V3Dead::deadifyAll(v3Global.rootp(), false);
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dead.tree"));
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dead.tree"));
     v3Global.checkTree();
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
@@ -186,7 +194,7 @@ void process () {
     V3Width::widthCommit(v3Global.rootp());
     v3Global.assertDTypesResolved(true);
     v3Global.assertWidthsMatch(true);
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("widthcommit.tree"));
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("widthcommit.tree"));
 
     // Coverage insertion
     //    Before we do dead code elimination and inlining, or we'll lose it.
@@ -212,321 +220,350 @@ void process () {
     V3Assert::assertAll(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("assert.tree"));
 
-    // Add top level wrapper with instance pointing to old top
-    // Move packages to under new top
-    // Must do this after we know the width of any parameters
-    // We also do it after coverage/assertion insertion so we don't 'cover' the top level.
-    V3LinkLevel::wrapTop(v3Global.rootp());
+    if (!v3Global.opt.xmlOnly()) {
+	// Add top level wrapper with instance pointing to old top
+	// Move packages to under new top
+	// Must do this after we know the width of any parameters
+	// We also do it after coverage/assertion insertion so we don't 'cover' the top level.
+	V3LinkLevel::wrapTop(v3Global.rootp());
+    }
 
     // Propagate constants into expressions
     V3Const::constifyAllLint(v3Global.rootp());
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
-    // Expand Inouts
-    V3Tristate::inoutAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inouts.tree"));
+    if (!v3Global.opt.xmlOnly()) {
+	// Expand Inouts
+	V3Tristate::inoutAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inouts.tree"));
+    }
 
-    // Remove cell arrays (must be between V3Width and scoping)
-    V3Inst::dearrayAll(v3Global.rootp());
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
+    if (!v3Global.opt.xmlOnly()) {
+	// Remove cell arrays (must be between V3Width and scoping)
+	V3Inst::dearrayAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
+    }
 
-    // Expand inouts, stage 2
-    // Also simplify pin connections to always be AssignWs in prep for V3Unknown
-    V3Tristate::tristateAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tristate.tree"));
+    if (!v3Global.opt.xmlOnly()) {
+	// Expand inouts, stage 2
+	// Also simplify pin connections to always be AssignWs in prep for V3Unknown
+	V3Tristate::tristateAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tristate.tree"));
 
-    // Task inlining & pushing BEGINs names to variables/cells
-    // Begin processing must be after Param, before module inlining
-    V3Begin::debeginAll(v3Global.rootp());	// Flatten cell names, before inliner
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("begin.tree"));
+	// Task inlining & pushing BEGINs names to variables/cells
+	// Begin processing must be after Param, before module inlining
+	V3Begin::debeginAll(v3Global.rootp());	// Flatten cell names, before inliner
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("begin.tree"));
 
-    // Move assignments from X into MODULE temps.
-    // (Before flattening, so each new X variable is shared between all scopes of that module.)
-    V3Unknown::unknownAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unknown.tree"));
+	// Move assignments from X into MODULE temps.
+	// (Before flattening, so each new X variable is shared between all scopes of that module.)
+	V3Unknown::unknownAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unknown.tree"));
 
-    // Module inlining
-    // Cannot remove dead variables after this, as alias information for final
-    // V3Scope's V3LinkDot is in the AstVar.
-    if (v3Global.opt.oInline()) {
-	V3Inline::inlineAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inline.tree"));
-	V3LinkDot::linkDotArrayed(v3Global.rootp());	// Cleanup as made new modules
-	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
+	// Module inlining
+	// Cannot remove dead variables after this, as alias information for final
+	// V3Scope's V3LinkDot is in the AstVar.
+	if (v3Global.opt.oInline()) {
+	    V3Inline::inlineAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inline.tree"));
+	    V3LinkDot::linkDotArrayed(v3Global.rootp());	// Cleanup as made new modules
+	    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
+	}
     }
 
     //--PRE-FLAT OPTIMIZATIONS------------------
 
     // Initial const/dead to reduce work for ordering code
     V3Const::constifyAll(v3Global.rootp());
+    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
     v3Global.checkTree();
+
     V3Dead::deadifyAll(v3Global.rootp(), false);
-    v3Global.checkTree();
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+    v3Global.checkTree();
 
     V3Error::abortIfErrors();
 
     //--FLATTENING---------------
 
-    // We're going to flatten the hierarchy, so as many optimizations that
-    // can be done as possible should be before this....
+    if (!v3Global.opt.xmlOnly()) {
+	// We're going to flatten the hierarchy, so as many optimizations that
+	// can be done as possible should be before this....
 
-    // Convert instantiations to wassigns and always blocks
-    V3Inst::instAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inst.tree"));
+	// Convert instantiations to wassigns and always blocks
+	V3Inst::instAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inst.tree"));
 
-    // Inst may have made lots of concats; fix them
-    V3Const::constifyAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+	// Inst may have made lots of concats; fix them
+	V3Const::constifyAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
-    // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
-    V3Scope::scopeAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("scope.tree"));
-    V3LinkDot::linkDotScope(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
+	// Flatten hierarchy, creating a SCOPE for each module's usage as a cell
+	V3Scope::scopeAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("scope.tree"));
+	V3LinkDot::linkDotScope(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot.tree"));
+    }
 
     //--SCOPE BASED OPTIMIZATIONS--------------
 
-    // Cleanup
-    V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), false);
-    v3Global.checkTree();
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
-
-    // Inline all tasks
-    V3Task::taskAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("task.tree"));
-
-    // Add __PVT's
-    // After V3Task so task internal variables will get renamed
-    V3Name::nameAll(v3Global.rootp());
-    //v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("name.tree"));
-
-    // Loop unrolling & convert FORs to WHILEs
-    V3Unroll::unrollAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unroll.tree"));
-
-    // Expand slices of arrays
-    V3Slice::sliceAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("slices.tree"));
-
-    // Convert case statements to if() blocks.  Must be after V3Unknown
-    V3Case::caseAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("case.tree"));
-
-    // Push constants across variables and remove redundant assignments
-    V3Const::constifyAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
-
-    if (v3Global.opt.oLife()) {
-	V3Life::lifeAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
-    }
-
-    // Make large low-fanin logic blocks into lookup tables
-    // This should probably be done much later, once we have common logic elimination.
-    if (!v3Global.opt.lintOnly() && v3Global.opt.oTable()) {
-	V3Table::tableAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("table.tree"));
-    }
-
-    // Cleanup
-    V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), false);
-    v3Global.checkTree();
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
-
-    // Detect clock enables and mode into sensitives, and split always based on clocks
-    // (so this is a good prelude to splitAlways.)
-    if (v3Global.opt.oFlopGater()) {
-	V3ClkGater::clkGaterAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clkgater.tree"));
-    }
-
-    // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
-    // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
-    V3Active::activeAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("active.tree"));
-
-    // Split single ALWAYS blocks into multiple blocks for better ordering chances
-    if (v3Global.opt.oSplit()) {
-	V3Split::splitAlwaysAll(v3Global.rootp());
-	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("split.tree"));
-    }
-    V3SplitAs::splitAsAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("splitas.tree"));
-
-    // Create tracing sample points, before we start eliminating signals
-    if (v3Global.opt.trace()) {
-	V3TraceDecl::traceDeclAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tracedecl.tree"));
-    }
-
-    // Gate-based logic elimination; eliminate signals and push constant across cell boundaries
-    // Instant propagation makes lots-o-constant reduction possibilities.
-    if (v3Global.opt.oGate()) {
-	V3Gate::gateAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("gate.tree"));
-	// V3Gate calls constant propagation itself.
-    } else {
-	v3info("Command Line disabled gate optimization with -Og/-O0.  This may cause ordering problems.");
-    }
-
-    // Combine COVERINCs with duplicate terms
-    if (v3Global.opt.coverage()) {
-	V3CoverageJoin::coverageJoin(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("coveragejoin.tree"));
-    }
-
-    // Remove unused vars
-    V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), true);
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
-
-    // Clock domain crossing analysis
-    if (v3Global.opt.cdc()) {
-	V3Cdc::cdcAll(v3Global.rootp());
-	V3Error::abortIfErrors();
-	return;
-    }
-
-    // Reorder assignments in pipelined blocks
-    if (v3Global.opt.oReorder()) {
-	V3Split::splitReorderAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("reorder.tree"));
-    }
-
-    // Create delayed assignments
-    // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
-    V3Delayed::delayedAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("delayed.tree"));
-
-    // Make Active's on the top level
-    // Differs from V3Active, because identical clocks may be pushed down to a module and now be identical
-    V3ActiveTop::activeTopAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("activetop.tree"));
-
-    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
-
-    // Order the code; form SBLOCKs and BLOCKCALLs
-    V3Order::orderAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("order.tree"));
-
-#ifndef NEW_ORDERING
-    // Change generated clocks to look at delayed signals
-    V3GenClk::genClkAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("genclk.tree"));
-#endif
-
-    // Convert sense lists into IF statements.
-    V3Clock::clockAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clock.tree"));
-
-    // Cleanup any dly vars or other temps that are simple assignments
-    // Life must be done before Subst, as it assumes each CFunc under _eval is called only once.
-    if (v3Global.opt.oLife()) {
+    if (!v3Global.opt.xmlOnly()) {
+	// Cleanup
 	V3Const::constifyAll(v3Global.rootp());
-	V3Life::lifeAll(v3Global.rootp());
-    }
-    if (v3Global.opt.oLifePost()) {
-	V3LifePost::lifepostAll(v3Global.rootp());
-    }
-    if (v3Global.opt.oLife() || v3Global.opt.oLifePost()) {
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
-    }
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
+	V3Dead::deadifyAll(v3Global.rootp(), false);
+	v3Global.checkTree();
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
-    // Remove unused vars
-    V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), true);
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+	// Inline all tasks
+	V3Task::taskAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("task.tree"));
+
+	// Add __PVT's
+	// After V3Task so task internal variables will get renamed
+	V3Name::nameAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("name.tree"));
+
+	// Loop unrolling & convert FORs to WHILEs
+	V3Unroll::unrollAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("unroll.tree"));
+
+	// Expand slices of arrays
+	V3Slice::sliceAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("slices.tree"));
+
+	// Convert case statements to if() blocks.  Must be after V3Unknown
+	V3Case::caseAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("case.tree"));
+
+	// Push constants across variables and remove redundant assignments
+	V3Const::constifyAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+	if (v3Global.opt.oLife()) {
+	    V3Life::lifeAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
+	}
+
+	// Make large low-fanin logic blocks into lookup tables
+	// This should probably be done much later, once we have common logic elimination.
+	if (!v3Global.opt.lintOnly() && v3Global.opt.oTable()) {
+	    V3Table::tableAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("table.tree"));
+	}
+
+	// Cleanup
+	V3Const::constifyAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
+	V3Dead::deadifyAll(v3Global.rootp(), false);
+	v3Global.checkTree();
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+	// Detect clock enables and mode into sensitives, and split always based on clocks
+	// (so this is a good prelude to splitAlways.)
+	if (v3Global.opt.oFlopGater()) {
+	    V3ClkGater::clkGaterAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clkgater.tree"));
+	}
+
+	// Move assignments/sensitives into a SBLOCK for each unique sensitivity list
+	// (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
+	V3Active::activeAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("active.tree"));
+
+	// Split single ALWAYS blocks into multiple blocks for better ordering chances
+	if (v3Global.opt.oSplit()) {
+	    V3Split::splitAlwaysAll(v3Global.rootp());
+	    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("split.tree"));
+	}
+	V3SplitAs::splitAsAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("splitas.tree"));
+
+	// Create tracing sample points, before we start eliminating signals
+	if (v3Global.opt.trace()) {
+	    V3TraceDecl::traceDeclAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("tracedecl.tree"));
+	}
+
+	// Gate-based logic elimination; eliminate signals and push constant across cell boundaries
+	// Instant propagation makes lots-o-constant reduction possibilities.
+	if (v3Global.opt.oGate()) {
+	    V3Gate::gateAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("gate.tree"));
+	    // V3Gate calls constant propagation itself.
+	} else {
+	    v3info("Command Line disabled gate optimization with -Og/-O0.  This may cause ordering problems.");
+	}
+
+	// Combine COVERINCs with duplicate terms
+	if (v3Global.opt.coverage()) {
+	    V3CoverageJoin::coverageJoin(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("coveragejoin.tree"));
+	}
+
+	// Remove unused vars
+	V3Const::constifyAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
+	V3Dead::deadifyAll(v3Global.rootp(), true);
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+	// Clock domain crossing analysis
+	if (v3Global.opt.cdc()) {
+	    V3Cdc::cdcAll(v3Global.rootp());
+	    V3Error::abortIfErrors();
+	    return;
+	}
+
+	// Reorder assignments in pipelined blocks
+	if (v3Global.opt.oReorder()) {
+	    V3Split::splitReorderAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("reorder.tree"));
+	}
+
+	// Create delayed assignments
+	// This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
+	V3Delayed::delayedAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("delayed.tree"));
+
+	// Make Active's on the top level
+	// Differs from V3Active, because identical clocks may be pushed down to a module and now be identical
+	V3ActiveTop::activeTopAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("activetop.tree"));
+
+	if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
+
+	// Order the code; form SBLOCKs and BLOCKCALLs
+	V3Order::orderAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("order.tree"));
 
 #ifndef NEW_ORDERING
-    // Detect change loop
-    V3Changed::changedAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("changed.tree"));
+	// Change generated clocks to look at delayed signals
+	V3GenClk::genClkAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("genclk.tree"));
 #endif
 
-    // Create tracing logic, since we ripped out some signals the user might want to trace
-    // Note past this point, we presume traced variables won't move between CFuncs
-    // (It's OK if untraced temporaries move around, or vars "effectively" activate the same way.)
-    if (v3Global.opt.trace()) {
-	V3Trace::traceAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("trace.tree"));
+	// Convert sense lists into IF statements.
+	V3Clock::clockAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clock.tree"));
+
+	// Cleanup any dly vars or other temps that are simple assignments
+	// Life must be done before Subst, as it assumes each CFunc under _eval is called only once.
+	if (v3Global.opt.oLife()) {
+	    V3Const::constifyAll(v3Global.rootp());
+	    V3Life::lifeAll(v3Global.rootp());
+	}
+	if (v3Global.opt.oLifePost()) {
+	    V3LifePost::lifepostAll(v3Global.rootp());
+	}
+	if (v3Global.opt.oLife() || v3Global.opt.oLifePost()) {
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("life.tree"));
+	}
+
+	// Remove unused vars
+	V3Const::constifyAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
+	V3Dead::deadifyAll(v3Global.rootp(), true);
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+
+#ifndef NEW_ORDERING
+	// Detect change loop
+	V3Changed::changedAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("changed.tree"));
+#endif
+
+	// Create tracing logic, since we ripped out some signals the user might want to trace
+	// Note past this point, we presume traced variables won't move between CFuncs
+	// (It's OK if untraced temporaries move around, or vars "effectively" activate the same way.)
+	if (v3Global.opt.trace()) {
+	    V3Trace::traceAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("trace.tree"));
+	}
+
+	if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
+
+	// Remove scopes; make varrefs/funccalls relative to current module
+	V3Descope::descopeAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("descope.tree"));
     }
-
-    if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
-
-    // Remove scopes; make varrefs/funccalls relative to current module
-    V3Descope::descopeAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("descope.tree"));
 
     //--MODULE OPTIMIZATIONS--------------
 
-    // Split deep blocks to appease MSVC++.  Must be before Localize.
-    if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
-	V3DepthBlock::depthBlockAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("deepblock.tree"));
-    }
+    if (!v3Global.opt.xmlOnly()) {
+	// Split deep blocks to appease MSVC++.  Must be before Localize.
+	if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
+	    V3DepthBlock::depthBlockAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("deepblock.tree"));
+	}
 
-    // Move BLOCKTEMPS from class to local variables
-    if (v3Global.opt.oLocalize()) {
-	V3Localize::localizeAll(v3Global.rootp());
-    }
+	// Move BLOCKTEMPS from class to local variables
+	if (v3Global.opt.oLocalize()) {
+	    V3Localize::localizeAll(v3Global.rootp());
+	    if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("localize.tree"));
+	}
 
-    // Icache packing; combine common code in each module's functions into subroutines
-    if (v3Global.opt.oCombine()) {
-	V3Combine::combineAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("combine.tree"));
+	// Icache packing; combine common code in each module's functions into subroutines
+	if (v3Global.opt.oCombine()) {
+	    V3Combine::combineAll(v3Global.rootp());
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("combine.tree"));
+	}
     }
 
     V3Error::abortIfErrors();
 
     //--GENERATION------------------
 
-    // Remove unused vars
-    V3Const::constifyAll(v3Global.rootp());
-    V3Dead::deadifyAll(v3Global.rootp(), true);
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
+    if (!v3Global.opt.xmlOnly()) {
+	// Remove unused vars
+	V3Const::constifyAll(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const_predad.tree"));
+	V3Dead::deadifyAll(v3Global.rootp(), true);
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
-    // Here down, widthMin() is the Verilog width, and width() is the C++ width
-    // Bits between widthMin() and width() are irrelevant, but may be non zero.
-    v3Global.assertWidthsMatch(false);
+	// Here down, widthMin() is the Verilog width, and width() is the C++ width
+	// Bits between widthMin() and width() are irrelevant, but may be non zero.
+	v3Global.assertWidthsMatch(false);
 
-    // Make all math operations either 8, 16, 32 or 64 bits
-    V3Clean::cleanAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clean.tree"));
+	// Make all math operations either 8, 16, 32 or 64 bits
+	V3Clean::cleanAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("clean.tree"));
 
-    // Move wide constants to BLOCK temps.
-    V3Premit::premitAll(v3Global.rootp());
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("premit.tree"));
+	// Move wide constants to BLOCK temps.
+	V3Premit::premitAll(v3Global.rootp());
+	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("premit.tree"));
+    }
 
     // Expand macros and wide operators into C++ primitives
-    if (v3Global.opt.oExpand()) {
+    if (!v3Global.opt.xmlOnly()
+	&& v3Global.opt.oExpand()) {
 	V3Expand::expandAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("expand.tree"));
     }
 
     // Propagate constants across WORDSEL arrayed temporaries
-    if (v3Global.opt.oSubst()) {
+    if (!v3Global.opt.xmlOnly()
+	&& v3Global.opt.oSubst()) {
 	// Constant folding of expanded stuff
 	V3Const::constifyCpp(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 	V3Subst::substituteAll(v3Global.rootp());
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("subst.tree"));
     }
-    if (v3Global.opt.oSubstConst()) {
+    if (!v3Global.opt.xmlOnly()
+	&& v3Global.opt.oSubstConst()) {
 	// Constant folding of substitutions
 	V3Const::constifyCpp(v3Global.rootp());
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("constc.tree"));
 
 	V3Dead::deadifyAll(v3Global.rootp(), true);
 	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dead.tree"));
     }
 
-    if (!v3Global.opt.lintOnly()) {
+    if (!v3Global.opt.lintOnly()
+	&& !v3Global.opt.xmlOnly()) {
 	// Fix very deep expressions
 	// Mark evaluation functions as member functions, if needed.
 	V3Depth::depthAll(v3Global.rootp());
-	//v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("depth.tree"));
+	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("depth.tree"));
 
 	// Branch prediction
 	V3Branch::branchAll(v3Global.rootp());
@@ -540,14 +577,21 @@ void process () {
     V3Error::abortIfErrors();
 
     // Output the text
-    if (!v3Global.opt.lintOnly()) {
+    if (!v3Global.opt.lintOnly()
+	&& !v3Global.opt.xmlOnly()) {
 	// emitcInlines is first, as it may set needHInlines which other emitters read
 	V3EmitC::emitcInlines();
 	V3EmitC::emitcSyms();
 	V3EmitC::emitcTrace();
     }
-    // Unfortunately we have some lint checks in emitc.
-    V3EmitC::emitc();
+    if (!v3Global.opt.xmlOnly()) { // Unfortunately we have some lint checks in emitc.
+	V3EmitC::emitc();
+    }
+    if (v3Global.opt.xmlOnly()
+	// Check XML when debugging to make sure no missing node types
+	|| (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly())) {
+	V3EmitXml::emitxml();
+    }
 
     // Statistics
     if (v3Global.opt.stats()) {
@@ -555,7 +599,8 @@ void process () {
 	V3Stats::statsReport();
     }
 
-    if (!v3Global.opt.lintOnly()) {
+    if (!v3Global.opt.lintOnly()
+	&& !v3Global.opt.xmlOnly()) {
 	// Makefile must be after all other emitters
 	V3EmitMk::emitmk(v3Global.rootp());
     }
@@ -584,8 +629,9 @@ int main(int argc, char** argv, char** env) {
     if (!v3Global.opt.outFormatOk()
 	&& !v3Global.opt.preprocOnly()
 	&& !v3Global.opt.lintOnly()
+	&& !v3Global.opt.xmlOnly()
 	&& !v3Global.opt.cdc()) {
-	v3fatal("verilator: Need --cc, --sc, --sp, --cdc, --lint-only or --E option");
+	v3fatal("verilator: Need --cc, --sc, --sp, --cdc, --lint-only, --xml_only or --E option");
     }
     // Check environment
     V3Options::getenvSYSTEMC();
