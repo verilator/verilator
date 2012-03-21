@@ -262,6 +262,7 @@ descriptions in the next sections for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
      +define+<var>+<value>      Set preprocessor define
     --dump-tree                 Enable dumping .tree files
+    --dump-treei <level>        Enable dumping .tree files at a level
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
@@ -529,9 +530,16 @@ standard across Verilog tools while -D is an alias for GCC compatibility.
 
 =item --dump-tree
 
-Rarely needed.  Enable writing .tree debug files.  This is enabled with
---debug, so "--debug --no-dump-tree" may be useful if the dump files are
-large and not desired.
+Rarely needed.  Enable writing .tree debug files with dumping level 3,
+which dumps the standard critical stages.  --dump-tree is enabled
+automatically with --debug, so "--debug --no-dump-tree" may be useful if
+the dump files are large and not desired.
+
+=item --dump-treei
+
+Rarely needed.  Enable writing .tree debug files with a specific dumping
+level, 0 disbles dumps and is equivelent to "--no-dump-tree".  Level 9
+enables dumping of every stage.
 
 =item -E
 

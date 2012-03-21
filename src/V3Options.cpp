@@ -725,8 +725,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
-	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag; }
-	    else if ( onoff   (sw, "-dump-tree-more", flag/*ref*/) )	{ m_dumpTreeMore = m_dumpTree = flag; }  // Undocumented
+	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
 	    else if ( onoff   (sw, "-inhibit-sim", flag/*ref*/)){ m_inhibitSim = flag; }
@@ -798,6 +797,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		const char* src = sw+strlen("-debugi-");
 		shift;
 		setDebugSrcLevel(src, atoi(argv[i]));
+	    }
+	    else if ( !strcmp (sw, "-dump-treei") && (i+1)<argc ) {
+		shift;
+		m_dumpTree = atoi(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-error-limit") && (i+1)<argc ) {
 		shift;
@@ -1162,8 +1165,6 @@ V3Options::V3Options() {
     m_coverageUnderscore = false;
     m_coverageUser = false;
     m_debugCheck = false;
-    m_dumpTree = false;
-    m_dumpTreeMore = false;
     m_exe = false;
     m_ignc = false;
     m_l2Name = true;
@@ -1187,6 +1188,7 @@ V3Options::V3Options() {
     m_underlineZero = false;
     m_xmlOnly = false;
 
+    m_dumpTree = 0;
     m_errorLimit = 50;
     m_ifDepth = 0;
     m_inlineMult = 2000;

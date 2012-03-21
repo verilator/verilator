@@ -143,7 +143,7 @@ void V3Global::readFiles() {
 //######################################################################
 
 void process () {
-    bool dumpMore = v3Global.opt.dumpTreeMore();
+    bool dumpMore = (v3Global.opt.dumpTree() >= 9);
 
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();

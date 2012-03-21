@@ -1014,7 +1014,8 @@ void AstNode::dumpTreeFile(const string& filename, bool append) {
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
 	    *logsp<<"Tree Dump from <e"<<dec<<editCountLast()<<">";
 	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;
-	    if (editCountGbl()==editCountLast()) {
+	    if (editCountGbl()==editCountLast()
+		&& !(v3Global.opt.dumpTree()>=9)) {
 		*logsp<<endl;
 		*logsp<<"No changes since last dump!\n";
 	    } else {

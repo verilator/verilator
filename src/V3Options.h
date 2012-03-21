@@ -106,8 +106,6 @@ class V3Options {
     bool	m_coverageUnderscore;// main switch: --coverage-underscore
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
-    bool	m_dumpTree;	// main switch: --dump-tree
-    bool	m_dumpTreeMore;	// main switch: --dump-tree-more
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
@@ -129,6 +127,7 @@ class V3Options {
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
     bool	m_xmlOnly;	// main switch: --xml-netlist
 
+    int		m_dumpTree;	// main switch: --dump-tree
     int		m_errorLimit;	// main switch: --error-limit
     int		m_ifDepth;	// main switch: --if-depth
     int		m_inlineMult;	// main switch: --inline-mult
@@ -238,8 +237,6 @@ class V3Options {
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
-    bool dumpTree() const { return m_dumpTree; }
-    bool dumpTreeMore() const { return m_dumpTreeMore; }
     bool exe() const { return m_exe; }
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
@@ -257,6 +254,7 @@ class V3Options {
     bool inhibitSim() const { return m_inhibitSim; }
     bool xmlOnly() const { return m_xmlOnly; }
 
+    int    dumpTree() const { return m_dumpTree; }
     int	   errorLimit() const { return m_errorLimit; }
     int	   ifDepth() const { return m_ifDepth; }
     int	   inlineMult() const { return m_inlineMult; }
