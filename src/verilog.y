@@ -1386,11 +1386,6 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); }
 	;
 
-generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE genTopBlock yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
-	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
-	;
-
 module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
 	//			// IEEE: parameter_override
 		yDEFPARAM list_of_defparam_assignments ';'	{ $$ = $2; }
@@ -1448,15 +1443,15 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 //************************************************
 // Generates
 
+generate_region<nodep>:		// ==IEEE: generate_region
+		yGENERATE genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
+	;
+
 generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	//	';'		// is included in
 	//			// IEEE: generate_block
-		genItem					{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1)) : NULL; }
-	|	genItemBegin				{ $$ = $1; }
-	;
-
-genTopBlock<nodep>:
-		genItemList				{ $$ = $1; }
+		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
@@ -1469,13 +1464,20 @@ genItemBegin<nodep>:		// IEEE: part of generate_block
 	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
 
-genItemList<nodep>:
-		genItem					{ $$ = $1; }
-	|	genItemList genItem			{ $$ = $1->addNextNull($2); }
+genItemOrBegin<nodep>:		// Not in IEEE, but our begin isn't under generate_item
+		generate_item				{ $$ = $1; }
+	|	genItemBegin				{ $$ = $1; }
 	;
 
-genItem<nodep>:			// IEEE: module_or_interface_or_generate_item
+genItemList<nodep>:
+		genItemOrBegin				{ $$ = $1; }
+	|	genItemList genItemOrBegin		{ $$ = $1->addNextNull($2); }
+	;
+
+generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
+	//			// Only legal when in a generate under a module (or interface under a module)
 		module_or_generate_item			{ $$ = $1; }
+	//			// Only legal when in a generate under an interface
 	//UNSUP	interface_or_generate_item		{ $$ = $1; }
 	;
 

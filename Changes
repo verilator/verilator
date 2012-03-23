@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix signed array warning, bug456. [Alex Solomatnikov]
 
+****  Fix genvar and begin under generate, bug461.  [Alex Solomatnikov]
+
 ****  Fix and document --gdb option, bug454. [Jeremy Bennett]
 
 
