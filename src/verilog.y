@@ -2101,12 +2101,8 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 	;
 
 for_step<nodep>:		// IEEE: for_step
-		varRefBase '=' expr			{ $$ = new AstAssign($2,$1,$3); }
-	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))) }
-	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))) }
-	|	varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))) }
-	|	varRefBase yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))) }
-	//UNSUP: List of steps
+	//UNSUP: List of steps, instead we keep it simple
+		genvar_iteration			{ $$ = $1; }
 	;
 
 //************************************************

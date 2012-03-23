@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.833 devel
 
+***   Support += and -= in standard for loops, bug463. [Alex Solomatnikov]
+
 ****  Fix signed array warning, bug456. [Alex Solomatnikov]
 
 ****  Fix and document --gdb option, bug454. [Jeremy Bennett]
