@@ -656,6 +656,18 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (m_state == CONVERT_VARS) {
 	    if (nodep->isTristate() && !m_ftaskp) {
+		// Add pullups/pulldowns so next stage can ignore wire type
+		// See test_regress/t/t_tri_pull01.v test, it fails for other reasons
+		//if (nodep->varType() == AstVarType::TRIWIRE0) {
+		//    nodep->addNext(new AstPull(nodep->fileline(),
+		//			       new AstVarRef(nodep->fileline(), nodep, true),
+		//			       false));
+		//}
+		//if (nodep->varType() == AstVarType::TRIWIRE1) {
+		//    nodep->addNext(new AstPull(nodep->fileline(),
+		//			       new AstVarRef(nodep->fileline(), nodep, true),
+		//			       true));
+		//}
 		// create the input var and leave the original as the output var
 		AstVar* varinp = nodep->cloneTree(false)->castVar();
 		varinp->name(varinp->name() + "__in");
