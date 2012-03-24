@@ -26,6 +26,8 @@
 //	    	Clone module cell calls, renaming with __{par1}_{par2}_...
 //		Substitute constants for cell's module's parameters
 //		Relink pins and cell to point to new module
+//	    Then process all modules called by that cell
+//	    (Cells never referenced after parameters expanded must be ignored.)
 //
 //*************************************************************************
 
@@ -36,6 +38,7 @@
 #include <unistd.h>
 #include <map>
 #include <vector>
+#include <deque>
 
 #include "V3Global.h"
 #include "V3Param.h"
@@ -51,7 +54,8 @@
 class ParamVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    //	 AstNodeModule::user5()	// bool	  True if parameters numbered
+    //	 AstNodeModule::user5()	// bool	  True if processed
+    //	 AstVar::user5()	// bool	  True if constant propagated
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
     //				//        (0=not processed, 1=iterated, but no number, 65+ parameter numbered)
     AstUser4InUse	m_inuser4;
@@ -71,6 +75,9 @@ private:
     typedef std::map<string,string> LongMap;
     LongMap	m_longMap;	// Hash of very long names to unique identity number
     int		m_longId;
+
+    typedef deque<AstNodeModule*> ModDeque;
+    ModDeque	m_todoModps;	// Modules left to process
 
     // METHODS
     static int debug() {
@@ -116,6 +123,19 @@ private:
 	    pinp->modVarp(cloneiter->second);
 	}
     }
+    void visitModules() {
+	// Loop on all modules left to process
+	// Hitting a cell adds to the END of this list, so since cells originally exist top->bottom
+	// we process in top->bottom order too.
+	while (!m_todoModps.empty()) {
+	    AstNodeModule* nodep = m_todoModps.front(); m_todoModps.pop_front();
+	    if (!nodep->user5Inc()) {  // Process once; note clone() must clear so we do it again
+		UINFO(4," MOD   "<<nodep<<endl);
+		nodep->iterateChildren(*this);
+		// Note this may add to m_todoModps
+	    }
+	}
+    }
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
@@ -123,8 +143,15 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
-	UINFO(4," MOD   "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+	if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
+	    // Add request to END of modules left to process
+	    m_todoModps.push_back(nodep);
+	    visitModules();
+	} else if (nodep->user5()) {
+	    UINFO(4," MOD-done   "<<nodep<<endl);  // Already did it
+	} else {
+	    UINFO(4," MOD-dead?  "<<nodep<<endl);  // Should have been done by now, if not dead
+	}
     }
     virtual void visit(AstCell* nodep, AstNUser*);
 
@@ -325,6 +352,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		// However links outside the module (like on the upper cells) will not.
 		modp = nodep->modp()->cloneTree(false);
 		modp->name(newname);
+		modp->user5(0); // We need to re-recurse this module once changed
 		nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
 
 		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
@@ -377,6 +405,9 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
 	UINFO(8,"     Done with "<<nodep<<endl);
     }
+
+    // Now remember to process the child module at the end of the module
+    m_todoModps.push_back(nodep->modp());
 }
 
 //######################################################################

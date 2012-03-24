@@ -12,6 +12,11 @@ module t (/*AUTOINST*/);
 
    u_test_inst();
 
+   initial begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+
 endmodule
 
 module Test ();
