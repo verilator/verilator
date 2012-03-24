@@ -117,7 +117,7 @@ if ($#opt_tests<0) {
 mkdir "obj_dir";
 
 our $Log_Filename = "obj_dir/driver_".strftime("%Y%m%d_%H%M%S.log", localtime);
-my $leftcnt=0; my $okcnt=0; my $failcnt=0; my $skcnt=0;
+my $LeftCnt=0; my $OkCnt=0; my $FailCnt=0; my $SkipCnt=0; my $UnsupCnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
@@ -134,7 +134,7 @@ $Fork->wait_all();   # Wait for all children to finish
 sub one_test {
     my @params = @_;
     my %params = (@params);
-    $leftcnt++;
+    $LeftCnt++;
     $Fork->schedule
 	(
 	 test_pl_filename => $params{pl_filename},
@@ -150,6 +150,8 @@ sub one_test {
 		 $test->oprint("Test PASSED\n");
 	     } elsif ($test->skips && !$test->errors) {
 		 $test->oprint("%Skip: $test->{skips}\n");
+	     } elsif ($test->unsupporteds && !$test->errors) {
+		 $test->oprint("%Unsupported: $test->{unsupporteds}\n");
 	     } else {
 		 $test->error("Missing ok\n") if !$test->errors;
 		 $test->oprint("%Error: $test->{errors}\n");
@@ -160,16 +162,18 @@ sub one_test {
 	     my $test = VTest->new(@params);
 	     $test->read_status;
 	     if ($test->ok) {
-		 $okcnt++;
+		 $OkCnt++;
 	     } elsif ($test->skips && !$test->errors) {
-		 $skcnt++;
+		 $SkipCnt++;
+	     } elsif ($test->unsupporteds && !$test->errors) {
+		 $UnsupCnt++;
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
 		 my $j = ($opt_jobs>1?" -j":"");
 		 push @fails, "\t\tmake$j && test_regress/"
 		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
-		 $failcnt++;
+		 $FailCnt++;
 		 report(\@fails, $Log_Filename);
 		 my $other = "";
 		 foreach my $proc ($Fork->running) {
@@ -178,8 +182,8 @@ sub one_test {
 		 $test->oprint("Simultaneous running tests:",$other,"\n") if $other;
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
-	     $leftcnt--;
-	     print STDERR "==SUMMARY: Left $leftcnt  Passed $okcnt  Skipped $skcnt  Failed $failcnt\n";
+	     $LeftCnt--;
+	     print STDERR "==SUMMARY: Left $LeftCnt  Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt\n";
 	 },
 	 )->ready();
 }
@@ -187,7 +191,7 @@ sub one_test {
 report(\@fails, undef);
 report(\@fails, $Log_Filename);
 
-exit(10) if $failcnt;
+exit(10) if $FailCnt;
 
 #----------------------------------------------------------------------
 
@@ -248,13 +252,13 @@ sub report {
     my $delta = time() - $Start;
     $fh->print("\n");
     $fh->print("="x70,"\n");
-    $fh->printf("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt  Time %d:%02d\n",
+    $fh->printf("TESTS Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt  Time %d:%02d\n",
 	       int($delta/60),$delta%60);
     foreach my $f (@$fails) {
 	chomp $f;
 	$fh->print("$f\n");
     }
-    $fh->printf("TESTS Passed $okcnt  Skipped $skcnt  Failed $failcnt  Time %d:%02d\n",
+    $fh->printf("TESTS Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt  Time %d:%02d\n",
 	       int($delta/60),$delta%60);
 }
 
@@ -412,6 +416,13 @@ sub skip {
     $self->{skips} ||= "Skip: ".$msg;
 }
 
+sub unsupported {
+    my $self = shift;
+    my $msg = join('',@_);
+    warn "%Unsupported: $self->{mode}/$self->{name}: ".$msg."\n";
+    $self->{unsupporteds} ||= "Unsupported: ".$msg;
+}
+
 sub prep {
     my $self = shift;
     mkdir $self->{obj_dir};  # Ok if already exists
@@ -453,7 +464,7 @@ sub read_status {
 sub compile_vlt_flags {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);	   # Default arguments are from $self
-    return 1 if $self->errors || $self->skips;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
     my $checkflags = join(' ',@{$param{v_flags}},
 			  @{$param{v_flags2}},
@@ -500,7 +511,7 @@ sub compile_vlt_flags {
 sub compile {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);	   # Default arguments are from $self
-    return 1 if $self->errors || $self->skips;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
     $self->oprint("Compile\n");
 
     compile_vlt_flags(%param);
@@ -617,7 +628,7 @@ sub compile {
 		    fails=>$param{fails},
 		    expect=>$param{expect},
 		    cmd=>\@cmdargs);
-	return 1 if $self->errors || $self->skips;
+	return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
 	    if ($self->sp) {
@@ -645,7 +656,7 @@ sub compile {
 
 sub execute {
     my $self = (ref $_[0]? shift : $Self);
-    return 1 if $self->errors || $self->skips;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
     my %param = (%{$self}, @_);	   # Default arguments are from $self
     #   params may be expect or {tool}_expect
     $self->oprint("Run\n");
@@ -732,7 +743,7 @@ sub execute {
 
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
-    return 1 if $self->errors || $self->skips;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
     return 1 if !$self->{vlt};
 
     my %param = (%{$self}, @_);	   # Default arguments are from $self
@@ -777,7 +788,7 @@ sub inline_checks {
 sub ok {
     my $self = (ref $_[0]? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
-    $self->{ok} = 0 if $self->{errors} || $self->{skips};
+    $self->{ok} = 0 if $self->{errors} || $self->{skips} || $self->unsupporteds;
     return $self->{ok};
 }
 
@@ -789,6 +800,11 @@ sub errors {
 sub skips {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{skips};
+}
+
+sub unsupporteds {
+    my $self = (ref $_[0]? shift : $Self);
+    return $self->{unsupporteds};
 }
 
 sub top_filename {
@@ -871,7 +887,7 @@ sub _run {
     if ($param{fails} && !$status) {
 	$self->error("Exec of $param{cmd}[0] ok, but expected to fail\n");
     }
-    return if $self->errors || $self->skips;
+    return if $self->errors || $self->skips || $self->unsupporteds;
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
@@ -1344,7 +1360,7 @@ sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
-    return if $self->errors || $self->skips;
+    return if $self->errors || $self->skips || $self->unsupporteds;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
@@ -1357,7 +1373,7 @@ sub file_grep {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
-    return if $self->errors || $self->skips;
+    return if $self->errors || $self->skips || $self->unsupporteds;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
@@ -1445,7 +1461,11 @@ driver.pl - Run regression tests
 
 =head1 DESCRIPTION
 
-driver.pl invokes Verilator or another simulator on each little test file.
+driver.pl invokes Verilator or another simulator on each test file.
+
+The driver reports the number of tests which pass, fail, skipped (some
+resource required by the test is not available, such as SystemC), or are
+unsupported (buggy or require a feature change before will pass.)
 
 =head1 ARGUMENTS
 

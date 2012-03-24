@@ -7,15 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug408");
+$Self->{vlt} and $Self->unsupported("Verilator unsupported, tri");
 
 compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
+	 fails=>$Self->{v3},
 	 expect=>
-'.*%Error: t/t_genvar_misuse_bad.v:\d+: Use of genvar where not convertible to constant: i
-%Error: Exiting due to.*',
-	 );
+'%Error: t/t_tri_bad_pull2.v:19: Unsupported: Conflicting pull directions.
+%Error: t/t_tri_bad_pull2.v:9: ... Location of conflicing pull.
+%Error: Exiting due to',
+	 ) if 
 
 ok(1);
 1;
+
