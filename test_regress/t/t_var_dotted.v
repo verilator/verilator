@@ -28,7 +28,9 @@ module t (/*AUTOARG*/
    integer cyc=1;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
-      //$write("[%0t] cyc%0d: %0x %0x %0x %0x\n", $time, cyc, outb0c0, outb0c1, outb1c0, outb1c1);
+`ifdef TEST_VERBOSE
+      $write("[%0t] cyc%0d: %0x %0x %0x %0x\n", $time, cyc, outb0c0, outb0c1, outb1c0, outb1c1);
+`endif
       if (cyc==2) begin
 	 if (global_cell.globali  != 32'hf00d) $stop;
 	 if (global_cell2.globali != 32'hf22d) $stop;

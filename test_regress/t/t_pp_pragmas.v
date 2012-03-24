@@ -21,7 +21,7 @@
 `default_decay_time infinite
 // unsupported (recommended not to): `default_trireg_strength 10
 
-// unsupported: `default_nettype wire
+`default_nettype wire
 // unsupported: `default_nettype tri
 // unsupported: `default_nettype tri0
 // unsupported: `default_nettype wand
@@ -29,7 +29,7 @@
 // unsupported: `default_nettype wor
 // unsupported: `default_nettype trior
 // unsupported: `default_nettype trireg
-// unsupported: `default_nettype none
+`default_nettype none
 
 `autoexpand_vectornets
 
@@ -45,7 +45,6 @@
 
 // unsupported: `unconnected_drive pull1
 // unsupported: `unconnected_drive pull0
-`nounconnected_drive
 `nounconnected_drive
 
 `line 100 "hallo.v" 0
