@@ -16,6 +16,7 @@ config.cache
 config.status
 configure
 dddrun*
+doxygen-doc
 gdbrun*
 internals.txt
 verilator.pdf
