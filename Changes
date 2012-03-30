@@ -16,6 +16,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix and document --gdb option, bug454. [Jeremy Bennett]
 
+****  Fix OpenSolaris compile error. [Sanjay Singh]
+
 
 * Verilator 3.832 2012/03/07
 

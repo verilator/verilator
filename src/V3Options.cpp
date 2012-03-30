@@ -394,13 +394,13 @@ void V3Options::setenvStr(const string& envvar, const string& value, const strin
     } else {
 	UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
-#ifndef _WIN32
+#if defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
     setenv(envvar.c_str(),value.c_str(),true);
 #else
-    //setenv() replaced by putenv() in MinGW environment. Prototype is different
+    //setenv() replaced by putenv() in MinGW/Solaris environment. Prototype is different
     //putenv() requires NAME=VALUE format
     string vareq = envvar + "=" + value;
-    putenv(vareq.c_str());
+    putenv(const_cast<char*>(vareq.c_str()));
 #endif
 }
 
