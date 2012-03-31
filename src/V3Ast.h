@@ -938,6 +938,8 @@ public:
     bool	isAllOnesV();  // Verilog width rules apply
 
     // METHODS - data type changes especially for initial creation
+    void	dtypeSetBitSized(int widthf, int widthMinf, AstNumeric numericf) { numeric(numericf); width(widthf,widthMinf); }
+    void	dtypeSetLogicSized(int widthf, int widthMinf, AstNumeric numericf) { numeric(numericf); width(widthf,widthMinf); }
     void	dtypeSetLogicBool()	{ numeric(AstNumeric::UNSIGNED); width(1,1); }
     void	dtypeSetDouble()	{ numeric(AstNumeric::DOUBLE); }
     void	dtypeSetSigned32()	{ numeric(AstNumeric::SIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }

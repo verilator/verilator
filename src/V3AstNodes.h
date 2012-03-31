@@ -52,18 +52,21 @@ public:
 	if (m_num.isDouble()) {
 	    dtypeSetDouble();
 	} else {
-	    width(m_num.width(), m_num.sized()?0:m_num.widthMin());
-	    numeric(m_num.isSigned() ? AstNumeric::SIGNED
-		    : AstNumeric::UNSIGNED);
+	    dtypeSetLogicSized(m_num.width(), m_num.sized()?0:m_num.widthMin(),
+			       m_num.isSigned() ? AstNumeric::SIGNED
+			       : AstNumeric::UNSIGNED);
 	}
     }
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { width(m_num.width(), m_num.sized()?0:m_num.widthMin()); }
+	,m_num(V3Number(fl,32,num)) { dtypeSetLogicSized(m_num.width(),
+							 m_num.sized()?0:m_num.widthMin(),
+							 AstNumeric::UNSIGNED); }
     class Unsized32 {};		// for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); width(32,m_num.widthMin()); }
+	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); dtypeSetLogicSized(32,m_num.widthMin(),
+										AstNumeric::UNSIGNED); }
     class RealDouble {};		// for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
 	:AstNodeMath(fl)
@@ -105,9 +108,9 @@ public:
     }
     void rewidth() {
 	if (m_name.length()==0) {
-	    width(1,1);  // 0 width isn't allowed due to historic special cases
+	    dtypeSetLogicSized(1,1,AstNumeric::UNSIGNED);  // 0 width isn't allowed due to historic special cases
 	} else {
-	    width(((int)m_name.length())*8, ((int)m_name.length())*8);
+	    dtypeSetLogicSized(((int)m_name.length())*8, ((int)m_name.length())*8, AstNumeric::UNSIGNED);
 	}
     }
     ASTNODE_NODE_FUNCS(ConstString, CONSTSTRING)
@@ -2862,7 +2865,9 @@ private:
 public:
     AstCCast(FileLine* fl, AstNode* lhsp, int setwidth) : AstNodeUniop(fl, lhsp) {
 	m_size=setwidth;
-	if (setwidth) { width(setwidth,setwidth); }
+	if (setwidth) {
+	    dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED);
+	}
     }
     AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp) : AstNodeUniop(fl, lhsp) {
 	if (typeFromp) { widthSignedFrom(typeFromp); }
@@ -3318,7 +3323,7 @@ struct AstLteS : public AstNodeBiop {
 struct AstShiftL : public AstNodeBiop {
     AstShiftL(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
-	if (setwidth) { width(setwidth,setwidth); }
+	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftL, SHIFTL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs,rhs); }
@@ -3332,7 +3337,7 @@ struct AstShiftL : public AstNodeBiop {
 struct AstShiftR : public AstNodeBiop {
     AstShiftR(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
-	if (setwidth) { width(setwidth,setwidth); }
+	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftR, SHIFTR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs,rhs); }
@@ -4089,7 +4094,7 @@ public:
     AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut=true)
 	: AstNodeMath(fl), m_cleanOut(cleanOut) {
 	addNOp1p(new AstText(fl, textStmt, true));
-	if (setwidth) { width(setwidth,setwidth); }
+	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(CMath, CMATH)
     virtual bool isGateOptimizable() const { return false; }
