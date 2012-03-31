@@ -729,7 +729,7 @@ private:
 		width=32;
 	    }
 	    if (!nodep->isDouble()) {
-		AstBasicDType* newp = new AstBasicDType(nodep->fileline(), AstLogicPacked(), width);
+		AstBasicDType* newp = new AstBasicDType(nodep->fileline(), VFlagLogicPacked(), width);
 		newp->implicit(true);
 		newp->numeric(rs);  // SIGNED or UNSIGNED
 		bdtypep->replaceWith(newp);

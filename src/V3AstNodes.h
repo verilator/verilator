@@ -258,11 +258,11 @@ public:
 	: AstNodeDType(fl) {
 	init(kwd, signst, 0, NULL);
     }
-    AstBasicDType(FileLine* fl, AstLogicPacked, int wantwidth)
+    AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
 	init(AstBasicDTypeKwd::LOGIC, signedst_NOSIGNED, wantwidth, NULL);
     }
-    AstBasicDType(FileLine* fl, AstBitPacked, int wantwidth)
+    AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
 	: AstNodeDType(fl) {
 	init(AstBasicDTypeKwd::BIT, signedst_NOSIGNED, wantwidth, NULL);
     }
@@ -647,20 +647,20 @@ public:
 	    width(dtp->basicp()->width(), 0);
 	} else width(1, 0);
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstLogicPacked, int wantwidth)
+    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	setOp1p(new AstBasicDType(fl, AstLogicPacked(), wantwidth));
+	setOp1p(new AstBasicDType(fl, VFlagLogicPacked(), wantwidth));
 	width(wantwidth,0);
     }
-    AstVar(FileLine* fl, AstVarType type, const string& name, AstBitPacked, int wantwidth)
+    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	setOp1p(new AstBasicDType(fl, AstBitPacked(), wantwidth));
+	setOp1p(new AstBasicDType(fl, VFlagBitPacked(), wantwidth));
 	width(wantwidth,0);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)

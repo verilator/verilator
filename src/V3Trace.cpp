@@ -313,7 +313,7 @@ private:
 	if (!activityNumber) activityNumber++;   // For simplicity, always create it
 	int activityBits = VL_WORDS_I(activityNumber)*VL_WORDSIZE;   // For tighter code; round to next 32 bit point.
 	AstVar* newvarp = new AstVar (m_chgFuncp->fileline(), AstVarType::MODULETEMP,
-				      "__Vm_traceActivity", AstBitPacked(), activityBits);
+				      "__Vm_traceActivity", VFlagBitPacked(), activityBits);
 	m_topModp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_highScopep, newvarp);
 	m_highScopep->addVarp(newvscp);

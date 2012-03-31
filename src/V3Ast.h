@@ -36,8 +36,8 @@
 //   class V3AstNode;
 
 // Hint class so we can choose constructors
-class AstLogicPacked {};
-class AstBitPacked {};
+class VFlagLogicPacked {};
+class VFlagBitPacked {};
 
 //######################################################################
 

@@ -127,7 +127,7 @@ private:
 	else {
 	    string name = ((string)"__Vlvbound"+cvtToStr(m_modp->varNumGetInc()));
 	    AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name,
-				      AstLogicPacked(), prep->width());
+				      VFlagLogicPacked(), prep->width());
 	    m_modp->addStmtp(varp);
 
 	    AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace
@@ -288,7 +288,7 @@ private:
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
 		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,
-				  AstLogicPacked(), nodep->width());
+				  VFlagLogicPacked(), nodep->width());
 		++m_statUnkVars;
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);

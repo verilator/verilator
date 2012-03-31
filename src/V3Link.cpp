@@ -198,7 +198,7 @@ private:
 		}
 	    }
 	    AstVar* newp = new AstVar (forrefp->fileline(), AstVarType::WIRE,
-				       forrefp->name(), AstLogicPacked(), 1);
+				       forrefp->name(), VFlagLogicPacked(), 1);
 
 	    newp->trace(m_modp->modTrace());
 	    m_modp->addStmtp(newp);

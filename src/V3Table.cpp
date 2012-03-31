@@ -182,7 +182,7 @@ private:
 	// Index into our table
 	AstVar* indexVarp = new AstVar (nodep->fileline(), AstVarType::BLOCKTEMP,
 					"__Vtableidx" + cvtToStr(m_modTables),
-					AstBitPacked(), m_inWidth);
+					VFlagBitPacked(), m_inWidth);
 	m_modp->addStmtp(indexVarp);
 	AstVarScope* indexVscp = new AstVarScope (indexVarp->fileline(), m_scopep, indexVarp);
 	m_scopep->addVarp(indexVscp);
@@ -191,7 +191,7 @@ private:
 	FileLine* fl = nodep->fileline();
 	AstNodeDType* dtypep
 	    = new AstArrayDType (fl,
-				 new AstBasicDType(fl, AstBitPacked(), m_outVarps.size()),
+				 new AstBasicDType(fl, VFlagBitPacked(), m_outVarps.size()),
 				 new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	AstVar* chgVarp
 	    = new AstVar (fl, AstVarType::MODULETEMP,
@@ -238,7 +238,7 @@ private:
 	    AstNodeDType* dtypep
 		= new AstArrayDType (fl,
 				     // FUTURE: If support more types, below can use outvarp->dtype()
-				     new AstBasicDType(fl, AstLogicPacked(), outvarp->width()),
+				     new AstBasicDType(fl, VFlagLogicPacked(), outvarp->width()),
 				     new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	    AstVar* tablevarp
 		= new AstVar (fl, AstVarType::MODULETEMP,

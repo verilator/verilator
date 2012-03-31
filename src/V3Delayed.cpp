@@ -134,7 +134,7 @@ private:
 		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
 		varp->widthSignedFrom(oldvarscp);
 	    } else { // Used for vset and dimensions, so can zero init
-		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, AstBitPacked(), width);
+		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, VFlagBitPacked(), width);
 	    }
 	    addmodp->addStmtp(varp);
 	    m_modVarMap.insert(make_pair(make_pair(addmodp, name), varp));
