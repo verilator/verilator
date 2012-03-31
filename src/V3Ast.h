@@ -938,11 +938,11 @@ public:
     bool	isAllOnesV();  // Verilog width rules apply
 
     // METHODS - data type changes especially for initial creation
-    void	dtypeChgLogicBool()	{ numeric(AstNumeric::UNSIGNED); width(1,1); }
-    void	dtypeChgDouble()	{ numeric(AstNumeric::DOUBLE); }
-    void	dtypeChgSigned32()	{ numeric(AstNumeric::SIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
-    void	dtypeChgUInt32()	{ numeric(AstNumeric::UNSIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
-    void	dtypeChgUInt64()	{ numeric(AstNumeric::UNSIGNED); width(VL_QUADSIZE,VL_QUADSIZE); }
+    void	dtypeSetLogicBool()	{ numeric(AstNumeric::UNSIGNED); width(1,1); }
+    void	dtypeSetDouble()	{ numeric(AstNumeric::DOUBLE); }
+    void	dtypeSetSigned32()	{ numeric(AstNumeric::SIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
+    void	dtypeSetUInt32()	{ numeric(AstNumeric::UNSIGNED); width(VL_WORDSIZE,VL_WORDSIZE); }
+    void	dtypeSetUInt64()	{ numeric(AstNumeric::UNSIGNED); width(VL_QUADSIZE,VL_QUADSIZE); }
 
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
