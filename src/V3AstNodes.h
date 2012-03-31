@@ -162,7 +162,7 @@ struct AstTypedef : public AstNode {
 private:
     string	m_name;
 public:
-    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtp)
+    AstTypedef(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
 	: AstNode(fl), m_name(name) {
 	setOp1p(dtp);
 	widthSignedFrom(dtp);
@@ -196,7 +196,8 @@ private:
     string	m_name;
     void*	m_containerp;	// In what scope is the name unique, so we can know what are duplicate definitions (arbitrary value)
 public:
-    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp, AstNodeDType* dtp)
+    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp,
+			VFlagChildDType, AstNodeDType* dtp)
 	: AstNodeDType(fl), m_name(name), m_containerp(containerp) {
 	setOp1p(dtp);
 	widthSignedFrom(dtp);
@@ -220,6 +221,12 @@ struct AstArrayDType : public AstNodeDType {
 private:
     bool		m_packed;
 public:
+    AstArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
+	: AstNodeDType(fl), m_packed(isPacked) {
+	setOp1p(dtp);
+	setOp2p(rangep);
+	widthSignedFrom(dtp);
+    }
     AstArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
 	: AstNodeDType(fl), m_packed(isPacked) {
 	setOp1p(dtp);
@@ -337,7 +344,8 @@ struct AstConstDType : public AstNodeDType {
     // const data type, ie "const some_dtype var_name [2:0]"
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
-    AstConstDType(FileLine* fl, AstNodeDType* dtp)
+public:
+    AstConstDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
 	: AstNodeDType(fl) {
 	setOp1p(dtp);
 	widthSignedFrom(dtp);
@@ -441,7 +449,8 @@ public:
 struct AstEnumDType : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // Children: ENUMVALUEs
-    AstEnumDType(FileLine* fl, AstNodeDType* dtp, AstNode* itemsp)
+public:
+    AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* itemsp)
 	: AstNodeDType(fl)
 	{ setOp1p(dtp); addNOp2p(itemsp); }
     ASTNODE_NODE_FUNCS(EnumDType, ENUMDTYPE)
@@ -637,6 +646,16 @@ private:
 	m_trace=false;
     }
 public:
+    AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
+	:AstNode(fl)
+	, m_name(name) {
+	init();
+	combineType(type); setOp1p(dtp);
+	if (dtp && dtp->basicp()) {
+	    numericFrom(dtp);
+	    width(dtp->basicp()->width(), 0);
+	} else width(1, 0);
+    }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
 	:AstNode(fl)
 	, m_name(name) {

@@ -374,7 +374,7 @@ private:
 		nodep->deleteTree(); nodep=NULL;
 		return;
 	    } else {
-		defp = new AstTypedef(nodep->fileline(), nodep->name(), dtypep);
+		defp = new AstTypedef(nodep->fileline(), nodep->name(), VFlagChildDType(), dtypep);
 		m_implTypedef.insert(make_pair(make_pair(nodep->containerp(), defp->name()), defp));
 		backp->addNextHere(defp);
 	    }

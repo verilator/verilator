@@ -38,6 +38,7 @@
 // Hint class so we can choose constructors
 class VFlagLogicPacked {};
 class VFlagBitPacked {};
+class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
 //######################################################################
 

@@ -1165,7 +1165,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
 	//UNSUP		{ UNSUP }
 	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
-										       GRAMMARP->m_modp,$1); }
+										       GRAMMARP->m_modp,VFlagChildDType(),$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }
@@ -1249,7 +1249,7 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 
 // IEEE: part of data_type
 enumDecl<dtypep>:
-		yENUM enum_base_typeE '{' enum_nameList '}' { $$ = new AstEnumDType($1,$2,$4); }
+		yENUM enum_base_typeE '{' enum_nameList '}' { $$ = new AstEnumDType($1,VFlagChildDType(),$2,$4); }
 	;
 
 enum_base_typeE<dtypep>:	// IEEE: enum_base_type
@@ -1316,14 +1316,14 @@ data_declarationVarFront:	// IEEE: part of data_declaration
 	|	/**/ 	    yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,false)); }
 	//
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-	|	yCONST__ETC yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, $4)); }
-	|	yCONST__ETC yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
- 	|	yCONST__ETC yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,false))); }
+	|	yCONST__ETC yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $4)); }
+	|	yCONST__ETC yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
+	|	yCONST__ETC yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,false))); }
 	//
 	//			// Expanded: "constE lifetimeE data_type"
 	|	/**/		      data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($1); }
 	|	/**/	    lifetime  data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($2); }
-	|	yCONST__ETC lifetimeE data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, $3)); }
+	|	yCONST__ETC lifetimeE data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $3)); }
 	//			// = class_new is in variable_decl_assignment
 	;
 
@@ -1336,7 +1336,8 @@ implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 
 type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Use idAny, as we can redeclare a typedef on an existing typedef
-		yTYPEDEF data_type idAny variable_dimensionListE ';'	{ $$ = new AstTypedef($<fl>1, *$3, GRAMMARP->createArray($2,$4,false)); SYMP->reinsert($$); }
+		yTYPEDEF data_type idAny variable_dimensionListE ';'	{ $$ = new AstTypedef($<fl>1, *$3, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
+									  SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; $1->v3error("Unsupported: SystemVerilog 2005 typedef in this context"); } //UNSUP
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
@@ -3218,7 +3219,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstRange* rangep,
 	while (rangep) {
 	    AstRange* prevp = rangep->backp()->castRange();
 	    if (prevp) rangep->unlinkFrBack();
-	    arrayp = new AstArrayDType(rangep->fileline(), arrayp, rangep, isPacked);
+	    arrayp = new AstArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep, isPacked);
 	    rangep = prevp;
 	}
     }
@@ -3252,7 +3253,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
     AstNodeDType* arrayDTypep = createArray(dtypep,arrayp,false);
 
-    AstVar* nodep = new AstVar(fileline, type, name, arrayDTypep);
+    AstVar* nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
     nodep->addAttrsp(attrsp);
     if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varIO);
