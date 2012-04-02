@@ -77,8 +77,7 @@ private:
 	AstNRelinker relinkHandle;
 	nodep->unlinkFrBack(&relinkHandle);
 	//
-	AstCCast* castp = new AstCCast (nodep->fileline(), nodep, needsize);
-	castp->width(needsize, nodep->widthMin());
+	AstCCast* castp = new AstCCast (nodep->fileline(), nodep, needsize, nodep->widthMin());
 	relinkHandle.relink(castp);
 	//if (debug()>8) castp->dumpTree(cout,"-castins: ");
 	//

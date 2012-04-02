@@ -2882,10 +2882,11 @@ struct AstCCast : public AstNodeUniop {
 private:
     int		m_size;
 public:
-    AstCCast(FileLine* fl, AstNode* lhsp, int setwidth) : AstNodeUniop(fl, lhsp) {
+    AstCCast(FileLine* fl, AstNode* lhsp, int setwidth, int minwidth=-1) : AstNodeUniop(fl, lhsp) {
 	m_size=setwidth;
 	if (setwidth) {
-	    dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED);
+	    if (minwidth==-1) minwidth=setwidth;
+	    dtypeSetLogicSized(setwidth,minwidth,AstNumeric::UNSIGNED);
 	}
     }
     AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp) : AstNodeUniop(fl, lhsp) {
