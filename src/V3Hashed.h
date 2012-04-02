@@ -46,12 +46,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    V3Hashed();
+    V3Hashed() { clear(); }
     ~V3Hashed() {}
+
     // ACCESSORS
     HashMmap& mmap() { return m_hashMmap; }	// Return map for iteration
-    HashMmap::iterator begin() { return m_hashMmap.begin(); }
-    HashMmap::iterator end() { return m_hashMmap.end(); }
+    iterator begin() { return m_hashMmap.begin(); }
+    iterator end() { return m_hashMmap.end(); }
 
     // METHODS
     static int debug() {
@@ -59,7 +60,7 @@ public:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
-    void clear() { m_hashMmap.clear(); }
+    void clear() { m_hashMmap.clear(); AstNode::user4ClearTree(); }
     void hashAndInsert(AstNode* nodep);	// Hash the node, and insert into map
     bool sameNodes(AstNode* node1p, AstNode* node2p);	// After hashing, and tell if identical
     void erase(iterator it);		// Remove node from structures
@@ -67,6 +68,7 @@ public:
     AstNode* iteratorNodep(iterator it) { return it->second; }
     void dumpFile(const string& filename, bool tree);
     void dumpFilePrefixed(const string& nameComment, bool tree=false);
+    static V3Hash nodeHash(AstNode* nodep) { return V3Hash(nodep->user4p()); }
 };
 
 #endif // Guard

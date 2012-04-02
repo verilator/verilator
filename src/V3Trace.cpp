@@ -208,7 +208,7 @@ private:
 		if (nodep->valuep()) {
 		    if (nodep->valuep()->backp() != nodep) nodep->v3fatalSrc("Trace duplicate back needs consistency, so we can map duplicates back to TRACEINCs");
 		    hashed.hashAndInsert(nodep->valuep());
-		    UINFO(8, "  Hashed "<<hex<<nodep->valuep()->user4()<<" "<<nodep<<endl);
+		    UINFO(8, "  Hashed "<<hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
 		}
 	    }
 	}
@@ -233,7 +233,7 @@ private:
 		}
 	    }
 	}
-	AstNode::user4ClearTree();
+	hashed.clear();
     }
 
     void graphSimplify() {

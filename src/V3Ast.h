@@ -693,11 +693,14 @@ public:
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1,0); }
     V3Hash(uint32_t val) { setBoth(1,val); }
-    V3Hash(void* vp) { setBoth(1,cvtToHash(vp)); }
+    V3Hash(const void* vp) { setBoth(1,cvtToHash(vp)); }
     V3Hash(const string& name);
-    V3Hash(V3Hash lh, V3Hash rh) {
-	setBoth(1,lh.hshval()*31+rh.hshval());
-    }
+    V3Hash(V3Hash h1, V3Hash h2) {
+	setBoth(1,h1.hshval()*31+h2.hshval()); }
+    V3Hash(V3Hash h1, V3Hash h2, V3Hash h3) {
+	setBoth(1,(h1.hshval()*31+h2.hshval())*31+h3.hshval()); }
+    V3Hash(V3Hash h1, V3Hash h2, V3Hash h3, V3Hash h4) {
+	setBoth(1,((h1.hshval()*31+h2.hshval())*31+h3.hshval())*31+h4.hshval()); }
 };
 ostream& operator<<(ostream& os, V3Hash rhs);
 

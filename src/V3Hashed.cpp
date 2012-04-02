@@ -61,7 +61,7 @@ private:
     }
 
     // METHODS
-    void hashNodeIterate(AstNode* nodep) {
+    void nodeHashIterate(AstNode* nodep) {
 	if (!nodep->user4()) {
 	    if (nodep->backp()->castCFunc()
 		&& !(nodep->castNodeStmt() || nodep->castCFunc())) {
@@ -83,21 +83,21 @@ private:
 	    m_lowerHash = oldHash;
 	}
 	// Update what will become the above node's hash
-	m_lowerHash += V3Hash(nodep->user4p());
+	m_lowerHash += V3Hashed::nodeHash(nodep);
     }
 
     //--------------------
     // Default: Just iterate
     virtual void visit(AstVar*, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
-	hashNodeIterate(nodep);
+	nodeHashIterate(nodep);
     }
 
 public:
     // CONSTUCTORS
     HashedVisitor(AstNode* nodep) {
-	hashNodeIterate(nodep);
-	//UINFO(9,"  stmthash "<<hex<<nodep->user4()<<"  "<<nodep<<endl);
+	nodeHashIterate(nodep);
+	//UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
     virtual ~HashedVisitor() {}
 };
@@ -105,16 +105,12 @@ public:
 //######################################################################
 // Hashed class functions
 
-V3Hashed::V3Hashed() {
-    AstNode::user4ClearTree();	// user4p() used on entire tree
-}
-
 void V3Hashed::hashAndInsert(AstNode* nodep) {
     UINFO(8,"   hashI "<<nodep<<endl);
     if (!nodep->user4p()) {
 	HashedVisitor visitor (nodep);
     }
-    m_hashMmap.insert(make_pair(V3Hash(nodep->user4p()), nodep));
+    m_hashMmap.insert(make_pair(nodeHash(nodep), nodep));
 }
 
 bool V3Hashed::sameNodes(AstNode* node1p, AstNode* node2p) {
@@ -183,7 +179,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
     UINFO(8,"   findD "<<nodep<<endl);
     if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
-    pair <HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(V3Hash(nodep->user4p()));
+    pair <HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
 	AstNode* node2p = eqit->second;
 	if (nodep != node2p && sameNodes(nodep, node2p)) {
