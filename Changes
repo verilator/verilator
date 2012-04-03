@@ -14,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix genvar and begin under generate, bug461.  [Alex Solomatnikov]
 
+****  Fix real constant parameter functions, bug475.  [Alex Solomatnikov]
+
 ****  Fix and document --gdb option, bug454. [Jeremy Bennett]
 
 ****  Fix OpenSolaris compile error. [Sanjay Singh]
