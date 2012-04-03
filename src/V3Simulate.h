@@ -144,6 +144,7 @@ private:
 	    nump = new V3Number (nodep->fileline(), nodep->width(), value);
 	    m_numAllps.push_back(nump);
 	}
+	nump->isDouble(nodep->isDouble());
 	return nump;
     }
 public:

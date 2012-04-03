@@ -339,7 +339,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     if (isDouble()) {
 	out.precision(17);
-	out<<toDouble();
+	if (width()!=64) out<<"%E-bad-width-double";
+	else out<<toDouble();
 	return out.str();
     }
     if (prefixed) {

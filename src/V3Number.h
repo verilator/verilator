@@ -156,6 +156,7 @@ public:
     bool isFromString() const { return m_fromString; }
     bool isSigned() const { return m_signed; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     bool isDouble() const { return m_double; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
+    void isDouble(bool flag)  { m_double=flag; } // Only if have 64 bit value loaded, and want to indicate it's real
     bool isNegative() const { return bitIs1(width()-1); }
     bool isFourState() const { for (int i=0;i<words();i++) {if (m_valueX[i]) return true;} return false; }
     bool hasZ() const { for(int i=0;i<words();i++) {if((~m_value[i]) & m_valueX[i]) return true;} return false;}
