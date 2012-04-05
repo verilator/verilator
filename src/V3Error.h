@@ -81,6 +81,7 @@ public:
 	MULTIDRIVEN,	// Driven from multiple blocks
 	REALCVT,	// Real conversion
 	REDEFMACRO,	// Redefining existing define macro
+	SELRANGE,	// Selection index out of range
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
 	SYNCASYNCNET,	// Mixed sync + async reset
@@ -120,7 +121,7 @@ public:
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
 	    "REALCVT", "REDEFMACRO",
-	    "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"

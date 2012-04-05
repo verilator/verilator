@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix processing unused parametrized modules, bug469, bug470.  [Alex Solomatnikov]
 
+****  Add SELRANGE as warning instead of error, bug477. [Alex Solomatnikov]
+
 ****  Fix signed array warning, bug456. [Alex Solomatnikov]
 
 ****  Fix genvar and begin under generate, bug461.  [Alex Solomatnikov]

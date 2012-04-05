@@ -385,7 +385,7 @@ private:
 		else if ((nodep->msbConst() > bdtypep->msbMaxSelect())
 			 || (nodep->lsbConst() > bdtypep->msbMaxSelect())) {
 		    // See also warning in V3Width
-		    nodep->v3error("Selection index out of range: "
+		    nodep->v3warn(SELRANGE, "Selection index out of range: "
 				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
 				   <<" outside "<<bdtypep->msbMaxSelect()<<":0"
 				   <<(bdtypep->lsb()>=0 ? ""

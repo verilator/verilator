@@ -2771,6 +2771,23 @@ is not possible, add a undef to indicate the code is overriding the value:
     `undef MACRO
     `define MACRO otherdef
 
+=item SELRANGE
+
+Warns that a selection index will go out of bounds:
+
+    wire vec[6:0];
+    initial out = vec[7];  // There is no 7
+
+Verilator will assume zero for this value, instead of X.  Note that in some
+cases this warning may be false, when a condition upstream or downstream of
+the access means the access out of bounds will never execute or be used.
+
+    wire vec[6:0];
+    initial begin
+        seven = 7;
+        ...
+        if (seven != 7) out = vec[seven];  // Never will use vec[7]
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for
