@@ -27,7 +27,7 @@
 #include "verilated_imp.h"
 #include <cctype>
 
-#define VL_VALUE_STRING_MAX_WIDTH 1024	///< Max static char array for VL_VALUE_STRING
+#define VL_VALUE_STRING_MAX_WIDTH 8192	///< Max static char array for VL_VALUE_STRING
 
 //===========================================================================
 // Global variables

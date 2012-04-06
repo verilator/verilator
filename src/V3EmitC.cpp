@@ -33,7 +33,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 
-#define VL_VALUE_STRING_MAX_WIDTH 1024	// We use a static char array in VL_VALUE_STRING
+#define VL_VALUE_STRING_MAX_WIDTH 8192	// We use a static char array in VL_VALUE_STRING
 
 //######################################################################
 // Emit statements and math operators
@@ -1195,7 +1195,7 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 	return;
     }
     if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-	dispp->v3error("Exceeded limit of 1024 bits for any display arguments");
+	dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any display arguments");
     }
     if (argp && argp->isWide()
 	&& (fmtLetter=='d'||fmtLetter=='u')) {
