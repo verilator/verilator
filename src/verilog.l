@@ -112,11 +112,13 @@ void yyerror(const char* errmsg) {
 }
 
 void yyerrorf(const char* format, ...) {
-    char msg[1024];
+    const int maxlen = 2000;
+    char msg[maxlen];
 
     va_list ap;
     va_start(ap,format);
-    vsprintf(msg,format,ap);
+    vsnprintf(msg,maxlen,format,ap);
+    msg[maxlen-1] = '\0';
     va_end(ap);
 
     yyerror(msg);
