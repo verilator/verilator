@@ -661,10 +661,10 @@ class EmitCImp : EmitCStmts {
 	    changep->lhsp()->iterateAndNext(*this);
 	}
 	else {
-	    AstVarRef* lhsp = changep->lhsp()->castVarRef();
-	    AstVarRef* rhsp = changep->rhsp()->castVarRef();
-	    if (!lhsp) changep->v3fatalSrc("Not ref?");
-	    if (!rhsp) changep->v3fatalSrc("Not ref?");
+	    AstNode* lhsp = changep->lhsp();
+	    AstNode* rhsp = changep->rhsp();
+	    if (!lhsp->castVarRef() && !lhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
+	    if (!rhsp->castVarRef() && !rhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
 	    for (int word=0; word<changep->lhsp()->widthWords(); word++) {
 		if (!gotOne) {
 		    gotOne = true;

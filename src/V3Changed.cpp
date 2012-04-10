@@ -59,11 +59,26 @@ private:
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
     AstCFunc*		m_chgFuncp;	// Change function we're building
 
+    // CONSTANTS
+    enum MiscConsts {
+	DETECTARRAY_MAX_INDEXES = 256	// How many indexes before error
+	// Ok to increase this, but may result in much slower model
+    };
+
     // METHODS
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
+    }
+
+    AstNode* aselIfNeeded(bool isArray, int index, AstNode* childp) {
+	if (isArray) {
+	    return new AstArraySel(childp->fileline(), childp,
+				   new AstConst(childp->fileline(), index));
+	} else {
+	    return childp;
+	}
     }
 
     void genChangeDet(AstVarScope* vscp) {
@@ -72,8 +87,18 @@ private:
 #endif
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
-	if (!varp->dtypeSkipRefp()->castBasicDType()) {
-	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on arrayed variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
+	AstArrayDType* arrayp = varp->dtypeSkipRefp()->castArrayDType();
+	bool isArray = arrayp;
+	int msb = isArray ? arrayp->msb() : 0;
+	int lsb = isArray ? arrayp->lsb() : 0;
+	if (isArray && ((msb - lsb + 1) > DETECTARRAY_MAX_INDEXES)) {
+	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
+			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
+	    vscp->v3warn(E_DETECTARRAY, "... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(msb-lsb+1));
+	} else if (!isArray
+		   && !varp->dtypeSkipRefp()->castBasicDType()) {
+	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
+	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
 	} else {
 	    string newvarname = "__Vchglast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName();
 	    // Create:  VARREF(_last)
@@ -84,17 +109,23 @@ private:
 	    m_topModp->addStmtp(newvarp);
 	    AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
 	    m_scopetopp->addVarp(newvscp);
-	    AstChangeDet* changep
-		= new AstChangeDet (vscp->fileline(),
-				    new AstVarRef(vscp->fileline(), vscp, false),
-				    new AstVarRef(vscp->fileline(), newvscp, false),
-				    false);
-	    m_chgFuncp->addStmtsp(changep);
-	    AstAssign* initp
-		= new AstAssign (vscp->fileline(),
-				 new AstVarRef(vscp->fileline(), newvscp, true),
-				 new AstVarRef(vscp->fileline(), vscp, false));
-	    m_chgFuncp->addFinalsp(initp);
+	    for (int index=lsb; index<=msb; ++index) {
+		AstChangeDet* changep
+		    = new AstChangeDet (vscp->fileline(),
+					aselIfNeeded(isArray, index,
+						     new AstVarRef(vscp->fileline(), vscp, false)),
+					aselIfNeeded(isArray, index,
+						     new AstVarRef(vscp->fileline(), newvscp, false)),
+					false);
+		m_chgFuncp->addStmtsp(changep);
+		AstAssign* initp
+		    = new AstAssign (vscp->fileline(),
+				     aselIfNeeded(isArray, index,
+						  new AstVarRef(vscp->fileline(), newvscp, true)),
+				     aselIfNeeded(isArray, index,
+						  new AstVarRef(vscp->fileline(), vscp, false)));
+		m_chgFuncp->addFinalsp(initp);
+	    }
 	}
     }
 
