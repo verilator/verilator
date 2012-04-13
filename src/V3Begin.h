@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Removal of named begin blocks
 //

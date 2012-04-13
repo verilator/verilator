@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: AssignPost Variable assignment elimination
 //

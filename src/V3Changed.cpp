@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for changed nodes
 //

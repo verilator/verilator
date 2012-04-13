@@ -1,3 +1,5 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+
 #ifdef T_VAR_PINS_CC
 # include "Vt_var_pins_cc.h"
 #elif defined(T_VAR_PINS_SC1)

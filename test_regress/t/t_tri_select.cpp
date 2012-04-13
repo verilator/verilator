@@ -1,3 +1,5 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+
 #include "Vt_tri_select.h"
 
 Vt_tri_select *tb = NULL;

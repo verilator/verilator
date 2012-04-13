@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Find broken links in tree
 //

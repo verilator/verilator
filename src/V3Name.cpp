@@ -1,3 +1,4 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Change names for __PVT__'s
 //

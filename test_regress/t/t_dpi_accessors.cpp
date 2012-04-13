@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
 // Copyright 2012 by Wilson Snyder. This program is free software; you can

@@ -1,3 +1,5 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks
 

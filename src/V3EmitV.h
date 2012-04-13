@@ -1,4 +1,4 @@
-//-*- C++ -*-
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Verilator: Emit Verilog code for module tree
 //

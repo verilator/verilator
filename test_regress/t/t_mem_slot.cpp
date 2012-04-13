@@ -1,3 +1,5 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+
 #include <cstdlib>
 #include <verilated.h>
 #include "Vt_mem_slot.h"

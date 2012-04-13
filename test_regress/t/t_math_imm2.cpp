@@ -1,3 +1,5 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+
 #include <verilated.h>
 #include "Vt_math_imm2.h"
 

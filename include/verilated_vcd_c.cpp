@@ -1,4 +1,4 @@
-// -*- SystemC -*-
+// -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
 // THIS MODULE IS PUBLICLY LICENSED
