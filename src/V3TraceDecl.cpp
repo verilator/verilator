@@ -80,7 +80,8 @@ private:
 	if ((int)nodep->dtypep()->arrayElements() > v3Global.opt.traceMaxArray()) return "Wide memory > --trace-max-array ents";
 	if (!(nodep->dtypeSkipRefp()->castBasicDType()
 	      || (nodep->dtypeSkipRefp()->castArrayDType()
-		  && nodep->dtypeSkipRefp()->castArrayDType()->dtypeSkipRefp()->castBasicDType()))) {
+		  && (nodep->dtypeSkipRefp()->castArrayDType()->subDTypep()
+		      ->skipRefp()->castBasicDType())))) {
 	    return "Unsupported: Multi-dimensional array";
 	}
 	return NULL;

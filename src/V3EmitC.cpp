@@ -889,7 +889,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    puts(nodep->name());
 	    if (isArray) {
 		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
-		     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 		}
 	    }
@@ -910,7 +910,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		if (nodep->isWide()) puts("W");
 		puts("("+nodep->name());
 		for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
-		     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 		}
 		puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
@@ -932,7 +932,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	puts(nodep->vlArgType(true,false));
 	// This isn't very robust and may need cleanup for other data types
 	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
-	     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+	     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
 	puts(";\n");
@@ -958,7 +958,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	puts(nodep->name());
 	// This isn't very robust and may need cleanup for other data types
 	for (AstArrayDType* arrayp=nodep->dtypeSkipRefp()->castArrayDType(); arrayp;
-	     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+	     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
 	puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
@@ -1341,7 +1341,7 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		int vects = 0;
 		// This isn't very robust and may need cleanup for other data types
 		for (AstArrayDType* arrayp=varp->dtypeSkipRefp()->castArrayDType(); arrayp;
-		     arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+		     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 		    int vecnum = vects++;
 		    if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 		    string ivar = string("__Vi")+cvtToStr(vecnum);
@@ -1517,7 +1517,7 @@ void EmitCImp::emitSensitives() {
 		    int vects = 0;
 		    // This isn't very robust and may need cleanup for other data types
 		    for (AstArrayDType* arrayp=varp->dtypeSkipRefp()->castArrayDType(); arrayp;
-			 arrayp = arrayp->dtypeSkipRefp()->castArrayDType()) {
+			 arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
 			int vecnum = vects++;
 			if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 			string ivar = string("__Vi")+cvtToStr(vecnum);

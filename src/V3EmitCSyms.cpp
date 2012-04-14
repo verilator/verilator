@@ -465,7 +465,7 @@ void EmitCSyms::emitSymImp() {
 			bounds += " ,"; bounds += cvtToStr(adtypep->arrayp()->msbConst());
 			bounds += ","; bounds += cvtToStr(adtypep->arrayp()->lsbConst());
 			dim++;
-			dtypep = adtypep->dtypep();
+			dtypep = adtypep->subDTypep();
 		    }
 		    else break; // AstBasicDType - nothing below, 1
 		}

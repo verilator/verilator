@@ -170,6 +170,7 @@ public:
     ASTNODE_NODE_FUNCS(Typedef, TYPEDEF)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep(); }
     // METHODS
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
@@ -239,6 +240,7 @@ public:
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep(); }
     AstRange*	arrayp() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
     void	arrayp(AstRange* nodep) { setOp2p(nodep); }
     // METHODS
@@ -354,6 +356,7 @@ public:
     ASTNODE_NODE_FUNCS(ConstDType, CONSTDTYPE)
     AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep(); }
     // METHODS
     virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
@@ -363,25 +366,25 @@ public:
 
 struct AstRefDType : public AstNodeDType {
 private:
-    AstNodeDType* m_defp;	// data type pointed to, BELOW the AstTypedef
+    AstNodeDType* m_subDTypep;	// data type pointed to, BELOW the AstTypedef
     string	m_name;		// Name of an AstTypedef
     AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
-	: AstNodeDType(fl), m_defp(NULL), m_name(name), m_packagep(NULL) {}
+	: AstNodeDType(fl), m_subDTypep(NULL), m_name(name), m_packagep(NULL) {}
     AstRefDType(FileLine* fl, AstNodeDType* defp)
-	: AstNodeDType(fl), m_defp(defp), m_packagep(NULL) {
+	: AstNodeDType(fl), m_subDTypep(defp), m_packagep(NULL) {
 	widthSignedFrom(defp);
     }
     ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
     // METHODS
-    virtual bool broken() const { return m_defp && !m_defp->brokeExists(); }
-    virtual void cloneRelink() { if (m_defp && m_defp->clonep()) {
-	m_defp = m_defp->clonep()->castNodeDType();
+    virtual bool broken() const { return m_subDTypep && !m_subDTypep->brokeExists(); }
+    virtual void cloneRelink() { if (m_subDTypep && m_subDTypep->clonep()) {
+	m_subDTypep = m_subDTypep->clonep()->castNodeDType();
     }}
-    virtual V3Hash sameHash() const { return V3Hash(skipRefp()); }
     virtual bool same(AstNode* samep) const {
 	return skipRefp()->sameTree(samep->castRefDType()->skipRefp()); }
+    virtual V3Hash sameHash() const { return V3Hash(skipRefp()); }
     virtual void dump(ostream& str=cout);
     virtual string name() const { return m_name; }
     virtual AstBasicDType* basicp() const { return defp() ? defp()->basicp() : NULL; }
@@ -398,8 +401,9 @@ public:
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
     AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }	// op1 = Range of variable
-    AstNodeDType* defp() const { return m_defp; }
-    void defp(AstNodeDType* nodep) { m_defp=nodep; }
+    AstNodeDType* defp() const { return m_subDTypep; }
+    AstNodeDType* subDTypep() const { return m_subDTypep; }
+    void subDTypep(AstNodeDType* nodep) { m_subDTypep=nodep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
@@ -460,6 +464,7 @@ public:
     void dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstEnumItem* itemsp() const { return op2p()->castEnumItem(); } // op2 = AstEnumItem's
     void addValuesp(AstNode* nodep) { addOp2p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep(); }
     // METHODS
     virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return dtypep()->skipRefp(); }

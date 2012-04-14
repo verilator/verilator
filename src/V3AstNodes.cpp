@@ -265,7 +265,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
 	    if ((dim++)==dimension) {
 		return dtypep;
 	    }
-	    dtypep = adtypep->dtypep();
+	    dtypep = adtypep->subDTypep();
 	    continue;
 	}
 	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
@@ -289,7 +289,7 @@ uint32_t AstNodeDType::arrayElements() {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    entries *= adtypep->elementsConst();
-	    dtypep = adtypep->dtypep();
+	    dtypep = adtypep->subDTypep();
 	}
 	else {
 	    // AstBasicDType - nothing below, 1
@@ -308,7 +308,7 @@ pair<uint32_t,uint32_t> AstNodeDType::dimensions() {
 	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
 	    if (adtypep->isPacked()) packed += 1;
 	    else unpacked += 1;
-	    dtypep = adtypep->dtypep();
+	    dtypep = adtypep->subDTypep();
 	}
 	else {
 	    // AstBasicDType - nothing below, 1

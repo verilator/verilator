@@ -552,7 +552,7 @@ private:
 		defp = m_curVarsp->findIdUpward(nodep->name())->castTypedef();
 	    }
 	    if (!defp) { nodep->v3error("Can't find typedef: "<<nodep->prettyName()); }
-	    nodep->defp(defp->dtypep());
+	    nodep->subDTypep(defp->subDTypep());
 	    nodep->packagep(packageFor(defp));
 	}
 	nodep->iterateChildren(*this);

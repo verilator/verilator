@@ -217,7 +217,7 @@ private:
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
 				  new AstArraySel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code),
 				  new AstArraySel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code));
-		toggleVarRecurse(adtypep->dtypeSkipRefp(), depth+1,
+		toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth+1,
 				 newent,
 				 varp, chgVarp);
 		newent.cleanup();
