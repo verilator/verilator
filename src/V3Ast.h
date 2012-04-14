@@ -1002,6 +1002,7 @@ public:
     virtual int  instrCount() const { return 0; }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash::Illegal()); }  // Not a node that supports it
     virtual bool same(AstNode* otherp) const { return true; }
+    virtual bool hasDType() const { return false; }	// Iff has a data type; dtype() must be non null
     virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
     virtual bool broken() const { return false; }
 
@@ -1038,6 +1039,7 @@ struct AstNodeMath : public AstNode {
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
+    virtual bool hasDType() const { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
@@ -1204,6 +1206,7 @@ struct AstNodeAssign : public AstNodeStmt {
     AstNode* lhsp()		const { return op2p()->castNode(); }	// op2 = Assign to
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
+    virtual bool hasDType() const { return true; }
     virtual bool cleanRhs() { return true; }
     virtual int  instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1300,6 +1303,7 @@ public:
 	init();
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
+    virtual bool hasDType() const { return true; }
     virtual bool broken() const;
     virtual int instrCount() const { return widthInstrs(); }
     virtual void cloneRelink();
@@ -1346,6 +1350,7 @@ struct AstNodeDType : public AstNode {
     ASTNODE_BASE_FUNCS(NodeDType)
     // Accessors
     virtual void dump(ostream& str);
+    virtual bool hasDType() const { return true; }
     virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs to next non-typeref type
     virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -1366,6 +1371,7 @@ struct AstNodeSel : public AstNodeBiop {
     AstNode* bitp() const { return op2p()->castNode(); }	// op2 = Msb selection expression
     void bitp(AstNode* nodep) { setOp2p(nodep); }
     int	     bitConst()	const;
+    virtual bool hasDType() const { return true; }
 };
 
 //######################################################################

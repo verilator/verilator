@@ -173,6 +173,7 @@ public:
     // METHODS
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
+    virtual bool hasDType() const { return true; }
     void name(const string& flag) { m_name = flag; }
 };
 
@@ -414,6 +415,7 @@ public:
     ASTNODE_NODE_FUNCS(EnumItem, ENUMITEM)
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
+    virtual bool hasDType() const { return true; }
     void name(const string& flag) { m_name = flag; }
     AstRange* rangep() const { return op1p()->castRange(); } // op1 = Range for name appending
     void rangep(AstNode* nodep) { addOp1p(nodep); }
@@ -696,6 +698,7 @@ public:
     ASTNODE_NODE_FUNCS(Var, VAR)
     virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Var name
+    virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
     virtual bool broken() const { return !dtypep(); }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
@@ -925,6 +928,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     virtual string name() const {return scopep()->name()+"->"+varp()->name();}	// * = Var name
     virtual void dump(ostream& str);
+    virtual bool hasDType() const { return true; }
     AstVar*	varp() const { return m_varp; }			// [After Link] Pointer to variable
     AstScope*	scopep() const { return m_scopep; }		// Pointer to scope it's under
     AstNode*	valuep()	const { return op1p(); }	// op1 = Calculation of value of variable, NULL=complicated
@@ -1244,6 +1248,7 @@ struct AstFunc : public AstNodeFTask {
 	addNOp1p(fvarsp);
     }
     ASTNODE_NODE_FUNCS(Func, FUNC)
+    virtual bool hasDType() const { return true; }
 };
 
 struct AstTaskRef : public AstNodeFTaskRef {
@@ -1262,6 +1267,7 @@ struct AstFuncRef : public AstNodeFTaskRef {
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef, FUNCREF)
+    virtual bool hasDType() const { return true; }
 };
 
 struct AstDpiExport : public AstNode {
@@ -2388,6 +2394,7 @@ public:
     ASTNODE_NODE_FUNCS(TraceDecl, TRACEDECL)
     virtual string name()	const { return m_showname; }
     virtual bool maybePointedTo() const { return true; }
+    virtual bool hasDType() const { return true; }
     virtual bool same(AstNode* samep) const { return false; }
     string showname()	const { return m_showname; }		// * = Var name
     // Details on what we're tracing
@@ -2419,6 +2426,7 @@ public:
     virtual void cloneRelink() { if (m_declp->clonep()) m_declp = m_declp->clonep()->castTraceDecl(); }
     virtual void dump(ostream& str);
     virtual int instrCount()	const { return 10+2*instrCountLd(); }
+    virtual bool hasDType() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(declp()); }
     virtual bool same(AstNode* samep) const {
 	return declp()==samep->castTraceInc()->declp(); }
@@ -2869,6 +2877,7 @@ struct AstCast : public AstNode {
 	if (dtp) { widthSignedFrom(dtp); }
     }
     ASTNODE_NODE_FUNCS(Cast, CAST)
+    virtual bool hasDType() const { return true; }
     virtual string emitVerilog() { return "((%r)'(%l))"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}
@@ -3745,6 +3754,7 @@ struct AstPslClocked : public AstNode {
 	addOp3p(propp);
     }
     ASTNODE_NODE_FUNCS(PslClocked, PSLCLOCKED)
+    virtual bool hasDType() const { return true; }  // Used under PslCover, which expects a bool child
     AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
     AstNode*	disablep()	const { return op2p(); }	// op2 = disable
     AstNode*	propp()		const { return op3p(); }	// op3 = property
@@ -3811,6 +3821,7 @@ struct AstPslBool : public AstNode {
     }
     ASTNODE_NODE_FUNCS(PslBool, PSLBOOL)
     AstNode*	exprp()	const { return op1p()->castNode(); }	// op1= expression
+    virtual bool hasDType() const { return true; }
     virtual bool isGateOptimizable() const { return false; }	// Not relevant
     virtual bool isPredictOptimizable() const { return false; }	// Not relevant
     virtual int instrCount()	const { return 0; }
