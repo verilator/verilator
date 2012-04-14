@@ -527,7 +527,7 @@ private:
     virtual void visit(AstConst* nodep, AstNUser* vup) {
 	// The node got setup with the signed/real state of the node.
 	// However a later operation may have changed the node->signed w/o changing
-	// the number's sign.  So we don't: nodep->isSigned(nodep->num().isSigned());
+	// the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
 	if (vup && vup->c()->prelim()) {
 	    if (nodep->num().sized()) {
 		nodep->width(nodep->num().width(), nodep->num().width());
@@ -575,7 +575,7 @@ private:
 	    replaceWithDVersion(nodep); nodep=NULL;
 	} else {
 	    AstNodeBiop* newp = shift_final(nodep, vup);  nodep=NULL;
-	    newp->isSigned(newp->lhsp()->isSigned());
+	    newp->dtypeChgSigned(newp->lhsp()->isSigned());
 	    if (newp->isSigned()) {
 		replaceWithUOrSVersion(newp, false);  newp=NULL;
 	    }
@@ -585,7 +585,7 @@ private:
 	// Pow is special, output sign only depends on LHS sign
 	shift_prelim(nodep, vup);
 	AstNodeBiop* newp = shift_final(nodep, vup);  nodep=NULL;
-	newp->isSigned(newp->lhsp()->isSigned());
+	newp->dtypeChgSigned(newp->lhsp()->isSigned());
 	if (!newp->isSigned()) {
 	    replaceWithUOrSVersion(newp, true);  newp=NULL;
 	}
@@ -1448,7 +1448,7 @@ private:
 		nodep = newp;  // Process new node instead
 	    }
 	} else {
-	    nodep->isSigned(nodep->lhsp()->isSigned());
+	    nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
 	    // Note there aren't yet uniops that need version changes
 	    // So no need to call replaceWithUOrSVersion(nodep, nodep->isSigned())
 	}
@@ -1486,7 +1486,7 @@ private:
 	// Widths: Output width from lhs, rhs<33 bits
 	// Signed: Output signed iff LHS signed; unary operator
 	shift_prelim(nodep,vup);
-	nodep->isSigned(nodep->lhsp()->isSigned());
+	nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
 	AstNodeBiop* newp = shift_final(nodep,vup); nodep=NULL;
 	if (newp) {}  // Ununused
     }
@@ -1538,7 +1538,7 @@ private:
 	int width  = max(vup->c()->width(),    max(nodep->lhsp()->width(),    nodep->rhsp()->width()));
 	int mwidth = max(vup->c()->widthMin(), max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin()));
 	nodep->width(width,mwidth);
-	nodep->isSigned(nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
+	nodep->dtypeChgSigned(nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
 	if (vup->c()->final()) {
 	    // Final call, so make sure children check their sizes
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
@@ -1584,7 +1584,7 @@ private:
 		nodep = newp;  // Process new node instead
 	    }
 	} else {
-	    nodep->isSigned(nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
+	    nodep->dtypeChgSigned(nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
 	    if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, nodep->isSigned())) { nodep=NULL;
 		nodep = newp;  // Process new node instead
 	    }
@@ -1858,11 +1858,11 @@ private:
 	}
 	// To simplify callers, some node types don't need to change
 	switch (nodep->type()) {
-	case AstType::atEQ:	nodep->isSigned(signedFlavorNeeded); return NULL;
-	case AstType::atNEQ:	nodep->isSigned(signedFlavorNeeded); return NULL;
-	case AstType::atADD:	nodep->isSigned(signedFlavorNeeded); return NULL;
-	case AstType::atSUB:	nodep->isSigned(signedFlavorNeeded); return NULL;
-	case AstType::atSHIFTL:	nodep->isSigned(signedFlavorNeeded); return NULL;
+	case AstType::atEQ:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atNEQ:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atADD:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atSUB:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atSHIFTL:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
 	default: break;
 	}
 	FileLine* fl = nodep->fileline();
