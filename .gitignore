@@ -9,6 +9,7 @@
 .*.swp
 *.tmp
 *.tex
+*.pdf
 /Makefile
 README
 autom4te.cache
@@ -19,6 +20,5 @@ dddrun*
 doxygen-doc
 gdbrun*
 internals.txt
-verilator.pdf
 verilator.txt
 verilator_bin*

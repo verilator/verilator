@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+######################################################################
+#
+# Copyright 2002-2012 by Wilson Snyder.  Verilator is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+# DESCRIPTION: Edits pod2latex output
+
+my $Opt_DistTitle = $ARGV[0] or die "%Error: No disttitle specified,";
+my $Opt_DistDate = $ARGV[1] or die "%Error: No distdate specified,";
+
+my $header = ("\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n"
+	      ."\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n"
+	      ."\\usepackage{fancyhdr} \\pagestyle{fancy}\n"
+	      ."\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n"
+	      ."\\title{${Opt_DistTitle}} \\date{${Opt_DistDate}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n"
+	      ."\\lhead[${Opt_DistTitle}]{${Opt_DistTitle}}\n"
+	      );
+
+foreach my $line (<STDIN>) {
+    $line =~ s/(\\begin{document})/${header}$1/;
+    $line =~ s/(\\tableofcontents)/\\begin{titlepage} \\maketitle \\end{titlepage}\n$1/;
+    print "$line";
+}

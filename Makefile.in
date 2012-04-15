@@ -59,6 +59,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
+POD2LATEXFIX = $(srcdir)/src/pod2latexfix
 PERL = @PERL@
 
 # Destination prefix for RPMs
@@ -100,7 +101,8 @@ SHELL = /bin/sh
 
 SUBDIRS = src test_verilated test_c test_sc test_sp test_regress test_vcs
 
-INFOS = README internals.txt verilator.txt verilator.html verilator.1 verilator.pdf
+INFOS = README README.html README.pdf internals.txt internals.html \
+        internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -216,15 +218,7 @@ verilator.html: ${srcdir}/bin/verilator
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
 verilator.pdf: ${srcdir}/bin/verilator Makefile
 	pod2latex --full --out verilator.tex ${srcdir}/bin/verilator
-	cat < verilator.tex \
-	   | sed 's/\\begin{document}/\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,linkbordercolor={0 0 1}]{hyperref}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\usepackage{fancyhdr} \\pagestyle{fancy}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\setlength{\\parindent}{0pt} \\setlength{\\parskip}{\\baselineskip}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\title{$(DISTTITLE)} \\date{${DISTDATE}} \\author{Wilson Snyder\\\\ http:\/\/www.veripool.org}\n\\begin{document}/' \
-	   | sed 's/\\begin{document}/\\lhead[$(DISTTITLE)]{$(DISTTITLE)}\n\\begin{document}/' \
-	   | sed 's/\\tableofcontents/\\begin{titlepage} \\maketitle \\end{titlepage}\n\\tableofcontents/' \
-	   > verilator2.tex
+	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE)" "${DISTDATE}" < verilator.tex > verilator2.tex
 	mv verilator2.tex verilator.tex
 	pdflatex verilator.tex
 	pdflatex verilator.tex
@@ -234,9 +228,33 @@ README: readme.pod
 	-rm -f $@
 	$(POD2TEXT) --loose $< > $@
 
+README.html: readme.pod
+	pod2html $< >$@
+
+# PDF needs DIST variables; but having configure.ac as dependency isn't detected
+README.pdf: readme.pod Makefile
+	pod2latex --full --out README.tex readme.pod
+	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) README File" "${DISTDATE}" < README.tex > README2.tex
+	mv README2.tex README.tex
+	pdflatex README.tex
+	pdflatex README.tex
+	-rm -f README.toc README.aux README.idx README.out
+
 internals.txt: internals.pod
 	-rm -f $@
 	$(POD2TEXT) --loose $< > $@
+
+internals.html: internals.pod
+	pod2html $< >$@
+
+# PDF needs DIST variables; but having configure.ac as dependency isn't detected
+internals.pdf: internals.pod Makefile
+	pod2latex --full --out internals.tex internals.pod
+	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) Internals Manual" "${DISTDATE}" < internals.tex > internals2.tex
+	mv internals2.tex internals.tex
+	pdflatex internals.tex
+	pdflatex internals.tex
+	-rm -f internals.toc internals.aux internals.idx internals.out
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \

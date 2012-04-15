@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Add SELRANGE as warning instead of error, bug477. [Alex Solomatnikov]
 
+****  Add readme.pdf and internal.pdf and doxygen, bug483.  [by Jeremy Bennett]
+
 ****  Fix change detections on arrays, bug364.  [John Stevenson, Alex Solomatnikov]
 
 ****  Fix signed array warning, bug456. [Alex Solomatnikov]
