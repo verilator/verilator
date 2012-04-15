@@ -35,3 +35,4 @@ nodist/
 /simv.daidir/
 /vc_hdrs.h$
 /csrc/
+doxygen-doc/.*
