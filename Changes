@@ -4,7 +4,7 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
-* Verilator 3.833 devel
+* Verilator 3.833 2012/04/15
 
 ***   Support += and -= in standard for loops, bug463. [Alex Solomatnikov]
 
