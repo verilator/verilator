@@ -54,6 +54,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 HOST = @HOST@
 
+DOXYGEN = doxygen
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
@@ -112,6 +113,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	Changes TODO \
 	MANIFEST.SKIP \
 	bin/* \
+	doxygen-mainpage doxygen.config veripool-logo.png \
 	install-sh configure mkinstalldirs *.pod \
 	include/*.[chv]* \
 	include/*.in \
@@ -460,6 +462,11 @@ TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/[a-z]*.in \
 
 TAGS:	$(TAGFILES)
 	etags $(TAGFILES)
+
+.PHONY: doxygen
+
+doxygen:
+	$(DOXYGEN) doxygen.config
 
 ######################################################################
 # Test targets
