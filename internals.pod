@@ -52,7 +52,11 @@ preprocessing, then lexical analysis with Flex and parsing with Bison.
 This produces an abstract syntax tree (AST) representation of the design,
 which is what is visible in the .tree files described below.
 
-Cells are then linked, which will read and parse additional files as above.
+Verilator then makes a series of passes over the AST, progressively refining
+and optimizing it.
+
+Cells in the AST first linked, which will read and parse additional files as
+above.
 
 Functions, variable and other references are linked to their definitions.
 
@@ -87,6 +91,39 @@ hints, and performs additional constant propagation.
 
 Verilator finally writes the C++ modules.
 
+=head2 Key Classes Used in the Verilator Flow
+
+The AST is represented at the top level by the class C<AstNode>. This abstract
+class has derived classes for the individual components (e.g. C<AstGenerate>
+for a generate block) or groups of components (e.g. C<AstNodeFTask> for
+functions and tasks, which in turn has C<AstFunc> and C<AstTask> as derived
+classes).
+
+Each C<AstNode> has pointers to up to four children, accessed by the
+C<op1p> through C<op4p> methods.  These methods are then abstracted in a
+specific Ast* node class to a more specific name.  For example with the
+C<AstIf> node (for C<if> statements), C<ifsp> calls C<op1p> to give the
+pointer to the AST for the "then" block, while C<elsesp> calls C<op2p> to
+give the pointer to the AST for the "else" block, or NULL if there is not
+one.
+
+C<AstNode> has the concept of a next and previous AST - for example the
+next and previous statements in a block. Pointers to the AST for these
+statements (if they exist) can be obtained using the C<back> and C<next>
+methods.
+
+It is useful to remember that the derived class C<AstNetlist> is at the top
+of the tree, so checking for this class is the standard way to see if you
+are at the top of the tree.
+
+By convention, each function/method uses the variable C<nodep> as a pointer
+to the C<AstNode> currently being processed.
+
+The passes are implemented by AST visitor classes (see L</Visitor
+Functions>). These are implemented by subclasses of the abstract class,
+C<AstNVisitor>. Each pass creates an instance of the visitor class, which
+in turn implements a method to perform the pass.
+
 =head2 Verilated Flow
 
 The evaluation loop outputted by Verilator is designed to allow a single
@@ -120,57 +157,182 @@ changed; if clear, checking those signals for changes may be skipped.
 To match the indentation of Verilator C++ sources, use 4 spaces per level,
 and leave tabs at 8 columns, so every other indent level is a tab stop.
 
-In Emacs, use in your ~/.emacs
+All files should contain the magic header to insure standard indentation:
 
-  (add-hook 'c-mode-common-hook '(lambda ()
-				   (c-set-style "cc-mode"))))
+    // -*- mode: C++; c-file-style: "cc-mode" -*-
 
 This sets indentation to the cc-mode defaults.  (Verilator predates a
 CC-mode change of several years ago which overrides the defaults with GNU
 style indentation; the c-set-style undoes that.)
 
+=head2 The C<astgen> script
+
+Some of the code implementing passes is extremely repetitive, and must be
+implemented for each sub-class of C<AstNode>. However, while repetitive,
+there is more variability than can be handled in C++ macros.
+
+In Verilator this is implemented by using a Perl script, C<astgen> to
+pre-process the C++ code. For example in C<V3Const.cpp> this is used to
+implement the C<visit()> functions for each binary operation using the
+TREEOP macro.
+
+The original C++ source code is transformed into C++ code in the C<obj_opt>
+and C<obj_dbg> sub-directories (the former for the optimized version of
+verilator, the latter for the debug version). So for example C<V3Const.cpp>
+into C<V3Const__gen.cpp>.
+
 =head2 Visitor Functions
 
-There's three ways data is passed between visitor functions.
+The verilator uses the I<Visitor> design pattern to implement its
+refinement and optimization passes. This allows separation of the pass
+algorithm from the AST on which it operates. Wikipedia provides an
+introduction to the concept at
+L<http://en.wikipedia.org/wiki/Visitor_pattern>.
 
-1. A visitor-class member variable.  This is generally for passing "parent"
-information down to children.  m_modp is a common example.  It's set to
-NULL in the constructor, where that node (AstModule visitor) sets it, then
-the children are iterated, then it's cleared.  Children under an AstModule
-will see it set, while nodes elsewhere will see it clear.  If there can be
-nested items (for example an AstFor under an AstFor) the variable needs to
-be save-set-restored in the AstFor visitor, otherwise exiting the lower for
-will loose the upper for's setting.
+As noted above, all visitors are derived classes of C<AstNvisitor>. All
+derived classes of C<AstNode> implement the C<accept> method, which takes
+as argument a reference to an instance or a C<AstNVisitor> derived class
+and applies the visit method of the C<AstNVisitor> to the invoking AstNode
+instance (i.e. C<this>).
 
-2. User() attributes.  Each node has 5 ->user() number or ->userp() pointer
-utility values (a common technique lifted from graph traversal packages).
+One possible difficulty is that a call to C<accept> may perform an edit
+which destroys the node it receives as argument. The
+C<acceptSubtreeReturnEdits> method of C<AstNode> is provided to apply
+C<accept> and return the resulting node, even if the original node is
+destroyed (if it is not destroyed it will just return the original node).
+
+The behavior of the visitor classes is achieved by overloading the C<visit>
+function for the different C<AstNode> derived classes. If a specific
+implementation is not found, the system will look in turn for overloaded
+implementations up the inheritance hierarchy. For example calling C<accept>
+on C<AstIf> will look in turn for:
+
+  void visit (AstIf* nodep, AstNUser* vup)
+  void visit (AstNodeIf* nodep, AstNUser* vup)
+  void visit (AstNodeStmt* nodep, AstNUser* vup)
+  void visit (AstNode* nodep, AstNUser* vup)
+
+There are three ways data is passed between visitor functions.
+
+=over 4
+
+=item 1.
+
+A visitor-class member variable.  This is generally for passing "parent"
+information down to children.  C<m_modp> is a common example.  It's set to
+NULL in the constructor, where that node (C<AstModule> visitor) sets it,
+then the children are iterated, then it's cleared.  Children under an
+C<AstModule> will see it set, while nodes elsewhere will see it clear.  If
+there can be nested items (for example an C<AstFor> under an C<AstFor>) the
+variable needs to be save-set-restored in the C<AstFor> visitor, otherwise
+exiting the lower for will lose the upper for's setting.
+
+=item 2.
+
+User attributes.  Each C<AstNode> (B<Note.> The AST node, not the visitor)
+has five user attributes, which may be accessed as an integer using the
+C<user1()> through C<user5()> methods, or as a pointer (of type
+C<AstNuser>) using the C<user1p()> through C<user5p()> methods (a common
+technique lifted from graph traversal packages).
+
 A visitor first clears the one it wants to use by calling
-AstNode::user#ClearTree(), then it can mark any node's user() with whatever
-data it wants.  Readers just call nodep->user(), but may need to cast
-appropriately, so you'll often see nodep->userp()->castSOMETYPE().  At the
-top of each visitor are comments describing how the user() stuff applies to
-that visitor class.  For example:
+C<AstNode::user#ClearTree()>, then it can mark any node's user() with whatever
+data it wants.  Readers just call C<< nodep->user() >>, but may need to cast
+appropriately, so you'll often see C<< nodep->userp()->castSOMETYPE() >>.  At
+the top of each visitor are comments describing how the C<user()> stuff
+applies to that visitor class.  For example:
 
     // NODE STATE
     // Cleared entire netlist
     //   AstModule::user1p()     // bool. True to inline this module
 
-This says that at the AstNetlist user1ClearTree() is called.  Each
-AstModule's is user1() is used to indicate if we're going to inline it.
+This says that at the C<AstNetlist> C<user1ClearTree()> is called.  Each
+C<AstModule>'s C<user1()> is used to indicate if we're going to inline it.
 
-These comments are important to make sure a user#() on a given AstNode type
-is never being used for two different purposes.
+These comments are important to make sure a C<user#()> on a given C<AstNode>
+type is never being used for two different purposes.
 
-Note that calling user#ClearTree is fast, it doesn't walk the tree, so it's
-ok to call fairly often.  For example, it's commonly called on every
+Note that calling C<user#ClearTree> is fast, it doesn't walk the tree, so
+it's ok to call fairly often.  For example, it's commonly called on every
 module.
 
-3. Parameters can be passed between the visitors in close to the "normal"
-function caller to callee way.  This is the second "vup" parameter that is
-ignored on most of the visitor functions.  V3Width does this, but it proved
-more messy than the above and is deprecated.  (V3Width was nearly the first
-module written.  Someday this scheme may be removed, as it slows the
-program down to have to pass vup everywhere.)
+=item 3.
+
+Parameters can be passed between the visitors in close to the "normal"
+function caller to callee way.  This is the second C<vup> parameter of type
+C<AstNuser> that is ignored on most of the visitor functions.  V3Width does
+this, but it proved more messy than the above and is deprecated.  (V3Width
+was nearly the first module written.  Someday this scheme may be removed,
+as it slows the program down to have to pass vup everywhere.)
+
+=back
+
+=head2 Iterators
+
+C<AstNode> provides a set of iterators to facilitate walking over the
+tree. Each takes two arguments, a visitor, C<v>, of type C<AstNVisitor> and
+an optional pointer user data, C<vup>, of type C<AstNuser*>. The second is
+one of the ways to pass parameters to visitors described in L</Visitor
+Functions>, but its use is no deprecated and should be used for new visitor
+classes.
+
+=over 4
+
+=item C<iterate()>
+
+This just applies the C<accept> method of the C<AstNode> to the visitor
+function.
+
+=item C<iterateAndNextIgnoreEdit>
+
+Applies the C<accept> method of each C<AstNode> in a list (i.e. connected
+by C<nextp> and C<backp> pointers).
+
+=item C<iterateAndNext>
+
+Applies the C<accept> method of each C<AstNode> in a list. If a node is
+edited by the call to C<accept>, apply C<accept> again, until the node does
+not change.
+
+=item C<iterateListBackwards>
+
+Applies the C<accept> method of each C<AstNode> in a list, starting with
+the last one.
+
+=item C<iterateChildren>
+
+Apply the C<iterateAndNext> method on each child C<op1p> through C<op4p> in
+turn.
+
+=item C<iterateChildrenBackwards>
+
+Apply the C<iterateListBackwards> method on each child C<op1p> through
+C<op4p> in turn.
+
+=back
+
+=head2 Identifying derived classes
+
+A common requirement is to identify the specific C<AstNode> class we are
+dealing with. For example a visitor might not implement separate C<visit>
+methods for C<AstIf> and C<AstGenIf>, but just a single method for the base
+class:
+
+  void visit (AstNodeIf* nodep, AstNUser* vup)
+
+However that method might want to specify additional code if it is called
+for C<AstGenIf>. Verilator does this by providing a C<castSOMETYPE()>
+method for each possible node type, using C++ C<dynamic_cast>. This either
+returns a pointer to the object cast to that type (if it is of class
+C<SOMETYPE>, or a derived class of C<SOMETYPE>) or else NULL. So our
+C<visit> method could use:
+
+  if (nodep->castAstGenIf()) {
+      <code specific to AstGenIf>
+  }
+
+A common test is for C<AstNetlist>, which is the node at the root of the
+AST.
 
 =head1 TESTING
 
@@ -214,7 +376,8 @@ algorithmic stage.  An example:
 
 =over 4
 
-"1:2:" indicates the hierarchy the VAR is op2p under the MODULE.
+"1:2:" indicates the hierarchy of the C<VAR> is the C<op2p> pointer under
+the C<MODULE>, which in turn is the C<op1p> pointer under the C<NETLIST>
 
 "VAR" is the AstNodeType.
 
@@ -239,8 +402,35 @@ variable is an output.
 =head2 Debugging with GDB
 
 The test_regress/driver.pl script accepts --debug --gdb to start Verilator
-under gdb.  You can also use --debug --gdbbt to just backtrace and then
-exit gd. To debug the Verilated executable, use --gdbsim.
+under gdb and break when an error is hit or the program is about to exit.
+You can also use --debug --gdbbt to just backtrace and then exit gdb. To
+debug the Verilated executable, use --gdbsim.
+
+If you wish to start verilator under GDB (or another debugger), then you
+can use --debug and look at the underlying invocation of verilator_dgb. For
+example
+
+  t/t_alw_dly.pl --debug
+
+shows it invokes the command:
+
+  ../verilator_bin_dbg --prefix Vt_alw_dly --x-assign unique --debug
+    -cc -Mdir obj_dir/t_alw_dly --debug-check -f input.vc t/t_alw_dly.v
+
+Start GDB, then C<start> with the remaining arguments.
+
+  gdb ../verilator_bin_dbg
+  ...
+  (gdb) start --prefix Vt_alw_dly --x-assign unique --debug -cc -Mdir
+            obj_dir/t_alw_dly --debug-check  -f input.vc t/t_alw_dly.v
+            > obj_dir/t_alw_dly/vlt_compile.log
+  ...
+  Temporary breakpoint 1, main (argc=13, argv=0xbfffefa4, env=0xbfffefdc)
+      at ../Verilator.cpp:615
+  615         ios::sync_with_stdio();
+  (gdb) 
+
+You can then continue execution with breakpoints as required.
 
 To break at a specific edit number which changed a node (presumably to find
 what made a <e####> line in the tree dumps):
@@ -251,6 +441,18 @@ To print a node:
 
    call nodep->dumpGdb()      # aliased to "pn" in src/.gdbinit
    call nodep->dumpTreeGdb()  # aliased to "pnt" in src/.gdbinit
+
+When GDB halts, it is useful to understand that the backtrace will commonly
+show the iterator functions between each invocation of C<visit> in the
+backtrace. You will typically see a frame sequence something like
+
+  ...
+  visit()
+  iterateChildren()
+  iterateAndNext()
+  accept()
+  visit()
+  ...
 
 =head1 DISTRIBUTION
 
