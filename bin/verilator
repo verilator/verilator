@@ -2215,23 +2215,23 @@ Verilator is a two state simulator, not a four state simulator.  However, it
 has two features which uncover most initialization bugs (including many that
 a four state simulator will miss.)
 
-First, assigning a variable to a X will actually assign the variable to a
-random value (see the -x-assign switch.)  Thus if the value is actually
-used, the random value should cause downstream errors.  Integers also
-randomize, even though the Verilog 2001 specification says they initialize
-to zero.
-
 Identity comparisons (=== or !==) are converted to standard ==/!== when
 neither side is a constant.  This may make the expression result differ
-from a four state simulator.
+from a four state simulator.  An === comparison to X will always be false,
+so that Verilog code which checks for uninitialized logic will not fire.
 
-All variables are initialized using a function.  By running several
-random simulation runs you can determine that reset is working correctly.
-On the first run, the function initializes variables to zero.  On the
-second, have it initialize variables to one.  On the third and following
-runs have it initialize them randomly.  If the results match, reset works.
-(Note this is what the hardware will really do.)  In practice, just setting
-all variables to one at startup finds most problems.
+Assigning a variable to a X will actually assign the variable to a random
+value (see the -x-assign switch.)  Thus if the value is actually used, the
+random value should cause downstream errors.  Integers also randomize, even
+though the Verilog 2001 specification says they initialize to zero.
+
+All variables are randomly initialized using a function.  By running
+several random simulation runs you can determine that reset is working
+correctly.  On the first run, the function initializes variables to zero.
+On the second, have it initialize variables to one.  On the third and
+following runs have it initialize them randomly.  If the results match,
+reset works.  (Note this is what the hardware will really do.)  In
+practice, just setting all variables to one at startup finds most problems.
 
 =head2 Tri/Inout
 
