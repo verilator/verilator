@@ -60,6 +60,7 @@ my $opt_vlt;
 my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
+our $Opt_Verilation = 1;
 our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config ("pass_through");
@@ -86,6 +87,7 @@ if (! GetOptions (
 		  "vlt!"	=> \$opt_vlt,
 		  "vcs!"	=> \$opt_vcs,
 		  "verbose!"	=> \$opt_verbose,
+		  "verilation!"		=> \$Opt_Verilation,  # Undocumented debugging
 		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
 	  	  #W		   see parameter()
 		  "<>"		=> \&parameter,
@@ -627,7 +629,7 @@ sub compile {
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",
 		    fails=>$param{fails},
 		    expect=>$param{expect},
-		    cmd=>\@cmdargs);
+		    cmd=>\@cmdargs) if $::Opt_Verilation;
 	return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
