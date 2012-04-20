@@ -916,6 +916,18 @@ last:
     return setSingleBits(outc);
 }
 
+V3Number& V3Number::opLogIf (const V3Number& lhs, const V3Number& rhs) {
+    // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to
+    // X/Z extend. Use opLogNot and opLogOr to do this for us.
+    return opLogOr(opLogNot(lhs), rhs);
+}
+
+V3Number& V3Number::opLogIff (const V3Number& lhs, const V3Number& rhs) {
+    // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to
+    // X/Z extend. Use opLogNot and opLogXor to do this for us.
+    return opLogNot(opXor(lhs, rhs));
+}
+
 V3Number& V3Number::opEq (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 1;
