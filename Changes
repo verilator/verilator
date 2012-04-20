@@ -3,12 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.900 devel
+* Verilator 3.840 devel
 
-New features:
-
-Bug fixes:
-
+***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
 * Verilator 3.833 2012/04/15
 

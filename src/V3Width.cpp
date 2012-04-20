@@ -110,6 +110,7 @@ private:
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
     AstNodeCase* m_casep;	// Current case statement CaseItem is under
     AstFunc*	m_funcp;	// Current function
+    bool	m_doGenerate;	// Do errors later inside generate statement
 
     // CLASSES
 #define ANYSIZE 0
@@ -436,15 +437,31 @@ private:
 		// See also warning in V3Const
 		// We need to check here, because the widthCheck may silently
 		// add another SEL which will lose the out-of-range check
-		nodep->v3error("Selection index out of range: "
- 			       <<nodep->msbConst()<<":"<<nodep->lsbConst()
-			       <<" outside "<<frommsb<<":"<<fromlsb);
-		UINFO(1,"    Related node: "<<nodep<<endl);
-		if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
+		//
+		// We don't want to trigger an error here if we are just
+		// evaluating type sizes for a generate block condition. We
+		// should only trigger the error if the out-of-range access is
+		// actually generated.
+		if (m_doGenerate) {
+		    UINFO(5, "Selection index out of range inside generate."<<endl);
+		} else {
+		    nodep->v3error("Selection index out of range: "
+				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
+				   <<" outside "<<frommsb<<":"<<fromlsb);
+		    UINFO(1,"    Related node: "<<nodep<<endl);
+		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
+		    if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
+		}
 	    }
 	    // iterate FINAL is two blocks above
-	    widthCheck(nodep,"Extract Range",nodep->lsbp(),selwidth,selwidth,true);
+	    //
+	    // If we have a width problem with GENERATE etc, this will reduce
+	    // it down and mask it, so we have no chance of finding a real
+	    // error in the future. So don't do this for them.
+	    if (!m_doGenerate) {
+		widthCheck(nodep,"Extract Range",nodep->lsbp(),selwidth,
+			   selwidth,true);
+	    }
 	}
     }
 
@@ -1961,11 +1978,14 @@ private:
 
 public:
     // CONSTUCTORS
-    WidthVisitor(bool paramsOnly) {
+    WidthVisitor(bool paramsOnly,   // [in] TRUE if we are considering parameters only.
+	         bool doGenerate) { // [in] TRUE if we are inside a generate statement and
+	//			    // don't wish to trigger errors
 	m_paramsOnly = paramsOnly;
 	m_cellRangep = NULL;
 	m_casep = NULL;
 	m_funcp = NULL;
+	m_doGenerate = doGenerate;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {
 	return nodep->acceptSubtreeReturnEdits(*this, WidthVP(ANYSIZE,0,BOTH).p());
@@ -1979,16 +1999,38 @@ public:
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor (false);
+    WidthVisitor visitor (false, false);
     (void)visitor.mainAcceptEdit(nodep);
     WidthRemoveVisitor rvisitor;
     (void)rvisitor.mainAcceptEdit(nodep);
 }
 
-AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
+//! Single node parameter propagation
+//! Smaller step... Only do a single node for parameter propagation
+AstNode* V3Width::widthParamsEdit (AstNode* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor (true);
+    WidthVisitor visitor (true, false);
+    nodep = visitor.mainAcceptEdit(nodep);
+    WidthRemoveVisitor rvisitor;
+    nodep = rvisitor.mainAcceptEdit(nodep);
+    return nodep;
+}
+
+//! Single node parameter propagation for generate blocks.
+//! Smaller step... Only do a single node for parameter propagation
+//! If we are inside a generated "if", "case" or "for", we don't want to
+//! trigger warnings when we deal with the width. It is possible that
+//! these are spurious, existing within sub-expressions that will not
+//! actually be generated. Since such occurrences, must be constant, in
+//! order to be someting a generate block can depend on, we can wait until
+//! later to do the width check.
+//! @return  Pointer to the edited node.
+AstNode* V3Width::widthGenerateParamsEdit(
+    AstNode* nodep) { //!< [in] AST whose parameters widths are to be analysed.
+    UINFO(4,__FUNCTION__<<": "<<endl);
+    // We should do it in bottom-up module order, but it works in any order.
+    WidthVisitor visitor (true, true);
     nodep = visitor.mainAcceptEdit(nodep);
     WidthRemoveVisitor rvisitor;
     nodep = rvisitor.mainAcceptEdit(nodep);

@@ -32,8 +32,8 @@
 class V3Width {
 public:
     static void width(AstNetlist* nodep);
-    // Smaller step... Only do a single node for parameter propagation
     static AstNode* widthParamsEdit(AstNode* nodep);
+    static AstNode* widthGenerateParamsEdit(AstNode* nodep);
     // Final step... Mark all widths as equal
     static void widthCommit(AstNetlist* nodep);
 

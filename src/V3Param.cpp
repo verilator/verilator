@@ -189,8 +189,12 @@ private:
     virtual void visit(AstGenIf* nodep, AstNUser*) {
 	UINFO(9,"  GENIF "<<nodep<<endl);
 	nodep->condp()->iterateAndNext(*this);
-	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
-	V3Const::constifyParamsEdit(nodep->condp());  // condp may change
+	// We suppress errors when widthing params since short-circuiting in
+	// the conditional evaluation may mean these error can never occur. We
+	// then make sure that short-circuiting is used by constifyParamsEdit.
+	V3Width::widthGenerateParamsEdit(nodep);  // Param typed widthing will
+						  // NOT recurse the body.
+	V3Const::constifyGenerateParamsEdit(nodep->condp()); // condp may change
 	if (AstConst* constp = nodep->condp()->castConst()) {
 	    AstNode* keepp = (constp->isZero()
 			      ? nodep->elsesp()
@@ -207,6 +211,11 @@ private:
 	    nodep->condp()->v3error("Generate If condition must evaluate to constant");
 	}
     }
+
+    //! Parameter subsitution for generated for loops.
+    //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
+    //!       expression, since this is currently restricted to simple comparisons. If we ever do
+    //!       move to more generic constant expressions, such code will be neede here.
     virtual void visit(AstGenFor* nodep, AstNUser*) {
 	// We parse a very limited form of FOR, so we don't need to do a full
 	// simulation to unroll the loop
@@ -220,7 +229,8 @@ private:
 	AstNode* keepp = NULL;
 	nodep->exprp()->iterateAndNext(*this);
 	V3Case::caseLint(nodep);
-	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
+	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
+					  // don't trigger errors yet.
 	V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
 	AstConst* exprp = nodep->exprp()->castConst();
 	// Constify

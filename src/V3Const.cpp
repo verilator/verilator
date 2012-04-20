@@ -107,6 +107,7 @@ private:
     bool	m_doNConst;	// Enable non-constant-child simplifications
     bool	m_doShort;	// Remove expressions that short circuit
     bool	m_doV;		// Verilog, not C++ conversion
+    bool	m_doGenerate;	// Postpone width checking inside generate
     AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
 
@@ -368,6 +369,7 @@ private:
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
 	AstNode* basefromp = AstArraySel::baseFromp(nodep);
+	if (m_doGenerate) V3Width::widthParamsEdit(nodep); // Never checked yet
 	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 	    AstVar* varp = varrefp->varp();
 	    if (!varp->dtypep()) varp->v3fatalSrc("Data type lost");
@@ -527,6 +529,20 @@ private:
 	childp->widthSignedFrom(nodep);
 	nodep->replaceWith(childp);
 	nodep->deleteTree(); nodep=NULL;
+    }
+
+    //! Replace a ternary node with its RHS after iterating
+    //! Used with short-circuting, where the RHS has not yet been iterated.
+    void replaceWIteratedRhs(AstNodeTriop* nodep) {
+	if (AstNode *rhsp = nodep->rhsp()) rhsp->iterateAndNext(*this);
+	replaceWChild(nodep, nodep->rhsp());	// May have changed
+    }
+
+    //! Replace a ternary node with its THS after iterating
+    //! Used with short-circuting, where the THS has not yet been iterated.
+    void replaceWIteratedThs(AstNodeTriop* nodep) {
+	if (AstNode *thsp = nodep->thsp()) thsp->iterateAndNext(*this);
+	replaceWChild(nodep, nodep->thsp());	// May have changed
     }
     void replaceWLhs(AstNodeUniop* nodep) {
 	// Keep LHS, remove RHS
@@ -1681,6 +1697,8 @@ private:
     //    v--- *1* These ops are always first, as we warn before replacing
     //    v--- *V* This op is a verilog op, only in m_doV mode
     //    v--- *C* This op works on all constant children, allowed in m_doConst mode
+    //    v--- *S* This op specifies a type should use short-circuting of its lhs op
+
     TREEOP1("AstSel{warnSelect(nodep)}",	"NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
     TREEOPC("AstNodeBiop {$lhsp.castConst, $rhsp.castConst}",  "replaceConst(nodep)");
@@ -1688,7 +1706,11 @@ private:
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, isTPure($rhsp)}",	"replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
+    // This visit function here must allow for short-circuiting.
+    TREEOPS("AstLogAnd   {$lhsp.isZero}",	"replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",	"replaceZero(nodep)");
+    // This visit function here must allow for short-circuiting.
+    TREEOPS("AstLogOr   {$lhsp.isOne}",		"replaceNum(nodep, 1)");
     TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
@@ -1742,6 +1764,9 @@ private:
     TREEOPC("AstNodeCond{$condp.isZero,       $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr2p)");
     TREEOPC("AstNodeCond{$condp.isNeqZero,    $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr1p)");
     TREEOP ("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
+    // This visit function here must allow for short-circuiting.
+    TREEOPS("AstCond {$lhsp.isZero}",		"replaceWIteratedThs(nodep)");
+    TREEOPS("AstCond {$lhsp.isNeqZero}",	"replaceWIteratedRhs(nodep)");
     TREEOP ("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstLogOr {$condp, $expr2p}");  // a?1:b == a||b
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstLogAnd{$condp, $expr1p}");  // a?b:0 == a&&b
@@ -1915,6 +1940,8 @@ private:
     TREEOPV("AstSel{$fromp.castXnor,$lhsp.castConst}",	"replaceSelIntoUniop(nodep)");
     // Conversions
     TREEOPV("AstRedXnor{$lhsp}",		"AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
+    // This visit function here must allow for short-circuiting.
+    TREEOPS("AstLogIf {$lhsp.isZero}",		"replaceNum(nodep, 1)");
     TREEOPV("AstLogIf {$lhsp, $rhsp}",		"AstLogOr{AstLogNot{$lhsp},$rhsp}");
     TREEOPV("AstLogIff{$lhsp, $rhsp}",		"AstLogNot{AstXor{$lhsp,$rhsp}}");
     // Strings
@@ -1948,6 +1975,7 @@ public:
     // Processing Mode Enum
     enum ProcMode {
 	PROC_PARAMS,
+	PROC_GENERATE,
 	PROC_LIVE,
 	PROC_V_WARN,
 	PROC_V_NOWARN,
@@ -1963,6 +1991,7 @@ public:
 	m_doNConst = false;
 	m_doShort = true;	// Presently always done
 	m_doV = false;
+	m_doGenerate = false;	// Inside generate conditionals
 	m_warn = false;
 	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;
@@ -1970,6 +1999,7 @@ public:
 	//
 	switch (pmode) {
 	case PROC_PARAMS:	m_doV = true;  m_doNConst = true; m_params = true; m_required = true; break;
+	case PROC_GENERATE:	m_doV = true;  m_doNConst = true; m_params = true; m_required = true; m_doGenerate = true; break;
 	case PROC_LIVE:		break;
 	case PROC_V_WARN:	m_doV = true;  m_doNConst = true; m_warn = true; break;
 	case PROC_V_NOWARN:	m_doV = true;  m_doNConst = true; break;
@@ -1988,12 +2018,46 @@ public:
 //######################################################################
 // Const class functions
 
+//! Force this cell node's parameter list to become a constant
+//! @return  Pointer to the edited node.
 AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     //if (debug()>0) nodep->dumpTree(cout,"  forceConPRE : ");
-    // Resize even if the node already has a width, because burried in the treee we may
-    // have a node we just created with signing, etc, that isn't sized yet.
-    nodep = V3Width::widthParamsEdit(nodep); // Make sure we've sized everything first
-    ConstVisitor visitor (ConstVisitor::PROC_PARAMS);
+    // Resize even if the node already has a width, because buried in the tree
+    // we may have a node we just created with signing, etc, that isn't sized yet.
+
+    // Make sure we've sized everything first
+    nodep = V3Width::widthParamsEdit(nodep);
+    ConstVisitor visitor(ConstVisitor::PROC_PARAMS);
+    if (AstVar* varp=nodep->castVar()) {
+	// If a var wants to be constified, it's really a param, and
+	// we want the value to be constant.  We aren't passed just the
+	// init value because we need widthing above to handle the var's type.
+	if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
+    } else {
+	nodep = visitor.mainAcceptEdit(nodep);
+    }
+    // Because we do edits, nodep links may get trashed and core dump this.
+    //if (debug()>0) nodep->dumpTree(cout,"  forceConDONE: ");
+    return nodep;
+}
+
+//! Force this cell node's parameter list to become a constant inside generate.
+//! If we are inside a generated "if", "case" or "for", we don't want to
+//! trigger warnings when we deal with the width. It is possible that these
+//! are spurious, existing within sub-expressions that will not actually be
+//! generated. Since such occurrences, must be constant, in order to be
+//! someting a generate block can depend on, we can wait until later to do the
+//! width check.
+//! @return  Pointer to the edited node.
+AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
+    //if (debug()>0) nodep->dumpTree(cout,"  forceConPRE : ");
+    // Resize even if the node already has a width, because buried in the tree
+    // we may have a node we just created with signing, etc, that isn't sized
+    // yet.
+
+    // Make sure we've sized everything first
+    nodep = V3Width::widthGenerateParamsEdit(nodep);
+    ConstVisitor visitor(ConstVisitor::PROC_GENERATE);
     if (AstVar* varp=nodep->castVar()) {
 	// If a var wants to be constified, it's really a param, and
 	// we want the value to be constant.  We aren't passed just the
