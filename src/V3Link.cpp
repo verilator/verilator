@@ -173,7 +173,7 @@ private:
 	    foundp = nodep;
 	} else if (nodep==foundp) {  // Already inserted.
 	    // Good.
-	} else if ((nodep->castBegin() || foundp->castBegin())
+	} else if ((nodep->castBegin() && foundp->castBegin())
 		   && m_inGenerate) {
 	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
 	    // See t_gen_forif.v for an example.
