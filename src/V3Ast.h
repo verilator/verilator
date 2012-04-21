@@ -365,6 +365,8 @@ public:
 	WIRE,
 	IMPLICITWIRE,
 	TRIWIRE,
+	TRI0,
+	TRI1,
 	PORT,		// Temp type used in parser only
 	BLOCKTEMP,
 	MODULETEMP,
@@ -380,7 +382,9 @@ public:
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "VAR","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","IMPLICITWIRE","TRIWIRE","PORT",
+	    "SUPPLY0","SUPPLY1","WIRE","IMPLICITWIRE",
+	    "TRIWIRE","TRI0","TRI1",
+	    "PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e]; }
   };

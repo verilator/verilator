@@ -26,17 +26,23 @@ double sc_time_stamp() {
 bool check() {
     bool pass;
     int c = (tb->A >> tb->SEL) & 0x1;
+#ifdef TEST_VERBOSE
+    bool verbose = true;
+#else
+    bool verbose = false;
+#endif
 
-    if(tb->Z == c && tb->Y == c && tb->X == c && tb->W == c) {
+    if(tb->W == c && tb->X == c && tb->Y == c && tb->Z == c) {
 	pass = true;
-	printf("PASS: ");
+	if (verbose) printf("-  pass: ");
     } else {
 	pass = false;
-	printf("FAIL: ");
+	verbose = true;
+	printf("%%E-FAIL: ");
     }
-#ifdef TEST_VERBOSE
-    printf("SEL=%d A=%d W=%d X=%d Y=%d Z=%d\n", tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z);
-#endif
+    if (verbose) {
+	printf("SEL=%d A=%d W=%d X=%d Y=%d Z=%d  c=%d\n", tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z, c);
+    }
     return pass;
 }
 

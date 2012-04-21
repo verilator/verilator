@@ -83,7 +83,8 @@ void AstVar::combineType(AstVarType type) {
 	m_input = true;
     if (type==AstVarType::OUTPUT || type==AstVarType::INOUT)
 	m_output = true;
-    if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE)
+    if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE
+	|| type==AstVarType::TRI0 || type==AstVarType::TRI1)
 	m_tristate = true;
 }
 

@@ -241,14 +241,16 @@ public:
 //######################################################################
 // Inst class functions
 
-void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp) {
+AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
+    // Return the new assignment, if one was made
     // Note this module calles cloneTree() via new AstVar
     AstVar* pinVarp = pinp->modVarp();
     AstVarRef* connectRefp = pinp->exprp()->castVarRef();
     AstBasicDType* pinBasicp = pinVarp->dtypep()->basicp();  // Maybe NULL
     AstBasicDType* connBasicp = NULL;
+    AstAssignW* assignp = NULL;
     if (connectRefp) connBasicp = connectRefp->varp()->dtypep()->basicp();
     //
     if (connectRefp
@@ -268,7 +270,6 @@ void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* mod
     } else {
 	// Make a new temp wire
 	//if (1||debug()>=9) { pinp->dumpTree(cout,"in_pin:"); }
-	AstAssignW* assignp = NULL;
 	AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
 	string newvarname = "__Vcellinp__"+cellp->name()+"__"+pinp->name();
 	AstVar* newvarp = new AstVar (pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
@@ -303,6 +304,7 @@ void V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* mod
 	//if (1||debug()) { pinp->dumpTree(cout,"  out:"); }
 	//if (1||debug()) { assignp->dumpTree(cout," aout:"); }
     }
+    return assignp;
 }
 
 //######################################################################

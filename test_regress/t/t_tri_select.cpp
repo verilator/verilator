@@ -10,6 +10,11 @@ double sc_time_stamp() {
 
 bool check() {
     bool pass = true;
+#ifdef TEST_VERBOSE
+    bool verbose = true;
+#else
+    bool verbose = false;
+#endif
 
     int Y = (tb->OE1 & !tb->OE2) ? tb->A1
 	: (!tb->OE1 & tb->OE2) ? tb->A2
@@ -21,15 +26,14 @@ bool check() {
 
     if(tb->Y1 == tb->Y2 && tb->Y1 == Y && tb->W == W) {
 	pass = true;
-	printf("Pass: ");
+	if (verbose) printf("-  pass: ");
     } else {
 	pass = false;
-	printf("Fail: ");
+	verbose = true;
+	printf("%%E-Fail: ");
     }
 
-#ifdef TEST_VERBOSE
-    printf("Read: OE1=%d OE2=%d A1=0x%x A2=0x%x Y1=0x%x Y2=0x%x W=0x%x  Expected: Y1=Y2=%d and W=0x%x\n", tb->OE1, tb->OE2, tb->A1, tb->A2, tb->Y1, tb->Y2, tb->W, Y,W);
-#endif
+    if (verbose) printf("Read: OE1=%d OE2=%d A1=0x%x A2=0x%x Y1=0x%x Y2=0x%x W=0x%x  Expected: Y1=Y2=%d and W=0x%x\n", tb->OE1, tb->OE2, tb->A1, tb->A2, tb->Y1, tb->Y2, tb->W, Y,W);
     return pass;
 }
 

@@ -24,16 +24,21 @@ bool check() {
 	X = 1;
     }
 
+#ifdef TEST_VERBOSE
+    bool verbose = true;
+#else
+    bool verbose = false;
+#endif
+
     if (tb->Z == Z  &&  tb->Y == Y  && tb->X == X) {
-	printf("PASS: ");
+	if (verbose) printf("PASS: ");
 	pass = true;
     } else {
-	printf("FAIL: ");
+	printf("%%E-FAIL: ");
+	verbose = true;
 	pass = false;
     }
-#ifdef TEST_VERBOSE
-    printf("OE=%d A=%d X=%d Y=%d Z=%d\n", tb->OE, tb->A, tb->X, tb->Y, tb->Z);
-#endif
+    if (verbose) printf("OE=%d A=%d  X=%d xexp=%d  Y=%d yexp=%d  Z=%d zexp=%d\n", tb->OE, tb->A, tb->X,X, tb->Y,Y, tb->Z,Z);
     return pass;
 }
 

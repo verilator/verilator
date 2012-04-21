@@ -2715,6 +2715,8 @@ struct AstNot : public AstNodeUniop {
 struct AstExtend : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
     AstExtend(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
+    AstExtend(FileLine* fl, AstNode* lhsp, int width) : AstNodeUniop(fl, lhsp) {
+	dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(Extend, EXTEND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%l"; }
@@ -2726,6 +2728,8 @@ struct AstExtend : public AstNodeUniop {
 struct AstExtendS : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
     AstExtendS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
+    AstExtendS(FileLine* fl, AstNode* lhsp, int width) : AstNodeUniop(fl, lhsp) {
+	dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(ExtendS, EXTENDS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opExtendS(lhs); }
     virtual string emitVerilog() { return "%l"; }
@@ -3670,6 +3674,7 @@ struct AstReplicate : public AstNodeBiop {
 };
 struct AstBufIf1 : public AstNodeBiop {
     // lhs is enable, rhs is data to drive
+    // Note unlike the Verilog bufif1() UDP, this allows any width; each lhsp bit enables respective rhsp bit
     AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp) widthSignedFrom(lhsp); }
     ASTNODE_NODE_FUNCS(BufIf1, BUFIF1)
