@@ -521,7 +521,9 @@ changing debug verbosity.  Enabled automatically when --debug specified.
 =item --debugi-<srcfile> <level>
 
 Rarely needed - for developer use.  Set internal debugging level globally
-or on the specified source file to the specified level.
+to the specified debug level (1-10) or set the specified source file to the
+specified level. Higher levels produce more detailed messages (plain
+C<--debug> is equivalent to C<--debugi 4>).
 
 =item +define+I<var>+I<value>
 
@@ -531,9 +533,10 @@ standard across Verilog tools while -D is an alias for GCC compatibility.
 =item --dump-tree
 
 Rarely needed.  Enable writing .tree debug files with dumping level 3,
-which dumps the standard critical stages.  --dump-tree is enabled
-automatically with --debug, so "--debug --no-dump-tree" may be useful if
-the dump files are large and not desired.
+which dumps the standard critical stages.  For details on the format see
+the Verilator Internals manual.  --dump-tree is enabled automatically with
+--debug, so "--debug --no-dump-tree" may be useful if the dump files are
+large and not desired.
 
 =item --dump-treei
 
@@ -3395,12 +3398,27 @@ follows:
     cp -p t/t_EXAMPLE.pl t/t_BUG.pl
     cp -p t/t_EXAMPLE.v t/t_BUG.v
 
+There are many hits on how to write a good test in the driver.pl
+documentation which can be seen by running:
+
+    cd $VERILATOR_ROOT  # Need the original distribution kit
+    test_regress/driver.pl --help
+
 Edit t/t_BUG.pl to suit your example; you can do anything you want in the
 Verilog code there; just make sure it retains the single clk input and no
 outputs.  Now, the following should fail:
 
+    cd $VERILATOR_ROOT  # Need the original distribution kit
     cd test_regress
-    t/t_BUG.pl
+    t/t_BUG.pl  # Run on Verilator
+    t/t_BUG.pl --debug # Run on Verilator, passing --debug to Verilator
+    t/t_BUG.pl --vcs  # Run on a commercial simulator
+    t/t_BUG.pl --nc|--iv|--ghdl  # Likewise on other simulators
+
+The test driver accepts a number of options, many of which mirror the main
+Verilator option. For example the previous test could have been run with
+debugging enabled.  The full set of test options can be seen by running
+driver.pl --help as shown above.
 
 Finally, report the bug using the bug tracker at
 L<http://www.veripool.org/verilator>.  The bug will become publicly

@@ -336,10 +336,10 @@ AST.
 
 =head1 TESTING
 
-To write a test see notes in the forum and in the verilator.txt manual.
+To write a test see the BUGS section of the Verilator primary manual, and
+the documentation in:
 
-Note you can run the regression tests in parallel; see the
-test_regress/driver.pl script -j flag.
+  test_regress/t/driver.pl --help  
 
 =head1 DEBUGGING
 
