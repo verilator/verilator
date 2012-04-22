@@ -376,6 +376,8 @@ class AstSenTree;
 %token<fl>		yTRANIF0	"tranif0"
 %token<fl>		yTRANIF1	"tranif1"
 %token<fl>		yTRI		"tri"
+%token<fl>		yTRI0		"tri0"
+%token<fl>		yTRI1		"tri1"
 %token<fl>		yTRUE		"true"
 %token<fl>		yTYPEDEF	"typedef"
 %token<fl>		yUNIQUE		"unique"
@@ -1007,8 +1009,8 @@ net_type:			// ==IEEE: net_type
 		ySUPPLY0				{ VARDECL(SUPPLY0); }
 	|	ySUPPLY1				{ VARDECL(SUPPLY1); }
 	|	yTRI 					{ VARDECL(TRIWIRE); }
-	//UNSUP	yTRI0 					{ VARDECL(TRI0); }
-	//UNSUP	yTRI1 					{ VARDECL(TRI1); }
+	|	yTRI0 					{ VARDECL(TRI0); }
+	|	yTRI1 					{ VARDECL(TRI1); }
 	//UNSUP	yTRIAND 				{ VARDECL(TRIAND); }
 	//UNSUP	yTRIOR 					{ VARDECL(TRIOR); }
 	//UNSUP	yTRIREG 				{ VARDECL(TRIREG); }

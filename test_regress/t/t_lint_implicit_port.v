@@ -21,7 +21,7 @@ module set (
    input  clk,
    output enable
    );
-
+   assign enable = 1'b0;
 endmodule
 
 module read (

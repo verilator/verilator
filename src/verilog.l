@@ -296,6 +296,8 @@ word	[a-zA-Z0-9_]+
   "tranif0"		{ FL; return yTRANIF0; }
   "tranif1"		{ FL; return yTRANIF1; }
   "tri"			{ FL; return yTRI; }
+  "tri0"		{ FL; return yTRI0; }
+  "tri1"		{ FL; return yTRI1; }
   "vectored"		{ FL; return yVECTORED; }
   "while"		{ FL; return yWHILE; }
   "wire"		{ FL; return yWIRE; }
@@ -333,8 +335,6 @@ word	[a-zA-Z0-9_]+
   "triand"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "trior"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "trireg"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "tri0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "tri1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "wait"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "wand"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "weak0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }

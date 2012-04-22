@@ -32,7 +32,6 @@
 class V3Tristate {
 public:
     static void tristateAll(AstNetlist* nodep);
-    static void inoutAll(AstNetlist* nodep);
 };
 
 #endif // Guard

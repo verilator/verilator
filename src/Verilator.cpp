@@ -234,12 +234,6 @@ void process () {
     v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("const.tree"));
 
     if (!v3Global.opt.xmlOnly()) {
-	// Expand Inouts
-	V3Tristate::inoutAll(v3Global.rootp());
-	v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("inouts.tree"));
-    }
-
-    if (!v3Global.opt.xmlOnly()) {
 	// Remove cell arrays (must be between V3Width and scoping)
 	V3Inst::dearrayAll(v3Global.rootp());
 	if (dumpMore) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("dearray.tree"));
