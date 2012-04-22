@@ -462,8 +462,8 @@ void EmitCSyms::emitSymImp() {
 		for (AstNodeDType* dtypep=varp->dtypep(); dtypep; ) {
 		    dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 		    if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
-			bounds += " ,"; bounds += cvtToStr(adtypep->arrayp()->msbConst());
-			bounds += ","; bounds += cvtToStr(adtypep->arrayp()->lsbConst());
+			bounds += " ,"; bounds += cvtToStr(adtypep->msb());
+			bounds += ","; bounds += cvtToStr(adtypep->lsb());
 			dim++;
 			dtypep = adtypep->subDTypep();
 		    }

@@ -241,16 +241,16 @@ public:
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep(); }
-    AstRange*	arrayp() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
-    void	arrayp(AstRange* nodep) { setOp2p(nodep); }
+    AstRange*	rangep() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
+    void	rangep(AstRange* nodep) { setOp2p(nodep); }
     // METHODS
     virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return elementsConst() * dtypep()->widthTotalBytes(); }
-    int		msb() const { return arrayp()->msbConst(); }
-    int		lsb() const { return arrayp()->lsbConst(); }
-    int		elementsConst() const { return arrayp()->elementsConst(); }
+    int		msb() const { return rangep()->msbConst(); }
+    int		lsb() const { return rangep()->lsbConst(); }
+    int		elementsConst() const { return rangep()->elementsConst(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	isPacked() const { return m_packed; }
 };
@@ -2388,8 +2388,8 @@ public:
 	m_left = bdtypep ? bdtypep->left() : 0;
 	m_right = bdtypep ? bdtypep->right() : 0;
 	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
-	    m_arrayLsb = adtypep->arrayp()->lsbConst();
-	    m_arrayMsb = adtypep->arrayp()->msbConst();
+	    m_arrayLsb = adtypep->lsb();
+	    m_arrayMsb = adtypep->msb();
 	} else {
 	    m_arrayLsb = 0;
 	    m_arrayMsb = 0;

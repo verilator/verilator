@@ -632,7 +632,7 @@ private:
 	// Lower datatype determines the width
 	nodep->dtypep()->iterateAndNext(*this,vup);
 	// But also cleanup array size
-	nodep->arrayp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->widthFrom(nodep->dtypep());
 	nodep->numericFrom(nodep->dtypep());
 	UINFO(4,"dtWidthed "<<nodep<<endl);

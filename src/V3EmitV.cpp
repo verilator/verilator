@@ -495,7 +495,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstArrayDType* nodep, AstNUser*) {
 	nodep->subDTypep()->iterateAndNext(*this);
-	nodep->arrayp()->iterateAndNext(*this);
+	nodep->rangep()->iterateAndNext(*this);
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (nodep->dotted()!="") { putfs(nodep,nodep->dotted()); puts("."); puts(nodep->prettyName()); }
