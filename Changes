@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support tri0 and tri1, bug462.  [Alex Solomatnikov]
 
+***   Support nmos and pmos, bug488.  [Alex Solomatnikov]
+
 ***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
 

@@ -2239,8 +2239,8 @@ practice, just setting all variables to one at startup finds most problems.
 =head2 Tri/Inout
 
 Verilator converts some simple tristate structures into two state.  Pullup,
-pulldown, bufif0, bufif1, notif0, notif1, tri0 and tri1 are also supported.
-Simple comparisons with === 1'bz are also supported.
+pulldown, bufif0, bufif1, notif0, notif1, pmos, nmos, tri0 and tri1 are
+also supported.  Simple comparisons with === 1'bz are also supported.
 
 An assignment of the form:
 

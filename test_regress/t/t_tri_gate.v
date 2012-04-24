@@ -26,6 +26,10 @@ module tbuf (input A, input OE, output Z);
    notif0 (Z, !A, !OE);
 `elsif T_NOTIF1
    notif1 (Z, !A, OE);
+`elsif T_PMOS
+   pmos (Z, A, !OE);
+`elsif T_NMOS
+   nmos (Z, A, OE);
 `elsif T_COND
    assign Z = (OE) ? A : 1'bz;
 `else

@@ -2705,10 +2705,10 @@ gateDecl<nodep>:
 	|	yXNOR delayE gateXnorList ';'		{ $$ = $3; }
 	|	yPULLUP delayE gatePullupList ';'	{ $$ = $3; }
 	|	yPULLDOWN delayE gatePulldownList ';'	{ $$ = $3; }
+	|	yNMOS delayE gateBufif1List ';'		{ $$ = $3; }  // ~=bufif1, as don't have strengths yet
+	|	yPMOS delayE gateBufif0List ';'		{ $$ = $3; }  // ~=bufif0, as don't have strengths yet
 	//
 	|	yTRAN delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"tran"); } // Unsupported
-	|	yNMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"nmos"); } // Unsupported
-	|	yPMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"pmos"); } // Unsupported
 	|	yRCMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"rcmos"); } // Unsupported
 	|	yCMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"cmos"); } // Unsupported
 	|	yRNMOS delayE gateUnsupList ';'		{ $$ = $3; GATEUNSUP($3,"rmos"); } // Unsupported

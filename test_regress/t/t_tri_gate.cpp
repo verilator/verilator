@@ -13,6 +13,10 @@
 # include "Vt_tri_gate_notif0.h"
 #elif defined(T_NOTIF1)
 # include "Vt_tri_gate_notif1.h"
+#elif defined(T_PMOS)
+# include "Vt_tri_gate_pmos.h"
+#elif defined(T_NMOS)
+# include "Vt_tri_gate_nmos.h"
 #else
 # error "Unknown test"
 #endif
