@@ -387,6 +387,11 @@ public:
 	    "PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
 	return names[m_e]; }
+    bool isSignal() const  { return (m_e==WIRE || m_e==IMPLICITWIRE
+				     || m_e==TRIWIRE
+				     || m_e==TRI0 || m_e==TRI1
+				     || m_e==SUPPLY0 || m_e==SUPPLY1
+				     || m_e==VAR); }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }

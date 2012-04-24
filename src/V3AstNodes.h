@@ -757,8 +757,7 @@ public:
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }
-    bool	isSignal() const  { return (varType()==AstVarType::WIRE || varType()==AstVarType::IMPLICITWIRE
-					    || varType()==AstVarType::VAR); }
+    bool	isSignal() const  { return varType().isSignal(); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
 					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
     bool	isToggleCoverable() const  { return ((isIO() || isSignal())
