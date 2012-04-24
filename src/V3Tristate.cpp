@@ -589,12 +589,10 @@ class TristateVisitor : public TristateBaseVisitor {
 	m_varvec.push_back(nodep);
 	nodep->iterateChildren(*this);
 	// If tri0/1 force a pullup
-	bool pulldown = nodep->varType()==AstVarType::TRI0;
-	bool pullup = nodep->varType()==AstVarType::TRI1;
-	if (pulldown || pullup) {
+	if (nodep->isPulldown() || nodep->isPullup()) {
 	    AstNode* newp = new AstPull(nodep->fileline(),
 					new AstVarRef(nodep->fileline(), nodep, true),
-					pullup);
+					nodep->isPullup());
 	    m_modp->addStmtp(newp);
 	    // We'll iterate on the new AstPull later
 	}

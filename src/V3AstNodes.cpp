@@ -75,6 +75,9 @@ bool AstVar::isScBv() const {
 }
 
 void AstVar::combineType(AstVarType type) {
+    // These flags get combined with the existing settings of the flags.
+    // We don't test varType for certain types, instead set flags since
+    // when we combine wires cross-hierarchy we need a union of all characteristics.
     if (type == AstVarType::SUPPLY0) type = AstVarType::WIRE;
     if (type == AstVarType::SUPPLY1) type = AstVarType::WIRE;
     m_varType=type; 	// For debugging prints only
@@ -86,6 +89,10 @@ void AstVar::combineType(AstVarType type) {
     if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE
 	|| type==AstVarType::TRI0 || type==AstVarType::TRI1)
 	m_tristate = true;
+    if (type==AstVarType::TRI0)
+	m_isPulldown = true;
+    if (type==AstVarType::TRI1)
+	m_isPullup = true;
 }
 
 string AstVar::verilogKwd() const {

@@ -639,6 +639,8 @@ private:
     bool	m_fileDescr:1;	// File descriptor
     bool	m_isConst:1;	// Table contains constant data
     bool	m_isStatic:1;	// Static variable
+    bool	m_isPulldown:1;	// Tri0
+    bool	m_isPullup:1;	// Tri1
     bool	m_trace:1;	// Trace this variable
 
     void	init() {
@@ -649,7 +651,7 @@ private:
 	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
-	m_fileDescr=false; m_isConst=false; m_isStatic=false;
+	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
 	m_trace=false;
     }
 public:
@@ -787,6 +789,8 @@ public:
     bool	isStatic() const { return m_isStatic; }
     bool	isFuncLocal() const { return m_funcLocal; }
     bool	isFuncReturn() const { return m_funcReturn; }
+    bool	isPullup() const { return m_isPullup; }
+    bool	isPulldown() const { return m_isPulldown; }
     bool	attrClockEn() const { return m_attrClockEn; }
     bool	attrScBv() const { return m_attrScBv; }
     bool	attrFileDescr() const { return m_fileDescr; }
