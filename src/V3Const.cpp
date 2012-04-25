@@ -369,7 +369,11 @@ private:
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
 	AstNode* basefromp = AstArraySel::baseFromp(nodep);
-	if (m_doGenerate) V3Width::widthParamsEdit(nodep); // Never checked yet
+	if (m_doGenerate) {
+	    // Never checked yet
+	    V3Width::widthParamsEdit(nodep);
+	    nodep->iterateChildren(*this);	// May need "constifying"
+	}
 	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 	    AstVar* varp = varrefp->varp();
 	    if (!varp->dtypep()) varp->v3fatalSrc("Data type lost");
