@@ -354,7 +354,8 @@ sub new {
 	vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
 	# NC
 	nc => 0,
-	nc_flags => [split(/\s+/,"+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c ")],
+	nc_flags => [split(/\s+/,("+licqueue +nowarn+LIBNOU +define+NC=1 -q +assert +sv -c "
+				  .($opt_trace ? " +access+r":"")))],
 	nc_flags2 => [],  # Overridden in some sim files
 	nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
 	# Verilator
