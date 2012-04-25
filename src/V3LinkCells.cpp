@@ -176,6 +176,13 @@ private:
 	m_modp = NULL;
     }
 
+    virtual void visit(AstPackageImport* nodep, AstNUser*) {
+	// Package Import: We need to do the package before the use of a package
+	nodep->iterateChildren(*this);
+	if (!nodep->packagep()) nodep->v3fatalSrc("Unlinked package");  // Parser should set packagep
+	new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
+    }
+
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
 	if (!nodep->modp()) {

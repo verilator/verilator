@@ -215,18 +215,17 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep, AstNUser* vup) {
 	// Top scope
 	m_curVarsp = symsFindNew(nodep, NULL);
-	// And recurse...
-	// Recurse...
+	// Recurse..., backward as must do packages before using packages
 	m_idState = ID_FIND;
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenBackwards(*this);
 	if (debug()==9) m_curVarsp->dump(cout,"-curvars: ",true/*user4p_is_table*/);
 	m_idState = ID_PARAM;
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenBackwards(*this);
 	m_idState = ID_RESOLVE;
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenBackwards(*this);
 	nodep->checkTree();
     }
 
