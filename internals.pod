@@ -384,13 +384,12 @@ the C<MODULE>, which in turn is the C<op1p> pointer under the C<NETLIST>
 "0x91a780" is the address of this node.
 
 "<e74>" means the 74th edit to the netlist was the last modification to
-this node.  A trailing # indicates this node changed since the last tree
-dump was made.  You can gdb break on this edit; see below.
+this node.
 
 "{a22}" indicates this node is related to line 22 in the source filename
-"a", where "a" is the first file read, "z" the 36th, and "aa" the 37th.
+"a", where "a" is the first file read, "z" the 26th, and "aa" the 27th.
 
-"w70" indicates the width is 70 bits.  sw70 would be signed 70 bits.
+"w70" indicates the width is 70 bits.
 
 "out_wide" is the name of the node, in this case the name of the variable.
 
@@ -398,6 +397,91 @@ dump was made.  You can gdb break on this edit; see below.
 variable is an output.
 
 =back
+
+In more detail the following fields are dumped common to all nodes. They
+are produced by the C<AstNode::dump()> method:
+
+=over 4
+
+=item Tree Hierarchy
+
+The dump lines begin with numbers and colons to indicate the child node
+hierarchy.  As noted above in L</Key Classes Used in the Verilator Flow>,
+C<AstNode> has lists of items at the same level in the AST, connected by
+the C<nextp()> and C<prevp()> pointers. These appear as nodes at the same
+level. For example after inlining:
+
+     NETLIST 0x929c1c8 <e1> {a0} w0
+    1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
+    1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
+    1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+    ...
+    1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
+    ...
+
+=item AstNode type
+
+The textual name of this node AST type (always in capitals). Many of these
+correspond directly to Verilog entities (for example C<MODULE> and
+C<TASK>), but others are internal to Verialtor (for example C<NETLIST> and
+C<BASICDTYPE>).
+
+=item Address of the node
+
+A hexadecimal address of the node in memory. Useful for examining with the
+debugger.
+
+=item Last edit number
+
+Of the form C<< <ennnn> >> or C<< <ennnn#> >> , where C<nnnn> is the number
+of the last edit to modify this node. The trailing C<#> indicates the node
+has been edited since the last tree dump (which typically means in the last
+refinement or optimization pass). GDB can watch for this, see L</Debugging
+with GDB> below.
+
+=item Source file and line
+
+Of the form C<< {xxnnnn} >>, where C{xx} is the filename letter (or
+letters) and C<nnnn> is the line number within that file. The first file is
+C<a>, the 26th is C<z>, the 27th is C<aa> and so on.
+
+=item Width of the item
+
+Many nodes have an explicit size, other "unsized" nodes have a minimum
+width for their implementation. This field is a squence of flag characters
+and width data as follows:
+
+C<s> if the node is signed.
+
+C<d> if the node is a double (i.e a floating point entity).
+
+C<w> always present, indicating this is the width field.
+
+C<u> if the node is unsized.
+
+C</nnnn> if the node is unsized, where C<nnnn> is the minimum width.
+
+=item Name of the entity represented by the node if it exists
+
+For example for a C<VAR> it is the name of the variable.
+
+=back
+
+Many nodes follow these fields with additional node specific
+information. Thus the C<VARREF> node will print either C<[LV]> or C<[RV]>
+to indicate a left value or right value, followed by the node of the
+variable being referred to. For example:
+
+    1:2:1:1: VARREF 0x92c2598 <e509> {e24} w0  clk [RV] <- VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+
+In general, examine the C<dump()> method in C<V3AstNodes.cpp> of the node
+type in question to determine additional fields that may be printed.
+
+The C<MODULE> has a list of C<CELLINLINE> nodes referred to by its
+C<op1p()> pointer, connected by C<nextp()> and C<prevp()> pointers.
+
+Similarly the C<NETLIST> has a list of modules referred to by its C<op1p()>
+pointer.
 
 =head2 Debugging with GDB
 
