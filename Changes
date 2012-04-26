@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support nmos and pmos, bug488.  [Alex Solomatnikov]
 
+***   Add PINMISSING and PINNOCONNECT lint checks.
+
 ***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
 ****  Fix imports causing symbol table error, bug490.  [Alex Solomatnikov]

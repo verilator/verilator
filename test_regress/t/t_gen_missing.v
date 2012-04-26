@@ -4,6 +4,7 @@
 // without warranty, 2011 by Wilson Snyder.
 
 module t;
+   //  verilator lint_off PINMISSING
 `ifdef T_GEN_MISSING_BAD
    foobar #(.FOO_TYPE(1)) foobar;  // This means we should instatiate missing module
 `elsif T_GEN_MISSING

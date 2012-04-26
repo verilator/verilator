@@ -79,6 +79,8 @@ public:
 	LITENDIAN,	// Little bit endian vector
 	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
+	PINMISSING,	// Cell pin not specified
+	PINNOCONNECT,	// Cell pin not connected
 	REALCVT,	// Real conversion
 	REDEFMACRO,	// Redefining existing define macro
 	SELRANGE,	// Selection index out of range
@@ -120,6 +122,7 @@ public:
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
+	    "PINMISSING", "PINNOCONNECT",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
@@ -146,6 +149,7 @@ public:
 				      || m_e==ENDLABEL
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN
+				      || m_e==PINMISSING
 				      || m_e==REALCVT
 				      || m_e==UNSIGNED
 				      || m_e==WIDTH); }
@@ -155,6 +159,7 @@ public:
 				       || m_e==DEFPARAM
 				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
+				       || m_e==PINNOCONNECT
 				       || m_e==SYNCASYNCNET
 				       || m_e==UNDRIVEN
 				       || m_e==UNUSED
