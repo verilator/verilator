@@ -114,6 +114,7 @@ private:
 	    // we'll save work, and we can't call pinReconnectSimple in
 	    // this loop as it clone()s itself.
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
+		if (!pinp->exprp()) continue;
 		V3Inst::pinReconnectSimple(pinp, nodep, m_modp);
 	    }
 
@@ -130,6 +131,7 @@ private:
 	    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
 	    // Create assignments to the pins
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
+		if (!pinp->exprp()) continue;
 		UINFO(6,"     Pin change from "<<pinp->modVarp()<<endl);
 		// Make new signal; even though we'll optimize the interconnect, we
 		// need an alias to trace correctly.  If tracing is disabled, we'll

@@ -80,6 +80,7 @@ private:
 	// PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
 	//	      or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
 	UINFO(4,"   PIN  "<<nodep<<endl);
+	if (!nodep->exprp()) return; // No-connect
 	if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
 	if (nodep->modVarp()->isOutOnly() && nodep->exprp()->castConst())
 	    nodep->v3error("Output port is connected to a constant pin, electrical short");
@@ -188,6 +189,7 @@ private:
     }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Any non-direct pins need reconnection with a part-select
+	if (!nodep->exprp()) return; // No-connect
 	if (m_cellRangep) {
 	    UINFO(4,"   PIN  "<<nodep<<endl);
 	    int pinwidth = nodep->modVarp()->width();

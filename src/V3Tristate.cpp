@@ -475,6 +475,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	//   ENABLE:  -> (VARREF(trisig__pinen)
 	//               SEL(trisig,x) = BUFIF1(enable__temp, trisig__pinen)
 	UINFO(9," "<<nodep<<endl);
+	if (!nodep->exprp()) return; // No-connect
 	AstVar* enModVarp = (AstVar*) nodep->modVarp()->user1p();
 	if (!enModVarp) { // no __en signals on this pin
 	    nodep->iterateChildren(*this);

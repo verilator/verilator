@@ -656,13 +656,6 @@ private:
 		    refp->user5p(nodep);
 		}
 	    }
-	    if (!nodep->exprp()) {
-		// It's an empty pin connection, done with it.
-		// (We used to not create pins for these, but we'd miss
-		// warns.  Perhaps they should live even further...)
-		pushDeletep(nodep->unlinkFrBack()); nodep=NULL;
-		return;
-	    }
 	    nodep->iterateChildren(*this);
 	}
 	// Deal with implicit definitions - do before ID_RESOLVE stage as may be referenced above declaration

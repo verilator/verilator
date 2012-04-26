@@ -1097,10 +1097,14 @@ private:
 	if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
 	    // Widthing handled as special init() case
 	    nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	} else if (!m_paramsOnly){
+	} else if (!m_paramsOnly) {
 	    if (nodep->modVarp()->width()==0) {
 		// Var hasn't been widthed, so make it so.
 		nodep->modVarp()->iterate(*this);
+	    }
+	    if (!nodep->exprp()) { // No-connect
+		nodep->widthSignedFrom(nodep->modVarp());
+		return;
 	    }
 	    // Very much like like an assignment, but which side is LH/RHS
 	    // depends on pin being a in/output/inout.

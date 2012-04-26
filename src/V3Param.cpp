@@ -311,6 +311,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
 	for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 	    if (!pinp) nodep->v3fatalSrc("Non pin under cell params\n");
+	    if (!pinp->exprp()) continue; // No-connect
 	    AstVar* modvarp = pinp->modVarp();
 	    if (!modvarp) {
 		pinp->v3error("Parameter not found in sub-module: Param "<<pinp->name()<<" of "<<nodep->prettyName());
@@ -390,7 +391,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		// Assign parameters to the constants specified
 		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		    AstVar* modvarp = pinp->modVarp();
-		    if (modvarp) {
+		    if (modvarp && pinp->exprp()) {
 			AstConst* constp = pinp->exprp()->castConst();
 			// Remove any existing parameter
 			if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
