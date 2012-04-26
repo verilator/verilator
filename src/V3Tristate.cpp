@@ -548,12 +548,14 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
 
 	// Propagate any pullups/pulldowns upwards if necessary
-	if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
-	    if (refp && !refp->varp()->user3p()) {
-		refp->varp()->user3p(pullp);
-	    } else {
-		//selp: Note we don't currently obey selects; all bits must be consistently pulled
-		checkPullDirection(pullp, (AstPull*) refp->varp()->user3p());
+	if (refp) {
+	    if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
+		if (!refp->varp()->user3p()) {
+		    refp->varp()->user3p(pullp);
+		} else {
+		    //selp: Note we don't currently obey selects; all bits must be consistently pulled
+		    checkPullDirection(pullp, (AstPull*) refp->varp()->user3p());
+		}
 	    }
 	}
 	// Don't need to visit the created assigns, as it was added at the end of the next links
