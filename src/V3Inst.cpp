@@ -46,8 +46,6 @@ class InstVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared each Cell:
-    //  AstVar::user1p()	-> AstNode*.  Expression connected to given pin
-    //  AstVarRef::user1p()	-> bool.  True if created senitem for parent's connected signal
     //  AstPin::user1p()	-> bool.  True if created assignment already
     AstUser1InUse	m_inuser1;
 
@@ -75,10 +73,6 @@ private:
 	m_cellp = nodep;
 	//VV*****  We reset user1p() on each cell!!!
 	AstNode::user1ClearTree();
-	// Collect pin expressions, so submod->varp->user1p() points to expression it connects to
-	for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
-	    pinp->modVarp()->user1p(pinp->exprp());
-	}
 	nodep->iterateChildren(*this);
 	m_cellp = NULL;
     }

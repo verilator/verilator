@@ -29,9 +29,9 @@ module t (/*AUTOARG*/
 
    // Test loop
    always @ (posedge clk) begin
-//`ifdef TEST_VERBOSE
+`ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
-//`endif
+`endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
