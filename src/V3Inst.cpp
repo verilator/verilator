@@ -87,7 +87,7 @@ private:
 	// Use user1p on the PIN to indicate we created an assign for this pin
 	if (!nodep->user1Inc()) {
 	    // Simplify it
-	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp);
+	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, false);
 	    // Make a ASSIGNW (expr, pin)
 	    AstNode*  exprp  = nodep->exprp()->cloneTree(false);
 	    if (nodep->width() != nodep->modVarp()->width())
@@ -237,7 +237,7 @@ public:
 //######################################################################
 // Inst class functions
 
-AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp) {
+AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp, bool forTristate) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
     // Return the new assignment, if one was made
@@ -261,7 +261,7 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	       && pinp->width() == pinVarp->width()
 	       && 1) {
 	// Done. One to one interconnect won't need a temporary variable.
-    } else if (pinp->exprp()->castConst()) {
+    } else if (!forTristate && pinp->exprp()->castConst()) {
 	// Done. Constant.
     } else {
 	// Make a new temp wire

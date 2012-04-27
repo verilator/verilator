@@ -8,13 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 fails=>$Self->{v3},
-	 expect=>
-qr{%Error: t/t_tri_pin0_bad.v:\d+: Unsupported tristate port expression: CONST '1'h0'
-%Error: t/t_tri_pin0_bad.v:\d+: Output port is connected to a constant pin, electrical short
-%Error: Exiting due to},
+    );
+
+execute (
+    check_finished=>1,
     );
 
 ok(1);
 1;
-

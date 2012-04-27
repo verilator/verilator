@@ -160,6 +160,16 @@ class TristateVisitor : public TristateBaseVisitor {
 	return invarp->user4p()->castNode()->castVar();
     }
 
+    AstVar* getCreateUnconnVarp(AstNode* fromp) {
+	AstVar* newp =  new AstVar(fromp->fileline(),
+				   AstVarType::MODULETEMP,
+				   "__Vtriunconn"+cvtToStr(m_unique++),
+				   VFlagLogicPacked(), fromp->width());
+	if (!m_modp) { newp->v3error("Unsupported: Creating tristate signal not underneath a module"); }
+	else m_modp->addStmtp(newp);
+	return newp;
+    }
+
     AstNode* newEnableDeposit(AstSel* selp, AstNode* enp) {
 	// Form a "deposit" instruction for given enable, using existing select as a template.
 	// Would be nicer if we made this a new AST type
@@ -196,6 +206,17 @@ class TristateVisitor : public TristateBaseVisitor {
     virtual void visit(AstConst* nodep, AstNUser*) {
 	UINFO(9,(m_alhs?"alhs":"")<<" "<<nodep<<endl);
 	// Detect any Z consts and convert them to 0's with an enable that is also 0.
+	if (m_alhs && nodep->user1p()) {
+	    // A pin with 1'b0 or similar connection results in an assign with constant on LHS
+	    // due to the pinReconnectSimple call in visit AstPin.
+	    // We can ignore the output override by making a temporary
+	    AstVar* varp = getCreateUnconnVarp(nodep);
+	    AstNode* newp = new AstVarRef(nodep->fileline(), varp, true);
+	    UINFO(9," const->"<<newp<<endl);
+	    nodep->replaceWith(newp);
+	    pushDeletep(nodep); nodep = NULL;
+	    return;
+	}
 	if (nodep->num().hasZ()) {
 	    FileLine* fl = nodep->fileline();
 	    V3Number numz (fl,nodep->width()); numz.opBitsZ(nodep->num());  //Z->1, else 0
@@ -388,7 +409,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    nodep->rhsp()->user1p(NULL);
 	    UINFO(9,"   enp<-rhs "<<nodep->lhsp()->user1p()<<endl);
 	}
-	m_alhs = true;
+	m_alhs = true;  // And user1p() will indicate tristate equation, if any
 	nodep->lhsp()->iterateAndNext(*this);
 	m_alhs = false;
     }
@@ -467,15 +488,25 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
+    // .tri(SEL(trisig,x)) becomes
+    //   INPUT:   -> (VARREF(trisig__pinin)),
+    //               trisig__pinin = SEL(trisig,x)       // via pinReconnectSimple
+    //   OUTPUT:  -> (VARREF(trisig__pinout))
+    //   ENABLE:  -> (VARREF(trisig__pinen)
+    //               SEL(trisig,x) = BUFIF1(enable__temp, trisig__pinen)
+    // Added complication is the signal may be an output/inout or just input with tie off (or not) up top
+    //     PIN	PORT	NEW PORTS AND CONNECTIONS
+    //     N/C	input	in(from-resolver), __out(to-resolver-only), __en(to-resolver-only)
+    //     N/C	inout	Spec says illegal
+    //     N/C	output	Unsupported; Illegal?
+    //     wire	input	in(from-resolver-with-wire-value), __out(to-resolver-only), __en(to-resolver-only)
+    //     wire	inout	in, __out, __en
+    //     wire	output	in, __out, __en
+    //     const	input	in(from-resolver-with-const-value), __out(to-resolver-only), __en(to-resolver-only)
+    //     const	inout	Spec says illegal
+    //     const	output	Unsupported; Illegal?
     virtual void visit(AstPin* nodep, AstNUser*) {
-	// .tri(SEL(trisig,x)) becomes
-	//   INPUT:   -> (VARREF(trisig__pinin)),
-	//               trisig__pinin = SEL(trisig,x)       // via pinReconnectSimple
-	//   OUTPUT:  -> (VARREF(trisig__pinout))
-	//   ENABLE:  -> (VARREF(trisig__pinen)
-	//               SEL(trisig,x) = BUFIF1(enable__temp, trisig__pinen)
 	UINFO(9," "<<nodep<<endl);
-	if (!nodep->exprp()) return; // No-connect
 	AstVar* enModVarp = (AstVar*) nodep->modVarp()->user1p();
 	if (!enModVarp) { // no __en signals on this pin
 	    nodep->iterateChildren(*this);
@@ -488,7 +519,15 @@ class TristateVisitor : public TristateBaseVisitor {
 	if (debug()>=9) nodep->dumpTree(cout,"-pin-pre: ");
 
 	// pinReconnectSimple needs to presume input or output behavior; we need both
-	// Therefore, create the BUFIF1 on output and separate input pin, then pinReconnectSimple both
+	// Therefore, create the enable, output and separate input pin, then pinReconnectSimple all
+
+	if (!nodep->exprp()) { // No-connect; covert to empty connection
+	    UINFO(5,"Unconnected pin terminate "<<nodep<<endl);
+	    AstVar* ucVarp = getCreateUnconnVarp(nodep);
+	    nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
+				       nodep->modVarp()->isOutput()));
+	    // We don't need a driver on the wire; the lack of one will default to tristate
+	}
 
 	// Create the output enable pin, connect to new signal
 	AstNode* enrefp;
@@ -524,14 +563,15 @@ class TristateVisitor : public TristateBaseVisitor {
 	    outpinp->user2(true); // mark this visited
 	    m_cellp->addPinsp(outpinp);
 	    // Simplify
-	    outAssignp = V3Inst::pinReconnectSimple(outpinp, m_cellp, m_modp);  // Note may change outpinp->exprp()
+	    if (debug()>=9) outpinp->dumpTree(cout,"-pin-opr: ");
+	    outAssignp = V3Inst::pinReconnectSimple(outpinp, m_cellp, m_modp, true);  // Note may change outpinp->exprp()
 	    if (debug()>=9) outpinp->dumpTree(cout,"-pin-out: ");
 	    if (debug()>=9 && outAssignp) outAssignp->dumpTree(cout,"-pin-out: ");
 	}
 
 	// Existing pin becomes an input
 	TristateInPinVisitor visitor (nodep->exprp());
-	V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp);  // Note may change nodep->exprp()
+	V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, true);  // Note may change nodep->exprp()
 	if (debug()>=9) nodep->dumpTree(cout,"-pin-in:  ");
 
 	// Connect enable to output signal

@@ -634,7 +634,7 @@ private:
 
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Pin: Link to submodule's port
-	// ONLY CALLED by AstCell during ID_RESOLVE and ID_PARAM state
+	// ONLY CALLED by visit(AstCell) during ID_RESOLVE and ID_PARAM state
 	if (m_idState==ID_RESOLVE && !nodep->modVarp()) {
 	    if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->castVar();
