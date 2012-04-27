@@ -510,8 +510,13 @@ void AstNode::dump(ostream& str) {
 	//<<" "<<(void*)this->m_backp
        <<" <e"<<dec<<editCount()
        <<((editCount()>=editCountLast())?"#>":">")
-       <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}"
-       <<" "<<(isSigned()?"s":"")
+       <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}";
+    if (user1p()) str<<" u1="<<(void*)user1p();
+    if (user2p()) str<<" u2="<<(void*)user2p();
+    if (user3p()) str<<" u3="<<(void*)user3p();
+    if (user4p()) str<<" u4="<<(void*)user4p();
+    if (user5p()) str<<" u5="<<(void*)user5p();
+    str<<" "<<(isSigned()?"s":"")
        <<(isDouble()?"d":"")
        <<"w"<<(widthSized()?"":"u")<<width();
     if (!widthSized()) str<<"/"<<widthMin();

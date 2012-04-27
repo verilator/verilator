@@ -445,6 +445,10 @@ Of the form C<< {xxnnnn} >>, where C{xx} is the filename letter (or
 letters) and C<nnnn> is the line number within that file. The first file is
 C<a>, the 26th is C<z>, the 27th is C<aa> and so on.
 
+=item User pointers
+
+Shows the value of the node's user1p...user5p, if non-NULL.
+
 =item Width of the item
 
 Many nodes have an explicit size, other "unsized" nodes have a minimum

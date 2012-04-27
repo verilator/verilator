@@ -996,6 +996,7 @@ public:
     void	checkTree();  // User Interface version
     void	dumpPtrs(ostream& str=cout) const;
     void	dumpTree(ostream& str=cout, const string& indent="    ", int maxDepth=0);
+    void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
     void	dumpTreeGdb(); // For GDB only
     void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeFile(const string& filename, bool append=false);

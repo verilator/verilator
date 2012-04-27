@@ -75,6 +75,7 @@ public:
     // METHODS
     void readFiles();
     void checkTree();
+    static void dumpGlobalTree(const string& filename, int newNumber=0);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void assertWidthsMatch(bool flag) { m_assertWidthsMatch = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {
