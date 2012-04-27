@@ -1929,6 +1929,7 @@ private:
 	AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	AstNodeBiop* newp = NULL;
+	// No width change on output;...		// All below have bool or double outputs
 	switch (nodep->type()) {
 	case AstType::atADD:  				newp = new AstAddD	(fl,lhsp,rhsp); break;
 	case AstType::atSUB:  				newp = new AstSubD	(fl,lhsp,rhsp); break;
@@ -1946,7 +1947,7 @@ private:
 	}
 	UINFO(6,"   ReplaceWithDVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
-	newp->widthSignedFrom(nodep);
+	// No width change; the default created type (bool or double) is correct
 	pushDeletep(nodep); nodep=NULL;
 	return newp;
     }

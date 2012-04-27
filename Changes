@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
+****  Fix ITOD internal error on real conversions, bug491.  [Alex Solomatnikov]
+
 ****  Fix imports causing symbol table error, bug490.  [Alex Solomatnikov]
 
 * Verilator 3.833 2012/04/15
