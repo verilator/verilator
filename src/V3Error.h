@@ -76,6 +76,7 @@ public:
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
 	INCABSPATH,	// Include has absolute path
+	INITIALDLY,	// Initial delayed statement
 	LITENDIAN,	// Little bit endian vector
 	MODDUP,		// Duplicate module
 	MULTIDRIVEN,	// Driven from multiple blocks
@@ -119,7 +120,8 @@ public:
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "ENDLABEL", "GENCLK",
-	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE", "INCABSPATH",
+	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+	    "INCABSPATH", "INITIALDLY",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
 	    "PINMISSING", "PINNOCONNECT",

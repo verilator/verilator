@@ -2718,6 +2718,15 @@ command line to specify the top include source directory.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item INITIALDLY
+
+Warns that you have a delayed assignment inside of an initial or final
+block.  If this message is suppressed, Verilator will convert this to a
+non-delayed assignment.  See also the COMBDLY warning.
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
+
 =item LITENDIAN
 
 Warns that a vector is declared with little endian bit numbering

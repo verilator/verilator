@@ -164,16 +164,22 @@ public:
 // Active AssignDly replacement functions
 
 class ActiveDlyVisitor : public ActiveBaseVisitor {
+public:
+    enum CheckType { CT_SEQ, CT_COMBO, CT_INITIAL };
 private:
-    bool 	m_combo;	// Combo logic
+    CheckType 	m_check;	// Combo logic or other
     AstNode*	m_alwaysp;	// Always we're under
     AstNode*	m_assignp;	// In assign
     // VISITORS
     virtual void visit(AstAssignDly* nodep, AstNUser*) {
-	if (m_combo) {
+	if (m_check != CT_SEQ) {
 	    // Convert to a non-delayed assignment
 	    UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
-	    nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).");
+	    if (m_check == CT_INITIAL) {
+		nodep->v3warn(INITIALDLY,"Delayed assignments (<=) in initial or final block; suggest blocking assignments (=).");
+	    } else {
+		nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).");
+	    }
 	    AstNode* newp = new AstAssign (nodep->fileline(),
 					   nodep->lhsp()->unlinkFrBack(),
 					   nodep->rhsp()->unlinkFrBack());
@@ -182,7 +188,7 @@ private:
 	}
     }
     virtual void visit(AstAssign* nodep, AstNUser*) {
-	if (!m_combo) {
+	if (m_check == CT_SEQ) {
 	    AstNode* las = m_assignp;
 	    m_assignp = nodep;
 	    nodep->lhsp()->iterateAndNext(*this);
@@ -191,7 +197,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	AstVar* varp=nodep->varp();
-	if (!m_combo
+	if (m_check == CT_SEQ
 	    && m_assignp
 	    && !varp->isUsedLoopIdx() // Ignore loop indicies
 	    && !varp->isTemp()
@@ -213,9 +219,9 @@ private:
     }
 public:
     // CONSTUCTORS
-    ActiveDlyVisitor(AstNode* nodep, bool combo) {
+    ActiveDlyVisitor(AstNode* nodep, CheckType check) {
 	m_alwaysp = nodep;
-	m_combo = combo;
+	m_check = check;
 	m_assignp = NULL;
 	nodep->accept(*this);
     }
@@ -252,6 +258,7 @@ private:
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	// Relink to IACTIVE, unless already under it
 	UINFO(4,"    INITIAL "<<nodep<<endl);
+	ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_INITIAL);
 	AstActive* wantactivep = m_namer.getIActive(nodep->fileline());
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
@@ -284,6 +291,7 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    return;
 	}
+	ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_INITIAL);
 	if (!m_scopeFinalp) {
 	    m_scopeFinalp = new AstCFunc(nodep->fileline(), "_final", m_namer.scopep());
 	    m_scopeFinalp->argTypes(EmitCBaseVisitor::symClassVar());
@@ -354,10 +362,10 @@ private:
 
 	// Warn and/or convert any delayed assignments
 	if (combo && !sequent) {
-	    ActiveDlyVisitor dlyvisitor (nodep, true);
+	    ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_COMBO);
 	}
 	else if (!combo && sequent) {
-	    ActiveDlyVisitor dlyvisitor (nodep, false);
+	    ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_SEQ);
 	}
     }
     virtual void visit(AstAlways* nodep, AstNUser*) {
