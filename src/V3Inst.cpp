@@ -237,7 +237,7 @@ public:
 //######################################################################
 // Inst class functions
 
-AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp, bool forTristate) {
+AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule*, bool forTristate) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
     // Return the new assignment, if one was made
@@ -269,7 +269,8 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
 	string newvarname = "__Vcellinp__"+cellp->name()+"__"+pinp->name();
 	AstVar* newvarp = new AstVar (pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
-	modp->addStmtp(newvarp);
+	// Important to add statement next to cell, in case there is a generate with same named cell
+	cellp->addNextHere(newvarp);
 	if (pinVarp->isInout()) {
 	    pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be direct one-to-one connection (without any expression)");
 	} else if (pinVarp->isOutput()) {
@@ -296,7 +297,7 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	    pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, false));
 	}
 	pinp->widthSignedFrom(pinp->exprp());
-	if (assignp) modp->addStmtp(assignp);
+	if (assignp) cellp->addNextHere(assignp);
 	//if (1||debug()) { pinp->dumpTree(cout,"  out:"); }
 	//if (1||debug()) { assignp->dumpTree(cout," aout:"); }
     }

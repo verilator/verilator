@@ -591,6 +591,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	// Propagate any pullups/pulldowns upwards if necessary
 	if (refp) {
 	    if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
+		UINFO(9, "propagate pull to "<<refp->varp());
 		if (!refp->varp()->user3p()) {
 		    refp->varp()->user3p(pullp);
 		} else {
@@ -636,6 +637,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstNode* newp = new AstPull(nodep->fileline(),
 					new AstVarRef(nodep->fileline(), nodep, true),
 					nodep->isPullup());
+	    UINFO(9,"New pull "<<newp);
 	    m_modp->addStmtp(newp);
 	    // We'll iterate on the new AstPull later
 	}
@@ -725,6 +727,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		//
 		outvarp->user1p(envarp);
 		outvarp->user3p(invarp->user3p());
+		if (invarp->user3p()) UINFO(9, "propagate pull to "<<outvarp);
 	    } else if (invarp->user1p()) {
 		envarp = invarp->user1p()->castNode()->castVar();  // From CASEEQ, foo === 1'bz
 	    }
@@ -788,6 +791,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		AstPull* pullp = (AstPull*)lhsp->user3p();
 		if (pullp && pullp->direction() == 1) {
 		    pull.setAllBits1();
+		    UINFO(9,"Has pullup "<<pullp<<endl);
 		} else {
 		    pull.setAllBits0(); // default pull direction is down.
 		}

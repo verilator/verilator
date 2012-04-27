@@ -632,6 +632,8 @@ void AstVar::dump(ostream& str) {
 	else if (isOutput()) str<<" [O]";
     }
     if (isConst()) str<<" [CONST]";
+    if (isPullup()) str<<" [PULLUP]";
+    if (isPulldown()) str<<" [PULLDOWN]";
     if (isUsedClock()) str<<" [CLK]";
     if (isSigPublic()) str<<" [P]";
     if (isUsedLoopIdx()) str<<" [LOOP]";

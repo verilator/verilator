@@ -868,9 +868,9 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
 	//			// Per spec, if direction given default the nettype.
 	//			// The higher level rule may override this VARDTYPE with one later in the parse.
-	|	port_direction				{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); }
-	|	port_direction net_type			{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARNET
-	|	net_type				{ } // net_type calls VARNET
+	|	port_direction					{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); }
+	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARNET
+	|	net_type					{ } // net_type calls VARNET
  	;
 
 port_declNetE:			// IEEE: part of port_declaration, optional net type
