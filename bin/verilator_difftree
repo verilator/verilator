@@ -14,6 +14,19 @@ use vars qw ($Debug);
 
 #======================================================================
 
+# Old version 1 dump nodes with no dtypep's
+our %Ver1_Non_Dtyped = map {$_ => 1} qw(
+  ACTIVE ALWAYS ALWAYSPOST ALWAYSPUBLIC ATTROF BEGIN BREAK CASE CASEITEM
+  CCALL CELL CELLINLINE CFILE CFUNC CHANGEDET CLOCKING COMMENT CONTINUE
+  COVERDECL COVERINC COVERTOGGLE CRETURN CSTMT DEFPARAM DISABLE DISPLAY DOT
+  DPIEXPORT FCLOSE FFLUSH FINAL FINISH FOPEN GENCASE GENERATE GENFOR GENIF
+  IF IMPLICIT INITARRAY INITIAL JUMPGO JUMPLABEL MODULE NETLIST
+  NOTFOUNDMODULE PACKAGE PACKAGEIMPORT PARSEREF PIN PORT PRAGMA PRIMITIVE
+  PSLASSERT PSLCOVER PSLDEFCLOCK PULL RANGE READMEM REPEAT RETURN SCCTOR
+  SCDTOR SCHDR SCIMP SCIMPHDR SCINT SCOPE SELBIT SELEXTRACT SELMINUS
+  SELPLUS SENGATE SENITEM SENTREE SFORMAT SFORMATF STOP SYSIGNORE SYSTEMT
+  TASK TASKREF TEXT TOPSCOPE TYPEDEFFWD TYPETABLE UCSTMT UDPTABLE
+  UDPTABLELINE UNTILSTABLE VASSERT WHILE );
 
 #======================================================================
 # main
@@ -82,24 +95,67 @@ sub diff_file {
     my $tmp_a = "/tmp/$$.a";
     my $tmp_b = "/tmp/$$.b";
 
-    filter ($a, $tmp_a);
-    filter ($b, $tmp_b);
+    my $vera = version_from($a);
+    my $verb = version_from($b);
+    my $verCvt = (($vera < 0x3900 && $verb >= 0x3900)
+		  || ($vera >= 0x3900 && $verb < 0x3900));
+
+    filter ($a, $tmp_a, $verCvt);
+    filter ($b, $tmp_b, $verCvt);
     system("diff -u $tmp_a $tmp_b");
     unlink $tmp_a;
     unlink $tmp_b;
 }
 
+sub version_from {
+    my $fn = shift;
+    # Return dump format
+    my $f1 = IO::File->new ($fn) or die "%Error: $! $fn,";
+    while (defined (my $line=$f1->getline())) {
+	last if $. > 10;
+	return hex $1 if $line =~ /\(format (0x[0-9.]+)\)/;
+    }
+    return 1.0;
+}
+
 sub filter {
     my $fn1 = shift;
     my $fn2 = shift;
+    my $verCvt = shift;
     # Remove hex numbers before diffing
     my $f1 = IO::File->new ($fn1) or die "%Error: $! $fn1,";
     my $f2 = IO::File->new ($fn2,"w") or die "%Error: $! $fn2,";
     while (defined (my $line=$f1->getline())) {
+      same_line:
 	next if $line =~ / This=/;
 	$line =~ s/0x[a-f0-9]+/0x/g;
 	$line =~ s/<e[0-9]+\#?>/<e>/g;
 	$line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
+	if ($verCvt) {
+	    next if $line =~ /^     NETLIST/;
+	    $line =~ s!\@dt=0x\(G?/?([^)]+)\)!$1!g;  # NEW: @dt -> OLD: non @dt format
+	    #					     # Below Ver1_Non_Dtyped may replace above further
+	    if ($line =~ /: ([A-Z]+) /) {
+		my $type = $1;
+		next if $type =~ 'DTYPE';
+		if ($type eq 'TYPETABLE' || $type eq 'RANGE') {
+		    $line =~ /^(\s+\S+:) /; my $prefix = $1;
+		    while (defined ($line=$f1->getline())) {
+			next if $line =~ /^\s+[a-z]/;  # Table body
+			next if $line =~ /^${prefix}[0-9]:/;
+			goto same_line;
+		    }
+		    next;
+		}
+		if ($Ver1_Non_Dtyped{$type}) {
+		    $line =~ s! w[0-9]+!!g;
+		}
+	    }
+	    $line =~ s!\@dt=0$!NoW!g;   # NEW: dt=null -> common format
+	    $line =~ s!\@dt=0 !NoW !g;  # NEW: dt=null -> common format
+	    $line =~ s! s?w0$! NoW!g;   # OLD: no width -> common format
+	    $line =~ s! s?w0 ! NoW !g;  # OLD: no width -> common format
+	}
 	print $f2 $line;
     }
     $f1->close;
