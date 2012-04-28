@@ -31,7 +31,23 @@
 
 //============================================================================
 
-class V3Hashed {
+class VHashedBase {
+public:
+    // CONSTRUCTORS
+    VHashedBase() {}
+    ~VHashedBase() {}
+
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+};
+
+//============================================================================
+
+class V3Hashed : public VHashedBase {
     // NODE STATE
     //  AstNode::user4()	-> V3Hash.  Hash value of this node (hash of 0 is illegal)
     AstUser4InUse	m_inuser4;
@@ -55,11 +71,6 @@ public:
     iterator end() { return m_hashMmap.end(); }
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
     void clear() { m_hashMmap.clear(); AstNode::user4ClearTree(); }
     void hashAndInsert(AstNode* nodep);	// Hash the node, and insert into map
     bool sameNodes(AstNode* node1p, AstNode* node2p);	// After hashing, and tell if identical

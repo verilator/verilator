@@ -53,7 +53,7 @@ sub printfll {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	next if $line !~ /%[^ ]*ll/;
+	next if $line !~ /%[a-z0-9]*ll/;
 	if ($line =~ /^([^:]+)/) {
 	    $names{$1} = 1;
 	    print "$line\n";

@@ -12,8 +12,7 @@ compile (
 	 fails=>1,
 	 expect=>
 '%Error: t/t_mem_packed_assign_bad.v:\d+: Unsupported: Assignment between packed arrays of different dimensions
-%Error: t/t_mem_packed_assign_bad.v:\d+: Unsupported: Assignment between packed arrays of different dimensions
-%Error: Exiting due to.*',
+.*',
 	 );
 
 ok(1);
