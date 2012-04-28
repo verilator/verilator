@@ -527,8 +527,10 @@ what made a <e####> line in the tree dumps):
 
 To print a node:
 
-   call nodep->dumpGdb()      # aliased to "pn" in src/.gdbinit
-   call nodep->dumpTreeGdb()  # aliased to "pnt" in src/.gdbinit
+   pn nodep
+   # or: call nodep->dumpGdb() # aliased to "pn" in src/.gdbinit
+   pnt nodep
+   # or: call nodep->dumpTreeGdb()  # aliased to "pnt" in src/.gdbinit
 
 When GDB halts, it is useful to understand that the backtrace will commonly
 show the iterator functions between each invocation of C<visit> in the

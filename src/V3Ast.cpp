@@ -1011,6 +1011,7 @@ void AstNode::dumpTreeAndNext(ostream& os, const string& indent, int maxDepth) {
 void AstNode::dumpTreeFile(const string& filename, bool append) {
     if (v3Global.opt.dumpTree()) {
 	{   // Write log & close
+	    UINFO(2,"Dumping "<<filename<<endl);
 	    const auto_ptr<ofstream> logsp (V3File::new_ofstream(filename, append));
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
 	    *logsp<<"Tree Dump from <e"<<dec<<editCountLast()<<">";

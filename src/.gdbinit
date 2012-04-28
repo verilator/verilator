@@ -18,3 +18,10 @@ end
 document pnt
   Verilator: Print AstNode NODEP's tree
 end
+
+define watchedit
+   watch AstNode::s_editCntGbl==$arg0
+end
+document watchedit
+  Verilator: Create watch on where a edit number is made
+end
