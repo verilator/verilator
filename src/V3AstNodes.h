@@ -264,21 +264,21 @@ private:
     bool		m_nosigned;	// Implicit without sign
     int			m_msb;		// MSB when no range attached
 public:
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstSignedState signst=signedst_NOSIGNED)
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSignedState signst=signedst_NOSIGN)
 	: AstNodeDType(fl) {
 	init(kwd, signst, 0, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::LOGIC, signedst_NOSIGNED, wantwidth, NULL);
+	init(AstBasicDTypeKwd::LOGIC, signedst_NOSIGN, wantwidth, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::BIT, signedst_NOSIGNED, wantwidth, NULL);
+	init(AstBasicDTypeKwd::BIT, signedst_NOSIGN, wantwidth, NULL);
     }
     // See also addRange in verilog.y
 private:
-    void init(AstBasicDTypeKwd kwd, AstSignedState signst, int wantwidth, AstRange* rangep) {
+    void init(AstBasicDTypeKwd kwd, VSignedState signst, int wantwidth, AstRange* rangep) {
 	m_keyword = kwd;
 	m_msb = 0;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
@@ -288,7 +288,7 @@ private:
 	    if (!rangep && !wantwidth) m_implicit = true;  // Also cleared if range added later
 	    m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
-	if (signst == signedst_NOSIGNED) {
+	if (signst == signedst_NOSIGN) {
 	    if (keyword().isSigned()) signst = signedst_SIGNED;
 	    else m_nosigned = true;
 	}
@@ -315,7 +315,7 @@ public:
     virtual string name()	const { return m_keyword.ascii(); }
     AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
     void	rangep(AstRange* nodep) { setNOp1p(nodep); }
-    void	setSignedState(AstSignedState signst) {
+    void	setSignedState(VSignedState signst) {
 	if (signst==signedst_UNSIGNED) numeric(AstNumeric::UNSIGNED);
 	else if (signst==signedst_SIGNED) numeric(AstNumeric::SIGNED);
     }

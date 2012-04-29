@@ -61,12 +61,20 @@ public:
 
 //######################################################################
 
+enum VSignedState {
+    // This can't be in the fancy class as the lexer union will get upset
+    signedst_NOSIGN=0, signedst_UNSIGNED=1, signedst_SIGNED=2
+};
+
+//######################################################################
+
 class AstNumeric {
 public:
     enum en {
 	UNSIGNED,
 	SIGNED,
-	DOUBLE
+	DOUBLE,
+	_ENUM_MAX	// Leave last
 	// Limited to 2 bits, unless change V3Ast's packing function
     };
     enum en m_e;
@@ -339,13 +347,6 @@ public:
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstBasicDTypeKwd::en lhs, AstBasicDTypeKwd rhs) { return (lhs == rhs.m_e); }
-
-//######################################################################
-
-enum AstSignedState {
-    // This can't be in the fancy class as the lexer union will get upset
-    signedst_NOSIGNED=0, signedst_UNSIGNED=1, signedst_SIGNED=2
-};
 
 //######################################################################
 
