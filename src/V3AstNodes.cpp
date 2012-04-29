@@ -326,6 +326,15 @@ pair<uint32_t,uint32_t> AstNodeDType::dimensions() {
     return make_pair(packed, unpacked);
 }
 
+int AstNodeDType::widthPow2() const {
+    // I.e.  width 30 returns 32, width 32 returns 32.
+    uint32_t width = this->width();
+    for (int p2=30; p2>=0; p2--) {
+	if (width > (1UL<<p2)) return (1UL<<(p2+1));
+    }
+    return 1;
+}
+
 // Special operators
 int AstArraySel::dimension(AstNode* nodep) {
     // How many dimensions is this reference from the base variable?

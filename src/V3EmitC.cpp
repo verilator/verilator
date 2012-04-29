@@ -487,7 +487,7 @@ public:
 	    visit(nodep->castNodeUniop(), vup);
 	} else {
 	    putbs("VL_REDXOR_");
-	    puts(cvtToStr(nodep->lhsp()->widthPow2()));
+	    puts(cvtToStr(nodep->lhsp()->dtypep()->widthPow2()));
 	    puts("(");
 	    nodep->lhsp()->iterateAndNext(*this);
 	    puts(")");

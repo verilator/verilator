@@ -981,7 +981,6 @@ public:
     int		width() const;
     int		widthMin() const;
     int		widthWords() const { return VL_WORDS_I(width()); }
-    int		widthPow2() const;
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }
     bool	isDouble() const;
