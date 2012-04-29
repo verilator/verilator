@@ -197,7 +197,7 @@ private:
     }
     void visitShift (AstNodeBiop* nodep) {
 	// Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
-	if (!nodep->user2Inc()) {
+	if (!nodep->user2SetOnce()) {
 	    UINFO(4,"  ShiftFix  "<<nodep<<endl);
 	    if (nodep->widthMin()<=64  // Else we'll use large operators which work right
 		// C operator's width must be < maximum shift which is based on Verilog width

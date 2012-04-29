@@ -627,7 +627,7 @@ class TristateVisitor : public TristateBaseVisitor {
     }
 
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (nodep->user2Inc()) return;  // Already processed
+	if (nodep->user2SetOnce()) return;  // Already processed
 	UINFO(9," "<<nodep<<endl);
 	// Adds all vars to the m_varvec list so that we can detect undriven
 	// inouts and output and make them drive Z.

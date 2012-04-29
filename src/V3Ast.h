@@ -906,6 +906,7 @@ public:
     int		user1() const { return user1p()->castInt(); }
     void	user1(int val) { user1p(AstNUser::fromInt(val)); }
     int		user1Inc() { int v=user1(); user1(v+1); return v; }
+    int		user1SetOnce() { int v=user1(); if (!v) user1(1); return v; } // Better for cache than user1Inc()
     static void	user1ClearTree() { AstUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     AstNUser*	user2p() const {
@@ -915,6 +916,7 @@ public:
     int		user2() const { return user2p()->castInt(); }
     void	user2(int val) { user2p(AstNUser::fromInt(val)); }
     int		user2Inc() { int v=user2(); user2(v+1); return v; }
+    int		user2SetOnce() { int v=user2(); if (!v) user2(1); return v; }
     static void	user2ClearTree() { AstUser2InUse::clear(); }
 
     AstNUser*	user3p() const {
@@ -924,6 +926,7 @@ public:
     int		user3() const { return user3p()->castInt(); }
     void	user3(int val) { user3p(AstNUser::fromInt(val)); }
     int		user3Inc() { int v=user3(); user3(v+1); return v; }
+    int		user3SetOnce() { int v=user3(); if (!v) user3(1); return v; }
     static void	user3ClearTree() { AstUser3InUse::clear(); }
 
     AstNUser*	user4p() const {
@@ -933,6 +936,7 @@ public:
     int		user4() const { return user4p()->castInt(); }
     void	user4(int val) { user4p(AstNUser::fromInt(val)); }
     int		user4Inc() { int v=user4(); user4(v+1); return v; }
+    int		user4SetOnce() { int v=user4(); if (!v) user4(1); return v; }
     static void	user4ClearTree() { AstUser4InUse::clear(); }
 
     AstNUser*	user5p() const {
@@ -942,6 +946,7 @@ public:
     int		user5() const { return user5p()->castInt(); }
     void	user5(int val) { user5p(AstNUser::fromInt(val)); }
     int		user5Inc() { int v=user5(); user5(v+1); return v; }
+    int		user5SetOnce() { int v=user5(); if (!v) user5(1); return v; }
     static void	user5ClearTree() { AstUser5InUse::clear(); }
 
     vluint64_t	editCount() const { return m_editCount; }

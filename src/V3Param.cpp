@@ -130,7 +130,7 @@ private:
 	// we process in top->bottom order too.
 	while (!m_todoModps.empty()) {
 	    AstNodeModule* nodep = m_todoModps.front(); m_todoModps.pop_front();
-	    if (!nodep->user5Inc()) {  // Process once; note clone() must clear so we do it again
+	    if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
 		UINFO(4," MOD   "<<nodep<<endl);
 		nodep->iterateChildren(*this);
 		// Note this may add to m_todoModps
@@ -158,7 +158,7 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep, AstNUser*) {
-	if (!nodep->user5Inc()) {  // Process once
+	if (!nodep->user5SetOnce()) {  // Process once
 	    nodep->iterateChildren(*this);
 	    if (nodep->isParam()) {
 		if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
@@ -364,7 +364,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		// However links outside the module (like on the upper cells) will not.
 		modp = nodep->modp()->cloneTree(false);
 		modp->name(newname);
-		modp->user5(0); // We need to re-recurse this module once changed
+		modp->user5(false); // We need to re-recurse this module once changed
 		nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
 
 		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));

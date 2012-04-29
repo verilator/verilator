@@ -75,7 +75,7 @@ private:
     }
 
     void cleanFileline(AstNode* nodep) {
-	if (!nodep->user2Inc()) {  // Process once
+	if (!nodep->user2SetOnce()) {  // Process once
 	    // We make all filelines unique per AstNode.  This allows us to
 	    // later turn off messages on a fileline when an issue is found
 	    // so that messages on replicated blocks occur only once,
@@ -98,7 +98,7 @@ private:
 
     // VISITs
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
-	if (!nodep->user1Inc()) {  // Process only once.
+	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    UINFO(5,"   "<<nodep<<endl);
 	    checkExpected(nodep);
@@ -187,7 +187,7 @@ private:
 	}
     }
     virtual void visit(AstSelBit* nodep, AstNUser*) {
-	if (!nodep->user1Inc()) {  // Process only once.
+	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		m_dotText = "";
@@ -216,7 +216,7 @@ private:
     }
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	// Excludes simple AstSel, see above
-	if (!nodep->user1Inc()) {  // Process only once.
+	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
@@ -239,7 +239,7 @@ private:
 	}
     }
     virtual void visit(AstText* nodep, AstNUser*) {
-	if (!nodep->user1Inc()) {  // Process only once.
+	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    if (m_exp != AstParseRefExp::PX_NONE) {
 		UINFO(7,"      "<<nodep<<endl);

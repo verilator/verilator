@@ -705,7 +705,7 @@ class GaterVisitor : public GaterBaseVisitor {
     virtual void visit(AstAlways* nodep, AstNUser*) {
 	if (debug()>=9) cout<<endl<<endl<<endl;
 	UINFO(5, "Gater: ALWAYS: "<<nodep<<endl);
-	if (nodep->user4Inc()) return;
+	if (nodep->user4SetOnce()) return;
 
 	clear();
 

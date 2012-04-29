@@ -1075,7 +1075,7 @@ private:
 	AstNode* prevInsStmtp = m_insStmtp;
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
-	if (!nodep->user1Inc()) {  // Just one creation needed per function
+	if (!nodep->user1SetOnce()) {  // Just one creation needed per function
 	    // Expand functions in it
 	    int modes = 0;
 	    if (nodep->dpiImport()) modes++;
