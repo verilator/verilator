@@ -98,6 +98,7 @@ V3Global v3Global;
 
 AstNetlist* V3Global::makeNetlist() {
     AstNetlist* newp = new AstNetlist();
+    newp->addTypeTablep(new AstTypeTable(newp->fileline()));
     return newp;
 }
 

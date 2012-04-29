@@ -124,7 +124,6 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 							varp, oldvarp->isOutput()));
 		// Skip length and width comp; we know it's a direct assignment
 		pinp->modVarp(oldvarp);
-		pinp->widthSignedFrom(oldvarp);
 		cellp->addPinsp(pinp);
 	    }
 	}

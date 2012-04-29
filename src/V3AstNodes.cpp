@@ -440,6 +440,87 @@ bool AstSenTree::hasCombo() {
     return false;
 }
 
+void AstTypeTable::clearCache() {
+    // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
+    // Just clear out the maps; the search functions will be used to rebuild the map
+    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+	m_basicps[i] = NULL;
+    }
+    for (int isbit=0; isbit<_IDX0_MAX; ++isbit) {
+	for (int numer=0; numer<AstNumeric::_ENUM_MAX; ++numer) {
+	    LogicMap& mapr = m_logicMap[isbit][numer];
+	    mapr.clear();
+	}
+    }
+    m_detailedMap.clear();
+    // Clear generic()'s so dead detection will work
+    for (AstNode* nodep = typesp(); nodep; nodep=nodep->nextp()) {
+	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+	    bdtypep->generic(false);
+	}
+    }
+}
+
+void AstTypeTable::repairCache() {
+    // After we mass-change widthMin in V3WidthCommit, we need to correct the table.
+    clearCache();
+    for (AstNode* nodep = typesp(); nodep; nodep=nodep->nextp()) {
+	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+	    (void)findInsertSameDType(bdtypep);
+	}
+    }
+}
+
+AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
+    if (m_basicps[kwd]) return m_basicps[kwd];
+    //
+    AstBasicDType* new1p = new AstBasicDType(fl, kwd);
+    // Because the detailed map doesn't update this map,
+    // check the detailed map for this same node
+    // Also adds this new node to the detailed map
+    AstBasicDType* newp = findInsertSameDType(new1p);
+    if (newp != new1p) new1p->deleteTree();
+    else addTypesp(newp);
+    //
+    m_basicps[kwd] = newp;
+    return newp;
+}
+
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+					       int width, int widthMin, AstNumeric numeric) {
+    int idx = IDX0_LOGIC;
+    if (kwd == AstBasicDTypeKwd::LOGIC) idx = IDX0_LOGIC;
+    else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
+    else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
+    pair<int,int> widths = make_pair(width,widthMin);
+    LogicMap& mapr = m_logicMap[idx][(int)numeric];
+    LogicMap::const_iterator it = mapr.find(widths);
+    if (it != mapr.end()) return it->second;
+    //
+    AstBasicDType* new1p = new AstBasicDType(fl, AstBasicDTypeKwd::BIT, numeric, width, widthMin);
+    // Because the detailed map doesn't update this map,
+    // check the detailed map for this same node, and if found update this map
+    // Also adds this new node to the detailed map
+    AstBasicDType* newp = findInsertSameDType(new1p);
+    if (newp != new1p) new1p->deleteTree();
+    else addTypesp(newp);
+    //
+    mapr.insert(make_pair(widths,newp));
+    return newp;
+}
+
+AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
+    VBasicTypeKey key (nodep->width(), nodep->widthMin(), nodep->numeric(),
+		       nodep->keyword(), nodep->nrange());
+    DetailedMap& mapr = m_detailedMap;
+    DetailedMap::const_iterator it = mapr.find(key);
+    if (it != mapr.end()) return it->second;
+    mapr.insert(make_pair(key,nodep));
+    nodep->generic(true);
+    // No addTypesp; the upper function that called new() is responsible for adding
+    return nodep;
+}
+
 //======================================================================
 // Special walking tree inserters
 
@@ -516,10 +597,15 @@ void AstNode::dump(ostream& str) {
     if (user3p()) str<<" u3="<<(void*)user3p();
     if (user4p()) str<<" u4="<<(void*)user4p();
     if (user5p()) str<<" u5="<<(void*)user5p();
-    str<<" "<<(isSigned()?"s":"")
-       <<(isDouble()?"d":"")
-       <<"w"<<(widthSized()?"":"u")<<width();
-    if (!widthSized()) str<<"/"<<widthMin();
+    if (hasDType()) {
+	if (dtypep()==this) str<<" @dt="<<"this";
+	else str<<" @dt="<<(void*)dtypep();
+	if (AstNodeDType* dtp = dtypep()) {
+	    dtp->dumpSmall(str);
+	}
+    } else { // V3Broken will throw an error
+	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
+    }
     if (name()!="") str<<"  "<<AstNode::quoteName(name());
 }
 
@@ -539,7 +625,6 @@ void AstBasicDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
     str<<" kwd="<<keyword().ascii();
     if (isRanged() && !rangep()) str<<" range=["<<left()<<":"<<right()<<"]";
-    if (implicit()) str<<" [IMPLICIT]";
 }
 void AstCCast::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -597,6 +682,21 @@ void AstVarXRef::dump(ostream& str) {
 }
 void AstNodeDType::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (generic()) str<<" [GENERIC]";
+    if (AstNodeDType* dtp = virtRefDTypep()) {
+	str<<" refdt="<<(void*)(dtp);
+	dtp->dumpSmall(str);
+    }
+}
+void AstNodeDType::dumpSmall(ostream& str) {
+    str<<"("
+       <<(generic()?"G/":"")
+       <<((isSigned()&&!isDouble())?"s":"")
+       <<(isNosign()?"n":"")
+       <<(isDouble()?"d":"")
+       <<"w"<<(widthSized()?"":"u")<<width();
+    if (!widthSized()) str<<"/"<<widthMin();
+    str<<")";
 }
 void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -608,6 +708,45 @@ void AstPackageImport::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<packagep();
 }
+void AstTypeTable::dump(ostream& str) {
+    this->AstNode::dump(str);
+    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+	if (AstBasicDType* subnodep=m_basicps[i]) {
+	    str<<endl;  // Newline from caller, so newline first
+	    str<<"\t\t"<<setw(8)<<AstBasicDTypeKwd(i).ascii();
+	    str<<"  -> ";
+	    subnodep->dump(str);
+	}
+    }
+    for (int isbit=0; isbit<2; ++isbit) {
+	for (int issigned=0; issigned<AstNumeric::_ENUM_MAX; ++issigned) {
+	    LogicMap& mapr = m_logicMap[isbit][issigned];
+	    for (LogicMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
+		AstBasicDType* dtypep = it->second;
+		str<<endl;  // Newline from caller, so newline first
+		stringstream nsstr;
+		nsstr<<(isbit?"bw":"lw")
+		     <<it->first.first<<"/"<<it->first.second;
+		str<<"\t\t"<<setw(8)<<nsstr.str();
+		if (issigned) str<<" s"; else str<<" u";
+		str<<"  ->  ";
+		dtypep->dump(str);
+	    }
+	}
+    }
+    {
+	DetailedMap& mapr = m_detailedMap;
+	for (DetailedMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
+	    AstBasicDType* dtypep = it->second;
+	    str<<endl;  // Newline from caller, so newline first
+	    stringstream nsstr;
+	    str<<"\t\tdetailed  ->  ";
+	    dtypep->dump(str);
+	}
+    }
+    // Note get newline from caller too.
+}
+
 void AstVarScope::dump(ostream& str) {
     this->AstNode::dump(str);
     if (isCircular()) str<<" [CIRC]";

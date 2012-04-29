@@ -78,8 +78,12 @@ private:
     AstNodeDType* dtypeForExtractp(AstNode* nodep, AstNode* basefromp, int dimension, bool rangedSelect) {
 	// Perform error checks on the node
 	AstVar* varp = varFromBasefrom(basefromp);
-	//UINFO(9,"SCD\n"); if (debug()>=9) nodep->backp()->dumpTree(cout,"-selcheck: ");
-	AstNodeDType* ddtypep = varp->dtypep()->dtypeDimensionp(dimension);
+	//UINFO(9,"SCD\n"); if (debug()>=9) varp->dumpTree(cout,"-dtfexvar: ");
+	// This may be called on dotted variables before we've completed widthing of the dotted var.
+	AstNodeDType* ddtypep = varp->dtypep() ? varp->dtypep() : varp->childDTypep();
+	if (!ddtypep) nodep->v3fatalSrc("No datatype found for variable in select");
+	ddtypep = ddtypep->dtypeDimensionp(dimension);
+	if (debug()>=9 &&ddtypep) ddtypep->dumpTree(cout,"-ddtypep: ");
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    return adtypep;
 	}
@@ -112,13 +116,13 @@ private:
 	    AstNode* newp = new AstSub(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
 	    // We must make sure sub gets sign of original value, not from the constant
-	    newp->numericFrom(lhsp);
+	    newp->dtypeFrom(lhsp);
 	    return newp;
 	} else {  // rhs < 0;
 	    AstNode* newp = new AstAdd(lhsp->fileline(), lhsp,
 				       new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
 	    // We must make sure sub gets sign of original value, not from the constant
-	    newp->numericFrom(lhsp);
+	    newp->dtypeFrom(lhsp);
 	    return newp;
 	}
     }
@@ -204,6 +208,7 @@ private:
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, false);
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* bitp = nodep->rhsp()->unlinkFrBack();
+	if (debug()>=9) ddtypep->dumpTree(cout,"-ddtypep: ");
 	if (debug()>=9) nodep->dumpTree(cout,"-vsbmd: ");
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)

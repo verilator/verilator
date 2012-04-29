@@ -93,7 +93,7 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	allNodes(nodep);
 	nodep->iterateChildren(*this);
-	if (m_counting) {
+	if (m_counting && nodep->dtypep()) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
 	    if (nodep->dtypeSkipRefp()->castArrayDType()) ++m_statVarArray;
 	    else m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();

@@ -74,7 +74,8 @@ private:
 		if (m_lowerHash.isIllegal()) {
 		    nodep->v3fatalSrc("sameHash function undefined (returns 0) for node under CFunc.");
 		}
-		m_lowerHash = V3Hash(m_lowerHash, V3Hash(nodep->type()<<6 | nodep->width()));
+		// For identical nodes, the type should be the same thus dtypep should be the same too
+		m_lowerHash = V3Hash(m_lowerHash, V3Hash(nodep->type()<<6, V3Hash(nodep->dtypep())));
 		// Now update m_lowerHash for our children's (and next children) contributions
 		nodep->iterateChildren(*this);
 		// Store the hash value

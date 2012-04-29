@@ -369,10 +369,10 @@ viewers let us know; ZGRViewer isn't great for large graphs.
 Tree files are dumps of the AST Tree and are produced between every major
 algorithmic stage.  An example:
 
-     NETLIST 0x90fb00 <e1> {a0} w0
-    1: MODULE 0x912b20 <e8822> {a8} w0  top  L2 [P]
-   *1:2: VAR 0x91a780 <e74#> {a22} w70  out_wide [O] WIRE
-    1:2:1: BASICDTYPE 0x91a3c0 <e73> {a22} w70  [logic]
+     NETLIST 0x90fb00 <e1> {a0}
+    1: MODULE 0x912b20 <e8822> {a8}  top  L2 [P]
+   *1:2: VAR 0x91a780 <e74#> {a22} @dt=0xa2e640(w32)  out_wide [O] WIRE
+    1:2:1: BASICDTYPE 0xa2e640 <e2149> {e24} @dt=this(sw32)  integer kwd=integer range=[31:0]
 
 =over 4
 
@@ -389,7 +389,9 @@ this node.
 "{a22}" indicates this node is related to line 22 in the source filename
 "a", where "a" is the first file read, "z" the 26th, and "aa" the 27th.
 
-"w70" indicates the width is 70 bits.
+"@dt=0x..." indicates the address of the data type this node contains.
+
+"w32" indicates the width is 32 bits.
 
 "out_wide" is the name of the node, in this case the name of the variable.
 
@@ -449,11 +451,13 @@ C<a>, the 26th is C<z>, the 27th is C<aa> and so on.
 
 Shows the value of the node's user1p...user5p, if non-NULL.
 
-=item Width of the item
+=item Data type
 
-Many nodes have an explicit size, other "unsized" nodes have a minimum
-width for their implementation. This field is a squence of flag characters
-and width data as follows:
+Many nodes have an explicit data type.  "@dt=0x..." indicates the address
+of the data type (AstNodeDType) this node uses.
+
+If a data type is present and is numberic, it then prints the width of the
+item. This field is a squence of flag characters and width data as follows:
 
 C<s> if the node is signed.
 

@@ -49,8 +49,10 @@ private:
     // Entire netlist:
     //  AstNode::user()		-> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()	-> bool.  True indicates widthMin has been propagated
+    //  AstNodeDType::user3()	-> AstNodeDType*.  Alternative node with C size
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // TYPES
     enum CleanState { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
@@ -71,16 +73,28 @@ private:
 	else if (nodep->width()<=VL_QUADSIZE) return VL_QUADSIZE;
 	else return nodep->widthWords()*VL_WORDSIZE;
     }
-    void setCppWidth (AstNode* nodep, int width, int widthMin) {
+    void setCppWidth (AstNode* nodep) {
 	nodep->user2(true);  // Don't resize it again
-	nodep->width(width, widthMin);
+	AstNodeDType* old_dtypep = nodep->dtypep();
+	int width=cppWidth(nodep);  // widthMin is unchanged
+	if (old_dtypep->width() != width) {
+	    // Since any given dtype's cppWidth() is the same, we can just
+	    // remember one convertion for each, and reuse it
+	    if (AstNodeDType* new_dtypep = old_dtypep->user3p()->castNode()->castNodeDType()) {
+		nodep->dtypep(new_dtypep);
+	    } else {
+		nodep->dtypeChgWidth(width, nodep->widthMin());
+		AstNodeDType* new_dtypep = nodep->dtypep();
+		if (new_dtypep == old_dtypep) nodep->v3fatalSrc("Dtype didn't change when width changed");
+		old_dtypep->user3p(new_dtypep);  // Remember for next time
+	    }
+	}
     }
     void computeCppWidth (AstNode* nodep) {
-	if (!nodep->user2()) {
+	if (!nodep->user2() && nodep->hasDType()) {
 	    if (nodep->castVar() || nodep->castNodeDType()) {  // Don't want to change variable widths!
-		setCppWidth(nodep, nodep->width(), nodep->width());  // set widthMin anyways so can see it later
 	    } else {
-		setCppWidth(nodep, cppWidth(nodep), nodep->widthMin());
+		setCppWidth(nodep);
 	    }
 	}
     }
@@ -117,7 +131,7 @@ private:
 	AstNode* cleanp = new AstAnd (nodep->fileline(),
 				      new AstConst (nodep->fileline(), mask),
 				      nodep);
-	setCppWidth (cleanp, cppWidth(nodep), nodep->widthMin());
+	cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
 	relinkHandle.relink(cleanp);
     }
     void insureClean(AstNode* nodep) {

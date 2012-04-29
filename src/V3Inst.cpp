@@ -90,13 +90,12 @@ private:
 	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, false);
 	    // Make a ASSIGNW (expr, pin)
 	    AstNode*  exprp  = nodep->exprp()->cloneTree(false);
-	    if (nodep->width() != nodep->modVarp()->width())
+	    if (exprp->width() != nodep->modVarp()->width())
 		nodep->v3fatalSrc("Width mismatch, should have been handled in pinReconnectSimple\n");
 	    if (nodep->modVarp()->isInout()) {
 		nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
 	    } else if (nodep->modVarp()->isOutput()) {
 		AstNode* rhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
-		rhsp->widthSignedFrom(nodep);
 		AstAssignW* assp = new AstAssignW (exprp->fileline(), exprp, rhsp);
 		m_modp->addStmtp(assp);
 	    } else if (nodep->modVarp()->isInput()) {
@@ -258,7 +257,7 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	       && connBasicp->width() == pinBasicp->width()
 	       && connBasicp->lsb() == pinBasicp->lsb()
 	       && !connectRefp->varp()->isSc()	// Need the signal as a 'shell' to convert types
-	       && pinp->width() == pinVarp->width()
+	       && connBasicp->width() == pinVarp->width()
 	       && 1) {
 	// Done. One to one interconnect won't need a temporary variable.
     } else if (!forTristate && pinp->exprp()->castConst()) {
@@ -276,16 +275,16 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	} else if (pinVarp->isOutput()) {
 	    // See also V3Inst
 	    AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
-	    if (pinp->width() > rhsp->width()) {
+	    if (pinVarp->width() > rhsp->width()) {
 		if (rhsp->isSigned()) {
 		    rhsp = new AstExtendS(pinp->fileline(), rhsp);
 		} else {
 		    rhsp = new AstExtend (pinp->fileline(), rhsp);
 		}
-	    } else if (pinp->width() < rhsp->width()) {
-		rhsp = new AstSel    (pinp->fileline(), rhsp, 0, pinp->width());
+	    } else if (pinVarp->width() < rhsp->width()) {
+		rhsp = new AstSel    (pinp->fileline(), rhsp, 0, pinVarp->width());
 	    }
-	    rhsp->widthSignedFrom(pinp);
+	    rhsp->dtypeFrom(pinVarp);  // Need proper widthMin, which may differ from AstSel created above
 	    assignp = new AstAssignW (pinp->fileline(), pinexprp, rhsp);
 	    pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, true));
 	} else {
@@ -296,7 +295,6 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 				      pinexprp);
 	    pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, false));
 	}
-	pinp->widthSignedFrom(pinp->exprp());
 	if (assignp) cellp->addNextHere(assignp);
 	//if (1||debug()) { pinp->dumpTree(cout,"  out:"); }
 	//if (1||debug()) { assignp->dumpTree(cout," aout:"); }

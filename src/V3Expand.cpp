@@ -127,13 +127,13 @@ private:
 				   new AstConst(nodep->fileline(), word));
 	} else if (nodep->isQuad() && word==0) {
 	    AstNode* quadfromp = nodep->cloneTree(true);
-	    quadfromp->width(VL_QUADSIZE,quadfromp->widthMin());
+	    quadfromp->dtypeSetBitSized(VL_QUADSIZE,quadfromp->widthMin(),AstNumeric::UNSIGNED);
 	    return new AstCCast (nodep->fileline(),
 				 quadfromp,
 				 VL_WORDSIZE);
 	} else if (nodep->isQuad() && word==1) {
 	    AstNode* quadfromp = nodep->cloneTree(true);
-	    quadfromp->width(VL_QUADSIZE,quadfromp->widthMin());
+	    quadfromp->dtypeSetBitSized(VL_QUADSIZE,quadfromp->widthMin(),AstNumeric::UNSIGNED);
 	    return new AstCCast (nodep->fileline(),
 				 new AstShiftR (nodep->fileline(),
 						quadfromp,
@@ -439,7 +439,7 @@ private:
 	    AstNode* newp = lowp;
 	    if (midp) newp = new AstOr (nodep->fileline(), midp, newp);
 	    if (hip) newp = new AstOr (nodep->fileline(), hip, newp);
-	    newp->widthFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    replaceWithDelete(nodep,newp); nodep=NULL;
 	}
 	else { // Long/Quad from Long/Quad
@@ -664,7 +664,7 @@ private:
 						      new AstConst (nodep->fileline(), rhsshift),
 						      nodep->width()),
 				       rhsp);
-	    newp->widthFrom(nodep); // Unsigned
+	    newp->dtypeFrom(nodep); // Unsigned
 	    replaceWithDelete(nodep,newp); nodep=NULL;
 	}
     }
@@ -713,11 +713,11 @@ private:
 						     new AstConst (nodep->fileline(), rhsshift),
 						     nodep->width()),
 				      newp);
-		    newp->widthFrom(nodep); // Unsigned
+		    newp->dtypeFrom(nodep); // Unsigned
 		}
 		lhsp->deleteTree();	// Never used
 	    }
-	    newp->widthFrom(nodep); // Unsigned
+	    newp->dtypeFrom(nodep); // Unsigned
 	    replaceWithDelete(nodep,newp); nodep=NULL;
 	}
     }
@@ -732,7 +732,7 @@ private:
 	    AstNode* newp;
 	    if (lhswidth==1) {
 		newp = new AstNegate (nodep->fileline(), lhsp->cloneTree(true));
-		newp->width(VL_WORDSIZE,VL_WORDSIZE);
+		newp->dtypeSetLogicSized(VL_WORDSIZE,VL_WORDSIZE,AstNumeric::UNSIGNED);  // Replicate always unsigned
 	    } else {
 		newp = newAstWordSelClone (lhsp, w);
 		for (unsigned repnum=1; repnum<times; repnum++) {

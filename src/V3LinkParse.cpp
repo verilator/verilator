@@ -368,7 +368,7 @@ private:
 		else if (backp->castNodeFTask()) break;
 	    }
 	    if (!backp) nodep->v3fatalSrc("Implicit enum/struct type created under unexpected node type");
-	    AstNodeDType* dtypep = nodep->dtypep(); dtypep->unlinkFrBack();
+	    AstNodeDType* dtypep = nodep->childDTypep(); dtypep->unlinkFrBack();
 	    if (backp->castTypedef()) { // A typedef doesn't need us to make yet another level of typedefing
 		// For typedefs just remove the AstRefDType level of abstraction
 		nodep->replaceWith(dtypep);

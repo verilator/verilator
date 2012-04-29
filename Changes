@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
       concatenates and pullup/pulldowns, bug395, bug56, bug54, bug51.
       [Alex Solomatnikov, Lane Brooks, et al]
 
+**    Major internal changes to support future complex data types.
+
 ***   Support tri0 and tri1, bug462.  [Alex Solomatnikov]
 
 ***   Support nmos and pmos, bug488.  [Alex Solomatnikov]

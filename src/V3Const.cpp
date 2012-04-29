@@ -858,16 +858,14 @@ private:
 	    // Form ranges
 	    AstSel*  sel1p = new AstSel(conp->fileline(), rhsp,  lsb1, msb1-lsb1+1);
 	    AstSel*  sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2-lsb2+1);
-	    sel1p->width(msb1-lsb1+1,msb1-lsb1+1);
-	    sel2p->width(msb2-lsb2+1,msb2-lsb2+1);
 	    // Make new assigns of same flavor as old one
 	    //*** Not cloneTree; just one node.
 	    AstNode* newp = NULL;
 	    if (!need_temp) {
 		AstNodeAssign* asn1ap=nodep->cloneType(lc1p, sel1p)->castNodeAssign();
 		AstNodeAssign* asn2ap=nodep->cloneType(lc2p, sel2p)->castNodeAssign();
-		asn1ap->width(msb1-lsb1+1,msb1-lsb1+1);
-		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
+		asn1ap->dtypeFrom(sel1p);
+		asn2ap->dtypeFrom(sel2p);
 		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn1ap);
 		// cppcheck-suppress nullPointer  // addNext deals with it
@@ -896,10 +894,10 @@ private:
 		AstNodeAssign* asn2bp=nodep->cloneType
 		    (lc2p, new AstVarRef(sel2p->fileline(), temp2p, false))
 		    ->castNodeAssign();
-		asn1ap->width(msb1-lsb1+1,msb1-lsb1+1);
-		asn1bp->width(msb1-lsb1+1,msb1-lsb1+1);
-		asn2ap->width(msb2-lsb2+1,msb2-lsb2+1);
-		asn2bp->width(msb2-lsb2+1,msb2-lsb2+1);
+		asn1ap->dtypeFrom(temp1p);
+		asn1bp->dtypeFrom(temp1p);
+		asn2ap->dtypeFrom(temp2p);
+		asn2bp->dtypeFrom(temp2p);
 		// This order matters
 		// cppcheck-suppress nullPointer  // addNext deals with it
 		newp = newp->addNext(asn1ap);
@@ -945,7 +943,7 @@ private:
 	AstAnd* newp = new AstAnd(nodep->fileline(),
 				  new AstConst(nodep->fileline(), val),
 				  fromp);
-	newp->width(nodep->width(), nodep->width());  // widthMin no longer applicable
+	newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);  // widthMin no longer applicable if different C-expanded width
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); nodep=NULL;
 	if (debug()>=9) newp->dumpTree(cout,"       _new: ");
@@ -1096,8 +1094,8 @@ private:
 	    // expression, not the potentially smaller lsb1p's width
 	    newlsbp = new AstAdd(lsb1p->fileline(),
 				 lsb2p, new AstExtend(lsb1p->fileline(), lsb1p));
-	    newlsbp->widthFrom(lsb2p); // Unsigned
-	    newlsbp->castAdd()->rhsp()->widthFrom(lsb2p); // Unsigned
+	    newlsbp->dtypeFrom(lsb2p); // Unsigned
+	    newlsbp->castAdd()->rhsp()->dtypeFrom(lsb2p);
 	}
 	AstSel* newp = new AstSel(nodep->fileline(),
 				  fromp,
@@ -1240,16 +1238,6 @@ private:
     // Not constant propagated (for today) because AstMath::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
-    virtual void visit(AstAttrOf* nodep, AstNUser*) {
-	// Don't iterate children, don't want to lose VarRef.
-	if (nodep->attrType()==AstAttrType::EXPR_BITS) {
-	    if (!nodep->fromp() || !nodep->fromp()->widthMin()) nodep->v3fatalSrc("Unsized expression");
-	    V3Number num (nodep->fileline(), 32, nodep->fromp()->widthMin());
-	    replaceNum(nodep, num); nodep=NULL;
-	} else {
-	    nodep->v3fatalSrc("Missing ATTR type case");
-	}
-    }
     bool onlySenItemInSenTree(AstNodeSenItem* nodep) {
 	// Only one if it's not in a list
 	return (!nodep->nextp() && nodep->backp()->nextp() != nodep);

@@ -74,6 +74,7 @@ private:
     //  AstNodeModule::user1()	-> int. Count of number of cells referencing this module.
     //  AstVar::user1()		-> int. Count of number of references
     //  AstVarScope::user1()	-> int. Count of number of references
+    //  AstNodeDType::user1()	-> int. Count of number of references
     AstUser1InUse	m_inuser1;
 
     // TYPES
@@ -84,6 +85,7 @@ private:
     vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
     AssignMap			m_assignMap;	// List of all simple assignments for each variable
     bool			m_elimUserVars;	// Allow removal of user's vars
+    bool			m_elimDTypes;	// Allow removal of DTypes
     bool			m_sideEffect;	// Side effects discovered in assign RHS
 
     // METHODS
@@ -92,7 +94,19 @@ private:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
+
     void checkAll(AstNode* nodep) {
+	if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
+	    if (AstNode* subnodep = nodep->dtypep()) subnodep->user1Inc();
+	}
+	if (AstNode* subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
+    }
+    void checkDType(AstNodeDType* nodep) {
+	if (!nodep->generic()  // Don't remove generic types
+	    && m_elimDTypes) {  // dtypes stick around until post-widthing
+	    m_varEtcsp.push_back(nodep);
+	}
+	if (AstNode* subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
     }
 
     // VISITORS
@@ -124,10 +138,16 @@ private:
     }
     virtual void visit(AstRefDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
+	checkDType(nodep);
 	checkAll(nodep);
 	if (nodep->packagep()) {
 	    nodep->packagep()->user1Inc();
 	}
+    }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	checkDType(nodep);
+	checkAll(nodep);
     }
     virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -156,6 +176,7 @@ private:
 	// Similar code in V3Life
 	m_sideEffect = false;
 	nodep->rhsp()->iterateAndNext(*this);
+	checkAll(nodep);
 	// Has to be direct assignment without any EXTRACTing.
 	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
 	if (varrefp && !m_sideEffect
@@ -226,14 +247,19 @@ private:
 
 public:
     // CONSTRUCTORS
-    DeadVisitor(AstNetlist* nodep, bool elimUserVars) {
+    DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes) {
 	m_elimUserVars = elimUserVars;
+	m_elimDTypes = elimDTypes;
 	m_sideEffect = false;
+	// Prepare to remove some datatypes
+	nodep->typeTablep()->clearCache();
 	// Operate on whole netlist
 	nodep->accept(*this);
 	deadCheckVar();
 	// Modules after vars, because might be vars we delete inside a mod we delete
 	deadCheckMod();
+	// We may have removed some datatypes, cleanup
+	nodep->typeTablep()->repairCache();
     }
     virtual ~DeadVisitor() {}
 };
@@ -243,13 +269,13 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, false);
+    DeadVisitor visitor (nodep, false, false);
 }
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, false);
+    DeadVisitor visitor (nodep, false, true);
 }
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, true);
+    DeadVisitor visitor (nodep, true, true);
 }

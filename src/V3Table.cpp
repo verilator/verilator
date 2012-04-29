@@ -192,8 +192,10 @@ private:
 	FileLine* fl = nodep->fileline();
 	AstNodeDType* dtypep
 	    = new AstArrayDType (fl,
-				 new AstBasicDType(fl, VFlagBitPacked(), m_outVarps.size()),
-				 new AstRange (fl, VL_MASK_I(m_inWidth), 0));
+				 nodep->findBitDType(nodep->fileline(), m_outVarps.size(),
+						     m_outVarps.size(), AstNumeric::UNSIGNED),
+				 new AstRange (fl, VL_MASK_I(m_inWidth), 0), false);
+	v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	AstVar* chgVarp
 	    = new AstVar (fl, AstVarType::MODULETEMP,
 			  "__Vtablechg" + cvtToStr(m_modTables),
@@ -237,10 +239,9 @@ private:
 	    AstVar* outvarp = outvscp->varp();
 	    FileLine* fl = nodep->fileline();
 	    AstNodeDType* dtypep
-		= new AstArrayDType (fl,
-				     // FUTURE: If support more types, below can use outvarp->dtype()
-				     new AstBasicDType(fl, VFlagLogicPacked(), outvarp->width()),
-				     new AstRange (fl, VL_MASK_I(m_inWidth), 0));
+		= new AstArrayDType (fl, outvarp->dtypep(),
+				     new AstRange (fl, VL_MASK_I(m_inWidth), 0), false);
+	    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	    AstVar* tablevarp
 		= new AstVar (fl, AstVarType::MODULETEMP,
 			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),

@@ -207,9 +207,22 @@ private:
 	if (nodep->broken()) {
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)");
 	}
+	if (nodep->dtypep()) {
+	    if (!nodep->dtypep()->brokeExists()) { nodep->v3error("Broken link in node->dtypep()"); }
+	    else if (!nodep->dtypep()->castNodeDType()) { nodep->v3error("Non-dtype link in node->dtypep()"); }
+	}
 	if (v3Global.assertDTypesResolved()) {
-	    if (!nodep->width() && nodep->castNodeMath()) {
-		nodep->v3fatalSrc("Math node has no assigned width");
+	    if (nodep->hasDType()) {
+		if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype on node with hasDType(): "<<nodep->prettyTypeName());
+	    } else {
+		if (nodep->dtypep()) nodep->v3fatalSrc("DType on node without hasDType(): "<<nodep->prettyTypeName());
+	    }
+	    if (nodep->getChildDTypep()) nodep->v3fatalSrc("childDTypep() non-null on node after should have removed");
+	    if (AstNodeDType* dnodep = nodep->castNodeDType()) {
+		if (dnodep->width() != dnodep->widthMin()
+		    && v3Global.assertWidthsMatch()) {
+		    dnodep->v3fatalSrc("Width != WidthMin");
+		}
 	    }
 	}
 	if (v3Global.assertWidthsMatch()) {

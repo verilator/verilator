@@ -161,11 +161,11 @@ class TristateVisitor : public TristateBaseVisitor {
 	return invarp->user4p()->castNode()->castVar();
     }
 
-    AstVar* getCreateUnconnVarp(AstNode* fromp) {
+    AstVar* getCreateUnconnVarp(AstNode* fromp, AstNodeDType* dtypep) {
 	AstVar* newp =  new AstVar(fromp->fileline(),
 				   AstVarType::MODULETEMP,
 				   "__Vtriunconn"+cvtToStr(m_unique++),
-				   VFlagLogicPacked(), fromp->width());
+				   dtypep);
 	if (!m_modp) { newp->v3error("Unsupported: Creating tristate signal not underneath a module"); }
 	else m_modp->addStmtp(newp);
 	return newp;
@@ -211,7 +211,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    // A pin with 1'b0 or similar connection results in an assign with constant on LHS
 	    // due to the pinReconnectSimple call in visit AstPin.
 	    // We can ignore the output override by making a temporary
-	    AstVar* varp = getCreateUnconnVarp(nodep);
+	    AstVar* varp = getCreateUnconnVarp(nodep, nodep->dtypep());
 	    AstNode* newp = new AstVarRef(nodep->fileline(), varp, true);
 	    UINFO(9," const->"<<newp<<endl);
 	    nodep->replaceWith(newp);
@@ -524,7 +524,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
 	if (!nodep->exprp()) { // No-connect; covert to empty connection
 	    UINFO(5,"Unconnected pin terminate "<<nodep<<endl);
-	    AstVar* ucVarp = getCreateUnconnVarp(nodep);
+	    AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
 	    nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
 				       nodep->modVarp()->isOutput()));
 	    // We don't need a driver on the wire; the lack of one will default to tristate
@@ -541,7 +541,6 @@ class TristateVisitor : public TristateBaseVisitor {
 					nodep->pinNum(),
 					nodep->name() + "__en" + cvtToStr(m_unique++),
 					new AstVarRef(nodep->fileline(), enVarp, true));
-	    enpinp->widthSignedFrom(enModVarp);
 	    enpinp->modVarp(enModVarp);
 	    enpinp->user2(true); // mark this visited
 	    m_cellp->addPinsp(enpinp);
@@ -559,7 +558,6 @@ class TristateVisitor : public TristateBaseVisitor {
 				 nodep->pinNum(),
 				 nodep->name() + "__out"+cvtToStr(m_unique),
 				 outexprp);
-	    outpinp->widthSignedFrom(outModVarp);
 	    outpinp->modVarp(outModVarp);
 	    outpinp->user2(true); // mark this visited
 	    m_cellp->addPinsp(outpinp);

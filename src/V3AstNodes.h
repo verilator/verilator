@@ -164,13 +164,14 @@ private:
 public:
     AstTypedef(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
 	: AstNode(fl), m_name(name) {
-	setOp1p(dtp);
-	widthSignedFrom(dtp);
+	childDTypep(dtp);  // Only for parser
+	dtypep(NULL);  // V3Width will resolve
     }
     ASTNODE_NODE_FUNCS(Typedef, TYPEDEF)
-    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
-    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep(); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     // METHODS
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
@@ -197,20 +198,26 @@ struct AstDefImplicitDType : public AstNodeDType {
 private:
     string	m_name;
     void*	m_containerp;	// In what scope is the name unique, so we can know what are duplicate definitions (arbitrary value)
+    int		m_uniqueNum;
 public:
     AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp,
 			VFlagChildDType, AstNodeDType* dtp)
 	: AstNodeDType(fl), m_name(name), m_containerp(containerp) {
-	setOp1p(dtp);
-	widthSignedFrom(dtp);
+	childDTypep(dtp);  // Only for parser
+	dtypep(NULL);  // V3Width will resolve
+	m_uniqueNum = uniqueNumInc();
     }
     ASTNODE_NODE_FUNCS(DefImplicitDType, DEFIMPLICITDTYPE)
-    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
-    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual bool same(AstNode* samep) const { return m_uniqueNum==samep->castDefImplicitDType()->m_uniqueNum; }
+    virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void*	containerp() const { return m_containerp; }
     // METHODS
-    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
@@ -220,34 +227,55 @@ public:
 
 struct AstArrayDType : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // Children: RANGE (array bounds)
 private:
+    AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
     bool		m_packed;
 public:
     AstArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
 	: AstNodeDType(fl), m_packed(isPacked) {
-	setOp1p(dtp);
+	childDTypep(dtp);  // Only for parser
+	refDTypep(NULL);
 	setOp2p(rangep);
-	widthSignedFrom(dtp);
+	dtypep(NULL);  // V3Width will resolve
+	widthFromSub(subDTypep());
     }
     AstArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
 	: AstNodeDType(fl), m_packed(isPacked) {
-	setOp1p(dtp);
+	refDTypep(dtp);
 	setOp2p(rangep);
-	widthSignedFrom(dtp);
+	dtypep(this);
+	widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
     virtual void dump(ostream& str);
-    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
-    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep(); }
+    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+					   || (!m_refDTypep && childDTypep())); }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
+    }}
+    virtual bool same(AstNode* samep) const {
+	AstArrayDType* sp = samep->castArrayDType();
+	return (m_packed==sp->m_packed
+		&& msb()==sp->msb()
+		&& subDTypep()==sp->subDTypep()
+		&& rangep()->sameTree(sp->rangep())); }  // HashedDT doesn't recurse, so need to check children
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     AstRange*	rangep() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
     void	rangep(AstRange* nodep) { setOp2p(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
-    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return elementsConst() * dtypep()->widthTotalBytes(); }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return elementsConst() * subDTypep()->widthTotalBytes(); }
     int		msb() const { return rangep()->msbConst(); }
     int		lsb() const { return rangep()->lsbConst(); }
     int		elementsConst() const { return rangep()->elementsConst(); }
@@ -259,109 +287,144 @@ struct AstBasicDType : public AstNodeDType {
     // Builtin atomic/vectored data type
     // Children: RANGE (converted to constant in V3Width)
 private:
-    AstBasicDTypeKwd	m_keyword;	// What keyword created it
-    bool		m_implicit;	// Implicitly declared
-    bool		m_nosigned;	// Implicit without sign
-    int			m_msb;		// MSB when no range attached
+    struct Members {
+	AstBasicDTypeKwd m_keyword;	// (also in VBasicTypeKey) What keyword created basic type
+	VNumRange	m_nrange;	// (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
+	bool operator== (const Members& rhs) const {
+	    return rhs.m_keyword == m_keyword
+		&& rhs.m_nrange == m_nrange; }
+    } m;
+    // See also in AstNodeDtype: m_width, m_widthMin, m_numeric(issigned)
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSignedState signst=signedst_NOSIGN)
 	: AstNodeDType(fl) {
-	init(kwd, signst, 0, NULL);
+	init(kwd, AstNumeric(signst), 0, -1, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::LOGIC, signedst_NOSIGN, wantwidth, NULL);
+	init(AstBasicDTypeKwd::LOGIC, AstNumeric::NOSIGN, wantwidth, -1, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
 	: AstNodeDType(fl) {
-	init(AstBasicDTypeKwd::BIT, signedst_NOSIGN, wantwidth, NULL);
+	init(AstBasicDTypeKwd::BIT, AstNumeric::NOSIGN, wantwidth, -1, NULL);
+    }
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstNumeric numer, int wantwidth, int widthmin)
+	: AstNodeDType(fl) {
+	init(kwd, numer, wantwidth, widthmin, NULL);
     }
     // See also addRange in verilog.y
 private:
-    void init(AstBasicDTypeKwd kwd, VSignedState signst, int wantwidth, AstRange* rangep) {
-	m_keyword = kwd;
-	m_msb = 0;
+    void init(AstBasicDTypeKwd kwd, AstNumeric numer,
+	      int wantwidth, int wantwidthmin, AstRange* rangep) {
+	// wantwidth=0 means figure it out, but if a widthmin is >=0
+	//    we allow width 0 so that {{0{x}},y} works properly
+	// wantwidthmin=-1:  default, use wantwidth if it is non zero
+	m.m_keyword = kwd;
 	// Implicitness: // "parameter X" is implicit and sized from initial value, "parameter reg x" not
-	m_implicit = false;
-	m_nosigned = false;
 	if (keyword()==AstBasicDTypeKwd::LOGIC_IMPLICIT) {
-	    if (!rangep && !wantwidth) m_implicit = true;  // Also cleared if range added later
-	    m_keyword = AstBasicDTypeKwd::LOGIC;
+	    if (rangep || wantwidth) m.m_keyword = AstBasicDTypeKwd::LOGIC;
 	}
-	if (signst == signedst_NOSIGN) {
-	    if (keyword().isSigned()) signst = signedst_SIGNED;
-	    else m_nosigned = true;
+        if (numer == AstNumeric::NOSIGN) {
+	    if (keyword().isSigned()) numer = AstNumeric::SIGNED;
+	    else if (keyword().isUnsigned()) numer = AstNumeric::UNSIGNED;
 	}
-	if (keyword().isDouble()) dtypeSetDouble();
-	else setSignedState(signst);
-	if (!rangep && wantwidth) { // Constant width
-	    m_msb = wantwidth - 1;
-	    width(wantwidth, wantwidth);
+	numeric(numer);
+	if (!rangep && (wantwidth || wantwidthmin>=0)) { // Constant width
+	    if (wantwidth>1) m.m_nrange.init(wantwidth-1, 0, false);
+	    int wmin = wantwidthmin>=0 ? wantwidthmin : wantwidth;
+	    widthForce(wantwidth, wmin);
 	} else if (!rangep) {  // Set based on keyword properties
 	    // V3Width will pull from this width
-	    if (keyword().width() > 1 && !isOpaque()) rangep = new AstRange(fileline(), keyword().width()-1, 0);
-	    width(keyword().width(), keyword().width());
+	    if (keyword().width() > 1 && !isOpaque()) {
+		m.m_nrange.init(keyword().width()-1, 0, false);
+	    }
+	    widthForce(keyword().width(), keyword().width());
 	} else {
-	    width(rangep->elementsConst(), rangep->elementsConst());  // Maybe unknown if parameters underneath it
+	    widthForce(rangep->elementsConst(), rangep->elementsConst());  // Maybe unknown if parameters underneath it
 	}
 	setNOp1p(rangep);
+	dtypep(this);
     }
 public:
     ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
     virtual void dump(ostream& str);
-    virtual V3Hash sameHash() const { return V3Hash(keyword()); }
-    virtual bool same(AstNode* samep) const {
-	return samep->castBasicDType()->keyword() == keyword(); }
-    virtual string name()	const { return m_keyword.ascii(); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m.m_keyword), V3Hash(m.m_nrange.msb())); }
+    virtual bool same(AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
+	return samep->castBasicDType()->m == m; }
+    virtual string name()	const { return m.m_keyword.ascii(); }
+    virtual bool broken() const { return dtypep()!=this; }
     AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
     void	rangep(AstRange* nodep) { setNOp1p(nodep); }
-    void	setSignedState(VSignedState signst) {
-	if (signst==signedst_UNSIGNED) numeric(AstNumeric::UNSIGNED);
-	else if (signst==signedst_SIGNED) numeric(AstNumeric::SIGNED);
+    void setSignedState(VSignedState signst) {
+	// Note NOSIGN does NOT change the state; this is required by the parser
+	if (signst==signedst_UNSIGNED) numeric(VSignedState(signst));
+	else if (signst==signedst_SIGNED) numeric(VSignedState(signst));
     }
     // METHODS
     virtual AstBasicDType* basicp() const { return (AstBasicDType*)this; }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
-    AstBasicDTypeKwd keyword() const { return m_keyword; }  // Avoid using - use isSomething accessors instead
+    AstBasicDTypeKwd keyword() const { return m.m_keyword; }  // Avoid using - use isSomething accessors instead
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isDouble() const { return keyword().isDouble(); }
     bool	isOpaque() const { return keyword().isOpaque(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     bool	isZeroInit() const { return keyword().isZeroInit(); }
-    bool	isRanged() const { return rangep() || m_msb; }
-    int		msb() const { if (!rangep()) return m_msb; return rangep()->msbConst(); }
-    int		lsb() const { if (!rangep()) return 0; return rangep()->lsbConst(); }
-    int		left() const { if (!rangep()) return m_msb; return littleEndian()?rangep()->lsbConst():rangep()->msbConst(); }
-    int		right() const { if (!rangep()) return 0; return littleEndian()?rangep()->msbConst():rangep()->lsbConst(); }
+    bool	isRanged() const { return rangep() || m.m_nrange.ranged(); }
+    const VNumRange& nrange() const { return m.m_nrange; } // Generally the msb/lsb/etc funcs should be used instead
+    int		msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.msb()); }
+    int		lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lsb()); }
+    int		left() const { return littleEndian()?lsb():msb(); }  // How to show a declaration
+    int		right() const { return littleEndian()?msb():lsb(); }
     int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
-    bool	littleEndian() const { return (rangep() && rangep()->littleEndian()); }
-    bool	implicit() const { return m_implicit; }
-    void	implicit(bool flag) { m_implicit = flag; }
-    bool	nosigned() const { return m_nosigned; }
-    void	cvtRangeConst() {}  // Convert to smaller represenation - disabled
+    bool	littleEndian() const { return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian()); }
+    bool	implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
+    void	cvtRangeConst() {  // Convert to smaller represenation
+	if (rangep() && rangep()->msbp()->castConst() && rangep()->lsbp()->castConst()) {
+	    m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(),
+			    rangep()->littleEndian());
+	    rangep()->unlinkFrBackWithNext()->deleteTree();
+	    rangep(NULL);
+	}
+    }
 };
 
 struct AstConstDType : public AstNodeDType {
     // const data type, ie "const some_dtype var_name [2:0]"
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
+private:
+    AstNodeDType*	m_refDTypep;	// Inherit from this base data type
 public:
     AstConstDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
 	: AstNodeDType(fl) {
-	setOp1p(dtp);
-	widthSignedFrom(dtp);
+	childDTypep(dtp);  // Only for parser
+	refDTypep(NULL);  // V3Width will resolve
+	dtypep(NULL);  // V3Width will resolve
+	widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(ConstDType, CONSTDTYPE)
-    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
-    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep(); }
+    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+					   || (!m_refDTypep && childDTypep())); }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
+    }}
+    virtual bool same(AstNode* samep) const {
+	return (m_refDTypep==samep->castConstDType()->m_refDTypep); }
+    virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }  // node's type() included elsewhere
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
-    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
 struct AstRefDType : public AstNodeDType {
@@ -374,7 +437,8 @@ public:
 	: AstNodeDType(fl), m_refDTypep(NULL), m_name(name), m_packagep(NULL) {}
     AstRefDType(FileLine* fl, AstNodeDType* defp)
 	: AstNodeDType(fl), m_refDTypep(defp), m_packagep(NULL) {
-	widthSignedFrom(defp);
+	dtypeFrom(defp->dtypep());
+	widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
     // METHODS
@@ -383,11 +447,13 @@ public:
 	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
     }}
     virtual bool same(AstNode* samep) const {
-	return skipRefp()->sameTree(samep->castRefDType()->skipRefp()); }
-    virtual V3Hash sameHash() const { return V3Hash(skipRefp()); }
+	return (m_refDTypep==samep->castRefDType()->m_refDTypep
+		&& m_name==samep->castRefDType()->m_name
+		&& m_packagep==samep->castRefDType()->m_packagep); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(m_packagep)); }
     virtual void dump(ostream& str=cout);
     virtual string name() const { return m_name; }
-    virtual AstBasicDType* basicp() const { return defp() ? defp()->basicp() : NULL; }
+    virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
     virtual AstNodeDType* skipRefp() const {
 	// Skip past both the Ref and the Typedef
 	if (defp()) return defp()->skipRefp();
@@ -396,14 +462,12 @@ public:
     virtual int widthAlignBytes() const { return dtypeSkipRefp()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) { m_name = flag; }
-    AstNodeDType* dtypep() const {
-	if (defp()) return defp();
-	else { v3fatalSrc("Typedef not linked"); return NULL; }
-    }
     AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }	// op1 = Range of variable
     AstNodeDType* defp() const { return m_refDTypep; } // Code backward compatibility name for refDTypep
     AstNodeDType* refDTypep() const { return m_refDTypep; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep=nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
@@ -456,21 +520,41 @@ public:
 struct AstEnumDType : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // Children: ENUMVALUEs
+private:
+    AstNodeDType*	m_refDTypep;	// Elements are of this type after V3Width
+    int		m_uniqueNum;
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* itemsp)
-	: AstNodeDType(fl)
-	{ setOp1p(dtp); addNOp2p(itemsp); }
+	: AstNodeDType(fl) {
+	childDTypep(dtp);  // Only for parser
+	refDTypep(NULL);
+	addNOp2p(itemsp);
+	dtypep(NULL);  // V3Width will resolve
+	widthFromSub(subDTypep());
+	m_uniqueNum = uniqueNumInc();
+    }
     ASTNODE_NODE_FUNCS(EnumDType, ENUMDTYPE)
-    AstNodeDType* dtypep() const { return op1p()->castNodeDType(); } // op1 = Data type
-    void dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+					   || (!m_refDTypep && childDTypep())); }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
+    }}
+    virtual bool same(AstNode* samep) const { return m_uniqueNum==samep->castEnumDType()->m_uniqueNum; }
+    virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Data type
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     AstEnumItem* itemsp() const { return op2p()->castEnumItem(); } // op2 = AstEnumItem's
     void addValuesp(AstNode* nodep) { addOp2p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep(); }
     // METHODS
-    virtual AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() const { return dtypep()->skipRefp(); }
-    virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
 //######################################################################
@@ -482,7 +566,10 @@ private:
     unsigned m_start;
     unsigned m_length;
     void init(AstNode* fromp) {
-	if (fromp) widthSignedFrom(fromp);
+	if (fromp && fromp->dtypep()->castArrayDType()) {
+	    // Strip off array to find what array references
+	    dtypeFrom(fromp->dtypep()->castArrayDType()->subDTypep());
+	}
     }
 public:
     AstArraySel(FileLine* fl, AstNode* fromp, AstNode* bitp)
@@ -580,13 +667,15 @@ struct AstSel : public AstNodeTriop {
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
 	if (widthp->castConst()) {
-	    width(widthp->castConst()->toUInt(), widthp->castConst()->toUInt());
+	    dtypeSetLogicSized(widthp->castConst()->toUInt(),
+			       widthp->castConst()->toUInt(),
+			       AstNumeric::UNSIGNED);
 	}
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
 	:AstNodeTriop(fl, fromp,
 		      new AstConst(fl,lsb), new AstConst(fl,bitwidth)) {
-	width(bitwidth,bitwidth);
+	dtypeSetLogicSized(bitwidth,bitwidth,AstNumeric::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel, SEL)
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
@@ -660,55 +749,47 @@ public:
 	:AstNode(fl)
 	, m_name(name) {
 	init();
-	combineType(type); setOp1p(dtp);
-	if (dtp && dtp->basicp()) {
-	    numericFrom(dtp);
-	    width(dtp->basicp()->width(), 0);
-	} else width(1, 0);
+	combineType(type);
+	childDTypep(dtp);  // Only for parser
+	dtypep(NULL);  // V3Width will resolve
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
-	combineType(type); setOp1p(dtp);
-	if (dtp && dtp->basicp()) {
-	    numericFrom(dtp);
-	    width(dtp->basicp()->width(), 0);
-	} else width(1, 0);
+	combineType(type);
+	UASSERT(dtp,"AstVar created with no dtype");
+	dtypep(dtp);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	setOp1p(new AstBasicDType(fl, VFlagLogicPacked(), wantwidth));
-	width(wantwidth,0);
+	dtypep(findLogicDType(fl,wantwidth,wantwidth,AstNumeric::UNSIGNED));
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	setOp1p(new AstBasicDType(fl, VFlagBitPacked(), wantwidth));
-	width(wantwidth,0);
+	dtypep(findLogicDType(fl,wantwidth,wantwidth,AstNumeric::UNSIGNED));
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	if (examplep->dtypep()) {
-	    setOp1p(examplep->dtypep()->cloneTree(true));
+	if (examplep->childDTypep()) {
+	    childDTypep(examplep->childDTypep()->cloneTree(true));
 	}
-	numericFrom(examplep);
-	width(examplep->width(), examplep->widthMin());
+	dtypeFrom(examplep);
     }
     ASTNODE_NODE_FUNCS(Var, VAR)
     virtual void dump(ostream& str);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
-    virtual bool broken() const { return !dtypep(); }
     AstVarType	varType()	const { return m_varType; }		// * = Type of variable
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
@@ -719,15 +800,17 @@ public:
     string	vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string	vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     void	combineType(AstVarType type);
-    AstNodeDType* dtypep() 	const { return op1p()->castNodeDType(); }	// op1 = Range of variable
-    AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const { return dtypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
+    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
+    AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
-    void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); dtypep(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
@@ -982,6 +1065,7 @@ public:
     AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, bool lvalue)
 	:AstNodeVarRef(fl, varp->name(), varp, lvalue)
 	, m_dotted(dotted) {
+	dtypeFrom(varp);
     }
     ASTNODE_NODE_FUNCS(VarXRef, VARXREF)
     virtual void dump(ostream& str);
@@ -1015,7 +1099,6 @@ public:
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	setNOp1p(exprp);
-	if (exprp) widthSignedFrom(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
 	:AstNode(fl), m_svImplicit(false) {
@@ -1023,7 +1106,6 @@ public:
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	setNOp1p(exprp);
-	if (exprp) widthSignedFrom(exprp);
     }
     ASTNODE_NODE_FUNCS(Pin, PIN)
     virtual void dump(ostream& str);
@@ -2274,7 +2356,7 @@ public:
     AstChangeDet(FileLine* fl, AstNode* lhsp, AstNode* rhsp, bool clockReq)
 	: AstNodeStmt(fl) {
 	setNOp1p(lhsp); setNOp2p(rhsp); m_clockReq=clockReq;
-	if (lhsp) widthSignedFrom(lhsp); }
+    }
     ASTNODE_NODE_FUNCS(ChangeDet, CHANGEDET)
     AstNode*	lhsp() 	const { return op1p(); }
     AstNode*	rhsp() 	const { return op2p(); }
@@ -2387,7 +2469,7 @@ public:
 	, m_showname(showname) {
 	dtypeFrom(varp);
 	m_code = 0;
-	m_codeInc = varp->dtypep()->arrayElements() * varp->widthWords();
+	m_codeInc = varp->dtypep()->arrayElements() * varp->dtypep()->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
 	m_left = bdtypep ? bdtypep->left() : 0;
 	m_right = bdtypep ? bdtypep->right() : 0;
@@ -2555,8 +2637,8 @@ struct AstRand : public AstNodeTermop {
 private:
     bool	m_reset;	// Random reset, versus always random
 public:
-    AstRand(FileLine* fl, int wwidth, bool reset) : AstNodeTermop(fl) {
-	width(wwidth,wwidth); m_reset=reset; }
+    AstRand(FileLine* fl, AstNodeDType* dtp, bool reset) : AstNodeTermop(fl) {
+	dtypep(dtp); m_reset=reset; }
     AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
     ASTNODE_NODE_FUNCS(Rand, RAND)
     virtual string emitVerilog() { return "%f$random"; }
@@ -2891,12 +2973,13 @@ struct AstCast : public AstNode {
     }
     ASTNODE_NODE_FUNCS(Cast, CAST)
     virtual bool hasDType() const { return true; }
-    virtual string emitVerilog() { return "((%r)'(%l))"; }
+    virtual string emitVerilog() { return "((%d)'(%l))"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     AstNode* lhsp() const { return op1p(); }
-    AstNodeDType* dtypep() const { return op2p()->castNodeDType(); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op2p()->castNodeDType(); }
 };
 
 struct AstCCast : public AstNodeUniop {
@@ -3393,7 +3476,7 @@ struct AstShiftR : public AstNodeBiop {
 struct AstShiftRS : public AstNodeBiop {
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
-	if (setwidth) { width(setwidth,setwidth); }
+	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::SIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftRS, SHIFTRS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs,rhs); }
@@ -3652,7 +3735,11 @@ struct AstNeqWild : public AstNodeBiop {
 struct AstConcat : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
     AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp->width() && rhsp->width()) width(lhsp->width()+rhsp->width(),lhsp->width()+rhsp->width());
+	if (lhsp->dtypep() && rhsp->dtypep()) {
+	    dtypeSetLogicSized(lhsp->dtypep()->width()+rhsp->dtypep()->width(),
+			       lhsp->dtypep()->width()+rhsp->dtypep()->width(),
+			       AstNumeric::UNSIGNED);
+	}
     }
     ASTNODE_NODE_FUNCS(Concat, CONCAT)
     virtual string emitVerilog() { return "%f{%l, %k%r}"; }
@@ -3664,7 +3751,11 @@ struct AstConcat : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
 struct AstReplicate : public AstNodeBiop {
-    AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
+    AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	if (AstConst* constp=rhsp->castConst()) {
+	    dtypeSetLogicSized(lhsp->width()*constp->toUInt(), lhsp->width()*constp->toUInt(), AstNumeric::UNSIGNED);
+	}
+    }
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)
 	: AstNodeBiop(fl, lhsp, new AstConst(fl, repCount)) {}
     ASTNODE_NODE_FUNCS(Replicate, REPLICATE)
@@ -4174,19 +4265,58 @@ struct AstCStmt : public AstNodeStmt {
 };
 
 //######################################################################
+// Right below top
+
+struct AstTypeTable : public AstNode {
+    // Container for hash of standard data types
+    // Children:  NODEDTYPEs
+    typedef map<pair<int,int>,AstBasicDType*> LogicMap;
+    AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
+    //
+    enum { IDX0_LOGIC, IDX0_BIT, _IDX0_MAX };
+    LogicMap m_logicMap[_IDX0_MAX][AstNumeric::_ENUM_MAX];  // uses above IDX enums
+    //
+    typedef map<VBasicTypeKey,AstBasicDType*> DetailedMap;
+    DetailedMap m_detailedMap;
+public:
+    AstTypeTable(FileLine* fl) : AstNode(fl) {
+	for (int i=0; i<AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
+    }
+    ASTNODE_NODE_FUNCS(TypeTable, TYPETABLE)
+    AstNodeDType*     typesp() 	const { return op1p()->castNodeDType();}	// op1 = List of dtypes
+    void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
+    AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
+    AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+				     int width, int widthMin, AstNumeric numeric);
+    AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    void clearCache();
+    void repairCache();
+    virtual void dump(ostream& str=cout);
+};
+
+//######################################################################
 // Top
 
 struct AstNetlist : public AstNode {
     // All modules are under this single top node.
     // Parents:   none
     // Children:  MODULEs & CFILEs
-    AstNetlist() : AstNode(new FileLine("AstRoot",0)) {}
+private:
+    AstTypeTable* m_typeTablep;	// Reference to top type table, for faster lookup
+public:
+    AstNetlist() : AstNode(new FileLine("AstRoot",0)) {
+	m_typeTablep = NULL;
+    }
     ASTNODE_NODE_FUNCS(Netlist, NETLIST)
     AstNodeModule*	modulesp() 	const { return op1p()->castNodeModule();}	// op1 = List of modules
     AstNodeModule*  topModulep() const { return op1p()->castNodeModule(); }	// * = Top module in hierarchy (first one added, for now)
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
     AstCFile*	filesp() 	const { return op2p()->castCFile();}	// op2 = List of files
     void addFilesp(AstCFile* filep) { addOp2p(filep); }
+    AstNode*	miscsp() 	const { return op3p();}	// op3 = List of dtypes etc
+    void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
+    AstTypeTable* typeTablep() { return m_typeTablep; }
+    void addTypeTablep(AstTypeTable* nodep) { m_typeTablep = nodep; addMiscsp(nodep); }
 };
 
 //######################################################################

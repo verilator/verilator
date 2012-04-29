@@ -220,10 +220,11 @@ private:
 		    V3Number zeronum  (nodep->fileline(), nodep->width(), 0);
 		    constzerop = new AstConst(nodep->fileline(), zeronum);
 		}
-		constzerop->widthFrom (nodep);  // unsigned
-		V3Number widthnum (nodep->fileline(), nodep->rhsp()->widthMin(), nodep->width()-1);
+		constzerop->dtypeFrom (nodep);  // unsigned
+
+		V3Number widthnum (nodep->fileline(), nodep->rhsp()->widthMin(), m1value);
 		AstNode* constwidthp = new AstConst(nodep->fileline(), widthnum);
-		constwidthp->widthFrom (nodep->rhsp());  // unsigned
+		constwidthp->dtypeFrom (nodep->rhsp());  // unsigned
 		AstCond* newp =
 		    new AstCond (nodep->fileline(),
 				 new AstLte (nodep->fileline(),

@@ -46,7 +46,6 @@ private:
 
     // STATE
     bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
-    AstInitial*	m_initialp;	// In an initial block
     AstNodeFTask* m_ftaskp;	// Function or task we're inside
 
     // METHODS
@@ -68,10 +67,6 @@ private:
 		if (!m_ftaskp) {
 		    nodep->v3warn(ASSIGNIN,"Assigning to input variable: "<<nodep->prettyName());
 		}
-	    }
-	    if (nodep->lvalue() && nodep->varp()->isConst()
-		&& !m_initialp) {  // Too loose, but need to allow our generated first assignment
-		nodep->v3error("Assigning to const variable: "<<nodep->prettyName());
 	    }
 	}
 	nodep->iterateChildren(*this);
@@ -228,11 +223,6 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
-	m_initialp = nodep;
-	nodep->iterateChildren(*this);
-	m_initialp = NULL;
-    }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	m_ftaskp = nodep;
 	nodep->iterateChildren(*this);
@@ -270,7 +260,6 @@ public:
     LinkLValueVisitor(AstNode* nodep, bool start) {
 	m_setRefLvalue = start;
 	m_ftaskp = NULL;
-	m_initialp = NULL;
 	nodep->accept(*this);
     }
     virtual ~LinkLValueVisitor() {}

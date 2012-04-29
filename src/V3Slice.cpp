@@ -280,6 +280,9 @@ class SliceVisitor : public AstNVisitor {
 	    }
 	    UINFO(9,"    ArraySel-child: "<<topp<<endl);
 	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp, new AstConst(nodep->fileline(),lsb));
+	    if (!newp->dtypep()) {
+		newp->v3fatalSrc("ArraySel dtyping failed when resolving slice");  // see ArraySel constructor
+	    }
 	    newp->user1p(refp);
 	    newp->start(lsb);
 	    newp->length(msb - lsb + 1);

@@ -63,37 +63,84 @@ public:
 };
 
 //######################################################################
+// Now that all widthing is complete,
+// Copy all width() to widthMin().  V3Const expects this
 
 class WidthCommitVisitor : public AstNVisitor {
-    // Now that all widthing is complete,
-    // Copy all width() to widthMin().  V3Const expects this
+    // NODE STATE
+    // AstVar::user1p		-> bool, processed
+    AstUser1InUse	m_inuser1;
+
 private:
+    // METHODS
+    void editDType(AstNode* nodep) {
+	// Edit dtypes for this node
+	nodep->dtypep(editOneDType(nodep->dtypep()));
+    }
+    AstNodeDType* editOneDType(AstNodeDType* nodep) {
+	// See if the dtype/refDType can be converted to a standard one
+	// This reduces the number of dtypes in the system, and since
+	// dtypep() figures into sameTree() results in better optimizations
+	if (!nodep) return NULL;
+	// Recurse to handle the data type, as may change the size etc of this type
+	if (!nodep->user1()) nodep->accept(*this,NULL);
+	// Look for duplicate
+	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+	    AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
+	    if (newp != bdtypep && debug()>=9) {
+		UINFO(9,"dtype replacement "); nodep->dumpSmall(cout);
+		cout<<"  ---->  "; newp->dumpSmall(cout); cout<<endl;
+	    }
+	    return newp;
+	}
+	return nodep;
+    }
     // VISITORS
     virtual void visit(AstConst* nodep, AstNUser*) {
-	nodep->width(nodep->width(),nodep->width());
-	if ((nodep->width() != nodep->num().width()) || !nodep->num().sized()) {
-	    V3Number num (nodep->fileline(), nodep->width());
+	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype");
+	nodep->dtypep()->accept(*this);  // Do datatype first
+	if ((nodep->dtypep()->width() != nodep->num().width())
+	    || !nodep->num().sized()) {  // Need to force the number rrom unsized to sized
+	    V3Number num (nodep->fileline(), nodep->dtypep()->width());
 	    num.opAssign(nodep->num());
 	    num.isSigned(nodep->isSigned());
-	    AstNode* newp = new AstConst(nodep->fileline(), num);
+	    AstConst* newp = new AstConst(nodep->fileline(), num);
+	    newp->dtypeFrom(nodep);
 	    nodep->replaceWith(newp);
-	    //if (debug()>4) nodep->dumpTree(cout,"  fixConstSize_old: ");
-	    //if (debug()>4)  newp->dumpTree(cout,"              _new: ");
-	    pushDeletep(nodep); nodep=NULL;
+	    AstNode* oldp = nodep; nodep = newp;
+	    //if (debug()>4) oldp->dumpTree(cout,"  fixConstSize_old: ");
+	    //if (debug()>4) newp->dumpTree(cout,"              _new: ");
+	    pushDeletep(oldp); oldp=NULL;
 	}
+	editDType(nodep);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	nodep->width(nodep->width(),nodep->width());
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	// Rather than use dtypeChg which may make new nodes, we simply edit in place,
+	// as we don't need to preserve any widthMin's, and every dtype with the same width
+	// gets an identical edit.
+	if (nodep->user1SetOnce()) return;  // Process once
+	nodep->widthMinFromWidth();
+	// Too late to any unspecified sign to be anything but unsigned
+	if (nodep->numeric().isNosign()) nodep->numeric(AstNumeric::UNSIGNED);
 	nodep->iterateChildren(*this);
+	nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
     }
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	// This check could go anywhere after V3Param
 	nodep->v3fatalSrc("Presels should have been removed before this point");
     }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	editDType(nodep);
+    }
 public:
     // CONSTUCTORS
     WidthCommitVisitor(AstNetlist* nodep) {
+	// Were changing widthMin's, so the table is now somewhat trashed
+	nodep->typeTablep()->clearCache();
 	nodep->accept(*this);
+	// Don't want to repairCache, as all needed nodes have been added back in
+	// a repair would prevent dead nodes from being detected
     }
     virtual ~WidthCommitVisitor() {}
 };

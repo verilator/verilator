@@ -137,8 +137,14 @@ public:
 		    finalp->unlinkFrBack();
 		    rangearraysp = rangesp;
 		}
+		if (dtypep->implicit()) {
+		    // It's no longer implicit but a real logic type
+		    AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
+							    dtypep->numeric(), dtypep->width(), dtypep->widthMin());
+		    dtypep->deleteTree();  dtypep=NULL;
+		    dtypep = newp;
+		}
 		dtypep->rangep(finalp);
-	       	dtypep->implicit(false);
 	    }
 	    return createArray(dtypep, rangearraysp, isPacked);
 	}
@@ -3269,9 +3275,9 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
 	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
-    // Clear any widths that got presumed by the ranging;
+    // Don't set dtypep in the ranging;
     // We need to autosize parameters and integers separately
-    nodep->width(0,0);
+    //
     // Propagate from current module tracing state
     if (nodep->isGenVar() || nodep->isParam()) nodep->trace(false);
     else nodep->trace(v3Global.opt.trace() && nodep->fileline()->tracingOn());
