@@ -448,7 +448,7 @@ private:
 	    oldp->v3fatalSrc("Already constant??\n");
 	}
 	AstNode* newp = new AstConst(oldp->fileline(), num);
-	newp->widthSignedFrom(oldp);
+	newp->dtypeFrom(oldp);
 	if (debug()>5) oldp->dumpTree(cout,"  const_old: ");
 	if (debug()>5) newp->dumpTree(cout,"       _new: ");
 	oldp->replaceWith(newp);
@@ -483,7 +483,7 @@ private:
 	    AstNode* newp = new AstAnd(nodep->fileline(),
 				       new AstConst(nodep->fileline(), 0),
 				       checkp->unlinkFrBack());
-	    newp->widthSignedFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); nodep=NULL;
 	}
@@ -530,7 +530,7 @@ private:
     void replaceWChild(AstNode* nodep, AstNode* childp) {
 	// NODE(..., CHILD(...)) -> CHILD(...)
 	childp->unlinkFrBackWithNext();
-	childp->widthSignedFrom(nodep);
+	childp->dtypeFrom(nodep);
 	nodep->replaceWith(childp);
 	nodep->deleteTree(); nodep=NULL;
     }
@@ -646,7 +646,7 @@ private:
 	AstNode* newp = (nodep->castExtendS()
 			 ? (new AstExtendS(nodep->fileline(), arg0p))->castNode()
 			 : (new AstExtend (nodep->fileline(), arg0p))->castNode());
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
     void replacePowShift (AstNodeBiop* nodep) {  // Pow or PowS
@@ -655,8 +655,8 @@ private:
 	AstShiftL* newp = new AstShiftL(nodep->fileline(),
 					new AstConst(nodep->fileline(), 1),
 					rhsp);
-	newp->widthSignedFrom(nodep);
-	newp->lhsp()->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
+	newp->lhsp()->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
     void replaceMulShift (AstMul* nodep) {  // Mul, but not MulS as not simple shift
@@ -665,7 +665,7 @@ private:
 	AstNode* opp = nodep->rhsp()->unlinkFrBack();
 	AstShiftL* newp = new AstShiftL(nodep->fileline(),
 					opp, new AstConst(nodep->fileline(), amount));
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
     void replaceDivShift (AstDiv* nodep) {  // Mul, but not MulS as not simple shift
@@ -674,7 +674,7 @@ private:
 	AstNode* opp = nodep->lhsp()->unlinkFrBack();
 	AstShiftR* newp = new AstShiftR(nodep->fileline(),
 					opp, new AstConst(nodep->fileline(), amount));
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
     void replaceShiftOp (AstNodeBiop* nodep) {
@@ -734,11 +734,11 @@ private:
 		newp = new AstShiftL(nodep->fileline(), ap,
 				     new AstConst(nodep->fileline(), newshift));
 	    }
-	    newp->widthSignedFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    newp = new AstAnd (nodep->fileline(),
 			       newp,
 			       new AstConst (nodep->fileline(), mask));
-	    newp->widthSignedFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
 	    //newp->dumpTree(cout, "  repShiftShift_new: ");
 	    newp->accept(*this);	// Further reduce, either node may have more reductions.
@@ -1157,7 +1157,7 @@ private:
 				  fromp,
 				  new AstConst(lsbp->fileline(), lsbp->toUInt() % fromp->width()),
 				  widthp);
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
     }
 
@@ -1175,7 +1175,7 @@ private:
 			       bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
 	fromp->rhsp(new AstSel(nodep->fileline(),
 			       birhsp, lsbp, widthp));
-	fromp->widthSignedFrom(nodep);
+	fromp->dtypeFrom(nodep);
 	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
     }
     void replaceSelIntoUniop(AstSel* nodep) {
@@ -1189,7 +1189,7 @@ private:
 	//
 	fromp->lhsp(new AstSel(nodep->fileline(),
 			       bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
-	fromp->widthSignedFrom(nodep);
+	fromp->dtypeFrom(nodep);
 	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
     }
 

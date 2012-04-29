@@ -886,6 +886,7 @@ public:
     void	numericFrom(AstNode* fromp) { numeric(fromp->numeric()); }
     void	numeric(AstNumeric flag) { m_numeric = (int)flag; if (flag.isDouble()) width(64,64); }
     AstNumeric	numeric() const { return AstNumeric(m_numeric); }
+    void	dtypeFrom(AstNode* fromp) { if (fromp) { widthSignedFrom(fromp); }}
     bool	isUnsigned() const { return numeric().isUnsigned(); }
     void	didWidth(bool flag) { m_didWidth=flag; }
     bool	didWidth() const { return m_didWidth; }
@@ -1080,7 +1081,7 @@ struct AstNodeUniop : public AstNodeMath {
     // Unary math
     AstNodeUniop(FileLine* fl, AstNode* lhsp)
 	: AstNodeMath(fl) {
-	if (lhsp) widthSignedFrom(lhsp);
+	dtypeFrom(lhsp);
 	setOp1p(lhsp); }
     ASTNODE_BASE_FUNCS(NodeUniop)
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
@@ -1160,8 +1161,8 @@ struct AstNodeBiComAsv : public AstNodeBiCom {
 struct AstNodeCond : public AstNodeTriop {
     AstNodeCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeTriop(fl, condp, expr1p, expr2p) {
-	if (expr1p) widthSignedFrom(expr1p);
-	else if (expr2p) widthSignedFrom(expr2p);
+	if (expr1p) dtypeFrom(expr1p);
+	else if (expr2p) dtypeFrom(expr2p);
     }
     ASTNODE_BASE_FUNCS(NodeCond)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
@@ -1213,7 +1214,7 @@ struct AstNodeAssign : public AstNodeStmt {
     AstNodeAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeStmt(fl) {
 	setOp1p(rhsp); setOp2p(lhsp);
-	if (lhsp) widthSignedFrom(lhsp);
+	dtypeFrom(lhsp);
     }
     ASTNODE_BASE_FUNCS(NodeAssign)
     virtual AstNode*	cloneType(AstNode* lhsp, AstNode* rhsp)=0;	// Clone single node, just get same type back.

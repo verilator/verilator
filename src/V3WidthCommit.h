@@ -50,7 +50,7 @@ private:
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
 	UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	pushDeletep(nodep); nodep=NULL;
     }
 public:

@@ -435,7 +435,7 @@ private:
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstPackage* packagep)
 	: AstNodeMath(fl), m_itemp(itemp), m_packagep(packagep) {
-	if (m_itemp) widthSignedFrom(m_itemp);
+	dtypeFrom(m_itemp);
     }
     ASTNODE_NODE_FUNCS(EnumItemRef, ENUMITEMREF)
     virtual void dump(ostream& str);
@@ -924,7 +924,7 @@ public:
 	:AstNode(fl)
 	, m_scopep(scopep), m_varp(varp) {
 	m_circular = false;
-	widthSignedFrom(varp);
+	dtypeFrom(varp);
     }
     ASTNODE_NODE_FUNCS(VarScope, VARSCOPE)
     virtual void cloneRelink() { if (m_varp && m_varp->clonep()) {
@@ -1444,7 +1444,7 @@ struct AstAlwaysPost : public AstNode {
 struct AstAssign : public AstNodeAssign {
     AstAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp);
+	dtypeFrom(lhsp);
     }
     ASTNODE_NODE_FUNCS(Assign, ASSIGN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
@@ -2385,7 +2385,7 @@ public:
     AstTraceDecl(FileLine* fl, const string& showname, AstVar* varp)
 	: AstNodeStmt(fl)
 	, m_showname(showname) {
-	widthSignedFrom(varp);
+	dtypeFrom(varp);
 	m_code = 0;
 	m_codeInc = varp->dtypep()->arrayElements() * varp->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
@@ -2426,7 +2426,7 @@ private:
 public:
     AstTraceInc(FileLine* fl, AstTraceDecl* declp, AstNode* valuep)
 	: AstNodeStmt(fl) {
-	widthSignedFrom(declp);
+	dtypeFrom(declp);
 	m_declp = declp;
 	addNOp2p(valuep);
     }
@@ -2627,7 +2627,7 @@ struct AstUCFunc : public AstNodeMath {
 
 struct AstNegate : public AstNodeUniop {
     AstNegate(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Negate, NEGATE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
@@ -2707,7 +2707,7 @@ struct AstLogNot : public AstNodeUniop {
 };
 struct AstNot : public AstNodeUniop {
     AstNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Not, NOT)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNot(lhs); }
     virtual string emitVerilog() { return "%f(~ %l)"; }
@@ -2887,7 +2887,7 @@ struct AstCast : public AstNode {
     // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
     AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp) : AstNode(fl) {
 	setOp1p(lhsp); setOp2p(dtp);
-	if (dtp) { widthSignedFrom(dtp); }
+	dtypeFrom(dtp);
     }
     ASTNODE_NODE_FUNCS(Cast, CAST)
     virtual bool hasDType() const { return true; }
@@ -2912,7 +2912,7 @@ public:
 	}
     }
     AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp) : AstNodeUniop(fl, lhsp) {
-	if (typeFromp) { widthSignedFrom(typeFromp); }
+	dtypeFrom(typeFromp);
 	m_size=width();
     }
     ASTNODE_NODE_FUNCS(CCast, CCAST)
@@ -3108,7 +3108,7 @@ struct AstLogIff : public AstNodeBiCom {
 };
 struct AstOr : public AstNodeBiComAsv {
     AstOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Or, OR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f| %r)"; }
@@ -3120,7 +3120,7 @@ struct AstOr : public AstNodeBiComAsv {
 };
 struct AstAnd : public AstNodeBiComAsv {
     AstAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(And, AND)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f& %r)"; }
@@ -3132,7 +3132,7 @@ struct AstAnd : public AstNodeBiComAsv {
 };
 struct AstXor : public AstNodeBiComAsv {
     AstXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xor, XOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f^ %r)"; }
@@ -3144,7 +3144,7 @@ struct AstXor : public AstNodeBiComAsv {
 };
 struct AstXnor : public AstNodeBiComAsv {
     AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xnor, XNOR)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXnor(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f^ ~ %r)"; }
@@ -3407,7 +3407,7 @@ struct AstShiftRS : public AstNodeBiop {
 };
 struct AstAdd : public AstNodeBiComAsv {
     AstAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Add, ADD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f+ %r)"; }
@@ -3433,7 +3433,7 @@ struct AstAddD : public AstNodeBiComAsv {
 };
 struct AstSub : public AstNodeBiop {
     AstSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Sub, SUB)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f- %r)"; }
@@ -3459,7 +3459,7 @@ struct AstSubD : public AstNodeBiop {
 };
 struct AstMul : public AstNodeBiComAsv {
     AstMul(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Mul, MUL)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f* %r)"; }
@@ -3486,7 +3486,7 @@ struct AstMulD : public AstNodeBiComAsv {
 };
 struct AstMulS : public AstNodeBiComAsv {
     AstMulS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(MulS, MULS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f* %r)"; }
@@ -3500,7 +3500,7 @@ struct AstMulS : public AstNodeBiComAsv {
 };
 struct AstDiv : public AstNodeBiop {
     AstDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Div, DIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f/ %r)"; }
@@ -3526,7 +3526,7 @@ struct AstDivD : public AstNodeBiop {
 };
 struct AstDivS : public AstNodeBiop {
     AstDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(DivS, DIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f/ %r)"; }
@@ -3539,7 +3539,7 @@ struct AstDivS : public AstNodeBiop {
 };
 struct AstModDiv : public AstNodeBiop {
     AstModDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDiv, MODDIV)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f%% %r)"; }
@@ -3551,7 +3551,7 @@ struct AstModDiv : public AstNodeBiop {
 };
 struct AstModDivS : public AstNodeBiop {
     AstModDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDivS, MODDIVS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f%% %r)"; }
@@ -3564,7 +3564,7 @@ struct AstModDivS : public AstNodeBiop {
 };
 struct AstPow : public AstNodeBiop {
     AstPow(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Pow, POW)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
@@ -3589,7 +3589,7 @@ struct AstPowD : public AstNodeBiop {
 };
 struct AstPowS : public AstNodeBiop {
     AstPowS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowS, POWS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowS(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
@@ -3680,7 +3680,7 @@ struct AstBufIf1 : public AstNodeBiop {
     // lhs is enable, rhs is data to drive
     // Note unlike the Verilog bufif1() UDP, this allows any width; each lhsp bit enables respective rhsp bit
     AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
-	if (lhsp) widthSignedFrom(lhsp); }
+	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(BufIf1, BUFIF1)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opBufIf1(lhs,rhs); }
     virtual string emitVerilog() { return "bufif(%r,%l)"; }
@@ -4134,7 +4134,7 @@ public:
     AstCMath(FileLine* fl, AstNode* exprsp)
 	: AstNodeMath(fl), m_cleanOut(true) {
 	addOp1p(exprsp);
-	widthSignedFrom(exprsp);
+	dtypeFrom(exprsp);
     }
     AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut=true)
 	: AstNodeMath(fl), m_cleanOut(cleanOut) {

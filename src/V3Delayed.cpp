@@ -133,7 +133,7 @@ private:
 	} else {
 	    if (width==0) {
 		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
-		varp->widthSignedFrom(oldvarscp);
+		varp->dtypeFrom(oldvarscp);
 	    } else { // Used for vset and dimensions, so can zero init
 		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, VFlagBitPacked(), width);
 	    }

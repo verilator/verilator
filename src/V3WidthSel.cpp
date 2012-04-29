@@ -128,7 +128,7 @@ private:
 	AstNode* newp = new AstSub(rhsp->fileline(),
 				   new AstConst(rhsp->fileline(), AstConst::Unsized32(), lhs),
 				   rhsp);
-	newp->widthSignedFrom(rhsp);  // Important as AstSub default is lhs's sign
+	newp->dtypeFrom(rhsp);  // Important as AstSub default is lhs's sign
 	return newp;
     }
 

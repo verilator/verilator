@@ -849,7 +849,7 @@ private:
 	    if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to an Enum");
 	    enump->iterate(*this,vup);
 	}
-	nodep->widthSignedFrom(nodep->itemp());
+	nodep->dtypeFrom(nodep->itemp());
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
@@ -1209,13 +1209,13 @@ private:
 	    if (nodep->lhsp()) {
 		// Function hasn't been widthed, so make it so.
 		nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
-		nodep->widthSignedFrom(m_funcp->fvarp());
+		nodep->dtypeFrom(m_funcp->fvarp());
 	    }
 	}
     }
     virtual void visit(AstFuncRef* nodep, AstNUser* vup) {
 	visit(nodep->castNodeFTaskRef(), vup);
-	nodep->widthSignedFrom(nodep->taskp());
+	nodep->dtypeFrom(nodep->taskp());
 	//if (debug()) nodep->dumpTree(cout,"  FuncOut: ");
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser* vup) {
@@ -1593,6 +1593,7 @@ private:
 	// If errors are off, we need to follow the spec; thus we really need to do the max()
 	// because the rhs could be larger, and we need to have proper editing to get the widths
 	// to be the same for our operations.
+	//if (debug()>=9) { UINFO(0,"-rus "<<vup->c()<<endl); nodep->dumpTree(cout,"-rusin-"); }
 	if (vup->c()->prelim()) {  // First stage evaluation
 	    // Determine expression widths only relying on what's in the subops
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
@@ -1919,7 +1920,7 @@ private:
 	}
 	UINFO(6,"   ReplaceWithUOrSVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	pushDeletep(nodep); nodep=NULL;
 	return newp;
     }
@@ -1972,7 +1973,7 @@ private:
 	}
 	UINFO(6,"   ReplaceWithDVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
-	newp->widthSignedFrom(nodep);
+	newp->dtypeFrom(nodep);
 	pushDeletep(nodep); nodep=NULL;
 	return newp;
     }

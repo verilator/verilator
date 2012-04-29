@@ -320,7 +320,7 @@ private:
 	    AstNode* newp = lhsp;
 	    if (nodep->isQuad()) {
 		if (lhsp->isQuad()) {
-		    lhsp->widthSignedFrom(nodep);	// Just mark it, else nop
+		    lhsp->dtypeFrom(nodep);	// Just mark it, else nop
 		} else if (lhsp->isWide()) {
 		    nodep->v3fatalSrc("extending larger thing into smaller?");
 		} else {
@@ -331,7 +331,7 @@ private:
 		if (lhsp->isQuad() || lhsp->isWide()) {
 		    nodep->v3fatalSrc("extending larger thing into smaller?");
 		} else {
-		    lhsp->widthSignedFrom(nodep);	// Just mark it, else nop
+		    lhsp->dtypeFrom(nodep);	// Just mark it, else nop
 		}
 	    }
 	    replaceWithDelete(nodep,newp); nodep=NULL;
@@ -451,11 +451,11 @@ private:
 					   fromp,
 					   dropCondBound(lsbp),
 					   nodep->width());
-	    newp->widthSignedFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    if (!nodep->isQuad() && fromp->isQuad()) {
 		newp = new AstCCast (newp->fileline(), newp, nodep);
 	    }
-	    newp->widthSignedFrom(nodep);
+	    newp->dtypeFrom(nodep);
 	    replaceWithDelete(nodep,newp); nodep=NULL;
 	}
     }
