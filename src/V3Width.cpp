@@ -282,8 +282,8 @@ private:
 	    int width  = max(vup->c()->width(),    max(nodep->expr1p()->width(),    nodep->expr2p()->width()));
 	    int mwidth = max(vup->c()->widthMin(), max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin()));
 	    nodep->dtypeSetLogicSized(width,mwidth,
-				 ((nodep->expr1p()->isSigned() && nodep->expr2p()->isSigned())
-				  ? AstNumeric::SIGNED : AstNumeric::UNSIGNED));
+				      ((nodep->expr1p()->isSigned() && nodep->expr2p()->isSigned())
+				       ? AstNumeric::SIGNED : AstNumeric::UNSIGNED));
 	}
 	if (vup->c()->final()) {
 	    // Final width known, so make sure children recompute & check their sizes

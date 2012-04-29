@@ -366,21 +366,21 @@ public:
 
 struct AstRefDType : public AstNodeDType {
 private:
-    AstNodeDType* m_subDTypep;	// data type pointed to, BELOW the AstTypedef
+    AstNodeDType* m_refDTypep;	// data type pointed to, BELOW the AstTypedef
     string	m_name;		// Name of an AstTypedef
     AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
-	: AstNodeDType(fl), m_subDTypep(NULL), m_name(name), m_packagep(NULL) {}
+	: AstNodeDType(fl), m_refDTypep(NULL), m_name(name), m_packagep(NULL) {}
     AstRefDType(FileLine* fl, AstNodeDType* defp)
-	: AstNodeDType(fl), m_subDTypep(defp), m_packagep(NULL) {
+	: AstNodeDType(fl), m_refDTypep(defp), m_packagep(NULL) {
 	widthSignedFrom(defp);
     }
     ASTNODE_NODE_FUNCS(RefDType, REFDTYPE)
     // METHODS
-    virtual bool broken() const { return m_subDTypep && !m_subDTypep->brokeExists(); }
-    virtual void cloneRelink() { if (m_subDTypep && m_subDTypep->clonep()) {
-	m_subDTypep = m_subDTypep->clonep()->castNodeDType();
+    virtual bool broken() const { return m_refDTypep && !m_refDTypep->brokeExists(); }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
     }}
     virtual bool same(AstNode* samep) const {
 	return skipRefp()->sameTree(samep->castRefDType()->skipRefp()); }
@@ -401,9 +401,10 @@ public:
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
     AstNodeDType* dtypeSkipRefp() const { return defp()->skipRefp(); }	// op1 = Range of variable
-    AstNodeDType* defp() const { return m_subDTypep; }
-    AstNodeDType* subDTypep() const { return m_subDTypep; }
-    void subDTypep(AstNodeDType* nodep) { m_subDTypep=nodep; }
+    AstNodeDType* defp() const { return m_refDTypep; } // Code backward compatibility name for refDTypep
+    AstNodeDType* refDTypep() const { return m_refDTypep; }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep=nodep; }
+    AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
@@ -724,7 +725,7 @@ public:
     AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
-    AstNode*	attrsp()	const { return op4p()->castNode(); }	// op4 = Attributes during early parse
+    AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
     void	dtypep(AstNodeDType* nodep) { setOp1p(nodep); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
