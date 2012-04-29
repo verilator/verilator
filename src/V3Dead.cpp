@@ -241,7 +241,15 @@ public:
 //######################################################################
 // Dead class functions
 
-void V3Dead::deadifyAll(AstNetlist* nodep, bool elimUserVars) {
+void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, elimUserVars);
+    DeadVisitor visitor (nodep, false);
+}
+void V3Dead::deadifyDTypes(AstNetlist* nodep) {
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    DeadVisitor visitor (nodep, false);
+}
+void V3Dead::deadifyAll(AstNetlist* nodep) {
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    DeadVisitor visitor (nodep, true);
 }

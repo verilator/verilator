@@ -67,6 +67,7 @@ public:
 
 //######################################################################
 // Given a node, flip any VarRef from LValue to RValue (i.e. make it an input)
+// See also V3LinkLValue::linkLValueSet
 
 class TristateInPinVisitor : public TristateBaseVisitor {
     // VISITORS

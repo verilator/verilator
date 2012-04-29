@@ -61,6 +61,10 @@
 //	Logicals convert compared to zero
 //	If any operand is real, result is real
 //*************************************************************************
+// V3Width is the only visitor that uses vup.  We could switch to using userp,
+// though note some iterators operate on next() and so would need to pass the
+// same value on each nextp().
+//*************************************************************************
 
 #include "config_build.h"
 #include "verilatedos.h"

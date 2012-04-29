@@ -31,8 +31,12 @@
 
 class V3Dead {
 public:
+    // Modules, no vars/dtypes
+    static void deadifyModules(AstNetlist* nodep);
+    // Modules, Data types
+    static void deadifyDTypes(AstNetlist* nodep);
     // Everything that's possible
-    static void deadifyAll(AstNetlist* nodep, bool elimUserVars);
+    static void deadifyAll(AstNetlist* nodep);
 };
 
 #endif // Guard

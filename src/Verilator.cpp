@@ -185,7 +185,7 @@ void process () {
     V3Error::abortIfErrors();
 
     // Remove any modules that were parameterized and are no longer referenced.
-    V3Dead::deadifyAll(v3Global.rootp(), false);
+    V3Dead::deadifyModules(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("dead.tree");
     v3Global.checkTree();
 
@@ -274,10 +274,10 @@ void process () {
 
     // Initial const/dead to reduce work for ordering code
     V3Const::constifyAll(v3Global.rootp());
-    if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
+    if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
     v3Global.checkTree();
 
-    V3Dead::deadifyAll(v3Global.rootp(), false);
+    V3Dead::deadifyDTypes(v3Global.rootp());
     V3Global::dumpGlobalTree("const.tree");
     v3Global.checkTree();
 
@@ -309,8 +309,8 @@ void process () {
     if (!v3Global.opt.xmlOnly()) {
 	// Cleanup
 	V3Const::constifyAll(v3Global.rootp());
-	if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
-	V3Dead::deadifyAll(v3Global.rootp(), false);
+	if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
+	V3Dead::deadifyDTypes(v3Global.rootp());
 	v3Global.checkTree();
 	V3Global::dumpGlobalTree("const.tree");
 
@@ -353,8 +353,8 @@ void process () {
 
 	// Cleanup
 	V3Const::constifyAll(v3Global.rootp());
-	if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
-	V3Dead::deadifyAll(v3Global.rootp(), false);
+	if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
+	V3Dead::deadifyDTypes(v3Global.rootp());
 	v3Global.checkTree();
 	V3Global::dumpGlobalTree("const.tree");
 
@@ -402,8 +402,8 @@ void process () {
 
 	// Remove unused vars
 	V3Const::constifyAll(v3Global.rootp());
-	if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
-	V3Dead::deadifyAll(v3Global.rootp(), true);
+	if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
+	V3Dead::deadifyAll(v3Global.rootp());
 	V3Global::dumpGlobalTree("const.tree");
 
 	// Clock domain crossing analysis
@@ -460,8 +460,8 @@ void process () {
 
 	// Remove unused vars
 	V3Const::constifyAll(v3Global.rootp());
-	if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
-	V3Dead::deadifyAll(v3Global.rootp(), true);
+	if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
+	V3Dead::deadifyAll(v3Global.rootp());
 	V3Global::dumpGlobalTree("const.tree");
 
 #ifndef NEW_ORDERING
@@ -514,8 +514,8 @@ void process () {
     if (!v3Global.opt.xmlOnly()) {
 	// Remove unused vars
 	V3Const::constifyAll(v3Global.rootp());
-	if (dumpMore) V3Global::dumpGlobalTree("const_predad.tree");
-	V3Dead::deadifyAll(v3Global.rootp(), true);
+	if (dumpMore) V3Global::dumpGlobalTree("const_predead.tree");
+	V3Dead::deadifyAll(v3Global.rootp());
 	V3Global::dumpGlobalTree("const.tree");
 
 	// Here down, widthMin() is the Verilog width, and width() is the C++ width
@@ -553,7 +553,7 @@ void process () {
 	V3Const::constifyCpp(v3Global.rootp());
 	if (dumpMore) V3Global::dumpGlobalTree("constc.tree");
 
-	V3Dead::deadifyAll(v3Global.rootp(), true);
+	V3Dead::deadifyAll(v3Global.rootp());
 	V3Global::dumpGlobalTree("dead.tree");
     }
 
