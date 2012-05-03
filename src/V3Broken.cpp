@@ -208,8 +208,8 @@ private:
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)");
 	}
 	if (nodep->dtypep()) {
-	    if (!nodep->dtypep()->brokeExists()) { nodep->v3error("Broken link in node->dtypep()"); }
-	    else if (!nodep->dtypep()->castNodeDType()) { nodep->v3error("Non-dtype link in node->dtypep()"); }
+	    if (!nodep->dtypep()->brokeExists()) { nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep()); }
+	    else if (!nodep->dtypep()->castNodeDType()) { nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep()); }
 	}
 	if (v3Global.assertDTypesResolved()) {
 	    if (nodep->hasDType()) {
@@ -246,10 +246,18 @@ public:
 
 void V3Broken::brokenAll(AstNetlist* nodep) {
     //UINFO(9,__FUNCTION__<<": "<<endl);
-    BrokenTable::prepForTree();
-    BrokenMarkVisitor mvisitor (nodep);
-    BrokenCheckVisitor cvisitor (nodep);
-    BrokenTable::doneWithTree();
+    static bool inBroken = false;
+    if (inBroken) {
+	// A error called by broken can recurse back into broken; avoid this
+	UINFO(1,"Broken called under broken, skipping recursion.\n");
+    } else {
+	inBroken = true;
+	BrokenTable::prepForTree();
+	BrokenMarkVisitor mvisitor (nodep);
+	BrokenCheckVisitor cvisitor (nodep);
+	BrokenTable::doneWithTree();
+	inBroken = false;
+    }
 }
 
 void V3Broken::addNewed(AstNode* nodep) {
