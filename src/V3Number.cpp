@@ -401,7 +401,7 @@ bool V3Number::displayedFmtLegal(char format) {
 
 string V3Number::displayed(const string& vformat) const {
     string::const_iterator pos = vformat.begin();
-    UASSERT(pos != vformat.end() && pos[0]=='%', "display with non format argument "<<*this);
+    UASSERT(pos != vformat.end() && pos[0]=='%', "$display-like function with non format argument "<<*this);
     ++pos;
     string fmtsize;
     for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); ++pos) {
@@ -444,7 +444,7 @@ string V3Number::displayed(const string& vformat) const {
 	return str;
     }
     case 'c': {
-	if (this->width()>8) m_fileline->v3error("$display of char format of > 8 bit value");
+	if (this->width()>8) m_fileline->v3error("$display-like format of char of > 8 bit value");
 	int v = bitsValue(0, 8);
 	str += (char)(v);
 	return str;
@@ -477,7 +477,7 @@ string V3Number::displayed(const string& vformat) const {
 	    fmtsize = cvtToStr(int(dchars));
 	}
 	if (width() > 64) {
-	    m_fileline->v3error("Unsupported: $display of dec format of > 64 bit results (use hex format instead)");
+	    m_fileline->v3error("Unsupported: $display-like format of decimal of > 64 bit results (use hex format instead)");
 	    return "ERR";
 	}
 	if (issigned) {
@@ -501,7 +501,7 @@ string V3Number::displayed(const string& vformat) const {
 	return tmp;
     }
     default:
-	m_fileline->v3fatalSrc("Unknown $display format code for number: %"<<pos[0]);
+	m_fileline->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);
 	return "ERR";
     }
 }

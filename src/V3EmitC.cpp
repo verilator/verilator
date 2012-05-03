@@ -1192,11 +1192,11 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
     AstNode* argp = *elistp;
     if (!argp) {
 	// expectDisplay() checks this first, so internal error if found here
-	dispp->v3error("Internal: Missing arguments for $display format");
+	dispp->v3error("Internal: Missing arguments for $display-like format");
 	return;
     }
     if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-	dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any display arguments");
+	dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any $display-like arguments");
     }
     if (argp && argp->isWide()
 	&& (fmtLetter=='d'||fmtLetter=='u')) {
@@ -1287,17 +1287,17 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 	    case 'z':
 	    case 'l':
 	    case 'v':
-		nodep->v3error("Unsupported: $display format code: %"<<pos[0]);
+		nodep->v3error("Unsupported: $display-like format code: %"<<pos[0]);
 		break;
 	    default:
-		nodep->v3error("Unknown $display format code: %"<<pos[0]);
+		nodep->v3error("Unknown $display-like format code: %"<<pos[0]);
 		break;
 	    }
 	}
     }
     if (elistp != NULL) {
 	// expectFormat also checks this, and should have found it first, so internal
-	elistp->v3error("Internal: Extra arguments for $display format");
+	elistp->v3error("Internal: Extra arguments for $display-like format");
     }
     displayEmit(nodep, isScan);
 }
