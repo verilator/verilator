@@ -809,7 +809,7 @@ public:
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
-    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); dtypep(nodep); }
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }

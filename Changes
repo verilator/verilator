@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix ITOD internal error on real conversions, bug491.  [Alex Solomatnikov]
 
+****  Fix input and real loosing real data type, bug501.  [Alex Solomatnikov]
+
 ****  Fix imports causing symbol table error, bug490.  [Alex Solomatnikov]
 
 * Verilator 3.833 2012/04/15

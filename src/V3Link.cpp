@@ -313,6 +313,15 @@ private:
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
 			nodep->fileline()->modifyStateInherit(nodep->fileline());
+			AstBasicDType* bdtypep = findvarp->childDTypep()->castBasicDType();
+			if (bdtypep && bdtypep->implicit()) {
+			    // Then have "input foo" and "real foo" so the dtype comes from the other side.
+			    AstNodeDType* newdtypep = nodep->subDTypep();
+			    if (!newdtypep || !nodep->childDTypep()) findvarp->v3fatalSrc("No child type?");
+			    bdtypep->unlinkFrBack()->deleteTree();
+			    newdtypep->unlinkFrBack();
+			    findvarp->childDTypep(newdtypep);
+			}
 			nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    } else {
 			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName());
