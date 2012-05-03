@@ -23,6 +23,8 @@
 //	Remove any unreferenced modules
 //	Remove any unreferenced variables
 //
+// TODO: A graph would make the process of circular and interlinked
+// dependencies easier to resolve.
 // NOTE: If redo this, consider using maybePointedTo()/broken() ish scheme
 // instead of needing as many visitors.
 //*************************************************************************
@@ -182,6 +184,7 @@ private:
 	if (varrefp && !m_sideEffect
 	    && varrefp->varScopep()) {	// For simplicity, we only remove post-scoping
 	    m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
+	    checkAll(varrefp);  // Must track reference to dtype()
 	} else {  // Track like any other statement
 	    nodep->lhsp()->iterateAndNext(*this);
 	}
