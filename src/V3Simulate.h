@@ -102,7 +102,7 @@ private:
 
     // Checking METHODS
 public:
-    /// Call other-this function on all new var references
+    /// Call other-this function on all new *non-constant* var references
     virtual void varRefCb(AstVarRef* nodep) {}
 
     void clearOptimizable(AstNode* nodep/*null ok*/, const string& why) {
@@ -272,7 +272,15 @@ private:
 	    if (!(vscp->user1() & VU_RV)) {
 		if (!m_params && (vscp->user1() & VU_LV)) clearOptimizable(nodep,"Var write & read");
 		vscp->user1( vscp->user1() | VU_RV);
-		if (m_checkOnly) varRefCb (nodep);
+		bool isConst = nodep->varp()->isParam();
+		AstConst* constp = (isConst ? nodep->varp()->valuep()->castConst() : NULL);
+		if (isConst && constp) { // Propagate PARAM constants for constant function analysis
+		    if (!m_checkOnly && optimizable()) {
+			newNumber(vscp)->opAssign(constp->num());
+		    }
+		} else {
+		    if (m_checkOnly) varRefCb (nodep);
+		}
 	    }
 	}
 	if (!m_checkOnly && optimizable()) { // simulating
