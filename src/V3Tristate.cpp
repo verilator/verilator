@@ -21,7 +21,7 @@
 //*************************************************************************
 // V3Tristate's Transformations:
 //
-// This module modifies the design to expand tristate logic into its
+// Modify the design to expand tristate logic into its
 // corresponding two state reprasentation. At the lowest levels,
 // expressions that have Z in them are converted into two state
 // drivers and corresponding output enable signals are generated.
@@ -92,12 +92,16 @@ public:
 
 class TristateVisitor : public TristateBaseVisitor {
     // NODE STATE
-    //   *::user1p	  -> pointer to output enable __en expressions
-    //   AstVarRef::user2 -> bool - already visited
-    //   AstVar::user2    -> bool - already visited
-    //   AstPin::user2    -> bool - already visited
-    //   AstVar::user3p   -> AstPull* pullup/pulldown direction (input Var's user3p)
-    //   AstVar::user4p   -> AstVar* pointer to output __out var (input Var's user2p)
+    //   *::user1p		-> pointer to output enable __en expressions
+    //   AstVarRef::user2	-> bool - already visited
+    //   AstVar::user2		-> bool - already visited
+    //   AstPin::user2		-> bool - already visited
+    //   AstVar::user3p		-> AstPull* pullup/pulldown direction (input Var's user3p)
+    //   AstVar::user4p		-> AstVar* pointer to output __out var (input Var's user2p)
+    AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
+    AstUser4InUse	m_inuser4;
 
     // TYPES
     typedef std::vector<AstVar*> VarVec;
@@ -105,20 +109,15 @@ class TristateVisitor : public TristateBaseVisitor {
     typedef std::map<AstVar*, RefVec*> VarMap;
 
     // MEMBERS
-    AstNodeModule* m_modp;	// Current module
-    AstCell*       m_cellp;	// current cell
-    VarMap         m_lhsmap;	// LHS driver map
-    VarVec         m_varvec;	// list of all vars for doing a final cleanup of inouts and undriven outputs that were not detected through finding Z logic in the module itself
-    int            m_unique;
-    bool	   m_alhs;	// On LHS of assignment
+    AstNodeModule*	m_modp;		// Current module
+    AstCell*		m_cellp;	// current cell
+    VarMap		m_lhsmap;	// LHS driver map
+    VarVec		m_varvec;	// list of all vars for doing a final cleanup of inouts and undriven outputs that were not detected through finding Z logic in the module itself
+    int			m_unique;
+    bool		m_alhs;		// On LHS of assignment
 
     // STATS
     V3Double0 m_statTriSigs; // stat tracking
-
-    AstUser1InUse	 m_inuser1;
-    AstUser2InUse	 m_inuser2;
-    AstUser3InUse	 m_inuser3;
-    AstUser4InUse	 m_inuser4;
 
     // METHODS
     AstNode* getEnp(AstNode* nodep) {
