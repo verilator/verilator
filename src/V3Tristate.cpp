@@ -182,10 +182,15 @@ class TristateVisitor : public TristateBaseVisitor {
 	return newp;
     }
 
-    void checkPullDirection(AstPull* pullp1, AstPull* pullp2) {
-	if (pullp1 && pullp2 && pullp1->direction() != pullp2->direction()) {
-	    pullp1->v3error("Unsupported: Conflicting pull directions.");
-	    pullp2->v3error("... Location of conflicing pull.");
+    void setPullDirection(AstVar* varp, AstPull* pullp) {
+	AstPull* oldpullp = (AstPull*)varp->user3p();
+	if (!oldpullp) {
+	    varp->user3p(pullp); //save off to indicate the pull direction
+	} else {
+	    if (oldpullp->direction() != pullp->direction()) {
+		pullp->v3error("Unsupported: Conflicting pull directions.");
+		oldpullp->v3error("... Location of conflicing pull.");
+	    }
 	}
     }
 
@@ -638,8 +643,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstVarRef* lhsp = nodep->lhsp()->unlinkFrBack()->castVarRef();
 	    lhsp->lvalue(true);
 	    AstVar* varp = lhsp->varp();
-	    AstPull* pullp = (AstPull*)varp->user3p();
-	    checkPullDirection(pullp, nodep);
+	    setPullDirection(varp, nodep);
 	    V3Number zeros (nodep->fileline(), varp->width());
 	    zeros.setAllBits0();
 	    AstConst* constp = new AstConst(nodep->fileline(), zeros);
@@ -758,12 +762,8 @@ class TristateVisitor : public TristateBaseVisitor {
 	if (refp) {
 	    if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
 		UINFO(9, "propagate pull to "<<refp->varp());
-		if (!refp->varp()->user3p()) {
-		    refp->varp()->user3p(pullp);
-		} else {
-		    //selp: Note we don't currently obey selects; all bits must be consistently pulled
-		    checkPullDirection(pullp, (AstPull*) refp->varp()->user3p());
-		}
+		//selp: Note we don't currently obey selects; all bits must be consistently pulled
+		setPullDirection(refp->varp(), pullp);
 	    }
 	}
 	// Don't need to visit the created assigns, as it was added at the end of the next links
