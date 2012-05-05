@@ -506,68 +506,57 @@ class TristateVisitor : public TristateBaseVisitor {
 	pushDeletep(nodep); nodep = NULL;
     }
 
-    virtual void visit(AstAnd* nodep, AstNUser*) {
+    void visitAndOr(AstNodeBiop* nodep, bool isAnd) {
 	nodep->iterateChildren(*this);
 	UINFO(9,(m_alhs?"alhs":"")<<" "<<nodep<<endl);
-	if (m_alhs && nodep->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
-	// ANDs and Z's have issues. Earlier optimizations convert
-	// expressions like "(COND) ? 1'bz : 1'b0" to "COND & 1'bz". So we
-	// have to define what is means to AND 1'bz with other
-	// expressions. I don't think this is spec, but here I take the
-	// approach that when one expression is 1, that the Z passes. This
-	// makes the COND's work. It is probably better to not perform the
-	// conditional optimization if the bits are Z.
-	AstNode* expr1p = nodep->lhsp();
-	AstNode* expr2p = nodep->rhsp();
-	if (!expr1p->user1p() && !expr2p->user1p()) {
-	    return; // no tristates in either expression, so nothing to do
+	{
+	    if (m_alhs && nodep->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
+	    // ANDs and Z's have issues. Earlier optimizations convert
+	    // expressions like "(COND) ? 1'bz : 1'b0" to "COND & 1'bz". So we
+	    // have to define what is means to AND 1'bz with other
+	    // expressions. I don't think this is spec, but here I take the
+	    // approach that when one expression is 1, that the Z passes. This
+	    // makes the COND's work. It is probably better to not perform the
+	    // conditional optimization if the bits are Z.
+	    //
+	    // ORs have the same issues as ANDs. Earlier optimizations convert
+	    // expressions like "(COND) ? 1'bz : 1'b1" to "COND | 1'bz". So we
+	    // have to define what is means to OR 1'bz with other
+	    // expressions. Here I take the approach that when one expression
+	    // is 0, that is passes the other.
+	    AstNode* expr1p = nodep->lhsp();
+	    AstNode* expr2p = nodep->rhsp();
+	    if (!expr1p->user1p() && !expr2p->user1p()) {
+		return; // no tristates in either expression, so nothing to do
+	    }
+	    AstNode* en1p = getEnp(expr1p);
+	    AstNode* en2p = getEnp(expr2p);
+	    AstNode* subexpr1p = expr1p->cloneTree(false);
+	    AstNode* subexpr2p = expr2p->cloneTree(false);
+	    if (isAnd) {
+		subexpr1p = new AstNot(nodep->fileline(), subexpr1p);
+		subexpr2p = new AstNot(nodep->fileline(), subexpr2p);
+	    }
+	    // calc new output enable
+	    AstNode* enp = new AstOr(nodep->fileline(),
+				     new AstAnd(nodep->fileline(), en1p, en2p),
+				     new AstOr(nodep->fileline(),
+					       new AstAnd(nodep->fileline(),
+							  en1p->cloneTree(false),
+							  subexpr1p),
+					       new AstAnd(nodep->fileline(),
+							  en2p->cloneTree(false),
+							  subexpr2p)));
+	    nodep->user1p(enp);
+	    expr1p->user1p(NULL);
+	    expr2p->user1p(NULL);
 	}
-	AstNode* en1p = getEnp(expr1p);
-	AstNode* en2p = getEnp(expr2p);
-	// calc new output enable.
-	AstNode* enp = new AstOr(nodep->fileline(),
-				 new AstAnd(nodep->fileline(), en1p, en2p),
-				 new AstOr(nodep->fileline(),
-					   new AstAnd(nodep->fileline(),
-						      en1p->cloneTree(false),
-						      new AstNot(nodep->fileline(), expr1p->cloneTree(false))),
-					   new AstAnd(nodep->fileline(),
-						      en2p->cloneTree(false),
-						      new AstNot(nodep->fileline(), expr2p->cloneTree(false)))));
-	nodep->user1p(enp);
-	expr1p->user1p(NULL);
-	expr2p->user1p(NULL);
     }
-
+    virtual void visit(AstAnd* nodep, AstNUser*) {
+	visitAndOr(nodep,true);
+    }
     virtual void visit(AstOr* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	UINFO(9,(m_alhs?"alhs":"")<<" "<<nodep<<endl);
-	if (m_alhs && nodep->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
-	// ORs have the same issues as ANDs. Earlier optimizations convert
-	// expressions like "(COND) ? 1'bz : 1'b1" to "COND | 1'bz". So we
-	// have to define what is means to OR 1'bz with other
-	// expressions. Here I take the approach that when one expression
-	// is 0, that is passes the other.
-	AstNode* expr1p = nodep->lhsp();
-	AstNode* expr2p = nodep->rhsp();
-	if (!expr1p->user1p() && !expr2p->user1p()) {
-	    return; // no tristates in either expression, so nothing to do
-	}
-	AstNode* en1p = getEnp(expr1p);
-	AstNode* en2p = getEnp(expr2p);
-	// calc new output enable
-	AstNode* enp = new AstOr(nodep->fileline(),
-				 new AstAnd(nodep->fileline(), en1p, en2p),
-				 new AstOr(nodep->fileline(),
-					   new AstAnd(nodep->fileline(),
-						      en1p->cloneTree(false),
-						      expr1p->cloneTree(false)),
-					   new AstAnd(nodep->fileline(),
-						      en2p->cloneTree(false),
-						      expr2p->cloneTree(false))));
-	nodep->user1p(enp);
-	expr1p->user1p(NULL);
-	expr2p->user1p(NULL);
+	visitAndOr(nodep,false);
     }
 
     void visitAssign(AstNodeAssign* nodep) {
