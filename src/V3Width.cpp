@@ -770,7 +770,6 @@ private:
 	bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
 	if (implicitParam) {
 	    int width=0;
-	    AstNumeric rs = AstNumeric::UNSIGNED;
 	    if (nodep->valuep()) {
 		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
 		UINFO(9,"implicitParamPRELIMIV "<<nodep->valuep()<<endl);
