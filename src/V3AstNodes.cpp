@@ -607,8 +607,8 @@ void AstNode::dump(ostream& str) {
     if (user4p()) str<<" u4="<<(void*)user4p();
     if (user5p()) str<<" u5="<<(void*)user5p();
     if (hasDType()) {
-	if (dtypep()==this) str<<" @dt="<<"this";
-	else str<<" @dt="<<(void*)dtypep();
+	if (dtypep()==this) str<<" @dt="<<"this@";
+	else str<<" @dt="<<(void*)dtypep()<<"@";  // Final @ so less likely to by accident think it's nodep
 	if (AstNodeDType* dtp = dtypep()) {
 	    dtp->dumpSmall(str);
 	}
