@@ -43,6 +43,7 @@ extern void yyerrorf(const char* format, ...);
 //======================================================================
 
 #define NEXTLINE() {PARSEP->linenoInc();}
+#define LINECHECK()  { const char* cp=yytext; for (int n=yyleng; n; --n) if (cp[n]=='\n') NEXTLINE(); }
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
 #define FL { yylval.fl = CRELINE(); }
@@ -894,8 +895,8 @@ word	[a-zA-Z0-9_]+
 			}
   \" 			{ yy_push_state(STRING); yymore(); }
 
-  [0-9]*?['']s?[bcodhBCODH][ \t]*[A-Fa-f0-9xXzZ_?]*	{
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+  [0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*	{
+			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9]*?['']s?[01xXzZ]	{	/* SystemVerilog */
@@ -903,16 +904,16 @@ word	[a-zA-Z0-9_]+
                           return yaINTNUM;
 			}
   /* Note below is constructed to not match the ' that begins a '(  or '{ */
-  [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+	{
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+  [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+	{
+			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
-  [0-9][_0-9]*[ \t]*['']s?[bcodhBCODH]	{
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+  [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]	{
+			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
-  [0-9][_0-9]*[ \t]*['']s	{
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+  [0-9][_0-9]*[ \t\n]*['']s	{
+			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
   [0-9][_0-9]*		{
