@@ -174,13 +174,16 @@ private:
 	return rnodep->lhsp()->castConst();
     }
     static bool operandAndOrSame(AstNode* nodep) {
+	// OR( AND(VAL,x), AND(VAL,y)) -> AND(VAL,OR(x,y))
+	// OR( AND(x,VAL), AND(y,VAL)) -> AND(OR(x,y),VAL)
 	AstNodeBiop* np = nodep->castNodeBiop();
 	AstNodeBiop* lp = np->lhsp()->castNodeBiop();
 	AstNodeBiop* rp = np->rhsp()->castNodeBiop();
 	return (lp && rp
 		&& lp->width()==rp->width()
 		&& lp->type()==rp->type()
-		&& operandsSame(lp->lhsp(),rp->lhsp()));
+		&& (operandsSame(lp->lhsp(),rp->lhsp())
+		    || operandsSame(lp->rhsp(),rp->rhsp())));
     }
     static bool matchOrAndNot(AstNodeBiop* nodep) {
 	// AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
@@ -410,7 +413,11 @@ private:
 	    return node1p->sameTree(node2p);
 	}
 	else if (node1p->castVarRef() && node2p->castVarRef()) {
-	    return node1p->sameTree(node2p);
+	    // Avoid comparing widthMin's, which results in lost optimization attempts
+	    // If cleanup sameTree to be smarter, this can be restored.
+	    //return node1p->sameTree(node2p);
+	    return node1p->castVarRef()->varp() == node2p->castVarRef()->varp()
+		&& node1p->castVarRef()->lvalue() == node2p->castVarRef()->lvalue();
 	} else {
 	    return false;
 	}
@@ -604,7 +611,9 @@ private:
 	//nodep->dumpTree(cout, "  repAsvRUp_new: ");
     }
     void replaceAndOr (AstNodeBiop* nodep) {
-	// Or(And(CONSTll,lr),And(CONSTrl==ll,rr)) -> And(CONSTll,Or(lr,rr))
+	//  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))
+	//  OR  (AND (CONSTll,lr), AND(CONSTrl,    rr=lr)) -> AND (OR(ll,rl), rr)
+	// nodep ^lp  ^llp   ^lrp  ^rp  ^rlp       ^rrp
 	// (Or/And may also be reversed)
 	AstNodeBiop* lp = nodep->lhsp()->unlinkFrBack()->castNodeBiop();
 	AstNode* llp = lp->lhsp()->unlinkFrBack();
@@ -613,12 +622,23 @@ private:
 	AstNode* rlp = rp->lhsp()->unlinkFrBack();
 	AstNode* rrp = rp->rhsp()->unlinkFrBack();
 	nodep->replaceWith(lp);
-	lp->lhsp(llp);
-	lp->rhsp(nodep);
-	nodep->lhsp(lrp);
-	nodep->rhsp(rrp);
-	rp->deleteTree();
-	rlp->deleteTree();
+	if (operandsSame(llp,rlp)) {
+	    lp->lhsp(llp);
+	    lp->rhsp(nodep);
+	    nodep->lhsp(lrp);
+	    nodep->rhsp(rrp);
+	    rp->deleteTree();
+	    rlp->deleteTree();
+	} else if (operandsSame(lrp, rrp)) {
+	    lp->lhsp(nodep);
+	    lp->rhsp(rrp);
+	    nodep->lhsp(llp);
+	    nodep->rhsp(rlp);
+	    rp->deleteTree();
+	    lrp->deleteTree();
+	} else {
+	    nodep->v3fatalSrc("replaceAndOr on something operandAndOrSame shouldn't have matched");
+	}
 	//nodep->dumpTree(cout, "  repAndOr_new: ");
     }
     void replaceShiftSame (AstNodeBiop* nodep) {
