@@ -162,6 +162,9 @@ endmodule
 
 
 // floating output and inout
+`ifndef VERILATOR
+// Note verilator doesn't know to make Z4 a tristate unless marked an inout
+`endif
 module Test4(output Z4, inout Z5);
 endmodule
 

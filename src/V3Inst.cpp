@@ -236,7 +236,8 @@ public:
 //######################################################################
 // Inst class functions
 
-AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule*, bool forTristate) {
+AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule*,
+				       bool forTristate, bool alwaysCvt) {
     // If a pin connection is "simple" leave it as-is
     // Else create a intermediate wire to perform the interconnect
     // Return the new assignment, if one was made
@@ -248,11 +249,13 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
     AstAssignW* assignp = NULL;
     if (connectRefp) connBasicp = connectRefp->varp()->dtypep()->basicp();
     //
-    if (connectRefp
+    if (!alwaysCvt
+	&& connectRefp
 	&& connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())
 	&& !connectRefp->varp()->isSc()) { // Need the signal as a 'shell' to convert types
 	// Done.  Same data type
-    } else if (connBasicp
+    } else if (!alwaysCvt
+	       && connBasicp
 	       && pinBasicp
 	       && connBasicp->width() == pinBasicp->width()
 	       && connBasicp->lsb() == pinBasicp->lsb()
@@ -260,13 +263,14 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	       && connBasicp->width() == pinVarp->width()
 	       && 1) {
 	// Done. One to one interconnect won't need a temporary variable.
-    } else if (!forTristate && pinp->exprp()->castConst()) {
+    } else if (!alwaysCvt && !forTristate && pinp->exprp()->castConst()) {
 	// Done. Constant.
     } else {
 	// Make a new temp wire
 	//if (1||debug()>=9) { pinp->dumpTree(cout,"in_pin:"); }
 	AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
-	string newvarname = "__Vcellinp__"+cellp->name()+"__"+pinp->name();
+	string newvarname = ((pinVarp->isOutput() ? "__Vcellout__" : "__Vcellinp__")
+			     +cellp->name()+"__"+pinp->name());
 	AstVar* newvarp = new AstVar (pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
 	// Important to add statement next to cell, in case there is a generate with same named cell
 	cellp->addNextHere(newvarp);

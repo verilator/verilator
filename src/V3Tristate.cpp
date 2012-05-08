@@ -69,11 +69,11 @@ public:
 // Given a node, flip any VarRef from LValue to RValue (i.e. make it an input)
 // See also V3LinkLValue::linkLValueSet
 
-class TristateInPinVisitor : public TristateBaseVisitor {
+class TristatePinVisitor : public TristateBaseVisitor {
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (nodep->lvalue()) {
-	    UINFO(9," Flip-to-RValue "<<nodep<<endl);
+	    UINFO(9,"  Flip-to-RValue "<<nodep<<endl);
 	    nodep->lvalue(false);
 	}
     }
@@ -82,10 +82,10 @@ class TristateInPinVisitor : public TristateBaseVisitor {
     }
 public:
     // CONSTUCTORS
-    TristateInPinVisitor(AstNode* nodep) {
+    TristatePinVisitor(AstNode* nodep) {
 	nodep->accept(*this);
     }
-    virtual ~TristateInPinVisitor() {}
+    virtual ~TristatePinVisitor() {}
 };
 
 //######################################################################
@@ -144,6 +144,7 @@ class TristateVisitor : public TristateBaseVisitor {
 				      AstVarType::MODULETEMP,
 				      invarp->name()+"__en",
 				      invarp);
+	    UINFO(9,"       newenv "<<newp<<endl);
 	    if (!m_modp) { invarp->v3error("Unsupported: Creating tristate signal not underneath a module: "<<invarp->prettyName()); }
 	    else m_modp->addStmtp(newp);
 	    invarp->user1p(newp); // find envar given invarp
@@ -158,6 +159,7 @@ class TristateVisitor : public TristateBaseVisitor {
 				      AstVarType::MODULETEMP,
 				      invarp->name()+"__out",
 				      invarp);
+	    UINFO(9,"       newout "<<newp<<endl);
 	    if (!m_modp) { invarp->v3error("Unsupported: Creating tristate signal not underneath a module: "<<invarp->prettyName()); }
 	    else m_modp->addStmtp(newp);
 	    invarp->user4p(newp);  // find outvar given invarp
@@ -170,6 +172,7 @@ class TristateVisitor : public TristateBaseVisitor {
 				   AstVarType::MODULETEMP,
 				   "__Vtriunconn"+cvtToStr(m_unique++),
 				   dtypep);
+	UINFO(9,"       newunc "<<newp<<endl);
 	if (!m_modp) { newp->v3error("Unsupported: Creating tristate signal not underneath a module"); }
 	else m_modp->addStmtp(newp);
 	return newp;
@@ -291,7 +294,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		//
 		outvarp->user1p(envarp);
 		outvarp->user3p(invarp->user3p()); // AstPull* propagation
-		if (invarp->user3p()) UINFO(9, "propagate pull to "<<outvarp);
+		if (invarp->user3p()) UINFO(9, "propagate pull to "<<outvarp<<endl);
 	    } else if (invarp->user1p()) {
 		envarp = invarp->user1p()->castNode()->castVar();  // From CASEEQ, foo === 1'bz
 	    }
@@ -311,7 +314,7 @@ class TristateVisitor : public TristateBaseVisitor {
 					     AstVarType::MODULETEMP,
 					     lhsp->name()+"__out"+cvtToStr(m_unique),
 					     VFlagBitPacked(), w);  // 2-state ok; sep enable
-		UINFO(9,"   newout "<<newlhsp);
+		UINFO(9,"       newout "<<newlhsp<<endl);
 		nodep->addStmtp(newlhsp);
 		refp->varp(newlhsp); // assign the new var to the varref
 		refp->name(newlhsp->name());
@@ -326,6 +329,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		AstNode* enassp = new AstAssignW(refp->fileline(),
 						 new AstVarRef(refp->fileline(), newenp, true),
 						 getEnp(refp));
+		UINFO(9,"       newass "<<enassp<<endl);
 		nodep->addStmtp(enassp);
 
 		// now append this driver to the driver logic.
@@ -432,6 +436,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    // The output enable of a cond is a cond of the output enable of the
 	    // two expressions with the same conditional.
 	    AstNode* enp = new AstCond(nodep->fileline(), condp->cloneTree(false), en1p, en2p);
+	    UINFO(9,"       newcond "<<enp<<endl);
 	    nodep->user1p(enp);
 	    expr1p->user1p(NULL);
 	    expr2p->user1p(NULL);
@@ -483,6 +488,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		AstNode* en1p = getEnp(expr1p);
 		AstNode* en2p = getEnp(expr2p);
 		AstNode* enp = new AstConcat(nodep->fileline(), en1p, en2p);
+		UINFO(9,"       newconc "<<enp<<endl);
 		nodep->user1p(enp);
 		expr1p->user1p(NULL);
 		expr2p->user1p(NULL);
@@ -515,7 +521,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
     void visitAndOr(AstNodeBiop* nodep, bool isAnd) {
 	nodep->iterateChildren(*this);
-	UINFO(9,(m_alhs?"alhs":"")<<" "<<nodep<<endl);
+	UINFO(9,dbgState()<<nodep<<endl);
 	{
 	    if (m_alhs && nodep->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
 	    // ANDs and Z's have issues. Earlier optimizations convert
@@ -612,6 +618,7 @@ class TristateVisitor : public TristateBaseVisitor {
 					   new AstEqCase(fl, new AstConst(fl, oneIfEnOne),
 							 varrefp));
 	    if (neq) newp = new AstLogNot(fl, newp);
+	    UINFO(9,"       newceq "<<newp<<endl);
 	    if (debug()>=9) nodep->dumpTree(cout,"-caseeq-old: ");
 	    if (debug()>=9) newp->dumpTree(cout,"-caseeq-new: ");
 	    nodep->replaceWith(newp);
@@ -660,8 +667,9 @@ class TristateVisitor : public TristateBaseVisitor {
     //   INPUT:   -> (VARREF(trisig__pinin)),
     //               trisig__pinin = SEL(trisig,x)       // via pinReconnectSimple
     //   OUTPUT:  -> (VARREF(trisig__pinout))
+    //               SEL(trisig,x) = trisig__pinout
+    //					^-- ->user1p() == trisig__pinen
     //   ENABLE:  -> (VARREF(trisig__pinen)
-    //               SEL(trisig,x) = BUFIF1(enable__temp, trisig__pinen)
     // Added complication is the signal may be an output/inout or just input with tie off (or not) up top
     //     PIN	PORT	NEW PORTS AND CONNECTIONS
     //     N/C	input	in(from-resolver), __out(to-resolver-only), __en(to-resolver-only)
@@ -702,17 +710,18 @@ class TristateVisitor : public TristateBaseVisitor {
 	{
 	    AstVar* enVarp = new AstVar(nodep->fileline(),
 					AstVarType::MODULETEMP,
-					nodep->name() + "__en" + cvtToStr(m_unique),
+					nodep->name() + "__en" + cvtToStr(m_unique++),
 					VFlagLogicPacked(), enModVarp->width());
 	    AstPin* enpinp = new AstPin(nodep->fileline(),
 					nodep->pinNum(),
-					nodep->name() + "__en" + cvtToStr(m_unique++),
+					enModVarp->name(),  // should be {var}"__en"
 					new AstVarRef(nodep->fileline(), enVarp, true));
 	    enpinp->modVarp(enModVarp);
 	    enpinp->user2(true); // mark this visited
 	    m_cellp->addPinsp(enpinp);
 	    m_modp->addStmtp(enVarp);
 	    enrefp = new AstVarRef(nodep->fileline(), enVarp, false);
+	    UINFO(9,"       newvrf "<<enrefp<<endl);
 	    if (debug()>=9) enpinp->dumpTree(cout,"-pin-ena: ");
 	}
 	// Create new output pin
@@ -723,7 +732,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstNode* outexprp = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
 	    outpinp = new AstPin(nodep->fileline(),
 				 nodep->pinNum(),
-				 nodep->name() + "__out"+cvtToStr(m_unique),
+				 outModVarp->name(),  // should be {var}"__out"
 				 outexprp);
 	    outpinp->modVarp(outModVarp);
 	    outpinp->user2(true); // mark this visited
@@ -736,30 +745,30 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
 
 	// Existing pin becomes an input
-	TristateInPinVisitor visitor (nodep->exprp());
+	TristatePinVisitor visitor (nodep->exprp());
 	V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, true);  // Note may change nodep->exprp()
 	if (debug()>=9) nodep->dumpTree(cout,"-pin-in:  ");
 
 	// Connect enable to output signal
-	AstVarRef* refp;
+	AstVarRef* outrefp;
 	if (!outAssignp) {
-	    refp = outpinp->exprp()->castVarRef();
+	    outrefp = outpinp->exprp()->castVarRef();
 	} else {
-	    refp = outAssignp->rhsp()->castVarRef();  // This should be the same var as the output pin
+	    outrefp = outAssignp->rhsp()->castVarRef();  // This should be the same var as the output pin
 	}
-	if (!refp) { // deal with simple varref port
+	if (!outrefp) { // deal with simple varref port
 	    nodep->v3error("Unsupported tristate port expression: "<<nodep->exprp()->prettyTypeName());
 	} else {
-	    refp->user1p(enrefp);  // Mark as now tristated; iteration will pick it up from there
-	    visit(refp, NULL); // visit this var ref to get it in the varmap
+	    outrefp->user1p(enrefp);  // Mark as now tristated; iteration will pick it up from there
+	    visit(outrefp, NULL); // visit this var ref to get it in the varmap
 	}
 
 	// Propagate any pullups/pulldowns upwards if necessary
-	if (refp) {
+	if (outrefp) {
 	    if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
-		UINFO(9, "propagate pull to "<<refp->varp());
+		UINFO(9, "propagate pull on "<<outrefp);
 		//selp: Note we don't currently obey selects; all bits must be consistently pulled
-		setPullDirection(refp->varp(), pullp);
+		setPullDirection(outrefp->varp(), pullp);
 	    }
 	}
 

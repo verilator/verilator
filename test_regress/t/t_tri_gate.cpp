@@ -45,7 +45,8 @@ bool check() {
 	printf("%%E-FAIL: ");
     }
     if (verbose) {
-	printf("SEL=%d A=%d W=%d X=%d Y=%d Z=%d  c=%d\n", tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z, c);
+	printf("SEL=%d A=%d   got: W=%d X=%d Y=%d Z=%d  exp: WXYZ=%d\n",
+	       tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z, c);
     }
     return pass;
 }

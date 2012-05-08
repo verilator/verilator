@@ -24,7 +24,7 @@ bool check() {
     int W = (((tb->OE2) ? (tb->A2 & 0x1) : 0) << tb->A1)
 	| (((tb->OE1) ? (tb->A2 >> 1)&0x1 : 0) << tb->A2);
 
-    if(tb->Y1 == tb->Y2 && tb->Y1 == Y && tb->W == W) {
+    if(tb->Y1 == Y && tb->Y2 == Y && tb->Y3 == Y && tb->W == W) {
 	pass = true;
 	if (verbose) printf("-  pass: ");
     } else {
@@ -33,7 +33,8 @@ bool check() {
 	printf("%%E-Fail: ");
     }
 
-    if (verbose) printf("Read: OE1=%d OE2=%d A1=0x%x A2=0x%x Y1=0x%x Y2=0x%x W=0x%x  Expected: Y1=Y2=%d and W=0x%x\n", tb->OE1, tb->OE2, tb->A1, tb->A2, tb->Y1, tb->Y2, tb->W, Y,W);
+    if (verbose) printf("Read: OE1=%d OE2=%d A1=0x%x A2=0x%x Y1=0x%x Y2=0x%x Y3=0x%x W=0x%x  Expected: Y1=Y2=Y3=%d and W=0x%x\n",
+			tb->OE1, tb->OE2, tb->A1, tb->A2, tb->Y1, tb->Y2, tb->Y3, tb->W, Y,W);
     return pass;
 }
 

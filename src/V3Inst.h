@@ -34,7 +34,7 @@ public:
     static void instAll(AstNetlist* nodep);
     static void dearrayAll(AstNetlist* nodep);
     static AstAssignW* pinReconnectSimple(AstPin* nodep, AstCell* cellp, AstNodeModule* modp,
-					  bool forTristate);
+					  bool forTristate, bool alwaysCvt=false);
 };
 
 #endif // Guard
