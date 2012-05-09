@@ -709,6 +709,7 @@ private:
     bool	m_input:1;	// Input or inout
     bool	m_output:1;	// Output or inout
     bool	m_tristate:1;	// Inout or triwire or trireg
+    bool	m_declOutput:1; // Inout or output before tristate resolution
     bool	m_primaryIO:1;	// In/out to top level (or directly assigned from same)
     bool	m_sc:1;		// SystemC variable
     bool	m_scClocked:1;	// SystemC sc_clk<> needed
@@ -734,7 +735,7 @@ private:
     bool	m_trace:1;	// Trace this variable
 
     void	init() {
-	m_input=false; m_output=false; m_tristate=false;
+	m_input=false; m_output=false; m_tristate=false; m_declOutput=false;
 	m_primaryIO=false;
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false; m_usedLoopIdx=false;
@@ -840,6 +841,7 @@ public:
     bool	isOutOnly() const { return m_output && !m_input; }
     bool	isInout() const { return m_input && m_output; }
     bool	isTristate() const  { return m_tristate; }
+    bool	isDeclOutput() const  { return m_declOutput; }
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }

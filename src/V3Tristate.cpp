@@ -858,9 +858,10 @@ class TristateVisitor : public TristateBaseVisitor {
 public:
     // CONSTUCTORS
     TristateVisitor(AstNode* nodep) {
-	m_unique = 0;
-	m_cellp = NULL;
 	m_modp  = NULL;
+	m_cellp = NULL;
+	m_unique = 0;
+	m_alhs = false;
 	nodep->accept(*this);
     }
     virtual ~TristateVisitor() {

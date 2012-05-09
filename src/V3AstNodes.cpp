@@ -84,8 +84,10 @@ void AstVar::combineType(AstVarType type) {
     // These flags get combined with the existing settings of the flags.
     if (type==AstVarType::INPUT || type==AstVarType::INOUT)
 	m_input = true;
-    if (type==AstVarType::OUTPUT || type==AstVarType::INOUT)
+    if (type==AstVarType::OUTPUT || type==AstVarType::INOUT) {
 	m_output = true;
+	m_declOutput = true;
+    }
     if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE
 	|| type==AstVarType::TRI0 || type==AstVarType::TRI1)
 	m_tristate = true;
