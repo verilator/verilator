@@ -336,7 +336,7 @@ private:
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
 	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
-				      funcp->findBasicDType(funcp->fileline(), kwd));
+				      funcp->findBasicDType(kwd));
 	newvarp->funcLocal(true);
 	newvarp->combineType(AstVarType::INPUT);
 	funcp->addArgsp(newvarp);

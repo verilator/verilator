@@ -1075,19 +1075,19 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, bool issigned) {
     }
 }
 
-AstNodeDType* AstNode::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
+AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) {
     // For 'simple' types we use the global directory.  These are all unsized.
     // More advanced types land under the module/task/etc
     return v3Global.rootp()->typeTablep()
-	->findBasicDType(fl, kwd);
+	->findBasicDType(fileline(), kwd);
 }
-AstNodeDType* AstNode::findBitDType(FileLine* fl, int width, int widthMin, AstNumeric numeric) {
+AstNodeDType* AstNode::findBitDType(int width, int widthMin, AstNumeric numeric) {
     return v3Global.rootp()->typeTablep()
-	->findLogicBitDType(fl, AstBasicDTypeKwd::BIT, width, widthMin, numeric);
+	->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT, width, widthMin, numeric);
 }
-AstNodeDType* AstNode::findLogicDType(FileLine* fl, int width, int widthMin, AstNumeric numeric) {
+AstNodeDType* AstNode::findLogicDType(int width, int widthMin, AstNumeric numeric) {
     return v3Global.rootp()->typeTablep()
-	->findLogicBitDType(fl, AstBasicDTypeKwd::LOGIC, width, widthMin, numeric);
+	->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC, width, widthMin, numeric);
 }
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()

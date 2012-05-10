@@ -192,7 +192,7 @@ private:
 	FileLine* fl = nodep->fileline();
 	AstNodeDType* dtypep
 	    = new AstArrayDType (fl,
-				 nodep->findBitDType(nodep->fileline(), m_outVarps.size(),
+				 nodep->findBitDType(m_outVarps.size(),
 						     m_outVarps.size(), AstNumeric::UNSIGNED),
 				 new AstRange (fl, VL_MASK_I(m_inWidth), 0), false);
 	v3Global.rootp()->typeTablep()->addTypesp(dtypep);

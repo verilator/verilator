@@ -1058,13 +1058,24 @@ public:
     void	dtypeChgSigned(bool flag=true);
     void	dtypeChgWidth(int width, int widthMin);
     void	dtypeChgWidthSigned(int width, int widthMin, bool issigned);
-    void	dtypeSetBitSized(int width, int widthMin, AstNumeric numeric) { dtypep(findBitDType(fileline(),width,widthMin,numeric)); }
-    void	dtypeSetLogicSized(int width, int widthMin, AstNumeric numeric) { dtypep(findLogicDType(fileline(),width,widthMin,numeric)); }
-    void	dtypeSetLogicBool()	{ dtypep(findBasicDType(fileline(),AstBasicDTypeKwd::LOGIC)); }
-    void	dtypeSetDouble()	{ dtypep(findBasicDType(fileline(),AstBasicDTypeKwd::DOUBLE)); }
-    void	dtypeSetSigned32()	{ dtypep(findBasicDType(fileline(),AstBasicDTypeKwd::INTEGER)); }
-    void	dtypeSetUInt32()	{ dtypep(findBasicDType(fileline(),AstBasicDTypeKwd::UINT32)); }  // Twostate
-    void	dtypeSetUInt64()	{ dtypep(findBasicDType(fileline(),AstBasicDTypeKwd::UINT64)); }  // Twostate
+    void	dtypeSetBitSized(int width, int widthMin, AstNumeric numeric) { dtypep(findBitDType(width,widthMin,numeric)); }
+    void	dtypeSetLogicSized(int width, int widthMin, AstNumeric numeric) { dtypep(findLogicDType(width,widthMin,numeric)); }
+    void	dtypeSetLogicBool()	{ dtypep(findLogicBoolDType()); }
+    void	dtypeSetDouble()	{ dtypep(findDoubleDType()); }
+    void	dtypeSetSigned32()	{ dtypep(findSigned32DType()); }
+    void	dtypeSetUInt32()	{ dtypep(findUInt32DType()); }  // Twostate
+    void	dtypeSetUInt64()	{ dtypep(findUInt64DType()); }  // Twostate
+
+    // Data type locators
+    AstNodeDType* findLogicBoolDType()	{ return findBasicDType(AstBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findDoubleDType()	{ return findBasicDType(AstBasicDTypeKwd::DOUBLE); }
+    AstNodeDType* findSigned32DType()	{ return findBasicDType(AstBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findUInt32DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT32); }  // Twostate
+    AstNodeDType* findUInt64DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT64); }  // Twostate
+    AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric);
+    AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric);
+    AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd);
+    AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
@@ -1087,12 +1098,6 @@ public:
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
-
-    // Data type locators
-    static AstNodeDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
-    static AstNodeDType* findBitDType(FileLine* fl, int width, int widthMin, AstNumeric numeric);
-    static AstNodeDType* findLogicDType(FileLine* fl, int width, int widthMin, AstNumeric numeric);
-    static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);

@@ -767,14 +767,14 @@ public:
 	, m_name(name) {
 	init();
 	combineType(type);
-	dtypep(findLogicDType(fl,wantwidth,wantwidth,AstNumeric::UNSIGNED));
+	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
 	:AstNode(fl)
 	, m_name(name) {
 	init();
 	combineType(type);
-	dtypep(findLogicDType(fl,wantwidth,wantwidth,AstNumeric::UNSIGNED));
+	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
 	:AstNode(fl)
