@@ -456,13 +456,16 @@ class TristateVisitor : public TristateBaseVisitor {
 	// Check for unsupported tristate constructs. This is not a 100% check.
 	// The best way would be to visit the tree again and find any user1p()
 	// pointers that did not get picked up and expanded.
-	if (m_alhs && nodep->user1p())
+	if (m_alhs && nodep->user1p()) {
 	    nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName());
-	if ((nodep->op1p() && nodep->op1p()->user1p())
-	     || (nodep->op2p() && nodep->op2p()->user1p())
-	     || (nodep->op3p() && nodep->op3p()->user1p())
-	     || (nodep->op4p() && nodep->op4p()->user1p()))
+	}
+	// Ignore Var's because they end up adjacent to statements
+	if ((nodep->op1p() && nodep->op1p()->user1p() && !nodep->op1p()->castVar())
+	    || (nodep->op2p() && nodep->op2p()->user1p() && !nodep->op1p()->castVar())
+	    || (nodep->op3p() && nodep->op3p()->user1p() && !nodep->op1p()->castVar())
+	    || (nodep->op4p() && nodep->op4p()->user1p() && !nodep->op1p()->castVar())) {
 	    nodep->v3error("Unsupported tristate construct: "<<nodep->prettyTypeName());
+	}
     }
 
     void insertTristates(AstNodeModule* nodep) {
