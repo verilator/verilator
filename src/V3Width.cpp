@@ -298,7 +298,7 @@ private:
 	    nodep->expr1p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	    nodep->expr2p()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheckReduce(nodep,"Conditional Test",nodep->condp(),1,0);
+	    widthCheckReduce(nodep,"Conditional Test",nodep->condp());
 	    widthCheck(nodep,"Conditional True",nodep->expr1p(),width,mwidth);
 	    widthCheck(nodep,"Conditional False",nodep->expr2p(),width,mwidth);
 	}
@@ -913,9 +913,9 @@ private:
 	nodep->sensesp()->iterateAndNext(*this);
 	if (nodep->disablep()) {
 	    nodep->disablep()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	    widthCheckReduce(nodep,"Disable",nodep->disablep(),1,1); // it's like an if() condition.
+	    widthCheckReduce(nodep,"Disable",nodep->disablep()); // it's like an if() condition.
 	}
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp());	// it's like an if() condition.
 	nodep->dtypeSetLogicBool();
     }
 
@@ -961,7 +961,7 @@ private:
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	if (!nodep->castGenFor()) nodep->bodysp()->iterateAndNext(*this);
 	nodep->incsp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"For Test Condition",nodep->condp());	// it's like an if() condition.
     }
     virtual void visit(AstRepeat* nodep, AstNUser*) {
 	nodep->countp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -973,7 +973,7 @@ private:
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->bodysp()->iterateAndNext(*this);
 	nodep->incsp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"For Test Condition",nodep->condp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"For Test Condition",nodep->condp());	// it's like an if() condition.
     }
     virtual void visit(AstNodeIf* nodep, AstNUser*) {
 	// TOP LEVEL NODE
@@ -984,7 +984,7 @@ private:
 	}
 	nodep->condp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	spliceCvtCmpD0(nodep->condp());
-	widthCheckReduce(nodep,"If",nodep->condp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"If",nodep->condp());	// it's like an if() condition.
 	//if (debug()) nodep->dumpTree(cout,"  IfOut: ");
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
@@ -1138,19 +1138,19 @@ private:
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->stmtsp()->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp());	// it's like an if() condition.
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp());	// it's like an if() condition.
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->passsp()->iterateAndNext(*this);
 	nodep->failsp()->iterateAndNext(*this);
-	widthCheckReduce(nodep,"Property",nodep->propp(),1,1);	// it's like an if() condition.
+	widthCheckReduce(nodep,"Property",nodep->propp());	// it's like an if() condition.
     }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	//if (debug()) nodep->dumpTree(cout,"-  PinPre: ");
@@ -1425,7 +1425,7 @@ private:
 	}
 	nodep->dtypeSetLogicBool();
 	if (vup->c()->final()) {
-	    widthCheckReduce(nodep,"LHS",nodep->op1p(),1,1);
+	    widthCheckReduce(nodep,"LHS",nodep->op1p());
 	}
     }
     void visit_log_O1_LR1rus(AstNodeBiop* nodep, AstNUser* vup) {
@@ -1439,8 +1439,8 @@ private:
 	}
 	nodep->dtypeSetLogicBool();
 	if (vup->c()->final()) {
-	    widthCheckReduce(nodep,"LHS",nodep->lhsp(),1,1);
-	    widthCheckReduce(nodep,"RHS",nodep->rhsp(),1,1);
+	    widthCheckReduce(nodep,"LHS",nodep->lhsp());
+	    widthCheckReduce(nodep,"RHS",nodep->rhsp());
 	}
     }
 
@@ -1853,10 +1853,12 @@ private:
     }
 
     void widthCheckReduce (AstNode* nodep, const char* side,
-			   AstNode* underp, int expWidth, int expWidthMin,
-			   bool ignoreWarn=false) {
+			   AstNode* underp) {
+	// Underp is used in a boolean context, reduce a multibit number to one bit
 	// Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
-	if (expWidthMin==0) expWidthMin = expWidth;
+	bool ignoreWarn = false; // Not used
+	bool expWidth = 1;
+	bool expWidthMin = 1;
 	if (expWidth!=1) nodep->v3fatalSrc("Only for binary functions");
 	bool bad = widthBad(underp,expWidth,expWidthMin);
 	if (bad) {
