@@ -1857,8 +1857,8 @@ private:
 	// Underp is used in a boolean context, reduce a multibit number to one bit
 	// Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
 	bool ignoreWarn = false; // Not used
-	bool expWidth = 1;
-	bool expWidthMin = 1;
+	int expWidth = 1;
+	int expWidthMin = 1;
 	if (expWidth!=1) nodep->v3fatalSrc("Only for binary functions");
 	bool bad = widthBad(underp,expWidth,expWidthMin);
 	if (bad) {
