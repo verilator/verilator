@@ -14,7 +14,7 @@ compile (
 	 );
 
 if ($Self->{vlt}) {
-    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+16/i);
+    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 16);
 }
 
 execute (

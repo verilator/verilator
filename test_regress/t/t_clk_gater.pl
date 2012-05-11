@@ -17,7 +17,7 @@ execute (
 
 if ($Self->{vlt}) {
     #Optimization is disabled
-    #file_grep ($Self->{stats}, qr/Optimizations, Gaters inserted\s+3/i);
+    #file_grep ($Self->{stats}, qr/Optimizations, Gaters inserted\s+(\d+)/i, 3);
 }
 
 ok(1);

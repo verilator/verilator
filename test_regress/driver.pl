@@ -1363,7 +1363,9 @@ sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
+    my $expvalue = shift;
     return if $self->errors || $self->skips || $self->unsupporteds;
+    !defined $expvalue or $self->error("file_grep_not: Unexpected 3rd argument: $expvalue");
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
@@ -1376,12 +1378,15 @@ sub file_grep {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $regexp = shift;
+    my $expvalue = shift;
     return if $self->errors || $self->skips || $self->unsupporteds;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
     if ($contents !~ /$regexp/) {
 	$self->error("File_grep: $filename: Regexp not found: $regexp\n");
+    } elsif ($expvalue && $expvalue ne $1) {
+	$self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
 }
 
