@@ -92,7 +92,14 @@ int dpic_save(int value) {
 	return 0;
     }
 
-    if (svPutUserData(scope, &Dpic_Unique, (void*)(value))) {
+    // Use union to avoid cast to different size pointer warnings
+    union valpack {
+	void* ptr;
+	int i;
+    } vp;
+
+    vp.i = value;
+    if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
 	printf("%%Warning: svPutUserData failed\n");
 	return 0;
     }
@@ -106,8 +113,14 @@ int dpic_restore() {
 	return 0;
     }
 
-    if (void* userp = svGetUserData(scope, &Dpic_Unique)) {
-	return (int)(long long)(userp);
+    if (void* userp = svGetUserData(scope, (void*)&Dpic_Unique)) {
+	// Use union to avoid cast to different size pointer warnings
+	union valpack {
+	    void* ptr;
+	    int i;
+	} vp;
+	vp.ptr = userp;
+	return vp.i;
     } else {
 	printf("%%Warning: svGetUserData failed\n");
 	return 0;

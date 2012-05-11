@@ -15,13 +15,14 @@ module t;
 
       count = 1234;
 `ifdef TEST_VERBOSE
-      $display("-count == %d, infile %d, outfile %d", count, infile, outfile);
+      $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
 `endif
       count = $fscanf(infile, "%d\n", a);
 `ifdef TEST_VERBOSE
       // Ifdefing this out gave bug248
-      $display("-count == %d, infile %d, outfile %d", count, infile, outfile);
+      $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
 `endif
+      if (count == 0) $stop;
       $fwrite(outfile, "# a\n");
       $fwrite(outfile, "%d\n", a);
       $fclose(infile);
