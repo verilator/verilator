@@ -1770,17 +1770,19 @@ private:
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 
-    void fixWidthReduce (AstNode* nodep, int expWidth) {
+    void fixWidthReduce (AstNode* nodep) {
 	// Fix the width mismatch by adding a reduction OR operator
 	// IF (A(CONSTwide)) becomes  IF (A(CONSTreduced))
 	// IF (A(somewide))  becomes  IF (A(REDOR(somewide)))
 	// Attempt to fix it quietly
+	int expWidth = 1;
+	int expSigned = false;
 	UINFO(4,"  widthReduce_old: "<<nodep<<endl);
 	AstConst* constp = nodep->castConst();
 	if (constp) {
 	    V3Number num (nodep->fileline(), expWidth);
 	    num.opRedOr(constp->num());
-	    num.isSigned(constp->isSigned());
+	    num.isSigned(expSigned);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
 	    nodep=newp;
@@ -1791,7 +1793,7 @@ private:
 	    linker.relink(newp);
 	    nodep=newp;
 	}
-	nodep->dtypeChgWidth(expWidth,expWidth);
+	nodep->dtypeChgWidthSigned(expWidth,expWidth,expSigned);
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 
@@ -1871,7 +1873,7 @@ private:
 				 ?" or "+cvtToStr(underp->widthMin()):"")
 			      <<" bits.");
 	    }
-	    fixWidthReduce(underp, expWidth); underp=NULL;//Changed
+	    fixWidthReduce(underp); underp=NULL;//Changed
 	}
     }
 
