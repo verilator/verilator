@@ -128,6 +128,7 @@ _MY_CXX_CHECK_OPT(-Wno-sign-compare)
 _MY_CXX_CHECK_OPT(-Wno-uninitialized)
 _MY_CXX_CHECK_OPT(-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(-Wno-unused-variable)
+_MY_CXX_CHECK_OPT(-Wno-unused-but-set-variable)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.
