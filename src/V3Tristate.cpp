@@ -1036,6 +1036,10 @@ class TristateVisitor : public TristateBaseVisitor {
 	    nodep->user2(U2_GRAPHING);
 	    AstVar* enModVarp = (AstVar*) nodep->modVarp()->user1p();
 	    if (!enModVarp) {
+		if (nodep->exprp()) {
+		    // May have an output only that later connects to a tristate, so simplify now.
+		    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, false);
+		}
 		iteratePinGuts(nodep);
 		return; // No __en signals on this pin
 	    }
