@@ -102,6 +102,7 @@ private:
     //    GraphEdge::user()  	OrigEdgeList*	Old graph edges
     //	  GraphVertex::user	bool		Detection of loops in simplifyDupIterate
     // MEMBERS
+    V3Graph*		m_origGraphp;		// Original graph
     V3Graph		m_breakGraph;		// Graph with only breakable edges represented
     V3List<GraphAcycVertex*>	m_work;		// List of vertices with optimization work left
     vector<OrigEdgeList*>	m_origEdgeDelp;	// List of deletions to do when done
@@ -183,7 +184,8 @@ private:
 	avertexp->m_work.unlink(m_work, avertexp); }
 public:
     // CONSTRUCTORS
-    GraphAcyc(V3EdgeFuncP edgeFuncp) {
+    GraphAcyc(V3Graph* origGraphp, V3EdgeFuncP edgeFuncp) {
+	m_origGraphp = origGraphp;
 	m_origEdgeFuncp = edgeFuncp;
     }
     ~GraphAcyc() {
@@ -192,7 +194,7 @@ public:
 	}
 	m_origEdgeDelp.clear();
     }
-    void main(V3Graph* origGraphp);
+    void main();
 };
 
 //--------------------------------------------------------------------
@@ -340,7 +342,16 @@ void GraphAcyc::simplifyOut (GraphAcycVertex* avertexp) {
 	    for (V3GraphEdge* nextp, *inEdgep = avertexp->inBeginp(); inEdgep; inEdgep=nextp) {
 		nextp = inEdgep->inNextp();
 		V3GraphVertex* inVertexp = inEdgep->fromp();
-		if (inVertexp == avertexp) v3fatalSrc("Non-cutable edge forms a loop "<<avertexp);
+		if (inVertexp == avertexp) {
+		    if (debug()) v3error("Non-cutable edge forms a loop, vertex="<<avertexp);
+		    v3error("Circular logic when ordering code (non-cutable edge loop)");
+		    m_origGraphp->reportLoops(&V3GraphEdge::followNotCutable,
+					      avertexp->origVertexp()); // calls OrderGraph::loopsVertexCb
+		    // Things are unlikely to end well at this point,
+		    // but we'll try something to get to further errors...
+		    inEdgep->cutable(true);
+		    return;
+		}
 		// Make a new edge connecting the two vertices directly
 		edgeFromEdge(inEdgep, inVertexp, outVertexp);
 		// Remove old edge
@@ -522,17 +533,17 @@ bool GraphAcyc::placeIterate(GraphAcycVertex* vertexp, uint32_t currentRank) {
 
 //----- Main algorithm entry point
 
-void GraphAcyc::main (V3Graph* origGraphp) {
+void GraphAcyc::main () {
     m_breakGraph.userClearEdges();
 
     // Color based on possible loops
-    origGraphp->stronglyConnected(m_origEdgeFuncp);
+    m_origGraphp->stronglyConnected(m_origEdgeFuncp);
 
     // Make a new graph with vertices that have only a single vertex
     // for each group of old vertices that are interconnected with unbreakable
     // edges (and thus can't represent loops - if we did the unbreakable
     // marking right, anyways)
-    buildGraph (origGraphp);
+    buildGraph (m_origGraphp);
     if (debug()>=6) m_breakGraph.dumpDotFilePrefixed("acyc_pre");
 
     // Perform simple optimizations before any cuttings
@@ -559,7 +570,7 @@ void GraphAcyc::main (V3Graph* origGraphp) {
 
 void V3Graph::acyclic(V3EdgeFuncP edgeFuncp) {
     UINFO(4, "Acyclic\n");
-    GraphAcyc acyc (edgeFuncp);
-    acyc.main(this);
+    GraphAcyc acyc (this, edgeFuncp);
+    acyc.main();
     UINFO(4, "Acyclic done\n");
 }
