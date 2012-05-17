@@ -1209,7 +1209,9 @@ private:
 	    }
 	    nodep->exprp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
 	    if (!m_cellRangep) {
-		widthCheckPin(nodep, nodep->exprp(), pinwidth, inputPin);
+		AstNodeDType* expDTypep = nodep->findLogicDType(pinwidth, pinwidth,
+								nodep->exprp()->dtypep()->numeric());
+		widthCheckPin(nodep, nodep->exprp(), expDTypep, inputPin);
 	    }
 	}
 	//if (debug()) nodep->dumpTree(cout,"-  PinOut: ");
@@ -1623,8 +1625,8 @@ private:
 	}
 	int width  = max(vup->c()->width(),    max(nodep->lhsp()->width(),    nodep->rhsp()->width()));
 	int mwidth = max(vup->c()->widthMin(), max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin()));
-	nodep->dtypeChgWidthSigned(width,mwidth,
-				   (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()));
+	bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
+	nodep->dtypeChgWidthSigned(width,mwidth,expSigned);
 	if (vup->c()->final()) {
 	    // Final call, so make sure children check their sizes
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
@@ -1732,19 +1734,20 @@ private:
 	return false;
     }
 
-    void fixWidthExtend (AstNode* nodep, int expWidth) {
+    void fixWidthExtend (AstNode* nodep, AstNodeDType* expDTypep) {
 	// Fix the width mismatch by extending or truncating bits
 	// Truncation is rarer, but can occur:  parameter [3:0] FOO = 64'h12312;
 	// A(CONSTwide)+B becomes  A(CONSTwidened)+B
 	// A(somewide)+B  becomes  A(TRUNC(somewide,width))+B
-	// 		      or       A(EXTRACT(somewide,width,0))+B
+	// 		      or   A(EXTRACT(somewide,width,0))+B
 	UINFO(4,"  widthExtend_old: "<<nodep<<endl);
 	AstConst* constp = nodep->castConst();
-	if (constp && !nodep->isSigned()) {
+	int expWidth = expDTypep->width();
+	if (constp && !expDTypep->isSigned()) {
 	    // Save later constant propagation work, just right-size it.
 	    V3Number num (nodep->fileline(), expWidth);
 	    num.opAssign(constp->num());
-	    num.isSigned(nodep->isSigned());
+	    num.isSigned(expDTypep->isSigned());
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
 	    pushDeletep(constp); constp=NULL;
@@ -1760,7 +1763,7 @@ private:
 	    // Extend
 	    AstNRelinker linker;
 	    nodep->unlinkFrBack(&linker);
-	    AstNode* newp = (nodep->isSigned()
+	    AstNode* newp = (expDTypep->isSigned()
 			     ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
 			     : (new AstExtend (nodep->fileline(), nodep))->castNode());
 	    linker.relink(newp);
@@ -1821,7 +1824,15 @@ private:
     void widthCheck (AstNode* nodep, const char* side,
 		     AstNode* underp, int expWidth, int expWidthMin,
 		     bool ignoreWarn=false) {
+	AstNodeDType* expDTypep = underp->findLogicDType(expWidth, expWidthMin, underp->dtypep()->numeric());
+	widthCheck(nodep,side,underp,expDTypep,ignoreWarn);
+    }
+    void widthCheck (AstNode* nodep, const char* side,
+		     AstNode* underp, AstNodeDType* expDTypep,
+		     bool ignoreWarn=false) {
 	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
+	int expWidth = expDTypep->width();
+	int expWidthMin = expDTypep->widthMin();
 	if (expWidthMin==0) expWidthMin = expWidth;
 	bool bad = widthBad(underp,expWidth,expWidthMin);
 	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
@@ -1850,7 +1861,7 @@ private:
 			  <<" bits.");
 	}
 	if (bad || underp->width()!=expWidth) {
-	    fixWidthExtend(underp, expWidth); underp=NULL;//Changed
+	    fixWidthExtend(underp, expDTypep); underp=NULL;//Changed
 	}
     }
 
@@ -1877,8 +1888,9 @@ private:
 	}
     }
 
-    void widthCheckPin (AstNode* nodep, AstNode* underp, int expWidth, bool inputPin) {
+    void widthCheckPin (AstNode* nodep, AstNode* underp, AstNodeDType* expDTypep, bool inputPin) {
 	// Before calling this, iterate into underp with FINAL state, so numbers get resized appropriately
+	int expWidth = expDTypep->width();
 	bool bad = widthBad(underp,expWidth,expWidth);
 	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
 	if (bad) {
@@ -1893,7 +1905,7 @@ private:
 	}
 	// We only fix input mismatches
 	if (bad && inputPin) {
-	    fixWidthExtend(underp, expWidth); underp=NULL;//Changed
+	    fixWidthExtend(underp, expDTypep); underp=NULL;//Changed
 	}
     }
 
