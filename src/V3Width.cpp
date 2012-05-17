@@ -1053,7 +1053,7 @@ private:
     virtual void visit(AstDisplay* nodep, AstNUser*) {
 	if (nodep->filep()) {
 	    nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
-	    widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	    widthCheckFileDesc(nodep,nodep->filep());
 	}
 	// Just let all arguments seek their natural sizes
 	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1062,21 +1062,21 @@ private:
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->modep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstFEof* nodep, AstNUser*) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
 	nodep->dtypeSetLogicSized(32,1,AstNumeric::SIGNED);  // Spec says integer return
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	if (nodep->filep()) {
 	    nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
-	    widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	    widthCheckFileDesc(nodep,nodep->filep());
 	}
     }
     virtual void visit(AstFGetC* nodep, AstNUser* vup) {
@@ -1084,7 +1084,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->dtypeSetLogicSized(32,8,AstNumeric::SIGNED);  // Spec says integer return
 	}
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstFGetS* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
@@ -1092,7 +1092,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->dtypeSetSigned32();  // Spec says integer return
 	}
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstFScanF* nodep, AstNUser* vup) {
 	nodep->filep()->iterateAndNext(*this,WidthVP(32,32,BOTH).p());
@@ -1100,7 +1100,7 @@ private:
 	if (vup->c()->prelim()) {
 	    nodep->dtypeSetSigned32();  // Spec says integer return
 	}
-	widthCheck(nodep,"file_descriptor",nodep->filep(),32,32);
+	widthCheckFileDesc(nodep,nodep->filep());
     }
     virtual void visit(AstSScanF* nodep, AstNUser* vup) {
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -1641,8 +1641,8 @@ private:
 		rhsOk = (mwidth >= (nodep->rhsp()->widthMin()));
 	    }
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheck(nodep,"LHS",nodep->lhsp(),width,mwidth,lhsOk);
-	    widthCheck(nodep,"RHS",nodep->rhsp(),width,mwidth,rhsOk);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep(),lhsOk);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),nodep->dtypep(),rhsOk);
 	}
     }
 
@@ -1697,8 +1697,8 @@ private:
 		rhsOk = (mwidth >= (nodep->rhsp()->widthMin()));
 	    }
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheck(nodep,"LHS",nodep->lhsp(),width,mwidth,lhsOk);
-	    widthCheck(nodep,"RHS",nodep->rhsp(),width,mwidth,rhsOk);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep(),lhsOk);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),nodep->dtypep(),rhsOk);
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"-rusou-");
     }
@@ -1763,7 +1763,7 @@ private:
 	    // Extend
 	    AstNRelinker linker;
 	    nodep->unlinkFrBack(&linker);
-	    AstNode* newp = (expDTypep->isSigned()
+	    AstNode* newp = ((expDTypep->isSigned() && nodep->isSigned())
 			     ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
 			     : (new AstExtend (nodep->fileline(), nodep))->castNode());
 	    linker.relink(newp);
@@ -1821,6 +1821,10 @@ private:
 	return false; // No change
     }
 
+    void widthCheckFileDesc (AstNode* nodep, AstNode* underp) {
+	AstNodeDType* expDTypep = underp->findUInt32DType();
+	widthCheck(nodep,"file_descriptor",underp,expDTypep,false);
+    }
     void widthCheck (AstNode* nodep, const char* side,
 		     AstNode* underp, int expWidth, int expWidthMin,
 		     bool ignoreWarn=false) {

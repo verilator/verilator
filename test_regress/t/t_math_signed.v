@@ -29,6 +29,15 @@ module t (/*AUTOARG*/
    reg 	[15:0] b_s;
    reg 	[15:0] b_us;
 
+   task check_s(input signed [7:0] i, input [7:0] expval);
+      //$display("check_s %x\n", i);
+      if (i !== expval) $stop;
+   endtask
+   task check_us(input signed [7:0] i, input [7:0] expval);
+      //$display("check_us %x\n", i);
+      if (i !== expval) $stop;
+   endtask
+
    always @* begin
       sr  = a>>b;
       srs = copy_signed(a)>>>b;
@@ -37,6 +46,10 @@ module t (/*AUTOARG*/
       // verilator lint_off WIDTH
       b_s  = b>>>4;		// Signed
       b_us = b[4:0]>>>4;	// Unsigned, due to extract
+      check_s ( 3'b111, 8'h07);
+      check_s (3'sb111, 8'hff);
+      check_us( 3'b111, 8'h07);
+      check_us(3'sb111, 8'hff); // Note we sign extend ignoring function's input requirements
       // verilator lint_on WIDTH
    end
 
