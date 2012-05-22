@@ -158,9 +158,9 @@ private:
 	if (oldactivep->sensesp() != m_activep->sensesp()) {
 	    if (!varrefp->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
 		&& !varrefp->varp()->user2()) {
-		varrefp->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks: "<<varrefp->varp()->prettyName());
-		varrefp->v3warn(MULTIDRIVEN,"... Location of first driving block");
-		oldactivep->v3warn(MULTIDRIVEN,"... Location of other driving block");
+		varrefp->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks: "<<varrefp->varp()->prettyName()<<endl
+					<<varrefp->warnMore()<<"... Location of first driving block"<<endl
+					<<oldactivep->warnMore()<<"... Location of other driving block");
 		varrefp->varp()->user2(true);
 	    }
 	    UINFO(4,"AssignDupDlyVar: "<<varrefp<<endl);

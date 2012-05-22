@@ -1044,6 +1044,11 @@ void AstNode::v3errorEnd(ostringstream& str) const {
     }
 }
 
+string AstNode::warnMore() const {
+    if (this) return this->fileline()->warnMore();
+    else return V3Error::warnMore();
+}
+
 //======================================================================
 // Data type conversion
 

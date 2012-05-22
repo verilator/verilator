@@ -265,6 +265,14 @@ void FileLine::v3errorEnd(ostringstream& str) {
     }
 }
 
+string FileLine::warnMore() const {
+    if (this && m_lineno) {
+	return V3Error::warnMore()+ascii()+": ";
+    } else {
+	return V3Error::warnMore();
+    }
+}
+
 #ifdef VL_LEAK_CHECKS
 typedef set<FileLine*> FileLineCheckSet;
 FileLineCheckSet fileLineLeakChecks;
@@ -370,7 +378,9 @@ bool V3Error::isError(V3ErrorCode code, bool supp) {
     else return false;
 }
 
-string V3Error::msgPrefix(V3ErrorCode code, bool supp) {
+string V3Error::msgPrefix() {
+    V3ErrorCode code=s_errorCode;
+    bool supp=s_errorSuppressed;
     if (supp) return "-arning-suppressed: ";
     else if (code==V3ErrorCode::EC_INFO) return "-Info: ";
     else if (code==V3ErrorCode::EC_FATAL) return "%Error: ";
@@ -395,23 +405,15 @@ void V3Error::vlAbort () {
 //======================================================================
 // Global Functions
 
-string V3Error::v3sform (const char* format, ...) {
-    static char msg[1000] = "";
-
-    va_list ap;
-    va_start(ap,format);
-    vsprintf(msg,format,ap);
-    va_end(ap);
-
-    string out = msg;
-    return out;
-}
-
 void V3Error::suppressThisWarning() {
     if (s_errorCode>=V3ErrorCode::EC_MIN) {
 	V3Stats::addStatSum(string("Warnings, Suppressed ")+s_errorCode.ascii(), 1);
 	s_errorSuppressed = true;
     }
+}
+
+string V3Error::warnMore() {
+    return msgPrefix();
 }
 
 void V3Error::v3errorEnd (ostringstream& sstr) {

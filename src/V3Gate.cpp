@@ -687,9 +687,9 @@ void GateVisitor::warnSignals() {
 		    && !sp->fileline()->warnIsOff(V3ErrorCode::SYNCASYNCNET)
 		    ) {
 		    vscp->varp()->user2(true);  // Warn only once per signal
-		    vscp->v3warn(SYNCASYNCNET,"Signal flopped as both synchronous and async: "<<vscp->prettyName());
-		    ap->v3warn(SYNCASYNCNET,"... Location of async usage");
-		    sp->v3warn(SYNCASYNCNET,"... Location of sync usage");
+		    vscp->v3warn(SYNCASYNCNET,"Signal flopped as both synchronous and async: "<<vscp->prettyName()<<endl
+				 <<ap->warnMore()<<"... Location of async usage"<<endl
+				 <<sp->warnMore()<<"... Location of sync usage"<<endl);
 		}
 	    }
 	}

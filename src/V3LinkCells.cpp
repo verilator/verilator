@@ -294,8 +294,8 @@ private:
 	    AstNode* foundp = m_mods.findIdUpward(nodep->name());
 	    if (foundp && foundp != nodep) {
 		if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP) || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
-		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName());
-		    foundp->v3warn(MODDUP,"... Location of original declaration");
+		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName()<<endl
+				  <<foundp->warnMore()<<"... Location of original declaration");
 		}
 		nodep->unlinkFrBack();
 		pushDeletep(nodep); nodep=NULL;

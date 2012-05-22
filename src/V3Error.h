@@ -196,7 +196,7 @@ class V3Error {
     // ACCESSORS
     static void		debugDefault(int level) { s_debugDefault = level; }
     static int		debugDefault() { return s_debugDefault; }
-    static string	msgPrefix(V3ErrorCode code=s_errorCode, bool supp=s_errorSuppressed);	// returns %Error/%Warn
+    static string	msgPrefix();	// returns %Error/%Warn
     static int		errorCount() { return s_errCount; }
     static int		warnCount() { return s_warnCount; }
     static int		errorOrWarnCount() { return errorCount()+warnCount(); }
@@ -209,15 +209,17 @@ class V3Error {
     static void		suppressThisWarning();	// Suppress next %Warn if user has it off
     static void		pretendError(V3ErrorCode code, bool flag) { s_pretendError[code]=flag; }
     static bool		isError(V3ErrorCode code, bool supp);
-    static string 	v3sform (const char* format, ...);
     static string	lineStr (const char* filename, int lineno);
     static V3ErrorCode	errorCode() { return s_errorCode; }
 
+    // When printing an error/warning, print prefix for multiline message
+    static string warnMore();
+
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
-    static ostringstream& v3errorPrep (V3ErrorCode code) {
-	s_errorStr.str(""); s_errorCode=code; s_errorSuppressed=false; return s_errorStr; }
-    static ostringstream& v3errorStr () { return s_errorStr; }
+    static void v3errorPrep(V3ErrorCode code) {
+	s_errorStr.str(""); s_errorCode=code; s_errorSuppressed=false; }
+    static ostringstream& v3errorStr() { return s_errorStr; }
     static void	vlAbort();
     static void	v3errorEnd(ostringstream& sstr);	// static, but often overridden in classes.
 };
@@ -228,7 +230,9 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 
 // These allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
-#define v3warnCode(code,msg) v3errorEnd(((V3Error::v3errorPrep(code)<<msg),V3Error::v3errorStr()));
+// Note the commas are the comma operator, not separating arguments. These are needed to insure
+// evaluation order as otherwise we couldn't insure v3errorPrep is called first.
+#define v3warnCode(code,msg) v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 #define v3warn(code,msg) v3warnCode(V3ErrorCode::code,msg)
 #define v3info(msg)  v3warn(EC_INFO,msg)
 #define v3fatal(msg) v3warn(EC_FATAL,msg)
@@ -375,6 +379,7 @@ public:
 
     // OPERATORS
     void v3errorEnd(ostringstream& str);
+    string warnMore() const;
     inline bool operator==(FileLine rhs) const {
 	return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno && m_warnOn==rhs.m_warnOn);
     }

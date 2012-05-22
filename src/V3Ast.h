@@ -1079,6 +1079,7 @@ public:
 
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
+    string	warnMore() const;
     virtual void dump(ostream& str=cout);
     void	dumpGdb(); // For GDB only
     void	dumpGdbHeader() const;

@@ -12,8 +12,8 @@ compile (
 	 fails=>$Self->{v3},
 	 expect=>
 '%Warning-VARHIDDEN: t/t_var_bad_hide2.v:\d+: Declaration of signal hides declaration in upper scope: t
-.*
 %Warning-VARHIDDEN: t/t_var_bad_hide2.v:\d+: ... Location of original declaration
+.*
 %Error: Exiting due to.*',
 	 );
 

@@ -178,12 +178,12 @@ private:
 	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
 	    // See t_gen_forif.v for an example.
 	} else if (nodep->type() == foundp->type()) {
-	    nodep->v3error("Duplicate declaration of "<<nodeTextType(foundp)<<": "<<nodep->prettyName());
-	    foundp->v3error("... Location of original declaration");
+	    nodep->v3error("Duplicate declaration of "<<nodeTextType(foundp)<<": "<<nodep->prettyName()<<endl
+			   <<foundp->warnMore()<<"... Location of original declaration");
 	} else {
 	    nodep->v3error("Unsupported in C: "<<ucfirst(nodeTextType(nodep))<<" has the same name as "
-			   <<nodeTextType(foundp)<<": "<<nodep->prettyName());
-	    foundp->v3error("... Location of original declaration");
+			   <<nodeTextType(foundp)<<": "<<nodep->prettyName()<<endl
+			   <<foundp->warnMore()<<"... Location of original declaration");
 	}
     }
 
@@ -324,16 +324,16 @@ private:
 			}
 			nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    } else {
-			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName());
-			findvarp->v3error("... Location of original declaration");
+			nodep->v3error("Duplicate declaration of signal: "<<nodep->prettyName()<<endl
+				       <<findvarp->warnMore()<<"... Location of original declaration");
 		    }
 		} else {
 		    // User can disable the message at either point
 		    if (!(m_ftaskp && m_ftaskp->dpiImport())
 			&& !nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
 			&& !foundp->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
-			nodep->v3warn(VARHIDDEN,"Declaration of signal hides declaration in upper scope: "<<nodep->name());
-			foundp->v3warn(VARHIDDEN,"... Location of original declaration");
+			nodep->v3warn(VARHIDDEN,"Declaration of signal hides declaration in upper scope: "<<nodep->name()<<endl
+				      <<foundp->warnMore()<<"... Location of original declaration");
 		    }
 		    ins = true;
 		}
@@ -400,14 +400,14 @@ private:
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
 		if (findvarp && findvarp->user3p() == m_curVarsp) {  // Only when on same level
-		    nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName());
-		    findvarp->v3error("... Location of original declaration");
+		    nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
+				   <<findvarp->warnMore()<<"... Location of original declaration");
 		} else {
 		    // User can disable the message at either point
 		    if (!nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
 			&& !foundp->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
-			nodep->v3warn(VARHIDDEN,"Declaration of enum value hides declaration in upper scope: "<<nodep->name());
-			foundp->v3warn(VARHIDDEN,"... Location of original declaration");
+			nodep->v3warn(VARHIDDEN,"Declaration of enum value hides declaration in upper scope: "<<nodep->name()<<endl
+				      <<foundp->warnMore()<<"... Location of original declaration");
 		    }
 		    ins = true;
 		}
@@ -658,8 +658,9 @@ private:
 	    } else {
 		nodep->modVarp(refp);
 		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
-		    nodep->v3error("Duplicate pin connection: "<<nodep->prettyName());
-		    refp->user5p()->castNode()->v3error("... Location of original pin connection");
+		    nodep->v3error("Duplicate pin connection: "<<nodep->prettyName()<<endl
+				   <<refp->user5p()->castNode()->warnMore()
+				   <<"... Location of original pin connection");
 		} else {
 		    refp->user5p(nodep);
 		}

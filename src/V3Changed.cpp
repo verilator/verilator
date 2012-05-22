@@ -94,8 +94,9 @@ private:
 	int lsb = isArray ? arrayp->lsb() : 0;
 	if (isArray && ((msb - lsb + 1) > DETECTARRAY_MAX_INDEXES)) {
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
-			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
-	    vscp->v3warn(E_DETECTARRAY, "... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(msb-lsb+1));
+			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName()<<endl
+			 <<vscp->warnMore()
+			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(msb-lsb+1));
 	} else if (!isArray
 		   && !varp->dtypeSkipRefp()->castBasicDType()) {
 	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
