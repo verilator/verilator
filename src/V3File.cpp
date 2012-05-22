@@ -302,7 +302,7 @@ private:
     }
     bool readContentsFile(const string& filename, StrList& outl) {
 	int fd = open (filename.c_str(), O_RDONLY);
-	if (!fd) return false;
+	if (fd<0) return false;
 	m_readEof = false;
 	readBlocks(fd, -1, outl);
 	close(fd);
