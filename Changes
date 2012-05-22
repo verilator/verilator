@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix parameters not supported in constant functions, bug474. [Alex Solomatnikov]
 
+****  Fix duplicate warnings/errors, bug516.  [Alex Solomatnikov]
+
 ****  Fix signed extending biops with WIDTH warning off, bug511. [Junji Hashimoto]
 
 ****  Fix ITOD internal error on real conversions, bug491.  [Alex Solomatnikov]

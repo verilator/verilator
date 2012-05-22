@@ -7,17 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-top_filename("t/t_udp.v");
-
 compile (
-	 fails=>$Self->{vlt},
+	 v_flags2 => ["--lint-only"],
+	 fails=>1,
 	 expect=>
-'%Error: t/t_udp.v:\d+: Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.
-%Error: Exiting due to '
+q{%Warning-WIDTH: t/t_lint_repeat_bad.v:17: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 2 bits.
+%Warning-WIDTH: Use \"\/\* verilator lint_off WIDTH \*\/\" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning}
 	 );
-
-execute (
-     ) if !$Self->{vlt};
 
 ok(1);
 1;

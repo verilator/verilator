@@ -29,6 +29,7 @@
 #include <sstream>
 #include <bitset>
 #include <map>
+#include <set>
 #include <deque>
 
 //######################################################################
@@ -176,6 +177,9 @@ public:
 
 class V3Error {
     // Base class for any object that wants debugging and error reporting
+
+    typedef set<string> MessagesSet;
+
   private:
     static bool 	s_describedWarnings;	// Told user how to disable warns
     static bool 	s_describedEachWarn[V3ErrorCode::_ENUM_MAX]; // Told user specifics about this warning
@@ -187,6 +191,7 @@ class V3Error {
     static ostringstream s_errorStr;		// Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     static bool		s_errorSuppressed;	// Error being formed should be suppressed
+    static MessagesSet	s_messages;		// What errors we've outputted
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
 
     V3Error() { cerr<<("Static class"); abort(); }

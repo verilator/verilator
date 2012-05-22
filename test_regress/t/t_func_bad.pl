@@ -12,11 +12,7 @@ compile (
 	 fails=>1,
 	 expect=>
 q{%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
-%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
-%Error: t/t_func_bad.v:\d+: Too few arguments in function call to FUNC 'add'
 %Error: t/t_func_bad.v:\d+: Too many arguments in function call to FUNC 'add'
-%Error: t/t_func_bad.v:\d+: Too few arguments in function call to TASK 'x'
-%Error: t/t_func_bad.v:\d+: Too few arguments in function call to TASK 'x'
 %Error: t/t_func_bad.v:\d+: Too few arguments in function call to TASK 'x'
 %Error: Exiting due to},
 	 );
