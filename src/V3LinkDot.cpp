@@ -85,7 +85,7 @@ public:
     }
     void errorScopes(AstNode* nodep) {
 	if (!this) {  // Silence if we messed it up and aren't debugging
-	    if (debug()) nodep->v3fatalSrc("Void pointer; perhaps used null vxp instead of okVxp?");
+	    if (debug() || v3Global.opt.debugCheck()) nodep->v3fatalSrc("Void pointer; perhaps used null vxp instead of okVxp?");
 	    return;
 	}
 	{
@@ -738,7 +738,8 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, bool prearray, bool scoped) {
     LinkDotState state (prearray,scoped);
     LinkDotFindVisitor visitor(rootp,&state);
     if (scoped) {
-	// Process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
+	// Well after the initial link when we're ready to operate on the flat design,
+	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);
     }
     state.dump();
