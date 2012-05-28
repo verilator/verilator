@@ -487,6 +487,12 @@ private:
 	//
 	nodep->flatsp()->iterateAndNext(*this);
     }
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	if (!m_beginp) {	// For now, we don't support xrefs into functions inside begin blocks
+	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	}
+	// No recursion, we don't want to pick up variables
+    }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (!m_statep->forScopeCreation()
 	    && !m_beginp	// For now, we don't support xrefs into begin blocks
@@ -495,12 +501,6 @@ private:
 	} else {
 	    UINFO(9,"       Not allowing dot refs to: "<<nodep<<endl);
 	}
-    }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	if (!m_beginp) {	// For now, we don't support xrefs into functions inside begin blocks
-	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
-	}
-	// No recursion, we don't want to pick up variables
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	// Ignore all AstVars under functions
