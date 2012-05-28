@@ -541,12 +541,6 @@ private:
 	    findAndInsertAndCheck(nodep, nodep->name());
 	}
     }
-    virtual void visit(AstTypedefFwd* nodep, AstNUser*) {
-	// We only needed the forward declaration in order to parse correctly.
-	// We won't even check it was ever really defined, as it might have been in a header
-	// file referring to a module we never needed
-	nodep->unlinkFrBack()->deleteTree();
-    }
     virtual void visit(AstRefDType* nodep, AstNUser*) {
 	// Resolve its reference
 	if (m_idState==ID_RESOLVE && !nodep->defp()) {
