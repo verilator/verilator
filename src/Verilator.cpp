@@ -616,6 +616,9 @@ int main(int argc, char** argv, char** env) {
     time(&randseed);
     srand( (int) randseed);
 
+    // Post-constructor initialization of netlists
+    v3Global.boot();
+
     // Preprocessor
     // Before command parsing so we can handle -Ds on command line.
     V3PreShell::boot(env);

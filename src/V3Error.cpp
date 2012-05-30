@@ -308,7 +308,7 @@ void FileLine::deleteAllRemaining() {
 	// Eventually the list will be empty and terminate the loop.
     }
     fileLineLeakChecks.clear();
-    FileLineSingleton::clear();
+    singleton().clear();
 #endif
 }
 
