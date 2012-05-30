@@ -345,6 +345,10 @@ private:
 	    }
 	    UINFO(6,"   new "<<newp<<endl);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	    // delete whataver we didn't use in reconstruction
+	    if (!fromp->backp()) pushDeletep(fromp); fromp=NULL;
+	    if (!rhsp->backp()) pushDeletep(rhsp); rhsp=NULL;
+	    if (!widthp->backp()) pushDeletep(widthp); widthp=NULL;
 	}
 	else {  // NULL=bad extract, or unknown node type
 	    nodep->v3error("Illegal +: or -: select; variable already selected, or bad dimension");
