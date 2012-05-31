@@ -782,6 +782,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		addCFlags(argv[i]);
 	    }
+	    else if ( !strcmp (sw, "-converge-limit") && (i+1)<argc ) {
+		shift;
+		m_convergeLimit = atoi(argv[i]);
+	    }
 	    else if ( !strncmp (sw, "-D", 2)) {
 		addDefine (string (sw+strlen("-D")));
 	    }
@@ -1187,6 +1191,7 @@ V3Options::V3Options() {
     m_underlineZero = false;
     m_xmlOnly = false;
 
+    m_convergeLimit = 100;
     m_dumpTree = 0;
     m_errorLimit = 50;
     m_ifDepth = 0;

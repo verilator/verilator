@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add PINMISSING and PINNOCONNECT lint checks.
 
+***   Add --converge-limit option.  [Holger Waechtler]
+
 ***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
 ***   Fix parameters not supported in constant functions, bug474. [Alex Solomatnikov]
