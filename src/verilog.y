@@ -178,6 +178,8 @@ const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
 
 #define INSTPREP(modname,paramsp) { GRAMMARP->m_impliedDecl = true; GRAMMARP->m_instModule = modname; GRAMMARP->m_instParamp = paramsp; }
 
+#define DEL(nodep) { if (nodep) nodep->deleteTree(); }
+
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
     fileline->v3error((string)"Unexpected \""+tokname+"\": \""+tokname+"\" is a SystemVerilog keyword misused as an identifier.");
@@ -1586,7 +1588,7 @@ delay_value:			// ==IEEE:delay_value
 	;
 
 delayExpr:
-		expr					{ }
+		expr					{ DEL($1); }
 	//			// Verilator doesn't support yaTIMENUM, so not in expr
 	|	yaTIMENUM 				{ }
 	;
@@ -2165,9 +2167,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++."); }
 	|	yD_FFLUSH '(' idClassSel ')'		{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
-	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); }
+	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); DEL($3); }
 	|	yD_STOP parenE				{ $$ = new AstStop($1); }
-	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); }
+	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); DEL($3); }
 	//
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
@@ -2187,8 +2189,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_ERROR    parenE					{ $$ = GRAMMARP->createDisplayError($1); }
 	|	yD_ERROR    '(' str commaEListE ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
 	|	yD_FATAL    parenE					{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
-	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); if ($3) $3->deleteTree(); }
+	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); DEL($3); }
 	//
 	|	yD_READMEMB '(' expr ',' varRefMem ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')'			{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -2792,60 +2794,60 @@ gateUnsupList<nodep>:
 
 gateBuf<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,$6); }
+			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateBufif0<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); DEL($2); }
 	;
 gateBufif1<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8,$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8,$6)); DEL($2); }
 	;
 gateNot<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateNotif0<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); }
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); DEL($2); }
 	;
 gateNotif1<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); }
+			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); DEL($2); }
 	;
 gateAnd<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); }
+			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateNand<nodep>:
 	 	gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateOr<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); }
+			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateNor<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateXor<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); }
+			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateXnor<nodep>:
 		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); }
+			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gatePullup<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); }
+		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); DEL($2); }
 	;
 gatePulldown<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); }
+		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); DEL($2); }
 	;
 gateUnsup<nodep>:
-		gateIdE instRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); }
+		gateIdE instRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); DEL($2); }
 	;
 
 gateIdE:

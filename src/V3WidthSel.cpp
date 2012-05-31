@@ -235,6 +235,7 @@ private:
 	    // How to recover?  We'll strip a dimension.
 	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
+	if (!bitp->backp()) pushDeletep(bitp); bitp=NULL;
     }
 
     virtual void visit(AstSelExtract* nodep, AstNUser*) {
@@ -285,13 +286,16 @@ private:
 	    UINFO(6,"   new "<<newp<<endl);
 	    //if (debug()>=9) newp->dumpTree(cout,"--SLEXnew: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	    pushDeletep(msbp); msbp=NULL;
 	}
 	else {  // NULL=bad extract, or unknown node type
 	    nodep->v3error("Illegal range select; variable already selected, or bad dimension");
 	    // How to recover?  We'll strip a dimension.
 	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
+	// delete whataver we didn't use in reconstruction
+	if (!fromp->backp()) pushDeletep(fromp); fromp=NULL;
+	if (!msbp->backp()) pushDeletep(msbp); msbp=NULL;
+	if (!lsbp->backp()) pushDeletep(lsbp); lsbp=NULL;
     }
 
     void replaceSelPlusMinus(AstNodePreSel* nodep) {

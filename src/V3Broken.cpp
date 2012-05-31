@@ -56,7 +56,7 @@ public:
     // METHODS
     static void deleted(const AstNode* nodep) {
 	// Called by operator delete on any node - only if VL_LEAK_CHECKS
-	if (debug()) cout<<"-nodeDel:  "<<(void*)(nodep)<<endl;
+	if (debug()>=9) cout<<"-nodeDel:  "<<(void*)(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)) {
 	    ((AstNode*)(nodep))->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted\n");
@@ -65,7 +65,7 @@ public:
     }
     static void addNewed(const AstNode* nodep) {
 	// Called by operator new on any node - only if VL_LEAK_CHECKS
-	if (debug()) cout<<"-nodeNew:  "<<(void*)(nodep)<<endl;
+	if (debug()>=9) cout<<"-nodeNew:  "<<(void*)(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
 	    ((AstNode*)(nodep))->v3fatalSrc("Newing AstNode object that is already allocated\n");
@@ -146,7 +146,7 @@ public:
 		    && (it->first->backp() ? backs==1 : backs==0)) {
 		    // Use only AstNode::dump instead of the virtual one, as there
 		    // may be varp() and other cross links that are bad.
-		    if (debug()) {
+		    if (v3Global.opt.debugCheck()) {
 			cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
 			((AstNode*)(it->first))->AstNode::dump(cerr);
 			cerr<<endl;

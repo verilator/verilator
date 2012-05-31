@@ -310,6 +310,7 @@ private:
 	if (bodysp) { pushDeletep(bodysp); bodysp=NULL; }
 	if (precondsp) { pushDeletep(precondsp); precondsp=NULL; }
 	if (initp) { pushDeletep(initp); initp=NULL; }
+	if (incp && !incp->backp()) { pushDeletep(incp); incp=NULL; }
 	if (debug()>=9) newbodysp->dumpTree(cout,"-  _new: ");
     }
 

@@ -1204,7 +1204,7 @@ private:
 	AstNode* bilhsp = fromp->lhsp()->unlinkFrBack();
 	//
 	fromp->lhsp(new AstSel(nodep->fileline(),
-			       bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)));
+			       bilhsp, lsbp, widthp));
 	fromp->dtypeFrom(nodep);
 	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
     }

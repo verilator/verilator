@@ -1301,6 +1301,7 @@ private:
 			    string format;
 			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
 			    else pinp->v3error("Format to $display-like function must have constant format string");
+			    pushDeletep(pinp); pinp=NULL;
 			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
 			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
 				newp->scopeNamep(new AstScopeName(newp->fileline()));
@@ -1749,7 +1750,7 @@ private:
 	    num.isSigned(expDTypep->isSigned());
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
-	    pushDeletep(constp); constp=NULL;
+	    pushDeletep(constp); constp=NULL; nodep=NULL;
 	    nodep=newp;
 	} else if (expWidth<nodep->width()) {
 	    // Trunc - Extract
@@ -1787,6 +1788,7 @@ private:
 	    num.isSigned(expSigned);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
+	    constp->deleteTree(); constp=NULL; nodep=NULL;
 	    nodep=newp;
 	} else {
 	    AstNRelinker linker;

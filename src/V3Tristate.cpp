@@ -609,6 +609,8 @@ class TristateVisitor : public TristateBaseVisitor {
 		undrivenp = new AstAnd(nodep->fileline(), undrivenp,
 				       new AstConst(nodep->fileline(), pull));
 		orp = new AstOr(nodep->fileline(), orp, undrivenp);
+	    } else {
+		undrivenp->deleteTree(); undrivenp=NULL;
 	    }
 	    if (envarp) {
 		nodep->addStmtp(new AstAssignW(enp->fileline(),
