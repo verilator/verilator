@@ -39,6 +39,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix loop error message to report line, bug513.  [Jeremy Bennett]
 
+****  Fix false UNUSED warning on file system calls.  [Holger Waechtler]
+
 
 * Verilator 3.833 2012/04/15
 
