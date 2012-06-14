@@ -64,6 +64,9 @@ private:
     AstVar*	m_varp;		// Variable we're under
     ImplTypedefMap	m_implTypedef;	// Created typedefs for each <container,name>
     FileLineSet		m_filelines;	// Filelines that have been seen
+    bool		m_inAlways;	// Inside an always
+    bool		m_inGenerate;	// Inside a generate
+    AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
 
     // METHODS
     static int debug() {
@@ -111,7 +114,10 @@ private:
 		nodep->dotted(m_dotText);
 		nodep->namep()->unlinkFrBack()->deleteTree(); m_baseTextp=NULL;
 	    }
+	    AstNodeModule* upperValueModp = m_valueModp;
+	    m_valueModp = NULL;
 	    nodep->iterateChildren(*this);
+	    m_valueModp = upperValueModp;
 	}
     }
     virtual void visit(AstParseRef* nodep, AstNUser*) {
@@ -279,6 +285,26 @@ private:
 	m_varp = nodep;
 	nodep->iterateChildren(*this);
 	m_varp = NULL;
+	// temporaries under an always aren't expected to be blocking
+	if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
+	if (nodep->valuep()) {
+	    // A variable with an = value can be three things:
+	    FileLine* fl = nodep->valuep()->fileline();
+	    // 1. Parameters and function inputs: It's a default to use if not overridden
+	    if (nodep->isParam() || nodep->isInOnly()) {
+	    } // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
+	    else if (m_valueModp) {
+		nodep->addNextHere
+		    (new AstInitial
+		     (fl, new AstAssign (fl, new AstVarRef(fl, nodep->name(), true),
+					 nodep->valuep()->unlinkFrBack())));
+	    } // 3. Under blocks, it's an initial value to be under an assign
+	    else {
+		nodep->addNextHere
+		    (new AstAssign (fl, new AstVarRef(fl, nodep->name(), true),
+				    nodep->valuep()->unlinkFrBack()));
+	    }
+	}
     }
 
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
@@ -389,6 +415,40 @@ private:
 	nodep->unlinkFrBack()->deleteTree();
     }
 
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	// Module: Create sim table for entire module and iterate
+	cleanFileline(nodep);
+	checkExpected(nodep);  // So we detect node types we forgot to list here
+	//
+	m_valueModp = nodep;
+	nodep->iterateChildren(*this);
+	m_valueModp = NULL;
+    }
+    void visitIterateNoValueMod(AstNode* nodep) {
+	// Iterate a node which shouldn't have any local variables moved to an Initial
+	cleanFileline(nodep);
+	checkExpected(nodep);  // So we detect node types we forgot to list here
+	//
+	AstNodeModule* upperValueModp = m_valueModp;
+	m_valueModp = NULL;
+	nodep->iterateChildren(*this);
+	m_valueModp = upperValueModp;
+    }
+    virtual void visit(AstInitial* nodep, AstNUser*) {
+	visitIterateNoValueMod(nodep);
+    }
+    virtual void visit(AstFinal* nodep, AstNUser*) {
+	visitIterateNoValueMod(nodep);
+    }
+    virtual void visit(AstAlways* nodep, AstNUser*) {
+	m_inAlways = true;
+	visitIterateNoValueMod(nodep);
+	m_inAlways = false;
+    }
+    virtual void visit(AstPslCover* nodep, AstNUser*) {
+	visitIterateNoValueMod(nodep);
+    }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	cleanFileline(nodep);
@@ -403,6 +463,9 @@ public:
 	m_exp = AstParseRefExp::PX_NONE;
 	m_baseTextp = NULL;
 	m_varp = NULL;
+	m_inAlways = false;
+	m_inGenerate = false;
+	m_valueModp = NULL;
 	rootp->accept(*this);
     }
     virtual ~LinkParseVisitor() {}

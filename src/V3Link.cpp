@@ -78,9 +78,7 @@ private:
     V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
     int		m_beginNum;	// Begin block number, 0=none seen
     int		m_modBeginNum;	// Begin block number in module, 0=none seen
-    bool	m_inAlways;	// Inside an always
     bool	m_inGenerate;	// Inside a generate
-    AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
     static int debug() {
@@ -233,7 +231,6 @@ private:
 	V3SymTable* upperVarsp = m_curVarsp;
 	{
 	    m_modp = nodep;
-	    m_valueModp = nodep;
 	    if (!m_curVarsp) nodep->v3fatalSrc("NULL");
 	    if (nodep->castPackage()) m_packagep = nodep->castPackage();
 	    if (m_packagep && m_packagep->isDollarUnit()) {  // $unit goes on "top"
@@ -253,7 +250,6 @@ private:
 	    nodep->iterateChildren(*this);
 	    // Prep for next
 	    m_modp = NULL;
-	    m_valueModp = NULL;
 	    m_packagep = NULL;
 	}
 	m_curVarsp = upperVarsp;
@@ -336,26 +332,6 @@ private:
 	    if (nodep->isIO() && !m_ftaskp && !nodep->user2()) {
 		nodep->v3error("Input/output/inout does not appear in port list: "<<nodep->prettyName());
 	    }
-	    // temporaries under an always aren't expected to be blocking
-	    if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
-	    if (nodep->valuep()) {
-		// A variable with a = value can be three things:
-		FileLine* fl = nodep->valuep()->fileline();
-		// 1. Parameters and function inputs: It's a default to use if not overridden
-		if (nodep->isParam() || nodep->isInOnly()) {
-		// 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
-		} else if (m_valueModp) {
-		    nodep->addNextHere
-			(new AstInitial (fl, new AstAssign (fl,
-							    new AstVarRef(fl, nodep, true),
-							    nodep->valuep()->unlinkFrBack())));
-		// 3. Under blocks, it's an initial value to be under an assign
-		} else {
-		    nodep->addNextHere
-			(new AstAssign (fl, new AstVarRef(fl, nodep, true),
-					nodep->valuep()->unlinkFrBack()));
-		}
-	    }
 	}
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
@@ -409,10 +385,7 @@ private:
 	if (!m_curVarsp) nodep->v3fatalSrc("Function/Task not under module??\n");
 	// Remember the existing symbol table scope
 	V3SymTable* upperVarsp = m_curVarsp;
-	AstNodeModule* upperValueModp = m_valueModp;
 	{
-	    m_valueModp = NULL;
-
 	    // Create symbol table for the task's vars
 	    m_curVarsp = symsFindNew(nodep, upperVarsp);
 
@@ -440,7 +413,6 @@ private:
 	    m_ftaskp = NULL;
 	}
 	m_curVarsp = upperVarsp;
-	m_valueModp = upperValueModp;
 	if (m_idState==ID_FIND) {
 	    findAndInsertAndCheck(nodep, nodep->name());
 	}
@@ -717,28 +689,6 @@ private:
 	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
     }
 
-    void visitIterateNoValueMod(AstNode* nodep) {
-	// Iterate a node which shouldn't have any local variables moved to an Initial
-	AstNodeModule* upperValueModp = m_valueModp;
-	m_valueModp = NULL;
-	nodep->iterateChildren(*this);
-	m_valueModp = upperValueModp;
-    }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
-	visitIterateNoValueMod(nodep);
-    }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
-	visitIterateNoValueMod(nodep);
-    }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
-	m_inAlways = true;
-	visitIterateNoValueMod(nodep);
-	m_inAlways = false;
-    }
-    virtual void visit(AstPslCover* nodep, AstNUser*) {
-	visitIterateNoValueMod(nodep);
-    }
-
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
@@ -756,9 +706,7 @@ public:
 	m_paramNum = 0;
 	m_beginNum = 0;
 	m_modBeginNum = 0;
-	m_inAlways = false;
 	m_inGenerate = false;
-	m_valueModp = NULL;
 	//
 	rootp->accept(*this);
     }
