@@ -103,6 +103,7 @@ private:
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
     V3GraphVertex*	m_topVertexp;	// Vertex of top module
+    set<string>		m_declfnWarned;	// Files we issued DECLFILENAME on
 
     static int debug() {
 	static int level = -1;
@@ -155,6 +156,15 @@ private:
 	// Module: Pick up modnames, so we can resolve cells later
 	m_modp = nodep;
 	UINFO(2,"Link Module: "<<nodep<<endl);
+	if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
+	    && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())) {
+	    // We only complain once per file, otherwise library-like files have a huge mess of warnings
+	    if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
+		m_declfnWarned.insert(nodep->fileline()->filename());
+		nodep->v3warn(DECLFILENAME, "Filename '"<<nodep->fileline()->filebasenameNoExt()
+			      <<"' does not match "<<nodep->typeName()<<" name: "<<nodep->prettyName());
+	    }
+	}
 	bool topMatch = (v3Global.opt.topModule()==nodep->name());
 	if (topMatch) {
 	    m_topVertexp = vertex(nodep);

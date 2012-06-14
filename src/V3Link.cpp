@@ -82,7 +82,6 @@ private:
     bool	m_inGenerate;	// Inside a generate
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
-    set<string>	m_declfnWarned;	// Files we issued DECLFILENAME on
 
     static int debug() {
 	static int level = -1;
@@ -230,17 +229,6 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(2,"Link Module: "<<nodep<<endl);
-	if (m_idState == ID_FIND) {
-	    if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
-		&& !v3Global.opt.isLibraryFile(nodep->fileline()->filename())) {
-		// We only complain once per file, otherwise library-like files have a huge mess of warnings
-		if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
-		    m_declfnWarned.insert(nodep->fileline()->filename());
-		    nodep->v3warn(DECLFILENAME, "Filename '"<<nodep->fileline()->filebasenameNoExt()
-				  <<"' does not match "<<nodep->typeName()<<" name: "<<nodep->prettyName());
-		}
-	    }
-	}
 	AstCell* upperCellp = m_cellp;
 	V3SymTable* upperVarsp = m_curVarsp;
 	{
