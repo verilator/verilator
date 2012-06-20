@@ -27,13 +27,16 @@
 //	    VarXRef/Func's:
 //		Find appropriate named cell and link to var they reference
 //*************************************************************************
-// Top
-//      a          (LinkDotCellVertex->AstCell)
-//        aa         (LinkDotCellVertex->AstCell)
-//          var        (AstVar) -- in syms(), not a vertex
-//          beg        (LinkDotBeginVertex->AstBegin) -- can see "upper" a's symbol table
-//      a__DOT__aa (LinkDotInlineVertex->AstCellInline) -- points to a.aa's symbol table
-//      b          (LinkDotCellVertex->AstCell)
+// TOP
+//      {name-of-top-modulename}
+//      a          (VSymEnt->AstCell)
+//	  {name-of-cell}
+//	  {name-of-cell-module}
+//        aa         (VSymEnt->AstCell)
+//          var        (AstVar) -- no sub symbol table needed
+//          beg        (VSymEnt->AstBegin) -- can see "upper" a's symbol table
+//      a__DOT__aa (VSymEnt->AstCellInline) -- points to a.aa's symbol table
+//      b          (VSymEnt->AstCell)
 //*************************************************************************
 
 #include "config_build.h"
@@ -52,145 +55,21 @@
 #include "V3Ast.h"
 
 //######################################################################
-
-class LinkDotGraph : public V3Graph {
-public:
-    LinkDotGraph() {}
-    virtual ~LinkDotGraph() {}
-    virtual string dotRankDir() { return "LR"; }
-};
-
-class LinkDotBaseVertex : public V3GraphVertex {
-    typedef std::map<string,LinkDotBaseVertex*> NameVtxMap;
-    // A point in the hierarchy, either inlined or real
-    string	m_symPrefix;	// String to prefix symbols with
-    NameVtxMap	m_nameToVtxMap;	// Lookup of name -> to vertexes
-public:
-    LinkDotBaseVertex(V3Graph* graphp, const string& symPrefix)
-	: V3GraphVertex(graphp), m_symPrefix(symPrefix) {}
-    virtual ~LinkDotBaseVertex() {}
-    virtual string modName() const = 0;
-    virtual string cellName() const = 0;
-    virtual V3SymTable& syms() = 0;
-    string symPrefix() const { return m_symPrefix; }
-    void insertSubcellName(LinkDotGraph* graphp, const string& name, LinkDotBaseVertex* toVertexp) {
-	m_nameToVtxMap.insert(make_pair(name, toVertexp));
-	new V3GraphEdge(graphp, this, toVertexp, 1, false);
-    }
-    LinkDotBaseVertex* findSubcell(const string& name, const string& altname) {
-	// Find a vertex under this one by name.
-	// We could walk the edge top() list, but that would be O(n) for large lists of cells
-	{
-	    NameVtxMap::iterator iter = m_nameToVtxMap.find(name);
-	    if (iter != m_nameToVtxMap.end()) return iter->second;
-	}
-	if (altname != "") {
-	    NameVtxMap::iterator iter = m_nameToVtxMap.find(altname);
-	    if (iter != m_nameToVtxMap.end()) return iter->second;
-	}
-	return NULL;
-    }
-    void errorScopes(AstNode* nodep) {
-	if (!this) {  // Silence if we messed it up and aren't debugging
-	    if (debug() || v3Global.opt.debugCheck()) nodep->v3fatalSrc("Void pointer; perhaps used null vxp instead of okVxp?");
-	    return;
-	}
-	{
-	    string scopes;
-	    for (NameVtxMap::iterator it = m_nameToVtxMap.begin(); it!=m_nameToVtxMap.end(); ++it) {
-		if (scopes != "") scopes += ", ";
-		scopes += AstNode::prettyName(it->second->cellName());
-	    }
-	    cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<cellName()<<"': "
-		<<scopes<<endl;
-	}
-	if (debug()) {
-	    for (NameVtxMap::iterator it = m_nameToVtxMap.begin(); it!=m_nameToVtxMap.end(); ++it) {
-		UINFO(1,"\t\t      KnownScope: "<<it->second->name()<<endl);
-	    }
-	}
-    }
-};
-
-class LinkDotCellVertex : public LinkDotBaseVertex {
-    // A real point in the hierarchy, corresponding to an instantiated module
-    AstNodeModule*	m_modp;		// Module
-    AstCell*	m_nodep;	// Cell creating this vertex **NULL AT TOP**
-    V3SymTable  m_syms;		// Symbol table of variable/task names for global lookup
-public:
-    LinkDotCellVertex(V3Graph* graphp, AstCell* nodep)
-	: LinkDotBaseVertex(graphp, ""), m_modp(nodep->modp()), m_nodep(nodep) {}
-    LinkDotCellVertex(V3Graph* graphp, AstNodeModule* nodep)
-	: LinkDotBaseVertex(graphp, ""), m_modp(nodep), m_nodep(NULL) {}
-    virtual ~LinkDotCellVertex() {}
-    AstNodeModule* modp() const { return m_modp; }   // May be NULL
-    AstCell* nodep() const { return m_nodep; }   // Is NULL at TOP
-    virtual V3SymTable& syms() { return m_syms; }
-    // We need to use origName as parameters may have renamed the modname
-    virtual string modName() const { return (modp() ? modp()->origName() : "*NULL*"); }
-    virtual string cellName() const { return (nodep() ? nodep()->origName() : "*NULL*"); }
-    virtual string name() const { return (string)("C:")+cellName()+" M:"+modName(); }
-};
-
-class LinkDotInlineVertex : public LinkDotBaseVertex {
-    // A fake point in the hierarchy, corresponding to an inlined module
-    // This refrences to another vertex, and eventually resolves to a module with a prefix
-    string	m_basename;		// Name with dotteds stripped
-    AstCellInline* m_cellInlinep; 	// Inlined cell
-    LinkDotCellVertex* m_symVxp;	// Above cell so we can find real symbol table
-    //					// (Could walk graph to find it, but that's much slower.)
-public:
-    LinkDotInlineVertex(V3Graph* graphp, AstCellInline* nodep, LinkDotCellVertex* symVxp,
-			const string& basename)
-	: LinkDotBaseVertex(graphp, nodep->name()+"__DOT__")
-	, m_basename(basename), m_cellInlinep(nodep), m_symVxp(symVxp) {}
-    virtual ~LinkDotInlineVertex() {}
-    AstCellInline* cellInlinep() const { return m_cellInlinep; }
-    // Search up through tree to find the real symbol table.
-    virtual V3SymTable& syms() { return m_symVxp->syms(); }
-    virtual string modName() const { return cellInlinep()->origModName(); }
-    virtual string cellName() const { return m_basename; }
-    virtual string name() const { return (string)("INL C:")+cellName()+" M:"+modName()+" P:"+symPrefix(); }
-    virtual string dotColor() const { return "yellow"; }
-};
-
-class LinkDotBeginVertex : public LinkDotBaseVertex {
-    // A fake point in the hierarchy, corresponding to a begin block
-    // After we remove begins these will go away
-    // Note we use the symbol table of the parent, as we want to find variables there
-    // However, cells walk the graph, so cells will appear under the begin itself
-    AstBegin*	m_nodep; 		// Relevant node
-    LinkDotCellVertex* m_symVxp;	// Above cell so we can find real symbol table
-    //					// (Could walk graph to find it, but that's much slower.)
-public:
-    LinkDotBeginVertex(V3Graph* graphp, AstBegin* nodep, LinkDotCellVertex* symVxp)
-	: LinkDotBaseVertex(graphp, nodep->name()+"__DOT__")
-	, m_nodep(nodep), m_symVxp(symVxp) {}
-    virtual ~LinkDotBeginVertex() {}
-    // Search up through tree to find the real symbol table.
-    virtual V3SymTable& syms() { return m_symVxp->syms(); }
-    virtual string modName() const { return m_nodep->name(); }
-    virtual string cellName() const { return m_nodep->name(); }
-    virtual string name() const { return (string)("BEG C:")+cellName(); }
-    virtual string dotColor() const { return "blue"; }
-};
-
-//######################################################################
 // LinkDot state, as a visitor of each AstNode
 
 class LinkDotState {
 private:
     // NODE STATE
     // Cleared on Netlist
-    //  AstNodeModule::user1p()	-> LinkDotCellVertex*.  Last cell that uses this module
+    //  AstNodeModule::user1p()	-> VSymEnt*.  Last cell that uses this module
     //  AstVarScope::user2p()	-> AstVarScope*.  Base alias for this signal
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
 
     // TYPES
-    typedef std::multimap<string,LinkDotCellVertex*> NameScopeMap;
+    typedef std::multimap<string,VSymEnt*> NameScopeMap;
     // MEMBERS
-    LinkDotGraph	m_graph;		// Graph of hierarchy
+    VSymGraph		m_syms;			// Symbol table
     NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by non-pretty textual name
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
@@ -203,7 +82,8 @@ public:
     }
 
     // CONSTRUCTORS
-    LinkDotState(bool forPrearray, bool forScopeCreation) {
+    LinkDotState(AstNetlist* rootp, bool forPrearray, bool forScopeCreation)
+	: m_syms(rootp) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
 	m_forPrearray = forPrearray;
 	m_forScopeCreation = forScopeCreation;
@@ -214,84 +94,111 @@ public:
     bool forScopeCreation() const { return m_forScopeCreation; }
 
     // METHODS
-    LinkDotCellVertex* insertTopCell(AstNodeModule* nodep, const string& scopename) {
+private:
+    VSymEnt* findSubcell(VSymEnt* symp, const string& name, const string& altname) {
+	VSymEnt* findp = symp->findIdFallback(name);
+	if (findp) return findp;
+	findp = symp->findIdFallback(altname);
+	return findp;
+    }
+public:
+    VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
 	// Only called on the module at the very top of the hierarchy
-	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
-	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
-	nodep->user1p(vxp);
-	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, vxp));
-	return vxp;
+	UINFO(9,"      INSERTtop "<<scopename<<" "<<nodep<<endl);
+	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	symp->parentp(m_syms.rootp());  // Needed so backward search can find name of top module
+	nodep->user1p(symp);
+	m_syms.rootp()->insert(nodep->origName(),symp);
+	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
+	return symp;
     }
-    LinkDotCellVertex* insertCell(LinkDotBaseVertex* abovep, LinkDotCellVertex* cellVxp,
-				  AstCell* nodep, const string& scopename) {
-	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
-	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
-	if (nodep->modp()) nodep->modp()->user1p(vxp);
-	abovep->insertSubcellName(&m_graph, nodep->origName(), vxp);
-	if (abovep != cellVxp) {
+    VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* cellSymp,
+			AstCell* nodep, const string& scopename) {
+	UINFO(9,"      INSERTcel "<<scopename<<" above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<" node="<<nodep<<endl);
+	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	symp->parentp(abovep);
+	symp->fallbackp(cellSymp);
+	if (nodep->modp()) nodep->modp()->user1p(symp);
+	abovep->reinsert(nodep->origName(), symp);
+	if (abovep != cellSymp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
-	    cellVxp->insertSubcellName(&m_graph, nodep->name(), vxp);
+	    // Duplicates are possible, as until resolve generates might have 2 same cells under an if
+	    cellSymp->reinsert(nodep->name(), symp);
 	}
-	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, vxp));
-	return vxp;
+	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
+	return symp;
     }
-    LinkDotInlineVertex* insertInline(LinkDotBaseVertex* abovep, LinkDotCellVertex* cellVxp,
-				      AstCellInline* nodep, const string& basename) {
-	UINFO(9,"      INSERTcinl "<<nodep<<endl);
-	LinkDotInlineVertex* vxp = new LinkDotInlineVertex(&m_graph, nodep, cellVxp, basename);
-	abovep->insertSubcellName(&m_graph, basename, vxp);
-	if (abovep != cellVxp) {
+    VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* cellSymp,
+			  AstCellInline* nodep, const string& basename) {
+	// A fake point in the hierarchy, corresponding to an inlined module
+	// This refrences to another Sym, and eventually resolves to a module with a prefix
+	UINFO(9,"      INSERTcel "<<basename<<" above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<" node="<<nodep<<endl);
+	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	symp->parentp(abovep);
+	symp->fallbackp(cellSymp);
+	symp->symPrefix(nodep->name()+"__DOT__");
+	abovep->reinsert(basename, symp);
+	if (abovep != cellSymp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
-	    cellVxp->insertSubcellName(&m_graph, nodep->name(), vxp);
+	    cellSymp->reinsert(nodep->name(), symp);
 	}
-	return vxp;
+	return symp;
     }
-    LinkDotBeginVertex* insertBegin(LinkDotBaseVertex* abovep, LinkDotCellVertex* cellVxp,
-				    AstBegin* nodep) {
-	UINFO(9,"      INSERTbeg "<<nodep<<endl);
-	LinkDotBeginVertex* vxp = new LinkDotBeginVertex(&m_graph, nodep, cellVxp);
-	abovep->insertSubcellName(&m_graph, nodep->name(), vxp);
-	return vxp;
+    VSymEnt* insertBegin(VSymEnt* abovep, VSymEnt* cellSymp,
+			 AstBegin* nodep) {
+	// A fake point in the hierarchy, corresponding to a begin block
+	// After we remove begins these will go away
+	// Note we fallback to the symbol table of the parent, as we want to find variables there
+	// However, cells walk the graph, so cells will appear under the begin itself
+	UINFO(9,"      INSERTbeg above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<"  node="<<nodep<<endl);
+	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	symp->parentp(abovep);
+	symp->symPrefix(nodep->name()+"__DOT__");
+	if (nodep->name() != "") {
+	    // Duplicates are possible, as until resolve generates might have 2 same cells under an if
+	    abovep->reinsert(nodep->name(), symp);
+	}
+	return symp;
     }
-    void insertSym(LinkDotCellVertex* abovep, const string& name, AstNode* nodep) {
-	UINFO(9,"      INSERTsym "<<name<<" "<<nodep<<endl);
-	abovep->syms().insert(name, nodep);
+    void insertSym(VSymEnt* abovep, const string& name, AstNode* nodep) {
+	UINFO(9,"      INSERTsym name='"<<name<<"' above="<<(void*)abovep<<"  node="<<nodep<<endl);
+	// We don't remember the ent associated with each node, because we need a unique scope entry for each instantiation
+	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	abovep->insert(name, symp);
     }
     bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
     }
-    LinkDotCellVertex* findModScope(AstNodeModule* nodep) {
-	LinkDotCellVertex* vxp = (LinkDotCellVertex*)(nodep->user1p());
-	if (!vxp) nodep->v3fatalSrc("Module never assigned a vertex");
-	return vxp;
+    VSymEnt* findModScope(AstNodeModule* nodep) {
+	VSymEnt* symp = nodep->user1p()->castSymEnt();
+	if (!symp) nodep->v3fatalSrc("Module never assigned a symbol entry?");
+	return symp;
     }
-    LinkDotCellVertex* findScope(AstScope* nodep) {
+    VSymEnt* findScopeSym(AstScope* nodep) {
 	NameScopeMap::iterator iter = m_nameScopeMap.find(nodep->name());
 	if (iter == m_nameScopeMap.end()) {
-	    nodep->v3fatalSrc("Scope never assigned a vertex");
+	    nodep->v3fatalSrc("Scope never assigned a symbol entry?");
 	}
 	return iter->second;
     }
     void dump() {
-	if (debug()>=6) m_graph.dumpDotFilePrefixed("linkdot");
+	if (debug()>=6) m_syms.dumpFilePrefixed("linkdot");
     }
-private:
-    LinkDotBaseVertex* parentOfCell(LinkDotBaseVertex* lowerVxp) {
-	for (V3GraphEdge* edgep = lowerVxp->inBeginp(); edgep; edgep=edgep->inNextp()) {
-	    LinkDotBaseVertex* fromVxp = dynamic_cast<LinkDotBaseVertex*>(edgep->fromp());
-	    return fromVxp;
+    void preErrorDump() {
+	static bool diddump = false;
+	if (!diddump && v3Global.opt.dumpTree()) {
+	    diddump = true;
+	    m_syms.dumpFilePrefixed("linkdot-preerr");
 	}
-	return NULL;
     }
-public:
-    LinkDotBaseVertex* findDotted(LinkDotBaseVertex* cellVxp, const string& dotname,
-				  string& baddot, LinkDotBaseVertex*& okVxp) {
+    VSymEnt* findDotted(VSymEnt* cellSymp, const string& dotname,
+			string& baddot, VSymEnt*& okSymp) {
 	// Given a dotted hierarchy name, return where in scope it is
-	// Note when dotname=="" we just fall through and return cellVxp
+	// Note when dotname=="" we just fall through and return cellSymp
 	UINFO(8,"    dottedFind "<<dotname<<endl);
 	bool firstId = true;
 	string leftname = dotname;
-	okVxp = cellVxp;  // So can list bad scopes
+	okSymp = cellSymp;  // So can list bad scopes
 	while (leftname != "") {  // foreach dotted part of xref name
 	    string::size_type pos;
 	    string ident;
@@ -303,7 +210,7 @@ public:
 		leftname = "";
 	    }
 	    baddot = ident;   // So user can see where they botched it
-	    okVxp = cellVxp;
+	    okSymp = cellSymp;
 	    string altIdent = "";
 	    if (m_forPrearray) {
 		// Cell foo__[array] before we've expanded arrays is just foo.
@@ -311,60 +218,61 @@ public:
 		    altIdent = ident.substr(0,pos);
 		}
 	    }
-	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at "<<cellVxp<<endl);
+	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at "<<cellSymp<<endl);
 	    // Spec says; Look at exiting module (cellnames then modname),
 	    // then look up (inst name or modname)
 	    if (firstId) {
 		// Check this module - subcellnames
-		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
-		    cellVxp = findVxp;
+		AstCell* cellp = cellSymp->nodep()->castCell();  // Replicated below
+		AstCellInline* inlinep = cellSymp->nodep()->castCellInline(); // Replicated below
+		if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+		    cellSymp = findSymp;
 		}
 		// Check this module - cur modname
-		else if (cellVxp->modName() == ident) {}
-		// Check this module - cur cellname
-		else if (cellVxp->cellName() == ident) {}
-		else if (cellVxp->cellName() == altIdent) {}
+		else if ((cellp && cellp->modp()->origName() == ident)
+			 || (inlinep && inlinep->origModName() == ident)) {}
 		// Move up and check cellname + modname
 		else {
-		    while (cellVxp) {
-			cellVxp = parentOfCell(cellVxp);
-			if (cellVxp) {
-			    UINFO(9,"\t\tUp to "<<cellVxp<<endl);
-			    if (cellVxp->modName() == ident
-				|| cellVxp->cellName() == ident
-				|| cellVxp->cellName() == altIdent) {
+		    while (cellSymp) {
+			cellSymp = cellSymp->parentp();
+			cellp = cellSymp->nodep()->castCell(); // Replicated above
+			inlinep = cellSymp->nodep()->castCellInline(); // Replicated above
+			if (cellSymp) {
+			    UINFO(9,"\t\tUp to "<<cellSymp<<endl);
+			    if ((cellp && cellp->modp()->origName() == ident)
+				|| (inlinep && inlinep->origModName() == ident)) {
 				break;
 			    }
-			    else if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
-				cellVxp = findVxp;
+			    else if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+				cellSymp = findSymp;
 				break;
 			    }
-			}
+			} else break;
 		    }
-		    if (!cellVxp) return NULL;  // Not found
+		    if (!cellSymp) return NULL;  // Not found
 		}
 	    } else { // Searching for middle submodule, must be a cell name
-		if (LinkDotBaseVertex* findVxp = cellVxp->findSubcell(ident, altIdent)) {
-		    cellVxp = findVxp;
+		if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+		    cellSymp = findSymp;
 		} else {
 		    return NULL;  // Not found
 		}
 	    }
 	    firstId = false;
 	}
-	return cellVxp;
+	return cellSymp;
     }
 
-    AstNode* findSym(LinkDotBaseVertex* cellVxp, const string& dotname, string& baddot) {
+    AstNode* findSym(VSymEnt* cellSymp, const string& dotname, string& baddot) {
 	// Find symbol in given point in hierarchy
-	// For simplicity cellVxp may be passed NULL result from findDotted
-	if (!cellVxp) return NULL;
+	// For simplicity cellSymp may be passed NULL result from findDotted
+	if (!cellSymp) return NULL;
 	UINFO(8,"\t\tfindSym "<<dotname
-	      <<((cellVxp->symPrefix()=="") ? "" : " as ")
-	      <<((cellVxp->symPrefix()=="") ? "" : cellVxp->symPrefix()+dotname)
-	      <<"  at  "<<cellVxp
+	      <<((cellSymp->symPrefix()=="") ? "" : " as ")
+	      <<((cellSymp->symPrefix()=="") ? "" : cellSymp->symPrefix()+dotname)
+	      <<"  at  "<<cellSymp
 	      <<endl);
-	AstNode* nodep = cellVxp->syms().findIdFlat(cellVxp->symPrefix() + dotname);  // Might be NULL
+	AstNode* nodep = cellSymp->findIdFallback(cellSymp->symPrefix() + dotname)->nodep();  // Might be NULL
 	if (!nodep) baddot = dotname;
 	return nodep;
     }
@@ -376,8 +284,8 @@ class LinkDotFindVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
-    LinkDotCellVertex*	m_cellVxp;	// Vertex for current module
-    LinkDotBaseVertex*	m_inlineVxp;	// Vertex for current module, possibly a fake inlined one
+    VSymEnt*		m_cellSymp;	// Symbol Entry for current module
+    VSymEnt*		m_inlineSymp;	// Symbol Entry for current module, possibly a fake inlined one
     string		m_scope;	// Scope text
     AstBegin*		m_beginp;	// Current Begin/end block
 
@@ -399,21 +307,21 @@ private:
 	} else {
 	    UINFO(8,"Top Module: "<<topmodp<<endl);
 	    m_scope = "TOP";
-	    m_cellVxp = m_statep->insertTopCell(topmodp, m_scope);
-	    m_inlineVxp = m_cellVxp;
+	    m_cellSymp = m_statep->insertTopCell(topmodp, m_scope);
+	    m_inlineSymp = m_cellSymp;
 	    {
 		topmodp->accept(*this);
 	    }
 	    m_scope = "";
-	    m_cellVxp = NULL;
-	    m_inlineVxp = m_cellVxp;
+	    m_cellSymp = NULL;
+	    m_inlineSymp = m_cellSymp;
 	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Called on top module from Netlist, other modules from the cell creating them,
 	// and packages
 	UINFO(8,"   "<<nodep<<endl);
-	if (!m_cellVxp) {
+	if (!m_cellSymp) {
 	    // Will be optimized away later
 	    UINFO(5, "Module not under any CELL or top - dead module\n");
 	} else {
@@ -431,35 +339,35 @@ private:
 	// Recurse in, preserving state
 	string oldscope = m_scope;
 	AstBegin* oldbeginp = m_beginp;
-	LinkDotCellVertex* oldVxp = m_cellVxp;
-	LinkDotBaseVertex* oldInlineVxp = m_inlineVxp;
+	VSymEnt* oldSymp = m_cellSymp;
+	VSymEnt* oldInlineSymp = m_inlineSymp;
 	// Where do we add it?
-	LinkDotBaseVertex* aboveVxp = m_inlineVxp;
+	VSymEnt* aboveSymp = m_inlineSymp;
 	string origname = AstNode::dedotName(nodep->name());
 	string::size_type pos;
 	if ((pos = origname.rfind(".")) != string::npos) {
 	    // Flattened, find what CellInline it should live under
 	    string scope = origname.substr(0,pos);
 	    string baddot;
-	    LinkDotBaseVertex* okVxp;
-	    aboveVxp = m_statep->findDotted(aboveVxp, scope, baddot, okVxp);
-	    if (!aboveVxp) nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    VSymEnt* okSymp;
+	    aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
+	    if (!aboveSymp) nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
 	}
 	{
 	    m_scope = m_scope+"."+nodep->name();
-	    m_cellVxp = m_statep->insertCell(aboveVxp, m_cellVxp, nodep, m_scope);
-	    m_inlineVxp = m_cellVxp;
+	    m_cellSymp = m_statep->insertCell(aboveSymp, m_cellSymp, nodep, m_scope);
+	    m_inlineSymp = m_cellSymp;
 	    m_beginp = NULL;
 	    if (nodep->modp()) nodep->modp()->accept(*this);
 	}
 	m_scope = oldscope;
 	m_beginp = oldbeginp;
-	m_cellVxp = oldVxp;
-	m_inlineVxp = oldInlineVxp;
+	m_cellSymp = oldSymp;
+	m_inlineSymp = oldInlineSymp;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	UINFO(5,"   CELLINLINE under "<<m_scope<<" is "<<nodep<<endl);
-	LinkDotBaseVertex* aboveVxp = m_inlineVxp;
+	VSymEnt* aboveSymp = m_inlineSymp;
 	// If baz__DOT__foo__DOT__bar, we need to find baz__DOT__foo and add bar to it.
 	string dottedname = nodep->name();
 	string::size_type pos;
@@ -467,32 +375,32 @@ private:
 	    string dotted = dottedname.substr(0, pos);
 	    string ident  = dottedname.substr(pos+strlen("__DOT__"));
 	    string baddot;
-	    LinkDotBaseVertex* okVxp;
-	    aboveVxp = m_statep->findDotted(aboveVxp, dotted, baddot, okVxp);
-	    if (!aboveVxp) nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
-	    m_statep->insertInline(aboveVxp, m_cellVxp, nodep, ident);
+	    VSymEnt* okSymp;
+	    aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
+	    if (!aboveSymp) nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    m_statep->insertInline(aboveSymp, m_cellSymp, nodep, ident);
 	} else {  // No __DOT__, just directly underneath
-	    m_statep->insertInline(aboveVxp, m_cellVxp, nodep, nodep->name());
+	    m_statep->insertInline(aboveSymp, m_cellSymp, nodep, nodep->name());
 	}
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
 	AstBegin* oldbegin = m_beginp;
-	LinkDotBaseVertex* oldVxp = m_inlineVxp;
+	VSymEnt* oldSymp = m_inlineSymp;
 	{
 	    m_beginp = nodep;
 	    // We don't pickup variables (as not supported yet), but do need to find cells
-	    m_inlineVxp = m_statep->insertBegin(m_inlineVxp, m_cellVxp, nodep);
+	    m_inlineSymp = m_statep->insertBegin(m_inlineSymp, m_cellSymp, nodep);
 	    nodep->stmtsp()->iterateAndNext(*this);
 	}
-	m_inlineVxp = oldVxp;
+	m_inlineSymp = oldSymp;
 	m_beginp = oldbegin;
 	//
 	nodep->flatsp()->iterateAndNext(*this);
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	if (!m_beginp) {	// For now, we don't support xrefs into functions inside begin blocks
-	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	    m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
 	}
 	// No recursion, we don't want to pick up variables
     }
@@ -500,7 +408,7 @@ private:
 	if (!m_statep->forScopeCreation()
 	    && !m_beginp	// For now, we don't support xrefs into begin blocks
 	    && !nodep->isFuncLocal()) {
-	    m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	    m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
 	} else {
 	    UINFO(9,"       Not allowing dot refs to: "<<nodep<<endl);
 	}
@@ -521,7 +429,8 @@ public:
     // CONSTUCTORS
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
+	m_inlineSymp = NULL;
 	m_statep = statep;
 	m_beginp = NULL;
 	//
@@ -536,7 +445,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
-    LinkDotCellVertex*	m_cellVxp;	// Vertex for current module
+    VSymEnt*		m_cellSymp;	// Symbol entry for current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -546,17 +455,17 @@ private:
 	if (!m_statep->forScopeCreation()) v3fatalSrc("Scopes should only exist right after V3Scope");
 	// Using the CELL names, we created all hierarchy.  We now need to match this Scope
 	// up with the hierarchy created by the CELL names.
-	m_cellVxp = m_statep->findScope(nodep);
+	m_cellSymp = m_statep->findScopeSym(nodep);
 	nodep->iterateChildren(*this);
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	if (!nodep->varp()->isFuncLocal()) {
-	    m_statep->insertSym(m_cellVxp, nodep->varp()->name(), nodep);
+	    m_statep->insertSym(m_cellSymp, nodep->varp()->name(), nodep);
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	m_statep->insertSym(m_cellVxp, nodep->name(), nodep);
+	m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
 	// No recursion, we don't want to pick up variables
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
@@ -585,7 +494,7 @@ public:
     // CONSTUCTORS
     LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
 	m_statep = statep;
 	//
 	rootp->accept(*this);
@@ -599,7 +508,7 @@ class LinkDotResolveVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State, including dotted symbol table
-    LinkDotCellVertex*	m_cellVxp;	// Vertex for current module
+    VSymEnt*		m_cellSymp;	// SymEnt for current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -610,18 +519,18 @@ private:
 	UINFO(8,"  "<<nodep<<endl);
 	if (!m_statep->existsModScope(nodep)) {
 	    UINFO(5,"Dead module for "<<nodep<<endl);
-	    m_cellVxp = NULL;
+	    m_cellSymp = NULL;
 	} else {
-	    m_cellVxp = m_statep->findModScope(nodep);
+	    m_cellSymp = m_statep->findModScope(nodep);
 	}
 	nodep->iterateChildren(*this);
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(8,"   "<<nodep<<endl);
-	m_cellVxp = m_statep->findScope(nodep);
+	m_cellSymp = m_statep->findScopeSym(nodep);
 	nodep->iterateChildren(*this);
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	if (m_statep->forScopeCreation()) {
@@ -633,35 +542,40 @@ private:
 	// We always link even if varp() is set, because the module we choose may change
 	// due to creating new modules, flattening, etc.
 	UINFO(8,"     "<<nodep<<endl);
-	if (!m_cellVxp) {
+	if (!m_cellSymp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->varp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
-	    LinkDotBaseVertex* okVxp;
-	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
+	    VSymEnt* okSymp;
+	    VSymEnt* dotSymp = m_cellSymp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::dedotName(nodep->inlinedDots());
-		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
-		if (!dotVxp) nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
+		dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
+		if (!dotSymp) {
+		    m_statep->preErrorDump();
+		    nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
+		}
 	    }
-	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot, okVxp); // Maybe NULL
+	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    if (!m_statep->forScopeCreation()) {
-		AstVar* varp = (m_statep->findSym(dotVxp, nodep->name(), baddot)
+		AstVar* varp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
 				->castVar());  // maybe NULL
 		nodep->varp(varp);
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
 		if (!nodep->varp()) {
+		    m_statep->preErrorDump();
 		    nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
-		    okVxp->errorScopes(nodep);
+		    okSymp->cellErrorScopes(nodep);
 		}
 	    } else {
 		string baddot;
-		AstVarScope* vscp = (m_statep->findSym(dotVxp, nodep->name(), baddot)
+		AstVarScope* vscp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
 				     ->castVarScope());  // maybe NULL
 		if (!vscp) {
+		    m_statep->preErrorDump();
 		    nodep->v3error("Can't find varpin scope of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
-		    okVxp->errorScopes(nodep);
+		    okSymp->cellErrorScopes(nodep);
 		} else {
 		    while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
 			UINFO(7,"         Resolved pre-alias "<<vscp<<endl);  // Also prints taskp
@@ -682,7 +596,7 @@ private:
 	UINFO(8,"     "<<nodep<<endl);
 	if (nodep->packagep()) {
 	    // References into packages don't care about cell hierarchy.
-	} else if (!m_cellVxp) {
+	} else if (!m_cellSymp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->taskp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else if (nodep->dotted()=="" && nodep->taskp()) {
@@ -690,26 +604,28 @@ private:
 	    // Might be under a BEGIN we're not processing, so don't relink it
 	} else {
 	    string baddot;
-	    LinkDotBaseVertex* okVxp;
-	    LinkDotBaseVertex* dotVxp = m_cellVxp;  // Start search at current scope
+	    VSymEnt* okSymp;
+	    VSymEnt* dotSymp = m_cellSymp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::dedotName(nodep->inlinedDots());
 		UINFO(8,"\t\tInlined "<<inl<<endl);
-		dotVxp = m_statep->findDotted(dotVxp, inl, baddot, okVxp);
-		if (!dotVxp) {
-		    okVxp->errorScopes(nodep);
+		dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
+		if (!dotSymp) {
+		    m_statep->preErrorDump();
+		    okSymp->cellErrorScopes(nodep);
 		    nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 		}
 	    }
-	    dotVxp = m_statep->findDotted(dotVxp, nodep->dotted(), baddot, okVxp); // Maybe NULL
+	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 
-	    AstNodeFTask* taskp = (m_statep->findSym(dotVxp, nodep->name(), baddot)
-				   ->castNodeFTask()); // maybe NULL
+	    AstNodeFTask* taskp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
+				   ->castNode()->castNodeFTask()); // maybe NULL
 	    nodep->taskp(taskp);
 	    UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
 	    if (!nodep->taskp()) {
+		m_statep->preErrorDump();
 		nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted task/function: "<<nodep->dotted()+"."+nodep->prettyName());
-		okVxp->errorScopes(nodep);
+		okSymp->cellErrorScopes(nodep);
 	    }
 	}
 	nodep->iterateChildren(*this);
@@ -723,7 +639,7 @@ public:
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
 	m_statep = statep;
-	m_cellVxp = NULL;
+	m_cellSymp = NULL;
 	//
 	rootp->accept(*this);
     }
@@ -735,13 +651,15 @@ public:
 
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, bool prearray, bool scoped) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    if (LinkDotState::debug()>=5) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
-    LinkDotState state (prearray,scoped);
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
+    LinkDotState state (rootp, prearray, scoped);
     LinkDotFindVisitor visitor(rootp,&state);
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     if (scoped) {
 	// Well after the initial link when we're ready to operate on the flat design,
 	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);
+	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
     }
     state.dump();
     LinkDotResolveVisitor visitorb(rootp,&state);

@@ -88,34 +88,32 @@ struct V3ParseBisonYYSType {
 
 class V3ParseSym {
     // TYPES
-    typedef vector<V3SymTable*>	SymStack;
+    typedef vector<VSymEnt*>	SymStack;
 
 private:
     // MEMBERS
     static int	s_anonNum;		// Number of next anonymous object (parser use only)
-    V3SymTable*	m_symTableNextId;	// Symbol table for next lexer lookup (parser use only)
-    V3SymTable*	m_symCurrentp;		// Active symbol table for additions/lookups
-    V3SymTable*	m_symRootp;		// Root symbol table
+    VSymGraph	m_syms;			// Graph of symbol tree
+    VSymEnt*	m_symTableNextId;	// Symbol table for next lexer lookup (parser use only)
+    VSymEnt*	m_symCurrentp;		// Active symbol table for additions/lookups
     SymStack	m_sympStack;		// Stack of upper nodes with pending symbol tables
-    SymStack	m_symsp;		// All symbol tables, to cleanup
 
 private:
     // METHODS
-    static V3SymTable* getTable(AstNode* nodep) {
+    static VSymEnt* getTable(AstNode* nodep) {
 	if (!nodep->user4p()) nodep->v3fatalSrc("Current symtable not found");
-	return nodep->user4p()->castSymTable();
+	return nodep->user4p()->castSymEnt();
     }
 
 public:
-    V3SymTable* nextId() const { return m_symTableNextId; }
-    V3SymTable* symCurrentp() const { return m_symCurrentp; }
-    V3SymTable*	symRootp() const { return m_symRootp; }
+    VSymEnt* nextId() const { return m_symTableNextId; }
+    VSymEnt* symCurrentp() const { return m_symCurrentp; }
+    VSymEnt* symRootp() const { return m_syms.rootp(); }
 
-    V3SymTable* findNewTable(AstNode* nodep, V3SymTable* parentp) {
+    VSymEnt* findNewTable(AstNode* nodep) {
 	if (!nodep->user4p()) {
-	    V3SymTable* symsp = new V3SymTable(nodep, parentp);
+	    VSymEnt* symsp = new VSymEnt(&m_syms, nodep);
 	    nodep->user4p(symsp);
-	    m_symsp.push_back(symsp);
 	}
 	return getTable(nodep);
     }
@@ -129,31 +127,32 @@ public:
 	    m_symTableNextId = NULL;
 	}
     }
-    void reinsert(AstNode* nodep, V3SymTable* parentp=NULL) {
+    void reinsert(AstNode* nodep, VSymEnt* parentp=NULL) {
 	reinsert(nodep, parentp, nodep->name());
     }
-    void reinsert(AstNode* nodep, V3SymTable* parentp, string name) {
+    void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
 	if (!parentp) parentp = symCurrentp();
 	if (name == "") {  // New name with space in name so can't collide with users
 	    name = string(" anon") + nodep->type().ascii() + cvtToStr(++s_anonNum);
 	}
-	parentp->reinsert(name,nodep);
+	parentp->reinsert(name, findNewTable(nodep));
     }
     void pushNew(AstNode* nodep) { pushNewUnder(nodep, NULL); }
-    void pushNewUnder(AstNode* nodep, V3SymTable* parentp) {
+    void pushNewUnder(AstNode* nodep, VSymEnt* parentp) {
 	if (!parentp) parentp = symCurrentp();
-	V3SymTable* symp = findNewTable(nodep, parentp);  // Will set user4p, which is how we connect table to node
+	VSymEnt* symp = findNewTable(nodep);  // Will set user4p, which is how we connect table to node
+	symp->fallbackp(parentp);
 	reinsert(nodep, parentp);
 	pushScope(symp);
     }
-    void pushScope(V3SymTable* symp) {
+    void pushScope(VSymEnt* symp) {
 	m_sympStack.push_back(symp);
 	m_symCurrentp = symp;
     }
     void popScope(AstNode* nodep) {
-	if (symCurrentp()->ownerp() != nodep) {
+	if (symCurrentp()->nodep() != nodep) {
 	    if (debug()) { showUpward(); dump(cout,"-mism: "); }
-	    nodep->v3fatalSrc("Symbols suggest ending "<<symCurrentp()->ownerp()->prettyTypeName()
+	    nodep->v3fatalSrc("Symbols suggest ending "<<symCurrentp()->nodep()->prettyTypeName()
 			      <<" but parser thinks ending "<<nodep->prettyTypeName());
 	    return;
 	}
@@ -164,22 +163,21 @@ public:
     void showUpward () {
 	UINFO(1,"ParseSym Stack:\n");
 	for (SymStack::reverse_iterator it=m_sympStack.rbegin(); it!=m_sympStack.rend(); ++it) {
-	    V3SymTable* symp = *it;
-	    UINFO(1,"\t"<<symp->ownerp()<<endl);
+	    VSymEnt* symp = *it;
+	    UINFO(1,"\t"<<symp->nodep()<<endl);
 	}
-	UINFO(1,"ParseSym Current: "<<symCurrentp()->ownerp()<<endl);
+	UINFO(1,"ParseSym Current: "<<symCurrentp()->nodep()<<endl);
     }
     void dump(ostream& os, const string& indent="") {
-	os<<"ParseSym Dump:\n";
-	m_sympStack[0]->dump(os, indent, true);
+	m_syms.dump(os,indent);
     }
     AstNode* findEntUpward (const string& name) {
 	// Lookup the given string as an identifier, return type of the id, scanning upward
-	return symCurrentp()->findIdFallback(name);
+	return symCurrentp()->findIdFallback(name)->nodep();
     }
     void import(AstNode* packagep, const string& id_or_star) {
 	// Import from package::id_or_star to this
-	V3SymTable* symp = getTable(packagep);
+	VSymEnt* symp = getTable(packagep);
 	if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
 	    packagep->v3fatalSrc("Import package not found");
 	    return;
@@ -190,18 +188,14 @@ public:
     }
 public:
     // CREATORS
-    V3ParseSym(AstNetlist* rootp) {
+    V3ParseSym(AstNetlist* rootp)
+	: m_syms(rootp) {
 	s_anonNum = 0;		// Number of next anonymous object
-	pushScope(findNewTable(rootp, NULL));
+	pushScope(findNewTable(rootp));
 	m_symTableNextId = NULL;
 	m_symCurrentp = symCurrentp();
-	m_symRootp = symCurrentp();
     }
-    ~V3ParseSym() {
-	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
-	    delete (*it);
-	}
-    }
+    ~V3ParseSym() {}
 };
 
 //######################################################################

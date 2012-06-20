@@ -1118,15 +1118,15 @@ int V3ParseImp::lexToken() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     if (token == yaID__LEX) {
 	AstNode* scp;
-	if (V3SymTable* look_underp = SYMP->nextId()) {
+	if (VSymEnt* look_underp = SYMP->nextId()) {
 	    if (debugFlex()) { cout<<"   lexToken: next id lookup forced under "<<look_underp<<endl; }
-	    scp = look_underp->findIdFallback(*(yylval.strp));
+	    scp = look_underp->findIdFallback(*(yylval.strp))->nodep();
 	    // "consume" it.  Must set again if want another token under temp scope
 	    SYMP->nextId(NULL);
 	} else {
 	    UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()<<" for '"<<*(yylval.strp)<<"'"<<endl);
 	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
-	    scp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
+	    scp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp))->nodep();
 	}
 	yylval.scp = scp;
 	if (scp) {

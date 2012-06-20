@@ -91,7 +91,7 @@ private:
     //  Entire netlist:
     //   AstNodeModule::user1p()	// V3GraphVertex*    Vertex describing this module
     //  Allocated across all readFiles in V3Global::readFiles:
-    //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
+    //   AstNode::user4p()	// VSymEnt*    Package and typedef symbol names
     AstUser1InUse	m_inuser1;
 
     // STATE
@@ -99,7 +99,7 @@ private:
 
     // Below state needs to be preserved between each module call.
     AstNodeModule*	m_modp;		// Current module
-    V3SymTable  	m_mods;		// Symbol table of all module names
+    VSymGraph	  	m_mods;		// Symbol table of all module names
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
     V3GraphVertex*	m_topVertexp;	// Vertex of top module
@@ -197,7 +197,7 @@ private:
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
 	    // Use findIdFallback instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
-	    AstNodeModule* modp = m_mods.findIdFallback(nodep->modName())->castNodeModule();
+	    AstNodeModule* modp = m_mods.rootp()->findIdFallback(nodep->modName())->nodep()->castNodeModule();
 	    if (!modp) {
 		// Read-subfile
 		// If file not found, make AstNotFoundModule, rather than error out.
@@ -208,7 +208,7 @@ private:
 		// We've read new modules, grab new pointers to their names
 		readModNames();
 		// Check again
-		modp = m_mods.findIdFallback(nodep->modName())->castNodeModule();
+		modp = m_mods.rootp()->findIdFallback(nodep->modName())->nodep()->castNodeModule();
 		if (!modp) {
 		    nodep->v3error("Can't resolve module reference: "<<nodep->modName());
 		}
@@ -299,7 +299,7 @@ private:
 	// Look at all modules, and store pointers to all module names
 	for (AstNodeModule* nextp,* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nextp) {
 	    nextp = nodep->nextp()->castNodeModule();
-	    AstNode* foundp = m_mods.findIdFallback(nodep->name());
+	    AstNode* foundp = m_mods.rootp()->findIdFallback(nodep->name())->nodep();
 	    if (foundp && foundp != nodep) {
 		if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP) || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
 		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName()<<endl
@@ -308,7 +308,7 @@ private:
 		nodep->unlinkFrBack();
 		pushDeletep(nodep); nodep=NULL;
 	    } else if (!foundp) {
-		m_mods.insert(nodep->name(), nodep);
+		m_mods.rootp()->insert(nodep->name(), new VSymEnt(&m_mods, nodep));
 	    }
 	}
 	//if (debug()>=9) m_mods.dump(cout, "-syms: ");
@@ -316,7 +316,8 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp) {
+    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp)
+	: m_mods(rootp) {
 	m_filterp = filterp;
 	m_modp = NULL;
 	m_libVertexp = NULL;

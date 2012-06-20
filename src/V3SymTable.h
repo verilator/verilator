@@ -28,65 +28,88 @@
 #include <unistd.h>
 #include <map>
 #include <iomanip>
+#include <memory>
 
 #include "V3Global.h"
 #include "V3Ast.h"
+#include "V3File.h"
+
+class VSymGraph;
 
 //######################################################################
 // Symbol table
 
-class V3SymTable {
+class VSymEnt {
     // Symbol table that can have a "superior" table for resolving upper references
-  private:
+private:
     // MEMBERS
-    typedef std::map<string,AstNode*> IdNameMap;
+    typedef std::map<string,VSymEnt*> IdNameMap;
     IdNameMap	m_idNameMap;	// Hash of variables by name
-    AstNode*	m_ownerp;	// Node that table belongs to
-    V3SymTable*	m_fallbackp;	// Table "above" this one in name scope
-  public:
+    AstNode*	m_nodep;	// Node that entry belongs to
+    VSymEnt*	m_fallbackp;	// Table "above" this one in name scope, for fallback resolution
+    VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
+    string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
+    static int debug() { return 0; }  // NOT runtime, too hot of a function
+private:
+    void dumpIterate(ostream& os, const string& indent, int numLevels, const string& searchName) const {
+	os<<indent<<left<<setw(30)<<searchName<<setw(0)<<right;
+	os<<"  "<<setw(16)<<(void*)(this)<<setw(0);
+	os<<"  n="<<nodep();
+	os<<endl;
+	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
+	    if (numLevels >= 1) {
+		it->second->dumpIterate(os, indent+"+ ", numLevels-1, it->first);
+	    }
+	}
+    }
+
+public:
     // METHODS
-    V3SymTable(AstNode* ownerp, V3SymTable* upperTablep) {
-	m_ownerp = ownerp; m_fallbackp = upperTablep; }
-    V3SymTable() {
-	m_ownerp = NULL; m_fallbackp = NULL; }
-    ~V3SymTable() {}
-    AstNode* ownerp() const { return m_ownerp; }
-    void insert(const string& name, AstNode* nodep) {
-	//UINFO(9, "     SymInsert "<<this<<" '"<<name<<"' "<<nodep<<endl);
+    VSymEnt(VSymGraph* graphp, AstNode* nodep);  // Below
+    ~VSymEnt() {}
+    void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }
+    void parentp(VSymEnt* entp) { m_parentp = entp; }
+    VSymEnt* parentp() const { return m_parentp; }
+    AstNode* nodep() const { if (!this) return NULL; else return m_nodep; }  // null check so can call .findId(...)->nodep()
+    string symPrefix() const { return m_symPrefix; }
+    void symPrefix(const string& name) { m_symPrefix = name; }
+    void insert(const string& name, VSymEnt* entp) {
+	UINFO(9, "     SymInsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	if (m_idNameMap.find(name) != m_idNameMap.end()) {
 	    if (!V3Error::errorCount()) {   // Else may have just reported warning
-		nodep->v3fatalSrc("Inserting two symbols with same name: "<<name<<endl);
+		if (debug()>=9 || V3Error::debugDefault()) dump(cout,"- err-dump: ", 1);
+		entp->nodep()->v3fatalSrc("Inserting two symbols with same name: "<<name<<endl);
 	    }
 	} else {
-	    m_idNameMap.insert(make_pair(name, nodep));
+	    m_idNameMap.insert(make_pair(name, entp));
 	}
     }
-    void reinsert(const string& name, AstNode* nodep) {
+    void reinsert(const string& name, VSymEnt* entp) {
 	IdNameMap::iterator it = m_idNameMap.find(name);
 	if (it != m_idNameMap.end()) {
-	    //UINFO(9, "     SymReinsert "<<this<<" '"<<name<<"' "<<nodep<<endl);
-	    it->second = nodep;  // Replace
+	    UINFO(9, "     SymReinsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
+	    it->second = entp;  // Replace
 	} else {
-	    insert(name,nodep);
+	    insert(name,entp);
 	}
     }
-    AstNode* findIdFlat(const string& name) const {
+    VSymEnt* findIdFlat(const string& name) const {
 	// Find identifier without looking upward through symbol hierarchy
-	//UINFO(9, "     SymFind   "<<this<<" '"<<name<<"' "<<endl);
 	// First, scan this begin/end block or module for the name
 	IdNameMap::const_iterator iter = m_idNameMap.find(name);
+	UINFO(9, "     SymFind   "<<this<<" '"<<name<<"' -> "<<(iter == m_idNameMap.end() ? "NONE" : cvtToStr((void*)(iter->second->nodep())))<<endl);
 	if (iter != m_idNameMap.end()) return (iter->second);
 	return NULL;
     }
-    AstNode* findIdFallback(const string& name) const {
+    VSymEnt* findIdFallback(const string& name) const {
 	// Find identifier looking upward through symbol hierarchy
 	// First, scan this begin/end block or module for the name
-	if (AstNode* nodep = findIdFlat(name)) return nodep;
+	if (VSymEnt* entp = findIdFlat(name)) return entp;
 	// Then scan the upper begin/end block or module for the name
 	if (m_fallbackp) return m_fallbackp->findIdFallback(name);
 	return NULL;
     }
-    bool import(const V3SymTable* srcp, const string& id_or_star) {
+    bool import(const VSymEnt* srcp, const string& id_or_star) {
 	// Import tokens from source symbol table into this symbol table
 	// Returns true if successful
 	bool any = false;
@@ -104,20 +127,79 @@ class V3SymTable {
 	}
 	return any;
     }
-    void dump(ostream& os, const string& indent="", bool user4p_is_table=false) const {
-	if (user4p_is_table) { AstUser4InUse::check(); }
-	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
-	    os<<indent<<it->first;
-	    for (size_t i=it->first.length(); i<30; ++i) os<<" ";
-	    if (user4p_is_table) {
-		V3SymTable* belowp = (it->second)->user4p()->castSymTable();
-		os<<setw(10)<<(void*)(belowp)<<setw(0)<<"  "<<it->second<<endl;
-		if (belowp) belowp->dump(os, indent+"+ ", user4p_is_table);
-	    } else {
-		os<<it->second<<endl;
+    void cellErrorScopes(AstNode* lookp) {
+	string scopes;
+	for (IdNameMap::iterator it = m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
+	    AstNode* nodep = it->second->nodep();
+	    if (nodep->castCell()
+		|| (nodep->castModule() && nodep->castModule()->isTop())) {
+		if (scopes != "") scopes += ", ";
+		scopes += AstNode::prettyName(it->first);
 	    }
+	}
+	cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<lookp->prettyName()<<"': "
+	    <<scopes<<endl;
+	if (debug()) dump(cerr,"\t\t      KnownScope: ", 1);
+    }
+    void dump(ostream& os, const string& indent="", int numLevels=1) const {
+	dumpIterate(os,indent,numLevels,"TOP");
+    }
+};
+
+//######################################################################
+// Symbol tables
+
+class VSymGraph {
+    // Collection of symbol tables
+    // TYPES
+    typedef vector<VSymEnt*>	SymStack;
+
+private:
+    // MEMBERS
+    VSymEnt*	m_symRootp;		// Root symbol table
+    SymStack	m_symsp;		// All symbol tables, to cleanup
+
+protected:
+    friend class VSymEnt;
+    void pushNewEnt(VSymEnt* entp) { m_symsp.push_back(entp); }
+
+public:
+    VSymEnt* rootp() const { return m_symRootp; }
+    // Debug
+    void dump(ostream& os, const string& indent="") {
+	os<<"SymEnt Dump:\n";
+	m_symRootp->dump(os, indent, 9999);
+    }
+    void dumpFilePrefixed(const string& nameComment) {
+	if (v3Global.opt.dumpTree()) {
+	    string filename = v3Global.debugFilename(nameComment)+".txt";
+	    const auto_ptr<ofstream> logp (V3File::new_ofstream(filename));
+	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+	    dump(*logp, "");
+	}
+    }
+public:
+    // CREATORS
+    VSymGraph(AstNetlist* nodep) {
+	m_symRootp = new VSymEnt(this, nodep);
+    }
+    ~VSymGraph() {
+	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
+	    delete (*it);
 	}
     }
 };
+
+//######################################################################
+
+inline VSymEnt::VSymEnt(VSymGraph* m_graphp, AstNode* nodep)
+    : m_nodep(nodep) {
+    // No argument to set fallbackp, as generally it's wrong to set it in the new call,
+    // Instead it needs to be set on a "findOrNew()" return, as it may have been new'ed
+    // by an earlier search insertion.
+    m_fallbackp = NULL;
+    m_parentp = NULL;
+    m_graphp->pushNewEnt(this);
+}
 
 #endif // guard

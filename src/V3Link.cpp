@@ -50,10 +50,10 @@ private:
     //  Entire netlist:
     //   AstVar/Module/Task::user1() // AstPackage*    Set if inside a package
     //   AstVar::user2p()	// bool		  True if port set for this variable
-    //   AstVar/Module::user3p() // V3SymTable*    Table used to create this variable
-    //   AstNodeModule::user4p() // V3SymTable*    Module's Symbol table
-    //   AstNodeFTask::user4p()	// V3SymTable*    Local Symbol table
-    //   AstBegin::user4p()	// V3SymTable*    Local Symbol table
+    //   AstVar/Module::user3p() // VSymEnt*    Table used to create this variable
+    //   AstNodeModule::user4p() // VSymEnt*    Module's Symbol table
+    //   AstNodeFTask::user4p()	// VSymEnt*    Local Symbol table
+    //   AstBegin::user4p()	// VSymEnt*    Local Symbol table
     //   AstVar::user5p()	// AstPin*	  True if port attached to a pin
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
@@ -68,18 +68,18 @@ private:
 
     // STATE
     // Below state needs to be preserved between each module call.
+    VSymGraph	m_syms;		// Symbol table graph
     AstPackage*		m_packagep;	// Current package
     AstCell*		m_cellp;	// Current cell
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* m_ftaskp;	// Current function/task
     IdState	m_idState;	// Id linking mode (find or resolve)
     int		m_paramNum;	// Parameter number, for position based connection
-    V3SymTable* m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
-    V3SymTable* m_cellVarsp;	// Symbol table of variables under cell's module
+    VSymEnt*	m_curVarsp;	// Symbol table of variables and tasks under table we're inserting into
+    VSymEnt*	m_cellVarsp;	// Symbol table of variables under cell's module
     int		m_beginNum;	// Begin block number, 0=none seen
     int		m_modBeginNum;	// Begin block number in module, 0=none seen
     bool	m_inGenerate;	// Inside a generate
-    vector<V3SymTable*> m_delSymps;	// Symbol tables to delete
 
     static int debug() {
 	static int level = -1;
@@ -88,21 +88,20 @@ private:
     }
 
     // METHODS
-    V3SymTable* symsFindNew(AstNode* nodep, V3SymTable* upperVarsp) {
+    VSymEnt* symsFindNew(AstNode* nodep) {
 	// Find or create symbol table for this node
-	V3SymTable* symsp = nodep->user4p()->castSymTable();
+	VSymEnt* symsp = nodep->user4p()->castSymEnt();
 	if (symsp) {
 	    return symsp;
 	} else {
-	    symsp = new V3SymTable(nodep, upperVarsp);
-	    m_delSymps.push_back(symsp);
+	    symsp = new VSymEnt(&m_syms, nodep);
 	    nodep->user4p(symsp);
 	    return symsp;
 	}
     }
-    V3SymTable* symsFind(AstNode* nodep) {
+    VSymEnt* symsFind(AstNode* nodep) {
 	// Find or create symbol table for this node
-	if (V3SymTable* symsp = nodep->user4p()->castSymTable()) {
+	if (VSymEnt* symsp = nodep->user4p()->castSymEnt()) {
 	    return symsp;
 	} else {
 	    nodep->v3fatalSrc("Symbol table not found looking up symbol");
@@ -112,7 +111,7 @@ private:
 
     void symsInsert(const string& name, AstNode* nodep) {
 	// Insert into symbol table, and remember what table the node is in
-	m_curVarsp->insert(name, nodep);
+	m_curVarsp->insert(name, symsFindNew(nodep));
 	nodep->user3p(m_curVarsp);
 	nodep->user1p(m_packagep);
     }
@@ -125,7 +124,7 @@ private:
     bool linkVarName (AstVarRef* nodep) {
 	// Return true if changed, and caller should end processing
 	if (!nodep->varp()) {
-	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name())->nodep();
 	    if (AstVar* varp = foundp->castVar()) {
 		nodep->varp(varp);
 		nodep->packagep(packageFor(varp));
@@ -162,7 +161,7 @@ private:
 	//
 	// Note we only check for conflicts at the same level; it's ok if one block hides another
 	// We also wouldn't want to not insert it even though it's lower down
-	AstNode* foundp = m_curVarsp->findIdFlat(name);
+	AstNode* foundp = m_curVarsp->findIdFlat(name)->nodep();
 	if (!foundp) {
 	    symsInsert(nodep->name(), nodep);
 	    foundp = nodep;
@@ -200,7 +199,7 @@ private:
 	    m_modp->addStmtp(newp);
 	    // Link it to signal list
 	    IdState old_id = m_idState;
-	    V3SymTable* old_varsp = m_curVarsp;
+	    VSymEnt* old_varsp = m_curVarsp;
 	    m_idState = ID_FIND;
 	    m_curVarsp = symsFind(m_modp);  // Must add the variable under the module; curVarsp might be lower now
 	    newp->accept(*this);
@@ -212,7 +211,7 @@ private:
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser* vup) {
 	// Top scope
-	m_curVarsp = symsFindNew(nodep, NULL);
+	m_curVarsp = symsFindNew(nodep);
 	// Recurse..., backward as must do packages before using packages
 	m_idState = ID_FIND;
 	nodep->iterateChildrenBackwards(*this);
@@ -228,7 +227,7 @@ private:
 	// Module: Create sim table for entire module and iterate
 	UINFO(2,"Link Module: "<<nodep<<endl);
 	AstCell* upperCellp = m_cellp;
-	V3SymTable* upperVarsp = m_curVarsp;
+	VSymEnt* upperVarsp = m_curVarsp;
 	{
 	    m_modp = nodep;
 	    if (!m_curVarsp) nodep->v3fatalSrc("NULL");
@@ -238,7 +237,8 @@ private:
 		// Don't insert dunit itself, or symtable->dump will loop-recurse
 	    } else {
 		findAndInsertAndCheck(nodep, nodep->name());
-		m_curVarsp = symsFindNew(nodep, upperVarsp);
+		m_curVarsp = symsFindNew(nodep);
+		m_curVarsp->fallbackp(upperVarsp);
 		UINFO(9, "New module scope "<<m_curVarsp<<endl);
 	    }
 	    // This state must be save/restored in the cell visitor function
@@ -280,7 +280,7 @@ private:
 		nodep->trace(false);
 	    }
 	    // Find under either a task or the module's vars
-	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name())->nodep();
 	    AstVar* findvarp = foundp->castVar();
 	    bool ins=false;
 	    if (!foundp) {
@@ -290,7 +290,7 @@ private:
 			       <<nodeTextType(foundp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-		if (findvarp && findvarp->user3p()->castSymTable() == m_curVarsp) {  // Only when on same level
+		if (findvarp && findvarp->user3p()->castSymEnt() == m_curVarsp) {  // Only when on same level
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
@@ -354,14 +354,14 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_FIND) {
 	    // Find under either a task or the module's vars
-	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name())->nodep();
 	    AstEnumItem* findvarp = foundp->castEnumItem();
 	    bool ins=false;
 	    if (!foundp) {
 		ins=true;
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-		if (findvarp && findvarp->user3p()->castSymTable() == m_curVarsp) {  // Only when on same level
+		if (findvarp && findvarp->user3p()->castSymEnt() == m_curVarsp) {  // Only when on same level
 		    nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
 				   <<findvarp->warnMore()<<"... Location of original declaration");
 		} else {
@@ -384,10 +384,11 @@ private:
 	// NodeTask: Remember its name for later resolution
 	if (!m_curVarsp) nodep->v3fatalSrc("Function/Task not under module??\n");
 	// Remember the existing symbol table scope
-	V3SymTable* upperVarsp = m_curVarsp;
+	VSymEnt* upperVarsp = m_curVarsp;
 	{
 	    // Create symbol table for the task's vars
-	    m_curVarsp = symsFindNew(nodep, upperVarsp);
+	    m_curVarsp = symsFindNew(nodep);
+	    m_curVarsp->fallbackp(upperVarsp);
 
 	    // Convert the func's range to the output variable
 	    // This should probably be done in the Parser instead, as then we could
@@ -420,7 +421,7 @@ private:
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	// Link variables underneath blocks
 	// Remember the existing symbol table scope
-	V3SymTable* upperVarsp = m_curVarsp;
+	VSymEnt* upperVarsp = m_curVarsp;
 	// Rename "genblk"s to include a number
 	// All blocks are numbered in the standard, IE we start with "genblk1" even if only one.
 	UINFO(8,"   "<<nodep<<endl);
@@ -452,7 +453,8 @@ private:
 	if (!nodep->hidden()) m_beginNum = 0;
 	{
 	    // Create symbol table for the task's vars
-	    m_curVarsp = symsFindNew(nodep, upperVarsp);
+	    m_curVarsp = symsFindNew(nodep);
+	    m_curVarsp->fallbackp(upperVarsp);
 	    nodep->iterateChildren(*this);
 	}
 	m_curVarsp = upperVarsp;
@@ -464,9 +466,9 @@ private:
 	    if (nodep->dotted() == "") {
 		AstNodeFTask* taskp;
 		if (nodep->packagep()) {
-		    taskp = symsFind(nodep->packagep())->findIdFallback(nodep->name())->castNodeFTask();
+		    taskp = symsFind(nodep->packagep())->findIdFallback(nodep->name())->nodep()->castNodeFTask();
 		} else {
-		    taskp = m_curVarsp->findIdFallback(nodep->name())->castNodeFTask();
+		    taskp = m_curVarsp->findIdFallback(nodep->name())->nodep()->castNodeFTask();
 		}
 		if (!taskp) { nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName()); }
 		nodep->taskp(taskp);
@@ -481,7 +483,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_RESOLVE) {
 	    AstNodeFTask* taskp;
-	    taskp = m_curVarsp->findIdFallback(nodep->name())->castNodeFTask();
+	    taskp = m_curVarsp->findIdFallback(nodep->name())->nodep()->castNodeFTask();
 	    if (!taskp) { nodep->v3error("Can't find definition of exported task/function: "<<nodep->prettyName()); }
 	    else if (taskp->dpiExport()) {
 		nodep->v3error("Function was already DPI Exported, duplicate not allowed: "<<nodep->prettyName());
@@ -506,9 +508,9 @@ private:
 	if (m_idState==ID_RESOLVE && !nodep->defp()) {
 	    AstTypedef* defp;
 	    if (nodep->packagep()) {
-		defp = symsFind(nodep->packagep())->findIdFlat(nodep->name())->castTypedef();
+		defp = symsFind(nodep->packagep())->findIdFlat(nodep->name())->nodep()->castTypedef();
 	    } else {
-		defp = m_curVarsp->findIdFallback(nodep->name())->castTypedef();
+		defp = m_curVarsp->findIdFallback(nodep->name())->nodep()->castTypedef();
 	    }
 	    if (!defp) { nodep->v3error("Can't find typedef: "<<nodep->prettyName()); }
 	    nodep->refDTypep(defp->subDTypep());
@@ -535,7 +537,7 @@ private:
 	    }
 	    // Need to pass the module info to this cell, so we can link up the pin names
 	    else if (m_idState==ID_RESOLVE) {
-		m_cellVarsp = nodep->modp()->user4p()->castSymTable();
+		m_cellVarsp = nodep->modp()->user4p()->castSymEnt();
 		UINFO(4,"(Backto) Link Cell: "<<nodep<<endl);
 		//if (debug()) { nodep->dumpTree(cout,"linkcell:"); }
 		//if (debug()) { nodep->modp()->dumpTree(cout,"linkcemd:"); }
@@ -557,7 +559,7 @@ private:
 	if (m_idState==ID_PARAM) {
 	    // Need to set pin numbers after varnames are created
 	    // But before we do the final resolution based on names
-	    AstVar* refp = m_curVarsp->findIdFlat(nodep->name())->castVar();
+	    AstVar* refp = m_curVarsp->findIdFlat(nodep->name())->nodep()->castVar();
 	    if (!refp) {
 		nodep->v3error("Input/output/inout declaration not found for port: "<<nodep->prettyName());
 	    } else if (!refp->isIO()) {
@@ -597,7 +599,7 @@ private:
 	// ONLY CALLED by visit(AstCell) during ID_RESOLVE and ID_PARAM state
 	if (m_idState==ID_RESOLVE && !nodep->modVarp()) {
 	    if (!m_cellVarsp) nodep->v3fatalSrc("Pin not under cell?\n");
-	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->castVar();
+	    AstVar* refp = m_cellVarsp->findIdFlat(nodep->name())->nodep()->castVar();
 	    if (!refp) {
 		if (nodep->name() == "__paramNumber1" && m_cellp->modp()->castPrimitive()) {
 		    // Primitive parameter is really a delay we can just ignore
@@ -656,7 +658,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_PARAM) {
 	    nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->name()<<"(...etc...))");
-	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->path());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->path())->nodep();
 	    AstCell* cellp = foundp->castCell();
 	    if (!cellp) {
 		nodep->v3error("In defparam, cell "<<nodep->path()<<" never declared");
@@ -677,9 +679,9 @@ private:
 
     virtual void visit(AstPackageImport* nodep, AstNUser*) {
 	UINFO(2,"  Link: "<<nodep<<endl);
-	V3SymTable* srcp = symsFind(nodep->packagep());
+	VSymEnt* srcp = symsFind(nodep->packagep());
 	if (nodep->name()!="*") {
-	    AstNode* impp = srcp->findIdFlat(nodep->name());
+	    VSymEnt* impp = srcp->findIdFlat(nodep->name());
 	    if (!impp) {
 		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
 	    }
@@ -696,7 +698,8 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkVisitor(AstNetlist* rootp) {
+    LinkVisitor(AstNetlist* rootp)
+	: m_syms(rootp) {
 	m_curVarsp = NULL;
 	m_cellVarsp = NULL;
 	m_cellp = NULL;
@@ -710,11 +713,7 @@ public:
 	//
 	rootp->accept(*this);
     }
-    virtual ~LinkVisitor() {
-	for (vector<V3SymTable*>::iterator it = m_delSymps.begin(); it != m_delSymps.end(); ++it) {
-	    delete (*it);
-	}
-    }
+    virtual ~LinkVisitor() {}
 };
 
 //######################################################################

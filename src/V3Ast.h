@@ -606,13 +606,13 @@ class LinkVP;
 class OrderBlockNU;
 class OrderVarNU;
 class V3GraphVertex;
-class V3SymTable;
+class VSymEnt;
 struct AstNUser {
     AstNUser*	p() { return this; }	// So can take address of temporary: iterate(...,AstNUser(args).p())
     // Casters
     WidthVP*	c() { return ((WidthVP*)this); }
     LinkVP*	castLinkVP() { return ((LinkVP*)this); }
-    V3SymTable*	castSymTable() { return ((V3SymTable*)this); }
+    VSymEnt*	castSymEnt() { return ((VSymEnt*)this); }
     AstNode*	castNode() { return ((AstNode*)this); }
     OrderBlockNU* castOrderBlock() { return ((OrderBlockNU*)this); }
     OrderVarNU*	castOrderVar() { return ((OrderVarNU*)this); }

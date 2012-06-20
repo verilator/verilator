@@ -108,7 +108,7 @@ public:
     }
     AstPackage* unitPackage(FileLine* fl) {
 	// Find one made earlier?
-	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->castPackage();
+	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->nodep()->castPackage();
 	if (!pkgp) {
 	    pkgp = new AstPackage(fl, AstPackage::dollarUnitName());
 	    pkgp->inLibrary(true);  // packages are always libraries; don't want to make them a "top"

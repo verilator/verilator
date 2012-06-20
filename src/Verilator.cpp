@@ -108,7 +108,7 @@ void V3Global::clear() {
 
 void V3Global::readFiles() {
     // NODE STATE
-    //   AstNode::user4p()	// V3SymTable*    Package and typedef symbol names
+    //   AstNode::user4p()	// VSymEnt*    Package and typedef symbol names
     AstUser4InUse	inuser4;
 
     V3InFilter filter (v3Global.opt.pipeFilter());
