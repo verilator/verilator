@@ -35,20 +35,20 @@
 //######################################################################
 // Symbol table
 
-class V3SymTable : public AstNUser {
+class V3SymTable {
     // Symbol table that can have a "superior" table for resolving upper references
   private:
     // MEMBERS
     typedef std::map<string,AstNode*> IdNameMap;
     IdNameMap	m_idNameMap;	// Hash of variables by name
     AstNode*	m_ownerp;	// Node that table belongs to
-    V3SymTable*	m_upperp;	// Table "above" this one in name scope
+    V3SymTable*	m_fallbackp;	// Table "above" this one in name scope
   public:
     // METHODS
     V3SymTable(AstNode* ownerp, V3SymTable* upperTablep) {
-	m_ownerp = ownerp; m_upperp = upperTablep; }
+	m_ownerp = ownerp; m_fallbackp = upperTablep; }
     V3SymTable() {
-	m_ownerp = NULL; m_upperp = NULL; }
+	m_ownerp = NULL; m_fallbackp = NULL; }
     ~V3SymTable() {}
     AstNode* ownerp() const { return m_ownerp; }
     void insert(const string& name, AstNode* nodep) {
@@ -78,12 +78,12 @@ class V3SymTable : public AstNUser {
 	if (iter != m_idNameMap.end()) return (iter->second);
 	return NULL;
     }
-    AstNode* findIdUpward(const string& name) const {
+    AstNode* findIdFallback(const string& name) const {
 	// Find identifier looking upward through symbol hierarchy
 	// First, scan this begin/end block or module for the name
 	if (AstNode* nodep = findIdFlat(name)) return nodep;
 	// Then scan the upper begin/end block or module for the name
-	if (m_upperp) return m_upperp->findIdUpward(name);
+	if (m_fallbackp) return m_fallbackp->findIdFallback(name);
 	return NULL;
     }
     bool import(const V3SymTable* srcp, const string& id_or_star) {

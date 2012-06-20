@@ -27,6 +27,14 @@
 //	    VarXRef/Func's:
 //		Find appropriate named cell and link to var they reference
 //*************************************************************************
+// Top
+//      a          (LinkDotCellVertex->AstCell)
+//        aa         (LinkDotCellVertex->AstCell)
+//          var        (AstVar) -- in syms(), not a vertex
+//          beg        (LinkDotBeginVertex->AstBegin) -- can see "upper" a's symbol table
+//      a__DOT__aa (LinkDotInlineVertex->AstCellInline) -- points to a.aa's symbol table
+//      b          (LinkDotCellVertex->AstCell)
+//*************************************************************************
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -65,8 +73,9 @@ public:
     virtual string cellName() const = 0;
     virtual V3SymTable& syms() = 0;
     string symPrefix() const { return m_symPrefix; }
-    void insertSubcellName(const string& name, LinkDotBaseVertex* toVertexp) {
-	m_nameToVtxMap.insert(make_pair(name,toVertexp));
+    void insertSubcellName(LinkDotGraph* graphp, const string& name, LinkDotBaseVertex* toVertexp) {
+	m_nameToVtxMap.insert(make_pair(name, toVertexp));
+	new V3GraphEdge(graphp, this, toVertexp, 1, false);
     }
     LinkDotBaseVertex* findSubcell(const string& name, const string& altname) {
 	// Find a vertex under this one by name.
@@ -104,27 +113,27 @@ public:
 };
 
 class LinkDotCellVertex : public LinkDotBaseVertex {
-    // A real point in the hierarchy, corresponding to a instantiated module
+    // A real point in the hierarchy, corresponding to an instantiated module
     AstNodeModule*	m_modp;		// Module
-    AstCell*	m_cellp;	// Cell creating this vertex **NULL AT TOP**
+    AstCell*	m_nodep;	// Cell creating this vertex **NULL AT TOP**
     V3SymTable  m_syms;		// Symbol table of variable/task names for global lookup
 public:
     LinkDotCellVertex(V3Graph* graphp, AstCell* nodep)
-	: LinkDotBaseVertex(graphp, ""), m_modp(nodep->modp()), m_cellp(nodep) {}
+	: LinkDotBaseVertex(graphp, ""), m_modp(nodep->modp()), m_nodep(nodep) {}
     LinkDotCellVertex(V3Graph* graphp, AstNodeModule* nodep)
-	: LinkDotBaseVertex(graphp, ""), m_modp(nodep), m_cellp(NULL) {}
+	: LinkDotBaseVertex(graphp, ""), m_modp(nodep), m_nodep(NULL) {}
     virtual ~LinkDotCellVertex() {}
     AstNodeModule* modp() const { return m_modp; }   // May be NULL
-    AstCell* cellp() const { return m_cellp; }   // Is NULL at TOP
+    AstCell* nodep() const { return m_nodep; }   // Is NULL at TOP
     virtual V3SymTable& syms() { return m_syms; }
     // We need to use origName as parameters may have renamed the modname
     virtual string modName() const { return (modp() ? modp()->origName() : "*NULL*"); }
-    virtual string cellName() const { return (cellp() ? cellp()->origName() : "*NULL*"); }
+    virtual string cellName() const { return (nodep() ? nodep()->origName() : "*NULL*"); }
     virtual string name() const { return (string)("C:")+cellName()+" M:"+modName(); }
 };
 
 class LinkDotInlineVertex : public LinkDotBaseVertex {
-    // A fake point in the hierarchy, corresponding to a inlined module
+    // A fake point in the hierarchy, corresponding to an inlined module
     // This refrences to another vertex, and eventually resolves to a module with a prefix
     string	m_basename;		// Name with dotteds stripped
     AstCellInline* m_cellInlinep; 	// Inlined cell
@@ -198,9 +207,6 @@ public:
 	UINFO(4,__FUNCTION__<<": "<<endl);
 	m_forPrearray = forPrearray;
 	m_forScopeCreation = forScopeCreation;
-	//VV*****  We reset all userp() on each netlist!!!
-	AstNode::user1ClearTree();
-	AstNode::user2ClearTree();
     }
     ~LinkDotState() {}
 
@@ -221,11 +227,10 @@ public:
 	UINFO(9,"      INSERTcell "<<scopename<<" "<<nodep<<endl);
 	LinkDotCellVertex* vxp = new LinkDotCellVertex(&m_graph, nodep);
 	if (nodep->modp()) nodep->modp()->user1p(vxp);
-	new V3GraphEdge(&m_graph, abovep, vxp, 1, false);
-	abovep->insertSubcellName(nodep->origName(), vxp);
+	abovep->insertSubcellName(&m_graph, nodep->origName(), vxp);
 	if (abovep != cellVxp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
-	    cellVxp->insertSubcellName(nodep->name(), vxp);
+	    cellVxp->insertSubcellName(&m_graph, nodep->name(), vxp);
 	}
 	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, vxp));
 	return vxp;
@@ -234,11 +239,10 @@ public:
 				      AstCellInline* nodep, const string& basename) {
 	UINFO(9,"      INSERTcinl "<<nodep<<endl);
 	LinkDotInlineVertex* vxp = new LinkDotInlineVertex(&m_graph, nodep, cellVxp, basename);
-	new V3GraphEdge(&m_graph, abovep, vxp, 1, false);
-	abovep->insertSubcellName(basename, vxp);
+	abovep->insertSubcellName(&m_graph, basename, vxp);
 	if (abovep != cellVxp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
-	    cellVxp->insertSubcellName(nodep->name(), vxp);
+	    cellVxp->insertSubcellName(&m_graph, nodep->name(), vxp);
 	}
 	return vxp;
     }
@@ -246,8 +250,7 @@ public:
 				    AstBegin* nodep) {
 	UINFO(9,"      INSERTbeg "<<nodep<<endl);
 	LinkDotBeginVertex* vxp = new LinkDotBeginVertex(&m_graph, nodep, cellVxp);
-	new V3GraphEdge(&m_graph, abovep, vxp, 1, false);
-	abovep->insertSubcellName(nodep->name(), vxp);
+	abovep->insertSubcellName(&m_graph, nodep->name(), vxp);
 	return vxp;
     }
     void insertSym(LinkDotCellVertex* abovep, const string& name, AstNode* nodep) {

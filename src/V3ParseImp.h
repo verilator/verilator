@@ -92,11 +92,11 @@ class V3ParseSym {
 
 private:
     // MEMBERS
-    static int	s_anonNum;		// Number of next anonymous object
-    V3SymTable*	m_symTableNextId;	// Symbol table for next lexer lookup
+    static int	s_anonNum;		// Number of next anonymous object (parser use only)
+    V3SymTable*	m_symTableNextId;	// Symbol table for next lexer lookup (parser use only)
     V3SymTable*	m_symCurrentp;		// Active symbol table for additions/lookups
     V3SymTable*	m_symRootp;		// Root symbol table
-    SymStack	m_sympStack;		// Stack of nodes with symbol tables
+    SymStack	m_sympStack;		// Stack of upper nodes with pending symbol tables
     SymStack	m_symsp;		// All symbol tables, to cleanup
 
 private:
@@ -175,7 +175,7 @@ public:
     }
     AstNode* findEntUpward (const string& name) {
 	// Lookup the given string as an identifier, return type of the id, scanning upward
-	return symCurrentp()->findIdUpward(name);
+	return symCurrentp()->findIdFallback(name);
     }
     void import(AstNode* packagep, const string& id_or_star) {
 	// Import from package::id_or_star to this

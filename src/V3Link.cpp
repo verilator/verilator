@@ -125,7 +125,7 @@ private:
     bool linkVarName (AstVarRef* nodep) {
 	// Return true if changed, and caller should end processing
 	if (!nodep->varp()) {
-	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
 	    if (AstVar* varp = foundp->castVar()) {
 		nodep->varp(varp);
 		nodep->packagep(packageFor(varp));
@@ -280,7 +280,7 @@ private:
 		nodep->trace(false);
 	    }
 	    // Find under either a task or the module's vars
-	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
 	    AstVar* findvarp = foundp->castVar();
 	    bool ins=false;
 	    if (!foundp) {
@@ -290,7 +290,7 @@ private:
 			       <<nodeTextType(foundp)<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-		if (findvarp && findvarp->user3p() == m_curVarsp) {  // Only when on same level
+		if (findvarp && findvarp->user3p()->castSymTable() == m_curVarsp) {  // Only when on same level
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
@@ -354,14 +354,14 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_FIND) {
 	    // Find under either a task or the module's vars
-	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->name());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->name());
 	    AstEnumItem* findvarp = foundp->castEnumItem();
 	    bool ins=false;
 	    if (!foundp) {
 		ins=true;
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-		if (findvarp && findvarp->user3p() == m_curVarsp) {  // Only when on same level
+		if (findvarp && findvarp->user3p()->castSymTable() == m_curVarsp) {  // Only when on same level
 		    nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
 				   <<findvarp->warnMore()<<"... Location of original declaration");
 		} else {
@@ -464,9 +464,9 @@ private:
 	    if (nodep->dotted() == "") {
 		AstNodeFTask* taskp;
 		if (nodep->packagep()) {
-		    taskp = symsFind(nodep->packagep())->findIdUpward(nodep->name())->castNodeFTask();
+		    taskp = symsFind(nodep->packagep())->findIdFallback(nodep->name())->castNodeFTask();
 		} else {
-		    taskp = m_curVarsp->findIdUpward(nodep->name())->castNodeFTask();
+		    taskp = m_curVarsp->findIdFallback(nodep->name())->castNodeFTask();
 		}
 		if (!taskp) { nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName()); }
 		nodep->taskp(taskp);
@@ -481,7 +481,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_RESOLVE) {
 	    AstNodeFTask* taskp;
-	    taskp = m_curVarsp->findIdUpward(nodep->name())->castNodeFTask();
+	    taskp = m_curVarsp->findIdFallback(nodep->name())->castNodeFTask();
 	    if (!taskp) { nodep->v3error("Can't find definition of exported task/function: "<<nodep->prettyName()); }
 	    else if (taskp->dpiExport()) {
 		nodep->v3error("Function was already DPI Exported, duplicate not allowed: "<<nodep->prettyName());
@@ -508,7 +508,7 @@ private:
 	    if (nodep->packagep()) {
 		defp = symsFind(nodep->packagep())->findIdFlat(nodep->name())->castTypedef();
 	    } else {
-		defp = m_curVarsp->findIdUpward(nodep->name())->castTypedef();
+		defp = m_curVarsp->findIdFallback(nodep->name())->castTypedef();
 	    }
 	    if (!defp) { nodep->v3error("Can't find typedef: "<<nodep->prettyName()); }
 	    nodep->refDTypep(defp->subDTypep());
@@ -656,7 +656,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_idState==ID_PARAM) {
 	    nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->name()<<"(...etc...))");
-	    AstNode* foundp = m_curVarsp->findIdUpward(nodep->path());
+	    AstNode* foundp = m_curVarsp->findIdFallback(nodep->path());
 	    AstCell* cellp = foundp->castCell();
 	    if (!cellp) {
 		nodep->v3error("In defparam, cell "<<nodep->path()<<" never declared");

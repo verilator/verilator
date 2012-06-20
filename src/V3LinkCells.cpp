@@ -195,9 +195,9 @@ private:
 	// Cell: Resolve its filename.  If necessary, parse it.
 	if (!nodep->modp()) {
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
-	    // Use findIdUpward instead of findIdFlat; it doesn't matter for now
+	    // Use findIdFallback instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
-	    AstNodeModule* modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
+	    AstNodeModule* modp = m_mods.findIdFallback(nodep->modName())->castNodeModule();
 	    if (!modp) {
 		// Read-subfile
 		// If file not found, make AstNotFoundModule, rather than error out.
@@ -208,7 +208,7 @@ private:
 		// We've read new modules, grab new pointers to their names
 		readModNames();
 		// Check again
-		modp = m_mods.findIdUpward(nodep->modName())->castNodeModule();
+		modp = m_mods.findIdFallback(nodep->modName())->castNodeModule();
 		if (!modp) {
 		    nodep->v3error("Can't resolve module reference: "<<nodep->modName());
 		}
@@ -251,20 +251,20 @@ private:
 	}
 	if (nodep->modp()) {
 	    // Note what pins exist
-	    V3SymTable  ports;	// Symbol table of all connected port names
+	    set<string> ports;	// Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
 		if (!pinp->exprp()) pinp->v3warn(PINNOCONNECT,"Cell pin is not connected: "<<pinp->prettyName());
-		if (!ports.findIdFlat(pinp->name())) {
-		    ports.insert(pinp->name(), pinp);
+		if (ports.find(pinp->name()) == ports.end()) {
+		    ports.insert(pinp->name());
 		}
 	    }
 	    // We search ports, rather than in/out declarations as they aren't resolved yet,
 	    // and it's easier to do it now than in V3Link when we'd need to repeat steps.
 	    for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep; portnodep=portnodep->nextp()) {
 		if (AstPort* portp = portnodep->castPort()) {
-		    if (!ports.findIdFlat(portp->name())
-			&& !ports.findIdFlat("__pinNumber"+cvtToStr(portp->pinNum()))) {
+		    if (ports.find(portp->name()) == ports.end()
+			&& ports.find("__pinNumber"+cvtToStr(portp->pinNum())) == ports.end()) {
 			if (pinStar) {
 			    UINFO(9,"    need .* PORT  "<<portp<<endl);
 			    // Create any not already connected
@@ -299,7 +299,7 @@ private:
 	// Look at all modules, and store pointers to all module names
 	for (AstNodeModule* nextp,* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nextp) {
 	    nextp = nodep->nextp()->castNodeModule();
-	    AstNode* foundp = m_mods.findIdUpward(nodep->name());
+	    AstNode* foundp = m_mods.findIdFallback(nodep->name());
 	    if (foundp && foundp != nodep) {
 		if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP) || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
 		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName()<<endl

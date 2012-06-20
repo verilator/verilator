@@ -538,7 +538,7 @@ word	[a-zA-Z0-9_]+
   "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
 				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
 				  // Lookup unencoded name including the $, to avoid hitting normal signals
-				  if (SYMP->symCurrentp()->findIdUpward(str)) {
+				  if (SYMP->symCurrentp()->findIdFallback(str)) {
 				      FL; return yaD_DPI;
 				  } else { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s",yytext); }
 				}
@@ -1120,13 +1120,13 @@ int V3ParseImp::lexToken() {
 	AstNode* scp;
 	if (V3SymTable* look_underp = SYMP->nextId()) {
 	    if (debugFlex()) { cout<<"   lexToken: next id lookup forced under "<<look_underp<<endl; }
-	    scp = look_underp->findIdUpward(*(yylval.strp));
+	    scp = look_underp->findIdFallback(*(yylval.strp));
 	    // "consume" it.  Must set again if want another token under temp scope
 	    SYMP->nextId(NULL);
 	} else {
 	    UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()<<" for '"<<*(yylval.strp)<<"'"<<endl);
 	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
-	    scp = SYMP->symCurrentp()->findIdUpward(*(yylval.strp));
+	    scp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
 	}
 	yylval.scp = scp;
 	if (scp) {
