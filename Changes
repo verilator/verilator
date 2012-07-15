@@ -41,6 +41,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix false UNUSED warning on file system calls.  [Holger Waechtler]
 
+****  Fix svdpi.h compile error on Apple OS.
+
 
 * Verilator 3.833 2012/04/15
 

@@ -27,6 +27,8 @@ typedef signed __int32 int32_t;
 typedef signed __int8 int8_t;
 #elif defined(__MINGW32__)
 #include <stdint.h>
+#elif defined(__APPLE__)
+#include <stdint.h>
 #elif defined(__linux)
 #include <inttypes.h>
 #else
