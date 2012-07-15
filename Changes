@@ -41,6 +41,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix false UNUSED warning on file system calls.  [Holger Waechtler]
 
+****  Fix GCC 4.7.0 compile warnings, bug530.  [Jeremy Bennett]
+
 ****  Fix svdpi.h compile error on Apple OS.
 
 

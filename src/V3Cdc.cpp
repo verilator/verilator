@@ -360,7 +360,7 @@ private:
     CdcEitherVertex* traceAsyncRecurse(CdcEitherVertex* vertexp, bool mark) {
 	// First pass: Return vertex of any hazardous stuff attached, or NULL if OK
 	// If first pass returns true, second pass calls asyncPath() on appropriate nodes
-	if (vertexp->user()>=m_userGeneration) return false;   // Processed - prevent loop
+	if (vertexp->user()>=m_userGeneration) return NULL;   // Processed - prevent loop
 	vertexp->user(m_userGeneration);
 
 	CdcEitherVertex* mark_outp = NULL;
@@ -383,7 +383,7 @@ private:
 		    CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
 		    eFromVertexp->asyncPath(true);
 		}
-		return false;
+		return NULL;
 	    }
 	    // Also ok if from flop, but partially trace the flop so more obvious to users
 	    if (vvertexp->fromFlop()) {
@@ -391,7 +391,7 @@ private:
 		    CdcEitherVertex* eFromVertexp = (CdcEitherVertex*)edgep->fromp();
 		    eFromVertexp->asyncPath(true);
 		}
-		return false;
+		return NULL;
 	    }
 	}
 

@@ -320,7 +320,7 @@ string V3PreProcImp::defParams(const string& name) {
 }
 FileLine* V3PreProcImp::defFileline(const string& name) {
     DefinesMap::iterator iter = m_defines.find(name);
-    if (iter == m_defines.end()) return false;
+    if (iter == m_defines.end()) return NULL;
     return iter->second.fileline();
 }
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,

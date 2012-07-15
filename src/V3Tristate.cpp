@@ -1239,7 +1239,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	// Clear state
 	m_tgraph.clear();
 	m_unique = 0;
-	m_logicp = false;
+	m_logicp = NULL;
 	m_lhsmap.clear();
 	m_modp = nodep;
 	// Walk the graph, finding all variables and tristate constructs
@@ -1291,7 +1291,7 @@ public:
 	m_cellp = NULL;
 	m_unique = 0;
 	m_alhs = false;
-	m_logicp = false;
+	m_logicp = NULL;
 	m_tgraph.clear();
 	nodep->accept(*this);
     }

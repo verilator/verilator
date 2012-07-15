@@ -82,9 +82,9 @@ private:
 		nodep->dtypep(new_dtypep);
 	    } else {
 		nodep->dtypeChgWidth(width, nodep->widthMin());
-		AstNodeDType* new_dtypep = nodep->dtypep();
-		if (new_dtypep == old_dtypep) nodep->v3fatalSrc("Dtype didn't change when width changed");
-		old_dtypep->user3p(new_dtypep);  // Remember for next time
+		AstNodeDType* new_dtypep2 = nodep->dtypep();
+		if (new_dtypep2 == old_dtypep) nodep->v3fatalSrc("Dtype didn't change when width changed");
+		old_dtypep->user3p(new_dtypep2);  // Remember for next time
 	    }
 	}
     }
