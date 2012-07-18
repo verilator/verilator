@@ -196,7 +196,7 @@ private:
 		    }
 		}
 	    }
-	    // Defaults were moved to last in the caseitem list by V3Link
+	    // Defaults were moved to last in the caseitem list by V3LinkDot
 	    if (itemp->isDefault()) {  // Case statement's default... Fill the table
 		for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
 		    if (!m_valueItem[i]) m_valueItem[i] = itemp;

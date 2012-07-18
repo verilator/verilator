@@ -260,7 +260,7 @@ private:
 		}
 	    }
 	    // We search ports, rather than in/out declarations as they aren't resolved yet,
-	    // and it's easier to do it now than in V3Link when we'd need to repeat steps.
+	    // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.
 	    for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep; portnodep=portnodep->nextp()) {
 		if (AstPort* portp = portnodep->castPort()) {
 		    if (ports.find(portp->name()) == ports.end()

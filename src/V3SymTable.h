@@ -35,47 +35,61 @@
 #include "V3File.h"
 
 class VSymGraph;
+class VSymEnt;
 
 //######################################################################
 // Symbol table
+
+typedef set<VSymEnt*> VSymMap;
 
 class VSymEnt {
     // Symbol table that can have a "superior" table for resolving upper references
 private:
     // MEMBERS
-    typedef std::map<string,VSymEnt*> IdNameMap;
+    typedef std::multimap<string,VSymEnt*> IdNameMap;
     IdNameMap	m_idNameMap;	// Hash of variables by name
     AstNode*	m_nodep;	// Node that entry belongs to
     VSymEnt*	m_fallbackp;	// Table "above" this one in name scope, for fallback resolution
     VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
+    AstPackage*	m_packagep;	// Package node is in (for V3LinkDot, unused here)
     string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
     static int debug() { return 0; }  // NOT runtime, too hot of a function
-private:
-    void dumpIterate(ostream& os, const string& indent, int numLevels, const string& searchName) const {
-	os<<indent<<left<<setw(30)<<searchName<<setw(0)<<right;
+public:
+    void dumpIterate(ostream& os, VSymMap& doneSymsr, const string& indent, int numLevels, const string& searchName) {
+	os<<indent<<"+ "<<left<<setw(30)<<(searchName==""?"\"\"":searchName)<<setw(0)<<right;
 	os<<"  "<<setw(16)<<(void*)(this)<<setw(0);
 	os<<"  n="<<nodep();
 	os<<endl;
-	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
-	    if (numLevels >= 1) {
-		it->second->dumpIterate(os, indent+"+ ", numLevels-1, it->first);
+	if (doneSymsr.find(this) != doneSymsr.end()) {
+	    os<<indent<<"| ^ duplicate, so no children printed\n";
+	} else {
+	    doneSymsr.insert(this);
+	    for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
+		if (numLevels >= 1) {
+		    it->second->dumpIterate(os, doneSymsr, indent+"| ", numLevels-1, it->first);
+		}
 	    }
 	}
     }
+    void dump(ostream& os, const string& indent="", int numLevels=1) {
+	VSymMap doneSyms;
+	dumpIterate(os, doneSyms, indent, numLevels, "TOP");
+    }
 
-public:
     // METHODS
     VSymEnt(VSymGraph* graphp, AstNode* nodep);  // Below
     ~VSymEnt() {}
     void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
+    void packagep(AstPackage* entp) { m_packagep = entp; }
+    AstPackage* packagep() const { return m_packagep; }
     AstNode* nodep() const { if (!this) return NULL; else return m_nodep; }  // null check so can call .findId(...)->nodep()
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }
     void insert(const string& name, VSymEnt* entp) {
 	UINFO(9, "     SymInsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
-	if (m_idNameMap.find(name) != m_idNameMap.end()) {
+	if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
 	    if (!V3Error::errorCount()) {   // Else may have just reported warning
 		if (debug()>=9 || V3Error::debugDefault()) dump(cout,"- err-dump: ", 1);
 		entp->nodep()->v3fatalSrc("Inserting two symbols with same name: "<<name<<endl);
@@ -86,7 +100,7 @@ public:
     }
     void reinsert(const string& name, VSymEnt* entp) {
 	IdNameMap::iterator it = m_idNameMap.find(name);
-	if (it != m_idNameMap.end()) {
+	if (name!="" && it != m_idNameMap.end()) {
 	    UINFO(9, "     SymReinsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	    it->second = entp;  // Replace
 	} else {
@@ -141,9 +155,6 @@ public:
 	    <<scopes<<endl;
 	if (debug()) dump(cerr,"\t\t      KnownScope: ", 1);
     }
-    void dump(ostream& os, const string& indent="", int numLevels=1) const {
-	dumpIterate(os,indent,numLevels,"TOP");
-    }
 };
 
 //######################################################################
@@ -167,8 +178,16 @@ public:
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug
     void dump(ostream& os, const string& indent="") {
+	VSymMap doneSyms;
 	os<<"SymEnt Dump:\n";
-	m_symRootp->dump(os, indent, 9999);
+	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "TOP");
+	bool first = false;
+	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
+	    if (doneSyms.find(*it) == doneSyms.end()) {
+		if (!first++) os<<"%%Warning: SymEnt Orphans:\n";
+		(*it)->dumpIterate(os, doneSyms, indent, 9999, "Orphan");
+	    }
+	}
     }
     void dumpFilePrefixed(const string& nameComment) {
 	if (v3Global.opt.dumpTree()) {
@@ -199,6 +218,7 @@ inline VSymEnt::VSymEnt(VSymGraph* m_graphp, AstNode* nodep)
     // by an earlier search insertion.
     m_fallbackp = NULL;
     m_parentp = NULL;
+    m_packagep = NULL;
     m_graphp->pushNewEnt(this);
 }
 

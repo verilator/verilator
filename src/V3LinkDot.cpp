@@ -95,7 +95,7 @@ public:
 
     // METHODS
 private:
-    VSymEnt* findSubcell(VSymEnt* symp, const string& name, const string& altname) {
+    VSymEnt* findWithAltFallback(VSymEnt* symp, const string& name, const string& altname) {
 	VSymEnt* findp = symp->findIdFallback(name);
 	if (findp) return findp;
 	findp = symp->findIdFallback(altname);
@@ -169,12 +169,12 @@ public:
     bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
     }
-    VSymEnt* findModScope(AstNodeModule* nodep) {
+    VSymEnt* getNodeSym(AstNodeModule* nodep) {
 	VSymEnt* symp = nodep->user1p()->castSymEnt();
 	if (!symp) nodep->v3fatalSrc("Module never assigned a symbol entry?");
 	return symp;
     }
-    VSymEnt* findScopeSym(AstScope* nodep) {
+    VSymEnt* getScopeSym(AstScope* nodep) {
 	NameScopeMap::iterator iter = m_nameScopeMap.find(nodep->name());
 	if (iter == m_nameScopeMap.end()) {
 	    nodep->v3fatalSrc("Scope never assigned a symbol entry?");
@@ -225,7 +225,7 @@ public:
 		// Check this module - subcellnames
 		AstCell* cellp = cellSymp->nodep()->castCell();  // Replicated below
 		AstCellInline* inlinep = cellSymp->nodep()->castCellInline(); // Replicated below
-		if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+		if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
 		    cellSymp = findSymp;
 		}
 		// Check this module - cur modname
@@ -243,7 +243,7 @@ public:
 				|| (inlinep && inlinep->origModName() == ident)) {
 				break;
 			    }
-			    else if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+			    else if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
 				cellSymp = findSymp;
 				break;
 			    }
@@ -252,7 +252,7 @@ public:
 		    if (!cellSymp) return NULL;  // Not found
 		}
 	    } else { // Searching for middle submodule, must be a cell name
-		if (VSymEnt* findSymp = findSubcell(cellSymp, ident, altIdent)) {
+		if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
 		    cellSymp = findSymp;
 		} else {
 		    return NULL;  // Not found
@@ -263,11 +263,11 @@ public:
 	return cellSymp;
     }
 
-    AstNode* findSym(VSymEnt* cellSymp, const string& dotname, string& baddot) {
+    AstNode* findSymPrefixed(VSymEnt* cellSymp, const string& dotname, string& baddot) {
 	// Find symbol in given point in hierarchy
 	// For simplicity cellSymp may be passed NULL result from findDotted
 	if (!cellSymp) return NULL;
-	UINFO(8,"\t\tfindSym "<<dotname
+	UINFO(8,"\t\tfindSymPrefixed "<<dotname
 	      <<((cellSymp->symPrefix()=="") ? "" : " as ")
 	      <<((cellSymp->symPrefix()=="") ? "" : cellSymp->symPrefix()+dotname)
 	      <<"  at  "<<cellSymp
@@ -284,8 +284,8 @@ class LinkDotFindVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
-    VSymEnt*		m_cellSymp;	// Symbol Entry for current module
-    VSymEnt*		m_inlineSymp;	// Symbol Entry for current module, possibly a fake inlined one
+    VSymEnt*		m_modSymp;	// Symbol Entry for current module
+    VSymEnt*		m_curSymp;	// Symbol Entry for current module, possibly a fake inlined one
     string		m_scope;	// Scope text
     AstBegin*		m_beginp;	// Current Begin/end block
 
@@ -307,21 +307,19 @@ private:
 	} else {
 	    UINFO(8,"Top Module: "<<topmodp<<endl);
 	    m_scope = "TOP";
-	    m_cellSymp = m_statep->insertTopCell(topmodp, m_scope);
-	    m_inlineSymp = m_cellSymp;
+	    m_curSymp = m_modSymp = m_statep->insertTopCell(topmodp, m_scope);
 	    {
 		topmodp->accept(*this);
 	    }
 	    m_scope = "";
-	    m_cellSymp = NULL;
-	    m_inlineSymp = m_cellSymp;
+	    m_curSymp = m_modSymp = NULL;
 	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Called on top module from Netlist, other modules from the cell creating them,
 	// and packages
 	UINFO(8,"   "<<nodep<<endl);
-	if (!m_cellSymp) {
+	if (!m_modSymp) {
 	    // Will be optimized away later
 	    UINFO(5, "Module not under any CELL or top - dead module\n");
 	} else {
@@ -334,15 +332,15 @@ private:
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(5,"   CELL under "<<m_scope<<" is "<<nodep<<endl);
-	// Process XREFs inside pins
+	// Process XREFs/etc inside pins
 	nodep->iterateChildren(*this);
 	// Recurse in, preserving state
 	string oldscope = m_scope;
 	AstBegin* oldbeginp = m_beginp;
-	VSymEnt* oldSymp = m_cellSymp;
-	VSymEnt* oldInlineSymp = m_inlineSymp;
+	VSymEnt* oldModSymp = m_modSymp;
+	VSymEnt* oldCurSymp = m_curSymp;
 	// Where do we add it?
-	VSymEnt* aboveSymp = m_inlineSymp;
+	VSymEnt* aboveSymp = m_curSymp;
 	string origname = AstNode::dedotName(nodep->name());
 	string::size_type pos;
 	if ((pos = origname.rfind(".")) != string::npos) {
@@ -355,19 +353,18 @@ private:
 	}
 	{
 	    m_scope = m_scope+"."+nodep->name();
-	    m_cellSymp = m_statep->insertCell(aboveSymp, m_cellSymp, nodep, m_scope);
-	    m_inlineSymp = m_cellSymp;
+	    m_curSymp = m_modSymp = m_statep->insertCell(aboveSymp, m_modSymp, nodep, m_scope);
 	    m_beginp = NULL;
 	    if (nodep->modp()) nodep->modp()->accept(*this);
 	}
 	m_scope = oldscope;
 	m_beginp = oldbeginp;
-	m_cellSymp = oldSymp;
-	m_inlineSymp = oldInlineSymp;
+	m_modSymp = oldModSymp;
+	m_curSymp = oldCurSymp;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	UINFO(5,"   CELLINLINE under "<<m_scope<<" is "<<nodep<<endl);
-	VSymEnt* aboveSymp = m_inlineSymp;
+	VSymEnt* aboveSymp = m_curSymp;
 	// If baz__DOT__foo__DOT__bar, we need to find baz__DOT__foo and add bar to it.
 	string dottedname = nodep->name();
 	string::size_type pos;
@@ -378,29 +375,29 @@ private:
 	    VSymEnt* okSymp;
 	    aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
 	    if (!aboveSymp) nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
-	    m_statep->insertInline(aboveSymp, m_cellSymp, nodep, ident);
+	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
 	} else {  // No __DOT__, just directly underneath
-	    m_statep->insertInline(aboveSymp, m_cellSymp, nodep, nodep->name());
+	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
 	}
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
 	AstBegin* oldbegin = m_beginp;
-	VSymEnt* oldSymp = m_inlineSymp;
+	VSymEnt* oldSymp = m_curSymp;
 	{
 	    m_beginp = nodep;
 	    // We don't pickup variables (as not supported yet), but do need to find cells
-	    m_inlineSymp = m_statep->insertBegin(m_inlineSymp, m_cellSymp, nodep);
+	    m_curSymp = m_statep->insertBegin(m_curSymp, m_modSymp, nodep);
 	    nodep->stmtsp()->iterateAndNext(*this);
 	}
-	m_inlineSymp = oldSymp;
+	m_curSymp = oldSymp;
 	m_beginp = oldbegin;
 	//
 	nodep->flatsp()->iterateAndNext(*this);
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	if (!m_beginp) {	// For now, we don't support xrefs into functions inside begin blocks
-	    m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
+	    m_statep->insertSym(m_modSymp, nodep->name(), nodep);
 	}
 	// No recursion, we don't want to pick up variables
     }
@@ -408,7 +405,7 @@ private:
 	if (!m_statep->forScopeCreation()
 	    && !m_beginp	// For now, we don't support xrefs into begin blocks
 	    && !nodep->isFuncLocal()) {
-	    m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
+	    m_statep->insertSym(m_modSymp, nodep->name(), nodep);
 	} else {
 	    UINFO(9,"       Not allowing dot refs to: "<<nodep<<endl);
 	}
@@ -429,8 +426,7 @@ public:
     // CONSTUCTORS
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
-	m_cellSymp = NULL;
-	m_inlineSymp = NULL;
+	m_curSymp = m_modSymp = NULL;
 	m_statep = statep;
 	m_beginp = NULL;
 	//
@@ -445,7 +441,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
-    VSymEnt*		m_cellSymp;	// Symbol entry for current module
+    VSymEnt*		m_modSymp;	// Symbol entry for current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -455,17 +451,17 @@ private:
 	if (!m_statep->forScopeCreation()) v3fatalSrc("Scopes should only exist right after V3Scope");
 	// Using the CELL names, we created all hierarchy.  We now need to match this Scope
 	// up with the hierarchy created by the CELL names.
-	m_cellSymp = m_statep->findScopeSym(nodep);
+	m_modSymp = m_statep->getScopeSym(nodep);
 	nodep->iterateChildren(*this);
-	m_cellSymp = NULL;
+	m_modSymp = NULL;
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	if (!nodep->varp()->isFuncLocal()) {
-	    m_statep->insertSym(m_cellSymp, nodep->varp()->name(), nodep);
+	    m_statep->insertSym(m_modSymp, nodep->varp()->name(), nodep);
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
-	m_statep->insertSym(m_cellSymp, nodep->name(), nodep);
+	m_statep->insertSym(m_modSymp, nodep->name(), nodep);
 	// No recursion, we don't want to pick up variables
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
@@ -494,7 +490,7 @@ public:
     // CONSTUCTORS
     LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
-	m_cellSymp = NULL;
+	m_modSymp = NULL;
 	m_statep = statep;
 	//
 	rootp->accept(*this);
@@ -508,7 +504,7 @@ class LinkDotResolveVisitor : public AstNVisitor {
 private:
     // STATE
     LinkDotState*	m_statep;	// State, including dotted symbol table
-    VSymEnt*		m_cellSymp;	// SymEnt for current module
+    VSymEnt*		m_modSymp;	// SymEnt for current module
 
     int debug() { return LinkDotState::debug(); }
 
@@ -519,18 +515,18 @@ private:
 	UINFO(8,"  "<<nodep<<endl);
 	if (!m_statep->existsModScope(nodep)) {
 	    UINFO(5,"Dead module for "<<nodep<<endl);
-	    m_cellSymp = NULL;
+	    m_modSymp = NULL;
 	} else {
-	    m_cellSymp = m_statep->findModScope(nodep);
+	    m_modSymp = m_statep->getNodeSym(nodep);
 	}
 	nodep->iterateChildren(*this);
-	m_cellSymp = NULL;
+	m_modSymp = NULL;
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(8,"   "<<nodep<<endl);
-	m_cellSymp = m_statep->findScopeSym(nodep);
+	m_modSymp = m_statep->getScopeSym(nodep);
 	nodep->iterateChildren(*this);
-	m_cellSymp = NULL;
+	m_modSymp = NULL;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	if (m_statep->forScopeCreation()) {
@@ -542,13 +538,13 @@ private:
 	// We always link even if varp() is set, because the module we choose may change
 	// due to creating new modules, flattening, etc.
 	UINFO(8,"     "<<nodep<<endl);
-	if (!m_cellSymp) {
+	if (!m_modSymp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->varp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else {
 	    string baddot;
 	    VSymEnt* okSymp;
-	    VSymEnt* dotSymp = m_cellSymp;  // Start search at current scope
+	    VSymEnt* dotSymp = m_modSymp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::dedotName(nodep->inlinedDots());
 		dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
@@ -559,7 +555,7 @@ private:
 	    }
 	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    if (!m_statep->forScopeCreation()) {
-		AstVar* varp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
+		AstVar* varp = (m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot)
 				->castVar());  // maybe NULL
 		nodep->varp(varp);
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
@@ -570,7 +566,7 @@ private:
 		}
 	    } else {
 		string baddot;
-		AstVarScope* vscp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
+		AstVarScope* vscp = (m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot)
 				     ->castVarScope());  // maybe NULL
 		if (!vscp) {
 		    m_statep->preErrorDump();
@@ -596,16 +592,16 @@ private:
 	UINFO(8,"     "<<nodep<<endl);
 	if (nodep->packagep()) {
 	    // References into packages don't care about cell hierarchy.
-	} else if (!m_cellSymp) {
+	} else if (!m_modSymp) {
 	    UINFO(9,"Dead module for "<<nodep<<endl);
 	    nodep->taskp(NULL);  // Module that is not in hierarchy.  We'll be dead code eliminating it later.
 	} else if (nodep->dotted()=="" && nodep->taskp()) {
-	    // V3Link should have setup the links
+	    // Earlier should have setup the links
 	    // Might be under a BEGIN we're not processing, so don't relink it
 	} else {
 	    string baddot;
 	    VSymEnt* okSymp;
-	    VSymEnt* dotSymp = m_cellSymp;  // Start search at current scope
+	    VSymEnt* dotSymp = m_modSymp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
 		string inl = AstNode::dedotName(nodep->inlinedDots());
 		UINFO(8,"\t\tInlined "<<inl<<endl);
@@ -618,7 +614,7 @@ private:
 	    }
 	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 
-	    AstNodeFTask* taskp = (m_statep->findSym(dotSymp, nodep->name(), baddot)
+	    AstNodeFTask* taskp = (m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot)
 				   ->castNode()->castNodeFTask()); // maybe NULL
 	    nodep->taskp(taskp);
 	    UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
@@ -639,7 +635,7 @@ public:
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
 	m_statep = statep;
-	m_cellSymp = NULL;
+	m_modSymp = NULL;
 	//
 	rootp->accept(*this);
     }

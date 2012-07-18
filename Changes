@@ -19,7 +19,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add PINMISSING and PINNOCONNECT lint checks.
 
-***   Add --converge-limit option.  [Holger Waechtler]
+***   Add --converge-limit option.
 
 ***   Fix generate operators not short circuiting, bug413.  [by Jeremy Bennett]
 
@@ -39,7 +39,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix loop error message to report line, bug513.  [Jeremy Bennett]
 
-****  Fix false UNUSED warning on file system calls.  [Holger Waechtler]
+****  Fix false UNUSED warning on file system calls.
 
 ****  Fix GCC 4.7.0 compile warnings, bug530.  [Jeremy Bennett]
 

@@ -183,7 +183,7 @@ public:
 	    return;
 	}
 	// Walk old sym table and reinsert into current table
-	// We let V3Link report the error instead of us
+	// We let V3LinkDot report the error instead of us
 	symCurrentp()->import(symp, id_or_star);
     }
 public:
