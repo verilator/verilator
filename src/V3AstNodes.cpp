@@ -679,16 +679,6 @@ void AstRefDType::dump(ostream& str) {
     if (defp()) { str<<" -> "; defp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
-void AstVarXRef::dump(ostream& str) {
-    this->AstNode::dump(str);
-    if (lvalue()) str<<" [LV] => ";
-    else          str<<" [RV] <- ";
-    str<<dotted()<<". - ";
-    if (inlinedDots()!="") str<<" flat.="<<inlinedDots()<<" - ";
-    if (varScopep()) { varScopep()->dump(str); }
-    else if (varp()) { varp()->dump(str); }
-    else { str<<"UNLINKED"; }
-}
 void AstNodeDType::dump(ostream& str) {
     this->AstNode::dump(str);
     if (generic()) str<<" [GENERIC]";
@@ -762,8 +752,20 @@ void AstVarScope::dump(ostream& str) {
     if (varp()) { str<<" -> "; varp()->dump(str); }
     else { str<<" ->UNLINKED"; }
 }
+void AstVarXRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
+    if (lvalue()) str<<" [LV] => ";
+    else          str<<" [RV] <- ";
+    str<<dotted()<<". - ";
+    if (inlinedDots()!="") str<<" flat.="<<inlinedDots()<<" - ";
+    if (varScopep()) { varScopep()->dump(str); }
+    else if (varp()) { varp()->dump(str); }
+    else { str<<"UNLINKED"; }
+}
 void AstVarRef::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     if (varScopep()) { varScopep()->dump(str); }
@@ -812,6 +814,7 @@ void AstActive::dump(ostream& str) {
 }
 void AstNodeFTaskRef::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
     str<<" -> ";
     if (dotted()!="") { str<<dotted()<<". - "; }
     if (taskp()) { taskp()->dump(str); }
@@ -829,6 +832,7 @@ void AstBegin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (unnamed()) str<<" [UNNAMED]";
     if (hidden()) str<<" [HIDDEN]";
+    if (generate()) str<<" [GEN]";
 }
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);

@@ -1462,16 +1462,16 @@ generate_region<nodep>:		// ==IEEE: generate_region
 generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	//	';'		// is included in
 	//			// IEEE: generate_block
-		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1)) : NULL; }
+		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1,true)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
 genItemBegin<nodep>:		// IEEE: part of generate_block
-		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2); }
+		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2,true); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4); GRAMMARP->endLabel($<fl>6,*$1,$6); }
+	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$1,$4,true); GRAMMARP->endLabel($<fl>6,*$1,$6); }
 	|	id ':' yBEGIN             yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
-	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4); GRAMMARP->endLabel($<fl>6,*$3,$6); }
+	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($2,*$3,$4,true); GRAMMARP->endLabel($<fl>6,*$3,$6); }
 	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
 
@@ -1500,7 +1500,7 @@ conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
 
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' generate_block_or_null
-			{ AstBegin* blkp = new AstBegin($1,"",NULL);  blkp->hidden(true);
+			{ AstBegin* blkp = new AstBegin($1,"",NULL,true);  blkp->hidden(true);
 			  AstNode* initp = $3;  AstNode* varp = $3;
 			  if (varp->castVar()) {  // Genvar
 				initp = varp->nextp();

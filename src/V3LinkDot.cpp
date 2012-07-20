@@ -104,54 +104,56 @@ private:
 public:
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
 	// Only called on the module at the very top of the hierarchy
-	UINFO(9,"      INSERTtop "<<scopename<<" "<<nodep<<endl);
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	UINFO(9,"      INSERTtop se"<<(void*)symp<<"  "<<scopename<<" "<<nodep<<endl);
 	symp->parentp(m_syms.rootp());  // Needed so backward search can find name of top module
 	nodep->user1p(symp);
 	m_syms.rootp()->insert(nodep->origName(),symp);
 	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
 	return symp;
     }
-    VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* cellSymp,
+    VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp,
 			AstCell* nodep, const string& scopename) {
-	UINFO(9,"      INSERTcel "<<scopename<<" above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<" node="<<nodep<<endl);
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	UINFO(9,"      INSERTcel se"<<(void*)symp<<"  "<<scopename<<" above=se"<<(void*)abovep<<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
-	symp->fallbackp(cellSymp);
+	symp->fallbackp(modSymp);
 	if (nodep->modp()) nodep->modp()->user1p(symp);
 	abovep->reinsert(nodep->origName(), symp);
-	if (abovep != cellSymp) {
+	if (abovep != modSymp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
 	    // Duplicates are possible, as until resolve generates might have 2 same cells under an if
-	    cellSymp->reinsert(nodep->name(), symp);
+	    modSymp->reinsert(nodep->name(), symp);
 	}
 	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
 	return symp;
     }
-    VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* cellSymp,
+    VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp,
 			  AstCellInline* nodep, const string& basename) {
 	// A fake point in the hierarchy, corresponding to an inlined module
 	// This refrences to another Sym, and eventually resolves to a module with a prefix
-	UINFO(9,"      INSERTcel "<<basename<<" above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<" node="<<nodep<<endl);
+	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	UINFO(9,"      INSERTinl se"<<(void*)symp<<"  "<<basename<<" above=se"<<(void*)abovep<<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
-	symp->fallbackp(cellSymp);
+	symp->fallbackp(modSymp);
 	symp->symPrefix(nodep->name()+"__DOT__");
 	abovep->reinsert(basename, symp);
-	if (abovep != cellSymp) {
+	if (abovep != modSymp) {
 	    // If it's foo_DOT_bar, we need to be able to find it under that too.
-	    cellSymp->reinsert(nodep->name(), symp);
+	    modSymp->reinsert(nodep->name(), symp);
 	}
 	return symp;
     }
-    VSymEnt* insertBegin(VSymEnt* abovep, VSymEnt* cellSymp,
+    VSymEnt* insertBegin(VSymEnt* abovep, VSymEnt* modSymp,
 			 AstBegin* nodep) {
 	// A fake point in the hierarchy, corresponding to a begin block
 	// After we remove begins these will go away
 	// Note we fallback to the symbol table of the parent, as we want to find variables there
 	// However, cells walk the graph, so cells will appear under the begin itself
-	UINFO(9,"      INSERTbeg above="<<(void*)abovep<<" cells="<<(void*)cellSymp<<"  node="<<nodep<<endl);
+	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	UINFO(9,"      INSERTblk se"<<(void*)symp<<"  above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->symPrefix(nodep->name()+"__DOT__");
 	if (nodep->name() != "") {
@@ -161,15 +163,16 @@ public:
 	return symp;
     }
     void insertSym(VSymEnt* abovep, const string& name, AstNode* nodep) {
-	UINFO(9,"      INSERTsym name='"<<name<<"' above="<<(void*)abovep<<"  node="<<nodep<<endl);
+	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	// We don't remember the ent associated with each node, because we need a unique scope entry for each instantiation
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
+	UINFO(9,"      INSERTsym name='"<<name<<"' above="<<(void*)abovep<<"  node="<<nodep<<endl);
 	abovep->insert(name, symp);
     }
-    bool existsModScope(AstNodeModule* nodep) {
+    static bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
     }
-    VSymEnt* getNodeSym(AstNodeModule* nodep) {
+    static VSymEnt* getNodeSym(AstNodeModule* nodep) {
 	VSymEnt* symp = nodep->user1p()->castSymEnt();
 	if (!symp) nodep->v3fatalSrc("Module never assigned a symbol entry?");
 	return symp;
@@ -191,14 +194,14 @@ public:
 	    m_syms.dumpFilePrefixed("linkdot-preerr");
 	}
     }
-    VSymEnt* findDotted(VSymEnt* cellSymp, const string& dotname,
+    VSymEnt* findDotted(VSymEnt* lookupSymp, const string& dotname,
 			string& baddot, VSymEnt*& okSymp) {
 	// Given a dotted hierarchy name, return where in scope it is
-	// Note when dotname=="" we just fall through and return cellSymp
-	UINFO(8,"    dottedFind "<<dotname<<endl);
+	// Note when dotname=="" we just fall through and return lookupSymp
+	UINFO(8,"    dottedFind se"<<(void*)lookupSymp<<" '"<<dotname<<"'"<<endl);
 	bool firstId = true;
 	string leftname = dotname;
-	okSymp = cellSymp;  // So can list bad scopes
+	okSymp = lookupSymp;  // So can list bad scopes
 	while (leftname != "") {  // foreach dotted part of xref name
 	    string::size_type pos;
 	    string ident;
@@ -210,7 +213,7 @@ public:
 		leftname = "";
 	    }
 	    baddot = ident;   // So user can see where they botched it
-	    okSymp = cellSymp;
+	    okSymp = lookupSymp;
 	    string altIdent = "";
 	    if (m_forPrearray) {
 		// Cell foo__[array] before we've expanded arrays is just foo.
@@ -218,61 +221,61 @@ public:
 		    altIdent = ident.substr(0,pos);
 		}
 	    }
-	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at "<<cellSymp<<endl);
+	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at se"<<lookupSymp<<endl);
 	    // Spec says; Look at exiting module (cellnames then modname),
 	    // then look up (inst name or modname)
 	    if (firstId) {
 		// Check this module - subcellnames
-		AstCell* cellp = cellSymp->nodep()->castCell();  // Replicated below
-		AstCellInline* inlinep = cellSymp->nodep()->castCellInline(); // Replicated below
-		if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
-		    cellSymp = findSymp;
+		AstCell* cellp = lookupSymp->nodep()->castCell();  // Replicated below
+		AstCellInline* inlinep = lookupSymp->nodep()->castCellInline(); // Replicated below
+		if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+		    lookupSymp = findSymp;
 		}
 		// Check this module - cur modname
 		else if ((cellp && cellp->modp()->origName() == ident)
 			 || (inlinep && inlinep->origModName() == ident)) {}
 		// Move up and check cellname + modname
 		else {
-		    while (cellSymp) {
-			cellSymp = cellSymp->parentp();
-			cellp = cellSymp->nodep()->castCell(); // Replicated above
-			inlinep = cellSymp->nodep()->castCellInline(); // Replicated above
-			if (cellSymp) {
-			    UINFO(9,"\t\tUp to "<<cellSymp<<endl);
+		    while (lookupSymp) {
+			lookupSymp = lookupSymp->parentp();
+			cellp = lookupSymp->nodep()->castCell(); // Replicated above
+			inlinep = lookupSymp->nodep()->castCellInline(); // Replicated above
+			if (lookupSymp) {
+			    UINFO(9,"\t\tUp to "<<lookupSymp<<endl);
 			    if ((cellp && cellp->modp()->origName() == ident)
 				|| (inlinep && inlinep->origModName() == ident)) {
 				break;
 			    }
-			    else if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
-				cellSymp = findSymp;
+			    else if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+				lookupSymp = findSymp;
 				break;
 			    }
 			} else break;
 		    }
-		    if (!cellSymp) return NULL;  // Not found
+		    if (!lookupSymp) return NULL;  // Not found
 		}
 	    } else { // Searching for middle submodule, must be a cell name
-		if (VSymEnt* findSymp = findWithAltFallback(cellSymp, ident, altIdent)) {
-		    cellSymp = findSymp;
+		if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+		    lookupSymp = findSymp;
 		} else {
 		    return NULL;  // Not found
 		}
 	    }
 	    firstId = false;
 	}
-	return cellSymp;
+	return lookupSymp;
     }
 
-    AstNode* findSymPrefixed(VSymEnt* cellSymp, const string& dotname, string& baddot) {
+    AstNode* findSymPrefixed(VSymEnt* lookupSymp, const string& dotname, string& baddot) {
 	// Find symbol in given point in hierarchy
-	// For simplicity cellSymp may be passed NULL result from findDotted
-	if (!cellSymp) return NULL;
+	// For simplicity lookupSymp may be passed NULL result from findDotted
+	if (!lookupSymp) return NULL;
 	UINFO(8,"\t\tfindSymPrefixed "<<dotname
-	      <<((cellSymp->symPrefix()=="") ? "" : " as ")
-	      <<((cellSymp->symPrefix()=="") ? "" : cellSymp->symPrefix()+dotname)
-	      <<"  at  "<<cellSymp
+	      <<((lookupSymp->symPrefix()=="") ? "" : " as ")
+	      <<((lookupSymp->symPrefix()=="") ? "" : lookupSymp->symPrefix()+dotname)
+	      <<"  at se"<<lookupSymp
 	      <<endl);
-	AstNode* nodep = cellSymp->findIdFallback(cellSymp->symPrefix() + dotname)->nodep();  // Might be NULL
+	AstNode* nodep = lookupSymp->findIdFallback(lookupSymp->symPrefix() + dotname)->nodep();  // Might be NULL
 	if (!nodep) baddot = dotname;
 	return nodep;
     }

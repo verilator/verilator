@@ -57,7 +57,8 @@ private:
 public:
     void dumpIterate(ostream& os, VSymMap& doneSymsr, const string& indent, int numLevels, const string& searchName) {
 	os<<indent<<"+ "<<left<<setw(30)<<(searchName==""?"\"\"":searchName)<<setw(0)<<right;
-	os<<"  "<<setw(16)<<(void*)(this)<<setw(0);
+	os<<"  se"<<(void*)(this)<<setw(0);
+	os<<"  fallb=se"<<(void*)(m_fallbackp);
 	os<<"  n="<<nodep();
 	os<<endl;
 	if (doneSymsr.find(this) != doneSymsr.end()) {
@@ -88,7 +89,7 @@ public:
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }
     void insert(const string& name, VSymEnt* entp) {
-	UINFO(9, "     SymInsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
+	UINFO(9, "     SymInsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
 	    if (!V3Error::errorCount()) {   // Else may have just reported warning
 		if (debug()>=9 || V3Error::debugDefault()) dump(cout,"- err-dump: ", 1);
@@ -101,7 +102,7 @@ public:
     void reinsert(const string& name, VSymEnt* entp) {
 	IdNameMap::iterator it = m_idNameMap.find(name);
 	if (name!="" && it != m_idNameMap.end()) {
-	    UINFO(9, "     SymReinsert "<<this<<" '"<<name<<"' "<<(void*)entp<<"  "<<entp->nodep()<<endl);
+	    UINFO(9, "     SymReinsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	    it->second = entp;  // Replace
 	} else {
 	    insert(name,entp);
@@ -111,7 +112,9 @@ public:
 	// Find identifier without looking upward through symbol hierarchy
 	// First, scan this begin/end block or module for the name
 	IdNameMap::const_iterator iter = m_idNameMap.find(name);
-	UINFO(9, "     SymFind   "<<this<<" '"<<name<<"' -> "<<(iter == m_idNameMap.end() ? "NONE" : cvtToStr((void*)(iter->second->nodep())))<<endl);
+	UINFO(9, "     SymFind   se"<<(void*)this<<" '"<<name
+	      <<"' -> "<<(iter == m_idNameMap.end() ? "NONE"
+			  : "se"+cvtToStr((void*)(iter->second))+" n="+cvtToStr((void*)(iter->second->nodep())))<<endl);
 	if (iter != m_idNameMap.end()) return (iter->second);
 	return NULL;
     }
@@ -151,6 +154,7 @@ public:
 		scopes += AstNode::prettyName(it->first);
 	    }
 	}
+	if (scopes=="") scopes="<no cells found>";
 	cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<lookp->prettyName()<<"': "
 	    <<scopes<<endl;
 	if (debug()) dump(cerr,"\t\t      KnownScope: ", 1);
@@ -180,7 +184,7 @@ public:
     void dump(ostream& os, const string& indent="") {
 	VSymMap doneSyms;
 	os<<"SymEnt Dump:\n";
-	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "TOP");
+	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
 	bool first = false;
 	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
 	    if (doneSyms.find(*it) == doneSyms.end()) {
@@ -192,6 +196,7 @@ public:
     void dumpFilePrefixed(const string& nameComment) {
 	if (v3Global.opt.dumpTree()) {
 	    string filename = v3Global.debugFilename(nameComment)+".txt";
+	    UINFO(2,"Dumping "<<filename<<endl);
 	    const auto_ptr<ofstream> logp (V3File::new_ofstream(filename));
 	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 	    dump(*logp, "");

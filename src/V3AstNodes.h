@@ -1252,14 +1252,16 @@ private:
     string	m_name;		// Name of block
     bool	m_unnamed;	// Originally unnamed
     bool	m_hidden;	// Inserted by verilator, not user
+    bool	m_generate;	// Underneath a generate
 public:
     // Node that simply puts name into the output stream
-    AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp)
+    AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp, bool generate=false)
 	: AstNode(fileline)
 	, m_name(name) {
 	addNOp1p(stmtsp);
 	m_unnamed = (name=="");
 	m_hidden = false;
+	m_generate = generate;
     }
     ASTNODE_NODE_FUNCS(Begin, BEGIN)
     virtual void dump(ostream& str);
@@ -1273,6 +1275,8 @@ public:
     bool unnamed() const { return m_unnamed; }
     void hidden(bool flag) { m_hidden = flag; }
     bool hidden() const { return m_hidden; }
+    void generate(bool flag) { m_generate = flag; }
+    bool generate() const { return m_generate; }
 };
 
 struct AstGenerate : public AstNode {
