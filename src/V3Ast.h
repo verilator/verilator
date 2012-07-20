@@ -548,7 +548,7 @@ struct VNumRange {
 	return false;
     }
     //
-    VNumRange() : m_msb(0), m_lsb(0), m_ranged(false), m_littleEndian(false) {}
+    VNumRange() : m_msb(0), m_lsb(0), mu_flags(0) {}
     ~VNumRange() {}
     // MEMBERS
     void init(int msb, int lsb, bool littleEndian) {

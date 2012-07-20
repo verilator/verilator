@@ -18,7 +18,7 @@ execute (
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
-file_grep ($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 23)
+file_grep ($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 24)
     if $Self->{vlt};
 
 ok(1);
