@@ -12,7 +12,7 @@ compile (
 	 expect=>
 '%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Cell has the same name as variable: varfirst
 %Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Task has the same name as variable: varfirst
+%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Task has the same name as (variable|cell): varfirst
 %Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
 %Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Variable has same name as cell: cellfirst
 %Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Task has the same name as cell: cellfirst

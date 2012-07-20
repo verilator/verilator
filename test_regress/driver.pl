@@ -171,10 +171,10 @@ sub one_test {
 		 $UnsupCnt++;
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
-		 push @fails, "\t#".$test->soprint("%Error: $test->{errors}\n");
 		 my $j = ($opt_jobs>1?" -j":"");
-		 push @fails, "\t\tmake$j && test_regress/"
-		     .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n";
+		 push @fails, ("\t#".$test->soprint("%Error: $test->{errors}\n")
+			       ."\t\tmake$j && test_regress/"
+			       .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n");
 		 $FailCnt++;
 		 report(\@fails, $Log_Filename);
 		 my $other = "";
@@ -256,7 +256,7 @@ sub report {
     $fh->print("="x70,"\n");
     $fh->printf("TESTS Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt  Time %d:%02d\n",
 	       int($delta/60),$delta%60);
-    foreach my $f (@$fails) {
+    foreach my $f (sort @$fails) {
 	chomp $f;
 	$fh->print("$f\n");
     }
