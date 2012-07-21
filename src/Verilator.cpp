@@ -58,7 +58,6 @@
 #include "V3Inst.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
-#include "V3Link.h"
 #include "V3LinkCells.h"
 #include "V3LinkDot.h"
 #include "V3LinkJump.h"
@@ -158,8 +157,6 @@ void process () {
     V3LinkParse::linkParse(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("linkparse.tree");
     // Cross-link signal names
-    V3Link::link(v3Global.rootp());
-    if (dumpMore) V3Global::dumpGlobalTree("linkmain.tree");
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrimary(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("linkdot.tree");

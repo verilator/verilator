@@ -54,6 +54,7 @@ class ParamVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //	 AstNodeModule::user5()	// bool	  True if processed
+    //	 AstGenFor::user5()	// bool	  True if processed
     //	 AstVar::user5()	// bool	  True if constant propagated
     //   AstVar::user4()	// int    Global parameter number (for naming new module)
     //				//        (0=not processed, 1=iterated, but no number, 65+ parameter numbered)
@@ -142,7 +143,9 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
-	if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
+	if (nodep->dead()) {
+	    UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
+	} else if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
 	    // Add request to END of modules left to process
 	    m_todoModps.push_back(nodep);
 	    visitModules();
@@ -214,13 +217,36 @@ private:
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be neede here.
+    virtual void visit(AstBegin* nodep, AstNUser*) {
+	if (nodep->genforp()) {
+	    AstGenFor* forp = nodep->genforp()->castGenFor();
+	    if (!forp) nodep->v3fatalSrc("Non-GENFOR under generate-for BEGIN");
+	    // We should have a GENFOR under here.  We will be replacing the begin,
+	    // so process here rather than at the generate to avoid iteration problems
+	    UINFO(9,"  BEGIN "<<nodep<<endl);
+	    UINFO(9,"  GENFOR "<<forp<<endl);
+	    V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
+	    // Outer wrapper around generate used to hold genvar, and to insure genvar
+	    // doesn't conflict in V3LinkDot resolution with other genvars
+	    // Now though we need to change BEGIN("zzz",GENFOR(...)) to
+	    // a BEGIN("zzz__BRA__{loop#}__KET__")
+	    string beginName = nodep->name();
+	    // Leave the original Begin, as need a container for the (possible) GENVAR
+	    // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
+	    V3Unroll::unrollGen(forp, beginName); forp=NULL;
+	    // Blocks were constructed under the special begin, move them up
+	    // Note forp is null, so grab statements again
+	    if (AstNode* stmtsp = nodep->genforp()) {
+		stmtsp->unlinkFrBackWithNext();
+		nodep->addNextHere(stmtsp);
+		// Note this clears nodep->genforp(), so begin is no longer special
+	    }
+	} else {
+	    nodep->iterateChildren(*this);
+	}
+    }
     virtual void visit(AstGenFor* nodep, AstNUser*) {
-	// We parse a very limited form of FOR, so we don't need to do a full
-	// simulation to unroll the loop
-	UINFO(9,"  GENFOR "<<nodep<<endl);
-	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body
-	// Note V3Unroll will replace some AstVarRef's to the loop variable with constants
-	V3Unroll::unrollGen(nodep); nodep=NULL;
+	nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
     virtual void visit(AstGenCase* nodep, AstNUser*) {
 	UINFO(9,"  GENCASE "<<nodep<<endl);

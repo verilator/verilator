@@ -1646,13 +1646,14 @@ private:
     bool	m_modPublic:1;	// Module has public references
     bool	m_modTrace:1;	// Tracing this module
     bool	m_inLibrary:1;	// From a library, no error if not used, never top level
+    bool	m_dead:1;	// LinkDot believes is dead; will remove in Dead visitors
     int		m_level;	// 1=top module, 2=cell off top module, ...
     int		m_varNum;	// Incrementing variable number
 public:
     AstNodeModule(FileLine* fl, const string& name)
 	: AstNode (fl)
 	,m_name(name), m_origName(name)
-	,m_modPublic(false), m_modTrace(false), m_inLibrary(false)
+	,m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false)
 	,m_level(0), m_varNum(0) { }
     ASTNODE_BASE_FUNCS(NodeModule)
     virtual void dump(ostream& str);
@@ -1677,6 +1678,8 @@ public:
     bool modPublic() const 	{ return m_modPublic; }
     void modTrace(bool flag) 	{ m_modTrace = flag; }
     bool modTrace() const 	{ return m_modTrace; }
+    void dead(bool flag) 	{ m_dead = flag; }
+    bool dead() const	 	{ return m_dead; }
 };
 
 //######################################################################

@@ -66,9 +66,13 @@ private:
     }
 
     // VISITs
+    // TODO: Most of these visitors are here for historical reasons.
+    // TODO: ExpectDecriptor can move to data type resolution, and the rest
+    // TODO: could move to V3LinkParse to get them out of the way of elaboration
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);
+	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_senitemCvtNum = 0;
 	nodep->iterateChildren(*this);

@@ -54,8 +54,8 @@ private:
     bool		m_varModeCheck;		// Just checking RHS assignments
     bool		m_varModeReplace;	// Replacing varrefs
     bool		m_varAssignHit;		// Assign var hit
-    bool		m_inBegin;		// Inside a begin/end loop
     bool		m_generate;		// Expand single generate For loop
+    string		m_beginName;		// What name to give begin iterations
     V3Double0		m_statLoops;		// Statistic tracking
     V3Double0		m_statIters;		// Statistic tracking
 
@@ -283,7 +283,12 @@ private:
 			m_varModeReplace = true;
 			tempp->stmtsp()->iterateAndNext(*this);
 			m_varModeReplace = false;
-			tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+			oneloopp = tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+		    }
+		    if (m_generate) {
+			string index = AstNode::encodeNumber(m_varValuep->toSInt());
+			string nname = m_beginName + "__BRA__" + index + "__KET__";
+			oneloopp = new AstBegin(oneloopp->fileline(),nname,oneloopp,true);
 		    }
 
 		    if (newbodysp) newbodysp->addNext(oneloopp);
@@ -379,29 +384,6 @@ private:
 	}
     }
 
-    virtual void visit(AstBegin* nodep, AstNUser*) {
-	// Naming inside loop body; must have been a generate for.
-	// We need to only rename the 'upper' begin,
-	// anything lower will be renamed "uppernewname.lowerbegin"
-	bool lastBegin = m_inBegin;
-	m_inBegin = true;
-	nodep->stmtsp()->iterateAndNext(*this);
-	m_inBegin = lastBegin;
-	nodep->flatsp()->iterateAndNext(*this);
-
-	if (m_varModeReplace && !m_inBegin // no upper begin, excluding this one
-	    ) {
-	    // Rename it, as otherwise we may get a conflict
-	    // V3Begin sees these DOTs and makes CellInlines for us.
-	    string index = AstNode::encodeNumber(m_varValuep->toSInt());
-	    string nname = (string)"genfor"+index+"__DOT__"+nodep->name();
-	    // Verilog seems to drop the for loop name and tack on [#]
-	    nname = nodep->name() + "__BRA__" + index + "__KET__";
-	    //UINFO(8,"   Rename begin "<<nname<<" "<<nodep<<endl);
-	    nodep->name(nname);
-	}
-    }
-
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (m_varModeCheck
 	    && nodep->varp() == m_forVarp
@@ -433,14 +415,14 @@ private:
 
 public:
     // CONSTUCTORS
-    UnrollVisitor(AstNode* nodep, bool generate) {
+    UnrollVisitor(AstNode* nodep, bool generate, string beginName) {
 	m_forVarp = NULL;
 	m_forVscp = NULL;
 	m_ignoreIncp = NULL;
 	m_varModeCheck = false;
 	m_varModeReplace = false;
-	m_inBegin = false;
 	m_generate = generate;
+	m_beginName = beginName;
 	//
 	nodep->accept(*this);
     }
@@ -455,10 +437,10 @@ public:
 
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    UnrollVisitor visitor (nodep, false);
+    UnrollVisitor visitor (nodep, false, "");
 }
 
-void V3Unroll::unrollGen(AstNodeFor* nodep) {
+void V3Unroll::unrollGen(AstNodeFor* nodep, string beginName) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    UnrollVisitor visitor (nodep, true);
+    UnrollVisitor visitor (nodep, true, beginName);
 }

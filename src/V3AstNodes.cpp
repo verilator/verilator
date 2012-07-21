@@ -702,6 +702,7 @@ void AstNodeModule::dump(ostream& str) {
     str<<"  L"<<level();
     if (modPublic()) str<<" [P]";
     if (inLibrary()) str<<" [LIB]";
+    if (dead()) str<<" [DEAD]";
 }
 void AstPackageImport::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -831,8 +832,8 @@ void AstNodeFTask::dump(ostream& str) {
 void AstBegin::dump(ostream& str) {
     this->AstNode::dump(str);
     if (unnamed()) str<<" [UNNAMED]";
-    if (hidden()) str<<" [HIDDEN]";
     if (generate()) str<<" [GEN]";
+    if (genforp()) str<<" [GENFOR]";
 }
 void AstCoverDecl::dump(ostream& str) {
     this->AstNode::dump(str);

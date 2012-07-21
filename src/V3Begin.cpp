@@ -142,21 +142,14 @@ private:
 
 	    // Remap var names and replace lower Begins
 	    nodep->stmtsp()->iterateAndNext(*this);
-
+	    if (nodep->genforp()) nodep->v3fatalSrc("GENFORs should have been expanded earlier");
 	}
 	m_namedScope = oldScope;
 	m_unnamedScope = oldUnnamed;
 
-	// Don't change var names of generate FOR() variables, but do recurse into a child FOR
-	nodep->flatsp()->iterateAndNext(*this);
-
 	// Cleanup
 	AstNode* addsp = NULL;
 	if (AstNode* stmtsp = nodep->stmtsp()) {
-	    stmtsp->unlinkFrBackWithNext();
-	    addsp = addsp->addNextNull(stmtsp);
-	}
-	if (AstNode* stmtsp = nodep->flatsp()) {
 	    stmtsp->unlinkFrBackWithNext();
 	    addsp = addsp->addNextNull(stmtsp);
 	}

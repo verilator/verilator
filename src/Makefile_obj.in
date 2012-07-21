@@ -198,7 +198,6 @@ RAW_OBJS = \
 	V3Inst.o \
 	V3Life.o \
 	V3LifePost.o \
-	V3Link.o \
 	V3LinkCells.o \
 	V3LinkDot.o \
 	V3LinkJump.o \

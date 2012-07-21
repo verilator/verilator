@@ -30,7 +30,7 @@
 class V3Unroll {
 public:
     static void unrollAll(AstNetlist* nodep);
-    static void unrollGen(AstNodeFor* nodep);
+    static void unrollGen(AstNodeFor* nodep, string beginName);
 };
 
 #endif // Guard

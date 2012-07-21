@@ -1462,6 +1462,7 @@ generate_region<nodep>:		// ==IEEE: generate_region
 generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	//	';'		// is included in
 	//			// IEEE: generate_block
+	//			// Must always return a BEGIN node, or NULL - see GenFor construction
 		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1,true)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
@@ -1500,17 +1501,27 @@ conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
 
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' generate_block_or_null
-			{ AstBegin* blkp = new AstBegin($1,"",NULL,true);  blkp->hidden(true);
+			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
+			  AstBegin* lowerBegp = $9->castBegin();
+			  if ($9 && !lowerBegp) $9->v3fatalSrc("Child of GENFOR should have been begin");
+			  if (!lowerBegp) lowerBegp = new AstBegin($1,"genblk",NULL,true);  // Empty body
+			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
+			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
+			  //
+			  AstBegin* blkp = new AstBegin($1,lowerBegp->name(),NULL,true);
+			  // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
 			  AstNode* initp = $3;  AstNode* varp = $3;
 			  if (varp->castVar()) {  // Genvar
 				initp = varp->nextp();
 				initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
 				blkp->addStmtsp(varp);
 			  }
-			  // Statements are under 'flatsp' so that cells under this
+			  // Statements are under 'genforp' as cells under this
 			  // for loop won't get an extra layer of hierarchy tacked on
-			  blkp->addFlatsp(new AstGenFor($1,initp,$5,$7,$9));
-			  $$ = blkp; }
+			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
+			  $$ = blkp;
+			  lowerBegp->deleteTree(); lowerBegp=NULL;
+			}
 	;
 
 genvar_initialization<nodep>:	// ==IEEE: genvar_initalization

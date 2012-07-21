@@ -114,6 +114,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_repeatNum = 0;
 	nodep->iterateChildren(*this);
