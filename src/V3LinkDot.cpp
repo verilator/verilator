@@ -80,13 +80,23 @@ public:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
+    void dump() {
+	if (debug()>=6) m_syms.dumpFilePrefixed("linkdot");
+    }
+    void preErrorDump() {
+	static bool diddump = false;
+	if (!diddump && v3Global.opt.dumpTree()) {
+	    diddump = true;
+	    m_syms.dumpFilePrefixed("linkdot-preerr");
+	}
+    }
 
     // CONSTRUCTORS
-    LinkDotState(AstNetlist* rootp, bool forPrearray, bool forScopeCreation)
+    LinkDotState(AstNetlist* rootp, VLinkDotStep step)
 	: m_syms(rootp) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
-	m_forPrearray = forPrearray;
-	m_forScopeCreation = forScopeCreation;
+	m_forPrearray = (step == LDS_PARAMED || step==LDS_PRIMARY);
+	m_forScopeCreation = (step == LDS_SCOPED);
     }
     ~LinkDotState() {}
 
@@ -150,7 +160,7 @@ public:
 	// A fake point in the hierarchy, corresponding to a begin block
 	// After we remove begins these will go away
 	// Note we fallback to the symbol table of the parent, as we want to find variables there
-	// However, cells walk the graph, so cells will appear under the begin itself
+	// However, cells walk the graph, so cells will appear under the begin/ftask itself
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
 	UINFO(9,"      INSERTblk se"<<(void*)symp<<"  above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
@@ -172,9 +182,9 @@ public:
     static bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
     }
-    static VSymEnt* getNodeSym(AstNodeModule* nodep) {
+    static VSymEnt* getNodeSym(AstNode* nodep) {
 	VSymEnt* symp = nodep->user1p()->castSymEnt();
-	if (!symp) nodep->v3fatalSrc("Module never assigned a symbol entry?");
+	if (!symp) nodep->v3fatalSrc("Module/etc never assigned a symbol entry?");
 	return symp;
     }
     VSymEnt* getScopeSym(AstScope* nodep) {
@@ -183,16 +193,6 @@ public:
 	    nodep->v3fatalSrc("Scope never assigned a symbol entry?");
 	}
 	return iter->second;
-    }
-    void dump() {
-	if (debug()>=6) m_syms.dumpFilePrefixed("linkdot");
-    }
-    void preErrorDump() {
-	static bool diddump = false;
-	if (!diddump && v3Global.opt.dumpTree()) {
-	    diddump = true;
-	    m_syms.dumpFilePrefixed("linkdot-preerr");
-	}
     }
     VSymEnt* findDotted(VSymEnt* lookupSymp, const string& dotname,
 			string& baddot, VSymEnt*& okSymp) {
@@ -221,7 +221,7 @@ public:
 		    altIdent = ident.substr(0,pos);
 		}
 	    }
-	    UINFO(8,"         id "<<ident<<" left "<<leftname<<" at se"<<lookupSymp<<endl);
+	    UINFO(8,"         id "<<ident<<" alt "<<altIdent<<" left "<<leftname<<" at se"<<lookupSymp<<endl);
 	    // Spec says; Look at exiting module (cellnames then modname),
 	    // then look up (inst name or modname)
 	    if (firstId) {
@@ -352,7 +352,10 @@ private:
 	    string baddot;
 	    VSymEnt* okSymp;
 	    aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
-	    if (!aboveSymp) nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    if (!aboveSymp) {
+		m_statep->preErrorDump();
+		nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    }
 	}
 	{
 	    m_scope = m_scope+"."+nodep->name();
@@ -377,7 +380,10 @@ private:
 	    string baddot;
 	    VSymEnt* okSymp;
 	    aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
-	    if (!aboveSymp) nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    if (!aboveSymp) {
+		m_statep->preErrorDump();
+		nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
+	    }
 	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
 	} else {  // No __DOT__, just directly underneath
 	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
@@ -386,14 +392,14 @@ private:
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
 	AstBegin* oldbegin = m_beginp;
-	VSymEnt* oldSymp = m_curSymp;
+	VSymEnt* oldCurSymp = m_curSymp;
 	{
 	    m_beginp = nodep;
 	    // We don't pickup variables (as not supported yet), but do need to find cells
 	    m_curSymp = m_statep->insertBegin(m_curSymp, m_modSymp, nodep);
 	    nodep->stmtsp()->iterateAndNext(*this);
 	}
-	m_curSymp = oldSymp;
+	m_curSymp = oldCurSymp;
 	m_beginp = oldbegin;
 	//
 	nodep->flatsp()->iterateAndNext(*this);
@@ -648,13 +654,15 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkDot::linkDotGuts(AstNetlist* rootp, bool prearray, bool scoped) {
+int V3LinkDot::debug() { return LinkDotState::debug(); }
+
+void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
-    LinkDotState state (rootp, prearray, scoped);
+    LinkDotState state (rootp, step);
     LinkDotFindVisitor visitor(rootp,&state);
     if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
-    if (scoped) {
+    if (step == LDS_SCOPED) {
 	// Well after the initial link when we're ready to operate on the flat design,
 	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);

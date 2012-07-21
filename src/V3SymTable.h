@@ -53,7 +53,15 @@ private:
     VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
     AstPackage*	m_packagep;	// Package node is in (for V3LinkDot, unused here)
     string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
+#if 0 // debug
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("V3LinkDot.cpp");
+	return level;
+    }
+#else
     static int debug() { return 0; }  // NOT runtime, too hot of a function
+#endif
 public:
     void dumpIterate(ostream& os, VSymMap& doneSymsr, const string& indent, int numLevels, const string& searchName) {
 	os<<indent<<"+ "<<left<<setw(30)<<(searchName==""?"\"\"":searchName)<<setw(0)<<right;

@@ -27,13 +27,21 @@
 
 //============================================================================
 
+enum VLinkDotStep { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
+
 class V3LinkDot {
 private:
-    static void linkDotGuts(AstNetlist* nodep, bool preparam, bool scoped);
+    static int debug();
+    static void linkDotGuts(AstNetlist* nodep, VLinkDotStep step);
 public:
-    static void linkDotPrearrayed(AstNetlist* nodep)	{ linkDotGuts(nodep,true,false); }
-    static void linkDotArrayed(AstNetlist* nodep)	{ linkDotGuts(nodep,false,false); }
-    static void linkDotScope(AstNetlist* nodep)		{ linkDotGuts(nodep,false,true); }
+    static void linkDotPrimary(AstNetlist* nodep) {
+	UINFO(2,__FUNCTION__<<": "<<endl);	linkDotGuts(nodep,LDS_PRIMARY); }
+    static void linkDotParamed(AstNetlist* nodep) {
+	UINFO(2,__FUNCTION__<<": "<<endl);	linkDotGuts(nodep,LDS_PARAMED); }
+    static void linkDotArrayed(AstNetlist* nodep) {
+	UINFO(2,__FUNCTION__<<": "<<endl);	linkDotGuts(nodep,LDS_ARRAYED); }
+    static void linkDotScope(AstNetlist* nodep) {
+	UINFO(2,__FUNCTION__<<": "<<endl);	linkDotGuts(nodep,LDS_SCOPED); }
 };
 
 #endif // Guard

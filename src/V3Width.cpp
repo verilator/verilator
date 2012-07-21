@@ -816,6 +816,7 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep, AstNUser* vup) {
 	if (nodep->didWidth()) return;
+	if (!nodep->varp()) nodep->v3fatalSrc("Unlinked varref");
 	if (!nodep->varp()->didWidth()) {
 	    // Var hasn't been widthed, so make it so.
 	    nodep->varp()->iterate(*this);

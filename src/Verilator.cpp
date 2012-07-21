@@ -161,8 +161,9 @@ void process () {
     V3Link::link(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("linkmain.tree");
     // Cross-link dotted hierarchical references
-    V3LinkDot::linkDotPrearrayed(v3Global.rootp());
+    V3LinkDot::linkDotPrimary(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("linkdot.tree");
+    v3Global.checkTree();  // Force a check, as link is most likely place for problems
     // Correct state we couldn't know at parse time, repair SEL's
     V3LinkResolve::linkResolve(v3Global.rootp());
     if (dumpMore) V3Global::dumpGlobalTree("linkresolve.tree");
@@ -179,8 +180,9 @@ void process () {
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
-    V3LinkDot::linkDotPrearrayed(v3Global.rootp());	// Cleanup as made new modules
-    V3Global::dumpGlobalTree("param.tree");
+    if (dumpMore) V3Global::dumpGlobalTree("param.tree");
+    V3LinkDot::linkDotParamed(v3Global.rootp());	// Cleanup as made new modules
+    V3Global::dumpGlobalTree("paramlink.tree");
     V3Error::abortIfErrors();
 
     // Remove any modules that were parameterized and are no longer referenced.
