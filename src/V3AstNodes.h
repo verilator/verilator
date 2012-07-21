@@ -1244,41 +1244,6 @@ public:
 
 //######################################################################
 
-struct AstBegin : public AstNode {
-    // A Begin/end named block, only exists shortly after parsing until linking
-    // Parents: statement
-    // Children: statements
-private:
-    string	m_name;		// Name of block
-    bool	m_unnamed;	// Originally unnamed
-    bool	m_hidden;	// Inserted by verilator, not user
-    bool	m_generate;	// Underneath a generate
-public:
-    // Node that simply puts name into the output stream
-    AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp, bool generate=false)
-	: AstNode(fileline)
-	, m_name(name) {
-	addNOp1p(stmtsp);
-	m_unnamed = (name=="");
-	m_hidden = false;
-	m_generate = generate;
-    }
-    ASTNODE_NODE_FUNCS(Begin, BEGIN)
-    virtual void dump(ostream& str);
-    virtual string name()	const { return m_name; }		// * = Block name
-    virtual void name(const string& name) { m_name = name; }
-    // op1 = Statements
-    AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
-    void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
-    AstNode*	flatsp() 	const { return op2p()->castNode(); }	// op2 = Statements that don't appear under new scope
-    void addFlatsp(AstNode* nodep) { addNOp2p(nodep); }
-    bool unnamed() const { return m_unnamed; }
-    void hidden(bool flag) { m_hidden = flag; }
-    bool hidden() const { return m_hidden; }
-    void generate(bool flag) { m_generate = flag; }
-    bool generate() const { return m_generate; }
-};
-
 struct AstGenerate : public AstNode {
     // A Generate/end block
     // Parents: MODULE
@@ -2370,6 +2335,41 @@ public:
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
+};
+
+struct AstBegin : public AstNode {
+    // A Begin/end named block, only exists shortly after parsing until linking
+    // Parents: statement
+    // Children: statements
+private:
+    string	m_name;		// Name of block
+    bool	m_unnamed;	// Originally unnamed
+    bool	m_hidden;	// Inserted by verilator, not user
+    bool	m_generate;	// Underneath a generate
+public:
+    // Node that simply puts name into the output stream
+    AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp, bool generate=false)
+	: AstNode(fileline)
+	, m_name(name) {
+	addNOp1p(stmtsp);
+	m_unnamed = (name=="");
+	m_hidden = false;
+	m_generate = generate;
+    }
+    ASTNODE_NODE_FUNCS(Begin, BEGIN)
+    virtual void dump(ostream& str);
+    virtual string name()	const { return m_name; }		// * = Block name
+    virtual void name(const string& name) { m_name = name; }
+    // op1 = Statements
+    AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
+    void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    AstNode*	flatsp() 	const { return op2p()->castNode(); }	// op2 = Statements that don't appear under new scope
+    void addFlatsp(AstNode* nodep) { addNOp2p(nodep); }
+    bool unnamed() const { return m_unnamed; }
+    void hidden(bool flag) { m_hidden = flag; }
+    bool hidden() const { return m_hidden; }
+    void generate(bool flag) { m_generate = flag; }
+    bool generate() const { return m_generate; }
 };
 
 struct AstInitial : public AstNode {
