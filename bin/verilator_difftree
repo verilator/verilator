@@ -92,8 +92,10 @@ sub diff_file {
     my $a = shift;
     my $b = shift;
     # Compare the two tree files
-    my $tmp_a = "/tmp/$$.a";
-    my $tmp_b = "/tmp/$$.b";
+    (my $short_a = $a) =~ s/[^a-zA-Z0-9.]+/_/g;
+    (my $short_b = $b) =~ s/[^a-zA-Z0-9.]+/_/g;
+    my $tmp_a = "/tmp/${$}_${short_a}.a";
+    my $tmp_b = "/tmp/${$}_${short_b}.b";
 
     my $vera = version_from($a);
     my $verb = version_from($b);

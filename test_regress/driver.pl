@@ -204,7 +204,7 @@ sub usage {
 
 sub debug {
     $Debug = 1;
-    push @Opt_Driver_Verilator_Flags, "--debug";
+    push @Opt_Driver_Verilator_Flags, "--debug --no-skip-identical";
 }
 
 our $_Parameter_Next_Level;
