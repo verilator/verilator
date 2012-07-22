@@ -65,11 +65,13 @@ dbg: ../verilator_bin_dbg
 	cd obj_dbg && $(MAKE)       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 prefiles::
-
-ifneq ($(UNDER_GIT),)	# If local git tree... Else don't burden users
 prefiles:: config_rev.h
+ifneq ($(UNDER_GIT),)	# If local git tree... Else don't burden users
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
 config_rev.h:	${srcdir}/config_rev.pl ${srcdir}/../.git/logs/HEAD
+	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
+else
+config_rev.h:	${srcdir}/config_rev.pl
 	$(PERL) ${srcdir}/config_rev.pl ${srcdir} >$@
 endif
 

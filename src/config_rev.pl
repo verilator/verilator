@@ -33,4 +33,4 @@ if ($data =~ /Changed but not updated/i
 print "static const char* DTVERSION_rev = \"$rev\";\n";
 
 # Die after the print, so at least the header has good contents
-$rev =~ /UNKNOWN/ and die "%Error: No git revision found,";
+$rev =~ /UNKNOWN/ and warn "%Warning: No git revision found,";
