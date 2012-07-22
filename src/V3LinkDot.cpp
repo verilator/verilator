@@ -848,16 +848,6 @@ private:
 	    m_modp = NULL;
 	}
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
-	// We used modTrace before leveling, and we may now
-	// want to turn it off now that we know the levelizations
-	if (v3Global.opt.traceDepth()
-	    && (m_modp->level()-1) > v3Global.opt.traceDepth()) {
-	    m_modp->modTrace(false);
-	    nodep->trace(false);
-	}
-	nodep->iterateChildren(*this);
-    }
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Pin: Link to submodule's port
 	// Deal with implicit definitions - do before Resolve visitor as may be referenced above declaration
@@ -912,6 +902,8 @@ private:
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
 	// tran gates need implicit creation
+	// As VarRefs don't exist in forPrimary, sanity check
+	if (m_statep->forPrimary()) nodep->v3fatalSrc("Assign aliases unexpected pre-dot");
 	if (AstVarRef* forrefp = nodep->lhsp()->castVarRef()) {
 	    pinImplicitExprRecurse(forrefp);
 	}

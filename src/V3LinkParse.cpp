@@ -67,6 +67,7 @@ private:
     bool		m_inAlways;	// Inside an always
     bool		m_inGenerate;	// Inside a generate
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
+    AstNodeModule*	m_modp;		// Current module
 
     // METHODS
     static int debug() {
@@ -282,6 +283,14 @@ private:
 
     virtual void visit(AstVar* nodep, AstNUser*) {
 	cleanFileline(nodep);
+	// We used modTrace before leveling, and we may now
+	// want to turn it off now that we know the levelizations
+	if (v3Global.opt.traceDepth()
+	    && m_modp
+	    && (m_modp->level()-1) > v3Global.opt.traceDepth()) {
+	    m_modp->modTrace(false);
+	    nodep->trace(false);
+	}
 	m_varp = nodep;
 	nodep->iterateChildren(*this);
 	m_varp = NULL;
@@ -420,8 +429,10 @@ private:
 	cleanFileline(nodep);
 	checkExpected(nodep);  // So we detect node types we forgot to list here
 	//
+	m_modp = nodep;
 	m_valueModp = nodep;
 	nodep->iterateChildren(*this);
+	m_modp = NULL;
 	m_valueModp = NULL;
     }
     void visitIterateNoValueMod(AstNode* nodep) {
@@ -463,6 +474,7 @@ public:
 	m_exp = AstParseRefExp::PX_NONE;
 	m_baseTextp = NULL;
 	m_varp = NULL;
+	m_modp = NULL;
 	m_inAlways = false;
 	m_inGenerate = false;
 	m_valueModp = NULL;
