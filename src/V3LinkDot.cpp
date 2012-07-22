@@ -74,10 +74,13 @@ private:
 
     // TYPES
     typedef std::multimap<string,VSymEnt*> NameScopeMap;
+    typedef set <pair<AstNodeModule*,string> > ImplicitNameSet;
+
     // MEMBERS
     VSymGraph		m_syms;			// Symbol table
     VSymEnt*		m_dunitEntp;		// $unit entry
     NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by non-pretty textual name
+    ImplicitNameSet	m_implicitNameSet;	// For [module][signalname] if we can implicitly create it
     bool		m_forPrimary;		// First link
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
@@ -271,6 +274,20 @@ public:
 	}
 	return iter->second;
     }
+    void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
+	// Mark the given variable name as being allowed to be implicitly declared
+	if (nodep) {
+	    ImplicitNameSet::iterator iter = m_implicitNameSet.find(make_pair(nodep,varname));
+	    if (iter == m_implicitNameSet.end()) {
+		m_implicitNameSet.insert(make_pair(nodep,varname));
+	    }
+	}
+    }
+    bool implicitOk(AstNodeModule* nodep, const string& varname) {
+	return nodep
+	    && (m_implicitNameSet.find(make_pair(nodep,varname)) != m_implicitNameSet.end());
+    }
+
 private:
     VSymEnt* findWithAltFallback(VSymEnt* symp, const string& name, const string& altname) {
 	VSymEnt* findp = symp->findIdFallback(name);
@@ -369,46 +386,6 @@ public:
 	VSymEnt* foundp = lookupSymp->findIdFallback(lookupSymp->symPrefix() + dotname);  // Might be NULL
 	if (!foundp) baddot = dotname;
 	return foundp;
-    }
-
-    // METHODS - Variables
-    bool linkVarName (VSymEnt* lookupSymp, AstVarRef* nodep) {
-	// Return true if changed, and caller should end processing
-	if (!nodep->varp()) {
-	    UINFO(9," linkVarName se"<<(void*)lookupSymp<<"  n="<<nodep<<endl);
-	    if (!lookupSymp) nodep->v3fatalSrc("NULL lookup symbol table");
-	    VSymEnt* foundp = lookupSymp->findIdFallback(nodep->name());
-	    if (AstVar* varp = foundp->nodep()->castVar()) {
-		nodep->varp(varp);
-		nodep->packagep(foundp->packagep());
-	    }
-	    else if (AstEnumItem* valuep = foundp->nodep()->castEnumItem()) {
-		AstNode* newp = new AstEnumItemRef(nodep->fileline(), valuep, foundp->packagep());
-		nodep->replaceWith(newp);
-		nodep->deleteTree(); nodep=NULL;
-		return true; // Edited
-	    }
-	}
-	return false;
-    }
-    void createImplicitVar (VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp, VSymEnt* moduleSymp, bool noWarn) {
-	// Create implicit after warning
-	if (linkVarName(lookupSymp, nodep)) { nodep=NULL; return; }
-	if (!nodep->varp()) {
-	    if (!noWarn) {
-		if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
-		    nodep->v3error("Signal definition not found, and implicit disabled with `default_nettype: "<<nodep->prettyName());
-		} else {
-		    nodep->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<nodep->prettyName());
-		}
-	    }
-	    AstVar* newp = new AstVar (nodep->fileline(), AstVarType::WIRE,
-				       nodep->name(), VFlagLogicPacked(), 1);
-	    newp->trace(modp->modTrace());
-	    modp->addStmtp(newp);
-	    // Link it to signal list, must add the variable under the module; current scope might be lower now
-	    insertSym(moduleSymp, newp->name(), newp, NULL/*packagep*/);
-	}
     }
 };
 
@@ -812,13 +789,11 @@ private:
     void pinImplicitExprRecurse(AstNode* nodep) {
 	// Under a pin, Check interconnect expression for a pin reference or a concat.
 	// Create implicit variable as needed
-	if (AstVarRef* varrefp = nodep->castVarRef()) {
+	if (nodep->castVarRef()) {
 	    // To prevent user errors, we should only do single bit
 	    // implicit vars, however some netlists (MIPS) expect single
 	    // bit implicit wires to get created with range 0:0 etc.
-	    //if (!nodep->modVarp()->rangep()) ...
-	    // Note FindVisitor::visit AstVarRef stashes user1p specifically for this getNodeSym
-	    m_statep->createImplicitVar(m_statep->getNodeSym(nodep), varrefp, m_modp, m_statep->getNodeSym(m_modp), false);
+	    m_statep->implicitOkAdd(m_modp, nodep->name());
 	}
 	// These are perhaps a little too generous, as a SELect of siga[sigb]
 	// perhaps shouldn't create an implicit variable.  But, we've warned...
@@ -1028,6 +1003,47 @@ private:
 
     int debug() { return LinkDotState::debug(); }
 
+    // METHODS - Variables
+    bool linkVarName (VSymEnt* lookupSymp, AstVarRef* nodep) {
+	// Return true if changed, and caller should end processing
+	if (!nodep->varp()) {
+	    UINFO(9," linkVarName se"<<(void*)lookupSymp<<"  n="<<nodep<<endl);
+	    if (!lookupSymp) nodep->v3fatalSrc("NULL lookup symbol table");
+	    VSymEnt* foundp = lookupSymp->findIdFallback(nodep->name());
+	    if (AstVar* varp = foundp->nodep()->castVar()) {
+		nodep->varp(varp);
+		nodep->packagep(foundp->packagep());
+	    }
+	    else if (AstEnumItem* valuep = foundp->nodep()->castEnumItem()) {
+		AstNode* newp = new AstEnumItemRef(nodep->fileline(), valuep, foundp->packagep());
+		nodep->replaceWith(newp);
+		nodep->deleteTree(); nodep=NULL;
+		return true; // Edited
+	    }
+	}
+	return false;
+    }
+    void createImplicitVar (VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp, VSymEnt* moduleSymp, bool noWarn) {
+	// Create implicit after warning
+	if (linkVarName(lookupSymp, nodep)) { nodep=NULL; return; }
+	if (!nodep->varp()) {
+	    if (!noWarn) {
+		if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
+		    nodep->v3error("Signal definition not found, and implicit disabled with `default_nettype: "<<nodep->prettyName());
+		} else {
+		    nodep->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<nodep->prettyName());
+		}
+	    }
+	    AstVar* newp = new AstVar (nodep->fileline(), AstVarType::WIRE,
+				       nodep->name(), VFlagLogicPacked(), 1);
+	    newp->trace(modp->modTrace());
+	    nodep->varp(newp);
+	    modp->addStmtp(newp);
+	    // Link it to signal list, must add the variable under the module; current scope might be lower now
+	    m_statep->insertSym(moduleSymp, newp->name(), newp, NULL/*packagep*/);
+	}
+    }
+
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser* vup) {
 	// Recurse..., backward as must do packages before using packages
@@ -1116,11 +1132,16 @@ private:
 	// VarRef: Resolve its reference
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) {
-	    if (m_statep->linkVarName(m_curSymp, nodep)) { nodep=NULL; return; }
+	    if (linkVarName(m_curSymp, nodep)) { nodep=NULL; return; }
 	    if (!nodep->varp()) {
-		m_statep->preErrorDump();
-		nodep->v3error("Can't find definition of signal: "<<nodep->prettyName());
-		m_statep->createImplicitVar (m_curSymp, nodep, m_modp, m_modSymp, true);  // So only complain once
+		bool err = (m_statep->forPrimary()
+			    && !m_statep->implicitOk(m_modp, nodep->name()));
+		if (err) {
+		    m_statep->preErrorDump();
+		    nodep->v3error("Can't find definition of signal: "<<nodep->prettyName());
+		}
+		// Create even if error, so only complain once
+		createImplicitVar (m_curSymp, nodep, m_modp, m_modSymp, err);
 	    }
 	}
     }
