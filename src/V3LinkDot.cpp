@@ -631,9 +631,6 @@ private:
 	}
 	m_curSymp = oldCurSymp;
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
-	nodep->user1p(m_curSymp);  // Remember so Param visitor can easily find the reference point
-    }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Var: Remember its name for later resolution
 	if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Var not under module??\n");
