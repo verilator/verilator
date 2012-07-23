@@ -755,7 +755,7 @@ void AstVarScope::dump(ostream& str) {
 }
 void AstVarXRef::dump(ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     str<<dotted()<<". - ";
@@ -766,7 +766,7 @@ void AstVarXRef::dump(ostream& str) {
 }
 void AstVarRef::dump(ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     if (varScopep()) { varScopep()->dump(str); }
@@ -815,7 +815,7 @@ void AstActive::dump(ostream& str) {
 }
 void AstNodeFTaskRef::dump(ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg=0x"<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     str<<" -> ";
     if (dotted()!="") { str<<dotted()<<". - "; }
     if (taskp()) { taskp()->dump(str); }

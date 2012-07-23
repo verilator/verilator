@@ -152,7 +152,8 @@ public:
 	}
 	return any;
     }
-    void cellErrorScopes(AstNode* lookp) {
+    void cellErrorScopes(AstNode* lookp, string prettyName="") {
+	if (prettyName=="") prettyName = lookp->prettyName();
 	string scopes;
 	for (IdNameMap::iterator it = m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
 	    AstNode* nodep = it->second->nodep();
@@ -163,7 +164,7 @@ public:
 	    }
 	}
 	if (scopes=="") scopes="<no cells found>";
-	cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<lookp->prettyName()<<"': "
+	cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<prettyName<<"': "
 	    <<scopes<<endl;
 	if (debug()) dump(cerr,"\t\t      KnownScope: ", 1);
     }

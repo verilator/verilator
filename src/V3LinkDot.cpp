@@ -374,7 +374,7 @@ public:
     }
 
     VSymEnt* findSymPrefixed(VSymEnt* lookupSymp, const string& dotname, string& baddot) {
-	// Find symbol in given point in hierarchy
+	// Find symbol in given point in hierarchy, allowing prefix (post-Inline)
 	// For simplicity lookupSymp may be passed NULL result from findDotted
 	if (!lookupSymp) return NULL;
 	UINFO(8,"\t\tfindSymPrefixed "<<dotname
@@ -1040,6 +1040,10 @@ private:
 	    m_statep->insertSym(moduleSymp, newp->name(), newp, NULL/*packagep*/);
 	}
     }
+    void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
+	if (nodep->taskp() && nodep->taskp()->castTask()
+	    && nodep->castFuncRef()) nodep->v3error("Illegal call of a task as a function: "<<nodep->prettyName());
+    }
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser* vup) {
@@ -1251,7 +1255,7 @@ private:
 		    okSymp->cellErrorScopes(nodep);
 		}
 	    }
-	    if (taskp->castTask() && nodep->castFuncRef()) nodep->v3error("Illegal call of a task as a function: "<<nodep->prettyName());
+	    taskFuncSwapCheck(nodep);
 	}
 	nodep->iterateChildren(*this);
     }
