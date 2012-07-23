@@ -1136,6 +1136,9 @@ And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
+    # Might be needed if SystemC 2.3.0
+    export SYSTEMC_CXX_FLAGS=-pthread
+
     g++ -L$SYSTEMC_LIBDIR ../sc_main.o Vour__ALL*.o verilated.o \
               -o Vour -lsystemc
 
@@ -1289,7 +1292,7 @@ was compiled).
 =item SYSTEMC_CXX_FLAGS
 
 Specifies additional flags that are required to be passed to GCC when
-building the SystemC model.
+building the SystemC model.  System 2.3.0 may need this set to "-pthread".
 
 =item SYSTEMC_INCLUDE
 
