@@ -1070,9 +1070,9 @@ public:
     AstNodeDType* findSigned32DType()	{ return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT32); }  // Twostate
     AstNodeDType* findUInt64DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT64); }  // Twostate
-    AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric);
-    AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric);
-    AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd);
+    AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error

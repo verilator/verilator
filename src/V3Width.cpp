@@ -420,7 +420,9 @@ private:
 	    int frommsb = nodep->fromp()->width() - 1;
 	    int fromlsb = 0;
 	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
-	    if (varrp && varrp->varp()->basicp()->isRanged()) {	// Selecting a bit from a multibit register
+	    if (varrp
+		&& varrp->varp()->basicp()
+		&& varrp->varp()->basicp()->isRanged()) {	// Selecting a bit from a multibit register
 		frommsb = varrp->varp()->basicp()->msbMaxSelect();  // Corrected for negative lsb
 		fromlsb = varrp->varp()->basicp()->lsb();
 	    }

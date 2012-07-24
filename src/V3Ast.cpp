@@ -1082,17 +1082,17 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, bool issigned) {
     }
 }
 
-AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) {
+AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) const {
     // For 'simple' types we use the global directory.  These are all unsized.
     // More advanced types land under the module/task/etc
     return v3Global.rootp()->typeTablep()
 	->findBasicDType(fileline(), kwd);
 }
-AstNodeDType* AstNode::findBitDType(int width, int widthMin, AstNumeric numeric) {
+AstNodeDType* AstNode::findBitDType(int width, int widthMin, AstNumeric numeric) const {
     return v3Global.rootp()->typeTablep()
 	->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT, width, widthMin, numeric);
 }
-AstNodeDType* AstNode::findLogicDType(int width, int widthMin, AstNumeric numeric) {
+AstNodeDType* AstNode::findLogicDType(int width, int widthMin, AstNumeric numeric) const {
     return v3Global.rootp()->typeTablep()
 	->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC, width, widthMin, numeric);
 }
