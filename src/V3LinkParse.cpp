@@ -19,11 +19,11 @@
 //*************************************************************************
 // LinkParse TRANSFORMATIONS:
 //	Top-down traversal
-//	    Replace ParseRef with VarRef, VarXRef, FuncRef or TaskRef
-//	    TASKREF(PARSEREF(DOT(TEXTa,TEXTb))) -> TASKREF(a,b)
-//	    PARSEREF(TEXTa) -> VARREF(a)
-//	    PARSEREF(DOT(TEXTa,TEXTb)) -> VARXREF("a","b")
-//	    PARSEREF(DOT(DOT(TEXTa,TEXTb),TEXTc)) -> VARXREF("a.b","c")
+//	    Replace ParseRef with lower parseref
+//	    TASKREF(PARSEREF(DOT(TEXTa,TEXTb))) -> DOT(PARSEREF(a),TASKREF(b))
+//	    PARSEREF(TEXTa) -> PARSEREF(a)   (no change)
+//	    PARSEREF(DOT(TEXTa,TEXTb)) -> DOT(PARSEREF(A),PARSEREF(b)
+//	    PARSEREF(DOT(DOT(TEXTa,TEXTb),TEXTc)) -> DOT(DOT(PARSEREF(a),PARSEREF(b)),PARSEREF(c))
 //*************************************************************************
 
 #include "config_build.h"
@@ -57,17 +57,16 @@ private:
     typedef set <FileLine*> FileLineSet;
 
     // STATE
-    string	m_dotText;	// Dotted module text we are building for a dotted node, passed up
-    bool	m_inModDot;	// We're inside module part of dotted name
-    AstParseRefExp m_exp;	// Type of data we're looking for
-    AstText*	m_baseTextp;	// Lowest TEXT node that needs replacement with varref
-    AstVar*	m_varp;		// Variable we're under
+    AstParseRefExp	m_exp;		// Type of data we're looking for
+    AstVar*		m_varp;		// Variable we're under
     ImplTypedefMap	m_implTypedef;	// Created typedefs for each <container,name>
     FileLineSet		m_filelines;	// Filelines that have been seen
     bool		m_inAlways;	// Inside an always
     bool		m_inGenerate;	// Inside a generate
+    bool		m_needStart;	// Need start marker on lower AstParse
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     AstNodeModule*	m_modp;		// Current module
+    AstParseRef*	m_rightParsep;	// RHS()-most parseref
 
     // METHODS
     static int debug() {
@@ -104,17 +103,6 @@ private:
 	    cleanFileline(nodep);
 	    UINFO(5,"   "<<nodep<<endl);
 	    checkExpected(nodep);
-	    // Due to a need to get the arguments, the ParseRefs are under here,
-	    // rather than the NodeFTaskRef under the ParseRef.
-	    if (nodep->namep()) {
-		m_exp = AstParseRefExp::PX_FUNC;
-		nodep->namep()->accept(*this);  // No next, we don't want to do the edit
-		m_exp = AstParseRefExp::PX_NONE;
-		if (!m_baseTextp) nodep->v3fatalSrc("No TEXT found to indicate function name");
-		nodep->name(m_baseTextp->text());
-		nodep->dotted(m_dotText);
-		nodep->namep()->unlinkFrBack()->deleteTree(); m_baseTextp=NULL;
-	    }
 	    AstNodeModule* upperValueModp = m_valueModp;
 	    m_valueModp = NULL;
 	    nodep->iterateChildren(*this);
@@ -122,99 +110,81 @@ private:
 	}
     }
     virtual void visit(AstParseRef* nodep, AstNUser*) {
+	if (nodep->user1SetOnce()) return;  // Process only once.
 	// VarRef: Parse its reference
 	UINFO(5,"   "<<nodep<<endl);
-	// May be a varref inside a select, etc, so save state and recurse
-	string		oldText = m_dotText;
-	bool		oldDot = m_inModDot;
-	AstParseRefExp  oldExp = m_exp;
-	AstText*	oldBasep = m_baseTextp;
-	{
-	    // Replace the parsed item with its child IE the selection tree down to the varref itself
-	    // Do this before iterating, so we don't have to process the edited tree twice
-	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-	    nodep->replaceWith(lhsp);
-
-	    // Process lower nodes
-	    m_dotText = "";
-	    m_baseTextp = NULL;
-	    if (m_exp == AstParseRefExp::PX_FUNC) {
-		lhsp->accept(*this);
-		// Return m_dotText to invoker
-	    } else if (nodep->expect() == AstParseRefExp::PX_VAR_MEM
-		       || nodep->expect() == AstParseRefExp::PX_VAR_ANY) {
-		m_exp = nodep->expect();
-		lhsp->accept(*this);
+	{   // First do any function call
+	    AstParseRefExp lastExp = m_exp;
+	    {
 		m_exp = AstParseRefExp::PX_NONE;
-		if (!m_baseTextp) nodep->v3fatalSrc("No TEXT found to indicate function name");
-		if (m_dotText == "") {
-		    AstNode* newp = new AstVarRef(nodep->fileline(), m_baseTextp->text(), false);  // lvalue'ness computed later
-		    m_baseTextp->replaceWith(newp); m_baseTextp->deleteTree(); m_baseTextp=NULL;
-		} else {
-		    AstNode* newp = new AstVarXRef(nodep->fileline(), m_baseTextp->text(), m_dotText, false);  // lvalue'ness computed later
-		    m_baseTextp->replaceWith(newp); m_baseTextp->deleteTree(); m_baseTextp=NULL;
-		}
-	    } else {
-		nodep->v3fatalSrc("Unknown ParseRefExp type\n");
+		if (nodep->ftaskrefp()) nodep->ftaskrefp()->iterateAndNext(*this);
 	    }
-	    nodep->deleteTree(); nodep=NULL;
+	    m_exp = lastExp;
 	}
-	if (m_exp != AstParseRefExp::PX_FUNC) {  // Fuctions need to look at the name themself
-	    m_dotText = oldText;
-	    m_inModDot = oldDot;
-	    m_exp = oldExp;
-	    m_baseTextp = oldBasep;
+	if (nodep->start()) { // Start of new parseref stack
+	    // The start parseref indicates the type of element to be created.
+	    // Push the start marking down to the lowest non-start parseref under any DOTs.
+	    // May be a varref inside a select, etc, so save state and recurse
+	    AstParseRefExp lastExp = m_exp;
+	    AstParseRef* lastRightp = m_rightParsep;
+	    {
+		m_exp = nodep->expect();
+		m_rightParsep = NULL;
+		m_needStart = true;
+		nodep->lhsp()->accept(*this);
+		if (!m_rightParsep) nodep->v3fatalSrc("No child ParseRef found");
+		AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+		if (nodep->expect() == AstParseRefExp::PX_FTASK) {
+		    // Put the FTaskRef under the final DOT
+		    AstNodeFTaskRef* ftaskrefp = nodep->ftaskrefp()->castNodeFTaskRef();
+		    if (!ftaskrefp) nodep->v3fatalSrc("Parseref indicates FTASKref but none found");
+		    ftaskrefp->name(m_rightParsep->name());
+		    ftaskrefp->unlinkFrBack();
+		    if (ftaskrefp->packagep()) {
+			// Can remove the parse stack entirely and V3LinkDot will deal with it natively
+			lhsp = ftaskrefp;
+		    } else {
+			m_rightParsep->ftaskrefp(ftaskrefp);
+		    }
+		}
+		nodep->replaceWith(lhsp);
+		nodep->deleteTree(); nodep=NULL;
+	    }
+	    m_exp = lastExp;
+	    m_rightParsep = lastRightp;
+	}
+	else { // inside existing stack
+	    nodep->expect(m_exp);
+	    m_rightParsep = nodep;
+	    // Move the start marker down to a standalone parse reference
+	    if (m_needStart) { nodep->start(true); m_needStart = false; }
 	}
     }
     virtual void visit(AstDot* nodep, AstNUser*) {
 	UINFO(5,"     "<<nodep<<endl);
-	cleanFileline(nodep);
-	if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
-	    m_dotText = "";
+	if (!nodep->user1SetOnce()) {  // Process only once.
+	    cleanFileline(nodep);
+	    if (m_exp == AstParseRefExp::PX_NONE) nodep->v3fatalSrc("Tree syntax error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type());
+	    AstParseRefExp lastExp = m_exp;
+	    m_exp = AstParseRefExp::PX_PREDOT;
+	    if (m_needStart) { nodep->start(true); m_needStart = false; }
 	    nodep->lhsp()->iterateAndNext(*this);
-	    string namelhs = m_dotText;
-
-	    m_dotText = "";
+	    m_exp = lastExp;
 	    nodep->rhsp()->iterateAndNext(*this);
-	    m_dotText = namelhs + "." + m_dotText;
-	} else {  // Not in ModDot, so this is {modulepart} DOT {name}
-	    m_inModDot = true;
-	    m_dotText = "";
-	    nodep->lhsp()->iterateAndNext(*this);
-	    string namelhs = m_dotText;
-
-	    m_inModDot = false;
-	    m_dotText = "";
-	    nodep->rhsp()->iterateAndNext(*this);
-	    m_dotText = namelhs;
-
-	    nodep->replaceWith(nodep->rhsp()->unlinkFrBack()); nodep->deleteTree(); nodep=NULL;
 	}
     }
     virtual void visit(AstSelBit* nodep, AstNUser*) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
-	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
-		m_dotText = "";
-		nodep->lhsp()->iterateAndNext(*this);
-		if (AstConst* constp = nodep->rhsp()->castConst()) {
-		    string index = AstNode::encodeNumber(constp->toSInt());
-		    m_dotText = m_dotText+"__BRA__"+index+"__KET__";
-		} else {
-		    nodep->v3error("Unsupported: Non-constant inside []'s in the cell part of a dotted reference");
-		}
-		// And pass up m_dotText
-	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
-		nodep->v3error("Syntax Error: Range selection '[]' is not allowed as part of function names");
+	    if (m_exp==AstParseRefExp::PX_FTASK) {
+		nodep->v3error("Syntax Error: Range selection '[]' is not allowed as part of function/task names");
 	    } else {
 		nodep->lhsp()->iterateAndNext(*this);
 		AstParseRefExp lastExp = m_exp;
-		AstText* lasttextp = m_baseTextp;
 		{
 		    m_exp = AstParseRefExp::PX_NONE;
 		    nodep->rhsp()->iterateAndNext(*this);
 		}
-		m_baseTextp = lasttextp;
 		m_exp = lastExp;
 	    }
 	}
@@ -223,37 +193,21 @@ private:
 	// Excludes simple AstSel, see above
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
-	    if (m_inModDot) { // Already under dot, so this is {modulepart} DOT {modulepart}
+	    if (m_exp == AstParseRefExp::PX_PREDOT) { // Already under dot, so this is {modulepart} DOT {modulepart}
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
-	    } else if (m_exp==AstParseRefExp::PX_FUNC) {
-		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed as part of function names");
+	    } else if (m_exp==AstParseRefExp::PX_FTASK) {
+		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed as part of function/task names");
 	    } else if (m_exp==AstParseRefExp::PX_VAR_MEM) {
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed when expecting memory reference");
 	    } else {
 		nodep->lhsp()->iterateAndNext(*this);
 		AstParseRefExp lastExp = m_exp;
-		AstText* lasttextp = m_baseTextp;
 		{
 		    m_exp = AstParseRefExp::PX_NONE;
 		    nodep->rhsp()->iterateAndNext(*this);
 		    nodep->thsp()->iterateAndNext(*this);
 		}
-		m_baseTextp = lasttextp;
 		m_exp = lastExp;
-	    }
-	}
-    }
-    virtual void visit(AstText* nodep, AstNUser*) {
-	if (!nodep->user1SetOnce()) {  // Process only once.
-	    cleanFileline(nodep);
-	    if (m_exp != AstParseRefExp::PX_NONE) {
-		UINFO(7,"      "<<nodep<<endl);
-		if (m_inModDot) {  // Dotted part, just pass up
-		    m_dotText = nodep->text();
-		} else {
-		    if (m_baseTextp) nodep->v3fatalSrc("Multiple low-level ParseRef text's found; which one is var name?");
-		    m_baseTextp = nodep;
-		}
 	    }
 	}
     }
@@ -470,14 +424,14 @@ private:
 public:
     // CONSTUCTORS
     LinkParseVisitor(AstNetlist* rootp) {
-	m_inModDot = false;
-	m_exp = AstParseRefExp::PX_NONE;
-	m_baseTextp = NULL;
 	m_varp = NULL;
+	m_exp = AstParseRefExp::PX_NONE;
 	m_modp = NULL;
 	m_inAlways = false;
 	m_inGenerate = false;
+	m_needStart = false;
 	m_valueModp = NULL;
+	m_rightParsep = NULL;
 	rootp->accept(*this);
     }
     virtual ~LinkParseVisitor() {}

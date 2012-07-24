@@ -10,11 +10,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
 	 fails=>1,
 	 expect=>
-'%Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of signal: nf
-%Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of \'subsubz\' in dotted signal: sub.subsubz.inss
-%Error:      Known scopes under \'inss\': subsub
+'%Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of variable: nf
+%Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of \'subsubz\' in dotted scope/variable: sub.subsubz
+%Error:      Known scopes under \'sub\': subsub
 %Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of task/function: nofunc
 %Error: t/t_var_notfound_bad.v:\d+: Can\'t find definition of task/function: notask
+%Error: t/t_var_notfound_bad.v:\d+: Found definition of \'a_var\' as a VAR but expected a task/function
 %Error: Exiting due to.*',
 	 );
 

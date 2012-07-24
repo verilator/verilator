@@ -2135,17 +2135,17 @@ for_step<nodep>:		// IEEE: for_step
 //************************************************
 // Functions/tasks
 
-taskRef<ftaskrefp>:		// IEEE: part of tf_call
-		idDotted		 		{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),NULL);}
-	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($1->fileline(), AstParseRefExp::PX_TASK, $1),$3);}
-	//UNSUP: package_scopeIdFollows idDotted		{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),NULL);}
-	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($1->fileline(),new AstParseRef($2->fileline(), AstParseRefExp::PX_TASK, $2),$4);}
+taskRef<parserefp>:		// IEEE: part of tf_call
+		idDotted		 		{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstTaskRef($1->fileline(),"",NULL)); $$->start(true); }
+	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstTaskRef($1->fileline(),"",$3)); $$->start(true); }
+	//UNSUP: package_scopeIdFollows idDotted		{ }
+	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ }
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
-funcRef<ftaskrefp>:		// IEEE: part of tf_call
-		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($2,new AstParseRef($1->fileline(), AstParseRefExp::PX_FUNC, $1), $3); }
-	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ $$ = new AstFuncRef($3,new AstParseRef($2->fileline(), AstParseRefExp::PX_FUNC, $2), $4); $$->packagep($1); }
+funcRef<parserefp>:		// IEEE: part of tf_call
+		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstFuncRef($2, "", $3)); $$->start(true); }
+	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ AstFuncRef* f=new AstFuncRef($3,"",$4); f->packagep($1); $$ = new AstParseRef($2->fileline(), AstParseRefExp::PX_FTASK, "", $2, f); $$->start(true); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -2978,12 +2978,12 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 
 // VarRef to a Memory
 varRefMem<parserefp>:
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_MEM, $1); }
+		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_MEM, "", $1, NULL); $$->start(true); }
 	;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
 idClassSel<parserefp>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_ANY, $1); }
+		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_ANY, "", $1, NULL); $$->start(true); }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
 	//UNSUP	yTHIS '.' idDotted			{ UNSUP }
 	//UNSUP	ySUPER '.' idDotted			{ UNSUP }
@@ -3008,7 +3008,7 @@ idDottedMore<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstText($<fl>1,*$1); }
+		id						{ $$ = new AstParseRef($<fl>1,AstParseRefExp::PX_TEXT,*$1,NULL,NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }

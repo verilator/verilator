@@ -806,6 +806,11 @@ void AstSenItem::dump(ostream& str) {
 void AstParseRef::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<expect().ascii()<<"]";
+    if (start()) str<<" [START]";
+}
+void AstDot::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (start()) str<<" [START]";
 }
 void AstActive::dump(ostream& str) {
     this->AstNode::dump(str);

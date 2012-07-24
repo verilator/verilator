@@ -1263,33 +1263,48 @@ struct AstParseRef : public AstNode {
     // We don't know which at parse time due to bison constraints
     // The link stages will replace this with AstVarRef, or AstTaskRef, etc.
     // Parents: math|stmt
-    // Children: TEXT|DOT|SEL* (or expression under sel)
+    // Children: TEXT|DOT|SEL*|TASK|FUNC (or expression under sel)
 private:
     AstParseRefExp	m_expect;		// Type we think it should resolve to
+    string		m_name;
+    bool		m_start;		// Start of parseref stack
 public:
-    AstParseRef(FileLine* fl, AstParseRefExp expect, AstNode* lhsp)
-	:AstNode(fl), m_expect(expect) { setOp1p(lhsp); }
+    AstParseRef(FileLine* fl, AstParseRefExp expect, const string& name, AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
+	:AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); m_start=false; }
     ASTNODE_NODE_FUNCS(ParseRef, PARSEREF)
     virtual void dump(ostream& str);
-    virtual V3Hash sameHash() const { return V3Hash(m_expect); }
-    virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect(); }
+    virtual string name() const { return m_name; }		// * = Var name
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_expect),V3Hash(m_name)); }
+    virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect() && m_name==samep->castParseRef()->m_name; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual void name(const string& name) 	{ m_name = name; }
     AstParseRefExp expect() const { return m_expect; }
+    void expect(AstParseRefExp exp) { m_expect=exp; }
     // op1 = Components
     AstNode*	lhsp() 		const { return op1p(); }	// op1 = List of statements
+    AstNode*	ftaskrefp()	const { return op2p(); }	// op2 = Function/task reference
+    void ftaskrefp(AstNodeFTaskRef* nodep) { setNOp2p(nodep); }	// op2 = Function/task reference
+    bool start() const { return m_start; }
+    void start(bool flag) { m_start = flag; }
 };
 
 struct AstDot : public AstNode {
     // A dot separating paths in an AstXRef, AstFuncRef or AstTaskRef
-    // These are elimiated in the link stage
+    // These are eliminated in the link stage
+private:
+    bool		m_start;		// Start of parseref stack
+public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
+	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); m_start=false; }
     ASTNODE_NODE_FUNCS(Dot, DOT)
+    virtual void dump(ostream& str);
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
+    bool start() const { return m_start; }
+    void start(bool flag) { m_start = flag; }
 };
 
 //######################################################################

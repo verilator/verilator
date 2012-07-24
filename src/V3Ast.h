@@ -500,10 +500,11 @@ class AstParseRefExp {
 public:
     enum en {
 	PX_NONE,	// Used in V3LinkParse only
-	PX_VAR_MEM,
-	PX_VAR_ANY,
-	PX_TASK,
-	PX_FUNC
+	PX_TEXT,	// Unknown ID component
+	PX_PREDOT,	// Module name or misc component above var/task/func/member
+	PX_VAR_MEM,	// Variable that must be a memory
+	PX_VAR_ANY,	// Variable/structure member
+	PX_FTASK	// Task/Function (AstParse::ftaskrefp() will be set)
     };
     enum en m_e;
     inline AstParseRefExp() : m_e(PX_NONE) {}
@@ -512,7 +513,7 @@ public:
     operator en () const { return m_e; }
     const char* ascii() const {
 	static const char* names[] = {
-	    "","VAR_MEM","VAR_ANY","TASK","FUNC"};
+	    "","TEXT","PREDOT","VAR_MEM","VAR_ANY","FTASK"};
 	return names[m_e]; }
   };
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }

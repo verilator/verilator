@@ -6,6 +6,7 @@
 module t (/*AUTOARG*/);
 
    integer i;
+   integer a_var;
 
    sub sub ();
 
@@ -14,6 +15,7 @@ module t (/*AUTOARG*/);
       sub.subsubz.inss = 0;  // subsub not found
       i = nofunc();  // nofunc not found
       notask();  // notask not found
+      a_var();	// Calling variable as task
       $finish;
    end
 endmodule
