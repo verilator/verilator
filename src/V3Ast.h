@@ -1109,6 +1109,7 @@ public:
     void	dumpTreeGdb(); // For GDB only
     void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeFile(const string& filename, bool append=false);
+    static void	dumpTreeFileGdb(const char* filenamep=NULL);
 
     // METHODS - queries
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays

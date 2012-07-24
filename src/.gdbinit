@@ -19,6 +19,13 @@ document pnt
   Verilator: Print AstNode NODEP's tree
 end
 
+define dtf
+  call AstNode::dumpTreeFileGdb(0)
+end
+document dtf
+  Verilator: Dump AstNode tree to file
+end
+
 define watchedit
    watch AstNode::s_editCntGbl==$arg0
 end

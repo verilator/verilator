@@ -946,15 +946,19 @@ void AstNode::dumpGdb() {  // For GDB only
     dumpGdbHeader();
     cout<<"  "; dump(cout); cout<<endl;
 }
+void AstNode::dumpGdbHeader() const {  // For GDB only
+    if (!this) { cout<<"This=NULL"<<endl; return; }
+    dumpPtrs(cout);
+    cout<<"  Fileline = "<<fileline()<<endl;
+}
 void AstNode::dumpTreeGdb() {  // For GDB only
     if (!this) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
     dumpTree(cout);
 }
-void AstNode::dumpGdbHeader() const {  // For GDB only
-    if (!this) { cout<<"This=NULL"<<endl; return; }
-    dumpPtrs(cout);
-    cout<<"  Fileline = "<<fileline()<<endl;
+void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only
+    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree",98);
+    v3Global.rootp()->dumpTreeFile(filename);
 }
 
 void AstNode::dumpPtrs(ostream& os) const {
