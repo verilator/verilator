@@ -75,11 +75,11 @@ private:
 
     AstNodeDType* dtypeForExtractp(AstNode* nodep, AstNode* basefromp, int dimension, bool rangedSelect) {
 	// Perform error checks on the node
-	AstVar* varp = varFromBasefrom(basefromp);
-	//UINFO(9,"SCD\n"); if (debug()>=9) varp->dumpTree(cout,"-dtfexvar: ");
+	AstNode* errp;
+	AstNodeDType* bfdtypep = baseDTypeFrom(basefromp, errp/*ref*/);
+	//UINFO(9,"SCD\n"); if (debug()>=9) bfdtypep->dumpTree(cout,"-dtfexvar: ");
 	// This may be called on dotted variables before we've completed widthing of the dotted var.
-	AstNodeDType* ddtypep = varp->dtypep() ? varp->dtypep() : varp->childDTypep();
-	if (!ddtypep) nodep->v3fatalSrc("No datatype found for variable in select");
+	AstNodeDType* ddtypep = bfdtypep;
 	ddtypep = ddtypep->dtypeDimensionp(dimension);
 	if (debug()>=9 &&ddtypep) ddtypep->dumpTree(cout,"-ddtypep: ");
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
@@ -87,13 +87,13 @@ private:
 	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (!adtypep->isRanged()) {
-		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<varp->prettyName());
+		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<errp->prettyName());
 		return NULL;
 	    }
 	    return adtypep;
 	}
 	else {
-	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension: "<<varp->prettyName());
+	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension: "<<errp->prettyName());
 	}
 	return NULL;
     }
@@ -134,34 +134,39 @@ private:
 	return newp;
     }
 
-    AstVar* varFromBasefrom(AstNode* basefromp) {
+    AstNodeDType* baseDTypeFrom(AstNode* basefromp, AstNode*& errpr) {
+	errpr = basefromp;
 	AstNodeVarRef* varrefp = basefromp->castNodeVarRef();
 	if (!varrefp) basefromp->v3fatalSrc("Bit/array selection of non-variable");
-	AstVar* varp = varrefp->varp();	if (!varp) varrefp->v3fatalSrc("Signal not linked");
-	return varp;
+	AstVar* varp = varrefp->varp();	if (!varp) { varrefp->v3fatalSrc("Signal not linked"); return NULL; }
+	errpr = varp;
+	AstNodeDType* bfdtypep = varp->subDTypep();
+	if (!bfdtypep) basefromp->v3fatalSrc("No datatype found for variable in select");
+	return bfdtypep;
     }
 
     AstNode* newSubLsbOf(AstNode* underp, AstNode* basefromp) {
 	// Account for a variable's LSB in bit selections
 	// Will likely become SUB(underp, lsb_of_signal)
 	// Don't report WIDTH warnings etc here, as may be inside a generate branch that will be deleted
-	AstVar* varp = varFromBasefrom(basefromp);
+	AstNode* errp;
+	AstNodeDType* bfdtypep = baseDTypeFrom(basefromp, errp/*ref*/);
 	// SUB #'s Not needed when LSB==0 and MSB>=0 (ie [0:-13] must still get added!)
-	if (!varp->basicp()->isRanged()) {
+	if (!bfdtypep->basicp()->isRanged()) {
 	    // vector without range, or 0 lsb is ok, for example a INTEGER x; y = x[21:0];
 	    return underp;
 	} else {
-	    if (varp->basicp()->rangep()
-		&& (!varp->basicp()->rangep()->msbp()->castConst()
-		    || !varp->basicp()->rangep()->lsbp()->castConst()))
-		varp->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(varp)
-	    if (varp->basicp()->littleEndian()) {
+	    if (bfdtypep->basicp()->rangep()
+		&& (!bfdtypep->basicp()->rangep()->msbp()->castConst()
+		    || !bfdtypep->basicp()->rangep()->lsbp()->castConst()))
+		bfdtypep->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
+	    if (bfdtypep->basicp()->littleEndian()) {
 		// reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
-		AstNode* newp = newSubNeg(varp->basicp()->msb(), underp);
+		AstNode* newp = newSubNeg(bfdtypep->basicp()->msb(), underp);
 		return newp;
 	    } else {
 		// reg [3:1] needs a SUB(under,1)
-		AstNode* newp = newSubNeg(underp, varp->basicp()->lsb());
+		AstNode* newp = newSubNeg(underp, bfdtypep->basicp()->lsb());
 		return newp;
 	    }
 	}
@@ -205,12 +210,12 @@ private:
 	int dimension      = AstArraySel::dimension(nodep->fromp());  // Not attrp as need hierarchy
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, false);
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
-	AstNode* bitp = nodep->rhsp()->unlinkFrBack();
+	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
 	if (debug()>=9) ddtypep->dumpTree(cout,"-ddtypep: ");
 	if (debug()>=9) nodep->dumpTree(cout,"-vsbmd: ");
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
-	    AstNode* subp = bitp;
+	    AstNode* subp = rhsp;
 	    if (adtypep->lsb()!=0 || adtypep->msb()<0) {
 		subp = newSubNeg (subp, adtypep->lsb());
 	    }
@@ -224,7 +229,7 @@ private:
 	    // SELBIT(range, index) -> SEL(array, index, 1)
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       newSubLsbOf(bitp, basefromp),
+				       newSubLsbOf(rhsp, basefromp),
 				       // Unsized so width from user
 				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
 	    UINFO(6,"   new "<<newp<<endl); if (debug()>=9) newp->dumpTree(cout,"-vsbnw: ");
@@ -235,7 +240,7 @@ private:
 	    // How to recover?  We'll strip a dimension.
 	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
-	if (!bitp->backp()) pushDeletep(bitp); bitp=NULL;
+	if (!rhsp->backp()) pushDeletep(rhsp); rhsp=NULL;
     }
 
     virtual void visit(AstSelExtract* nodep, AstNUser*) {
@@ -253,7 +258,8 @@ private:
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* msbp = nodep->rhsp()->unlinkFrBack();
 	AstNode* lsbp = nodep->thsp()->unlinkFrBack();
-	AstVar* varp = varFromBasefrom(basefromp);
+	AstNode* errp;
+	AstNodeDType* bfdtypep = baseDTypeFrom(basefromp, errp/*ref*/);
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, msb!=lsb);
@@ -265,11 +271,11 @@ private:
 		newp->length((msb - lsb) + 1);
 		nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	    } else {
-		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<varp->prettyName());
+		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<errp->prettyName());
 	    }
 	} else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (adtypep) {} // Unused
-	    if (varp->basicp()->littleEndian()) {
+	    if (bfdtypep->basicp()->littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
 	    }
@@ -310,7 +316,6 @@ private:
 	AstNode* rhsp  = nodep->rhsp()->unlinkFrBack();
 	AstNode* widthp = nodep->thsp()->unlinkFrBack();
 	int width = widthp->castConst()->toSInt();
-	//AstVar* varp = varFromBasefrom(basefromp);
 	if (width > (1<<28)) nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "<<widthp->prettyName());
 	if (width<0) nodep->v3error("Width of :+ or :- is < 0: "<<widthp->prettyName());
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, width!=1);
