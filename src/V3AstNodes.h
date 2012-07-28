@@ -3767,6 +3767,7 @@ struct AstConcat : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
 struct AstReplicate : public AstNodeBiop {
+    // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
     AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (AstConst* constp=rhsp->castConst()) {
 	    dtypeSetLogicSized(lhsp->width()*constp->toUInt(), lhsp->width()*constp->toUInt(), AstNumeric::UNSIGNED);
@@ -3776,7 +3777,7 @@ struct AstReplicate : public AstNodeBiop {
 	: AstNodeBiop(fl, lhsp, new AstConst(fl, repCount)) {}
     ASTNODE_NODE_FUNCS(Replicate, REPLICATE)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs,rhs); }
-    virtual string emitVerilog() { return "%f{%l{%k%r}}"; }
+    virtual string emitVerilog() { return "%f{%r{%k%l}}"; }
     virtual string emitC() { return "VL_REPLICATE_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
