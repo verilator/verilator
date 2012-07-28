@@ -758,13 +758,16 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     // Future versions of this function may require the node to have a back to be iterated;
     // there's no lower level reason yet though the back must exist.
     AstNode* nodep=this;
+#ifdef VL_DEBUG  // Otherwise too hot of a function for debug
     if (VL_UNLIKELY(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
+#endif
     while (nodep) {
-	AstNode* niterp = nodep;
+	AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
 	ASTNODE_PREFETCH(nodep->m_nextp);
 	niterp->m_iterpp = &niterp;
 	niterp->accept(v, vup);
 	// accept may do a replaceNode and change niterp on us...
+	//if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep<<" now into "<<(void*)niterp<<endl);  // niterp maybe NULL, so need cast
 	if (!niterp) return;
 	niterp->m_iterpp = NULL;
 	if (VL_UNLIKELY(niterp!=nodep)) { // Edited it

@@ -392,6 +392,7 @@ public:
 // Width class functions
 
 AstNode* V3Width::widthSelNoIterEdit(AstNode* nodep) {
+    UINFO(4,__FUNCTION__<<": "<<nodep<<endl);
     WidthSelVisitor visitor;
     nodep = visitor.mainAcceptEdit(nodep);
     return nodep;

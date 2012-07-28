@@ -1144,7 +1144,7 @@ public:
     //  AstAlways*	castAlways();
 };
 
-inline ostream& operator<<(ostream& os, AstNode* rhs) { rhs->dump(os); return os;}
+inline ostream& operator<<(ostream& os, AstNode* rhs) { if (!rhs) os<<"NULL"; else rhs->dump(os); return os; }
 inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 //######################################################################

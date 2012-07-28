@@ -124,11 +124,7 @@ private:
 #define ANYSIZE 0
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    static int debug() { return V3Width::debug(); }
 
     // VISITORS
     //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
@@ -2125,6 +2121,12 @@ public:
 //######################################################################
 // Width class functions
 
+int V3Width::debug() {
+    static int level = -1;
+    if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+    return level;
+}
+
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
@@ -2137,7 +2139,7 @@ void V3Width::width(AstNetlist* nodep) {
 //! Single node parameter propagation
 //! Smaller step... Only do a single node for parameter propagation
 AstNode* V3Width::widthParamsEdit (AstNode* nodep) {
-    UINFO(4,__FUNCTION__<<": "<<endl);
+    UINFO(4,__FUNCTION__<<": "<<nodep<<endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (true, false);
     nodep = visitor.mainAcceptEdit(nodep);
@@ -2157,7 +2159,7 @@ AstNode* V3Width::widthParamsEdit (AstNode* nodep) {
 //! @return  Pointer to the edited node.
 AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) { //!< [in] AST whose parameters widths are to be analysed.
-    UINFO(4,__FUNCTION__<<": "<<endl);
+    UINFO(4,__FUNCTION__<<": "<<nodep<<endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (true, true);
     nodep = visitor.mainAcceptEdit(nodep);

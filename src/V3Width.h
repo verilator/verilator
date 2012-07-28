@@ -29,6 +29,7 @@
 
 class V3Width {
 public:
+    static int debug();
     static void width(AstNetlist* nodep);
     static AstNode* widthParamsEdit(AstNode* nodep);
     static AstNode* widthGenerateParamsEdit(AstNode* nodep);
