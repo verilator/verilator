@@ -521,20 +521,24 @@ private:
 
     virtual void visit(AstSelBit* nodep, AstNUser* vup) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
+	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelBit should disappear after widthSel");
     }
     virtual void visit(AstSelExtract* nodep, AstNUser* vup) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
+	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelExtract should disappear after widthSel");
     }
 
     virtual void visit(AstSelPlus* nodep, AstNUser* vup) {
+	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelPlus should disappear after widthSel");
     }
     virtual void visit(AstSelMinus* nodep, AstNUser* vup) {
+	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelMinus should disappear after widthSel");
     }
@@ -631,8 +635,11 @@ private:
 	    if (!nodep->fromp() || !nodep->fromp()->widthMin()) nodep->v3fatalSrc("Unsized expression");
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->width());
 	    nodep->replaceWith(new AstConst(nodep->fileline(), num)); nodep->deleteTree(); nodep=NULL;
+	} else if (nodep->attrType()==AstAttrType::VAR_BASE) {
+	    // Soon to be handled in V3LinkWidth SEL generation
 	} else {  // Everything else resolved earlier
 	    nodep->dtypeSetLogicSized(32,1,AstNumeric::UNSIGNED);	// Approximation, unsized 32
+	    UINFO(1,"Missing ATTR type case node: "<<nodep<<endl);
 	    nodep->v3fatalSrc("Missing ATTR type case");
 	}
     }

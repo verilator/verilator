@@ -108,6 +108,7 @@ private:
     bool	m_doGenerate;	// Postpone width checking inside generate
     AstNodeModule*	m_modp;		// Current module
     AstNode*	m_scopep;	// Current scope
+    AstAttrOf*	m_attrp;	// Current attribute
 
     // METHODS
     static int debug() {
@@ -1209,11 +1210,17 @@ private:
 	nodep->replaceWith(fromp); nodep->deleteTree(); nodep=NULL;
     }
 
+    virtual void visit(AstAttrOf* nodep, AstNUser*) {
+	AstAttrOf* oldAttr = m_attrp;
+	m_attrp = nodep;
+	nodep->iterateChildren(*this);
+	m_attrp = oldAttr;
+    }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
-	if (m_doV && nodep->varp()->hasSimpleInit() && !nodep->backp()->castAttrOf()) {
+	if (m_doV && nodep->varp()->hasSimpleInit() && !m_attrp) {
 	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
 	    nodep->varp()->valuep()->iterateAndNext(*this);
 	    if (operandConst(nodep->varp()->valuep())
@@ -2006,6 +2013,7 @@ public:
 	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;
 	m_scopep = NULL;
+	m_attrp = NULL;
 	//
 	switch (pmode) {
 	case PROC_PARAMS:	m_doV = true;  m_doNConst = true; m_params = true; m_required = true; break;
