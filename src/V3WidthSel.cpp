@@ -309,7 +309,7 @@ private:
 	// Below 2 lines may change nodep->widthp()
 	V3Const::constifyParamsEdit(nodep->thsp()); // May relink pointed to node
 	checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
-	// Now replace it with a AstSel
+	// Now replace it with an AstSel
 	AstNode* basefromp = AstArraySel::baseFromp(nodep->attrp());
 	int dimension      = AstArraySel::dimension(nodep->fromp());  // Not attrp as need hierarchy
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();

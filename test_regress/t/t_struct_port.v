@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
 
    // Take CRC data and apply to testblock inputs
    pack_t in;
-   always @* in = crc[10:0];
+   always @* in = crc[9:0];
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
