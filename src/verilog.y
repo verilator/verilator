@@ -57,6 +57,7 @@ public:
     AstVar*	m_varAttrp;	// Current variable for attribute adding
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
     AstNodeDType* m_varDTypep;	// Pointer to data type for next signal declaration
+    AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
     int		m_pinNum;	// Pin number currently parsing
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
@@ -70,6 +71,7 @@ public:
 	m_varDecl = AstVarType::UNKNOWN;
 	m_varIO = AstVarType::UNKNOWN;
 	m_varDTypep = NULL;
+	m_memDTypep = NULL;
 	m_pinNum = -1;
 	m_instModule = "";
 	m_instParamp = NULL;
@@ -345,6 +347,7 @@ class AstSenTree;
 %token<fl>		yOR		"or"
 %token<fl>		yOUTPUT		"output"
 %token<fl>		yPACKAGE	"package"
+%token<fl>		yPACKED		"packed"
 %token<fl>		yPARAMETER	"parameter"
 %token<fl>		yPMOS		"pmos"
 %token<fl>		yPOSEDGE	"posedge"
@@ -355,6 +358,8 @@ class AstSenTree;
 %token<fl>		yPULLDOWN	"pulldown"
 %token<fl>		yPULLUP		"pullup"
 %token<fl>		yPURE		"pure"
+%token<fl>		yRAND		"rand"
+%token<fl>		yRANDC		"randc"
 %token<fl>		yRCMOS		"rcmos"
 %token<fl>		yREAL		"real"
 %token<fl>		yREALTIME	"realtime"
@@ -373,6 +378,7 @@ class AstSenTree;
 %token<fl>		ySPECPARAM	"specparam"
 %token<fl>		ySTATIC		"static"
 %token<fl>		ySTRING		"string"
+%token<fl>		ySTRUCT		"struct"
 %token<fl>		ySUPPLY0	"supply0"
 %token<fl>		ySUPPLY1	"supply1"
 %token<fl>		yTABLE		"table"
@@ -388,6 +394,7 @@ class AstSenTree;
 %token<fl>		yTRI1		"tri1"
 %token<fl>		yTRUE		"true"
 %token<fl>		yTYPEDEF	"typedef"
+%token<fl>		yUNION		"union"
 %token<fl>		yUNIQUE		"unique"
 %token<fl>		yUNIQUE0	"unique0"
 %token<fl>		yUNSIGNED	"unsigned"
@@ -1170,10 +1177,8 @@ data_typeBasic<dtypep>:		// IEEE: part of data_type
 
 data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc references
 		data_typeBasic				{ $$ = $1; }
-	//UNSUP	ySTRUCT        packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
-	//UNSUP		{ UNSUP }
-	//UNSUP	yUNION taggedE packedSigningE '{' struct_union_memberList '}' packed_dimensionListE
-	//UNSUP		{ UNSUP }
+	|	struct_unionDecl packed_dimensionListE	{ $$ = GRAMMARP->createArray(new AstDefImplicitDType($1->fileline(),"__typeimpsu"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
+													     GRAMMARP->m_modp,VFlagChildDType(),$1),$2,false); }
 	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
 										       GRAMMARP->m_modp,VFlagChildDType(),$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
@@ -1185,6 +1190,57 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
 	//			// IEEE: ps_covergroup: see data_type above
+	;
+
+data_type_or_void<dtypep>:		// ==IEEE: data_type_or_void
+		data_type				{ $$=$1; }
+	//UNSUP	yVOID					{ UNSUP }	// No yTAGGED structures
+	;
+
+struct_unionDecl<classp>:	// IEEE: part of data_type
+	//			// packedSigningE is NOP for unpacked
+		ySTRUCT        packedSigningE '{' 	{ $<classp>$ = new AstStructDType($1, $2); SYMP->pushNew($<classp>$); }
+	/*cont*/	struct_union_memberList '}'
+			{ $$=$<classp>4; $$->addMembersp($5); SYMP->popScope($$); }
+	|	yUNION taggedE packedSigningE '{' 	{ $<classp>$ = new AstUnionDType($1, $3); SYMP->pushNew($<classp>$); }
+	/*cont*/	struct_union_memberList '}'
+			{ $$=$<classp>5; $$->addMembersp($6); SYMP->popScope($$); }
+	;
+
+struct_union_memberList<nodep>:	// IEEE: { struct_union_member }
+		struct_union_member				{ $$ = $1; }
+	|	struct_union_memberList struct_union_member	{ $$ = $1->addNextNull($2); }
+	;
+
+struct_union_member<nodep>:	// ==IEEE: struct_union_member
+		random_qualifierE data_type_or_void
+			{ GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
+	/*cont*/	list_of_member_decl_assignments ';'	{ $$ = $4; GRAMMARP->m_memDTypep = NULL; }
+	;
+
+list_of_member_decl_assignments<nodep>:	// Derived from IEEE: list_of_variable_decl_assignments
+		member_decl_assignment		{ $$ = $1; }
+	|	list_of_member_decl_assignments ',' member_decl_assignment	{ $$ = $1->addNextNull($3); }
+	;
+
+member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
+	//			// At present we allow only packed structures/unions.  So this is different from variable_decl_assignment
+		id variable_dimensionListE
+			{ if ($2) $2->v3error("Unsupported: Unpacked array in packed struct/union");
+			  $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(), GRAMMARP->m_memDTypep->cloneTree(true)); }
+	|	id variable_dimensionListE '=' variable_declExpr
+			{ $4->v3error("Unsupported: Initial values in struct/union members."); }
+	|	idSVKwd					{ $$ = NULL; }
+	//
+	//			// IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
+	//			// Matches above with variable_dimensionE = "[]"
+	//			// IEEE: "class_variable_identifier [ '=' class_new ]"
+	//			// variable_dimensionE must be empty
+	//			// Pushed into variable_declExpr:dynamic_array_new
+	//
+	//			// IEEE: "[ covergroup_variable_identifier ] '=' class_new
+	//			// Pushed into variable_declExpr:class_new
+	//UNSUP	'=' class_new				{ UNSUP }
 	;
 
 list_of_variable_decl_assignments<nodep>:	// ==IEEE: list_of_variable_decl_assignments
@@ -1252,6 +1308,27 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//			// IEEE: queue_dimension
 	//			// '[' '$' ']' -- $ is part of expr
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
+	;
+
+random_qualifierE:		// IEEE: random_qualifier + empty
+		/*empty*/				{ }
+	|	random_qualifier			{ }
+	;
+
+random_qualifier:		// ==IEEE: random_qualifier
+		yRAND					{ }  // Ignored until we support randomize()
+	|	yRANDC					{ }  // Ignored until we support randomize()
+	;
+
+taggedE:
+		/*empty*/				{ }
+	//UNSUP	yTAGGED					{ UNSUP }
+	;
+
+packedSigningE<signstate>:
+	//			// AstNumeric::NOSIGN overloaded to indicate not packed
+		/*empty*/				{ $$ = signedst_NOSIGN; }
+	|	yPACKED signingE			{ $$ = $2; if ($$ == signedst_NOSIGN) $$ = signedst_UNSIGNED; }
 	;
 
 //************************************************
@@ -1353,8 +1430,8 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$2); SYMP->reinsert($$); }
 	|	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
-	//UNSUP	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	|	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	;
 

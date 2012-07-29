@@ -622,6 +622,7 @@ public:
     virtual void visit(AstTraceDecl*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstTraceInc*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstCFile*, AstNUser*) {}		// Handled outside the Visit class
+    virtual void visit(AstTypedef*, AstNUser*) {}	// Nothing needed presently
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
 	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");

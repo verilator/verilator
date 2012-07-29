@@ -9,7 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
       concatenates and pullup/pulldowns, bug395, bug56, bug54, bug51.
       [Alex Solomatnikov, Lane Brooks, et al]
 
-**    Major internal changes to support future complex data types.
+**    Support packed structures and unions, bug181.
+      Note this was a major internal change that may lead to some instability.
 
 ***   Support tri0 and tri1, bug462.  [Alex Solomatnikov]
 

@@ -8,12 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-    );
-
-execute (
-    check_finished=>1,
-    );
+	 fails=>$Self->{v3},
+	 expect=>
+q{%Error: t/t_struct_unpacked_bad.v:8: Unsupported: Unpacked struct/union
+.*%Error: Exiting due to.*},
+	 );
 
 ok(1);
 1;
-

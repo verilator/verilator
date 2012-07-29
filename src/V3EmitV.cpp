@@ -501,6 +501,19 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->subDTypep()->iterateAndNext(*this);
 	nodep->rangep()->iterateAndNext(*this);
     }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	puts(nodep->verilogKwd()+" ");
+	if (nodep->packed()) puts("packed ");
+	puts("\n");
+	nodep->membersp()->iterateAndNext(*this);
+	puts("}");
+    }
+    virtual void visit(AstMemberDType* nodep, AstNUser*) {
+	nodep->subDTypep()->iterateAndNext(*this);
+	puts(" ");
+	puts(nodep->name());
+	puts("}");
+    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (nodep->dotted()!="") { putfs(nodep,nodep->dotted()); puts("."); puts(nodep->prettyName()); }
 	else { putfs(nodep,nodep->prettyName()); }

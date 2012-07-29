@@ -200,10 +200,15 @@ private:
 	    // So we replicate it in another node
 	    // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
-	    AstNodeVarRef* varrefp = basefromp->castNodeVarRef();  // Maybe varxref - so need to clone
-	    if (!varrefp) nodep->v3fatalSrc("Illegal bit select; no signal being extracted from");
-	    nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
-				       varrefp->cloneTree(false)));
+	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {  // Maybe varxref - so need to clone
+		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
+					   varrefp->cloneTree(false)));
+	    } else if (AstMemberSel* fromp = nodep->fromp()->castMemberSel()) {
+		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
+					   fromp->cloneTree(false)));
+	    } else {
+		nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
+	    }
 	}
     }
 

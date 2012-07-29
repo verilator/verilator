@@ -419,13 +419,17 @@ word	[a-zA-Z0-9_]+
   "logic"		{ FL; return yLOGIC; }
   "longint"		{ FL; return yLONGINT; }
   "package"		{ FL; return yPACKAGE; }
+  "packed"		{ FL; return yPACKED; }
   "priority"		{ FL; return yPRIORITY; }
   "program"		{ FL; return yPROGRAM; }
   "pure"		{ FL; return yPURE; }
+  "rand"		{ FL; return yRAND; }
+  "randc"		{ FL; return yRANDC; }
   "return"		{ FL; return yRETURN; }
   "shortint"		{ FL; return ySHORTINT; }
   "static"		{ FL; return ySTATIC; }
   "string"		{ FL; return ySTRING; }
+  "struct"		{ FL; return ySTRUCT; }
   "timeprecision"	{ FL; return yTIMEPRECISION; }
   "timeunit"		{ FL; return yTIMEUNIT; }
   "typedef"		{ FL; return yTYPEDEF; }
@@ -467,17 +471,13 @@ word	[a-zA-Z0-9_]+
   "modport"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "new"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "null"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "packed"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "protected"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "rand"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "randc"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randcase"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randomize"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "ref"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "shortreal"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "struct"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "tagged"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "this"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -496,11 +496,11 @@ word	[a-zA-Z0-9_]+
   "const"		{ FL; return yCONST__LEX; }
   "cover"		{ FL; return yCOVER; }
   "property"		{ FL; return yPROPERTY; }
+  "union"		{ FL; return yUNION; }
   /*     Generic unsupported warnings */
   "assume"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
-  "union"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
   "within"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
 }
 

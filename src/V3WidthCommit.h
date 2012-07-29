@@ -113,6 +113,13 @@ private:
 	editDType(nodep);
     }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	visitIterateNodeDType(nodep);
+    }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	visitIterateNodeDType(nodep);
+	nodep->clearCache();
+    }
+    void visitIterateNodeDType(AstNodeDType* nodep) {
 	// Rather than use dtypeChg which may make new nodes, we simply edit in place,
 	// as we don't need to preserve any widthMin's, and every dtype with the same width
 	// gets an identical edit.

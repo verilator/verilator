@@ -118,6 +118,7 @@ private:
     AstNodeCase* m_casep;	// Current case statement CaseItem is under
     AstFunc*	m_funcp;	// Current function
     AstInitial*	m_initialp;	// Current initial block
+    AstAttrOf*	m_attrp;	// Current attribute
     bool	m_doGenerate;	// Do errors later inside generate statement
 
     // CLASSES
@@ -377,6 +378,7 @@ private:
 
     virtual void visit(AstSel* nodep, AstNUser* vup) {
 	// Signed: always unsigned; Real: Not allowed
+	if (nodep->didWidth()) return;
 	if (vup->c()->prelim()) {
 	    if (debug()>=9) nodep->dumpTree(cout,"-selWidth: ");
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
@@ -531,7 +533,6 @@ private:
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelExtract should disappear after widthSel");
     }
-
     virtual void visit(AstSelPlus* nodep, AstNUser* vup) {
 	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
@@ -629,6 +630,8 @@ private:
 	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
+	AstAttrOf* oldAttr = m_attrp;
+	m_attrp = nodep;
 	nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	// Don't iterate children, don't want to lose VarRef.
 	if (nodep->attrType()==AstAttrType::EXPR_BITS) {
@@ -636,12 +639,15 @@ private:
 	    V3Number num (nodep->fileline(), 32, nodep->fromp()->width());
 	    nodep->replaceWith(new AstConst(nodep->fileline(), num)); nodep->deleteTree(); nodep=NULL;
 	} else if (nodep->attrType()==AstAttrType::VAR_BASE) {
-	    // Soon to be handled in V3LinkWidth SEL generation
+	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
+	} else if (nodep->attrType()==AstAttrType::MEMBER_BASE) {
+	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
 	} else {  // Everything else resolved earlier
 	    nodep->dtypeSetLogicSized(32,1,AstNumeric::UNSIGNED);	// Approximation, unsized 32
 	    UINFO(1,"Missing ATTR type case node: "<<nodep<<endl);
 	    nodep->v3fatalSrc("Missing ATTR type case");
 	}
+	m_attrp = oldAttr;
     }
     virtual void visit(AstText* nodep, AstNUser* vup) {
 	// Only used in CStmts which don't care....
@@ -760,8 +766,9 @@ private:
 	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype determined for var");
-	if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType() ||
-			       nodep->dtypeSkipRefp()->castArrayDType())) {
+	if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType()
+			       || nodep->dtypeSkipRefp()->castArrayDType()
+			       || nodep->dtypeSkipRefp()->castNodeClassDType())) {
 	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
 	}
 	if (nodep->dtypeSkipRefp()->castConstDType()) {
@@ -912,6 +919,81 @@ private:
 	    enump->iterate(*this,vup);
 	}
 	nodep->dtypeFrom(nodep->itemp());
+    }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser* vup) {
+	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+	UINFO(5,"   NODECLASS "<<nodep<<endl);
+	//if (debug()>=9) nodep->dumpTree("-class-in--");
+	if (!nodep->packed()) nodep->v3error("Unsupported: Unpacked struct/union");
+	nodep->iterateChildren(*this);  // First size all members
+	nodep->repairMemberCache();
+	// Determine bit assignments and width
+	nodep->dtypep(nodep);
+	int lsb = 0;
+	int width = 0;
+	// MSB is first, so go backwards
+	AstMemberDType* itemp;
+	for (itemp = nodep->membersp(); itemp && itemp->nextp(); itemp=itemp->nextp()->castMemberDType()) ;
+	for (AstMemberDType* backip; itemp; itemp=backip) {
+	    backip = itemp->backp()->castMemberDType();
+	    itemp->lsb(lsb);
+	    if (nodep->castUnionDType()) {
+		width = max(width, itemp->width());
+	    } else {
+		lsb += itemp->width();
+		width += itemp->width();
+	    }
+	}
+	nodep->widthForce(width,width);  // Signing stays as-is, as parsed from declaration
+	//if (debug()>=9) nodep->dumpTree("-class-out-");
+    }
+    virtual void visit(AstMemberDType* nodep, AstNUser* vup) {
+	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+	if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+	// Iterate into subDTypep() to resolve that type and update pointer.
+	nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+	nodep->dtypep(nodep);  // The member itself, not subDtype
+	nodep->widthFromSub(nodep->subDTypep());
+    }
+    virtual void visit(AstMemberSel* nodep, AstNUser* vup) {
+	UINFO(5,"   MEMBERSEL "<<nodep<<endl);
+	if (debug()>=9) nodep->dumpTree("-ms-in-");
+	nodep->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	// Find the fromp dtype - should be a class
+	AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+	UINFO(9,"     from dt "<<fromDtp<<endl);
+	AstNodeClassDType* fromClassp = fromDtp->castNodeClassDType();
+	AstMemberDType* memberp = NULL;  // NULL=error below
+	if (!fromClassp) {
+	    nodep->v3error("Member selection of non-struct/union object '"
+			   <<nodep->fromp()->prettyTypeName()<<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
+	}
+	else {
+	    // No need to width-resolve the fromClassp, as it was done when we did the child
+	    memberp = fromClassp->findMember(nodep->name());
+	    if (!memberp) {
+		nodep->v3error("Member '"<<nodep->prettyName()<<"' not found in structure");
+	    }
+	}
+	if (memberp) {
+	    if (m_attrp) {  // Looking for the base of the attribute
+		nodep->dtypep(memberp);
+		UINFO(9,"   MEMBERSEL(attr) -> "<<nodep<<endl);
+	    } else {
+		AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+					  memberp->lsb(), memberp->width());
+		newp->dtypep(memberp);
+		newp->didWidth(true);  // Don't replace dtype with basic type
+		UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
+		nodep->replaceWith(newp);
+		pushDeletep(nodep); nodep=NULL;
+		// Should be able to treat it as a normal-ish nodesel - maybe.  The lhsp() will be strange until this stage; create the number here?
+	    }
+	}
+	if (!memberp) {  // Very bogus, but avoids core dump
+	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+	    pushDeletep(nodep); nodep=NULL;
+	}
     }
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
@@ -2117,6 +2199,7 @@ public:
 	m_casep = NULL;
 	m_funcp = NULL;
 	m_initialp = NULL;
+	m_attrp = NULL;
 	m_doGenerate = doGenerate;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {

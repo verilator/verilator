@@ -85,6 +85,9 @@ private:
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    return adtypep;
 	}
+	else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
+	    return adtypep;
+	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (!adtypep->isRanged()) {
 		nodep->v3error("Illegal bit select; variable does not have a bit range, or bad dimension: "<<errp->prettyName());
@@ -136,13 +139,21 @@ private:
 
     AstNodeDType* baseDTypeFrom(AstNode* basefromp, AstNode*& errpr) {
 	errpr = basefromp;
-	AstNodeVarRef* varrefp = basefromp->castNodeVarRef();
-	if (!varrefp) basefromp->v3fatalSrc("Bit/array selection of non-variable");
-	AstVar* varp = varrefp->varp();	if (!varp) { varrefp->v3fatalSrc("Signal not linked"); return NULL; }
-	errpr = varp;
-	AstNodeDType* bfdtypep = varp->subDTypep();
-	if (!bfdtypep) basefromp->v3fatalSrc("No datatype found for variable in select");
-	return bfdtypep;
+	if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
+	    AstVar* varp = varrefp->varp(); if (!varp) { varrefp->v3fatalSrc("Signal not linked"); return NULL; }
+	    errpr = varp;
+	    AstNodeDType* bfdtypep = varp->subDTypep();
+	    if (!bfdtypep) basefromp->v3fatalSrc("No datatype found for variable in select");
+	    return bfdtypep;
+	} else if (AstMemberSel* selp = basefromp->castMemberSel()) {
+	    errpr = selp;
+	    AstNodeDType* bfdtypep = selp->dtypep();
+	    if (!bfdtypep) basefromp->v3fatalSrc("No datatype found for variable in select");
+	    return bfdtypep;
+	} else {
+	    basefromp->v3fatalSrc("Bit/array selection of non-variable");
+	}
+	return NULL;
     }
 
     AstNode* newSubLsbOf(AstNode* underp, AstNode* basefromp) {
@@ -235,6 +246,17 @@ private:
 	    UINFO(6,"   new "<<newp<<endl); if (debug()>=9) newp->dumpTree(cout,"-vsbnw: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
+	else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
+	    if (adtypep) {} // unused
+	    // SELBIT(range, index) -> SEL(array, index, 1)
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubLsbOf(rhsp, basefromp),
+				       // Unsized so width from user
+				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
+	    UINFO(6,"   new "<<newp<<endl); if (debug()>=9) newp->dumpTree(cout,"-vsbnw: ");
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	}
 	else {  // NULL=bad extract, or unknown node type
 	    nodep->v3error("Illegal bit or array select; variable already selected, or bad dimension");
 	    // How to recover?  We'll strip a dimension.
@@ -279,6 +301,22 @@ private:
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
 	    }
+	    if (lsb > msb) {
+		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
+		int x = msb; msb = lsb; lsb = x;
+	    }
+	    AstNode* widthp = new AstConst (msbp->fileline(), AstConst::Unsized32(), // Unsized so width from user
+					    msb +1-lsb);
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       newSubLsbOf(lsbp, basefromp),
+				       widthp);
+	    UINFO(6,"   new "<<newp<<endl);
+	    //if (debug()>=9) newp->dumpTree(cout,"--SLEXnew: ");
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	} else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
+	    if (adtypep) {} // Unused
+	    // Classes aren't little endian
 	    if (lsb > msb) {
 		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
 		int x = msb; msb = lsb; lsb = x;

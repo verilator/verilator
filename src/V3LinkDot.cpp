@@ -1192,7 +1192,11 @@ private:
 	    m_dotSymp = m_curSymp;
 	}
 	if (m_dotPos == DP_MEMBER) {
-	    nodep->v3error("Unsupported: Structs and dotted reference into variable");
+	    // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
+	    AstNode* varEtcp = m_dotp->lhsp()->unlinkFrBack();
+	    AstNode* newp = new AstMemberSel(nodep->fileline(), varEtcp, VFlagChildDType(), nodep->name());
+	    nodep->replaceWith(newp);
+	    pushDeletep(nodep); nodep=NULL;
 	}
 	else {
 	    //

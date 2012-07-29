@@ -221,6 +221,8 @@ public:
 	ILLEGAL,
 	EXPR_BITS,			// V3Const converts to constant
 	//
+	MEMBER_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
+	//
 	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	VAR_CLOCK,			// V3LinkParse moves to AstVar::attrScClocked
 	VAR_CLOCK_ENABLE,		// V3LinkParse moves to AstVar::attrClockEn
@@ -235,8 +237,8 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "%E-AT", "EXPR_BITS", "VAR_BASE",
-	    "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
+	    "%E-AT", "EXPR_BITS", "MEMBER_BASE",
+	    "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
 	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT"
 	};
@@ -1516,6 +1518,40 @@ public:
     pair<uint32_t,uint32_t> dimensions();
     uint32_t	arrayElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
+};
+
+struct AstNodeClassDType : public AstNodeDType {
+private:
+    // TYPES
+    typedef map<string,AstMemberDType*> MemberNameMap;
+    // MEMBERS
+    bool		m_packed;
+    MemberNameMap	m_members;
+public:
+    AstNodeClassDType(FileLine* fl, AstNumeric numericUnpack)
+	: AstNodeDType(fl) {
+	// AstNumeric::NOSIGN overloaded to indicate not packed
+	m_packed = (numericUnpack != AstNumeric::NOSIGN);
+	numeric(numericUnpack.isSigned() ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
+    }
+    ASTNODE_BASE_FUNCS(NodeClassDType)
+    virtual bool broken() const;
+    virtual void dump(ostream& str);
+    // For basicp() we reuse the size to indicate a "fake" basic type of same size
+    virtual AstBasicDType* basicp() const { return findLogicDType(width(),width(),numeric())->castBasicDType(); }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
+    virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    // op1 = members
+    AstMemberDType* membersp() const { return op1p()->castMemberDType(); } // op1 = AstMember list
+    void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
+    bool packed() const { return m_packed; }
+    void clearCache() { m_members.clear(); }
+    void repairMemberCache();
+    AstMemberDType* findMember(const string& name) const {
+	MemberNameMap::const_iterator it = m_members.find(name);
+	return (it==m_members.end()) ? NULL : it->second;
+    }
 };
 
 struct AstNodeSel : public AstNodeBiop {

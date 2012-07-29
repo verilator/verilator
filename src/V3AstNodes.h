@@ -471,6 +471,68 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
+struct AstStructDType : public AstNodeClassDType {
+    AstStructDType(FileLine* fl, AstNumeric numericUnpack)
+	: AstNodeClassDType(fl,numericUnpack) {}
+    ASTNODE_NODE_FUNCS(StructDType, STRUCTDTYPE)
+    virtual string verilogKwd() const { return "struct"; };
+};
+
+struct AstUnionDType : public AstNodeClassDType {
+    //UNSUP: bool isTagged;
+    AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
+	: AstNodeClassDType(fl,numericUnpack) {}
+    ASTNODE_NODE_FUNCS(UnionDType, UNIONDTYPE)
+    virtual string verilogKwd() const { return "union"; };
+};
+
+struct AstMemberDType : public AstNodeDType {
+    // A member of a struct/union
+    // PARENT: AstClassDType
+private:
+    AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
+    string	m_name;		// Name of variable
+    int		m_lsb;		// Within this level's packed struct, the LSB of the first bit of the member
+    //UNSUP: int m_randType;	// Randomization type (IEEE)
+public:
+    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
+	: AstNodeDType(fl)
+	, m_name(name), m_lsb(-1) {
+	childDTypep(dtp);  // Only for parser
+	dtypep(NULL);  // V3Width will resolve
+	refDTypep(NULL);
+    }
+    AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
+	: AstNodeDType(fl)
+	, m_name(name), m_lsb(-1) {
+	UASSERT(dtp,"AstMember created with no dtype");
+	refDTypep(dtp);
+	dtypep(this);
+	widthFromSub(subDTypep());
+    }
+    ASTNODE_NODE_FUNCS(MemberDType, MEMBERDTYPE)
+    virtual string name()	const { return m_name; }		// * = Var name
+    virtual bool hasDType() const { return true; }
+    virtual bool maybePointedTo() const { return true; }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    //
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
+    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
+    virtual AstNodeDType* skipRefp() const { return dtypeSkipRefp(); }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); } // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); } // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    // METHODS
+    virtual void name(const string& name) { m_name = name; }
+    int lsb() const { return m_lsb; }
+    void lsb(int lsb) { m_lsb=lsb; }
+};
+
 struct AstEnumItem : public AstNode {
 private:
     string	m_name;
@@ -697,6 +759,37 @@ struct AstSel : public AstNodeTriop {
     int		widthConst() const { return widthp()->castConst()->toSInt(); }
     int		lsbConst()   const { return lsbp()->castConst()->toSInt(); }
     int		msbConst()   const { return lsbConst()+widthConst()-1; }
+};
+
+struct AstMemberSel : public AstNodeMath {
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+private:
+    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
+    string m_name;
+public:
+    AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
+	: AstNodeMath(fl), m_name(name) {
+	setOp1p(fromp);
+	dtypep(NULL);  // V3Width will resolve
+    }
+    AstMemberSel(FileLine* fl, AstNode* fromp, AstMemberDType* dtp)
+	: AstNodeMath(fl) {
+	setOp1p(fromp);
+	dtypep(dtp);
+	m_name = dtp->name();
+    }
+    ASTNODE_NODE_FUNCS(MemberSel, MEMBERSEL)
+    virtual string name() const { return m_name; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+	V3ERROR_NA; /* How can from be a const? */ }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return false; }
+    virtual bool same(AstNode* samep) const { return true; } // dtype comparison does it all for us
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* fromp() const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
 struct AstVar : public AstNode {

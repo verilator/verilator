@@ -1747,8 +1747,8 @@ Verilator supports ==? and !=? operators, ++ and -- in some contexts,
 $bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
 $unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
 const, do-while, enum, export, final, import, int, logic, longint, package,
-program, shortint, time, typedef, var, void, priority case/if, and unique
-case/if.
+program, shortint, struct, time, typedef, union, var, void, priority
+case/if, and unique case/if.
 
 It also supports .name and .* interconnection.
 
@@ -2217,6 +2217,14 @@ Floating Point (real) numbers are supported.
 Verilator is optimized for edge sensitive (flop based) designs.  It will
 attempt to do the correct thing for latches, but most performance
 optimizations will be disabled around the latch.
+
+=head2 Structures and Unions
+
+Verilator only presently supports packed structs and packed unions.  Rand
+and randc tags on members are simply ignored.  All structures and unions
+are represented as a single vector, which means that generating one member
+of a structure from blocking, and another from non-blocking assignments is
+unsupported.
 
 =head2 Time
 

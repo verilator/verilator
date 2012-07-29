@@ -46,6 +46,28 @@ int AstNodeSel::bitConst() const {
     AstConst* constp=bitp()->castConst(); return (constp?constp->toSInt():0);
 }
 
+void AstNodeClassDType::repairMemberCache() {
+    clearCache();
+    for (AstMemberDType* itemp = membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+	if (m_members.find(itemp->name())!=m_members.end()) { itemp->v3error("Duplicate declaration of member name: "<<itemp->prettyName()); }
+	else m_members.insert(make_pair(itemp->name(), itemp));
+    }
+}
+
+bool AstNodeClassDType::broken() const {
+    set<AstMemberDType*> exists;
+    for (AstMemberDType* itemp = membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+	exists.insert(itemp);
+    }
+    for (MemberNameMap::const_iterator it=m_members.begin(); it!=m_members.end(); ++it) {
+	if (exists.find(it->second) == exists.end()) {
+	    this->v3error("Internal: Structure member broken: "<<it->first);
+	    return true;
+	}
+    }
+    return false;
+}
+
 int AstBasicDType::widthAlignBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
@@ -58,6 +80,22 @@ int AstBasicDType::widthTotalBytes() const {
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
     else return widthWords()*(VL_WORDSIZE/8);
+}
+
+int AstNodeClassDType::widthTotalBytes() const {
+    if (width()<=8) return 1;
+    else if (width()<=16) return 2;
+    else if (isQuad()) return 8;
+    else return widthWords()*(VL_WORDSIZE/8);
+}
+
+int AstNodeClassDType::widthAlignBytes() const {
+    // Could do max across members but that would be slow,
+    // instead intuit based on total structure size
+    if (width()<=8) return 1;
+    else if (width()<=16) return 2;
+    else if (width()<=32) return 4;
+    else return 8;
 }
 
 bool AstVar::isSigPublic() const {
@@ -279,6 +317,14 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
 	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
 	    // AstBasicDType - nothing below, return null
 	    if (adtypep->isRanged()) {
+		if ((dim++) == dimension) {
+		    return adtypep;
+		}
+	    }
+	    return NULL;
+	}
+	else if (AstNodeClassDType* adtypep = dtypep->castNodeClassDType()) {
+	    if (adtypep->packed()) {
 		if ((dim++) == dimension) {
 		    return adtypep;
 		}
@@ -678,6 +724,10 @@ void AstRefDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
     if (defp()) { str<<" -> "; defp()->dump(str); }
     else { str<<" -> UNLINKED"; }
+}
+void AstNodeClassDType::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (packed()) str<<" [PACKED]";
 }
 void AstNodeDType::dump(ostream& str) {
     this->AstNode::dump(str);
