@@ -19,7 +19,9 @@ module t ();
    // synthesis translate on
    localparam LP_PACK_AND_MOD = 20;
    initial begin
+      // verilator lint_off STMTDLY
       #10;
+      // verilator lint_on STMTDLY
       if (LP_PACK_AND_MOD != 20) $stop;
       check_param();
       $write("*-* All Finished *-*\n");
