@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.84*** devel
+
+****  Fix double-deep parameter cell WIDTHs, bug541.  [Hiroki Honda]
+
+
 * Verilator 3.840 2012/07/31 Beta
 
 **    Rewrote tristate handling; supports tri0, tri1, tristate bit selects,

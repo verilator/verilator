@@ -76,8 +76,8 @@ private:
     LongMap	m_longMap;	// Hash of very long names to unique identity number
     int		m_longId;
 
-    typedef deque<AstNodeModule*> ModDeque;
-    ModDeque	m_todoModps;	// Modules left to process
+    typedef multimap<int,AstNodeModule*> LevelModMap;
+    LevelModMap	m_todoModps;	// Modules left to process
 
     // METHODS
     static int debug() {
@@ -125,10 +125,12 @@ private:
     }
     void visitModules() {
 	// Loop on all modules left to process
-	// Hitting a cell adds to the END of this list, so since cells originally exist top->bottom
-	// we process in top->bottom order too.
+	// Hitting a cell adds to the appropriate leval of this level-sorted list,
+	// so since cells originally exist top->bottom we process in top->bottom order too.
 	while (!m_todoModps.empty()) {
-	    AstNodeModule* nodep = m_todoModps.front(); m_todoModps.pop_front();
+	    LevelModMap::iterator it = m_todoModps.begin();
+	    AstNodeModule* nodep = it->second;
+	    m_todoModps.erase(it);
 	    if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
 		UINFO(4," MOD   "<<nodep<<endl);
 		nodep->iterateChildren(*this);
@@ -147,7 +149,7 @@ private:
 	    UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
 	} else if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
 	    // Add request to END of modules left to process
-	    m_todoModps.push_back(nodep);
+	    m_todoModps.insert(make_pair(nodep->level(),nodep));
 	    visitModules();
 	} else if (nodep->user5()) {
 	    UINFO(4," MOD-done   "<<nodep<<endl);  // Already did it
@@ -443,7 +445,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
     }
 
     // Now remember to process the child module at the end of the module
-    m_todoModps.push_back(nodep->modp());
+    m_todoModps.insert(make_pair(nodep->modp()->level(),nodep->modp()));
 }
 
 //######################################################################
