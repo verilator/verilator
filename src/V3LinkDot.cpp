@@ -544,6 +544,10 @@ private:
 	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
 	}
     }
+    virtual void visit(AstDefParam* nodep, AstNUser*) {
+	nodep->user1p(m_curSymp);
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstGenerate* nodep, AstNUser*) {
 	// Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
 	// See t_gen_forif.v for an example.
@@ -834,14 +838,15 @@ private:
     virtual void visit(AstDefParam* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->name()<<"(...etc...))");
-	VSymEnt* foundp = m_statep->getNodeSym(m_modp)->findIdFallback(nodep->path());
+	VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
 	AstCell* cellp = foundp->nodep()->castCell();
 	if (!cellp) {
 	    nodep->v3error("In defparam, cell "<<nodep->path()<<" never declared");
 	} else {
 	    AstNode* exprp = nodep->rhsp()->unlinkFrBack();
 	    UINFO(9,"Defparam cell "<<nodep->path()<<"."<<nodep->name()
-		  <<" <= "<<exprp<<endl);
+		  <<" attach-to "<<cellp
+		  <<"  <= "<<exprp<<endl);
 	    // Don't need to check the name of the defparam exists.  V3Param does.
 	    AstPin* pinp = new AstPin (nodep->fileline(),
 				       -1, // Pin# not relevant
