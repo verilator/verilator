@@ -9,6 +9,9 @@ package functions;
    function real abs (real num);
       abs = (num <0) ? -num : num;
    endfunction
+   function real neg (real num);
+      return -abs(num);  // Check package funcs can call package funcs
+   endfunction
 endpackage
 
 module t ();
@@ -19,6 +22,8 @@ module t ();
 	 initial begin
 	    if (abs(-2.1) != 2.1) $stop;
 	    if (abs(2.2) != 2.2) $stop;
+	    if (neg(-2.1) != -2.1) $stop;
+	    if (neg(2.2) != -2.2) $stop;
 	    $write("*-* All Finished *-*\n");
 	    $finish;
 	 end
