@@ -743,8 +743,7 @@ private:
 	    }
 	}
 	m_curSymp->import(srcp, nodep->name());
-	// No longer needed
-	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -1297,6 +1296,7 @@ private:
 				       <<"'"<<" as a "<<foundp->nodep()->typeName()
 				       <<" but expected a "<<expectWhat);
 		    } else if (m_dotText=="") {
+			UINFO(7,"   ErrParseRef curSymp=se"<<(void*)m_curSymp<<" dotSymp=se"<<(void*)m_dotSymp<<endl);
 			nodep->v3error("Can't find definition of "<<expectWhat
 				       <<": "<<nodep->prettyName());
 		    } else {
@@ -1445,7 +1445,9 @@ private:
 		nodep->packagep(foundp->packagep());
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
 	    } else {
+		// Note ParseRef has similar error handling/message output
 		m_statep->preErrorDump();
+		UINFO(7,"   ErrFtask curSymp=se"<<(void*)m_curSymp<<" dotSymp=se"<<(void*)dotSymp<<endl);
 		if (nodep->dotted() == "") {
 		    nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName());
 		} else {
@@ -1526,6 +1528,10 @@ private:
 	    if (nodep->cname()!="") taskp->cname(nodep->cname());
 	}
 	nodep->unlinkFrBack()->deleteTree();
+    }
+    virtual void visit(AstPackageImport* nodep, AstNUser*) {
+	// No longer needed
+	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
