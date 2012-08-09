@@ -53,6 +53,11 @@ module t (/*AUTOARG*/
       // verilator lint_on WIDTH
    end
 
+   reg signed [32:0] bug349;
+
+   initial
+     begin
+     end
    integer i;
    initial begin
       if ((-1 >>> 3) != -1) $stop;	// Decimals are signed
@@ -81,6 +86,10 @@ module t (/*AUTOARG*/
       i = -'sd12 /3;  if (i !== 32'hfffffffc) $stop;
       i = -4'sd12 /3; if (i !== 32'h00000001) $stop;
       // verilator lint_on WIDTH
+
+      // verilator lint_off WIDTH
+      bug349 = 4'sb1111 - 1'b1;
+      if (bug349 != 32'he) $stop;
    end
 
    function signed [15:0] copy_signed;
