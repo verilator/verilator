@@ -134,9 +134,11 @@ private:
 		    if (m_unnamedScope=="") m_unnamedScope = ident;
 		    else m_unnamedScope = m_unnamedScope + "__DOT__"+ident;
 		    // Create CellInline for dotted var resolution
-		    AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
-							       m_unnamedScope, "__BEGIN__");
-		    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+		    if (!m_ftaskp) {
+			AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
+								   m_unnamedScope, "__BEGIN__");
+			m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+		    }
 		}
 	    }
 
@@ -184,6 +186,7 @@ private:
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline
+	if (nodep->user1SetOnce()) return;  // Don't double-add text's
 	if (m_namedScope != "") {
 	    // To keep correct visual order, must add before other Text's
 	    AstNode* afterp = nodep->scopeAttrp();
