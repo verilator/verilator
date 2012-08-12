@@ -2188,6 +2188,71 @@ caseCondList<nodep>:		// IEEE: part of case_item
 	|	caseCondList ',' expr			{ $$ = $1;$1->addNext($3); }
 	;
 
+patternNoExpr<nodep>:		// IEEE: pattern **Excluding Expr*
+		'.' id/*variable*/			{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
+	|	yP_DOTSTAR				{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
+	//			// IEEE: "expr" excluded; expand in callers
+	//			// "yTAGGED id [expr]" Already part of expr
+	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
+	//			// "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
+	;
+
+patternList<nodep>:		// IEEE: part of pattern
+		patternOne				{ $$ = $1; }
+	|	patternList ',' patternOne		{ $$ = $1->addNextNull($3); }
+	;
+
+patternOne<nodep>:		// IEEE: part of pattern
+		expr					{ $$ = new AstPatMember($1->fileline(),$1,NULL,NULL); }
+	|	expr '{' argsExprList '}'		{ $$ = new AstPatMember($2,$3,NULL,$1); }
+	|	patternNoExpr				{ $$ = $1; }
+	;
+
+patternMemberList<nodep>:	// IEEE: part of pattern and assignment_pattern
+		patternMemberOne			{ $$ = $1; }
+	|	patternMemberList ',' patternMemberOne	{ $$ = $1->addNextNull($3); }
+	;
+
+patternMemberOne<patmemberp>:	// IEEE: part of pattern and assignment_pattern
+		patternKey ':' expr			{ $$ = new AstPatMember($2,$3,$1,NULL); }
+	|	patternKey ':' patternNoExpr		{ $2->v3error("Unsupported: '{} .* patterns"); $$=NULL; }
+	//			// From assignment_pattern_key
+	|	yDEFAULT ':' expr			{ $$ = new AstPatMember($2,$3,NULL,NULL); $$->isDefault(true); }
+	|	yDEFAULT ':' patternNoExpr		{ $2->v3error("Unsupported: '{} .* patterns"); $$=NULL; }
+	;
+
+patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
+	//			// IEEE: structure_pattern_key
+	//			// id/*member*/ is part of constExpr below
+	//UNSUP	constExpr				{ $$ = $1; }
+	//			// IEEE: assignment_pattern_key
+	//UNSUP	simple_type				{ $1->v3error("Unsupported: '{} with data type as key"); $$=$1; }
+	//			// simple_type reference looks like constExpr
+	//			// Verilator:
+	//			//   The above expressions cause problems because "foo" may be a constant identifier
+	//			//   (if array) or a reference to the "foo"member (if structure)
+	//			//   So for now we only allow a true constant number, or a identifier which we treat as a structure member name
+		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
+	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
+	|	yaID__ETC				{ $$ = new AstText($<fl>1,*$1); }
+	;
+
+assignment_pattern<nodep>:	// ==IEEE: assignment_pattern
+	// This doesn't match the text of the spec.  I think a : is missing, or example code needed
+	// yP_TICKBRA constExpr exprList '}'	{ $$="'{"+$2+" "+$3"}"; }
+	//			// "'{ const_expression }" is same as patternList with one entry
+	//			// From patternNoExpr
+	//			// also IEEE: "''{' expression { ',' expression } '}'"
+	//			//      matches since patternList includes expr
+		yP_TICKBRA patternList '}'		{ $$ = new AstPattern($1,$2); }
+	//			// From patternNoExpr
+	//			// also IEEE "''{' structure_pattern_key ':' ...
+	//			// also IEEE "''{' array_pattern_key ':' ...
+	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
+	//			// IEEE: Not in grammar, but in VMM
+	|	yP_TICKBRA '}'				{ $1->v3error("Unsupported: Empty '{}"); $$=NULL; }
+	;
+
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
 for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
 	//			// IEEE: for_variable_declaration
@@ -2705,7 +2770,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// We allow more here than the spec requires
 	//UNSUP	~l~exprScope assignment_pattern		{ UNSUP }
 	//UNSUP	data_type assignment_pattern		{ UNSUP }
-	//UNSUP	assignment_pattern			{ UNSUP }
+	|	assignment_pattern			{ $$ = $1; }
 	//
 	//UNSUP	streaming_concatenation			{ UNSUP }
 	;

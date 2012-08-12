@@ -3905,6 +3905,45 @@ struct AstFGetS : public AstNodeBiop {
     AstNode*	filep() const { return rhsp(); }
 };
 
+struct AstPattern : public AstNodeMath {
+    // Verilog '{a,b,c,d...}
+    // Parents: AstNodeAssign, AstPattern, ...
+    // Children: expression, AstPattern, AstPatReplicate
+    AstPattern(FileLine* fl, AstNode* itemsp) : AstNodeMath(fl) {
+	addNOp1p(itemsp);
+    }
+    ASTNODE_NODE_FUNCS(Pattern, PATTERN)
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
+    virtual string emitC() { V3ERROR_NA; return "";}
+    virtual string emitSimpleOperator() { V3ERROR_NA; return "";}
+    virtual bool cleanOut() {V3ERROR_NA; return "";}
+    virtual int instrCount()	const { return widthInstrs(); }
+    AstNode* itemsp() const { return op1p(); } // op1 = AstPatReplicate, AstPatMember, etc
+};
+struct AstPatMember : public AstNodeMath {
+    // Verilog '{a} or '{a{b}}
+    // Parents: AstPattern
+    // Children: expression, AstPattern, replication count
+private:
+    bool	m_default;
+public:
+    AstPatMember(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* repp) : AstNodeMath(fl) {
+	setOp1p(lhsp), setNOp2p(keyp), setNOp3p(repp); m_default = false; }
+    ASTNODE_NODE_FUNCS(PatMember, PATMEMBER)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return lhsp()?"%f{%r{%k%l}}":"%l"; }
+    virtual string emitC() { V3ERROR_NA; return "";}
+    virtual string emitSimpleOperator() { V3ERROR_NA; return "";}
+    virtual bool cleanOut() {V3ERROR_NA; return "";}
+    virtual int instrCount()	const { return widthInstrs()*2; }
+    AstNode* lhsp() const { return op1p(); } // op1 = expression to assign or another AstPattern
+    AstNode* keyp() const { return op2p(); } // op2 = assignment key (Const, id Text)
+    AstNode* repp() const { return op3p(); } // op3 = replication count, or NULL for count 1
+    bool isDefault() const { return m_default; }
+    void isDefault(bool flag) { m_default = flag; }
+};
+
 //======================================================================
 // SysVerilog assertions
 

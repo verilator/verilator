@@ -119,6 +119,7 @@ private:
     AstFunc*	m_funcp;	// Current function
     AstInitial*	m_initialp;	// Current initial block
     AstAttrOf*	m_attrp;	// Current attribute
+    AstNodeDType* m_assDTypep;	// Assign LHS data type for assignment pattern
     bool	m_doGenerate;	// Do errors later inside generate statement
 
     // CLASSES
@@ -995,6 +996,126 @@ private:
 	    pushDeletep(nodep); nodep=NULL;
 	}
     }
+
+    virtual void visit(AstPattern* nodep, AstNUser* vup) {
+	if (nodep->didWidthAndSet()) return;
+	UINFO(9,"PATTERN "<<nodep<<endl);
+	AstNodeDType* oldAssDTypep = m_assDTypep;
+	{
+	    if (!m_assDTypep) nodep->v3error("Unsupported/Illegal: Assignment pattern not underneath an assignment");
+	    m_assDTypep = m_assDTypep->skipRefp();
+	    UINFO(9,"  adtypep "<<m_assDTypep<<endl);
+	    nodep->dtypep(m_assDTypep);
+	    if (AstNodeClassDType* classp = m_assDTypep->castNodeClassDType()) {
+		// Due to "default" and tagged patterns, we need to determine
+		// which member each AstPatMember corresponds to before we can
+		// determine the dtypep for that PatMember's value, and then
+		// width the initial value appropriately.
+		typedef map<AstMemberDType*,AstPatMember*> PatMap;
+		PatMap patmap;
+		AstPatMember* defaultp = NULL;
+		{
+		    AstMemberDType* memp = classp->membersp();
+		    AstPatMember* patp = nodep->itemsp()->castPatMember();
+		    for (; memp || patp; ) {
+			// Determine replication count, and replicate initial value as widths need to be individually determined
+			if (patp) {
+			    int times = visitPatMemberRep(patp);
+			    for (int i=1; i<times; i++) {
+				AstNode* newp = patp->cloneTree(false);
+				patp->addNextHere(newp);
+				// This loop will see the new elements as part of nextp()
+			    }
+			    if (patp->keyp()) {
+				if (AstText* textp = patp->keyp()->castText()) {
+				    memp = classp->findMember(textp->text());
+				    if (!memp) {
+					patp->keyp()->v3error("Assignment pattern key '"<<textp->text()<<"' not found as member");
+					continue;
+				    }
+				} else {
+				    patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
+				}
+			    }
+			}
+			if (patp && patp->isDefault()) {
+			    if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
+			    defaultp = patp;
+			} else if (memp && !patp) {
+			    // Missing init elements, warn below
+			    memp=NULL; patp=NULL; break;
+			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
+			    memp=NULL; patp=NULL; break;
+			} else {
+			    patmap.insert(make_pair(memp, patp));
+			}
+			// Next
+			if (memp) memp = memp->nextp()->castMemberDType();
+			if (patp) patp = patp->nextp()->castPatMember();
+		    }
+		}
+		AstNode* newp = NULL;
+		for (AstMemberDType* memp = classp->membersp(); memp; memp=memp->nextp()->castMemberDType()) {
+		    PatMap::iterator it = patmap.find(memp);
+		    AstPatMember* newpatp = NULL;
+		    AstPatMember* patp = NULL;
+		    if (it == patmap.end()) {
+			if (defaultp) {
+			    newpatp = defaultp->cloneTree(false);
+			    patp = newpatp;
+			}
+			else {
+			    patp->v3error("Assignment pattern missed initializing elements: "<<memp->prettyTypeName());
+			}
+		    } else {
+			patp = it->second;
+		    }
+		    // Determine initial values
+		    m_assDTypep = memp;
+		    patp->dtypep(memp);
+		    patp->accept(*this,WidthVP(patp->width(),patp->width(),BOTH).p());
+		    // Convert to concat for now
+		    if (!newp) newp = patp->lhsp()->unlinkFrBack();
+		    else {
+			AstConcat* concatp = new AstConcat(patp->fileline(), newp, patp->lhsp()->unlinkFrBack());
+			newp = concatp;
+			newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+						 concatp->lhsp()->width()+concatp->rhsp()->width(),
+						 nodep->dtypep()->numeric());
+		    }
+		    if (newpatp) pushDeletep(newpatp);
+		}
+		if (newp) nodep->replaceWith(newp);
+		else nodep->v3error("Assignment pattern with no members");
+		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+	    } else {
+		nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "<<m_assDTypep->prettyTypeName());
+	    }
+	}
+	m_assDTypep = oldAssDTypep;
+    }
+    virtual void visit(AstPatMember* nodep, AstNUser* vup) {
+	if (!nodep->dtypep()) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
+	if (!m_assDTypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath an assignment");
+	nodep->lhsp()->dtypeFrom(nodep);
+	nodep->iterateChildren(*this,WidthVP(nodep->dtypep()->width(),nodep->dtypep()->width(),BOTH).p());
+	widthCheck(nodep,"LHS",nodep->lhsp(),nodep->width(),nodep->width());
+    }
+    int visitPatMemberRep(AstPatMember* nodep) {
+	uint32_t times = 1;
+	if (nodep->repp()) { // else repp()==NULL shorthand for rep count 1
+	    nodep->repp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    checkCvtUS(nodep->repp());
+	    V3Const::constifyParamsEdit(nodep->repp()); // repp may change
+	    AstConst* constp = nodep->repp()->castConst();
+	    if (!constp) { nodep->v3error("Replication value isn't a constant."); times=0; }
+	    else times = constp->toUInt();
+	    if (times==0) { nodep->v3error("Pattern replication value of 0 is not legal."); times=1; }
+	    nodep->repp()->unlinkFrBackWithNext()->deleteTree();  // Done with replicate before cloning
+	}
+	return times;
+    }
+
     virtual void visit(AstPslClocked* nodep, AstNUser*) {
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
 	nodep->sensesp()->iterateAndNext(*this);
@@ -1077,27 +1198,32 @@ private:
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	//if (debug()) nodep->dumpTree(cout,"  AssignPre: ");
-	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	if (!nodep->lhsp()->dtypep()) nodep->v3fatalSrc("How can LHS be untyped?");
-	if (!nodep->lhsp()->dtypep()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
-	if (!nodep->lhsp()->isDouble() && nodep->rhsp()->isDouble()) {
-	    spliceCvtS(nodep->rhsp(), false);  // Round RHS
-	} else if (nodep->lhsp()->isDouble() && !nodep->rhsp()->isDouble()) {
-	    spliceCvtD(nodep->rhsp());
+	AstNodeDType* oldAssDTypep = m_assDTypep;
+	{
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    if (!nodep->lhsp()->dtypep()) nodep->v3fatalSrc("How can LHS be untyped?");
+	    if (!nodep->lhsp()->dtypep()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
+	    m_assDTypep = nodep->lhsp()->dtypep();
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    if (!nodep->lhsp()->isDouble() && nodep->rhsp()->isDouble()) {
+		spliceCvtS(nodep->rhsp(), false);  // Round RHS
+	    } else if (nodep->lhsp()->isDouble() && !nodep->rhsp()->isDouble()) {
+		spliceCvtD(nodep->rhsp());
+	    }
+	    int awidth = nodep->lhsp()->width();
+	    if (awidth==0) {
+		awidth = nodep->rhsp()->width();	// Parameters can propagate by unsized assignment
+	    }
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
+	    nodep->dtypeFrom(nodep->lhsp());
+	    nodep->dtypeChgWidth(awidth,awidth);  // We know the assign will truncate, so rather
+	    // than using "width" and have the optimizer truncate the result, we do
+	    // it using the normal width reduction checks.
+	    //UINFO(0,"aw "<<awidth<<" w"<<nodep->rhsp()->width()<<" m"<<nodep->rhsp()->widthMin()<<endl);
+	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
+	    //if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
 	}
-	int awidth = nodep->lhsp()->width();
-	if (awidth==0) {
-	    awidth = nodep->rhsp()->width();	// Parameters can propagate by unsized assignment
-	}
-	nodep->rhsp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
-	nodep->dtypeFrom(nodep->lhsp());
-	nodep->dtypeChgWidth(awidth,awidth);  // We know the assign will truncate, so rather
-	// than using "width" and have the optimizer truncate the result, we do
-	// it using the normal width reduction checks.
-	//UINFO(0,"aw "<<awidth<<" w"<<nodep->rhsp()->width()<<" m"<<nodep->rhsp()->widthMin()<<endl);
-	widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
-	//if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
+	m_assDTypep = oldAssDTypep;
     }
     virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	// Excludes NodeDisplay, see below
@@ -2200,6 +2326,7 @@ public:
 	m_funcp = NULL;
 	m_initialp = NULL;
 	m_attrp = NULL;
+	m_assDTypep = NULL;
 	m_doGenerate = doGenerate;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {

@@ -15,6 +15,11 @@ module t;
       bit	b0;
    } b4_t;
 
+   typedef struct packed { // [3:0]
+      b4_t	x1;
+      b4_t	x0;
+   } b4x2_t;
+
    typedef union packed { // [3:0]
       bit [3:0]	quad0;
       b4_t	quad1;
@@ -60,7 +65,6 @@ module t;
       if (arr[1].four !== 4'b1010) $stop;
       //
       // Initialization
-`ifndef VERILATOR // UNSUPPORTED
       begin
 	 b4_t q = '{1'b1, 1'b1, 1'b0, 1'b0};
 	 if (q != 4'b1100) $stop;
@@ -74,18 +78,21 @@ module t;
 	 if (q != 4'b1111) $stop;
       end
       begin
-	 b4_t q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
-	 if (q != 4'b1101) $stop;
+	 b4x2_t m = '{4'b1001, '{1'b1, 1'b0, 1'b1, 1'b1}};
+	 if (m != 8'b10011011) $stop;
       end
       begin
 	 b4_t q = '{default:1'b1};
 	 if (q != 4'b1111) $stop;
-	 q.b1 = 0;
-	 if (q != 4'b1101) $stop;
-	 {q.b3,q.b2} = 2'b10;
-	 if (q != 4'b1001) $stop;
       end
-`endif
+      begin
+	 b4_t q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
+	 if (q != 4'b1101) $stop;
+      end
+      begin
+	 b4_t q = '{b2:1'b0, default:1'b1};
+	 if (q != 4'b1011) $stop;
+      end
 
       $write("*-* All Finished *-*\n");
       $finish;

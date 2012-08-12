@@ -48,26 +48,28 @@ module t (/*AUTOARG*/
    // big endian
    always @ (posedge clk)
    if (cnt[1:0]==2'd0) begin
-      // initialize to defaults (all bits 1'bx)
-      if      (cnt[30:2]==0)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==1)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==2)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==3)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==4)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==5)  struct_bg <= {WS{1'bx}};
-      else if (cnt[30:2]==6)  struct_bg <= {WS{1'bx}};
+      // initialize to defaults (all bits 1'b0)
+      if      (cnt[30:2]==0)  struct_bg <= '0;
+      else if (cnt[30:2]==1)  struct_bg <= '0;
+      else if (cnt[30:2]==2)  struct_bg <= '0;
+      else if (cnt[30:2]==3)  struct_bg <= '0;
+      else if (cnt[30:2]==4)  struct_bg <= '0;
+      else if (cnt[30:2]==5)  struct_bg <= '0;
+      else if (cnt[30:2]==6)  struct_bg <= '0;
    end else if (cnt[1:0]==2'd1) begin
       // write data into whole or part of the array using literals
       if      (cnt[30:2]==0)  begin end
       else if (cnt[30:2]==1)  struct_bg <= '{0 ,1 , 2, 3};
       else if (cnt[30:2]==2)  struct_bg <= '{e0:1, e1:2, e2:3, e3:4};
       else if (cnt[30:2]==3)  struct_bg <= '{e3:6, e2:4, e1:2, e0:0};
+      // verilator lint_off WIDTH
       else if (cnt[30:2]==4)  struct_bg <= '{default:13};
       else if (cnt[30:2]==5)  struct_bg <= '{e2:8'haa, default:1};
       else if (cnt[30:2]==6)  struct_bg <= '{cnt+0 ,cnt+1 , cnt+2, cnt+3};
+      // verilator lint_on WIDTH
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
-      if      (cnt[30:2]==0)  begin if (struct_bg !== 15'bx_xx_xxxx_xxxxxxxx) begin $display("%b", struct_bg); $stop(); end end
+      if      (cnt[30:2]==0)  begin if (struct_bg !== 15'b0_00_0000_00000000) begin $display("%b", struct_bg); $stop(); end end
       else if (cnt[30:2]==1)  begin if (struct_bg !== 15'b0_01_0010_00000011) begin $display("%b", struct_bg); $stop(); end end
       else if (cnt[30:2]==2)  begin if (struct_bg !== 15'b1_10_0011_00000100) begin $display("%b", struct_bg); $stop(); end end
       else if (cnt[30:2]==3)  begin if (struct_bg !== 15'b0_10_0100_00000110) begin $display("%b", struct_bg); $stop(); end end
@@ -79,26 +81,28 @@ module t (/*AUTOARG*/
    // little endian
    always @ (posedge clk)
    if (cnt[1:0]==2'd0) begin
-      // initialize to defaults (all bits 1'bx)
-      if      (cnt[30:2]==0)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==1)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==2)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==3)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==4)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==5)  struct_lt <= {WS{1'bx}};
-      else if (cnt[30:2]==6)  struct_lt <= {WS{1'bx}};
+      // initialize to defaults (all bits 1'b0)
+      if      (cnt[30:2]==0)  struct_lt <= '0;
+      else if (cnt[30:2]==1)  struct_lt <= '0;
+      else if (cnt[30:2]==2)  struct_lt <= '0;
+      else if (cnt[30:2]==3)  struct_lt <= '0;
+      else if (cnt[30:2]==4)  struct_lt <= '0;
+      else if (cnt[30:2]==5)  struct_lt <= '0;
+      else if (cnt[30:2]==6)  struct_lt <= '0;
    end else if (cnt[1:0]==2'd1) begin
       // write data into whole or part of the array using literals
       if      (cnt[30:2]==0)  begin end
       else if (cnt[30:2]==1)  struct_lt <= '{0 ,1 , 2, 3};
       else if (cnt[30:2]==2)  struct_lt <= '{e0:1, e1:2, e2:3, e3:4};
       else if (cnt[30:2]==3)  struct_lt <= '{e3:6, e2:4, e1:2, e0:0};
+      // verilator lint_off WIDTH
       else if (cnt[30:2]==4)  struct_lt <= '{default:13};
       else if (cnt[30:2]==5)  struct_lt <= '{e2:8'haa, default:1};
       else if (cnt[30:2]==6)  struct_lt <= '{cnt+0 ,cnt+1 , cnt+2, cnt+3};
+      // verilator lint_on WIDTH
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
-      if      (cnt[30:2]==0)  begin if (struct_lt !== 15'bx_xx_xxxx_xxxxxxxx) begin $display("%b", struct_lt); $stop(); end end
+      if      (cnt[30:2]==0)  begin if (struct_lt !== 15'b0_00_0000_00000000) begin $display("%b", struct_lt); $stop(); end end
       else if (cnt[30:2]==1)  begin if (struct_lt !== 15'b0_01_0010_00000011) begin $display("%b", struct_lt); $stop(); end end
       else if (cnt[30:2]==2)  begin if (struct_lt !== 15'b1_10_0011_00000100) begin $display("%b", struct_lt); $stop(); end end
       else if (cnt[30:2]==3)  begin if (struct_lt !== 15'b0_10_0100_00000110) begin $display("%b", struct_lt); $stop(); end end

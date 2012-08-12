@@ -2374,6 +2374,12 @@ Increment/decrement can only be used as standalone statements or in for
 loops.  They cannot be used as side effect operators inside more complicate
 expressions ("a = b++;").
 
+=item '{} operator
+
+Assignment patterns with order based, default, constant integer (array) or
+member identifier (struct/union) keys are supported.  Data type keys and
+keys which are computed from a constant expression are not supported.
+
 =item cast operator
 
 Casting is supported only between simple scalar types, signed and unsigned,

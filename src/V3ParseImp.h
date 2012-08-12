@@ -75,6 +75,7 @@ struct V3ParseBisonYYSType {
 	AstNodeVarRef*	varnodep;
 	AstPackage*	packagep;
 	AstParseRef*	parserefp;
+	AstPatMember*	patmemberp;
 	AstPin*		pinp;
 	AstRange*	rangep;
 	AstSenTree*	sentreep;
