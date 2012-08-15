@@ -271,6 +271,7 @@ public:
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);
     static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
+    static const char* commandArgsPlusMatch(const char* prefixp);
 
     /// For debugging, print text list of all scope names with
     /// dpiImport/Export context.  This function may change in future
