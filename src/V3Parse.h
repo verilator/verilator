@@ -28,6 +28,7 @@
 class AstNetlist;
 class V3InFilter;
 class V3ParseImp;
+class V3ParseSym;
 
 //============================================================================
 
@@ -38,7 +39,7 @@ private:
 public:
     // CONSTRUCTORS
     // We must allow reading multiple files into one parser
-    V3Parse(AstNetlist* rootp, V3InFilter* filterp);
+    V3Parse(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* symp);
     ~V3Parse();
 
     // METHODS

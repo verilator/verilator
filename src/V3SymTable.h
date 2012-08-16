@@ -53,7 +53,7 @@ private:
     VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
     AstPackage*	m_packagep;	// Package node is in (for V3LinkDot, unused here)
     string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
-#if 0 // debug
+#ifdef VL_DEBUG
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("V3LinkDot.cpp");
@@ -87,7 +87,18 @@ public:
 
     // METHODS
     VSymEnt(VSymGraph* graphp, AstNode* nodep);  // Below
-    ~VSymEnt() {}
+    ~VSymEnt() {
+	// Change links so we coredump if used
+#ifdef VL_DEBUG
+	m_nodep = (AstNode*)1;
+	m_fallbackp = (VSymEnt*)1;
+	m_parentp = (VSymEnt*)1;
+	m_packagep = (AstPackage*)1;
+#endif
+    }
+#if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
+    void operator delete(void* objp, size_t size) {} // For testing, leak so above destructor 1 assignments work
+#endif
     void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }

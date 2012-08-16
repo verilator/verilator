@@ -26,12 +26,13 @@
 #include "V3Ast.h"
 
 class V3InFilter;
+class V3ParseSym;
 
 //============================================================================
 
 class V3LinkCells {
 public:
-    static void link(AstNetlist* nodep, V3InFilter* filterp);
+    static void link(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp);
 };
 
 #endif // Guard

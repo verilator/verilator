@@ -92,11 +92,12 @@ class V3ParseImp {
     // MEMBERS
     AstNetlist* 	m_rootp;	// Root of the design
     V3InFilter*		m_filterp;	// Reading filter
+    V3ParseSym*		m_symp;		// Symbol table
+
     V3Lexer*		m_lexerp;	// Current FlexLexer
     static V3ParseImp*	s_parsep;	// Current THIS, bison() isn't class based
     FileLine*		m_fileline;	// Filename/linenumber currently active
 
-    V3ParseSym	m_sym;			// Symbol table
     bool	m_inCellDefine;		// Inside a `celldefine
     bool	m_inLibrary;		// Currently reading a library vs. regular file
     int		m_inBeginKwd;		// Inside a `begin_keywords
@@ -193,14 +194,14 @@ public:
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
 
     //==== Symbol tables
-    V3ParseSym* symp() { return &m_sym; }
+    V3ParseSym* symp() { return m_symp; }
 
 public:
     // CREATORS
-    V3ParseImp(AstNetlist* rootp, V3InFilter* filterp)
-	: m_filterp(filterp), m_sym(rootp) {
+    V3ParseImp(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parserSymp)
+	: m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
 	m_fileline = NULL;
-	m_rootp = rootp; m_lexerp = NULL;
+	m_lexerp = NULL;
 	m_inCellDefine = false;
 	m_inLibrary = false;
 	m_inBeginKwd = 0;

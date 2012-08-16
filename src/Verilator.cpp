@@ -70,6 +70,7 @@
 #include "V3Order.h"
 #include "V3Param.h"
 #include "V3Parse.h"
+#include "V3ParseSym.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3Scope.h"
@@ -111,8 +112,9 @@ void V3Global::readFiles() {
     AstUser4InUse	inuser4;
 
     V3InFilter filter (v3Global.opt.pipeFilter());
+    V3ParseSym parseSyms (v3Global.rootp());  // Symbol table must be common across all parsing
 
-    V3Parse parser (v3Global.rootp(), &filter);
+    V3Parse parser (v3Global.rootp(), &filter, &parseSyms);
     // Read top module
     for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
 	 it != v3Global.opt.vFiles().end(); ++it) {
@@ -135,7 +137,7 @@ void V3Global::readFiles() {
 
     if (!v3Global.opt.preprocOnly()) {
 	// Resolve all modules cells refer to
-	V3LinkCells::link(v3Global.rootp(), &filter);
+	V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
     }
 }
 

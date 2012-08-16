@@ -96,6 +96,7 @@ private:
 
     // STATE
     V3InFilter*		m_filterp;	// Parser filter
+    V3ParseSym*		m_parseSymp;	// Parser symbol table
 
     // Below state needs to be preserved between each module call.
     AstNodeModule*	m_modp;		// Current module
@@ -202,7 +203,7 @@ private:
 		// Read-subfile
 		// If file not found, make AstNotFoundModule, rather than error out.
 		// We'll throw the error when we know the module will really be needed.
-		V3Parse parser (v3Global.rootp(), m_filterp);
+		V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
 		parser.parseFile(nodep->fileline(), nodep->modName(), false, "");
 		V3Error::abortIfErrors();
 		// We've read new modules, grab new pointers to their names
@@ -284,6 +285,7 @@ private:
 	if (nodep->modp()) {
 	    nodep->iterateChildren(*this);
 	}
+	UINFO(4," Link Cell done: "<<nodep<<endl);
     }
 
     // Accelerate the recursion
@@ -316,9 +318,10 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp)
+    LinkCellsVisitor(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parseSymp)
 	: m_mods(rootp) {
 	m_filterp = filterp;
+	m_parseSymp = parseSymp;
 	m_modp = NULL;
 	m_libVertexp = NULL;
 	m_topVertexp = NULL;
@@ -330,7 +333,7 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkCells::link(AstNetlist* rootp, V3InFilter* filterp) {
+void V3LinkCells::link(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parseSymp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkCellsVisitor visitor (rootp, filterp);
+    LinkCellsVisitor visitor (rootp, filterp, parseSymp);
 }
