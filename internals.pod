@@ -376,6 +376,9 @@ algorithmic stage.  An example:
 
 =over 4
 
+The following summarizes the above example dump, with more detail on each
+field in the section below.
+
 "1:2:" indicates the hierarchy of the C<VAR> is the C<op2p> pointer under
 the C<MODULE>, which in turn is the C<op1p> pointer under the C<NETLIST>
 
