@@ -14,32 +14,6 @@ the first for reference for developers and debugging problems.
 
 See also the Verilator internals presentation at http://www.veripool.org.
 
-=head1 ADDING A NEW FEATURE
-
-Generally what would you do to add a new feature?
-
-=over 4
-
-File a bug (if there isn't already) so others know what you're working on.
-
-Make a testcase in the test_regress/t/t_EXAMPLE format, see TESTING Below.
-
-If grammar changes are needed, look at the git version of VerilogPerl's
-src/VParseGrammar.y, as this grammar supports the full SystemVerilog
-language and has a lot of back-and-forth with Verilator's grammar.  Copy
-the appropriate rules to src/verilog.y and modify the productions.
-
-If a new Ast type is needed, add it to V3AstNodes.h.
-
-Now you can run "test_regress/t/t_{new testcase}.pl --debug" and it'll
-probably fail but you'll see a test_regress/obj_dir/t_{newtestcase}/*.tree
-file which you can examine to see if the parsing worked. See also the
-sections below on debugging.
-
-Modify the later visitor functions to process the new feature as needed.
-
-=back
-
 =head1 CODE FLOWS
 
 =head2 Verilator Flow
@@ -93,6 +67,10 @@ Verilator finally writes the C++ modules.
 
 =head2 Key Classes Used in the Verilator Flow
 
+=over 4
+
+=item C<AstNode>
+
 The AST is represented at the top level by the class C<AstNode>. This abstract
 class has derived classes for the individual components (e.g. C<AstGenerate>
 for a generate block) or groups of components (e.g. C<AstNodeFTask> for
@@ -119,10 +97,63 @@ are at the top of the tree.
 By convention, each function/method uses the variable C<nodep> as a pointer
 to the C<AstNode> currently being processed.
 
+=item C<AstNVistor>
+
 The passes are implemented by AST visitor classes (see L</Visitor
 Functions>). These are implemented by subclasses of the abstract class,
 C<AstNVisitor>. Each pass creates an instance of the visitor class, which
 in turn implements a method to perform the pass.
+
+=item C<V3Graph>
+
+A number of passes use graph algorithms, and the class C<V3Graph> is provided
+to represent those graphs. Graphs are directed, and algorithms are provided to
+manipulate the graphs and to output them in I<GraphViz> dot format (see
+L<http://www.graphviz.org/>). C<V3Graph.h> provides documentation of this
+class.
+
+=item C<V3GraphVertex>
+
+This is the base class for vertices in a graph. Vertices have an associated
+C<fanout>, C<color> and C<rank>, which may be used in algorithms for ordering
+the graph. A generic C<user>/C<userp> member variable is also provided.
+
+Virtual methods are provided to specify the name, color, shape and style to be
+used in dot output. Typically users provided derived classes from
+C<V3GraphVertex> which will reimplement these methods.
+
+Iterators are provided to access in and out edges. Typically these are used in
+the form:
+
+    for (V3GraphEdge *edgep = vertexp->inBeginp();
+         edgep;
+         edgep = edgep->inNextp()) {
+
+=item C<V3GraphEdge>
+
+This is the base class for directed edges between pairs of vertices. Edges
+have an associated C<weight> and may also be made C<cutable>. A generic
+C<user>/C<userp> member variable is also provided.
+
+Accessors, C<fromp> and C<top> return the "from" and "to" vertices
+respectively.
+
+Virtual methods are provided to specify the label, color and style to be
+used in dot output. Typically users provided derived classes from
+C<V3GraphEdge> which will reimplement these methods.
+
+=item C<V3GraphAlg>
+
+This is the base class for graph algorithms. It implements a C<bool> method,
+C<followEdge> which algorithms can use to decide whether an edge is
+followed. This method returns true if the graph edge has weight greater than
+one and a user function, C<edgeFuncp> (supplied in the constructor) returns
+C<true>.
+
+A number of predefined derived algorithm classes and access methods are
+provided and documented in C<V3GraphAlg.cpp>.
+
+=back
 
 =head2 Verilated Flow
 
@@ -178,16 +209,15 @@ TREEOP macro.
 
 The original C++ source code is transformed into C++ code in the C<obj_opt>
 and C<obj_dbg> sub-directories (the former for the optimized version of
-verilator, the latter for the debug version). So for example C<V3Const.cpp>
+Verilator, the latter for the debug version). So for example C<V3Const.cpp>
 into C<V3Const__gen.cpp>.
 
 =head2 Visitor Functions
 
-The verilator uses the I<Visitor> design pattern to implement its
-refinement and optimization passes. This allows separation of the pass
-algorithm from the AST on which it operates. Wikipedia provides an
-introduction to the concept at
-L<http://en.wikipedia.org/wiki/Visitor_pattern>.
+Verilator uses the I<Visitor> design pattern to implement its refinement
+and optimization passes. This allows separation of the pass algorithm from
+the AST on which it operates. Wikipedia provides an introduction to the
+concept at L<http://en.wikipedia.org/wiki/Visitor_pattern>.
 
 As noted above, all visitors are derived classes of C<AstNvisitor>. All
 derived classes of C<AstNode> implement the C<accept> method, which takes
@@ -339,7 +369,68 @@ AST.
 To write a test see the BUGS section of the Verilator primary manual, and
 the documentation in:
 
-  test_regress/t/driver.pl --help  
+  test_regress/t/driver.pl --help
+
+Developers will also want to configure with two extra flags:
+
+=over 4
+
+=item --enable-ccwarn
+
+Causes the build to stop on warnings as well as errors. A good way to
+ensure no sloppy code gets added, however it can be painful when it comes
+to testing, since third party code used in the tests (e.g. SystemC) may not
+be warning free.
+
+=item --enable-long-tests
+
+In addition to the standard C, SystemC and SystemPerl tests also run the
+tests in the C<test_vcs>, C<test_verilated> and C<test_regress> directories
+when using I<make test>.  This is disabled by default as SystemC/SystemPerl
+installation problems would otherwise falsely indicate a Verilator problem.
+
+=back
+
+When enabling the long tests, some additional PERL modules are needed, which
+you can install using cpan.
+
+    cpan install Unix::Processors
+
+There are some traps to avoid when running regression tests
+
+=over 4
+
+=item *
+
+The regression tests will assume that you have a version of SystemPerl to
+match. Typically if working on Verilator from git, also use SystemPerl from
+git.
+
+=item *
+
+When checking the MANIFEST, the test will barf on unexpected code in the
+Verilator tree. So make sure to keep any such code outside the tree.
+
+=item *
+
+Not all Linux systems install Perldoc by default. This is needed for the
+I<--help> option to Verilator, and also for regression testing. This can be
+installed using cpan:
+
+    cpan install Pod::Perldoc
+
+Many Linux systems also offer a standard package for this. Red
+Hat/Fedora/Centos offer I<perl-Pod-Perldoc>, while Debian/Ubuntu/Linux Mint
+offer I<perl-doc>.
+
+=item *
+
+Running regression may exhaust resources on some Linux systems, particularly
+file handles and user processes. Increase these to respectively 16,384 and
+4,096. The method of doing this is system dependent, but on Fedora Linux it
+would require editing the C</etc/security/limits.conf> file as root.
+
+=back
 
 =head1 DEBUGGING
 
@@ -442,7 +533,7 @@ Of the form C<< <ennnn> >> or C<< <ennnn#> >> , where C<nnnn> is the number
 of the last edit to modify this node. The trailing C<#> indicates the node
 has been edited since the last tree dump (which typically means in the last
 refinement or optimization pass). GDB can watch for this, see L</Debugging
-with GDB> below.
+with GDB>.
 
 =item Source file and line
 
@@ -501,7 +592,7 @@ under gdb and break when an error is hit or the program is about to exit.
 You can also use --debug --gdbbt to just backtrace and then exit gdb. To
 debug the Verilated executable, use --gdbsim.
 
-If you wish to start verilator under GDB (or another debugger), then you
+If you wish to start Verilator under GDB (or another debugger), then you
 can use --debug and look at the underlying invocation of verilator_dgb. For
 example
 
@@ -550,6 +641,50 @@ backtrace. You will typically see a frame sequence something like
   accept()
   visit()
   ...
+
+=head1 ADDING A NEW FEATURE
+
+Generally what would you do to add a new feature?
+
+=over 4
+
+=item 1.
+
+File a bug (if there isn't already) so others know what you're working on.
+
+=item 2.
+
+Make a testcase in the test_regress/t/t_EXAMPLE format, see L<TESTING>.
+
+=item 3.
+
+If grammar changes are needed, look at the git version of VerilogPerl's
+src/VParseGrammar.y, as this grammar supports the full SystemVerilog
+language and has a lot of back-and-forth with Verilator's grammar.  Copy
+the appropriate rules to src/verilog.y and modify the productions.
+
+=item 4.
+
+If a new Ast type is needed, add it to V3AstNodes.h.
+
+=back
+
+Now you can run "test_regress/t/t_{new testcase}.pl --debug" and it'll
+probably fail but you'll see a test_regress/obj_dir/t_{newtestcase}/*.tree
+file which you can examine to see if the parsing worked. See also the
+sections above on debugging.
+
+Modify the later visitor functions to process the new feature as needed.
+
+=head2 Adding a new pass
+
+For more substantial changes you may need to add a new pass. The simplest way
+to do this is to copy the C<.cpp> and C<.h> files from an existing
+pass. You'll need to add a call into your pass from the C<process()> function
+in C<src/verilator.cpp>.
+
+To get your pass to build you'll need to add its binary filename to the list
+in C<src/Makefile_obj.in> and reconfigure.
 
 =head1 DISTRIBUTION
 
