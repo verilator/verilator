@@ -97,7 +97,8 @@ void t_embed_child_io_eval (unsigned char clk,
     VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_io_eval\n"); );
     Vt_embed1_child* __modelp = __get_modelp();
     VL_DEBUG_IF(VL_PRINTF("[%0ld]      in clk=%x b=%x V=%x R=%x\n",
-			  VL_TIME_Q(), clk, bit_in, vec_in[0], is_ref););
+			  (long int) (VL_TIME_Q()), clk, bit_in, vec_in[0],
+			  is_ref););
     __modelp->clk = clk;
     __modelp->bit_in = bit_in;
     __modelp->vec_in = vec_in[0];
@@ -119,5 +120,6 @@ void t_embed_child_io_eval (unsigned char clk,
     wide_out[3] = __modelp->wide_out[3];
     *did_init_out = __modelp->did_init_out;
     VL_DEBUG_IF(VL_PRINTF("[%0ld] out b=%x V=%x DI=%x\n",
-			  VL_TIME_Q(), *bit_out, *vec_out, *did_init_out););
+			  (long int)(VL_TIME_Q()), *bit_out, *vec_out,
+			  *did_init_out););
 }

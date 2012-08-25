@@ -281,7 +281,7 @@ int _mon_check_quad() {
     CHECK_RESULT_NZ(vh2);
 
     s_vpi_value v;
-    t_vpi_vecval vv;  bzero(&vv,sizeof(vv));
+    t_vpi_vecval vv[2];  bzero(&vv,sizeof(vv));
 
     s_vpi_time t;
     t.type = vpiSimTime;
@@ -294,13 +294,13 @@ int _mon_check_quad() {
     CHECK_RESULT_NZ(vhidx2);
 
     v.format = vpiVectorVal;
-    v.value.vector = &vv;
+    v.value.vector = vv;
     v.value.vector[1].aval = 0x12819213UL;
     v.value.vector[0].aval = 0xabd31a1cUL;
     vpi_put_value(vhidx2, &v, &t, vpiNoDelay);
 
     v.format = vpiVectorVal;
-    v.value.vector = &vv;
+    v.value.vector = vv;
     v.value.vector[1].aval = 0x1c77bb9bUL;
     v.value.vector[0].aval = 0x3784ea09UL;
     vpi_put_value(vhidx3, &v, &t, vpiNoDelay);
