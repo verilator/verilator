@@ -275,10 +275,10 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) {
 
     // Header
     *logp<<"digraph v3graph {\n";
-    *logp<<"\trankdir="<<dotRankDir()<<"\n";
-    *logp<<"\t//size="<<"\"7.5,10\""<<"\n";
-    *logp<<"\tnTITLE\t[fontsize=20 label=\""<<filename<<"\", shape=box, style=bold, color=black];\n";
-    *logp<<"\n";
+    *logp<<"\tgraph\t[label=\""<<filename<<"\",\n";
+    *logp<<"\t\t labelloc=t, labeljust=l,\n";
+    *logp<<"\t\t //size="<<"\"7.5,10\","<<"\n";
+    *logp<<"\t\t rankdir="<<dotRankDir()<<"];\n";
 
     // List of all possible subgraphs
     typedef multimap<string,V3GraphVertex*> SubgraphMmap;
