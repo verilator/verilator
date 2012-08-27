@@ -33,14 +33,10 @@
 // Global variables
 
 // Slow path variables
-int  Verilated::s_randReset = 0;
 VerilatedVoidCb Verilated::s_flushCb = NULL;
 
 // Keep below together in one cache line
-int  Verilated::s_debug = 0;
-bool Verilated::s_calcUnusedSigs = false;
-bool Verilated::s_gotFinish = false;
-bool Verilated::s_assertOn = true;
+Verilated::Serialized Verilated::s_s;
 VL_THREAD const VerilatedScope* Verilated::t_dpiScopep = NULL;
 VL_THREAD const char* Verilated::t_dpiFilename = "";
 VL_THREAD int Verilated::t_dpiLineno = 0;
@@ -80,6 +76,17 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
     abort();
 }
 #endif
+
+//===========================================================================
+// Overall class init
+
+Verilated::Serialized::Serialized() {
+    s_randReset = 0;
+    s_debug = 0;
+    s_calcUnusedSigs = false;
+    s_gotFinish = false;
+    s_assertOn = true;
+}
 
 //===========================================================================
 // Random reset -- Only called at init time, so don't inline.

@@ -303,6 +303,7 @@ descriptions in the next sections for more information.
     --private                   Debugging; see docs
     --psl                       Enable PSL parsing
     --public                    Debugging; see docs
+    --savable			Enable model save-restore
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
@@ -815,6 +816,27 @@ optimizations as if all signals had a /*verilator public*/ comments and
 inlining.  This will also turn off inlining as if all modules had a
 /*verilator public_module*/, unless the module specifically enabled it with
 /*verilator inline_module*/.
+
+=item --savable
+
+Enable including save and restore functions in the generated model.
+
+The user code must create a VerilatedSerialize or VerilatedDeserialze
+object then calling the << or >> operators on the generated model and any
+other data the process needs saved/restored.  For example:
+
+    void save_model(const char* filenamep) {
+        VerilatedSave os;
+        os.open(filenamep);
+        os << main_time;  // user code must save the timestamp, etc
+        os << *topp;
+    }
+    void restore_model(const char* filenamep) {
+        VerilatedRestore os;
+        os.open(filenamep);
+        os >> main_time;
+        os >> *topp;
+    }
 
 =item --sc
 

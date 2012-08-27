@@ -29,6 +29,7 @@
 #include <algorithm>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 
@@ -842,6 +843,7 @@ class EmitCImp : EmitCStmts {
     void emitCoverageDecl(AstNodeModule* modp);
     void emitCoverageImp(AstNodeModule* modp);
     void emitDestructorImp(AstNodeModule* modp);
+    void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
     void emitIntFuncDecls(AstNodeModule* modp);
     // High level
@@ -1436,7 +1438,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	// compatible, and have a common wrapper.
 	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
 	puts(  	"const char* hierp, const char* pagep, const char* commentp) {\n");
-	puts(   "static uint32_t fake_zero_count = 0;\n");
+	puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
 	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
 	puts(   "*countp = 0;\n");
 	puts(   "SP_COVER_INSERT(countp,");
@@ -1457,6 +1459,79 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     emitTextSection(AstType::atSCDTOR);
     if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
     puts("}\n");
+}
+
+void EmitCImp::emitSavableImp(AstNodeModule* modp) {
+    if (v3Global.opt.savable() ) {
+	puts("\n// Savable\n");
+	for (int de=0; de<2; ++de) {
+	    string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+	    string funcname = de ? "__Vdeserialize" : "__Vserialize";
+	    string writeread = de ? "read" : "write";
+	    string op = de ? ">>" : "<<";
+	    puts("void "+modClassName(modp)+"::"+funcname+"("+classname+"& os) {\n");
+	    // Place a computed checksum to insure proper structure save/restore formatting
+	    // OK if this hash includes some things we won't dump, since just looking for loading the wrong model
+	    VHashFnv hash;
+	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+		if (AstVar* varp = nodep->castVar()) {
+		    hash.hash(varp->name());
+		    hash.hash(varp->dtypep()->width());
+		}
+	    }
+	    ofp()->printf(   "vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
+			     hash.value());
+	    if (de) {
+		puts("os.readAssert(__Vcheckval);\n");
+	    } else {
+		puts("os<<__Vcheckval;\n");
+	    }
+
+	    // Save all members
+	    if (v3Global.opt.inhibitSim()) puts("os"+op+"__Vm_inhibitSim;\n");
+	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+		if (AstVar* varp = nodep->castVar()) {
+		    if (varp->isIO() && modp->isTop() && optSystemC()) {
+			// System C top I/O doesn't need loading, as the lower level subinst code does it.
+		    }
+		    else if (varp->isParam()) {}
+		    else if (varp->isStatic() && varp->isConst()) {}
+		    else {
+			int vects = 0;
+			// This isn't very robust and may need cleanup for other data types
+			for (AstArrayDType* arrayp=varp->dtypeSkipRefp()->castArrayDType(); arrayp;
+			     arrayp = arrayp->subDTypep()->skipRefp()->castArrayDType()) {
+			    int vecnum = vects++;
+			    if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
+			    string ivar = string("__Vi")+cvtToStr(vecnum);
+			    // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
+			    puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
+			    puts(" for (; "+ivar+"<"+cvtToStr(arrayp->elementsConst()));
+			    puts("; ++"+ivar+") {\n");
+			}
+			if (varp->basicp() && (varp->basicp()->keyword() == AstBasicDTypeKwd::STRING
+					       || !varp->basicp()->isWide())) {
+			    puts("os"+op+varp->name());
+			    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
+			    puts(";\n");
+			} else {
+			    puts("os."+writeread+"(&"+varp->name());
+			    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
+			    puts(",sizeof("+varp->name());
+			    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
+			    puts("));\n");
+			}
+			for (int v=0; v<vects; ++v) puts( "}}\n");
+		    }
+		}
+	    }
+
+	    if (modp->isTop()) {  // Save the children
+		puts(   "__VlSymsp->"+funcname+"(os);\n");
+	    }
+	    puts("}\n");
+	}
+    }
 }
 
 void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
@@ -1675,8 +1750,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     } else {
 	puts("#include \"verilated.h\"\n");
     }
+    if (v3Global.opt.savable()) {
+	puts("#include \"verilated_save.h\"\n");
+    }
     if (v3Global.opt.coverage()) {
 	puts("#include \"SpCoverage.h\"\n");
+	if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
     if (v3Global.needHInlines()) {   // Set by V3EmitCInlines; should have been called before us
 	puts("#include \""+topClassName()+"__Inlines.h\"\n");
@@ -1842,9 +1921,21 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("static void traceFull ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
 	puts("static void traceChg  ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
     }
+    if (v3Global.opt.savable()) {
+	puts("void __Vserialize(VerilatedSerialize& os);\n");
+	puts("void __Vdeserialize(VerilatedDeserialize& os);\n");
+	puts("\n");
+    }
 
-    puts("} VL_ATTR_ALIGNED(64);\n");
+    puts("} VL_ATTR_ALIGNED(128);\n");
     puts("\n");
+
+    // Save/restore
+    if (v3Global.opt.savable() && modp->isTop()) {
+	puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "+modClassName(modp)+"& rhs) {rhs.__Vserialize(os); return os;}\n");
+	puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "+modClassName(modp)+"& rhs) {rhs.__Vdeserialize(os); return os;}\n");
+	puts("\n");
+    }
 
     // finish up h-file
     if (!optSystemPerl()) {
@@ -1893,6 +1984,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 	emitCtorImp(modp);
 	emitConfigureImp(modp);
 	emitDestructorImp(modp);
+	emitSavableImp(modp);
 	emitCoverageImp(modp);
     }
 

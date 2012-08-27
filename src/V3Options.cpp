@@ -34,6 +34,7 @@
 #include <memory>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3Options.h"
 #include "V3Error.h"
 #include "V3File.h"
@@ -367,7 +368,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
     if (DIR* dirp = opendir(dir.c_str())) {
 	while (struct dirent* direntp = readdir(dirp)) {
-	    if (wildmatch(direntp->d_name, regexp.c_str())) {
+	    if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
 		string fullname = dir + "/" + string(direntp->d_name);
 		unlink (fullname.c_str());
 	    }
@@ -433,9 +434,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
 #else
 	struct utsname uts;
 	uname(&uts);
-	string sysname = downcase(uts.sysname);  // aka  'uname -s'
-	if (wildmatch(sysname.c_str(), "*solaris*")) { var = "gccsparcOS5"; }
-	else if (wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
+	string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
+	if (VString::wildmatch(sysname.c_str(), "*solaris*")) { var = "gccsparcOS5"; }
+	else if (VString::wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
 	else { var = "linux"; }
 #endif
 	setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
@@ -540,54 +541,6 @@ string V3Options::getenvVERILATOR_ROOT() {
 	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
     }
     return var;
-}
-
-//######################################################################
-// Wildcard
-
-// Double procedures, inlined, unrolls loop much better
-inline bool V3Options::wildmatchi(const char* s, const char* p) {
-    for ( ; *p; s++, p++) {
-	if (*p!='*') {
-	    if (((*s)!=(*p)) && *p != '?')
-		return false;
-	}
-	else {
-	    // Trailing star matches everything.
-	    if (!*++p) return true;
-	    while (wildmatch(s, p) == false)
-		if (*++s == '\0')
-		    return false;
-	    return true;
-	}
-    }
-    return (*s == '\0');
-}
-
-bool V3Options::wildmatch(const char* s, const char* p) {
-    for ( ; *p; s++, p++) {
-	if (*p!='*') {
-	    if (((*s)!=(*p)) && *p != '?')
-		return false;
-	}
-	else {
-	    // Trailing star matches everything.
-	    if (!*++p) return true;
-	    while (wildmatchi(s, p) == false)
-		if (*++s == '\0')
-		    return false;
-	    return true;
-	}
-    }
-    return (*s == '\0');
-}
-
-string V3Options::downcase(const string& str) {
-    string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
-	*pos = tolower(*pos);
-    }
-    return out;
 }
 
 //######################################################################
@@ -737,6 +690,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
 	    else if ( onoff   (sw, "-psl", flag/*ref*/) )		{ m_psl = flag; }
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
+	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
 	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = false; }
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
 	    else if ( !strcmp (sw, "-sp") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = true; }
@@ -1181,6 +1135,7 @@ V3Options::V3Options() {
     m_preprocOnly = false;
     m_psl = false;
     m_public = false;
+    m_savable = false;
     m_skipIdentical = true;
     m_stats = false;
     m_systemC = false;

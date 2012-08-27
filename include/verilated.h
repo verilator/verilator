@@ -219,14 +219,18 @@ struct Verilated {
     // MEMBERS
 private:
     // Slow path variables
-    static int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 
-    // Fast path
-    static int		s_debug;		///< See accessors... only when VL_DEBUG set
-    static bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
-    static bool		s_gotFinish;		///< A $finish statement executed
-    static bool		s_assertOn;		///< Assertions are enabled
+    static struct Serialized {   // All these members serialized/deserialized
+	// Slow path
+	int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
+	// Fast path
+	int		s_debug;		///< See accessors... only when VL_DEBUG set
+	bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
+	bool		s_gotFinish;		///< A $finish statement executed
+	bool		s_assertOn;		///< Assertions are enabled
+	Serialized();
+    } s_s;
 
     static VL_THREAD const VerilatedScope* t_dpiScopep;	///< DPI context scope
     static VL_THREAD const char*	t_dpiFilename;	///< DPI context filename
@@ -241,29 +245,29 @@ public:
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
-    static void randReset(int val) { s_randReset=val; }
-    static int  randReset() { return s_randReset; }	///< Return randReset value
+    static void randReset(int val) { s_s.s_randReset=val; }
+    static int  randReset() { return s_s.s_randReset; }	///< Return randReset value
 
     /// Enable debug of internal verilated code
-    static inline void debug(int level) { s_debug = level; }
+    static inline void debug(int level) { s_s.s_debug = level; }
 #ifdef VL_DEBUG
-    static inline int  debug() { return s_debug; }	///< Return debug value
+    static inline int  debug() { return s_s.s_debug; }	///< Return debug value
 #else
     static inline int  debug() { return 0; }		///< Constant 0 debug, so C++'s optimizer rips up
 #endif
     /// Enable calculation of unused signals
-    static void calcUnusedSigs(bool flag) { s_calcUnusedSigs=flag; }
-    static bool calcUnusedSigs() { return s_calcUnusedSigs; }	///< Return calcUnusedSigs value
+    static void calcUnusedSigs(bool flag) { s_s.s_calcUnusedSigs=flag; }
+    static bool calcUnusedSigs() { return s_s.s_calcUnusedSigs; }	///< Return calcUnusedSigs value
     /// Did the simulation $finish?
-    static void gotFinish(bool flag) { s_gotFinish=flag; }
-    static bool gotFinish() { return s_gotFinish; }	///< Return if got a $finish
+    static void gotFinish(bool flag) { s_s.s_gotFinish=flag; }
+    static bool gotFinish() { return s_s.s_gotFinish; }	///< Return if got a $finish
     /// Allow traces to at some point be enabled (disables some optimizations)
     static void traceEverOn(bool flag) {
 	if (flag) { calcUnusedSigs(flag); }
     }
     /// Enable/disable assertions
-    static void assertOn(bool flag) { s_assertOn=flag; }
-    static bool assertOn() { return s_assertOn; }
+    static void assertOn(bool flag) { s_s.s_assertOn=flag; }
+    static bool assertOn() { return s_s.s_assertOn; }
     /// Flush callback for VCD waves
     static void flushCb(VerilatedVoidCb cb);
     static void flushCall() { if (s_flushCb) (*s_flushCb)(); }
@@ -293,6 +297,8 @@ public:
     static const char* dpiFilenamep() { return t_dpiFilename; }
     static int dpiLineno() { return t_dpiLineno; }
     static int exportFuncNum(const char* namep);
+    static size_t serializedSize() { return sizeof(s_s); }
+    static void* serializedPtr() { return &s_s; }
 };
 
 //=========================================================================

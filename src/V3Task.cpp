@@ -666,7 +666,7 @@ private:
 	    // We could use 64-bits of a MD5/SHA hash rather than a string here,
 	    // but the compare is only done on first call then memoized, so it's not worth optimizing.
 	    string stmt;
-	    stmt += "static int __Vfuncnum = -1;\n";
+	    stmt += "static int __Vfuncnum = -1;\n";  // Static doesn't need save-restore as if below will re-fill proper value
 	    // First time init (faster than what the compiler does if we did a singleton
 	    stmt += "if (VL_UNLIKELY(__Vfuncnum==-1)) { __Vfuncnum = Verilated::exportFuncNum(\""+nodep->cname()+"\"); }\n";
 	    // If the find fails, it will throw an error

@@ -29,6 +29,7 @@
 #include <algorithm>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3EmitXml.h"
 #include "V3EmitCBase.h"
 
@@ -64,12 +65,12 @@ class EmitXmlFileVisitor : public EmitCBaseVisitor {
 
     // XML methods
     void outputTag(AstNode* nodep, string tag) {
-	if (tag=="") tag = V3Options::downcase(nodep->typeName());
+	if (tag=="") tag = VString::downcase(nodep->typeName());
 	puts("<"+tag+" "+nodep->fileline()->xml());
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
     }
     void outputChildrenEnd(AstNode* nodep, string tag) {
-	if (tag=="") tag = V3Options::downcase(nodep->typeName());
+	if (tag=="") tag = VString::downcase(nodep->typeName());
 	if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
 	    puts(">\n");
 	    nodep->iterateChildren(*this);

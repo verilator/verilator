@@ -80,6 +80,9 @@ public:
 		    if (v3Global.dpi()) {
 			putMakeClassEntry(of, "verilated_dpi.cpp");
 		    }
+		    if (v3Global.opt.savable()) {
+			putMakeClassEntry(of, "verilated_save.cpp");
+		    }
 		    if (v3Global.opt.systemPerl()) {
 			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
 		    }

@@ -115,6 +115,7 @@ class V3Options {
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_psl;		// main switch: --psl
     bool	m_public;	// main switch: --public
+    bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
     bool	m_skipIdentical;// main switch: --skip-identical
     bool	m_systemPerl;	// main switch: --sp: System Perl instead of SystemC (m_systemC also set)
@@ -192,7 +193,6 @@ class V3Options {
     string parseFileArg(const string& optdir, const string& relfilename);
     string filePathCheckOneDir(const string& modname, const string& dirname);
 
-    static bool wildmatchi(const char* s, const char* p);
     static string getenvStr(const string& envvar, const string& defaultValue);
     static void setenvStr(const string& envvar, const string& value, const string& why);
     static string getenvSYSTEMPERLGuts();
@@ -223,6 +223,7 @@ class V3Options {
     bool systemPerl() const { return m_systemPerl; }
     bool usingSystemCLibs() const { return !lintOnly() && (systemPerl() || systemC()); }
     bool usingSystemPerlLibs() const { return !lintOnly() && (systemPerl() || coverage()); }
+    bool savable() const { return m_savable; }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
@@ -320,10 +321,6 @@ class V3Options {
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList (FileLine* fl, const string& optdir, int argc, char** argv);
     void parseOptsFile (FileLine* fl, const string& filename, bool rel);
-
-    // METHODS (generic string utilities)
-    static bool wildmatch(const char* s, const char* p);
-    static string downcase(const string& str);
 
     // METHODS (generic file utilities)
     static string filenameFromDirBase (const string& dir, const string& basename);

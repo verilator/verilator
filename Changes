@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.84*** devel
 
+***   Add --savable to support model save/restore.  [Jeremy Bennett]
+
 ***   Support '{} assignment pattern on structures, part of bug355.
 
 ****  Fix double-deep parameter cell WIDTHs, bug541.  [Hiroki Honda]

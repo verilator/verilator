@@ -55,7 +55,9 @@ class VerilatedImp {
     // MEMBERS
     static VerilatedImp	s_s;		///< Static Singleton; One and only static this
 
-    ArgVec		m_argVec;	///< Argument list
+    // Nothing here is save-restored; users expected to re-register appropriately
+
+    ArgVec		m_argVec;	///< Argument list (NOT save-restored, may want different results)
     bool		m_argVecLoaded;	///< Ever loaded argument list
     UserMap	 	m_userMap;	///< Map of <(scope,userkey), userData>
     ScopeNameMap	m_nameMap;	///< Map of <scope_name, scope pointer>

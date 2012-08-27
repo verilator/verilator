@@ -476,6 +476,7 @@ sub compile_vlt_flags {
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
+    $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
     my @verilator_flags = @{$param{verilator_flags}};
@@ -963,15 +964,39 @@ sub _make_main {
     print $fh "#include \"systemc.h\"\n" if $self->sc;
     print $fh "#include \"systemperl.h\"\n" if $self->sp;
     print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && !$self->sp;
+    print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
     print $fh "#include \"SpTraceVcd.h\"\n" if $self->{trace} && $self->sp;
 
     print $fh "$VM_PREFIX * topp;\n";
     if (!$self->sc_or_sp) {
-	print $fh "unsigned int main_time = false;\n";
+	print $fh "vluint64_t main_time = false;\n";
 	print $fh "double sc_time_stamp () {\n";
 	print $fh "    return main_time;\n";
 	print $fh "}\n";
     }
+
+    if ($self->{savable}) {
+	$fh->print("\n");
+	$fh->print("void save_model(const char* filenamep) {\n");
+	$fh->print("    VL_PRINTF(\"Saving model to '%s'\\n\", filenamep);\n");
+	$fh->print("    VerilatedSave os;\n");
+	$fh->print("    os.open(filenamep);\n");
+	$fh->print("    os << main_time;\n");
+	$fh->print("    os << *topp;\n");
+	$fh->print("    os.close();\n");
+	$fh->print("}\n");
+	$fh->print("\n");
+	$fh->print("void restore_model(const char* filenamep) {\n");
+	$fh->print("    VL_PRINTF(\"Restoring model from '%s'\\n\", filenamep);\n");
+	$fh->print("    VerilatedRestore os;\n");
+	$fh->print("    os.open(filenamep);\n");
+	$fh->print("    os >> main_time;\n");
+	$fh->print("    os >> *topp;\n");
+	$fh->print("    os.close();\n");
+	$fh->print("}\n");
+    }
+
+    #### Main
     if ($self->sc_or_sp) {
 	print $fh "extern int sc_main(int argc, char **argv);\n";
 	print $fh "int sc_main(int argc, char **argv) {\n";
@@ -1017,9 +1042,24 @@ sub _make_main {
 	$fh->print("#endif\n");
     }
 
-    print $fh "    ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
-    print $fh "    ${set}clk = false;\n" if $self->{inputs}{clk};
+    if ($self->{savable}) {
+	$fh->print("    const char* save_time_strp  = Verilated::commandArgsPlusMatch(\"save_time=\");\n");
+	$fh->print("    const char* save_restore_strp = Verilated::commandArgsPlusMatch(\"save_restore=\");\n");
+	$fh->print("    unsigned int save_time = !save_time_strp[0] ? 0 : atoi(save_time_strp+strlen(\"+save_time=\"));\n");
+	$fh->print("    unsigned int save_restore = !save_restore_strp[0] ? 0 : 1;\n");
+    }
+
+    if ($self->{savable}) {
+	$fh->print("    if (save_restore) {\n");
+	$fh->print("        restore_model(\"$self->{obj_dir}/saved.vltsv\");\n");
+	$fh->print("    } else {\n");
+    } else {
+	$fh->print("    {\n");
+    }
+    print $fh "       ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
+    print $fh "       ${set}clk = false;\n" if $self->{inputs}{clk};
     _print_advance_time($self, $fh, 10);
+    print $fh "    }\n";
 
     print $fh "    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {\n";
     for (my $i=0; $i<5; $i++) {
@@ -1031,6 +1071,13 @@ sub _make_main {
 	if ($i==0 && $self->{inputs}{clk}) {
 	    print $fh "	${set}clk=!${set}clk;\n";
 	    $action = 1;
+	}
+	if ($self->{savable}) {
+	    $fh->print("	if (sc_time_stamp() == save_time && save_time) {\n");
+	    $fh->print("	    save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
+	    $fh->print("	    printf(\"Exiting after save_model\\n\");\n");
+	    $fh->print("	    exit(0);\n");
+	    $fh->print("	}\n");
 	}
 	_print_advance_time($self, $fh, 1, $action);
     }

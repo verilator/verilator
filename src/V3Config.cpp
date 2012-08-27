@@ -25,6 +25,7 @@
 #include <set>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3Config.h"
 
 //######################################################################
@@ -89,7 +90,7 @@ class V3ConfigIgnores {
 	    it = m_ignFiles.find(filename);
 	    // Make new list for this file of all matches
 	    for (IgnFiles::iterator fnit = m_ignWilds.begin(); fnit != m_ignWilds.end(); ++fnit) {
-		if (V3Options::wildmatch(filename.c_str(), fnit->first.c_str())) {
+		if (VString::wildmatch(filename.c_str(), fnit->first.c_str())) {
 		    for (IgnLines::iterator lit = fnit->second.begin(); lit != fnit->second.end(); ++lit) {
 			it->second.insert(*lit);
 		    }

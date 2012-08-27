@@ -22,7 +22,7 @@
  `define _VERILATED_V_ 1
 
  // Hide verilator pragmas from other tools
- `ifdef verilator `else
+ `ifdef VERILATOR `else
   `define coverage_block_off
  `endif
 

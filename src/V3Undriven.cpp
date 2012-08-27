@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3Undriven.h"
 #include "V3Ast.h"
 
@@ -135,7 +136,7 @@ public:
     bool unusedMatch(AstVar* nodep) {
 	const char* regexpp = v3Global.opt.unusedRegexp().c_str();
 	if (!regexpp || !*regexpp) return false;
-	return V3Options::wildmatch(nodep->prettyName().c_str(), regexpp);
+	return VString::wildmatch(nodep->prettyName().c_str(), regexpp);
     }
     void reportViolations() {
 	// Combine bits into overall state

@@ -339,8 +339,13 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
     puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r;}\n");
+    if (v3Global.opt.savable() ) {
+	puts("void __Vserialize(VerilatedSerialize& os);\n");
+	puts("void __Vdeserialize(VerilatedDeserialize& os);\n");
+    }
     puts("\n");
     puts("} VL_ATTR_ALIGNED(64);\n");
+    puts("\n");
     puts("#endif  /*guard*/\n");
 }
 
@@ -498,7 +503,28 @@ void EmitCSyms::emitSymImp() {
     }
 
     puts("}\n");
-    puts("\n");
+
+    if (v3Global.opt.savable() ) {
+	puts("\n");
+	for (int de=0; de<2; ++de) {
+	    string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+	    string funcname = de ? "__Vdeserialize" : "__Vserialize";
+	    string op = de ? ">>" : "<<";
+	    puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
+	    puts(   "// LOCAL STATE\n");
+	    // __Vm_namep presumably already correct
+	    puts(   "os"+op+"__Vm_activity;\n");
+	    puts(   "os"+op+"__Vm_didInit;\n");
+	    puts(   "// SUBCELL STATE\n");
+	    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+		AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+		if (!modp->isTop()) {
+		    puts(   scopep->nameDotless()+"."+funcname+"(os);\n");
+		}
+	    }
+	    puts("}\n");
+	}
+    }
 }
 
 //######################################################################
