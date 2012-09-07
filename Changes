@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.84** devel
+
+****  Fix parameter pins interspersed with cells broke in 3.840.  [Bernard Deadman]
+
+
 * Verilator 3.841 2012/09/03
 
 ***   Add --savable to support model save/restore.  [Jeremy Bennett]

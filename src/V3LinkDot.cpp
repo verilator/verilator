@@ -154,6 +154,7 @@ public:
 	    // See t_gen_forif.v for an example.
 	} else {
 	    preErrorDump();
+	    UINFO(4,"name "<<name<<endl);  // Not always same as nodep->name
 	    UINFO(4,"Var1 "<<nodep<<endl);
 	    UINFO(4,"Var2 "<<fnodep<<endl);
 	    if (nodep->type() == fnodep->type()) {
@@ -497,6 +498,7 @@ private:
 	AstBegin* oldbeginp = m_beginp;
 	VSymEnt* oldModSymp = m_modSymp;
 	VSymEnt* oldCurSymp = m_curSymp;
+	int oldParamNum = m_paramNum;
 	// Where do we add it?
 	VSymEnt* aboveSymp = m_curSymp;
 	string origname = AstNode::dedotName(nodep->name());
@@ -522,6 +524,7 @@ private:
 	m_beginp = oldbeginp;
 	m_modSymp = oldModSymp;
 	m_curSymp = oldCurSymp;
+	m_paramNum = oldParamNum;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	UINFO(5,"   CELLINLINE under "<<m_scope<<" is "<<nodep<<endl);
