@@ -58,12 +58,8 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 2)  array_bg               <= '{default:13};
       else if (cnt[30:2]== 3)  array_bg               <= '{0:4, 1:5, 2:6, 3:7};
       else if (cnt[30:2]== 4)  array_bg               <= '{2:15, default:13};
-      else if (cnt[30:2]== 5)  array_bg               <= '{WA  {          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]== 6)  array_bg               <= '{WA  { {3'b101, {WB/2-1{2'b10}}} }};
-      else if (cnt[30:2]== 7)  array_bg               <= '{WA  {          {WB/2-1{2'b10}}  }};
-      else if (cnt[30:2]== 8)  array_bg [WA/2-1:0   ] <= '{WA/2{          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]== 9)  array_bg [WA  -1:WA/2] <= '{WA/2{          {WB/2  {2'b01}}  }};
-      else if (cnt[30:2]==10)  array_bg               <= '{cnt+0, cnt+1, cnt+2, cnt+3};
+      else if (cnt[30:2]== 5)  array_bg               <= '{WA  {          {WB  {2'b10}}  }};
+      else if (cnt[30:2]== 6)  array_bg               <= '{cnt+0, cnt+1, cnt+2, cnt+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
       if      (cnt[30:2]== 0)  begin if (array_bg !== 16'b0000000000000000) begin $display("%b", array_bg); $stop(); end end
@@ -72,11 +68,7 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 3)  begin if (array_bg !== 16'b0111011001010100) begin $display("%b", array_bg); $stop(); end end
       else if (cnt[30:2]== 4)  begin if (array_bg !== 16'b1101111111011101) begin $display("%b", array_bg); $stop(); end end
       else if (cnt[30:2]== 5)  begin if (array_bg !== 16'b1010101010101010) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 6)  begin if (array_bg !== 16'b0110011001100110) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 7)  begin if (array_bg !== 16'b0010001000100010) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 8)  begin if (array_bg !== 16'b1010101000000000) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 9)  begin if (array_bg !== 16'b0000000010101010) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]==10)  begin if (array_bg !== 16'b1001101010111100) begin $display("%b", array_bg); $stop(); end end
+      else if (cnt[30:2]== 6)  begin if (array_bg !== 16'b1001101010111100) begin $display("%b", array_bg); $stop(); end end
    end
 
    // little endian
@@ -102,10 +94,6 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 3)  array_lt               <= '{3:4, 2:5, 1:6, 0:7};
       else if (cnt[30:2]== 4)  array_lt               <= '{1:15, default:13};
       else if (cnt[30:2]== 5)  array_lt               <= '{WA  {          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]== 6)  array_lt               <= '{WA  { {3'b101, {WB/2-1{2'b10}}} }};
-      else if (cnt[30:2]== 7)  array_lt               <= '{WA  {          {WB/2-1{2'b10}}  }};
-      else if (cnt[30:2]== 8)  array_lt [0   :WA/2-1] <= '{WA/2{          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]== 9)  array_lt [WA/2:WA  -1] <= '{WA/2{          {WB/2  {2'b01}}  }};
       else if (cnt[30:2]==10)  array_lt               <= '{cnt+0, cnt+1, cnt+2, cnt+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
@@ -115,10 +103,6 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 3)  begin if (array_lt !== 16'b0111011001010100) begin $display("%b", array_lt); $stop(); end end
       else if (cnt[30:2]== 4)  begin if (array_lt !== 16'b1101111111011101) begin $display("%b", array_lt); $stop(); end end
       else if (cnt[30:2]== 5)  begin if (array_lt !== 16'b1010101010101010) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 6)  begin if (array_lt !== 16'b0110011001100110) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 7)  begin if (array_lt !== 16'b0010001000100010) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 8)  begin if (array_lt !== 16'b1010101000000000) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 9)  begin if (array_lt !== 16'b0000000010101010) begin $display("%b", array_lt); $stop(); end end
       else if (cnt[30:2]==10)  begin if (array_lt !== 16'b1001101010111100) begin $display("%b", array_lt); $stop(); end end
    end
 

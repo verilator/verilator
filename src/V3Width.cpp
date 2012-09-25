@@ -1006,6 +1006,23 @@ private:
 	    m_assDTypep = m_assDTypep->skipRefp();
 	    UINFO(9,"  adtypep "<<m_assDTypep<<endl);
 	    nodep->dtypep(m_assDTypep);
+	    for (AstPatMember* patp = nodep->itemsp()->castPatMember(); patp; patp = patp->nextp()->castPatMember()) {
+		// Determine replication count, and replicate initial value as widths need to be individually determined
+		int times = visitPatMemberRep(patp);
+		for (int i=1; i<times; i++) {
+		    AstNode* newp = patp->cloneTree(false);
+		    patp->addNextHere(newp);
+		    // This loop will see the new elements as part of nextp()
+		}
+	    }
+	    AstPatMember* defaultp = NULL;
+	    for (AstPatMember* patp = nodep->itemsp()->castPatMember(); patp; patp = patp->nextp()->castPatMember()) {
+		if (patp->isDefault()) {
+		    if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
+		    defaultp = patp;
+		    patp->unlinkFrBack();
+		}
+	    }
 	    if (AstNodeClassDType* classp = m_assDTypep->castNodeClassDType()) {
 		// Due to "default" and tagged patterns, we need to determine
 		// which member each AstPatMember corresponds to before we can
@@ -1013,19 +1030,11 @@ private:
 		// width the initial value appropriately.
 		typedef map<AstMemberDType*,AstPatMember*> PatMap;
 		PatMap patmap;
-		AstPatMember* defaultp = NULL;
 		{
 		    AstMemberDType* memp = classp->membersp();
 		    AstPatMember* patp = nodep->itemsp()->castPatMember();
 		    for (; memp || patp; ) {
-			// Determine replication count, and replicate initial value as widths need to be individually determined
 			if (patp) {
-			    int times = visitPatMemberRep(patp);
-			    for (int i=1; i<times; i++) {
-				AstNode* newp = patp->cloneTree(false);
-				patp->addNextHere(newp);
-				// This loop will see the new elements as part of nextp()
-			    }
 			    if (patp->keyp()) {
 				if (AstText* textp = patp->keyp()->castText()) {
 				    memp = classp->findMember(textp->text());
@@ -1038,10 +1047,7 @@ private:
 				}
 			    }
 			}
-			if (patp && patp->isDefault()) {
-			    if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
-			    defaultp = patp;
-			} else if (memp && !patp) {
+			if (memp && !patp) {
 			    // Missing init elements, warn below
 			    memp=NULL; patp=NULL; break;
 			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
