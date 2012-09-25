@@ -54,14 +54,6 @@ class SliceCloneVisitor : public AstNVisitor {
     //  AstNodeAssign::user2()	    -> int. The number of clones needed for this assign
     //  AstArraySel::user3()	    -> bool.  Error detected
 
-    // ENUMS
-    enum RedOp {		// The type of unary operation to be expanded
-	REDOP_UNKNOWN,		// Unknown/Unsupported
-	REDOP_OR,		// Or Reduction
-	REDOP_AND,		// And Reduction
-	REDOP_XOR,		// Xor Reduction
-	REDOP_XNOR};		// Xnor Reduction
-
     // STATE
     vector<vector<unsigned> >	m_selBits;	// Indexes of the ArraySel we are expanding
     int				m_vecIdx;	// Current vector index
@@ -140,14 +132,6 @@ class SliceCloneVisitor : public AstNVisitor {
 	m_selBits.clear();
 	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
 
-	// Figure out what type of operation this is so we don't have to cast on
-	// every clone.
-	RedOp redOpType = REDOP_UNKNOWN;
-	if (nodep->castRedOr()) redOpType = REDOP_OR;
-	else if (nodep->castRedAnd()) redOpType = REDOP_AND;
-	else if (nodep->castRedXor()) redOpType = REDOP_XOR;
-	else if (nodep->castRedXnor()) redOpType = REDOP_XNOR;
-
 	AstNode* lhsp = NULL;
 	AstNode* rhsp = NULL;
 	for (int i = 0; i < nodep->user2(); ++i) {
@@ -158,20 +142,20 @@ class SliceCloneVisitor : public AstNVisitor {
 	    if (!lhsp) lhsp = clonep;
 	    else rhsp = clonep;
 	    if (lhsp && rhsp) {
-		switch (redOpType) {
-		case REDOP_OR:
+		switch (nodep->type()) {
+		case AstType::atREDOR:
 		    lhsp = new AstOr(nodep->fileline(), lhsp, rhsp);
 		    break;
-		case REDOP_AND:
+		case AstType::atREDAND:
 		    lhsp = new AstAnd(nodep->fileline(), lhsp, rhsp);
 		    break;
-		case REDOP_XOR:
+		case AstType::atREDXOR:
 		    lhsp = new AstXor(nodep->fileline(), lhsp, rhsp);
 		    break;
-		case REDOP_XNOR:
+		case AstType::atREDXNOR:
 		    lhsp = new AstXnor(nodep->fileline(), lhsp, rhsp);
 		    break;
-		default: // REDOP_UNKNOWN
+		default:
 		    nodep->v3fatalSrc("Unsupported: Unary operation on multiple packed dimensions");
 		    break;
 		}
