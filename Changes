@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix parameter pins interspersed with cells broke in 3.840.  [Bernard Deadman]
 
+****  Fix large shift error on large shift constants.  [David Welch]
+
 
 * Verilator 3.841 2012/09/03
 

@@ -1821,9 +1821,19 @@ private:
 	    int width=nodep->width();  int ewidth=nodep->widthMin();
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 	    widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
-	    if (nodep->rhsp()->width()>32)
-		nodep->rhsp()->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
-				       <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+	    if (nodep->rhsp()->width()>32) {
+		AstConst* shiftp = nodep->rhsp()->castConst();
+		if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
+		    // If (number)<<96'h1, then make it into (number)<<32'h1
+		    V3Number num (shiftp->fileline(), 32, 0); num.opAssign(shiftp->num());
+		    AstNode* shiftp = nodep->rhsp();
+		    nodep->rhsp()->replaceWith(new AstConst(shiftp->fileline(), num));
+		    shiftp->deleteTree(); shiftp=NULL;
+		} else {
+		    nodep->rhsp()->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
+					   <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+		}
+	    }
 	}
 	return nodep;  // May edit
     }

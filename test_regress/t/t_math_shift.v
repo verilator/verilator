@@ -40,6 +40,8 @@ module t (/*AUTOARG*/
 	    if (5'sb10110>>>2 != 5'sb11101) $stop;
 	    if (5'sb10110<<2  != 5'sb11000) $stop;
 	    if (5'sb10110<<<2 != 5'sb11000) $stop;
+	    // Allow >64 bit shifts if the shift amount is a constant
+	    if ((64'sh458c2de282e30f8b >> 68'sh4) !== 64'sh0458c2de282e30f8) $stop;
 	 end
 	 if (cyc==2) begin
 	    amt <= 32'd28;
