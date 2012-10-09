@@ -208,6 +208,9 @@ class AstSenTree;
 %token<strp>		yaID__LEX	"IDENTIFIER-in-lex"
 %token<strp>		yaID__aPACKAGE	"PACKAGE-IDENTIFIER"
 %token<strp>		yaID__aTYPE	"TYPE-IDENTIFIER"
+//			Can't predecode aFUNCTION, can declare after use
+//			Can't predecode aINTERFACE, can declare after use
+//			Can't predecode aTASK, can declare after use
 
 // IEEE: integral_number
 %token<nump>		yaINTNUM	"INTEGER NUMBER"
@@ -697,7 +700,7 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	//UNSUP	extern_constraint_declaration		{ $$ = $1; }
 	//UNSUP	class_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
-	|	local_parameter_declaration		{ $$ = $1; }
+	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';'		{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//UNSUP	overload_declaration			{ $$ = $1; }
@@ -826,10 +829,14 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PARSEP->instantCb($<fl>2, $2, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PARSEP->instantCb($<fl>2, $2, $5, $6); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE
+	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PARSEP->instantCb($<fl>2, $2, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE
+	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PINNUMINC(); }
+	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
+	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PARSEP->instantCb($<fl>2, $2, $5, $6); PINNUMINC(); }
+	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
+	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PINNUMINC(); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
@@ -856,11 +863,16 @@ port<nodep>:			// ==IEEE: port
 	//
 	//			// Note implicit rules looks just line declaring additional followon port
 	//			// No VARDECL("port") for implicit, as we don't want to declare variables for them
-	//UNSUP	portDirNetE data_type	       '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
-	//UNSUP	portDirNetE yVAR data_type     '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
-	//UNSUP	portDirNetE yVAR implicit_type '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
-	//UNSUP	portDirNetE signingE rangeList '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
-	//UNSUP	portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE	{ UNSUP }
+	//UNSUP	portDirNetE data_type	       '.' portSig '(' portAssignExprE ')' sigAttrListE
+	//UNSUP		{ UNSUP }
+	//UNSUP	portDirNetE yVAR data_type     '.' portSig '(' portAssignExprE ')' sigAttrListE
+	//UNSUP		{ UNSUP }
+	//UNSUP	portDirNetE yVAR implicit_type '.' portSig '(' portAssignExprE ')' sigAttrListE
+	//UNSUP		{ UNSUP }
+	//UNSUP	portDirNetE signingE rangeList '.' portSig '(' portAssignExprE ')' sigAttrListE
+	//UNSUP		{ UNSUP }
+	//UNSUP	portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE
+	//UNSUP		{ UNSUP }
 	//
 		portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
 			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
@@ -982,7 +994,7 @@ genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 
 local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
 	//			// See notes in parameter_declaration
-		local_parameter_declarationFront list_of_param_assignments ';'	{ $$ = $2; }
+		local_parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
 	;
 
 parameter_declaration<nodep>:	// IEEE: parameter_declaration
@@ -1485,7 +1497,8 @@ module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
 	//			// IEEE: gate_instantiation + udp_instantiation + module_instantiation
 	//			// not here, see etcInst in module_common_item
 	//			// We joined udp & module definitions, so this goes here
-	|	table					{ $$ = $1; }
+	|	combinational_body			{ $$ = $1; }
+	//			// This module_common_item shared with interface_or_generate_item:module_common_item
 	|	module_common_item			{ $$ = $1; }
 	;
 
@@ -1535,6 +1548,11 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 
 //************************************************
 // Generates
+//
+// Way down in generate_item is speced a difference between module,
+// interface and checker generates.  modules and interfaces are almost
+// identical (minus DEFPARAMs) so we overlap them.  Checkers are too
+// different, so we copy all rules for checkers.
 
 generate_region<nodep>:		// ==IEEE: generate_region
 		yGENERATE genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
@@ -1559,13 +1577,13 @@ genItemBegin<nodep>:		// IEEE: part of generate_block
 	;
 
 genItemOrBegin<nodep>:		// Not in IEEE, but our begin isn't under generate_item
-		generate_item				{ $$ = $1; }
-	|	genItemBegin				{ $$ = $1; }
+		~c~generate_item			{ $$ = $1; }
+	|	~c~genItemBegin				{ $$ = $1; }
 	;
 
 genItemList<nodep>:
-		genItemOrBegin				{ $$ = $1; }
-	|	genItemList genItemOrBegin		{ $$ = $1->addNextNull($2); }
+		~c~genItemOrBegin			{ $$ = $1; }
+	|	~c~genItemList ~c~genItemOrBegin	{ $$ = $1->addNextNull($2); }
 	;
 
 generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
@@ -1579,13 +1597,13 @@ generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
 	;
 
 conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
-		yCASE  '(' expr ')' case_generate_itemListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
+		yCASE  '(' expr ')' ~c~case_generate_itemListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
 	|	yIF '(' expr ')' generate_block_or_null	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
 	|	yIF '(' expr ')' generate_block_or_null yELSE generate_block_or_null	{ $$ = new AstGenIf($1,$3,$5,$7); }
 	;
 
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
-		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' generate_block_or_null
+		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
 			  AstBegin* lowerBegp = $9->castBegin();
 			  if ($9 && !lowerBegp) $9->v3fatalSrc("Child of GENFOR should have been begin");
@@ -1641,8 +1659,8 @@ case_generate_itemListE<nodep>:	// IEEE: [{ case_generate_itemList }]
 	;
 
 case_generate_itemList<nodep>:	// IEEE: { case_generate_itemList }
-		case_generate_item			{ $$=$1; }
-	|	case_generate_itemList case_generate_item	{ $$=$1; $1->addNext($2); }
+		~c~case_generate_item			{ $$=$1; }
+	|	~c~case_generate_itemList ~c~case_generate_item	{ $$=$1; $1->addNext($2); }
 	;
 
 case_generate_item<nodep>:	// ==IEEE: case_generate_item
@@ -1949,7 +1967,7 @@ stmtBlock<nodep>:		// IEEE: statement + seq_block + par_block
 
 seq_block<nodep>:		// ==IEEE: seq_block
 	//			// IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
-	//			// So need begin's even if unnamed to scope variables down
+	//			// So need AstBegin's even if unnamed to scope variables down
 		seq_blockFront blockDeclStmtList yEND endLabelE	{ $$=$1; $1->addStmtsp($2); SYMP->popScope($1); GRAMMARP->endLabel($<fl>4,$1,$4); }
 	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
 	;
@@ -1973,7 +1991,7 @@ block_item_declarationList<nodep>:	// IEEE: [ block_item_declaration ]
 
 block_item_declaration<nodep>:	// ==IEEE: block_item_declaration
 		data_declaration 			{ $$ = $1; }
-	|	local_parameter_declaration 		{ $$ = $1; }
+	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';' 		{ $$ = $1; }
 	//UNSUP	overload_declaration 			{ $$ = $1; }
 	//UNSUP	let_declaration 			{ $$ = $1; }
@@ -2299,6 +2317,14 @@ taskRef<parserefp>:		// IEEE: part of tf_call
 	;
 
 funcRef<parserefp>:		// IEEE: part of tf_call
+	//			// package_scope/hierarchical_... is part of expr, so just need ID
+	//			//	making-a		id-is-a
+	//			//	-----------------	------------------
+	//			//      tf_call			tf_identifier		expr (list_of_arguments)
+	//			//      method_call(post .)	function_identifier	expr (list_of_arguments)
+	//			//	property_instance	property_identifier	property_actual_arg
+	//			//	sequence_instance	sequence_identifier	sequence_actual_arg
+	//			//      let_expression		let_identifier		let_actual_arg
 		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstFuncRef($2, "", $3)); $$->start(true); }
 	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ AstFuncRef* f=new AstFuncRef($3,"",$4); f->packagep($1); $$ = new AstParseRef($2->fileline(), AstParseRefExp::PX_FTASK, "", $2, f); $$->start(true); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
@@ -3050,7 +3076,7 @@ strengthSpecE:			// IEEE: drive_strength + pullup_strength + pulldown_strength +
 //************************************************
 // Tables
 
-table<nodep>:		// IEEE: combinational_body + sequential_body
+combinational_body<nodep>:	// IEEE: combinational_body + sequential_body
 		yTABLE tableEntryList yENDTABLE		{ $$ = new AstUdpTable($1,$2); }
 	;
 
@@ -3224,6 +3250,8 @@ labeledStmt<nodep>:
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 		concurrent_assertion_statement		{ $$ = $1; }
 	|	id/*block_identifier*/ ':' concurrent_assertion_statement	{ $$ = new AstBegin($2,*$1,$3); }
+	//			// IEEE: checker_instantiation
+	//			// identical to module_instantiation; see etcInst
 	;
 
 concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
