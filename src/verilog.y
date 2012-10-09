@@ -631,6 +631,7 @@ descriptionList:		// IEEE: part of source_text
 
 description:			// ==IEEE: description
 		module_declaration			{ }
+	//			// udp_declaration moved into module_declaration
 	//UNSUP	interface_declaration			{ }
 	|	program_declaration			{ }
 	|	package_declaration			{ }
@@ -644,6 +645,7 @@ description:			// ==IEEE: description
 
 timeunits_declaration<nodep>:	// ==IEEE: timeunits_declaration
 		yTIMEUNIT       yaTIMENUM ';'		{ $$ = NULL; }
+	|	yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'	{ $$ = NULL; }
 	| 	yTIMEPRECISION  yaTIMENUM ';'		{ $$ = NULL; }
 	;
 
@@ -681,6 +683,7 @@ package_itemList<nodep>:	// IEEE: { package_item }
 package_item<nodep>:		// ==IEEE: package_item
 		package_or_generate_item_declaration	{ $$ = $1; }
 	//UNSUP	anonymous_program			{ $$ = $1; }
+	//UNSUP	package_export_declaration		{ $$ = $1; }
 	|	timeunits_declaration			{ $$ = $1; }
 	;
 
@@ -689,15 +692,16 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	|	data_declaration			{ $$ = $1; }
 	|	task_declaration			{ $$ = $1; }
 	|	function_declaration			{ $$ = $1; }
+	//UNSUP	checker_declaration			{ $$ = $1; }
 	|	dpi_import_export			{ $$ = $1; }
 	//UNSUP	extern_constraint_declaration		{ $$ = $1; }
 	//UNSUP	class_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
-	|	parameter_declaration ';'		{ $$ = $1; }
 	|	local_parameter_declaration		{ $$ = $1; }
+	|	parameter_declaration ';'		{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//UNSUP	overload_declaration			{ $$ = $1; }
-	//UNSUP	concurrent_assertion_item_declaration	{ $$ = $1; }
+	//UNSUP	assertion_item_declaration		{ $$ = $1; }
 	|	';'					{ $$ = NULL; }
 	;
 
@@ -828,7 +832,7 @@ port<nodep>:			// ==IEEE: port
 	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE	{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PINNUMINC(); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
-	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension }
+	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
 	//			//   IEEE: [ net_port_header | variable_port_header ] '.' port_identifier '(' [ expression ] ')'
 	//			//   IEEE: [ variable_port_header ] port_identifier { variable_dimension } [ '=' constant_expression ]
 	//			//   Substitute net_port_header = [ port_direction ] net_port_type
@@ -955,6 +959,7 @@ program_generate_item<nodep>:		// ==IEEE: program_generate_item
 		loop_generate_construct			{ $$ = $1; }
 	|	conditional_generate_construct		{ $$ = $1; }
 	|	generate_region				{ $$ = $1; }
+	//UNSUP	elaboration_system_task			{ $$ = $1; }
 	;
 
 //************************************************
@@ -1568,6 +1573,9 @@ generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
 		module_or_generate_item			{ $$ = $1; }
 	//			// Only legal when in a generate under an interface
 	//UNSUP	interface_or_generate_item		{ $$ = $1; }
+	//			// IEEE: checker_or_generate_item
+	//			// Only legal when in a generate under a checker
+	//			// so below in c_generate_item
 	;
 
 conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
@@ -1806,6 +1814,7 @@ defparam_assignment<nodep>:	// ==IEEE: defparam_assignment
 //   gate (strong0) [#(delay)]   [name] (pins) [, (pins)...] ;	// gate_instantiation
 //   program_id     [#(params}]   name ;			// program_instantiation
 //   interface_id   [#(params}]   name ;			// interface_instantiation
+//   checker_id			  name  (pins) ;		// checker_instantiation
 
 etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_instantiation
 		instDecl				{ $$ = $1; }
@@ -1967,6 +1976,7 @@ block_item_declaration<nodep>:	// ==IEEE: block_item_declaration
 	|	local_parameter_declaration 		{ $$ = $1; }
 	|	parameter_declaration ';' 		{ $$ = $1; }
 	//UNSUP	overload_declaration 			{ $$ = $1; }
+	//UNSUP	let_declaration 			{ $$ = $1; }
 	;
 
 stmtList<nodep>:
@@ -1988,6 +1998,8 @@ statement_item<nodep>:		// IEEE: statement_item
 		foperator_assignment ';'		{ $$ = $1; }
 	//
 	//		 	// IEEE: blocking_assignment
+	//			// 1800-2009 restricts LHS of assignment to new to not have a range
+	//			// This is ignored to avoid conflicts
 	//UNSUP	fexprLvalue '=' class_new ';'		{ UNSUP }
 	//UNSUP	fexprLvalue '=' dynamic_array_new ';'	{ UNSUP }
 	//
@@ -2058,6 +2070,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
 							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
 	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
+	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
 	//UNSUP	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' stmt	{ UNSUP }
 	//
 	//			// IEEE: jump_statement
@@ -2709,6 +2722,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// method_call:array_method requires a '.'
 	//UNSUP	~l~expr '.' array_methodNoRoot		{ UNSUP }
 	//
+	//			// IEEE: let_expression
+	//			// see funcRef
+	//
 	//			// IEEE: '(' mintypmax_expression ')'
 	|	~noPar__IGNORE~'(' expr ')'		{ $$ = $2; }
 	//UNSUP	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'	{ $$ = $4; }
@@ -2766,7 +2782,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// IEEE: concatenation/constant_concatenation
 	|	'{' cateList '}'			{ $$ = $2; }
 	//			// IEEE: assignment_pattern_expression
-	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id]
+	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires
 	//UNSUP	~l~exprScope assignment_pattern		{ UNSUP }
 	//UNSUP	data_type assignment_pattern		{ UNSUP }
@@ -2778,6 +2794,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 exprScope<nodep>:		// scope and variable for use to inside an expression
 	// 			// Here we've split method_call_root | implicit_class_handle | class_scope | package_scope
 	//			// from the object being called and let expr's "." deal with resolving it.
+	//			// (note method_call_root was simplified to require a primary in 1800-2009)
 	//
 	//			// IEEE: [ implicit_class_handle . | class_scope | package_scope ] hierarchical_identifier select
 	//			// Or method_call_body without parenthesis
@@ -3131,6 +3148,7 @@ idClassSel<parserefp>:			// Misc Ref to dotted, and/or arrayed, and/or bit-range
 	//UNSUP	ySUPER '.' idDotted			{ UNSUP }
 	//UNSUP	yTHIS '.' ySUPER '.' idDotted		{ UNSUP }
 	//			// Expanded: package_scope idDotted
+	//UNSUP	class_scopeIdFollows idDotted		{ UNSUP }
 	//UNSUP	package_scopeIdFollows idDotted		{ UNSUP }
 	;
 
@@ -3252,12 +3270,15 @@ ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
 		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>2, *$2); $$->castRefDType()->packagep($1); }
+	//			// Simplify typing - from ps_covergroup_identifier
+	//UNSUP	package_scopeIdFollowsE yaID__aCOVERGROUP	{ $<fl>$=$<fl>1; $$=$1+$2; }
 	;
 
 //=== Below rules assume special scoping per above
 
 package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			// class_qualifier := [ yLOCAL '::'  ] [ implicit_class_handle '.'  class_scope ]
 		/* empty */				{ $$ = NULL; }
 	|	package_scopeIdFollows			{ $$ = $1; }
 	;
@@ -3269,6 +3290,8 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	/*cont*/	yP_COLONCOLON	{ $$ = GRAMMARP->unitPackage($<fl>1); }
 	|	yaID__aPACKAGE { SYMP->nextId($<scp>1); }
 	/*cont*/	yP_COLONCOLON	{ $$ = $<scp>1->castPackage(); }
+	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
+	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
 	;
 
 //************************************************
