@@ -353,9 +353,9 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		// Deal with all read-and-print somethings
 		const int lbits = va_arg(ap, int);
 		QData ld = 0;
+		WData qlwp[2];
 		WDataInP lwp;
 		if (lbits <= VL_QUADSIZE) {
-		    WData qlwp[2];
 		    ld = _VL_VA_ARG_Q(ap, lbits);
 		    VL_SET_WQ(qlwp,ld);
 		    lwp = qlwp;
