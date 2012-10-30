@@ -5,12 +5,23 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
+`ifdef VERILATOR
+//We call it via $c so we can verify DPI isn't required - see bug572
+`else
 import "DPI-C" context function integer mon_check();
+`endif
 
 module t (/*AUTOARG*/
    // Inputs
    clk
    );
+
+`ifdef VERILATOR
+`systemc_header
+extern "C" int mon_check();
+`verilog
+`endif
+
    input clk;
 
    reg		onebit		/*verilator public_flat_rw @(posedge clk) */;
@@ -29,7 +40,11 @@ module t (/*AUTOARG*/
    // Test loop
    initial begin
       onebit = 1'b0;
+`ifdef VERILATOR
+      status = $c32("mon_check()");
+`else
       status = mon_check();
+`endif
       if (status!=0) begin
 	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
 	 $stop;

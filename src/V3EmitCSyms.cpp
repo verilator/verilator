@@ -115,8 +115,8 @@ class EmitCSyms : EmitCBaseVisitor {
 	    AstScope* scopep = it->first;  AstNodeModule* smodp = it->second;
 	    for (vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end(); ++it) {
 		AstNodeModule* modp = it->first;
+		AstVar* varp = it->second;
 		if (modp == smodp) {
-		    AstVar* varp = it->second;
 		    // Need to split the module + var name into the original-ish full scope and variable name under that scope.
 		    // The module instance name is included later, when we know the scopes this module is under
 		    string whole = scopep->name()+"__DOT__"+varp->name();
@@ -204,7 +204,8 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (nodep->isSigUserRdPublic()) {
+	if (nodep->isSigUserRdPublic()
+	    && !nodep->isParam()) {  // The VPI functions require a pointer to allow modification, but parameters are constants
 	    m_modVars.push_back(make_pair(m_modp, nodep));
 	}
     }
