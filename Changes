@@ -9,7 +9,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix large shift error on large shift constants.  [David Welch]
 
-****  Fix $display mangling on GCC 4.7, msg927. [R Diez]
+****  Fix $display mangling on GCC 4.7 and speed up, msg927, bug373. [R Diez]
 
 ****  Fix missing var access functions when no DPI, bug572. [Amir Gonnen]
 

@@ -308,7 +308,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 	    const char *ep = pos;
 	    while (ep[0] && ep[0]!='%') ep++;
 	    if (ep != pos) {
-		output += string(pos, ep-pos);
+		output.append(pos, ep-pos);
 		pos += ep-pos-1;
 	    }
 	} else { // Format character

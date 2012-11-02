@@ -371,6 +371,13 @@ the documentation in:
 
   test_regress/t/driver.pl --help
 
+It is important to add tests for failures as well as success (for example to
+check that an error message is correctly triggered).
+
+Tests that fail should by convenition have the suffix C<_bad> in their name,
+and include C<fails =E<gt> 1> in either their C<compile> or C<execute> step as
+appropriate.
+
 Developers will also want to configure with two extra flags:
 
 =over 4
@@ -382,7 +389,7 @@ ensure no sloppy code gets added, however it can be painful when it comes
 to testing, since third party code used in the tests (e.g. SystemC) may not
 be warning free.
 
-=item --enable-long-tests
+=item --enable-longtests
 
 In addition to the standard C, SystemC and SystemPerl tests also run the
 tests in the C<test_vcs>, C<test_verilated> and C<test_regress> directories
