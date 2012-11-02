@@ -124,6 +124,7 @@ class V3Options {
     bool	m_traceDups;	// main switch: --trace-dups
     bool	m_traceUnderscore;// main switch: --trace-underscore
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
+    bool	m_xInitialEdge;	// main switch: --x-initial-edge
     bool	m_xmlOnly;	// main switch: --xml-netlist
 
     int		m_convergeLimit;// main switch: --converge-limit
@@ -252,6 +253,7 @@ class V3Options {
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
+    bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
 
     int	   convergeLimit() const { return m_convergeLimit; }

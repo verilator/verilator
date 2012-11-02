@@ -326,7 +326,8 @@ descriptions in the next sections for more information.
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
      -Wno-fatal                 Disable fatal exit on warnings
-     -x-assign <mode>           Initially assign Xs to this value
+    --x-assign <mode>           Initially assign Xs to this value
+    --x-initial-edge            Enable initial X->0 and X->1 edge triggers
      -y <dir>                   Directory to search for modules
 
 
@@ -359,7 +360,8 @@ with the --exe option.
 Enable all assertions, includes enabling the --psl flag.  (If psl is not
 desired, but other assertions are, use --assert --nopsl.)
 
-See also --x-assign; setting "--x-assign unique" may be desirable.
+See also --x-assign and --x-initial-edge; setting "--x-assign unique"
+and/or "--x-initial-edge" may be desirable.
 
 =item --autoflush
 
@@ -1000,28 +1002,62 @@ Enable all code style related warning messages.  This is equivalent to
 -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN -Wwarn-UNUSED
 -Wwarn-VARHIDDEN".
 
-=item -x-assign 0
+=item --x-assign 0
 
-=item -x-assign 1
+=item --x-assign 1
 
-=item -x-assign fast (default)
+=item --x-assign fast (default)
 
-=item -x-assign unique
+=item --x-assign unique
 
 Controls the two-state value that is replaced when an assignment to X is
-encountered.  -x-assign=fast, the default, converts all Xs to whatever is
-best for performance.  -x-assign=0 converts all Xs to 0s, and is also fast.
--x-assign=1 converts all Xs to 1s, this is nearly as fast as 0, but more
-likely to find reset bugs as active high logic will fire.  -x-assign=unique
+encountered.  --x-assign=fast, the default, converts all Xs to whatever is
+best for performance.  --x-assign=0 converts all Xs to 0s, and is also fast.
+--x-assign=1 converts all Xs to 1s, this is nearly as fast as 0, but more
+likely to find reset bugs as active high logic will fire.  --x-assign=unique
 will call a function to determine the value, this allows randomization of
 all Xs to find reset bugs and is the slowest, but safest for finding reset
 bugs in code.
 
-If using -x-assign unique, you may want to seed your random number
+If using --x-assign unique, you may want to seed your random number
 generator such that each regression run gets a different randomization
 sequence.  Use the system's srand48() or for Windows srand() function to do
 this.  You'll probably also want to print any seeds selected, and code to
 enable rerunning with that same seed so you can reproduce bugs.
+
+B<Note.> This option applies only to variables which are explicitly assigned
+to X in the Verilog source code. Initial values of clocks are set to 0 unless
+--x-initial-edge is specified. Initial values of all other state holding
+variables are set as though --x-assign unique had been specified.
+
+=item --x-initial-edge
+
+Enables emulation of event driven simulators which generally trigger an
+edge on a transition from X to 1 (C<posedge>) or X to 0 (C<negedge>). Thus
+the following code, where C<rst_n> is uninitialized would set C<res_n> to
+C<1'b1> when C<rst_n> is first set to zero:
+
+    reg  res_n = 1'b0;
+
+    always @(negedge rst_n) begin
+       if (rst_n == 1'b0) begin
+          res_n <= 1'b1;
+       end
+    end
+
+
+In Verilator, by default, uninitialized clocks are given a value of zero,
+so the above C<always> block would not trigger.
+
+While it is not good practice, there are some designs that rely on X
+E<rarr> 0 triggering a C<negedge>, particularly in reset sequences. Using
+--x-initial-edge with Verilator will replicate this behaviour. It will also
+ensure that X E<rarr> 1 triggers a C<posedge>.
+
+B<Note.> Some users have reported that using this option can affect
+convergence, and that it may be necessary to use --converge-limit to
+increase the number of convergence iterations. This may be another
+indication of problems with the modelled design that should be addressed.
 
 =item -y I<dir>
 
@@ -1183,9 +1219,9 @@ the test_sp directory in the distribution for an example.
 
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 -x-assign=fast
+For best performance, run Verilator with the "-O3 --x-assign=fast
 --noassert" flags.  The -O3 flag will require longer compile times, and
--x-assign=fast may increase the risk of reset bugs in trade for
+--x-assign=fast may increase the risk of reset bugs in trade for
 performance; see the above documentation for these flags.
 
 Minor Verilog code changes can also give big wins.  You should not have any
@@ -2267,7 +2303,7 @@ from a four state simulator.  An === comparison to X will always be false,
 so that Verilog code which checks for uninitialized logic will not fire.
 
 Assigning a variable to a X will actually assign the variable to a random
-value (see the -x-assign switch.)  Thus if the value is actually used, the
+value (see the --x-assign switch.)  Thus if the value is actually used, the
 random value should cause downstream errors.  Integers also randomize, even
 though the Verilog 2001 specification says they initialize to zero.
 
@@ -2278,6 +2314,18 @@ On the second, have it initialize variables to one.  On the third and
 following runs have it initialize them randomly.  If the results match,
 reset works.  (Note this is what the hardware will really do.)  In
 practice, just setting all variables to one at startup finds most problems.
+
+B<Note.> --x-assign applies to variables explicitly initialized or assigned to
+X. Unititialized clocks are initialized to zero, while all other state holding
+variables are initialized to a random value.
+
+Event driven simulators will generally trigger an edge on a transition from X
+to 1 (C<posedge>) or X to 0 (C<negedge>). However, by default, since clocks
+are initialized to zero, Verilator will not trigger an initial negedge. Some
+code (particulary for reset) may rely on X->0 triggering an edge. Verilator
+provides a switch (see --x-initial-edge) to enable this behavior. Comparing
+runs with and without this switch will find such problems.
+
 
 =head2 Tri/Inout
 

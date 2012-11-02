@@ -700,6 +700,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
+	    else if ( onoff   (sw, "-x-initial-edge", flag/*ref*/) )	{ m_xInitialEdge = flag; }
 	    else if ( onoff   (sw, "-xml-only", flag/*ref*/) )		{ m_xmlOnly = flag; }  // Undocumented, still experimental
 	    // Optimization
 	    else if ( !strncmp (sw, "-O", 2) ) {
@@ -1144,6 +1145,7 @@ V3Options::V3Options() {
     m_traceDups = false;
     m_traceUnderscore = false;
     m_underlineZero = false;
+    m_xInitialEdge = false;
     m_xmlOnly = false;
 
     m_convergeLimit = 100;

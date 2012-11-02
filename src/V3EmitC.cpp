@@ -1368,7 +1368,16 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		    puts(varp->name());
 		    for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
 		    if (zeroit) {
-			puts(" = 0;\n");
+			// We want to force an initial edge on uninitialized clocks (from 'X' to
+			// whatever the first value is). Since the class is instantiated before
+			// initial blocks are evaluated, this should not clash with any initial
+			// block settings. Clocks are always BIT datatypes, so zeroit is true.
+			if (v3Global.opt.xInitialEdge()
+			    && (0 == varp->name().find("__Vclklast__"))) {
+			    puts(" = 1;\n");
+			} else {
+			    puts(" = 0;\n");
+			}
 		    } else {
 			puts(" = VL_RAND_RESET_");
 			emitIQW(varp);

@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix missing var access functions when no DPI, bug572. [Amir Gonnen]
 
+****  Add -x-initial-edge, bug570.  [Jeremy Bennett]
+
 
 * Verilator 3.841 2012/09/03
 
