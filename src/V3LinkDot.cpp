@@ -451,6 +451,9 @@ private:
 	string oldscope = m_scope;
 	VSymEnt* oldModSymp = m_modSymp;
 	VSymEnt* oldCurSymp = m_curSymp;
+        int      oldParamNum    = m_paramNum;
+        int      oldBeginNum    = m_beginNum;
+        int      oldModBeginNum = m_modBeginNum;
 	if (doit) {
 	    UINFO(2,"     Link Module: "<<nodep<<endl);
 	    if (nodep->dead()) nodep->v3fatalSrc("Module in cell tree mislabeled as dead?");
@@ -482,6 +485,9 @@ private:
 	m_scope = oldscope;
 	m_modSymp = oldModSymp;
 	m_curSymp = oldCurSymp;
+        m_paramNum    = oldParamNum;
+        m_beginNum    = oldBeginNum;
+        m_modBeginNum = oldModBeginNum;
 	// Prep for next
 	m_packagep = NULL;
     }
