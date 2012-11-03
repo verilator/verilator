@@ -60,7 +60,7 @@ private:
 	return level;
     }
 #else
-    static int debug() { return 0; }  // NOT runtime, too hot of a function
+    static inline int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
     void dumpIterate(ostream& os, VSymMap& doneSymsr, const string& indent, int numLevels, const string& searchName) {

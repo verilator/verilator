@@ -1365,6 +1365,7 @@ private:
 	    VSymEnt* okSymp;
 	    VSymEnt* dotSymp = m_curSymp;  // Start search at current scope
 	    if (nodep->inlinedDots()!="") {  // Correct for current scope
+		dotSymp = m_modSymp; // Dotted lookup is always relative to module, as maybe variable name lower down with same scope name we want to ignore (t_math_divw)
 		string inl = AstNode::dedotName(nodep->inlinedDots());
 		dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
 		if (!dotSymp) {
