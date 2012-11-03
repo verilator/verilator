@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix $display mangling on GCC 4.7 and speed up, msg927, bug373. [R Diez]
 
+****  Fix array of struct references giving false error, bug566. [Julius Baxter]
+
 ****  Fix missing var access functions when no DPI, bug572. [Amir Gonnen]
 
 ****  Fix name collision on unnamed blocks, bug567.  [Chandan Egbert]

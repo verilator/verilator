@@ -1019,7 +1019,7 @@ private:
     AstCell*		m_cellp;	// Current cell
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
-    AstDot*		m_dotp;		// Current dot 
+    AstDot*		m_dotp;		// Current dot
     DotPosition		m_dotPos;	// Scope part of dotted resolution
     bool		m_dotErr;	// Error found in dotted resolution, ignore upwards
     string		m_dotText;	// String of dotted names found in below parseref
@@ -1252,6 +1252,7 @@ private:
 		    if (m_dotText!="") m_dotText += ".";
 		    m_dotText += nodep->name();
 		    m_dotSymp = foundp;
+		    m_dotPos = DP_SCOPE;
 		    // Upper AstDot visitor will handle it from here
 		}
 	    }
@@ -1471,8 +1472,8 @@ private:
     }
     virtual void visit(AstSelBit* nodep, AstNUser*) {
 	if (nodep->user3SetOnce()) return;
+	nodep->lhsp()->iterateAndNext(*this);
 	if (m_dotPos == DP_SCOPE) { // Already under dot, so this is {modulepart} DOT {modulepart}
-	    nodep->lhsp()->iterateAndNext(*this);
 	    if (AstConst* constp = nodep->rhsp()->castConst()) {
 		string index = AstNode::encodeNumber(constp->toSInt());
 		m_dotText += "__BRA__"+index+"__KET__";
@@ -1480,9 +1481,9 @@ private:
 		nodep->v3error("Unsupported: Non-constant inside []'s in the cell part of a dotted reference");
 	    }
 	    // And pass up m_dotText
-	} else {
-	    nodep->iterateChildren(*this);
 	}
+	nodep->fromp()->iterateAndNext(*this);
+	nodep->bitp()->iterateAndNext(*this);
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
