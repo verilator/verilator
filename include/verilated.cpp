@@ -757,9 +757,10 @@ void VL_FCLOSE_I(IData fdi) {
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
     va_list ap;
     va_start(ap,formatp);
-    string output;
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
@@ -767,9 +768,10 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
 }
 
 string VL_SFORMATF_NX(const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
     va_list ap;
     va_start(ap,formatp);
-    string output;
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
@@ -777,9 +779,10 @@ string VL_SFORMATF_NX(const char* formatp, ...) {
 }
 
 void VL_WRITEF(const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
     va_list ap;
     va_start(ap,formatp);
-    string output;
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
@@ -788,12 +791,13 @@ void VL_WRITEF(const char* formatp, ...) {
 }
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return;
 
     va_list ap;
     va_start(ap,formatp);
-    string output;
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
@@ -956,13 +960,13 @@ IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) {
 }
 
 IData VL_TESTPLUSARGS_I(const char* formatp) {
-    string match = VerilatedImp::argPlusMatch(formatp);
+    const string& match = VerilatedImp::argPlusMatch(formatp);
     if (match == "") return 0;
     else return 1;
 }
 
 IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp) {
-    string match = VerilatedImp::argPlusMatch(prefixp);
+    const string& match = VerilatedImp::argPlusMatch(prefixp);
     const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);
     if (match == "") return 0;
     VL_ZERO_RESET_W(rbits, rwp);
@@ -998,7 +1002,7 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
 }
 
 const char* vl_mc_scan_plusargs(const char* prefixp) {
-    string match = VerilatedImp::argPlusMatch(prefixp);
+    const string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match == "") return NULL;
     strncpy(outstr, match.c_str()+strlen(prefixp)+1, // +1 to skip the "+"

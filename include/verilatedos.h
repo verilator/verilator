@@ -78,8 +78,12 @@
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
 # endif
+# define VL_STATIC_OR_THREAD		///< Static if unthreaded, as some strings can be faster
+//					///< if non-dynamic and can't do "static VL_THREAD string"
 #else
 # define VL_THREAD			///< Storage class for thread-local storage
+# define VL_STATIC_OR_THREAD static	///< Static if unthreaded, as some strings can be faster
+//					///< if non-dynamic and can't do "static VL_THREAD string"
 #endif
 
 #ifdef _MSC_VER

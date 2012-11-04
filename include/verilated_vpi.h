@@ -182,7 +182,7 @@ public:
     vluint32_t entSize() const { return m_entSize; }
     virtual const char* name() { return m_varp->name(); }
     virtual const char* fullname() {
-	static VL_THREAD string out;
+	VL_STATIC_OR_THREAD string out;
 	out = string(m_scopep->name())+"."+name();
 	return out.c_str();
     }
@@ -207,7 +207,7 @@ public:
     virtual ~VerilatedVpioVarIndex() {}
     static inline VerilatedVpioVarIndex* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioVarIndex*>((VerilatedVpio*)h); }
     virtual const char* fullname() {
-	static VL_THREAD string out;
+	VL_STATIC_OR_THREAD string out;
 	char num[20]; sprintf(num,"%d",m_index);
 	out = string(scopep()->name())+"."+name()+"["+num+"]";
 	return out.c_str();
