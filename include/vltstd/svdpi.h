@@ -36,17 +36,21 @@ typedef signed __int8 int8_t;
 #endif
 
 /* Use to export a symbol from application */
+#ifndef DPI_DLLISPEC
 #if defined (_MSC_VER)
 #define DPI_DLLISPEC __declspec(dllimport)
 #else
 #define DPI_DLLISPEC
 #endif
+#endif
 
 /* Use to import a symbol into application */
+#ifndef DPI_DLLESPEC
 #if defined (_MSC_VER)
 #define DPI_DLLESPEC __declspec(dllexport)
 #else
 #define DPI_DLLESPEC
+#endif
 #endif
 
 /* Use to mark a function as external */

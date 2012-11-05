@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.84** devel
 
+****  Fix svdpi compile issue on MSVCC, bug571.  [Amir Gonnen]
+
+
 
 * Verilator 3.842 2012/11/03
 
