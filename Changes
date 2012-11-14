@@ -7,8 +7,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add +1364-1995ext and similar language options, bug532.  [Jeremy Bennett]
 
-****  Fix svdpi compile issue on MSVCC, bug571.  [Amir Gonnen]
-
+****  Fix compile issues on MSVCC, bug571, bug577.  [Amir Gonnen]
 
 
 * Verilator 3.842 2012/11/03

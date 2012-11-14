@@ -34,6 +34,13 @@
 # include <unistd.h>
 #endif
 
+#ifndef O_LARGEFILE // For example on WIN32
+# define O_LARGEFILE 0
+#endif
+#ifndef O_NONBLOCK
+# define O_NONBLOCK 0
+#endif
+
 // CONSTANTS
 static const char* VLTSAVE_HEADER_STR = "verilatorsave01\n";	///< Value of first bytes of each file
 static const char* VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last bytes of each file
