@@ -241,6 +241,11 @@ descriptions in the next sections for more information.
     {file.c/cc/cpp}             Optional C++ files to compile in
     {file.a/o/so}               Optional C++ files to link in
 
+     +1364-1995ext+<ext>        Use Verilog 1995 with file extension <ext>
+     +1364-2001ext+<ext>        Use Verilog 2001 with file extension <ext>
+     +1364-2005ext+<ext>        Use Verilog 2005 with file extension <ext>
+     +1800-2005ext+<ext>        Use SystemVerilog 2005 with file extension <ext>
+     +1800-2009ext+<ext>        Use SystemVerilog 2009 with file extension <ext>
     --assert                    Enable all assertions
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
@@ -261,6 +266,7 @@ descriptions in the next sections for more information.
     --debug-check               Enable debugging assertions
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
+    --default-language <lang>   Default language to parse
      +define+<var>+<value>      Set preprocessor define
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
@@ -279,7 +285,7 @@ descriptions in the next sections for more information.
     --inline-mult <value>       Tune module inlining
      -LDFLAGS <flags>           Linker pre-object flags for makefile
      -LDLIBS <flags>            Linker library flags for makefile
-    --language <lang>           Language standard to parse
+    --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
     --MMD                       Create .d dependency files
@@ -308,6 +314,7 @@ descriptions in the next sections for more information.
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
      -sv                        Enable SystemVerilog parsing
+     +systemverilogext+<ext>    Synonym for +1800-2009ext+<ext>
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -320,6 +327,8 @@ descriptions in the next sections for more information.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
+     +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
+     +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
      -Werror-<message>          Convert warning to error
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
@@ -354,6 +363,41 @@ code, as a shorthand for -LDFLAGS "<file>".  If any files are specified in
 this way, Verilator will include a make rule that uses these files when
 linking the I<module> executable.  This generally is only useful when used
 with the --exe option.
+
+=item +1364-1995ext+I<ext>
+
+=item +1364-2001ext+I<ext>
+
+=item +1364-2005ext+I<ext>
+
+=item +1800-2005ext+I<ext>
+
+=item +1800-2009ext+I<ext>
+
+Specifies the language standard to be used with a specific filename
+extension, I<ext>.
+
+For compatibility with other simulators, see also the synonyms
+C<+verilog1995ext+>I<ext>, C<+verilog2001ext+>I<ext>, and
+C<+systemverilogext+>I<ext>.
+
+For any source file, the language specified by these options takes
+precedence over any language specified by the C<--default-language> or
+C<--language> options.
+
+These options take effect in the order they are encountered. Thus the
+following would use Verilog 1995 for C<a.v> and Verilog 2001 for C<b.v>.
+
+    verilator ... +1364-1995ext+v a.v +1364-2001ext+v b.v
+
+These flags are only recommended for legacy mixed language designs, as the
+preferable option is to edit the code to repair new keywords, or add
+appropriate C<`begin_keywords>.
+
+B<Note> C<`begin_keywords> is a SystemVerilog construct, which specifies
+I<only> which the set of keywords is to be recognized. Whatever set is
+chosen, the semantics will be those of SystemVerilog. By contrast
+C<+1364-1995ext+> etc. specify both the syntax I<and> semantics to be used.
 
 =item --assert
 
@@ -536,6 +580,25 @@ to the specified debug level (1-10) or set the specified source file to the
 specified level. Higher levels produce more detailed messages (plain
 C<--debug> is equivalent to C<--debugi 4>).
 
+=item --default-language I<value>
+
+Select the language to be used by default when first processing each
+Verilog file.  The language value must be "1364-1995", "1364-2001",
+"1364-2005", "1800-2005" or "1800-2009".
+
+Any language associated with a particular file extension (see the various
++I<lang>ext+ options) will be used in preference to the language specified
+by --default-language.
+
+The --default-language flag is only recommended for legacy code using the
+same language in all source files, as the preferable option is to edit the
+code to repair new keywords, or add appropriate C<`begin_keywords>. For
+legacy mixed language designs, the various +I<lang>ext+ options should be
+used.
+
+If no language is specified, either by this flag or +I<lang>ext+ options,
+then the latest SystemVerilog language (IEEE 1800-2009) is used.
+
 =item +define+I<var>+I<value>
 
 Defines the given preprocessor symbol.  Same as -D; +define is fairly
@@ -645,15 +708,8 @@ in the Make variable LDLIBS, not LDFLAGS.)
 
 =item --language I<value>
 
-Select the language to be used when first processing each Verilog file.
-The language value must be "1364-1995", "1364-2001", "1364-2001",
-"1364-2005", "1800-2005", "VAMS-2.3".  Verilator also allows the
-non-standard "1800+VAMS" to allow both the full SystemVerilog and
-Verilog-AMS keywords.
-
-The --language flag is only recommended for legacy code, as the preferable
-option is to edit the code to repair new keywords, or add appropriate
-`begin_keywords.
+A synonym for C<--default-langauge>, for compatibility with other tools and
+earlier versions of Verilator.
 
 =item +libext+I<ext>+I<ext>...
 
@@ -860,6 +916,10 @@ Specifies SystemVerilog language features should be enabled; equivalent to
 "--language 1800-2005".  This option is selected by default, it exists for
 compatibility with other simulators.
 
+=item  +systemverilogext+I<ext>
+
+A synonym for C<+1800-2009ext+>I<ext>.
+
 =item --top-module I<topname>
 
 When the input Verilog contains more than one top level module, specifies
@@ -934,6 +994,12 @@ into Verilator.  (Similar to perl -V.)
 Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
+
+=item  +verilog1995ext+I<ext>
+
+=item  +verilog2001ext+I<ext>
+
+Synonyms for C<+1364-1995ext+>I<ext> and C<+1364-2001ext+>I<ext> respectively
 
 =item -Wall
 

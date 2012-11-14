@@ -80,22 +80,33 @@ const string FileLineSingleton::filenameLetters(int no) {
     return op;
 }
 
+//! Convert filenames to a filenameno
+
+//! This lets us assign a nice small identifier for debug messages, but more
+//! importantly lets us use a 4 byte int instead of 8 byte pointer in every
+//! FileLine.
+
+//! We associate a language with each source file, so we also set the default
+//! for this.
 int FileLineSingleton::nameToNumber(const string& filename) {
-    // Convert filenames to a filenameno
-    // This lets us assign a nice small identifier for debug messages, but more
-    // importantly lets us use a 4 byte int instead of 8 byte pointer in every FileLine.
     FileNameNumMap::const_iterator iter = m_namemap.find(filename);
     if (VL_LIKELY(iter != m_namemap.end())) return iter->second;
     int num = m_names.size();
     m_names.push_back(filename);
+    m_languages.push_back(V3LangCode::mostRecent());
     m_namemap.insert(make_pair(filename,num));
     return num;
 }
 
+//! Support XML output
+
+//! Experimental. Updated to also put out the language.
 void FileLineSingleton::fileNameNumMapDumpXml(ostream& os) {
     os<<"<files>\n";
     for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
-	os<<"<file id=\""<<filenameLetters(it->second)<<"\" filename=\""<<it->first<<"\"/>\n";
+	os<<"<file id=\""<<filenameLetters(it->second)
+	  <<"\" filename=\""<<it->first
+	  <<"\" language=\""<<numberToLang(it->second).ascii()<<"\"/>\n";
     }
     os<<"</files>\n";
 }
@@ -168,6 +179,10 @@ FileLine* FileLine::copyOrSameFileLine() {
     FileLine* newp = new FileLine(this);
     lastNewp = newp;
     return newp;
+}
+
+void FileLine::updateLanguage () {
+     language(v3Global.opt.fileLanguage(filename()));
 }
 
 const string FileLine::filebasename() const {

@@ -30,6 +30,8 @@
 #include <set>
 #include <deque>
 
+#include "V3LangCode.h"
+
 //######################################################################
 
 class V3ErrorCode {
@@ -271,12 +273,18 @@ inline uint32_t cvtToHash(const void* vp) {
 
 class FileLine;
 
+//! Singleton class with tables of per-file data.
+
+//! This singleton class contains tables of data that are unchanging in each
+//! source file (each with its own unique filename number).
 class FileLineSingleton {
     // TYPES
     typedef map<string,int> FileNameNumMap;
+    typedef map<string,V3LangCode> FileLangNumMap;
     // MEMBERS
     FileNameNumMap	m_namemap;	// filenameno for each filename
     deque<string>	m_names;	// filename text for each filenameno
+    deque<V3LangCode>	m_languages;	// language for each filenameno
     // COSNTRUCTORS
     FileLineSingleton() { }
     ~FileLineSingleton() { }
@@ -285,17 +293,22 @@ protected:
     // METHODS
     int nameToNumber(const string& filename);
     const string numberToName(int filenameno) const { return m_names[filenameno]; }
-    void clear() { m_namemap.clear(); m_names.clear(); }
+    const V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
+    void numberToLang(int filenameno, const V3LangCode l) { m_languages[filenameno] = l; }
+    void clear() { m_namemap.clear(); m_names.clear(); m_languages.clear(); }
     void fileNameNumMapDumpXml(ostream& os);
     static const string filenameLetters(int fileno);
 };
 
+//! File and line number of an object, mostly for error reporting
+
+//! This class is instantiated for every source code line (potentially
+//! millions). To save space, per-file information (e.g. filename, source
+//! language is held in tables in the FileLineSingleton class.
 class FileLine {
-    // File and line number of an object, mostly for error reporting
     int		m_lineno;
     int		m_filenameno;
     bitset<V3ErrorCode::_ENUM_MAX>	m_warnOn;
-    // Consider moving opt.language() into here, so can know language per-node
 
 private:
     struct EmptySecret {};
@@ -315,6 +328,7 @@ protected:
     friend class V3PreLex;
     friend class V3PreProcImp;
     void lineno(int num) { m_lineno = num; }
+    void language (V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
@@ -337,6 +351,8 @@ public:
 #endif
 
     int lineno () const { return m_lineno; }
+    V3LangCode language () const { return singleton().numberToLang(m_filenameno); }
+    void updateLanguage ();
     string ascii() const;
     const string filename () const { return singleton().numberToName(m_filenameno); }
     const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }

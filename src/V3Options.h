@@ -29,43 +29,7 @@
 #include <set>
 
 #include "V3Global.h"
-
-//######################################################################
-
-class V3LangCode {
-public:
-    enum en {
-	L_ERROR,  // Must be first.
-	L1364_1995,
-	L1364_2001,
-	L1364_2005,
-	L1800_2005,
-	L1800_2009,
-	// ***Add new elements below also***
-	_ENUM_END
-    };
-    const char* ascii() const {
-	const char* names[] = {
-	    // These must match the `begin_keywords values.
-	    " ERROR",
-	    "1364-1995",
-	    "1364-2001",
-	    "1364-2005",
-	    "1800-2005",
-	    "1800-2009"
-	};
-	return names[m_e];
-    };
-    static V3LangCode mostRecent() { return V3LangCode(L1800_2009); }
-    bool legal() const { return m_e != L_ERROR; }
-    //
-    enum en m_e;
-    inline V3LangCode () : m_e(L_ERROR) {}
-    inline V3LangCode (en _e) : m_e(_e) {}
-    V3LangCode (const char* textp);	// Return matching code or ERROR
-    explicit inline V3LangCode (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
-};
+#include "V3LangCode.h"
 
 //######################################################################
 // V3Options - Command line options
@@ -156,8 +120,9 @@ class V3Options {
     string	m_unusedRegexp;	// main switch: --unused-regexp
     string	m_xAssign;	// main switch: --x-assign
 
-    // Consider moving m_language into FileLine, so can know language per-node
-    V3LangCode	m_language;	// main switch: --language
+    // Language is now held in FileLine, on a per-node basis. However we still
+    // have a concept of the default language at a global level.
+    V3LangCode	m_defaultLanguage;	// main switch: --language
 
     // MEMBERS (optimizations)
     //				// main switch: -Op: --public
@@ -185,6 +150,7 @@ class V3Options {
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
+    void addLangExt(const string &langext, const V3LangCode lc);
     void addLibExtV(const string& libext);
     void optimize(int level);
     void showVersion(bool verbose);
@@ -192,6 +158,7 @@ class V3Options {
     bool onoff(const char* sw, const char* arg, bool& flag);
     bool suffixed(const char* sw, const char* arg);
     string parseFileArg(const string& optdir, const string& relfilename);
+    bool parseLangExt(const char* swp, const char* langswp, const V3LangCode lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
 
     static string getenvStr(const string& envvar, const string& defaultValue);
@@ -288,7 +255,7 @@ class V3Options {
     const V3StringSet& ldLibs() const { return m_ldLibs; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
-    const V3LangCode& language() const { return m_language; }
+    const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
 
     bool isFuture(const string& flag) const;
     bool isLibraryFile(const string& filename) const;
@@ -351,6 +318,7 @@ class V3Options {
     string fileExists (const string& filename);
     string filePath (FileLine* fl, const string& modname, const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
+    V3LangCode fileLanguage(const string &filename);
     static bool fileStatDir (const string& filename);
     static bool fileStatNormal (const string& filename);
 

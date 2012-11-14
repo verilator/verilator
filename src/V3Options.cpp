@@ -55,6 +55,7 @@ struct V3OptionsImp {
     set<string>		m_incDirUserSet;	// Include directories (for removing duplicates)
     list<string>	m_incDirFallbacks;	// Include directories (ordered)
     set<string>		m_incDirFallbackSet;	// Include directories (for removing duplicates)
+    map<string,V3LangCode> m_langExts;		// Language extension map
     list<string>	m_libExtVs;	// Library extensions (ordered)
     set<string>		m_libExtVSet;	// Library extensions (for removing duplicates)
     DirMap		m_dirMap;	// Directory listing
@@ -76,6 +77,12 @@ struct V3OptionsImp {
 	    }
 	}
     }
+    void addLangExt(const string &langext, const V3LangCode lc) {
+	// New language extension replaces any pre-existing one.
+	(void)m_langExts.erase(langext);
+	m_langExts[langext] = lc;
+    }
+
     void addLibExtV(const string& libext) {
 	if (m_libExtVSet.find(libext) == m_libExtVSet.end()) {
 	    m_libExtVSet.insert(libext);
@@ -90,6 +97,9 @@ void V3Options::addIncDirUser(const string& incdir) {
 }
 void V3Options::addIncDirFallback(const string& incdir) {
     m_impp->addIncDirFallback(incdir);
+}
+void V3Options::addLangExt(const string &langext, const V3LangCode lc) {
+    m_impp->addLangExt(langext, lc);
 }
 void V3Options::addLibExtV(const string& libext) {
     m_impp->addLibExtV(libext);
@@ -158,7 +168,7 @@ string V3Options::allArgsString() {
 }
 
 //######################################################################
-// Language class
+// V3LangCode class functions
 
 V3LangCode::V3LangCode (const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
@@ -364,6 +374,24 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 	}
     }
 }
+
+//! Determine what language is associated with a filename
+
+//! If we recognize the extension, use its language, otherwise, use the
+//! default language.
+V3LangCode V3Options::fileLanguage(const string &filename) {
+    string ext = filenameNonDir(filename);
+    string::size_type pos;
+    if ((pos = ext.rfind(".")) != string::npos) {
+	ext.erase(0, pos + 1);
+	map<string,V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
+	if (it != m_impp->m_langExts.end()) {
+	    return it->second;
+	}
+    }
+    return m_defaultLanguage;
+}
+
 
 void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
     if (DIR* dirp = opendir(dir.c_str())) {
@@ -633,6 +661,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
 		addIncDirUser (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
 	    }
+	    else if (parseLangExt(sw, "+systemverilogext+", V3LangCode::L1800_2009)
+		     || parseLangExt(sw, "+verilog1995ext+", V3LangCode::L1364_1995)
+		     || parseLangExt(sw, "+verilog2001ext+", V3LangCode::L1364_2001)
+		     || parseLangExt(sw, "+1364-1995ext+", V3LangCode::L1364_1995)
+		     || parseLangExt(sw, "+1364-2001ext+", V3LangCode::L1364_2001)
+		     || parseLangExt(sw, "+1364-2005ext+", V3LangCode::L1364_2005)
+		     || parseLangExt(sw, "+1800-2005ext+", V3LangCode::L1800_2005)
+		     || parseLangExt(sw, "+1800-2009ext+", V3LangCode::L1800_2009)) {
+		// Nothing to do here - all done in the test
+
+	    }
 	    else if ( !strncmp (sw, "+libext+", 8)) {
 		string exts = string(sw+strlen("+libext+"));
 		string::size_type pos;
@@ -695,7 +734,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
 	    else if ( !strcmp (sw, "-sp") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = true; }
 	    else if ( onoff   (sw, "-stats", flag/*ref*/) )		{ m_stats = flag; }
-	    else if ( !strcmp (sw, "-sv") )				{ m_language = V3LangCode::L1800_2005; }
+	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
@@ -779,11 +818,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		addLdLibs(argv[i]);
 	    }
-	    else if ( !strcmp (sw, "-language") && (i+1)<argc ) {
+	    else if ( (!strcmp (sw, "-language") && (i+1)<argc)
+		      || (!strcmp (sw, "-default-language") && (i+1)<argc)) {
 		shift;
 		V3LangCode optval = V3LangCode(argv[i]);
 		if (optval.legal()) {
-		    m_language = optval;
+		    m_defaultLanguage = optval;
 		} else {
 		    fl->v3fatal("Unknown language specified: "<<argv[i]);
 		}
@@ -1074,6 +1114,21 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 
 //======================================================================
 
+//! Utility to see if we have a language extension argument and if so add it.
+bool V3Options::parseLangExt (const char* swp, //!< argument text
+			      const char* langswp, //!< option to match
+			      const V3LangCode lc) { //!< language code
+    int len = strlen(langswp);
+    if (!strncmp(swp, langswp, len)) {
+	addLangExt(swp + len, lc);
+	return true;
+    } else {
+	return false;
+    }
+}
+
+//======================================================================
+
 void V3Options::showVersion(bool verbose) {
     cout <<version();
     cout <<endl;
@@ -1171,7 +1226,7 @@ V3Options::V3Options() {
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 
-    m_language = V3LangCode::mostRecent();
+    m_defaultLanguage = V3LangCode::mostRecent();
 
     optimize(true);
     // Default +libext+
