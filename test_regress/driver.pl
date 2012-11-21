@@ -21,7 +21,7 @@ use POSIX qw(strftime);
 
 $::Driver = 1;
 
-eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1);";
+eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1); \$::Have_Forker=1;";
 $Fork = Forker->new(use_sig_child=>1) if !$Fork;
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; };
@@ -185,7 +185,8 @@ sub one_test {
 		 if ($opt_stop) { die "%Error: --stop and errors found\n"; }
 	     }
 	     $LeftCnt--;
-	     print STDERR "==SUMMARY: Left $LeftCnt  Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt\n";
+	     my $LeftMsg = $::Have_Forker ? $LeftCnt : "NO-FORKER";
+	     print STDERR "==SUMMARY: Left $LeftMsg  Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt\n";
 	 },
 	 )->ready();
 }
