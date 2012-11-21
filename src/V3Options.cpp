@@ -1243,7 +1243,7 @@ V3Options::~V3Options() {
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
-    m_dumpTree = true;
+    if (!m_dumpTree) m_dumpTree = true;	// Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
     cout << "Starting "<<version()<<endl;
