@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add +1364-1995ext and similar language options, bug532.  [Jeremy Bennett]
 
+****  Fix mis-optimized identical submodule subtract, bug581.  [Charlie Brej]
+
 ****  Fix compile issues on MSVCC, bug571, bug577.  [Amir Gonnen]
 
 ****  Fix --debug overriding preceding --dump-treei, bug580.  [Jeremy Bennett]

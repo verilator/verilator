@@ -20,6 +20,7 @@ use vars qw ($Debug %Vars $Driver $Fork);
 use POSIX qw(strftime);
 
 $::Driver = 1;
+$::Have_Forker = 0;
 
 eval "use Parallel::Forker; \$Fork=Parallel::Forker->new(use_sig_child=>1); \$::Have_Forker=1;";
 $Fork = Forker->new(use_sig_child=>1) if !$Fork;

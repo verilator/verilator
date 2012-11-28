@@ -416,6 +416,7 @@ private:
 	    // If cleanup sameTree to be smarter, this can be restored.
 	    //return node1p->sameTree(node2p);
 	    return node1p->castVarRef()->varp() == node2p->castVarRef()->varp()
+		&& node1p->castVarRef()->varScopep() == node2p->castVarRef()->varScopep()
 		&& node1p->castVarRef()->lvalue() == node2p->castVarRef()->lvalue();
 	} else {
 	    return false;
