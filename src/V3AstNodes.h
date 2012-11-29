@@ -1135,10 +1135,17 @@ struct AstVarRef : public AstNodeVarRef {
     ASTNODE_NODE_FUNCS(VarRef, VARREF)
     virtual void dump(ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(varp()->name()),V3Hash(hiername())); }
-    virtual bool same(AstNode* samep) const {
-	if (varScopep()) return varScopep()==samep->castVarRef()->varScopep();
-	else return (hiername()==samep->castVarRef()->hiername()
-		     && varp()->name()==samep->castVarRef()->varp()->name()); }
+    virtual bool same(AstNode* samep) const { return same(samep->castVarRef()); }
+    inline bool same(AstVarRef* samep) const {
+	if (varScopep()) return (varScopep()==samep->varScopep()
+				 && lvalue()==samep->lvalue());
+	else return (hiername()==samep->hiername()
+		     && varp()->name()==samep->varp()->name()
+		     && lvalue()==samep->lvalue()); }
+    inline bool sameNoLvalue(AstVarRef* samep) const {
+	if (varScopep()) return (varScopep()==samep->varScopep());
+	else return (hiername()==samep->hiername()
+		     && varp()->name()==samep->varp()->name()); }
     virtual int instrCount() const { return widthInstrs()*(lvalue()?1:instrCountLd()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }

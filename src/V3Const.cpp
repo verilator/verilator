@@ -415,9 +415,7 @@ private:
 	    // Avoid comparing widthMin's, which results in lost optimization attempts
 	    // If cleanup sameTree to be smarter, this can be restored.
 	    //return node1p->sameTree(node2p);
-	    return node1p->castVarRef()->varp() == node2p->castVarRef()->varp()
-		&& node1p->castVarRef()->varScopep() == node2p->castVarRef()->varScopep()
-		&& node1p->castVarRef()->lvalue() == node2p->castVarRef()->lvalue();
+	    return node1p->same(node2p);
 	} else {
 	    return false;
 	}
@@ -432,7 +430,7 @@ private:
 	AstVarRef* elsevarp = elsep->lhsp()->castVarRef();
 	if (!ifvarp || !elsevarp) return false;
 	if (ifvarp->isWide()) return false;  // Would need temporaries, so not worth it
-	if (ifvarp->varp() != elsevarp->varp()) return false;
+	if (!ifvarp->sameTree(elsevarp)) return false;
 	return true;
     }
     bool operandIfIf(AstNodeIf* nodep) {
@@ -777,7 +775,7 @@ private:
 	AstSel* sel2p = nextp->lhsp()->castSel(); if (!sel2p) return false;
 	AstVarRef* varref1p = sel1p->fromp()->castVarRef(); if (!varref1p) return false;
 	AstVarRef* varref2p = sel2p->fromp()->castVarRef(); if (!varref2p) return false;
-	if (varref1p->varp() != varref2p->varp()) return false;
+	if (!varref1p->sameTree(varref2p)) return false;
 	AstConst* con1p = sel1p->lsbp()->castConst(); if (!con1p) return false;
 	AstConst* con2p = sel2p->lsbp()->castConst(); if (!con2p) return false;
 	// We need to make sure there's no self-references involved in either
@@ -828,7 +826,7 @@ private:
     bool replaceNodeAssign(AstNodeAssign* nodep) {
 	if (nodep->lhsp()->castVarRef()
 	    && nodep->rhsp()->castVarRef()
-	    && nodep->lhsp()->sameTree(nodep->rhsp())
+	    && nodep->lhsp()->castVarRef()->sameNoLvalue(nodep->rhsp()->castVarRef())
 	    && !nodep->castAssignDly()) {
 	    // X = X.  Quite pointless, though X <= X may override another earlier assignment
 	    if (nodep->castAssignW()) {

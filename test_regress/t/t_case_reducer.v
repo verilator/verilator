@@ -55,7 +55,7 @@ module t (/*AUTOARG*/
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
 	 // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hf15989544a22e48a
+`define EXPECTED_SUM 64'h8a78c2ec4946ac38
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
@@ -218,8 +218,6 @@ module clz(
   reg [2:0]  clz_byte2;
   reg [2:0]  clz_byte3;
 
-  assign out = data_i[6:0];
-
   always @*
     case (data_i)
       `def_1xxx_xxxx : clz_byte0 = 3'b000;
@@ -275,6 +273,7 @@ module clz(
       default        : clz_byte3 = 3'bxxx;
     endcase
 
+  assign out = {4'b0000, clz_byte1};
 
 endmodule // clz
 
