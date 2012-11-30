@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix mis-optimized identical submodule subtract, bug581.  [Charlie Brej]
 
+****  Fix crash on dotted references into dead modules, bug583.  [Jeremy Bennett]
+
 ****  Fix compile issues on MSVCC, bug571, bug577.  [Amir Gonnen]
 
 ****  Fix --debug overriding preceding --dump-treei, bug580.  [Jeremy Bennett]

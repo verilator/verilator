@@ -1484,6 +1484,7 @@ private:
 	}
 	nodep->fromp()->iterateAndNext(*this);
 	nodep->bitp()->iterateAndNext(*this);
+	nodep->attrp()->iterateAndNext(*this);
     }
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	UINFO(5,"   "<<nodep<<endl);
