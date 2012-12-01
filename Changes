@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.84** devel
+* Verilator 3.843 2012/12/01
 
 ***   Add +1364-1995ext and similar language options, bug532.  [Jeremy Bennett]
 
