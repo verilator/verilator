@@ -9,7 +9,7 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.307';
+$VERSION = '3.318';
 
 our $Self;
 
@@ -56,7 +56,7 @@ process();
 
 sub usage {
     print "Version $VERSION\n";
-    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
     exit (1);
 }
 
@@ -167,11 +167,11 @@ sub clean_output {
 	my %state_line; my $l=0;
 	foreach my $line (@lines) {
 	    $l++;
-	    $state_line{$1} = $l if $line =~ /^state (\d+)\s*$/;
+	    # We add a colon so it's easy to search for the definition
+	    $state_line{$1} = $l if $line =~ s/^state (\d+)\s*$/state $1:/;
 	}
 	my @out;
 	foreach my $line (@lines) {
-	    $state_line{$1} = $l if $line =~ /^state (\d+)\s*$/;
 	    if ($line =~ /^State (\d+) (conflicts)/) {
 		chomp $line;
 		$line .= " // line $state_line{$1}" if $state_line{$1};
