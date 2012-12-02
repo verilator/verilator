@@ -3185,7 +3185,7 @@ idDotted<nodep>:
 
 idDottedMore<nodep>:
 		idArrayed 				{ $$ = $1; }
-	|	idDotted '.' idArrayed	 		{ $$ = new AstDot($2,$1,$3); }
+	|	idDottedMore '.' idArrayed	 	{ $$ = new AstDot($2,$1,$3); }
 	;
 
 // Single component of dotted path, maybe [#].

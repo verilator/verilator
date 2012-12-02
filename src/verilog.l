@@ -1149,7 +1149,8 @@ int V3ParseImp::lexToBison() {
     int tok = lexToken();
     //yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex()>=6 || debugBison()>=6) {
-	cout<<"   lexToBison  TOKEN="<<tok<<" "<<tokenName(tok);
+	cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
+	    <<"} lexToBison  TOKEN="<<tok<<" "<<tokenName(tok);
 	if (tok == yaID__ETC || tok == yaID__LEX || tok == yaID__aTYPE) {
 	    cout<<"   strp='"<<*(yylval.strp)<<"'";
 	}
