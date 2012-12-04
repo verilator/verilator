@@ -52,9 +52,12 @@ extern "C" {
 
     extern void dpii_v_bit	(unsigned char i, unsigned char* o);
     extern void dpii_v_int	(int i,		int *o);
+    extern void dpii_v_uint	(unsigned int i, unsigned int *o);
     extern void dpii_v_byte	(char i,	char *o);
     extern void dpii_v_shortint	(short int i,	short int *o);
+    extern void dpii_v_ushort	(unsigned short i, unsigned short *o);
     extern void dpii_v_longint	(long long i,	long long *o);
+    extern void dpii_v_ulong	(unsigned long long i, unsigned long long *o);
     extern void dpii_v_chandle	(void* i,	void* *o);
     extern void dpii_v_string   (const char* i, const char** o);
     extern void dpii_v_real     (double i,      double* o);
@@ -93,9 +96,12 @@ float		dpii_f_shortreal(float i)	{ return i+1.5; }
 
 void dpii_v_bit	(unsigned char i, unsigned char *o)	{ *o = SV_MASK(1) & ~i; }
 void dpii_v_int (int i, int *o)				{ *o = ~i; }
+void dpii_v_uint (unsigned int i, unsigned int *o)	{ *o = ~i; }
 void dpii_v_byte (char i, char *o)			{ *o = ~i; }
 void dpii_v_shortint (short int i, short int *o)	{ *o = ~i; }
+void dpii_v_ushort (unsigned short i, unsigned short *o) { *o = ~i; }
 void dpii_v_longint (long long i, long long *o)		{ *o = ~i; }
+void dpii_v_ulong (unsigned long long i, unsigned long long *o)	{ *o = ~i; }
 void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
 void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }

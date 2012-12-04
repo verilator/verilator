@@ -268,6 +268,9 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 	}
     } else {
 	arg = basicp()->keyword().dpiType();
+	if (basicp()->keyword().isDpiUnsignable() && !basicp()->isSigned()) {
+	    arg = "unsigned "+arg;
+	}
 	if (!forReturn && isOutput()) arg += "*";
     }
     if (named) arg += " "+name();

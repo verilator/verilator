@@ -356,6 +356,9 @@ public:
     bool isDpiUnsupported() const {
 	return (m_e==LOGIC || m_e==TIME);
     }
+    bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
+	return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);
+    }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
 	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
     }
