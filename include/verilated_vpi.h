@@ -101,6 +101,7 @@ public:
     // cppcheck-suppress uninitVar  // m_value
     VerilatedVpioCb(const t_cb_data* cbDatap, QData time)
 	: m_cbData(*cbDatap), m_time(time) {
+        m_value.format = cbDatap->value?cbDatap->value->format:vpiSuppressVal;
 	m_cbData.value = &m_value;
     }
     virtual ~VerilatedVpioCb() {}

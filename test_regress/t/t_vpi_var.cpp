@@ -31,6 +31,7 @@
 unsigned int main_time = false;
 unsigned int callback_count = false;
 unsigned int callback_count_half = false;
+unsigned int callback_count_quad = false;
 
 //======================================================================
 
@@ -65,6 +66,13 @@ public:
 #define CHECK_RESULT(got, exp) \
     if ((got != exp)) { \
 	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
+	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
+	return __LINE__; \
+    }
+
+#define CHECK_RESULT_HEX(got, exp) \
+    if ((got != exp)) { \
+	cout<<hex<<"%Error: "<<FILENM<<":"<<__LINE__ \
 	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
 	return __LINE__; \
     }
@@ -121,15 +129,24 @@ int _mon_check_callbacks() {
 }
 
 int _value_callback(p_cb_data cb_data) {
-  CHECK_RESULT(cb_data->value->value.integer+10, main_time);
-  callback_count++;
-  return 0;
+    CHECK_RESULT(cb_data->value->value.integer+10, main_time);
+    callback_count++;
+    return 0;
 }
 
 int _value_callback_half(p_cb_data cb_data) {
-  CHECK_RESULT(cb_data->value->value.integer*2+10, main_time);
-  callback_count_half++;
-  return 0;
+    CHECK_RESULT(cb_data->value->value.integer*2+10, main_time);
+    callback_count_half++;
+    return 0;
+}
+
+int _value_callback_quad(p_cb_data cb_data) {
+    for (int index=0;index<2;index++) {
+	CHECK_RESULT_HEX(cb_data->value->value.vector[1].aval, (unsigned long)((index==2)?0x1c77bb9bUL:0x12819213UL));
+	CHECK_RESULT_HEX(cb_data->value->value.vector[0].aval, (unsigned long)((index==2)?0x3784ea09UL:0xabd31a1cUL));
+    }
+    callback_count_quad++;
+    return 0;
 }
 
 int _mon_check_value_callbacks() {
@@ -154,6 +171,25 @@ int _mon_check_value_callbacks() {
 
     cb_data.obj = vh1;
     cb_data.cb_rtn = _value_callback_half;
+
+    vh = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh);
+
+    vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.quads", NULL);
+    CHECK_RESULT_NZ(vh1);
+
+    v.format = vpiVectorVal;
+    cb_data.obj = vh1;
+    cb_data.cb_rtn = _value_callback_quad;
+
+    vh = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh);
+
+    vh1 = vpi_handle_by_index(vh1, 2);
+    CHECK_RESULT_NZ(vh1);
+
+    cb_data.obj = vh1;
+    cb_data.cb_rtn = _value_callback_quad;
 
     vh = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh);
@@ -371,6 +407,7 @@ int main(int argc, char **argv, char **env) {
     }
     CHECK_RESULT(callback_count, 501);
     CHECK_RESULT(callback_count_half, 250);
+    CHECK_RESULT(callback_count_quad, 2);
     if (!Verilated::gotFinish()) {
 	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }
