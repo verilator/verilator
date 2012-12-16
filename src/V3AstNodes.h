@@ -1913,7 +1913,7 @@ public:
     bool hidden() const { return m_hidden; }
 };
 
-struct AstDisplay : public AstNode {
+struct AstDisplay : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
     // Children: SFORMATF to generate print string
@@ -1921,7 +1921,7 @@ private:
     AstDisplayType	m_displayType;
 public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
-	: AstNode (fileline) {
+	: AstNodeStmt (fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
@@ -1976,11 +1976,11 @@ struct AstSFormat : public AstNode {
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-struct AstSysIgnore : public AstNode {
+struct AstSysIgnore : public AstNodeStmt {
     // Parents: stmtlist
     // Children: varrefs or exprs
     AstSysIgnore(FileLine* fileline, AstNode* exprsp)
-	: AstNode (fileline) { addNOp1p(exprsp); }
+	: AstNodeStmt (fileline) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysIgnore, SYSIGNORE)
     virtual string verilogKwd() const { return "$ignored"; }
     virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
