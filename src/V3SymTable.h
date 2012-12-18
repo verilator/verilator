@@ -53,6 +53,7 @@ private:
     VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
     AstPackage*	m_packagep;	// Package node is in (for V3LinkDot, unused here)
     string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
+    bool	m_importable;	// Allow importing
 #ifdef VL_DEBUG
     static int debug() {
 	static int level = -1;
@@ -107,6 +108,8 @@ public:
     AstNode* nodep() const { if (!this) return NULL; else return m_nodep; }  // null check so can call .findId(...)->nodep()
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }
+    bool importable() const { return m_importable; }
+    void importable(bool flag) { m_importable = flag; }
     void insert(const string& name, VSymEnt* entp) {
 	UINFO(9, "     SymInsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
@@ -152,13 +155,17 @@ public:
 	if (id_or_star != "*") {
 	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
 	    if (it != m_idNameMap.end()) {
-		reinsert(it->first, it->second);
-		any = true;
+		if (it->second->importable()) {
+		    reinsert(it->first, it->second);
+		}
 	    }
+	    any = true;  // Legal, though perhaps lint questionable to import nothing
 	} else {
 	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
-		reinsert(it->first, it->second);
-		any = true;
+		if (it->second->importable()) {
+		    reinsert(it->first, it->second);
+		    any = true;
+		}
 	    }
 	}
 	return any;
@@ -244,6 +251,7 @@ inline VSymEnt::VSymEnt(VSymGraph* m_graphp, AstNode* nodep)
     m_fallbackp = NULL;
     m_parentp = NULL;
     m_packagep = NULL;
+    m_importable = true;
     m_graphp->pushNewEnt(this);
 }
 

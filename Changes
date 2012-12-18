@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix task inlining under $display, bug589.  [Holger Waechtler]
 
+****  Fix package import of non-localparam parameter, bug591.  [Jeremy Bennett]
+
 
 * Verilator 3.843 2012/12/01
 

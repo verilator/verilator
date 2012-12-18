@@ -247,7 +247,7 @@ public:
 	abovep->reinsert(name, symp);
 	return symp;
     }
-    void insertSym(VSymEnt* abovep, const string& name, AstNode* nodep, AstPackage* packagep) {
+    VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep, AstPackage* packagep) {
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
 	UINFO(9,"      INSERTsym se"<<(void*)symp<<"  name='"<<name<<"' above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
@@ -258,6 +258,7 @@ public:
 	nodep->user1p(symp);
 	checkDuplicate(abovep, nodep, name);
 	abovep->insert(name, symp);
+	return symp;
     }
     static bool existsModScope(AstNodeModule* nodep) {
 	return nodep->user1p()!=NULL;
@@ -698,7 +699,8 @@ private:
 		m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
 		if (m_statep->forPrimary() && nodep->isGParam()) {
 		    m_paramNum++;
-		    m_statep->insertSym(m_curSymp, "__paramNumber"+cvtToStr(m_paramNum), nodep, m_packagep);
+		    VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber"+cvtToStr(m_paramNum), nodep, m_packagep);
+		    symp->importable(false);
 		}
 	    }
 	}
@@ -752,6 +754,7 @@ private:
 	    }
 	}
 	m_curSymp->import(srcp, nodep->name());
+	UINFO(2,"    Link Done: "<<nodep<<endl);
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
@@ -876,7 +879,9 @@ private:
 	    nodep->v3error("Pin is not an in/out/inout: "<<nodep->prettyName());
 	} else {
 	    refp->user4(true);
-	    m_statep->insertSym(m_statep->getNodeSym(m_modp), "__pinNumber"+cvtToStr(nodep->pinNum()), refp, NULL/*packagep*/);
+	    VSymEnt* symp = m_statep->insertSym(m_statep->getNodeSym(m_modp),
+						"__pinNumber"+cvtToStr(nodep->pinNum()), refp, NULL/*packagep*/);
+	    symp->importable(false);
 	}
 	// Ports not needed any more
 	nodep->unlinkFrBack()->deleteTree();  nodep=NULL;
