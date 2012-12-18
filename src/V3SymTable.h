@@ -53,7 +53,8 @@ private:
     VSymEnt*	m_parentp;	// Table that created this table, dot notation needed to resolve into it
     AstPackage*	m_packagep;	// Package node is in (for V3LinkDot, unused here)
     string	m_symPrefix;	// String to prefix symbols with (for V3LinkDot, unused here)
-    bool	m_importable;	// Allow importing
+    bool	m_exported;	// Allow importing
+    bool	m_imported;	// Was imported
 #ifdef VL_DEBUG
     static int debug() {
 	static int level = -1;
@@ -87,6 +88,7 @@ public:
     }
 
     // METHODS
+    VSymEnt(VSymGraph* graphp, const VSymEnt* symp);  // Below
     VSymEnt(VSymGraph* graphp, AstNode* nodep);  // Below
     ~VSymEnt() {
 	// Change links so we coredump if used
@@ -108,8 +110,10 @@ public:
     AstNode* nodep() const { if (!this) return NULL; else return m_nodep; }  // null check so can call .findId(...)->nodep()
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }
-    bool importable() const { return m_importable; }
-    void importable(bool flag) { m_importable = flag; }
+    bool exported() const { return m_exported; }
+    void exported(bool flag) { m_exported = flag; }
+    bool imported() const { return m_imported; }
+    void imported(bool flag) { m_imported = flag; }
     void insert(const string& name, VSymEnt* entp) {
 	UINFO(9, "     SymInsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
 	if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
@@ -148,22 +152,26 @@ public:
 	if (m_fallbackp) return m_fallbackp->findIdFallback(name);
 	return NULL;
     }
-    bool import(const VSymEnt* srcp, const string& id_or_star) {
+    bool import(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
 	// Import tokens from source symbol table into this symbol table
 	// Returns true if successful
 	bool any = false;
 	if (id_or_star != "*") {
 	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
 	    if (it != m_idNameMap.end()) {
-		if (it->second->importable()) {
-		    reinsert(it->first, it->second);
+		if (it->second->exported()) {
+		    VSymEnt* symp = new VSymEnt(graphp, it->second);
+		    symp->exported(false);  // Can't reimport an import without an export
+		    reinsert(it->first, symp);
 		}
 	    }
 	    any = true;  // Legal, though perhaps lint questionable to import nothing
 	} else {
 	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
-		if (it->second->importable()) {
-		    reinsert(it->first, it->second);
+		if (it->second->exported()) {
+		    VSymEnt* symp = new VSymEnt(graphp, it->second);
+		    symp->exported(false);  // Can't reimport an import without an export
+		    reinsert(it->first, symp);
 		    any = true;
 		}
 	    }
@@ -243,7 +251,7 @@ public:
 
 //######################################################################
 
-inline VSymEnt::VSymEnt(VSymGraph* m_graphp, AstNode* nodep)
+inline VSymEnt::VSymEnt(VSymGraph* graphp, AstNode* nodep)
     : m_nodep(nodep) {
     // No argument to set fallbackp, as generally it's wrong to set it in the new call,
     // Instead it needs to be set on a "findOrNew()" return, as it may have been new'ed
@@ -251,8 +259,19 @@ inline VSymEnt::VSymEnt(VSymGraph* m_graphp, AstNode* nodep)
     m_fallbackp = NULL;
     m_parentp = NULL;
     m_packagep = NULL;
-    m_importable = true;
-    m_graphp->pushNewEnt(this);
+    m_exported = true;
+    m_imported = false;
+    graphp->pushNewEnt(this);
+}
+
+inline VSymEnt::VSymEnt(VSymGraph* graphp, const VSymEnt* symp)
+    : m_nodep(symp->nodep()) {
+    m_fallbackp = symp->m_fallbackp;
+    m_parentp  = symp->m_parentp;
+    m_packagep = symp->m_packagep;
+    m_exported = symp->m_exported;
+    m_imported = symp->m_imported;
+    graphp->pushNewEnt(this);
 }
 
 #endif // guard

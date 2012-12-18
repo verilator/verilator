@@ -114,6 +114,7 @@ public:
     ~LinkDotState() {}
 
     // ACCESSORS
+    VSymGraph* symsp() { return &m_syms; }
     bool forPrimary() const { return m_forPrimary; }
     bool forPrearray() const { return m_forPrearray; }
     bool forScopeCreation() const { return m_forScopeCreation; }
@@ -700,7 +701,7 @@ private:
 		if (m_statep->forPrimary() && nodep->isGParam()) {
 		    m_paramNum++;
 		    VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber"+cvtToStr(m_paramNum), nodep, m_packagep);
-		    symp->importable(false);
+		    symp->exported(false);
 		}
 	    }
 	}
@@ -753,7 +754,7 @@ private:
 		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
 	    }
 	}
-	m_curSymp->import(srcp, nodep->name());
+	m_curSymp->import(m_statep->symsp(), srcp, nodep->name());
 	UINFO(2,"    Link Done: "<<nodep<<endl);
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
@@ -881,7 +882,7 @@ private:
 	    refp->user4(true);
 	    VSymEnt* symp = m_statep->insertSym(m_statep->getNodeSym(m_modp),
 						"__pinNumber"+cvtToStr(nodep->pinNum()), refp, NULL/*packagep*/);
-	    symp->importable(false);
+	    symp->exported(false);
 	}
 	// Ports not needed any more
 	nodep->unlinkFrBack()->deleteTree();  nodep=NULL;
