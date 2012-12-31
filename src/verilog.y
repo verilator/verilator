@@ -600,6 +600,11 @@ class AstSenTree;
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -641,7 +646,7 @@ description:			// ==IEEE: description
 	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
 	//UNSUP	bind_directive				{ }
 	//	unsupported	// IEEE: config_declaration
-				// Verilator only
+	//			// Verilator only
 	|	vltItem					{ }
 	|	error					{ }
 	;
@@ -1051,10 +1056,6 @@ net_type:			// ==IEEE: net_type
 	//UNSUP	yWOR 					{ VARDECL(WOR); }
 	;
 
-varRESET:
-		/* empty */ 				{ VARRESET_NONLIST(VAR); }
-	;
-
 varGParamReset:
 		yPARAMETER				{ VARRESET_NONLIST(GPARAM); }
 	;
@@ -1409,25 +1410,25 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 
 data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
-		varRESET data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $3; }
+		data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
 
 data_declarationVarFront:	// IEEE: part of data_declaration
 	//			// Expanded: "constE yVAR lifetimeE data_type"
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-		/**/ 	    yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE($3); }
-	|	/**/ 	    yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT)); }
+		/**/ 	    yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
+	|	/**/ 	    yVAR lifetimeE		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT)); }
 	|	/**/ 	    yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,false)); }
 	//
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-	|	yCONST__ETC yVAR lifetimeE data_type	{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $4)); }
-	|	yCONST__ETC yVAR lifetimeE		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
-	|	yCONST__ETC yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,false))); }
+	|	yCONST__ETC yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $4)); }
+	|	yCONST__ETC yVAR lifetimeE		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
+	|	yCONST__ETC yVAR lifetimeE signingE rangeList { VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,false))); }
 	//
 	//			// Expanded: "constE lifetimeE data_type"
-	|	/**/		      data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($1); }
-	|	/**/	    lifetime  data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE($2); }
-	|	yCONST__ETC lifetimeE data_type		{ /*VARRESET-in-ddVar*/ VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $3)); }
+	|	/**/		      data_type		{ VARRESET_NONLIST(VAR); VARDTYPE($1); }
+	|	/**/	    lifetime  data_type		{ VARRESET_NONLIST(VAR); VARDTYPE($2); }
+	|	yCONST__ETC lifetimeE data_type		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $3)); }
 	//			// = class_new is in variable_decl_assignment
 	;
 
@@ -2287,10 +2288,10 @@ assignment_pattern<nodep>:	// ==IEEE: assignment_pattern
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
 for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
 	//			// IEEE: for_variable_declaration
-		varRESET data_type idAny/*new*/ '=' expr ';'
-			{ VARDTYPE($2);
-			  $$ = VARDONEA($<fl>3,*$3,NULL,NULL);
-			  $$->addNext(new AstAssign($4,new AstVarRef($4,*$3,true),$5));}
+		data_type idAny/*new*/ '=' expr ';'
+			{ VARRESET_NONLIST(VAR); VARDTYPE($1);
+			  $$ = VARDONEA($<fl>2,*$2,NULL,NULL);
+			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
 	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
 	//UNSUP: List of initializations
 	;
