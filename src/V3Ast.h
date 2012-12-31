@@ -507,7 +507,6 @@ public:
 	PX_NONE,	// Used in V3LinkParse only
 	PX_TEXT,	// Unknown ID component
 	PX_PREDOT,	// Module name or misc component above var/task/func/member
-	PX_VAR_MEM,	// Variable that must be a memory
 	PX_VAR_ANY,	// Variable/structure member
 	PX_FTASK	// Task/Function (AstParse::ftaskrefp() will be set)
     };

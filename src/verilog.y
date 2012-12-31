@@ -2385,12 +2385,12 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FATAL    '(' expr ')'				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); DEL($3); }
 	|	yD_FATAL    '(' expr ',' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); DEL($3); }
 	//
-	|	yD_READMEMB '(' expr ',' varRefMem ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
-	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ')'			{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
-	|	yD_READMEMB '(' expr ',' varRefMem ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
-	|	yD_READMEMH '(' expr ',' varRefMem ')'				{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
-	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ')'			{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
-	|	yD_READMEMH '(' expr ',' varRefMem ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	|	yD_READMEMB '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
+	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
+	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
+	|	yD_READMEMH '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
+	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
+	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
@@ -3160,11 +3160,6 @@ variable_lvalue<nodep>:		// IEEE: variable_lvalue or net_lvalue
 variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'
 		variable_lvalue					{ $$ = $1; }
 	|	variable_lvalueConcList ',' variable_lvalue	{ $$ = new AstConcat($2,$1,$3); }
-	;
-
-// VarRef to a Memory
-varRefMem<parserefp>:
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_MEM, "", $1, NULL); $$->start(true); }
 	;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable

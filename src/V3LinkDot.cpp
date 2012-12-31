@@ -1229,8 +1229,7 @@ private:
 		expectWhat = "scope/variable";
 		allowScope = true;
 		allowVar = true;
-	    } else if (nodep->expect() == AstParseRefExp::PX_VAR_MEM
-		       || nodep->expect() == AstParseRefExp::PX_VAR_ANY) {
+	    } else if (nodep->expect() == AstParseRefExp::PX_VAR_ANY) {
 		expectWhat = "variable";
 		onlyVar = true;
 		allowVar = true;

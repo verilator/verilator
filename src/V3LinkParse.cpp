@@ -197,8 +197,6 @@ private:
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
 	    } else if (m_exp==AstParseRefExp::PX_FTASK) {
 		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed as part of function/task names");
-	    } else if (m_exp==AstParseRefExp::PX_VAR_MEM) {
-		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed when expecting memory reference");
 	    } else {
 		nodep->lhsp()->iterateAndNext(*this);
 		AstParseRefExp lastExp = m_exp;

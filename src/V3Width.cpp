@@ -1341,6 +1341,9 @@ private:
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	if (!nodep->memp()->dtypep()->skipRefp()->castArrayDType()) {
+	    nodep->memp()->v3error("Unsupported: $readmem into non-array");
+	}
 	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
