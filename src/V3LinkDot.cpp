@@ -805,7 +805,7 @@ private:
 	if (nodep->castDot()) {  // Not creating a simple implied type,
 	    // and implying something else would just confuse later errors
 	}
-	if (nodep->castVarRef() || (nodep->castParseRef() && nodep->castParseRef()->start())) {
+	else if (nodep->castVarRef() || (nodep->castParseRef() && nodep->castParseRef()->start())) {
 	    // To prevent user errors, we should only do single bit
 	    // implicit vars, however some netlists (MIPS) expect single
 	    // bit implicit wires to get created with range 0:0 etc.
