@@ -499,6 +499,7 @@ class AstSenTree;
 %token<fl>		yP_WILDNOTEQUAL	"!=?"
 %token<fl>		yP_GTE		">="
 %token<fl>		yP_LTE		"<="
+%token<fl>		yP_LTE__IGNORE	"<=-ignored"	// Used when expr:<= means assignment
 %token<fl>		yP_SLEFT	"<<"
 %token<fl>		yP_SRIGHT	">>"
 %token<fl>		yP_SSRIGHT	">>>"
@@ -560,7 +561,7 @@ class AstSenTree;
 %left		'^' yP_XNOR
 %left		'&' yP_NAND
 %left		yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
-%left		'>' '<' yP_GTE yP_LTE
+%left		'>' '<' yP_GTE yP_LTE yP_LTE__IGNORE
 %left		yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left		'+' '-'
 %left		'*' '/' '%'
@@ -2023,8 +2024,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	fexprLvalue '=' dynamic_array_new ';'	{ UNSUP }
 	//
 	//			// IEEE: nonblocking_assignment
-	|	idClassSel yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
-	|	'{' variable_lvalueConcList '}' yP_LTE delayE expr ';' { $$ = new AstAssignDly($4,$2,$6); }
+	|	fexprLvalue yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
 	//UNSUP	fexprLvalue yP_LTE delay_or_event_controlE expr ';'	{ UNSUP }
 	//
 	//			// IEEE: procedural_continuous_assignment
@@ -2065,7 +2065,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
 	//UNSUP	fexpr '.' array_methodNoRoot ';'	{ UNSUP }
-	//UNSUP	fexpr '.' task_subroutine_callNoMethod ';'	{ UNSUP }
+	|	fexpr '.' task_subroutine_callNoMethod ';'	{ $$ = new AstDot($<fl>2,$1,$3); }
 	//UNSUP	fexprScope ';'				{ UNSUP }
 	//			// Not here in IEEE; from class_constructor_declaration
 	//			// Because we've joined class_constructor_declaration into generic functions
@@ -2140,35 +2140,22 @@ statementVerilatorPragmas<nodep>:
 	;
 
 foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of expression)
-		idClassSel '=' delayE expr	{ $$ = new AstAssign($2,$1,$4); }
-	|	idClassSel '=' yD_FOPEN '(' expr ',' expr ')'	{ $$ = new AstFOpen($3,$1,$5,$7); }
-	|	'{' variable_lvalueConcList '}' '=' delayE expr	{ $$ = new AstAssign($4,$2,$6); }
+		fexprLvalue '=' delayE expr	{ $$ = new AstAssign($2,$1,$4); }
+	|	fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'	{ $$ = new AstFOpen($3,$1,$5,$7); }
 	//
 	//UNSUP	~f~exprLvalue '=' delay_or_event_controlE expr { UNSUP }
 	//UNSUP	~f~exprLvalue yP_PLUS(etc) expr		{ UNSUP }
-	|	idClassSel yP_PLUSEQ    expr		{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_MINUSEQ   expr		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_TIMESEQ   expr		{ $$ = new AstAssign($2,$1,new AstMul    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_DIVEQ     expr		{ $$ = new AstAssign($2,$1,new AstDiv    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_MODEQ     expr		{ $$ = new AstAssign($2,$1,new AstModDiv ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_ANDEQ     expr		{ $$ = new AstAssign($2,$1,new AstAnd    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_OREQ      expr		{ $$ = new AstAssign($2,$1,new AstOr     ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_XOREQ     expr		{ $$ = new AstAssign($2,$1,new AstXor    ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_SLEFTEQ   expr		{ $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_SRIGHTEQ  expr		{ $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
-	|	idClassSel yP_SSRIGHTEQ expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
-	//
-	|	'{' variable_lvalueConcList '}' yP_PLUSEQ    expr	{ $$ = new AstAssign($4,$2,new AstAdd    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_MINUSEQ   expr	{ $$ = new AstAssign($4,$2,new AstSub    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_TIMESEQ   expr	{ $$ = new AstAssign($4,$2,new AstMul    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_DIVEQ     expr	{ $$ = new AstAssign($4,$2,new AstDiv    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_MODEQ     expr	{ $$ = new AstAssign($4,$2,new AstModDiv ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_ANDEQ     expr	{ $$ = new AstAssign($4,$2,new AstAnd    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_OREQ      expr	{ $$ = new AstAssign($4,$2,new AstOr     ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_XOREQ     expr	{ $$ = new AstAssign($4,$2,new AstXor    ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_SLEFTEQ   expr	{ $$ = new AstAssign($4,$2,new AstShiftL ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_SRIGHTEQ  expr	{ $$ = new AstAssign($4,$2,new AstShiftR ($4,$2->cloneTree(true),$5)); }
-	|	'{' variable_lvalueConcList '}' yP_SSRIGHTEQ expr	{ $$ = new AstAssign($4,$2,new AstShiftRS($4,$2->cloneTree(true),$5)); }
+	|	fexprLvalue yP_PLUSEQ    expr		{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_MINUSEQ   expr		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_TIMESEQ   expr		{ $$ = new AstAssign($2,$1,new AstMul    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_DIVEQ     expr		{ $$ = new AstAssign($2,$1,new AstDiv    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_MODEQ     expr		{ $$ = new AstAssign($2,$1,new AstModDiv ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_ANDEQ     expr		{ $$ = new AstAssign($2,$1,new AstAnd    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_OREQ      expr		{ $$ = new AstAssign($2,$1,new AstOr     ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_XOREQ     expr		{ $$ = new AstAssign($2,$1,new AstXor    ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_SLEFTEQ   expr		{ $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_SRIGHTEQ  expr		{ $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
+	|	fexprLvalue yP_SSRIGHTEQ expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
 	;
 
 finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
@@ -2309,15 +2296,13 @@ for_step<nodep>:		// IEEE: for_step
 //************************************************
 // Functions/tasks
 
-taskRef<parserefp>:		// IEEE: part of tf_call
-		idDotted		 		{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstTaskRef($1->fileline(),"",NULL)); $$->start(true); }
-	|	idDotted '(' list_of_argumentsE ')'	{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstTaskRef($1->fileline(),"",$3)); $$->start(true); }
-	//UNSUP: package_scopeIdFollows idDotted		{ }
-	//UNSUP: package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ }
-	//UNSUP: idDotted is really just id to allow dotted method calls
+taskRef<nodep>:			// IEEE: part of tf_call
+		id		 		{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
+	|	id '(' list_of_argumentsE ')'	{ $$ = new AstTaskRef($<fl>1,*$1,$3); }
+	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2,*$2,$4)); }
 	;
 
-funcRef<parserefp>:		// IEEE: part of tf_call
+funcRef<nodep>:			// IEEE: part of tf_call
 	//			// package_scope/hierarchical_... is part of expr, so just need ID
 	//			//	making-a		id-is-a
 	//			//	-----------------	------------------
@@ -2326,8 +2311,8 @@ funcRef<parserefp>:		// IEEE: part of tf_call
 	//			//	property_instance	property_identifier	property_actual_arg
 	//			//	sequence_instance	sequence_identifier	sequence_actual_arg
 	//			//      let_expression		let_identifier		let_actual_arg
-		idDotted '(' list_of_argumentsE ')'	{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_FTASK, "", $1, new AstFuncRef($2, "", $3)); $$->start(true); }
-	|	package_scopeIdFollows idDotted '(' list_of_argumentsE ')'	{ AstFuncRef* f=new AstFuncRef($3,"",$4); f->packagep($1); $$ = new AstParseRef($2->fileline(), AstParseRefExp::PX_FTASK, "", $2, f); $$->start(true); }
+		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($2, *$1, $3); }
+	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -2745,7 +2730,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	|	function_subroutine_callNoMethod	{ $$ = $1; }
 	//			// method_call
-	//UNSUP	~l~expr '.' function_subroutine_callNoMethod	{ UNSUP }
+	|	~l~expr '.' function_subroutine_callNoMethod	{ $$ = new AstDot($2,$1,$3); }
 	//			// method_call:array_method requires a '.'
 	//UNSUP	~l~expr '.' array_methodNoRoot		{ UNSUP }
 	//
@@ -2781,6 +2766,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//----------------------
 	//
+	//			// Part of expr that may also be used as lvalue
 	|	~l~exprOkLvalue				{ $$ = $1; }
 	//
 	//----------------------
@@ -2798,6 +2784,10 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: expression_or_dist - here to avoid reduce problems
 	//			// "expr yDIST '{' dist_list '}'"
 	//UNSUP	~l~expr yDIST '{' dist_list '}'		{ UNSUP }
+	;
+
+fexpr<nodep>:			// For use as first part of statement (disambiguates <=)
+		BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})	// {copied}
 	;
 
 exprNoStr<nodep>:		// expression with string removed
@@ -2818,6 +2808,14 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//UNSUP	streaming_concatenation			{ UNSUP }
 	;
 
+fexprOkLvalue<nodep>:		// exprOkLValue, For use as first part of statement (disambiguates <=)
+		BISONPRE_COPY(exprOkLvalue,{s/~l~/f/g})	// {copied}
+	;
+
+fexprLvalue<nodep>:		// For use as first part of statement (disambiguates <=)
+		fexprOkLvalue				{ $<fl>$=$<fl>1; $$ = $1; }
+	;
+
 exprScope<nodep>:		// scope and variable for use to inside an expression
 	// 			// Here we've split method_call_root | implicit_class_handle | class_scope | package_scope
 	//			// from the object being called and let expr's "." deal with resolving it.
@@ -2827,15 +2825,18 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// Or method_call_body without parenthesis
 	//			// See also varRefClassBit, which is the non-expr version of most of this
 	//UNSUP	yTHIS					{ UNSUP }
-		idClassSel				{ $$ = $1; }
-	//UNSUP: idArrayed instead of idClassSel
-	//UNSUP	package_scopeIdFollows idArrayed	{ UNSUP }
+		idArrayed				{ $$ = $1; }
+	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	//UNSUP	class_scopeIdFollows idArrayed		{ UNSUP }
-	//UNSUP	~l~expr '.' idArrayed			{ UNSUP }
+	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2,$1,$3); }
 	//			// expr below must be a "yTHIS"
 	//UNSUP	~l~expr '.' ySUPER			{ UNSUP }
 	//			// Part of implicit_class_handle
 	//UNSUP	ySUPER					{ UNSUP }
+	;
+
+fexprScope<nodep>:		// exprScope, For use as first part of statement (disambiguates <=)
+		BISONPRE_COPY(exprScope,{s/~l~/f/g})	// {copied}
 	;
 
 // Psl excludes {}'s by lexer converting to different token
@@ -3163,8 +3164,8 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 	;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
-idClassSel<parserefp>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
-		idDotted				{ $$ = new AstParseRef($1->fileline(), AstParseRefExp::PX_VAR_ANY, "", $1, NULL); $$->start(true); }
+idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
+		idDotted				{ $$ = $1; }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
 	//UNSUP	yTHIS '.' idDotted			{ UNSUP }
 	//UNSUP	ySUPER '.' idDotted			{ UNSUP }

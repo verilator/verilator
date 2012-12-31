@@ -859,11 +859,16 @@ void AstSenItem::dump(ostream& str) {
 void AstParseRef::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<expect().ascii()<<"]";
-    if (start()) str<<" [START]";
+}
+void AstPackageRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    str<<" -> ";
+    if (packagep()) { packagep()->dump(str); }
+    else { str<<"UNLINKED"; }
 }
 void AstDot::dump(ostream& str) {
     this->AstNode::dump(str);
-    if (start()) str<<" [START]";
 }
 void AstActive::dump(ostream& str) {
     this->AstNode::dump(str);

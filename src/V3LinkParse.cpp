@@ -19,11 +19,7 @@
 //*************************************************************************
 // LinkParse TRANSFORMATIONS:
 //	Top-down traversal
-//	    Replace ParseRef with lower parseref
-//	    TASKREF(PARSEREF(DOT(TEXTa,TEXTb))) -> DOT(PARSEREF(a),TASKREF(b))
-//	    PARSEREF(TEXTa) -> PARSEREF(a)   (no change)
-//	    PARSEREF(DOT(TEXTa,TEXTb)) -> DOT(PARSEREF(A),PARSEREF(b)
-//	    PARSEREF(DOT(DOT(TEXTa,TEXTb),TEXTc)) -> DOT(DOT(PARSEREF(a),PARSEREF(b)),PARSEREF(c))
+//	    Move some attributes around
 //*************************************************************************
 
 #include "config_build.h"
@@ -57,7 +53,6 @@ private:
     typedef set <FileLine*> FileLineSet;
 
     // STATE
-    AstParseRefExp	m_exp;		// Type of data we're looking for
     AstVar*		m_varp;		// Variable we're under
     ImplTypedefMap	m_implTypedef;	// Created typedefs for each <container,name>
     FileLineSet		m_filelines;	// Filelines that have been seen
@@ -66,7 +61,6 @@ private:
     bool		m_needStart;	// Need start marker on lower AstParse
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     AstNodeModule*	m_modp;		// Current module
-    AstParseRef*	m_rightParsep;	// RHS()-most parseref
 
     // METHODS
     static int debug() {
@@ -90,123 +84,15 @@ private:
 	}
     }
 
-    void checkExpected(AstNode* nodep) {
-	if (m_exp != AstParseRefExp::PX_NONE) {
-	    nodep->v3fatalSrc("Tree syntax error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type());
-	    m_exp = AstParseRefExp::PX_NONE;
-	}
-    }
-
     // VISITs
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    UINFO(5,"   "<<nodep<<endl);
-	    checkExpected(nodep);
 	    AstNodeModule* upperValueModp = m_valueModp;
 	    m_valueModp = NULL;
 	    nodep->iterateChildren(*this);
 	    m_valueModp = upperValueModp;
-	}
-    }
-    virtual void visit(AstParseRef* nodep, AstNUser*) {
-	if (nodep->user1SetOnce()) return;  // Process only once.
-	// VarRef: Parse its reference
-	UINFO(5,"   "<<nodep<<endl);
-	{   // First do any function call
-	    AstParseRefExp lastExp = m_exp;
-	    {
-		m_exp = AstParseRefExp::PX_NONE;
-		if (nodep->ftaskrefp()) nodep->ftaskrefp()->iterateAndNext(*this);
-	    }
-	    m_exp = lastExp;
-	}
-	if (nodep->start()) { // Start of new parseref stack
-	    // The start parseref indicates the type of element to be created.
-	    // Push the start marking down to the lowest non-start parseref under any DOTs.
-	    // May be a varref inside a select, etc, so save state and recurse
-	    AstParseRefExp lastExp = m_exp;
-	    AstParseRef* lastRightp = m_rightParsep;
-	    {
-		m_exp = nodep->expect();
-		m_rightParsep = NULL;
-		m_needStart = true;
-		nodep->lhsp()->accept(*this);
-		if (!m_rightParsep) nodep->v3fatalSrc("No child ParseRef found");
-		AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-		if (nodep->expect() == AstParseRefExp::PX_FTASK) {
-		    // Put the FTaskRef under the final DOT
-		    AstNodeFTaskRef* ftaskrefp = nodep->ftaskrefp()->castNodeFTaskRef();
-		    if (!ftaskrefp) nodep->v3fatalSrc("Parseref indicates FTASKref but none found");
-		    ftaskrefp->name(m_rightParsep->name());
-		    ftaskrefp->unlinkFrBack();
-		    if (ftaskrefp->packagep()) {
-			// Can remove the parse stack entirely and V3LinkDot will deal with it natively
-			lhsp = ftaskrefp;
-		    } else {
-			m_rightParsep->ftaskrefp(ftaskrefp);
-		    }
-		}
-		nodep->replaceWith(lhsp);
-		nodep->deleteTree(); nodep=NULL;
-	    }
-	    m_exp = lastExp;
-	    m_rightParsep = lastRightp;
-	}
-	else { // inside existing stack
-	    nodep->expect(m_exp);
-	    m_rightParsep = nodep;
-	    // Move the start marker down to a standalone parse reference
-	    if (m_needStart) { nodep->start(true); m_needStart = false; }
-	}
-    }
-    virtual void visit(AstDot* nodep, AstNUser*) {
-	UINFO(5,"     "<<nodep<<endl);
-	if (!nodep->user1SetOnce()) {  // Process only once.
-	    cleanFileline(nodep);
-	    if (m_exp == AstParseRefExp::PX_NONE) nodep->v3fatalSrc("Tree syntax error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type());
-	    AstParseRefExp lastExp = m_exp;
-	    m_exp = AstParseRefExp::PX_PREDOT;
-	    if (m_needStart) { nodep->start(true); m_needStart = false; }
-	    nodep->lhsp()->iterateAndNext(*this);
-	    m_exp = lastExp;
-	    nodep->rhsp()->iterateAndNext(*this);
-	}
-    }
-    virtual void visit(AstSelBit* nodep, AstNUser*) {
-	if (!nodep->user1SetOnce()) {  // Process only once.
-	    cleanFileline(nodep);
-	    if (m_exp==AstParseRefExp::PX_FTASK) {
-		nodep->v3error("Syntax Error: Range selection '[]' is not allowed as part of function/task names");
-	    } else {
-		nodep->lhsp()->iterateAndNext(*this);
-		AstParseRefExp lastExp = m_exp;
-		{
-		    m_exp = AstParseRefExp::PX_NONE;
-		    nodep->rhsp()->iterateAndNext(*this);
-		}
-		m_exp = lastExp;
-	    }
-	}
-    }
-    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
-	// Excludes simple AstSel, see above
-	if (!nodep->user1SetOnce()) {  // Process only once.
-	    cleanFileline(nodep);
-	    if (m_exp == AstParseRefExp::PX_PREDOT) { // Already under dot, so this is {modulepart} DOT {modulepart}
-		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the cell part of a dotted reference");
-	    } else if (m_exp==AstParseRefExp::PX_FTASK) {
-		nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed as part of function/task names");
-	    } else {
-		nodep->lhsp()->iterateAndNext(*this);
-		AstParseRefExp lastExp = m_exp;
-		{
-		    m_exp = AstParseRefExp::PX_NONE;
-		    nodep->rhsp()->iterateAndNext(*this);
-		    nodep->thsp()->iterateAndNext(*this);
-		}
-		m_exp = lastExp;
-	    }
 	}
     }
     virtual void visit(AstEnumItem* nodep, AstNUser*) {
@@ -379,7 +265,6 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	cleanFileline(nodep);
-	checkExpected(nodep);  // So we detect node types we forgot to list here
 	//
 	m_modp = nodep;
 	m_valueModp = nodep;
@@ -390,7 +275,6 @@ private:
     void visitIterateNoValueMod(AstNode* nodep) {
 	// Iterate a node which shouldn't have any local variables moved to an Initial
 	cleanFileline(nodep);
-	checkExpected(nodep);  // So we detect node types we forgot to list here
 	//
 	AstNodeModule* upperValueModp = m_valueModp;
 	m_valueModp = NULL;
@@ -415,7 +299,6 @@ private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	cleanFileline(nodep);
-	checkExpected(nodep);  // So we detect node types we forgot to list here
 	nodep->iterateChildren(*this);
     }
 
@@ -423,13 +306,11 @@ public:
     // CONSTUCTORS
     LinkParseVisitor(AstNetlist* rootp) {
 	m_varp = NULL;
-	m_exp = AstParseRefExp::PX_NONE;
 	m_modp = NULL;
 	m_inAlways = false;
 	m_inGenerate = false;
 	m_needStart = false;
 	m_valueModp = NULL;
-	m_rightParsep = NULL;
 	rootp->accept(*this);
     }
     virtual ~LinkParseVisitor() {}

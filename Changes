@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support "unsigned int" DPI import functions, msg966.  [Alex Lee]
 
+***   Fix package resolution of parameters, bug586. [Jeremy Bennett]
+
 ****  Fix non-integer vpi_get_value, bug587.  [Rich Porter]
 
 ****  Fix task inlining under $display, bug589.  [Holger Waechtler]

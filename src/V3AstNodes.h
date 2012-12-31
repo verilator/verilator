@@ -1367,15 +1367,16 @@ struct AstParseRef : public AstNode {
 private:
     AstParseRefExp	m_expect;		// Type we think it should resolve to
     string		m_name;
-    bool		m_start;		// Start of parseref stack
 public:
     AstParseRef(FileLine* fl, AstParseRefExp expect, const string& name, AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
-	:AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); m_start=false; }
+	:AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); }
     ASTNODE_NODE_FUNCS(ParseRef, PARSEREF)
     virtual void dump(ostream& str);
     virtual string name() const { return m_name; }		// * = Var name
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_expect),V3Hash(m_name)); }
-    virtual bool same(AstNode* samep) const { return expect() == samep->castParseRef()->expect() && m_name==samep->castParseRef()->m_name; }
+    virtual bool same(AstNode* samep) const {
+	return (expect() == samep->castParseRef()->expect()
+		&& m_name==samep->castParseRef()->m_name); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual void name(const string& name) 	{ m_name = name; }
@@ -1385,26 +1386,44 @@ public:
     AstNode*	lhsp() 		const { return op1p(); }	// op1 = List of statements
     AstNode*	ftaskrefp()	const { return op2p(); }	// op2 = Function/task reference
     void ftaskrefp(AstNodeFTaskRef* nodep) { setNOp2p(nodep); }	// op2 = Function/task reference
-    bool start() const { return m_start; }
-    void start(bool flag) { m_start = flag; }
+};
+
+struct AstPackageRef : public AstNode {
+private:
+    AstPackage*	m_packagep;	// Package hierarchy
+public:
+    AstPackageRef(FileLine* fl, AstPackage* packagep)
+	: AstNode(fl), m_packagep(packagep) {}
+    ASTNODE_NODE_FUNCS(PackageRef, PACKAGEREF)
+    // METHODS
+    virtual bool broken() const { return !m_packagep || !m_packagep->brokeExists(); }
+    virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) {
+	m_packagep = m_packagep->clonep()->castPackage();
+    }}
+    virtual bool same(AstNode* samep) const {
+	return (m_packagep==samep->castPackageRef()->m_packagep); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_packagep)); }
+    virtual void dump(ostream& str=cout);
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
 struct AstDot : public AstNode {
     // A dot separating paths in an AstXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
-private:
-    bool		m_start;		// Start of parseref stack
 public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); m_start=false; }
+	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
     ASTNODE_NODE_FUNCS(Dot, DOT)
+    static AstNode* newIfPkg(FileLine*fl, AstPackage* packagep, AstNode* rhsp) {  // For parser, make only if non-null package
+	if (!packagep) return rhsp;
+	return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
+    }
     virtual void dump(ostream& str);
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
-    bool start() const { return m_start; }
-    void start(bool flag) { m_start = flag; }
 };
 
 //######################################################################
@@ -1474,11 +1493,7 @@ public:
     class Initial {};		// for creator type-overload selection
     class Settle {};		// for creator type-overload selection
     class Never {};		// for creator type-overload selection
-    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNodeVarRef* varrefp)
-	: AstNodeSenItem(fl), m_edgeType(edgeType) {
-	setOp1p(varrefp);
-    }
-    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstParseRef* varrefp)
+    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNode* varrefp)
 	: AstNodeSenItem(fl), m_edgeType(edgeType) {
 	setOp1p(varrefp);
     }
