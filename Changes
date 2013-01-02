@@ -11,7 +11,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix non-integer vpi_get_value, bug587.  [Rich Porter]
 
-****  Fix task inlining under $display, bug589.  [Holger Waechtler]
+****  Fix task inlining under $display and case, bug589, bug598.  [Holger Waechtler]
 
 ****  Fix package import of non-localparam parameter, bug591.  [Jeremy Bennett]
 
