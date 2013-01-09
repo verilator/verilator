@@ -152,6 +152,20 @@ public:
 	if (m_fallbackp) return m_fallbackp->findIdFallback(name);
 	return NULL;
     }
+private:
+    bool importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
+	if (srcp->exported()
+	    && !findIdFlat(name)) {  // Don't insert over existing entry
+	    VSymEnt* symp = new VSymEnt(graphp, srcp);
+	    symp->exported(false);  // Can't reimport an import without an export
+	    symp->imported(true);
+	    reinsert(name, symp);
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+public:
     bool import(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
 	// Import tokens from source symbol table into this symbol table
 	// Returns true if successful
@@ -159,21 +173,12 @@ public:
 	if (id_or_star != "*") {
 	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
 	    if (it != m_idNameMap.end()) {
-		if (it->second->exported()) {
-		    VSymEnt* symp = new VSymEnt(graphp, it->second);
-		    symp->exported(false);  // Can't reimport an import without an export
-		    reinsert(it->first, symp);
-		}
+		importOneSymbol(graphp, it->first, it->second);
 	    }
 	    any = true;  // Legal, though perhaps lint questionable to import nothing
 	} else {
 	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
-		if (it->second->exported()) {
-		    VSymEnt* symp = new VSymEnt(graphp, it->second);
-		    symp->exported(false);  // Can't reimport an import without an export
-		    reinsert(it->first, symp);
-		    any = true;
-		}
+		if (importOneSymbol(graphp, it->first, it->second)) any = true;
 	    }
 	}
 	return any;

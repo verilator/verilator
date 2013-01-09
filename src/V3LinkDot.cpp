@@ -153,6 +153,8 @@ public:
 	    // Not found, will add in a moment.
 	} else if (nodep==fnodep) {  // Already inserted.
 	    // Good.
+	} else if (foundp->imported()) {  // From package
+	    // We don't throw VARHIDDEN as if the import is later the symbol table's import wouldn't warn
 	} else if (nodep->castBegin() && fnodep->castBegin()
 		   && nodep->castBegin()->generate()) {
 	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
@@ -262,7 +264,7 @@ public:
 	symp->fallbackp(abovep);
 	nodep->user1p(symp);
 	checkDuplicate(abovep, nodep, name);
-	abovep->insert(name, symp);
+	abovep->reinsert(name, symp);
 	return symp;
     }
     static bool existsModScope(AstNodeModule* nodep) {
@@ -669,7 +671,8 @@ private:
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp->nodep()<<endl);
 		UINFO(4,"    found  cur=se"<<(void*)m_curSymp<<" ;; parent=se"<<(void*)foundp->parentp()<<endl);
-		if (foundp && foundp->parentp() == m_curSymp) {  // Only when on same level
+		if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
+		    && !foundp->imported()) {  // and not from package
 		    if ((findvarp->isIO() && nodep->isSignal())
 			|| (findvarp->isSignal() && nodep->isIO())) {
 			findvarp->combineType(nodep);
@@ -732,7 +735,8 @@ private:
 	    ins=true;
 	} else if (findvarp != nodep) {
 	    UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-	    if (foundp && foundp->parentp() == m_curSymp) {  // Only when on same level
+	    if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
+		&& !foundp->imported()) {  // and not from package
 		nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
 			       <<findvarp->warnMore()<<"... Location of original declaration");
 	    } else {
@@ -759,7 +763,7 @@ private:
 	    }
 	}
 	m_curSymp->import(m_statep->symsp(), srcp, nodep->name());
-	UINFO(2,"    Link Done: "<<nodep<<endl);
+	UINFO(9,"    Link Done: "<<nodep<<endl);
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
