@@ -676,6 +676,10 @@ private:
 	    // calculation would return identical values.  Therefore we can directly replace the width
 	    nodep->widthForce(nodep->rangep()->elementsConst(), nodep->rangep()->elementsConst());
 	}
+	else if (nodep->implicit()) {
+	    // Parameters may notice implicitness and change to different dtype
+	    nodep->widthForce(1,1);
+	}
 	// else width in node is correct; it was set based on keyword().width()
 	// at construction time.  Ditto signed, so "unsigned byte" etc works right.
 	nodep->cvtRangeConst();
