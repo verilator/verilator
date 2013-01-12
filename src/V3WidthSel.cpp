@@ -51,11 +51,6 @@ private:
     //  complicated GenCase/GenFor/Cell/Function call logic that all depends
     //  on if widthing top-down or just for parameters.
 #define iterateChildren DO_NOT_iterateChildern_IN_V3WidthSel
-    //
-    // NODE STATE
-    //  isBelowSeled() used insead of userp, as we're out of
-    //  non-conflicting users, and having a persistent variable means this
-    //  code can be skipped during most later stage constification calls.
 
     // METHODS
     static int debug() {
@@ -188,6 +183,8 @@ private:
     // If adding new visitors, insure V3Width's visit(TYPE) calls into here
 
     virtual void visit(AstSelBit* nodep, AstNUser*) {
+	// Select of a non-width specified part of an array, i.e. "array[2]"
+	// This select style has a lsb and msb (no user specified width)
 	UINFO(6,"SELBIT "<<nodep<<endl);
 	if (debug()>=9) nodep->backp()->dumpTree(cout,"-vsbin(-1): ");
 	// lhsp/rhsp do not need to be constant
@@ -240,7 +237,9 @@ private:
     }
 
     virtual void visit(AstSelExtract* nodep, AstNUser*) {
+	// Select of a range specified part of an array, i.e. "array[2:3]"
 	// SELEXTRACT(from,msb,lsb) -> SEL(from, lsb, 1+msb-lsb)
+	// This select style has a (msb or lsb) and width
 	UINFO(6,"SELEXTRACT "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"--SLEX0: ");
 	// Below 2 lines may change nodep->widthp()
@@ -317,6 +316,8 @@ private:
     }
 
     void replaceSelPlusMinus(AstNodePreSel* nodep) {
+	// Select of a range specified with +: or -:, i.e. "array[2+:3], [2-:3]"
+	// This select style has a lsb and width
 	UINFO(6,"SELPLUS/MINUS "<<nodep<<endl);
 	// Below 2 lines may change nodep->widthp()
 	V3Const::constifyParamsEdit(nodep->thsp()); // May relink pointed to node
@@ -389,6 +390,7 @@ private:
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// See notes above; we never iterate
+	nodep->v3fatalSrc("Shouldn't iterate in V3WidthSel");
     }
 
 public:
