@@ -233,6 +233,7 @@ class SliceVisitor : public AstNVisitor {
 	    if (!selp) {
 		nodep->user1p(fromp->castVarRef());
 		selp = NULL;
+		break;
 	    } else {
 		fromp = selp->fromp();
 		if (fromp) ++dim;

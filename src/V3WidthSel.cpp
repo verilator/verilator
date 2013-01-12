@@ -65,6 +65,7 @@ private:
     }
 
     void checkConstantOrReplace(AstNode* nodep, const string& message) {
+	// See also V3Width::checkConstantOrReplace
 	// Note can't call V3Const::constifyParam(nodep) here, as constify may change nodep on us!
 	if (!nodep->castConst()) {
 	    nodep->v3error(message);
@@ -185,33 +186,6 @@ private:
 
     // VISITORS
     // If adding new visitors, insure V3Width's visit(TYPE) calls into here
-
-    virtual void visit(AstRange* nodep, AstNUser*) {
-	// Convert all range values to constants
-	UINFO(6,"RANGE "<<nodep<<endl);
-	V3Const::constifyParamsEdit(nodep->msbp()); // May relink pointed to node
-	V3Const::constifyParamsEdit(nodep->lsbp()); // May relink pointed to node
-	checkConstantOrReplace(nodep->msbp(), "MSB of bit range isn't a constant");
-	checkConstantOrReplace(nodep->lsbp(), "LSB of bit range isn't a constant");
-	int msb = nodep->msbConst();
-	int lsb = nodep->lsbConst();
-	if (msb<lsb) {
-	    // If it's an array, ok to have either ordering, we'll just correct
-	    // So, see if we're sitting under a variable's arrayp.
-	    AstNode* huntbackp = nodep;
-	    while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
-	    if (huntbackp->backp()->castArrayDType()) {
-	    } else {
-		// Little endian bits are legal, just remember to swap
-		// Warning is in V3Width to avoid false warnings when in "off" generate if's
-		nodep->littleEndian(!nodep->littleEndian());
-	    }
-	    // Internally we'll always have msb() be the greater number
-	    // We only need to correct when doing [] AstSel extraction,
-	    // and when tracing the vector.
-	    nodep->msbp()->swapWith(nodep->lsbp());
-	}
-    }
 
     virtual void visit(AstSelBit* nodep, AstNUser*) {
 	UINFO(6,"SELBIT "<<nodep<<endl);

@@ -359,10 +359,32 @@ private:
 	}
     }
     virtual void visit(AstRange* nodep, AstNUser* vup) {
-	// If there's an edit, then processes the edit'ee (can't just rely on iterateChildren because sometimes we for(...) here ourself
 	// Real: Not allowed
 	// Signed: unsigned output, input either
-	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
+	// Convert all range values to constants
+	UINFO(6,"RANGE "<<nodep<<endl);
+	V3Const::constifyParamsEdit(nodep->msbp()); // May relink pointed to node
+	V3Const::constifyParamsEdit(nodep->lsbp()); // May relink pointed to node
+	checkConstantOrReplace(nodep->msbp(), "MSB of bit range isn't a constant");
+	checkConstantOrReplace(nodep->lsbp(), "LSB of bit range isn't a constant");
+	int msb = nodep->msbConst();
+	int lsb = nodep->lsbConst();
+	if (msb<lsb) {
+	    // If it's an array, ok to have either ordering, we'll just correct
+	    // So, see if we're sitting under a variable's arrayp.
+	    AstNode* huntbackp = nodep;
+	    while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
+	    if (huntbackp->backp()->castArrayDType()) {
+	    } else {
+		// Little endian bits are legal, just remember to swap
+		// Warning is in V3Width to avoid false warnings when in "off" generate if's
+		nodep->littleEndian(!nodep->littleEndian());
+	    }
+	    // Internally we'll always have msb() be the greater number
+	    // We only need to correct when doing [] AstSel extraction,
+	    // and when tracing the vector.
+	    nodep->msbp()->swapWith(nodep->lsbp());
+	}
 	if (vup->c()->prelim()) {
 	    nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
@@ -514,8 +536,7 @@ private:
 			      <<" bits.");
 		if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
 		    UINFO(1,"    Related node: "<<nodep<<endl);
-		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		    if (varrp) UINFO(1,"    Related depth: "<<dimension<<" dtype: "<<ddtypep<<endl);
+		    UINFO(1,"    Related dtype: "<<nodep->dtypep()<<endl);
 		}
 	    }
 	    widthCheck(nodep,"Extract Range",nodep->bitp(),selwidth,selwidth,true);
@@ -2336,6 +2357,15 @@ private:
 	// The spec doesn't state this, but if you have an array select where the selection
 	// index is NOT wide enough, you do not sign extend, but always zero extend.
 	return (nodep->castArraySel() || nodep->castSel());
+    }
+    void checkConstantOrReplace(AstNode* nodep, const string& message) {
+	// See also V3WidthSel::checkConstantOrReplace
+	// Note can't call V3Const::constifyParam(nodep) here, as constify may change nodep on us!
+	if (!nodep->castConst()) {
+	    nodep->v3error(message);
+	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
+	    pushDeletep(nodep); nodep=NULL;
+	}
     }
 
 public:
