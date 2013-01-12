@@ -260,14 +260,11 @@ private:
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, msb!=lsb);
 	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
 	    if (adtypep) {}
-	    if (msb!=lsb) {
-		AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
-		newp->start(lsb);
-		newp->length((msb - lsb) + 1);
-		nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	    } else {
-		nodep->v3error("Illegal bit select; can't bit extract from arrayed dimension: "<<errp->prettyName());
-	    }
+	    // Slice extraction
+	    AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
+	    newp->start(lsb);
+	    newp->length((msb - lsb) + 1);
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	} else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (adtypep) {} // Unused
 	    if (bfdtypep->basicp()->littleEndian()) {
@@ -367,16 +364,16 @@ private:
 	    }
 	    UINFO(6,"   new "<<newp<<endl);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	    // delete whataver we didn't use in reconstruction
-	    if (!fromp->backp()) pushDeletep(fromp); fromp=NULL;
-	    if (!rhsp->backp()) pushDeletep(rhsp); rhsp=NULL;
-	    if (!widthp->backp()) pushDeletep(widthp); widthp=NULL;
 	}
 	else {  // NULL=bad extract, or unknown node type
 	    nodep->v3error("Illegal +: or -: select; variable already selected, or bad dimension");
 	    // How to recover?  We'll strip a dimension.
 	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}
+	// delete whataver we didn't use in reconstruction
+	if (!fromp->backp()) pushDeletep(fromp); fromp=NULL;
+	if (!rhsp->backp()) pushDeletep(rhsp); rhsp=NULL;
+	if (!widthp->backp()) pushDeletep(widthp); widthp=NULL;
     }
     virtual void visit(AstSelPlus* nodep, AstNUser*) {
 	replaceSelPlusMinus(nodep);
