@@ -189,10 +189,10 @@ private:
 	// Change it variable
 	FileLine* fl = nodep->fileline();
 	AstNodeDType* dtypep
-	    = new AstArrayDType (fl,
-				 nodep->findBitDType(m_outVarps.size(),
-						     m_outVarps.size(), AstNumeric::UNSIGNED),
-				 new AstRange (fl, VL_MASK_I(m_inWidth), 0), false);
+	    = new AstUnpackArrayDType (fl,
+				       nodep->findBitDType(m_outVarps.size(),
+							   m_outVarps.size(), AstNumeric::UNSIGNED),
+				       new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	AstVar* chgVarp
 	    = new AstVar (fl, AstVarType::MODULETEMP,
@@ -237,8 +237,8 @@ private:
 	    AstVar* outvarp = outvscp->varp();
 	    FileLine* fl = nodep->fileline();
 	    AstNodeDType* dtypep
-		= new AstArrayDType (fl, outvarp->dtypep(),
-				     new AstRange (fl, VL_MASK_I(m_inWidth), 0), false);
+		= new AstUnpackArrayDType (fl, outvarp->dtypep(),
+					   new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	    AstVar* tablevarp
 		= new AstVar (fl, AstVarType::MODULETEMP,

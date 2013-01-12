@@ -310,7 +310,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     int dim = 0;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
 	    if ((dim++)==dimension) {
 		return dtypep;
 	    }
@@ -344,7 +344,7 @@ uint32_t AstNodeDType::arrayElements() {
     uint32_t entries=1;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
 	    entries *= adtypep->elementsConst();
 	    dtypep = adtypep->subDTypep();
 	}
@@ -362,8 +362,8 @@ pair<uint32_t,uint32_t> AstNodeDType::dimensions() {
     uint32_t unpacked = 0;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
-	    if (adtypep->isPacked()) packed += 1;
+	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+	    if (adtypep->castPackArrayDType()) packed += 1;
 	    else unpacked += 1;
 	    dtypep = adtypep->subDTypep();
 	}
@@ -667,10 +667,6 @@ void AstNode::dump(ostream& str) {
     if (name()!="") str<<"  "<<AstNode::quoteName(name());
 }
 
-void AstArrayDType::dump(ostream& str) {
-    this->AstNodeDType::dump(str);
-    if (isPacked()) str<<" [PACKED]";
-}
 void AstArraySel::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" [start:"<<start()<<"] [length:"<<length()<<"]";

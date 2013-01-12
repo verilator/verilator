@@ -209,7 +209,7 @@ private:
 				varp, chgVarp);
 	    }
 	}
-	else if (AstArrayDType* adtypep = dtypep->castArrayDType()) {
+	else if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb()+1; ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",

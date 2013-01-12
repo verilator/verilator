@@ -223,62 +223,54 @@ public:
     void name(const string& flag) { m_name = flag; }
 };
 
-struct AstArrayDType : public AstNodeDType {
+struct AstPackArrayDType : public AstNodeArrayDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
-private:
-    AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
-    bool		m_packed;
 public:
-    AstArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
-	: AstNodeDType(fl), m_packed(isPacked) {
+    AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
+	: AstNodeArrayDType(fl) {
 	childDTypep(dtp);  // Only for parser
 	refDTypep(NULL);
 	setOp2p(rangep);
 	dtypep(NULL);  // V3Width will resolve
+	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
 	widthFromSub(subDTypep());
     }
-    AstArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep, bool isPacked=false)
-	: AstNodeDType(fl), m_packed(isPacked) {
+    AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
+	: AstNodeArrayDType(fl) {
 	refDTypep(dtp);
 	setOp2p(rangep);
 	dtypep(this);
+	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
 	widthFromSub(subDTypep());
     }
-    ASTNODE_NODE_FUNCS(ArrayDType, ARRAYDTYPE)
-    virtual void dump(ostream& str);
-    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
-					   || (!m_refDTypep && childDTypep())); }
-    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
-	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
-    }}
-    virtual bool same(AstNode* samep) const {
-	AstArrayDType* sp = samep->castArrayDType();
-	return (m_packed==sp->m_packed
-		&& msb()==sp->msb()
-		&& subDTypep()==sp->subDTypep()
-		&& rangep()->sameTree(sp->rangep())); }  // HashedDT doesn't recurse, so need to check children
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
-    AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
-    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
-    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
-    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
-    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    AstRange*	rangep() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
-    void	rangep(AstRange* nodep) { setOp2p(nodep); }
-    // METHODS
-    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
-    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
-    virtual int widthTotalBytes() const { return elementsConst() * subDTypep()->widthTotalBytes(); }
-    int		msb() const { return rangep()->msbConst(); }
-    int		lsb() const { return rangep()->lsbConst(); }
-    int		elementsConst() const { return rangep()->elementsConst(); }
-    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
-    bool	isPacked() const { return m_packed; }
+    ASTNODE_NODE_FUNCS(PackArrayDType, PACKARRAYDTYPE)
+};
+
+struct AstUnpackArrayDType : public AstNodeArrayDType {
+    // Array data type, ie "some_dtype var_name [2:0]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // Children: RANGE (array bounds)
+public:
+    AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
+	: AstNodeArrayDType(fl) {
+	childDTypep(dtp);  // Only for parser
+	refDTypep(NULL);
+	setOp2p(rangep);
+	dtypep(NULL);  // V3Width will resolve
+	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
+	widthFromSub(subDTypep());
+    }
+    AstUnpackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
+	: AstNodeArrayDType(fl) {
+	refDTypep(dtp);
+	setOp2p(rangep);
+	dtypep(this);
+	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
+	widthFromSub(subDTypep());
+    }
+    ASTNODE_NODE_FUNCS(UnpackArrayDType, UNPACKARRAYDTYPE)
 };
 
 struct AstBasicDType : public AstNodeDType {
@@ -626,9 +618,9 @@ private:
     unsigned m_start;
     unsigned m_length;
     void init(AstNode* fromp) {
-	if (fromp && fromp->dtypep()->castArrayDType()) {
+	if (fromp && fromp->dtypep()->castNodeArrayDType()) {
 	    // Strip off array to find what array references
-	    dtypeFrom(fromp->dtypep()->castArrayDType()->subDTypep());
+	    dtypeFrom(fromp->dtypep()->castNodeArrayDType()->subDTypep());
 	}
     }
 public:
@@ -2604,7 +2596,7 @@ public:
 	AstBasicDType* bdtypep = varp->basicp();
 	m_left = bdtypep ? bdtypep->left() : 0;
 	m_right = bdtypep ? bdtypep->right() : 0;
-	if (AstArrayDType* adtypep = varp->dtypeSkipRefp()->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = varp->dtypeSkipRefp()->castNodeArrayDType()) {
 	    m_arrayLsb = adtypep->lsb();
 	    m_arrayMsb = adtypep->msb();
 	} else {

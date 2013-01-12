@@ -379,7 +379,7 @@ private:
 	    int maxmsb = 0;
 	    bool lvalue = false;
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
-		AstArrayDType* adtypep = varrefp->varp()->dtypep()->dtypeDimensionp(dimension)->castArrayDType();
+		AstNodeArrayDType* adtypep = varrefp->varp()->dtypep()->dtypeDimensionp(dimension)->castNodeArrayDType();
 		if (!adtypep) nodep->v3fatalSrc("ArraySel to type without array at same depth");
 		lvalue = varrefp->lvalue();
 		maxmsb = adtypep->elementsConst()-1;

@@ -1498,7 +1498,7 @@ public:
     //
     // Changing the width may confuse the data type resolution, so must clear TypeTable cache after use.
     void widthForce(int width, int sized) { m_width=width; m_widthMin=sized; }
-    // For backward compatibility AstArrayDType and others inherit width and signing from the subDType/base type
+    // For backward compatibility inherit width and signing from the subDType/base type
     void widthFromSub(AstNodeDType* nodep) { m_width=nodep->m_width; m_widthMin=nodep->m_widthMin; m_numeric=nodep->m_numeric; }
     //
     int	width() const { return m_width; }
@@ -1551,6 +1551,47 @@ public:
 	MemberNameMap::const_iterator it = m_members.find(name);
 	return (it==m_members.end()) ? NULL : it->second;
     }
+};
+
+struct AstNodeArrayDType : public AstNodeDType {
+    // Array data type, ie "some_dtype var_name [2:0]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // Children: RANGE (array bounds)
+private:
+    AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
+    AstNode*	rangenp() const { return op2p(); }	// op2 = Array(s) of variable
+public:
+    AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {}
+    ASTNODE_BASE_FUNCS(NodeArrayDType)
+    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+					   || (!m_refDTypep && childDTypep())); }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
+    }}
+    virtual bool same(AstNode* samep) const {
+	AstNodeArrayDType* sp = samep->castNodeArrayDType();
+	return (msb()==sp->msb()
+		&& subDTypep()==sp->subDTypep()
+		&& rangenp()->sameTree(sp->rangenp())); }  // HashedDT doesn't recurse, so need to check children
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    AstRange*	rangep() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
+    void	rangep(AstRange* nodep);
+    // METHODS
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return elementsConst() * subDTypep()->widthTotalBytes(); }
+    int		msb() const;
+    int		lsb() const;
+    int		elementsConst() const;
+    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
 };
 
 struct AstNodeSel : public AstNodeBiop {
@@ -1744,5 +1785,10 @@ inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst
 inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
 
 inline void AstNodeVarRef::init() { if (m_varp) dtypep(m_varp->dtypep()); }
+
+inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
+inline int AstNodeArrayDType::msb() const { return rangep()->msbConst(); }
+inline int AstNodeArrayDType::lsb() const { return rangep()->lsbConst(); }
+inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 
 #endif // Guard

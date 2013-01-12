@@ -374,7 +374,7 @@ private:
 	    // So, see if we're sitting under a variable's arrayp.
 	    AstNode* huntbackp = nodep;
 	    while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
-	    if (huntbackp->backp()->castArrayDType()) {
+	    if (huntbackp->backp()->castNodeArrayDType()) {
 	    } else {
 		// Little endian bits are legal, just remember to swap
 		// Warning is in V3Width to avoid false warnings when in "off" generate if's
@@ -512,7 +512,7 @@ private:
 	    int frommsb;
 	    int fromlsb;
 	    AstNodeDType* ddtypep = varrp->varp()->dtypep()->dtypeDimensionp(dimension);
-	    if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
+	    if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
 		frommsb = adtypep->msb();
 		fromlsb = adtypep->lsb();
 		if (fromlsb>frommsb) {int t=frommsb; frommsb=fromlsb; fromlsb=t; }
@@ -676,7 +676,7 @@ private:
     }
 
     // DTYPES
-    virtual void visit(AstArrayDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeArrayDType* nodep, AstNUser*) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
 	if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
 	// Iterate into subDTypep() to resolve that type and update pointer.
@@ -793,7 +793,7 @@ private:
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype determined for var");
 	if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType()
-			       || nodep->dtypeSkipRefp()->castArrayDType()
+			       || nodep->dtypeSkipRefp()->castNodeArrayDType()
 			       || nodep->dtypeSkipRefp()->castNodeClassDType())) {
 	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
 	}
@@ -1366,7 +1366,7 @@ private:
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	if (!nodep->memp()->dtypep()->skipRefp()->castArrayDType()) {
+	if (!nodep->memp()->dtypep()->skipRefp()->castNodeArrayDType()) {
 	    nodep->memp()->v3error("Unsupported: $readmem into non-array");
 	}
 	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());

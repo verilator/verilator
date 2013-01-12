@@ -86,7 +86,7 @@ private:
 #endif
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
-	AstArrayDType* arrayp = varp->dtypeSkipRefp()->castArrayDType();
+	AstNodeArrayDType* arrayp = varp->dtypeSkipRefp()->castNodeArrayDType();
 	bool isArray = arrayp;
 	int msb = isArray ? arrayp->msb() : 0;
 	int lsb = isArray ? arrayp->lsb() : 0;

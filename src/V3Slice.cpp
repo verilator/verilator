@@ -253,7 +253,7 @@ class SliceVisitor : public AstNVisitor {
 	AstNode* topp = nodep;
 	for (unsigned i = start; i < start + count; ++i) {
 	    AstNodeDType* dtypep = varp->dtypep()->dtypeDimensionp(i-1);
-	    AstArrayDType* adtypep = dtypep->castArrayDType();
+	    AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType();
 	    if (!adtypep) nodep->v3fatalSrc("insertImplicit tried to expand an array without an ArrayDType");
 	    vlsint32_t msb = adtypep->msb();
 	    vlsint32_t lsb = adtypep->lsb();

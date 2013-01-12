@@ -77,8 +77,8 @@ private:
 	if ((int)nodep->width() > v3Global.opt.traceMaxWidth()) return "Wide bus > --trace-max-width bits";
 	if ((int)nodep->dtypep()->arrayElements() > v3Global.opt.traceMaxArray()) return "Wide memory > --trace-max-array ents";
 	if (!(nodep->dtypeSkipRefp()->castBasicDType()
-	      || (nodep->dtypeSkipRefp()->castArrayDType()
-		  && (nodep->dtypeSkipRefp()->castArrayDType()->subDTypep()
+	      || (nodep->dtypeSkipRefp()->castNodeArrayDType()
+		  && (nodep->dtypeSkipRefp()->castNodeArrayDType()->subDTypep()
 		      ->skipRefp()->castBasicDType())))) {
 	    return "Unsupported: Multi-dimensional array";
 	}

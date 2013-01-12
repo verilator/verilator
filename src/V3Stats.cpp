@@ -93,7 +93,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_counting && nodep->dtypep()) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
-	    if (nodep->dtypeSkipRefp()->castArrayDType()) ++m_statVarArray;
+	    if (nodep->dtypeSkipRefp()->castPackArrayDType()) ++m_statVarArray;
 	    else m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();
 	    if (int(m_statVarWidths.size()) <= nodep->width()) {
 		m_statVarWidths.resize(nodep->width()+5);
@@ -197,7 +197,7 @@ public:
 	V3Stats::addStat(m_stage, "Instruction count, TOTAL", m_statInstr);
 	V3Stats::addStat(m_stage, "Instruction count, fast",  m_statInstrFast);
 	// Vars
-	V3Stats::addStat(m_stage, "Vars, arrayed", m_statVarArray);
+	V3Stats::addStat(m_stage, "Vars, packed arrayed", m_statVarArray);
 	V3Stats::addStat(m_stage, "Vars, clock attribute", m_statVarClock);
 	V3Stats::addStat(m_stage, "Var space, non-arrays, bytes", m_statVarBytes);
 	if (m_statVarScpBytes) {

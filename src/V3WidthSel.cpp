@@ -78,7 +78,7 @@ private:
 	AstNodeDType* ddtypep = bfdtypep;
 	ddtypep = ddtypep->dtypeDimensionp(dimension);
 	if (debug()>=9 &&ddtypep) ddtypep->dumpTree(cout,"-ddtypep: ");
-	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
 	    return adtypep;
 	}
 	else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
@@ -195,7 +195,7 @@ private:
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
 	if (debug()>=9) ddtypep->dumpTree(cout,"-ddtypep: ");
 	if (debug()>=9) nodep->dumpTree(cout,"-vsbmd: ");
-	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
 	    AstNode* subp = rhsp;
 	    if (adtypep->lsb()!=0 || adtypep->msb()<0) {
@@ -258,7 +258,7 @@ private:
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
 	AstNodeDType* ddtypep = dtypeForExtractp(nodep, basefromp, dimension, msb!=lsb);
-	if (AstArrayDType* adtypep = ddtypep->castArrayDType()) {
+	if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
 	    if (adtypep) {}
 	    // Slice extraction
 	    AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);

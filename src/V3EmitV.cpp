@@ -497,7 +497,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putfs(nodep,"const ");
 	nodep->subDTypep()->iterateAndNext(*this);
     }
-    virtual void visit(AstArrayDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeArrayDType* nodep, AstNUser*) {
 	nodep->subDTypep()->iterateAndNext(*this);
 	nodep->rangep()->iterateAndNext(*this);
     }

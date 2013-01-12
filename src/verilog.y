@@ -3433,7 +3433,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstRange* rangep,
 	while (rangep) {
 	    AstRange* prevp = rangep->backp()->castRange();
 	    if (prevp) rangep->unlinkFrBack();
-	    arrayp = new AstArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep, isPacked);
+	    if (isPacked) {
+	        arrayp = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+	    } else {
+	        arrayp = new AstUnpackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+	    }
 	    rangep = prevp;
 	}
     }
