@@ -342,7 +342,7 @@ private:
 		    // SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
 		    newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       newSubLsbOf(rhsp, basefromp),
+				       newSubNeg(rhsp, adtypep->lsb()),
 				       widthp);
 		}
 	    } else if (nodep->castSelMinus()) {
