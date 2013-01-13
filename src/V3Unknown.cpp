@@ -323,16 +323,14 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->user1SetOnce()) {
 	    // Guard against reading/writing past end of bit vector array
-	    int maxmsb = 0;
-	    bool lvalue = false;
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
+	    bool lvalue = false;
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
 		lvalue = varrefp->lvalue();
-		maxmsb = (varrefp->varp()->width()-1);
-	    } else {
-		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
-		maxmsb = basefromp->width()-1;
 	    }
+	    // Find range of dtype we are selecting from
+	    // Similar code in V3Const::warnSelect
+	    int maxmsb = nodep->fromp()->dtypep()->width()-1;
 	    int maxlsb = maxmsb - nodep->width() + 1;
 	    if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
 	    V3Number maxlsbnum (nodep->fileline(), nodep->lsbp()->width(), maxlsb);
@@ -375,22 +373,25 @@ private:
 	    if (debug()==9) nodep->dumpTree(cout,"-in: ");
 	    // Guard against reading/writing past end of arrays
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
-	    int dimension      = AstArraySel::dimension(nodep->fromp());
-	    int maxmsb = 0;
 	    bool lvalue = false;
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
-		AstNodeArrayDType* adtypep = varrefp->varp()->dtypep()->dtypeDimensionp(dimension)->castNodeArrayDType();
-		if (!adtypep) nodep->v3fatalSrc("ArraySel to type without array at same depth");
 		lvalue = varrefp->lvalue();
-		maxmsb = adtypep->elementsConst()-1;
-	    } else if (AstConst* lhconstp = basefromp->castConst()) {
+	    } else if (basefromp->castConst()) {
 		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
-		maxmsb = lhconstp->width();
 	    } else {
 		nodep->v3fatalSrc("No VarRef or Const under ArraySel\n");
 	    }
+	    // Find range of dtype we are selecting from
+	    int declElements = -1;
+	    AstNodeDType* dtypep = nodep->fromp()->dtypep()->skipRefp();
+	    if (!dtypep) nodep->v3fatalSrc("Select of non-selectable type");
+	    if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+		declElements = adtypep->elementsConst();
+	    } else {
+		nodep->v3error("Select from non-array "<<dtypep->prettyTypeName());
+	    }
 	    if (debug()>=9) nodep->dumpTree(cout,"arraysel_old: ");
-	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), maxmsb);
+	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), declElements-1);
 
 	    // See if the condition is constant true
 	    AstNode* condp = new AstLte (nodep->fileline(),
