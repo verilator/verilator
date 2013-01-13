@@ -716,6 +716,8 @@ struct AstSel : public AstNodeTriop {
     // Multiple bit range extraction
     // Parents: math|stmt
     // Children: varref|arraysel, math, constant math
+    // Tempting to have an lvalue() style method here as LHS selects are quite
+    // different, but that doesn't play well with V3Inst and bidirects which don't know direction
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
 	if (widthp->castConst()) {

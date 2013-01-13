@@ -307,6 +307,8 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     //	   DECL:	VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (DT RANGE3))))
     //	      *or*	VAR a (ARRAYSEL0 (ARRAYSEL1 (ARRAYSEL2 (ARRAYSEL3 (DT))))
     //	   SEL1 needs to select from entire variable which is a pointer to ARRAYSEL0
+    // TODO this function should be removed in favor of recursing the dtype(),
+    // as that allows for more complicated data types.
     int dim = 0;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
@@ -403,7 +405,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable
     while (nodep) {
 	if (nodep->castArraySel()) { nodep=nodep->castArraySel()->fromp(); continue; }
 	else if (nodep->castSel()) { nodep=nodep->castSel()->fromp(); continue; }
-	// AstNodeSelPre stashes the associated variable under a ATTROF of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
+	// AstNodeSelPre stashes the associated variable under an ATTROF of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
 	else if (nodep->castAttrOf()) { nodep=nodep->castAttrOf()->fromp(); continue; }
 	else if (nodep->castNodePreSel()) {
 	    if (nodep->castNodePreSel()->attrp()) {
