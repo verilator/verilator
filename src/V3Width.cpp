@@ -504,15 +504,11 @@ private:
 	    checkCvtUS(nodep->bitp());
 	    //
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
-	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
-	    int dimension      = AstArraySel::dimension(nodep->fromp());
-	    AstNodeVarRef* varrp = basefromp->castNodeVarRef();
-	    if (!varrp) nodep->v3fatalSrc("No VarRef found under ArraySel(s)");
 	    //
 	    int frommsb;
 	    int fromlsb;
-	    AstNodeDType* ddtypep = varrp->varp()->dtypep()->dtypeDimensionp(dimension);
-	    if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
+	    AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+	    if (AstNodeArrayDType* adtypep = fromDtp->castNodeArrayDType()) {
 		frommsb = adtypep->msb();
 		fromlsb = adtypep->lsb();
 		if (fromlsb>frommsb) {int t=frommsb; frommsb=fromlsb; fromlsb=t; }
@@ -521,9 +517,8 @@ private:
 		nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
 	    }
 	    else {
-		UINFO(1,"    Related var dtypep: "<<varrp->varp()->dtypep()<<endl);
-		UINFO(1,"    Related ddtypep: "<<ddtypep<<endl);
-		UINFO(1,"    Related dimension: "<<dimension<<endl);
+		// Note PackArrayDType doesn't use an ArraySel but a normal Sel.
+		UINFO(1,"    Related dtype: "<<fromDtp<<endl);
 		nodep->v3fatalSrc("Array reference exceeds dimension of array");
 		frommsb = fromlsb = 0;
 	    }

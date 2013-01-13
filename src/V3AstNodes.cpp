@@ -386,20 +386,6 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-// Special operators
-int AstArraySel::dimension(AstNode* nodep) {
-    // How many dimensions is this reference from the base variable?
-    // nodep is typically the fromp() of a select; thus the first select
-    // is selecting from the entire variable type - effectively dimension 0.
-    // Dimension passed to AstVar::dtypeDimensionp; see comments there
-    int dim = 0;
-    while (nodep) {
-	if (nodep->castNodeSel()) { dim++; nodep=nodep->castNodeSel()->fromp(); continue; }
-	if (nodep->castNodePreSel()) { dim++; nodep=nodep->castNodePreSel()->fromp(); continue; }
-	break;
-    }
-    return dim;
-}
 AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
     // Else AstArraySel etc; search for the base
     while (nodep) {

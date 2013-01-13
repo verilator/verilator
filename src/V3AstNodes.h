@@ -650,7 +650,6 @@ public:
     void     start(unsigned start) { m_start = start; }
     unsigned start() const { return m_start; }
     // Special operators
-    static int dimension(AstNode* nodep); ///< How many dimensions is this reference from the base variable?
     static AstNode* baseFromp(AstNode* nodep);	///< What is the base variable (or const) this dereferences?
     virtual void dump(ostream& str);
 };
