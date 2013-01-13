@@ -1551,6 +1551,9 @@ public:
 	MemberNameMap::const_iterator it = m_members.find(name);
 	return (it==m_members.end()) ? NULL : it->second;
     }
+    int lsb() const { return 0; }
+    int msb() const { return dtypep()->width()-1; }  // Packed classes look like arrays
+    int msbMaxSelect() const { return msb(); }
 };
 
 struct AstNodeArrayDType : public AstNodeDType {
@@ -1563,6 +1566,8 @@ private:
 public:
     AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {}
     ASTNODE_BASE_FUNCS(NodeArrayDType)
+    virtual void dump(ostream& str);
+    virtual void dumpSmall(ostream& str);
     virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
 					   || (!m_refDTypep && childDTypep())); }
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {

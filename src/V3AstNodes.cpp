@@ -748,6 +748,14 @@ void AstNodeDType::dumpSmall(ostream& str) {
     if (!widthSized()) str<<"/"<<widthMin();
     str<<")";
 }
+void AstNodeArrayDType::dumpSmall(ostream& str) {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"["<<msb()<<":"<<lsb()<<"]";
+}
+void AstNodeArrayDType::dump(ostream& str) {
+    this->AstNodeDType::dump(str);
+    str<<" ["<<msb()<<":"<<lsb()<<"]";
+}
 void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<"  L"<<level();
