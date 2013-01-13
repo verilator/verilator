@@ -12,17 +12,12 @@ $Self->{verilated_randReset} = 1;  # allow checking if we initialize vars to zer
 compile (
 	 fails=>1,
 	 expect=>
-'%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: d_bitz
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: d_logicz
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: d_regz
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: d_real
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: d_realtime
-%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-%Error: Exiting due to.*',
+'%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is bit
+.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
+.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
+.*%Error: Exiting due to.*',
 	 );
 
 ok(1);

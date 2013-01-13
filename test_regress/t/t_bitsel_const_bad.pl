@@ -11,9 +11,8 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_bitsel_const_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: b
-.*
-%Error: Exiting due to.*',
+'%Error: t/t_bitsel_const_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+.*%Error: Exiting due to.*',
 	 );
 
 ok(1);

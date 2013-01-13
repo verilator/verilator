@@ -521,6 +521,9 @@ private:
 		nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
 	    }
 	    else {
+		UINFO(1,"    Related var dtypep: "<<varrp->varp()->dtypep()<<endl);
+		UINFO(1,"    Related ddtypep: "<<ddtypep<<endl);
+		UINFO(1,"    Related dimension: "<<dimension<<endl);
 		nodep->v3fatalSrc("Array reference exceeds dimension of array");
 		frommsb = fromlsb = 0;
 	    }
@@ -545,22 +548,34 @@ private:
 
     virtual void visit(AstSelBit* nodep, AstNUser* vup) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
+	nodep->fromp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->thsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
 	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelBit should disappear after widthSel");
     }
     virtual void visit(AstSelExtract* nodep, AstNUser* vup) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
+	nodep->fromp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->thsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
 	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelExtract should disappear after widthSel");
     }
     virtual void visit(AstSelPlus* nodep, AstNUser* vup) {
+	nodep->fromp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->thsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
 	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelPlus should disappear after widthSel");
     }
     virtual void visit(AstSelMinus* nodep, AstNUser* vup) {
+	nodep->fromp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
+	nodep->thsp()->iterateAndNext(*this,WidthVP(0,0,PRELIM).p()); //FINAL in AstSel
 	nodep->attrp()->iterateAndNext(*this,WidthVP(0,0,FINAL).p());
 	AstNode* selp = V3Width::widthSelNoIterEdit(nodep); if (selp!=nodep) { nodep=NULL; selp->iterate(*this,vup); return; }
 	nodep->v3fatalSrc("AstSelMinus should disappear after widthSel");

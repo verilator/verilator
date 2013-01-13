@@ -11,15 +11,11 @@ compile (
 	 fails=>$Self->{v3},
 	 nc=>0,  # Need to get it not to give the prompt
 	 expect=>
-q{%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: dimn
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal range select; variable already selected, or bad dimension
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: dim0
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: dim1
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal \+: or -: select; variable already selected, or bad dimension
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension: dim0nv
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; variable already selected, or bad dimension
+q{%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is bit
+.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is bit
+.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal \+: or -: select; type already selected, or bad dimension: type is UNPACKARRAYDTYPE
+.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
 .*%Error: Exiting due to.*},
 	 );
 
