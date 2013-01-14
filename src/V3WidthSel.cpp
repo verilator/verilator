@@ -218,7 +218,7 @@ private:
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
-	else if (ddtypep->castNodeClassDType()) {
+	else if (ddtypep->castNodeClassDType()) {  // It's packed, so a bit from the packed struct
 	    // SELBIT(range, index) -> SEL(array, index, 1)
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
