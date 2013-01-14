@@ -26,9 +26,9 @@ extern "C" int mon_check();
 
    reg		onebit		/*verilator public_flat_rw @(posedge clk) */;
    reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
-   reg [4:3][2:1] fourthreetwoone /*verilator public_flat_rw @(posedge clk) */;
+   reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
 
-   reg [3:2][61:0] quads	/*verilator public_flat_rw @(posedge clk) */;
+   reg [61:0] 	quads[3:2]	/*verilator public_flat_rw @(posedge clk) */;
 
    reg [31:0] 	   count	/*verilator public_flat_rd */;
    reg [31:0] 	   half_count	/*verilator public_flat_rd */;
