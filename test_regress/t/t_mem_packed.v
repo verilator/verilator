@@ -92,8 +92,8 @@ module t (/*AUTOARG*/
    end
 
    // Test for mixed implicit/explicit dimensions and all implicit packed
-   logic [3:0][7:0][1:0] vld [1:0][1:0];
-   logic [3:0][7:0][1:0] vld2;
+   bit [3:0][7:0][1:0] vld [1:0][1:0];
+   bit [3:0][7:0][1:0] vld2;
 
    // There are specific nodes for Or, Xor, Xnor and And
    logic            vld_or;
@@ -118,12 +118,12 @@ module t (/*AUTOARG*/
 
    // Bit reductions should be cloned, other unary operations should clone the
    // entire assign.
-   logic [3:0][7:0][1:0] not_lhs;
-   logic [3:0][7:0][1:0] not_rhs;
+   bit [3:0][7:0][1:0] not_lhs;
+   bit [3:0][7:0][1:0] not_rhs;
    assign not_lhs = ~not_rhs;
 
    // Test an AstNodeUniop that shouldn't be expanded
-   logic [3:0][7:0][1:0] vld2_inv;
+   bit [3:0][7:0][1:0] vld2_inv;
    assign vld2_inv = ~vld2;
 
    initial begin
