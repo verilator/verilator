@@ -342,11 +342,11 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     return NULL;
 }
 
-uint32_t AstNodeDType::arrayElements() {
+uint32_t AstNodeDType::arrayUnpackedElements() {
     uint32_t entries=1;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+	if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
 	    entries *= adtypep->elementsConst();
 	    dtypep = adtypep->subDTypep();
 	}
@@ -753,6 +753,13 @@ void AstNodeModule::dump(ostream& str) {
 void AstPackageImport::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<packagep();
+}
+void AstSel::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (declRange().ranged()) {
+	str<<" decl["<<declRange().left()<<":"<<declRange().right()<<"]";
+	if (declElWidth()!=1) str<<"/"<<declElWidth();
+    }
 }
 void AstTypeTable::dump(ostream& str) {
     this->AstNode::dump(str);

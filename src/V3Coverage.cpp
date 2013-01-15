@@ -86,7 +86,7 @@ private:
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";
 	}
-	if ((nodep->width()*nodep->dtypep()->arrayElements()) > 256) return "Wide bus/array > 256 bits";
+	if ((nodep->width()*nodep->dtypep()->arrayUnpackedElements()) > 256) return "Wide bus/array > 256 bits";
 	// We allow this, though tracing doesn't
 	// if (nodep->arrayp(1)) return "Unsupported: Multi-dimensional array";
 	return NULL;
@@ -209,7 +209,7 @@ private:
 				varp, chgVarp);
 	    }
 	}
-	else if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+	else if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb()+1; ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",

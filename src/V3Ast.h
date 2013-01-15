@@ -560,8 +560,10 @@ struct VNumRange {
     int lsb() const { return m_lsb; }
     int left() const { return littleEndian()?lsb():msb(); }  // How to show a declaration
     int right() const { return littleEndian()?msb():lsb(); }
+    int elements() const { return msb()-lsb()+1; }
     bool ranged() const { return m_ranged; }
     bool littleEndian() const { return m_littleEndian; }
+    int msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool representableByWidth() const  // Could be represented by just width=1, or [width-1:0]
 	{ return (!m_ranged || (m_lsb==0 && m_msb>=1 && !m_littleEndian)); }
 };
@@ -1515,7 +1517,7 @@ public:
     void generic(bool flag) { m_generic = flag; }
     AstNodeDType* dtypeDimensionp(int depth);
     pair<uint32_t,uint32_t> dimensions();
-    uint32_t	arrayElements();	// 1, or total multiplication of all dimensions
+    uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
 };
 

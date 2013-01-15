@@ -8,12 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-         v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
-'%Error: t/t_mem_packed_assign_bad.v:\d+: Unsupported: Assignment between packed arrays of different dimensions
-.*',
-	 );
+    );
+
+execute (
+    check_finished=>1,
+    );
 
 ok(1);
 1;

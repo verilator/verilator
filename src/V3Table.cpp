@@ -349,7 +349,8 @@ private:
 	    AstVarScope* vsc2p= *it;
 	    AstVar* var2p = vsc2p->varp();
 	    if (var1p->width() == var2p->width()
-		&& var1p->dtypep()->arrayElements() == var2p->dtypep()->arrayElements()) {
+		&& (var1p->dtypep()->arrayUnpackedElements()
+		    == var2p->dtypep()->arrayUnpackedElements())) {
 		AstNode* init1p = var1p->valuep()->castInitArray();
 		AstNode* init2p = var2p->valuep()->castInitArray();
 		if (init1p->sameTree(init2p)) {

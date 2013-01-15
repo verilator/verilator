@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
 
    /* verilator lint_off WIDTH */
    always @ (posedge clk) begin
-      // LHS is a 2D packed array, RHS is 1D packed or Const. Unsupported.
+      // LHS is a 2D packed array, RHS is 1D packed or Const. Allowed now.
       ch01                  <= {{2{28'd4}}};
       ch02                  <= {{2{cyc}}};
       ch03                  <= 56'd0;

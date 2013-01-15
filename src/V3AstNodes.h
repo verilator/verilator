@@ -717,8 +717,13 @@ struct AstSel : public AstNodeTriop {
     // Children: varref|arraysel, math, constant math
     // Tempting to have an lvalue() style method here as LHS selects are quite
     // different, but that doesn't play well with V3Inst and bidirects which don't know direction
+private:
+    VNumRange	m_declRange;	// Range of the 'from' array if isRanged() is set, else invalid
+    int		m_declElWidth;	// If a packed array, the number of bits per element
+public:
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
+	m_declElWidth = 1;
 	if (widthp->castConst()) {
 	    dtypeSetLogicSized(widthp->castConst()->toUInt(),
 			       widthp->castConst()->toUInt(),
@@ -728,9 +733,11 @@ struct AstSel : public AstNodeTriop {
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
 	:AstNodeTriop(fl, fromp,
 		      new AstConst(fl,lsb), new AstConst(fl,bitwidth)) {
+	m_declElWidth = 1;
 	dtypeSetLogicSized(bitwidth,bitwidth,AstNumeric::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel, SEL)
+    virtual void dump(ostream& str);
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
 	out.opSel(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
@@ -752,6 +759,10 @@ struct AstSel : public AstNodeTriop {
     int		widthConst() const { return widthp()->castConst()->toSInt(); }
     int		lsbConst()   const { return lsbp()->castConst()->toSInt(); }
     int		msbConst()   const { return lsbConst()+widthConst()-1; }
+    VNumRange& declRange() { return m_declRange; }
+    void declRange(const VNumRange& flag) { m_declRange = flag; }
+    int declElWidth() const { return m_declElWidth; }
+    void declElWidth(int flag) { m_declElWidth = flag; }
 };
 
 struct AstMemberSel : public AstNodeMath {
@@ -2593,11 +2604,11 @@ public:
 	, m_showname(showname) {
 	dtypeFrom(varp);
 	m_code = 0;
-	m_codeInc = varp->dtypep()->arrayElements() * varp->dtypep()->widthWords();
+	m_codeInc = varp->dtypep()->arrayUnpackedElements() * varp->dtypep()->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
 	m_left = bdtypep ? bdtypep->left() : 0;
 	m_right = bdtypep ? bdtypep->right() : 0;
-	if (AstNodeArrayDType* adtypep = varp->dtypeSkipRefp()->castNodeArrayDType()) {
+	if (AstUnpackArrayDType* adtypep = varp->dtypeSkipRefp()->castUnpackArrayDType()) {
 	    m_arrayLsb = adtypep->lsb();
 	    m_arrayMsb = adtypep->msb();
 	} else {

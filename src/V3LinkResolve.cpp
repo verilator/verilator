@@ -203,7 +203,7 @@ private:
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {  // Maybe varxref - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   varrefp->cloneTree(false)));
-	    } else if (AstMemberSel* fromp = nodep->fromp()->castMemberSel()) {
+	    } else if (AstMemberSel* fromp = basefromp->castMemberSel()) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
 					   fromp->cloneTree(false)));
 	    } else {

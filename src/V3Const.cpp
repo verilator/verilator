@@ -377,30 +377,12 @@ private:
 	}
 	// Find range of dtype we are selecting from
 	// Similar code in V3Unknown::AstSel
-	int declMsbMaxSelect = -1;
-	int declLsb = -1;
-	bool doit = false;
-	AstNodeDType* dtypep = nodep->fromp()->dtypep()->skipRefp();
-	if (!dtypep) nodep->v3fatalSrc("Select of non-selectable type");
-	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
-	    declMsbMaxSelect = adtypep->msbMaxSelect();
-	    declLsb = adtypep->lsb();
-	    doit = true;
-	} else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
-	    declMsbMaxSelect = adtypep->msbMaxSelect();
-	    declLsb = adtypep->lsb();
-	    doit = (!adtypep->isRanged() || adtypep->msb()); // else it's non-resolvable parameterized
-	} else if (AstNodeClassDType* adtypep = dtypep->castNodeClassDType()) {
-	    declMsbMaxSelect = adtypep->msbMaxSelect();
-	    declLsb = adtypep->lsb();
-	    doit = true;
-	} else {
-	    nodep->v3error("Select from non-selectable "<<dtypep->prettyTypeName());
-	}
+	bool doit = true;
 	if (m_warn
 	    && nodep->lsbp()->castConst()
 	    && nodep->widthp()->castConst()
 	    && doit) {
+	    int maxDeclBit = nodep->declRange().msbMaxSelect()*nodep->declElWidth() + (nodep->declElWidth()-1);
 	    if (nodep->lsbp()->castConst()->num().isFourState()
 		|| nodep->widthp()->castConst()->num().isFourState()) {
 		nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -408,14 +390,19 @@ private:
 		// Replacing nodep will make a mess above, so we replace the offender
 		replaceZero(nodep->lsbp());
 	    }
-	    else if ((nodep->msbConst() > declMsbMaxSelect)
-		     || (nodep->lsbConst() > declMsbMaxSelect)) {
+	    else if (nodep->declRange().ranged()
+		     && (nodep->msbConst() > maxDeclBit
+			 || nodep->lsbConst() > maxDeclBit)) {
 		// See also warning in V3Width
+		// Must adjust by element width as declRange() is in number of elements
 		nodep->v3warn(SELRANGE, "Selection index out of range: "
-			      <<nodep->msbConst()<<":"<<nodep->lsbConst()
-			      <<" outside "<<declMsbMaxSelect<<":0"
-			      <<(declLsb>=0 ? ""
-				 :" (adjusted +"+cvtToStr(-declLsb)+" to account for negative lsb)"));
+			      <<(nodep->msbConst()/nodep->declElWidth())
+			      <<":"<<(nodep->lsbConst()/nodep->declElWidth())
+			      <<" outside "<<nodep->declRange().msbMaxSelect()<<":0"
+			      <<(nodep->declRange().lsb()>=0 ? ""
+				 :(" (adjusted +"+cvtToStr(-nodep->declRange().lsb())
+				   +" to account for negative lsb)")));
+		UINFO(1,"    Related Raw index is "<<nodep->msbConst()<<":"<<nodep->lsbConst()<<endl);
 		// Don't replace with zero, we'll do it later
 	    }
 	}

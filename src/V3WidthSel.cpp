@@ -196,14 +196,38 @@ private:
 	FromData fromdata = fromDataForArray(nodep, fromp, false);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
-	if (ddtypep->castNodeArrayDType()) {
+	UINFO(6,"  ddtypep "<<ddtypep<<endl);
+	if (AstUnpackArrayDType* adtypep = ddtypep->castUnpackArrayDType()) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
 	    AstNode* subp = rhsp;
 	    if (fromRange.lsb()!=0 || fromRange.msb()<0) {
 		subp = newSubNeg (subp, fromRange.lsb());
 	    }
-	    AstArraySel* newp = new AstArraySel	(nodep->fileline(),
+	    AstArraySel* newp = new AstArraySel (nodep->fileline(),
 						 fromp, subp);
+	    newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
+	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	}
+	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+	    // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
+	    AstNode* subp = rhsp;
+	    if (fromRange.lsb()!=0 || fromRange.msb()<0) {
+		subp = newSubNeg (subp, fromRange.lsb());
+	    }
+	    if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
+		adtypep->v3fatalSrc("Array extraction with width miscomputed "
+				    <<adtypep->width()<<"/"<<fromRange.elements());
+	    int elwidth = adtypep->width() / fromRange.elements();
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       new AstMul(nodep->fileline(),
+						  new AstConst(nodep->fileline(),AstConst::Unsized32(),elwidth),
+						  newSubLsbOf(rhsp, fromRange)),
+				       new AstConst (nodep->fileline(),AstConst::Unsized32(),elwidth));
+	    newp->declRange(fromRange);
+	    newp->declElWidth(elwidth);
+	    newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
@@ -214,6 +238,7 @@ private:
 				       newSubLsbOf(rhsp, fromRange),
 				       // Unsized so width from user
 				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
+	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
@@ -225,6 +250,7 @@ private:
 				       newSubLsbOf(rhsp, fromRange),
 				       // Unsized so width from user
 				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
+	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
@@ -257,13 +283,14 @@ private:
 	FromData fromdata = fromDataForArray(nodep, fromp, false);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
-	if (ddtypep->castNodeArrayDType()) {
+	if (ddtypep->castUnpackArrayDType()) {
 	    // Slice extraction
 	    AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
 	    newp->start(lsb);
 	    newp->length((msb - lsb) + 1);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	} else if (ddtypep->castBasicDType()) {
+	}
+	else if (ddtypep->castBasicDType()) {
 	    if (fromRange.littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
@@ -278,10 +305,12 @@ private:
 				       fromp,
 				       newSubLsbOf(lsbp, fromRange),
 				       widthp);
+	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    //if (debug()>=9) newp->dumpTree(cout,"--SELEXnew: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
-	} else if (ddtypep->castNodeClassDType()) {
+	}
+	else if (ddtypep->castNodeClassDType()) {
 	    // Classes aren't little endian
 	    if (lsb > msb) {
 		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
@@ -293,6 +322,7 @@ private:
 				       fromp,
 				       newSubLsbOf(lsbp, fromRange),
 				       widthp);
+	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    //if (debug()>=9) newp->dumpTree(cout,"--SELEXnew: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
@@ -361,6 +391,7 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Bad Case");
 	    }
+	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}

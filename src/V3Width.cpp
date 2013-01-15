@@ -417,7 +417,7 @@ private:
 		nodep->dtypeSetLogicBool(); return;
 	    }
 	    int width = nodep->widthConst();
-	    nodep->dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED);
+	    if (!nodep->dtypep()) nodep->v3fatalSrc("dtype wasn't set") // by V3WidthSel
 	    if (nodep->lsbp()->castConst()
 		&& nodep->msbConst() < nodep->lsbConst()) {
 		nodep->v3error("Unsupported: MSB < LSB of bit extract: "
@@ -437,31 +437,29 @@ private:
 	    }
 	    // Check bit indexes.
 	    // What is the MSB?  We want the true MSB, not one starting at 0,
-	    // because a 4 bit index is required to look at a one-bit variable[15:15]
+	    // because a 4 bit index is required to look at a one-bit variable[15:15] and 5 bits for [15:-2]
 	    int frommsb = nodep->fromp()->width() - 1;
 	    int fromlsb = 0;
-	    AstNodeVarRef* varrp = nodep->fromp()->castNodeVarRef();
-	    if (varrp
-		&& varrp->varp()->basicp()
-		&& varrp->varp()->basicp()->isRanged()) {	// Selecting a bit from a multibit register
-		frommsb = varrp->varp()->basicp()->msbMaxSelect();  // Corrected for negative lsb
-		fromlsb = varrp->varp()->basicp()->lsb();
+	    int elw = nodep->declElWidth();  // Must adjust to tell user bit ranges
+	    if (nodep->declRange().ranged()) {
+		frommsb = nodep->declRange().msbMaxSelect()*elw + (elw-1);  // Corrected for negative lsb
+		fromlsb = nodep->declRange().lsb()*elw;
+	    } else {
+		//nodep->v3fatalSrc("Should have been declRanged in V3WidthSel");
 	    }
 	    int selwidth = V3Number::log2b(frommsb+1-1)+1;	// Width to address a bit
 	    nodep->fromp()->iterateAndNext(*this,WidthVP(selwidth,selwidth,FINAL).p());
 	    nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,FINAL).p());
 	    if (widthBad(nodep->lsbp(),selwidth,selwidth)
 		&& nodep->lsbp()->width()!=32) {
-		nodep->v3warn(WIDTH,"Bit extraction of var["<<frommsb<<":"<<fromlsb<<"] requires "
-			      <<selwidth<<" bit index, not "
-			      <<nodep->lsbp()->width()
-			      <<(nodep->lsbp()->width()!=nodep->lsbp()->widthMin()
-				 ?" or "+cvtToStr(nodep->lsbp()->widthMin()):"")
-			      <<" bits.");
 		if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
+		    nodep->v3warn(WIDTH,"Bit extraction of var["<<(frommsb/elw)<<":"<<(fromlsb/elw)<<"] requires "
+				  <<(selwidth/elw)<<" bit index, not "
+				  <<(nodep->lsbp()->width()/elw)
+				  <<(nodep->lsbp()->width()!=nodep->lsbp()->widthMin()
+				     ?" or "+cvtToStr(nodep->lsbp()->widthMin()/elw):"")
+				  <<" bits.");
 		    UINFO(1,"    Related node: "<<nodep<<endl);
-		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		    if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
 		}
 	    }
 	    if (nodep->lsbp()->castConst() && nodep->msbConst() > frommsb) {
@@ -480,8 +478,6 @@ private:
 				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
 				   <<" outside "<<frommsb<<":"<<fromlsb);
 		    UINFO(1,"    Related node: "<<nodep<<endl);
-		    if (varrp) UINFO(1,"    Related var: "<<varrp->varp()<<endl);
-		    if (varrp) UINFO(1,"    Related dtype: "<<varrp->varp()->dtypep()<<endl);
 		}
 	    }
 	    // iterate FINAL is two blocks above
@@ -508,7 +504,7 @@ private:
 	    int frommsb;
 	    int fromlsb;
 	    AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
-	    if (AstNodeArrayDType* adtypep = fromDtp->castNodeArrayDType()) {
+	    if (AstUnpackArrayDType* adtypep = fromDtp->castUnpackArrayDType()) {
 		frommsb = adtypep->msb();
 		fromlsb = adtypep->lsb();
 		if (fromlsb>frommsb) {int t=frommsb; frommsb=fromlsb; fromlsb=t; }
@@ -694,7 +690,13 @@ private:
 	// Cleanup array size
 	nodep->rangep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->dtypep(nodep);  // The array itself, not subDtype
-	nodep->widthFromSub(nodep->subDTypep());
+	if (nodep->castUnpackArrayDType()) {
+	    // Historically array elements have width of the ref type not the full array
+	    nodep->widthFromSub(nodep->subDTypep());
+	} else {
+	    int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
+	    nodep->widthForce(width,width);
+	}
 	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstBasicDType* nodep, AstNUser*) {
@@ -1241,11 +1243,13 @@ private:
 	//if (debug()) nodep->dumpTree(cout,"  AssignPre: ");
 	AstNodeDType* oldAssDTypep = m_assDTypep;
 	{
+	    //if (debug()) nodep->dumpTree(cout,"-    assin:  ");
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    if (!nodep->lhsp()->dtypep()) nodep->v3fatalSrc("How can LHS be untyped?");
 	    if (!nodep->lhsp()->dtypep()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
 	    m_assDTypep = nodep->lhsp()->dtypep();
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    //if (debug()) nodep->dumpTree(cout,"-    assign: ");
 	    if (!nodep->lhsp()->isDouble() && nodep->rhsp()->isDouble()) {
 		spliceCvtS(nodep->rhsp(), false);  // Round RHS
 	    } else if (nodep->lhsp()->isDouble() && !nodep->rhsp()->isDouble()) {
@@ -1376,8 +1380,8 @@ private:
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	nodep->filenamep()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->memp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
-	if (!nodep->memp()->dtypep()->skipRefp()->castNodeArrayDType()) {
-	    nodep->memp()->v3error("Unsupported: $readmem into non-array");
+	if (!nodep->memp()->dtypep()->skipRefp()->castUnpackArrayDType()) {
+	    nodep->memp()->v3error("Unsupported: $readmem into other than unpacked array");
 	}
 	nodep->lsbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	nodep->msbp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
