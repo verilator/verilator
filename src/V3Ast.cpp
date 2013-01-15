@@ -1041,7 +1041,7 @@ void AstNode::v3errorEnd(ostringstream& str) const {
 	nsstr<<str.str();
 	if (debug()) {
 	    nsstr<<endl;
-	    nsstr<<"-node: "<<this<<endl;
+	    nsstr<<"-node: "; ((AstNode*)this)->dump(nsstr); nsstr<<endl;
 	}
 	m_fileline->v3errorEnd(nsstr);
     } else {
