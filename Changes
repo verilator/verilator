@@ -5,9 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.8** devel
 
-***   Fix nested packed arrays and structs, bug600. [Jeremy Bennett]
+***   Fix nested packed arrays and struct, bug600. [Jeremy Bennett]
       Packed arrays are now represented as a single linear vector in
-      Verilated models this may affect packed arrays that are public or
+      Verilated models.  This may affect packed arrays that are public or
       accessed via the VPI.
 
 * Verilator 3.844 2013/01/09
