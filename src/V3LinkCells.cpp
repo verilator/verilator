@@ -90,6 +90,7 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstNodeModule::user1p()	// V3GraphVertex*    Vertex describing this module
+    //   AstCell::user1()		// bool			Did it.
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()	// VSymEnt*    Package and typedef symbol names
     AstUser1InUse	m_inuser1;
@@ -119,6 +120,26 @@ private:
 	    nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
 	}
 	return (nodep->user1p()->castGraphVertex());
+    }
+
+    AstNodeModule* resolveModule(AstNode* nodep, const string& modName) {
+	AstNodeModule* modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
+	if (!modp) {
+	    // Read-subfile
+	    // If file not found, make AstNotFoundModule, rather than error out.
+	    // We'll throw the error when we know the module will really be needed.
+	    V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
+	    parser.parseFile(nodep->fileline(), modName, false, "");
+	    V3Error::abortIfErrors();
+	    // We've read new modules, grab new pointers to their names
+	    readModNames();
+	    // Check again
+	    modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
+	    if (!modp) {
+		nodep->v3error("Can't resolve module reference: "<<modName);
+	    }
+	}
+	return modp;
     }
 
     // VISITs
@@ -180,6 +201,7 @@ private:
 	    if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
 	    new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
 	}
+	// Note AstBind also has iteration on cells
 	nodep->iterateChildren(*this);
 	nodep->checkTree();
 	m_modp = NULL;
@@ -192,28 +214,35 @@ private:
 	new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
 
+    virtual void visit(AstBind* nodep, AstNUser*) {
+	// Bind: Has cells underneath that need to be put into the new module, and cells which need resolution
+	// TODO this doesn't allow bind to dotted hier names, that would require
+	// this move to post param, which would mean we do not auto-read modules
+	// and means we cannot compute module levels until later.
+	UINFO(4,"Link Bind: "<<nodep<<endl);
+	AstNodeModule* modp = resolveModule(nodep,nodep->name());
+	if (modp) {
+	    AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
+	    // Module may have already linked, so need to pick up these new cells
+	    AstNodeModule* oldModp = m_modp;
+	    {
+		m_modp = modp;
+		modp->addStmtp(cellsp);  // Important that this adds to end, as next iterate assumes does all cells
+		cellsp->iterateAndNext(*this);
+	    }
+	    m_modp = oldModp;
+	}
+	pushDeletep(nodep->unlinkFrBack());
+    }
+
     virtual void visit(AstCell* nodep, AstNUser*) {
 	// Cell: Resolve its filename.  If necessary, parse it.
+	if (nodep->user1SetOnce()) return;  // AstBind and AstNodeModule may call a cell twice
 	if (!nodep->modp()) {
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
 	    // Use findIdFallback instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
-	    AstNodeModule* modp = m_mods.rootp()->findIdFallback(nodep->modName())->nodep()->castNodeModule();
-	    if (!modp) {
-		// Read-subfile
-		// If file not found, make AstNotFoundModule, rather than error out.
-		// We'll throw the error when we know the module will really be needed.
-		V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
-		parser.parseFile(nodep->fileline(), nodep->modName(), false, "");
-		V3Error::abortIfErrors();
-		// We've read new modules, grab new pointers to their names
-		readModNames();
-		// Check again
-		modp = m_mods.rootp()->findIdFallback(nodep->modName())->nodep()->castNodeModule();
-		if (!modp) {
-		    nodep->v3error("Can't resolve module reference: "<<nodep->modName());
-		}
-	    }
+	    AstNodeModule* modp = resolveModule(nodep,nodep->modName());
 	    if (modp) {
 		nodep->modp(modp);
 		// Track module depths, so can sort list from parent down to children

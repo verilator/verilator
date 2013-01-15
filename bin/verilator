@@ -2327,6 +2327,11 @@ always @* to reduce missing activity items.  Avoid putting $displays in
 combo blocks, as they may print multiple times when not desired, even on
 compliant simulators as event ordering is not specified.
 
+=head2 Bind
+
+Verilator only supports "bind" to a target module name, not an instance
+path.
+
 =head2 Dotted cross-hierarchy references
 
 Verilator supports dotted references to variables, functions and tasks in

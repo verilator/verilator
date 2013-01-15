@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
       Verilated models.  This may affect packed arrays that are public or
       accessed via the VPI.
 
+***   Support bind, to module names only, bug602. [Ed Lander]
+
 * Verilator 3.844 2013/01/09
 
 ***   Support "unsigned int" DPI import functions, msg966.  [Alex Lee]

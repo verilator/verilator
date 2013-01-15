@@ -1331,6 +1331,25 @@ public:
     virtual void name(const string& name) { m_name = name; }
 };
 
+struct AstBind : public AstNode {
+    // Parents: MODULE
+    // Children: CELL
+private:
+    string	m_name;		// Binding to name
+public:
+    AstBind(FileLine* fl, const string& name, AstNode* cellsp)
+	: AstNode(fl)
+	, m_name(name) {
+	if (!cellsp->castCell()) cellsp->v3fatalSrc("Only cells allowed to be bound");
+	addNOp1p(cellsp);
+    }
+    ASTNODE_NODE_FUNCS(Bind, BIND)
+    // ACCESSORS
+    virtual string name() const { return m_name; }		// * = Bind Target name
+    virtual void name(const string& name) { m_name = name; }
+    AstNode* cellsp() const { return op1p(); }	// op1= cells
+};
+
 struct AstPort : public AstNode {
     // A port (in/out/inout) on a module
 private:

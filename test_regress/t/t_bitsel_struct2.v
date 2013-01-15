@@ -14,7 +14,7 @@ module t (/*AUTOARG*/);
       c_t [17:16] d;
    } e_t;
 
-`define check(got,expec) do if ((got) != (expec)) begin $display("Line%d:  Got %b Exp %b\n", `__LINE__, (got), (expec)); $stop; end while(0);
+`define check(got,expec) do if ((got) != (expec)) begin $display("Line%0d:  Got %b Exp %b\n", `__LINE__, (got), (expec)); $stop; end while(0);
 
    initial begin
       e_t e;

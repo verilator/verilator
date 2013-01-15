@@ -282,6 +282,7 @@ class AstSenTree;
 %token<fl>		yASSIGN		"assign"
 %token<fl>		yAUTOMATIC	"automatic"
 %token<fl>		yBEGIN		"begin"
+%token<fl>		yBIND		"bind"
 %token<fl>		yBIT		"bit"
 %token<fl>		yBREAK		"break"
 %token<fl>		yBUF		"buf"
@@ -1512,7 +1513,7 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	//			// + module_instantiation from module_or_generate_item
 	|	etcInst 				{ $$ = $1; }
 	|	concurrent_assertion_item		{ $$ = $1; }
-	//UNSUP	bind_directive				{ $$ = $1; }
+	|	bind_directive				{ $$ = $1; }
 	|	continuous_assign			{ $$ = $1; }
 	//			// IEEE: net_alias
 	//UNSUP	yALIAS variable_lvalue aliasEqList ';'	{ UNSUP }
@@ -1547,6 +1548,31 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 	| 	genvar_declaration			{ $$ = $1; }
 	|	clocking_declaration			{ $$ = $1; }
 	//UNSUP	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = $1; }
+	;
+
+bind_directive<nodep>:		// ==IEEE: bind_directive + bind_target_scope
+	//			// ';' - Note IEEE grammar is wrong, includes extra ';' - it's already in module_instantiation
+	//			// We merged the rules - id may be a bind_target_instance or module_identifier or interface_identifier
+		yBIND bind_target_instance bind_instantiation	{ $$ = new AstBind($<fl>1,*$2,$3); }
+	|	yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation	{ $$=NULL; $1->v3error("Unsupported: Bind with instance list"); }
+	;
+
+bind_target_instance_list:	// ==IEEE: bind_target_instance_list
+		bind_target_instance			{ }
+	|	bind_target_instance_list ',' bind_target_instance	{ }
+	;
+
+bind_target_instance<strp>:	// ==IEEE: bind_target_instance
+	//UNSUP	hierarchical_identifierBit		{ }
+		idAny					{ $$ = $1; }
+	;
+
+bind_instantiation<nodep>:	// ==IEEE: bind_instantiation
+	//			// IEEE: program_instantiation
+	//			// IEEE: + module_instantiation
+	//			// IEEE: + interface_instantiation
+	//			// Need to get an AstBind instead of AstCell, so have special rules
+		instDecl				{ $$ = $1; }
 	;
 
 //************************************************
