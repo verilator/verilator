@@ -3,6 +3,8 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Ed Lander.
 
+// verilator lint_off WIDTH
+
 `define check(got,expec) do if ((got) != (expec)) begin $display("Line%0d:  Got 0x%0x Exp 0x%0x\n", `__LINE__, (got), (expec)); $stop; end while(0);
 
 module t (/*AUTOARG*/
@@ -36,7 +38,8 @@ module t (/*AUTOARG*/
    //p2 explictly bound to targetmod						(=> 0x05)
    //p3 explictly bound to top								(=> 0x03)
 
-   bind i_targetmod mycheck
+   // Alternative unsupported form is i_targetmod
+   bind targetmod mycheck
      #(
        .param2(param2),
        .param3(param3)
