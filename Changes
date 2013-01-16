@@ -12,6 +12,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support bind, to module names only, bug602. [Ed Lander]
 
+***   Fix pin width mismatch error, bug595.  [Alex Solomatnikov]
+
+
 * Verilator 3.844 2013/01/09
 
 ***   Support "unsigned int" DPI import functions, msg966.  [Alex Lee]

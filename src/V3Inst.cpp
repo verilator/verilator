@@ -291,7 +291,6 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	    pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, true));
 	} else {
 	    // V3 width should have range/extended to make the widths correct
-	    if (pinexprp->width() != pinVarp->width()) pinp->v3fatalSrc("Input pin width mismatch");
 	    assignp = new AstAssignW (pinp->fileline(),
 				      new AstVarRef(pinp->fileline(), newvarp, true),
 				      pinexprp);
