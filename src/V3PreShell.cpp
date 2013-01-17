@@ -70,6 +70,26 @@ protected:
 	    s_preprocp->defineCmdLine(prefl,"verilator3", "1");  // LEAK_OK
 	    s_preprocp->defineCmdLine(prefl,"systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK
 	    s_preprocp->defineCmdLine(prefl,"coverage_block_off", "/*verilator coverage_block_off*/");  // LEAK_OK
+	    if (prefl->language().systemVerilog()) {
+		// Synthesis compatibility
+		s_preprocp->defineCmdLine(prefl,"SYSTEMVERILOG", "1");  // LEAK_OK
+		// IEEE predefined
+		s_preprocp->defineCmdLine(prefl,"SV_COV_START", "0");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_STOP", "1");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_RESET", "2");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_CHECK", "3");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_MODULE", "10");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_HIER", "11");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_ASSERTION", "20");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_FSM_STATE", "21");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_STATEMENT", "22");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_TOGGLE", "23");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_OVERFLOW", "-2");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_ERROR", "-1");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_NOCOV", "0");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_OK", "1");
+		s_preprocp->defineCmdLine(prefl,"SV_COV_PARTIAL", "2");
+	    }
 	}
     }
 

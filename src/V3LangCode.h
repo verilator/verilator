@@ -57,6 +57,7 @@ public:
 	return names[m_e];
     };
     static V3LangCode mostRecent() { return V3LangCode(L1800_2009); }
+    bool systemVerilog() const { return m_e == L1800_2005 || m_e == L1800_2009; }
     bool legal() const { return m_e != L_ERROR; }
     //
     enum en m_e;

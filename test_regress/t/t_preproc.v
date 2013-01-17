@@ -522,3 +522,21 @@ module t;
 `undef A  `undef STR
 endmodule
 //======================================================================
+// IEEE mandated predefines
+`undefineall  // undefineall should have no effect on these
+predef `SV_COV_START 0
+predef `SV_COV_STOP 1
+predef `SV_COV_RESET 2
+predef `SV_COV_CHECK 3
+predef `SV_COV_MODULE 10
+predef `SV_COV_HIER 11
+predef `SV_COV_ASSERTION 20
+predef `SV_COV_FSM_STATE 21
+predef `SV_COV_STATEMENT 22
+predef `SV_COV_TOGGLE 23
+predef `SV_COV_OVERFLOW -2
+predef `SV_COV_ERROR -1
+predef `SV_COV_NOCOV 0
+predef `SV_COV_OK 1
+predef `SV_COV_PARTIAL 2
+//======================================================================

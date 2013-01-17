@@ -2070,6 +2070,11 @@ functions, the Verilog signals must be declared with /*verilator public*/.
 See also the public task feature; writing an accessor may result in cleaner
 code.
 
+=item `SYSTEMVERILOG
+
+The SYSTEMVERILOG, SV_COV_START and related standard defines are set by
+default when --language is 1800-*.
+
 =item `VERILATOR
 
 =item `verilator
