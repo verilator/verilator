@@ -104,10 +104,7 @@ private:
 			   false); // big endian
 	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
-	    if (!adtypep->isRanged()) {
-		nodep->v3error("Illegal bit or array select; type does not have a bit range, or bad dimension: type is "
-			       <<errp->prettyName());
-	    } else {
+	    if (adtypep->isRanged()) {
 		if (adtypep->rangep()
 		    && (!adtypep->rangep()->msbp()->castConst()
 			|| !adtypep->rangep()->lsbp()->castConst()))
@@ -115,6 +112,9 @@ private:
 		fromRange.init(adtypep->msb(),
 			       adtypep->lsb(),
 			       adtypep->littleEndian());
+	    } else {
+		nodep->v3error("Illegal bit or array select; type does not have a bit range, or bad dimension: type is "
+			       <<errp->prettyName());
 	    }
 	}
 	else {

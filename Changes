@@ -12,9 +12,12 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support bind, to module names only, bug602. [Ed Lander]
 
-***   Fix pin width mismatch error, bug595.  [Alex Solomatnikov]
+***   Define SYSTEMVERILOG, SV_COV_START and other IEEE mandated predefines.
 
-****  Define SYSTEMVERILOG, SV_COV_START and other IEEE mandated predefines.
+****  Fix pin width mismatch error, bug595.  [Alex Solomatnikov]
+
+****  Fix implicit one bit parameter selection, bug603.  [Jeremy Bennett]
+
 
 * Verilator 3.844 2013/01/09
 

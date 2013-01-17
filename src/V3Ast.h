@@ -551,6 +551,9 @@ struct VNumRange {
     }
     //
     VNumRange() : m_msb(0), m_lsb(0), mu_flags(0) {}
+    VNumRange(int msb, int lsb, bool littleEndian)
+	: m_msb(0), m_lsb(0), mu_flags(0)
+	{ init(msb,lsb,littleEndian); }
     ~VNumRange() {}
     // MEMBERS
     void init(int msb, int lsb, bool littleEndian) {
@@ -1076,6 +1079,7 @@ public:
     AstNodeDType* findUInt64DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT64); }  // Twostate
     AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findLogicRangeDType(VNumRange range, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 

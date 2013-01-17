@@ -840,7 +840,17 @@ private:
 			width = 32;
 		    }
 		    // Can't just inherit valuep()->dtypep() as mwidth might not equal width
-		    nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),issigned);
+		    if (width==1) {
+			// one bit parameter is same as "parameter [0] foo", not "parameter logic foo"
+			// as you can extract "foo[0]" from a parameter but not a wire
+			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),issigned);
+			nodep->dtypep(nodep->findLogicRangeDType
+				      (VNumRange(0,0,false),
+				       nodep->valuep()->widthMin(),
+				       issigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED));
+		    } else {
+			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),issigned);
+		    }
 		    didchk = true;
 		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,nodep->widthMin(),FINAL).p());
 		}

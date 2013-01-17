@@ -302,6 +302,11 @@ public:
 	: AstNodeDType(fl) {
 	init(kwd, numer, wantwidth, widthmin, NULL);
     }
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstNumeric numer, VNumRange range, int widthmin)
+	: AstNodeDType(fl) {
+	init(kwd, numer, range.elements(), widthmin, NULL);
+	m.m_nrange = range; // as init() presumes lsb==0, but range.lsb() might not be
+    }
     // See also addRange in verilog.y
 private:
     void init(AstBasicDTypeKwd kwd, AstNumeric numer,
@@ -4482,6 +4487,8 @@ public:
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
 				     int width, int widthMin, AstNumeric numeric);
+    AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+				     VNumRange range, int widthMin, AstNumeric numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     void clearCache();
     void repairCache();

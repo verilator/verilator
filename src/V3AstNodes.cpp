@@ -557,6 +557,15 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     return newp;
 }
 
+AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
+					       VNumRange range, int widthMin, AstNumeric numeric) {
+    AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
+    AstBasicDType* newp = findInsertSameDType(new1p);
+    if (newp != new1p) new1p->deleteTree();
+    else addTypesp(newp);
+    return newp;
+}
+
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     VBasicTypeKey key (nodep->width(), nodep->widthMin(), nodep->numeric(),
 		       nodep->keyword(), nodep->nrange());
