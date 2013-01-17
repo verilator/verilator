@@ -11,6 +11,7 @@ endfunction
 
 package p;
    typedef int package_type_t;
+   integer     pi = 123;
    function [3:0] plusone(input [3:0] i);
       plusone = i+1;
    endfunction
@@ -38,6 +39,8 @@ module t (/*AUTOARG*/
       if (unit_plusone(1) !== 2) $stop;
       if ($unit::unit_plusone(1) !== 2) $stop;
       if (p::plusone(1) !== 2) $stop;
+      p::pi = 124;
+      if (p::pi !== 124) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -53,5 +56,6 @@ module t2;
    initial begin
       if (plusone(1) !== 2) $stop;
       if (plustwo(1) !== 3) $stop;
+      if (p::pi !== 123 && p::pi !== 124) $stop;  // may race with other initial, so either value
    end
 endmodule

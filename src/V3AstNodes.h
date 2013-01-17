@@ -4504,11 +4504,14 @@ struct AstNetlist : public AstNode {
     // Children:  MODULEs & CFILEs
 private:
     AstTypeTable* m_typeTablep;	// Reference to top type table, for faster lookup
+    AstPackage*	  m_dollarUnitPkgp;
 public:
     AstNetlist() : AstNode(new FileLine("AstRoot",0)) {
 	m_typeTablep = NULL;
+	m_dollarUnitPkgp = NULL;
     }
     ASTNODE_NODE_FUNCS(Netlist, NETLIST)
+    virtual bool broken() const { return (m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists()); }
     AstNodeModule*	modulesp() 	const { return op1p()->castNodeModule();}	// op1 = List of modules
     AstNodeModule*  topModulep() const { return op1p()->castNodeModule(); }	// * = Top module in hierarchy (first one added, for now)
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
@@ -4518,6 +4521,16 @@ public:
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     void addTypeTablep(AstTypeTable* nodep) { m_typeTablep = nodep; addMiscsp(nodep); }
+    AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
+    AstPackage* dollarUnitPkgAddp() {
+	if (!m_dollarUnitPkgp) {
+	    m_dollarUnitPkgp = new AstPackage(fileline(), AstPackage::dollarUnitName());
+	    m_dollarUnitPkgp->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
+	    m_dollarUnitPkgp->modTrace(false);  // may reconsider later
+	    m_dollarUnitPkgp->internal(true);
+	    addModulep(m_dollarUnitPkgp);
+	}
+	return m_dollarUnitPkgp; }
 };
 
 //######################################################################

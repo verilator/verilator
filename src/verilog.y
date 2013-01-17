@@ -112,11 +112,8 @@ public:
 	// Find one made earlier?
 	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->nodep()->castPackage();
 	if (!pkgp) {
-	    pkgp = new AstPackage(fl, AstPackage::dollarUnitName());
-	    pkgp->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
-	    pkgp->modTrace(false);  // may reconsider later
+	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
 	    GRAMMARP->m_modp = pkgp; GRAMMARP->m_modTypeImpNum = 0;
-	    PARSEP->rootp()->addModulep(pkgp);
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
 	}
 	return pkgp;
