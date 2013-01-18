@@ -45,6 +45,10 @@ module t (/*AUTOARG*/
       $write("*-* All Finished *-*\n");
       $finish;
    end
+   always @ (posedge clk) begin
+      p::pi += 1;
+      if (p::pi < 124) $stop;
+   end
 endmodule
 
 module t2;

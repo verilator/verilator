@@ -46,8 +46,10 @@ private:
     // NODE STATE
     // AstVar::user1p		-> AstVarScope replacement for this variable
     // AstTask::user2p		-> AstTask*.  Replacement task
+    // AstVar::user3p		-> AstVarScope for packages
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
+    AstUser3InUse	m_inuser3;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp;	// Current module
@@ -201,10 +203,12 @@ private:
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Make new scope variable
-	if (!nodep->user1p()) {
+	if (m_modp->castPackage()
+	    ? !nodep->user3p() : !nodep->user1p()) {
 	    AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
 	    UINFO(6,"   New scope "<<varscp<<endl);
 	    nodep->user1p(varscp);
+	    if (m_modp->castPackage()) nodep->user3p(varscp);
 	    m_scopep->addVarp(varscp);
 	}
     }
@@ -212,7 +216,9 @@ private:
 	// VarRef needs to point to VarScope
 	// Make sure variable has made user1p.
 	nodep->varp()->accept(*this);
-	AstVarScope* varscp = (AstVarScope*)nodep->varp()->user1p();
+	AstVarScope* varscp = nodep->packagep()
+	    ? (AstVarScope*)nodep->varp()->user3p()
+	    : (AstVarScope*)nodep->varp()->user1p();
 	if (!varscp) nodep->v3fatalSrc("Can't locate varref scope");
 	nodep->varScopep(varscp);
     }

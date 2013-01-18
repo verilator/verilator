@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix implicit one bit parameter selection, bug603.  [Jeremy Bennett]
 
+****  Fix package logic var compile error.
+
 
 * Verilator 3.844 2013/01/09
 
