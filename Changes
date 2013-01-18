@@ -12,6 +12,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support bind, to module names only, bug602. [Ed Lander]
 
+***   Support VPI product info, warning calls, etc, bug588. [Rick Porter]
+
 ***   Define SYSTEMVERILOG, SV_COV_START and other IEEE mandated predefines.
 
 ****  Fix pin width mismatch error, bug595.  [Alex Solomatnikov]

@@ -28,10 +28,14 @@
 // __FILE__ is too long
 #define FILENM "t_vpi_var.cpp"
 
+#define TEST_MSG if (0) printf
+
 unsigned int main_time = false;
 unsigned int callback_count = false;
 unsigned int callback_count_half = false;
 unsigned int callback_count_quad = false;
+unsigned int callback_count_strs = false;
+unsigned int callback_count_strs_max = 500;
 
 //======================================================================
 
@@ -64,15 +68,15 @@ public:
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
-    if ((got != exp)) { \
+    if ((got) != (exp)) {			     \
 	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
 	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
 	return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
-    if ((got != exp)) { \
-	cout<<hex<<"%Error: "<<FILENM<<":"<<__LINE__ \
+    if ((got) != (exp)) {				  \
+	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__<<hex \
 	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
 	return __LINE__; \
     }
@@ -83,6 +87,9 @@ public:
 	       FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
 	return __LINE__; \
     }
+
+#define CHECK_RESULT_CSTR_STRIP(got, exp) \
+    CHECK_RESULT_CSTR(got+strspn(got, " "), exp)
 
 int _mon_check_mcd() {
     PLI_INT32 status;
@@ -352,6 +359,213 @@ int _mon_check_quad() {
     return 0;
 }
 
+int _mon_check_string() {
+    static struct {
+	const char *name;
+        const char *initial;
+        const char *value;
+    } text_test_obs[] = {
+        {"t.text_byte", "B", "xxA"}, // x's dropped
+        {"t.text_half", "Hf", "xxT2"}, // x's dropped
+        {"t.text_word", "Word", "Tree"},
+        {"t.text_long", "Long64b", "44Four44"},
+        {"t.text"     , "Verilog Test module", "lorem ipsum"},
+    };
+
+    for (int i=0; i<5; i++) {
+      VlVpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)text_test_obs[i].name, NULL);
+      CHECK_RESULT_NZ(vh1);
+
+      s_vpi_value v;
+      s_vpi_time t = { vpiSimTime, 0, 0};
+      s_vpi_error_info e;
+
+      v.format = vpiStringVal;
+      vpi_get_value(vh1, &v);
+      if (vpi_chk_error(&e)) {
+	  printf("%%vpi_chk_error : %s\n", e.message);
+      }
+
+      CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
+
+      v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
+      vpi_put_value(vh1, &v, &t, vpiNoDelay);
+    }
+
+    return 0;
+}
+
+int _mon_check_putget_str(p_cb_data cb_data) {
+    static VlVpiHandle cb;
+    static struct {
+	VlVpiHandle scope, sig, rfr, check, verbose;
+        char str[128+1];          // char per bit plus null terminator
+        int type;                 // value type in .str
+        union {
+          PLI_INT32    integer;
+          s_vpi_vecval vector[4];
+	} value;                 // reference
+    } data[129];
+    if (cb_data) {
+	// this is the callback
+        static unsigned int seed = 1;
+        s_vpi_time t;
+        t.type = vpiSimTime;
+        t.high = 0;
+        t.low = 0;
+        for (int i=2; i<=128; i++) {
+	  static s_vpi_value v;
+          int words = (i+31)>>5;
+	  TEST_MSG("========== %d ==========\n", i);
+          if (callback_count_strs) {
+	      // check persistance
+              if (data[i].type) {
+                  v.format = data[i].type;
+	      } else {
+		  static PLI_INT32 vals[] = {vpiBinStrVal, vpiOctStrVal, vpiHexStrVal, vpiDecStrVal};
+                  v.format = vals[rand_r(&seed) % ((words>2)?3:4)];
+		  TEST_MSG("new format %d\n", v.format);
+	      }
+              vpi_get_value(data[i].sig, &v);
+	      TEST_MSG("%s\n", v.value.str);
+              if (data[i].type) {
+                  CHECK_RESULT_CSTR(v.value.str, data[i].str);
+	      } else {
+                  data[i].type = v.format;
+                  strcpy(data[i].str, v.value.str);
+	      }
+	  }
+
+          // check for corruption
+          v.format = (words==1)?vpiIntVal:vpiVectorVal;
+          vpi_get_value(data[i].sig, &v);
+          if (v.format == vpiIntVal) {
+              TEST_MSG("%08x %08x\n", v.value.integer, data[i].value.integer);
+              CHECK_RESULT(v.value.integer, data[i].value.integer);
+	  } else {
+              for (int k=0; k < words; k++) {
+	          TEST_MSG("%d %08x %08x\n", k, v.value.vector[k].aval, data[i].value.vector[k].aval);
+                  CHECK_RESULT_HEX(v.value.vector[k].aval, data[i].value.vector[k].aval);
+	      }
+	  }
+
+          if (callback_count_strs & 7) {
+              // put same value back - checking encoding/decoding equivalent
+              v.format = data[i].type;
+              v.value.str = data[i].str;
+              vpi_put_value(data[i].sig, &v, &t, vpiNoDelay);
+              v.format = vpiIntVal;
+              v.value.integer = 1;
+              //vpi_put_value(data[i].verbose, &v, &t, vpiNoDelay);
+              vpi_put_value(data[i].check, &v, &t, vpiNoDelay);
+	  } else {
+              // stick a new random value in
+              unsigned int mask = ((i&31)?(1<<(i&31)):0)-1;
+              if (words == 1) {
+                  v.value.integer = rand_r(&seed);
+                  data[i].value.integer = v.value.integer &= mask;
+                  v.format = vpiIntVal;
+	          TEST_MSG("new value %08x\n", data[i].value.integer);
+	      } else {
+	          TEST_MSG("new value\n");
+	          for (int j=0; j<4; j++) {
+                      data[i].value.vector[j].aval = rand_r(&seed);
+                      if (j==(words-1)) {
+			  data[i].value.vector[j].aval &= mask;
+		      }
+	              TEST_MSG(" %08x\n", data[i].value.vector[j].aval);
+	          }
+                  v.value.vector = data[i].value.vector;
+                  v.format = vpiVectorVal;
+	      }
+              vpi_put_value(data[i].sig, &v, &t, vpiNoDelay);
+              vpi_put_value(data[i].rfr, &v, &t, vpiNoDelay);
+	  }
+          if ((callback_count_strs & 1) == 0) data[i].type = 0;
+	}
+        if (++callback_count_strs == callback_count_strs_max) {
+          int success = vpi_remove_cb(cb);
+          CHECK_RESULT_NZ(success);
+	};
+    } else {
+	// setup and install
+        for (int i=1; i<=128; i++) {
+            char buf[32];
+            snprintf(buf, sizeof(buf), "t.arr[%d].arr", i);
+	    CHECK_RESULT_NZ(data[i].scope   = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
+	    CHECK_RESULT_NZ(data[i].sig     = vpi_handle_by_name((PLI_BYTE8*)"sig", data[i].scope));
+	    CHECK_RESULT_NZ(data[i].rfr     = vpi_handle_by_name((PLI_BYTE8*)"rfr", data[i].scope));
+	    CHECK_RESULT_NZ(data[i].check   = vpi_handle_by_name((PLI_BYTE8*)"check", data[i].scope));
+	    CHECK_RESULT_NZ(data[i].verbose = vpi_handle_by_name((PLI_BYTE8*)"verbose", data[i].scope));
+	}
+
+	static t_cb_data cb_data;
+	static s_vpi_value v;
+        static VlVpiHandle count_h = vpi_handle_by_name((PLI_BYTE8*)"t.count", NULL);
+
+        cb_data.reason = cbValueChange;
+        cb_data.cb_rtn = _mon_check_putget_str; // this function
+        cb_data.obj = count_h;
+        cb_data.value = &v;
+        v.format = vpiIntVal;
+
+        cb = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(cb);
+    }
+    return 0;
+}
+
+int _mon_check_vlog_info() {
+    s_vpi_vlog_info vlog_info;
+    PLI_INT32 rtn = vpi_get_vlog_info(&vlog_info);
+    CHECK_RESULT(rtn, 1);
+    CHECK_RESULT(vlog_info.argc, 4);
+    CHECK_RESULT_CSTR(vlog_info.argv[1], "+PLUS");
+    CHECK_RESULT_CSTR(vlog_info.argv[2], "+INT=1234");
+    CHECK_RESULT_CSTR(vlog_info.argv[3], "+STRSTR");
+    CHECK_RESULT_CSTR(vlog_info.product, "Verilator");
+    CHECK_RESULT(strlen(vlog_info.version) > 0, 1);
+
+    return 0;
+}
+
+#define CHECK_ENUM_STR(fn, enum) \
+    do { \
+        const char* strVal = VerilatedVpiError::fn(enum); \
+        CHECK_RESULT_CSTR(strVal, #enum); \
+    } while (0)
+
+int _mon_check_vl_str() {
+
+    CHECK_ENUM_STR(strFromVpiVal, vpiBinStrVal);
+    CHECK_ENUM_STR(strFromVpiVal, vpiRawFourStateVal);
+
+    CHECK_ENUM_STR(strFromVpiObjType, vpiAlways);
+    CHECK_ENUM_STR(strFromVpiObjType, vpiWhile);
+    CHECK_ENUM_STR(strFromVpiObjType, vpiAttribute);
+    CHECK_ENUM_STR(strFromVpiObjType, vpiUdpArray);
+    CHECK_ENUM_STR(strFromVpiObjType, vpiContAssignBit);
+    CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
+
+    CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
+    CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
+
+    CHECK_ENUM_STR(strFromVpiCallbackReason, cbValueChange);
+    CHECK_ENUM_STR(strFromVpiCallbackReason, cbAtEndOfSimTime);
+
+    CHECK_ENUM_STR(strFromVpiProp, vpiType);
+    CHECK_ENUM_STR(strFromVpiProp, vpiProtected);
+    CHECK_ENUM_STR(strFromVpiProp, vpiDirection);
+    CHECK_ENUM_STR(strFromVpiProp, vpiTermIndex);
+    CHECK_ENUM_STR(strFromVpiProp, vpiConstType);
+    CHECK_ENUM_STR(strFromVpiProp, vpiAutomatic);
+    CHECK_ENUM_STR(strFromVpiProp, vpiOffset);
+    CHECK_ENUM_STR(strFromVpiProp, vpiStop);
+    CHECK_ENUM_STR(strFromVpiProp, vpiIsProtected);
+
+    return 0;
+}
+
 int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_mcd()) return status;
@@ -361,6 +575,10 @@ int mon_check() {
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_getput()) return status;
     if (int status = _mon_check_quad()) return status;
+    if (int status = _mon_check_string()) return status;
+    if (int status = _mon_check_putget_str(NULL)) return status;
+    if (int status = _mon_check_vlog_info()) return status;
+    if (int status = _mon_check_vl_str()) return status;
     return 0; // Ok
 }
 
@@ -408,6 +626,7 @@ int main(int argc, char **argv, char **env) {
     CHECK_RESULT(callback_count, 501);
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
+    CHECK_RESULT(callback_count_strs, callback_count_strs_max);
     if (!Verilated::gotFinish()) {
 	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }

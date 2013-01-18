@@ -455,7 +455,7 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	rm -f Makefile config.status config.cache config.log verilator_bin* TAGS
-	rm -f include/verilated.mk
+	rm -f include/verilated.mk include/verilated_config.h
 
 TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
 	${srcdir}/*.in ${srcdir}/*.pod
