@@ -442,8 +442,8 @@ private:
 	    int fromlsb = 0;
 	    int elw = nodep->declElWidth();  // Must adjust to tell user bit ranges
 	    if (nodep->declRange().ranged()) {
-		frommsb = nodep->declRange().msbMaxSelect()*elw + (elw-1);  // Corrected for negative lsb
-		fromlsb = nodep->declRange().lsb()*elw;
+		frommsb = nodep->declRange().hiMaxSelect()*elw + (elw-1);  // Corrected for negative lsb
+		fromlsb = nodep->declRange().lo()*elw;
 	    } else {
 		//nodep->v3fatalSrc("Should have been declRanged in V3WidthSel");
 	    }

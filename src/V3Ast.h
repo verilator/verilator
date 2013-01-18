@@ -527,8 +527,8 @@ public:
 // See also AstRange, which is a symbolic version of this
 
 struct VNumRange {
-    int		m_msb;		// MSB, MSB always >= LSB
-    int		m_lsb;		// LSB
+    int		m_hi;		// HI part, HI always >= LO
+    int		m_lo;		// LO
     union {
 	int mu_flags;
 	struct {
@@ -537,38 +537,38 @@ struct VNumRange {
 	};
     };
     inline bool operator== (const VNumRange& rhs) const {
-	return m_msb == rhs.m_msb
-	    && m_lsb == rhs.m_lsb
+	return m_hi == rhs.m_hi
+	    && m_lo == rhs.m_lo
 	    && mu_flags == rhs.mu_flags; }
     inline bool operator< (const VNumRange& rhs) const {
-	if ( (m_msb <  rhs.m_msb)) return true;
-	if (!(m_msb == rhs.m_msb)) return false;  // lhs > rhs
-	if ( (m_lsb <  rhs.m_lsb)) return true;
-	if (!(m_lsb == rhs.m_lsb)) return false;  // lhs > rhs
+	if ( (m_hi <  rhs.m_hi)) return true;
+	if (!(m_hi == rhs.m_hi)) return false;  // lhs > rhs
+	if ( (m_lo <  rhs.m_lo)) return true;
+	if (!(m_lo == rhs.m_lo)) return false;  // lhs > rhs
 	if ( (mu_flags <  rhs.mu_flags)) return true;
 	if (!(mu_flags == rhs.mu_flags)) return false;  // lhs > rhs
 	return false;
     }
     //
-    VNumRange() : m_msb(0), m_lsb(0), mu_flags(0) {}
-    VNumRange(int msb, int lsb, bool littleEndian)
-	: m_msb(0), m_lsb(0), mu_flags(0)
-	{ init(msb,lsb,littleEndian); }
+    VNumRange() : m_hi(0), m_lo(0), mu_flags(0) {}
+    VNumRange(int hi, int lo, bool littleEndian)
+	: m_hi(0), m_lo(0), mu_flags(0)
+	{ init(hi,lo,littleEndian); }
     ~VNumRange() {}
     // MEMBERS
-    void init(int msb, int lsb, bool littleEndian) {
-	m_msb=msb; m_lsb=lsb; mu_flags=0; m_ranged=true; m_littleEndian=littleEndian;
+    void init(int hi, int lo, bool littleEndian) {
+	m_hi=hi; m_lo=lo; mu_flags=0; m_ranged=true; m_littleEndian=littleEndian;
     }
-    int msb() const { return m_msb; }
-    int lsb() const { return m_lsb; }
-    int left() const { return littleEndian()?lsb():msb(); }  // How to show a declaration
-    int right() const { return littleEndian()?msb():lsb(); }
-    int elements() const { return msb()-lsb()+1; }
+    int hi() const { return m_hi; }
+    int lo() const { return m_lo; }
+    int left() const { return littleEndian()?lo():hi(); }  // How to show a declaration
+    int right() const { return littleEndian()?hi():lo(); }
+    int elements() const { return hi()-lo()+1; }
     bool ranged() const { return m_ranged; }
     bool littleEndian() const { return m_littleEndian; }
-    int msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
+    int hiMaxSelect() const { return (lo()<0 ? hi()-lo() : hi()); } // Maximum value a [] select may index
     bool representableByWidth() const  // Could be represented by just width=1, or [width-1:0]
-	{ return (!m_ranged || (m_lsb==0 && m_msb>=1 && !m_littleEndian)); }
+	{ return (!m_ranged || (m_lo==0 && m_hi>=1 && !m_littleEndian)); }
 };
 
 //######################################################################
@@ -1559,7 +1559,6 @@ public:
     }
     int lsb() const { return 0; }
     int msb() const { return dtypep()->width()-1; }  // Packed classes look like arrays
-    int msbMaxSelect() const { return msb(); }
 };
 
 struct AstNodeArrayDType : public AstNodeDType {
@@ -1602,7 +1601,6 @@ public:
     int		msb() const;
     int		lsb() const;
     int		elementsConst() const;
-    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
 };
 
 struct AstNodeSel : public AstNodeBiop {

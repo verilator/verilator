@@ -382,7 +382,7 @@ private:
 	    && nodep->lsbp()->castConst()
 	    && nodep->widthp()->castConst()
 	    && doit) {
-	    int maxDeclBit = nodep->declRange().msbMaxSelect()*nodep->declElWidth() + (nodep->declElWidth()-1);
+	    int maxDeclBit = nodep->declRange().hiMaxSelect()*nodep->declElWidth() + (nodep->declElWidth()-1);
 	    if (nodep->lsbp()->castConst()->num().isFourState()
 		|| nodep->widthp()->castConst()->num().isFourState()) {
 		nodep->v3error("Selection index is constantly unknown or tristated: "
@@ -398,9 +398,9 @@ private:
 		nodep->v3warn(SELRANGE, "Selection index out of range: "
 			      <<(nodep->msbConst()/nodep->declElWidth())
 			      <<":"<<(nodep->lsbConst()/nodep->declElWidth())
-			      <<" outside "<<nodep->declRange().msbMaxSelect()<<":0"
-			      <<(nodep->declRange().lsb()>=0 ? ""
-				 :(" (adjusted +"+cvtToStr(-nodep->declRange().lsb())
+			      <<" outside "<<nodep->declRange().hiMaxSelect()<<":0"
+			      <<(nodep->declRange().lo()>=0 ? ""
+				 :(" (adjusted +"+cvtToStr(-nodep->declRange().lo())
 				   +" to account for negative lsb)")));
 		UINFO(1,"    Related Raw index is "<<nodep->msbConst()<<":"<<nodep->lsbConst()<<endl);
 		// Don't replace with zero, we'll do it later

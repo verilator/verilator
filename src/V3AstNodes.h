@@ -343,7 +343,7 @@ private:
 public:
     ASTNODE_NODE_FUNCS(BasicDType, BASICDTYPE)
     virtual void dump(ostream& str);
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m.m_keyword), V3Hash(m.m_nrange.msb())); }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m.m_keyword), V3Hash(m.m_nrange.hi())); }
     virtual bool same(AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
 	return samep->castBasicDType()->m == m; }
     virtual string name()	const { return m.m_keyword.ascii(); }
@@ -368,11 +368,10 @@ public:
     bool	isZeroInit() const { return keyword().isZeroInit(); }
     bool	isRanged() const { return rangep() || m.m_nrange.ranged(); }
     const VNumRange& nrange() const { return m.m_nrange; } // Generally the msb/lsb/etc funcs should be used instead
-    int		msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.msb()); }
-    int		lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lsb()); }
+    int		msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
+    int		lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lo()); }
     int		left() const { return littleEndian()?lsb():msb(); }  // How to show a declaration
     int		right() const { return littleEndian()?msb():lsb(); }
-    int		msbMaxSelect() const { return (lsb()<0 ? msb()-lsb() : msb()); } // Maximum value a [] select may index
     bool	littleEndian() const { return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian()); }
     bool	implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
     void	cvtRangeConst() {  // Convert to smaller represenation
