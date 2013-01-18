@@ -1559,6 +1559,7 @@ public:
     }
     int lsb() const { return 0; }
     int msb() const { return dtypep()->width()-1; }  // Packed classes look like arrays
+    VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
 };
 
 struct AstNodeArrayDType : public AstNodeDType {
@@ -1601,6 +1602,7 @@ public:
     int		msb() const;
     int		lsb() const;
     int		elementsConst() const;
+    VNumRange declRange() const;
 };
 
 struct AstNodeSel : public AstNodeBiop {
@@ -1802,5 +1804,6 @@ inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
 inline int AstNodeArrayDType::msb() const { return rangep()->msbConst(); }
 inline int AstNodeArrayDType::lsb() const { return rangep()->lsbConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
+inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange(msb(), lsb(), rangep()->littleEndian()); }
 
 #endif // Guard

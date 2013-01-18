@@ -94,14 +94,10 @@ private:
 	AstNode* errp = ddtypep;
 	UINFO(9,"  fromData.ddtypep = "<<ddtypep<<endl);
 	if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
-	    fromRange.init(adtypep->msb(),
-			   adtypep->lsb(),
-			   adtypep->rangep()->littleEndian());
+	    fromRange = adtypep->declRange();
 	}
 	else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
-	    fromRange.init(adtypep->msb(),
-			   adtypep->lsb(),
-			   false); // big endian
+	    fromRange = adtypep->declRange();
 	}
 	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
 	    if (adtypep->isRanged()) {
@@ -109,9 +105,7 @@ private:
 		    && (!adtypep->rangep()->msbp()->castConst()
 			|| !adtypep->rangep()->lsbp()->castConst()))
 		    nodep->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
-		fromRange.init(adtypep->msb(),
-			       adtypep->lsb(),
-			       adtypep->littleEndian());
+		fromRange = adtypep->declRange();
 	    } else {
 		nodep->v3error("Illegal bit or array select; type does not have a bit range, or bad dimension: type is "
 			       <<errp->prettyName());

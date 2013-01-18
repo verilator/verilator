@@ -746,11 +746,11 @@ void AstNodeDType::dumpSmall(ostream& str) {
 void AstNodeArrayDType::dumpSmall(ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     if (castPackArrayDType()) str<<"p"; else str<<"u";
-    str<<"["<<msb()<<":"<<lsb()<<"]";
+    str<<"["<<declRange().left()<<":"<<declRange().right()<<"]";
 }
 void AstNodeArrayDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
-    str<<" ["<<msb()<<":"<<lsb()<<"]";
+    str<<" ["<<declRange().left()<<":"<<declRange().right()<<"]";
 }
 void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);

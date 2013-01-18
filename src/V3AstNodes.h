@@ -374,6 +374,7 @@ public:
     int		right() const { return littleEndian()?msb():lsb(); }
     bool	littleEndian() const { return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian()); }
     bool	implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
+    VNumRange declRange() const { return isRanged() ? VNumRange(msb(), lsb(), littleEndian()) : VNumRange(); }
     void	cvtRangeConst() {  // Convert to smaller represenation
 	if (rangep() && rangep()->msbp()->castConst() && rangep()->lsbp()->castConst()) {
 	    m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(),
