@@ -5,7 +5,7 @@
 
 // verilator lint_off WIDTH
 
-`define check(got,expec) do if ((got) != (expec)) begin $display("Line%0d:  Got 0x%0x Exp 0x%0x\n", `__LINE__, (got), (expec)); $stop; end while(0);
+`define check(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d:  got=0x%0x exp=0x%0x\n", `__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs

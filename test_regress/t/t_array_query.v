@@ -39,7 +39,9 @@ module array_test
 
    input clk;
 
+   // verilator lint_off LITENDIAN
    reg [7:0] a [LEFT:RIGHT];
+   // verilator lint_on LITENDIAN
 
    integer   l;
    integer   r;
@@ -54,10 +56,8 @@ module array_test
       $write ("$left (a) = %d, $right (a) = %d, $size (a) = %d\n", l, r, s);
 `endif
 
-      if ((l == LEFT) && (r == RIGHT) && (s == (RIGHT - LEFT + 1))) begin
-	 $write("*-* All Finished *-*\n");
-      end
-
+      if ((l != LEFT) || (r != RIGHT) || (s != (RIGHT - LEFT + 1))) $stop;
+      $write("*-* All Finished *-*\n");
       $finish;
    end
 
