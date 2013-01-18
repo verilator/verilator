@@ -352,7 +352,9 @@ private:
 	FromData fromdata = fromDataForArray(nodep, fromp, width!=1);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
-	if (ddtypep->castBasicDType()) {
+	if (ddtypep->castBasicDType()
+	    || (ddtypep->castNodeClassDType()
+		&& ddtypep->castNodeClassDType()->packed())) {
 	    AstSel* newp = NULL;
 	    if (nodep->castSelPlus()) {
 		if (fromRange.littleEndian()) {
