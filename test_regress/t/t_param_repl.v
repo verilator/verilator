@@ -20,7 +20,9 @@ module t (/*AUTOARG*/
    parameter 		DWORDS_LOG2 = 7;
    parameter 		DWORDS = (1<<DWORDS_LOG2);
    parameter 		DBYTES=DBITS/8;
+   // verilator lint_off LITENDIAN
    reg [DBITS-1:0] mem [0:DWORDS-1];
+   // verilator lint_on LITENDIAN
 
    integer 	     i;
 

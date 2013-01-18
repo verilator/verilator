@@ -10,7 +10,9 @@ module t (/*AUTOARG*/
 
    input clk;
 
+   // verilator lint_off LITENDIAN
    wire [7:0] array [2:0][1:3];
+   // verilator lint_on LITENDIAN
 
    integer cyc; initial cyc=0;
    integer    i0,i1,i2;

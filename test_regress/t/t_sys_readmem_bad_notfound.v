@@ -5,7 +5,7 @@
 
 module t;
 
-   reg [175:0] hex [0:15];
+   reg [175:0] hex [15:0];
 
    initial begin
       $readmemh("t/t_sys_readmem_bad_NOTFOUND.mem", hex);

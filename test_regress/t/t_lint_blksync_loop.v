@@ -65,7 +65,7 @@ module reg_1r1w
 
     output [WIDTH-1:0] data_out;
 
-    reg [WIDTH-1:0] array [0:DEPTH-1];
+    reg [WIDTH-1:0] array [DEPTH-1:0];
     reg [ADRWID-1:0] ra_r, wa_r;
     reg [WIDTH-1:0]  data_in_r;
     reg             wr_r;

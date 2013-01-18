@@ -5,9 +5,11 @@
 
 module t;
 
+   // verilator lint_off LITENDIAN
    reg [5:0] binary_nostart [2:15];
    reg [5:0] binary_start [0:15];
    reg [175:0] hex [0:15];
+   // verilator lint_on LITENDIAN
 
    integer   i;
 

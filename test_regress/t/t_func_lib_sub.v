@@ -17,7 +17,7 @@ reg covfok;
 reg [15:0] xwieqw;
 reg [2:0] ofnjjt;
 
-reg [37:0] hdsejo[0:1];
+reg [37:0] hdsejo[1:0];
 
 reg wxxzgd, tceppr, ratebp, fjizkr, iwwrnq;
 reg vrqrih, ryyjxy;

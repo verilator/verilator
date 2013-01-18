@@ -370,16 +370,9 @@ private:
 	int msb = nodep->msbConst();
 	int lsb = nodep->lsbConst();
 	if (msb<lsb) {
-	    // If it's an array, ok to have either ordering, we'll just correct
-	    // So, see if we're sitting under a variable's arrayp.
-	    AstNode* huntbackp = nodep;
-	    while (huntbackp->backp()->castRange()) huntbackp=huntbackp->backp();
-	    if (huntbackp->backp()->castNodeArrayDType()) {
-	    } else {
-		// Little endian bits are legal, just remember to swap
-		// Warning is in V3Width to avoid false warnings when in "off" generate if's
-		nodep->littleEndian(!nodep->littleEndian());
-	    }
+	    // Little endian bits are legal, just remember to swap
+	    // Warning is in V3Width to avoid false warnings when in "off" generate if's
+	    nodep->littleEndian(!nodep->littleEndian());
 	    // Internally we'll always have msb() be the greater number
 	    // We only need to correct when doing [] AstSel extraction,
 	    // and when tracing the vector.

@@ -5,7 +5,7 @@
 
 module t;
 
-   reg [175:0] hex [0:15];
+   reg [175:0] hex [15:0];
 
    integer   i;
 
