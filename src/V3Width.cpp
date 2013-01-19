@@ -836,13 +836,15 @@ private:
 		    if (width==1) {
 			// one bit parameter is same as "parameter [0] foo", not "parameter logic foo"
 			// as you can extract "foo[0]" from a parameter but not a wire
-			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),issigned);
+			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),
+						   issigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED);
 			nodep->dtypep(nodep->findLogicRangeDType
 				      (VNumRange(0,0,false),
 				       nodep->valuep()->widthMin(),
 				       issigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED));
 		    } else {
-			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),issigned);
+			nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),
+						   issigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED);
 		    }
 		    didchk = true;
 		    nodep->valuep()->iterateAndNext(*this,WidthVP(width,nodep->widthMin(),FINAL).p());
@@ -1901,7 +1903,8 @@ private:
 	int width  = max(vup->c()->width(),    max(nodep->lhsp()->width(),    nodep->rhsp()->width()));
 	int mwidth = max(vup->c()->widthMin(), max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin()));
 	bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
-	nodep->dtypeChgWidthSigned(width,mwidth,expSigned);
+	nodep->dtypeChgWidthSigned(width,mwidth,
+				   expSigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED);
 	if (vup->c()->final()) {
 	    // Final call, so make sure children check their sizes
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
@@ -2072,7 +2075,8 @@ private:
 	    linker.relink(newp);
 	    nodep=newp;
 	}
-	nodep->dtypeChgWidthSigned(expWidth,expWidth,expSigned);
+	nodep->dtypeChgWidthSigned(expWidth,expWidth,
+				   expSigned?AstNumeric::SIGNED : AstNumeric::UNSIGNED);
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 

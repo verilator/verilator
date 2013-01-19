@@ -1062,7 +1062,7 @@ public:
     void	dtypeFrom(AstNode* fromp) { if (fromp) { dtypep(fromp->dtypep()); }}
     void	dtypeChgSigned(bool flag=true);
     void	dtypeChgWidth(int width, int widthMin);
-    void	dtypeChgWidthSigned(int width, int widthMin, bool issigned);
+    void	dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric);
     void	dtypeSetBitSized(int width, int widthMin, AstNumeric numeric) { dtypep(findBitDType(width,widthMin,numeric)); }
     void	dtypeSetLogicSized(int width, int widthMin, AstNumeric numeric) { dtypep(findLogicDType(width,widthMin,numeric)); }
     void	dtypeSetLogicBool()	{ dtypep(findLogicBoolDType()); }

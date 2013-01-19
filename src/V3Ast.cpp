@@ -1067,8 +1067,7 @@ void AstNode::dtypeChgWidth(int width, int widthMin) {
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 
-void AstNode::dtypeChgWidthSigned(int width, int widthMin, bool issigned) {
-    AstNumeric numeric = issigned ? AstNumeric::SIGNED : AstNumeric::UNSIGNED;
+void AstNode::dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric) {
     if (!dtypep()) {
 	// We allow dtypep() to be null, as before/during widthing dtypes are not resolved
 	dtypeSetLogicSized(width, widthMin, numeric);

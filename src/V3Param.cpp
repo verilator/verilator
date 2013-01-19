@@ -324,13 +324,13 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
     if (nodep->paramsp()) {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);
 	// Create new module name with _'s between the constants
-	if (debug()>9) nodep->dumpTree(cout,"cell:\t");
+	if (debug()>=10) nodep->dumpTree(cout,"-cell:\t");
 	// Evaluate all module constants
 	V3Const::constifyParamsEdit(nodep);
 
 	// Make sure constification worked
 	// Must be a separate loop, as constant conversion may have changed some pointers.
-	//if (debug()) nodep->dumpTree(cout,"cel2:\t");
+	//if (debug()) nodep->dumpTree(cout,"-cel2:\t");
 	string longname = nodep->modp()->name();
 	bool any_overrides = false;
 	longname += "_";
@@ -442,6 +442,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	// Delete the parameters from the cell; they're not relevant any longer.
 	nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
 	UINFO(8,"     Done with "<<nodep<<endl);
+	//if (debug()>=10) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
     }
 
     // Now remember to process the child module at the end of the module
