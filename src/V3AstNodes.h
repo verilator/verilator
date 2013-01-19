@@ -1288,7 +1288,7 @@ private:
     string	m_name;		// Cell name
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
-    AstNodeModule*	m_modp;		// [AfterLink] Pointer to module instanced
+    AstNodeModule* m_modp;	// [AfterLink] Pointer to module instanced
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
