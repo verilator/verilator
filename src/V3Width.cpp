@@ -1499,7 +1499,7 @@ private:
 			// otherwise would need some mess to force both sides to proper size
 		    }
 		}
-		// Simple dtype checking, should be a more general check
+		// TODO Simple dtype checking, should be a more general check
 		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		if (loArray != hiArray) {
