@@ -358,21 +358,22 @@ uint32_t AstNodeDType::arrayUnpackedElements() {
     return entries;
 }
 
-pair<uint32_t,uint32_t> AstNodeDType::dimensions() {
+pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
     uint32_t unpacked = 0;
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
-	    if (adtypep->castPackArrayDType()) packed += 1;
-	    else unpacked += 1;
+	    if (adtypep->castPackArrayDType()) packed++;
+	    else unpacked++;
 	    dtypep = adtypep->subDTypep();
+	    continue;
 	}
-	else {
-	    // AstBasicDType - nothing below, 1
-	    break;
+	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
+	    if (includeBasic && adtypep->isRanged()) packed++;
 	}
+	break;
     }
     return make_pair(packed, unpacked);
 }

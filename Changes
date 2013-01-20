@@ -14,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support VPI product info, warning calls, etc, bug588. [Rick Porter]
 
+***   Support $left, $right and related functions, bug448. [Iztok Jeras]
+
 ***   Define SYSTEMVERILOG, SV_COV_START and other IEEE mandated predefines.
 
 ****  Fix pin width mismatch error, bug595.  [Alex Solomatnikov]

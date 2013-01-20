@@ -65,6 +65,11 @@ public:
 	:AstNodeMath(fl)
 	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); dtypeSetLogicSized(32,m_num.widthMin(),
 										AstNumeric::UNSIGNED); }
+    class Signed32 {};		// for creator type-overload selection
+    AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
+	:AstNodeMath(fl)
+	,m_num(V3Number(fl,32,num)) { m_num.width(32,32); dtypeSetLogicSized(32,m_num.widthMin(),
+									     AstNumeric::SIGNED); }
     class RealDouble {};		// for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
 	:AstNodeMath(fl)
@@ -2736,12 +2741,14 @@ private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     AstAttrType	m_attrType;	// What sort of extraction
 public:
-    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp=NULL)
+    AstAttrOf(FileLine* fl, AstAttrType attrtype, AstNode* fromp=NULL, AstNode* dimp=NULL)
 	: AstNode(fl) {
 	setNOp1p(fromp);
+	setNOp2p(dimp);
 	m_attrType = attrtype; }
     ASTNODE_NODE_FUNCS(AttrOf, ATTROF)
     AstNode*	fromp() const { return op1p(); }
+    AstNode*	dimp() const { return op2p(); }
     AstAttrType	attrType() const { return m_attrType; }
     virtual void dump(ostream& str=cout);
 };

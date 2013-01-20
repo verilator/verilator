@@ -49,14 +49,14 @@ module t (/*AUTOARG*/
       if ($bits (struct_bg.e1) !=  2) $stop;
       if ($bits (struct_bg.e2) !=  4) $stop;
       if ($bits (struct_bg.e3) !=  8) $stop;
-//    if ($increment (struct_bg, 1) !=  1) $stop;
+      if ($increment (struct_bg, 1) !=  1) $stop;
       // little endian
       if ($bits (struct_lt   ) != 15) $stop;
       if ($bits (struct_lt.e0) !=  1) $stop;
       if ($bits (struct_lt.e1) !=  2) $stop;
       if ($bits (struct_lt.e2) !=  4) $stop;
       if ($bits (struct_lt.e3) !=  8) $stop;
-//    if ($increment (struct_lt, 1) != -1) $stop;
+      if ($increment (struct_lt, 1) != 1) $stop;  // Structure itself always big numbered
    end
 
 endmodule

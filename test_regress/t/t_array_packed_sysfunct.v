@@ -107,6 +107,7 @@ module t (/*AUTOARG*/
                `check($increment  (array_bg[2], dim-1), 1    );
                `check($size       (array_bg[2], dim-1), wdt  );
             end
+`ifndef VERILATOR // Unsupported slices don't maintain size correctly
 	 end else if (slc==2) begin
             // half array
             `check($dimensions (array_bg[WA/2+1:2]), 3);
@@ -119,6 +120,7 @@ module t (/*AUTOARG*/
                `check($increment  (array_bg[WA/2+1:2], dim), 1    );
                `check($size       (array_bg[WA/2+1:2], dim), wdt);
             end
+`endif
 	 end
       end else if (cnt[30:4]==2) begin
 	 // little endian
@@ -146,6 +148,7 @@ module t (/*AUTOARG*/
                `check($increment  (array_lt[2], dim-1), -1   );
                `check($size       (array_lt[2], dim-1), wdt  );
             end
+`ifndef VERILATOR // Unsupported slices don't maintain size correctly
 	 end else if (slc==2) begin
             // half array
             `check($dimensions (array_lt[2:WA/2+1]), 3);
@@ -158,6 +161,7 @@ module t (/*AUTOARG*/
                `check($increment  (array_lt[2:WA/2+1], dim), -1   );
                `check($size       (array_lt[2:WA/2+1], dim), wdt  );
             end
+`endif
 	 end
       end
    end

@@ -219,7 +219,16 @@ class AstAttrType {
 public:
     enum en {
 	ILLEGAL,
-	EXPR_BITS,			// V3Const converts to constant
+	//
+	DIM_BITS,			// V3Const converts to constant
+	DIM_DIMENSIONS,			// V3Width converts to constant
+	DIM_HIGH,			// V3Width processes
+	DIM_INCREMENT,			// V3Width processes
+	DIM_LEFT,			// V3Width processes
+	DIM_LOW,			// V3Width processes
+	DIM_RIGHT,			// V3Width processes
+	DIM_SIZE,			// V3Width processes
+	DIM_UNPK_DIMENSIONS,		// V3Width converts to constant
 	//
 	MEMBER_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	//
@@ -237,7 +246,10 @@ public:
     enum en m_e;
     const char* ascii() const {
 	static const char* names[] = {
-	    "%E-AT", "EXPR_BITS", "MEMBER_BASE",
+	    "%E-AT",
+	    "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
+	    "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
+	    "MEMBER_BASE",
 	    "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
 	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT"
@@ -1520,7 +1532,7 @@ public:
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     AstNodeDType* dtypeDimensionp(int depth);
-    pair<uint32_t,uint32_t> dimensions();
+    pair<uint32_t,uint32_t> dimensions(bool includeBasic);
     uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
 };

@@ -14,22 +14,30 @@ module t (/*AUTOARG*/);
       c_t [17:16] d;
    } e_t;
 
-`define check(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d:  got=0b%b exp=0b%b\n", `__LINE__, (gotv), (expv)); $stop; end while(0);
+`define check(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d:  got=0x%x exp=0x%x\n", `__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checkb(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d:  got=0b%b exp=0b%b\n", `__LINE__, (gotv), (expv)); $stop; end while(0);
 
    initial begin
       e_t e;
-      if ($bits(ab_t)!=6) $stop;
-      if ($bits(c_t)!=12) $stop;
-      if ($bits(e_t)!=24) $stop;
-      e =       24'b101101010111010110101010;
-      `check(e, 24'b101101010111010110101010);
-      e.d[17] = 12'b111110011011;
-      `check(e, 24'b111110011011010110101010);
-      e.d[16][6] =                 6'b010101;
-      `check(e, 24'b111110011011010110010101);
-      e.d[16][6].b[5] =            2'b10;
-      `check(e, 24'b111110011011010110011001);
-      e.d[16][6].b[5][2] =           1'b1;
+      `check($bits(ab_t),6);
+      `check($bits(c_t),12);
+      `check($bits(e_t),24);
+      `check($bits(e), 24);
+      `check($bits(e.d[17]),12);
+      `check($bits(e.d[16][6]),6);
+      `check($bits(e.d[16][6].b[5]),2);
+      `check($bits(e.d[16][6].b[5][2]), 1);
+      //
+      e =        24'b101101010111010110101010;
+      `checkb(e, 24'b101101010111010110101010);
+      e.d[17] =  12'b111110011011;
+      `checkb(e, 24'b111110011011010110101010);
+      e.d[16][6] =                  6'b010101;
+      `checkb(e, 24'b111110011011010110010101);
+      e.d[16][6].b[5] =             2'b10;
+      `checkb(e, 24'b111110011011010110011001);
+      e.d[16][6].b[5][2] =            1'b1;
+      //
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -440,6 +440,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	putfs(nodep,"$_ATTROF(");
 	nodep->fromp()->iterateAndNext(*this);
+	if (nodep->dimp()) {
+	    putbs(",");
+	    nodep->dimp()->iterateAndNext(*this);
+	}
 	puts(")");
     }
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
