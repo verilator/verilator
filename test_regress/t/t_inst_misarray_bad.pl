@@ -7,13 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug595");
-
 compile (
 	 verilator_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'TBD
+'%Error: t/t_inst_misarray_bad.v:\d+: Illegal port connection foo, port is not an array expression is an array.
 %Error: Exiting due to.*',
 	 );
 

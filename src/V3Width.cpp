@@ -1499,6 +1499,14 @@ private:
 			// otherwise would need some mess to force both sides to proper size
 		    }
 		}
+		// Simple dtype checking, should be a more general check
+		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
+		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
+		if (loArray != hiArray) {
+		    nodep->v3error("Illegal port connection "<<nodep->prettyName()<<","
+				   <<" port is"<<(hiArray?"":" not")<<" an array"
+				   <<" expression is"<<(loArray?"":" not")<<" an array.");
+		}
 		if (inputPin) {
 		    // input pin is lhs, expr is rhs; resize expr to match
 		    awidth = pinwidth;
