@@ -24,6 +24,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix signed/unsigned parameter misconversion, bug606.  [Jeremy Bennett]
 
+****  Fix segfault on multidimensional dotted arrays, bug607.  [Jie Xu]
+
 ****  Fix package logic var compile error.
 
 

@@ -1563,6 +1563,7 @@ private:
 	    m_ds.init(m_curSymp);
 	    nodep->rhsp()->iterateAndNext(*this);
 	    nodep->thsp()->iterateAndNext(*this);
+	    nodep->attrp()->iterateAndNext(*this);
 	}
 	m_ds = lastStates;
     }
