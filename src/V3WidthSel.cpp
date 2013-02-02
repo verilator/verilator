@@ -284,6 +284,31 @@ private:
 	    newp->length((msb - lsb) + 1);
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
+	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+	    // SELEXTRACT(array, msb, lsb) -> SEL(array, lsb*width-of-subindex, width-of-subindex*(msb-lsb))
+	    if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
+		adtypep->v3fatalSrc("Array extraction with width miscomputed "
+				    <<adtypep->width()<<"/"<<fromRange.elements());
+	    int elwidth = adtypep->width() / fromRange.elements();
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp,
+				       new AstConst(nodep->fileline(),AstConst::Unsized32(),lsb*elwidth),
+				       new AstConst(nodep->fileline(),AstConst::Unsized32(),(msb-lsb+1)*elwidth));
+	    newp->declRange(fromRange);
+	    newp->declElWidth(elwidth);
+	    if (fromRange.elements() == (msb-lsb+1)) {  // Extracting whole of original array
+		newp->dtypeFrom(adtypep);
+	    } else {
+		// Need a slice data type, which is an array of the extracted type, but with (presumably) different size
+		AstNodeDType* vardtypep = new AstPackArrayDType(nodep->fileline(),
+								adtypep->subDTypep(), // Need to strip off array reference
+								new AstRange(nodep->fileline(), fromRange));
+		v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+		newp->dtypeFrom(vardtypep);
+	    }
+	    if (debug()>=9) newp->dumpTree(cout,"--EXTBTn: ");
+	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	}
 	else if (ddtypep->castBasicDType()) {
 	    if (fromRange.littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap
@@ -324,6 +349,7 @@ private:
 	else {  // NULL=bad extract, or unknown node type
 	    nodep->v3error("Illegal range select; type already selected, or bad dimension: type is "
 			   <<fromdata.m_errp->prettyName());
+	    UINFO(1,"    Related ddtype: "<<ddtypep<<endl);
 	    // How to recover?  We'll strip a dimension.
 	    nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
 	}

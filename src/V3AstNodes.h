@@ -142,6 +142,11 @@ public:
 	m_littleEndian = false;
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
     }
+    AstRange(FileLine* fl, VNumRange range)
+	:AstNode(fl) {
+	m_littleEndian = range.littleEndian();
+	setOp2p(new AstConst(fl,range.hi())); setOp3p(new AstConst(fl,range.lo()));
+    }
     ASTNODE_NODE_FUNCS(Range, RANGE)
     AstNode* msbp() const { return op2p()->castNode(); }	// op2 = Msb expression
     AstNode* lsbp() const { return op3p()->castNode(); }	// op3 = Lsb expression
