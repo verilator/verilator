@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
       Verilated models.  This may affect packed arrays that are public or
       accessed via the VPI.
 
+***   Support wires with data types, bug608. [Ed Lander]
+
 ***   Support bind, to module names only, bug602. [Ed Lander]
 
 ***   Support VPI product info, warning calls, etc, bug588. [Rick Porter]
