@@ -103,6 +103,7 @@ public:
 	if (!diddump && v3Global.opt.dumpTree()) {
 	    diddump = true;
 	    m_syms.dumpFilePrefixed("linkdot-preerr");
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr.tree"));
 	}
     }
 
@@ -1444,6 +1445,10 @@ private:
 		}
 	    }
 	}
+    }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+	// EnumItemRef may be under a dot.  Should already be resolved.
+	nodep->iterateChildren(*this);
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	checkNoDot(nodep);
