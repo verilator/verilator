@@ -1273,6 +1273,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_doNConst
 	    && (nodep->sensp()->castConst()
+		|| nodep->sensp()->castEnumItemRef()
 		|| (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
 	    // Constants in sensitivity lists may be removed (we'll simplify later)
 	    if (nodep->isClocked()) {  // A constant can never get a pos/negexge
@@ -1301,6 +1302,9 @@ private:
 	    if (!senvarp) sensp->v3fatalSrc("Non-varref sensitivity variable");
 	    sensp->replaceWith(senvarp);
 	    sensp->deleteTree(); sensp=NULL;
+	} else if (!m_doNConst  // Deal with later when doNConst missing
+		   && (nodep->sensp()->castEnumItemRef()
+		       || nodep->sensp()->castConst())) {
 	} else {
 	    if (nodep->hasVar() && !nodep->varrefp()) nodep->v3fatalSrc("Null sensitivity variable");
 	}

@@ -15,6 +15,12 @@ module t;
    reg [1:0]  ttype;
    reg 	      m;
 
+   enum       bit [1:0] { LOCAL } l;
+
+   always @ (m or 1'b0 or LOCAL) begin
+      // Don't complain about constants in sensitivity lists
+   end
+
    initial begin
       ttype = pkg::E__NOT;
       m = (ttype == pkg::E__VAL);
