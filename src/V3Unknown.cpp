@@ -168,6 +168,11 @@ private:
 	m_constXCvt = true;
 	nodep->bodysp()->iterateAndNext(*this);
     }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	m_constXCvt = false;  // Avoid loosing the X's in casex
+	nodep->iterateChildren(*this);
+	m_constXCvt = true;
+    }
     void visitEqNeqCase(AstNodeBiop* nodep) {
 	UINFO(4," N/EQCASE->EQ "<<nodep<<endl);
 	V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
@@ -283,6 +288,7 @@ private:
 	    } else {
 		// Make a Vxrand variable
 		// We use the special XTEMP type so it doesn't break pure functions
+		if (!m_modp) nodep->v3fatalSrc("X number not under module");
 		string newvarname = ((string)"__Vxrand"
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp

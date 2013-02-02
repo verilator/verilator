@@ -115,7 +115,6 @@ private:
     // STATE
     bool	m_paramsOnly;	// Computing parameter value; limit operation
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
-    AstNodeCase* m_casep;	// Current case statement CaseItem is under
     AstFunc*	m_funcp;	// Current function
     AstInitial*	m_initialp;	// Current initial block
     AstAttrOf*	m_attrp;	// Current attribute
@@ -1215,12 +1214,10 @@ private:
 
     virtual void visit(AstNodeCase* nodep, AstNUser*) {
 	// TOP LEVEL NODE
-	AstNodeCase* lastCasep = m_casep;
-	m_casep = nodep;
 	nodep->exprp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	for (AstCaseItem* nextip, *itemp = nodep->itemsp(); itemp; itemp=nextip) {
 	    nextip = itemp->nextp()->castCaseItem(); // Prelim may cause the node to get replaced
-	    if (!m_casep->castGenCase()) itemp->bodysp()->iterateAndNext(*this);
+	    if (!nodep->castGenCase()) itemp->bodysp()->iterateAndNext(*this);
 	    for (AstNode* nextcp, *condp = itemp->condsp(); condp; condp=nextcp) {
 		nextcp = condp->nextp(); // Prelim may cause the node to get replaced
 		condp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p()); condp=NULL;
@@ -1244,7 +1241,6 @@ private:
 	    }
 	}
         widthCheck(nodep,"Case expression",nodep->exprp(),width,mwidth);
-	m_casep = lastCasep;
     }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	// TOP LEVEL NODE
@@ -2532,7 +2528,6 @@ public:
 	//			    // don't wish to trigger errors
 	m_paramsOnly = paramsOnly;
 	m_cellRangep = NULL;
-	m_casep = NULL;
 	m_funcp = NULL;
 	m_initialp = NULL;
 	m_attrp = NULL;

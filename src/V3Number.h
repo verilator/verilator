@@ -166,6 +166,7 @@ public:
     bool isEqAllOnes(int optwidth=0) const;
     bool isCaseEq(const V3Number& rhsp) const;  // operator==
     bool isLt(const V3Number& rhsp) const;  // operator<
+    bool isLtXZ(const V3Number& rhsp) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
     uint32_t toUInt() const;
@@ -180,7 +181,7 @@ public:
     uint32_t mostSetBitP1() const;	// Highest bit set plus one, IE for 16 return 5, for 0 return 0.
 
     // Operators
-    bool operator<(const V3Number& rhs) const { return isLt(rhs); }
+    bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
 
     // STATICS
     static int log2b(uint32_t num);

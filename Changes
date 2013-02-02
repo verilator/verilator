@@ -30,6 +30,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix package logic var compile error.
 
+****  Fix enums with X values.
+
 
 * Verilator 3.844 2013/01/09
 
