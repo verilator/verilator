@@ -2552,6 +2552,33 @@ struct AstFinal : public AstNode {
     AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
 };
 
+struct AstInside : public AstNodeMath {
+    AstInside(FileLine* fl, AstNode* exprp, AstNode* itemsp)
+	: AstNodeMath(fl) {
+	addOp1p(exprp); addOp2p(itemsp);
+	dtypeSetLogicBool();
+    }
+    ASTNODE_NODE_FUNCS(Inside, INSIDE)
+    AstNode* exprp() const { return op1p()->castNode(); }	// op1 = LHS expression to compare with
+    AstNode* itemsp() const { return op2p()->castNode(); }	// op2 = RHS, possibly a list of expr or AstInsideRange
+    virtual string emitVerilog() { return "%l inside { %r }"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return false; }  // NA
+};
+
+struct AstInsideRange : public AstNodeMath {
+    AstInsideRange(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+	: AstNodeMath(fl) {
+	addOp1p(lhsp); addOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(InsideRange, INSIDERANGE)
+    AstNode* lhsp() const { return op1p()->castNode(); }	// op1 = LHS
+    AstNode* rhsp() const { return op2p()->castNode(); }	// op2 = RHS
+    virtual string emitVerilog() { return "[%l:%r]"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return false; }  // NA
+};
+
 struct AstInitArray : public AstNode {
     // Set a var to a large list of values
     // The values must be in sorted order, and not exceed the size of the var's array.

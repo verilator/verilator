@@ -2558,6 +2558,11 @@ the disable statement itself is inside.  This was commonly used to provide
 loop break and continue functionality before SystemVerilog added the break
 and continue keywords.
 
+=item inside
+
+Inside expressions may not include unpacked array traversal or $ as an
+upper bound.  Case inside and case matches are also unsupported.
+
 =item priority if, unique if
 
 Priority and unique if's are treated as normal ifs and not asserted to be

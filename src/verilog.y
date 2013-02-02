@@ -332,6 +332,7 @@ class AstSenTree;
 %token<fl>		yINITIAL	"initial"
 %token<fl>		yINOUT		"inout"
 %token<fl>		yINPUT		"input"
+%token<fl>		yINSIDE		"inside"
 %token<fl>		yINT		"int"
 %token<fl>		yINTEGER	"integer"
 %token<fl>		yLOCALPARAM	"localparam"
@@ -557,7 +558,7 @@ class AstSenTree;
 // PSL op precedence
 %right	 	yP_MINUSGT  yP_LOGIFF
 %right		yP_ORMINUSGT  yP_OREQGT
-%left<fl>		prPSLCLK
+%left<fl>	prPSLCLK
 
 // Verilog op precedence
 %right		'?' ':'
@@ -567,7 +568,7 @@ class AstSenTree;
 %left		'^' yP_XNOR
 %left		'&' yP_NAND
 %left		yP_EQUAL yP_NOTEQUAL yP_CASEEQUAL yP_CASENOTEQUAL yP_WILDEQUAL yP_WILDNOTEQUAL
-%left		'>' '<' yP_GTE yP_LTE yP_LTE__IGNORE
+%left		'>' '<' yP_GTE yP_LTE yP_LTE__IGNORE yINSIDE
 %left		yP_SLEFT yP_SRIGHT yP_SSRIGHT
 %left		'+' '-'
 %left		'*' '/' '%'
@@ -2245,6 +2246,20 @@ case_itemList<caseitemp>:	// IEEE: { case_item + ... }
 	|	case_itemList yDEFAULT ':' stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
 	;
 
+open_range_list<nodep>:		// ==IEEE: open_range_list + open_value_range
+		open_value_range			{ $$ = $1; }
+	|	open_range_list ',' open_value_range	{ $$ = $1;$1->addNext($3); }
+	;
+
+open_value_range<nodep>:	// ==IEEE: open_value_range
+		value_range				{ $$ = $1; }
+	;
+
+value_range<nodep>:		// ==IEEE: value_range
+		expr					{ $$ = $1; }
+	|	'[' expr ':' expr ']'			{ $$ = new AstInsideRange($3,$2,$4); }
+	;
+
 caseCondList<nodep>:		// IEEE: part of case_item
 		expr 					{ $$ = $1; }
 	|	caseCondList ',' expr			{ $$ = $1;$1->addNext($3); }
@@ -2757,7 +2772,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr '?' ~r~expr ':' ~r~expr		{ $$ = new AstCond($2,$1,$3,$5); }
 	//
 	//			// IEEE: inside_expression
-	//UNSUP	~l~expr yINSIDE '{' open_range_list '}'	{ UNSUP }
+	|	~l~expr yINSIDE '{' open_range_list '}'	{ $$ = new AstInside($2,$1,$4); }
 	//
 	//			// IEEE: tagged_union_expression
 	//UNSUP	yTAGGED id/*member*/ %prec prTAGGED		{ UNSUP }

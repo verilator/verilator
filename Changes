@@ -18,6 +18,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support $left, $right and related functions, bug448. [Iztok Jeras]
 
+***   Support inside expressions.
+
 ***   Define SYSTEMVERILOG, SV_COV_START and other IEEE mandated predefines.
 
 ****  Fix pin width mismatch error, bug595.  [Alex Solomatnikov]

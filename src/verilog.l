@@ -424,6 +424,7 @@ word	[a-zA-Z0-9_]+
   "final"		{ FL; return yFINAL; }
   "iff"			{ FL; return yIFF; }
   "import"		{ FL; return yIMPORT; }
+  "inside"		{ FL; return yINSIDE; }
   "int"			{ FL; return yINT; }
   "logic"		{ FL; return yLOGIC; }
   "longint"		{ FL; return yLONGINT; }
@@ -469,7 +470,6 @@ word	[a-zA-Z0-9_]+
   "forkjoin"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "ignore_bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "illegal_bins"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "inside"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "interface"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "intersect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "join_any"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }

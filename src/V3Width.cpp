@@ -996,6 +996,58 @@ private:
 	// Should be correct by construction, so we'll just loop through all types
 	nodep->iterateChildren(*this, vup);
     }
+    virtual void visit(AstInside* nodep, AstNUser* vup) {
+	nodep->exprp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	for (AstNode* nextip, *itemp = nodep->itemsp(); itemp; itemp=nextip) {
+	    nextip = itemp->nextp(); // Prelim may cause the node to get replaced
+	    itemp->iterate(*this,WidthVP(ANYSIZE,0,PRELIM).p()); itemp=NULL;
+	}
+	// Take width as maximum across all items
+	int width = nodep->exprp()->width();
+	int mwidth = nodep->exprp()->widthMin();
+	for (AstNode* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()) {
+	    width = max(width,itemp->width());
+	    mwidth = max(mwidth,itemp->widthMin());
+	}
+	// Apply width
+	nodep->exprp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
+	for (AstNode* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()) {
+	    widthCheck(nodep,"Inside Item",itemp,width,mwidth);
+	}
+        widthCheck(nodep,"Inside expression",nodep->exprp(),width,mwidth);
+	nodep->dtypeSetLogicBool();
+	if (debug()>=9) nodep->dumpTree(cout,"-inside-in: ");
+	// Now rip out the inside and replace with simple math
+	AstNode* newp = NULL;
+	for (AstNode* nextip, *itemp = nodep->itemsp(); itemp; itemp=nextip) {
+	    nextip = itemp->nextp(); // Will be unlinking
+	    AstNode* inewp;
+	    if (AstInsideRange* irangep = itemp->castInsideRange()) {
+		inewp = new AstAnd(itemp->fileline(),
+				   new AstGte(itemp->fileline(),
+					      nodep->exprp()->cloneTree(true),
+					      irangep->lhsp()->unlinkFrBack()),
+				   new AstLte(itemp->fileline(),
+					      nodep->exprp()->cloneTree(true),
+					      irangep->rhsp()->unlinkFrBack()));
+	    } else {
+		inewp = new AstEqWild(itemp->fileline(),
+				      nodep->exprp()->cloneTree(true),
+				      itemp->unlinkFrBack());
+	    }
+	    if (newp) newp = new AstOr(nodep->fileline(), newp, inewp);
+	    else newp = inewp;
+	}
+	if (!newp) newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+	if (debug()>=9) newp->dumpTree(cout,"-inside-out: ");
+	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+    }
+    virtual void visit(AstInsideRange* nodep, AstNUser* vup) {
+	// Just do each side; AstInside will rip these nodes out later
+	nodep->lhsp()->iterateAndNext(*this,vup);
+	nodep->rhsp()->iterateAndNext(*this,vup);
+	nodep->dtypeFrom(nodep->lhsp());
+    }
 
     virtual void visit(AstNodeClassDType* nodep, AstNUser* vup) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
