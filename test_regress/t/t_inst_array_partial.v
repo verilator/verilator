@@ -9,8 +9,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   wire [17:10] bitout;
-   wire [27:24] short_bitout;
+   wire [19:10] bitout;
+   wire [29:24] short_bitout;
    wire [7:0] 	allbits;
    wire [15:0] 	twobits;
 
@@ -37,6 +37,11 @@ module t (/*AUTOARG*/
 		   .twobits (twobits),
 		   .bitout (bitout[17:10]));
 
+   sub
+     i_sub6 [7:4] (.allbits (allbits),
+		   .twobits (twobits[15:8]),
+		   .bitout ({bitout[18+:2],short_bitout[28+:2]}));
+
    integer 	cyc=0;
    reg [63:0] 	crc;
    reg [63:0] 	sum;
@@ -44,7 +49,7 @@ module t (/*AUTOARG*/
    // Signals under test
    assign allbits = crc[7:0];
    assign twobits = crc[15:0];
-   wire [63:0] result = {52'h0, short_bitout, bitout};
+   wire [63:0] result = {48'h0, short_bitout, bitout};
 
    // Test loop
    always @ (posedge clk) begin
@@ -68,7 +73,7 @@ module t (/*AUTOARG*/
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
 	 // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h0bf9559ce1f98425
+`define EXPECTED_SUM 64'ha1da9ff8082a4ff6
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;

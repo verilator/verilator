@@ -198,6 +198,7 @@ private:
 		AstNode* exprp = nodep->exprp()->unlinkFrBack();
 		bool inputPin = nodep->modVarp()->isInput();
 		if (!inputPin && !exprp->castVarRef()
+		    && !exprp->castConcat()  // V3Const will collapse the SEL with the one we're about to make
 		    && !exprp->castSel()) {  // V3Const will collapse the SEL with the one we're about to make
 		    nodep->v3error("Unsupported: Per-bit array instantiations with output connections to non-wires.");
 		    // Note spec allows more complicated matches such as slices and such
