@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-`define check(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d: cnt=0x%0x  got=0x%0x exp=0x%0x\n", `__LINE__, cnt, (gotv), (expv)); $stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
    // parameters for array sizes
    localparam WA = 4;
@@ -31,17 +31,17 @@ module t (/*AUTOARG*/
    integer wdt = 0;  // width
 
    initial begin
-      `check($dimensions (array_unpk), 3);
+      `checkh($dimensions (array_unpk), 3);
 `ifndef VCS
-      `check($unpacked_dimensions (array_unpk), 2);  // IEEE 2009
+      `checkh($unpacked_dimensions (array_unpk), 2);  // IEEE 2009
 `endif
-      `check($bits (array_unpk), 2*2*2);
-      `check($low  (array_unpk), 2);
-      `check($high (array_unpk), 3);
-      `check($left (array_unpk), 3);
-      `check($right(array_unpk), 2);
-      `check($increment(array_unpk), 1);
-      `check($size (array_unpk), 2);
+      `checkh($bits (array_unpk), 2*2*2);
+      `checkh($low  (array_unpk), 2);
+      `checkh($high (array_unpk), 3);
+      `checkh($left (array_unpk), 3);
+      `checkh($right(array_unpk), 2);
+      `checkh($increment(array_unpk), 1);
+      `checkh($size (array_unpk), 2);
    end
    
    // event counter
@@ -85,40 +85,40 @@ module t (/*AUTOARG*/
 	 // big endian
 	 if (slc==0) begin
             // full array
-            `check($dimensions (array_bg), 3);
-            `check($bits       (array_bg), WA*WB*WC);
+            `checkh($dimensions (array_bg), 3);
+            `checkh($bits       (array_bg), WA*WB*WC);
             if ((dim>=1)&&(dim<=3)) begin
-               `check($left       (array_bg, dim), wdt+1);
-               `check($right      (array_bg, dim), 2    );
-               `check($low        (array_bg, dim), 2    );
-               `check($high       (array_bg, dim), wdt+1);
-               `check($increment  (array_bg, dim), 1    );
-               `check($size       (array_bg, dim), wdt  );
+               `checkh($left       (array_bg, dim), wdt+1);
+               `checkh($right      (array_bg, dim), 2    );
+               `checkh($low        (array_bg, dim), 2    );
+               `checkh($high       (array_bg, dim), wdt+1);
+               `checkh($increment  (array_bg, dim), 1    );
+               `checkh($size       (array_bg, dim), wdt  );
             end
 	 end else if (slc==1) begin
             // single array element
-            `check($dimensions (array_bg[2]), 2);
-            `check($bits       (array_bg[2]), WB*WC);
+            `checkh($dimensions (array_bg[2]), 2);
+            `checkh($bits       (array_bg[2]), WB*WC);
             if ((dim>=2)&&(dim<=3)) begin
-               `check($left       (array_bg[2], dim-1), wdt+1);
-               `check($right      (array_bg[2], dim-1), 2    );
-               `check($low        (array_bg[2], dim-1), 2    );
-               `check($high       (array_bg[2], dim-1), wdt+1);
-               `check($increment  (array_bg[2], dim-1), 1    );
-               `check($size       (array_bg[2], dim-1), wdt  );
+               `checkh($left       (array_bg[2], dim-1), wdt+1);
+               `checkh($right      (array_bg[2], dim-1), 2    );
+               `checkh($low        (array_bg[2], dim-1), 2    );
+               `checkh($high       (array_bg[2], dim-1), wdt+1);
+               `checkh($increment  (array_bg[2], dim-1), 1    );
+               `checkh($size       (array_bg[2], dim-1), wdt  );
             end
 `ifndef VERILATOR // Unsupported slices don't maintain size correctly
 	 end else if (slc==2) begin
             // half array
-            `check($dimensions (array_bg[WA/2+1:2]), 3);
-            `check($bits       (array_bg[WA/2+1:2]), WA/2*WB*WC);
+            `checkh($dimensions (array_bg[WA/2+1:2]), 3);
+            `checkh($bits       (array_bg[WA/2+1:2]), WA/2*WB*WC);
             if ((dim>=1)&&(dim<=3)) begin
-               `check($left       (array_bg[WA/2+1:2], dim), wdt+1);
-               `check($right      (array_bg[WA/2+1:2], dim), 2    );
-               `check($low        (array_bg[WA/2+1:2], dim), 2    );
-               `check($high       (array_bg[WA/2+1:2], dim), wdt+1);
-               `check($increment  (array_bg[WA/2+1:2], dim), 1    );
-               `check($size       (array_bg[WA/2+1:2], dim), wdt);
+               `checkh($left       (array_bg[WA/2+1:2], dim), wdt+1);
+               `checkh($right      (array_bg[WA/2+1:2], dim), 2    );
+               `checkh($low        (array_bg[WA/2+1:2], dim), 2    );
+               `checkh($high       (array_bg[WA/2+1:2], dim), wdt+1);
+               `checkh($increment  (array_bg[WA/2+1:2], dim), 1    );
+               `checkh($size       (array_bg[WA/2+1:2], dim), wdt);
             end
 `endif
 	 end
@@ -126,40 +126,40 @@ module t (/*AUTOARG*/
 	 // little endian
 	 if (slc==0) begin
             // full array
-            `check($dimensions (array_lt), 3);
-            `check($bits       (array_lt), WA*WB*WC);
+            `checkh($dimensions (array_lt), 3);
+            `checkh($bits       (array_lt), WA*WB*WC);
             if ((dim>=1)&&(dim<=3)) begin
-               `check($left       (array_lt, dim), 2    );
-               `check($right      (array_lt, dim), wdt+1);
-               `check($low        (array_lt, dim), 2    );
-               `check($high       (array_lt, dim), wdt+1);
-               `check($increment  (array_lt, dim), -1   );
-               `check($size       (array_lt, dim), wdt  );
+               `checkh($left       (array_lt, dim), 2    );
+               `checkh($right      (array_lt, dim), wdt+1);
+               `checkh($low        (array_lt, dim), 2    );
+               `checkh($high       (array_lt, dim), wdt+1);
+               `checkh($increment  (array_lt, dim), -1   );
+               `checkh($size       (array_lt, dim), wdt  );
             end
 	 end else if (slc==1) begin
             // single array element
-            `check($dimensions (array_lt[2]), 2);
-            `check($bits       (array_lt[2]), WB*WC);
+            `checkh($dimensions (array_lt[2]), 2);
+            `checkh($bits       (array_lt[2]), WB*WC);
             if ((dim>=2)&&(dim<=3)) begin
-               `check($left       (array_lt[2], dim-1), 2    );
-               `check($right      (array_lt[2], dim-1), wdt+1);
-               `check($low        (array_lt[2], dim-1), 2    );
-               `check($high       (array_lt[2], dim-1), wdt+1);
-               `check($increment  (array_lt[2], dim-1), -1   );
-               `check($size       (array_lt[2], dim-1), wdt  );
+               `checkh($left       (array_lt[2], dim-1), 2    );
+               `checkh($right      (array_lt[2], dim-1), wdt+1);
+               `checkh($low        (array_lt[2], dim-1), 2    );
+               `checkh($high       (array_lt[2], dim-1), wdt+1);
+               `checkh($increment  (array_lt[2], dim-1), -1   );
+               `checkh($size       (array_lt[2], dim-1), wdt  );
             end
 `ifndef VERILATOR // Unsupported slices don't maintain size correctly
 	 end else if (slc==2) begin
             // half array
-            `check($dimensions (array_lt[2:WA/2+1]), 3);
-            `check($bits       (array_lt[2:WA/2+1]), WA/2*WB*WC);
+            `checkh($dimensions (array_lt[2:WA/2+1]), 3);
+            `checkh($bits       (array_lt[2:WA/2+1]), WA/2*WB*WC);
             if ((dim>=1)&&(dim<=3)) begin
-               `check($left       (array_lt[2:WA/2+1], dim), 2    );
-               `check($right      (array_lt[2:WA/2+1], dim), wdt+1);
-               `check($low        (array_lt[2:WA/2+1], dim), 2    );
-               `check($high       (array_lt[2:WA/2+1], dim), wdt+1);
-               `check($increment  (array_lt[2:WA/2+1], dim), -1   );
-               `check($size       (array_lt[2:WA/2+1], dim), wdt  );
+               `checkh($left       (array_lt[2:WA/2+1], dim), 2    );
+               `checkh($right      (array_lt[2:WA/2+1], dim), wdt+1);
+               `checkh($low        (array_lt[2:WA/2+1], dim), 2    );
+               `checkh($high       (array_lt[2:WA/2+1], dim), wdt+1);
+               `checkh($increment  (array_lt[2:WA/2+1], dim), -1   );
+               `checkh($size       (array_lt[2:WA/2+1], dim), wdt  );
             end
 `endif
 	 end

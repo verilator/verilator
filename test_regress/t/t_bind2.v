@@ -5,7 +5,7 @@
 
 // verilator lint_off WIDTH
 
-`define check(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: Line%0d:  got=0x%0x exp=0x%0x\n", `__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -79,12 +79,12 @@ module mycheck (/*AUTOARG*/
    parameter int param3 = 8'h33;
 
    always @ (posedge clk) begin
-      `check(param1,8'h31);
-      `check(param2,8'h22);
-      `check(param3,8'h23);
-      `check(p1,8'h04);
-      `check(p2,8'h05);
-      `check(p3,8'h06);
+      `checkh(param1,8'h31);
+      `checkh(param2,8'h22);
+      `checkh(param3,8'h23);
+      `checkh(p1,8'h04);
+      `checkh(p2,8'h05);
+      `checkh(p3,8'h06);
       $write("*-* All Finished *-*\n");
       $finish;
    end
