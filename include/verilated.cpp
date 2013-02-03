@@ -603,7 +603,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    vlsint64_t ld;
-		    sscanf(tmp,"%" VL_PRI64 "d",&ld);
+		    sscanf(tmp,"%30" VL_PRI64 "d",&ld);
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
@@ -624,7 +624,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    QData ld;
-		    sscanf(tmp,"%" VL_PRI64 "u",&ld);
+		    sscanf(tmp,"%30" VL_PRI64 "u",&ld);
 		    VL_SET_WQ(owp,ld);
 		    break;
 		}
@@ -977,7 +977,7 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
 	break;
     case 'd':
 	vlsint64_t ld;
-	sscanf(dp,"%" VL_PRI64 "d",&ld);
+	sscanf(dp,"%30" VL_PRI64 "d",&ld);
 	VL_SET_WQ(rwp,ld);
 	break;
     case 'b':
@@ -1101,6 +1101,7 @@ VerilatedModule::~VerilatedModule() {
 //======================================================================
 // VerilatedVar:: Methods
 
+// cppcheck-suppress unusedFunction  // Used by applications
 vluint32_t VerilatedVar::entSize() const {
     vluint32_t size = 1;
     switch (vltype()) {
@@ -1197,6 +1198,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
     m_varsp->insert(make_pair(namep,var));
 }
 
+// cppcheck-suppress unusedFunction  // Used by applications
 VerilatedVar* VerilatedScope::varFind(const char* namep) const {
     if (VL_LIKELY(m_varsp)) {
 	VerilatedVarNameMap::iterator it = m_varsp->find(namep);

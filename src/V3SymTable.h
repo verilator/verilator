@@ -225,10 +225,10 @@ public:
 	VSymMap doneSyms;
 	os<<"SymEnt Dump:\n";
 	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
-	bool first = false;
+	bool first = true;
 	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
 	    if (doneSyms.find(*it) == doneSyms.end()) {
-		if (!first++) os<<"%%Warning: SymEnt Orphans:\n";
+		if (first) { first=false; os<<"%%Warning: SymEnt Orphans:\n"; }
 		(*it)->dumpIterate(os, doneSyms, indent, 9999, "Orphan");
 	    }
 	}

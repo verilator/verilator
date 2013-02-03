@@ -294,7 +294,7 @@ protected:
     int nameToNumber(const string& filename);
     const string numberToName(int filenameno) const { return m_names[filenameno]; }
     const V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
-    void numberToLang(int filenameno, const V3LangCode l) { m_languages[filenameno] = l; }
+    void numberToLang(int filenameno, const V3LangCode& l) { m_languages[filenameno] = l; }
     void clear() { m_namemap.clear(); m_names.clear(); m_languages.clear(); }
     void fileNameNumMapDumpXml(ostream& os);
     static const string filenameLetters(int fileno);

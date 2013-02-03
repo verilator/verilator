@@ -508,7 +508,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		continue;
 	    }
 
-	    m_statTriSigs++;
+	    ++m_statTriSigs;
 	    m_tgraph.didProcess(invarp);
 	    UINFO(8, "  TRISTATE EXPANDING:" << invarp << endl);
 

@@ -1404,6 +1404,7 @@ private:
 	    for (AstNodeSenItem* nextp, * senp = nodep->sensesp()->castNodeSenItem();
 		 senp; senp=nextp) {
 		nextp=senp->nextp()->castNodeSenItem();
+		// cppcheck-suppress unassignedVariable  // cppcheck bug
 		SenItemCmp cmp;
 		if (nextp && !cmp(senp, nextp)) {
 		    // Something's out of order, sort it

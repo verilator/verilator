@@ -94,8 +94,8 @@ private:
 		if (varp->isGParam()) {
 		    char ch = varp->name()[0];
 		    ch = toupper(ch); if (ch<'A' || ch>'Z') ch='Z';
-		    varp->user4(usedLetter[ch]*256 + ch);
-		    usedLetter[ch]++;
+		    varp->user4(usedLetter[static_cast<int>(ch)]*256 + ch);
+		    usedLetter[static_cast<int>(ch)]++;
 		}
 	    }
 	}

@@ -153,7 +153,7 @@ private:
 	AstNode* addsp = NULL;
 	if (AstNode* stmtsp = nodep->stmtsp()) {
 	    stmtsp->unlinkFrBackWithNext();
-	    addsp = addsp->addNextNull(stmtsp);
+	    if (addsp) { addsp = addsp->addNextNull(stmtsp); } else { addsp = stmtsp; }
 	}
 	if (addsp) {
 	    nodep->replaceWith(addsp);

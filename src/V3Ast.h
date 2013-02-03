@@ -47,6 +47,7 @@ public:
     //   enum en {...};
     //   const char* ascii() const {...};
     enum en m_e;
+    // cppcheck-suppress uninitVar  // responsiblity of each subclass
     inline AstType () {}
     inline AstType (en _e) : m_e(_e) {}
     explicit inline AstType (int _e) : m_e(static_cast<en>(_e)) {}
@@ -782,7 +783,7 @@ protected:
     RelinkWhatEn m_chg;
     AstNode** m_iterpp;
 public:
-    AstNRelinker() { m_backp=NULL; m_chg=RELINK_BAD; m_iterpp=NULL;}
+    AstNRelinker() { m_oldp=NULL; m_backp=NULL; m_chg=RELINK_BAD; m_iterpp=NULL;}
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(ostream& str=cout) const;
@@ -1582,7 +1583,9 @@ private:
     AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
     AstNode*	rangenp() const { return op2p(); }	// op2 = Array(s) of variable
 public:
-    AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {}
+    AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {
+	m_refDTypep = NULL;
+    }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
     virtual void dump(ostream& str);
     virtual void dumpSmall(ostream& str);

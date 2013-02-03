@@ -141,6 +141,7 @@ void VerilatedVcd::openNext (bool incFilename) {
     if (m_filename[0]=='|') {
 	assert(0);	// Not supported yet.
     } else {
+	// cppcheck-suppress duplicateExpression
 	m_fd = ::open (m_filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
 		       , 0666);
 	if (m_fd<0) {

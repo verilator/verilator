@@ -109,7 +109,7 @@ protected:
     void trailer();
 public:
     // CREATORS
-    VerilatedDeserialize() {}
+    VerilatedDeserialize() { m_endp = NULL; }
     virtual ~VerilatedDeserialize() { close(); }
     // METHODS
     inline VerilatedDeserialize& read (void* __restrict datap, size_t size) {
@@ -146,7 +146,7 @@ private:
 
 public:
     // CREATORS
-    VerilatedSave() {}
+    VerilatedSave() { m_fd=-1; }
     virtual ~VerilatedSave() { close(); }
     // METHODS
     void open(const char* filenamep);	///< Open the file; call isOpen() to see if errors
@@ -164,7 +164,7 @@ private:
 
 public:
     // CREATORS
-    VerilatedRestore() {}
+    VerilatedRestore() { m_fd=-1; }
     virtual ~VerilatedRestore() { close(); }
 
     // METHODS

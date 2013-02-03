@@ -62,6 +62,7 @@ private:
 	nodep->displayType(AstDisplayType::DT_WRITE);
 	nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
 	AstNode* timesp = nodep->fmtp()->exprsp(); if (timesp) timesp->unlinkFrBack();
+	// cppcheck-suppress nullPointer
 	timesp = timesp->addNext(new AstTime(nodep->fileline()));
 	nodep->fmtp()->exprsp(timesp);
 	if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {

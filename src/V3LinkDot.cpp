@@ -661,7 +661,7 @@ private:
 	    // Find under either a task or the module's vars
 	    VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
 	    if (!foundp && m_modSymp && nodep->name() == m_modSymp->nodep()->name()) foundp = m_modSymp;  // Conflicts with modname?
-	    AstVar* findvarp = foundp->nodep()->castVar();
+	    AstVar* findvarp = foundp ? foundp->nodep()->castVar() : NULL;
 	    bool ins=false;
 	    if (!foundp) {
 		ins=true;
@@ -730,7 +730,7 @@ private:
 	// Find under either a task or the module's vars
 	VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
 	if (!foundp && m_modSymp && nodep->name() == m_modSymp->nodep()->name()) foundp = m_modSymp;  // Conflicts with modname?
-	AstEnumItem* findvarp = foundp->nodep()->castEnumItem();
+	AstEnumItem* findvarp = foundp ? foundp->nodep()->castEnumItem() : NULL;
 	bool ins=false;
 	if (!foundp) {
 	    ins=true;
@@ -1503,7 +1503,7 @@ private:
 	    VSymEnt* foundp = NULL;
 	    AstNodeFTask* taskp = NULL;
 	    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-	    taskp = foundp->nodep()->castNodeFTask(); // Maybe NULL
+	    taskp = foundp ? foundp->nodep()->castNodeFTask() : NULL; // Maybe NULL
 	    if (taskp) {
 		nodep->taskp(taskp);
 		nodep->packagep(foundp->packagep());

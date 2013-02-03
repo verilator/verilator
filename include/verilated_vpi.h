@@ -274,7 +274,7 @@ class VerilatedVpi {
     static VerilatedVpi s_s;		// Singleton
 
 public:
-    VerilatedVpi() {}
+    VerilatedVpi() { m_errorInfop=NULL; }
     ~VerilatedVpi() {}
     static void cbReasonAdd(VerilatedVpioCb* vop) {
 	if (vop->reason() == cbValueChange) {
@@ -425,7 +425,7 @@ public:
 	    vl_fatal(error_info_p->file, error_info_p->line, "", error_info_p->message);
 	    return;
 	}
-        vl_fatal(error_info_p->file, error_info_p->line, "", "vpi_unsupported called without error info set");
+        vl_fatal(__FILE__, __LINE__, "", "vpi_unsupported called without error info set");
     }
     static const char* strFromVpiVal(PLI_INT32 vpiVal);
     static const char* strFromVpiObjType(PLI_INT32 vpiVal);
@@ -875,7 +875,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                             val &= (1<<rem)-1;
 			}
 		    }
-		    outStr[chars-i-1] = hex[val];
+		    outStr[chars-i-1] = hex[static_cast<int>(val)];
 		}
 		outStr[i]=0; // NULL terminate
 		return;
@@ -1097,7 +1097,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	} else if (value_p->format == vpiDecStrVal) {
             char remainder[16];
             unsigned long val;
-            int success = sscanf(value_p->value.str, "%lu%15s", &val, remainder);
+            int success = sscanf(value_p->value.str, "%30lu%15s", &val, remainder);
             if (success < 1) {
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
 			      VL_FUNC, value_p->value.str, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());

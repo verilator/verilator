@@ -104,9 +104,6 @@ int svHigh(const svOpenArrayHandle h, int d) {
 int svIncrement(const svOpenArrayHandle h, int d) {
     _VL_SVDPI_UNIMP(); return 0;
 }
-int svLength(const svOpenArrayHandle h, int d) {
-    _VL_SVDPI_UNIMP(); return 0;
-}
 int svDimensions(const svOpenArrayHandle h) {
     _VL_SVDPI_UNIMP(); return 0;
 }

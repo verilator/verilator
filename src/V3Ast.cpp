@@ -764,6 +764,7 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     while (nodep) {
 	AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
 	ASTNODE_PREFETCH(nodep->m_nextp);
+	// cppcheck-suppress nullPointer
 	niterp->m_iterpp = &niterp;
 	niterp->accept(v, vup);
 	// accept may do a replaceNode and change niterp on us...

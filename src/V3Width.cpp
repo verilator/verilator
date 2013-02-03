@@ -837,8 +837,8 @@ private:
 	bool didchk = false;
 	bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
 	if (implicitParam) {
-	    int width=0;
 	    if (nodep->valuep()) {
+		int width=0;
 		nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,PRELIM).p());
 		UINFO(9,"implicitParamPRELIMIV "<<nodep->valuep()<<endl);
 		// Although nodep will get a different width for parameters just below,

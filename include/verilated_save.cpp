@@ -116,6 +116,7 @@ void VerilatedSave::open (const char* filenamep) {
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.
     } else {
+	// cppcheck-suppress duplicateExpression
 	m_fd = ::open (filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
 		       , 0666);
 	if (m_fd<0) {
@@ -137,6 +138,7 @@ void VerilatedRestore::open (const char* filenamep) {
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.
     } else {
+	// cppcheck-suppress duplicateExpression
 	m_fd = ::open (filenamep, O_CREAT|O_RDONLY|O_LARGEFILE
 		       , 0666);
 	if (m_fd<0) {

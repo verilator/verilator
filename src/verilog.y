@@ -63,7 +63,6 @@ public:
     AstPin*	m_instParamp;	// Parameters for instantiations
     AstNodeModule* m_modp;	// Module
     int		m_modTypeImpNum; // Implicit type number, incremented each module
-    int		m_uniqueAttr;	// Bitmask of unique/priority keywords
 
     // CONSTRUCTORS
     V3ParseGrammar() {

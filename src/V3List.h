@@ -79,7 +79,7 @@ public:
     void pushBack (V3List<T>& listr, T newp) {
 	// "this" must be a element inside of *newp
 	// cppcheck-suppress thisSubtraction
-	size_t offset = (vluint8_t*)(this) - (vluint8_t*)(newp);
+	size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(newp);
 	m_nextp = NULL;
 	if (!listr.m_headp) listr.m_headp = newp;
 	m_prevp = listr.m_tailp;
@@ -89,7 +89,7 @@ public:
     void pushFront (V3List<T>& listr, T newp) {
 	// "this" must be a element inside of *newp
 	// cppcheck-suppress thisSubtraction
-	size_t offset = (vluint8_t*)(this) - (vluint8_t*)(newp);
+	size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(newp);
 	m_nextp = listr.m_headp;
 	if (m_nextp) baseToListEnt(m_nextp,offset)->m_prevp = newp;
 	listr.m_headp = newp;
@@ -100,7 +100,7 @@ public:
     void unlink (V3List<T>& listr, T oldp) {
 	// "this" must be a element inside of *oldp
 	// cppcheck-suppress thisSubtraction
-	size_t offset = (vluint8_t*)(this) - (vluint8_t*)(oldp);
+	size_t offset = (size_t)(vluint8_t*)(this) - (size_t)(vluint8_t*)(oldp);
 	if (m_nextp) baseToListEnt(m_nextp,offset)->m_prevp = m_prevp;
 	else listr.m_tailp = m_prevp;
 	if (m_prevp) baseToListEnt(m_prevp,offset)->m_nextp = m_nextp;

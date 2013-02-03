@@ -77,7 +77,7 @@ struct V3OptionsImp {
 	    }
 	}
     }
-    void addLangExt(const string &langext, const V3LangCode lc) {
+    void addLangExt(const string& langext, const V3LangCode& lc) {
 	// New language extension replaces any pre-existing one.
 	(void)m_langExts.erase(langext);
 	m_langExts[langext] = lc;
@@ -98,7 +98,7 @@ void V3Options::addIncDirUser(const string& incdir) {
 void V3Options::addIncDirFallback(const string& incdir) {
     m_impp->addIncDirFallback(incdir);
 }
-void V3Options::addLangExt(const string &langext, const V3LangCode lc) {
+void V3Options::addLangExt(const string& langext, const V3LangCode& lc) {
     m_impp->addLangExt(langext, lc);
 }
 void V3Options::addLibExtV(const string& libext) {
@@ -1117,7 +1117,7 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 //! Utility to see if we have a language extension argument and if so add it.
 bool V3Options::parseLangExt (const char* swp, //!< argument text
 			      const char* langswp, //!< option to match
-			      const V3LangCode lc) { //!< language code
+			      const V3LangCode& lc) { //!< language code
     int len = strlen(langswp);
     if (!strncmp(swp, langswp, len)) {
 	addLangExt(swp + len, lc);

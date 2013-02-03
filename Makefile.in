@@ -398,14 +398,17 @@ endif
 # VERILATOR_AUTHOR_SITE
 endif
 
+# Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK = cppcheck
-CPPCHECK_FLAGS = --enable=all --inline-suppr --suppress=unusedScopedObject
+CPPCHECK_FLAGS = --enable=all --inline-suppr --suppress=unusedScopedObject --suppress=cstyleCast
+CPPCHECK_FLAGS += --xml
 CPPCHECK_CPP = $(wildcard $(srcdir)/include/*.cpp $(srcdir)/src/*.cpp)
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))
+CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -I$(srcdir)/include -I$(srcdir)/src $<
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 $(CPPCHECK_INC) $<
 
 ftp: info
 
