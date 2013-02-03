@@ -125,6 +125,7 @@ int _mon_check_callbacks() {
     cb_data.reason = cbEndOfSimulation;
     cb_data.cb_rtn = NULL;
     cb_data.user_data = 0;
+    cb_data.value = NULL;
 
     vpiHandle vh = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh);
