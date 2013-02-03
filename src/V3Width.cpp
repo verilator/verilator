@@ -1551,9 +1551,11 @@ private:
 		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		if (loArray != hiArray) {
-		    nodep->v3error("Illegal port connection "<<nodep->prettyName()<<","
-				   <<" port is"<<(hiArray?"":" not")<<" an array"
-				   <<" expression is"<<(loArray?"":" not")<<" an array.");
+		    nodep->v3error("Illegal port connection '"<<nodep->prettyName()<<"',"
+				   <<" mismatch between port which is"<<(hiArray?"":" not")<<" an array,"
+				   <<" and expression which is"<<(loArray?"":" not")<<" an array.");
+		    UINFO(1,"    Related lo: "<<nodep->exprp()->dtypep()->skipRefp()<<endl);
+		    UINFO(1,"    Related hi: "<<nodep->modVarp()->dtypep()->skipRefp()<<endl);
 		}
 		if (inputPin) {
 		    // input pin is lhs, expr is rhs; resize expr to match
