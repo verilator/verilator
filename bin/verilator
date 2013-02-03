@@ -2837,6 +2837,14 @@ designs should now be using the #(...) format to specify parameters.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item DETECTARRAY
+
+Error when Verilator tries to deal with a combinatorial loop that could not be
+flattened, and which involves a structure. This typically ocurrs when
+-Wno-UNOPTFLAT has been used to override an UNOPTFLAT warning (see below).
+
+The solution is to break the loop, as described for UNOPTFLAT.
+
 =item ENDLABEL
 
 Warns that a label attached to a "end"-something statement does not match
