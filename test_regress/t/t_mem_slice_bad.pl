@@ -15,7 +15,6 @@ compile (
 	 expect=>
 '%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
 %Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
 %Error: t/t_mem_slice_bad.v:\d+: Unsupported: Slices in a non-delayed assignment with the same Var on both sides
 %Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
 %Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions

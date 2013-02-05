@@ -35,7 +35,8 @@ module t (/*AUTOARG*/
 
    assign active_command[8:0] = (use_AnB) ? command_A[8:0] : command_B[8:0];
    assign active_command2 = (use_AnB) ? command_A2 : command_B2;
-   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][2:0][3:0];
+   // Illegal to have [1:0][x:y] here - IEEE only allows single dimension slicing
+   assign active_command3[1:0] = (use_AnB) ?  command_A3[1:0] : command_B3[1:0];
 
    // Check we can cope with things other than packed arrays
    assign active_command4 = (use_A4nB4[0]) ?  command_A4 : command_B4;

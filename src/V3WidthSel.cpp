@@ -279,10 +279,16 @@ private:
 	VNumRange fromRange = fromdata.m_fromRange;
 	if (ddtypep->castUnpackArrayDType()) {
 	    // Slice extraction
-	    AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
-	    newp->start(lsb);
-	    newp->length((msb - lsb) + 1);
-	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	    if (fromRange.elements() == (msb-lsb+1)
+		&& fromRange.lo() == lsb) { // Extracting whole of original array
+		nodep->replaceWith(fromp); pushDeletep(nodep); nodep=NULL;
+	    } else {
+		// TODO when unpacked arrays fully supported probably need new data type here
+		AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
+		newp->start(lsb);
+		newp->length((msb - lsb) + 1);
+		nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	    }
 	}
 	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
 	    // SELEXTRACT(array, msb, lsb) -> SEL(array, lsb*width-of-subindex, width-of-subindex*(msb-lsb))
@@ -296,7 +302,8 @@ private:
 				       new AstConst(nodep->fileline(),AstConst::Unsized32(),(msb-lsb+1)*elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
-	    if (fromRange.elements() == (msb-lsb+1)) {  // Extracting whole of original array
+	    if (fromRange.elements() == (msb-lsb+1) // Extracting whole of original array
+		&& fromRange.lo() == lsb) {
 		newp->dtypeFrom(adtypep);
 	    } else {
 		// Need a slice data type, which is an array of the extracted type, but with (presumably) different size
