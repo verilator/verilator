@@ -162,13 +162,11 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     *ofp<<"# DESCR"<<"IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."<<endl;
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
-#ifndef _WIN32
-    sync();  // Push files so sizes look correct
-#endif
     for (set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	// Read stats of files we create after we're done making them (execpt for this file, of course)
 	DependFile* dfp = (DependFile*)&(*iter);
+	V3Options::fileNfsFlush(dfp->filename());
 	dfp->loadStats();
 	off_t showSize = iter->size();
 	if (dfp->filename() == filename) showSize=0;  // We're writing it, so need to ignore it

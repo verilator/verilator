@@ -28,6 +28,7 @@
 #include <cctype>
 #include <dirent.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <set>
 #include <list>
 #include <map>
@@ -275,6 +276,17 @@ bool V3Options::fileStatNormal(const string& filename) {
     if (err!=0) return false;
     if (S_ISDIR(m_stat.st_mode)) return false;
     return true;
+}
+
+void V3Options::fileNfsFlush(const string& filename) {
+    // NFS caches stat() calls so to get up-to-date information must
+    // do a open or opendir on the filename.
+    // Faster to just try both rather than check if a file is a dir.
+    if (DIR* dirp = opendir(filename.c_str())) {
+	closedir(dirp);
+    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {
+	if (fd>0) ::close(fd);
+    }
 }
 
 string V3Options::fileExists (const string& filename) {

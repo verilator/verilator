@@ -36,6 +36,7 @@
 
 class V3OptionsImp;
 class FileLine;
+struct stat;
 
 typedef vector<string> V3StringList;
 typedef set<string> V3StringSet;
@@ -321,6 +322,7 @@ class V3Options {
     V3LangCode fileLanguage(const string &filename);
     static bool fileStatDir (const string& filename);
     static bool fileStatNormal (const string& filename);
+    static void fileNfsFlush(const string& filename);
 
     // METHODS (other OS)
     static void throwSigsegv();
