@@ -14,9 +14,9 @@ use Cwd qw(chdir);
 
 my @args = @ARGV;
 chdir("$FindBin::Bin/..");
+$ENV{PWD} = Cwd::getcwd();  # Else chdir leaves the .. which confuses later commands
 
 @args = map { s!.*test_regress/!!; $_; } @args;
 
-print "cd $ENV{PWD} && $FindBin::Bin/bootstrap.pl ",join(' ',@args),"\n";
 exec("./driver.pl", @args);
 die;
