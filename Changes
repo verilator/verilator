@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.846-devel
+
+****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
+
 * Verilator 3.845 2013/02/04
 
 ***   Fix nested packed arrays and struct, bug600. [Jeremy Bennett]
