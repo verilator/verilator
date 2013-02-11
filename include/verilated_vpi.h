@@ -839,7 +839,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT8 : snprintf(outStr, outStrSz+1, "%hhu", (unsigned  int)*((CData*)(vop->varDatap()))); return;
 	    case VLVT_UINT16: snprintf(outStr, outStrSz+1, "%hu",  (unsigned  int)*((SData*)(vop->varDatap()))); return;
 	    case VLVT_UINT32: snprintf(outStr, outStrSz+1, "%u",   (unsigned  int)*((IData*)(vop->varDatap()))); return;
-	    case VLVT_UINT64: snprintf(outStr, outStrSz+1, "%lu",  (unsigned long)*((QData*)(vop->varDatap()))); return;
+	    case VLVT_UINT64: snprintf(outStr, outStrSz+1, "%llu",  (unsigned long long)*((QData*)(vop->varDatap()))); return;
 	    default:
                 strcpy(outStr, "-1");
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
@@ -1096,8 +1096,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    }
 	} else if (value_p->format == vpiDecStrVal) {
             char remainder[16];
-            unsigned long val;
-            int success = sscanf(value_p->value.str, "%30lu%15s", &val, remainder);
+            unsigned long long val;
+            int success = sscanf(value_p->value.str, "%30llu%15s", &val, remainder);
             if (success < 1) {
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
 			      VL_FUNC, value_p->value.str, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());

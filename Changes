@@ -7,6 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
 
+****  Fix 32-bit OS VPI scan issue, bug615.  [Jeremy Bennett, Rich Porter]
+
+
 * Verilator 3.845 2013/02/04
 
 ***   Fix nested packed arrays and struct, bug600. [Jeremy Bennett]
