@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
 
+****  Fix LITENDIAN on unpacked structures, bug614. [Wai Sum Mong]
+
 ****  Fix 32-bit OS VPI scan issue, bug615.  [Jeremy Bennett, Rich Porter]
 
 

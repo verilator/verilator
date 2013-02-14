@@ -2927,7 +2927,7 @@ simulators.
 
 =item LITENDIAN
 
-Warns that a vector is declared with little endian bit numbering
+Warns that a packed vector is declared with little endian bit numbering
 (i.e. [0:7]).  Big endian bit numbering is now the overwhelming standard,
 and little numbering is now thus often due to simple oversight instead of
 intent.
