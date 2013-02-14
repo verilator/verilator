@@ -3,7 +3,14 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Wilson Snyder.
 
-module t;
+bit a_finished;
+bit b_finished;
+
+module t (/*AUTOARG*/
+   // Inputs
+   clk
+   );
+   input clk;
    wire [31:0] o;
    wire        si = 1'b0;
 
@@ -18,6 +25,13 @@ module t;
 	   // Inputs
 	   .si				(si));
 
+   always @ (posedge clk) begin
+      if (!a_finished) $stop;
+      if (!b_finished) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+
 endmodule
 
 module InstModule (
@@ -28,10 +42,7 @@ module InstModule (
 endmodule
 
 program Prog (input si);
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+   initial a_finished = 1'b1;
 endprogram
 
 module ExampInst (o,i);
@@ -55,3 +66,12 @@ module ExampInst (o,i);
 
 endmodule
 
+// Check bind at top level
+bind InstModule Prog2 instProg2
+  (/*AUTOBIND*/
+   .si      (si));
+
+// Check program declared after bind
+program Prog2 (input si);
+   initial b_finished = 1'b1;
+endprogram

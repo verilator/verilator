@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Support pattern assignment features, bug616, bug617, bug618. [Ed Lander]
 
+****  Support bind in $unit, bug602. [Ed Lander]
+
 ****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
 
 ****  Fix LITENDIAN on unpacked structures, bug614. [Wai Sum Mong]

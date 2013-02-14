@@ -651,7 +651,7 @@ description:			// ==IEEE: description
 	|	program_declaration			{ }
 	|	package_declaration			{ }
 	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
-	//UNSUP	bind_directive				{ }
+       	|	bind_directive				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
 	//	unsupported	// IEEE: config_declaration
 	//			// Verilator only
 	|	vltItem					{ }
