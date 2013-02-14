@@ -41,6 +41,9 @@ module t;
 
    const b4_t b4_const_a = '{1'b1, 1'b0, 1'b0, 1'b1};
 
+   // Cast to a pattern - note bits are tagged out of order
+   const b4_t b4_const_b = b4_t'{ b1 : 1'b0, b0 : 1'b1, b3 : 1'b1, b2 : 1'b0 };
+
    wire b4_t b4_wire;
    assign b4_wire = '{1'b1, 1'b0, 1'b1, 1'b0};
 
@@ -100,6 +103,7 @@ module t;
       end
 
       if (b4_const_a != 4'b1001) $stop;
+      if (b4_const_b != 4'b1001) $stop;
       if (b4_wire != 4'b1010) $stop;
       if (pat(4'b1100, 4'b1100)) $stop;
       if (pat('{1'b1, 1'b0, 1'b1, 1'b1}, 4'b1011)) $stop;

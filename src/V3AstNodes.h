@@ -3999,7 +3999,7 @@ struct AstPattern : public AstNodeMath {
     // Parents: AstNodeAssign, AstPattern, ...
     // Children: expression, AstPattern, AstPatReplicate
     AstPattern(FileLine* fl, AstNode* itemsp) : AstNodeMath(fl) {
-	addNOp1p(itemsp);
+	addNOp2p(itemsp);
     }
     ASTNODE_NODE_FUNCS(Pattern, PATTERN)
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
@@ -4008,7 +4008,11 @@ struct AstPattern : public AstNodeMath {
     virtual string emitSimpleOperator() { V3ERROR_NA; return "";}
     virtual bool cleanOut() {V3ERROR_NA; return "";}
     virtual int instrCount()	const { return widthInstrs(); }
-    AstNode* itemsp() const { return op1p(); } // op1 = AstPatReplicate, AstPatMember, etc
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    AstNode* itemsp() const { return op2p(); } // op2 = AstPatReplicate, AstPatMember, etc
 };
 struct AstPatMember : public AstNodeMath {
     // Verilog '{a} or '{a{b}}

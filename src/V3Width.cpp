@@ -1130,7 +1130,11 @@ private:
     virtual void visit(AstPattern* nodep, AstNUser* vup) {
 	if (nodep->didWidthAndSet()) return;
 	UINFO(9,"PATTERN "<<nodep<<endl);
-	AstNodeDType* vdtypep = vup->c()->dtypep();
+	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
+	if (!nodep->dtypep() && vup->c()->dtypep()) {  // Get it from parent assignment/pin/etc
+	    nodep->dtypep(vup->c()->dtypep());
+	}
+	AstNodeDType* vdtypep = nodep->dtypep();
 	if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath a supported construct: "<<nodep->backp()->prettyTypeName());
 	{
 	    vdtypep = vdtypep->skipRefp();

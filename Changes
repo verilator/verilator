@@ -5,9 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.846-devel
 
-****  Support pattern assignments to const variables, bug616. [Ed Lander]
-
-****  Support pattern assignments in function calls, bug617. [Ed Lander]
+****  Support pattern assignment features, bug616, bug617, bug618. [Ed Lander]
 
 ****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
 

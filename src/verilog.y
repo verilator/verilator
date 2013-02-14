@@ -2313,7 +2313,7 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 	|	yaID__ETC				{ $$ = new AstText($<fl>1,*$1); }
 	;
 
-assignment_pattern<nodep>:	// ==IEEE: assignment_pattern
+assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	// This doesn't match the text of the spec.  I think a : is missing, or example code needed
 	// yP_TICKBRA constExpr exprList '}'	{ $$="'{"+$2+" "+$3"}"; }
 	//			// "'{ const_expression }" is same as patternList with one entry
@@ -2875,7 +2875,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires
 	//UNSUP	~l~exprScope assignment_pattern		{ UNSUP }
-	//UNSUP	data_type assignment_pattern		{ UNSUP }
+	|	data_type assignment_pattern		{ $$ = $2; $2->childDTypep($1); }
 	|	assignment_pattern			{ $$ = $1; }
 	//
 	//UNSUP	streaming_concatenation			{ UNSUP }
