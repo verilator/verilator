@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.846-devel
 
+****  Support pattern assignments to const variables, bug616. [Ed Lander]
+
 ****  Fix DETECTARRAY on packed structures, bug610. [Jeremy Bennett]
 
 ****  Fix LITENDIAN on unpacked structures, bug614. [Wai Sum Mong]

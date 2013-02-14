@@ -1151,6 +1151,9 @@ private:
 		    patp->unlinkFrBack();
 		}
 	    }
+	    while (AstConstDType* classp = m_assDTypep->castConstDType()) {
+		m_assDTypep = classp->subDTypep()->skipRefp();
+	    }
 	    if (AstNodeClassDType* classp = m_assDTypep->castNodeClassDType()) {
 		// Due to "default" and tagged patterns, we need to determine
 		// which member each AstPatMember corresponds to before we can

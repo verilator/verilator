@@ -39,6 +39,8 @@ module t;
       //      bit 	vec2d[2][3];
    } pack3_t;
 
+   const b4_t b4_const_a = '{1'b1, 1'b0, 1'b0, 1'b1};
+
    pack2_t arr[2];
 
    initial begin
@@ -93,6 +95,8 @@ module t;
 	 b4_t q = '{b2:1'b0, default:1'b1};
 	 if (q != 4'b1011) $stop;
       end
+
+      if (b4_const_a != 4'b1001) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
