@@ -41,6 +41,9 @@ module t;
 
    const b4_t b4_const_a = '{1'b1, 1'b0, 1'b0, 1'b1};
 
+   wire b4_t b4_wire;
+   assign b4_wire = '{1'b1, 1'b0, 1'b1, 1'b0};
+
    pack2_t arr[2];
 
    initial begin
@@ -97,9 +100,17 @@ module t;
       end
 
       if (b4_const_a != 4'b1001) $stop;
+      if (b4_wire != 4'b1010) $stop;
+      if (pat(4'b1100, 4'b1100)) $stop;
+      if (pat('{1'b1, 1'b0, 1'b1, 1'b1}, 4'b1011)) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
    end
 
+   function pat(b4_t in, logic [3:0] cmp);
+      if (in !== cmp) $stop;
+      pat = 1'b0;
+   endfunction
+   
 endmodule

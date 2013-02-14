@@ -95,7 +95,9 @@ public:
     WidthVP(int width, int widthMin, Stage stage)
 	: m_width(width), m_widthMin(widthMin), m_dtypep(NULL), m_stage(stage) {}
     WidthVP(AstNodeDType* dtypep, Stage stage)
-	: m_width(0), m_widthMin(0), m_dtypep(dtypep), m_stage(stage) {}
+	: m_width(dtypep->width()), m_widthMin(dtypep->widthMin()), m_dtypep(dtypep), m_stage(stage) {}
+    WidthVP(AstNodeDType* dtypep, int width, int widthMin, Stage stage)
+	: m_width(width), m_widthMin(widthMin), m_dtypep(dtypep), m_stage(stage) {}
     int width() const { return m_width; }
     int widthMin() const { return m_widthMin?m_widthMin:m_width; }
     AstNodeDType* dtypep() const { return m_dtypep; }
@@ -118,7 +120,6 @@ private:
     AstFunc*	m_funcp;	// Current function
     AstInitial*	m_initialp;	// Current initial block
     AstAttrOf*	m_attrp;	// Current attribute
-    AstNodeDType* m_assDTypep;	// Assign LHS data type for assignment pattern
     bool	m_doGenerate;	// Do errors later inside generate statement
     int		m_dtTables;	// Number of created data type tables
 
@@ -970,6 +971,7 @@ private:
     virtual void visit(AstEnumItem* nodep, AstNUser* vup) {
 	UINFO(5,"   ENUMITEM "<<nodep<<endl);
 	AstNodeDType* vdtypep = vup->c()->dtypep();
+	if (!vdtypep) nodep->v3fatalSrc("ENUMITEM not under ENUM");
 	nodep->dtypep(vdtypep);
 	if (nodep->valuep()) {  // else the value will be assigned sequentially
 	    int width = vdtypep->width();  // Always from parent type
@@ -1128,12 +1130,13 @@ private:
     virtual void visit(AstPattern* nodep, AstNUser* vup) {
 	if (nodep->didWidthAndSet()) return;
 	UINFO(9,"PATTERN "<<nodep<<endl);
-	AstNodeDType* oldAssDTypep = m_assDTypep;
+	AstNodeDType* vdtypep = vup->c()->dtypep();
+	if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath a supported construct: "<<nodep->backp()->prettyTypeName());
 	{
-	    if (!m_assDTypep) nodep->v3error("Unsupported/Illegal: Assignment pattern not underneath an assignment");
-	    m_assDTypep = m_assDTypep->skipRefp();
-	    UINFO(9,"  adtypep "<<m_assDTypep<<endl);
-	    nodep->dtypep(m_assDTypep);
+	    vdtypep = vdtypep->skipRefp();
+	    nodep->dtypep(vdtypep);
+	    UINFO(9,"  adtypep "<<vdtypep<<endl);
+	    nodep->dtypep(vdtypep);
 	    for (AstPatMember* patp = nodep->itemsp()->castPatMember(); patp; patp = patp->nextp()->castPatMember()) {
 		// Determine replication count, and replicate initial value as widths need to be individually determined
 		int times = visitPatMemberRep(patp);
@@ -1151,10 +1154,10 @@ private:
 		    patp->unlinkFrBack();
 		}
 	    }
-	    while (AstConstDType* classp = m_assDTypep->castConstDType()) {
-		m_assDTypep = classp->subDTypep()->skipRefp();
+	    while (AstConstDType* classp = vdtypep->castConstDType()) {
+		vdtypep = classp->subDTypep()->skipRefp();
 	    }
-	    if (AstNodeClassDType* classp = m_assDTypep->castNodeClassDType()) {
+	    if (AstNodeClassDType* classp = vdtypep->castNodeClassDType()) {
 		// Due to "default" and tagged patterns, we need to determine
 		// which member each AstPatMember corresponds to before we can
 		// determine the dtypep for that PatMember's value, and then
@@ -1208,9 +1211,9 @@ private:
 			patp = it->second;
 		    }
 		    // Determine initial values
-		    m_assDTypep = memp;
+		    vdtypep = memp;
 		    patp->dtypep(memp);
-		    patp->accept(*this,WidthVP(patp->width(),patp->width(),BOTH).p());
+		    patp->accept(*this,WidthVP(memp,BOTH).p());
 		    // Convert to concat for now
 		    if (!newp) newp = patp->lhsp()->unlinkFrBack();
 		    else {
@@ -1226,16 +1229,16 @@ private:
 		else nodep->v3error("Assignment pattern with no members");
 		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
 	    } else {
-		nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "<<m_assDTypep->prettyTypeName());
+		nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "<<vdtypep->prettyTypeName());
 	    }
 	}
-	m_assDTypep = oldAssDTypep;
     }
     virtual void visit(AstPatMember* nodep, AstNUser* vup) {
-	if (!nodep->dtypep()) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
-	if (!m_assDTypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath an assignment");
+	AstNodeDType* vdtypep = vup->c()->dtypep();
+	if (!vdtypep) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
+	nodep->dtypep(vdtypep);
 	nodep->lhsp()->dtypeFrom(nodep);
-	nodep->iterateChildren(*this,WidthVP(nodep->dtypep()->width(),nodep->dtypep()->width(),BOTH).p());
+	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
 	widthCheck(nodep,"LHS",nodep->lhsp(),nodep->width(),nodep->width());
     }
     int visitPatMemberRep(AstPatMember* nodep) {
@@ -1332,14 +1335,12 @@ private:
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	//if (debug()) nodep->dumpTree(cout,"  AssignPre: ");
-	AstNodeDType* oldAssDTypep = m_assDTypep;
 	{
 	    //if (debug()) nodep->dumpTree(cout,"-    assin:  ");
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
 	    if (!nodep->lhsp()->dtypep()) nodep->v3fatalSrc("How can LHS be untyped?");
 	    if (!nodep->lhsp()->dtypep()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
-	    m_assDTypep = nodep->lhsp()->dtypep();
-	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(nodep->lhsp()->dtypep(),ANYSIZE,0,PRELIM).p());
 	    //if (debug()) nodep->dumpTree(cout,"-    assign: ");
 	    if (!nodep->lhsp()->isDouble() && nodep->rhsp()->isDouble()) {
 		spliceCvtS(nodep->rhsp(), false);  // Round RHS
@@ -1350,7 +1351,7 @@ private:
 	    if (awidth==0) {
 		awidth = nodep->rhsp()->width();	// Parameters can propagate by unsized assignment
 	    }
-	    nodep->rhsp()->iterateAndNext(*this,WidthVP(awidth,awidth,FINAL).p());
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(nodep->lhsp()->dtypep(),awidth,awidth,FINAL).p());
 	    nodep->dtypeFrom(nodep->lhsp());
 	    nodep->dtypeChgWidth(awidth,awidth);  // We know the assign will truncate, so rather
 	    // than using "width" and have the optimizer truncate the result, we do
@@ -1359,7 +1360,6 @@ private:
 	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),awidth,awidth);
 	    //if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
 	}
-	m_assDTypep = oldAssDTypep;
     }
     virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	// Excludes NodeDisplay, see below
@@ -1684,7 +1684,7 @@ private:
 			    handle.relink(newp);
 			    pinp = newp;
 			}
-			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),PRELIM).p());  pinp=NULL;
+			pinp->accept(*this,WidthVP(portp->dtypep(),PRELIM).p());  pinp=NULL;
 		    } else if (accept_mode==1) {
 			// Change data types based on above accept completion
 			if (portp->isDouble()) {
@@ -1692,7 +1692,7 @@ private:
 			}
 		    } else if (accept_mode==2) {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
-			pinp->accept(*this,WidthVP(portp->width(),portp->widthMin(),BOTH).p());
+			pinp->accept(*this,WidthVP(portp->dtypep(),BOTH).p());
 			if ((portp->isOutput() || portp->isInout())
 			    && pinp->width() != portp->width()) {
 			    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
@@ -2588,7 +2588,6 @@ public:
 	m_funcp = NULL;
 	m_initialp = NULL;
 	m_attrp = NULL;
-	m_assDTypep = NULL;
 	m_doGenerate = doGenerate;
 	m_dtTables = 0;
     }
