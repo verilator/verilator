@@ -40,6 +40,10 @@ module m1;
    localparam PAR1DUP = PAR1+2;  // Check we propagate parameters properly
    parameter PAR1 = 0;
    m2 #(PAR1MINUS1) m2 ();
+
+   // Packed arrays
+   localparam [1:0][3:0] PACKED_PARAM = { 4'h3, 4'h6 };
+   initial if (PACKED_PARAM != 8'h36) $stop;
 endmodule
 
 module m2;
