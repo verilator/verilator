@@ -66,7 +66,7 @@ public:
     GateEitherVertex(V3Graph* graphp, AstScope* scopep)
 	: V3GraphVertex(graphp), m_scopep(scopep), m_reducible(true), m_consumed(false) {}
     virtual ~GateEitherVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string dotStyle() const { return m_consumed?"":"dotted"; }
     AstScope* scopep() const { return m_scopep; }
     bool reducible() const { return m_reducible; }
@@ -92,7 +92,7 @@ public:
 	: GateEitherVertex(graphp, scopep), m_varScp(varScp), m_isTop(false)
 	, m_isClock(false), m_rstSyncNodep(NULL), m_rstAsyncNodep(NULL) {}
     virtual ~GateVarVertex() {}
-    // Accessors
+    // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const { return (cvtToStr((void*)m_varScp)+" "+varScp()->name()); }
     virtual string dotColor() const { return "blue"; }
@@ -104,6 +104,15 @@ public:
     void rstSyncNodep(AstNode* nodep) { m_rstSyncNodep=nodep; }
     AstNode* rstAsyncNodep() const { return m_rstAsyncNodep; }
     void rstAsyncNodep(AstNode* nodep) { m_rstAsyncNodep=nodep; }
+    // METHODS
+    void propagateAttrClocksFrom(GateVarVertex* fromp) {
+	// Propagate clock and general attribute onto this node
+	varScp()->varp()->propagateAttrFrom(fromp->varScp()->varp());
+	if (fromp->isClock()) {
+	    varScp()->varp()->usedClock(true);
+	    setIsClock();
+	}
+    }
 };
 
 class GateLogicVertex : public GateEitherVertex {
@@ -114,7 +123,7 @@ public:
     GateLogicVertex(V3Graph* graphp, AstScope* scopep, AstNode* nodep, AstActive* activep, bool slow)
 	: GateEitherVertex(graphp,scopep), m_nodep(nodep), m_activep(activep), m_slow(slow) {}
     virtual ~GateLogicVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string name() const { return (cvtToStr((void*)m_nodep)+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return "yellow"; }
     AstNode* nodep() const { return m_nodep; }
@@ -548,12 +557,8 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 				UINFO(9,"         Point-to-new vertex "<<newvarscp<<endl);
 				GateVarVertex* varvertexp = makeVarVertex(newvarscp);
 				new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
-				newvarscp->varp()->propagateAttrFrom(vvertexp->varScp()->varp());
-				if (vvertexp->isClock()) {
-				    // Propagate clock attribute onto generating node
-				    newvarscp->varp()->usedClock(true);
-				    varvertexp->setIsClock();
-				}
+				// Propagate clock attribute onto generating node
+				varvertexp->propagateAttrClocksFrom(vvertexp);
 			    }
 			    // Remove the edge
 			    edgep->unlinkDelete(); edgep=NULL;
