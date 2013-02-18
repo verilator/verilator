@@ -695,17 +695,17 @@ void AstDisplay::dump(ostream& str) {
     this->AstNode::dump(str);
     //str<<" "<<displayType().ascii();
 }
-void AstJumpGo::dump(ostream& str) {
-    this->AstNode::dump(str);
-    str<<" -> ";
-    if (labelp()) { labelp()->dump(str); }
-    else { str<<"%Error:UNLINKED"; }
-}
 void AstEnumItemRef::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (itemp()) { itemp()->dump(str); }
     else { str<<"UNLINKED"; }
+}
+void AstJumpGo::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" -> ";
+    if (labelp()) { labelp()->dump(str); }
+    else { str<<"%Error:UNLINKED"; }
 }
 void AstPin::dump(ostream& str) {
     this->AstNode::dump(str);
