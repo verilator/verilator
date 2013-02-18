@@ -815,6 +815,7 @@ struct AstVar : public AstNode {
     // A variable (in/out/wire/reg/param) inside a module
 private:
     string	m_name;		// Name of variable
+    string	m_origName;	// Original name before dot addition
     AstVarType	m_varType;	// Type of variable
     bool	m_input:1;	// Input or inout
     bool	m_output:1;	// Output or inout
@@ -858,7 +859,7 @@ private:
 public:
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
 	:AstNode(fl)
-	, m_name(name) {
+	, m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	childDTypep(dtp);  // Only for parser
@@ -866,7 +867,7 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
 	:AstNode(fl)
-	, m_name(name) {
+	, m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	UASSERT(dtp,"AstVar created with no dtype");
@@ -874,21 +875,21 @@ public:
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
 	:AstNode(fl)
-	, m_name(name) {
+	, m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
 	:AstNode(fl)
-	, m_name(name) {
+	, m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
 	:AstNode(fl)
-	, m_name(name) {
+	, m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	if (examplep->childDTypep()) {
@@ -898,10 +899,13 @@ public:
     }
     ASTNODE_NODE_FUNCS(Var, VAR)
     virtual void dump(ostream& str);
-    virtual string name()	const { return m_name; }		// * = Var name
+    virtual string name() const { return m_name; }		// * = Var name
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
-    AstVarType	varType()	const { return m_varType; }		// * = Type of variable
+    string origName() const { return m_origName; }		// * = Original name
+    void origName(const string& name) { m_origName = name; }
+    AstVarType varType() const { return m_varType; }  // * = Type of variable
+    void varType(AstVarType type) { m_varType = type; }
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
