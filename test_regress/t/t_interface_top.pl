@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} and $Self->unsupported("Verilator unsupported, bug102");
 
 compile (
-    v_flags => ["--lint-only"]
+    verilator_flags2 => ["--lint-only"]
     );
 
 ok(1);

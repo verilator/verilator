@@ -10,13 +10,12 @@ interface counter_io;
    modport core_side (output reset, input value);
 endinterface
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk,
+module t
+  (// Inputs
+   input clk,
    counter_io.counter_side c_data
    );
 
-   input clk;
    integer cyc=1;
 
 endmodule

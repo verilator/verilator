@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
    counter    c1 (.clkm(clk),
 		  .c_data(c1_data),
 		  .i_value(4'h1));
-   counter    c2 (.clkm(clk),
+   counter2   c2 (.clkm(clk),
 		  .c_data(c2_data),
 		  .i_value(4'h2));
 
@@ -66,3 +66,16 @@ module counter
 	c_data.value <= c_data.value + 1;
    end
 endmodule : counter
+
+module counter2(clkm, c_data, i_value);
+   input clkm;
+   counter_io c_data;
+   input logic [3:0] i_value;
+
+   always @ (posedge clkm) begin
+      if (c_data.reset)
+	c_data.value <= i_value;
+      else
+	c_data.value <= c_data.value + 1;
+   end
+endmodule : counter2
