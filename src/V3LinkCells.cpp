@@ -136,6 +136,7 @@ private:
 	    // Check again
 	    modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
 	    if (!modp) {
+		// This shouldn't throw a message as parseFile will create a AstNotFoundModule for us
 		nodep->v3error("Can't resolve module reference: "<<modName);
 	    }
 	}
