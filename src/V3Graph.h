@@ -242,6 +242,7 @@ public:
 	return top()->sortCmp(rhsp->top());
     }
     void	unlinkDelete();
+    V3GraphEdge* relinkFromp(V3GraphVertex* newFromp);
     // ACCESSORS
     int		weight() const { return m_weight; }
     void	weight(int weight) { m_weight=weight; }

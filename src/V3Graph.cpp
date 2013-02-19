@@ -140,6 +140,14 @@ V3GraphEdge::V3GraphEdge(V3Graph* graphp,
     inPushBack();
 }
 
+V3GraphEdge* V3GraphEdge::relinkFromp(V3GraphVertex* newFromp) {
+    V3GraphEdge *oldNxt = outNextp();
+    m_outs.unlink(m_fromp->m_outs, this);
+    m_fromp = newFromp;
+    outPushBack();
+    return oldNxt;
+}
+
 void V3GraphEdge::unlinkDelete() {
     // Unlink from side
     m_outs.unlink(m_fromp->m_outs, this);
