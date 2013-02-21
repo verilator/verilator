@@ -1136,6 +1136,7 @@ public:
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays
     virtual bool isBrancher() const { return false; }	// Changes control flow, disable some optimizations
     virtual bool isGateOptimizable() const { return true; }	// Else a AstTime etc that can't be pushed out
+    virtual bool isGateDedupable() const { return isGateOptimizable(); }  // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isSubstOptimizable() const { return true; }	// Else a AstTime etc that can't be substituted out
     virtual bool isPredictOptimizable() const { return true; }	// Else a AstTime etc which output can't be predicted from input
     virtual bool isOutputter() const { return false; }	// Else creates output or exits, etc, not unconsumed
@@ -1389,6 +1390,7 @@ public:
     void	addIfsp(AstNode* newp)		{ addOp2p(newp); }
     void	addElsesp(AstNode* newp)	{ addOp3p(newp); }
     virtual bool isGateOptimizable() const { return false; }
+    virtual bool isGateDedupable() const { return true; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }

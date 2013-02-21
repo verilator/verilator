@@ -5,6 +5,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.846-devel
 
+***   Add duplicate clock gate optimization, msg980. [Varun Koyyalagunta]
+      Disabled unless -OD or -O3 used, please try it as may get some
+      significant speedups.
+
 ****  Support pattern assignment features, bug616, bug617, bug618. [Ed Lander]
 
 ****  Support bind in $unit, bug602. [Ed Lander]
