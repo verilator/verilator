@@ -866,38 +866,42 @@ public:
 // Have we seen the rhs of this assign before?
 
 class GateDedupeVarVisitor : public GateBaseVisitor {
-    // A node passed to findDupe() is visited in this order
-    //   (otherwise dupe not found)
+    // Given a node, it is visited to try to find the AstNodeAssign under it that can used for dedupe.
+    // Right now, only the following node trees are supported for dedupe.
     // 1. AstNodeAssign
     // 2. AstAlways -> AstNodeAssign
+    //   (Note, the assign must also be the only node under the always)
     // 3. AstAlways -> AstNodeIf -> AstNodeAssign
+    //   (Note, the IF must be the only node under the always,
+    //    and the assign must be the only node under the if, other than the ifcond)
+    // Any other ordering or node type, except for an AstComment, makes it not dedupable
 private:
-    // RETURN STATE
-    AstNodeVarRef*	m_dupLhsVarRefp;	// Duplicate lhs varref that was found
     // STATE
-    GateDedupeHash	m_hash;			// Hash used to find dupes
-    AstVarScope*	m_consumerVarScopep;	// VarScope on lhs of assignment (what we're replacing)
-    AstActive*		m_activep;		// AstActive that assign is under
+    GateDedupeHash	m_hash;			// Hash used to find dupes of rhs of assign
+    AstNodeAssign*	m_assignp;		// Assign found for dedupe
     AstNode*		m_ifCondp;		// IF condition that assign is under
     bool		m_always;		// Assign is under an always
+    bool		m_dedupable;		// Determined the assign to be dedupable
 
     // VISITORS
     virtual void visit(AstNodeAssign* assignp, AstNUser*) {
-	AstNode* lhsp = assignp->lhsp();
-	// Possible todo, handle more complex lhs expressions
-	if (AstNodeVarRef* lhsVarRefp = lhsp->castNodeVarRef()) {
-	    if (lhsVarRefp->varScopep() != m_consumerVarScopep) m_consumerVarScopep->v3fatalSrc("Consumer doesn't match lhs of assign");
-	    if (AstNodeAssign* dup =  m_hash.hashAndFindDupe(assignp,m_activep,m_ifCondp)) {
-		m_dupLhsVarRefp = dup->lhsp()->castNodeVarRef();
+	if (m_dedupable) {
+	    // I think we could safely dedupe an always block with multiple non-blocking statements, but erring on side of caution here
+	    if (!m_assignp) {
+		m_assignp = assignp;
+	    } else {
+		m_dedupable = false;
 	    }
 	}
     }
     virtual void visit(AstAlways* alwaysp, AstNUser*) {
-	// I think we could safely dedupe an always block with multiple non-blocking statements,
-	// but erring on side of caution here
-	if (!m_always && alwaysp->isJustOneBodyStmt()) {
-	    m_always = true;
-	    alwaysp->bodysp()->accept(*this);
+	if (m_dedupable) {
+	    if (!m_always) {
+		m_always = true;
+		alwaysp->bodysp()->iterateAndNext(*this);
+	    } else {
+		m_dedupable = false;
+	    }
 	}
     }
     // Ugly support for latches of the specific form -
@@ -905,30 +909,44 @@ private:
     //    if (...)
     //       foo = ...; // or foo <= ...;
     virtual void visit(AstNodeIf* ifp, AstNUser*) {
-	if (m_always && !ifp->elsesp()) {  //we're under an always and there's no else
-	    AstNode* ifsp = ifp->ifsp();
-	    if (!ifsp->nextp()) {  //only one stmt under if
+	if (m_dedupable) {
+	    if (m_always && !m_ifCondp && !ifp->elsesp()) {  //we're under an always, this is the first IF,  and there's no else
 		m_ifCondp = ifp->condp();
-		ifsp->accept(*this);
+		ifp->ifsp()->iterateAndNext(*this);
+	    } else {
+		m_dedupable = false;
 	    }
 	}
     }
+
+    virtual void visit(AstComment*, AstNUser*) {}  // NOP
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {}
+    virtual void visit(AstNode*, AstNUser*) {
+	m_dedupable = false;
+    }
 
 public:
     // CONSTUCTORS
     GateDedupeVarVisitor() {}
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
-	m_consumerVarScopep = consumerVarScopep;
-	m_activep = activep;
-	m_always = false;
+	m_assignp = NULL;
 	m_ifCondp = NULL;
-	m_dupLhsVarRefp = NULL;
+	m_always = false;
+	m_dedupable = true;
 	nodep->accept(*this);
-	return m_dupLhsVarRefp;
+	if (m_dedupable && m_assignp) {
+	    AstNode* lhsp = m_assignp->lhsp();
+	    // Possible todo, handle more complex lhs expressions
+	    if (AstNodeVarRef* lhsVarRefp = lhsp->castNodeVarRef()) {
+		if (lhsVarRefp->varScopep() != consumerVarScopep) consumerVarScopep->v3fatalSrc("Consumer doesn't match lhs of assign");
+		if (AstNodeAssign* dup =  m_hash.hashAndFindDupe(m_assignp,activep,m_ifCondp)) {
+		    return (AstNodeVarRef*) dup->lhsp();
+		}
+	    }
+	}
+	return NULL;
     }
 };
 
