@@ -266,10 +266,11 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	// Done. Constant.
     } else {
 	// Make a new temp wire
-	//if (1||debug()>=9) { pinp->dumpTree(cout,"in_pin:"); }
+	//if (1||debug()>=9) { pinp->dumpTree(cout,"-in_pin:"); }
 	AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
-	string newvarname = ((pinVarp->isOutput() ? "__Vcellout__" : "__Vcellinp__")
-			     +cellp->name()+"__"+pinp->name());
+	string newvarname = ((string)(pinVarp->isOutput() ? "__Vcellout" : "__Vcellinp")
+			     +(forTristate?"t":"")  // Prevent name conflict if both tri & non-tri add signals
+			     +"__"+cellp->name()+"__"+pinp->name());
 	AstVar* newvarp = new AstVar (pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
 	// Important to add statement next to cell, in case there is a generate with same named cell
 	cellp->addNextHere(newvarp);
@@ -298,8 +299,8 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	    pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, false));
 	}
 	if (assignp) cellp->addNextHere(assignp);
-	//if (1||debug()) { pinp->dumpTree(cout,"  out:"); }
-	//if (1||debug()) { assignp->dumpTree(cout," aout:"); }
+	//if (debug()) { pinp->dumpTree(cout,"-  out:"); }
+	//if (debug()) { assignp->dumpTree(cout,"- aout:"); }
     }
     return assignp;
 }
