@@ -11,7 +11,7 @@ compile (
 	 fails=>$Self->{v3},
 	 expect=>
 '%Error: t/t_tri_pull2_bad.v:\d+: Unsupported: Conflicting pull directions.
-%Error: t/t_tri_pull2_bad.v:\d+: ... Location of conflicing pull.
+%Error: t/t_tri_pull2_bad.v:\d+: ... Location of conflicting pull.
 %Error: Exiting due to',
     );
 

@@ -20,7 +20,7 @@
 // V3Tristate's Transformations:
 //
 // Modify the design to expand tristate logic into its
-// corresponding two state reprasentation. At the lowest levels,
+// corresponding two state representation. At the lowest levels,
 //
 // In detail:
 //
@@ -46,7 +46,7 @@
 // logic that they may go through until they hit the module level.  At
 // the module level, all the output enable signals from what can be
 // many tristate drivers are combined together to produce a single
-// driver and output enable. If the signal propigates up into higher
+// driver and output enable. If the signal propagates up into higher
 // modules, then new ports are created with for the signal with
 // suffixes __en and __out. The original port is turned from an inout
 // to an input and the __out port carries the output driver signal and
@@ -252,7 +252,7 @@ public:
 	TristateVertex* vertexp = (TristateVertex*)(nodep->user5p());
 	if (!vertexp) {
 	    // Not v3errorSrc as no reason to stop the world
-	    nodep->v3error("Unsupported tristate constuct (not in propagation graph): "<<nodep->prettyTypeName());
+	    nodep->v3error("Unsupported tristate construct (not in propagation graph): "<<nodep->prettyTypeName());
 	} else {
 	    // We don't warn if no vertexp->isTristate() as the creation process makes midling nodes that don't have it set
 	    vertexp->processed(true);
@@ -445,7 +445,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	} else {
 	    if (oldpullp->direction() != pullp->direction()) {
 		pullp->v3error("Unsupported: Conflicting pull directions.");
-		oldpullp->v3error("... Location of conflicing pull.");
+		oldpullp->v3error("... Location of conflicting pull.");
 	    }
 	}
     }
@@ -1109,7 +1109,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		// Simplify
 		if (inOnlyProcessing) {   // Not an input that was a converted tristate
 		    // The pin is an input, but we need an output
-		    // The if() above is neded because the Visitor is simple, it will flip ArraySel's and such,
+		    // The if() above is needed because the Visitor is simple, it will flip ArraySel's and such,
 		    // but if the pin is an input the earlier reconnectSimple made it a VarRef without any ArraySel, etc
 		    TristatePinVisitor visitor (outexprp, m_tgraph, true);
 		}
