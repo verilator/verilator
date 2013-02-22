@@ -121,6 +121,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	include/vltstd/*.[chv]* \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/bisonpre src/*fix \
+	src/.gdbinit \
 	src/*.pl src/*.pod \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
