@@ -103,7 +103,7 @@ public:
     virtual AstNUser* accept(GateGraphBaseVisitor& v, AstNUser* vup=NULL) =0;
     // Returns only the result from the LAST vertex iterated over
     AstNUser* iterateInEdges(GateGraphBaseVisitor& v, AstNUser* vup=NULL) {
-	AstNUser* retp;
+	AstNUser* retp = NULL;
 	for (V3GraphEdge* edgep = inBeginp(); edgep; edgep = edgep->inNextp()) {
 	    retp = dynamic_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vup);
 	}
