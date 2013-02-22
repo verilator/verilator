@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
       Disabled unless -OD or -O3 used, please try it as may get some
       significant speedups.
 
+***   Fix wrong dot resolution under inlining. [Art Stamness]
+
 ****  Support pattern assignment features, bug616, bug617, bug618. [Ed Lander]
 
 ****  Support bind in $unit, bug602. [Ed Lander]

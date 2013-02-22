@@ -1114,10 +1114,14 @@ private:
     }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	UINFO(8,"   "<<nodep<<endl);
+	VSymEnt* oldModSymp = m_modSymp;
+	VSymEnt* oldCurSymp = m_curSymp;
 	checkNoDot(nodep);
-	m_ds.m_dotSymp = m_curSymp = m_statep->getScopeSym(nodep);
+	m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getScopeSym(nodep);
 	nodep->iterateChildren(*this);
-	m_ds.m_dotSymp = m_curSymp = NULL;
+	m_ds.m_dotSymp = m_curSymp = m_modSymp = NULL;
+	m_modSymp = oldModSymp;
+	m_curSymp = oldCurSymp;
     }
     virtual void visit(AstCellInline* nodep, AstNUser*) {
 	checkNoDot(nodep);
@@ -1320,6 +1324,7 @@ private:
 			newp = new AstVarRef(nodep->fileline(), nodep->name(), false);  // lvalue'ness computed later
 			newp->varp(varp);
 			newp->packagep(foundp->packagep());
+			UINFO(9,"    new "<<newp<<endl);
 		    }
 		    nodep->replaceWith(newp); pushDeletep(nodep); nodep = NULL;
 		    m_ds.m_dotPos = DP_MEMBER;
@@ -1442,6 +1447,7 @@ private:
 		    AstVarRef* newvscp = new AstVarRef(nodep->fileline(), vscp, nodep->lvalue());
 		    nodep->replaceWith(newvscp);
 		    nodep->deleteTree(); nodep=NULL;
+		    UINFO(9,"         new "<<newvscp<<endl);  // Also prints taskp
 		}
 	    }
 	}
