@@ -21,9 +21,8 @@ double sc_time_stamp () {
 VM_PREFIX* topp = NULL;
 
 void clockit(int clk1, int clk0) {
-#ifdef T_CLK_2IN_VEC
     topp->clks = clk1<<1 | clk0;
-#else
+#ifndef T_CLK_2IN_VEC
     topp->c1 = clk1;
     topp->c0 = clk0;
 #endif
@@ -38,6 +37,7 @@ int main (int argc, char *argv[]) {
     topp = new VM_PREFIX;
     topp->check = 0;
     clockit(0,0);
+    main_time+=10;
 
     Verilated::debug(0);
 
@@ -47,6 +47,9 @@ int main (int argc, char *argv[]) {
 	clockit(1, 1);
 	clockit(0, 0);
 	clockit(1, 1);
+	clockit(1, 0);
+	clockit(0, 0);
+	clockit(0, 1);
 	clockit(1, 0);
 	clockit(0, 0);
     }
