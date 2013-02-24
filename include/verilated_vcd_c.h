@@ -57,7 +57,8 @@ typedef void (*VerilatedVcdCallback_t)(VerilatedVcd* vcdp, void* userthis, vluin
 
 //=============================================================================
 // VerilatedVcd
-/// Create a SystemPerl VCD dump
+/// Base class to create a Verilator VCD dump
+/// This is an internally used class - see VerilatedVcdC for what to call from applications
 
 class VerilatedVcd {
 private:
@@ -100,6 +101,7 @@ private:
     void closeErr();
     void openNext();
     void makeNameMap();
+    void deleteNameMap();
     void printIndent (int levelchange);
     void printStr (const char* str);
     void printQuad (vluint64_t n);
@@ -400,8 +402,12 @@ public:
     bool isOpen() const { return m_sptrace.isOpen(); }
     // METHODS
     /// Open a new VCD file
+    /// This includes a complete header dump each time it is called,
+    /// just as if this object was deleted and reconstructed.
     void open (const char* filename) { m_sptrace.open(filename); }
     /// Continue a VCD dump by rotating to a new file name
+    /// The header is only in the first file created, this allows
+    /// "cat" to be used to combine the header plus any number of data files.
     void openNext (bool incFilename=true) { m_sptrace.openNext(incFilename); }
     /// Set size in megabytes after which new file should be created
     void rolloverMB(size_t rolloverMB) { m_sptrace.rolloverMB(rolloverMB); };

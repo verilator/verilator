@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix 32-bit OS VPI scan issue, bug615.  [Jeremy Bennett, Rich Porter]
 
+****  Fix opening a VerilatedVcdC file multiple times, msg1021. [Frederic Requin]
+
 
 * Verilator 3.845 2013/02/04
 

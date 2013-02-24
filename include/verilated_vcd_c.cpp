@@ -157,6 +157,8 @@ void VerilatedVcd::openNext (bool incFilename) {
 
 void VerilatedVcd::makeNameMap() {
     // Take signal information from each module and build m_namemapp
+    deleteNameMap();
+    m_nextCode = 1;
     m_namemapp = new NameMap;
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
@@ -183,15 +185,20 @@ void VerilatedVcd::makeNameMap() {
 	    newname += hiername;
 	    newmapp->insert(make_pair(newname,decl));
 	}
-	delete m_namemapp; m_namemapp=NULL;
+	deleteNameMap();
 	m_namemapp = newmapp;
     }
+}
+
+void VerilatedVcd::deleteNameMap() {
+    if (m_namemapp) { delete m_namemapp; m_namemapp=NULL; }
 }
 
 VerilatedVcd::~VerilatedVcd() {
     close();
     if (m_wrBufp) { delete[] m_wrBufp; m_wrBufp=NULL; }
     if (m_sigs_oldvalp) { delete[] m_sigs_oldvalp; m_sigs_oldvalp=NULL; }
+    deleteNameMap();
     // Remove from list of traces
     vector<VerilatedVcd*>::iterator pos = find(s_vcdVecp.begin(), s_vcdVecp.end(), this);
     if (pos != s_vcdVecp.end()) { s_vcdVecp.erase(pos); }
@@ -414,7 +421,7 @@ void VerilatedVcd::dumpHeader () {
     assert (m_modDepth==0);
 
     // Reclaim storage
-    delete m_namemapp;
+    deleteNameMap();
 }
 
 void VerilatedVcd::module (string name) {
