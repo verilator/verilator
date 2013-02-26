@@ -159,9 +159,14 @@ protected:
     void rank(uint32_t rank) { m_rank = rank; }
     void inUnlink() { m_ins.reset(); }	 // Low level; normally unlinkDelete is what you want
     void outUnlink() { m_outs.reset(); } // Low level; normally unlinkDelete is what you want
+protected:
+    // CONSTRUCTORS
+    V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
 public:
-    // CONSTRUCTION
     V3GraphVertex(V3Graph* graphp);
+    //! Clone copy constructor. Doesn't copy edges or user/userp.
+    virtual V3GraphVertex* clone(V3Graph* graphp) const {
+	return new V3GraphVertex(graphp, *this); }
     virtual ~V3GraphVertex() {}
     void	unlinkEdges(V3Graph* graphp);
     void	unlinkDelete(V3Graph* graphp);
@@ -207,6 +212,9 @@ ostream& operator<<(ostream& os, V3GraphVertex* vertexp);
 
 class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
+public:
+    // ENUMS
+    enum Cuttable { NOT_CUTABLE = false, CUTABLE = true };	// For passing to V3GraphEdge
 protected:
     friend class V3Graph;	friend class V3GraphVertex;
     friend class GraphAcyc;	friend class GraphAcycEdge;
@@ -222,15 +230,23 @@ protected:
 	uint32_t	m_user;		// Marker for some algorithms
     };
     // METHODS
+    void init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable=false);
     void cut() { m_weight = 0; }   // 0 weight is same as disconnected
     void outPushBack();
     void inPushBack();
+    // CONSTRUCTORS
+protected:
+    V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, const V3GraphEdge& old) {
+	init(graphp, fromp, top, old.m_weight, old.m_cutable);
+    }
 public:
-    // ENUMS
-    enum Cuttable { NOT_CUTABLE = false, CUTABLE = true };	// For passing to V3GraphEdge
-    // CONSTRUCTION
-    // Add DAG from one node to the specified node
-    V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable=false);
+    //! Add DAG from one node to the specified node
+    V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable=false) {
+	init(graphp, fromp, top, weight, cutable);
+    }
+    //! Clone copy constructor.  Doesn't copy existing vertices or user/userp.
+    virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
+	return new V3GraphEdge(graphp, fromp, top, *this); }
     virtual ~V3GraphEdge() {}
     // METHODS
     virtual string name() const { return m_fromp->name()+"->"+m_top->name(); }
