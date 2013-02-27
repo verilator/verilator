@@ -123,6 +123,15 @@ public:
     virtual void loopsVertexCb(V3GraphVertex* vertexp);
 };
 
+//! Graph for UNOPTFLAT loops
+class UnoptflatGraph : public OrderGraph {
+public:
+    UnoptflatGraph() {}
+    virtual ~UnoptflatGraph() {}
+    // Methods
+    virtual void loopsVertexCb(V3GraphVertex* vertexp);
+};
+
 //######################################################################
 // Vertex types
 
@@ -336,9 +345,9 @@ public:
 };
 
 class OrderLoopEndVertex : public OrderLogicVertex {
-    // A end vertex points to the *same nodep* as the Begin,
-    // as we need it to be a logic vertex for moving, but don't need a permanent node.
-    // We won't add to the output graph though, so it shouldn't matter.
+    // A end vertex points to the *same nodep* as the Begin, as we need it to
+    // be a logic vertex for moving, but don't need a permanent node.  We
+    // won't add to the output graph though, so it shouldn't matter.
     OrderLoopBeginVertex*  m_beginVertexp;	// Corresponding loop begin
     OrderLoopEndVertex(V3Graph* graphp, const OrderLoopEndVertex& old)
 	: OrderLogicVertex(graphp, old), m_beginVertexp(old.m_beginVertexp) {}

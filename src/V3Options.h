@@ -89,6 +89,7 @@ class V3Options {
     bool	m_traceDups;	// main switch: --trace-dups
     bool	m_traceUnderscore;// main switch: --trace-underscore
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
+    bool	m_reportUnoptflat; // main switch: --report-unoptflat
     bool	m_xInitialEdge;	// main switch: --x-initial-edge
     bool	m_xmlOnly;	// main switch: --xml-netlist
 
@@ -222,6 +223,7 @@ class V3Options {
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
+    bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
 

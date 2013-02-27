@@ -232,6 +232,26 @@ public:
     ~OrderUser() {}
 };
 
+
+//######################################################################
+// Comparator classes
+
+//! Comparator for width of associated variable
+struct OrderVarWidthCmp {
+    bool operator() (OrderVarStdVertex* vsv1p, OrderVarStdVertex* vsv2p) {
+	return vsv1p->varScp()->varp()->width()
+	    > vsv2p->varScp()->varp()->width();
+    }
+};
+
+//! Comparator for fanout of vertex
+struct OrderVarFanoutCmp {
+    bool operator() (OrderVarStdVertex* vsv1p, OrderVarStdVertex* vsv2p) {
+	return vsv1p->fanout() > vsv2p->fanout();
+    }
+};
+
+
 //######################################################################
 // Order class functions
 
@@ -285,6 +305,7 @@ private:
 protected:
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*>  m_pomReadyDomScope;	// List of ready domain/scope pairs, by loopId
+    vector<OrderVarStdVertex*>	m_unoptflatVars;	// Vector of variables in UNOPTFLAT loop
 
 private:
     // STATS
@@ -418,10 +439,99 @@ private:
 		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
 		m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
 		if (tempWeight) edgep->weight(0);
+		if (v3Global.opt.reportUnoptflat()) {
+		    // Report candidate variables for splitting
+		    reportLoopVars(vertexp);
+		    // Do a subgraph for the UNOPTFLAT loop
+		    OrderGraph loopGraph;
+		    m_graph.subtreeLoops(&OrderEdge::followComboConnected,
+					 vertexp, &loopGraph);
+		    loopGraph.dumpDotFilePrefixedAlways("unoptflat");
+		}
 	    }
 	}
     }
 
+    //! Find all variables in an UNOPTFLAT loop
+    //!
+    //! Ignore vars that are 1-bit wide and don't worry about generated
+    //! variables (PRE and POST vars, __Vdly__, __Vcellin__ and __VCellout).
+    //! What remains are candidates for splitting to break loops.
+    //!
+    //! node->user3 is used to mark if we have done a particular variable.
+    //! vertex->user is used to mark if we have seen this vertex before.
+    //!
+    //! @todo We could be cleverer in the future and consider just
+    //!       the width that is generated/consumed.
+    void reportLoopVars(OrderVarVertex* vertexp) {
+	m_graph.userClearVertices();
+	AstNode::user3ClearTree();
+	m_unoptflatVars.clear();
+	reportLoopVarsIterate (vertexp, vertexp->color());
+	AstNode::user3ClearTree();
+	m_graph.userClearVertices();
+	// May be very large vector, so only report the "most important"
+	// elements. Up to 10 of the widest
+	cerr<<V3Error::msgPrefix()
+	    <<"     Widest candidate vars to split:"<<endl;
+	sort (m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
+	int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
+	for (int i = 0; i < lim; i++) {
+	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
+	    AstVar* varp = vsvertexp->varScp()->varp();
+	    cerr<<V3Error::msgPrefix()<<"          "
+		<<varp->fileline()<<" "<<varp->prettyName()<<dec
+		<<", width "<<varp->width()<<", fanout "
+		<<vsvertexp->fanout()<<endl;
+	}
+	// Up to 10 of the most fanned out
+	cerr<<V3Error::msgPrefix()
+	    <<"     Most fanned out candidate vars to split:"<<endl;
+	sort (m_unoptflatVars.begin(), m_unoptflatVars.end(),
+	      OrderVarFanoutCmp());
+	lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
+	for (int i = 0; i < lim; i++) {
+	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
+	    AstVar* varp = vsvertexp->varScp()->varp();
+	    cerr<<V3Error::msgPrefix()<<"          "
+		<<varp->fileline()<<" "<<varp->prettyName()
+		<<", width "<<dec<<varp->width()
+		<<", fanout "<<vsvertexp->fanout()<<endl;
+	}
+	m_unoptflatVars.clear();
+    }
+
+    void reportLoopVarsIterate(V3GraphVertex* vertexp, uint32_t color) {
+	if (vertexp->user()) return; // Already done
+	vertexp->user(1);
+	if (OrderVarStdVertex* vsvertexp = dynamic_cast<OrderVarStdVertex*>(vertexp)) {
+	    // Only reporting on standard variable vertices
+	    AstVar* varp = vsvertexp->varScp()->varp();
+	    if (!varp->user3()) {
+		string name = varp->prettyName();
+		if ((varp->width() != 1)
+		    && (name.find("__Vdly") == string::npos)
+		    && (name.find("__Vcell") == string::npos)) {
+		    // Variable to report on and not yet done
+		    m_unoptflatVars.push_back(vsvertexp);
+		}
+		varp->user3Inc();
+	    }
+	}
+	// Iterate through all the to and from vertices of the same color
+	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep;
+	     edgep = edgep->outNextp()) {
+	    if (edgep->top()->color() == color) {
+		reportLoopVarsIterate(edgep->top(), color);
+	    }
+	}
+	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep;
+	     edgep = edgep->inNextp()) {
+	    if (edgep->fromp()->color() == color) {
+		reportLoopVarsIterate(edgep->fromp(), color);
+	    }
+	}
+    }
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	{
@@ -1600,7 +1710,10 @@ void OrderVisitor::process() {
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
     m_graph.dumpDotFilePrefixed("orderg_preasn_done", true);
 #else
-    // Break cycles
+    // Break cycles. Each strongly connected subgraph (including cutable
+    // edges) will have its own color, and corresponds to a loop in the
+    // original graph. However the new graph will be acyclic (the removed
+    // edges are actually still there, just with weight 0).
     UINFO(2,"  Acyclic & Order...\n");
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
     m_graph.dumpDotFilePrefixed("orderg_acyc");
@@ -1611,6 +1724,9 @@ void OrderVisitor::process() {
     m_graph.order();
     m_graph.dumpDotFilePrefixed("orderg_order");
 
+    // This finds everything that can be traced from an input (which by
+    // definition are the source clocks). After this any vertex which was
+    // traced has isFromInput() true.
     UINFO(2,"  Process Clocks...\n");
     processInputs();  // must be before processCircular
 

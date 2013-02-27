@@ -280,6 +280,11 @@ void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgrap
     }
 }
 
+//! Variant of dumpDotFilePrefixed without --dump option check
+void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph) {
+    dumpDotFile(v3Global.debugFilename(nameComment)+".dot", colorAsSubgraph);
+}
+
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) {
     // This generates a file used by graphviz, http://www.graphviz.org
     // "hardcoded" parameters:

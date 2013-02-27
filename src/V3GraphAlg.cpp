@@ -376,6 +376,58 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
     GraphAlgRLoops (this, edgeFuncp, vertexp);
 }
 
+
+//######################################################################
+//######################################################################
+// Algorithms - subtrees
+
+class GraphAlgSubtrees : GraphAlg {
+private:
+    V3Graph* m_loopGraphp;
+
+    //! Iterate through all connected nodes of a graph with a loop or loops.
+    V3GraphVertex* vertexIterateAll(V3GraphVertex* vertexp) {
+	if (V3GraphVertex* newVertexp = (V3GraphVertex*)vertexp->userp()) {
+	    return newVertexp;
+	} else {
+	    newVertexp = vertexp->clone(m_loopGraphp);
+	    vertexp->userp(newVertexp);
+
+	    for (V3GraphEdge* edgep = vertexp->outBeginp();
+		 edgep; edgep=edgep->outNextp()) {
+		if (followEdge(edgep)) {
+		    V3GraphEdge* newEdgep = (V3GraphEdge*)edgep->userp();
+		    if (!newEdgep) {
+			V3GraphVertex* newTop = vertexIterateAll(edgep->top());
+			newEdgep = edgep->clone(m_loopGraphp, newVertexp,
+						newTop);
+			edgep->userp(newEdgep);
+		    }
+		}
+	    }
+	    return newVertexp;
+	}
+    }
+
+public:
+    GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp,
+		     V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
+	: GraphAlg(graphp, edgeFuncp), m_loopGraphp (loopGraphp) {
+	// Vertex::m_userp - New vertex if we have seen this vertex already
+	// Edge::m_userp - New edge if we have seen this edge already
+	m_graphp->userClearVertices();
+	m_graphp->userClearEdges();
+	(void) vertexIterateAll(vertexp);
+    }
+    ~GraphAlgSubtrees() {}
+};
+
+//! Report the entire connected graph with a loop or loops
+void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
+			   V3Graph* loopGraphp) {
+    GraphAlgSubtrees (this, loopGraphp, edgeFuncp, vertexp);
+}
+
 //######################################################################
 //######################################################################
 // Algorithms - make non cutable
@@ -465,7 +517,9 @@ void V3Graph::order() {
 	}
     }
 
-    // Sort list of vertices by rank, then fanout
+    // Sort list of vertices by rank, then fanout. Fanout is a bit of a
+    // misnomer. It is the sum of all the fanouts of nodes reached from a node
+    // *plus* the count of edges in to that node.
     sortVertices();
     // Sort edges by rank then fanout of node they point to
     sortEdges();

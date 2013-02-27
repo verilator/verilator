@@ -119,13 +119,17 @@ public:
     /// Remove any redundant edges, weights become SUM of any other weight
     void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp);
 
-    /// Call loopsVertexCb on any loops starting where specified
+    /// Call loopsVertexCb on any one loop starting where specified
     void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp);
+
+    /// Build a subgraph of all loops starting where specified
+    void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp);
 
     /// Debugging
     void dump(ostream& os=cout);
     void dumpDotFile(const string& filename, bool colorAsSubgraph);
     void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false);
+    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false);
     void userClearVertices();
     void userClearEdges();
     static void test();
@@ -170,6 +174,7 @@ public:
     virtual ~V3GraphVertex() {}
     void	unlinkEdges(V3Graph* graphp);
     void	unlinkDelete(V3Graph* graphp);
+
     // ACCESSORS
     virtual string name() const { return ""; }
     virtual string dotColor() const { return "black"; }

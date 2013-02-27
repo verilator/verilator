@@ -308,6 +308,7 @@ descriptions in the next sections for more information.
     --private                   Debugging; see docs
     --psl                       Enable PSL parsing
     --public                    Debugging; see docs
+    --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable			Enable model save-restore
     --sc                        Create SystemC output
     --sp                        Create SystemPerl output
@@ -876,6 +877,27 @@ optimizations as if all signals had a /*verilator public*/ comments and
 inlining.  This will also turn off inlining as if all modules had a
 /*verilator public_module*/, unless the module specifically enabled it with
 /*verilator inline_module*/.
+
+=item --report-unoptflat
+
+Extra diagnostics for UNOPTFLAT warnings. This includes for each loop, the
+10 widest variables in the loop, and the 10 most fanned out variables in
+the loop. These are candidates for splitting into multiple variables to
+break the loop.
+
+In addition produces a GraphViz DOT file of the entire strongly connected
+components within the source associated with each loop. This is produced
+irrespective of whether --dump-tree is set. Such graphs may help in
+analysing the problem, but can be very large indeed.
+
+Various commands exist for viewing and manipulating DOT files. For example
+the I<dot> command can be used to convert a DOT file to a PDF for
+printing. For example:
+
+    dot -Tpdf -O Vt_unoptflat_simple_2_35_unoptflat.dot
+
+will generate a PDF Vt_unoptflat_simple_2_35_unoptflat.dot.pdf from the DOT
+file.
 
 =item --savable
 
@@ -3145,6 +3167,11 @@ clock_enable meta comment described above.
 The UNOPTFLAT warning may also occur where outputs from a block of logic
 are independent, but occur in the same always block.  To fix this, use the
 isolate_assignments meta comment described above.
+
+To assist in resolving UNOPTFLAT, the option C<--report-unoptflat> can be
+used, which will provide suggestions for variables that can be split up,
+and a graph of all the nodes connected in the loop. See the L<Arguments>
+section for more details.
 
 Ignoring this warning will only slow simulations, it will simulate
 correctly.

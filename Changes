@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.846-devel
 
+***   Add --report-unoptflat, bug611. [Jeremy Bennett]
+
 ***   Add duplicate clock gate optimization, msg980. [Varun Koyyalagunta]
       Disabled unless -OD or -O3 used, please try it as may get some
       significant speedups.
