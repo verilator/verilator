@@ -245,6 +245,7 @@ descriptions in the next sections for more information.
      +1364-2005ext+<ext>        Use Verilog 2005 with file extension <ext>
      +1800-2005ext+<ext>        Use SystemVerilog 2005 with file extension <ext>
      +1800-2009ext+<ext>        Use SystemVerilog 2009 with file extension <ext>
+     +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
     --assert                    Enable all assertions
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
@@ -314,7 +315,7 @@ descriptions in the next sections for more information.
     --sp                        Create SystemPerl output
     --stats                     Create statistics file
      -sv                        Enable SystemVerilog parsing
-     +systemverilogext+<ext>    Synonym for +1800-2009ext+<ext>
+     +systemverilogext+<ext>    Synonym for +1800-2012ext+<ext>
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -373,6 +374,8 @@ with the --exe option.
 =item +1800-2005ext+I<ext>
 
 =item +1800-2009ext+I<ext>
+
+=item +1800-2012ext+I<ext>
 
 Specifies the language standard to be used with a specific filename
 extension, I<ext>.
@@ -585,7 +588,7 @@ C<--debug> is equivalent to C<--debugi 4>).
 
 Select the language to be used by default when first processing each
 Verilog file.  The language value must be "1364-1995", "1364-2001",
-"1364-2005", "1800-2005" or "1800-2009".
+"1364-2005", "1800-2005", "1800-2009" or "1800-2012".
 
 Any language associated with a particular file extension (see the various
 +I<lang>ext+ options) will be used in preference to the language specified
@@ -598,7 +601,7 @@ legacy mixed language designs, the various +I<lang>ext+ options should be
 used.
 
 If no language is specified, either by this flag or +I<lang>ext+ options,
-then the latest SystemVerilog language (IEEE 1800-2009) is used.
+then the latest SystemVerilog language (IEEE 1800-2012) is used.
 
 =item +define+I<var>+I<value>
 
@@ -940,7 +943,7 @@ compatibility with other simulators.
 
 =item  +systemverilogext+I<ext>
 
-A synonym for C<+1800-2009ext+>I<ext>.
+A synonym for C<+1800-2012ext+>I<ext>.
 
 =item --top-module I<topname>
 
@@ -1916,13 +1919,13 @@ It also supports .name and .* interconnection.
 Verilator partially supports concurrent assert and cover statements; see
 the enclosed coverage tests for the syntax which is allowed.
 
-=head2 SystemVerilog 2009 (IEEE 1800-2009) Support
+=head2 SystemVerilog 2012 (IEEE 1800-2012) Support
 
-Verilator implements a full SystemVerilog 2009 preprocessor, including
+Verilator implements a full SystemVerilog 2012 preprocessor, including
 function call-like preprocessor defines, default define arguments,
 `__FILE__, `__LINE__ and `undefineall.
 
-Verilator currently has some support for SystemVerilog 2009 synthesis
+Verilator currently has some support for SystemVerilog synthesis
 constructs. As SystemVerilog features enter common usage they are added;
 please file a bug if a feature you need is missing.
 

@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.846-devel
 
+**    IEEE 1800-2012 is now the default language.  This adds 4 new keywords
+      and updates the svdpi.h and vpi_user.h header files.
+
 ***   Add --report-unoptflat, bug611. [Jeremy Bennett]
 
 ***   Add duplicate clock gate optimization, msg980. [Varun Koyyalagunta]

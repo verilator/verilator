@@ -673,14 +673,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
 		addIncDirUser (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
 	    }
-	    else if (parseLangExt(sw, "+systemverilogext+", V3LangCode::L1800_2009)
+	    else if (parseLangExt(sw, "+systemverilogext+", V3LangCode::L1800_2012)
 		     || parseLangExt(sw, "+verilog1995ext+", V3LangCode::L1364_1995)
 		     || parseLangExt(sw, "+verilog2001ext+", V3LangCode::L1364_2001)
 		     || parseLangExt(sw, "+1364-1995ext+", V3LangCode::L1364_1995)
 		     || parseLangExt(sw, "+1364-2001ext+", V3LangCode::L1364_2001)
 		     || parseLangExt(sw, "+1364-2005ext+", V3LangCode::L1364_2005)
 		     || parseLangExt(sw, "+1800-2005ext+", V3LangCode::L1800_2005)
-		     || parseLangExt(sw, "+1800-2009ext+", V3LangCode::L1800_2009)) {
+		     || parseLangExt(sw, "+1800-2009ext+", V3LangCode::L1800_2009)
+		     || parseLangExt(sw, "+1800-2012ext+", V3LangCode::L1800_2012)) {
 		// Nothing to do here - all done in the test
 
 	    }

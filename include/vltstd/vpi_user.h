@@ -1,7 +1,7 @@
 /*******************************************************************************
  * vpi_user.h
  *
- * IEEE Std 1800 Programming Language Interface (PLI)
+ * IEEE Std 1800-2012 Programming Language Interface (PLI)
  *
  * This file contains the constant definitions, structure definitions, and
  * routine declarations used by the SystemVerilog Verification Procedural
@@ -61,9 +61,9 @@ typedef char             PLI_BYTE8;
 typedef unsigned char    PLI_UBYTE8;
 #endif
 
-/* Use to export a symbol */
+/* Use to import a symbol */
 
-#if WIN32
+#if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__))
 #ifndef PLI_DLLISPEC
 #define PLI_DLLISPEC __declspec(dllimport)
 #define VPI_USER_DEFINED_DLLISPEC 1
@@ -74,9 +74,9 @@ typedef unsigned char    PLI_UBYTE8;
 #endif
 #endif
 
-/* Use to import a symbol */
+/* Use to export a symbol */
 
-#if WIN32
+#if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__))
 #ifndef PLI_DLLESPEC
 #define PLI_DLLESPEC __declspec(dllexport)
 #define VPI_USER_DEFINED_DLLESPEC 1
@@ -438,12 +438,12 @@ typedef PLI_UINT32 *vpiHandle;
 #define vpiPlusOp                  2   /* unary plus */
 #define vpiNotOp                   3   /* unary not */
 #define vpiBitNegOp                4   /* bitwise negation */
-#define vpiUnaryAndOp              5   /* bitwise reduction and */
-#define vpiUnaryNandOp             6   /* bitwise reduction nand */
-#define vpiUnaryOrOp               7   /* bitwise reduction or */
-#define vpiUnaryNorOp              8   /* bitwise reduction nor */
-#define vpiUnaryXorOp              9   /* bitwise reduction xor */
-#define vpiUnaryXNorOp            10   /* bitwise reduction xnor */
+#define vpiUnaryAndOp              5   /* bitwise reduction AND */
+#define vpiUnaryNandOp             6   /* bitwise reduction NAND */
+#define vpiUnaryOrOp               7   /* bitwise reduction OR */
+#define vpiUnaryNorOp              8   /* bitwise reduction NOR */
+#define vpiUnaryXorOp              9   /* bitwise reduction XOR */
+#define vpiUnaryXNorOp            10   /* bitwise reduction XNOR */
 #define vpiSubOp                  11   /* binary subtraction */
 #define vpiDivOp                  12   /* binary division */
 #define vpiModOp                  13   /* binary modulus */
@@ -459,17 +459,17 @@ typedef PLI_UINT32 *vpiHandle;
 #define vpiRShiftOp               23   /* binary right shift */
 #define vpiAddOp                  24   /* binary addition */
 #define vpiMultOp                 25   /* binary multiplication */
-#define vpiLogAndOp               26   /* binary logical and */
-#define vpiLogOrOp                27   /* binary logical or */
-#define vpiBitAndOp               28   /* binary bitwise and */
-#define vpiBitOrOp                29   /* binary bitwise or */
-#define vpiBitXorOp               30   /* binary bitwise xor */
-#define vpiBitXNorOp              31   /* binary bitwise xnor */
+#define vpiLogAndOp               26   /* binary logical AND */
+#define vpiLogOrOp                27   /* binary logical OR */
+#define vpiBitAndOp               28   /* binary bitwise AND */
+#define vpiBitOrOp                29   /* binary bitwise OR */
+#define vpiBitXorOp               30   /* binary bitwise XOR */
+#define vpiBitXNorOp              31   /* binary bitwise XNOR */
 #define vpiBitXnorOp              vpiBitXNorOp /* added with 1364-2001 */
 #define vpiConditionOp            32   /* ternary conditional */
 #define vpiConcatOp               33   /* n-ary concatenation */
 #define vpiMultiConcatOp          34   /* repeated concatenation */
-#define vpiEventOrOp              35   /* event or */
+#define vpiEventOrOp              35   /* event OR */
 #define vpiNullOp                 36   /* null operation */
 #define vpiListOp                 37   /* list of expressions */
 #define vpiMinTypMaxOp            38   /* min:typ:max: delay expression */
@@ -536,7 +536,7 @@ typedef PLI_UINT32 *vpiHandle;
                                          same subtypes as vpiNetType */
 #define vpiSaveRestartID         62   /* unique ID for save/restart data */
 #define vpiSaveRestartLocation   63   /* name of save/restart data file */
-/* vpiValid,vpiValidTrue,vpiValidFalse are deprecated in 1800-2009 */
+/* vpiValid,vpiValidTrue,vpiValidFalse were deprecated in 1800-2009 */
 #define vpiValid                 64   /* reentrant task/func frame or automatic
                                          variable is valid */
 #define vpiValidFalse              0
@@ -661,7 +661,7 @@ typedef struct t_vpi_arrayvalue
    {
        PLI_INT32 *integers;               /* integer values */
        PLI_INT16 *shortints;              /* short integer values */
-       PLI_INT16 *longints;               /* long integer values */
+       PLI_INT64 *longints;               /* long integer values */
        PLI_BYTE8 *rawvals;                /* 2/4-state vector elements */
        struct t_vpi_vecval *vectors;      /* 4-state vector elements */
        struct t_vpi_time *times;          /* time values */
@@ -944,7 +944,7 @@ XXTERN PLI_INT32    vpi_compare_objects PROTO_PARAMS((vpiHandle object1,
                                                       vpiHandle object2));
 XXTERN PLI_INT32    vpi_chk_error       PROTO_PARAMS((p_vpi_error_info
                                                       error_info_p));
-/* vpi_free_object() is deprecated in 1800-2009 */
+/* vpi_free_object() was deprecated in 1800-2009 */
 XXTERN PLI_INT32    vpi_free_object     PROTO_PARAMS((vpiHandle object));
 XXTERN PLI_INT32    vpi_release_handle  PROTO_PARAMS((vpiHandle object));
 XXTERN PLI_INT32    vpi_get_vlog_info   PROTO_PARAMS((p_vpi_vlog_info

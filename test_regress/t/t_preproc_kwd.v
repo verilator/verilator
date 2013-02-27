@@ -9,12 +9,13 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   s1 s1 ();
-   s2 s2 ();
-   s3 s3 ();
-   s4 s4 ();
-   s5 s5 ();
-   s6 s6 ();
+   v95 v95 ();
+   v01 v01 ();
+   v05 v05 ();
+   s05 s05 ();
+   s09 s09 ();
+   a23 a23 ();
+   s12 s12 ();
 
    initial begin
       $finish;
@@ -22,31 +23,37 @@ module t (/*AUTOARG*/
 endmodule
 
 `begin_keywords "1364-1995"
-module s1;
+module v95;
   integer signed; initial signed = 1;
 endmodule
 `end_keywords
 
 `begin_keywords "1364-2001"
-module s2;
+module v01;
   integer bit; initial bit = 1;
 endmodule
 `end_keywords
 
 `begin_keywords "1364-2005"
-module s3;
+module v05;
   integer final; initial final = 1;
 endmodule
 `end_keywords
 
 `begin_keywords "1800-2005"
-module s4;
+module s05;
   integer global; initial global = 1;
 endmodule
 `end_keywords
 
 `begin_keywords "1800-2009"
-module s5;
+module s09;
+   integer soft; initial soft = 1;
+endmodule
+`end_keywords
+
+`begin_keywords "1800-2012"
+module s12;
  final begin
     $write("*-* All Finished *-*\n");
  end
@@ -54,7 +61,7 @@ endmodule
 `end_keywords
 
 `begin_keywords "VAMS-2.3"
-module s6;
+module a23;
    real foo; initial foo = sqrt(2.0);
 endmodule
 `end_keywords

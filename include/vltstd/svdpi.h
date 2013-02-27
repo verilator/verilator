@@ -7,7 +7,7 @@
  * This file contains the constant definitions, structure definitions,
  * and routine declarations used by SystemVerilog DPI.
  *
- * This file is from the SystemVerilog IEEE 1800-2009 Annex I.
+ * This file is from the SystemVerilog IEEE 1800-2012 Annex I.
  */
 
 #ifndef INCLUDED_SVDPI
@@ -35,18 +35,18 @@ typedef signed __int8 int8_t;
 #include <sys/types.h>
 #endif
 
-/* Use to export a symbol from application */
+/* Use to import a symbol into dll */
 #ifndef DPI_DLLISPEC
-#if defined (_MSC_VER)
+#if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__))
 #define DPI_DLLISPEC __declspec(dllimport)
 #else
 #define DPI_DLLISPEC
 #endif
 #endif
 
-/* Use to import a symbol into application */
+/* Use to export a symbol from dll */
 #ifndef DPI_DLLESPEC
-#if defined (_MSC_VER)
+#if (defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__))
 #define DPI_DLLESPEC __declspec(dllexport)
 #else
 #define DPI_DLLESPEC
