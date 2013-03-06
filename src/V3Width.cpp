@@ -805,6 +805,28 @@ private:
 	pushDeletep(nodep); nodep=NULL;
 	//if (debug()) newp->dumpTree(cout,"  CastOut: ");
     }
+    virtual void visit(AstCastSize* nodep, AstNUser* vup) {
+	if (!nodep->rhsp()->castConst()) nodep->v3fatalSrc("Unsupported: Non-const cast of size");
+	//if (debug()) nodep->dumpTree(cout,"  CastPre: ");
+	int width = nodep->rhsp()->castConst()->toSInt();
+	if (width < 1) { nodep->v3error("Size-changing cast to zero or negative size"); width=1; }
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	AstBasicDType* underDtp = nodep->lhsp()->dtypep()->castBasicDType();
+	if (!underDtp) {
+	    nodep->v3error("Unsupported: Size-changing cast on non-basic data type");
+	    underDtp = nodep->findLogicBoolDType()->castBasicDType();
+	}
+	AstNodeDType* newDtp = (underDtp->keyword().isFourstate()
+				? nodep->findLogicDType(width, width, underDtp->numeric())
+				: nodep->findBitDType(width, width, underDtp->numeric()));
+	nodep->dtypep(newDtp);
+	AstNode* underp = nodep->lhsp()->unlinkFrBack();
+	nodep->replaceWith(underp);
+	if (underp->width()!=width) {
+	    fixWidthExtend(underp, newDtp);
+	}
+	pushDeletep(nodep); nodep=NULL;
+    }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");
 	// Must have deterministic constant width

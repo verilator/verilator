@@ -10,11 +10,14 @@ module t;
 
    mc_t o;
 
+   logic [15:0] allones = 16'hffff;
+
    initial begin
       if (4'shf > 4'sh0) $stop;
       if (signed'(4'hf) > 4'sh0) $stop;
       if (4'hf < 4'h0) $stop;
       if (unsigned'(4'shf) < 4'h0) $stop;
+      if (4'(allones) !== 4'hf) $stop;
 
       o = tocast_t'(4'b1);
       if (o != 4'b1) $stop;

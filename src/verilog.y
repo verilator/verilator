@@ -2825,6 +2825,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
 	//UNSUP	~l~expr yP_TICK '(' expr ')'		{ UNSUP }
+	|	yaINTNUM     yP_TICK '(' expr ')'	{ $$ = new AstCastSize($2,$4,new AstConst($1->fileline(),*$1)); }
 	//
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: streaming_concatenation

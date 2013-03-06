@@ -3184,6 +3184,20 @@ struct AstCast : public AstNode {
     AstNodeDType* childDTypep() const { return op2p()->castNodeDType(); }
 };
 
+struct AstCastSize : public AstNode {
+    // Cast to specific size; signed/twostate inherited from lower element per IEEE
+    AstCastSize(FileLine* fl, AstNode* lhsp, AstConst* rhsp) : AstNode(fl) {
+	setOp1p(lhsp); setOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(CastSize, CASTSIZE)
+    virtual string emitVerilog() { return "((%r)'(%l))"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* rhsp() const { return op2p(); }
+};
+
 struct AstCCast : public AstNodeUniop {
     // Cast to C-based data type
 private:
