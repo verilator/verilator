@@ -90,13 +90,12 @@ private:
 	AstStructDType *structp = varp->dtypeSkipRefp()->castStructDType();
 	bool isArray = arrayp;
 	bool isStruct = structp && structp->packed();
-	int msb = isArray ? arrayp->msb() : 0;
-	int lsb = isArray ? arrayp->lsb() : 0;
-	if (isArray && ((msb - lsb + 1) > DETECTARRAY_MAX_INDEXES)) {
+	int elements = isArray ? arrayp->elementsConst() : 1;
+	if (isArray && (elements > DETECTARRAY_MAX_INDEXES)) {
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
 			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName()<<endl
 			 <<vscp->warnMore()
-			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(msb-lsb+1));
+			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(elements));
 	} else if (!isArray && !isStruct
 		   && !varp->dtypeSkipRefp()->castBasicDType()) {
 	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
@@ -111,7 +110,7 @@ private:
 	    m_topModp->addStmtp(newvarp);
 	    AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
 	    m_scopetopp->addVarp(newvscp);
-	    for (int index=lsb; index<=msb; ++index) {
+	    for (int index=0; index<elements; ++index) {
 		AstChangeDet* changep
 		    = new AstChangeDet (vscp->fileline(),
 					aselIfNeeded(isArray, index,

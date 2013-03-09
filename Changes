@@ -30,6 +30,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix opening a VerilatedVcdC file multiple times, msg1021. [Frederic Requin]
 
+****  Fix UNOPTFLAT circular array bounds crossing, bug630. [Jie Xu]
+
 
 * Verilator 3.845 2013/02/04
 
