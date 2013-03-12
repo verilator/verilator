@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.847 devel
 
+**** Fix module resolution with __, bug631. [Jason McMullan]
+
 
 * Verilator 3.846 2013-03-09
 

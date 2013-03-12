@@ -5,7 +5,7 @@
 // without warranty, 2003 by Wilson Snyder.
 
 // This file is named .vi to test +libext+ flags.
-module t_inst_v2k_sub
+module t_inst_v2k__sub
   (
    output reg [7:0] osizedreg,
    output wire oonewire /*verilator public*/,

@@ -18,16 +18,17 @@ module t (/*AUTOARG*/
    reg ionewire;
 
 `ifdef never_just_for_verilog_mode
-   wire oonewire;		// From sub of t_inst_v2k_sub.v
+   wire oonewire;		// From sub of t_inst_v2k__sub.v
 `endif
 
-   wire [7:0]		osizedreg;		// From sub of t_inst_v2k_sub.v
+   wire [7:0]		osizedreg;		// From sub of t_inst_v2k__sub.v
    wire [1:0]		tied;
    wire [3:0]		tied_also;
 
    hello hsub (.tied_also);
 
-   t_inst_v2k_sub sub
+   // Double underscore tests bug631
+   t_inst_v2k__sub sub
      (
       // Outputs
       .osizedreg			(osizedreg[7:0]),

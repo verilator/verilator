@@ -698,7 +698,7 @@ private:
 			&& (!m_ftaskp || m_ftaskp != foundp->nodep())  // Not the function's variable hiding function
 			&& !nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
 			&& !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
-			nodep->v3warn(VARHIDDEN,"Declaration of signal hides declaration in upper scope: "<<nodep->name()<<endl
+			nodep->v3warn(VARHIDDEN,"Declaration of signal hides declaration in upper scope: "<<nodep->prettyName()<<endl
 				      <<foundp->nodep()->warnMore()<<"... Location of original declaration");
 		    }
 		    ins = true;
@@ -744,7 +744,7 @@ private:
 		// User can disable the message at either point
 		if (!nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
 		    && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
-		    nodep->v3warn(VARHIDDEN,"Declaration of enum value hides declaration in upper scope: "<<nodep->name()<<endl
+		    nodep->v3warn(VARHIDDEN,"Declaration of enum value hides declaration in upper scope: "<<nodep->prettyName()<<endl
 				  <<foundp->nodep()->warnMore()<<"... Location of original declaration");
 		}
 		ins = true;
@@ -858,7 +858,7 @@ private:
     }
     virtual void visit(AstDefParam* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->name()<<"(...etc...))");
+	nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->prettyName()<<"(...etc...))");
 	VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
 	AstCell* cellp = foundp->nodep()->castCell();
 	if (!cellp) {

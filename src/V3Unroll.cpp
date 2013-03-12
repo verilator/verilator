@@ -115,7 +115,7 @@ private:
 	m_forVarp = initAssp->lhsp()->castVarRef()->varp();
 	m_forVscp = initAssp->lhsp()->castVarRef()->varScopep();
 	if (nodep->castGenFor() && !m_forVarp->isGenVar()) {
-	    nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->name()<<endl);
+	    nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->prettyName()<<endl);
 	}
 	if (m_generate) V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 	AstConst* constInitp = initAssp->rhsp()->castConst();

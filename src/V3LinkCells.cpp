@@ -75,7 +75,7 @@ public:
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
     if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
 	vvertexp->modp()->v3error("Recursive module (module instantiates itself): "
-				  <<vvertexp->modp()->name());
+				  <<vvertexp->modp()->prettyName());
 	V3Error::abortIfErrors();
     } else {  // Everything should match above, but...
 	v3fatalSrc("Recursive instantiations");
@@ -128,8 +128,9 @@ private:
 	    // Read-subfile
 	    // If file not found, make AstNotFoundModule, rather than error out.
 	    // We'll throw the error when we know the module will really be needed.
+	    string prettyName = AstNode::prettyName(modName);
 	    V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
-	    parser.parseFile(nodep->fileline(), modName, false, "");
+	    parser.parseFile(nodep->fileline(), prettyName, false, "");
 	    V3Error::abortIfErrors();
 	    // We've read new modules, grab new pointers to their names
 	    readModNames();
@@ -137,7 +138,7 @@ private:
 	    modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
 	    if (!modp) {
 		// This shouldn't throw a message as parseFile will create a AstNotFoundModule for us
-		nodep->v3error("Can't resolve module reference: "<<modName);
+		nodep->v3error("Can't resolve module reference: "<<prettyName);
 	    }
 	}
 	return modp;
@@ -189,7 +190,7 @@ private:
 			      <<"' does not match "<<nodep->typeName()<<" name: "<<nodep->prettyName());
 	    }
 	}
-	bool topMatch = (v3Global.opt.topModule()==nodep->name());
+	bool topMatch = (v3Global.opt.topModule()==nodep->prettyName());
 	if (topMatch) {
 	    m_topVertexp = vertex(nodep);
 	    UINFO(2,"Link --top-module: "<<nodep<<endl);

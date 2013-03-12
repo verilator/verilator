@@ -66,7 +66,7 @@ private:
 	    } else {
 		string rsvd = m_words.isKeyword(nodep->name());
 		if (rsvd != "") {
-		    nodep->v3warn(SYMRSVDWORD,"Symbol matches "+rsvd+": '"<<nodep->name()<<"'");
+		    nodep->v3warn(SYMRSVDWORD,"Symbol matches "+rsvd+": '"<<nodep->prettyName()<<"'");
 		    string newname = (string)"__SYM__"+nodep->name();
 		    nodep->name(newname);
 		}
