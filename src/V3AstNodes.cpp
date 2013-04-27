@@ -103,11 +103,19 @@ bool AstVar::isSigPublic() const {
 }
 
 bool AstVar::isScQuad() const {
-    return (isSc() && isQuad() && !isScBv());
+    return (isSc() && isQuad() && !isScBv() && !isScBigUint());
 }
 
 bool AstVar::isScBv() const {
     return ((isSc() && width() >= v3Global.opt.pinsBv()) || m_attrScBv);
+}
+
+bool AstVar::isScUint() const {
+    return ((isSc() && v3Global.opt.pinsScUint() && width() >= 2 && width() <= 64) && !isScBv());
+}
+
+bool AstVar::isScBigUint() const {
+    return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512) && !isScBv());
 }
 
 void AstVar::combineType(AstVarType type) {
@@ -278,7 +286,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 }
 
 string AstVar::scType() const {
-    if (isScBv()) {
+    if (isScBigUint()) {
+	return (string("sc_biguint<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
+    } else if (isScUint()) {
+	return (string("sc_uint<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
+    } else if (isScBv()) {
 	return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
 	return "bool";

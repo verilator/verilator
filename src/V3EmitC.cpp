@@ -79,7 +79,10 @@ public:
 	puts (nodep->isWide()?"W":(nodep->isQuad()?"Q":"I"));
     }
     void emitScIQW(AstVar* nodep) {
-	puts (nodep->isScBv()?"SW":(nodep->isScQuad()?"SQ":"SI"));
+	puts (nodep->isScBigUint() ? "SB"
+	      : nodep->isScUint()  ? "SU"
+	      : nodep->isScBv()    ? "SW"
+	      : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitOpName(AstNode* nodep, const string& format,
 		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
@@ -1699,7 +1702,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 			if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
 			else if (varp->dtypeSkipRefp()->castUnpackArrayDType()) sortbytes=8;
 			else if (varp->basicp() && varp->basicp()->isOpaque()) sortbytes=7;
-			else if (varp->isScBv()) sortbytes=6;
+			else if (varp->isScBv() || varp->isScBigUint()) sortbytes=6;
 			else if (sigbytes==8) sortbytes=5;
 			else if (sigbytes==4) sortbytes=4;
 			else if (sigbytes==2) sortbytes=2;
@@ -2172,6 +2175,21 @@ class EmitCTrace : EmitCStmts {
 	AstVar* varp = varrefp->varp();
 	return varp->isSc() && varp->isScBv();
     }
+
+    bool emitTraceIsScBigUint(AstTraceInc* nodep) {
+	AstVarRef* varrefp = nodep->valuep()->castVarRef();
+	if (!varrefp) return false;
+	AstVar* varp = varrefp->varp();
+	return varp->isSc() && varp->isScBigUint();
+    }
+
+    bool emitTraceIsScUint(AstTraceInc* nodep) {
+	AstVarRef* varrefp = nodep->valuep()->castVarRef();
+	if (!varrefp) return false;
+	AstVar* varp = varrefp->varp();
+	return varp->isSc() && varp->isScUint();
+    }
+
     void emitTraceInitOne(AstTraceDecl* nodep) {
 	if (nodep->isDouble()) {
 	    puts("vcdp->declDouble");
@@ -2207,7 +2225,7 @@ class EmitCTrace : EmitCStmts {
 		       ? "full":"chg");
 	if (nodep->isDouble()) {
 	    puts("vcdp->"+full+"Double");
-	} else if (nodep->isWide() || emitTraceIsScBv(nodep)) {
+	} else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
@@ -2221,7 +2239,7 @@ class EmitCTrace : EmitCStmts {
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
 	if (!nodep->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->declp()->left() || nodep->declp()->right() || emitTraceIsScBv(nodep))) {
+	    && (nodep->declp()->left() || nodep->declp()->right() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep))) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");
@@ -2231,7 +2249,8 @@ class EmitCTrace : EmitCStmts {
 	    AstVarRef* varrefp = nodep->valuep()->castVarRef();
 	    AstVar* varp = varrefp->varp();
 	    puts("(");
-	    if (emitTraceIsScBv(nodep)) puts("VL_SC_BV_DATAP(");
+	    if (emitTraceIsScBigUint(nodep)) puts("(vluint32_t*)");
+	    else if (emitTraceIsScBv(nodep)) puts("VL_SC_BV_DATAP(");
 	    varrefp->iterate(*this);	// Put var name out
 	    // Tracing only supports 1D arrays
 	    if (varp->dtypeSkipRefp()->castUnpackArrayDType()) {
@@ -2240,7 +2259,9 @@ class EmitCTrace : EmitCStmts {
 		else puts("["+cvtToStr(arrayindex)+"]");
 	    }
 	    if (varp->isSc()) puts(".read()");
-	    if (emitTraceIsScBv(nodep)) puts(")");
+	    if (emitTraceIsScUint(nodep)) puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
+	    else if (emitTraceIsScBigUint(nodep)) puts(".get_raw()");
+	    else if (emitTraceIsScBv(nodep)) puts(")");
 	    puts(")");
 	} else {
 	    puts("(");

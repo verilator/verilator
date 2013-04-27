@@ -547,6 +547,7 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
 //===================================================================
 // SYSTEMC OPERATORS
 // Copying verilog format to systemc integers and bit vectors.
+// Get a SystemC variable
 
 #define VL_ASSIGN_ISI(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read()); }
 #define VL_ASSIGN_QSQ(obits,vvar,svar) { (vvar) = VL_CLEAN_QQ((obits),(obits),(svar).read()); }
@@ -564,7 +565,21 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
     owp[words-1] &= VL_MASK_I(obits); \
 }
 
+#define VL_ASSIGN_ISU(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read().to_uint()); }
+#define VL_ASSIGN_QSU(obits,vvar,svar) { (vvar) = VL_CLEAN_QQ((obits),(obits),(svar).read().to_uint64()); }
+#define VL_ASSIGN_WSB(obits,owp,svar) {                       \
+    int words = VL_WORDS_I(obits);                            \
+    sc_biguint<obits> _butemp = (svar).read();                \
+    for (int i=0; i < words; i++) {                           \
+        int msb = ((i+1)*VL_WORDSIZE) - 1;                    \
+        msb = (msb >= obits) ? (obits-1) : msb;               \
+        owp[i] = _butemp.range(msb,i*VL_WORDSIZE).to_uint();  \
+    }                                                         \
+    owp[words-1] &= VL_MASK_I(obits);                         \
+}
+
 // Copying verilog format from systemc integers and bit vectors.
+// Set a SystemC variable
 
 #define VL_ASSIGN_SII(obits,svar,vvar) { (svar).write(vvar); }
 #define VL_ASSIGN_SQQ(obits,svar,vvar) { (svar).write(vvar); }
@@ -584,6 +599,20 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
     sc_bv<obits> _bvtemp; \
     for (int i=0; i < VL_WORDS_I(obits); i++) _bvtemp.set_word(i,rwp[i]); \
     svar.write(_bvtemp); \
+}
+
+#define VL_ASSIGN_SUI(obits,svar,rd) { (svar).write(rd); }
+#define VL_ASSIGN_SUQ(obits,svar,rd) { (svar).write(rd); }
+#define VL_ASSIGN_SBI(obits,svar,rd) { (svar).write(rd); }
+#define VL_ASSIGN_SBQ(obits,svar,rd) { (svar).write(rd); }
+#define VL_ASSIGN_SBW(obits,svar,rwp) {             \
+    sc_biguint<obits> _butemp;                      \
+    for (int i=0; i < VL_WORDS_I(obits); i++) {     \
+        int msb = ((i+1)*VL_WORDSIZE) - 1;          \
+        msb = (msb >= obits) ? (obits-1) : msb;     \
+        _butemp.range(msb,i*VL_WORDSIZE) = rwp[i];  \
+    }                                               \
+    svar.write(_butemp);                            \
 }
 
 //===================================================================

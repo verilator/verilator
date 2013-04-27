@@ -302,6 +302,8 @@ descriptions in the next sections for more information.
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .ccp functions
     --pins-bv <bits>            Specify types for top level ports
+    --pins-sc-uint              Specify types for top level ports
+    --pins-sc-biguint           Specify types for top level ports
     --pins-uint8                Specify types for top level ports
     --pipe-filter <command>     Filter all input through a script
     --prefix <topname>          Name of top level class
@@ -819,6 +821,20 @@ wide should use sc_bv's instead of uint32/vluint64_t's.  The default is
 "--pins-bv 65".  Versions before Verilator 3.671 defaulted to "--pins-bv
 33".  The more sc_bv is used, the worse for performance.  Use the
 "/*verilator sc_bv*/" attribute to select specific ports to be sc_bv.
+
+=item --pins-sc-uint
+
+Specifies SystemC inputs/outputs of greater than 2 bits wide should use
+sc_uint between 2 and 64.  When combined with the "--pins-sc-biguint"
+combination, it results in sc_uint being used between 2 and 64 and
+sc_biguint being used between 65 and 512.
+
+=item --pins-sc-biguint
+
+Specifies SystemC inputs/outputs of greater than 65 bits wide should use
+sc_biguint between 65 and 512, and sc_bv from 513 upwards.  When combined
+with the "--pins-sc-uint" combination, it results in sc_uint being used
+between 2 and 64 and sc_biguint being used between 65 and 512.
 
 =item --pins-uint8
 

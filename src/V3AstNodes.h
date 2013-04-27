@@ -979,6 +979,8 @@ public:
     bool	isSc() const { return m_sc; }
     bool	isScQuad() const;
     bool	isScBv() const;
+    bool	isScUint() const;
+    bool	isScBigUint() const;
     bool	isScSensitive() const { return m_scSensitive; }
     bool	isSigPublic()  const;
     bool	isSigModPublic() const { return m_sigModPublic; }
