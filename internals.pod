@@ -366,10 +366,8 @@ AST.
 
 =head1 TESTING
 
-To write a test see the BUGS section of the Verilator primary manual, and
-the documentation in:
-
-  test_regress/t/driver.pl --help
+For an overview of how to write a test see the BUGS section of the
+Verilator primary manual.
 
 It is important to add tests for failures as well as success (for example to
 check that an error message is correctly triggered).
@@ -378,7 +376,60 @@ Tests that fail should by convenition have the suffix C<_bad> in their name,
 and include C<fails =E<gt> 1> in either their C<compile> or C<execute> step as
 appropriate.
 
-Developers will also want to configure with two extra flags:
+=head2 Controlling the Test Driver
+
+Test drivers are written in PERL. All invoke the main test driver script,
+which can provide detailed help on all the features available when writing
+a test driver.
+
+  test_regress/t/driver.pl --help
+
+For convenience, a summary of the most commonly used features is provided
+here. All drivers require a call to C<compile> subroutine to compile the
+test. For run-time tests, this is followed by a call to the C<execute>
+subroutine. Both of these functions can optionally be provided with a hash
+table as argument specifying additonal options.
+
+The test driver assumes by default that the source Verilog file name
+matches the PERL driver name. So a test whose driver is C<t/t_mytest.pl>
+will expect a Verilog source file C<t/t_mytest.v>. This can be changed
+using the C<top_filename> subroutine, for example
+
+  top_filename("t/t_myothertest.v");
+
+By default all tests will run with major simulators (Icarus Verilog, NC,
+VCS, ModelSim) as well as Verilator, to allow results to be
+compared. However if you wish a test only to be used with Verilator, you
+can use the following:
+
+  $Self->{vlt} or $Self->skip("Verilator only test");
+
+Of the many options that can be set through arguments to C<compiler> and
+C<execute>, the following are particularly useful:
+
+=over 4
+
+=item C<verilator_flags2>
+
+A list of flags to be passed to verilator when compiling.
+
+=item C<fails>
+
+Set to 1 to indicate that the compilation or execution is intended to fail.
+
+=back
+
+For example the following would specify that compilation requires two
+defines and is expected to fail.
+
+  compile (
+      verilator_flags2 => ["-DSMALL_CLOCK -DGATED_COMMENT"],
+      fails => 1,
+      );
+
+=head2 Regression Testing for Developers
+
+Developers will also want to call ./configure with two extra flags:
 
 =over 4
 
