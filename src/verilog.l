@@ -403,9 +403,9 @@ word	[a-zA-Z0-9_]+
   "$warning"		{ FL; return yD_WARNING; }
   /*     SV2005 Keywords */
   "$unit"		{ FL; return yD_UNIT; }  /* Yes, a keyword, not task */
-  "always_comb"		{ FL; return yALWAYS; }
-  "always_ff"		{ FL; return yALWAYS; }
-  "always_latch"	{ FL; return yALWAYS; }
+  "always_comb"		{ FL; return yALWAYS_COMB; }
+  "always_ff"		{ FL; return yALWAYS_FF; }
+  "always_latch"	{ FL; return yALWAYS_LATCH; }
   "bind"		{ FL; return yBIND; }
   "bit"			{ FL; return yBIT; }
   "break"		{ FL; return yBREAK; }

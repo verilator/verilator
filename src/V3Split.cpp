@@ -416,7 +416,7 @@ private:
 		}
 		if (splitAlwaysp) {
 		    ++m_statSplits;
-		    AstAlways* alwaysp = new AstAlways(newListp->fileline(), NULL, NULL);
+		    AstAlways* alwaysp = new AstAlways(newListp->fileline(), VAlwaysKwd::ALWAYS, NULL, NULL);
 		    addAfterp->addNextHere(alwaysp);  addAfterp=alwaysp;
 		    alwaysp->addStmtp(newListp);
 		} else {

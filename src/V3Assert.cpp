@@ -137,6 +137,7 @@ private:
 	if (nodep->castPslAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	AstNode* newp = new AstAlways (nodep->fileline(),
+				       VAlwaysKwd::ALWAYS,
 				       sentreep,
 				       bodysp);
 	// Install it

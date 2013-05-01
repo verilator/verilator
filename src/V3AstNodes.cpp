@@ -677,6 +677,11 @@ void AstNode::dump(ostream& str) {
     if (name()!="") str<<"  "<<AstNode::quoteName(name());
 }
 
+void AstAlways::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (keyword() != VAlwaysKwd::ALWAYS) str<<" ["<<keyword().ascii()<<"]";
+}
+
 void AstArraySel::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" [start:"<<start()<<"] [length:"<<length()<<"]";

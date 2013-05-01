@@ -57,6 +57,7 @@ public:
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
 	//
+	ALWCOMBORDER,	// Always_comb with unordered statements
 	ASSIGNDLY,	// Assignment delays
 	ASSIGNIN,	// Assigning to input
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
@@ -116,7 +117,7 @@ public:
 	    "BLKLOOPINIT", "DETECTARRAY", "MULTITOP", "TASKNSVAR",
 	    // Warnings
 	    " EC_FIRST_WARN",
-	    "ASSIGNDLY", "ASSIGNIN",
+	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKSEQ",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
 	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
@@ -146,7 +147,8 @@ public:
     bool mentionManual() const { return ( m_e==EC_FATALSRC || pretendError() ); }
 
     // Warnings that are lint only
-    bool lintError() const { return ( m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
+    bool lintError() const { return ( m_e==ALWCOMBORDER
+				      || m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
 				      || m_e==CASEWITHX || m_e==CASEX
 				      || m_e==CMPCONST
 				      || m_e==ENDLABEL

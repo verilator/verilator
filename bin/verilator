@@ -1068,10 +1068,10 @@ Disable the specified warning message.
 =item -Wno-lint
 
 Disable all lint related warning messages, and all style warnings.  This is
-equivalent to "-Wno-CASEINCOMPLETE -Wno-CASEOVERLAP -Wno-CASEX
--Wno-CASEWITHX -Wno-CMPCONST -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN
--Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
--Wno-WIDTH" plus the list shown for Wno-style.
+equivalent to "-Wno-ALWCOMBORDER -Wno-CASEINCOMPLETE -Wno-CASEOVERLAP
+-Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-ENDLABEL -Wno-IMPLICIT
+-Wno-LITENDIAN -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN
+-Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -1100,9 +1100,10 @@ Enables the specified warning message.
 
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
-"-Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX
--Wwarn-CMPCONST -Wwarn-ENDLABEL -Wwarn-IMPLICIT -Wwarn-LITENDIAN
--Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH".
+"-Wwarn-ALWCOMBORDER -Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX
+-Wwarn-CASEWITHX -Wwarn-CMPCONST -Wwarn-ENDLABEL -Wwarn-IMPLICIT
+-Wwarn-LITENDIAN -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED
+-Wwarn-WIDTH".
 
 =item -Wwarn-style
 
@@ -2713,6 +2714,20 @@ compile your design.
 List of all warnings:
 
 =over 4
+
+=item ALWCOMBORDER
+
+Warns that an always_comb block has a variable which is set after it is
+used.  This may cause simulation-synthesis mismatches, as not all
+commercial simulators allow this ordering.
+
+    always_comb begin
+       a = b;
+       b = 1;
+    end
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item ASSIGNIN
 

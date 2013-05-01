@@ -133,6 +133,17 @@ public:
 	    }
 	}
     }
+    bool isUsedNotDrivenBit (int bit, int width) const {
+	for (int i=0; i<width; i++) {
+	    if (bitNumOk(bit+i)
+		&& (m_usedWhole || m_flags[(bit+i)*FLAGS_PER_BIT + FLAG_USED])
+		&& !(m_drivenWhole || m_flags[(bit+i)*FLAGS_PER_BIT + FLAG_DRIVEN])) return true;
+	}
+	return false;
+    }
+    bool isUsedNotDrivenAny () const {
+	return isUsedNotDrivenBit(0, m_flags.size()/FLAGS_PER_BIT);
+    }
     bool unusedMatch(AstVar* nodep) {
 	const char* regexpp = v3Global.opt.unusedRegexp().c_str();
 	if (!regexpp || !*regexpp) return false;
@@ -213,11 +224,13 @@ private:
     // NODE STATE
     // AstVar::user1p		-> UndrivenVar* for usage var, 0=not set yet
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
-    vector<UndrivenVarEntry*>	m_entryps;	// Nodes to delete when we are finished
+    vector<UndrivenVarEntry*>	m_entryps[3];	// Nodes to delete when we are finished
     bool		m_markBoth;	// Mark as driven+used
     AstNodeFTask*	m_taskp;	// Current task
+    AstAlways*		m_alwaysp;	// Current always
 
     // METHODS
     static int debug() {
@@ -226,31 +239,45 @@ private:
 	return level;
     }
 
-    UndrivenVarEntry* getEntryp(AstVar* nodep) {
-	if (!nodep->user1p()) {
+    UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
+	if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {
 	    UndrivenVarEntry* entryp = new UndrivenVarEntry (nodep);
-	    m_entryps.push_back(entryp);
-	    nodep->user1p(entryp);
+	    //UINFO(9," Associate u="<<which_user<<" "<<(void*)this<<" "<<nodep->name()<<endl);
+	    m_entryps[which_user].push_back(entryp);
+	    if (which_user==1) nodep->user1p(entryp);
+	    else if (which_user==2) nodep->user2p(entryp);
+	    else nodep->v3fatalSrc("Bad case");
 	    return entryp;
 	} else {
-	    UndrivenVarEntry* entryp = (UndrivenVarEntry*)(nodep->user1p());
+	    UndrivenVarEntry* entryp = (UndrivenVarEntry*)(which_user==1 ? nodep->user1p() : nodep->user2p());
 	    return entryp;
+	}
+    }
+
+    void warnAlwCombOrder(AstVarRef* nodep) {
+	AstVar* varp = nodep->varp();
+	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
+	    && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
+	    nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "<<nodep->prettyName());
+	    varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
 	}
     }
 
     // VISITORS
     virtual void visit(AstVar* nodep, AstNUser*) {
-	UndrivenVarEntry* entryp = getEntryp (nodep);
-	if (nodep->isInput()
-	    || nodep->isSigPublic() || nodep->isSigUserRWPublic()
-	    || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
-	    entryp->drivenWhole();
-	}
-	if (nodep->isOutput()
-	    || nodep->isSigPublic() || nodep->isSigUserRWPublic()
-	    || nodep->isSigUserRdPublic()
-	    || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
-	    entryp->usedWhole();
+	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+	    UndrivenVarEntry* entryp = getEntryp (nodep, usr);
+	    if (nodep->isInput()
+		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()
+		|| (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
+		entryp->drivenWhole();
+	    }
+	    if (nodep->isOutput()
+		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()
+		|| nodep->isSigUserRdPublic()
+		|| (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
+		entryp->usedWhole();
+	    }
 	}
 	// Discover variables used in bit definitions, etc
 	nodep->iterateChildren(*this);
@@ -263,10 +290,19 @@ private:
 	AstVarRef* varrefp = nodep->fromp()->castVarRef();
 	AstConst* constp = nodep->lsbp()->castConst();
 	if (varrefp && constp && !constp->num().isFourState()) {
-	    UndrivenVarEntry* entryp = getEntryp (varrefp->varp());
-	    int lsb = constp->toUInt();
-	    if (m_markBoth || varrefp->lvalue()) entryp->drivenBit(lsb, nodep->width());
-	    if (m_markBoth || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
+	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+		UndrivenVarEntry* entryp = getEntryp (varrefp->varp(), usr);
+		int lsb = constp->toUInt();
+		if (m_markBoth || varrefp->lvalue()) {
+		    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
+		    if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
+			UINFO(9," Select.  Entryp="<<(void*)entryp<<endl);
+			warnAlwCombOrder(varrefp);
+		    }
+		    entryp->drivenBit(lsb, nodep->width());
+		}
+		if (m_markBoth || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
+	    }
 	} else {
 	    // else other varrefs handled as unknown mess in AstVarRef
 	    nodep->iterateChildren(*this);
@@ -274,10 +310,18 @@ private:
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// Any variable
-	UndrivenVarEntry* entryp = getEntryp (nodep->varp());
-	bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
-	if (m_markBoth || nodep->lvalue()) entryp->drivenWhole();
-	if (m_markBoth || !nodep->lvalue() || fdrv) entryp->usedWhole();
+	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+	    UndrivenVarEntry* entryp = getEntryp (nodep->varp(), usr);
+	    bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
+	    if (m_markBoth || nodep->lvalue()) {
+		if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenAny()) {
+		    UINFO(9," Full bus.  Entryp="<<(void*)entryp<<endl);
+		    warnAlwCombOrder(nodep);
+		}
+		entryp->drivenWhole();
+	    }
+	    if (m_markBoth || !nodep->lvalue() || fdrv) entryp->usedWhole();
+	}
     }
 
     // Don't know what black boxed calls do, assume in+out
@@ -286,6 +330,19 @@ private:
 	m_markBoth = true;
 	nodep->iterateChildren(*this);
 	m_markBoth = prevMark;
+    }
+
+    virtual void visit(AstAlways* nodep, AstNUser*) {
+	AstAlways* prevAlwp = m_alwaysp;
+	{
+	    AstNode::user2ClearTree();
+	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
+	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysp = nodep;
+	    else m_alwaysp = NULL;
+	    nodep->iterateChildren(*this);
+	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
+	}
+	m_alwaysp = prevAlwp;
     }
 
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
@@ -315,12 +372,17 @@ public:
     UndrivenVisitor(AstNetlist* nodep) {
 	m_markBoth = false;
 	m_taskp = NULL;
+	m_alwaysp = NULL;
 	nodep->accept(*this);
     }
     virtual ~UndrivenVisitor() {
-	for (vector<UndrivenVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end(); ++it) {
+	for (vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {
 	    (*it)->reportViolations();
-	    delete (*it);
+	}
+	for (int usr=1; usr<3; ++usr) {
+	    for (vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin(); it != m_entryps[usr].end(); ++it) {
+		delete (*it);
+	    }
 	}
     }
 };

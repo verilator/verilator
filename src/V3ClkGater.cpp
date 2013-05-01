@@ -684,6 +684,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	AstNode* bodyp = nodep->bodysp()->cloneTree(true);
 
 	AstAlways* alwp = new AstAlways(nodep->fileline(),
+					nodep->keyword(),
 					sensesp,
 					bodyp);
 

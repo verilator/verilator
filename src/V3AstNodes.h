@@ -1623,15 +1623,19 @@ public:
 };
 
 struct AstAlways : public AstNode {
-    AstAlways(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
-	: AstNode(fl) {
+    VAlwaysKwd m_keyword;
+public:
+    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
+	: AstNode(fl), m_keyword(keyword) {
 	addNOp1p(sensesp); addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Always, ALWAYS)
     //
+    virtual void dump(ostream& str);
     AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    VAlwaysKwd keyword() const { return m_keyword; }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
@@ -1702,7 +1706,7 @@ struct AstAssignW : public AstNodeAssign {
     AstAlways* convertToAlways() {
 	AstNode* lhs1p = lhsp()->unlinkFrBack();
 	AstNode* rhs1p = rhsp()->unlinkFrBack();
-	AstAlways* newp = new AstAlways (fileline(), NULL,
+	AstAlways* newp = new AstAlways (fileline(), VAlwaysKwd::ALWAYS, NULL,
 					 new AstAssign (fileline(), lhs1p, rhs1p));
 	replaceWith(newp); // User expected to then deleteTree();
 	return newp;

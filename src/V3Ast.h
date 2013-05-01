@@ -467,6 +467,30 @@ public:
 
 //######################################################################
 
+class VAlwaysKwd {
+public:
+    enum en {
+	ALWAYS,
+	ALWAYS_FF,
+	ALWAYS_LATCH,
+	ALWAYS_COMB
+    };
+    enum en m_e;
+    inline VAlwaysKwd () : m_e(ALWAYS) {}
+    inline VAlwaysKwd (en _e) : m_e(_e) {}
+    explicit inline VAlwaysKwd (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+    const char* ascii() const {
+	static const char* names[] = {
+	    "always","always_ff","always_latch","always_comb"};
+	return names[m_e]; }
+  };
+  inline bool operator== (VAlwaysKwd lhs, VAlwaysKwd rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VAlwaysKwd lhs, VAlwaysKwd::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VAlwaysKwd::en lhs, VAlwaysKwd rhs) { return (lhs == rhs.m_e); }
+
+//######################################################################
+
 class AstCaseType {
 public:
     enum en {

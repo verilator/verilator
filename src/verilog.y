@@ -273,6 +273,9 @@ class AstSenTree;
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
 %token<fl>		yALWAYS		"always"
+%token<fl>		yALWAYS_FF	"always_ff"
+%token<fl>		yALWAYS_COMB	"always_comb"
+%token<fl>		yALWAYS_LATCH	"always_latch"
 %token<fl>		yAND		"and"
 %token<fl>		yASSERT		"assert"
 %token<fl>		yASSIGN		"assign"
@@ -1549,7 +1552,10 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	final_construct				{ $$ = $1; }
 	//			// IEEE: always_construct
 	//			// Verilator only - event_control attached to always
-	|	yALWAYS event_controlE stmtBlock	{ $$ = new AstAlways($1,$2,$3); }
+	|	yALWAYS       event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS, $2,$3); }
+	|	yALWAYS_FF    event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_FF, $2,$3); }
+	|	yALWAYS_COMB  event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_COMB, $2,$3); }
+	|	yALWAYS_LATCH event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, $2,$3); }
 	|	loop_generate_construct			{ $$ = $1; }
 	|	conditional_generate_construct		{ $$ = $1; }
 	//			// Verilator only
