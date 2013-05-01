@@ -64,6 +64,7 @@ class GateGraphBaseVisitor {
 public:
     virtual AstNUser* visit(GateLogicVertex* vertexp, AstNUser* vup=NULL) =0;
     virtual AstNUser* visit(GateVarVertex* vertexp, AstNUser* vup=NULL) =0;
+    virtual ~GateGraphBaseVisitor() {}
 };
 
 //######################################################################
