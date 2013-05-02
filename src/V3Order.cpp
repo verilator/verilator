@@ -375,8 +375,10 @@ private:
     void processBrokeLoop();
 #endif
     void processCircular();
+    typedef deque<OrderEitherVertex*> VertexVec;
     void processInputs();
-    void processInputsIterate(OrderEitherVertex* vertexp);
+    void processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
+    void processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
     void processSensitive();
     void processDomains();
     void processDomainsIterate(OrderEitherVertex* vertexp);
@@ -1059,28 +1061,33 @@ void OrderVisitor::processBrokeLoop() {
 // Clock propagation
 
 void OrderVisitor::processInputs() {
-    m_graph.userClearVertices();  // Vertex::user()   // true if processed
+    m_graph.userClearVertices();  // Vertex::user()   // 1 if input recursed, 2 if marked as input, 3 if out-edges recursed
     // Start at input vertex, process from input-to-output order
+    VertexVec todoVec; // List of newly-input marked vectors we need to process
+    todoVec.push_front(m_inputsVxp);
     m_inputsVxp->isFromInput(true);  // By definition
-    processInputsIterate(m_inputsVxp);
+    while (!todoVec.empty()) {
+	OrderEitherVertex* vertexp = todoVec.back(); todoVec.pop_back();
+	processInputsOutIterate(vertexp, todoVec);
+    }
 }
 
-void OrderVisitor::processInputsIterate(OrderEitherVertex* vertexp) {
+void OrderVisitor::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec) {
     // Propagate PrimaryIn through simple assignments
     if (vertexp->user()) return;  // Already processed
     if (0 && debug()>=9) {
-	UINFO(9," InIt "<<vertexp<<endl);
+	UINFO(9," InIIter "<<vertexp<<endl);
 	if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
 	    vvertexp->nodep()->dumpTree(cout,"-            TT: ");
 	}
     }
-    vertexp->user(true);  // Processing
+    vertexp->user(1);  // Processing
     // First handle all inputs to this vertex, in most cases they'll be already processed earlier
     // Also, determine if this vertex is an input
     int inonly = 1;  // 0=no, 1=maybe, 2=yes until a no
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
 	OrderEitherVertex* frVertexp = (OrderEitherVertex*)edgep->fromp();
-	processInputsIterate(frVertexp);
+	processInputsInIterate(frVertexp, todoVec);
 	if (frVertexp->isFromInput()) {
 	    if (inonly==1) inonly = 2;
 	} else if (dynamic_cast<OrderVarPostVertex*>(frVertexp)) {
@@ -1091,20 +1098,38 @@ void OrderVisitor::processInputsIterate(OrderEitherVertex* vertexp) {
 	    break;
 	}
     }
-    if (inonly == 2) {  // Set it.  Note may have already been set earlier, too
+
+    if (inonly == 2 && vertexp->user()<2) {  // Set it.  Note may have already been set earlier, too
 	UINFO(9,"   Input reassignment: "<<vertexp<<endl);
 	vertexp->isFromInput(true);
+	vertexp->user(2);  // 2 means on list
+	// Can't work on out-edges of a node we know is an input immediately,
+	// as it might visit other nodes before their input state is resolved.
+	// So push to list and work on it later when all in-edges known resolved
+	todoVec.push_back(vertexp);
     }
-    // If we're still an input, process all targets of this vertex
-    if (vertexp->isFromInput()) {
+    //UINFO(9,"  InIdone "<<vertexp<<endl);
+}
+
+void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec& todoVec) {
+    if (vertexp->user()==3) return;  // Already out processed
+    //UINFO(9," InOIter "<<vertexp<<endl);
+    // First make sure input path is fully recursed
+    processInputsInIterate(vertexp, todoVec);
+    // Propagate PrimaryIn through simple assignments
+    if (!vertexp->isFromInput()) v3fatalSrc("processInputsOutIterate only for input marked vertexes");
+    vertexp->user(3);  // out-edges processed
+
+    {
+	// Propagate PrimaryIn through simple assignments, followint target of vertex
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
 	    OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
 	    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
-		processInputsIterate(vvertexp);
+		processInputsInIterate(vvertexp, todoVec);
 	    }
 	    if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
 		if (vvertexp->nodep()->castNodeAssign()) {
-		    processInputsIterate(vvertexp);
+		    processInputsInIterate(vvertexp, todoVec);
 		}
 	    }
 	}
