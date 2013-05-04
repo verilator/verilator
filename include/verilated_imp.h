@@ -78,6 +78,18 @@ public: // But only for verilated*.cpp
 	m_fdps[2] = stderr;
     }
     ~VerilatedImp() {}
+    static void internalsDump() {
+	VL_PRINTF("internalsDump:\n");
+	VL_PRINTF("  Argv:");
+	for (ArgVec::iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
+	    VL_PRINTF(" %s",it->c_str());
+	}
+	VL_PRINTF("\n");
+	VL_PRINTF("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
+	scopesDump();
+	exportsDump();
+	userDump();
+    }
 
     // METHODS - arguments
     static void commandArgs(int argc, const char** argv) {
@@ -129,6 +141,14 @@ private:
 	    }
 	}
     }
+    static void userDump() {
+	bool first = true;
+	for (UserMap::iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ++it) {
+	    if (first) { VL_PRINTF("  userDump:\n"); first=false; }
+	    VL_PRINTF("    DPI_USER_DATA scope %p key %p: %p\n",
+		      it->first.first, it->first.second, it->second);
+	}
+    }
 
 public: // But only for verilated*.cpp
     // METHODS - scope name
@@ -150,9 +170,8 @@ public: // But only for verilated*.cpp
 	ScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
-
     static void scopesDump() {
-	VL_PRINTF("scopesDump:\n");
+	VL_PRINTF("  scopesDump:\n");
 	for (ScopeNameMap::iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
 	    scopep->scopeDump();
@@ -193,6 +212,13 @@ public: // But only for verilated*.cpp
 	    if (it->second == funcnum) return it->first;
 	}
 	return "*UNKNOWN*";
+    }
+    static void exportsDump() {
+	bool first = true;
+	for (ExportNameMap::iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
+	    if (first) { VL_PRINTF("  exportDump:\n"); first=false; }
+	    VL_PRINTF("    DPI_EXPORT_NAME %05d: %s\n", it->second, it->first);
+	}
     }
     // We don't free up m_exportMap until the end, because we can't be sure
     // what other models are using the assigned funcnum's.

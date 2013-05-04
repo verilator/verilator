@@ -99,7 +99,7 @@ int dpix_run_tests() {
     static int didDump = 0;
     if (didDump++ == 0) {
 # ifdef TEST_VERBOSE
-	Verilated::scopesDump();
+	Verilated::internalsDump();
 # endif
     }
 #endif

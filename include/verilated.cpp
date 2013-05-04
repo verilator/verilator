@@ -1075,6 +1075,10 @@ const char* Verilated::commandArgsPlusMatch(const char* prefixp) {
     return VerilatedImp::argPlusMatch(prefixp).c_str();
 }
 
+void Verilated::internalsDump() {
+    VerilatedImp::internalsDump();
+}
+
 void Verilated::scopesDump() {
     VerilatedImp::scopesDump();
 }

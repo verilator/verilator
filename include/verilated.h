@@ -294,6 +294,11 @@ public:
     static const char* productName() { return VERILATOR_PRODUCT; }
     static const char* productVersion() { return VERILATOR_VERSION; }
 
+    /// For debugging, print much of the Verilator internal state.
+    /// The output of this function may change in future
+    /// releases - contact the authors before production use.
+    static void internalsDump();
+
     /// For debugging, print text list of all scope names with
     /// dpiImport/Export context.  This function may change in future
     /// releases - contact the authors before production use.
