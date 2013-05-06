@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***  Add --pins-sc-uint and --pins-sc-biguint, bug638. [Alex Hornung]
 
+**** Support "signal[vec]++".
+
 **** Fix simulation error when inputs and MULTIDRIVEN, bug634. [Ted Campbell]
 
 **** Fix module resolution with __, bug631. [Jason McMullan]

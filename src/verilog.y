@@ -2210,10 +2210,10 @@ foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of exp
 
 finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
 	//UNSUP: Generic scopes in incrementes
-		varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
-	|	varRefBase yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
-	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
-	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
+		fexprLvalue yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
+	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
+	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
+	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
 	;
 
 //************************************************
