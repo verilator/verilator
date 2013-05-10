@@ -217,7 +217,7 @@ private:
 				       fromp,
 				       new AstMul(nodep->fileline(),
 						  new AstConst(nodep->fileline(),AstConst::Unsized32(),elwidth),
-						  newSubLsbOf(rhsp, fromRange)),
+						  subp),
 				       new AstConst (nodep->fileline(),AstConst::Unsized32(),elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
