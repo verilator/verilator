@@ -1504,6 +1504,7 @@ sub sig_child {}
 sub kill_tree_all {}
 sub wait_all {}
 sub ready {}
+sub running {}
 
 #######################################################################
 1;
