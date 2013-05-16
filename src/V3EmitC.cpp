@@ -906,12 +906,12 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    else if (nodep->isOutput()) puts("VL_OUT");
 	    else nodep->v3fatalSrc("Unknown type");
 
-	    if (nodep->isQuad()) puts("64");
-	    else if (nodep->widthMin() <= 8) puts("8");
-	    else if (nodep->widthMin() <= 16) puts("16");
+	    if (basicp->isQuad()) puts("64");
+	    else if (basicp->widthMin() <= 8) puts("8");
+	    else if (basicp->widthMin() <= 16) puts("16");
+	    else if (basicp->isWide()) puts("W");
 
 	    if (isArray) {
-		if (nodep->isWide()) puts("W");
 		puts("("+nodep->name());
 		for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
 		     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
@@ -924,7 +924,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		    puts("("+nodep->name()
 			 +","+cvtToStr(basicp->msb())
 			 +","+cvtToStr(basicp->lsb()));
-		else puts("W("+nodep->name()
+		else puts("("+nodep->name()
 			  +","+cvtToStr(basicp->msb())
 			  +","+cvtToStr(basicp->lsb())
 			  +","+cvtToStr(basicp->widthWords()));

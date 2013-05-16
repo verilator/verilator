@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.848 devel
+
+****  Fix arrayed input compile error, bug645. [Krzysztof Jankowski]
+
+
 * Verilator 3.847 2013-05-11
 
 ***   Add ALWCOMBORDER warning.  [KC Buckenmaier]
