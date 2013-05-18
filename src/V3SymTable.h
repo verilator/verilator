@@ -137,11 +137,11 @@ public:
     VSymEnt* findIdFlat(const string& name) const {
 	// Find identifier without looking upward through symbol hierarchy
 	// First, scan this begin/end block or module for the name
-	IdNameMap::const_iterator iter = m_idNameMap.find(name);
+	IdNameMap::const_iterator it = m_idNameMap.find(name);
 	UINFO(9, "     SymFind   se"<<(void*)this<<" '"<<name
-	      <<"' -> "<<(iter == m_idNameMap.end() ? "NONE"
-			  : "se"+cvtToStr((void*)(iter->second))+" n="+cvtToStr((void*)(iter->second->nodep())))<<endl);
-	if (iter != m_idNameMap.end()) return (iter->second);
+	      <<"' -> "<<(it == m_idNameMap.end() ? "NONE"
+			  : "se"+cvtToStr((void*)(it->second))+" n="+cvtToStr((void*)(it->second->nodep())))<<endl);
+	if (it != m_idNameMap.end()) return (it->second);
 	return NULL;
     }
     VSymEnt* findIdFallback(const string& name) const {

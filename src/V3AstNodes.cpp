@@ -35,8 +35,10 @@
 // Special methods
 
 // We need these here, because the classes they point to aren't defined when we declare the class
-bool AstNodeVarRef::broken() const { return ((m_varScopep && !m_varScopep->brokeExists())
-					     || (m_varp && !m_varp->brokeExists())); }
+bool AstNodeVarRef::broken() const {
+    return ((m_varScopep && !m_varScopep->brokeExists())
+	    || (m_varp && !m_varp->brokeExists()));
+}
 
 void AstNodeVarRef::cloneRelink() {
     if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep()->castVar(); }

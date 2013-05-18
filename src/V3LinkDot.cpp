@@ -77,13 +77,13 @@ private:
     AstUser4InUse	m_inuser4;
 
     // TYPES
-    typedef std::multimap<string,VSymEnt*> NameScopeMap;
+    typedef std::multimap<string,VSymEnt*> NameScopeSymMap;
     typedef set <pair<AstNodeModule*,string> > ImplicitNameSet;
 
     // MEMBERS
     VSymGraph		m_syms;			// Symbol table
     VSymEnt*		m_dunitEntp;		// $unit entry
-    NameScopeMap	m_nameScopeMap;		// Hash of scope referenced by non-pretty textual name
+    NameScopeSymMap	m_nameScopeSymMap;	// Map of scope referenced by non-pretty textual name
     ImplicitNameSet	m_implicitNameSet;	// For [module][signalname] if we can implicitly create it
     bool		m_forPrimary;		// First link
     bool		m_forPrearray;		// Compress cell__[array] refs
@@ -195,7 +195,7 @@ public:
 	nodep->user1p(symp);
 	checkDuplicate(rootEntp(), nodep, nodep->origName());
 	rootEntp()->insert(nodep->origName(),symp);
-	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
+	if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
 	return symp;
     }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp,
@@ -214,7 +214,7 @@ public:
 	    // Duplicates are possible, as until resolve generates might have 2 same cells under an if
 	    modSymp->reinsert(nodep->name(), symp);
 	}
-	if (forScopeCreation()) m_nameScopeMap.insert(make_pair(scopename, symp));
+	if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
 	return symp;
     }
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp,
@@ -278,17 +278,17 @@ public:
 	return symp;
     }
     VSymEnt* getScopeSym(AstScope* nodep) {
-	NameScopeMap::iterator iter = m_nameScopeMap.find(nodep->name());
-	if (iter == m_nameScopeMap.end()) {
+	NameScopeSymMap::iterator it = m_nameScopeSymMap.find(nodep->name());
+	if (it == m_nameScopeSymMap.end()) {
 	    nodep->v3fatalSrc("Scope never assigned a symbol entry?");
 	}
-	return iter->second;
+	return it->second;
     }
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
 	// Mark the given variable name as being allowed to be implicitly declared
 	if (nodep) {
-	    ImplicitNameSet::iterator iter = m_implicitNameSet.find(make_pair(nodep,varname));
-	    if (iter == m_implicitNameSet.end()) {
+	    ImplicitNameSet::iterator it = m_implicitNameSet.find(make_pair(nodep,varname));
+	    if (it == m_implicitNameSet.end()) {
 		m_implicitNameSet.insert(make_pair(nodep,varname));
 	    }
 	}

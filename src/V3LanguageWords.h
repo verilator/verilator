@@ -37,9 +37,9 @@ class V3LanguageWords {
     }
   public:
     string isKeyword(const string& kwd) {
-	map<string,string>::iterator iter = m_kwdMap.find(kwd);
-	if (iter == m_kwdMap.end()) return "";
-	return iter->second;
+	map<string,string>::iterator it = m_kwdMap.find(kwd);
+	if (it == m_kwdMap.end()) return "";
+	return it->second;
     }
 
   public:

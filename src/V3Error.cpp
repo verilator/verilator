@@ -89,8 +89,8 @@ const string FileLineSingleton::filenameLetters(int no) {
 //! We associate a language with each source file, so we also set the default
 //! for this.
 int FileLineSingleton::nameToNumber(const string& filename) {
-    FileNameNumMap::const_iterator iter = m_namemap.find(filename);
-    if (VL_LIKELY(iter != m_namemap.end())) return iter->second;
+    FileNameNumMap::const_iterator it = m_namemap.find(filename);
+    if (VL_LIKELY(it != m_namemap.end())) return it->second;
     int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
