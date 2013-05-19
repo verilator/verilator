@@ -86,6 +86,13 @@ public:
     }
     void emitOpName(AstNode* nodep, const string& format,
 		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
+    void emitDeclArrayBrackets(AstVar* nodep) {
+	// This isn't very robust and may need cleanup for other data types
+	for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
+	     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
+	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
+	}
+    }
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
@@ -788,7 +795,7 @@ class EmitCImp : EmitCStmts {
 
 	if (!m_blkChangeDetVec.empty()) puts("return __req;\n");
 
-//	puts("__Vm_activity = true;\n");
+	//puts("__Vm_activity = true;\n");
 	puts("}\n");
     }
 
@@ -875,7 +882,6 @@ public:
 void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Outputting this data type");
     if (nodep->isIO()) {
-	bool isArray = !nodep->dtypeSkipRefp()->castBasicDType();
 	if (nodep->isSc()) {
 	    m_ctorVarsVec.push_back(nodep);
 	    ofp()->putAlign(nodep->isStatic(), 4);	// sc stuff is a structure, so bigger alignment
@@ -891,12 +897,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		puts(">\t");
 	    }
 	    puts(nodep->name());
-	    if (isArray) {
-		for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-		     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
-		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
-		}
-	    }
+	    emitDeclArrayBrackets(nodep);
 	    puts(";\n");
 	} else { // C++ signals
 	    ofp()->putAlign(nodep->isStatic(), nodep->dtypeSkipRefp()->widthAlignBytes(),
@@ -906,39 +907,23 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    else if (nodep->isOutput()) puts("VL_OUT");
 	    else nodep->v3fatalSrc("Unknown type");
 
-	    if (basicp->isQuad()) puts("64");
-	    else if (basicp->widthMin() <= 8) puts("8");
-	    else if (basicp->widthMin() <= 16) puts("16");
-	    else if (basicp->isWide()) puts("W");
+	    if (nodep->isQuad()) puts("64");
+	    else if (nodep->widthMin() <= 8) puts("8");
+	    else if (nodep->widthMin() <= 16) puts("16");
+	    else if (nodep->isWide()) puts("W");
 
-	    if (isArray) {
-		puts("("+nodep->name());
-		for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-		     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
-		    puts("["+cvtToStr(arrayp->elementsConst())+"]");
-		}
-		puts(","+cvtToStr(basicp->msb())+","+cvtToStr(basicp->lsb()));
-		if (basicp->isWide()) puts(","+cvtToStr(basicp->widthWords()));
-	    } else {
-		if (!basicp->isWide())
-		    puts("("+nodep->name()
-			 +","+cvtToStr(basicp->msb())
-			 +","+cvtToStr(basicp->lsb()));
-		else puts("("+nodep->name()
-			  +","+cvtToStr(basicp->msb())
-			  +","+cvtToStr(basicp->lsb())
-			  +","+cvtToStr(basicp->widthWords()));
-	    }
+	    puts("("+nodep->name());
+	    emitDeclArrayBrackets(nodep);
+	    // If it's a packed struct/array then nodep->width is the whole thing, msb/lsb is just lowest dimension
+	    puts(","+cvtToStr(basicp->lsb()+nodep->width()-1)
+		 +","+cvtToStr(basicp->lsb()));
+	    if (nodep->isWide()) puts(","+cvtToStr(nodep->widthWords()));
 	    puts(");\n");
 	}
     } else if (basicp && basicp->isOpaque()) {
 	// strings and other fundamental c types
 	puts(nodep->vlArgType(true,false));
-	// This isn't very robust and may need cleanup for other data types
-	for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-	     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
-	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
-	}
+	emitDeclArrayBrackets(nodep);
 	puts(";\n");
     } else {
 	// Arrays need a small alignment, but may need different padding after.
@@ -960,13 +945,10 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	}
 	if (prefixIfImp!="") { puts(prefixIfImp); puts("::"); }
 	puts(nodep->name());
-	// This isn't very robust and may need cleanup for other data types
-	for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-	     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
-	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
-	}
+	emitDeclArrayBrackets(nodep);
 	// If it's a packed struct/array then nodep->width is the whole thing, msb/lsb is just lowest dimension
-	puts(","+cvtToStr(basicp->lsb()+nodep->width())+","+cvtToStr(basicp->lsb()));
+	puts(","+cvtToStr(basicp->lsb()+nodep->width()-1)
+	     +","+cvtToStr(basicp->lsb()));
 	if (nodep->isWide()) puts(","+cvtToStr(nodep->widthWords()));
 	puts(");\n");
     }
