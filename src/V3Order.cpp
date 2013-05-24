@@ -476,7 +476,7 @@ private:
 	// elements. Up to 10 of the widest
 	cerr<<V3Error::msgPrefix()
 	    <<"     Widest candidate vars to split:"<<endl;
-	sort (m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
+	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
 	int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
@@ -489,8 +489,8 @@ private:
 	// Up to 10 of the most fanned out
 	cerr<<V3Error::msgPrefix()
 	    <<"     Most fanned out candidate vars to split:"<<endl;
-	sort (m_unoptflatVars.begin(), m_unoptflatVars.end(),
-	      OrderVarFanoutCmp());
+	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(),
+			  OrderVarFanoutCmp());
 	lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
@@ -1324,7 +1324,7 @@ void OrderVisitor::processEdgeReport() {
     }
 
     *logp<<"Signals and their clock domains:"<<endl;
-    sort(report.begin(), report.end());
+    stable_sort(report.begin(), report.end());
     for (deque<string>::iterator it=report.begin(); it!=report.end(); ++it) {
 	*logp<<(*it)<<endl;
     }

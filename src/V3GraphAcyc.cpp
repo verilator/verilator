@@ -461,7 +461,7 @@ void GraphAcyc::place() {
     }
 
     // Sort by weight, then by vertex (so that we completely process one vertex, when possible)
-    sort(edges.begin(), edges.end(), GraphAcycEdgeCmp());
+    stable_sort(edges.begin(), edges.end(), GraphAcycEdgeCmp());
 
     // Process each edge in weighted order
     m_placeStep = 10;

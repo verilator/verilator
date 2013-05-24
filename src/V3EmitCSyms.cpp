@@ -168,8 +168,8 @@ class EmitCSyms : EmitCBaseVisitor {
 	varsExpand();
 
 	// Sort by names, so line/process order matters less
-	sort(m_scopes.begin(), m_scopes.end(), CmpName());
-	sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
+	stable_sort(m_scopes.begin(), m_scopes.end(), CmpName());
+	stable_sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
 
 	// Output
 	emitSymHdr();

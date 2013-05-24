@@ -526,7 +526,7 @@ private:
 		}
 	    }
 	}
-	sort(report.begin(), report.end());
+	stable_sort(report.begin(), report.end());
 	for (deque<string>::iterator it = report.begin(); it!=report.end(); ++it) {
 	    *ofp << *it;
 	}

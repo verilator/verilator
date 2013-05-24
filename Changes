@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix arrayed input compile error, bug645. [Krzysztof Jankowski]
 
+****  Fix GCC version runtime changes, bug651. [Jeremy Bennett]
+
 
 * Verilator 3.847 2013-05-11
 

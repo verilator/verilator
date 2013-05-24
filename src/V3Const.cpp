@@ -1413,7 +1413,7 @@ private:
 		    for (AstNodeSenItem* senp = nodep->sensesp()->castNodeSenItem(); senp; senp=senp->nextp()->castNodeSenItem()) {
 			vec.push_back(senp);
 		    }
-		    sort(vec.begin(), vec.end(), SenItemCmp());
+		    stable_sort(vec.begin(), vec.end(), SenItemCmp());
 		    for (vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
 			(*it)->unlinkFrBack();
 		    }

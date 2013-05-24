@@ -67,7 +67,7 @@ void V3LinkLevel::modSortByLevel() {
 	}
 	vec.push_back(nodep);
     }
-    sort(vec.begin(), vec.end(), CmpLevel()); // Sort the vector
+    stable_sort(vec.begin(), vec.end(), CmpLevel()); // Sort the vector
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
 	AstNodeModule* nodep = *it;
 	nodep->unlinkFrBack();

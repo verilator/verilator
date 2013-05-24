@@ -1717,7 +1717,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 	}
     }
 
-    sort(funcsp.begin(), funcsp.end(), CmpName());
+    stable_sort(funcsp.begin(), funcsp.end(), CmpName());
 
     for (vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
 	AstCFunc* funcp = *it;

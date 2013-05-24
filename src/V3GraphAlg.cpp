@@ -464,7 +464,7 @@ void V3Graph::sortVertices() {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertices.push_back(vertexp);
     }
-    std::sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
+    std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
     this->verticesUnlink();
     for (vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
 	(*it)->verticesPushBack(this);
@@ -480,7 +480,7 @@ void V3Graph::sortEdges() {
 	    edges.push_back(edgep);
 	}
 	// Sort
-	std::sort(edges.begin(), edges.end(), GraphSortEdgeCmp());
+	std::stable_sort(edges.begin(), edges.end(), GraphSortEdgeCmp());
 
 	// Relink edges in specified order
 	// We know the vector contains all of the edges that were
