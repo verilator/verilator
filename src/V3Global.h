@@ -80,7 +80,7 @@ public:
     string debugFilename(const string& nameComment, int newNumber=0) {
 	++m_debugFileNumber;
 	if (newNumber) m_debugFileNumber = newNumber;
-	char digits[100]; sprintf(digits, "%02d", m_debugFileNumber);
+	char digits[100]; sprintf(digits, "%03d", m_debugFileNumber);
 	return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
     }
     bool needHInlines() const { return m_needHInlines; }

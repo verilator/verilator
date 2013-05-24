@@ -482,7 +482,7 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		}
 #ifndef _V3ERROR_NO_GLOBAL_
 		if (debug()) {
-		    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",99));
+		    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",999));
 		    V3Stats::statsFinalAll(v3Global.rootp());
 		    V3Stats::statsReport();
 		}
