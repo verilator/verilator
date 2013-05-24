@@ -24,14 +24,14 @@ more details.
 
 =head1 DESCRIPTION
 
-Verilator converts synthesizable (not behavioral) Verilog code into C++ or
-SystemC code.  It is not a complete simulator, just a translator.
+Verilator converts synthesizable (generally not behavioral) Verilog code
+into C++ or SystemC code.  It is not a complete simulator, just a
+translator.
 
 Verilator is invoked with parameters similar to GCC or Synopsys's VCS.  It
 reads the specified Verilog code, lints it, and optionally adds coverage
 code.  For C++ format, it outputs .cpp and .h files.  For SystemC format,
-it outputs .sp files for the SystemPerl preprocessor available at
-http://www.veripool.org.
+it outputs .cpp and .h files using the standard SystemC headers.
 
 The resulting files are then compiled with C++.  The user writes a little
 C++ wrapper file, which instantiates the top level module.  This is
@@ -41,14 +41,11 @@ The resulting executable will perform the actual simulation.
 
 =head1 SUPPORTED SYSTEMS
 
-Verilator is developed and has primary testing on:
-
-    SuSE 11.1 AMD64 i686-linux-2.6.27, GCC 4.3.2
-
-Versions have also built on Redhat Linux, Macs OS-X, HPUX and Solaris.  It
-should run with minor porting on any Linix-ish platform.  Verilator also
-works on Windows under Cygwin, and Windows under MinGW (gcc -mno-cygwin).
-Verilated output (not Verilator itself) compiles under MSVC++ 2008.
+Verilator is developed and has primary testing on Ubuntu.  Versions have
+also built on Redhat Linux, Macs OS-X, HPUX and Solaris.  It should run
+with minor porting on any Linix-ish platform.  Verilator also works on
+Windows under Cygwin, and Windows under MinGW (gcc -mno-cygwin).  Verilated
+output (not Verilator itself) compiles under MSVC++ 2008 and newer.
 
 =head1 INSTALLATION
 
@@ -71,11 +68,11 @@ Download the latest package from that site, and decompress.
 =item
 
 If you will be using SystemC (vs straight C++ output), download SystemC
-2.0.1 from L<http://www.systemc.org>.  Follow their installation
-instructions.  You will need to set SYSTEMC_INCLUDE to point to the
-include directory with systemc.h in it, and SYSTEMC_LIBDIR to points
-to the directory with libsystemc.a in it.  (Older installations may
-set SYSTEMC and SYSTEMC_ARCH instead.)
+from L<http://www.systemc.org>.  Follow their installation instructions.
+You will need to set SYSTEMC_INCLUDE to point to the include directory with
+systemc.h in it, and SYSTEMC_LIBDIR to points to the directory with
+libsystemc.a in it.  (Older installations may set SYSTEMC and SYSTEMC_ARCH
+instead.)
 
 =item
 
@@ -107,7 +104,7 @@ executable, so try to have them correct before configuring.
 
 Our personal favorite is to always run Verilator from the kit directory.
 This allows the easiest experimentation and upgrading.  It's also how most
-EDA tools operate; to run any of them you point to the tarball.
+EDA tools operate; to run you point to the tarball, no install is needed.
 
     export VERILATOR_ROOT=`pwd`   # if your shell is bash
     setenv VERILATOR_ROOT `pwd`   # if your shell is csh
@@ -156,11 +153,10 @@ PATH.
 
 Type C<make> to compile Verilator.
 
-Type C<make test_c> to check the compilation.
+Type C<make test> to check the compilation.
 
-Type C<make test> for a more complete test.  You may get a error about the
-Bit::Vector Perl package.  You will need to install it and SystemPerl if
-you want all tests to pass.
+Configure with C<--enable-longtests> for more complete developer tests.
+Additional packages may be required for these tests.
 
 You may get a error about a typedef conflict for uint32_t.  Edit
 verilated.h to change the typedef to work, probably to @samp{typedef
@@ -195,7 +191,7 @@ The directories in the kit after de-taring are as follows:
     bin/verilator               => Compiler Wrapper invoked to Verilate code
     include/                    => Files that should be in your -I compiler path
     include/verilated*.cpp      => Global routines to link into your simulator
-    include/verilated.h         => Global headers
+    include/verilated*.h        => Global headers
     include/verilated.v         => Stub defines for linting
     include/verilated.mk        => Common makefile
     src/                        => Translator source code
