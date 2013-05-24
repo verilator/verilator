@@ -1297,14 +1297,23 @@ sub _read_inputs_v {
     my $filename = $self->top_filename;
     $filename = "$self->{t_dir}/$filename" if !-r $filename;
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
+    my $get_sigs=1;
+    my %inputs;
     while (defined(my $line = $fh->getline)) {
-	if ($line =~ /^\s*input\s*(\S+)\s*(\/[^\/]+\/|)\s*;/) {
-	    $self->{inputs}{$1} = $1;
+	if ($get_sigs) {
+	    if ($line =~ /^\s*input\s*(\S+)\s*(\/[^\/]+\/|)\s*;/) {
+		$inputs{$1} = $1;
+	    }
+	    if ($line =~ /^\s*(function|task|endmodule)/) {
+		$get_sigs = 0;
+	    }
 	}
-	if ($line =~ /^\s*(function|task|endmodule)/) {
-	    last;
+	if ($line =~ /^\s*module\s+t\b/) { # Ignore any earlier inputs; Module 't' has precedence
+	    %inputs = ();
+	    $get_sigs = 1;
 	}
     }
+    $self->{inputs}{$_} = $inputs{$_} foreach keys %inputs;
     $fh->close();
 }
 
