@@ -18,6 +18,7 @@ compile (
 
 foreach my $file (glob("$Self->{obj_dir}/*t_lint_only*")) {
     next if $file =~ /simx_compile.log/;  # Made by driver.pl, not Verilator
+    next if $file =~ /\.status/;  # Made by driver.pl, not Verilator
     $Self->error("%Error: Created $file, but --lint-only shouldn't create files");
 }
 

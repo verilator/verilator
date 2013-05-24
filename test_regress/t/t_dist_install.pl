@@ -38,10 +38,11 @@ if (!-r "$root/.git") {
     # Check empty
     my @files;
     $finds = `find $destdir -type f -print`;
-    foreach my $f (split /\n/, $finds) {
-	print "\tLEFT:  $f\n";
-	$f =~ s!^$cwd!.!;
-	push @files, $f;
+    foreach my $file (split /\n/, $finds) {
+	next if $file =~ /\.status/;  # Made by driver.pl, not Verilator
+	print "\tLEFT:  $file\n";
+	$file =~ s!^$cwd!.!;
+	push @files, $file;
     }
     if ($#files >= 0) {
 	$Self->error("Uninstall missed files: ",join(' ',@files));
