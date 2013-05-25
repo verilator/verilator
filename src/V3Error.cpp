@@ -493,5 +493,10 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 
 	    vlAbort();
 	}
+	else if (isError(s_errorCode, s_errorSuppressed)) {
+	    // We don't dump tree on any error because a Visitor may be in middle of
+	    // a tree cleanup and cause a false broken problem.
+	    if (s_errorExitCb) s_errorExitCb();
+	}
     }
 }
