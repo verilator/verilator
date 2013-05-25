@@ -307,13 +307,15 @@ private:
 		newp->dtypeFrom(adtypep);
 	    } else {
 		// Need a slice data type, which is an array of the extracted type, but with (presumably) different size
+		VNumRange newRange (msb, lsb, fromRange.littleEndian());
 		AstNodeDType* vardtypep = new AstPackArrayDType(nodep->fileline(),
 								adtypep->subDTypep(), // Need to strip off array reference
-								new AstRange(nodep->fileline(), fromRange));
+								new AstRange(nodep->fileline(), newRange));
 		v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 		newp->dtypeFrom(vardtypep);
 	    }
-	    if (debug()>=9) newp->dumpTree(cout,"--EXTBTn: ");
+	    //if (debug()>=9) newp->dumpTree(cout,"--EXTBTn: ");
+	    if (newp->widthMin()!=(int)newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
 	else if (ddtypep->castBasicDType()) {

@@ -244,16 +244,16 @@ public:
 	refDTypep(NULL);
 	setOp2p(rangep);
 	dtypep(NULL);  // V3Width will resolve
-	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
-	widthFromSub(subDTypep());
+	int width = subDTypep()->width() * rangep->elementsConst();
+	widthForce(width,width);
     }
     AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep)
 	: AstNodeArrayDType(fl) {
 	refDTypep(dtp);
 	setOp2p(rangep);
 	dtypep(this);
-	// For backward compatibility AstNodeArrayDType and others inherit width and signing from the subDType/base type
-	widthFromSub(subDTypep());
+	int width = subDTypep()->width() * rangep->elementsConst();
+	widthForce(width,width);
     }
     ASTNODE_NODE_FUNCS(PackArrayDType, PACKARRAYDTYPE)
 };

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix GCC version runtime changes, bug651. [Jeremy Bennett]
 
+****  Fix packed array select internal error, bug652. [Krzysztof Jankowski]
+
 
 * Verilator 3.847 2013-05-11
 
