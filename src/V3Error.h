@@ -181,6 +181,7 @@ class V3Error {
     // Base class for any object that wants debugging and error reporting
 
     typedef set<string> MessagesSet;
+    typedef void (*ErrorExitCb)(void);
 
   private:
     static bool 	s_describedWarnings;	// Told user how to disable warns
@@ -194,6 +195,8 @@ class V3Error {
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     static bool		s_errorSuppressed;	// Error being formed should be suppressed
     static MessagesSet	s_messages;		// What errors we've outputted
+    static ErrorExitCb	s_errorExitCb;		// Callback when error occurs for dumping
+
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
 
     V3Error() { cerr<<("Static class"); abort(); }
@@ -218,6 +221,7 @@ class V3Error {
     static bool		isError(V3ErrorCode code, bool supp);
     static string	lineStr (const char* filename, int lineno);
     static V3ErrorCode	errorCode() { return s_errorCode; }
+    static void		errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
 
     // When printing an error/warning, print prefix for multiline message
     static string warnMore();

@@ -44,6 +44,7 @@ bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;
 bool V3Error::s_pretendError[V3ErrorCode::_ENUM_MAX];
 V3Error::MessagesSet V3Error::s_messages;
+V3Error::ErrorExitCb V3Error::s_errorExitCb = NULL;
 
 struct v3errorIniter {
     v3errorIniter() {  V3Error::init(); }
@@ -482,7 +483,8 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 		}
 #ifndef _V3ERROR_NO_GLOBAL_
 		if (debug()) {
-		    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",999));
+		    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree",990));
+		    if (s_errorExitCb) s_errorExitCb();
 		    V3Stats::statsFinalAll(v3Global.rootp());
 		    V3Stats::statsReport();
 		}

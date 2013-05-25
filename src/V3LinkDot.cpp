@@ -80,6 +80,8 @@ private:
     typedef std::multimap<string,VSymEnt*> NameScopeSymMap;
     typedef set <pair<AstNodeModule*,string> > ImplicitNameSet;
 
+    static LinkDotState* s_errorThisp;		// Last self, for error reporting only
+
     // MEMBERS
     VSymGraph		m_syms;			// Symbol table
     VSymEnt*		m_dunitEntp;		// $unit entry
@@ -88,6 +90,7 @@ private:
     bool		m_forPrimary;		// First link
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
+
 public:
 
     static int debug() {
@@ -97,6 +100,9 @@ public:
     }
     void dump() {
 	if (debug()>=6) m_syms.dumpFilePrefixed("linkdot");
+    }
+    static void preErrorDumpHandler() {
+	if (s_errorThisp) s_errorThisp->preErrorDump();
     }
     void preErrorDump() {
 	static bool diddump = false;
@@ -115,8 +121,13 @@ public:
 	m_forPrearray = (step == LDS_PARAMED || step==LDS_PRIMARY);
 	m_forScopeCreation = (step == LDS_SCOPED);
 	m_dunitEntp = NULL;
+	s_errorThisp = this;
+	V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
     }
-    ~LinkDotState() {}
+    ~LinkDotState() {
+	V3Error::errorExitCb(NULL);
+	s_errorThisp = NULL;
+    }
 
     // ACCESSORS
     VSymGraph* symsp() { return &m_syms; }
@@ -161,7 +172,6 @@ public:
 	    // Begin: ... blocks often replicate under genif/genfor, so simply suppress duplicate checks
 	    // See t_gen_forif.v for an example.
 	} else {
-	    preErrorDump();
 	    UINFO(4,"name "<<name<<endl);  // Not always same as nodep->name
 	    UINFO(4,"Var1 "<<nodep<<endl);
 	    UINFO(4,"Var2 "<<fnodep<<endl);
@@ -399,6 +409,8 @@ public:
     }
 };
 
+LinkDotState* LinkDotState::s_errorThisp = NULL;
+
 //======================================================================
 
 class LinkDotFindVisitor : public AstNVisitor {
@@ -525,7 +537,6 @@ private:
 	    VSymEnt* okSymp;
 	    aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
 	    if (!aboveSymp) {
-		m_statep->preErrorDump();
 		nodep->v3fatalSrc("Can't find cell insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
 	    }
 	}
@@ -554,7 +565,6 @@ private:
 	    VSymEnt* okSymp;
 	    aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
 	    if (!aboveSymp) {
-		m_statep->preErrorDump();
 		nodep->v3fatalSrc("Can't find cellinline insertion point at '"<<baddot<<"' in: "<<nodep->prettyName());
 	    }
 	    m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
@@ -666,7 +676,6 @@ private:
 	    if (!foundp) {
 		ins=true;
 	    } else if (!findvarp && foundp && m_curSymp->findIdFlat(nodep->name())) {
-		m_statep->preErrorDump();
 		nodep->v3error("Unsupported in C: Variable has same name as "
 			       <<LinkDotState::nodeTextType(foundp->nodep())<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
@@ -1087,7 +1096,6 @@ private:
     }
     inline void checkNoDot(AstNode* nodep) {
 	if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
-	    m_statep->preErrorDump();
 	    UINFO(1,"ds="<<m_ds.ascii()<<endl);
 	    nodep->v3error("Syntax Error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type()<<" in dotted expression");
 	    m_ds.m_dotErr = true;
@@ -1344,7 +1352,6 @@ private:
 		bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText=="");
 		bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
 		if (err) {
-		    m_statep->preErrorDump();
 		    if (foundp) {
 			nodep->v3error("Found definition of '"<<m_ds.m_dotText<<(m_ds.m_dotText==""?"":".")<<nodep->prettyName()
 				       <<"'"<<" as a "<<foundp->nodep()->typeName()
@@ -1388,7 +1395,6 @@ private:
 		nodep->packagep(foundp->packagep());  // Generally set by parse, but might be an import
 	    }
 	    if (!nodep->varp()) {
-		m_statep->preErrorDump();
 		nodep->v3error("Can't find definition of signal, again: "<<nodep->prettyName());
 	    }
 	}
@@ -1412,7 +1418,6 @@ private:
 		string inl = AstNode::dedotName(nodep->inlinedDots());
 		dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
 		if (!dotSymp) {
-		    m_statep->preErrorDump();
 		    nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 		}
 	    }
@@ -1423,7 +1428,6 @@ private:
 		nodep->varp(varp);
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
 		if (!nodep->varp()) {
-		    m_statep->preErrorDump();
 		    nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
 		    okSymp->cellErrorScopes(nodep);
 		}
@@ -1432,7 +1436,6 @@ private:
 		VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
 		AstVarScope* vscp = foundp->nodep()->castVarScope();  // maybe NULL
 		if (!vscp) {
-		    m_statep->preErrorDump();
 		    nodep->v3error("Can't find varpin scope of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
 		    okSymp->cellErrorScopes(nodep);
 		} else {
@@ -1499,7 +1502,6 @@ private:
 		    UINFO(8,"\t\tInlined "<<inl<<endl);
 		    dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
 		    if (!dotSymp) {
-			m_statep->preErrorDump();
 			okSymp->cellErrorScopes(nodep);
 			nodep->v3fatalSrc("Couldn't resolve inlined scope '"<<baddot<<"' in: "<<nodep->inlinedDots());
 		    }
@@ -1516,7 +1518,6 @@ private:
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
 	    } else {
 		// Note ParseRef has similar error handling/message output
-		m_statep->preErrorDump();
 		UINFO(7,"   ErrFtask curSymp=se"<<(void*)m_curSymp<<" dotSymp=se"<<(void*)dotSymp<<endl);
 		if (foundp) {
 		    nodep->v3error("Found definition of '"<<m_ds.m_dotText<<(m_ds.m_dotText==""?"":".")<<nodep->prettyName()

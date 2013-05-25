@@ -676,7 +676,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     // Final steps
-    V3Global::dumpGlobalTree("final.tree",999);
+    V3Global::dumpGlobalTree("final.tree",990);
     V3Error::abortIfWarnings();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()
