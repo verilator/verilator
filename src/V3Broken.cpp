@@ -202,8 +202,8 @@ class BrokenCheckVisitor : public AstNVisitor {
 private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	BrokenTable::setUnder(nodep,true);
-	if (nodep->broken()) {
-	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo)");
+	if (const char* whyp=nodep->broken()) {
+	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
 	}
 	if (nodep->dtypep()) {
 	    if (!nodep->dtypep()->brokeExists()) { nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep()); }

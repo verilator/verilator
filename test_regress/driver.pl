@@ -878,7 +878,7 @@ sub _run {
 	    while (1) {
 		my $buf = '';
 		my $got = sysread PARENTRD,$buf,10000;
-		last if $got==0;
+		last if defined $got && $got==0;
 		print $buf if $param{tee};
 		print $logfh $buf if $logfh;
 	    }

@@ -38,6 +38,9 @@ class VFlagLogicPacked {};
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
+// For broken() function, return error string if have a match
+#define BROKEN_RTN(test) do { if (VL_UNLIKELY(test)) return # test; } while(0)
+
 //######################################################################
 
 class AstType {
@@ -1171,7 +1174,7 @@ public:
     virtual bool hasDType() const { return false; }	// Iff has a data type; dtype() must be non null
     virtual AstNodeDType* getChildDTypep() const { return NULL; } // Iff has a non-null childDTypep(), as generic node function
     virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
-    virtual bool broken() const { return false; }
+    virtual const char* broken() const { return NULL; }
 
     // INVOKERS
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) = 0;
@@ -1472,7 +1475,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeVarRef)
     virtual bool hasDType() const { return true; }
-    virtual bool broken() const;
+    virtual const char* broken() const;
     virtual int instrCount() const { return widthInstrs(); }
     virtual void cloneRelink();
     virtual string name()	const { return m_name; }		// * = Var name
@@ -1579,7 +1582,7 @@ public:
 	numeric(numericUnpack.isSigned() ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
     }
     ASTNODE_BASE_FUNCS(NodeClassDType)
-    virtual bool broken() const;
+    virtual const char* broken() const;
     virtual void dump(ostream& str);
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const { return findLogicDType(width(),width(),numeric())->castBasicDType(); }
@@ -1615,8 +1618,8 @@ public:
     ASTNODE_BASE_FUNCS(NodeArrayDType)
     virtual void dump(ostream& str);
     virtual void dumpSmall(ostream& str);
-    virtual bool broken() const { return !((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
-					   || (!m_refDTypep && childDTypep())); }
+    virtual const char* broken() const { BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+						     || (!m_refDTypep && childDTypep()))); return NULL; }
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
 	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
     }}
@@ -1740,7 +1743,7 @@ public:
 	addNOp2p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
-    virtual bool broken() const { return m_taskp && !m_taskp->brokeExists(); }
+    virtual const char* broken() const { BROKEN_RTN(m_taskp && !m_taskp->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_taskp && m_taskp->clonep()) {
 	m_taskp = m_taskp->clonep()->castNodeFTask();
     }}
