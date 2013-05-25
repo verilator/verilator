@@ -64,6 +64,7 @@ private:
     bool	m_checkBlock;	// Should this block get covered?
     AstNodeModule*	m_modp;	// Current module to add statement to
     bool	m_inToggleOff;	// In function/task etc
+    bool	m_inModOff;	// In module with no coverage
     FileMap	m_fileps;	// Column counts for each fileline
     string	m_beginHier;	// AstBegin hier name for user coverage points
 
@@ -124,9 +125,11 @@ private:
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;
+	m_inModOff = nodep->isTop();   // Ignore coverage on top module; it's a shell we created
 	m_fileps.clear();
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
+	m_inModOff = true;
     }
 
     // VISITORS - TOGGLE COVERAGE
@@ -140,7 +143,7 @@ private:
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (m_modp && !m_inToggleOff
+	if (m_modp && !m_inModOff && !m_inToggleOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageToggle()) {
 	    const char* disablep = varIgnoreToggle(nodep);
 	    if (disablep) {
@@ -231,7 +234,7 @@ private:
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
 	    nodep->ifsp()->iterateAndNext(*this);
-	    if (m_checkBlock
+	    if (m_checkBlock && !m_inModOff
 		&& nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
 		if (!nodep->backp()->castIf()
 		    || nodep->backp()->castIf()->elsesp()!=nodep) {  // Ignore if else; did earlier
@@ -243,7 +246,7 @@ private:
 	    if (nodep->elsesp()) {
 		m_checkBlock = true;
 		nodep->elsesp()->iterateAndNext(*this);
-		if (m_checkBlock
+		if (m_checkBlock && !m_inModOff
 		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
 		    if (nodep->elsesp()->castIf()) {
@@ -258,7 +261,7 @@ private:
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
 	UINFO(4," CASEI: "<<nodep<<endl);
-	if (m_checkBlock
+	if (m_checkBlock && !m_inModOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {
 	    nodep->bodysp()->iterateAndNext(*this);
 	    if (m_checkBlock) {	// if the case body didn't disable it
@@ -327,6 +330,7 @@ public:
 	m_checkBlock = true;
 	m_beginHier = "";
 	m_inToggleOff = false;
+	m_inModOff = true;
 	rootp->iterateChildren(*this);
     }
     virtual ~CoverageVisitor() {}

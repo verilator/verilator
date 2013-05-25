@@ -95,6 +95,18 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
     newmodp->modPublic(true);
     netlistp->addModulep(newmodp);
 
+    // TODO the module creation above could be done after linkcells, but
+    // the rest must be done after data type resolution
+    wrapTopCell(netlistp);
+    wrapTopPackages(netlistp);
+}
+
+void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
+    AstNodeModule* newmodp = netlistp->modulesp();
+    if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
+    AstNodeModule* oldmodp = newmodp->nextp()->castNodeModule();
+    if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
+
     // Add instance
     AstCell* cellp = new AstCell(newmodp->fileline(),
 				 (v3Global.opt.l2Name() ? "v" : oldmodp->name()),
@@ -126,13 +138,13 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 	    }
 	}
     }
-
-    wrapTopPackages(netlistp, newmodp);
 }
 
-void V3LinkLevel::wrapTopPackages(AstNetlist* netlistp, AstNodeModule* newmodp) {
+void V3LinkLevel::wrapTopPackages(AstNetlist* netlistp) {
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
+    AstNodeModule* newmodp = netlistp->modulesp();
+    if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
     for (AstNodeModule* modp = netlistp->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
 	if (modp->castPackage()) {
 	    AstCell* cellp = new AstCell(modp->fileline(),
