@@ -51,23 +51,42 @@ static const int INLINE_MODS_SMALLER = 100;	// If a mod is < this # nodes, can a
 class InlineMarkVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // Entire netlist
+    // Output
     //  AstNodeModule::user1()	// OUTPUT: bool. User request to inline this module
-    //  AstNodeModule::user2()	// bool. Allowed to automatically inline module
+    // Entire netlist (can be cleared after this visit completes)
+    //  AstNodeModule::user2()	// CIL_*. Allowed to automatically inline module
     //  AstNodeModule::user3()	// int. Number of cells referencing this module
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
 
+    enum {CIL_NOTHARD=0,	// For user2, inline not supported
+	  CIL_NOTSOFT,		// For user2, don't inline unless user overrides
+	  CIL_MAYBE};		// For user2, might inline
+
     // STATE
     AstNodeModule*	m_modp;		// Flattened cell's containing module
     int			m_stmtCnt;	// Statements in module
+    V3Double0		m_statUnsup;	// Statistic tracking
 
     // METHODS
-    void cantInline(const char* reason) {
-	if (m_modp->user2()) {
-	    UINFO(4,"  No inline: "<<reason<<" "<<m_modp<<endl);
-	    m_modp->user2(false);
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+    void cantInline(const char* reason, bool hard) {
+	if (hard) {
+	    if (m_modp->user2() != CIL_NOTHARD) {
+		UINFO(4,"  No inline hard: "<<reason<<" "<<m_modp<<endl);
+		m_modp->user2(CIL_NOTHARD);
+		m_statUnsup++;
+	    }
+	} else {
+	    if (m_modp->user2() == CIL_MAYBE) {
+		UINFO(4,"  No inline soft: "<<reason<<" "<<m_modp<<endl);
+		m_modp->user2(CIL_NOTSOFT);
+	    }
 	}
     }
 
@@ -75,28 +94,28 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_stmtCnt = 0;
 	m_modp = nodep;
-	m_modp->user2(true);  // Allowed = true
-	if (m_modp->modPublic()) cantInline("modPublic");
+	m_modp->user2(CIL_MAYBE);
+	if (m_modp->modPublic()) cantInline("modPublic",false);
 	//
 	nodep->iterateChildren(*this);
 	//
 	bool userinline = nodep->user1();
-	bool allowed = nodep->user2();
+	int allowed = nodep->user2();
 	int refs = nodep->user3();
 	// Should we automatically inline this module?
 	// inlineMult = 2000 by default.  If a mod*#instances is < this # nodes, can inline it
-	bool doit = (userinline || (allowed && (refs==1
-						|| m_stmtCnt < INLINE_MODS_SMALLER
-						|| v3Global.opt.inlineMult() < 1
-						|| refs*m_stmtCnt < v3Global.opt.inlineMult())));
+	bool doit = ((allowed == CIL_NOTSOFT || allowed == CIL_MAYBE)
+		     && (userinline
+			 || ((allowed == CIL_MAYBE)
+			     && (refs==1
+				 || m_stmtCnt < INLINE_MODS_SMALLER
+				 || v3Global.opt.inlineMult() < 1
+				 || refs*m_stmtCnt < v3Global.opt.inlineMult()))));
 	// Packages aren't really "under" anything so they confuse this algorithm
 	if (nodep->castPackage()) doit = false;
 	UINFO(4, " Inline="<<doit<<" Possible="<<allowed<<" Usr="<<userinline<<" Refs="<<refs<<" Stmts="<<m_stmtCnt
 	      <<"  "<<nodep<<endl);
-	if (doit) {
-	    UINFO(4," AutoInline "<<nodep<<endl);
-	    nodep->user1(true);
-	}
+	nodep->user1(doit);
 	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
@@ -116,7 +135,7 @@ private:
 	    if (!m_modp) {
 		nodep->v3error("Inline pragma not under a module");
 	    } else {
-		cantInline("Pragma NO_INLINE_MODULE");
+		cantInline("Pragma NO_INLINE_MODULE",false);
 	    }
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
 	} else {
@@ -156,13 +175,14 @@ public:
     InlineMarkVisitor(AstNode* nodep) {
 	m_modp = NULL;
 	m_stmtCnt = 0;
-	//VV*****  We reset all userp() on the whole netlist!!!
-	AstNode::user1ClearTree();
-	AstNode::user2ClearTree();
-	AstNode::user3ClearTree();
 	nodep->accept(*this);
     }
-    virtual ~InlineMarkVisitor() {}
+    virtual ~InlineMarkVisitor() {
+	V3Stats::addStat("Optimizations, Inline unsupported", m_statUnsup);
+	// Done with these, are not outputs
+	AstNode::user2ClearTree();
+	AstNode::user3ClearTree();
+    }
 };
 
 //######################################################################
@@ -226,7 +246,7 @@ private:
 						new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
 						new AstVarRef(nodep->fileline(), nodep, false)));
 	    } else {
-		// Due to inlining child's variable now within the same module, so a AstVarRef not AstVarXRef below
+		// Do to inlining child's variable now within the same module, so a AstVarRef not AstVarXRef below
 		m_modp->addStmtp(new AstAssignAlias(nodep->fileline(),
 						    new AstVarRef(nodep->fileline(), nodep, true),
 						    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));

@@ -844,7 +844,7 @@ void AstVarXRef::dump(ostream& str) {
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     str<<dotted()<<". - ";
-    if (inlinedDots()!="") str<<" flat.="<<inlinedDots()<<" - ";
+    if (inlinedDots()!="") str<<" inline.="<<inlinedDots()<<" - ";
     if (varScopep()) { varScopep()->dump(str); }
     else if (varp()) { varp()->dump(str); }
     else { str<<"UNLINKED"; }
