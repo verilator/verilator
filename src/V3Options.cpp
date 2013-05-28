@@ -1307,7 +1307,7 @@ void V3Options::optimize(int level) {
     m_oSubst = flag;
     m_oSubstConst = flag;
     m_oTable = flag;
-    m_oDedupe = level >= 3;
+    m_oDedupe = flag;
     // And set specific optimization levels
     if (level >= 3) {
 	m_inlineMult = -1;	// Maximum inlining

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support interfaces and modports, bug102.  [Byron Bradley, Jeremy Bennett]
 
+***   Duplicate clock gate optimization on by default, bug621.
+
 ****  Fix arrayed input compile error, bug645. [Krzysztof Jankowski]
 
 ****  Fix GCC version runtime changes, bug651. [Jeremy Bennett]
