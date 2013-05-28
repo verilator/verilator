@@ -128,7 +128,7 @@ public:
 	}
 	// Walk old sym table and reinsert into current table
 	// We let V3LinkDot report the error instead of us
-	symCurrentp()->import(&m_syms, symp, id_or_star);
+	symCurrentp()->importFromPackage(&m_syms, symp, id_or_star);
     }
 public:
     // CREATORS

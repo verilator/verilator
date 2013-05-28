@@ -166,7 +166,7 @@ private:
 	}
     }
 public:
-    bool import(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
+    bool importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
 	// Import tokens from source symbol table into this symbol table
 	// Returns true if successful
 	bool any = false;

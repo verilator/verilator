@@ -336,7 +336,6 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	longname += "_";
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
 	for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
-	    if (!pinp) nodep->v3fatalSrc("Non pin under cell params\n");
 	    if (!pinp->exprp()) continue; // No-connect
 	    AstVar* modvarp = pinp->modVarp();
 	    if (!modvarp) {

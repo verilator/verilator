@@ -98,8 +98,14 @@ public:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
-    void dump() {
-	if (debug()>=6) m_syms.dumpFilePrefixed("linkdot");
+    void dump(const string& nameComment="linkdot", bool force=false) {
+	if (debug()>=6 || force) {
+	    string filename = v3Global.debugFilename(nameComment)+".txt";
+	    const auto_ptr<ofstream> logp (V3File::new_ofstream(filename));
+	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+	    ostream& os = *logp;
+	    m_syms.dump(os);
+	}
     }
     static void preErrorDumpHandler() {
 	if (s_errorThisp) s_errorThisp->preErrorDump();
@@ -108,7 +114,7 @@ public:
 	static bool diddump = false;
 	if (!diddump && v3Global.opt.dumpTree()) {
 	    diddump = true;
-	    m_syms.dumpFilePrefixed("linkdot-preerr");
+	    dump("linkdot-preerr",true);
 	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr.tree"));
 	}
     }
@@ -256,7 +262,7 @@ public:
 	UINFO(9,"      INSERTblk se"<<(void*)symp<<"  above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->packagep(packagep);
-	symp->fallbackp(abovep);  // Needed so can find $unit stuff
+	symp->fallbackp(abovep);
 	nodep->user1p(symp);
 	if (name != "") {
 	    checkDuplicate(abovep, nodep, name);
@@ -414,7 +420,6 @@ LinkDotState* LinkDotState::s_errorThisp = NULL;
 //======================================================================
 
 class LinkDotFindVisitor : public AstNVisitor {
-private:
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
     AstPackage*		m_packagep;	// Current package
@@ -772,7 +777,7 @@ private:
 		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
 	    }
 	}
-	m_curSymp->import(m_statep->symsp(), srcp, nodep->name());
+	m_curSymp->importFromPackage(m_statep->symsp(), srcp, nodep->name());
 	UINFO(9,"    Link Done: "<<nodep<<endl);
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
@@ -985,13 +990,11 @@ private:
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
 	// Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
 	// we'll need to replace it with a VARXREF(aliased_to)
-	if (m_statep->forScopeCreation()) {
-	    if (debug()>=9) nodep->dumpTree(cout,"-\t\t\t\talias: ");
-	    AstVarScope* fromVscp = nodep->lhsp()->castVarRef()->varScopep();
-	    AstVarScope* toVscp   = nodep->rhsp()->castVarRef()->varScopep();
-	    if (!fromVscp || !toVscp) nodep->v3fatalSrc("Bad alias scopes");
-	    fromVscp->user2p(toVscp);
-	}
+	if (debug()>=9) nodep->dumpTree(cout,"-\t\t\t\talias: ");
+	AstVarScope* fromVscp = nodep->lhsp()->castVarRef()->varScopep();
+	AstVarScope* toVscp   = nodep->rhsp()->castVarRef()->varScopep();
+	if (!fromVscp || !toVscp) nodep->v3fatalSrc("Bad alias scopes");
+	fromVscp->user2p(toVscp);
 	nodep->iterateChildren(*this);
     }
     // For speed, don't recurse things that can't have scope
@@ -1096,7 +1099,7 @@ private:
     }
     inline void checkNoDot(AstNode* nodep) {
 	if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
-	    UINFO(1,"ds="<<m_ds.ascii()<<endl);
+	    //UINFO(9,"ds="<<m_ds.ascii()<<endl);
 	    nodep->v3error("Syntax Error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type()<<" in dotted expression");
 	    m_ds.m_dotErr = true;
 	}
@@ -1138,7 +1141,7 @@ private:
 	}
     }
     virtual void visit(AstCell* nodep, AstNUser*) {
-	// Cell: Resolve its filename.  If necessary, parse it.
+	// Cell: Recurse inside or cleanup not founds
 	checkNoDot(nodep);
 	m_cellp = nodep;
 	AstNode::user5ClearTree();
@@ -1220,10 +1223,12 @@ private:
 	    } else {
 		m_ds.m_dotPos = DP_SCOPE;
 		nodep->lhsp()->iterateAndNext(*this);
+		//if (debug()>=9) nodep->dumpTree("-dot-lho: ");
 	    }
 	    if (!m_ds.m_dotErr) {  // Once something wrong, give up
 		if (start && m_ds.m_dotPos==DP_SCOPE) m_ds.m_dotPos = DP_FINAL;  // Top 'final' dot RHS is final RHS, else it's a DOT(DOT(x,*here*),real-rhs) which we consider a RHS
 		nodep->rhsp()->iterateAndNext(*this);
+		//if (debug()>=9) nodep->dumpTree("-dot-rho: ");
 	    }
 	    if (start) {
 		AstNode* newp;
@@ -1307,7 +1312,8 @@ private:
 	    } else {
 		foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
 	    }
-	    if (foundp) UINFO(9,"     found=se"<<(void*)foundp<<"  n="<<foundp->nodep()<<endl);
+	    if (foundp) UINFO(9,"     found=se"<<(void*)foundp<<"  exp="<<expectWhat
+			      <<"  n="<<foundp->nodep()<<endl);
 	    // What fell out?
 	    bool ok = false;
 	    if (foundp->nodep()->castCell() || foundp->nodep()->castBegin()
