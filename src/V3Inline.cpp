@@ -95,6 +95,11 @@ private:
 	m_stmtCnt = 0;
 	m_modp = nodep;
 	m_modp->user2(CIL_MAYBE);
+	if (m_modp->castIface()) {
+	    // Inlining an interface means we no longer have a cell handle to resolve to.
+	    // If inlining moves post-scope this can perhaps be relaxed.
+	    cantInline("modIface",true);
+	}
 	if (m_modp->modPublic()) cantInline("modPublic",false);
 	//
 	nodep->iterateChildren(*this);
@@ -146,6 +151,14 @@ private:
 	// Cleanup link until V3LinkDot can correct it
 	nodep->varp(NULL);
     }
+    virtual void visit(AstVar* nodep, AstNUser*) {
+	// Can't look at AstIfaceRefDType directly as it is no longer underneath the module
+	if (nodep->isIfaceRef()) {
+	    // Unsupported: Inlining of modules with ifaces (see AstIface comment above)
+	    if (m_modp) cantInline("Interfaced",true);
+	}
+	nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	// Cleanup link until V3LinkDot can correct it
 	if (!nodep->packagep()) nodep->taskp(NULL);
@@ -183,6 +196,41 @@ public:
 	AstNode::user2ClearTree();
 	AstNode::user3ClearTree();
     }
+};
+
+//######################################################################
+// Using clonep(), find cell cross references.
+// clone() must not be called inside this visitor
+
+class InlineCollectVisitor : public AstNVisitor {
+private:
+    // NODE STATE
+    //  Output:
+    //   AstCell::user4p()	// AstCell* of the created clone
+
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
+    // VISITORS
+    virtual void visit(AstCell* nodep, AstNUser*) {
+	nodep->user4p(nodep->clonep());
+    }
+    // Accelerate
+    virtual void visit(AstNodeStmt* nodep, AstNUser*) {}
+    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+
+public:
+    // CONSTUCTORS
+    InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
+	nodep->accept(*this);
+    }
+    virtual ~InlineCollectVisitor() {}
 };
 
 //######################################################################
@@ -245,6 +293,13 @@ private:
 		m_modp->addStmtp(new AstAssignW(nodep->fileline(),
 						new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
 						new AstVarRef(nodep->fileline(), nodep, false)));
+	    } else if (nodep->isIfaceRef()) {
+		m_modp->addStmtp(new AstAssignVarScope(nodep->fileline(),
+						       new AstVarRef(nodep->fileline(), nodep, true),
+						       new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
+		AstNode* nodebp=exprvarrefp->varp();
+		nodep ->fileline()->modifyStateInherit(nodebp->fileline());
+		nodebp->fileline()->modifyStateInherit(nodep ->fileline());
 	    } else {
 		// Do to inlining child's variable now within the same module, so a AstVarRef not AstVarXRef below
 		m_modp->addStmtp(new AstAssignAlias(nodep->fileline(),
@@ -261,7 +316,17 @@ private:
 	if (!nodep->isFuncLocal()) nodep->inlineAttrReset(name);
 	if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
 	if (debug()>=9) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
-	if (nodep) nodep->iterateChildren(*this);
+	// Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
+	if (AstIfaceRefDType* ifacerefp = nodep->dtypep()->castIfaceRefDType()) {
+	    // Relink to point to newly cloned cell
+	    if (ifacerefp->cellp()) {
+		if (AstCell* newcellp = ifacerefp->cellp()->user4p()->castNode()->castCell()) {
+		    ifacerefp->cellp(newcellp);
+		    ifacerefp->cellName(newcellp->name());
+		}
+	    }
+	}
+	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
 	// Function under the inline cell, need to rename to avoid conflicts
@@ -357,6 +422,9 @@ private:
     // Cleared each cell
     //   AstVar::user2p()	// AstVarRef*/AstConst*  Points to signal this is a direct connect to
     //   AstVar::user3()	// bool    Don't alias the user2, keep it as signal
+    //   AstCell::user4		// AstCell* of the created clone
+
+    AstUser4InUse	m_inuser4;
 
     // STATE
     AstNodeModule*	m_modp;		// Current module
@@ -397,8 +465,10 @@ private:
 	    //if (debug()>=9) { nodep->modp()->dumpTree(cout,"oldmod:"); }
 	    AstNodeModule* newmodp = nodep->modp()->cloneTree(false);
 	    if (debug()>=9) { newmodp->dumpTree(cout,"newmod:"); }
-	    // Clear var markings
+	    // Clear var markings and find cell cross references
 	    AstNode::user2ClearTree();
+	    AstNode::user4ClearTree();
+	    { InlineCollectVisitor(nodep->modp()); }  // {} to destroy visitor immediately
 	    // Create data for dotted variable resolution
 	    AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
 						       nodep->name(), nodep->modp()->origName());

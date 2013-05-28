@@ -31,6 +31,26 @@
 //	    VarXRef/Func's:
 //		Find appropriate named cell and link to var they reference
 //*************************************************************************
+// Interfaces:
+//	CELL (.port (ifref)
+//		       ^--- cell                 -> IfaceDTypeRef(iface)
+//	  	       ^--- cell.modport	 -> IfaceDTypeRef(iface,modport)
+//		       ^--- varref(input_ifref)  -> IfaceDTypeRef(iface)
+//		       ^--- varref(input_ifref).modport -> IfaceDTypeRef(iface,modport)
+//	FindVisitor:
+//	    #1: Insert interface Vars
+//	    #2: Insert ModPort names
+//	  IfaceVisitor:
+//	    #3: Update ModPortVarRef to point at interface vars (after #1)
+//	    #4: Create ModPortVarRef symbol table entries
+//	  FindVisitor-insertIfaceRefs()
+//	    #5: Resolve IfaceRefDtype modport names (after #2)
+//	    #7: Record sym of IfaceRefDType and aliased interface and/or modport (after #4,#5)
+//	insertAllScopeAliases():
+//	    #8: Insert modport's symbols under IfaceRefDType (after #7)
+//	ResolveVisitor:
+//	    #9: Resolve general variables, which may point into the interface or modport (after #8)
+//*************************************************************************
 // TOP
 //      {name-of-top-modulename}
 //      a          (VSymEnt->AstCell)
@@ -77,8 +97,11 @@ private:
     AstUser4InUse	m_inuser4;
 
     // TYPES
-    typedef std::multimap<string,VSymEnt*> NameScopeSymMap;
-    typedef set <pair<AstNodeModule*,string> > ImplicitNameSet;
+    typedef multimap<string,VSymEnt*> NameScopeSymMap;
+    typedef map<VSymEnt*,VSymEnt*> ScopeAliasMap;
+    typedef set<pair<AstNodeModule*,string> > ImplicitNameSet;
+    typedef vector<VSymEnt*> IfaceVarSyms;
+    typedef vector<pair<AstIface*,VSymEnt*> > IfaceModSyms;
 
     static LinkDotState* s_errorThisp;		// Last self, for error reporting only
 
@@ -87,6 +110,9 @@ private:
     VSymEnt*		m_dunitEntp;		// $unit entry
     NameScopeSymMap	m_nameScopeSymMap;	// Map of scope referenced by non-pretty textual name
     ImplicitNameSet	m_implicitNameSet;	// For [module][signalname] if we can implicitly create it
+    ScopeAliasMap	m_scopeAliasMap;	// Map of <lhs,rhs> aliases
+    IfaceVarSyms	m_ifaceVarSyms;		// List of AstIfaceRefDType's to be imported
+    IfaceModSyms	m_ifaceModSyms;		// List of AstIface+Symbols to be processed
     bool		m_forPrimary;		// First link
     bool		m_forPrearray;		// Compress cell__[array] refs
     bool		m_forScopeCreation;	// Remove VarXRefs for V3Scope
@@ -105,6 +131,10 @@ public:
 	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 	    ostream& os = *logp;
 	    m_syms.dump(os);
+	    if (!m_scopeAliasMap.empty()) os<<"\nScopeAliasMap:\n";
+	    for (ScopeAliasMap::iterator it = m_scopeAliasMap.begin(); it != m_scopeAliasMap.end(); ++it) {
+		os<<"\t"<<it->first<<" -> "<<it->second<<endl;
+	    }
 	}
     }
     static void preErrorDumpHandler() {
@@ -148,6 +178,7 @@ public:
 	else if (nodep->castTask()) return "task";
 	else if (nodep->castFunc()) return "function";
 	else if (nodep->castBegin()) return "block";
+	else if (nodep->castIface()) return "interface";
 	else return nodep->prettyTypeName();
     }
     static string ucfirst(const string& text) {
@@ -314,6 +345,69 @@ public:
 	    && (m_implicitNameSet.find(make_pair(nodep,varname)) != m_implicitNameSet.end());
     }
 
+    // Track and later recurse interface modules
+    void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
+	m_ifaceModSyms.push_back(make_pair(nodep, symp));
+    }
+    void computeIfaceModSyms();
+
+    // Track and later insert interface references
+    void insertIfaceVarSym(VSymEnt* symp) {  // Where sym is for a VAR of dtype IFACEREFDTYPE
+	m_ifaceVarSyms.push_back(symp);
+    }
+    void computeIfaceVarSyms() {
+	for (IfaceVarSyms::iterator it = m_ifaceVarSyms.begin(); it != m_ifaceVarSyms.end(); ++it) {
+	    VSymEnt* varSymp = *it;
+	    AstVar* varp = varSymp->nodep()->castVar();
+	    UINFO(9, "  insAllIface se"<<(void*)varSymp<<" "<<varp<<endl);
+	    AstIfaceRefDType* ifacerefp = varp->subDTypep()->castIfaceRefDType();
+	    if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
+	    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
+	    VSymEnt* ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
+	    VSymEnt* ifOrPortSymp = ifaceSymp;
+	    // Link Modport names to the Modport Node under the Interface
+	    if (ifacerefp->isModport()) {
+		VSymEnt* foundp = ifaceSymp->findIdFallback(ifacerefp->modportName());
+		bool ok = false;
+		if (foundp) {
+		    if (AstModport* modportp = foundp->nodep()->castModport()) {
+			UINFO(4,"Link Modport: "<<modportp<<endl);
+			ifacerefp->modportp(modportp);
+			ifOrPortSymp = foundp;
+			ok = true;
+		    }
+		}
+		if (!ok) ifacerefp->v3error("Modport not found under interface '"
+					    <<ifacerefp->prettyName(ifacerefp->ifaceName())
+					    <<"': "<<ifacerefp->prettyName(ifacerefp->modportName()));
+	    }
+	    // Alias won't expand until interfaces and modport names are known; see notes at top
+	    insertScopeAlias(varSymp, ifOrPortSymp);
+	}
+	m_ifaceVarSyms.clear();
+    }
+
+    // Track and later insert scope aliases
+    void insertScopeAlias(VSymEnt* lhsp, VSymEnt* rhsp) {  // Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
+	UINFO(9,"   insertScopeAlias se"<<(void*)lhsp<<" se"<<(void*)rhsp<<endl);
+	m_scopeAliasMap.insert(make_pair(lhsp, rhsp));
+    }
+    void computeScopeAliases() {
+	UINFO(9,"computeIfaceAliases\n");
+	for (ScopeAliasMap::iterator it=m_scopeAliasMap.begin(); it!=m_scopeAliasMap.end(); ++it) {
+	    VSymEnt* lhsp = it->first;
+	    VSymEnt* srcp = lhsp;
+	    while (1) {  // Follow chain of aliases up to highest level non-alias
+		ScopeAliasMap::iterator it2 = m_scopeAliasMap.find(srcp);
+		if (it2 != m_scopeAliasMap.end()) { srcp = it2->second; continue; }
+		else break;
+	    }
+	    UINFO(9,"  iiasa: Insert alias se"<<lhsp<<" <- se"<<srcp<<" "<<srcp->nodep()<<endl);
+	    // srcp should be an interface reference pointing to the interface we want to import
+	    lhsp->importFromIface(symsp(), srcp);
+	}
+	m_scopeAliasMap.clear();
+    }
 private:
     VSymEnt* findWithAltFallback(VSymEnt* symp, const string& name, const string& altname) {
 	VSymEnt* findp = symp->findIdFallback(name);
@@ -503,6 +597,10 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    // Iterate
 	    nodep->iterateChildren(*this);
 	    nodep->user4(true);
+	    // Interfaces need another pass when signals are resolved
+	    if (AstIface* ifacep = nodep->castIface()) {
+		m_statep->insertIfaceModSym(ifacep, m_curSymp);
+	    }
 	} else { //!doit
 	    // Will be optimized away later
 	    // Can't remove now, as our backwards iterator will throw up
@@ -719,11 +817,15 @@ class LinkDotFindVisitor : public AstNVisitor {
 		}
 	    }
 	    if (ins) {
-		m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+		VSymEnt* insp = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
 		if (m_statep->forPrimary() && nodep->isGParam()) {
 		    m_paramNum++;
 		    VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber"+cvtToStr(m_paramNum), nodep, m_packagep);
 		    symp->exported(false);
+		}
+		if (nodep->subDTypep()->castIfaceRefDType()) {
+		    // Can't resolve until interfaces and modport names are known; see notes at top
+		    m_statep->insertIfaceVarSym(insp);
 		}
 	    }
 	}
@@ -899,8 +1001,8 @@ private:
 	AstVar* refp = foundp->nodep()->castVar();
 	if (!refp) {
 	    nodep->v3error("Input/output/inout declaration not found for port: "<<nodep->prettyName());
-	} else if (!refp->isIO()) {
-	    nodep->v3error("Pin is not an in/out/inout: "<<nodep->prettyName());
+	} else if (!refp->isIO() && !refp->isIfaceRef()) {
+	    nodep->v3error("Pin is not an in/out/inout/interface: "<<nodep->prettyName());
 	} else {
 	    refp->user4(true);
 	    VSymEnt* symp = m_statep->insertSym(m_statep->getNodeSym(m_modp),
@@ -956,9 +1058,10 @@ public:
 //======================================================================
 
 class LinkDotScopeVisitor : public AstNVisitor {
-private:
+
     // STATE
     LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
+    AstScope*		m_scopep;	// The current scope
     VSymEnt*		m_modSymp;	// Symbol entry for current module
 
     int debug() { return LinkDotState::debug(); }
@@ -974,12 +1077,36 @@ private:
 	// Using the CELL names, we created all hierarchy.  We now need to match this Scope
 	// up with the hierarchy created by the CELL names.
 	m_modSymp = m_statep->getScopeSym(nodep);
+	m_scopep = nodep;
 	nodep->iterateChildren(*this);
 	m_modSymp = NULL;
+	m_scopep = NULL;
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	if (!nodep->varp()->isFuncLocal()) {
-	    m_statep->insertSym(m_modSymp, nodep->varp()->name(), nodep, NULL);
+	    VSymEnt* varSymp = m_statep->insertSym(m_modSymp, nodep->varp()->name(), nodep, NULL);
+	    if (nodep->varp()->isIfaceRef()
+		&& nodep->varp()->isIfaceParent()) {
+		UINFO(9,"Iface parent ref var "<<nodep->varp()->name()<<" "<<nodep<<endl);
+		// Find the interface cell the var references
+		AstIfaceRefDType* dtypep = nodep->varp()->dtypep()->castIfaceRefDType();
+		if (!dtypep) nodep->v3fatalSrc("Non AstIfaceRefDType on isIfaceRef() var");
+		UINFO(9,"Iface parent dtype "<<dtypep<<endl);
+		string ifcellname = dtypep->cellName();
+		string baddot; VSymEnt* okSymp;
+		VSymEnt* cellSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
+		if (!cellSymp) nodep->v3fatalSrc("No symbol for interface cell: " <<nodep->prettyName(ifcellname));
+		UINFO(5, "       Found interface cell: se"<<(void*)cellSymp<<" "<<cellSymp->nodep()<<endl);
+		if (dtypep->modportName()!="") {
+		    VSymEnt* mpSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
+		    if (!mpSymp) { nodep->v3fatalSrc("No symbol for interface modport: " <<nodep->prettyName(dtypep->modportName())); }
+		    else cellSymp = mpSymp;
+		    UINFO(5, "       Found modport cell: se"<<(void*)cellSymp<<" "<<mpSymp->nodep()<<endl);
+		}
+		// Interface reference; need to put whole thing into symtable, but can't clone it now
+		// as we may have a later alias for it.
+		m_statep->insertScopeAlias(varSymp, cellSymp);
+	    }
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
@@ -997,6 +1124,37 @@ private:
 	fromVscp->user2p(toVscp);
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
+	UINFO(5,"ASSIGNVARSCOPE  "<<nodep<<endl);
+	if (debug()>=9) nodep->dumpTree(cout,"-\t\t\t\tavs: ");
+	VSymEnt* rhsSymp;
+	{
+	    AstVarRef* refp = nodep->rhsp()->castVarRef();
+	    if (!refp) nodep->v3fatalSrc("Unsupported: Non VarRef attached to interface pin");
+	    string scopename = refp->name();
+	    string baddot; VSymEnt* okSymp;
+	    VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
+	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias rhs");
+	    UINFO(5, "       Found a linked scope RHS: "<<scopename<<"  se"<<(void*)symp<<" "<<symp->nodep()<<endl);
+	    rhsSymp = symp;
+	}
+	VSymEnt* lhsSymp;
+	{
+	    AstVarXRef* refp = nodep->lhsp()->castVarXRef();
+	    if (!refp) nodep->v3fatalSrc("Unsupported: Non VarXRef attached to interface pin");
+	    string scopename = refp->dotted()+"."+refp->name();
+	    string baddot; VSymEnt* okSymp;
+	    VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
+	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias lhs");
+	    UINFO(5, "       Found a linked scope LHS: "<<scopename<<"  se"<<(void*)symp<<" "<<symp->nodep()<<endl);
+	    lhsSymp = symp;
+	}
+	// Remember the alias - can't do it yet because we may have additional symbols to be added,
+	// or maybe an alias of an alias
+	m_statep->insertScopeAlias(lhsSymp, rhsSymp);
+	// We have stored the link, we don't need these any more
+	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+    }
     // For speed, don't recurse things that can't have scope
     // Note we allow AstNodeStmt's as generates may be under them
     virtual void visit(AstCell*, AstNUser*) {}
@@ -1012,12 +1170,85 @@ public:
     LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep) {
 	UINFO(4,__FUNCTION__<<": "<<endl);
 	m_modSymp = NULL;
+	m_scopep = NULL;
 	m_statep = statep;
 	//
 	rootp->accept(*this);
     }
     virtual ~LinkDotScopeVisitor() {}
 };
+
+//======================================================================
+
+// Iterate an interface to resolve modports
+class LinkDotIfaceVisitor : public AstNVisitor {
+    // STATE
+    LinkDotState*	m_statep;	// State to pass between visitors, including symbol table
+    VSymEnt*		m_curSymp;	// Symbol Entry for current table, where to lookup/insert
+
+    // METHODS
+    int debug() { return LinkDotState::debug(); }
+
+    // VISITs
+    virtual void visit(AstModport* nodep, AstNUser*) {
+	// Modport: Remember its name for later resolution
+	UINFO(5,"   fiv: "<<nodep<<endl);
+	VSymEnt* oldCurSymp = m_curSymp;
+	{
+	    // Create symbol table for the vars
+	    m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, NULL);
+	    m_curSymp->fallbackp(oldCurSymp);
+	    nodep->iterateChildren(*this);
+	}
+	m_curSymp = oldCurSymp;
+    }
+    virtual void visit(AstModportVarRef* nodep, AstNUser*) {
+	UINFO(5,"   fiv: "<<nodep<<endl);
+	nodep->iterateChildren(*this);
+	VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
+	if (!symp) {
+	    nodep->v3error("Modport item not found: "<<nodep->prettyName());
+	} else if (AstVar* varp = symp->nodep()->castVar()) {
+	    // Make symbol under modport that points at the _interface_'s var, not the modport.
+	    nodep->varp(varp);
+	    m_statep->insertSym(m_curSymp, nodep->name(), varp, NULL/*package*/);
+	} else if (AstVarScope* vscp = symp->nodep()->castVarScope()) {
+	    // Make symbol under modport that points at the _interface_'s var, not the modport.
+	    nodep->varp(vscp->varp());
+	    m_statep->insertSym(m_curSymp, nodep->name(), vscp, NULL/*package*/);
+	} else {
+	    nodep->v3error("Modport item is not a variable: "<<nodep->prettyName());
+	}
+	if (m_statep->forScopeCreation()) {
+	    // Done with AstModportVarRef.
+	    // Delete to prevent problems if we dead-delete pointed to variable
+	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	}
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	// Default: Just iterate
+	nodep->iterateChildren(*this);
+    }
+
+public:
+    // CONSTUCTORS
+    LinkDotIfaceVisitor(AstIface* nodep, VSymEnt* curSymp, LinkDotState* statep) {
+	UINFO(4,__FUNCTION__<<": "<<endl);
+	m_curSymp = curSymp;
+	m_statep = statep;
+	nodep->accept(*this);
+    }
+    virtual ~LinkDotIfaceVisitor() {}
+};
+
+void LinkDotState::computeIfaceModSyms() {
+    for (IfaceModSyms::iterator it=m_ifaceModSyms.begin(); it!=m_ifaceModSyms.end(); ++it) {
+	AstIface* nodep = it->first;
+	VSymEnt* symp = it->second;
+	LinkDotIfaceVisitor(nodep, symp, this);
+    }
+    m_ifaceModSyms.clear();
+}
 
 //======================================================================
 
@@ -1049,6 +1280,7 @@ private:
     AstCell*		m_cellp;	// Current cell
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask* 	m_ftaskp;	// Current function/task
+    int			m_modportNum;	// Uniqueify modport numbers
 
     struct DotStates {
 	DotPosition	m_dotPos;	// Scope part of dotted resolution
@@ -1104,6 +1336,16 @@ private:
 	    m_ds.m_dotErr = true;
 	}
     }
+    AstVar* makeIfaceModportVar(FileLine* fl, AstCell* cellp, AstIface* ifacep, AstModport* modportp) {
+	// Create iface variable, using duplicate var when under same module scope
+	string varName = ifacep->name()+"__Vmp__"+modportp->name()+"__Viftop"+cvtToStr(++m_modportNum);
+	AstIfaceRefDType* idtypep = new AstIfaceRefDType(fl, cellp->name(), ifacep->name(), modportp->name());
+	idtypep->cellp(cellp);
+	AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
+	varp->isIfaceParent(true);
+	m_modp->addStmtp(varp);
+	return varp;
+    }
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser* vup) {
@@ -1119,6 +1361,7 @@ private:
 	m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);  // Until overridden by a SCOPE
 	m_cellp = NULL;
 	m_modp = nodep;
+	m_modportNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
 	m_ds.m_dotSymp = m_curSymp = m_modSymp = NULL;
@@ -1183,8 +1426,8 @@ private:
 		    return;
 		}
 		nodep->v3error("Pin not found: "<<nodep->prettyName());
-	    } else if (!refp->isIO() && !refp->isParam()) {
-		nodep->v3error("Pin is not an in/out/inout/param: "<<nodep->prettyName());
+	    } else if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
+		nodep->v3error("Pin is not an in/out/inout/param/interface: "<<nodep->prettyName());
 	    } else {
 		nodep->modVarp(refp);
 		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
@@ -1326,9 +1569,41 @@ private:
 		    m_ds.m_dotPos = DP_SCOPE;
 		    // Upper AstDot visitor will handle it from here
 		}
+		else if (foundp->nodep()->castCell()
+			 && allowVar && m_cellp
+			 && foundp->nodep()->castCell()->modp()->castIface()) {
+		    // Interfaces can be referenced like a variable for interconnect
+		    AstCell* cellp = foundp->nodep()->castCell();
+		    VSymEnt* cellEntp = m_statep->getNodeSym(cellp);  if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
+		    VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
+		    string findName = nodep->name()+"__Viftop";
+		    AstVar* ifaceRefVarp = parentEntp->findIdFallback(findName)->nodep()->castVar();
+		    if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "<<findName);
+		    //
+		    ok = true;
+		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
+		    m_ds.m_dotText += nodep->name();
+		    m_ds.m_dotSymp = foundp;
+		    m_ds.m_dotPos = DP_SCOPE;
+		    UINFO(9," cell -> iface varref "<<foundp->nodep()<<endl);
+		    AstNode* newp = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, false);
+		    nodep->replaceWith(newp); pushDeletep(nodep); nodep = NULL;
+		}
 	    }
 	    else if (AstVar* varp = foundp->nodep()->castVar()) {
-		if (allowVar) {
+		if (AstIfaceRefDType* ifacerefp = varp->subDTypep()->castIfaceRefDType()) {
+		    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
+		    // Really this is a scope reference into an interface
+		    UINFO(9,"varref-ifaceref "<<m_ds.m_dotText<<"  "<<nodep<<endl);
+		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
+		    m_ds.m_dotText += nodep->name();
+		    m_ds.m_dotSymp = m_statep->getNodeSym(ifacerefp->ifaceViaCellp());
+		    m_ds.m_dotPos = DP_SCOPE;
+		    ok = true;
+		    AstNode* newp = new AstVarRef(nodep->fileline(), varp, false);
+		    nodep->replaceWith(newp); pushDeletep(nodep); nodep = NULL;
+		}
+		else if (allowVar) {
 		    AstNodeVarRef* newp;
 		    if (m_ds.m_dotText != "") {
 			newp = new AstVarXRef(nodep->fileline(), nodep->name(), m_ds.m_dotText, false);  // lvalue'ness computed later
@@ -1343,6 +1618,34 @@ private:
 		    nodep->replaceWith(newp); pushDeletep(nodep); nodep = NULL;
 		    m_ds.m_dotPos = DP_MEMBER;
 		    ok = true;
+		}
+	    }
+	    else if (AstModport* modportp = foundp->nodep()->castModport()) {
+		// A scope reference into an interface's modport (not necessarily at a pin connection)
+		UINFO(9,"cell-ref-to-modport "<<m_ds.m_dotText<<"  "<<nodep<<endl);
+		UINFO(9,"dotSymp "<<m_ds.m_dotSymp<<" "<<m_ds.m_dotSymp->nodep()<<endl);
+		// Iface was the previously dotted component
+		if (!m_ds.m_dotSymp
+		    || !m_ds.m_dotSymp->nodep()->castCell()
+		    || !m_ds.m_dotSymp->nodep()->castCell()->modp()
+		    || !m_ds.m_dotSymp->nodep()->castCell()->modp()->castIface()) {
+		    nodep->v3error("Modport not referenced as <interface>."<<modportp->prettyName());
+		} else	if (!m_ds.m_dotSymp->nodep()->castCell()->modp()
+			    || !m_ds.m_dotSymp->nodep()->castCell()->modp()->castIface()) {
+		    nodep->v3error("Modport not referenced from underneath an interface: "<<modportp->prettyName());
+		} else {
+		    AstCell* cellp = m_ds.m_dotSymp->nodep()->castCell();
+		    if (!cellp) nodep->v3fatalSrc("Modport not referenced from a cell");
+		    AstIface* ifacep = cellp->modp()->castIface();
+		    //string cellName = m_ds.m_dotText;   // Use cellp->name
+		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
+		    m_ds.m_dotText += nodep->name();
+		    m_ds.m_dotSymp = m_statep->getNodeSym(modportp);
+		    m_ds.m_dotPos = DP_SCOPE;
+		    ok = true;
+		    AstVar* varp = makeIfaceModportVar(nodep->fileline(), cellp, ifacep, modportp);
+		    AstVarRef* refp = new AstVarRef(varp->fileline(), varp, false);
+		    nodep->replaceWith(refp); pushDeletep(nodep); nodep = NULL;
 		}
 	    }
 	    else if (AstEnumItem* valuep = foundp->nodep()->castEnumItem()) {
@@ -1677,6 +1980,7 @@ public:
 	m_cellp = NULL;
 	m_modp = NULL;
 	m_ftaskp = NULL;
+	m_modportNum = 0;
 	//
 	rootp->accept(*this);
     }
@@ -1698,12 +2002,18 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
 	LinkDotParamVisitor visitors(rootp,&state);
 	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
     }
+    else if (step == LDS_ARRAYED) {}
     else if (step == LDS_SCOPED) {
 	// Well after the initial link when we're ready to operate on the flat design,
 	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);
 	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
     }
+    else v3fatalSrc("Bad case");
+    state.dump();
+    state.computeIfaceModSyms();
+    state.computeIfaceVarSyms();
+    state.computeScopeAliases();
     state.dump();
     LinkDotResolveVisitor visitorb(rootp,&state);
 }

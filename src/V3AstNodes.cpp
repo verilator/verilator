@@ -35,6 +35,17 @@
 // Special methods
 
 // We need these here, because the classes they point to aren't defined when we declare the class
+const char* AstIfaceRefDType::broken() const {
+    BROKEN_RTN(m_ifacep && !m_ifacep->brokeExists());
+    BROKEN_RTN(m_cellp && !m_cellp->brokeExists());
+    BROKEN_RTN(m_modportp && !m_modportp->brokeExists());
+    return NULL;
+}
+
+AstIface* AstIfaceRefDType::ifaceViaCellp() const {
+    return ((m_cellp && m_cellp->modp()) ? m_cellp->modp()->castIface() : m_ifacep);
+}
+
 const char* AstNodeVarRef::broken() const {
     BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
@@ -723,11 +734,30 @@ void AstEnumItemRef::dump(ostream& str) {
     if (itemp()) { itemp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
+void AstIfaceRefDType::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (cellName()!="") { str<<" cell="<<cellName(); }
+    if (ifaceName()!="") { str<<" if="<<ifaceName(); }
+    if (modportName()!="") { str<<" mp="<<modportName(); }
+    if (cellp()) { str<<" -> "; cellp()->dump(str); }
+    else if (ifacep()) { str<<" -> "; ifacep()->dump(str); }
+    else { str<<" -> UNLINKED"; }
+}
+void AstIfaceRefDType::dumpSmall(ostream& str) {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"iface";
+}
 void AstJumpGo::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (labelp()) { labelp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
+}
+void AstModportVarRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" "<<varType();
+    if (varp()) { str<<" -> "; varp()->dump(str); }
+    else { str<<" -> UNLINKED"; }
 }
 void AstPin::dump(ostream& str) {
     this->AstNode::dump(str);

@@ -1073,6 +1073,14 @@ private:
 	nodep->dtypeFrom(nodep->lhsp());
     }
 
+    virtual void visit(AstIfaceRefDType* nodep, AstNUser* vup) {
+	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+	UINFO(5,"   IFACEREF "<<nodep<<endl);
+	nodep->iterateChildren(*this, vup);
+	nodep->dtypep(nodep);
+	nodep->widthForce(1, 1); // Not really relevant
+	UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
     virtual void visit(AstNodeClassDType* nodep, AstNUser* vup) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
 	UINFO(5,"   NODECLASS "<<nodep<<endl);

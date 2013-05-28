@@ -190,6 +190,7 @@ private:
 			      <<"' does not match "<<nodep->typeName()<<" name: "<<nodep->prettyName());
 	    }
 	}
+	if (nodep->castIface() || nodep->castPackage()) nodep->inLibrary(true); // Interfaces can't be at top, unless asked
 	bool topMatch = (v3Global.opt.topModule()==nodep->prettyName());
 	if (topMatch) {
 	    m_topVertexp = vertex(nodep);
@@ -208,6 +209,25 @@ private:
 	nodep->iterateChildren(*this);
 	nodep->checkTree();
 	m_modp = NULL;
+    }
+
+    virtual void visit(AstIfaceRefDType* nodep, AstNUser*) {
+	// Cell: Resolve its filename.  If necessary, parse it.
+	UINFO(4,"Link IfaceRef: "<<nodep<<endl);
+	// Use findIdUpward instead of findIdFlat; it doesn't matter for now
+	// but we might support modules-under-modules someday.
+	AstNodeModule* modp = resolveModule(nodep, nodep->ifaceName());
+	if (modp) {
+	    if (modp->castIface()) {
+		// Track module depths, so can sort list from parent down to children
+		new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
+		if (!nodep->cellp()) nodep->ifacep(modp->castIface());
+	    } else if (modp->castNotFoundModule()) {  // Will error out later
+	    } else {
+		nodep->v3error("Non-interface used as an interface: "<<nodep->prettyName());
+	    }
+	}
+	// Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
     virtual void visit(AstPackageImport* nodep, AstNUser*) {
@@ -312,6 +332,23 @@ private:
 			}
 		    }
 		}
+	    }
+	}
+	if (nodep->modp()->castIface()) {
+	    // Cell really is the parent's instantiation of an interface, not a normal module
+	    // Make sure we have a variable to refer to this cell, so can <ifacename>.<innermember>
+	    // in the same way that a child does.  Rename though to avoid conflict with cell.
+	    // This is quite similar to how classes work; when unpacked classes are better supported
+	    // may remap interfaces to be more like a class.
+	    if (!nodep->hasIfaceVar()) {
+		string varName = nodep->name()+"__Viftop";  // V3LinkDot looks for this naming
+		AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(), nodep->modp()->name());
+		idtypep->cellp(nodep);  // Only set when real parent cell known
+		idtypep->ifacep(NULL);  // cellp overrides
+		AstVar* varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
+		varp->isIfaceParent(true);
+		nodep->addNextHere(varp);
+		nodep->hasIfaceVar(true);
 	    }
 	}
 	if (nodep->modp()) {

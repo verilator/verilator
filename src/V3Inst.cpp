@@ -105,6 +105,13 @@ private:
 		     exprp);
 		m_modp->addStmtp(assp);
 		if (debug()>=9) assp->dumpTree(cout,"     _new: ");
+	    } else if (nodep->modVarp()->isIfaceRef()) {
+		// Create an AstAssignVarScope for Vars to Cells so we can link with their scope later
+		AstNode* lhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
+		AstVarRef* refp = exprp->castVarRef();
+		if (!refp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef");
+		AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, refp);
+		m_modp->addStmtp(assp);
 	    } else {
 		nodep->v3error("Assigned pin is neither input nor output");
 	    }
@@ -252,7 +259,11 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 	&& connectRefp
 	&& connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())
 	&& !connectRefp->varp()->isSc()) { // Need the signal as a 'shell' to convert types
-	// Done.  Same data type
+	// Done. Same data type
+    } else if (!alwaysCvt
+	       && connectRefp
+	       && connectRefp->varp()->isIfaceRef()) {
+	// Done. Interface
     } else if (!alwaysCvt
 	       && connBasicp
 	       && pinBasicp

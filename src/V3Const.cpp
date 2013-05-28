@@ -1466,6 +1466,9 @@ private:
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
 	// Don't perform any optimizations, keep the alias around
     }
+    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
+	// Don't perform any optimizations, the node won't be linked yet
+    }
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (m_doNConst && replaceNodeAssign(nodep)) return;

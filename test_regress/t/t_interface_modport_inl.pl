@@ -7,13 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug102");
-
 top_filename("t/t_interface_modport.v");
 
 compile (
     # Avoid inlining so we find bugs in the non-inliner connection code
-    v_flags => ["-Oi"],
+    verilator_flags2 => ["-Oi"],
     );
 
 execute (

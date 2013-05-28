@@ -410,7 +410,8 @@ public:
 	BLOCKTEMP,
 	MODULETEMP,
 	STMTTEMP,
-	XTEMP
+	XTEMP,
+	IFACEREF	// Used to link Interfaces between modules
     };
     enum en m_e;
     inline AstVarType () : m_e(UNKNOWN) {}
@@ -424,7 +425,8 @@ public:
 	    "SUPPLY0","SUPPLY1","WIRE","IMPLICITWIRE",
 	    "TRIWIRE","TRI0","TRI1",
 	    "PORT",
-	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP"};
+	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP",
+	    "IFACEREF"};
 	return names[m_e]; }
     bool isSignal() const  { return (m_e==WIRE || m_e==IMPLICITWIRE
 				     || m_e==TRIWIRE
@@ -1849,5 +1851,10 @@ inline int AstNodeArrayDType::msb() const { return rangep()->msbConst(); }
 inline int AstNodeArrayDType::lsb() const { return rangep()->lsbConst(); }
 inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
 inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange(msb(), lsb(), rangep()->littleEndian()); }
+
+inline void AstIfaceRefDType::cloneRelink() {
+    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep()->castCell();
+    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep()->castIface();
+    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep()->castModport(); }
 
 #endif // Guard

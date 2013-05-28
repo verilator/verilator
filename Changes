@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.848 devel
 
+**    Support interfaces and modports, bug102.  [Byron Bradley, Jeremy Bennett]
+
 ****  Fix arrayed input compile error, bug645. [Krzysztof Jankowski]
 
 ****  Fix GCC version runtime changes, bug651. [Jeremy Bennett]

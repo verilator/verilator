@@ -310,6 +310,7 @@ class AstSenTree;
 %token<fl>		yENDCLOCKING	"endclocking"
 %token<fl>		yENDFUNCTION	"endfunction"
 %token<fl>		yENDGENERATE	"endgenerate"
+%token<fl>		yENDINTERFACE	"endinterface"
 %token<fl>		yENDMODULE	"endmodule"
 %token<fl>		yENDPACKAGE	"endpackage"
 %token<fl>		yENDPRIMITIVE	"endprimitive"
@@ -337,9 +338,11 @@ class AstSenTree;
 %token<fl>		yINSIDE		"inside"
 %token<fl>		yINT		"int"
 %token<fl>		yINTEGER	"integer"
+%token<fl>		yINTERFACE	"interface"
 %token<fl>		yLOCALPARAM	"localparam"
 %token<fl>		yLOGIC		"logic"
 %token<fl>		yLONGINT	"longint"
+%token<fl>		yMODPORT	"modport"
 %token<fl>		yMODULE		"module"
 %token<fl>		yNAND		"nand"
 %token<fl>		yNEGEDGE	"negedge"
@@ -650,7 +653,7 @@ descriptionList:		// IEEE: part of source_text
 description:			// ==IEEE: description
 		module_declaration			{ }
 	//			// udp_declaration moved into module_declaration
-	//UNSUP	interface_declaration			{ }
+	|	interface_declaration			{ }
 	|	program_declaration			{ }
 	|	package_declaration			{ }
 	|	package_item				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
@@ -844,14 +847,24 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-	//UNSUP	portDirNetE id/*interface*/                      idAny/*port*/ rangeListE sigAttrListE
-	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PARSEP->instantCb($<fl>2, $2, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE
-	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>3, $3, $4); PINNUMINC(); }
-	//UNSUP	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
-	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PARSEP->instantCb($<fl>2, $2, $5, $6); PINNUMINC(); }
-	//UNSUP	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
-	//UNSUP		{ VARDTYPE($2); VARDONEA($<fl>5, $5, $6); PINNUMINC(); }
+		portDirNetE id/*interface*/                      idAny/*port*/ variable_dimensionListE sigAttrListE
+			{ $$ = new AstPort($<fl>2,PINNUMINC(),*$3);
+			  AstVar* varp=new AstVar($<fl>2,AstVarType(AstVarType::IFACEREF),*$3,VFlagChildDType(),
+						  new AstIfaceRefDType($<fl>2,"",*$2));
+			  if ($4) varp->v3error("Unsupported: Arrayed interfaces");
+			  varp->addAttrsp($5);
+			  $$->addNext(varp); }
+	|	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE
+			{ $<fl>2->v3error("Unsupported: virtual interfaces"); }
+	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
+			{ $$ = new AstPort($3,PINNUMINC(),*$5);
+			  AstVar* varp=new AstVar($<fl>2,AstVarType(AstVarType::IFACEREF),*$5,VFlagChildDType(),
+						  new AstIfaceRefDType($<fl>2,"",*$2,*$4));
+			  if ($6) varp->v3error("Unsupported: Arrayed interfaces");
+			  varp->addAttrsp($7);
+			  $$->addNext(varp); }
+	|	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
+			{ $<fl>2->v3error("Unsupported: virtual interfaces"); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
@@ -889,7 +902,7 @@ port<nodep>:			// ==IEEE: port
 	//UNSUP	portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE
 	//UNSUP		{ UNSUP }
 	//
-		portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE
 			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
@@ -931,6 +944,54 @@ portSig<nodep>:
 
 //**********************************************************************
 // Interface headers
+
+interface_declaration:		// IEEE: interface_declaration + interface_nonansi_header + interface_ansi_header:
+	//			// timeunits_delcarationE is instead in interface_item
+		intFront parameter_port_listE portsStarE ';'
+			interface_itemListE yENDINTERFACE endLabelE
+			{ if ($2) $1->addStmtp($2);
+			  if ($3) $1->addStmtp($3);
+			  if ($5) $1->addStmtp($5);
+			  SYMP->popScope($1); }
+	//UNSUP yEXTERN intFront parameter_port_listE portsStarE ';'	{ }
+	;
+
+intFront<modulep>:
+		yINTERFACE lifetimeE idAny/*new_interface*/
+			{ $$ = new AstIface($1,*$3);
+			  $$->inLibrary(true);
+			  PARSEP->rootp()->addModulep($$);
+			  SYMP->pushNew($$); }
+	;
+
+interface_itemListE<nodep>:
+		/* empty */				{ $$ = NULL; }
+	|	interface_itemList			{ $$ = $1; }
+	;
+
+interface_itemList<nodep>:
+		interface_item				{ $$ = $1; }
+	|	interface_itemList interface_item	{ $$ = $1->addNextNull($2); }
+	;
+
+interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
+		port_declaration ';'			{ $$ = $1; }
+	//			// IEEE: non_port_interface_item
+	//UNSUP	generate_region				{ $$ = $1; }
+	|	interface_or_generate_item		{ $$ = $1; }
+	//UNSUP	program_declaration			{ $$ = $1; }
+	//UNSUP	interface_declaration			{ $$ = $1; }
+	|	timeunits_declaration			{ $$ = $1; }
+	//			// See note in interface_or_generate item
+	|	module_common_item			{ $$ = $1; }
+	;
+
+interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
+	//			    // module_common_item in interface_item, as otherwise duplicated
+	//			    // with module_or_generate_item's module_common_item
+		modport_declaration			{ $$ = $1; }
+	//UNSUP	extern_tf_declaration			{ $$ = $1; }
+	;
 
 //**********************************************************************
 // Program headers
@@ -987,6 +1048,46 @@ program_generate_item<nodep>:		// ==IEEE: program_generate_item
 	|	conditional_generate_construct		{ $$ = $1; }
 	|	generate_region				{ $$ = $1; }
 	//UNSUP	elaboration_system_task			{ $$ = $1; }
+	;
+
+modport_declaration<nodep>:		// ==IEEE: modport_declaration
+		yMODPORT modport_itemList ';'		{ $$ = $2; }
+	;
+
+modport_itemList<nodep>:		// IEEE: part of modport_declaration
+		modport_item				{ $$ = $1; }
+	|	modport_itemList ',' modport_item	{ $$ = $1->addNextNull($3); }
+	;
+
+modport_item<nodep>:			// ==IEEE: modport_item
+		id/*new-modport*/ '(' modportPortsDeclList ')'		{ $$ = new AstModport($2,*$1,$3); }
+	;
+
+modportPortsDeclList<modportvarrefp>:
+		modportPortsDecl			    { $$ = $1; }
+	|	modportPortsDeclList ',' modportPortsDecl   { $$ = $1->addNextNull($3)->castModportVarRef(); }
+	;
+
+// IEEE: modport_ports_declaration  + modport_simple_ports_declaration
+//	+ (modport_tf_ports_declaration+import_export) + modport_clocking_declaration
+// We've expanded the lists each take to instead just have standalone ID ports.
+// We track the type as with the V2k series of defines, then create as each ID is seen.
+modportPortsDecl<modportvarrefp>:
+	//			// IEEE: modport_simple_ports_declaration
+		port_direction modportSimplePort	{ $$ = new AstModportVarRef($<fl>1,*$2,GRAMMARP->m_varIO); }
+	//			// IEEE: modport_clocking_declaration
+	//UNSUP	yCLOCKING idAny/*clocking_identifier*/	{ }
+	//UNSUP	yIMPORT modport_tf_port			{ }
+	//UNSUP	yEXPORT modport_tf_port			{ }
+	// Continuations of above after a comma.
+	//			// IEEE: modport_simple_ports_declaration
+	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,AstVarType::INOUT); }
+	;
+
+modportSimplePort<strp>:	// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
+		id					{ $$ = $1; }
+	//UNSUP	'.' idAny '(' ')'			{ }
+	//UNSUP	'.' idAny '(' expr ')'			{ }
 	;
 
 //************************************************

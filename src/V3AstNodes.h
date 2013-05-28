@@ -432,6 +432,48 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
+struct AstIfaceRefDType : public AstNodeDType {
+    // Reference to an interface, either for a port, or inside parent cell
+private:
+    string		m_cellName;	// "" = no cell, such as when connects to 'input' iface
+    string		m_ifaceName;	// Interface name
+    string		m_modportName;	// "" = no modport
+    AstIface*		m_ifacep;	// Pointer to interface; note cellp() should override
+    AstCell*		m_cellp;	// When exact parent cell known; not a guess
+    AstModport*		m_modportp;	// NULL = unlinked or no modport
+public:
+    AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
+	: AstNodeDType(fl), m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(""),
+	  m_ifacep(NULL), m_cellp(NULL), m_modportp(NULL) { }
+    AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName, const string& modport)
+	: AstNodeDType(fl), m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(modport),
+	  m_ifacep(NULL), m_cellp(NULL), m_modportp(NULL) { }
+    ASTNODE_NODE_FUNCS(IfaceRefDType, IFACEREFDTYPE)
+    // METHODS
+    virtual const char* broken() const;
+    virtual void dump(ostream& str=cout);
+    virtual void dumpSmall(ostream& str);
+    virtual void cloneRelink();
+    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return 1; }
+    virtual int widthTotalBytes() const { return 1; }
+    string cellName() const { return m_cellName; }
+    void cellName(const string& name) { m_cellName=name; }
+    string ifaceName() const { return m_ifaceName; }
+    void ifaceName(const string& name) { m_ifaceName=name; }
+    string modportName() const { return m_modportName; }
+    void modportName(const string& name) { m_modportName=name; }
+    AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
+    AstIface* ifacep() const { return m_ifacep; }
+    void ifacep(AstIface* nodep) { m_ifacep=nodep; }
+    AstCell* cellp() const { return m_cellp; }
+    void cellp(AstCell* nodep) { m_cellp=nodep; }
+    AstModport* modportp() const { return m_modportp; }
+    void modportp(AstModport* modportp) { m_modportp=modportp; }
+    bool isModport() { return !m_modportName.empty(); }
+};
+
 struct AstRefDType : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep;	// data type pointed to, BELOW the AstTypedef
@@ -843,6 +885,7 @@ private:
     bool	m_isStatic:1;	// Static variable
     bool	m_isPulldown:1;	// Tri0
     bool	m_isPullup:1;	// Tri1
+    bool	m_isIfaceParent:1;	// dtype is reference to interface present in this module
     bool	m_trace:1;	// Trace this variable
 
     void	init() {
@@ -854,6 +897,7 @@ private:
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
+	m_isIfaceParent=false;
 	m_trace=false;
     }
 public:
@@ -944,6 +988,7 @@ public:
     void	primaryIO(bool flag) { m_primaryIO = flag; }
     void	isConst(bool flag) { m_isConst = flag; }
     void	isStatic(bool flag) { m_isStatic = flag; }
+    void	isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void	funcLocal(bool flag) { m_funcLocal = flag; }
     void	funcReturn(bool flag) { m_funcReturn = flag; }
     void	trace(bool flag) { m_trace=flag; }
@@ -959,6 +1004,8 @@ public:
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }
+    bool	isIfaceRef() const { return (varType()==AstVarType::IFACEREF); }
+    bool	isIfaceParent() const { return m_isIfaceParent; }
     bool	isSignal() const  { return varType().isSignal(); }
     bool	isTemp() const { return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
 					 || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
@@ -1298,6 +1345,49 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
+struct AstIface : public AstNodeModule {
+    // A module declaration
+    AstIface(FileLine* fl, const string& name)
+	: AstNodeModule (fl,name) { }
+    ASTNODE_NODE_FUNCS(Iface, IFACE)
+};
+
+struct AstModportVarRef : public AstNode {
+    // A input/output/etc variable referenced under a modport
+    // The storage for the variable itself is inside the interface, thus this is a reference
+    // PARENT: AstIface
+private:
+    string	m_name;		// Name of the variable referenced
+    AstVarType	m_type;		// Type of the variable (in/out)
+    AstVar*	m_varp;		// Link to the actual Var
+public:
+    AstModportVarRef(FileLine* fl, const string& name, AstVarType::en type)
+	: AstNode(fl), m_name(name), m_type(type), m_varp(NULL) { }
+    ASTNODE_NODE_FUNCS(ModportVarRef, MODPORTVARREF)
+    virtual const char* broken() const { BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
+    virtual void dump(ostream& str);
+    AstVarType	varType() const { return m_type; }		// * = Type of variable
+    virtual string name() const { return m_name; }
+    bool isInput() const { return (varType()==AstVarType::INPUT || varType()==AstVarType::INOUT); }
+    bool isOutput() const { return (varType()==AstVarType::OUTPUT || varType()==AstVarType::INOUT); }
+    AstVar* varp() const { return m_varp; }		// [After Link] Pointer to variable
+    void varp(AstVar* varp) { m_varp=varp; }
+};
+
+struct AstModport : public AstNode {
+    // A modport in an interface
+private:
+    string	m_name;		// Name of the modport
+public:
+    AstModport(FileLine* fl, const string& name, AstModportVarRef* varsp)
+	: AstNode(fl), m_name(name) {
+        addNOp1p(varsp); }
+    virtual string name() const { return m_name; }
+    virtual bool maybePointedTo() const { return true; }
+    ASTNODE_NODE_FUNCS(Modport, MODPORT)
+    AstModportVarRef* varsp() const { return op1p()->castModportVarRef(); }	// op1 = List of Vars
+};
+
 struct AstCell : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
 private:
@@ -1305,12 +1395,13 @@ private:
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
     AstNodeModule* m_modp;	// [AfterLink] Pointer to module instanced
+    bool	m_hasIfaceVar; // True if a Var has been created for this cell
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
 	: AstNode(fl)
 	, m_name(instName), m_origName(instName), m_modName(modName)
-	, m_modp(NULL) {
+	, m_modp(NULL), m_hasIfaceVar(false) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     ASTNODE_NODE_FUNCS(Cell, CELL)
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -1331,6 +1422,8 @@ public:
     void addPinsp(AstPin* nodep) { addOp1p(nodep); }
     void addParamsp(AstPin* nodep) { addOp2p(nodep); }
     void modp(AstNodeModule* nodep)	{ m_modp = nodep; }
+    bool hasIfaceVar() const { return m_hasIfaceVar; }
+    void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
 };
 
 struct AstCellInline : public AstNode {
@@ -1711,6 +1804,16 @@ struct AstAssignW : public AstNodeAssign {
 	replaceWith(newp); // User expected to then deleteTree();
 	return newp;
     }
+};
+
+struct AstAssignVarScope : public AstNodeAssign {
+    // Assign two VarScopes to each other
+    AstAssignVarScope(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
+	: AstNodeAssign(fileline, lhsp, rhsp) {
+	dtypeFrom(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(AssignVarScope, ASSIGNVARSCOPE)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignVarScope(this->fileline(), lhsp, rhsp); }
 };
 
 struct AstPull : public AstNode {

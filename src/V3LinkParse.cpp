@@ -152,6 +152,12 @@ private:
 				    nodep->valuep()->unlinkFrBack()));
 	    }
 	}
+	if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+	    // Only AstIfaceRefDType's at this point correspond to ports;
+	    // haven't made additional ones for interconnect yet, so assert is simple
+	    // What breaks later is we don't have a Scope/Cell representing the interface to attach to
+	    if (m_modp->level()<=2) nodep->v3error("Unsupported: Interfaced port on top level module");
+	}
     }
 
     virtual void visit(AstAttrOf* nodep, AstNUser*) {

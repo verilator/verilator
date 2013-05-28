@@ -150,6 +150,14 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
+    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
+	// Copy under the scope but don't recurse
+	UINFO(4,"    Move "<<nodep<<endl);
+	AstNode* clonep = nodep->cloneTree(false);
+	nodep->user2p(clonep);
+	m_scopep->addActivep(clonep);
+	clonep->iterateChildren(*this);	// We iterate under the *clone*
+    }
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
@@ -215,12 +223,17 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// VarRef needs to point to VarScope
 	// Make sure variable has made user1p.
-	nodep->varp()->accept(*this);
-	AstVarScope* varscp = nodep->packagep()
-	    ? (AstVarScope*)nodep->varp()->user3p()
-	    : (AstVarScope*)nodep->varp()->user1p();
-	if (!varscp) nodep->v3fatalSrc("Can't locate varref scope");
-	nodep->varScopep(varscp);
+	if (!nodep->varp()) nodep->v3fatalSrc("Unlinked");
+	if (nodep->varp()->isIfaceRef()) {
+	    nodep->varScopep(NULL);
+	} else {
+	    nodep->varp()->accept(*this);
+	    AstVarScope* varscp = nodep->packagep()
+		? (AstVarScope*)nodep->varp()->user3p()
+		: (AstVarScope*)nodep->varp()->user1p();
+	    if (!varscp) nodep->v3fatalSrc("Can't locate varref scope");
+	    nodep->varScopep(varscp);
+	}
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
@@ -296,6 +309,9 @@ private:
 	movedDeleteOrIterate(nodep);
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+	movedDeleteOrIterate(nodep);
+    }
+    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
 	movedDeleteOrIterate(nodep);
     }
     virtual void visit(AstAssignW* nodep, AstNUser*) {

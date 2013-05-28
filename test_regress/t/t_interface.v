@@ -100,7 +100,7 @@ interface handshake #(
    // local logic (counter)
    always @ (posedge clk, posedge rst)
    if (rst) cnt <= '0;
-   else     cnt <= cnt + inc;
+   else     cnt <= cnt + {31'h0, inc};
 
 endinterface : handshake
 
@@ -129,7 +129,7 @@ module source #(
    // counter
    always @ (posedge clk, posedge rst)
    if (rst) cnt <= 32'd0;
-   else     cnt <= cnt + (inf.req & inf.grt);
+   else     cnt <= cnt + {31'd0, (inf.req & inf.grt)};
 
    // request signal
    assign inf.req = rnd[0];
@@ -161,7 +161,7 @@ module drain #(
    // counter
    always @ (posedge clk, posedge rst)
    if (rst) cnt <= 32'd0;
-   else     cnt <= cnt + (inf.req & inf.grt);
+   else     cnt <= cnt + {31'd0, (inf.req & inf.grt)};
 
    // grant signal
    assign inf.grt = rnd[0];

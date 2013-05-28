@@ -1920,16 +1920,12 @@ uwire keyword.
 
 =head2 SystemVerilog 2005 (IEEE 1800-2005) Support
 
-Verilator currently has some support for SystemVerilog synthesis
-constructs. As SystemVerilog features enter common usage they are added;
-please file a bug if a feature you need is missing.
-
 Verilator supports ==? and !=? operators, ++ and -- in some contexts,
 $bits, $countones, $error, $fatal, $info, $isunknown, $onehot, $onehot0,
 $unit, $warning, always_comb, always_ff, always_latch, bit, byte, chandle,
-const, do-while, enum, export, final, import, int, logic, longint, package,
-program, shortint, struct, time, typedef, union, var, void, priority
-case/if, and unique case/if.
+const, do-while, enum, export, final, import, int, interface, logic,
+longint, modport, package, program, shortint, struct, time, typedef, union,
+var, void, priority case/if, and unique case/if.
 
 It also supports .name and .* interconnection.
 
@@ -2604,6 +2600,12 @@ and continue keywords.
 
 Inside expressions may not include unpacked array traversal or $ as an
 upper bound.  Case inside and case matches are also unsupported.
+
+=item interface
+
+Interfaces and modports, including with generated data types are supported.
+Generate blocks around modports are not supported, nor are virtual
+interfaces nor unnamed interfaces.
 
 =item priority if, unique if
 

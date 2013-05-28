@@ -21,12 +21,30 @@
 //   Top down traversal:
 //	For each cell:
 //	    If parameterized,
-//		Determine all parameter widths, constant values
+//		Determine all parameter widths, constant values.
+//		(Interfaces also matter, as if an interface is parameterized
+//		this effectively changes the width behavior of all that
+//		reference the iface.)
 //	    	Clone module cell calls, renaming with __{par1}_{par2}_...
-//		Substitute constants for cell's module's parameters
-//		Relink pins and cell to point to new module
-//	    Then process all modules called by that cell
+//		Substitute constants for cell's module's parameters.
+//		Relink pins and cell and ifacerefdtype to point to new module.
+//
+//		For interface Parent's we have the AstIfaceRefDType::cellp()
+//		pointing to this module.  If that parent cell's interface
+//		module gets parameterized, AstIfaceRefDType::cloneRelink
+//		will update AstIfaceRefDType::cellp(), and AstLinkDot will
+//		see the new interface.
+//
+//		However if a submodule's AstIfaceRefDType::ifacep() points
+//		to the old (unparameterized) interface and needs correction.
+//		To detect this we must walk all pins looking for interfaces
+//		that the parent has changed and propagate down.
+//
+//	    Then process all modules called by that cell.
 //	    (Cells never referenced after parameters expanded must be ignored.)
+//
+//   After we complete parameters, the varp's will be wrong (point to old module)
+//   and must be relinked.
 //
 //*************************************************************************
 
@@ -62,22 +80,33 @@ private:
     AstUser5InUse	m_inuser5;
     // User1/2/3 used by constant function simulations
 
+    // TYPES
+    typedef deque<pair<AstIfaceRefDType*,AstIfaceRefDType*> > IfaceRefRefs;  // Note may have duplicate entries
+
     // STATE
-    typedef std::map<AstVar*,AstVar*> VarCloneMap;
+    typedef map<AstVar*,AstVar*> VarCloneMap;
     struct ModInfo {
 	AstNodeModule*	m_modp;		// Module with specified name
 	VarCloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
 	ModInfo(AstNodeModule* modp) { m_modp=modp; }
     };
-    typedef std::map<string,ModInfo> ModNameMap;
+    typedef map<string,ModInfo> ModNameMap;
     ModNameMap	m_modNameMap;	// Hash of created module flavors by name
 
-    typedef std::map<string,string> LongMap;
+    typedef map<string,string> LongMap;
     LongMap	m_longMap;	// Hash of very long names to unique identity number
     int		m_longId;
 
+    typedef map<AstNode*,int> ValueMap;
+    typedef map<int,int> NextValueMap;
+    ValueMap	m_valueMap;	// Hash of node to param value
+    NextValueMap m_nextValueMap;// Hash of param value to next value to be used
+
     typedef multimap<int,AstNodeModule*> LevelModMap;
     LevelModMap	m_todoModps;	// Modules left to process
+
+    typedef deque<AstCell*> CellList;
+    CellList	m_cellps;	// Cells left to process (in this module)
 
     // METHODS
     static int debug() {
@@ -91,7 +120,7 @@ private:
 	// Pass 1, assign first letter to each gparam's name
 	for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* varp = stmtp->castVar()) {
-		if (varp->isGParam()) {
+		if (varp->isGParam()||varp->isIfaceRef()) {
 		    char ch = varp->name()[0];
 		    ch = toupper(ch); if (ch<'A' || ch>'Z') ch='Z';
 		    varp->user4(usedLetter[static_cast<int>(ch)]*256 + ch);
@@ -113,6 +142,27 @@ private:
 	}
 	return st;
     }
+    string paramValueNumber(AstNode* nodep) {
+	// Given a compilcated object create a number to use for param module assignment
+	// Ideally would be relatively stable if design changes (not use pointer value),
+	// and must return same value given same input node
+	// Return must presently be numberic so doesn't collide with 'small' alphanumeric parameter names
+	ValueMap::iterator it = m_valueMap.find(nodep);
+	if (it != m_valueMap.end()) {
+	    return cvtToStr(it->second);
+	} else {
+	    static int BUCKETS = 1000;
+	    V3Hash hash (nodep->name());
+	    int bucket = hash.hshval() % BUCKETS;
+	    int offset = 0;
+	    NextValueMap::iterator it = m_nextValueMap.find(bucket);
+	    if (it != m_nextValueMap.end()) { offset = it->second; it->second = offset + 1; }
+	    else { m_nextValueMap.insert(make_pair(bucket, offset + 1)); }
+	    int num = bucket + offset * BUCKETS;
+	    m_valueMap.insert(make_pair(nodep, num));
+	    return cvtToStr(num);
+	}
+    }
     void relinkPins(VarCloneMap* clonemapp, AstPin* startpinp) {
 	for (AstPin* pinp = startpinp; pinp; pinp=pinp->nextp()->castPin()) {
 	    if (!pinp->modVarp()) pinp->v3fatalSrc("Not linked?\n");
@@ -123,9 +173,10 @@ private:
 	    pinp->modVarp(cloneiter->second);
 	}
     }
+    void visitCell(AstCell* nodep);
     void visitModules() {
 	// Loop on all modules left to process
-	// Hitting a cell adds to the appropriate leval of this level-sorted list,
+	// Hitting a cell adds to the appropriate level of this level-sorted list,
 	// so since cells originally exist top->bottom we process in top->bottom order too.
 	while (!m_todoModps.empty()) {
 	    LevelModMap::iterator it = m_todoModps.begin();
@@ -134,7 +185,19 @@ private:
 	    if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
 		UINFO(4," MOD   "<<nodep<<endl);
 		nodep->iterateChildren(*this);
-		// Note this may add to m_todoModps
+		// Note above iterate may add to m_todoModps
+		//
+		// Process interface cells, then non-interface which may ref an interface cell
+		for (int nonIf=0; nonIf<2; ++nonIf) {
+		    for (CellList::iterator it=m_cellps.begin(); it!=m_cellps.end(); ++it) {
+			AstCell* nodep = *it;
+			if ((nonIf==0 && nodep->modp()->castIface())
+			    || (nonIf==1 && !nodep->modp()->castIface())) {
+			    visitCell(nodep);
+			}
+		    }
+		}
+		m_cellps.clear();
 	    }
 	}
     }
@@ -157,7 +220,10 @@ private:
 	    UINFO(4," MOD-dead?  "<<nodep<<endl);  // Should have been done by now, if not dead
 	}
     }
-    virtual void visit(AstCell* nodep, AstNUser*);
+    virtual void visit(AstCell* nodep, AstNUser*) {
+	// Must do ifaces first, so push to list and do in proper order
+	m_cellps.push_back(nodep);
+    }
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep, AstNUser*) {
@@ -218,7 +284,7 @@ private:
     //! Parameter subsitution for generated for loops.
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
-    //!       move to more generic constant expressions, such code will be neede here.
+    //!       move to more generic constant expressions, such code will be needed here.
     virtual void visit(AstBegin* nodep, AstNUser*) {
 	if (nodep->genforp()) {
 	    AstGenFor* forp = nodep->genforp()->castGenFor();
@@ -317,11 +383,13 @@ public:
 //----------------------------------------------------------------------
 // VISITs
 
-void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
+void ParamVisitor::visitCell(AstCell* nodep) {
     // Cell: Check for parameters in the instantiation.
     nodep->iterateChildren(*this);
-    if (!nodep->modp()) { nodep->dumpTree(cerr,"error:"); nodep->v3fatalSrc("Not linked?"); }
-    if (nodep->paramsp()) {
+    if (!nodep->modp()) nodep->v3fatalSrc("Not linked?");
+    if (nodep->paramsp()
+	|| 1  // Need to look for interfaces; could track when one exists, but should be harmless to always do this
+	) {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);
 	// Create new module name with _'s between the constants
 	if (debug()>=10) nodep->dumpTree(cout,"-cell:\t");
@@ -356,6 +424,30 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		} else {
 		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+constp->num().ascii(false);
 		    any_overrides = true;
+		}
+	    }
+	}
+	IfaceRefRefs ifaceRefRefs;
+	for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
+	    AstVar* modvarp = pinp->modVarp();
+	    if (modvarp->isIfaceRef()) {
+		AstIfaceRefDType* portIrefp = modvarp->subDTypep()->castIfaceRefDType();
+		//UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
+		if (!pinp->exprp()
+		    || !pinp->exprp()->castVarRef()
+		    || !pinp->exprp()->castVarRef()->varp()
+		    || !pinp->exprp()->castVarRef()->varp()->subDTypep()
+		    || !pinp->exprp()->castVarRef()->varp()->subDTypep()->castIfaceRefDType()) {
+		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not connected to interface/modport pin expression");
+		} else {
+		    AstIfaceRefDType* pinIrefp = pinp->exprp()->castVarRef()->varp()->subDTypep()->castIfaceRefDType();
+		    //UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
+		    if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
+			UINFO(9,"     IfaceRefDType needs reconnect  "<<pinIrefp<<endl);
+			longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+paramValueNumber(pinIrefp);
+			any_overrides = true;
+			ifaceRefRefs.push_back(make_pair(portIrefp,pinIrefp));
+		    }
 		}
 	    }
 	}
@@ -401,7 +493,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		// Note we allow multiple users of a parameterized model, thus we need to stash this info.
 		for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
 		    if (AstVar* varp = stmtp->castVar()) {
-			if (varp->isIO() || varp->isGParam()) {
+			if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
 			    // Cloning saved a pointer to the new node for us, so just follow that link.
 			    AstVar* oldvarp = varp->clonep()->castVar();
 			    //UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
@@ -413,7 +505,21 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 		// Relink parameter vars to the new module
 		relinkPins(clonemapp, nodep->paramsp());
 
+		// Fix any interface references
+		for (IfaceRefRefs::iterator it=ifaceRefRefs.begin(); it!=ifaceRefRefs.end(); ++it) {
+		    AstIfaceRefDType* portIrefp = it->first;
+		    AstIfaceRefDType* pinIrefp = it->second;
+		    AstIfaceRefDType* cloneIrefp = portIrefp->clonep()->castIfaceRefDType();
+		    UINFO(8,"     IfaceOld "<<portIrefp<<endl);
+		    UINFO(8,"     IfaceTo  "<<pinIrefp<<endl);
+		    if (!cloneIrefp) portIrefp->v3fatalSrc("parameter clone didn't hit AstIfaceRefDType");
+		    UINFO(8,"     IfaceClo "<<cloneIrefp<<endl);
+		    cloneIrefp->ifacep(pinIrefp->ifaceViaCellp());
+		    UINFO(8,"     IfaceNew "<<cloneIrefp<<endl);
+		}
+
 		// Assign parameters to the constants specified
+		// DOES clone() so must be finished with module clonep() before here
 		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		    AstVar* modvarp = pinp->modVarp();
 		    if (modvarp && pinp->exprp()) {
@@ -439,7 +545,7 @@ void ParamVisitor::visit(AstCell* nodep, AstNUser*) {
 	} // if any_overrides
 
 	// Delete the parameters from the cell; they're not relevant any longer.
-	nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
+	if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
 	UINFO(8,"     Done with "<<nodep<<endl);
 	//if (debug()>=10) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
     }

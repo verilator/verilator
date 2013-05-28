@@ -7,6 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->{vlt} and $Self->unsupported("Verilator unsupported, interface generates changing types");
+$Self->{vcs} and $Self->unsupported("Commercially unsupported, interface crossrefs");
+
 compile (
     );
 
