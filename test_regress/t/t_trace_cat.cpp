@@ -63,7 +63,7 @@ int main(int argc, char **argv, char **env) {
 #elif defined(T_TRACE_CAT_RENEW)
 	    tfp->close();
 	    delete tfp;
-	    VerilatedVcdC* tfp = new VerilatedVcdC;
+	    tfp = new VerilatedVcdC;
 	    top->trace(tfp,99);
 	    tfp->open(trace_name());
 #else
