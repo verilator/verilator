@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.851 devel
 
+***   Fix ordering of clock enables with delayed assigns, bug613. [Jeremy Bennett]
+
 
 * Verilator 3.850 2013-06-02
 

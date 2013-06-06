@@ -224,6 +224,7 @@ class OrderVarVertex : public OrderEitherVertex {
     AstVarScope* m_varScp;
     OrderVarVertex*	m_pilNewVertexp;	// for processInsLoopNewVar
     bool	 m_isClock;	// Used as clock
+    bool	 m_isDelayed;	// Set in a delayed assignment
 protected:
     OrderVarVertex(V3Graph* graphp, const OrderVarVertex& old)
 	: OrderEitherVertex(graphp, old)
@@ -231,7 +232,7 @@ protected:
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
 	: OrderEitherVertex(graphp, scopep, NULL), m_varScp(varScp)
-	, m_pilNewVertexp(NULL), m_isClock(false) {}
+	, m_pilNewVertexp(NULL), m_isClock(false), m_isDelayed(false) {}
     virtual ~OrderVarVertex() {}
     virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
     virtual OrderVEdgeType type() const = 0;
@@ -239,6 +240,8 @@ public:
     AstVarScope* varScp() const { return m_varScp; }
     void isClock(bool flag) { m_isClock=flag; }
     bool isClock() const { return m_isClock; }
+    void isDelayed(bool flag) { m_isDelayed=flag; }
+    bool isDelayed() const { return m_isDelayed; }
     OrderVarVertex* pilNewVertexp() const { return m_pilNewVertexp; }
     void pilNewVertexp (OrderVarVertex* vertexp) { m_pilNewVertexp = vertexp; }
 };
