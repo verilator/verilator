@@ -847,24 +847,18 @@ port<nodep>:			// ==IEEE: port
 	//			// IEEE: interface_port_header port_identifier { unpacked_dimension }
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
-		portDirNetE id/*interface*/                      idAny/*port*/ variable_dimensionListE sigAttrListE
-			{ $$ = new AstPort($<fl>2,PINNUMINC(),*$3);
-			  AstVar* varp=new AstVar($<fl>2,AstVarType(AstVarType::IFACEREF),*$3,VFlagChildDType(),
-						  new AstIfaceRefDType($<fl>2,"",*$2));
-			  if ($4) varp->v3error("Unsupported: Arrayed interfaces");
-			  varp->addAttrsp($5);
-			  $$->addNext(varp); }
-	|	portDirNetE yINTERFACE                           idAny/*port*/ rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual interfaces"); }
-	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
-			{ $$ = new AstPort($3,PINNUMINC(),*$5);
-			  AstVar* varp=new AstVar($<fl>2,AstVarType(AstVarType::IFACEREF),*$5,VFlagChildDType(),
-						  new AstIfaceRefDType($<fl>2,"",*$2,*$4));
-			  if ($6) varp->v3error("Unsupported: Arrayed interfaces");
-			  varp->addAttrsp($7);
-			  $$->addNext(varp); }
-	|	portDirNetE yINTERFACE      '.' idAny/*modport*/ idAny/*port*/ rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual interfaces"); }
+		portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
+			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
+			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
+			  $$->addNextNull(VARDONEP($$,$4,$5)); }
+	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig rangeListE sigAttrListE
+			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
+			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
+			  $$->addNextNull(VARDONEP($$,$6,$7)); }
+	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
+			{ $<fl>2->v3error("Unsupported: virtual interfaces"); $$=NULL; }
+	|	portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
+			{ $<fl>2->v3error("Unsupported: virtual interfaces"); $$=NULL; }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
@@ -902,7 +896,7 @@ port<nodep>:			// ==IEEE: port
 	//UNSUP	portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE
 	//UNSUP		{ UNSUP }
 	//
-	|	portDirNetE data_type          portSig variable_dimensionListE sigAttrListE
+	|	portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
 			{ $$=$3; VARDTYPE($2); $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
@@ -3636,6 +3630,9 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
 	return NULL;
     }
     AstVarType type = GRAMMARP->m_varIO;
+    if (dtypep->castIfaceRefDType()) {
+	if (arrayp) { fileline->v3error("Unsupported: Arrayed interfaces"); arrayp=NULL; }
+    }
     if (!dtypep) {  // Created implicitly
 	dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
     } else {  // May make new variables with same type, so clone
