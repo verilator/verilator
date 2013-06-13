@@ -93,7 +93,7 @@ public:
 
 int _mon_check_mcd() {
     PLI_INT32 status;
-    
+
     PLI_UINT32 mcd;
     PLI_BYTE8* filename = (PLI_BYTE8*)"obj_dir/t_vpi_var/mcd_open.tmp";
     mcd = vpi_mcd_open(filename);
@@ -247,13 +247,13 @@ int _mon_check_var() {
 	VlVpiHandle vh10 = vpi_handle(vpiLeftRange, vh4);
 	CHECK_RESULT_NZ(vh10);
 	vpi_get_value(vh10, &tmpValue);
-	CHECK_RESULT(tmpValue.value.integer,2);
+	CHECK_RESULT(tmpValue.value.integer,4);
     }
     {
 	VlVpiHandle vh10 = vpi_handle(vpiRightRange, vh4);
 	CHECK_RESULT_NZ(vh10);
 	vpi_get_value(vh10, &tmpValue);
-	CHECK_RESULT(tmpValue.value.integer,1);
+	CHECK_RESULT(tmpValue.value.integer,3);
     }
     {
 	VlVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
@@ -263,11 +263,11 @@ int _mon_check_var() {
 	VlVpiHandle vh12 = vpi_handle(vpiLeftRange, vh11);
 	CHECK_RESULT_NZ(vh12);
 	vpi_get_value(vh12, &tmpValue);
-	CHECK_RESULT(tmpValue.value.integer,4);
+	CHECK_RESULT(tmpValue.value.integer,2);
 	VlVpiHandle vh13 = vpi_handle(vpiRightRange, vh11);
 	CHECK_RESULT_NZ(vh13);
 	vpi_get_value(vh13, &tmpValue);
-	CHECK_RESULT(tmpValue.value.integer,3);
+	CHECK_RESULT(tmpValue.value.integer,1);
     }
 
     return 0;

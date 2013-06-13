@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix ordering of clock enables with delayed assigns, bug613. [Jeremy Bennett]
 
+***   Fix vpi_iterate on memory words, bug655. [Rich Porter]
+
 
 * Verilator 3.850 2013-06-02
 
