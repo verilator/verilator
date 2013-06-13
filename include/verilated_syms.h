@@ -45,19 +45,20 @@ struct VerilatedCStrCmp {
 //===========================================================================
 /// Verilator range
 
+// See also V3Ast::VNumRange
 class VerilatedRange { 
-    int		m_lhs;
-    int		m_rhs;
+    int		m_left;
+    int		m_right;
 protected:
     friend class VerilatedVar;
     friend class VerilatedScope;
-    VerilatedRange() : m_lhs(0), m_rhs(0) {}
-    void sets(int lhs, int rhs) { m_lhs=lhs; m_rhs=rhs; }
+    VerilatedRange() : m_left(0), m_right(0) {}
+    void sets(int left, int right) { m_left=left; m_right=right; }
 public:
     ~VerilatedRange() {}
-    int lhs() const { return m_lhs; }
-    int rhs() const { return m_rhs; }
-    int bits() const { return (VL_LIKELY(m_lhs>=m_rhs)?(m_lhs-m_rhs+1):(m_rhs-m_lhs+1)); }
+    int left() const { return m_left; }
+    int right() const { return m_right; }
+    int elements() const { return (VL_LIKELY(m_left>=m_right)?(m_left-m_right+1):(m_right-m_left+1)); }
 };
 
 //===========================================================================
