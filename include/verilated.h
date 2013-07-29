@@ -871,7 +871,7 @@ static inline WDataOutP VL_OR_W(int words, WDataOutP owp,WDataInP lwp,WDataInP r
 }
 // EMIT_RULE: VL_CHANGEXOR:  oclean=1; obits=32; lbits==rbits;
 static inline IData VL_CHANGEXOR_W(int words, WDataInP lwp,WDataInP rwp){
-    IData od;
+    IData od = 0;
     for (int i=0; (i < words); i++) od |= (lwp[i] ^ rwp[i]);
     return(od);
 }

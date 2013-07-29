@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix interface ports with comma lists, msg1058. [Ed Lander]
 
+****  Fix clang warnings, bug668.  [Yutetsu Takatsukasa]
+
 
 * Verilator 3.850 2013-06-02
 
