@@ -915,6 +915,9 @@ private:
 	    if (!nodep->valuep()->castInitArray()) { // No dtype at present, perhaps TODO
 		widthCheck(nodep,"Initial value",nodep->valuep(),nodep->width(),nodep->widthMin());
 	    }
+	    if (nodep->isDouble() && !nodep->valuep()->isDouble()) {
+		spliceCvtD(nodep->valuep());
+	    }
 	}
 	UINFO(4,"varWidthed "<<nodep<<endl);
 	//if (debug()) nodep->dumpTree(cout,"  InitOut: ");
