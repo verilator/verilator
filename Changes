@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Fix vpi_iterate on memory words, bug655. [Rich Porter]
 
+****  Fix final duplicate declarations when non-inlined, bug661. [Charlie Brej]
+
 ****  Fix interface ports with comma lists, msg1058. [Ed Lander]
 
 ****  Fix clang warnings, bug668.  [Yutetsu Takatsukasa]

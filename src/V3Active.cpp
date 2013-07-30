@@ -291,7 +291,7 @@ private:
 	}
 	ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_INITIAL);
 	if (!m_scopeFinalp) {
-	    m_scopeFinalp = new AstCFunc(nodep->fileline(), "_final", m_namer.scopep());
+	    m_scopeFinalp = new AstCFunc(nodep->fileline(), "_final_"+m_namer.scopep()->nameDotless(), m_namer.scopep());
 	    m_scopeFinalp->argTypes(EmitCBaseVisitor::symClassVar());
 	    m_scopeFinalp->addInitsp(new AstCStmt(nodep->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
 	    m_scopeFinalp->dontCombine(true);

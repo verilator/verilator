@@ -346,14 +346,10 @@ private:
 	nodep->iterateChildren(*this);
 	// Link to global function
 	if (nodep->formCallTree()) {
-	    if (nodep->name() == "_final") {
-		UINFO(4, "    formCallTree "<<nodep<<endl);
-		AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
-		callp->argTypes("vlSymsp");
-		m_finalFuncp->addStmtsp(callp);
-	    } else {
-		nodep->v3fatalSrc("Unknown CFunc name.  Make code more generic, with a map of func names");
-	    }
+	    UINFO(4, "    formCallTree "<<nodep<<endl);
+	    AstCCall* callp = new AstCCall(nodep->fileline(), nodep);
+	    callp->argTypes("vlSymsp");
+	    m_finalFuncp->addStmtsp(callp);
 	}
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
