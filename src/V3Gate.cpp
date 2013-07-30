@@ -215,7 +215,7 @@ private:
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	m_substTreep = nodep->rhsp();
 	if (!nodep->lhsp()->castNodeVarRef())
-	    clearSimple("ASSIGN(non VARREF)");
+	    clearSimple("ASSIGN(non-VARREF)");
 	else nodep->iterateChildren(*this);
 	// We don't push logic other then assignments/NOTs into SenItems
 	// This avoids a mess in computing what exactly a POSEDGE is

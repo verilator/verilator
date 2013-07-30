@@ -431,11 +431,11 @@ private:
 	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
 	if (nodep->castAssignDly()) {
-	    if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non dly assigns");
+	    if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
 	    m_anyAssignDly = true;
 	    m_inDlyAssign = true;
 	} else {
-	    if (m_anyAssignDly) clearOptimizable(nodep, "Mix of dly/non dly assigns");
+	    if (m_anyAssignDly) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
 	    m_anyAssignComb = true;
 	}
 	if (!nodep->lhsp()->castVarRef()) {

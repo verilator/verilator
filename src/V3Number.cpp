@@ -515,7 +515,7 @@ uint32_t V3Number::toUInt() const {
 
 double V3Number::toDouble() const {
     if (VL_UNLIKELY(!isDouble())) {
-	m_fileline->v3fatalSrc("Real conversion on non real number");
+	m_fileline->v3fatalSrc("Real conversion on non-real number");
     }
     if (VL_UNLIKELY(width()!=64)) {
 	m_fileline->v3fatalSrc("Real operation on wrong sized number");
