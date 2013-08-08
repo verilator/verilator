@@ -68,6 +68,7 @@ void V3LinkLevel::modSortByLevel() {
 	vec.push_back(nodep);
     }
     stable_sort(vec.begin(), vec.end(), CmpLevel()); // Sort the vector
+    UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
 	AstNodeModule* nodep = *it;
 	nodep->unlinkFrBack();
@@ -77,6 +78,7 @@ void V3LinkLevel::modSortByLevel() {
 	AstNodeModule* nodep = *it;
 	v3Global.rootp()->addModulep(nodep);
     }
+    UINFO(9,"modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
 }
 
 //######################################################################
