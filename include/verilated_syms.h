@@ -93,7 +93,8 @@ public:
 //======================================================================
 /// Types
 
-struct VerilatedVarNameMap : public map<const char*, VerilatedVar, VerilatedCStrCmp> {
+class VerilatedVarNameMap : public map<const char*, VerilatedVar, VerilatedCStrCmp> {
+public:
     VerilatedVarNameMap() {}
     ~VerilatedVarNameMap() {}
 };

@@ -297,7 +297,7 @@ struct VerilatedVpiTimedCbsCmp {
     }
 };
 
-struct VerilatedVpiError;
+class VerilatedVpiError;
 
 class VerilatedVpi {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime+1 };	// Maxium callback reason

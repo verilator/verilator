@@ -145,7 +145,7 @@ public:
 # define VL_CELL(instname,type)		///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
-# define VL_MODULE(modname)		struct modname : public VerilatedModule
+# define VL_MODULE(modname)		class modname : public VerilatedModule
 
 /// Constructor, ala SC_CTOR
 # define VL_CTOR(modname)		modname(const char* __VCname="")
@@ -216,9 +216,8 @@ public:  // But internals only - called from VerilatedModule's
 //===========================================================================
 /// Verilator global static information class
 
-struct Verilated {
+class Verilated {
     // MEMBERS
-private:
     // Slow path variables
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 

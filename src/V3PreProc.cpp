@@ -107,7 +107,8 @@ public:
 //*************************************************************************
 // Data for a preprocessor instantiation.
 
-struct V3PreProcImp : public V3PreProc {
+class V3PreProcImp : public V3PreProc {
+public:
     // TYPES
     typedef std::map<string,V3Define> DefinesMap;
     typedef V3InFilter::StrList StrList;

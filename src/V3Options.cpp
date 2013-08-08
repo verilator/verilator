@@ -46,7 +46,8 @@
 //######################################################################
 // V3 Internal state
 
-struct V3OptionsImp {
+class V3OptionsImp {
+public:
     // TYPES
     typedef std::map<string,set<string> > DirMap;	// Directory listing
 
@@ -91,6 +92,7 @@ struct V3OptionsImp {
 	}
     }
     V3OptionsImp() {}
+    ~V3OptionsImp() {}
 };
 
 void V3Options::addIncDirUser(const string& incdir) {
