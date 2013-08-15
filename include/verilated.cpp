@@ -769,6 +769,14 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, destp, (int)output.length(), output.c_str());
 }
 
+void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...) {
+    output = "";
+    va_list ap;
+    va_start(ap,formatp);
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+}
+
 string VL_SFORMATF_NX(const char* formatp, ...) {
     VL_STATIC_OR_THREAD string output;  // static only for speed
     output = "";
