@@ -85,6 +85,7 @@ public:
     }
 
     // METHODS
+    void argWrapList(AstNodeFTaskRef* nodep);
     AstNodeDType* createArray(AstNodeDType* basep, AstRange* rangep, bool isPacked);
     AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
@@ -2470,6 +2471,7 @@ funcRef<nodep>:			// IEEE: part of tf_call
 	//			//	property_instance	property_identifier	property_actual_arg
 	//			//	sequence_instance	sequence_identifier	sequence_actual_arg
 	//			//      let_expression		let_identifier		let_actual_arg
+	//
 		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($2, *$1, $3); }
 	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
 	//UNSUP: idDotted is really just id to allow dotted method calls
@@ -2497,7 +2499,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yaD_IGNORE  '(' exprList ')'		{ $$ = new AstSysIgnore($<fl>1,$3); }
 	//
 	|	yaD_DPI parenE				{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); GRAMMARP->argWrapList($$->castTaskRef()); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
@@ -2542,7 +2544,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
 	//
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList($$->castFuncRef()); }
 	//
 	|	yD_BITS '(' data_type ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' data_type ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
@@ -2598,9 +2600,10 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	;
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
-		/* empty */				{ $$ = NULL; }
-	|	argsExprList				{ $$ = $1; }
-	//UNSUP empty arguments with just ,,
+		argsDottedList				{ $$ = $1; }
+	|	argsExprListE				{ if ($1->castArg() && $1->castArg()->emptyConnectNoNext()) { $1->deleteTree(); $$ = NULL; } // Mis-created when have 'func()'
+	/*cont*/					  else $$ = $1; }
+	|	argsExprListE ',' argsDottedList	{ $$ = $1->addNextNull($3); }
 	;
 
 task_declaration<ftaskp>:	// ==IEEE: task_declaration
@@ -3061,6 +3064,26 @@ commaVRDListE<nodep>:
 argsExprList<nodep>:		// IEEE: part of list_of_arguments (used where ,, isn't legal)
 		expr					{ $$ = $1; }
 	|	argsExprList ',' expr			{ $$ = $1->addNext($3); }
+	;
+
+argsExprListE<nodep>:		// IEEE: part of list_of_arguments
+		argsExprOneE				{ $$ = $1; }
+	|	argsExprListE ',' argsExprOneE		{ $$ = $1->addNext($3); }
+	;
+
+argsExprOneE<nodep>:		// IEEE: part of list_of_arguments
+		/*empty*/				{ $$ = new AstArg(CRELINE(),"",NULL); }
+	|	expr					{ $$ = new AstArg(CRELINE(),"",$1); }
+	;
+
+argsDottedList<nodep>:		// IEEE: part of list_of_arguments
+		argsDotted				{ $$ = $1; }
+	|	argsDottedList ',' argsDotted		{ $$ = $1->addNextNull($3); }
+	;
+
+argsDotted<nodep>:		// IEEE: part of list_of_arguments
+		'.' idAny '(' ')'			{ $$ = new AstArg($1,*$2,NULL); }
+	|	'.' idAny '(' expr ')'			{ $$ = new AstArg($1,*$2,$4); }
 	;
 
 stream_expression<nodep>:	// ==IEEE: stream_expression
@@ -3588,6 +3611,16 @@ const char* V3ParseImp::tokenName(int token) {
 void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
     VARDTYPE(NULL);
+}
+
+void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
+    // Convert list of expressions to list of arguments
+    AstNode* outp = NULL;
+    while (nodep->pinsp()) {
+	AstNode* exprp = nodep->pinsp()->unlinkFrBack();
+	outp = outp->addNext(new AstArg(exprp->fileline(), "", exprp));
+    }
+    if (outp) nodep->addPinsp(outp);
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {

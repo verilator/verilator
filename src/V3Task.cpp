@@ -370,7 +370,8 @@ private:
 	V3TaskConnects tconnects = V3Task::taskConnects(refp, beginp);
 	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 	    AstVar* portp = it->first;
-	    AstNode* pinp = it->second;
+	    AstArg* argp = it->second;
+	    AstNode* pinp = argp->exprp();
 	    portp->unlinkFrBack(); pushDeletep(portp);  // Remove it from the clone (not original)
 	    if (pinp==NULL) {
 		// Too few arguments in function call
@@ -378,6 +379,7 @@ private:
 		UINFO(9, "     Port "<<portp<<endl);
 		UINFO(9, "      pin "<<pinp<<endl);
 		pinp->unlinkFrBack();   // Relinked to assignment below
+		argp->unlinkFrBack()->deleteTree(); // Args no longer needed
 		//
 		if ((portp->isInout()||portp->isOutput()) && pinp->castConst()) {
 		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
@@ -476,7 +478,7 @@ private:
 	V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
 	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 	    AstVar* portp = it->first;
-	    AstNode* pinp = it->second;
+	    AstNode* pinp = it->second->exprp();
 	    if (!pinp) {
 		// Too few arguments in function call
 	    } else {
@@ -532,9 +534,10 @@ private:
 	AstNode* nextpinp;
 	for (AstNode* pinp = refp->pinsp(); pinp; pinp=nextpinp) {
 	    nextpinp = pinp->nextp();
-	    // Move pin to the CCall
-	    pinp->unlinkFrBack();
-	    ccallp->addArgsp(pinp);
+	    // Move pin to the CCall, removing all Arg's
+	    AstNode* exprp = pinp->castArg()->exprp();
+	    exprp->unlinkFrBack();
+	    ccallp->addArgsp(exprp);
 	}
 
 	if (outvscp) {
@@ -1177,20 +1180,20 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, NULL)
     // Extra   pin/expr?  We clean it up
 
+    typedef map<string,int> NameToIndex;
+    NameToIndex nameToIndex;
     V3TaskConnects tconnects;
     if (!nodep->taskp()) nodep->v3fatalSrc("unlinked");
 
     // Find ports
     //map<string,int> name_to_pinnum;
-    int tpinnum = 0;	// Note grammar starts pin counting at one
+    int tpinnum = 0;
     AstVar* sformatp = NULL;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
 	if (AstVar* portp = stmtp->castVar()) {
 	    if (portp->isIO()) {
-		tconnects.push_back(make_pair(portp, (AstNode*)NULL));
-		// Eventually we'll do name based connections
-		// That'll require a AstTpin or somesuch which will replace the ppinnum counting
-		//name_to_pinnum.insert(make_pair(portp->name(), tpinnum));
+		tconnects.push_back(make_pair(portp, (AstArg*)NULL));
+		nameToIndex.insert(make_pair(portp->name(), tpinnum)); // For name based connections
 		tpinnum++;
 		if (portp->attrSFormat()) {
 		    sformatp = portp;
@@ -1201,27 +1204,90 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 	}
     }
 
-    // Connect pins
+    // Find pins
     int ppinnum = 0;
-    for (AstNode* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()) {
-	if (ppinnum >= tpinnum) {
-	    if (sformatp) {
-		tconnects.push_back(make_pair(sformatp, (AstNode*)NULL));
+    bool reorganize = false;
+    for (AstNode* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
+	nextp = pinp->nextp();
+	AstArg* argp = pinp->castArg(); if (!argp) pinp->v3fatalSrc("Non-arg under ftask reference");
+	if (argp->name() != "") {
+	    // By name
+	    NameToIndex::iterator it = nameToIndex.find(argp->name());
+	    if (it == nameToIndex.end()) {
+		pinp->v3error("No such argument '"<<argp->prettyName()
+			      <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+		// We'll just delete it; seems less error prone than making a false argument
+		pinp->unlinkFrBack()->deleteTree(); pinp=NULL;
 	    } else {
-		pinp->v3error("Too many arguments in function call to "<<nodep->taskp()->prettyTypeName());
-		// We'll just delete them; seems less error prone than making a false argument
-		pinp->unlinkFrBackWithNext()->deleteTree(); pinp=NULL;
-		break;
+		if (tconnects[it->second].second) {
+		    pinp->v3error("Duplicate argument '"<<argp->prettyName()
+				  <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+		}
+		argp->name("");  // Can forget name as will add back in pin order
+		tconnects[it->second].second = argp;
+		reorganize = true;
+	    }
+	} else { // By pin number
+	    if (ppinnum >= tpinnum) {
+		if (sformatp) {
+		    tconnects.push_back(make_pair(sformatp, (AstArg*)NULL));
+		    tconnects[ppinnum].second = argp;
+		    tpinnum++;
+		} else {
+		    pinp->v3error("Too many arguments in function call to "<<nodep->taskp()->prettyTypeName());
+		    // We'll just delete it; seems less error prone than making a false argument
+		    pinp->unlinkFrBack()->deleteTree(); pinp=NULL;
+		}
+	    } else {
+		tconnects[ppinnum].second = argp;
 	    }
 	}
-	tconnects[ppinnum].second = pinp;
 	ppinnum++;
     }
 
-    while (ppinnum < tpinnum) {
-	nodep->v3error("Too few arguments in function call to "<<nodep->taskp()->prettyTypeName());
-	UINFO(1,"missing argument for '"<<tconnects[ppinnum].first->prettyName()<<"'"<<endl);
-	ppinnum++;
+    // Connect missing ones
+    for (int i=0; i<tpinnum; ++i) {
+	AstVar* portp = tconnects[i].first;
+	if (!tconnects[i].second || !tconnects[i].second->exprp()) {
+	    AstNode* newvaluep = NULL;
+	    if (!portp->valuep()) {
+		nodep->v3error("Missing argument on non-defaulted argument '"<<portp->prettyName()
+			       <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+		newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+	    } else if (!portp->valuep()->castConst()) {
+		// Problem otherwise is we might have a varref, task call, or something else that only
+		// makes sense in the domain of the function, not the callee.
+		nodep->v3error("Unsupported: Non-constant default value in missing argument '"<<portp->prettyName()
+			       <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+		newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+	    } else {
+		newvaluep = portp->valuep()->cloneTree(true);
+	    }
+	    // To avoid problems with callee needing to know to deleteTree or not, we make this into a pin
+	    UINFO(9,"Default pin for "<<portp<<endl);
+	    AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
+	    if (tconnects[i].second) { // Have a "NULL" pin already defined for it
+		tconnects[i].second->unlinkFrBack()->deleteTree(); tconnects[i].second=NULL;
+	    }
+	    tconnects[i].second = newp;
+	    reorganize = true;
+	}
+	if (tconnects[i].second) { UINFO(9,"Connect "<<portp<<"  ->  "<<tconnects[i].second<<endl); }
+	else { UINFO(9,"Connect "<<portp<<"  ->  NONE"<<endl); }
+    }
+
+    if (reorganize) {
+	// To simplify downstream, put argument list back into pure pinnumber ordering
+	while (nodep->pinsp()) nodep->pinsp()->unlinkFrBack();  // Must unlink each pin, not all pins linked together as one list
+	for (int i=0; i<tpinnum; ++i) {
+	    AstArg* argp = tconnects[i].second; if (!argp) nodep->v3fatalSrc("Lost argument in func conversion");
+	    nodep->addPinsp(argp);
+	}
+    }
+
+    if (debug()>=9) {
+	nodep->dumpTree(cout,"-ftref-out: ");
+	for (int i=0; i<tpinnum; ++i) UINFO(0,"   pin "<<i<<"  conn="<<(void*)tconnects[i].second<<endl);
     }
     return tconnects;
 }

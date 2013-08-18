@@ -525,6 +525,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	nodep->pinsp()->iterateAndNext(*this);
 	puts(")");
     }
+    virtual void visit(AstArg* nodep, AstNUser*) {
+	nodep->exprp()->iterateAndNext(*this);
+    }
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (nodep->varScopep())

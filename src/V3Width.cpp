@@ -1686,7 +1686,8 @@ private:
 	    V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
 	    for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 		AstVar* portp = it->first;
-		AstNode* pinp = it->second;
+		AstArg* argp = it->second;
+		AstNode* pinp = argp->exprp();
 		if (pinp!=NULL) {  // Else argument error we'll find later
 		    if (accept_mode==0) {
 			// Prelim may cause the node to get replaced; we've lost our
@@ -1695,18 +1696,21 @@ private:
 			    && (!pinp->castSFormatF() || pinp->nextp())) {  // Not already done
 			    UINFO(4,"   sformat via metacomment: "<<nodep<<endl);
 			    AstNRelinker handle;
-			    pinp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
+			    argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
 			    AstNode* argsp = NULL;
-			    if (pinp->nextp()) argsp = pinp->nextp()->unlinkFrBackWithNext();
+			    while (AstArg* nextargp = argp->nextp()->castArg()) {
+				argsp = argsp->addNext(nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
+				nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
+			    }
 			    string format;
 			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
 			    else pinp->v3error("Format to $display-like function must have constant format string");
-			    pushDeletep(pinp); pinp=NULL;
+			    pushDeletep(argp); argp=NULL;
 			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
 			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
 				newp->scopeNamep(new AstScopeName(newp->fileline()));
 			    }
-			    handle.relink(newp);
+			    handle.relink(new AstArg(newp->fileline(), "", newp));
 			    // Connection list is now incorrect (has extra args in it).
 			    goto reloop;  // so exit early; next loop will correct it
 			}

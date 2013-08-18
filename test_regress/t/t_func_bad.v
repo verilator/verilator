@@ -9,6 +9,10 @@ module t;
       if (add(3'd1, 3'd2, 3'd3) != 0) $stop;	// Too many args
       x; // Too few args
       if (hasout(3'd1) != 0) $stop;  // outputs
+      //
+      f(.j(1), .no_such(2)); // Name mismatch
+      f(.dup(1), .dup(3)); // Duplicate
+      f(1,2,3); // Too many
    end
 
    function [2:0] add;
@@ -27,6 +31,10 @@ module t;
    function hasout;
       output [2:0] illegal_output;
       hasout = 0;
+   endfunction
+
+   function int f( int j = 1, int dup = 0 );
+      return (j<<16) | dup;
    endfunction
 
 endmodule

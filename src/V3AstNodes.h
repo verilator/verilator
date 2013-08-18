@@ -1294,6 +1294,25 @@ public:
     void        svImplicit(bool flag) { m_svImplicit=flag; }
 };
 
+struct AstArg : public AstNode {
+    // An argument to a function/task
+private:
+    string	m_name;		// Pin name, or "" for number based interconnect
+public:
+    AstArg(FileLine* fl, const string& name, AstNode* exprp)
+	: AstNode(fl)
+	,m_name(name) {
+	setNOp1p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(Arg, ARG)
+    virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
+    virtual void name(const string& name) { m_name = name; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    void	exprp(AstNode* nodep) { addOp1p(nodep); }
+    AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin, NULL if unconnected
+    bool	emptyConnectNoNext() const { return !exprp() && name()=="" && !nextp(); }
+};
+
 struct AstModule : public AstNodeModule {
     // A module declaration
     AstModule(FileLine* fl, const string& name)

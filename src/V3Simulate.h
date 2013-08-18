@@ -607,7 +607,7 @@ private:
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
 	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 	    AstVar* portp = it->first;
-	    AstNode* pinp = it->second;
+	    AstNode* pinp = it->second->exprp();
 	    if (pinp==NULL) {
 		// Too few arguments in function call - ignore it
 	    } else {

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.852 devel
 
+***   Support named function and task arguments. [Chris Randall]
+
 
 * Verilator 3.851 2013-08-15
 
