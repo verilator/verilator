@@ -7,6 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support named function and task arguments. [Chris Randall]
 
+****  Fix --output-split-cfunc to count internal functions. [Chris Randall]
+
+
 
 * Verilator 3.851 2013-08-15
 

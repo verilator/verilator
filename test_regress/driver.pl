@@ -320,6 +320,7 @@ sub new {
 	make_pli => 0,		# need to compile pli
 	sim_time => 1100,
 	benchmark => $opt_benchmark,
+	verbose => $opt_verbose,
 	run_env => '',
 	# All compilers
 	v_flags => [split(/\s+/,(" -f input.vc "

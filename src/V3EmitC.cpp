@@ -58,8 +58,9 @@ public:
     int	splitFilenum() const { return m_splitFilenum; }
     int	splitFilenumInc() { m_splitSize = 0; return ++m_splitFilenum; }
     int splitSize() const { return m_splitSize; }
-    void splitSizeInc(AstNode* nodep) { m_splitSize += EmitCBaseCounterVisitor(nodep).count(); }
-    bool splitNeeded() { return (splitSize() && v3Global.opt.outputSplit() > 1
+    void splitSizeInc(int count) { m_splitSize += count; }
+    void splitSizeInc(AstNode* nodep) { splitSizeInc(EmitCBaseCounterVisitor(nodep).count()); }
+    bool splitNeeded() { return (splitSize() && v3Global.opt.outputSplit()
 				 && v3Global.opt.outputSplit() < splitSize()); }
 
     // METHODS
@@ -1418,9 +1419,11 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
 		puts("// Coverage Declarations\n");
 	    }
 	    nodep->accept(*this);
+	    splitSizeInc(nodep);
 	}
     }
     puts("}\n");
+    splitSizeInc(10);
 }
 
 void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
@@ -1444,6 +1447,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	puts(	"  \"page\",pagep,");
 	puts(	"  \"comment\",commentp);\n");
 	puts("}\n");
+	splitSizeInc(10);
     }
 }
 
@@ -1453,6 +1457,7 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     emitTextSection(AstType::atSCDTOR);
     if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
     puts("}\n");
+    splitSizeInc(10);
 }
 
 void EmitCImp::emitSavableImp(AstNodeModule* modp) {
@@ -1631,6 +1636,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("}\n");
 #endif
     puts("}\n");
+    splitSizeInc(10);
 
     //
     puts("\nvoid "+modClassName(modp)+"::_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+") {\n");
@@ -1651,6 +1657,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts(    "}\n");
 #endif
     puts("}\n");
+    splitSizeInc(10);
 }
 
 //----------------------------------------------------------------------
@@ -2111,6 +2118,7 @@ class EmitCTrace : EmitCStmts {
 	       +", &"+topClassName()+"::traceFull"
 	       +", &"+topClassName()+"::traceChg, this);\n");
 	puts("}\n");
+	splitSizeInc(10);
 
 	puts("void "+topClassName()+"::traceInit("
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
@@ -2123,6 +2131,7 @@ class EmitCTrace : EmitCStmts {
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
 	puts("vcdp->scopeEscape('.');\n");  // Restore so SystemPerl traced files won't break
 	puts("}\n");
+	splitSizeInc(10);
 
 	puts("void "+topClassName()+"::traceFull("
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
@@ -2131,6 +2140,7 @@ class EmitCTrace : EmitCStmts {
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("t->traceFullThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
+	splitSizeInc(10);
 
 	puts("\n//======================\n\n");
     }
@@ -2147,6 +2157,7 @@ class EmitCTrace : EmitCStmts {
 	puts("t->traceChgThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
 	puts("}\n");
+	splitSizeInc(10);
 
 	puts("\n//======================\n\n");
     }

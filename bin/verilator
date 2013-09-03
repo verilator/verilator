@@ -300,7 +300,8 @@ descriptions in the next sections for more information.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --output-split <bytes>      Split .cpp files into pieces
-    --output-split-cfuncs <statements>   Split .ccp functions
+    --output-split-cfuncs <statements>   Split .cpp functions
+    --output-split-ctrace <statements>   Split tracing functions
     --pins-bv <bits>            Specify types for top level ports
     --pins-sc-uint              Specify types for top level ports
     --pins-sc-biguint           Specify types for top level ports
@@ -809,6 +810,11 @@ enable GCC to compile faster, at a small loss in performance that gets
 worse with decreasing split values.  Note that this option is stronger than
 --output-split in the sense that --output-split will not split inside a
 function.
+
+=item --output-split-ctrace I<statements>
+
+Enables splitting trace functions in the output .cpp/.sp files into
+multiple functions.  Defaults to same setting as --output-split-cfuncs.
 
 =item --pins64
 
