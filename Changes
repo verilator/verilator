@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix --output-split-cfunc to count internal functions. [Chris Randall]
 
+****  Fix crash on 32-bit Ubuntu, bug670. [Mark Jackson Pulver]
+
 
 
 * Verilator 3.851 2013-08-15

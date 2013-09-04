@@ -965,6 +965,14 @@ void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only
     v3Global.rootp()->dumpTreeFile(filename);
 }
 
+void AstNode::checkIter() const {
+    if (m_iterpp) {
+	dumpPtrs(cout);
+	// Perhaps something forgot to clear m_iterpp?
+	this->v3fatalSrc("Iteration link should be NULL");
+    }
+}
+
 void AstNode::dumpPtrs(ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;
     os<<" back="<<(void*)backp();

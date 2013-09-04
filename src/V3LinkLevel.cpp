@@ -71,6 +71,7 @@ void V3LinkLevel::modSortByLevel() {
     UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
 	AstNodeModule* nodep = *it;
+	nodep->clearIter();  // Because we didn't iterate to find the node pointers, may have a stale m_iterp() needing cleanup
 	nodep->unlinkFrBack();
     }
     if (v3Global.rootp()->modulesp()) v3Global.rootp()->v3fatalSrc("Unlink didn't work");

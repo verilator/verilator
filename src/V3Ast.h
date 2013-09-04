@@ -1153,6 +1153,8 @@ public:
     bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
     void	deleteTree();	// Always deletes the next link
     void	checkTree();  // User Interface version
+    void	checkIter() const;
+    void	clearIter() { m_iterpp=NULL; }
     void	dumpPtrs(ostream& str=cout) const;
     void	dumpTree(ostream& str=cout, const string& indent="    ", int maxDepth=0);
     void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
