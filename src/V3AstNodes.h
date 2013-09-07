@@ -3378,6 +3378,7 @@ struct AstFEof : public AstNodeUniop {
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
+    virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
     AstNode*	filep() const { return lhsp(); }
 };
 
@@ -3391,6 +3392,7 @@ struct AstFGetC : public AstNodeUniop {
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*64; }
+    virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
     AstNode*	filep() const { return lhsp(); }
 };
 

@@ -815,9 +815,10 @@ private:
 
     bool varNotReferenced(AstNode* nodep, AstVar* varp, int level=0) {
 	// Return true if varp never referenced under node.
-	// Return false if referenced, or tree too deep to be worth it
+	// Return false if referenced, or tree too deep to be worth it, or side effects
 	if (!nodep) return true;
 	if (level>2) return false;
+	if (nodep->isPure()) return false;  // For example a $fgetc can't be reordered
 	if (nodep->castNodeVarRef() && nodep->castNodeVarRef()->varp()==varp) return false;
 	return (varNotReferenced  (nodep->nextp(),varp,level+1)
 		&& varNotReferenced(nodep->op1p(),varp,level+1)

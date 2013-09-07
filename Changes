@@ -7,10 +7,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support named function and task arguments. [Chris Randall]
 
+****  Fix ordering of $fgetc, msg1229. [Frederic Requin]
+
 ****  Fix --output-split-cfunc to count internal functions. [Chris Randall]
 
 ****  Fix crash on 32-bit Ubuntu, bug670. [Mark Jackson Pulver]
-
 
 
 * Verilator 3.851 2013-08-15

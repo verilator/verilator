@@ -15,6 +15,10 @@ module t;
    reg [16*8:1]	letterz;
    real		r;
 
+   reg [7:0] 	v_a,v_b,v_c,v_d;
+   reg [31:0] 	v_worda;
+   reg [31:0] 	v_wordb;
+
 `ifdef TEST_VERBOSE
  `define verbose 1'b1
 `else
@@ -173,6 +177,22 @@ module t;
 	 if (`verbose) $write("c=%0d l=%x\n", chars, letterl);
 	 if (chars != 1) $stop;
 	 if (letterl != "\n") $stop;
+
+	 // msg1229
+	 v_a = $fgetc(file);
+	 v_b = $fgetc(file);
+	 v_c = $fgetc(file);
+	 v_d = $fgetc(file);
+	 v_worda = { v_d, v_c, v_b, v_a };
+	 if (v_worda != "4321") $stop;
+
+	 v_wordb[7:0]   = $fgetc(file);
+	 v_wordb[15:8]  = $fgetc(file);
+	 v_wordb[23:16] = $fgetc(file);
+	 v_wordb[31:24] = $fgetc(file);
+	 if (v_wordb != "9876") $stop;
+
+	 if ($fgetc(file) != "\n") $stop;
 
 	 $fclose(file);
       end
