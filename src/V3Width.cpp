@@ -468,9 +468,9 @@ private:
 		if (m_doGenerate) {
 		    UINFO(5, "Selection index out of range inside generate."<<endl);
 		} else {
-		    nodep->v3error("Selection index out of range: "
-				   <<nodep->msbConst()<<":"<<nodep->lsbConst()
-				   <<" outside "<<frommsb<<":"<<fromlsb);
+		    nodep->v3warn(SELRANGE,"Selection index out of range: "
+				  <<nodep->msbConst()<<":"<<nodep->lsbConst()
+				  <<" outside "<<frommsb<<":"<<fromlsb);
 		    UINFO(1,"    Related node: "<<nodep<<endl);
 		}
 	    }

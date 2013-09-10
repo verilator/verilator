@@ -11,10 +11,11 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-q{%Error: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Error: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Error: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Error: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
+q{%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: Use .*
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
 %Error: Exiting due to .*},
 	 );
 

@@ -11,7 +11,8 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>$Self->{v3},
 	 expect=>
-'%Error: t/t_select_bad_range2.v:\d+: Selection index out of range: 3:2 outside 1:0
+'%Warning-SELRANGE: t/t_select_bad_range2.v:\d+: Selection index out of range: 3:2 outside 1:0
+%Warning-SELRANGE: Use .*
 %Error: Exiting due to.*',
 	 );
 

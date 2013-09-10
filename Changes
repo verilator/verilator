@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support named function and task arguments. [Chris Randall]
 
+***   Report SELRANGE warning for non-generate if, bug675. [Roland Kruse]
+
 ****  Fix ordering of $fgetc, msg1229. [Frederic Requin]
 
 ****  Fix --output-split-cfunc to count internal functions. [Chris Randall]
