@@ -4,7 +4,7 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
-* Verilator 3.853 devel
+* Verilator 3.853 2013-09-30
 
 ****  Add --no-order-clock-delay to work around bug613. [Charlie Brej]
 
