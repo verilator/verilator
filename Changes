@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.853 devel
 
+****  Add --no-order-clock-delay to work around bug613. [Charlie Brej]
+
 
 * Verilator 3.852 2013-09-29
 

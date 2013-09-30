@@ -299,6 +299,7 @@ descriptions in the next sections for more information.
      -O3                        High performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
+    --no-order-clock-delay      Disable ordering clock enable assignments
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .cpp functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -788,6 +789,12 @@ mappings of optimizations to -O letters.
 
 Specify the name for the final executable built if using --exe.  Defaults
 to the --prefix if not specified.
+
+=item --no-order-clock-delay
+
+Rarely needed.  Disables a bug fix for ordering of clock enables with
+delayed assignments.  This flag should only be used when suggested by the
+developers.
 
 =item --output-split I<bytes>
 

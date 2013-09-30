@@ -738,6 +738,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-l2name", flag/*ref*/) )	{ m_l2Name = flag; }
 	    else if ( onoff   (sw, "-lint-only", flag/*ref*/) )	{ m_lintOnly = flag; }
 	    else if ( !strcmp (sw, "-no-pins64") )		{ m_pinsBv = 33; }
+	    else if ( onoff   (sw, "-order-clock-delay", flag/*ref*/) )	{ m_orderClockDly = flag; }
 	    else if ( !strcmp (sw, "-pins64") )			{ m_pinsBv = 65; }
 	    else if ( onoff   (sw, "-pins-sc-uint", flag/*ref*/) ){ m_pinsScUint = flag; if (!m_pinsScBigUint) m_pinsBv = 65; }
 	    else if ( onoff   (sw, "-pins-sc-biguint", flag/*ref*/) ){ m_pinsScBigUint = flag; m_pinsBv = 513; }
@@ -1203,6 +1204,7 @@ V3Options::V3Options() {
     m_lintOnly = false;
     m_makeDepend = true;
     m_makePhony = false;
+    m_orderClockDly = true;
     m_outFormatOk = false;
     m_warnFatal = true;
     m_pinsBv = 65;

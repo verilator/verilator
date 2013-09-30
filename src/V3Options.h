@@ -74,6 +74,7 @@ class V3Options {
     bool	m_inhibitSim;	// main switch: --inhibit-sim
     bool	m_l2Name;	// main switch: --l2name
     bool	m_lintOnly;	// main switch: --lint-only
+    bool	m_orderClockDly;// main switch: --order-clock-delay
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
     bool	m_warnFatal;	// main switch: --warnFatal
     bool	m_pinsScUint;   // main switch: --pins-sc-uint
@@ -214,6 +215,7 @@ class V3Options {
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
     bool traceUnderscore() const { return m_traceUnderscore; }
+    bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
     bool warnFatal() const { return m_warnFatal; }
