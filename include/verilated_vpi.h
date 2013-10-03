@@ -38,7 +38,7 @@
 // Internal macros
 
 #define _VL_VPI_INTERNAL    VerilatedVpi::error_info()->setMessage(vpiInternal)->setMessage
-#define _VL_VPI_SYSTEM	     VerilatedVpi::error_info()->setMessage(vpiSystem  )->setMessage
+#define _VL_VPI_SYSTEM      VerilatedVpi::error_info()->setMessage(vpiSystem  )->setMessage
 #define _VL_VPI_ERROR       VerilatedVpi::error_info()->setMessage(vpiError   )->setMessage
 #define _VL_VPI_WARNING     VerilatedVpi::error_info()->setMessage(vpiWarning )->setMessage
 #define _VL_VPI_NOTICE      VerilatedVpi::error_info()->setMessage(vpiNotice  )->setMessage
@@ -52,6 +52,8 @@
 // Implementation
 
 #include <set>
+#include <list>
+#include <map>
 
 #define VL_DEBUG_IF_PLI VL_DEBUG_IF
 #define VL_VPI_LINE_SIZE 8192
@@ -301,7 +303,7 @@ class VerilatedVpiError;
 
 class VerilatedVpi {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime+1 };	// Maxium callback reason
-    typedef set<VerilatedVpioCb*> VpioCbSet;
+    typedef list<VerilatedVpioCb*> VpioCbList;
     typedef set<pair<QData,VerilatedVpioCb*>,VerilatedVpiTimedCbsCmp > VpioTimedCbs;
 
     struct product_info {
@@ -309,7 +311,7 @@ class VerilatedVpi {
 	PLI_BYTE8* version;
     };
 
-    VpioCbSet		m_cbObjSets[CB_ENUM_MAX_VALUE];	// Callbacks for each supported reason
+    VpioCbList		m_cbObjLists[CB_ENUM_MAX_VALUE];	// Callbacks for each supported reason
     VpioTimedCbs	m_timedCbs;	// Time based callbacks
     VerilatedVpiError*  m_errorInfop;	// Container for vpi error info
 
@@ -325,17 +327,14 @@ public:
 	    }
 	}
 	if (VL_UNLIKELY(vop->reason() >= CB_ENUM_MAX_VALUE)) vl_fatal(__FILE__,__LINE__,"", "vpi bb reason too large");
-	s_s.m_cbObjSets[vop->reason()].insert(vop);
+	s_s.m_cbObjLists[vop->reason()].push_back(vop);
     }
     static void cbTimedAdd(VerilatedVpioCb* vop) {
 	s_s.m_timedCbs.insert(make_pair(vop->time(), vop));
     }
     static void cbReasonRemove(VerilatedVpioCb* cbp) {
-	VpioCbSet& cbObjSet = s_s.m_cbObjSets[cbp->reason()];
-	VpioCbSet::iterator it=cbObjSet.find(cbp);
-	if (VL_LIKELY(it != cbObjSet.end())) {
-	    cbObjSet.erase(it);
-	}
+	VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
+        cbObjList.remove(cbp);
     }
     static void cbTimedRemove(VerilatedVpioCb* cbp) {
 	VpioTimedCbs::iterator it=s_s.m_timedCbs.find(make_pair(cbp->time(),cbp));
@@ -364,8 +363,8 @@ public:
 	}
     }
     static void callCbs(vluint32_t reason) {
-	VpioCbSet& cbObjSet = s_s.m_cbObjSets[reason];
-	for (VpioCbSet::iterator it=cbObjSet.begin(); it!=cbObjSet.end();) {
+	VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
+	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
 	    VerilatedVpioCb* vop = *it;
 	    ++it;  // iterator may be deleted by callback
 	    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  reason_callback %d %p\n",reason,vop););
@@ -373,8 +372,9 @@ public:
 	}
     }
     static void callValueCbs() {
-	VpioCbSet& cbObjSet = s_s.m_cbObjSets[cbValueChange];
-	for (VpioCbSet::iterator it=cbObjSet.begin(); it!=cbObjSet.end();) {
+	VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
+        set<VerilatedVpioVar*> update; // set of objects to update after callbacks
+	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
 	    VerilatedVpioCb* vop = *it;
 	    ++it;  // iterator may be deleted by callback
 	    if (VerilatedVpioVar* varop = VerilatedVpioVar::castp(vop->cb_datap()->obj)) {
@@ -386,11 +386,14 @@ public:
 		if (memcmp(prevDatap, newDatap, varop->entSize())) {
 		    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  value_callback %p %s v[0]=%d\n",
 					      vop,varop->fullname(), *((CData*)newDatap)););
-		    memcpy(prevDatap, newDatap, varop->entSize());
+                    update.insert(varop);
 		    vpi_get_value(vop->cb_datap()->obj, vop->cb_datap()->value);
 		    (vop->cb_rtnp()) (vop->cb_datap());
 		}
 	    }
+	}
+	for (set<VerilatedVpioVar*>::iterator it=update.begin(); it!=update.end(); it++ ) {
+	    memcpy((*it)->prevDatap(), (*it)->varDatap(), (*it)->entSize());
 	}
     }
 

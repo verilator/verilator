@@ -5,6 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.854 devel
 
+****  Fix multiple VPI variable callbacks, bug679. [Rich Porter]
 
 
 * Verilator 3.853 2013-09-30

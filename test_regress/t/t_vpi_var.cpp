@@ -30,13 +30,28 @@
 
 #define TEST_MSG if (0) printf
 
+struct countdown {
+    int        count;
+    vpiHandle  callback;
+    countdown(int count) : count(count) {};
+    int decrement() {
+	if (!--count) {
+	    vpi_remove_cb(callback);
+	}
+        return count;
+    }
+    PLI_BYTE8* ptr() {
+	return (PLI_BYTE8*)this;
+    }
+};
+
 unsigned int main_time = false;
 unsigned int callback_count = false;
 unsigned int callback_count_half = false;
 unsigned int callback_count_quad = false;
 unsigned int callback_count_strs = false;
 unsigned int callback_count_strs_max = 500;
-
+countdown cd(200);
 //======================================================================
 
 
@@ -142,6 +157,10 @@ int _value_callback(p_cb_data cb_data) {
     return 0;
 }
 
+int _value_callback_countdown(p_cb_data cb_data) {
+    return ((countdown*)(cb_data->user_data))->decrement() < 1;
+};
+
 int _value_callback_half(p_cb_data cb_data) {
     CHECK_RESULT(cb_data->value->value.integer*2+10, main_time);
     callback_count_half++;
@@ -170,9 +189,14 @@ int _mon_check_value_callbacks() {
     cb_data.cb_rtn = _value_callback;
     cb_data.obj = vh1;
     cb_data.value = &v;
-
     vpiHandle vh = vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(vh);
+
+    // add another callback to same signal
+    cb_data.cb_rtn = _value_callback_countdown;
+    cb_data.user_data = cd.ptr();
+    cd.callback = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(cd.callback);
 
     vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.half_count", NULL);
     CHECK_RESULT_NZ(vh1);
@@ -628,6 +652,7 @@ int main(int argc, char **argv, char **env) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
+    CHECK_RESULT(cd.count, 0)
     if (!Verilated::gotFinish()) {
 	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }
