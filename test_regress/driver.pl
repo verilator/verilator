@@ -713,7 +713,7 @@ sub execute {
 		   @{$param{all_run_flags}},
 		          );
 	if ($param{iv_pli}) {
-	    unshift @cmd, "vvp -m $self->{obj_dir}/libvpi.so";
+	    unshift @cmd, "vvp -n -m $self->{obj_dir}/libvpi.so"; # don't enter command line on $stop, include vpi
 	}
 	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
@@ -1212,7 +1212,7 @@ sub _make_top_v {
     print $fh "   initial begin\n";
     print $fh "      \$display(\"-Tracing Waves to Dumpfile: $self->{vcd_filename}\");\n";
     print $fh "      \$dumpfile(\"$self->{vcd_filename}\");\n";
-    print $fh "      \$dumpvars(12, t);\n";
+    print $fh "      \$dumpvars(0, top);\n";
     print $fh "   end\n";
     print $fh "`endif\n";
 
