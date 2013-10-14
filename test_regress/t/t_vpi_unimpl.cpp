@@ -25,6 +25,8 @@
 
 #include <iostream>
 
+#include "TestVpi.h"
+
 // __FILE__ is too long
 #define FILENM "t_vpi_unimpl.cpp"
 
@@ -32,20 +34,6 @@
 
 unsigned int main_time = false;
 unsigned int callback_count = false;
-
-//======================================================================
-
-
-class VlVpiHandle {
-    /// For testing, etc, wrap vpiHandle in an auto-releasing class
-    vpiHandle m_handle;
-public:
-    VlVpiHandle() : m_handle(NULL) { }
-    VlVpiHandle(vpiHandle h) : m_handle(h) { }
-    ~VlVpiHandle() { if (m_handle) { vpi_release_handle(m_handle); m_handle=NULL; } }
-    operator vpiHandle () const { return m_handle; }
-    inline VlVpiHandle& operator= (vpiHandle h) { m_handle = h; return *this; }
-};
 
 //======================================================================
 
@@ -88,7 +76,7 @@ public:
     CHECK_RESULT_CSTR(got+strspn(got, " "), exp)
 
 int _mon_check_unimpl(p_cb_data cb_data) {
-    static VlVpiHandle cb, clk_h;
+    static TestVpiHandle cb, clk_h;
     if (cb_data) {
 	// this is the callback
         s_vpi_error_info info;

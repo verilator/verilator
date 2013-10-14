@@ -5,7 +5,7 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
-`ifdef VERILATOR
+`ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
 import "DPI-C" context function integer mon_check();
@@ -45,7 +45,9 @@ extern "C" int mon_check();
 
    // Test loop
    initial begin
+      count = 0;
       onebit = 1'b0;
+      fourthreetwoone[3] = 0; // stop icarus optimizing away
       text_byte = "B";
       text_half = "Hf";
       text_word = "Word";
@@ -53,13 +55,18 @@ extern "C" int mon_check();
       text = "Verilog Test module";
 `ifdef VERILATOR
       status = $c32("mon_check()");
-`else
-      status = mon_check();
+`endif
+`ifdef iverilog
+     status = $mon_check();
+`endif
+`ifndef USE_VPI_NOT_DPI
+     status = mon_check();
 `endif
       if (status!=0) begin
 	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
 	 $stop;
       end
+      $write("%%Info: Checking results\n");
       if (onebit != 1'b1) $stop;
       if (quads[2] != 62'h12819213_abd31a1c) $stop;
       if (quads[3] != 62'h1c77bb9b_3784ea09) $stop;
@@ -83,16 +90,20 @@ extern "C" int mon_check();
 
    genvar i;
    generate
-   for (i=1;i<=128;i++) begin : arr
+   for (i=1; i<=128; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
    end endgenerate
 
-endmodule
+endmodule : t
 
 module sub;
    reg subsig1 /*verilator public_flat_rd*/;
    reg subsig2 /*verilator public_flat_rd*/;
-endmodule
+`ifdef iverilog
+   // stop icarus optimizing signals away
+   wire redundant = subsig1 | subsig2;
+`endif
+endmodule : sub
 
 module arr;
 
@@ -103,6 +114,11 @@ module arr;
 
    reg 		  check /*verilator public_flat_rw*/;
    reg          verbose /*verilator public_flat_rw*/;
+
+   initial begin
+      sig = {LENGTH{1'b0}};
+      rfr = {LENGTH{1'b0}};
+   end
 
    always @(posedge check) begin
      if (verbose) $display("%m : %x %x", sig, rfr);

@@ -182,6 +182,10 @@ class VerilatedVpioVar : public VerilatedVpio {
 protected:
     void*			m_varDatap;	// varp()->datap() adjusted for array entries
     vlsint32_t			m_index;
+    const VerilatedRange&	get_range() {
+	// Determine number of dimensions and return outermost
+	return (m_varp->dims()>1) ? m_varp->array() : m_varp->range();
+    }
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
 	: m_varp(varp), m_scopep(scopep), m_index(0) {
@@ -200,10 +204,12 @@ public:
     vluint8_t mask_byte(int idx) { return m_mask.u8[idx & 3]; }
     vluint32_t entSize() const { return m_entSize; }
     const vluint32_t index() { return m_index; }
-    virtual const vluint32_t type() { return (varp()->dims()>1) ? vpiMemory : vpiReg; /* but might be wire, logic */ }
-    virtual const vluint32_t size() { return range().elements(); }
-    const VerilatedRange& range() { return m_varp->dims()?m_varp->array():m_varp->range(); }
-    virtual const VerilatedRange* rangep() { return &range(); }
+    virtual const vluint32_t type() {
+      if (varp()->vldir() != vpiNoDirection) return vpiPort;
+      return (varp()->dims()>1) ? vpiMemory : vpiReg; /* but might be wire, logic */
+    }
+    virtual const vluint32_t size() { return get_range().elements(); }
+    virtual const VerilatedRange* rangep() { return &get_range(); }
     virtual const char* name() { return m_varp->name(); }
     virtual const char* fullname() {
 	VL_STATIC_OR_THREAD string out;

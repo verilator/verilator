@@ -11,7 +11,7 @@ compile (
     make_top_shell => 0,
     make_main => 0,
     make_pli => 1,
-    iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI -s t -o obj_dir/iv_t_vpi_memory/simiv"],
+    iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI"],
     v_flags2 => ["+define+USE_VPI_NOT_DPI"],
     verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --no-l2name $Self->{t_dir}/t_vpi_memory.cpp"],
     );

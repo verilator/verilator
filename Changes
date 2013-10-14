@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix multiple VPI variable callbacks, bug679. [Rich Porter]
 
+****  Fix vpi_get of vpiSize, bug680. [Rich Porter]
+
 
 * Verilator 3.853 2013-09-30
 
