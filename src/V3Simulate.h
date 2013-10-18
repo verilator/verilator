@@ -603,20 +603,25 @@ private:
 	if (m_params) { V3Width::widthParamsEdit(funcp); } funcp=NULL; // Make sure we've sized the function
 	funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
-	// Note we'd need a stack if we allowed recursive functions!
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+	// Must do this in two steps, eval all params, then apply them
+	// Otherwise chained functions may have the wrong results
 	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 	    AstVar* portp = it->first;
 	    AstNode* pinp = it->second->exprp();
-	    if (pinp==NULL) {
-		// Too few arguments in function call - ignore it
-	    } else {
+	    if (pinp) {  // Else too few arguments in function call - ignore it
 		if (portp->isOutput()) {
 		    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
 		    return;
 		}
 		// Evaluate pin value
 		pinp->accept(*this);
+	    }
+	}
+	for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+	    AstVar* portp = it->first;
+	    AstNode* pinp = it->second->exprp();
+	    if (pinp) {  // Else too few arguments in function call - ignore it
 		// Apply value to the function
 		if (!m_checkOnly && optimizable()) {
 		    newNumber(portp)->opAssign(*fetchNumber(pinp));
