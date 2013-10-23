@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.854 devel
 
+****  Support vpi_get of vpiSuppressVal, bug687. [Varun Koyyalagunta]
+
 ****  Fix evaluation of chained parameter functions, bug684. [Ted Campbell]
 
 ****  Fix multiple VPI variable callbacks, bug679. [Rich Porter]

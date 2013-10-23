@@ -1015,6 +1015,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
 		return;
 	    }
+	} else if (value_p->format == vpiSuppressVal) {
+	    return;
 	}
         _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s",
 		      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
