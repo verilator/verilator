@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Support vpi_get of vpiSuppressVal, bug687. [Varun Koyyalagunta]
 
+****  Support vpi_get_time, bug688. [Varun Koyyalagunta]
+
 ****  Fix evaluation of chained parameter functions, bug684. [Ted Campbell]
 
 ****  Fix multiple VPI variable callbacks, bug679. [Rich Porter]

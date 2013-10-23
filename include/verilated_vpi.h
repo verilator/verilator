@@ -1308,7 +1308,21 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 // time processing
 
 void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
-    _VL_VPI_UNIMP(); return;
+    if (VL_UNLIKELY(!time_p)) {
+	_VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_get_time with NULL value pointer");
+	return;
+    }
+    if (time_p->type == vpiSimTime) {
+	QData qtime = VL_TIME_Q();
+	IData itime[2];
+	VL_SET_WQ(itime, qtime);
+	time_p->low = itime[0];
+	time_p->high = itime[1];
+	return;
+    }
+    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported type (%d)",
+		  VL_FUNC, time_p->type);
+    return;
 }
 
 // I/O routines
