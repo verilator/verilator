@@ -770,6 +770,7 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
 }
 
 void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...) {
+    if (obits_ignored) {}
     output = "";
     va_list ap;
     va_start(ap,formatp);
