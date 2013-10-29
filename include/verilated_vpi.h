@@ -340,7 +340,12 @@ public:
     }
     static void cbReasonRemove(VerilatedVpioCb* cbp) {
 	VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
-        cbObjList.remove(cbp);
+	// We do not remove it now as we may be iterating the list,
+	// instead set to NULL and will cleanup later
+	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end(); ) {
+	    if (*it == cbp) it = cbObjList.erase(it);
+	    else ++it;
+	}
     }
     static void cbTimedRemove(VerilatedVpioCb* cbp) {
 	VpioTimedCbs::iterator it=s_s.m_timedCbs.find(make_pair(cbp->time(),cbp));
@@ -371,8 +376,11 @@ public:
     static void callCbs(vluint32_t reason) {
 	VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
 	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
-	    VerilatedVpioCb* vop = *it;
-	    ++it;  // iterator may be deleted by callback
+	    if (VL_UNLIKELY(!*it)) { // Deleted earlier, cleanup
+		it = cbObjList.erase(it);
+		continue;
+	    }
+	    VerilatedVpioCb* vop = *it++;
 	    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  reason_callback %d %p\n",reason,vop););
 	    (vop->cb_rtnp()) (vop->cb_datap());
 	}
@@ -381,8 +389,11 @@ public:
 	VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
         set<VerilatedVpioVar*> update; // set of objects to update after callbacks
 	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
-	    VerilatedVpioCb* vop = *it;
-	    ++it;  // iterator may be deleted by callback
+	    if (VL_UNLIKELY(!*it)) { // Deleted earlier, cleanup
+		it = cbObjList.erase(it);
+		continue;
+	    }
+	    VerilatedVpioCb* vop = *it++;
 	    if (VerilatedVpioVar* varop = VerilatedVpioVar::castp(vop->cb_datap()->obj)) {
 		void* newDatap = varop->varDatap();
 		void* prevDatap = varop->prevDatap();  // Was malloced when we added the callback
