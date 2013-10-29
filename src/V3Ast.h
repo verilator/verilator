@@ -1597,6 +1597,7 @@ public:
     AstMemberDType* membersp() const { return op1p()->castMemberDType(); } // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
+    bool packedUnsup() const { return true; }  // packed() but as don't support unpacked, presently all structs
     void clearCache() { m_members.clear(); }
     void repairMemberCache();
     AstMemberDType* findMember(const string& name) const {

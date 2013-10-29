@@ -3225,6 +3225,13 @@ section for more details.
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
 
+=item UNPACKED
+
+Warns that unpacked structs and unions are not supported.
+
+Ignoring this warning will make Verilator treat the structure as packed,
+which may make Verilator simulations differ from other simulators.
+
 =item UNSIGNED
 
 Warns that you are comparing a unsigned value in a way that implies it is

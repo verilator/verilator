@@ -89,7 +89,7 @@ private:
 	AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();
 	AstStructDType *structp = varp->dtypeSkipRefp()->castStructDType();
 	bool isArray = arrayp;
-	bool isStruct = structp && structp->packed();
+	bool isStruct = structp && structp->packedUnsup();
 	int elements = isArray ? arrayp->elementsConst() : 1;
 	if (isArray && (elements > DETECTARRAY_MAX_INDEXES)) {
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)

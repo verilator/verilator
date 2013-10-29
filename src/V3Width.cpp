@@ -1088,7 +1088,9 @@ private:
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
 	UINFO(5,"   NODECLASS "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree("-class-in--");
-	if (!nodep->packed()) nodep->v3error("Unsupported: Unpacked struct/union");
+	if (!nodep->packed()) {
+	    nodep->v3warn(UNPACKED, "Unsupported: Unpacked struct/union");
+	}
 	nodep->iterateChildren(*this);  // First size all members
 	nodep->repairMemberCache();
 	// Determine bit assignments and width

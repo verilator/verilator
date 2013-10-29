@@ -5,9 +5,11 @@
 
 module x;
 
+   // verilator lint_off UNPACKED
    typedef struct {
       int 	  a;
    } notpacked_t;
+   // verilator lint_on UNPACKED
 
    typedef struct packed {
       notpacked_t b;

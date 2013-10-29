@@ -389,7 +389,7 @@ private:
 	VNumRange fromRange = fromdata.m_fromRange;
 	if (ddtypep->castBasicDType()
 	    || (ddtypep->castNodeClassDType()
-		&& ddtypep->castNodeClassDType()->packed())) {
+		&& ddtypep->castNodeClassDType()->packedUnsup())) {
 	    AstSel* newp = NULL;
 	    if (nodep->castSelPlus()) {
 		if (fromRange.littleEndian()) {

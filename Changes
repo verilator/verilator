@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.854 devel
 
+***   Add UNPACKED warning to convert unpacked structs. [Jeremy Bennett]
+
 ****  Support vpi_get of vpiSuppressVal, bug687. [Varun Koyyalagunta]
 
 ****  Support vpi_get_time, bug688. [Varun Koyyalagunta]

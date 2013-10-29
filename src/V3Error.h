@@ -93,6 +93,7 @@ public:
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
+	UNPACKED,	// Unsupported unpacked
 	UNSIGNED,	// Comparison is constant due to unsigned arithmetic
 	UNUSED,		// No receivers
 	VARHIDDEN,	// Hiding variable
@@ -129,7 +130,7 @@ public:
 	    "PINMISSING", "PINNOCONNECT",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNSIGNED", "UNUSED",
+	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNPACKED", "UNSIGNED", "UNUSED",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"
 	};
