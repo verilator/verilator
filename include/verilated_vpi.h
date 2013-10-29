@@ -342,9 +342,8 @@ public:
 	VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
 	// We do not remove it now as we may be iterating the list,
 	// instead set to NULL and will cleanup later
-	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end(); ) {
-	    if (*it == cbp) it = cbObjList.erase(it);
-	    else ++it;
+	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end(); ++it) {
+            if (*it == cbp) *it = NULL;
 	}
     }
     static void cbTimedRemove(VerilatedVpioCb* cbp) {
