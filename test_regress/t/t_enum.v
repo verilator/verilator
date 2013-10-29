@@ -34,6 +34,9 @@ module t (/*AUTOARG*/);
 
    var logic [ONES:0] sized_based_on_enum;
 
+   var enum logic [3:0]  { QINVALID='1, QSEND={2'b0,2'h0}, QOP={2'b0,2'h1}, QCL={2'b0,2'h2},
+			   QPR={2'b0,2'h3 }, QACK, QRSP } inv;
+
    initial begin
       if (e0 !== 0) $stop;
       if (e1 !== 1) $stop;
@@ -60,6 +63,14 @@ module t (/*AUTOARG*/);
       if (FIVE[BIT0] != 1'b1) $stop;
       if (FIVE[BIT1] != 1'b0) $stop;
       if (FIVE[BIT2] != 1'b1) $stop;
+
+      if (QINVALID != 15) $stop;
+      if (QSEND    !=  0) $stop;
+      if (QOP      !=  1) $stop;
+      if (QCL      !=  2) $stop;
+      if (QPR      !=  3) $stop;
+      if (QACK     !=  4) $stop;
+      if (QRSP     !=  5) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

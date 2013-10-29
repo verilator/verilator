@@ -2251,12 +2251,16 @@ private:
     void widthCheck (AstNode* nodep, const char* side,
 		     AstNode* underp, AstNodeDType* expDTypep,
 		     bool ignoreWarn=false) {
-	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e"<<expWidth<<" m"<<expWidthMin<<" i"<<ignoreWarn<<endl);
+	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<" i"<<ignoreWarn<<endl);
 	int expWidth = expDTypep->width();
 	int expWidthMin = expDTypep->widthMin();
 	if (expWidthMin==0) expWidthMin = expWidth;
 	bool bad = widthBad(underp,expWidth,expWidthMin);
-	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
+	if ((bad || underp->width() !=expWidth)
+	    && fixAutoExtend(underp/*ref*/,expWidth)) {
+	    underp=NULL; // Changes underp
+	    return;
+	}
 	if (underp->castConst() && underp->castConst()->num().isFromString()
 	    && expWidth > underp->width()
 	    && (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
