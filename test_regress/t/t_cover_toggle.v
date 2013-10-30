@@ -10,7 +10,19 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   reg 	 toggle; initial toggle=0;
+   typedef struct packed {
+      union packed {
+	 logic 	  ua;
+	 logic 	  ub;
+      } u;
+      logic b;
+   } str_t;
+
+   reg 	 toggle; initial toggle='0;
+
+   str_t stoggle; initial stoggle='0;
+
+   reg [1:0][1:0] ptoggle; initial ptoggle=0;
 
    integer cyc; initial cyc=1;
    wire [7:0] cyc_copy = cyc[7:0];
@@ -51,6 +63,9 @@ module t (/*AUTOARG*/
 	 cyc <= cyc + 1;
 	 memory[cyc + 'd100] <= memory[cyc + 'd100] + 2'b1;
 	 toggle <= '0;
+	 stoggle.u <= toggle;
+	 stoggle.b <= toggle;
+	 ptoggle[0][0] <= toggle;
 	 if (cyc==3) begin
 	    toggle <= '1;
 	 end

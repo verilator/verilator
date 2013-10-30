@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix vpi_remove_cb inside callback, bug689. [Varun Koyyalagunta]
 
+****  Fix crash with coverage of structures, bug691. [Eivind Liland]
+
 
 * Verilator 3.853 2013-09-30
 

@@ -213,12 +213,56 @@ private:
 	    }
 	}
 	else if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
-	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb()+1; ++index_docs) {
+	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
 				  new AstArraySel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code),
 				  new AstArraySel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code));
 		toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth+1,
+				 newent,
+				 varp, chgVarp);
+		newent.cleanup();
+	    }
+	}
+	else if (AstPackArrayDType* adtypep = dtypep->castPackArrayDType()) {
+	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
+		AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
+		int index_code = index_docs - adtypep->lsb();
+		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
+				  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
+					     index_code*subtypep->width(), subtypep->width()),
+				  new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true),
+					     index_code*subtypep->width(), subtypep->width()));
+		toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth+1,
+				 newent,
+				 varp, chgVarp);
+		newent.cleanup();
+	    }
+	}
+	else if (AstStructDType* adtypep = dtypep->castStructDType()) {
+	    // For now it's packed, so similar to array
+	    for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+		int index_code = itemp->lsb();
+		ToggleEnt newent (above.m_comment+string(".")+itemp->name(),
+				  new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true),
+					     index_code, subtypep->width()),
+				  new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true),
+					     index_code, subtypep->width()));
+		toggleVarRecurse(subtypep, depth+1,
+				 newent,
+				 varp, chgVarp);
+		newent.cleanup();
+	    }
+	}
+	else if (AstUnionDType* adtypep = dtypep->castUnionDType()) {
+	    // Arbitrarially handle only the first member of the union
+	    if (AstMemberDType* itemp = adtypep->membersp()) {
+		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+		ToggleEnt newent (above.m_comment+string(".")+itemp->name(),
+				  above.m_varRefp->cloneTree(true),
+				  above.m_chgRefp->cloneTree(true));
+		toggleVarRecurse(subtypep, depth+1,
 				 newent,
 				 varp, chgVarp);
 		newent.cleanup();
