@@ -1016,8 +1016,8 @@ void AstNode::dumpTreeAndNext(ostream& os, const string& indent, int maxDepth) {
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool append) {
-    if (v3Global.opt.dumpTree()) {
+void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
+    if (v3Global.opt.dumpTree() && doDump) {
 	{   // Write log & close
 	    UINFO(2,"Dumping "<<filename<<endl);
 	    const auto_ptr<ofstream> logsp (V3File::new_ofstream(filename, append));

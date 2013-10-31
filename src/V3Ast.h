@@ -1160,7 +1160,7 @@ public:
     void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
     void	dumpTreeGdb(); // For GDB only
     void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTreeFile(const string& filename, bool append=false);
+    void	dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
     static void	dumpTreeFileGdb(const char* filenamep=NULL);
 
     // METHODS - queries
