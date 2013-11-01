@@ -852,7 +852,7 @@ private:
 			       || nodep->dtypeSkipRefp()->castNodeClassDType())) {
 	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
 	}
-	if (nodep->dtypeSkipRefp()->castConstDType()) {
+	if (nodep->dtypep()->skipRefToConstp()->castConstDType()) {
 	    nodep->isConst(true);
 	}
 	// Parameters if implicit untyped inherit from what they are assigned to

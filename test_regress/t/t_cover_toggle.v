@@ -22,6 +22,8 @@ module t (/*AUTOARG*/
 
    str_t stoggle; initial stoggle='0;
 
+   const reg aconst = '0;
+
    reg [1:0][1:0] ptoggle; initial ptoggle=0;
 
    integer cyc; initial cyc=1;
