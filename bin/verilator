@@ -469,6 +469,12 @@ Enables tunings and work-arounds for the specified C++ compiler.
 
 =over 4
 
+=item clang
+
+Tune for clang.  This may reduce execution speed as it enables several
+workarounds to avoid silly hardcoded limits in clang.  This includes
+breaking deep structures as for msvc as described below.
+
 =item gcc
 
 Tune for Gnu C++, although generated code should work on almost any

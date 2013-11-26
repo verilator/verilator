@@ -963,7 +963,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-compiler") && (i+1)<argc) {
 		shift;
-		if (!strcmp (argv[i], "gcc")) {
+		if (!strcmp (argv[i], "clang")) {
+		    m_compLimitParens = 80;   // limit unknown
+		    m_compLimitBlocks = 80;   // limit unknown
+		} else if (!strcmp (argv[i], "gcc")) {
 		    m_compLimitParens = 0;
 		} else if (!strcmp (argv[i], "msvc")) {
 		    m_compLimitParens = 80;   // 128, but allow some room

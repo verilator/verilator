@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add UNPACKED warning to convert unpacked structs. [Jeremy Bennett]
 
+***   Add --compiler clang to work around compiler bug, bug694. [Stefan Ludwig]
+
 ****  Support vpi_get of vpiSuppressVal, bug687. [Varun Koyyalagunta]
 
 ****  Support vpi_get_time, bug688. [Varun Koyyalagunta]
