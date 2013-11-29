@@ -190,6 +190,15 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #endif
 
 //=========================================================================
+// File system functions
+
+#ifdef _WIN32
+# define VL_DEV_NULL "nul"
+#else // Linux or compliant Unix flavors
+# define VL_DEV_NULL "/dev/null"
+#endif
+
+//=========================================================================
 // Integer size macros
 
 #define VL_BYTESIZE 8			///< Bits in a byte

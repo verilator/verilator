@@ -706,7 +706,7 @@ class EmitCImp : EmitCStmts {
 	if (v3Global.opt.lintOnly()) {
 	    // Unfortunately we have some lint checks here, so we can't just skip processing.
 	    // We should move them to a different stage.
-	    string filename = "/dev/null";
+	    string filename = VL_DEV_NULL;
 	    newCFile(filename, slow, source);
 	    ofp = new V3OutSpFile (filename);
 	}
