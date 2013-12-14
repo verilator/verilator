@@ -1419,21 +1419,22 @@ private:
 	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
 	    AstVar* refp = foundp->nodep()->castVar();
+	    const char* whatp = nodep->param() ? "parameter pin" : "pin";
 	    if (!refp) {
 		if (nodep->name() == "__paramNumber1" && m_cellp->modp()->castPrimitive()) {
 		    // Primitive parameter is really a delay we can just ignore
 		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    return;
 		}
-		nodep->v3error("Pin not found: "<<nodep->prettyName());
+		nodep->v3error(LinkDotState::ucfirst(whatp)<<" not found: "<<nodep->prettyName());
 	    } else if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
-		nodep->v3error("Pin is not an in/out/inout/param/interface: "<<nodep->prettyName());
+		nodep->v3error(LinkDotState::ucfirst(whatp)<<" is not an in/out/inout/param/interface: "<<nodep->prettyName());
 	    } else {
 		nodep->modVarp(refp);
 		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
-		    nodep->v3error("Duplicate pin connection: "<<nodep->prettyName()<<endl
+		    nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
 				   <<refp->user5p()->castNode()->warnMore()
-				   <<"... Location of original pin connection");
+				   <<"... Location of original "<<whatp<<" connection");
 		} else {
 		    refp->user5p(nodep);
 		}

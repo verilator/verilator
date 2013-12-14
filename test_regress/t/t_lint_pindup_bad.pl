@@ -19,8 +19,8 @@ compile (
 '%Error: t/t_lint_pindup_bad.v:\d+: Duplicate pin connection: i
 %Error: t/t_lint_pindup_bad.v:\d+: ... Location of original pin connection
 %Error: t/t_lint_pindup_bad.v:\d+: Pin not found: __pinNumber4
-%Error: t/t_lint_pindup_bad.v:\d+: Duplicate pin connection: P
-%Error: t/t_lint_pindup_bad.v:\d+: ... Location of original pin connection
+%Error: t/t_lint_pindup_bad.v:\d+: Duplicate parameter pin connection: P
+%Error: t/t_lint_pindup_bad.v:\d+: ... Location of original parameter pin connection
 %Error: Exiting due to.*',
     );
 

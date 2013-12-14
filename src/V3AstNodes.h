@@ -1273,17 +1273,18 @@ private:
     int		m_pinNum;	// Pin number
     string	m_name;		// Pin name, or "" for number based interconnect
     AstVar*	m_modVarp;	// Input/output this pin connects to on submodule.
+    bool	m_param;	// Pin connects to parameter
     bool	m_svImplicit;	// Pin is SystemVerilog .name'ed
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
 	:AstNode(fl)
-	,m_name(name), m_svImplicit(false) {
+	,m_name(name), m_param(false), m_svImplicit(false) {
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	setNOp1p(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-	:AstNode(fl), m_svImplicit(false) {
+	:AstNode(fl), m_param(false), m_svImplicit(false) {
 	m_name = varname->name();
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
@@ -1300,7 +1301,9 @@ public:
     AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin, NULL if unconnected
     AstVar*	modVarp()	const { return m_modVarp; }		// [After Link] Pointer to variable
     void  	modVarp(AstVar* varp) { m_modVarp=varp; }
-    bool	svImplicit()	const { return m_svImplicit; }
+    bool	param()	const { return m_param; }
+    void        param(bool flag) { m_param=flag; }
+    bool	svImplicit() const { return m_svImplicit; }
     void        svImplicit(bool flag) { m_svImplicit=flag; }
 };
 
