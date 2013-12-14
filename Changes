@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix --lint-only with MinGW, msg1283. [HyungKi Jeong]
 
+****  Fix some delayed assignments of typedefed unpacked arrays.
+
 
 * Verilator 3.854 2013-11-26
 

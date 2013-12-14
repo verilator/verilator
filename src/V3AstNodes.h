@@ -685,9 +685,9 @@ private:
     unsigned m_start;
     unsigned m_length;
     void init(AstNode* fromp) {
-	if (fromp && fromp->dtypep()->castNodeArrayDType()) {
+	if (fromp && fromp->dtypep()->skipRefp()->castNodeArrayDType()) {
 	    // Strip off array to find what array references
-	    dtypeFrom(fromp->dtypep()->castNodeArrayDType()->subDTypep());
+	    dtypeFrom(fromp->dtypep()->skipRefp()->castNodeArrayDType()->subDTypep());
 	}
     }
 public:
