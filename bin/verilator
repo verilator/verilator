@@ -754,7 +754,9 @@ to gcc -MP option.
 =item --Mdir I<directory>
 
 Specifies the name of the Make object directory.  All generated files will
-be placed in this directory.  If not specified, "obj_dir" is used.
+be placed in this directory.  If not specified, "obj_dir" is used.  The
+directory is created if it does not exist and the parent directories exist;
+otherwise manually create the Mdir before calling Verilator.
 
 =item --mod-prefix I<topname>
 
