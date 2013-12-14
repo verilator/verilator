@@ -2190,23 +2190,23 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->declArray");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->declQuad ");
-	} else if (nodep->left() || nodep->right()) {
+	} else if (nodep->bitRange().ranged()) {
 	    puts("vcdp->declBus  ");
 	} else {
 	    puts("vcdp->declBit  ");
 	}
 	puts("(c+"+cvtToStr(nodep->code()));
-	if (nodep->arrayWidth()) puts("+i*"+cvtToStr(nodep->widthWords()));
+	if (nodep->arrayRange().ranged()) puts("+i*"+cvtToStr(nodep->widthWords()));
 	puts(",");
 	putsQuoted(nodep->showname());
-	if (nodep->arrayWidth()) {
-	    puts(",(i+"+cvtToStr(nodep->arrayLsb())+")");
+	if (nodep->arrayRange().ranged()) {
+	    puts(",(i+"+cvtToStr(nodep->arrayRange().lo())+")");
 	} else {
 	    puts(",-1");
 	}
 	if (!nodep->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->left() || nodep->right())) {
-	    puts(","+cvtToStr(nodep->left())+","+cvtToStr(nodep->right()));
+	    && nodep->bitRange().ranged()) {
+	    puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
 	}
 	puts(");");
     }
@@ -2222,7 +2222,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->"+full+"Array");
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
-	} else if (nodep->declp()->left() || nodep->declp()->right()) {
+	} else if (nodep->declp()->bitRange().ranged()) {
 	    puts("vcdp->"+full+"Bus  ");
 	} else {
 	    puts("vcdp->"+full+"Bit  ");
@@ -2232,7 +2232,7 @@ class EmitCTrace : EmitCStmts {
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
 	if (!nodep->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->declp()->left() || nodep->declp()->right() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep))) {
+	    && (nodep->declp()->bitRange().ranged() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep))) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");
@@ -2319,8 +2319,8 @@ class EmitCTrace : EmitCStmts {
 	m_funcp = NULL;
     }
     virtual void visit(AstTraceDecl* nodep, AstNUser*) {
-	if (nodep->arrayWidth()) {
-	    puts("{int i; for (i=0; i<"+cvtToStr(nodep->arrayWidth())+"; i++) {\n");
+	if (nodep->arrayRange().ranged()) {
+	    puts("{int i; for (i=0; i<"+cvtToStr(nodep->arrayRange().elements())+"; i++) {\n");
 	    emitTraceInitOne(nodep);
 	    puts("}}\n");
 	} else {
@@ -2329,9 +2329,9 @@ class EmitCTrace : EmitCStmts {
 	}
     }
     virtual void visit(AstTraceInc* nodep, AstNUser*) {
-	if (nodep->declp()->arrayWidth()) {
+	if (nodep->declp()->arrayRange().ranged()) {
 	    // It traces faster if we unroll the loop
-	    for (unsigned i=0; i<nodep->declp()->arrayWidth(); i++) {
+	    for (int i=0; i<nodep->declp()->arrayRange().elements(); i++) {
 		emitTraceChangeOne(nodep, i);
 	    }
 	} else {

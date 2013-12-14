@@ -2796,10 +2796,8 @@ struct AstTraceDecl : public AstNodeStmt {
 private:
     string	m_showname;	// Name of variable
     uint32_t	m_code;		// Trace identifier code; converted to ASCII by trace routines
-    int		m_right;	// Property of var the trace details
-    int		m_left;		// Property of var the trace details
-    uint32_t	m_arrayLsb;	// Property of var the trace details
-    uint32_t	m_arrayMsb;	// Property of var the trace details
+    VNumRange	m_bitRange;	// Property of var the trace details
+    VNumRange	m_arrayRange;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
 public:
     AstTraceDecl(FileLine* fl, const string& showname, AstVar* varp)
@@ -2809,14 +2807,9 @@ public:
 	m_code = 0;
 	m_codeInc = varp->dtypep()->arrayUnpackedElements() * varp->dtypep()->widthWords();
 	AstBasicDType* bdtypep = varp->basicp();
-	m_left = bdtypep ? bdtypep->left() : 0;
-	m_right = bdtypep ? bdtypep->right() : 0;
+	if (bdtypep) m_bitRange = bdtypep->nrange();
 	if (AstUnpackArrayDType* adtypep = varp->dtypeSkipRefp()->castUnpackArrayDType()) {
-	    m_arrayLsb = adtypep->lsb();
-	    m_arrayMsb = adtypep->msb();
-	} else {
-	    m_arrayLsb = 0;
-	    m_arrayMsb = 0;
+	    m_arrayRange = adtypep->declRange();
 	}
     }
     virtual int instrCount()	const { return 100; }  // Large...
@@ -2830,11 +2823,8 @@ public:
     uint32_t	code() const { return m_code; }
     void	code(uint32_t code) { m_code=code; }
     uint32_t	codeInc() const { return m_codeInc; }
-    int		left() const { return m_left; }  // Note msb maybe < lsb if little endian
-    int		right() const { return m_right; }
-    uint32_t	arrayMsb() const { return m_arrayMsb; }
-    uint32_t	arrayLsb() const { return m_arrayLsb; }
-    uint32_t	arrayWidth() const { if (!arrayMsb()) return 0; return arrayMsb()-arrayLsb()+1; }
+    const VNumRange& bitRange() const { return m_bitRange; }
+    const VNumRange& arrayRange() const { return m_arrayRange; }
 };
 
 struct AstTraceInc : public AstNodeStmt {
