@@ -2246,7 +2246,7 @@ class EmitCTrace : EmitCStmts {
 	    else if (emitTraceIsScBv(nodep)) puts("VL_SC_BV_DATAP(");
 	    varrefp->iterate(*this);	// Put var name out
 	    // Tracing only supports 1D arrays
-	    if (varp->dtypeSkipRefp()->castUnpackArrayDType()) {
+	    if (nodep->declp()->arrayRange().ranged()) {
 		if (arrayindex==-2) puts("[i]");
 		else if (arrayindex==-1) puts("[0]");
 		else puts("["+cvtToStr(arrayindex)+"]");

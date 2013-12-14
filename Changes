@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.855 devel
 
+****  Fix tracing of packed structs, bug705. [Jie Xu]
+
 ****  Fix --lint-only with MinGW, msg1283. [HyungKi Jeong]
 
 ****  Fix some delayed assignments of typedefed unpacked arrays.

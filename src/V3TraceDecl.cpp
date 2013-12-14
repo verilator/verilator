@@ -51,6 +51,9 @@ private:
     AstCFunc*		m_fullFuncp;	// Trace function being built
     AstCFunc*		m_chgFuncp;	// Trace function being built
     int			m_funcNum;	// Function number being built
+    AstVarScope*	m_traVscp;	// Signal being trace constructed
+    AstNode*		m_traValuep;	// Signal being traced's value to trace in it
+    string		m_traShowname;	// Signal being traced's component name
 
     V3Double0		m_statSigs;	// Statistic tracking
     V3Double0		m_statIgnSigs;	// Statistic tracking
@@ -66,22 +69,15 @@ private:
 	// Return true if this shouldn't be traced
 	// See also similar rule in V3Coverage::varIgnoreToggle
 	string prettyName = nodep->prettyName();
-	if (!nodep->isTrace())
+	if (!nodep->isTrace()) {
 	    return "Verilator trace_off";
-	if (!v3Global.opt.traceUnderscore()) {
+	}
+	else if (!v3Global.opt.traceUnderscore()) {
 	    if (prettyName.c_str()[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";
         }
-	if ((int)nodep->width() > v3Global.opt.traceMaxWidth()) return "Wide bus > --trace-max-width bits";
-	if ((int)nodep->dtypep()->arrayUnpackedElements() > v3Global.opt.traceMaxArray()) return "Wide memory > --trace-max-array ents";
-	if (!(nodep->dtypeSkipRefp()->castBasicDType()
-	      || (nodep->dtypeSkipRefp()->castUnpackArrayDType()
-		  && (nodep->dtypeSkipRefp()->castUnpackArrayDType()->subDTypep()
-		      ->skipRefp()->castBasicDType())))) {
-	    return "Unsupported: Multi-dimensional array";
-	}
 	return NULL;
     }
 
@@ -109,8 +105,32 @@ private:
 	basep->addStmtsp(callp);
 	return funcp;
     }
-    void addCFuncStmt(AstCFunc* basep, AstNode* nodep) {
+    void addCFuncStmt(AstCFunc* basep, AstNode* nodep, VNumRange arrayRange) {
 	basep->addStmtsp(nodep);
+    }
+    void addTraceDecl(const VNumRange& arrayRange) {
+	VNumRange bitRange;
+	AstBasicDType* bdtypep = m_traValuep->dtypep()->basicp();
+	if (bdtypep) bitRange = bdtypep->nrange();
+	AstTraceDecl* declp = new AstTraceDecl(m_traVscp->fileline(), m_traShowname, m_traValuep,
+					       bitRange, arrayRange);
+
+	if (m_initSubStmts && v3Global.opt.outputSplitCTrace()
+	    && m_initSubStmts > v3Global.opt.outputSplitCTrace()) {
+	    m_initSubFuncp = newCFuncSub(m_initFuncp);
+	    m_initSubStmts = 0;
+	}
+
+	m_initSubFuncp->addStmtsp(declp);
+	m_initSubStmts += EmitCBaseCounterVisitor(declp).count();
+
+	m_chgFuncp->addStmtsp(new AstTraceInc(m_traVscp->fileline(), declp, m_traValuep->cloneTree(true)));
+	// The full version will get constructed in V3Trace
+    }
+    void addIgnore(const char* why) {
+	++m_statIgnSigs;
+	m_initSubFuncp->addStmtsp(
+	    new AstComment(m_traVscp->fileline(), "Tracing: "+m_traShowname+" // Ignored: "+why));
     }
 
     // VISITORS
@@ -134,35 +154,107 @@ private:
 	    // Compute show name
 	    // This code assumes SPTRACEVCDC_VERSION >= 1330;
 	    // it uses spaces to separate hierarchy components.
-	    string showname = AstNode::vcdName(scopep->name() + " " + varp->name());
-	    if (showname.substr(0,4) == "TOP ") showname.replace(0,4,"");
+	    m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
+	    if (m_traShowname.substr(0,4) == "TOP ") m_traShowname.replace(0,4,"");
 	    if (!m_initSubFuncp) nodep->v3fatalSrc("NULL");
+
+	    m_traVscp = nodep;
+	    m_traValuep = NULL;
 	    if (varIgnoreTrace(varp)) {
-		++m_statIgnSigs;
-		m_initSubFuncp->addStmtsp(
-		    new AstComment(nodep->fileline(),
-				   "Tracing: "+showname+" // Ignored: "+varIgnoreTrace(varp)));
+		addIgnore(varIgnoreTrace(varp));
 	    } else {
 		++m_statSigs;
-		AstNode* valuep = NULL;
-		if (nodep->valuep()) valuep=nodep->valuep()->cloneTree(true);
-		else valuep = new AstVarRef(nodep->fileline(), nodep, false);
-		AstTraceDecl* declp = new AstTraceDecl(nodep->fileline(), showname, varp);
-
-		if (m_initSubStmts && v3Global.opt.outputSplitCTrace()
-		    && m_initSubStmts > v3Global.opt.outputSplitCTrace()) {
-		    m_initSubFuncp = newCFuncSub(m_initFuncp);
-		    m_initSubStmts = 0;
+		if (nodep->valuep()) m_traValuep = nodep->valuep()->cloneTree(true);
+		else m_traValuep = new AstVarRef(nodep->fileline(), nodep, false);
+		{
+		    // Recurse into data type of the signal; the visitors will call addTraceDecl()
+		    varp->dtypeSkipRefp()->accept(*this);
 		}
+		// Cleanup
+		if (m_traValuep) { m_traValuep->deleteTree(); m_traValuep=NULL; }
+	    }
+	    m_traVscp = NULL;
+	    m_traValuep = NULL;
+	    m_traShowname = "";
+	}
+    }
+    // VISITORS - Data types when tracing
+    virtual void visit(AstConstDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    nodep->subDTypep()->skipRefp()->accept(*this);
+	}
+    }
+    virtual void visit(AstRefDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    nodep->subDTypep()->skipRefp()->accept(*this);
+	}
+    }
+    virtual void visit(AstUnpackArrayDType* nodep, AstNUser*) {
+	// Note more specific dtypes above
+	if (m_traVscp) {
+	    if ((int)nodep->arrayUnpackedElements() > v3Global.opt.traceMaxArray()) {
+		addIgnore("Wide memory > --trace-max-array ents");
+	    } else if (nodep->subDTypep()->skipRefp()->castBasicDType()  // Nothing lower than this array
+		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
+		// Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
+		// This will put "(index)" at end of signal name for us
+		addTraceDecl(nodep->declRange());
+	    } else {
+		// Unroll now, as have no other method to get right signal names
+		AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
+		for (int i=nodep->lsb(); i<=nodep->msb(); ++i) {
+		    string oldShowname = m_traShowname;
+		    AstNode* oldValuep = m_traValuep;
+		    {
+			m_traShowname += string("(")+cvtToStr(i)+string(")");
+			m_traValuep = new AstArraySel(nodep->fileline(), m_traValuep->cloneTree(true),
+						      i - nodep->lsb());
 
-		m_initSubFuncp->addStmtsp(declp);
-		m_initSubStmts += EmitCBaseCounterVisitor(declp).count();
-
-		m_chgFuncp->addStmtsp(new AstTraceInc(nodep->fileline(), declp, valuep));
-		// The full version will get constructed in V3Trace
+			subtypep->accept(*this);
+			m_traValuep->deleteTree(); m_traValuep = NULL;
+		    }
+		    m_traShowname = oldShowname;
+		    m_traValuep = oldValuep;
+		}
 	    }
 	}
     }
+    virtual void visit(AstPackArrayDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    // Everything downstream is packed, so deal with as one trace unit
+	    // This may not be the nicest for user presentation, but is a much faster way to trace
+	    addTraceDecl(VNumRange());
+	}
+    }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    if (nodep->packed()) {
+		// Everything downstream is packed, so deal with as one trace unit
+		// This may not be the nicest for user presentation, but is a much faster way to trace
+		addTraceDecl(VNumRange());
+	    } else {
+		addIgnore("Unsupported: Unpacked struct/union");
+		// Once we have an UnpackedMemberSel which works, this code is straight forward:
+		//for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+		//    AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+		// ...
+		//	m_traShowname += string(" ")+itemp->name();
+		//      m_traValuep = new AstMemberSel(nodep->fileline(), m_traValuep->cloneTree(true), ...
+		// and iterate
+	    }
+	}
+    }
+    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    addTraceDecl(VNumRange());
+	}
+    }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	// Note more specific dtypes above
+	if (!m_traVscp) return;
+	addIgnore("Unsupported: data type");
+    }
+
     //--------------------
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -178,6 +270,8 @@ public:
 	m_fullFuncp = NULL;
 	m_chgFuncp = NULL;
 	m_funcNum = 0;
+	m_traVscp = NULL;
+	m_traValuep = NULL;
 	nodep->accept(*this);
     }
     virtual ~TraceDeclVisitor() {

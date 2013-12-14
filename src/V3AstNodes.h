@@ -2800,17 +2800,14 @@ private:
     VNumRange	m_arrayRange;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
 public:
-    AstTraceDecl(FileLine* fl, const string& showname, AstVar* varp)
+    AstTraceDecl(FileLine* fl, const string& showname, AstNode* valuep,
+		 const VNumRange& bitRange, const VNumRange& arrayRange)
 	: AstNodeStmt(fl)
-	, m_showname(showname) {
-	dtypeFrom(varp);
+	, m_showname(showname), m_bitRange(bitRange), m_arrayRange(arrayRange) {
+	dtypeFrom(valuep);
 	m_code = 0;
-	m_codeInc = varp->dtypep()->arrayUnpackedElements() * varp->dtypep()->widthWords();
-	AstBasicDType* bdtypep = varp->basicp();
-	if (bdtypep) m_bitRange = bdtypep->nrange();
-	if (AstUnpackArrayDType* adtypep = varp->dtypeSkipRefp()->castUnpackArrayDType()) {
-	    m_arrayRange = adtypep->declRange();
-	}
+	m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
+		     * valuep->dtypep()->widthWords());
     }
     virtual int instrCount()	const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl, TRACEDECL)
