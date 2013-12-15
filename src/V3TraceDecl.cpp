@@ -221,26 +221,59 @@ private:
     }
     virtual void visit(AstPackArrayDType* nodep, AstNUser*) {
 	if (m_traVscp) {
-	    // Everything downstream is packed, so deal with as one trace unit
-	    // This may not be the nicest for user presentation, but is a much faster way to trace
-	    addTraceDecl(VNumRange());
-	}
-    }
-    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
-	if (m_traVscp) {
-	    if (nodep->packed()) {
+	    if (!v3Global.opt.traceStructs()) {
 		// Everything downstream is packed, so deal with as one trace unit
 		// This may not be the nicest for user presentation, but is a much faster way to trace
 		addTraceDecl(VNumRange());
 	    } else {
-		addIgnore("Unsupported: Unpacked struct/union");
-		// Once we have an UnpackedMemberSel which works, this code is straight forward:
-		//for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
-		//    AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
-		// ...
-		//	m_traShowname += string(" ")+itemp->name();
-		//      m_traValuep = new AstMemberSel(nodep->fileline(), m_traValuep->cloneTree(true), ...
-		// and iterate
+		AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
+		for (int i=nodep->lsb(); i<=nodep->msb(); ++i) {
+		    string oldShowname = m_traShowname;
+		    AstNode* oldValuep = m_traValuep;
+		    {
+			m_traShowname += string("(")+cvtToStr(i)+string(")");
+			m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
+						 (i - nodep->lsb())*subtypep->width(),
+						 subtypep->width());
+			subtypep->accept(*this);
+			m_traValuep->deleteTree(); m_traValuep = NULL;
+		    }
+		    m_traShowname = oldShowname;
+		    m_traValuep = oldValuep;
+		}
+	    }
+	}
+    }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	if (m_traVscp) {
+	    if (nodep->packed() && !v3Global.opt.traceStructs()) {
+		// Everything downstream is packed, so deal with as one trace unit
+		// This may not be the nicest for user presentation, but is a much faster way to trace
+		addTraceDecl(VNumRange());
+	    } else {
+		if (!nodep->packed()) {
+		    addIgnore("Unsupported: Unpacked struct/union");
+		} else {
+		    for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+			AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+			string oldShowname = m_traShowname;
+			AstNode* oldValuep = m_traValuep;
+			{
+			    m_traShowname += string(" ")+itemp->prettyName();
+			    m_traValuep->dumpTree(cout, "-tv: ");
+			    if (nodep->castStructDType()) {
+				m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
+							 itemp->lsb(), subtypep->width());
+				subtypep->accept(*this);
+				m_traValuep->deleteTree(); m_traValuep = NULL;
+			    } else { // Else union, replicate fields
+				subtypep->accept(*this);
+			    }
+			}
+			m_traShowname = oldShowname;
+			m_traValuep = oldValuep;
+		    }
+		}
 	    }
 	}
     }

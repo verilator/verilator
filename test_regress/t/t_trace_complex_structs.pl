@@ -7,8 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+top_filename("t_trace_complex.v");
+
 compile (
-	 verilator_flags2 => ['--cc --trace'],
+	 verilator_flags2 => ['--cc --trace --trace-structs'],
 	 );
 
 execute (
@@ -18,8 +20,8 @@ execute (
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_strp /);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_strp_strp /);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_arrp /);
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_strp /);
+file_grep_not ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_arrp /);
+file_grep_not ("$Self->{obj_dir}/simx.vcd", qr/ v_arrp_strp /);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\(/);

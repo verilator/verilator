@@ -17,6 +17,11 @@ module t (clk);
       strp_t	x0;
    } strp_strp_t;
 
+   typedef union packed {
+      strp_t	x1;
+      strp_t	x0;
+   } unip_strp_t;
+
    typedef bit [2:1] arrp_t;
    typedef arrp_t [4:3] arrp_arrp_t;
 
@@ -29,6 +34,7 @@ module t (clk);
 
    strp_t 	v_strp;
    strp_strp_t	v_strp_strp;
+   unip_strp_t	v_unip_strp;
    arrp_t	v_arrp;
    arrp_arrp_t	v_arrp_arrp;
    arrp_strp_t	v_arrp_strp;
@@ -41,6 +47,7 @@ module t (clk);
       cyc <= cyc + 1;
       v_strp <= ~v_strp;
       v_strp_strp <= ~v_strp_strp;
+      v_unip_strp <= ~v_unip_strp;
       v_arrp_strp <= ~v_arrp_strp;
       v_arrp <= ~v_arrp;
       v_arrp_arrp <= ~v_arrp_arrp;

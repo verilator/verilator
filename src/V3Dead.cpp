@@ -144,6 +144,12 @@ private:
 	    nodep->packagep()->user1Inc();
 	}
     }
+    virtual void visit(AstMemberDType* nodep, AstNUser*) {
+	// Keep member names iff upper type exists
+	nodep->iterateChildren(*this);
+	// No checkDType(nodep)
+	checkAll(nodep);
+    }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	checkDType(nodep);
