@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix some delayed assignments of typedefed unpacked arrays.
 
+****  Fix wire declarations with size and not range, bug466. [Alex Solomatnikov]
+
 ****  Fix parameter pin vs. normal pin error, bug704. [Alex Solomatnikov]
 
 

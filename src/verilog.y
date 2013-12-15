@@ -1879,7 +1879,7 @@ netSigList<varp>:		// IEEE: list_of_port_identifiers
 netSig<varp>:			// IEEE: net_decl_assignment -  one element from list_of_port_identifiers
 		netId sigAttrListE			{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); }
 	|	netId sigAttrListE '=' expr		{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); $$->addNext(new AstAssignW($3,new AstVarRef($3,$$->name(),true),$4)); }
-	|	netId rangeList sigAttrListE		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
+	|	netId variable_dimensionList sigAttrListE	{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
 	;
 
 netId<strp>:
