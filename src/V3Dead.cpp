@@ -103,7 +103,9 @@ private:
     }
     void checkDType(AstNodeDType* nodep) {
 	if (!nodep->generic()  // Don't remove generic types
-	    && m_elimDTypes) {  // dtypes stick around until post-widthing
+	    && m_elimDTypes  // dtypes stick around until post-widthing
+	    && !nodep->castMemberDType() // Keep member names iff upper type exists
+	    ) {
 	    m_varEtcsp.push_back(nodep);
 	}
 	if (AstNode* subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
@@ -143,12 +145,6 @@ private:
 	if (nodep->packagep()) {
 	    nodep->packagep()->user1Inc();
 	}
-    }
-    virtual void visit(AstMemberDType* nodep, AstNUser*) {
-	// Keep member names iff upper type exists
-	nodep->iterateChildren(*this);
-	// No checkDType(nodep)
-	checkAll(nodep);
     }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

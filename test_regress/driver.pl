@@ -226,7 +226,7 @@ sub parameter {
 	push @Opt_Driver_Verilator_Flags, $param;
 	$_Parameter_Next_Level = $param;
     }
-    elsif ($param =~ /^-?-W/) {
+    elsif ($param =~ /^-?(-W||-debug-check)/) {
 	push @Opt_Driver_Verilator_Flags, $param;
     }
     else {
