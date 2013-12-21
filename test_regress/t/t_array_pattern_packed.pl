@@ -10,11 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} and $Self->unsupported("Verilator unsupported, bug355");
 
 compile (
-	 );
+    );
 
 execute (
-	 check_finished=>1,
-     );
+    check_finished=>1,
+    );
 
 ok(1);
 1;

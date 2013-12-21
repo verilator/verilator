@@ -10,6 +10,34 @@ module t (/*AUTOARG*/
 
    input clk;
 
+   logic [1:0] [3:0] [3:0] array_simp;  // big endian array
+
+   initial begin
+      array_simp[0] = '{ 4'd3, 4'd2, 4'd1, 4'd0};
+      if (array_simp[0] !== 16'h3210) $stop;
+
+      // verilator lint_off WIDTH
+      array_simp[0] = '{ 3 ,2 ,1, 0 };
+      // verilator lint_on WIDTH
+      if (array_simp[0] !== 16'h3210) $stop;
+
+      // Doesn't seem to work for unpacked arrays in other simulators
+      //if (array_simp[0] !== 16'h3210) $stop;
+      //array_simp[0] = '{ 1:4'd3, default:13};
+      //if (array_simp[0] !== 16'hDD3D) $stop;
+
+      array_simp = '{ '{ 4'd3, 4'd2, 4'd1, 4'd0 }, '{ 4'd1, 4'd2, 4'd3, 4'd4 }};
+      if (array_simp !== 32'h3210_1234) $stop;
+
+      // Doesn't seem to work for unpacked arrays in other simulators
+      //array_simp <= '{2  { '{4 { 4'd3, 4'd2, 4'd1, 4'd0 }} } };
+
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+
+   //====================
+
    // parameters for array sizes
    localparam WA = 4;  // address dimension size
    localparam WB = 4;  // bit     dimension size
