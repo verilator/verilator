@@ -353,6 +353,11 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstModportFTaskRef* nodep, AstNUser*) {
+	// The crossrefs are dealt with in V3LinkDot
+	nodep->ftaskp(NULL);
+	nodep->iterateChildren(*this);
+    }
 
     //--------------------
     // Default

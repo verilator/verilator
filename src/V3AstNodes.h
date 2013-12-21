@@ -1384,10 +1384,32 @@ struct AstIface : public AstNodeModule {
     ASTNODE_NODE_FUNCS(Iface, IFACE)
 };
 
+struct AstModportFTaskRef : public AstNode {
+    // An import/export referenced under a modport
+    // The storage for the function itself is inside the interface/instantiator, thus this is a reference
+    // PARENT: AstModport
+private:
+    string	m_name;		// Name of the variable referenced
+    bool	m_export;	// Type of the function (import/export)
+    AstNodeFTask* m_ftaskp;	// Link to the function
+public:
+    AstModportFTaskRef(FileLine* fl, const string& name, bool isExport)
+	: AstNode(fl), m_name(name), m_export(isExport), m_ftaskp(NULL) { }
+    ASTNODE_NODE_FUNCS(ModportFTaskRef, MODPORTFTASKREF)
+    virtual const char* broken() const { BROKEN_RTN(m_ftaskp && !m_ftaskp->brokeExists()); return NULL; }
+    virtual void dump(ostream& str);
+    virtual string name() const { return m_name; }
+    virtual void cloneRelink() { if (m_ftaskp && m_ftaskp->clonep()) m_ftaskp = m_ftaskp->clonep()->castNodeFTask(); }
+    bool isImport() const { return !m_export; }
+    bool isExport() const { return m_export; }
+    AstNodeFTask* ftaskp() const { return m_ftaskp; }		// [After Link] Pointer to variable
+    void ftaskp(AstNodeFTask* ftaskp) { m_ftaskp=ftaskp; }
+};
+
 struct AstModportVarRef : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
-    // PARENT: AstIface
+    // PARENT: AstModport
 private:
     string	m_name;		// Name of the variable referenced
     AstVarType	m_type;		// Type of the variable (in/out)
@@ -1398,8 +1420,9 @@ public:
     ASTNODE_NODE_FUNCS(ModportVarRef, MODPORTVARREF)
     virtual const char* broken() const { BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
     virtual void dump(ostream& str);
-    AstVarType	varType() const { return m_type; }		// * = Type of variable
+    virtual void cloneRelink() { if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep()->castVar(); }
     virtual string name() const { return m_name; }
+    AstVarType	varType() const { return m_type; }		// * = Type of variable
     bool isInput() const { return (varType()==AstVarType::INPUT || varType()==AstVarType::INOUT); }
     bool isOutput() const { return (varType()==AstVarType::OUTPUT || varType()==AstVarType::INOUT); }
     AstVar* varp() const { return m_varp; }		// [After Link] Pointer to variable
@@ -1411,13 +1434,13 @@ struct AstModport : public AstNode {
 private:
     string	m_name;		// Name of the modport
 public:
-    AstModport(FileLine* fl, const string& name, AstModportVarRef* varsp)
+    AstModport(FileLine* fl, const string& name, AstNode* varsp)
 	: AstNode(fl), m_name(name) {
         addNOp1p(varsp); }
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
     ASTNODE_NODE_FUNCS(Modport, MODPORT)
-    AstModportVarRef* varsp() const { return op1p()->castModportVarRef(); }	// op1 = List of Vars
+    AstNode* varsp() const { return op1p(); }	// op1 = List of Vars
 };
 
 struct AstCell : public AstNode {

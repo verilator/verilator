@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.855 devel
 
+***   Support modport import, bug696. [Jeremy Bennett]
+
 ***   Add --trace-structs to show struct names, bug673. [Chris Randall]
 
 ****  Fix tracing of packed structs, bug705. [Jie Xu]

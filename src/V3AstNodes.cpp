@@ -753,6 +753,13 @@ void AstJumpGo::dump(ostream& str) {
     if (labelp()) { labelp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
+void AstModportFTaskRef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (isExport()) str<<" EXPORT";
+    if (isImport()) str<<" IMPORT";
+    if (ftaskp()) { str<<" -> "; ftaskp()->dump(str); }
+    else { str<<" -> UNLINKED"; }
+}
 void AstModportVarRef::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" "<<varType();

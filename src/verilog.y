@@ -1058,22 +1058,27 @@ modport_item<nodep>:			// ==IEEE: modport_item
 		id/*new-modport*/ '(' modportPortsDeclList ')'		{ $$ = new AstModport($2,*$1,$3); }
 	;
 
-modportPortsDeclList<modportvarrefp>:
+modportPortsDeclList<nodep>:
 		modportPortsDecl			    { $$ = $1; }
-	|	modportPortsDeclList ',' modportPortsDecl   { $$ = $1->addNextNull($3)->castModportVarRef(); }
+	|	modportPortsDeclList ',' modportPortsDecl   { $$ = $1->addNextNull($3); }
 	;
 
 // IEEE: modport_ports_declaration  + modport_simple_ports_declaration
 //	+ (modport_tf_ports_declaration+import_export) + modport_clocking_declaration
 // We've expanded the lists each take to instead just have standalone ID ports.
 // We track the type as with the V2k series of defines, then create as each ID is seen.
-modportPortsDecl<modportvarrefp>:
+modportPortsDecl<nodep>:
 	//			// IEEE: modport_simple_ports_declaration
 		port_direction modportSimplePort	{ $$ = new AstModportVarRef($<fl>1,*$2,GRAMMARP->m_varIO); }
 	//			// IEEE: modport_clocking_declaration
-	//UNSUP	yCLOCKING idAny/*clocking_identifier*/	{ }
-	//UNSUP	yIMPORT modport_tf_port			{ }
-	//UNSUP	yEXPORT modport_tf_port			{ }
+	|	yCLOCKING idAny/*clocking_identifier*/	{ $1->v3error("Unsupported: Modport clocking"); }
+	//			// IEEE: yIMPORT modport_tf_port
+	//			// IEEE: yEXPORT modport_tf_port
+	//			// modport_tf_port expanded here
+	|	yIMPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>1,*$2,false); }
+	|	yEXPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>1,*$2,true); }
+	|	yIMPORT method_prototype		{ $1->v3error("Unsupported: Modport import with prototype"); }
+	|	yEXPORT method_prototype		{ $1->v3error("Unsupported: Modport export with prototype"); }
 	// Continuations of above after a comma.
 	//			// IEEE: modport_simple_ports_declaration
 	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,AstVarType::INOUT); }
@@ -2630,6 +2635,11 @@ function_prototype<ftaskp>:	// IEEE: function_prototype
 funcIsolateE<cint>:
 		/* empty */		 		{ $$ = 0; }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = 1; }
+	;
+
+method_prototype:
+		task_prototype				{ }
+	|	function_prototype			{ }
 	;
 
 lifetimeE:			// IEEE: [lifetime]

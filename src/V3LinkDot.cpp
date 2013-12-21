@@ -1202,6 +1202,26 @@ class LinkDotIfaceVisitor : public AstNVisitor {
 	}
 	m_curSymp = oldCurSymp;
     }
+    virtual void visit(AstModportFTaskRef* nodep, AstNUser*) {
+	UINFO(5,"   fif: "<<nodep<<endl);
+	nodep->iterateChildren(*this);
+	if (nodep->isExport()) nodep->v3error("Unsupported: modport export");
+	VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
+	if (!symp) {
+	    nodep->v3error("Modport item not found: "<<nodep->prettyName());
+	} else if (AstNodeFTask* ftaskp = symp->nodep()->castNodeFTask()) {
+	    // Make symbol under modport that points at the _interface_'s var, not the modport.
+	    nodep->ftaskp(ftaskp);
+	    m_statep->insertSym(m_curSymp, nodep->name(), ftaskp, NULL/*package*/);
+	} else {
+	    nodep->v3error("Modport item is not a function/task: "<<nodep->prettyName());
+	}
+	if (m_statep->forScopeCreation()) {
+	    // Done with AstModportFTaskRef.
+	    // Delete to prevent problems if we dead-delete pointed to ftask
+	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	}
+    }
     virtual void visit(AstModportVarRef* nodep, AstNUser*) {
 	UINFO(5,"   fiv: "<<nodep<<endl);
 	nodep->iterateChildren(*this);
