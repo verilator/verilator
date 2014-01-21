@@ -2190,7 +2190,12 @@ statement_item<nodep>:		// IEEE: statement_item
 							  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
 							  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
 	//UNSUP	caseStart caseAttrE yMATCHES case_patternListE yENDCASE	{ }
-	//UNSUP	caseStart caseAttrE yINSIDE  case_insideListE yENDCASE	{ }
+	|	unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE	{ $$ = $2; if ($5) $2->addItemsp($5);
+							  if (!$2->caseSimple()) $2->v3error("Illegal to have inside on a casex/casez");
+							  $2->caseInsideSet();
+							  if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
@@ -2328,9 +2333,9 @@ unique_priorityE<uniqstate>:	// IEEE: unique_priority + empty
 	;
 
 caseStart<casep>:		// IEEE: part of case_statement
-	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASE,$3,NULL); }
-	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASEX,$3,NULL); }
-	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,AstCaseType::CT_CASEZ,$3,NULL); }
+	 	yCASE  '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,VCaseType::CT_CASE,$3,NULL); }
+	|	yCASEX '(' expr ')' 			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,VCaseType::CT_CASEX,$3,NULL); }
+	|	yCASEZ '(' expr ')'			{ $$ = GRAMMARP->m_caseAttrp = new AstCase($1,VCaseType::CT_CASEZ,$3,NULL); }
 	;
 
 caseAttrE:
@@ -2344,6 +2349,11 @@ case_itemListE<caseitemp>:	// IEEE: [ { case_item } ]
 	|	case_itemList				{ $$ = $1; }
 	;
 
+case_insideListE<caseitemp>:	// IEEE: [ { case_inside_item } ]
+		/* empty */				{ $$ = NULL; }
+	|	case_inside_itemList			{ $$ = $1; }
+	;
+
 case_itemList<caseitemp>:	// IEEE: { case_item + ... }
 		caseCondList ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
 	|	yDEFAULT ':' stmtBlock			{ $$ = new AstCaseItem($2,NULL,$3); }
@@ -2351,6 +2361,15 @@ case_itemList<caseitemp>:	// IEEE: { case_item + ... }
 	|	case_itemList caseCondList ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
 	|       case_itemList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,NULL,$3)); }
 	|	case_itemList yDEFAULT ':' stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
+	;
+
+case_inside_itemList<caseitemp>:	// IEEE: { case_inside_item + open_range_list ... }
+		open_range_list ':' stmtBlock		{ $$ = new AstCaseItem($2,$1,$3); }
+	|	yDEFAULT ':' stmtBlock			{ $$ = new AstCaseItem($2,NULL,$3); }
+	|	yDEFAULT stmtBlock			{ $$ = new AstCaseItem($1,NULL,$2); }
+	|	case_inside_itemList open_range_list ':' stmtBlock { $$ = $1;$1->addNext(new AstCaseItem($3,$2,$4)); }
+	|       case_inside_itemList yDEFAULT stmtBlock		{ $$ = $1;$1->addNext(new AstCaseItem($2,NULL,$3)); }
+	|	case_inside_itemList yDEFAULT ':' stmtBlock	{ $$ = $1;$1->addNext(new AstCaseItem($3,NULL,$4)); }
 	;
 
 open_range_list<nodep>:		// ==IEEE: open_range_list + open_value_range

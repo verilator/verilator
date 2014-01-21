@@ -504,7 +504,7 @@ private:
 		UINFO(6,"       -to "<<pinNewVarp<<endl);
 		pinNewVarp->user2p(connectRefp);
 		// Public output inside the cell must go via an assign rather than alias
-		// Else the public logic will set the alias, loosing the value to be propagated up
+		// Else the public logic will set the alias, losing the value to be propagated up
 		// (InOnly isn't a problem as the AssignAlias will create the assignment for us)
 		pinNewVarp->user3(pinNewVarp->isSigUserRWPublic() && pinNewVarp->isOutOnly());
 	    }

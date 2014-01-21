@@ -112,6 +112,35 @@ int AstNodeClassDType::widthAlignBytes() const {
     else return 8;
 }
 
+AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+    if (lhsp->isDouble() && rhsp->isDouble()) {
+	return new AstEqD(fl, lhsp, rhsp);
+    } else {
+	return new AstEq(fl, lhsp, rhsp);
+    }
+}
+
+AstNodeBiop* AstGte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+    if (lhsp->isDouble() && rhsp->isDouble()) {
+	return new AstGteD(fl, lhsp, rhsp);
+    } else if (lhsp->isSigned() && rhsp->isSigned()) {
+	return new AstGteS(fl, lhsp, rhsp);
+    } else {
+	return new AstGte(fl, lhsp, rhsp);
+    }
+}
+
+AstNodeBiop* AstLte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+    if (lhsp->isDouble() && rhsp->isDouble()) {
+	return new AstLteD(fl, lhsp, rhsp);
+    } else if (lhsp->isSigned() && rhsp->isSigned()) {
+	return new AstLteS(fl, lhsp, rhsp);
+    } else {
+	return new AstLte(fl, lhsp, rhsp);
+    }
+}
+
+
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
 }

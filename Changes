@@ -5,6 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.856 devel
 
+***   Support case inside, bug708. [Jan Egil Ruud]
 
 
 * Verilator 3.855 2014-01-18

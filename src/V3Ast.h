@@ -496,22 +496,23 @@ public:
 
 //######################################################################
 
-class AstCaseType {
+class VCaseType {
 public:
     enum en {
 	CT_CASE,
 	CT_CASEX,
-	CT_CASEZ
+	CT_CASEZ,
+	CT_CASEINSIDE
     };
     enum en m_e;
-    inline AstCaseType () : m_e(CT_CASE) {}
-    inline AstCaseType (en _e) : m_e(_e) {}
-    explicit inline AstCaseType (int _e) : m_e(static_cast<en>(_e)) {}
+    inline VCaseType () : m_e(CT_CASE) {}
+    inline VCaseType (en _e) : m_e(_e) {}
+    explicit inline VCaseType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
   };
-  inline bool operator== (AstCaseType lhs, AstCaseType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator== (AstCaseType lhs, AstCaseType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator== (AstCaseType::en lhs, AstCaseType rhs) { return (lhs == rhs.m_e); }
+  inline bool operator== (VCaseType lhs, VCaseType rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VCaseType lhs, VCaseType::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VCaseType::en lhs, VCaseType rhs) { return (lhs == rhs.m_e); }
 
 //######################################################################
 

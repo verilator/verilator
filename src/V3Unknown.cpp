@@ -163,13 +163,13 @@ private:
 	m_assignwp = NULL;
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
-	m_constXCvt = false;  // Avoid loosing the X's in casex
+	m_constXCvt = false;  // Avoid losing the X's in casex
 	nodep->condsp()->iterateAndNext(*this);
 	m_constXCvt = true;
 	nodep->bodysp()->iterateAndNext(*this);
     }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {
-	m_constXCvt = false;  // Avoid loosing the X's in casex
+	m_constXCvt = false;  // Avoid losing the X's in casex
 	nodep->iterateChildren(*this);
 	m_constXCvt = true;
     }

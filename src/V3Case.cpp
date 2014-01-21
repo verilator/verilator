@@ -97,7 +97,8 @@ private:
 		nodep->v3error("Use of x/? constant in generate case statement, (no such thing as 'generate casez')");
 	    } else if (m_caseExprp->castCase() && m_caseExprp->castCase()->casex()) {
 		// Don't sweat it, we already complained about casex in general
-	    } else if (m_caseExprp->castCase() && m_caseExprp->castCase()->casez()) {
+	    } else if (m_caseExprp->castCase() && (m_caseExprp->castCase()->casez()
+						   || m_caseExprp->castCase()->caseInside())) {
 		if (nodep->num().isUnknown()) {
 		    nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, (perhaps intended ?/z in constant)");
 		}
@@ -322,36 +323,42 @@ private:
 		    icondNextp = icondp->nextp();
 		    icondp->unlinkFrBack();
 
-		    AstNode* and1p;
-		    AstNode* and2p;
+		    AstNode* condp = NULL;  // Default is to use and1p/and2p
 		    AstConst* iconstp = icondp->castConst();
 		    if (iconstp && neverItem(nodep, iconstp)) {
 			// X in casez can't ever be executed
 			icondp->deleteTree(); icondp=NULL; iconstp=NULL;
 			// For simplicity, make expression that is not equal, and let later
 			// optimizations remove it
-			and1p = new AstConst(itemp->fileline(), AstConst::LogicFalse());
-			and2p = new AstConst(itemp->fileline(), AstConst::LogicTrue());
+			condp = new AstConst(itemp->fileline(), AstConst::LogicFalse());
+		    } else if (AstInsideRange* irangep = icondp->castInsideRange()) {
+			// Similar logic in V3Width::visit(AstInside)
+			AstNode* ap = AstGte::newTyped(itemp->fileline(),
+						       cexprp->cloneTree(false),
+						       irangep->lhsp()->unlinkFrBack());
+			AstNode* bp = AstLte::newTyped(itemp->fileline(),
+						       cexprp->cloneTree(false),
+						       irangep->rhsp()->unlinkFrBack());
+			condp = new AstAnd(itemp->fileline(), ap, bp);
 		    } else if (iconstp && iconstp->num().isFourState()
-			       && (nodep->casex() || nodep->casez())) {
+			       && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
 			V3Number nummask (itemp->fileline(), iconstp->width());
 			nummask.opBitsNonX(iconstp->num());
 			V3Number numval  (itemp->fileline(), iconstp->width());
 			numval.opBitsOne(iconstp->num());
-			and1p = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
-					   new AstConst(itemp->fileline(), nummask));
-			and2p = new AstAnd(itemp->fileline(),
-					   new AstConst(itemp->fileline(), numval),
-					   new AstConst(itemp->fileline(), nummask));
+			AstNode* and1p = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
+						    new AstConst(itemp->fileline(), nummask));
+			AstNode* and2p = new AstAnd(itemp->fileline(),
+						    new AstConst(itemp->fileline(), numval),
+						    new AstConst(itemp->fileline(), nummask));
 			icondp->deleteTree(); icondp=NULL; iconstp=NULL;
+			condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
 		    } else {
 			// Not a caseX mask, we can simply build CASEEQ(cexpr icond)
-			and1p = cexprp->cloneTree(false);
-			and2p = icondp;
+			AstNode* and1p = cexprp->cloneTree(false);
+			AstNode* and2p = icondp;
+			condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
 		    }
-		    AstNodeBiop* condp = (and1p->isDouble()
-					  ? (new AstEqD(itemp->fileline(), and1p, and2p))->castNodeBiop()
-					  : (new AstEq(itemp->fileline(), and1p, and2p))->castNodeBiop());
 		    if (!ifexprp) {
 			ifexprp = condp;
 		    } else {
@@ -435,7 +442,7 @@ private:
     bool neverItem(AstCase* casep, AstConst* itemp) {
 	// Xs in case or casez are impossible due to two state simulations
 	if (casep->casex()) {
-	} else if (casep->casez()) {
+	} else if (casep->casez() || casep->caseInside()) {
 	    if (itemp->num().isUnknown()) return true;
 	} else {
 	    if (itemp->num().isFourState()) return true;

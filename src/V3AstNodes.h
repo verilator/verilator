@@ -2053,14 +2053,14 @@ struct AstCase : public AstNodeCase {
     // exprp Children:  MATHs
     // casesp Children: CASEITEMs
 private:
-    AstCaseType	m_casex;		// 0=case, 1=casex, 2=casez
+    VCaseType	m_casex;		// 0=case, 1=casex, 2=casez
     bool	m_fullPragma;		// Synthesis full_case
     bool	m_parallelPragma;	// Synthesis parallel_case
     bool	m_uniquePragma;		// unique case
     bool	m_unique0Pragma;	// unique0 case
     bool	m_priorityPragma;	// priority case
 public:
-    AstCase(FileLine* fileline, AstCaseType casex, AstNode* exprp, AstNode* casesp)
+    AstCase(FileLine* fileline, VCaseType casex, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
 	m_casex=casex;
 	m_fullPragma=false; m_parallelPragma=false;
@@ -2070,8 +2070,11 @@ public:
     virtual string  verilogKwd() const { return casez()?"casez":casex()?"casex":"case"; }
     virtual bool same(AstNode* samep) const {
 	return m_casex==samep->castCase()->m_casex; }
-    bool	casex()	const { return m_casex==AstCaseType::CT_CASEX; }
-    bool	casez()	const { return m_casex==AstCaseType::CT_CASEZ; }
+    bool	casex()	const { return m_casex==VCaseType::CT_CASEX; }
+    bool	casez()	const { return m_casex==VCaseType::CT_CASEZ; }
+    bool	caseInside() const { return m_casex==VCaseType::CT_CASEINSIDE; }
+    bool	caseSimple() const { return m_casex==VCaseType::CT_CASE; }
+    void	caseInsideSet()	{ m_casex=VCaseType::CT_CASEINSIDE; }
     bool	fullPragma()	const { return m_fullPragma; }
     void	fullPragma(bool flag)	{ m_fullPragma=flag; }
     bool	parallelPragma()	const { return m_parallelPragma; }
@@ -3610,6 +3613,7 @@ struct AstEq : public AstNodeBiCom {
     AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Eq, EQ)
+    static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstEq/AstEqD
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f== %r)"; }
     virtual string emitC() { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
@@ -3740,6 +3744,7 @@ struct AstGte : public AstNodeBiop {
     AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Gte, GTE)
+    static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstGte/AstGteS/AstGteD
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
     virtual string emitC() { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
@@ -3779,6 +3784,7 @@ struct AstLte : public AstNodeBiop {
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Lte, LTE)
+    static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstLte/AstLteS/AstLteD
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
     virtual string emitC() { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }

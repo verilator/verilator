@@ -1050,6 +1050,7 @@ private:
 	    nextip = itemp->nextp(); // Will be unlinking
 	    AstNode* inewp;
 	    if (AstInsideRange* irangep = itemp->castInsideRange()) {
+		// Similar logic in V3Case
 		inewp = new AstAnd(itemp->fileline(),
 				   new AstGte(itemp->fileline(),
 					      nodep->exprp()->cloneTree(true),
