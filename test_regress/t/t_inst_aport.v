@@ -1,19 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//	$write("*-* All Finished *-*\n");
-//	$finish;
-// on success, or $stop.
-//
-// The code as shown applies a random vector to the Test
-// module, then calculates a CRC on the Test module's outputs.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here, otherwise:**
-//
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2014 by ____YOUR_NAME_HERE____.
+// without warranty, 2014 by Wilson Snyder.
 
 module t (/*AUTOARG*/
    // Inputs
@@ -30,18 +18,17 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0] 		out;			// From test of Test.v
+   wire [15:0]		out;			// From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
 	      // Outputs
-	      .out			(out[31:0]),
+	      .out			(out[15:0]),
 	      // Inputs
-	      .clk			(clk),
 	      .in			(in[31:0]));
 
    // Aggregate outputs into a single result vector
-   wire [63:0] result = {32'h0, out};
+   wire [63:0] result = {48'h0, out};
 
    // Test loop
    always @ (posedge clk) begin
@@ -74,23 +61,49 @@ module t (/*AUTOARG*/
 
 endmodule
 
+module callee (input [7:0] port [7:0], output [7:0] o);
+   assign o = ^{port[0], port[1], port[2], port[3],
+		port[4], port[5], port[6], port[7]};
+endmodule // callee
+
 module Test (/*AUTOARG*/
    // Outputs
    out,
    // Inputs
-   clk, in
+   in
    );
 
-   // Replace this module with the device under test.
-   //
-   // Change the code in the t module to apply values to the inputs and
-   // merge the output values into the result vector.
-
-   input clk;
    input [31:0] in;
-   output reg [31:0] out;
+   output reg [15:0] out;
 
-   always @(posedge clk) begin
-      out <= in;
+   wire [7:0] port [15:0];
+   wire [7:0] goodport [7:0];
+
+   always_comb begin
+      port[0][7:0] = in[7:0];
+      port[1][7:0] = in[16:8];
+      port[2] = '0;
+      port[3] = '0;
+      port[4] = '0;
+      port[5] = '0;
+      port[6] = '0;
+      port[7] = '0;
    end
+
+   always_comb begin
+      goodport[0][7:0] = in[7:0];
+      goodport[1][7:0] = in[16:8];
+      goodport[2] = '0;
+      goodport[3] = '0;
+      goodport[4] = '0;
+      goodport[5] = '0;
+      goodport[6] = '0;
+      goodport[7] = '0;
+   end
+
+   callee good (.port(goodport), .o(out[7:0]));
+
+   // This is a slice, unsupported by other tools, bug711
+   callee bad (.port(port[7:0]), .o(out[15:8]));
+
 endmodule
