@@ -126,7 +126,7 @@ private:
 	else {
 	    string name = ((string)"__Vlvbound"+cvtToStr(m_modp->varNumGetInc()));
 	    AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name,
-				      VFlagLogicPacked(), prep->width());
+				      prep->dtypep());
 	    m_modp->addStmtp(varp);
 
 	    AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace

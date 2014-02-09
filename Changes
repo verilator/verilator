@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support case inside, bug708. [Jan Egil Ruud]
 
+****  Fix array bound checks on real variables.
+
 
 * Verilator 3.855 2014-01-18
 
