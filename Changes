@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix array bound checks on real variables.
 
+****  Fix --skip-identical mis-detecting on OS-X, bug707.
+
 
 * Verilator 3.855 2014-01-18
 

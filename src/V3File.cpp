@@ -67,6 +67,7 @@ class V3FileDependImp {
 	const string& filename() const { return m_filename; }
 	bool target() const { return m_target; }
 	off_t size() const { return m_stat.st_size; }
+	ino_t ino() const { return m_stat.st_ino; }
 	time_t mtime() const { return m_stat.st_mtime; }
 	void loadStats() {
 	    if (!m_stat.st_mtime) {
@@ -169,10 +170,12 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 	V3Options::fileNfsFlush(dfp->filename());
 	dfp->loadStats();
 	off_t showSize = iter->size();
-	if (dfp->filename() == filename) showSize=0;  // We're writing it, so need to ignore it
+	ino_t showIno = iter->ino();
+	if (dfp->filename() == filename) { showSize=0; showIno=0; }  // We're writing it, so need to ignore it
 
 	*ofp<<(iter->target()?"T":"S")<<" ";
 	*ofp<<" "<<setw(8)<<showSize;
+	*ofp<<" "<<setw(8)<<showIno;
 	*ofp<<" "<<setw(11)<<iter->mtime();
 	*ofp<<" \""<<iter->filename()<<"\"";
 	*ofp<<endl;
@@ -202,6 +205,7 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
     while (!ifp->eof()) {
 	char   chkDir;   *ifp>>chkDir;
 	off_t  chkSize;  *ifp>>chkSize;
+	ino_t  chkIno;   *ifp>>chkIno;
 	if (ifp->eof()) break;  // Needed to read final whitespace before found eof
 	time_t chkMtime; *ifp>>chkMtime;
 	char   quote;    *ifp>>quote;
@@ -222,6 +226,7 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	    // we determined the original size.  For safety, we know the creation time
 	    // must be within a few second window... call it 20 sec.
 	    if (!(chkStat.st_size >= chkSize
+		  && chkStat.st_ino == chkIno
 		  && chkStat.st_mtime >= chkMtime
 		  && chkStat.st_mtime <= (chkMtime + 20))) {
 		UINFO(2,"   --check-times failed: out-of-date "<<chkFilename
