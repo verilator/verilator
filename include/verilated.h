@@ -1466,6 +1466,9 @@ static inline QData VL_SHIFTRS_QQI(int obits, int, int, QData lhs, IData rhs) {
     QData signext = ~(VL_MASK_Q(obits) >> rhs);
     return (lhs >> rhs) | (sign & VL_CLEAN_QQ(obits,obits,signext));
 }
+static inline IData VL_SHIFTRS_IQI(int obits, int lbits, int rbits, QData lhs, IData rhs) {
+    return (IData)(VL_SHIFTRS_QQI(obits, lbits, rbits, lhs, rhs));
+}
 static inline WDataOutP VL_SHIFTRS_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);

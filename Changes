@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix --skip-identical mis-detecting on OS-X, bug707.
 
+****  Fix missing VL_SHIFTRS_IQI with WIDTH warning, bug714. [Fabrizio Ferrandi]
+
 
 * Verilator 3.855 2014-01-18
 
