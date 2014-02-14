@@ -3543,8 +3543,8 @@ coverage.  Both require the SystemPerl package to be installed but do not
 require use of the SystemPerl output mode.
 
 First, run verilator with the --coverage option.  If you're using your own
-makefile, compile the model with the GCC flag -DSP_COVERAGE_ENABLE (if
-using Verilator's, it will do this for you.)
+makefile, compile the model with the GCC flag -DSP_COVERAGE (if using
+Verilator's, it will do this for you.)
 
 Run your tests in different directories.  Each test will create a
 logs/coverage.pl file.
