@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support case inside, bug708. [Jan Egil Ruud]
 
+***   Add parameters into trace files, bug706. [Alex Solomatnikov]
+
 ****  Fix array bound checks on real variables.
 
 ****  Fix --skip-identical mis-detecting on OS-X, bug707.

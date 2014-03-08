@@ -43,6 +43,9 @@ module t (clk);
    arru_arrp_t	v_arru_arrp;
    arru_strp_t	v_arru_strp;
 
+   p #(.P(2)) p2 ();
+   p #(.P(3)) p3 ();
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       v_strp <= ~v_strp;
@@ -64,4 +67,8 @@ module t (clk);
 	 $finish;
       end
    end
+endmodule
+
+module p;
+   parameter P = 1;
 endmodule

@@ -147,7 +147,8 @@ private:
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	if (!nodep->varp()->isTemp() && !nodep->varp()->isParam() && !nodep->varp()->isFuncLocal()) {
+	// Avoid updating this if (), instead see varp->isTrace()
+	if (!nodep->varp()->isTemp() && !nodep->varp()->isFuncLocal()) {
 	    UINFO(5, "    vsc "<<nodep<<endl);
 	    AstVar* varp = nodep->varp();
 	    AstScope* scopep = nodep->scopep();

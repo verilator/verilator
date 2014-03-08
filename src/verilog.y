@@ -3727,7 +3727,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     // We need to autosize parameters and integers separately
     //
     // Propagate from current module tracing state
-    if (nodep->isGenVar() || nodep->isParam()) nodep->trace(false);
+    if (nodep->isGenVar()) nodep->trace(false);
     else nodep->trace(v3Global.opt.trace() && nodep->fileline()->tracingOn());
 
     // Remember the last variable created, so we can attach attributes to it in later parsing

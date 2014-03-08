@@ -223,7 +223,9 @@ private:
     bool mightElim(AstVar* nodep) {
 	return (!nodep->isSigPublic()	// Can't elim publics!
 		&& !nodep->isIO()
-		&& (nodep->isTemp() || nodep->isParam() || m_elimUserVars));
+		&& (nodep->isTemp()
+		    || (nodep->isParam() && !nodep->isTrace())
+		    || m_elimUserVars));  // Post-Trace can kill most anything
     }
     void deadCheckVar() {
 	// Delete any unused varscopes
