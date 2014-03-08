@@ -1416,6 +1416,11 @@ sub vcd_identical {
 	if ($out ne '') {
 	    print $out;
 	    $self->error("VCD miscompare $fn1 $fn2\n");
+	    if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
+		warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
+		eval "use File::Copy;";
+		File::Copy::copy($fn1,$fn2);
+	    }
 	    return 0;
 	}
     }
