@@ -175,6 +175,22 @@ private:
 	}
     }
 
+    AstNodeDType* sliceDType(AstPackArrayDType* nodep, int msb, int lsb) {
+	// Return slice needed for msb/lsb, either as original dtype or a new slice dtype
+	if (nodep->declRange().elements() == (msb-lsb+1) // Extracting whole of original array
+	    && nodep->declRange().lo() == lsb) {
+	    return nodep;
+	} else {
+	    // Need a slice data type, which is an array of the extracted type, but with (presumably) different size
+	    VNumRange newRange (msb, lsb, nodep->declRange().littleEndian());
+	    AstNodeDType* vardtypep = new AstPackArrayDType(nodep->fileline(),
+							    nodep->subDTypep(), // Need to strip off array reference
+							    new AstRange(nodep->fileline(), newRange));
+	    v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+	    return vardtypep;
+	}
+    }
+
     // VISITORS
     // If adding new visitors, insure V3Width's visit(TYPE) calls into here
 
@@ -302,18 +318,7 @@ private:
 				       new AstConst(nodep->fileline(),AstConst::Unsized32(),(msb-lsb+1)*elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
-	    if (fromRange.elements() == (msb-lsb+1) // Extracting whole of original array
-		&& fromRange.lo() == lsb) {
-		newp->dtypeFrom(adtypep);
-	    } else {
-		// Need a slice data type, which is an array of the extracted type, but with (presumably) different size
-		VNumRange newRange (msb, lsb, fromRange.littleEndian());
-		AstNodeDType* vardtypep = new AstPackArrayDType(nodep->fileline(),
-								adtypep->subDTypep(), // Need to strip off array reference
-								new AstRange(nodep->fileline(), newRange));
-		v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-		newp->dtypeFrom(vardtypep);
-	    }
+	    newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
 	    //if (debug()>=9) newp->dumpTree(cout,"--EXTBTn: ");
 	    if (newp->widthMin()!=(int)newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
