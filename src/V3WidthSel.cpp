@@ -390,40 +390,31 @@ private:
 	if (ddtypep->castBasicDType()
 	    || (ddtypep->castNodeClassDType()
 		&& ddtypep->castNodeClassDType()->packedUnsup())) {
-	    AstSel* newp = NULL;
+	    AstNode* newlsbp = NULL;
 	    if (nodep->castSelPlus()) {
 		if (fromRange.littleEndian()) {
 		    // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
-		    newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubNeg((fromRange.hi()-width+1), rhsp),
-				       widthp);
+		    newlsbp = newSubNeg((fromRange.hi()-width+1), rhsp);
 		} else {
 		    // SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
-		    newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubNeg(rhsp, fromRange.lo()),
-				       widthp);
+		    newlsbp = newSubNeg(rhsp, fromRange.lo());
 		}
 	    } else if (nodep->castSelMinus()) {
 		if (fromRange.littleEndian()) {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
-		    newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubNeg(fromRange.hi(), rhsp),
-				       widthp);
+		    newlsbp = newSubNeg(fromRange.hi(), rhsp);
 		} else {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-(width-1)-lsb#)
-		    newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubNeg(rhsp, fromRange.lo()+(width-1)),
-				       widthp);
+		    newlsbp = newSubNeg(rhsp, fromRange.lo()+(width-1));
 		}
 	    } else {
 		nodep->v3fatalSrc("Bad Case");
 	    }
+	    AstSel* newp = new AstSel (nodep->fileline(),
+				       fromp, newlsbp, widthp);
 	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
+	    if (debug()>=9) newp->dumpTree(cout,"--SELNEW: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
 	}
 	else {  // NULL=bad extract, or unknown node type
