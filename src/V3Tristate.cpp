@@ -957,11 +957,25 @@ class TristateVisitor : public TristateBaseVisitor {
 	    }
 	}
     }
+    void visitEqNeqWild(AstNodeBiop* nodep) {
+	if (!nodep->rhsp()->castConst()) {
+	    nodep->v3error("Unsupported: RHS of ==? or !=? must be constant to be synthesizable");  // Says spec.
+	    // rhs we want to keep X/Z intact, so otherwise ignore
+	}
+	nodep->lhsp()->iterateAndNext(*this);
+	if (nodep->lhsp()->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
+    }
     virtual void visit(AstEqCase* nodep, AstNUser*) {
 	visitCaseEq(nodep,false);
     }
     virtual void visit(AstNeqCase* nodep, AstNUser*) {
 	visitCaseEq(nodep,true);
+    }
+    virtual void visit(AstEqWild* nodep, AstNUser*) {
+	visitEqNeqWild(nodep);
+    }
+    virtual void visit(AstNeqWild* nodep, AstNUser*) {
+	visitEqNeqWild(nodep);
     }
 
     virtual void visit(AstPull* nodep, AstNUser*) {
