@@ -61,6 +61,7 @@ private:
     bool		m_needStart;	// Need start marker on lower AstParse
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     AstNodeModule*	m_modp;		// Current module
+    AstNodeFTask*	m_ftaskp;	// Current task
 
     // METHODS
     static int debug() {
@@ -85,6 +86,14 @@ private:
     }
 
     // VISITs
+    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+	if (!nodep->user1SetOnce()) {  // Process only once.
+	    cleanFileline(nodep);
+	    m_ftaskp = nodep;
+	    nodep->iterateChildren(*this);
+	    m_ftaskp = NULL;
+	}
+    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
@@ -138,7 +147,11 @@ private:
 	    // A variable with an = value can be three things:
 	    FileLine* fl = nodep->valuep()->fileline();
 	    // 1. Parameters and function inputs: It's a default to use if not overridden
-	    if (nodep->isParam() || nodep->isInOnly()) {
+	    if (nodep->isParam() || (m_ftaskp && nodep->isInOnly())) {
+	    }
+	    else if (!m_ftaskp && nodep->isInOnly()) {
+		nodep->v3error("Unsupported: Default value on module input: "<<nodep->prettyName());
+		nodep->valuep()->unlinkFrBack()->deleteTree();
 	    } // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
 	    else if (m_valueModp) {
 		nodep->addNextHere
@@ -313,6 +326,7 @@ public:
     LinkParseVisitor(AstNetlist* rootp) {
 	m_varp = NULL;
 	m_modp = NULL;
+	m_ftaskp = NULL;
 	m_inAlways = false;
 	m_inGenerate = false;
 	m_needStart = false;

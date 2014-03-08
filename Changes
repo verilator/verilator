@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix missing VL_SHIFTRS_IQI with WIDTH warning, bug714. [Fabrizio Ferrandi]
 
+****  Fix internal error on "input x =" syntax error, bug716. [Lane Brooks]
+
 
 * Verilator 3.855 2014-01-18
 
