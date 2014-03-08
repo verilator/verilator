@@ -393,8 +393,15 @@ private:
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
 	if (ddtypep->castBasicDType()
+	    || ddtypep->castPackArrayDType()
 	    || (ddtypep->castNodeClassDType()
 		&& ddtypep->castNodeClassDType()->packedUnsup())) {
+	    int elwidth = 1;
+	    AstNode* newwidthp = widthp;
+	    if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+		elwidth = adtypep->width() / fromRange.elements();
+		newwidthp = new AstConst (nodep->fileline(),AstConst::Unsized32(), width * elwidth);
+	    }
 	    AstNode* newlsbp = NULL;
 	    if (nodep->castSelPlus()) {
 		if (fromRange.littleEndian()) {
@@ -415,9 +422,12 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Bad Case");
 	    }
+	    if (elwidth != 1) newlsbp = new AstMul (nodep->fileline(), newlsbp,
+						    new AstConst (nodep->fileline(), elwidth));
 	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp, newlsbp, widthp);
+				       fromp, newlsbp, newwidthp);
 	    newp->declRange(fromRange);
+	    newp->declElWidth(elwidth);
 	    UINFO(6,"   new "<<newp<<endl);
 	    if (debug()>=9) newp->dumpTree(cout,"--SELNEW: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;

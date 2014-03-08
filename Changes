@@ -15,6 +15,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix internal error on "input x =" syntax error, bug716. [Lane Brooks]
 
+****  Fix slice extraction from packed array, bug717. [Jan Egil Ruud]
+
 ****  Fix inside statement EQWILD error, bug718. [Jan Egil Ruud]
 
 
