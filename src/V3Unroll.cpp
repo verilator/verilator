@@ -73,6 +73,7 @@ private:
 	    nodep->v3error("Unsupported: Can't unroll generate for; "<<reason);
 	}
 	UINFO(3,"   Can't Unroll: "<<reason<<" :"<<nodep<<endl);
+	//if (debug()>=9) nodep->dumpTree(cout,"-cant-");
 	V3Stats::addStatSum(string("Unrolling gave up, ")+reason, 1);
 	return false;
     }
@@ -158,20 +159,20 @@ private:
 	if (!constIncp) return cantUnroll(nodep, "non-constant increment");
 	if (constIncp->isZero()) return cantUnroll(nodep, "zero increment");  // Or we could loop forever below...
 
-        bool lt  = condp->castLt() || condp->castLtS();
+        bool lt  = condp->castLt()  || condp->castLtS();
         bool lte = condp->castLte() || condp->castLteS();
-	bool gt  = condp->castGt() || condp->castGtS();
+	bool gt  = condp->castGt()  || condp->castGtS();
 	bool gte = condp->castGte() || condp->castGteS();
 	if (!lt && !lte && !gt && !gte)
 	    return cantUnroll(nodep, "condition not <= or <");
 	AstNodeBiop* condBip = condp->castNodeBiop();
-	if (!condBip->lhsp()->castVarRef())
-	    return cantUnroll(nodep, "no variable on lhs of condition");
-	if (condBip->lhsp()->castVarRef()->varp() != m_forVarp
-	    || condBip->lhsp()->castVarRef()->varScopep() != m_forVscp)
+	if (!condBip->rhsp()->castVarRef())
+	    return cantUnroll(nodep, "no variable on rhs of condition");
+	if (condBip->rhsp()->castVarRef()->varp() != m_forVarp
+	    || condBip->rhsp()->castVarRef()->varScopep() != m_forVscp)
 	    return cantUnroll(nodep, "different variable in condition");
-	if (m_generate) V3Const::constifyParamsEdit(condBip->rhsp());  // rhsp may change
-	AstConst* constStopp = condBip->rhsp()->castConst();
+	if (m_generate) V3Const::constifyParamsEdit(condBip->lhsp());  // rhsp may change
+	AstConst* constStopp = condBip->lhsp()->castConst();
 	if (!constStopp) return cantUnroll(nodep, "non-constant final value");
 	UINFO(8, "   Stop expr ok: "<<constStopp<<endl);
 	//
@@ -181,7 +182,7 @@ private:
 	    return cantUnroll(nodep, "init/final/increment too large or four state");
 	vlsint32_t valInit = constInitp->num().toSInt();
 	vlsint32_t valStop = constStopp->num().toSInt();
-	if (lte) valStop++;  if (gte) valStop--;
+	if (gte) valStop++;  if (lte) valStop--;   // 23 >= a, handle as if 24 > a
 	vlsint32_t valInc  = constIncp->num().toSInt();
 	if (subtract) valInc = -valInc;
 	UINFO(8,"     In Numbers: for (v="<<valInit<<"; v<"<<valStop<<"; v=v+"<<valInc<<")\n");
@@ -269,7 +270,7 @@ private:
 		UINFO(8,"      Looping "<<loopValue<<endl);
 		// if loopValue<valStop
 		V3Number contin (nodep->fileline(), 1);
-		cmpInstrp->numberOperate(contin, loopValue, numStop);
+		cmpInstrp->numberOperate(contin, numStop, loopValue);
 		if (contin.isEqZero()) {
 		    break;  // Done with the loop
 		} else {

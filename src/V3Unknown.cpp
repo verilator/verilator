@@ -342,9 +342,9 @@ private:
 	    V3Number maxlsbnum (nodep->fileline(), nodep->lsbp()->width(), maxlsb);
 
 	    // See if the condition is constant true
-	    AstNode* condp = new AstLte (nodep->fileline(),
-					 nodep->lsbp()->cloneTree(false),
-					 new AstConst(nodep->fileline(), maxlsbnum));
+	    AstNode* condp = new AstGte (nodep->fileline(),
+					 new AstConst(nodep->fileline(), maxlsbnum),
+					 nodep->lsbp()->cloneTree(false));
 	    // Note below has null backp(); the Edit function knows how to deal with that.
 	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {
@@ -400,9 +400,9 @@ private:
 	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), declElements-1);
 
 	    // See if the condition is constant true
-	    AstNode* condp = new AstLte (nodep->fileline(),
-					 nodep->bitp()->cloneTree(false),
-					 new AstConst(nodep->fileline(), widthnum));
+	    AstNode* condp = new AstGte (nodep->fileline(),
+					 new AstConst(nodep->fileline(), widthnum),
+					 nodep->bitp()->cloneTree(false));
 	    // Note below has null backp(); the Edit function knows how to deal with that.
 	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {

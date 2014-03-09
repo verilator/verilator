@@ -225,9 +225,9 @@ private:
 		constwidthp->dtypeFrom (nodep->rhsp());  // unsigned
 		AstCond* newp =
 		    new AstCond (nodep->fileline(),
-				 new AstLte (nodep->fileline(),
-					     nodep->rhsp()->cloneTree(false),
-					     constwidthp),
+				 new AstGte (nodep->fileline(),
+					     constwidthp,
+					     nodep->rhsp()->cloneTree(false)),
 				 nodep,
 				 constzerop);
 		replaceHandle.relink(newp);
