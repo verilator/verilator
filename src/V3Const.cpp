@@ -538,6 +538,8 @@ private:
     void replaceWChild(AstNode* nodep, AstNode* childp) {
 	// NODE(..., CHILD(...)) -> CHILD(...)
 	childp->unlinkFrBackWithNext();
+	// If replacing a SEL for example, the data type comes from the parent (is less wide).
+	// This may adversly affect the operation of the node being replaced.
 	childp->dtypeFrom(nodep);
 	nodep->replaceWith(childp);
 	nodep->deleteTree(); nodep=NULL;
@@ -1831,7 +1833,7 @@ private:
     TREEOP1("AstGte  {$lhsp.isAllOnes, $rhsp, $lhsp->width()==$rhsp->width()}",  "replaceNumLimited(nodep,1)");
     // Two level bubble pushing
     TREEOP ("AstNot   {$lhsp.castNot,  $lhsp->width()==$lhsp->castNot()->lhsp()->width()}",	"replaceWChild(nodep, $lhsp->op1p())");  // NOT(NOT(x))->x
-    TREEOP ("AstLogNot{$lhsp.castLogNot}",		"replaceWChild(nodep, $lhsp->op1p())");  // NOT(NOT(x))->x
+    TREEOP ("AstLogNot{$lhsp.castLogNot}",		"replaceWChild(nodep, $lhsp->op1p())");  // LOGNOT(LOGNOT(x))->x
     TREEOPV("AstNot   {$lhsp.castEqCase, $lhsp.width1}","AstNeqCase{$lhsp->op1p(),$lhsp->op2p()}");
     TREEOP ("AstLogNot{$lhsp.castEqCase}",		"AstNeqCase{$lhsp->op1p(),$lhsp->op2p()}");
     TREEOPV("AstNot   {$lhsp.castNeqCase, $lhsp.width1}","AstEqCase {$lhsp->op1p(),$lhsp->op2p()}");

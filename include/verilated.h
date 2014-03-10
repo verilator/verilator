@@ -1455,32 +1455,37 @@ static inline WDataOutP VL_SHIFTR_WWI(int obits,int,int,WDataOutP owp,WDataInP l
 }
 
 // EMIT_RULE: VL_SHIFTRS:  oclean=false; lclean=clean, rclean==clean;
-static inline IData VL_SHIFTRS_III(int obits, int, int, IData lhs, IData rhs) {
+static inline IData VL_SHIFTRS_III(int obits, int lbits, int, IData lhs, IData rhs) {
     // Note the C standard does not specify the >> operator as a arithmetic shift!
-    IData sign    = -(lhs >> (obits-1)); // ffff_ffff if negative
-    IData signext = ~(VL_MASK_I(obits) >> rhs);   // One with bits where we've shifted "past"
+    // IEEE says signed if output signed, but bit position from lbits;
+    // must use lbits for sign; lbits might != obits,
+    // an EXTEND(SHIFTRS(...)) can became a SHIFTRS(...) within same 32/64 bit word length
+    IData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
+    IData signext = ~(VL_MASK_I(lbits) >> rhs);   // One with bits where we've shifted "past"
     return (lhs >> rhs) | (sign & VL_CLEAN_II(obits,obits,signext));
 }
-static inline QData VL_SHIFTRS_QQI(int obits, int, int, QData lhs, IData rhs) {
-    QData sign    = -(lhs >> (obits-1));
-    QData signext = ~(VL_MASK_Q(obits) >> rhs);
+static inline QData VL_SHIFTRS_QQI(int obits, int lbits, int, QData lhs, IData rhs) {
+    QData sign    = -(lhs >> (lbits-1));
+    QData signext = ~(VL_MASK_Q(lbits) >> rhs);
     return (lhs >> rhs) | (sign & VL_CLEAN_QQ(obits,obits,signext));
 }
 static inline IData VL_SHIFTRS_IQI(int obits, int lbits, int rbits, QData lhs, IData rhs) {
     return (IData)(VL_SHIFTRS_QQI(obits, lbits, rbits, lhs, rhs));
 }
-static inline WDataOutP VL_SHIFTRS_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
+static inline WDataOutP VL_SHIFTRS_WWI(int obits,int lbits,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);
     int lmsw = VL_WORDS_I(obits)-1;
-    IData sign = VL_SIGNONES_I(obits,lwp[lmsw]);
-    if ((int)rd >= obits) {
+    IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
+    if ((int)rd >= obits) {  // Shifting past end, sign in all of lbits
 	for (int i=0; i <= lmsw; i++) owp[i] = sign;
+	owp[lmsw] &= VL_MASK_I(lbits);
     } else if (bit_shift==0) {  // Aligned word shift (>>0,>>32,>>64 etc)
 	int copy_words = (VL_WORDS_I(obits)-word_shift);
 	for (int i=0; i < copy_words; i++) owp[i] = lwp[i+word_shift];
 	if (copy_words>=0) owp[copy_words-1] |= ~VL_MASK_I(obits) & sign;
 	for (int i=copy_words; i < VL_WORDS_I(obits); i++) owp[i] = sign;
+	owp[lmsw] &= VL_MASK_I(lbits);
     } else {
 	int loffset = rd & VL_SIZEBITS_I;
 	int nbitsonright = 32-loffset;  // bits that end up in lword (know loffset!=0)
@@ -1495,6 +1500,7 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits,int,int,WDataOutP owp,WDataInP 
 	}
 	if (words) owp[words-1] |= sign & ~VL_MASK_I(obits-loffset);
 	for (int i=words; i<VL_WORDS_I(obits); i++) owp[i] = sign;
+	owp[lmsw] &= VL_MASK_I(lbits);
     }
     return(owp);
 }

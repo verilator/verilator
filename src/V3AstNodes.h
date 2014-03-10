@@ -3849,6 +3849,8 @@ struct AstShiftR : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}  // LHS size might be > output size, so don't want to force size
 };
 struct AstShiftRS : public AstNodeBiop {
+    // Shift right with sign extension, >>> operator
+    // Output data type's width determines which bit is used for sign extension
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::SIGNED); }
