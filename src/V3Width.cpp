@@ -106,7 +106,7 @@ public:
     char stageAscii() const { return "-PFB"[m_stage]; }
 };
 ostream& operator<<(ostream& str, const WidthVP* vup) {
-    str<<"  VUP(w="<<vup->width()<<",wm="<<vup->widthMin()<<",s="<<vup->stageAscii()<<")";
+    str<<"  VUP(s="<<vup->stageAscii()<<",w="<<vup->width()<<",wm="<<vup->widthMin()<<",dt="<<(void*)vup->dtypep()<<")";
     return str;
 }
 
