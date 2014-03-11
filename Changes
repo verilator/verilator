@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add parameters into trace files, bug706. [Alex Solomatnikov]
 
+****  Fix parsing "#0 'b0", bug256.
+
 ****  Fix array bound checks on real variables.
 
 ****  Fix --skip-identical mis-detecting on OS-X, bug707.

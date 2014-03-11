@@ -105,6 +105,7 @@ class V3ParseImp {
     int		m_inBeginKwd;		// Inside a `begin_keywords
     int		m_lastVerilogState;	// Last LEX state in `begin_keywords
 
+    int		m_prevLexToken;		// previous parsed token (for lexer)
     bool	m_ahead;		// aheadToken is valid
     int		m_aheadToken;		// Token we read ahead
     V3ParseBisonYYSType m_aheadVal;	// aheadToken's value
@@ -193,6 +194,7 @@ public:
     void statePushVlg();	// Parser -> lexer communication
     void statePop();		// Parser -> lexer communication
     static int stateVerilogRecent();	// Parser -> lexer communication
+    int	prevLexToken() { return m_prevLexToken; } // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
 
     //==== Symbol tables
@@ -208,11 +210,13 @@ public:
 	m_inLibrary = false;
 	m_inBeginKwd = 0;
 	m_lastVerilogState = stateVerilogRecent();
+	m_prevLexToken = 0;
 	m_ahead = false;
 	m_aheadToken = 0;
     }
     ~V3ParseImp();
     void parserClear();
+    void unputString(const char* textp, size_t length);
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
@@ -223,6 +227,7 @@ public:
 
 private:
     void lexFile(const string& modname);
+    int yylexReadTok();
     int lexToken(); // Internal; called from lexToBison
 };
 

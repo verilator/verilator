@@ -43,7 +43,8 @@ extern void yyerrorf(const char* format, ...);
 //======================================================================
 
 #define NEXTLINE() {PARSEP->linenoInc();}
-#define LINECHECK()  { const char* cp=yytext; for (int n=yyleng; n; --n) if (cp[n]=='\n') NEXTLINE(); }
+#define LINECHECKS(textp,len)  { const char* cp=textp; for (int n=len; n; --n) if (cp[n]=='\n') NEXTLINE(); }
+#define LINECHECK()  LINECHECKS(yytext,yyleng)
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
 #define FL { yylval.fl = CRELINE(); }
@@ -149,6 +150,13 @@ id	[a-zA-Z_][a-zA-Z0-9_$]*
 	/* escaped identifier */
 escid	\\[^ \t\f\r\n]+
 word	[a-zA-Z0-9_]+
+	/* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
+vnum1	[0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
+vnum2	[0-9]*?['']s?[01xXzZ]
+vnum3	[0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+
+vnum4	[0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]
+vnum5	[0-9][_0-9]*[ \t\n]*['']s
+vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
 
@@ -912,24 +920,21 @@ word	[a-zA-Z0-9_]+
 			}
   \" 			{ yy_push_state(STRING); yymore(); }
 
-  [0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*	{
-			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
-                          return yaINTNUM;
-			}
-  [0-9]*?['']s?[01xXzZ]	{	/* SystemVerilog */
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
-                          return yaINTNUM;
-			}
-  /* Note below is constructed to not match the ' that begins a '(  or '{ */
-  [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t]*[A-Fa-f0-9xXzZ_?]+	{
-			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
-                          return yaINTNUM;
-			}
-  [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]	{
-			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
-                          return yaINTNUM;
-			}
-  [0-9][_0-9]*[ \t\n]*['']s	{
+  {vnum}		{
+			  /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
+			  if (PARSEP->prevLexToken()=='#') {
+			      int shortlen = 0;
+			      while (isdigit(yytext[shortlen])) shortlen++;
+			      if (shortlen) {
+				  // Push rest for later parse
+				  PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
+				  FL; LINECHECKS(yytext,shortlen);
+				  // Return is stuff before '
+				  yytext[shortlen] = '\0';
+				  yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
+				  return yaINTNUM;
+			      }
+			  }
 			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
                           return yaINTNUM;
 			}
@@ -1106,8 +1111,8 @@ int V3ParseImp::lexToken() {
 	yylval = m_aheadVal;
     } else {
 	// Parse new token
-	token = yylexThis();
-	//yylval // Set by yylexThis()
+	token = yylexReadTok();
+	//yylval // Set by yylexReadTok()
     }
     // If a paren, read another
     if (token == yCONST__LEX
@@ -1116,7 +1121,7 @@ int V3ParseImp::lexToken() {
 	) {
 	if (debugFlex()) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
 	V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
-	int nexttok = yylexThis();
+	int nexttok = yylexReadTok();
 	m_ahead = true;
 	m_aheadToken = nexttok;
 	m_aheadVal = yylval;
