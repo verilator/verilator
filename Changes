@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.856 devel
+* Verilator 3.856 2014-03-11
 
 ***   Support case inside, bug708. [Jan Egil Ruud]
 
