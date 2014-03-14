@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t_trace_complex.v");
 
 compile (
-	 verilator_flags2 => ['--cc --trace --trace-structs'],
+	 verilator_flags2 => ['--cc --trace --trace-structs --no-trace-params'],
 	 );
 
 execute (

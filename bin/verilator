@@ -325,6 +325,7 @@ descriptions in the next sections for more information.
     --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
+    --trace-params              Enable tracing parameters
     --trace-structs             Enable tracing structure names
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
@@ -1021,6 +1022,10 @@ simulations.
 Rarely needed.  Specify the maximum bit width of a signal that may be
 traced.  Defaults to 256, as tracing large vectors may greatly slow traced
 simulations.
+
+=item --no-trace-params
+
+Disable tracing of parameters.
 
 =item --trace-structs
 

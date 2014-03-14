@@ -90,6 +90,7 @@ class V3Options {
     bool	m_stats;	// main switch: --stats
     bool	m_trace;	// main switch: --trace
     bool	m_traceDups;	// main switch: --trace-dups
+    bool	m_traceParams;	// main switch: --trace-params
     bool	m_traceStructs;	// main switch: --trace-structs
     bool	m_traceUnderscore;// main switch: --trace-underscore
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
@@ -215,6 +216,7 @@ class V3Options {
     bool exe() const { return m_exe; }
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
+    bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool orderClockDly() const { return m_orderClockDly; }

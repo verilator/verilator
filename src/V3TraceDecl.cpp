@@ -261,7 +261,6 @@ private:
 			AstNode* oldValuep = m_traValuep;
 			{
 			    m_traShowname += string(" ")+itemp->prettyName();
-			    m_traValuep->dumpTree(cout, "-tv: ");
 			    if (nodep->castStructDType()) {
 				m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 							 itemp->lsb(), subtypep->width());

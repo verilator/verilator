@@ -756,6 +756,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
+	    else if ( onoff   (sw, "-trace-params", flag/*ref*/) )	{ m_traceParams = flag; }
 	    else if ( onoff   (sw, "-trace-structs", flag/*ref*/) )	{ m_traceStructs = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
@@ -1223,6 +1224,7 @@ V3Options::V3Options() {
     m_systemPerl = false;
     m_trace = false;
     m_traceDups = false;
+    m_traceParams = true;
     m_traceStructs = false;
     m_traceUnderscore = false;
     m_underlineZero = false;
