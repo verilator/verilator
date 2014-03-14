@@ -40,7 +40,7 @@ Verilator then performs many additional edits and optimizations on the
 hierarchical design.  This includes coverage, assertions, X elimination,
 inlining, constant propagation, and dead code elimination.
 
-References in the design are then psudo-flattened.  Each module's variables
+References in the design are then pseudo-flattened.  Each module's variables
 and functions get "Scope" references.  A scope reference is an occurrence of
 that un-flattened variable in the flattened hierarchy.  A module that occurs
 only once in the hierarchy will have a single scope and single VarScope for
@@ -49,7 +49,7 @@ occurrence, and two VarScopes for each variable.  This allows optimizations
 to proceed across the flattened design, while still preserving the
 hierarchy.
 
-Additional edits and optimizations proceed on the psudo-flat design.  These
+Additional edits and optimizations proceed on the pseudo-flat design.  These
 include module references, function inlining, loop unrolling, variable
 lifetime analysis, lookup table creation, always splitting, and logic gate
 simplifications (pushing inverters, etc).
@@ -80,8 +80,8 @@ classes).
 Each C<AstNode> has pointers to up to four children, accessed by the
 C<op1p> through C<op4p> methods.  These methods are then abstracted in a
 specific Ast* node class to a more specific name.  For example with the
-C<AstIf> node (for C<if> statements), C<ifsp> calls C<op1p> to give the
-pointer to the AST for the "then" block, while C<elsesp> calls C<op2p> to
+C<AstIf> node (for C<if> statements), C<ifsp> calls C<op2p> to give the
+pointer to the AST for the "then" block, while C<elsesp> calls C<op3p> to
 give the pointer to the AST for the "else" block, or NULL if there is not
 one.
 
@@ -97,7 +97,7 @@ are at the top of the tree.
 By convention, each function/method uses the variable C<nodep> as a pointer
 to the C<AstNode> currently being processed.
 
-=item C<AstNVistor>
+=item C<AstNVisitor>
 
 The passes are implemented by AST visitor classes (see L</Visitor
 Functions>). These are implemented by subclasses of the abstract class,
@@ -119,7 +119,7 @@ C<fanout>, C<color> and C<rank>, which may be used in algorithms for ordering
 the graph. A generic C<user>/C<userp> member variable is also provided.
 
 Virtual methods are provided to specify the name, color, shape and style to be
-used in dot output. Typically users provided derived classes from
+used in dot output. Typically users provide derived classes from
 C<V3GraphVertex> which will reimplement these methods.
 
 Iterators are provided to access in and out edges. Typically these are used in
@@ -219,7 +219,7 @@ and optimization passes. This allows separation of the pass algorithm from
 the AST on which it operates. Wikipedia provides an introduction to the
 concept at L<http://en.wikipedia.org/wiki/Visitor_pattern>.
 
-As noted above, all visitors are derived classes of C<AstNvisitor>. All
+As noted above, all visitors are derived classes of C<AstNVisitor>. All
 derived classes of C<AstNode> implement the C<accept> method, which takes
 as argument a reference to an instance or a C<AstNVisitor> derived class
 and applies the visit method of the C<AstNVisitor> to the invoking AstNode
@@ -262,7 +262,7 @@ exiting the lower for will lose the upper for's setting.
 User attributes.  Each C<AstNode> (B<Note.> The AST node, not the visitor)
 has five user attributes, which may be accessed as an integer using the
 C<user1()> through C<user5()> methods, or as a pointer (of type
-C<AstNuser>) using the C<user1p()> through C<user5p()> methods (a common
+C<AstNUser>) using the C<user1p()> through C<user5p()> methods (a common
 technique lifted from graph traversal packages).
 
 A visitor first clears the one it wants to use by calling
@@ -290,7 +290,7 @@ module.
 
 Parameters can be passed between the visitors in close to the "normal"
 function caller to callee way.  This is the second C<vup> parameter of type
-C<AstNuser> that is ignored on most of the visitor functions.  V3Width does
+C<AstNUser> that is ignored on most of the visitor functions.  V3Width does
 this, but it proved more messy than the above and is deprecated.  (V3Width
 was nearly the first module written.  Someday this scheme may be removed,
 as it slows the program down to have to pass vup everywhere.)
@@ -301,10 +301,10 @@ as it slows the program down to have to pass vup everywhere.)
 
 C<AstNode> provides a set of iterators to facilitate walking over the
 tree. Each takes two arguments, a visitor, C<v>, of type C<AstNVisitor> and
-an optional pointer user data, C<vup>, of type C<AstNuser*>. The second is
+an optional pointer user data, C<vup>, of type C<AstNUser*>. The second is
 one of the ways to pass parameters to visitors described in L</Visitor
-Functions>, but its use is no deprecated and should be used for new visitor
-classes.
+Functions>, but its use is now deprecated and should I<not> be used for new
+visitor classes.
 
 =over 4
 
