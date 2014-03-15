@@ -120,7 +120,7 @@ V3FileDependImp  dependImp;	// Depend implementation class
 // V3FileDependImp
 
 inline void V3FileDependImp::writeDepend(const string& filename) {
-    const auto_ptr<ofstream> ofp (V3File::new_ofstream(filename));
+    const VL_UNIQUE_PTR<ofstream> ofp (V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 
     for (set<DependFile>::iterator iter=m_filenameList.begin();
@@ -156,7 +156,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 }
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
-    const auto_ptr<ofstream> ofp (V3File::new_ofstream(filename));
+    const VL_UNIQUE_PTR<ofstream> ofp (V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 
     string cmdline = stripQuotes(cmdlineIn);

@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix tracing of package variables and real arrays.
 
+****  Fix C++-2011 warnings.
+
 
 * Verilator 3.856 2014-03-11
 

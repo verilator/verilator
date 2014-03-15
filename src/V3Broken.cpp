@@ -47,11 +47,11 @@ private:
     typedef map<const AstNode*,int> NodeMap;
     static NodeMap s_nodes;	// Set of all nodes that exist
     // BITMASK
-    static const int FLAG_ALLOCATED	= 0x01;		// new() and not delete()ed
-    static const int FLAG_IN_TREE	= 0x02;		// Is in netlist tree
-    static const int FLAG_LINKABLE	= 0x04;		// Is in netlist tree, can be linked to
-    static const int FLAG_LEAKED	= 0x08;		// Known to have been leaked
-    static const int FLAG_UNDER_NOW	= 0x10;		// Is in tree as parent of current node
+    enum { FLAG_ALLOCATED	= 0x01 };	// new() and not delete()ed
+    enum { FLAG_IN_TREE		= 0x02 };	// Is in netlist tree
+    enum { FLAG_LINKABLE	= 0x04 };	// Is in netlist tree, can be linked to
+    enum { FLAG_LEAKED		= 0x08 };	// Known to have been leaked
+    enum { FLAG_UNDER_NOW	= 0x10 };	// Is in tree as parent of current node
 public:
     // METHODS
     static void deleted(const AstNode* nodep) {

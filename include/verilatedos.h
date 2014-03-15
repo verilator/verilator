@@ -96,6 +96,16 @@
 #define VL_UL(c) ((IData)(c##UL))	///< Add appropriate suffix to 32-bit constant
 
 //=========================================================================
+// C++-2011
+
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+# define VL_HAS_UNIQUE_PTR
+# define VL_UNIQUE_PTR unique_ptr
+#else
+# define VL_UNIQUE_PTR auto_ptr
+#endif
+
+//=========================================================================
 // Warning disabled
 
 #ifndef VL_WARNINGS

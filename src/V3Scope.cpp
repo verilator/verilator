@@ -78,13 +78,13 @@ private:
 	    AstVarRef* nodep = it->first;
 	    AstScope* scopep = it->second;
 	    if (nodep->packagep()) {
-		PackageScopeMap::iterator it = m_packageScopes.find(nodep->packagep());
-		if (it==m_packageScopes.end()) nodep->v3fatalSrc("Can't locate package scope");
-		scopep = it->second;
+		PackageScopeMap::iterator it2 = m_packageScopes.find(nodep->packagep());
+		if (it2==m_packageScopes.end()) nodep->v3fatalSrc("Can't locate package scope");
+		scopep = it2->second;
 	    }
-	    VarScopeMap::iterator it = m_varScopes.find(make_pair(nodep->varp(), scopep));
-	    if (it==m_varScopes.end()) nodep->v3fatalSrc("Can't locate varref scope");
-	    AstVarScope* varscp = it->second;
+	    VarScopeMap::iterator it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
+	    if (it3==m_varScopes.end()) nodep->v3fatalSrc("Can't locate varref scope");
+	    AstVarScope* varscp = it3->second;
 	    nodep->varScopep(varscp);
 	}
     }
