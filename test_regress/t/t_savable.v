@@ -33,11 +33,14 @@ module sub (/*AUTOARG*/
    real		r;
    string	s,s2;
 
+   string 	si;
+
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d\n",$time, cyc);
 `endif
+      si = "siimmed";
       cyc <= cyc + 1;
       if (cycdone[cyc[7:0]]) $stop;
       cycdone[cyc[7:0]] <= '1;

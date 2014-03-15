@@ -2184,7 +2184,7 @@ class EmitCTrace : EmitCStmts {
     }
 
     void emitTraceInitOne(AstTraceDecl* nodep) {
-	if (nodep->isDouble()) {
+	if (nodep->dtypep()->basicp()->isDouble()) {
 	    puts("vcdp->declDouble");
 	} else if (nodep->isWide()) {
 	    puts("vcdp->declArray");
@@ -2204,7 +2204,7 @@ class EmitCTrace : EmitCStmts {
 	} else {
 	    puts(",-1");
 	}
-	if (!nodep->isDouble()  // When float/double no longer have widths this can go
+	if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
 	    && nodep->bitRange().ranged()) {
 	    puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
 	}
@@ -2216,7 +2216,7 @@ class EmitCTrace : EmitCStmts {
 	string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
 			|| m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
 		       ? "full":"chg");
-	if (nodep->isDouble()) {
+	if (nodep->dtypep()->basicp()->isDouble()) {
 	    puts("vcdp->"+full+"Double");
 	} else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
 	    puts("vcdp->"+full+"Array");
@@ -2231,7 +2231,7 @@ class EmitCTrace : EmitCStmts {
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
-	if (!nodep->isDouble()  // When float/double no longer have widths this can go
+	if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
 	    && (nodep->declp()->bitRange().ranged() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep))) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}

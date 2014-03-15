@@ -279,7 +279,11 @@ private:
     }
     virtual void visit(AstBasicDType* nodep, AstNUser*) {
 	if (m_traVscp) {
-	    addTraceDecl(VNumRange());
+	    if (nodep->keyword()==AstBasicDTypeKwd::STRING) {
+		addIgnore("Unsupported: strings");
+	    } else {
+		addTraceDecl(VNumRange());
+	    }
 	}
     }
     virtual void visit(AstNodeDType* nodep, AstNUser*) {

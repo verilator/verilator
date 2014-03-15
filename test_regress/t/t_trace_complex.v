@@ -3,6 +3,8 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2009 by Wilson Snyder.
 
+bit global_bit;
+
 module t (clk);
    input clk;
    integer 	cyc=0;
@@ -43,6 +45,10 @@ module t (clk);
    arru_arrp_t	v_arru_arrp;
    arru_strp_t	v_arru_strp;
 
+   real         v_real;
+   real         v_arr_real [2];
+   string	v_string;
+
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 
@@ -54,6 +60,10 @@ module t (clk);
       v_arrp_strp <= ~v_arrp_strp;
       v_arrp <= ~v_arrp;
       v_arrp_arrp <= ~v_arrp_arrp;
+      v_real <= v_real + 0.1;
+      v_string <= "foo";
+      v_arr_real[0] <= v_arr_real[0] + 0.2;
+      v_arr_real[1] <= v_arr_real[1] + 0.3;
       for (integer b=3; b<=4; b++) begin
 	 v_arru[b] <= ~v_arru[b];
 	 v_arru_strp[b] <= ~v_arru_strp[b];
@@ -71,4 +81,5 @@ endmodule
 
 module p;
    parameter PARAM = 1;
+   initial global_bit = 1;
 endmodule

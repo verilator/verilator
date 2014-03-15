@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Documentation fixes, bug723. [Glen Gibb]
 
+****  Fix tracing of package variables and real arrays.
+
 
 * Verilator 3.856 2014-03-11
 
