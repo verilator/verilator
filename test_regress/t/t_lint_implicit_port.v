@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
 
    read r (.clk(clk), .data( ( ( oe == 1'd001 ) && implicit_write ) ) );
    set  s (.clk(clk), .enable(implicit_write));
-   set  u (.clk(clk), .enable(~implicit_also));
+   read u (.clk(clk), .data(~implicit_also));
 
 endmodule
 
