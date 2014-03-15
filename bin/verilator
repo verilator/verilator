@@ -209,7 +209,7 @@ Verilator - Convert Verilog code to C++/SystemC
 =head1 DESCRIPTION
 
 Verilator converts synthesizable (not behavioral) Verilog code, plus some
-Synthesis, SystemVerilog and a small subset of Verilog AMS and Sugar/PSL
+Synthesis, SystemVerilog and a small subset of Verilog AMS
 assertions, into C++, SystemC or SystemPerl code.  It is not a complete
 simulator, just a compiler.
 
@@ -259,7 +259,7 @@ descriptions in the next sections for more information.
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage
     --coverage-toggle           Enable toggle coverage
-    --coverage-user             Enable PSL/SVL user coverage
+    --coverage-user             Enable SVL user coverage
     --coverage-underscore       Enable coverage of _signals
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
@@ -311,7 +311,6 @@ descriptions in the next sections for more information.
     --prefix <topname>          Name of top level class
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
-    --psl                       Enable PSL parsing
     --public                    Debugging; see docs
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable			Enable model save-restore
@@ -410,8 +409,7 @@ C<+1364-1995ext+> etc. specify both the syntax I<and> semantics to be used.
 
 =item --assert
 
-Enable all assertions, includes enabling the --psl flag.  (If psl is not
-desired, but other assertions are, use --assert --nopsl.)
+Enable all assertions.
 
 See also --x-assign and --x-initial-edge; setting "--x-assign unique"
 and/or "--x-initial-edge" may be desirable.
@@ -901,12 +899,6 @@ statements.
 
 Opposite of --public.  Is the default; this option exists for backwards
 compatibility.
-
-=item --psl
-
-Enable PSL parsing.  Without this switch, PSL meta-comments are ignored.
-See the --assert flag to enable all assertions, and --coverage-user to
-enable functional coverage.
 
 =item --public
 
@@ -1987,34 +1979,6 @@ AMS parsing is enabled with "--language VAMS" or "--language 1800+VAMS".
 At present Verilator implements ceil, exp, floor, ln, log, pow, sqrt,
 string, and wreal.
 
-=head2 Sugar/PSL Support
-
-Most future work is being directed towards improving SystemVerilog
-assertions instead of PSL.  If you are using these PSL features, please
-contact the author as they may be depreciated in future versions.
-
-With the --assert switch, Verilator enables support of the Property
-Specification Language (PSL), specifically the simple PSL subset without
-time-branching primitives.  Verilator currently only converts PSL
-assertions to simple "if (...) error" statements, and coverage statements
-to increment the line counters described in the coverage section.
-
-Verilator implements these keywords: assert, assume (same as assert),
-default (for clocking), countones, cover, isunknown, onehot, onehot0,
-report, and true.
-
-Verilator implements these operators: -> (logical if).
-
-Verilator does not support SEREs yet.  All assertion and coverage
-statements must be simple expressions that complete in one cycle.  PSL
-vmode/vprop/vunits are not supported.  PSL statements must be in the module
-they reference, at the module level where you would put an
-initial... statement.
-
-Verilator only supports (posedge CLK) or (negedge CLK), where CLK is the
-name of a one bit signal.  You may not use arbitrary expressions as
-assertion clocks.
-
 =head2 Synthesis Directive Assertion Support
 
 With the --assert switch, Verilator reads any "//synopsys full_case" or
@@ -2054,13 +2018,6 @@ supported by Verilator since 2006!)
 =item `error I<string>
 
 This will report an error when encountered, like C++'s #error.
-
-=item _(I<expr>)
-
-A underline followed by an expression in parenthesis returns a Verilog
-expression.  This is different from normal parenthesis in special contexts,
-such as PSL expressions, and can be used to embed bit concatenation ({})
-inside of PSL statements.
 
 =item $c(I<string>, ...);
 

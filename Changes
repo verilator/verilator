@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.857 devel
 
+**    PSL is no longer supported, please use System Verilog assertions.
+
 ***   Add --no-trace-params.
 
 ****  Documentation fixes, bug723. [Glen Gibb]

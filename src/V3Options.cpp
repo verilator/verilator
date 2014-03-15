@@ -715,7 +715,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-E") )			{ m_preprocOnly = true; }
 	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_makeDepend = flag; }
 	    else if ( onoff   (sw, "-MP", flag/*ref*/) )	{ m_makePhony = flag; }
-	    else if ( onoff   (sw, "-assert", flag/*ref*/) )	{ m_assert = flag; m_psl = flag; }
+	    else if ( onoff   (sw, "-assert", flag/*ref*/) )	{ m_assert = flag; }
 	    else if ( onoff   (sw, "-autoflush", flag/*ref*/) )	{ m_autoflush = flag; }
 	    else if ( onoff   (sw, "-bbox-sys", flag/*ref*/) )	{ m_bboxSys = flag; }
 	    else if ( onoff   (sw, "-bbox-unsup", flag/*ref*/) ) { m_bboxUnsup = flag; }
@@ -745,7 +745,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-pins-uint8", flag/*ref*/) ){ m_pinsUint8 = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
-	    else if ( onoff   (sw, "-psl", flag/*ref*/) )		{ m_psl = flag; }
+	    else if ( onoff   (sw, "-psl-deprecated", flag/*ref*/) )	{ m_psl = flag; }  // Undocumented
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
 	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }

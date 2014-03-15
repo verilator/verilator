@@ -31,11 +31,13 @@ Configure/Make/Install
 	* Distribute with flex/bison already expanded?
 	  Flex library not needed.  Probably too difficult to be worth it.
 	* Integrate SystemPerl coverage
+	      see the SystemPerl git branch coverage_only
     	      (Note in /usr/include there are no upper cased include files.)
 		Coverage.pm		-- Need all functionality, but in C?
 		Coverage/Item.pm	-- Need all functionality, but in C?
 		Coverage/ItemKey.pm	-- Need all functionality, but in C?
 		sp_preproc		-- Some steps in here need to be moved to generated C
+		--			   -- note uses Verilog::Getopt
 		src/Sp.cpp		-- n/a
 		src/SpCommon.h		-- mostly overlaps verilatedos.h
 		src/SpCoverage.cpp/h	-- All needed

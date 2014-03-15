@@ -14,7 +14,7 @@ my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 top_filename("t/t_preproc_psl.v");
 
 compile (
-    verilator_flags2 => ['-psl -E'],
+    verilator_flags2 => ['-psl-deprecated -E'],
     verilator_make_gcc=>0,
     stdout_filename => $stdout_filename,
     );
