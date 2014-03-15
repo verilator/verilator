@@ -563,14 +563,13 @@ signals are not covered.  See also --trace-underscore.
 =item --coverage-user
 
 Enables user inserted functional coverage.  Currently, all functional
-coverage points are specified using PSL which must be separately enabled
-with --psl.
+coverage points are specified using SVA which must be separately enabled
+with --assert.
 
-For example, the following PSL statement will add a coverage point, with
+For example, the following statement will add a coverage point, with
 the comment "DefaultClock":
 
-   // psl default clock = posedge clk;
-   // psl cover {cyc==9} report "DefaultClock,expect=1";
+   DefaultClock: cover property (@(posedge clk) cyc==3);
 
 =item -DI<var>=I<value>
 
