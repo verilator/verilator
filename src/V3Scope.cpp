@@ -46,10 +46,13 @@ private:
     // NODE STATE
     // AstVar::user1p		-> AstVarScope replacement for this variable
     // AstTask::user2p		-> AstTask*.  Replacement task
-    // AstVar::user3p		-> AstVarScope for packages
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
-    AstUser3InUse	m_inuser3;
+
+    // TYPES
+    typedef map<AstPackage*, AstScope*> PackageScopeMap;
+    typedef map<pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
+    typedef set<pair<AstVarRef*, AstScope*> > VarRefScopeSet;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp;	// Current module
@@ -57,12 +60,33 @@ private:
     // STATE, for passing down one level of hierarchy (may need save/restore)
     AstCell*	m_aboveCellp;	// Cell that instantiates this module
     AstScope*	m_aboveScopep;	// Scope that instantiates this scope
+    
+    PackageScopeMap	m_packageScopes;	// Scopes for each package
+    VarScopeMap		m_varScopes;		// Varscopes created for each scope and var
+    VarRefScopeSet	m_varRefScopes;		// Varrefs-in-scopes needing fixup when donw
 
     // METHODS
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
+    }
+
+    void cleanupVarRefs() {
+	for (VarRefScopeSet::iterator it = m_varRefScopes.begin();
+	     it!=m_varRefScopes.end(); ++it) {
+	    AstVarRef* nodep = it->first;
+	    AstScope* scopep = it->second;
+	    if (nodep->packagep()) {
+		PackageScopeMap::iterator it = m_packageScopes.find(nodep->packagep());
+		if (it==m_packageScopes.end()) nodep->v3fatalSrc("Can't locate package scope");
+		scopep = it->second;
+	    }
+	    VarScopeMap::iterator it = m_varScopes.find(make_pair(nodep->varp(), scopep));
+	    if (it==m_varScopes.end()) nodep->v3fatalSrc("Can't locate varref scope");
+	    AstVarScope* varscp = it->second;
+	    nodep->varScopep(varscp);
+	}
     }
 
     // VISITORS
@@ -73,6 +97,7 @@ private:
 	m_aboveCellp = NULL;
 	m_aboveScopep = NULL;
 	modp->accept(*this);
+	cleanupVarRefs();
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Create required blocks and add to module
@@ -85,6 +110,7 @@ private:
 
 	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
+	if (nodep->castPackage()) m_packageScopes.insert(make_pair(nodep->castPackage(), m_scopep));
 
 	// Now for each child cell, iterate the module this cell points to
 	for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp=cellnextp->nextp()) {
@@ -211,12 +237,13 @@ private:
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	// Make new scope variable
-	if (m_modp->castPackage()
-	    ? !nodep->user3p() : !nodep->user1p()) {
+	// This is called cross-module by AstVar, so we cannot trust any m_ variables
+	if (!nodep->user1p()) {
 	    AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
 	    UINFO(6,"   New scope "<<varscp<<endl);
 	    nodep->user1p(varscp);
-	    if (m_modp->castPackage()) nodep->user3p(varscp);
+	    if (!m_scopep) nodep->v3fatalSrc("No scope for var");
+	    m_varScopes.insert(make_pair(make_pair(nodep, m_scopep), varscp));
 	    m_scopep->addVarp(varscp);
 	}
     }
@@ -227,12 +254,10 @@ private:
 	if (nodep->varp()->isIfaceRef()) {
 	    nodep->varScopep(NULL);
 	} else {
-	    nodep->varp()->accept(*this);
-	    AstVarScope* varscp = nodep->packagep()
-		? (AstVarScope*)nodep->varp()->user3p()
-		: (AstVarScope*)nodep->varp()->user1p();
-	    if (!varscp) nodep->v3fatalSrc("Can't locate varref scope");
-	    nodep->varScopep(varscp);
+	    // We may have not made the variable yet, and we can't make it now as
+	    // the var's referenced package etc might not be created yet.
+	    // So push to a list and post-correct
+	    m_varRefScopes.insert(make_pair(nodep, m_scopep));
 	}
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
