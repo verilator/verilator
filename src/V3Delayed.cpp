@@ -118,7 +118,7 @@ private:
 	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->varp()->prettyName());
 	}
     }
-    AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/) {
+    AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/, AstNodeDType* newdtypep) {
 	// Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
 	if (!oldvarscp->scopep()) oldvarscp->v3fatalSrc("Var unscoped");
 	AstVar* varp;
@@ -129,7 +129,9 @@ private:
 	    // Created module's AstVar earlier under some other scope
 	    varp = it->second;
 	} else {
-	    if (width==0) {
+	    if (newdtypep) {
+		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, newdtypep);
+	    } else if (width==0) {
 		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
 		varp->dtypeFrom(oldvarscp);
 	    } else { // Used for vset and dimensions, so can zero init
@@ -219,7 +221,7 @@ private:
 	    } else {
 		string bitvarname = (string("__Vdlyvdim")+cvtToStr(dimension)
 				     +"__"+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
-		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, dimp->width());
+		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), NULL);
 		AstAssign* bitassignp
 		    = new AstAssign (nodep->fileline(),
 				     new AstVarRef(nodep->fileline(), bitvscp, true),
@@ -237,7 +239,7 @@ private:
 		bitreadp = lsbvaluep;
 	    } else {
 		string bitvarname = (string("__Vdlyvlsb__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
-		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width());
+		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), NULL);
 		AstAssign* bitassignp = new AstAssign (nodep->fileline(),
 						       new AstVarRef(nodep->fileline(), bitvscp, true),
 						       lsbvaluep);
@@ -252,7 +254,7 @@ private:
 	    valreadp = nodep->rhsp()->unlinkFrBack();
 	} else {
 	    string valvarname = (string("__Vdlyvval__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
-	    AstVarScope* valvscp = createVarSc(varrefp->varScopep(), valvarname, nodep->rhsp()->width());
+	    AstVarScope* valvscp = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
 	    newlhsp = new AstVarRef(nodep->fileline(), valvscp, true);
 	    valreadp = new AstVarRef(nodep->fileline(), valvscp, false);
 	}
@@ -270,7 +272,7 @@ private:
 	    ++m_statSharedSet;
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
-	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1);
+	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, NULL);
 	    setinitp = new AstAssignPre (nodep->fileline(),
 					 new AstVarRef(nodep->fileline(), setvscp, true),
 					 new AstConst(nodep->fileline(), 0));
@@ -399,7 +401,7 @@ private:
 		}
 		if (!dlyvscp) {  // First use of this delayed variable
 		    string newvarname = (string("__Vdly__")+nodep->varp()->shortName());
-		    dlyvscp = createVarSc(oldvscp, newvarname, 0);
+		    dlyvscp = createVarSc(oldvscp, newvarname, 0, NULL);
 		    AstNodeAssign* prep
 			= new AstAssignPre (nodep->fileline(),
 					    new AstVarRef(nodep->fileline(), dlyvscp, true),
