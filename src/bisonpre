@@ -9,7 +9,7 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.318';
+$VERSION = '3.404';
 
 our $Self;
 
@@ -304,10 +304,12 @@ sub clean_input {
 	foreach my $line (@linesin) {
 	    $l++;
 	    if ($line =~ /BISONPRE_VERSION/) {
-		($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*([^\),]+)\)\s*$/)
+		#                            1         3             4
+		($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$/)
 		    or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
-		my $ver=$1;  my $cmd=$2;
-		if ($Self->{bison_version} >= $1) {
+		my $ver=$1;  my $ver_max=$3;  my $cmd=$4;
+		if ($Self->{bison_version} >= $1
+		    && (!$ver_max || $Self->{bison_version} <= $ver_max)) {
 		    $line = $cmd."\n";
 		} else {
 		    $line = "//NOP: $line";
