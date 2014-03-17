@@ -1991,9 +1991,8 @@ appropriate code to detect failing cases at runtime and print an "Assertion
 failed" error message.
 
 Verilator likewise also asserts any "unique" or "priority" SystemVerilog
-keywords on case statements.  However, "unique if" and "priority if" are
-currently simply ignored.
-
+keywords on case statement, as well as "unique" on if statements.
+However, "priority if" is currently simply ignored.
 
 =head1 LANGUAGE EXTENSIONS
 

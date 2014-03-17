@@ -174,6 +174,61 @@ private:
 	// Bye
 	pushDeletep(nodep); nodep=NULL;
     }
+    
+    virtual void visit(AstIf* nodep, AstNUser*) {
+	if (nodep->uniquePragma() || nodep->unique0Pragma()) {
+	    AstNodeIf* ifp = nodep;
+	    AstNode* propp = NULL;
+	    bool hasDefaultElse = false;
+	    do {
+		// If this statement ends with 'else if', then nextIf will point to the
+		// nextIf statement.  Otherwise it will be null.
+		AstNodeIf* nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
+
+		// Recurse into the true case.
+		ifp->ifsp()->iterateChildren(*this);
+		
+		// If the last else is not an else if, recurse into that too.
+		if (ifp->elsesp() && !nextifp) {
+		    ifp->elsesp()->iterateChildren(*this);
+		}
+		
+		// Build a bitmask of the true predicates
+	        AstNode* predp = ifp->condp()->cloneTree(false);
+	        if (propp) {
+		    propp = new AstConcat(nodep->fileline(), predp, propp);
+		} else {
+		    propp = predp;
+		}
+
+		// Record if this ends with an 'else' that does not have an if
+		if (ifp->elsesp() && !nextifp) {
+		    hasDefaultElse = true;
+		}
+		
+		ifp = nextifp;
+	    } while (ifp);
+
+	    AstNode *newifp = nodep->cloneTree(false);
+	    bool allow_none = nodep->unique0Pragma();
+	    
+	    // Note: if this ends with an 'else', then we don't need to validate that one of the
+	    // predicates evaluates to true.
+	    AstNode* ohot = ((allow_none || hasDefaultElse)
+			     ? (new AstOneHot0(nodep->fileline(), propp))->castNode()
+			     : (new AstOneHot (nodep->fileline(), propp))->castNode());
+	    AstIf* checkifp = new AstIf (nodep->fileline(),
+					 new AstLogNot (nodep->fileline(), ohot),
+					 newFireAssert(nodep, "'unique if' statement violated"),
+					 newifp);
+	    checkifp->branchPred(AstBranchPred::BP_UNLIKELY);
+	    nodep->replaceWith(checkifp);
+	    pushDeletep(nodep);
+	} else {
+	    nodep->ifsp()->iterateChildren(*this);
+	    nodep->elsesp()->iterateChildren(*this);
+	}
+    }
 
     // VISITORS  //========== Case assertions
     virtual void visit(AstCase* nodep, AstNUser*) {
