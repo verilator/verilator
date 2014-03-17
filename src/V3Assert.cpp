@@ -56,7 +56,7 @@ private:
 		+":"+cvtToStr(nodep->fileline()->lineno())
 		+": Assertion failed in %m"
 		+((message != "")?": ":"")+message
-		+"\\n");
+		+"\n");
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
 	nodep->displayType(AstDisplayType::DT_WRITE);
