@@ -16,7 +16,7 @@ $Self->_run (cmd=>["cd $Self->{obj_dir}"
 	     check_finished=>0);
 $Self->_run (cmd=>["cd $Self->{obj_dir}"
 		   ." && g++ -fPIC -c ../../t/t_flag_ldflags_so.cpp"
-		   ." && ld -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
+		   ." && g++ -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
 	     check_finished=>0);
 
 compile (

@@ -30,7 +30,7 @@
 #include <memory>
 #include <map>
 
-#if defined(__unix__)
+#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
