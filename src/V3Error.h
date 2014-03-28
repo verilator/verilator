@@ -84,6 +84,7 @@ public:
 	MULTIDRIVEN,	// Driven from multiple blocks
 	PINMISSING,	// Cell pin not specified
 	PINNOCONNECT,	// Cell pin not connected
+	PINCONNECTEMPTY,// Cell pin connected by name with empty reference: ".name()" (can be used to mark unused pins)
 	REALCVT,	// Real conversion
 	REDEFMACRO,	// Redefining existing define macro
 	SELRANGE,	// Selection index out of range
@@ -127,7 +128,7 @@ public:
 	    "INCABSPATH", "INITIALDLY",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
-	    "PINMISSING", "PINNOCONNECT",
+	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNPACKED", "UNSIGNED", "UNUSED",
@@ -165,6 +166,7 @@ public:
 				       || m_e==DEFPARAM
 				       || m_e==DECLFILENAME
 				       || m_e==INCABSPATH
+				       || m_e==PINCONNECTEMPTY
 				       || m_e==PINNOCONNECT
 				       || m_e==SYNCASYNCNET
 				       || m_e==UNDRIVEN

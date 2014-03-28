@@ -5,9 +5,9 @@
 
 module t (/*AUTOARG*/);
    wire ok = 1'b0;
-   sub sub (.ok(ok), .nc());
+   sub sub (.ok(ok), , .nc());
 endmodule
 
-module sub (input ok, input nc, input missing);
-   initial if (ok&&nc&&missing) begin end  // No unused warning
+module sub (input ok, input none, input nc, input missing);
+   initial if (ok && none && nc && missing) begin end  // No unused warning
 endmodule

@@ -308,7 +308,13 @@ private:
 	    set<string> ports;	// Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
-		if (!pinp->exprp()) pinp->v3warn(PINNOCONNECT,"Cell pin is not connected: "<<pinp->prettyName());
+		if (!pinp->exprp()) {
+		    if (pinp->name().substr(0, 11) == "__pinNumber") {
+			pinp->v3warn(PINNOCONNECT,"Cell pin is not connected: "<<pinp->prettyName());
+		    } else {
+			pinp->v3warn(PINCONNECTEMPTY,"Cell pin connected by name with empty reference: "<<pinp->prettyName());
+		    }
+		}
 		if (ports.find(pinp->name()) == ports.end()) {
 		    ports.insert(pinp->name());
 		}

@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add assertions on 'unique if', bug725. [Jeff Bush] 
 
+***   Add PINCONNECTEMPTY warning. [Holger Waechtler]
+
 ****  Documentation fixes, bug723. [Glen Gibb]
 
 ****  Fix tracing of package variables and real arrays.

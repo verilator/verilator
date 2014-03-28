@@ -11,9 +11,10 @@ compile (
 	 v_flags2 => ["--lint-only --Wall -Wno-DECLFILENAME"],
 	 fails=>1,
 	 expect=>
-q{%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:\d+: Cell pin is not connected: nc
+q{%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:8: Cell pin is not connected: __pinNumber2
 %Warning-PINNOCONNECT: Use .*
-%Warning-PINMISSING: t/t_inst_missing_bad.v:\d+: Cell has missing pin: missing
+%Warning-PINCONNECTEMPTY: t/t_inst_missing_bad.v:8: Cell pin connected by name with empty reference: nc
+%Warning-PINMISSING: t/t_inst_missing_bad.v:8: Cell has missing pin: missing
 %Error: Exiting due to.*},
 	 );
 

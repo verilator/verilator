@@ -1095,8 +1095,9 @@ Disable the specified warning message.
 Disable all lint related warning messages, and all style warnings.  This is
 equivalent to "-Wno-ALWCOMBORDER -Wno-CASEINCOMPLETE -Wno-CASEOVERLAP
 -Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-ENDLABEL -Wno-IMPLICIT
--Wno-LITENDIAN -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN
--Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for Wno-style.
+-Wno-LITENDIAN -Wno-PINCONNECTEMPTY -Wno-PINMISSING -Wno-SYNCASYNCNET
+-Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for
+Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -1106,8 +1107,8 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-INCABSPATH -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
--Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT -Wno-SYNCASYNCNET
+-Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
 
 =item -Wno-fatal
 
@@ -3009,11 +3010,21 @@ not really needed.  The best solution is to insure that each module is in a
 unique file by the same name.  Otherwise, make sure all library files are
 read in as libraries with -v, instead of automatically with -y.
 
+=item PINCONNECTEMPTY
+
+Warns that a cell instantiation has a pin which is connected to
+.pin_name(), e.g. not another signal, but with an explicit mention of the
+pin.  It may be desirable to disable PINCONNECTEMPTY, as this indicates
+intention to have a no-connect.
+
+Disabled by default as this is a code style warning; it will simulate
+correctly.
+
 =item PINMISSING
 
 Warns that a module has a pin which is not mentioned in a cell
 instantiation.  If a pin is not missing it should still be specified on the
-cell declaration with a empty connection,using "(.pin_name())".
+cell declaration with a empty connection, using "(.pin_name())".
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
