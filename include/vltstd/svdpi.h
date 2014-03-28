@@ -29,7 +29,7 @@ typedef signed __int8 int8_t;
 #include <stdint.h>
 #elif defined(__APPLE__)
 #include <stdint.h>
-#elif defined(__linux)
+#elif defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
 #include <inttypes.h>
 #else
 #include <sys/types.h>
