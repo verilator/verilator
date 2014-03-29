@@ -333,7 +333,11 @@ sub new {
 	v_flags2 => [],  # Overridden in some sim files
 	v_other_filenames => [],	# After the filename so we can spec multiple files
 	all_run_flags => [],
-	pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -export-dynamic -shared -o $self->{obj_dir}/libvpi.so"],
+	pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
+		      .(($^O eq "darwin" )
+			? " -Wl,-undefined,dynamic_lookup"
+			: " -export-dynamic")
+		      ." -o $self->{obj_dir}/libvpi.so"],
 	# ATSIM
 	atsim => 0,
 	atsim_flags => [split(/\s+/,"-c +sv +define+ATSIM"),
