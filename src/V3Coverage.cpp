@@ -60,9 +60,14 @@ private:
 	}
     };
 
+    // NODE STATE
+    // Entire netlist:
+    //  AstIf::user1()			-> bool.  True indicates ifelse processed
+    AstUser1InUse	m_inuser1;
+
     // STATE
-    bool	m_checkBlock;	// Should this block get covered?
-    AstNodeModule*	m_modp;	// Current module to add statement to
+    bool		m_checkBlock;	// Should this block get covered?
+    AstNodeModule*	m_modp;		// Current module to add statement to
     bool	m_inToggleOff;	// In function/task etc
     bool	m_inModOff;	// In module with no coverage
     FileMap	m_fileps;	// Column counts for each fileline
@@ -277,12 +282,18 @@ private:
     virtual void visit(AstIf* nodep, AstNUser*) { // Note not AstNodeIf; other types don't get covered
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
+	    // An else-if.  When we iterate the if, use "elsif" marking
+	    bool elsif = (nodep->elsesp()->castIf()
+			  && !nodep->elsesp()->castIf()->nextp());
+	    if (elsif) nodep->elsesp()->castIf()->user1(true);
+	    //
 	    nodep->ifsp()->iterateAndNext(*this);
 	    if (m_checkBlock && !m_inModOff
 		&& nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
-		if (!nodep->backp()->castIf()
-		    || nodep->backp()->castIf()->elsesp()!=nodep) {  // Ignore if else; did earlier
-		    UINFO(4,"   COVER: "<<nodep<<endl);
+		UINFO(4,"   COVER: "<<nodep<<endl);
+		if (nodep->user1()) {
+		    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "elsif"));
+		} else {
 		    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "if"));
 		}
 	    }
@@ -293,9 +304,7 @@ private:
 		if (m_checkBlock && !m_inModOff
 		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
-		    if (nodep->elsesp()->castIf()) {
-			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "v_line", "elsif"));
-		    } else {
+		    if (!elsif) {  // elsif done inside if()
 			nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(), "", "v_line", "else"));
 		    }
 		}
