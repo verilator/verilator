@@ -606,6 +606,7 @@ struct VNumRange {
     int lo() const { return m_lo; }
     int left() const { return littleEndian()?lo():hi(); }  // How to show a declaration
     int right() const { return littleEndian()?hi():lo(); }
+    int leftToRightInc() const { return littleEndian()?1:-1; }
     int elements() const { return hi()-lo()+1; }
     bool ranged() const { return m_ranged; }
     bool littleEndian() const { return m_littleEndian; }

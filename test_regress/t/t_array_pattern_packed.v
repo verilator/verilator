@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
       if (array_simp !== 32'h3210_1234) $stop;
 
       // Doesn't seem to work for unpacked arrays in other simulators
-      //array_simp <= '{2  { '{4 { 4'd3, 4'd2, 4'd1, 4'd0 }} } };
+      array_simp = '{2  { '{4 { 4'd3, 4'd2, 4'd1, 4'd0 }} } };
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -86,8 +86,8 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 2)  array_bg               <= '{default:13};
       else if (cnt[30:2]== 3)  array_bg               <= '{0:4, 1:5, 2:6, 3:7};
       else if (cnt[30:2]== 4)  array_bg               <= '{2:15, default:13};
-      else if (cnt[30:2]== 5)  array_bg               <= '{WA  {          {WB  {2'b10}}  }};
-      else if (cnt[30:2]== 6)  array_bg               <= '{cnt+0, cnt+1, cnt+2, cnt+3};
+      else if (cnt[30:2]== 5)  array_bg               <= '{WA  {          {WB/2  {2'b10}}  }};
+      else if (cnt[30:2]== 6)  array_bg               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
       if      (cnt[30:2]== 0)  begin if (array_bg !== 16'b0000000000000000) begin $display("%b", array_bg); $stop(); end end
@@ -122,7 +122,7 @@ module t (/*AUTOARG*/
       else if (cnt[30:2]== 3)  array_lt               <= '{3:4, 2:5, 1:6, 0:7};
       else if (cnt[30:2]== 4)  array_lt               <= '{1:15, default:13};
       else if (cnt[30:2]== 5)  array_lt               <= '{WA  {          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]==10)  array_lt               <= '{cnt+0, cnt+1, cnt+2, cnt+3};
+      else if (cnt[30:2]==10)  array_lt               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
       if      (cnt[30:2]== 0)  begin if (array_lt !== 16'b0000000000000000) begin $display("%b", array_lt); $stop(); end end

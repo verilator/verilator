@@ -25,7 +25,7 @@ module t (/*AUTOARG*/);
 	   array_simp[0][3],array_simp[0][2],array_simp[0][1],array_simp[0][0]} !== 32'h3210_1234) $stop;
 
       // Doesn't seem to work for unpacked arrays in other simulators
-      //array_simp <= '{2{ '{4{ 4'd3, 4'd2, 4'd1, 4'd0 }} }};
+      array_simp = '{2  { '{4 { 4'd3, 4'd2, 4'd1, 4'd0 }} } };
 
       $write("*-* All Finished *-*\n");
       $finish;

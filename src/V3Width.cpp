@@ -1177,13 +1177,27 @@ private:
 	    nodep->dtypep(vdtypep);
 	    UINFO(9,"  adtypep "<<vdtypep<<endl);
 	    nodep->dtypep(vdtypep);
+	    // Determine replication count, and replicate initial value as widths need to be individually determined
 	    for (AstPatMember* patp = nodep->itemsp()->castPatMember(); patp; patp = patp->nextp()->castPatMember()) {
-		// Determine replication count, and replicate initial value as widths need to be individually determined
 		int times = visitPatMemberRep(patp);
 		for (int i=1; i<times; i++) {
 		    AstNode* newp = patp->cloneTree(false);
 		    patp->addNextHere(newp);
 		    // This loop will see the new elements as part of nextp()
+		}
+	    }
+	    // Convert any PatMember with multiple items to multiple PatMembers
+	    for (AstPatMember* patp = nodep->itemsp()->castPatMember(); patp; patp = patp->nextp()->castPatMember()) {
+		if (patp->lhssp()->nextp()) {
+		    // Can't just addNext, as would add to end of all members.  So detach, add next and reattach
+		    AstNRelinker relinkHandle;
+		    patp->unlinkFrBack(&relinkHandle);
+		    while (AstNode* movep = patp->lhssp()->nextp()) {
+			movep->unlinkFrBack();  // Not unlinkFrBackWithNext, just one
+			AstPatMember* newp = new AstPatMember(patp->fileline(), movep, patp->keyp()->cloneTree(true), NULL);
+			patp->addNext(newp);
+		    }
+		    relinkHandle.relink(patp);
 		}
 	    }
 	    AstPatMember* defaultp = NULL;
@@ -1255,9 +1269,9 @@ private:
 		    patp->dtypep(memp);
 		    patp->accept(*this,WidthVP(memp,BOTH).p());
 		    // Convert to concat for now
-		    if (!newp) newp = patp->lhsp()->unlinkFrBack();
+		    if (!newp) newp = patp->lhssp()->unlinkFrBack();
 		    else {
-			AstConcat* concatp = new AstConcat(patp->fileline(), newp, patp->lhsp()->unlinkFrBack());
+			AstConcat* concatp = new AstConcat(patp->fileline(), newp, patp->lhssp()->unlinkFrBack());
 			newp = concatp;
 			newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
 						 concatp->lhsp()->width()+concatp->rhsp()->width(),
@@ -1277,9 +1291,10 @@ private:
 	AstNodeDType* vdtypep = vup->c()->dtypep();
 	if (!vdtypep) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
 	nodep->dtypep(vdtypep);
-	nodep->lhsp()->dtypeFrom(nodep);
+	if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
+	nodep->lhssp()->dtypeFrom(nodep);
 	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
-	widthCheck(nodep,"LHS",nodep->lhsp(),nodep->width(),nodep->width());
+	widthCheck(nodep,"LHS",nodep->lhssp(),nodep->width(),nodep->width());
     }
     int visitPatMemberRep(AstPatMember* nodep) {
 	uint32_t times = 1;
