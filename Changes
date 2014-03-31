@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    PSL is no longer supported, please use System Verilog assertions.
 
+**    Support '{} assignment pattern on arrays, bug355.
+
 ***   Add --no-trace-params.
 
 ***   Add assertions on 'unique if', bug725. [Jeff Bush] 

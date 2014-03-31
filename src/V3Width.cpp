@@ -911,7 +911,7 @@ private:
 	}
 	if (nodep->valuep()) {
 	    //if (debug()) nodep->dumpTree(cout,"  final: ");
-	    if (!didchk) nodep->valuep()->iterateAndNext(*this,WidthVP(nodep->dtypep()->width(),0,BOTH).p());
+	    if (!didchk) nodep->valuep()->iterateAndNext(*this,WidthVP(nodep->dtypep(),BOTH).p());
 	    if (!nodep->valuep()->castInitArray()) { // No dtype at present, perhaps TODO
 		widthCheck(nodep,"Initial value",nodep->valuep(),nodep->width(),nodep->widthMin());
 	    }
@@ -1020,8 +1020,15 @@ private:
 	nodep->dtypeFrom(nodep->itemp());
     }
     virtual void visit(AstInitArray* nodep, AstNUser* vup) {
-	// Should be correct by construction, so we'll just loop through all types
-	nodep->iterateChildren(*this, vup);
+	// InitArray has type of the array; children are array values
+	AstNodeDType* vdtypep = vup->c()->dtypep();
+	if (!vdtypep) nodep->v3fatalSrc("InitArray type not assigned by AstPattern visitor");
+	nodep->dtypep(vdtypep);
+	if (AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType()) {
+	    nodep->iterateChildren(*this,WidthVP(arrayp->subDTypep(),BOTH).p());
+	} else {
+	    nodep->v3fatalSrc("InitArray on non-array");
+	}
     }
     virtual void visit(AstInside* nodep, AstNUser* vup) {
 	nodep->exprp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
@@ -1269,18 +1276,94 @@ private:
 		    patp->dtypep(memp);
 		    patp->accept(*this,WidthVP(memp,BOTH).p());
 		    // Convert to concat for now
-		    if (!newp) newp = patp->lhssp()->unlinkFrBack();
+		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
+		    if (!newp) newp = valuep;
 		    else {
-			AstConcat* concatp = new AstConcat(patp->fileline(), newp, patp->lhssp()->unlinkFrBack());
+			AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
 			newp = concatp;
 			newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
 						 concatp->lhsp()->width()+concatp->rhsp()->width(),
 						 nodep->dtypep()->numeric());
 		    }
-		    if (newpatp) pushDeletep(newpatp);
+		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
 		}
 		if (newp) nodep->replaceWith(newp);
 		else nodep->v3error("Assignment pattern with no members");
+		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+	    }
+	    else if (AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType()) {
+		typedef map<int,AstPatMember*> PatMap;
+		PatMap patmap;
+		{
+		    int element = arrayp->declRange().left();
+		    for (AstPatMember* patp = nodep->itemsp()->castPatMember();
+			 patp; patp = patp->nextp()->castPatMember()) {
+			if (patp->keyp()) {
+			    if (AstConst* constp = patp->keyp()->castConst()) {
+				element = constp->toSInt();
+			    } else {
+				patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
+			    }
+			}
+			if (patmap.find(element) != patmap.end()) {
+			    patp->v3error("Assignment pattern key used multiple times: "<<element);
+			} else {
+			    patmap.insert(make_pair(element, patp));
+			}
+			element += arrayp->declRange().leftToRightInc();
+		    }
+		}
+		UINFO(9,"ent "<<arrayp->declRange().hi()<<" to "<<arrayp->declRange().lo()<<endl);
+		AstNode* newp = NULL;
+		for (int ent=arrayp->declRange().hi(); ent>=arrayp->declRange().lo(); --ent) {
+		    AstPatMember* newpatp = NULL;
+		    AstPatMember* patp = NULL;
+		    PatMap::iterator it=patmap.find(ent);
+		    if (it == patmap.end()) {
+			if (defaultp) {
+			    newpatp = defaultp->cloneTree(false);
+			    patp = newpatp;
+			}
+			else {
+			    nodep->v3error("Assignment pattern missed initializing elements: "<<ent);
+			}
+		    } else {
+			patp = it->second;
+			patmap.erase(it);
+		    }
+
+		    // Determine initial values
+		    vdtypep = arrayp->subDTypep();
+		    // Don't want the RHS an array
+		    patp->dtypep(arrayp->subDTypep());
+		    // Determine values - might be another InitArray
+		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+		    // Convert to InitArray or constify immediately
+		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
+		    if (arrayp->castUnpackArrayDType()) {
+			if (!newp) {
+			    newp = new AstInitArray(nodep->fileline(), arrayp, valuep);
+			} else {
+			    // We iterate hi()..lo() as that is what packed needs,
+			    // but INITARRAY needs lo() first
+			    newp->castInitArray()->initsp()->addHereThisAsNext(valuep);
+			}
+		    } else {  // Packed. Convert to concat for now.
+			if (!newp) newp = valuep;
+			else {
+			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+			    newp = concatp;
+			    newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     nodep->dtypep()->numeric());
+			}
+		    }
+		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
+		}
+		if (patmap.size()) nodep->v3error("Assignment pattern with too many elements");
+		if (newp) nodep->replaceWith(newp);
+		else nodep->v3error("Assignment pattern with no members");
+		//if (debug()>=9) newp->dumpTree("-apat-out: ");
 		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
 	    } else {
 		nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "<<vdtypep->prettyTypeName());
@@ -1291,10 +1374,11 @@ private:
 	AstNodeDType* vdtypep = vup->c()->dtypep();
 	if (!vdtypep) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
 	nodep->dtypep(vdtypep);
+	UINFO(9,"   PATMEMBER "<<nodep<<endl);
 	if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
 	nodep->lhssp()->dtypeFrom(nodep);
 	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
-	widthCheck(nodep,"LHS",nodep->lhssp(),nodep->width(),nodep->width());
+	widthCheck(nodep,"Value",nodep->lhssp(),vdtypep);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
 	uint32_t times = 1;

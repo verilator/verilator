@@ -408,6 +408,22 @@ class SliceVisitor : public AstNVisitor {
 
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	if (!nodep->user1()) {
+	    // Cleanup initArrays
+	    if (AstInitArray* initp = nodep->rhsp()->castInitArray()) {
+		//if (debug()>=9) nodep->dumpTree(cout, "-InitArrayIn:  ");
+		AstNode* newp = NULL;
+		int index = 0;
+		while (AstNode* subp=initp->initsp()) {
+		    AstNode* lhsp = new AstArraySel(nodep->fileline(),
+						    nodep->lhsp()->cloneTree(false),
+						    index++);
+		    newp = newp->addNext(nodep->cloneType(lhsp, subp->unlinkFrBack()));
+		}
+		//if (debug()>=9) newp->dumpTreeAndNext(cout, "-InitArrayOut: ");
+		nodep->replaceWith(newp);
+		pushDeletep(nodep); nodep=NULL;
+		return;  // WIll iterate in a moment
+	    }
 	    // Hasn't been searched for implicit slices yet
 	    findImplicit(nodep);
 	}
