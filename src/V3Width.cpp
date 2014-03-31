@@ -2600,10 +2600,10 @@ private:
 	pair<uint32_t,uint32_t> dim = nodep->skipRefp()->dimensions(true);
 	uint32_t maxdim = dim.first+dim.second;
 	//
-	AstInitArray* initp = new AstInitArray (nodep->fileline(), NULL);
-	AstNodeDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
-							  nodep->findSigned32DType(),
-							  new AstRange(nodep->fileline(), maxdim, 0));
+	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
+							       nodep->findSigned32DType(),
+							       new AstRange(nodep->fileline(), maxdim, 0));
+	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
 				   "__Vdimtable" + cvtToStr(m_dtTables++),

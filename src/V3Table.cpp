@@ -188,7 +188,7 @@ private:
 
 	// Change it variable
 	FileLine* fl = nodep->fileline();
-	AstNodeDType* dtypep
+	AstNodeArrayDType* dtypep
 	    = new AstUnpackArrayDType (fl,
 				       nodep->findBitDType(m_outVarps.size(),
 							   m_outVarps.size(), AstNumeric::UNSIGNED),
@@ -199,7 +199,7 @@ private:
 			  "__Vtablechg" + cvtToStr(m_modTables),
 			  dtypep);
 	chgVarp->isConst(true);
-	chgVarp->valuep(new AstInitArray (nodep->fileline(), NULL));
+	chgVarp->valuep(new AstInitArray (nodep->fileline(), dtypep, NULL));
 	m_modp->addStmtp(chgVarp);
 	AstVarScope* chgVscp = new AstVarScope (chgVarp->fileline(), m_scopep, chgVarp);
 	m_scopep->addVarp(chgVscp);
@@ -236,7 +236,7 @@ private:
 	    AstVarScope* outvscp = *it;
 	    AstVar* outvarp = outvscp->varp();
 	    FileLine* fl = nodep->fileline();
-	    AstNodeDType* dtypep
+	    AstNodeArrayDType* dtypep
 		= new AstUnpackArrayDType (fl, outvarp->dtypep(),
 					   new AstRange (fl, VL_MASK_I(m_inWidth), 0));
 	    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
@@ -246,7 +246,7 @@ private:
 			      dtypep);
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
-	    tablevarp->valuep(new AstInitArray (nodep->fileline(), NULL));
+	    tablevarp->valuep(new AstInitArray (nodep->fileline(), dtypep, NULL));
 	    m_modp->addStmtp(tablevarp);
 	    AstVarScope* tablevscp = new AstVarScope(tablevarp->fileline(), m_scopep, tablevarp);
 	    m_scopep->addVarp(tablevscp);

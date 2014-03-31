@@ -2758,15 +2758,20 @@ struct AstInsideRange : public AstNodeMath {
 struct AstInitArray : public AstNode {
     // Set a var to a large list of values
     // The values must be in sorted order, and not exceed the size of the var's array.
+    // The first value on the initsp() list is for the lo() index of the array.
     // Parents: ASTVAR::init()
     // Children: CONSTs...
-    AstInitArray(FileLine* fl, AstNode* initsp)
+    AstInitArray(FileLine* fl, AstNodeArrayDType* newDTypep, AstNode* initsp)
 	: AstNode(fl) {
+	dtypep(newDTypep);
 	addNOp1p(initsp);
     }
     ASTNODE_NODE_FUNCS(InitArray, INITARRAY)
     AstNode*	initsp() 	const { return op1p()->castNode(); }	// op1 = Initial value expressions
     void	addInitsp(AstNode* newp)	{ addOp1p(newp); }
+    virtual bool hasDType() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
 };
 
 struct AstPragma : public AstNode {

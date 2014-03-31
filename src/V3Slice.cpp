@@ -70,7 +70,7 @@ class SliceCloneVisitor : public AstNVisitor {
     // VISITORS
     virtual void visit(AstArraySel* nodep, AstNUser*) {
 	if (!nodep->backp()->castArraySel()) {
-	    // This is the top of an ArraySel, setup
+	    // This is the top of an ArraySel, setup for iteration
 	    m_refp = nodep->user1p()->castNode()->castVarRef();
 	    m_vecIdx += 1;
 	    if (m_vecIdx == (int)m_selBits.size()) {
@@ -78,6 +78,7 @@ class SliceCloneVisitor : public AstNVisitor {
 		AstVar* varp = m_refp->varp();
 		pair<uint32_t,uint32_t> arrDim = varp->dtypep()->dimensions(false);
 		uint32_t dimensions = arrDim.second;
+		// for 3-dimensions we want m_selBits[m_vecIdx]=[0,0,0]
 		for (uint32_t i = 0; i < dimensions; ++i) {
 		    m_selBits[m_vecIdx].push_back(0);
 		}
@@ -165,19 +166,15 @@ class SliceCloneVisitor : public AstNVisitor {
 	nodep->addNextHere(lhsp);
 	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
     }
-
     virtual void visit(AstRedOr* nodep, AstNUser*) {
 	cloneUniop(nodep);
     }
-
     virtual void visit(AstRedAnd* nodep, AstNUser*) {
 	cloneUniop(nodep);
     }
-
     virtual void visit(AstRedXor* nodep, AstNUser*) {
 	cloneUniop(nodep);
     }
-
     virtual void visit(AstRedXnor* nodep, AstNUser*) {
 	cloneUniop(nodep);
     }
@@ -188,8 +185,8 @@ class SliceCloneVisitor : public AstNVisitor {
     }
 public:
     // CONSTUCTORS
-    SliceCloneVisitor(AstNode* assignp) {
-	assignp->accept(*this);
+    SliceCloneVisitor(AstNode* nodep) {
+	nodep->accept(*this);
     }
     virtual ~SliceCloneVisitor() {}
 };
@@ -223,8 +220,8 @@ class SliceVisitor : public AstNVisitor {
 	return level;
     }
 
-    // Find out how many explicit dimensions are in a given ArraySel.
     unsigned explicitDimensions(AstArraySel* nodep) {
+	// Find out how many explicit dimensions are in a given ArraySel.
 	unsigned dim = 0;
 	AstNode* fromp = nodep;
 	AstArraySel* selp;
@@ -243,10 +240,23 @@ class SliceVisitor : public AstNVisitor {
 	return dim;
     }
 
+    int countClones(AstArraySel* nodep) {
+	// Count how many clones we need to make from this ArraySel
+	int clones = 1;
+	AstNode* fromp = nodep;
+	AstArraySel* selp;
+	do {
+	    selp = fromp->castArraySel();
+	    fromp = (selp) ? selp->fromp() : NULL;
+	    if (fromp && selp) clones *= selp->length();
+	} while (fromp && selp);
+	return clones;
+    }
+
     AstArraySel* insertImplicit(AstNode* nodep, unsigned start, unsigned count) {
 	// Insert any implicit slices as explicit slices (ArraySel nodes).
 	// Return a new pointer to replace nodep() in the ArraySel.
-	UINFO(9,"  insertImplicit "<<nodep<<endl);
+	UINFO(9,"  insertImplicit (start="<<start<<",c="<<count<<") "<<nodep<<endl);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
 	if (!refp) nodep->v3fatalSrc("No VarRef in user1 of node "<<nodep);
 	AstVar* varp = refp->varp();
@@ -269,28 +279,15 @@ class SliceVisitor : public AstNVisitor {
 	    newp->user1p(refp);
 	    newp->start(lsb);
 	    newp->length(msb - lsb + 1);
-	    topp = newp->castNode();
+	    topp = newp;
 	}
 	return topp->castArraySel();
-    }
-
-    int countClones(AstArraySel* nodep) {
-	// Count how many clones we need to make from this ArraySel
-	int clones = 1;
-	AstNode* fromp = nodep;
-	AstArraySel* selp;
-	do {
-	    selp = fromp->castArraySel();
-	    fromp = (selp) ? selp->fromp() : NULL;
-	    if (fromp && selp) clones *= selp->length();
-	} while (fromp && selp);
-	return clones;
     }
 
     // VISITORS
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	// The LHS/RHS of an Assign may be to a Var that is an array. In this
-	// case we need to create a slice accross the entire Var
+	// case we need to create a slice across the entire Var
 	if (m_assignp && !nodep->backp()->castArraySel()) {
 	    pair<uint32_t,uint32_t> arrDim = nodep->varp()->dtypep()->dimensions(false);
 	    uint32_t dimensions = arrDim.second;  // unpacked only
@@ -382,8 +379,8 @@ class SliceVisitor : public AstNVisitor {
 	    refp = findVarRefRecurse(nodep->op3p());
 	    if (refp) return refp;
 	}
-	if (nodep->op3p()) {
-	    refp = findVarRefRecurse(nodep->op3p());
+	if (nodep->op4p()) {
+	    refp = findVarRefRecurse(nodep->op4p());
 	    if (refp) return refp;
 	}
 	if (nodep->nextp()) {
@@ -424,7 +421,7 @@ class SliceVisitor : public AstNVisitor {
 	    dim = explicitDimensions(selp);
 	}
 	if (dim == 0 && !nodep->lhsp()->castVarRef()) {
-	    // No ArraySel or VarRef, not something we can expand
+	    // No ArraySel nor VarRef, not something we can expand
 	    nodep->iterateChildren(*this);
 	} else {
 	    AstVarRef* refp = findVarRefRecurse(nodep->lhsp());
@@ -445,25 +442,21 @@ class SliceVisitor : public AstNVisitor {
 	    }
 	}
     }
-
     virtual void visit(AstRedOr* nodep, AstNUser*) {
 	if (!nodep->user1()) {
 	    expandUniOp(nodep);
 	}
     }
-
     virtual void visit(AstRedAnd* nodep, AstNUser*) {
 	if (!nodep->user1()) {
 	    expandUniOp(nodep);
 	}
     }
-
     virtual void visit(AstRedXor* nodep, AstNUser*) {
 	if (!nodep->user1()) {
 	    expandUniOp(nodep);
 	}
     }
-
     virtual void visit(AstRedXnor* nodep, AstNUser*) {
 	if (!nodep->user1()) {
 	    expandUniOp(nodep);
