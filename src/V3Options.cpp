@@ -591,9 +591,6 @@ string V3Options::getenvVERILATOR_ROOT() {
 string V3Options::version() {
     string ver = DTVERSION;
     ver += " rev "+cvtToStr(DTVERSION_rev);
-#ifdef NEW_ORDERING
-    ver += " (ord)";
-#endif
     return ver;
 }
 

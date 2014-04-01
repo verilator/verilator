@@ -81,9 +81,6 @@ private:
     }
 
     void genChangeDet(AstVarScope* vscp) {
-#ifdef NEW_ORDERING
-	vscp->v3fatalSrc("Not applicable\n");
-#endif
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
 	AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();

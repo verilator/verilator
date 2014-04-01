@@ -326,12 +326,10 @@ private:
 	bool sequent = m_itemSequent;
 
 	if (!combo && !sequent) combo=true;	// If no list, Verilog 2000: always @ (*)
-#ifndef NEW_ORDERING
 	if (combo && sequent) {
 	    nodep->v3error("Unsupported: Mixed edge (pos/negedge) and activity (no edge) sensitive activity list");
 	    sequent = false;
 	}
-#endif
 
 	AstActive* wantactivep = NULL;
 	if (combo && !sequent) {

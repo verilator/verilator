@@ -435,11 +435,9 @@ void process () {
 	V3Order::orderAll(v3Global.rootp());
 	V3Global::dumpCheckGlobalTree("order.tree");
 
-#ifndef NEW_ORDERING
 	// Change generated clocks to look at delayed signals
 	V3GenClk::genClkAll(v3Global.rootp());
 	V3Global::dumpCheckGlobalTree("genclk.tree");
-#endif
 
 	// Convert sense lists into IF statements.
 	V3Clock::clockAll(v3Global.rootp());
@@ -464,11 +462,9 @@ void process () {
 	V3Dead::deadifyAll(v3Global.rootp());
 	V3Global::dumpCheckGlobalTree("const.tree");
 
-#ifndef NEW_ORDERING
 	// Detect change loop
 	V3Changed::changedAll(v3Global.rootp());
 	V3Global::dumpCheckGlobalTree("changed.tree");
-#endif
 
 	// Create tracing logic, since we ripped out some signals the user might want to trace
 	// Note past this point, we presume traced variables won't move between CFuncs

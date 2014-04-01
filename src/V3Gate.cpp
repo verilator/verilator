@@ -222,7 +222,7 @@ private:
 	// V3Const cleans up any NOTs by flipping the edges for us
 	if (m_buffersOnly
 	    && !(nodep->rhsp()->castVarRef()
-		 // Until NEW_ORDERING, avoid making non-clocked logic into clocked,
+		 // Avoid making non-clocked logic into clocked,
 		 // as it slows down the verilator_sim_benchmark
 		 || (nodep->rhsp()->castNot()
 		     && nodep->rhsp()->castNot()->lhsp()->castVarRef()

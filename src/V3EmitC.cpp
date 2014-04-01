@@ -786,9 +786,7 @@ class EmitCImp : EmitCStmts {
 
 	if (nodep->stmtsp()) puts("// Body\n");
 	nodep->stmtsp()->iterateAndNext(*this);
-#ifndef NEW_ORDERING
 	if (!m_blkChangeDetVec.empty()) emitChangeDet();
-#endif
 
 	if (nodep->finalsp()) puts("// Final\n");
 	nodep->finalsp()->iterateAndNext(*this);
@@ -1621,20 +1619,16 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     }
     puts("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
-#ifndef NEW_ORDERING
     puts("int __VclockLoop = 0;\n");
     puts("IData __Vchange=1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
     puts(    "VL_DEBUG_IF(VL_PRINTF(\" Clock loop\\n\"););\n");
-#endif
     puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "_eval(vlSymsp);\n");
-#ifndef NEW_ORDERING
     puts(    "__Vchange = _change_request(vlSymsp);\n");
     puts(    "if (++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
 	     +") vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
     puts("}\n");
-#endif
     puts("}\n");
     splitSizeInc(10);
 
@@ -1642,20 +1636,16 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+") {\n");
     puts("vlSymsp->__Vm_didInit = true;\n");
     puts("_eval_initial(vlSymsp);\n");
-#ifndef NEW_ORDERING
     puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "int __VclockLoop = 0;\n");
     puts(    "IData __Vchange=1;\n");
     puts(    "while (VL_LIKELY(__Vchange)) {\n");
-#endif
     puts(        "_eval_settle(vlSymsp);\n");
     puts(        "_eval(vlSymsp);\n");
-#ifndef NEW_ORDERING
     puts(	 "__Vchange = _change_request(vlSymsp);\n");
     puts(        "if (++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
 		 +") vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
     puts(    "}\n");
-#endif
     puts("}\n");
     splitSizeInc(10);
 }
