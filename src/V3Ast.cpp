@@ -239,6 +239,9 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
     //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<": "<<(void*)this<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
     //if (debug()) {
     //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
+    //	// Commenting out the section below may crash, as the tree state
+    //	// between edits is not always consistent for printing
+    //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
     //	v3Global.rootp()->dumpTree(cout,"-treeChange: ");
     //	if (next||1) this->dumpTreeAndNext(cout, prefix);
     //	else this->dumpTree(cout, prefix);
@@ -561,7 +564,7 @@ void AstNode::relink(AstNRelinker* linkerp) {
     if (linkerp->m_iterpp) {
 	// If we're iterating over a next() link, we need to follow links off the
 	// NEW node.  Thus we pass iteration information via a pointer in the node.
-	// This adds a unfortunate 4 bytes to every AstNode, but is faster than passing
+	// This adds a unfortunate hot 8 bytes to every AstNode, but is faster than passing
 	// across every function.
 	// If anyone has a cleaner way, I'd be grateful.
 	*(linkerp->m_iterpp) = newp;
@@ -750,6 +753,20 @@ void AstNode::iterateChildren(AstNVisitor& v, AstNUser* vup) {
     if (m_op4p) m_op4p->iterateAndNext(v, vup);
 }
 
+void AstNode::iterateChildrenConst(AstNVisitor& v, AstNUser* vup) {
+    // This is a very hot function
+    if (!this) return;
+    ASTNODE_PREFETCH(m_op1p);
+    ASTNODE_PREFETCH(m_op2p);
+    ASTNODE_PREFETCH(m_op3p);
+    ASTNODE_PREFETCH(m_op4p);
+    // if () not needed since iterateAndNext accepts null this, but faster with it.
+    if (m_op1p) m_op1p->iterateAndNextConst(v, vup);
+    if (m_op2p) m_op2p->iterateAndNextConst(v, vup);
+    if (m_op3p) m_op3p->iterateAndNextConst(v, vup);
+    if (m_op4p) m_op4p->iterateAndNextConst(v, vup);
+}
+
 void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
@@ -764,16 +781,18 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     while (nodep) {
 	AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
 	ASTNODE_PREFETCH(nodep->m_nextp);
+	// Desirable check, but many places where multiple iterations are OK
+	//if (VL_UNLIKELY(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
 	// cppcheck-suppress nullPointer
 	niterp->m_iterpp = &niterp;
 	niterp->accept(v, vup);
 	// accept may do a replaceNode and change niterp on us...
 	//if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep<<" now into "<<(void*)niterp<<endl);  // niterp maybe NULL, so need cast
-	if (!niterp) return;
+	if (!niterp) return;  // Perhaps node deleted inside accept
 	niterp->m_iterpp = NULL;
-	if (VL_UNLIKELY(niterp!=nodep)) { // Edited it
+	if (VL_UNLIKELY(niterp!=nodep)) { // Edited node inside accept
 	    nodep = niterp;
-	} else {  // Same node, just loop
+	} else {  // Unchanged node, just continue loop
 	    nodep = niterp->m_nextp;
 	}
     }
@@ -799,11 +818,12 @@ void AstNode::iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup) {
     this->op4p()->iterateListBackwards(v,vup);
 }
 
-void AstNode::iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateAndNextConst(AstNVisitor& v, AstNUser* vup) {
     // Keep following the current list even if edits change it
     if (!this) return;
     for (AstNode* nodep=this; nodep; ) {
 	AstNode* nnextp = nodep->m_nextp;
+	ASTNODE_PREFETCH(nnextp);
 	nodep->accept(v, vup);
 	nodep = nnextp;
     }

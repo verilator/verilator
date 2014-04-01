@@ -31,6 +31,9 @@
 #include "V3Ast.h"
 #include "V3File.h"
 
+// This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
+#include "V3AstConstOnly.h"
+
 //######################################################################
 // Stats class functions
 
@@ -74,14 +77,14 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	allNodes(nodep);
 	if (!m_fast) {
-	    nodep->iterateChildren(*this);
+	    nodep->iterateChildrenConst(*this);
 	} else {
 	    for (AstNode* searchp = nodep->stmtsp(); searchp; searchp=searchp->nextp()) {
 		if (AstCFunc* funcp = searchp->castCFunc()) {
 		    if (funcp->name() == "_eval") {
 			m_instrs=0;
 			m_counting = true;
-			funcp->iterateChildren(*this);
+			funcp->iterateChildrenConst(*this);
 			m_counting = false;
 		    }
 		}
@@ -90,7 +93,7 @@ private:
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	allNodes(nodep);
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
 	if (m_counting && nodep->dtypep()) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
 	    if (nodep->dtypeSkipRefp()->castUnpackArrayDType()) ++m_statVarArray;
@@ -103,7 +106,7 @@ private:
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	allNodes(nodep);
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
 	if (m_counting) {
 	    if (nodep->varp()->dtypeSkipRefp()->castBasicDType()) {
 		m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
@@ -114,13 +117,13 @@ private:
 	UINFO(4,"   IF "<<nodep<<endl);
 	allNodes(nodep);
 	// Condition is part of PREVIOUS block
-	nodep->condp()->iterateAndNext(*this);
+	nodep->condp()->iterateAndNextConst(*this);
 	// Track prediction
 	if (m_counting) {
 	    ++m_statPred[nodep->branchPred()];
 	}
 	if (!m_fast) {
-	    nodep->iterateChildren(*this);
+	    nodep->iterateChildrenConst(*this);
 	} else {
 	    // See which path we want to take
 	    bool takeElse = false;
@@ -135,11 +138,11 @@ private:
 		m_counting = false;
 		// Check if
 		m_instrs = 0;
-		nodep->ifsp()->iterateAndNext(*this);
+		nodep->ifsp()->iterateAndNextConst(*this);
 		double instrIf = m_instrs;
 		// Check else
 		m_instrs = 0;
-		nodep->elsesp()->iterateAndNext(*this);
+		nodep->elsesp()->iterateAndNextConst(*this);
 		double instrElse = m_instrs;
 		// Max of if or else condition
 		takeElse = (instrElse > instrIf);
@@ -150,9 +153,9 @@ private:
 	    // Count the block
 	    if (m_counting) {
 		if (takeElse) {
-		    nodep->elsesp()->iterateAndNext(*this);
+		    nodep->elsesp()->iterateAndNextConst(*this);
 		} else {
-		    nodep->ifsp()->iterateAndNext(*this);
+		    nodep->ifsp()->iterateAndNextConst(*this);
 		}
 	    }
 	}
@@ -163,7 +166,7 @@ private:
     virtual void visit(AstCCall* nodep, AstNUser*) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
 	allNodes(nodep);
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
 	if (m_fast) {
 	    // Enter the function and trace it
 	    nodep->funcp()->accept(*this);
@@ -172,12 +175,12 @@ private:
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	m_cfuncp = nodep;
 	allNodes(nodep);
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
 	m_cfuncp = NULL;
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	allNodes(nodep);
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
     }
 public:
     // CONSTRUCTORS

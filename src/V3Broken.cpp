@@ -37,6 +37,9 @@
 #include "V3Broken.h"
 #include "V3Ast.h"
 
+// This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
+#include "V3AstConstOnly.h"
+
 //######################################################################
 
 class BrokenTable : public AstNVisitor {
@@ -185,7 +188,7 @@ private:
     // VISITORS
     virtual void visit(AstNode* nodep, AstNUser*) {
 	BrokenTable::addInTree(nodep, nodep->maybePointedTo());
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
     }
 public:
     // CONSTUCTORS
@@ -228,7 +231,7 @@ private:
 		nodep->v3fatalSrc("Width != WidthMin");
 	    }
 	}
-	nodep->iterateChildren(*this);
+	nodep->iterateChildrenConst(*this);
 	BrokenTable::setUnder(nodep,false);
     }
 public:

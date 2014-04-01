@@ -1186,9 +1186,11 @@ public:
     virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) = 0;
     void	iterate(AstNVisitor& v, AstNUser* vup=NULL) { this->accept(v,vup); } 	  // Does this; excludes following this->next
     void	iterateAndNext(AstNVisitor& v, AstNUser* vup=NULL);
-    void	iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup=NULL);
+    void	iterateAndNextConst(AstNVisitor& v, AstNUser* vup=NULL);
+    void	iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup=NULL) { iterateAndNextConst(v, vup); }
     void	iterateChildren(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
+    void	iterateChildrenConst(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     AstNode*	acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
 
     // CONVERSION
