@@ -339,7 +339,8 @@ private:
 	    varscp->user1p(newup);
 	}
 	OrderUser* up = (OrderUser*)(varscp->user1p());
-	return up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
+	OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
+	return varVxp;
     }
 
     V3GraphEdge* findEndEdge(V3GraphVertex* vertexp, AstNode* errnodep, OrderLoopEndVertex*& evertexpr) {
@@ -396,41 +397,56 @@ private:
 
     void nodeMarkCircular(OrderVarVertex* vertexp, OrderEdge* edgep) {
 	AstVarScope* nodep = vertexp->varScp();
-	nodep->circular(true);
-	++m_statCut[vertexp->type()];
-	if (edgep) ++m_statCut[edgep->type()];
-	if (vertexp->isClock()) {
-	    // Seems obvious; no warning yet
-	    //nodep->v3warn(GENCLK,"Signal unoptimizable: Generated clock: "<<nodep->prettyName());
-	} else if (nodep->varp()->isSigPublic()) {
-	    nodep->v3warn(UNOPT,"Signal unoptimizable: Feedback to public clock or circular logic: "<<nodep->prettyName());
-	    if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
-		nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT, true);  // Complain just once
-		// Give the user an example.
-		bool tempWeight = (edgep && edgep->weight()==0);
-		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
-		m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
-		if (tempWeight) edgep->weight(0);
-	    }
-	} else {
-	    // We don't use UNOPT, as there are lots of V2 places where it was needed, that aren't any more
-	    // First v3warn not inside warnIsOff so we can see the suppressions with --debug
-	    nodep->v3warn(UNOPTFLAT,"Signal unoptimizable: Feedback to clock or circular logic: "<<nodep->prettyName());
-	    if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
-		nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);  // Complain just once
-		// Give the user an example.
-		bool tempWeight = (edgep && edgep->weight()==0);
-		if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
-		m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
-		if (tempWeight) edgep->weight(0);
-		if (v3Global.opt.reportUnoptflat()) {
-		    // Report candidate variables for splitting
-		    reportLoopVars(vertexp);
-		    // Do a subgraph for the UNOPTFLAT loop
-		    OrderGraph loopGraph;
-		    m_graph.subtreeLoops(&OrderEdge::followComboConnected,
-					 vertexp, &loopGraph);
-		    loopGraph.dumpDotFilePrefixedAlways("unoptflat");
+	OrderLogicVertex* fromLVtxp = NULL;
+	OrderLogicVertex* toLVtxp = NULL;
+	if (edgep) {
+	    fromLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
+	    toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
+	}
+	//
+	if ((fromLVtxp && fromLVtxp->nodep()->castInitial())
+	    || (toLVtxp && toLVtxp->nodep()->castInitial())) {
+	    // IEEE does not specify ordering between initial blocks, so we can do whatever we want
+	    // We especially do not want to evaluate multiple times, so do not mark the edge circular
+	}
+	else {
+	    nodep->circular(true);
+	    ++m_statCut[vertexp->type()];
+	    if (edgep) ++m_statCut[edgep->type()];
+	    //
+	    if (vertexp->isClock()) {
+		// Seems obvious; no warning yet
+		//nodep->v3warn(GENCLK,"Signal unoptimizable: Generated clock: "<<nodep->prettyName());
+	    } else if (nodep->varp()->isSigPublic()) {
+		nodep->v3warn(UNOPT,"Signal unoptimizable: Feedback to public clock or circular logic: "<<nodep->prettyName());
+		if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
+		    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT, true);  // Complain just once
+		    // Give the user an example.
+		    bool tempWeight = (edgep && edgep->weight()==0);
+		    if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
+		    m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
+		    if (tempWeight) edgep->weight(0);
+		}
+	    } else {
+		// We don't use UNOPT, as there are lots of V2 places where it was needed, that aren't any more
+		// First v3warn not inside warnIsOff so we can see the suppressions with --debug
+		nodep->v3warn(UNOPTFLAT,"Signal unoptimizable: Feedback to clock or circular logic: "<<nodep->prettyName());
+		if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
+		    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);  // Complain just once
+		    // Give the user an example.
+		    bool tempWeight = (edgep && edgep->weight()==0);
+		    if (tempWeight) edgep->weight(1);  // Else the below loop detect can't see the loop
+		    m_graph.reportLoops(&OrderEdge::followComboConnected, vertexp); // calls OrderGraph::loopsVertexCb
+		    if (tempWeight) edgep->weight(0);
+		    if (v3Global.opt.reportUnoptflat()) {
+			// Report candidate variables for splitting
+			reportLoopVars(vertexp);
+			// Do a subgraph for the UNOPTFLAT loop
+			OrderGraph loopGraph;
+			m_graph.subtreeLoops(&OrderEdge::followComboConnected,
+					     vertexp, &loopGraph);
+			loopGraph.dumpDotFilePrefixedAlways("unoptflat");
+		    }
 		}
 	    }
 	}
@@ -580,7 +596,6 @@ private:
     }
     virtual void visit(AstActive* nodep, AstNUser*) {
 	// Create required activation blocks and add to module
-	if (nodep->hasInitial()) return;  // Ignore initials
 	UINFO(4,"  ACTIVE  "<<nodep<<endl);
 	m_activep = nodep;
 	m_activeSenVxp = NULL;
@@ -756,6 +771,11 @@ private:
 	m_inPost = false;
     }
     virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+	iterateNewStmt(nodep);
+    }
+    virtual void visit(AstInitial* nodep, AstNUser*) {
+	// We use initials to setup parameters and static consts's which may be referenced
+	// in user initial blocks.  So use ordering to sort them all out.
 	iterateNewStmt(nodep);
     }
     virtual void visit(AstCFunc*, AstNUser*) {
@@ -996,7 +1016,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 		) {
 		UINFO(9,"     from d="<<(void*)fromVertexp->domainp()<<" "<<fromVertexp<<endl);
 		if (!domainp  // First input to this vertex
-		    || domainp->hasSettle()) {	// or, we can ignore being in the settle domain
+		    || domainp->hasSettle()	// or, we can ignore being in the settle domain
+		    || domainp->hasInitial()) {
 		    domainp = fromVertexp->domainp();
 		}
 		else if (domainp->hasCombo()) {
@@ -1006,7 +1027,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 		    // Any combo input means this vertex must remain combo
 		    domainp = m_comboDomainp;
 		}
-		else if (fromVertexp->domainp()->hasSettle()) {
+		else if (fromVertexp->domainp()->hasSettle()
+			 || fromVertexp->domainp()->hasInitial()) {
 		    // Ignore that we have a constant (initial) input
 		}
 		else if (domainp != fromVertexp->domainp()) {

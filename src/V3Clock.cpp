@@ -320,28 +320,6 @@ private:
 	}
 	nodep->deleteTree(); nodep = NULL;
     }
-    void moveInitial(AstActive* nodep) {
-	// Change to CFunc
-	AstNode* stmtsp = nodep->stmtsp();
-	if (stmtsp) {
-	    if (!m_scopep) nodep->v3fatalSrc("Initial Active not under scope\n");
-	    AstCFunc* funcp = new AstCFunc(nodep->fileline(), "_initial__"+m_scopep->nameDotless(),
-					   m_scopep);
-	    funcp->argTypes(EmitCBaseVisitor::symClassVar());
-	    funcp->symProlog(true);
-	    funcp->slow(true);
-	    stmtsp->unlinkFrBackWithNext();
-	    funcp->addStmtsp(stmtsp);
-	    nodep->replaceWith(funcp);
-	    // Add top level call to it
-	    AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
-	    callp->argTypes("vlSymsp");
-	    m_initFuncp->addStmtsp(callp);
-	} else {
-	    nodep->unlinkFrBack();
-	}
-	nodep->deleteTree(); nodep=NULL;
-    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	// Link to global function
@@ -365,13 +343,14 @@ private:
 	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
 	else m_settleFuncp->addStmtsp(stmtsp);  // else add to top level function
     }
+    void addToInitial(AstNode* stmtsp) {
+	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
+	else m_initFuncp->addStmtsp(stmtsp);  // else add to top level function
+    }
     virtual void visit(AstActive* nodep, AstNUser*) {
 	// Careful if adding variables here, ACTIVES can be under other ACTIVES
 	// Need to save and restore any member state in AstUntilStable block
-	if (nodep->hasInitial()) {
-	    moveInitial(nodep);
-	}
-	else if (!m_topScopep || !nodep->stmtsp()) {
+	if (!m_topScopep || !nodep->stmtsp()) {
 	    // Not at the top or empty block...
 	    // Only empty blocks should be leftover on the non-top.  Killem.
 	    if (nodep->stmtsp()) nodep->v3fatalSrc("Non-empty lower active");
@@ -381,6 +360,7 @@ private:
 	    AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
 	    if (nodep->hasClocked()) {
 		// Remember the latest sensitivity so we can compare it next time
+		if (nodep->hasInitial()) nodep->v3fatalSrc("Initial block should not have clock sensitivity");
 		if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
 		    UINFO(4,"    sameSenseTree\n");
 		} else {
@@ -392,6 +372,10 @@ private:
 		}
 		// Move statements to if
 		m_lastIfp->addIfsp(stmtsp);
+	    } else if (nodep->hasInitial()) {
+		// Don't need to: clearLastSen();, as we're adding it to different cfunc
+		// Move statements to function
+		addToInitial(stmtsp);
 	    } else if (nodep->hasSettle()) {
 		// Don't need to: clearLastSen();, as we're adding it to different cfunc
 		// Move statements to function

@@ -13,9 +13,9 @@ compile (
 execute (
     check_finished=>1,
 	 expect=>quotemeta(
-q{created tag with scope = top.v.tag
-created tag with scope = top.v.b.gen[0].tag
+q{created tag with scope = top.v.b.gen[0].tag
 created tag with scope = top.v.b.gen[1].tag
+created tag with scope = top.v.tag
 mod a has scope = top.v
 mod a has tag   = top.v.tag
 mod b has scope = top.v.b

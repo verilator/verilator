@@ -690,7 +690,8 @@ class EmitCImp : EmitCStmts {
 		}
 		changep->lhsp()->iterateAndNext(*this);
 		if (changep->lhsp()->isWide()) puts("["+cvtToStr(word)+"]");
-		puts(" ^ ");
+		if (changep->lhsp()->isDouble()) puts(" != ");
+		else puts(" ^ ");
 		changep->rhsp()->iterateAndNext(*this);
 		if (changep->lhsp()->isWide()) puts("["+cvtToStr(word)+"]");
 		puts(")");
