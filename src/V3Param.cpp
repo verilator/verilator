@@ -230,8 +230,16 @@ private:
 	if (!nodep->user5SetOnce()) {  // Process once
 	    nodep->iterateChildren(*this);
 	    if (nodep->isParam()) {
-		if (!nodep->hasSimpleInit()) { nodep->v3fatalSrc("Parameter without initial value"); }
+		if (!nodep->valuep()) { nodep->v3fatalSrc("Parameter without initial value"); }
 		V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+		if (!nodep->valuep()->castConst()) {  // Complex init, like an array
+		    // Make a new INITIAL to set the value.
+		    // This allows the normal array/struct handling code to properly initialize the parameter
+		    nodep->addNext(new AstInitial(nodep->fileline(),
+						  new AstAssign(nodep->fileline(),
+								new AstVarRef(nodep->fileline(), nodep, true),
+								nodep->valuep()->cloneTree(true))));
+		}
 	    }
 	}
     }

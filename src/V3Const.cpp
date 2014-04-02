@@ -106,7 +106,8 @@ private:
     bool	m_doShort;	// Remove expressions that short circuit
     bool	m_doV;		// Verilog, not C++ conversion
     bool	m_doGenerate;	// Postpone width checking inside generate
-    AstNodeModule*	m_modp;		// Current module
+    AstNodeModule*	m_modp;	// Current module
+    AstArraySel*	m_selp;	// Current select
     AstNode*	m_scopep;	// Current scope
     AstAttrOf*	m_attrp;	// Current attribute
 
@@ -1221,15 +1222,35 @@ private:
 	nodep->iterateChildren(*this);
 	m_attrp = oldAttr;
     }
+
+    virtual void visit(AstArraySel* nodep, AstNUser*) {
+	nodep->bitp()->iterateAndNext(*this);
+	if (nodep->bitp()->castConst()
+	    && nodep->fromp()->castVarRef()
+	    // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
+	    && nodep->fromp()->castVarRef()->varp()
+	    && nodep->fromp()->castVarRef()->varp()->valuep()->castInitArray()) {
+	    m_selp = nodep;  // Ask visit(AstVarRef) to replace varref with const
+	}
+	nodep->fromp()->iterateAndNext(*this);
+	if (nodep->fromp()->castConst()) {  // It did.
+	    if (!m_selp) {
+		nodep->v3error("Illegal assignment of constant to unpacked array");
+	    } else {
+		nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+	    }
+	}
+	m_selp = NULL;
+    }
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
-	if (m_doV && nodep->varp()->hasSimpleInit() && !m_attrp) {
-	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
-	    nodep->varp()->valuep()->iterateAndNext(*this);
-	    if (operandConst(nodep->varp()->valuep())
-		&& !nodep->lvalue()
+	if (m_doV && nodep->varp()->valuep() && !m_attrp) {
+	    //if (debug()) valuep->dumpTree(cout,"  visitvaref: ");
+	    nodep->varp()->valuep()->iterateAndNext(*this);  // May change nodep->varp()->valuep()
+	    AstNode* valuep = nodep->varp()->valuep();
+	    if (!nodep->lvalue()
 		&& ((!m_params // Can reduce constant wires into equations
 		     && m_doNConst
 		     && v3Global.opt.oConst()
@@ -1237,11 +1258,23 @@ private:
 			  && nodep->varp()->isInput())
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
-		AstConst* constp = nodep->varp()->valuep()->castConst();
-		const V3Number& num = constp->num();
-		//UINFO(2,"constVisit "<<(void*)constp<<" "<<num<<endl);
-		replaceNum(nodep, num); nodep=NULL;
-		did=true;
+		if (operandConst(valuep)) {
+		    const V3Number& num = valuep->castConst()->num();
+		    //UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+		    replaceNum(nodep, num); nodep=NULL;
+		    did=true;
+		}
+		else if (m_selp && valuep->castInitArray()) {
+		    int bit = m_selp->bitConst();
+		    AstNode* itemp = valuep->castInitArray()->initsp();
+		    for (int n=0; n<bit && itemp; ++n, itemp=itemp->nextp()) {}
+		    if (itemp->castConst()) {
+			const V3Number& num = itemp->castConst()->num();
+			//UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+			replaceNum(nodep, num); nodep=NULL;
+			did=true;
+		    }
+		}
 	    }
 	}
 	if (!did && m_required) {
@@ -1666,6 +1699,10 @@ private:
 	    }
 	}
     }
+    virtual void visit(AstInitArray* nodep, AstNUser*) {
+	// Constant if all children are constant
+	nodep->iterateChildren(*this);
+    }
 
     // These are converted by V3Param.  Don't constify as we don't want the from() VARREF to disappear, if any
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
@@ -1711,6 +1748,12 @@ private:
 
     //-----
     // Below lines are magic expressions processed by astgen
+    //  TREE_SKIP_VISIT("AstNODETYPE")    # Rename normal visit to visitGen and don't iterate
+    //-----
+
+    TREE_SKIP_VISIT("ArraySel");
+
+    //-----
     //  "AstNODETYPE {             # bracket not paren
     //                $accessor_name, ...
     //                             # ,, gets replaced with a , rather than &&
@@ -2038,6 +2081,7 @@ public:
 	m_warn = false;
 	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;
+	m_selp = NULL;
 	m_scopep = NULL;
 	m_attrp = NULL;
 	//

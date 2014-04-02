@@ -977,7 +977,6 @@ public:
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
-    bool	hasSimpleInit()	const { return (op3p() && !op3p()->castInitArray()); }
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }

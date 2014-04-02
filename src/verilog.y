@@ -1892,10 +1892,6 @@ netId<strp>:
 	|	idSVKwd					{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
-sigId<varp>:
-		id					{ $$ = VARDONEA($<fl>1,*$1, NULL, NULL); }
-	;
-
 sigAttrListE<nodep>:
 		/* empty */				{ $$ = NULL; }
 	|	sigAttrList				{ $$ = $1; }
@@ -1958,7 +1954,8 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-		sigId sigAttrListE '=' expr		{ $$ = $1; $1->addAttrsp($2); $$->valuep($4); }
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	//UNSUP:  exprOrDataType instead of expr
 	;
 

@@ -71,7 +71,7 @@ public:
 		    string vfmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
-    typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_STATIC, EVL_ALL} EisWhich;
+    typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_PAR, EVL_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
     void emitVarCtors();
     bool emitSimpleOk(AstNodeMath* nodep);
@@ -1309,7 +1309,9 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		// Constructor deals with it
 	    }
 	    else if (varp->isParam()) {
-		if (!varp->hasSimpleInit()) nodep->v3fatalSrc("No init for a param?");
+		if (!varp->valuep()) nodep->v3fatalSrc("No init for a param?");
+		// If a simple CONST value we initialize it using an enum
+		// If an ARRAYINIT we initialize it using an initial block similar to a signal
 		//puts("// parameter "+varp->name()+" = "+varp->valuep()->name()+"\n");
 	    }
 	    else if (AstInitArray* initarp = varp->valuep()->castInitArray()) {
@@ -1673,6 +1675,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 		    case EVL_IO:   doit = varp->isIO(); break;
 		    case EVL_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
 		    case EVL_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
+		    case EVL_PAR:  doit = (varp->isParam() && !varp->valuep()->castConst()); break;
 		    default: v3fatalSrc("Bad Case");
 		    }
 		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;
@@ -1828,6 +1831,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n// PARAMETERS\n");
     if (modp->isTop()) puts("// Parameters marked /*verilator public*/ for use by application code\n");
     ofp()->putsPrivate(false);  // public:
+    emitVarList(modp->stmtsp(), EVL_PAR, "");  // Only those that are non-CONST
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstVar* varp = nodep->castVar()) {
 	    if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
@@ -1837,7 +1841,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 		if (varp->isWide()) {   // Unsupported for output
 		    puts("// enum WData "+varp->name()+"  //wide");
 		} else if (!varp->valuep()->castConst()) {   // Unsupported for output
-		    puts("// enum IData "+varp->name()+"  //not simple value");
+		    //puts("// enum ..... "+varp->name()+"  //not simple value, see variable above instead");
 		} else {
 		    puts("enum ");
 		    puts(varp->isQuad()?"_QData":"_IData");

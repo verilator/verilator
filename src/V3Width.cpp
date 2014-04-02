@@ -1277,6 +1277,13 @@ private:
 		    patp->accept(*this,WidthVP(memp,BOTH).p());
 		    // Convert to concat for now
 		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
+		    if (valuep->castConst()) {
+			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+			    pushDeletep(valuep); valuep=NULL;
+			    valuep = newp;
+			}
+		    }
 		    if (!newp) newp = valuep;
 		    else {
 			AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
@@ -1340,6 +1347,13 @@ private:
 		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
 		    // Convert to InitArray or constify immediately
 		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
+		    if (valuep->castConst()) {
+			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+			    pushDeletep(valuep); valuep=NULL;
+			    valuep = newp;
+			}
+		    }
 		    if (arrayp->castUnpackArrayDType()) {
 			if (!newp) {
 			    newp = new AstInitArray(nodep->fileline(), arrayp, valuep);

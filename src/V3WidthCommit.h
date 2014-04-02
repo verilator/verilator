@@ -69,6 +69,22 @@ class WidthCommitVisitor : public AstNVisitor {
     // AstVar::user1p		-> bool, processed
     AstUser1InUse	m_inuser1;
 
+public:
+    // METHODS
+    static AstConst* newIfConstCommitSize (AstConst* nodep) {
+	if ((nodep->dtypep()->width() != nodep->num().width())
+	    || !nodep->num().sized()) {  // Need to force the number rrom unsized to sized
+	    V3Number num (nodep->fileline(), nodep->dtypep()->width());
+	    num.opAssign(nodep->num());
+	    num.isSigned(nodep->isSigned());
+	    AstConst* newp = new AstConst(nodep->fileline(), num);
+	    newp->dtypeFrom(nodep);
+	    return newp;
+	} else {
+	    return NULL;
+	}
+    }
+
 private:
     // METHODS
     void editDType(AstNode* nodep) {
@@ -97,13 +113,7 @@ private:
     virtual void visit(AstConst* nodep, AstNUser*) {
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype");
 	nodep->dtypep()->accept(*this);  // Do datatype first
-	if ((nodep->dtypep()->width() != nodep->num().width())
-	    || !nodep->num().sized()) {  // Need to force the number rrom unsized to sized
-	    V3Number num (nodep->fileline(), nodep->dtypep()->width());
-	    num.opAssign(nodep->num());
-	    num.isSigned(nodep->isSigned());
-	    AstConst* newp = new AstConst(nodep->fileline(), num);
-	    newp->dtypeFrom(nodep);
+	if (AstConst* newp = newIfConstCommitSize(nodep)) {
 	    nodep->replaceWith(newp);
 	    AstNode* oldp = nodep; nodep = newp;
 	    //if (debug()>4) oldp->dumpTree(cout,"  fixConstSize_old: ");
