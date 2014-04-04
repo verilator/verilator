@@ -189,7 +189,9 @@ interface genbus_if
                                     output logic   [SMSB:0] re );
     begin
       s_sdata[id] = sdata & {(DSIZE<<3){s_sel[id]}};
+      // verilator lint_off WIDTH
       s_ws   [id] = ws & {SSIZE{s_sel[id]}};
+      // verilator lint_on WIDTH
 
       mdata  = s_mdata[id] & {16{~rst}};
       adr    = s_adr  [id];

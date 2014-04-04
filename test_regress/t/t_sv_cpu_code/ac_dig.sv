@@ -75,7 +75,11 @@ module ac_dig
 
   always_comb
     begin
+`ifdef VERILATOR //TODO
+      dbus.sConnect( .id(ID), .rst(rst), .sdata(sdata), .ws(ws), .mdata(mdata), .adr(adr     ), .we(we), .re(re) );
+`else
       dbus.sConnect( .id(ID), .rst(rst), .sdata(sdata), .ws(ws), .mdata(mdata), .adr(adr[1:0]), .we(we), .re(re) );
+`endif
 //      dbus.sConnect( ID, rst, sdata, ws, mdata, adr, we, re );
     end
 

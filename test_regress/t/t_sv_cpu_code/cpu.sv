@@ -223,7 +223,9 @@ module cpu
   mPreAdrDecode_resp busproperty;
   always_comb
     begin: PreAdrDecode
+      // verilator lint_off WIDTH
       busproperty = dbus.mPreAdrDecode( 0, idec_mem_adr );
+      // verilator lint_on WIDTH
     end
 
 endmodule // cpu
