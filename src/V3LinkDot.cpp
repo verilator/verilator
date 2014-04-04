@@ -96,6 +96,12 @@ private:
     AstUser2InUse	m_inuser2;
     AstUser4InUse	m_inuser4;
 
+public:
+    // ENUMS
+    // In order of priority, compute first ... compute last
+    enum SAMNum { SAMN_MODPORT, SAMN_IFTOP, SAMN__MAX };	// Values for m_scopeAliasMap
+
+private:
     // TYPES
     typedef multimap<string,VSymEnt*> NameScopeSymMap;
     typedef map<VSymEnt*,VSymEnt*> ScopeAliasMap;
@@ -110,7 +116,7 @@ private:
     VSymEnt*		m_dunitEntp;		// $unit entry
     NameScopeSymMap	m_nameScopeSymMap;	// Map of scope referenced by non-pretty textual name
     ImplicitNameSet	m_implicitNameSet;	// For [module][signalname] if we can implicitly create it
-    ScopeAliasMap	m_scopeAliasMap;	// Map of <lhs,rhs> aliases
+    ScopeAliasMap	m_scopeAliasMap[SAMN__MAX]; // Map of <lhs,rhs> aliases
     IfaceVarSyms	m_ifaceVarSyms;		// List of AstIfaceRefDType's to be imported
     IfaceModSyms	m_ifaceModSyms;		// List of AstIface+Symbols to be processed
     bool		m_forPrimary;		// First link
@@ -131,9 +137,18 @@ public:
 	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 	    ostream& os = *logp;
 	    m_syms.dump(os);
-	    if (!m_scopeAliasMap.empty()) os<<"\nScopeAliasMap:\n";
-	    for (ScopeAliasMap::iterator it = m_scopeAliasMap.begin(); it != m_scopeAliasMap.end(); ++it) {
-		os<<"\t"<<it->first<<" -> "<<it->second<<endl;
+	    bool first = true;
+	    for (int samn=0; samn<SAMN__MAX; ++samn) {
+		if (!m_scopeAliasMap[samn].empty()) {
+		    if (first) os<<"\nScopeAliasMap:\n";
+		    first = false;
+		    for (ScopeAliasMap::iterator it = m_scopeAliasMap[samn].begin();
+			 it != m_scopeAliasMap[samn].end(); ++it) {
+			// left side is what we will import into
+			os<<"\t"<<samn<<"\t"<<it->first<<" ("<<it->first->nodep()->typeName()
+			  <<") <- "<<it->second<<" "<<it->second->nodep()<<endl;
+		    }
+		}
 	    }
 	}
     }
@@ -382,31 +397,36 @@ public:
 					    <<"': "<<ifacerefp->prettyName(ifacerefp->modportName()));
 	    }
 	    // Alias won't expand until interfaces and modport names are known; see notes at top
-	    insertScopeAlias(varSymp, ifOrPortSymp);
+	    insertScopeAlias(SAMN_IFTOP, varSymp, ifOrPortSymp);
 	}
 	m_ifaceVarSyms.clear();
     }
 
-    // Track and later insert scope aliases
-    void insertScopeAlias(VSymEnt* lhsp, VSymEnt* rhsp) {  // Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
+    void insertScopeAlias(SAMNum samn, VSymEnt* lhsp, VSymEnt* rhsp) {
+	// Track and later insert scope aliases; an interface referenced by a child cell connecting to that interface
+	// Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
 	UINFO(9,"   insertScopeAlias se"<<(void*)lhsp<<" se"<<(void*)rhsp<<endl);
-	m_scopeAliasMap.insert(make_pair(lhsp, rhsp));
+	m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
     }
     void computeScopeAliases() {
 	UINFO(9,"computeIfaceAliases\n");
-	for (ScopeAliasMap::iterator it=m_scopeAliasMap.begin(); it!=m_scopeAliasMap.end(); ++it) {
-	    VSymEnt* lhsp = it->first;
-	    VSymEnt* srcp = lhsp;
-	    while (1) {  // Follow chain of aliases up to highest level non-alias
-		ScopeAliasMap::iterator it2 = m_scopeAliasMap.find(srcp);
-		if (it2 != m_scopeAliasMap.end()) { srcp = it2->second; continue; }
-		else break;
+	for (int samn=0; samn<SAMN__MAX; ++samn) {
+	    for (ScopeAliasMap::iterator it=m_scopeAliasMap[samn].begin();
+		 it!=m_scopeAliasMap[samn].end(); ++it) {
+		VSymEnt* lhsp = it->first;
+		VSymEnt* srcp = lhsp;
+		while (1) {  // Follow chain of aliases up to highest level non-alias
+		    ScopeAliasMap::iterator it2 = m_scopeAliasMap[samn].find(srcp);
+		    if (it2 != m_scopeAliasMap[samn].end()) { srcp = it2->second; continue; }
+		    else break;
+		}
+		UINFO(9,"  iiasa: Insert alias se"<<lhsp<<" ("<<lhsp->nodep()->typeName()
+		      <<") <- se"<<srcp<<" "<<srcp->nodep()<<endl);
+		// srcp should be an interface reference pointing to the interface we want to import
+		lhsp->importFromIface(symsp(), srcp);
 	    }
-	    UINFO(9,"  iiasa: Insert alias se"<<lhsp<<" <- se"<<srcp<<" "<<srcp->nodep()<<endl);
-	    // srcp should be an interface reference pointing to the interface we want to import
-	    lhsp->importFromIface(symsp(), srcp);
+	    //m_scopeAliasMap[samn].clear();  // Done with it, but put into debug file
 	}
-	m_scopeAliasMap.clear();
     }
 private:
     VSymEnt* findWithAltFallback(VSymEnt* symp, const string& name, const string& altname) {
@@ -1105,7 +1125,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 		}
 		// Interface reference; need to put whole thing into symtable, but can't clone it now
 		// as we may have a later alias for it.
-		m_statep->insertScopeAlias(varSymp, cellSymp);
+		m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, cellSymp);
 	    }
 	}
     }
@@ -1151,7 +1171,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 	}
 	// Remember the alias - can't do it yet because we may have additional symbols to be added,
 	// or maybe an alias of an alias
-	m_statep->insertScopeAlias(lhsSymp, rhsSymp);
+	m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
 	// We have stored the link, we don't need these any more
 	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
     }
@@ -1212,7 +1232,8 @@ class LinkDotIfaceVisitor : public AstNVisitor {
 	} else if (AstNodeFTask* ftaskp = symp->nodep()->castNodeFTask()) {
 	    // Make symbol under modport that points at the _interface_'s var, not the modport.
 	    nodep->ftaskp(ftaskp);
-	    m_statep->insertSym(m_curSymp, nodep->name(), ftaskp, NULL/*package*/);
+	    VSymEnt* subSymp = m_statep->insertSym(m_curSymp, nodep->name(), ftaskp, NULL/*package*/);
+	    m_statep->insertScopeAlias(LinkDotState::SAMN_MODPORT, subSymp, symp);
 	} else {
 	    nodep->v3error("Modport item is not a function/task: "<<nodep->prettyName());
 	}

@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix missing coverage line on else-if, bug727. [Sharad Bagri]
 
+****  Fix modport function import not-found error.
+
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 
 ****  Fix C++-2011 warnings.
