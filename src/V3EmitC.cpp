@@ -2056,6 +2056,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
 		m_ofp = newOutCFile (modp, !m_fast, true/*source*/, splitFilenumInc());
 		emitImp (modp);
 	    }
+	    splitSizeInc(10);  // Even blank functions get a file with a low csplit
 	    mainDoFunc(funcp);
 	}
     }
