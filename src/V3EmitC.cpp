@@ -1073,9 +1073,13 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
 		    break;
 		}
 	    }
+	} else if (pos[0] == ')') {
+	    nextComma=""; puts(")");
+	} else if (pos[0] == '(') {
+	    COMMA; needComma = false; puts("(");
 	} else {
 	    // Normal text
-	    if (pos[0] == ')') nextComma="";
+	    if (isalnum(pos[0])) needComma = true;
 	    COMMA;
 	    string s; s+=pos[0]; puts(s);
 	}

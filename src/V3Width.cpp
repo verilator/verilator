@@ -614,7 +614,7 @@ private:
 	}
     }
     virtual void visit(AstPow* nodep, AstNUser* vup) {
-	// Pow is special, output sign only depends on LHS sign
+	// Pow is special, output sign only depends on LHS sign, but function result depends on both signs
 	// Real if either side is real (as with AstAdd)
 	shift_prelim(nodep, vup);
 	if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
@@ -622,21 +622,46 @@ private:
 	    spliceCvtD(nodep->rhsp());
 	    replaceWithDVersion(nodep); nodep=NULL;
 	} else {
-	    AstNodeBiop* newp = shift_final(nodep, vup);  nodep=NULL;
-	    newp->dtypeChgSigned(newp->lhsp()->isSigned());
-	    if (newp->isSigned()) {
-		replaceWithUOrSVersion(newp, false);  newp=NULL;
+	    if (vup->c()->final()) {
+		int width=nodep->width();  int ewidth=nodep->widthMin();
+		nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+		// rhs already finalized in shift_prelim
+		widthCheck(nodep,"LHS",nodep->lhsp(),width,ewidth);
+		nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
+		AstNode* newp = NULL;  // No change
+		if (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
+		    newp = new AstPowSS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+					 nodep->rhsp()->unlinkFrBack());
+		} else if (nodep->lhsp()->isSigned() && !nodep->rhsp()->isSigned()) {
+		    newp = new AstPowSU (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+					 nodep->rhsp()->unlinkFrBack());
+		} else if (!nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
+		    newp = new AstPowUS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+					 nodep->rhsp()->unlinkFrBack());
+		}
+		if (newp) {
+		    newp->dtypeFrom(nodep);
+		    UINFO(9,"powOld "<<nodep<<endl);
+		    UINFO(9,"powNew "<<newp<<endl);
+		    nodep->replaceWith(newp); nodep=NULL;
+		}
 	    }
 	}
     }
-    virtual void visit(AstPowS* nodep, AstNUser* vup) {
-	// Pow is special, output sign only depends on LHS sign
-	shift_prelim(nodep, vup);
-	AstNodeBiop* newp = shift_final(nodep, vup);  nodep=NULL;
-	newp->dtypeChgSigned(newp->lhsp()->isSigned());
-	if (!newp->isSigned()) {
-	    replaceWithUOrSVersion(newp, true);  newp=NULL;
-	}
+    virtual void visit(AstPowSU* nodep, AstNUser* vup) {
+	// POWSU/SS/US only created here, dtype already determined, so nothing to do in this function
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
+    virtual void visit(AstPowSS* nodep, AstNUser* vup) {
+	// POWSU/SS/US only created here, dtype already determined, so nothing to do in this function
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+    }
+    virtual void visit(AstPowUS* nodep, AstNUser* vup) {
+	// POWSU/SS/US only created here, dtype already determined, so nothing to do in this function
+	nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
     }
     virtual void visit(AstCountOnes* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
@@ -2533,8 +2558,6 @@ private:
 	case AstType::atMODDIVS: newp = new AstModDiv 	(fl,lhsp,rhsp); break;
 	case AstType::atMUL:	newp = new AstMulS	(fl,lhsp,rhsp); break;
 	case AstType::atMULS:	newp = new AstMul	(fl,lhsp,rhsp); break;
-	case AstType::atPOW:	newp = new AstPowS	(fl,lhsp,rhsp); break;
-	case AstType::atPOWS:	newp = new AstPow	(fl,lhsp,rhsp); break;
 	case AstType::atSHIFTR:	newp = new AstShiftRS	(fl,lhsp,rhsp); break;
 	case AstType::atSHIFTRS: newp = new AstShiftR	(fl,lhsp,rhsp); break;
 	default:

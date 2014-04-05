@@ -3,6 +3,12 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2005 by Wilson Snyder.
 
+`ifdef VERILATOR
+ `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
+`else
+ `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0)
+`endif
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -28,11 +34,13 @@ module t (/*AUTOARG*/
 	 $write("%0x %x %x\n", cyc, p, shifted);
 `endif
 	 // Constant versions
-	 if (61'h1 ** 21'h31 != 61'h1) $stop;
-	 if (61'h2 ** 21'h10 != 61'h10000) $stop;
-	 if (61'd10 ** 21'h3 != 61'h3e8) $stop;
-	 if (61'h3  ** 21'h7 != 61'h88b) $stop;
-	 if (61'h7ab3811219 ** 21'ha6e30 != 61'h01ea58c703687e81) $stop;
+	 `checkh(61'h1 ** 21'h31, 61'h1);
+	 `checkh(61'h2 ** 21'h10, 61'h10000);
+	 `checkh(61'd10 ** 21'h3, 61'h3e8);
+	 `checkh(61'h3  ** 21'h7, 61'h88b);
+`ifndef VCS
+	 `checkh(61'h7ab3811219 ** 21'ha6e30, 61'h01ea58c703687e81);
+`endif
 	 if (cyc==1) begin
 	    a <= 61'h0;
 	    b <= 21'h0;
@@ -71,25 +79,25 @@ module t (/*AUTOARG*/
 	32'd01: ;
 	32'd02: ; // 0^x is indeterminate
 	32'd03: ; // 0^x is indeterminate
-	32'd04: if (p!=61'h1) $stop;
-	32'd05: if (p!=61'h10000) $stop;
-	32'd06: if (p!=61'h3e8) $stop;
-	32'd07: if (p!=61'h88b) $stop;
-	32'd08: if (p!=61'h01ea58c703687e81) $stop;
-	32'd09: if (p!=61'h01ea58c703687e81) $stop;
+	32'd04: `checkh(p, 61'h1);
+	32'd05: `checkh(p, 61'h10000);
+	32'd06: `checkh(p, 61'h3e8);
+	32'd07: `checkh(p, 61'h88b);
+	32'd08: `checkh(p, 61'h01ea58c703687e81);
+	32'd09: `checkh(p, 61'h01ea58c703687e81);
 	default: $stop;
       endcase
       case (cyc)
 	32'd00: ;
 	32'd01: ;
-	32'd02: if (shifted!=61'h0000000000000001) $stop;
-	32'd03: if (shifted!=61'h0000000000000008) $stop;
-	32'd04: if (shifted!=61'h0002000000000000) $stop;
-	32'd05: if (shifted!=61'h0000000000010000) $stop;
-	32'd06: if (shifted!=61'h0000000000000008) $stop;
-	32'd07: if (shifted!=61'h0000000000000080) $stop;
-	32'd08: if (shifted!=61'h0000000000000000) $stop;
-	32'd09: if (shifted!=61'h0000000000000000) $stop;
+	32'd02: `checkh(shifted, 61'h0000000000000001);
+	32'd03: `checkh(shifted, 61'h0000000000000008);
+	32'd04: `checkh(shifted, 61'h0002000000000000);
+	32'd05: `checkh(shifted, 61'h0000000000010000);
+	32'd06: `checkh(shifted, 61'h0000000000000008);
+	32'd07: `checkh(shifted, 61'h0000000000000080);
+	32'd08: `checkh(shifted, 61'h0000000000000000);
+	32'd09: `checkh(shifted, 61'h0000000000000000);
 	default: $stop;
       endcase
    end

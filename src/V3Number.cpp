@@ -1381,13 +1381,23 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     }
 }
 
-V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs) {
+V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs, bool lsign, bool rsign) {
     // L(i) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (lhs.isEqZero()) return setZero();
+    if (rhs.isEqZero()) return setQuad(1); // Overrides lhs 0 -> return 0
     // We may want to special case when the lhs is 2, so we can get larger outputs
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** math not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** math not implemented yet: "<<*this);
+    if (rsign && rhs.isNegative()) {
+	if (lhs.isEqZero()) return setAllBitsX();
+	else if (lhs.isEqOne()) return setQuad(1);
+	else if (lsign && lhs.isEqAllOnes()) {
+	    if (rhs.bitIs1(0)) return setAllBits1();  // -1^odd=-1
+	    else return setQuad(1); // -1^even=1
+	}
+	return setZero();
+    }
+    if (lhs.isEqZero()) return setZero();
     setZero();
     m_value[0] = 1;
     V3Number power (lhs.m_fileline, width());  power.opAssign(lhs);
@@ -1404,14 +1414,14 @@ V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs) {
     }
     return *this;
 }
-V3Number& V3Number::opPowS (const V3Number& lhs, const V3Number& rhs) {
-    // Signed multiply
-    if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (lhs.isEqZero() && rhs.isNegative()) return setAllBitsX();  // Per spec
-    if (!lhs.isNegative() && !rhs.isNegative()) return opPow(lhs,rhs);
-    //if (lhs.isNegative() || rhs.isNonIntegral()) return setAllBitsX();  // Illegal pow() call
-    m_fileline->v3fatalSrc("Unsupported: Power (**) operator with negative numbers: "<<*this);
-    return setAllBitsX();
+V3Number& V3Number::opPowSU (const V3Number& lhs, const V3Number& rhs) {
+    return opPow(lhs,rhs,true,false);
+}
+V3Number& V3Number::opPowSS (const V3Number& lhs, const V3Number& rhs) {
+    return opPow(lhs,rhs,true,true);
+}
+V3Number& V3Number::opPowUS (const V3Number& lhs, const V3Number& rhs) {
+    return opPow(lhs,rhs,false,true);
 }
 
 V3Number& V3Number::opBufIf1  (const V3Number& ens, const V3Number& if1s) {

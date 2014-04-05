@@ -238,8 +238,10 @@ public:
     V3Number& opDivS	(const V3Number& lhs, const V3Number& rhs); // Signed
     V3Number& opModDiv	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opModDivS	(const V3Number& lhs, const V3Number& rhs); // Signed
-    V3Number& opPow	(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opPowS	(const V3Number& lhs, const V3Number& rhs); // Signed
+    V3Number& opPow	(const V3Number& lhs, const V3Number& rhs, bool lsign=false, bool rsign=false);
+    V3Number& opPowSU	(const V3Number& lhs, const V3Number& rhs); // Signed lhs, unsigned rhs
+    V3Number& opPowSS	(const V3Number& lhs, const V3Number& rhs); // Signed lhs, signed rhs
+    V3Number& opPowUS	(const V3Number& lhs, const V3Number& rhs); // Unsigned lhs, signed rhs
     V3Number& opAnd	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opChangeXor(const V3Number& lhs, const V3Number& rhs);
     V3Number& opXor	(const V3Number& lhs, const V3Number& rhs);

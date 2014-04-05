@@ -48,11 +48,7 @@ module t (/*AUTOARG*/
    // Do a few in each group
    wire [1:0] o1 = ~ a;  // Can't get more than one reduction to parse
    wire [1:0] o2 = ^ b;  // Can't get more than one reduction to parse
-`ifdef verilator
-   wire [1:0] o3 = a ** b ** c;
-`else  // A commercial simulator gets this wrong, so calc manually
-   wire [1:0] o3 = pow(pow(a,b),c);
-`endif
+   wire [1:0] o3 = a ** b ** c;  // Some simulators botch this
 
    wire [1:0] o4 = a * b / cnz % dnz * enz;
    wire [1:0] o5 = a + b - c + d;
@@ -68,13 +64,8 @@ module t (/*AUTOARG*/
    wire [1:0] o15 = a ? b : c ? d : e;
 
    // Now cross each pair of groups
-`ifdef verilator
-   wire [1:0] x1 = ~ a ** ~ b ** ~c;
-   wire [1:0] x2 = a ** b * c ** d;
-`else
-   wire [1:0] x1 = pow(pow(~ a, ~ b), ~c);
-   wire [1:0] x2 = pow(a,b) * pow(c,d);
-`endif
+   wire [1:0] x1 = ~ a ** ~ b ** ~c;  // Some simulators botch this
+   wire [1:0] x2 = a ** b * c ** d;  // Some simulators botch this
    wire [1:0] x3 = a + b * c + d;
    wire [1:0] x4 = a + b << c + d;
    wire [1:0] x5 = a == b << c == d;
@@ -160,7 +151,7 @@ module t (/*AUTOARG*/
 	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
 	 if (crc !== 64'hc77bb9b3784ea091) $stop;
 	 // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h34b4e0b25bb03880
+`define EXPECTED_SUM 64'h2756ea365ec7520e
 	 if (sum !== `EXPECTED_SUM) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;

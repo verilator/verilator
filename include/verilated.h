@@ -1163,7 +1163,10 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     }
 }
 
+#define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
+
 static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
+    if (VL_UNLIKELY(rhs==0)) return 1;
     if (VL_UNLIKELY(lhs==0)) return 0;
     IData power = lhs;
     IData out = 1;
@@ -1173,10 +1176,8 @@ static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
     }
     return out;
 }
-
-#define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
-
 static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
+    if (VL_UNLIKELY(rhs==0)) return 1;
     if (VL_UNLIKELY(lhs==0)) return 0;
     QData power = lhs;
     QData out = VL_ULL(1);
@@ -1185,6 +1186,36 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
 	if (rhs & (VL_ULL(1)<<i)) out *= power;
     }
     return out;
+}
+
+#define VL_POWSS_QQI(obits,lbits,rbits,lhs,rhs,lsign,rsign) VL_POWSS_QQQ(obits,lbits,rbits,lhs,rhs,lsign,rsign)
+
+static inline IData VL_POWSS_III(int obits, int, int rbits, IData lhs, IData rhs, bool lsign, bool rsign) {
+    if (VL_UNLIKELY(rhs==0)) return 1;
+    if (rsign && VL_SIGN_I(rbits, rhs)) {
+	if (lhs==0) return 0;	// "X"
+	else if (lhs==1) return 1;
+	else if (lsign && lhs==VL_MASK_I(obits)) {  //-1
+	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
+	    else return 1; // -1^even=1
+	}
+	return 0;
+    }
+    return VL_POW_III(obits, obits, rbits, lhs, rhs);
+}
+
+static inline QData VL_POWSS_QQQ(int obits, int, int rbits, QData lhs, QData rhs, bool lsign, bool rsign) {
+    if (VL_UNLIKELY(rhs==0)) return 1;
+    if (rsign && VL_SIGN_I(rbits, rhs)) {
+	if (lhs==0) return 0;	// "X"
+	else if (lhs==1) return 1;
+	else if (lsign && lhs==VL_MASK_I(obits)) {  //-1
+	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
+	    else return 1; // -1^even=1
+	}
+	return 0;
+    }
+    return VL_POW_QQQ(obits, obits, rbits, lhs, rhs);
 }
 
 //===================================================================

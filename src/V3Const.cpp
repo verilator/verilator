@@ -1794,8 +1794,14 @@ private:
     TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstPow   {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstPowS  {$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPow   {$rhsp.isZero}",		"replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSS {$rhsp.isZero}",		"replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSU {$rhsp.isZero}",		"replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowUS {$rhsp.isZero}",		"replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPow   {$lhsp.isZero, !$rhsp.isZero}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPowSU {$lhsp.isZero, !$rhsp.isZero}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPowUS {$lhsp.isZero, !$rhsp.isZero}",	"replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstPowSU {$lhsp.isZero, !$rhsp.isZero}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",	"replaceWRhs(nodep)");
     TREEOP ("AstShiftL{$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",	"replaceZeroChkPure(nodep,$rhsp)");
@@ -1834,7 +1840,6 @@ private:
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}",	"replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}",	"replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
-    TREEOP ("AstPowS  {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");

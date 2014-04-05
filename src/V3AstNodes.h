@@ -4036,7 +4036,7 @@ struct AstPow : public AstNodeBiop {
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
-    virtual int instrCount()	const { return widthInstrs()*instrCountMul(); }
+    virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
 };
 struct AstPowD : public AstNodeBiop {
     AstPowD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
@@ -4048,20 +4048,46 @@ struct AstPowD : public AstNodeBiop {
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleDiv(); }
+    virtual int instrCount()	const { return instrCountDoubleDiv()*5; }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstPowS : public AstNodeBiop {
-    AstPowS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+struct AstPowSU : public AstNodeBiop {
+    AstPowSU(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
-    ASTNODE_NODE_FUNCS(PowS, POWS)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowS(lhs,rhs); }
+    ASTNODE_NODE_FUNCS(PowSU, POWSU)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSU(lhs,rhs); }
     virtual string emitVerilog() { return "%k(%l %f** %r)"; }
-    virtual string emitC() { return "VL_POWS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,0)"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
-    virtual int instrCount()	const { return widthInstrs()*instrCountMul(); }
+    virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
+    virtual bool signedFlavor() const { return true; }
+};
+struct AstPowSS : public AstNodeBiop {
+    AstPowSS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeFrom(lhsp); }
+    ASTNODE_NODE_FUNCS(PowSS, POWSS)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSS(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f** %r)"; }
+    virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 1,1)"; }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
+    virtual bool signedFlavor() const { return true; }
+};
+struct AstPowUS : public AstNodeBiop {
+    AstPowUS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeFrom(lhsp); }
+    ASTNODE_NODE_FUNCS(PowUS, POWUS)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowUS(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f** %r)"; }
+    virtual string emitC() { return "VL_POWSS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri, 0,1)"; }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
     virtual bool signedFlavor() const { return true; }
 };
 struct AstEqCase : public AstNodeBiCom {
