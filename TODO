@@ -55,6 +55,7 @@ Testing:
 	* New random program generator
 	* Better graph viewer with search and zoom
 	* Port and test against opencores.org code
+	* // verilator debug in code so can see only tree affecting those nodes
 
 Usability:
 	* Detect and pre-remove most UNOPTFLATs (4.000) 

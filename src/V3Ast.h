@@ -92,6 +92,8 @@ public:
 	else if (signst==signedst_SIGNED) m_e=SIGNED;
 	else m_e=NOSIGN;
     }
+    static inline AstNumeric fromBool (bool isSigned) {  // Factory method
+	return isSigned ? AstNumeric(SIGNED) : AstNumeric(UNSIGNED); }
     explicit inline AstNumeric (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
     inline bool isSigned() const { return m_e==SIGNED; }
