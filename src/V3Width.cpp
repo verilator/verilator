@@ -103,6 +103,7 @@ public:
     AstNodeDType* dtypep() const { return m_dtypep; }
     bool prelim() const { return m_stage&1; }
     bool final() const { return m_stage&2; }
+    bool isSelfDetermined() const { return m_dtypep == NULL; }  // i.e. made with ANYSIZE
     char stageAscii() const { return "-PFB"[m_stage]; }
 };
 ostream& operator<<(ostream& str, const WidthVP* vup) {
@@ -122,6 +123,13 @@ private:
     AstAttrOf*	m_attrp;	// Current attribute
     bool	m_doGenerate;	// Do errors later inside generate statement
     int		m_dtTables;	// Number of created data type tables
+
+    // ENUMS
+    enum ExtendRule {
+	EXTEND_EXP,		// Extend if expect sign and node signed, e.g. where node=x/y in "x + y"
+	EXTEND_ZERO,		// Extend with zeros. e.g. node=x/y in "$signed(x) == $unsigned(y)"
+	EXTEND_LHS		// Extend with sign if node signed. e.g. node=x/y in "$signed(x) == $signed(y)"
+    };
 
     // CLASSES
 #define ANYSIZE 0
@@ -295,8 +303,8 @@ private:
 	    nodep->expr2p()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
 	    // Error report and change sizes for suboperands of this node.
 	    widthCheckReduce(nodep,"Conditional Test",nodep->condp());
-	    widthCheck(nodep,"Conditional True",nodep->expr1p(),subDTypep);
-	    widthCheck(nodep,"Conditional False",nodep->expr2p(),subDTypep);
+	    widthCheck(nodep,"Conditional True",nodep->expr1p(),subDTypep,EXTEND_EXP);
+	    widthCheck(nodep,"Conditional False",nodep->expr2p(),subDTypep,EXTEND_EXP);
 	}
     }
     virtual void visit(AstConcat* nodep, AstNUser* vup) {
@@ -427,7 +435,7 @@ private:
 			       <<" bits from only "<<nodep->fromp()->width()<<" bit number");
 		// Extend it.
 		AstNodeDType* subDTypep = nodep->findLogicDType(width,width,nodep->fromp()->dtypep()->numeric());
-		widthCheck(nodep,"errorless...",nodep->fromp(),subDTypep,true/*noerror*/);
+		widthCheck(nodep,"errorless...",nodep->fromp(),subDTypep,EXTEND_EXP,true/*noerror*/);
 	    }
 	    // Check bit indexes.
 	    // What is the MSB?  We want the true MSB, not one starting at 0,
@@ -482,7 +490,7 @@ private:
 	    if (!m_doGenerate) {
 		AstNodeDType* subDTypep = nodep->findLogicDType(selwidth, selwidth,
 								nodep->lsbp()->dtypep()->numeric());
-		widthCheck(nodep,"Extract Range",nodep->lsbp(),subDTypep,true);
+		widthCheck(nodep,"Extract Range",nodep->lsbp(),subDTypep,EXTEND_EXP,true);
 	    }
 	}
     }
@@ -529,7 +537,7 @@ private:
 		    UINFO(1,"    Related dtype: "<<nodep->dtypep()<<endl);
 		}
 	    }
-	    widthCheck(nodep,"Extract Range",nodep->bitp(),selDTypep,true);
+	    widthCheck(nodep,"Extract Range",nodep->bitp(),selDTypep,EXTEND_EXP,true);
 	}
     }
 
@@ -629,7 +637,7 @@ private:
 		nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 		// rhs already finalized in shift_prelim
 		nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
-		widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep());
+		widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep(),EXTEND_EXP);
 		AstNode* newp = NULL;  // No change
 		if (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
 		    newp = new AstPowSS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
@@ -811,7 +819,7 @@ private:
 	    // Note widthCheck might modify nodep->lhsp()
 	    AstNodeDType* subDTypep = nodep->findLogicDType(nodep->width(),nodep->width(),
 							    nodep->lhsp()->dtypep()->numeric());
-	    widthCheck(nodep,"Cast",nodep->lhsp(),subDTypep,true);
+	    widthCheck(nodep,"Cast",nodep->lhsp(),subDTypep,EXTEND_EXP,true);
 	}
 	AstNode* newp = nodep->lhsp()->unlinkFrBack();
 	if (basicp->isDouble() && !newp->isDouble()) {
@@ -852,7 +860,7 @@ private:
 	AstNode* underp = nodep->lhsp()->unlinkFrBack();
 	nodep->replaceWith(underp);
 	if (underp->width()!=width) {
-	    fixWidthExtend(underp, newDtp);
+	    fixWidthExtend(underp, newDtp, EXTEND_EXP);
 	}
 	pushDeletep(nodep); nodep=NULL;
     }
@@ -942,10 +950,7 @@ private:
 	    //if (debug()) nodep->dumpTree(cout,"  final: ");
 	    if (!didchk) nodep->valuep()->iterateAndNext(*this,WidthVP(nodep->dtypep(),BOTH).p());
 	    if (!nodep->valuep()->castInitArray()) { // No dtype at present, perhaps TODO
-		widthCheck(nodep,"Initial value",nodep->valuep(),nodep->dtypep());
-	    }
-	    if (nodep->isDouble() && !nodep->valuep()->isDouble()) {
-		spliceCvtD(nodep->valuep());
+		widthCheck(nodep,"Initial value",nodep->valuep(),nodep->dtypep(),EXTEND_EXP);
 	    }
 	}
 	UINFO(4,"varWidthed "<<nodep<<endl);
@@ -1032,7 +1037,7 @@ private:
 	    nodep->valuep()->iterateAndNext(*this,WidthVP(width,0,BOTH).p());
 	    int mwidth = nodep->valuep()->widthMin();  // Value determines minwidth
 	    nodep->dtypeChgWidth(width, mwidth);
-	    widthCheck(nodep,"Enum value",nodep->valuep(),nodep->dtypep());
+	    widthCheck(nodep,"Enum value",nodep->valuep(),nodep->dtypep(),EXTEND_EXP);
 	}
     }
     virtual void visit(AstEnumItemRef* nodep, AstNUser* vup) {
@@ -1076,9 +1081,9 @@ private:
 	nodep->exprp()->iterateAndNext(*this,WidthVP(width,mwidth,FINAL).p());
 	AstNodeDType* subDTypep = nodep->findLogicDType(width,mwidth,nodep->exprp()->dtypep()->numeric());
 	for (AstNode* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()) {
-	    widthCheck(nodep,"Inside Item",itemp,subDTypep);
+	    widthCheck(nodep,"Inside Item",itemp,subDTypep,EXTEND_EXP);
 	}
-        widthCheck(nodep,"Inside expression",nodep->exprp(),subDTypep);
+        widthCheck(nodep,"Inside expression",nodep->exprp(),subDTypep,EXTEND_EXP);
 	nodep->dtypeSetLogicBool();
 	if (debug()>=9) nodep->dumpTree(cout,"-inside-in: ");
 	// Now rip out the inside and replace with simple math
@@ -1422,7 +1427,7 @@ private:
 	if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
 	nodep->lhssp()->dtypeFrom(nodep);
 	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
-	widthCheck(nodep,"Value",nodep->lhssp(),vdtypep);
+	widthCheck(nodep,"Value",nodep->lhssp(),vdtypep,EXTEND_EXP);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
 	uint32_t times = 1;
@@ -1479,10 +1484,10 @@ private:
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 	    for (AstNode* condp = itemp->condsp(); condp; condp=condp->nextp()) {
 		condp->iterate(*this,WidthVP(subDTypep,FINAL).p());
-		widthCheck(nodep,"Case Item",condp,subDTypep);
+		widthCheck(nodep,"Case Item",condp,subDTypep,EXTEND_EXP);
 	    }
 	}
-        widthCheck(nodep,"Case expression",nodep->exprp(),subDTypep);
+        widthCheck(nodep,"Case expression",nodep->exprp(),subDTypep,EXTEND_EXP);
     }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {
 	// TOP LEVEL NODE
@@ -1542,7 +1547,8 @@ private:
 	    // it using the normal width reduction checks.
 	    //UINFO(0,"aw "<<awidth<<" w"<<nodep->rhsp()->width()<<" m"<<nodep->rhsp()->widthMin()<<endl);
 	    AstNodeDType* subDTypep = nodep->dtypep();
-	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),subDTypep);
+	    // Note assignments do not look at the LHS's sign, extend based on right only
+	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),subDTypep,EXTEND_LHS);
 	    //if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
 	}
     }
@@ -1892,7 +1898,7 @@ private:
 			    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
 			}
 			if (portp->basicp() && !portp->basicp()->isOpaque()) {
-			    widthCheck(nodep,"Function Argument",pinp,portp->dtypep());
+			    widthCheck(nodep,"Function Argument",pinp,portp->dtypep(),EXTEND_EXP);
 			}
 		    }
 		}
@@ -1933,7 +1939,7 @@ private:
 	    checkCvtUS(nodep->lhsp());
 	    nodep->dtypeSetDouble();
 	    AstNodeDType* subDTypep = nodep->findLogicDType(64,64, nodep->lhsp()->dtypep()->numeric());
-	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,EXTEND_EXP);
 	}
     }
     void visit_Or_Ls32(AstNodeUniop* nodep, AstNUser* vup) {
@@ -1944,7 +1950,7 @@ private:
 	    checkCvtUS(nodep->lhsp());
 	    nodep->dtypeSetDouble();
 	    AstNodeDType* subDTypep = nodep->findLogicDType(32,32, nodep->lhsp()->dtypep()->numeric());
-	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,EXTEND_EXP);
 	}
     }
     void visit_Os32_Lr(AstNodeUniop* nodep, AstNUser* vup) {
@@ -2016,10 +2022,12 @@ private:
 	// Widths: 1 bit out, lhs width == rhs width
 	// Signed: if RHS&LHS signed, OPERATOR CHANGES to signed flavor
 	// Real: allowed on RHS, if RHS|LHS is real, both become real, and OPERATOR CHANGES
+	// IEEE, 11.4.4: relational compares (<,>,<=,>=,==,===,!=,!==) use "zero padding" on unsigned
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	}
+	bool signedFl = nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned();
 	if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
 	    spliceCvtD(nodep->lhsp());
 	    spliceCvtD(nodep->rhsp());
@@ -2027,7 +2035,6 @@ private:
 		nodep = newp;  // Process new node instead
 	    }
 	} else {
-	    bool signedFl = nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned();
 	    if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, signedFl)) { nodep=NULL;
 		nodep = newp;  // Process new node instead
 	    }
@@ -2036,12 +2043,12 @@ private:
 	int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
 	int ewidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
 	AstNodeDType* subDTypep = nodep->findLogicDType(width, ewidth,
-							AstNumeric::fromBool(nodep->signedFlavor()));
+							AstNumeric::fromBool(signedFl));
 	if (vup->c()->final()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
-	    widthCheck(nodep, "LHS", nodep->lhsp(), subDTypep);
-	    widthCheck(nodep, "RHS", nodep->rhsp(), subDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,signedFl?EXTEND_LHS:EXTEND_ZERO);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),subDTypep,signedFl?EXTEND_LHS:EXTEND_ZERO);
 	}
     }
     void visit_cmp_O1_LRrus(AstNodeBiop* nodep, AstNUser* vup, bool real_lhs) {
@@ -2050,6 +2057,7 @@ private:
 	// Widths: 1 bit out, lhs width == rhs width
 	// Signed compare (not output) if both sides signed
 	// Real if and only if real_lhs set
+	// IEEE, 11.4.4: relational compares (<,>,<=,>=,==,===,!=,!==) use "zero padding" on unsigned
 	if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
@@ -2071,8 +2079,8 @@ private:
 	if (vup->c()->final()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
-	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep);
-	    widthCheck(nodep,"RHS",nodep->rhsp(),subDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,signedFl?EXTEND_LHS:EXTEND_ZERO);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),subDTypep,signedFl?EXTEND_LHS:EXTEND_ZERO);
 	}
     }
 
@@ -2105,25 +2113,28 @@ private:
 	AstNodeDType* subDTypep = nodep->dtypep();
 	if (vup->c()->final()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
-	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,EXTEND_EXP);
 	}
     }
 
     void visit_Ous_Lus_Wforce(AstNodeUniop* nodep, AstNUser* vup, AstNumeric rs_out) {
 	// CALLER: Signed, Unsigned
 	// Widths: lhs is self determined width
-	// Output though still may require extension
+	// See IEEE-2012 6.24.1 "returns packed array, of size $bits(expression),
+	// bit if expression is 2-state, otherwise type logic."
 	if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
 	if (vup->c()->prelim()) {
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,PRELIM).p());
 	    checkCvtUS(nodep->lhsp());
 	}
-	int width  = nodep->lhsp()->width();
-	int ewidth = nodep->lhsp()->width();  // Not widthMin; force it.
-	nodep->dtypeSetLogicSized(width,ewidth,rs_out);
+	int width = nodep->lhsp()->width();
+	nodep->dtypeSetLogicSized(width,width,rs_out);
 	if (vup->c()->final()) {
-	    // Final call, so make sure children check their sizes
-	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
+	    // The child's width is self determined
+	    AstNodeDType* subDTypep = nodep->dtypep();
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
+	    // Now extend
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,EXTEND_EXP);
 	}
     }
 
@@ -2161,7 +2172,7 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(width,ewidth,FINAL).p());
 	    AstNodeDType* sublhsDTypep = nodep->findLogicDType(width, ewidth,
 							       nodep->lhsp()->dtypep()->numeric());
-	    widthCheck(nodep,"LHS",nodep->lhsp(),sublhsDTypep);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),sublhsDTypep,EXTEND_EXP);
 	    if (nodep->rhsp()->width()>32) {
 		AstConst* shiftp = nodep->rhsp()->castConst();
 		if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
@@ -2214,8 +2225,8 @@ private:
 		rhsOk = (mwidth >= (nodep->rhsp()->widthMin()));
 	    }
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,lhsOk);
-	    widthCheck(nodep,"RHS",nodep->rhsp(),subDTypep,rhsOk);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),subDTypep,EXTEND_EXP,lhsOk);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),subDTypep,EXTEND_EXP,rhsOk);
 	}
     }
 
@@ -2270,8 +2281,8 @@ private:
 		rhsOk = (mwidth >= (nodep->rhsp()->widthMin()));
 	    }
 	    // Error report and change sizes for suboperands of this node.
-	    widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep(),lhsOk);
-	    widthCheck(nodep,"RHS",nodep->rhsp(),nodep->dtypep(),rhsOk);
+	    widthCheck(nodep,"LHS",nodep->lhsp(),nodep->dtypep(),EXTEND_EXP,lhsOk);
+	    widthCheck(nodep,"RHS",nodep->rhsp(),nodep->dtypep(),EXTEND_EXP,rhsOk);
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"-rusou-");
     }
@@ -2307,16 +2318,20 @@ private:
 	return false;
     }
 
-    void fixWidthExtend (AstNode* nodep, AstNodeDType* expDTypep) {
+    void fixWidthExtend (AstNode* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
 	// Fix the width mismatch by extending or truncating bits
 	// Truncation is rarer, but can occur:  parameter [3:0] FOO = 64'h12312;
 	// A(CONSTwide)+B becomes  A(CONSTwidened)+B
 	// A(somewide)+B  becomes  A(TRUNC(somewide,width))+B
 	// 		      or   A(EXTRACT(somewide,width,0))+B
-	UINFO(4,"  widthExtend_old: "<<nodep<<endl);
+	// Sign extension depends on the type of the *present*
+	// node, while the output dtype is the *expected* sign.
+	// It is reasonable to have sign extension with unsigned output,
+	// for example $unsigned(a)+$signed(b), the SIGNED(B) will be unsigned dtype out
+	UINFO(4,"  widthExtend_(r="<<extendRule<<") old: "<<nodep<<endl);
 	AstConst* constp = nodep->castConst();
 	int expWidth = expDTypep->width();
-	if (constp && !expDTypep->isSigned()) {
+	if (constp && !nodep->isSigned()) {
 	    // Save later constant propagation work, just right-size it.
 	    V3Number num (nodep->fileline(), expWidth);
 	    num.opAssign(constp->num());
@@ -2336,13 +2351,26 @@ private:
 	    // Extend
 	    AstNRelinker linker;
 	    nodep->unlinkFrBack(&linker);
-	    AstNode* newp = ((expDTypep->isSigned() && nodep->isSigned())
+	    bool doSigned;
+	    switch (extendRule) {
+	    case EXTEND_ZERO: doSigned = false; break;
+	    case EXTEND_EXP:  doSigned = nodep->isSigned() && expDTypep->isSigned(); break;
+	    case EXTEND_LHS:  doSigned = nodep->isSigned(); break;
+	    default: nodep->v3fatalSrc("bad case");
+	    }
+	    AstNode* newp = (doSigned
 			     ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
 			     : (new AstExtend (nodep->fileline(), nodep))->castNode());
 	    linker.relink(newp);
 	    nodep=newp;
 	}
-	nodep->dtypeChgWidth(expWidth,expWidth);
+	if (expDTypep->isDouble() && !nodep->isDouble()) {
+	    // For AstVar init() among others
+	    // TODO do all to-real and to-integer conversions in this function rather than in callers
+	    AstNode* newp = spliceCvtD(nodep);
+	    nodep = newp;
+	}
+	nodep->dtypeFrom(expDTypep);
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 
@@ -2398,16 +2426,11 @@ private:
 
     void widthCheckFileDesc (AstNode* nodep, AstNode* underp) {
 	AstNodeDType* expDTypep = underp->findUInt32DType();
-	widthCheck(nodep,"file_descriptor",underp,expDTypep,false);
-    }
-    void widthCheck (AstNode* nodep, const char* side,
-		     AstNode* underp, int expWidth, int expWidthMin,
-		     bool ignoreWarn=false) {
-	AstNodeDType* expDTypep = underp->findLogicDType(expWidth, expWidthMin, underp->dtypep()->numeric());
-	widthCheck(nodep,side,underp,expDTypep,ignoreWarn);
+	widthCheck(nodep,"file_descriptor",underp,expDTypep,EXTEND_EXP,false);
     }
     void widthCheck (AstNode* nodep, const char* side,
 		     AstNode* underp, AstNodeDType* expDTypep,
+		     ExtendRule extendRule,
 		     bool ignoreWarn=false) {
 	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<" i"<<ignoreWarn<<endl);
 	int expWidth = expDTypep->width();
@@ -2444,7 +2467,7 @@ private:
 			  <<" bits.");
 	}
 	if (bad || underp->width()!=expWidth) {
-	    fixWidthExtend(underp, expDTypep); underp=NULL;//Changed
+	    fixWidthExtend(underp, expDTypep, extendRule); underp=NULL;//Changed
 	}
     }
 
@@ -2488,7 +2511,7 @@ private:
 	}
 	// We only fix input mismatches
 	if (bad && inputPin) {
-	    fixWidthExtend(underp, expDTypep); underp=NULL;//Changed
+	    fixWidthExtend(underp, expDTypep, EXTEND_EXP); underp=NULL;//Changed
 	}
     }
 
@@ -2519,7 +2542,7 @@ private:
 	    linker.relink(newp);
 	}
     }
-    void spliceCvtD(AstNode* nodep) {
+    AstNode* spliceCvtD(AstNode* nodep) {
 	// For integer used in REAL context, convert to real
 	// We don't warn here, "2.0 * 2" is common and reasonable
 	if (nodep && !nodep->isDouble()) {
@@ -2528,6 +2551,9 @@ private:
 	    nodep->unlinkFrBack(&linker);
 	    AstNode* newp = new AstIToRD(nodep->fileline(), nodep);
 	    linker.relink(newp);
+	    return newp;
+	} else {
+	    return nodep;
 	}
     }
     void spliceCvtS(AstNode* nodep, bool ignoreWarn) {

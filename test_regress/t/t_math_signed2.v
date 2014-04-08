@@ -16,14 +16,6 @@ module t (/*AUTOARG*/
   reg  signed[7:0]  delay_minmax[31:0];
   integer k;
 
-   wire [1:0] bug729_a = ~0;
-   wire [2:0] bug729_b = ~0;
-   // verilator lint_off WIDTH
-   // the $signed becomes EXTEND(SIGNED(bug729_a)), not EXTENDS because the == is unsigned
-   wire [0:0] bug729_y = $signed(bug729_a) == bug729_b;
-   // verilator lint_on WIDTH
-   initial if (bug729_y) $stop;
-
   initial begin
     in = 11'b10000001000;
     for(k=0;k<32;k=k+1)
