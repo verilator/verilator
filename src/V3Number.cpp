@@ -47,6 +47,7 @@ V3Number::V3Number(VerilogString, FileLine* fileline, const string& str) {
 	    }
 	}
     }
+    opCleanThis();
 }
 
 V3Number::V3Number (FileLine* fileline, const char* sourcep) {
@@ -252,6 +253,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	setBit(obit, bitIs(obit-1));
 	obit++;
     }
+    opCleanThis();
 
     //printf("Dump \"%s\"  CP \"%s\"  B '%c' %d W %d\n", sourcep, value_startp, base, width(), m_value[0]);
 }
@@ -276,11 +278,13 @@ V3Number& V3Number::setQuad(vluint64_t value) {
     for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = value & VL_ULL(0xffffffff);
     m_value[1] = (value>>VL_ULL(32)) & VL_ULL(0xffffffff);
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLong(uint32_t value) {
     for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = value;
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setLongS(vlsint32_t value) {
@@ -288,6 +292,7 @@ V3Number& V3Number::setLongS(vlsint32_t value) {
     union { uint32_t u; vlsint32_t s; } u;
     u.s = value;
     m_value[0] = u.u;
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
@@ -314,14 +319,17 @@ V3Number& V3Number::setAllBits0() {
 }
 V3Number& V3Number::setAllBits1() {
     for (int i=0; i<words(); i++) { m_value[i]= ~0; m_valueX[i] = 0; }
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsX() {
     for (int i=0; i<words(); i++) { m_value[i]=m_valueX[i] = ~0; }
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setAllBitsZ() {
     for (int i=0; i<words(); i++) { m_value[i]=0; m_valueX[i] = ~0; }
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::setMask(int nbits) {
@@ -341,6 +349,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 	if (width()!=64) out<<"%E-bad-width-double";
 	else out<<toDouble();
 	return out.str();
+    } else {
+	if ((m_value[words()-1] | m_valueX[words()-1]) & ~hiWordMask()) out<<"%E-hidden-bits";
     }
     if (prefixed) {
 	if (sized()) {
@@ -751,6 +761,7 @@ V3Number& V3Number::opCountOnes (const V3Number& lhs) {
     if (lhs.isFourState()) return setAllBitsX();
     setZero();
     m_value[0] = lhs.countOnes();
+    opCleanThis();
     return *this;
 }
 V3Number& V3Number::opIsUnknown (const V3Number& lhs) {
@@ -1291,6 +1302,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 	}
 	UINFO(9, "  opmoddiv-1w  "<<lhs<<" "<<rhs<<" q="<<*this<<" rem=0x"<<hex<<k<<dec<<endl);
 	if (is_modulus) { setZero(); m_value[0] = k; }
+	opCleanThis();
 	return *this;
     }
 
@@ -1373,9 +1385,11 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 	    m_value[i] = (un[i] >> s) | (shift_mask & (un[i+1] << (32-s)));
 	}
 	for (int i=vw; i<words; i++) m_value[i] = 0;
+	opCleanThis();
 	UINFO(9, "  opmoddiv-mod "<<lhs<<" "<<rhs<<" now="<<*this<<endl);
 	return *this;
     } else { // division
+	opCleanThis();
 	UINFO(9, "  opmoddiv-div "<<lhs<<" "<<rhs<<" now="<<*this<<endl);
 	return *this;
     }
@@ -1457,9 +1471,8 @@ V3Number& V3Number::opClean (const V3Number& lhs, uint32_t bits) {
 
 void V3Number::opCleanThis() {
     // Clean in place number
-    if (uint32_t okbits = (width() & 31)) {
-	m_value[words()-1] &= ((1UL<<okbits)-1);
-    }
+    m_value[words()-1]  &= hiWordMask();
+    m_valueX[words()-1] &= hiWordMask();
 }
 
 V3Number& V3Number::opSel (const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {

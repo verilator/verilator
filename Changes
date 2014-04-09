@@ -27,7 +27,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix signed extension problems with -Wno-WIDTH, bug729. [Clifford Wolf]
 
-****  Fix power operator calculation, bug730. [Clifford Wolf]
+****  Fix power operator calculation, bug730, bug735. [Clifford Wolf]
 
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 

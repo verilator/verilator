@@ -103,6 +103,7 @@ private:
     }
 
     int words() const { return ((width()+31)/32); }
+    uint32_t hiWordMask() const { return VL_MASK_I(width()); }
 
     V3Number& opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus);
 
@@ -111,7 +112,7 @@ public:
     // CONSTRUCTORS
     V3Number(FileLine* fileline) { init(fileline, 1); }
     V3Number(FileLine* fileline, int width) { init(fileline, width); }  // 0=unsized
-    V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; }
+    V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; opCleanThis(); }
     V3Number(FileLine* fileline, const char* source);	// Create from a verilog 32'hxxxx number.
     V3Number(VerilogString, FileLine* fileline, const string& vvalue);
 
