@@ -111,6 +111,14 @@ module t (/*AUTOARG*/
 	 // Test display extraction widthing
 	 $display("[%0t] %x %x %x(%d)", $time, shq[2:0], shq[2:0]<<2, xor3[2:0], xor3[2:0]);
 
+	 // bug736
+	 //verilator lint_off WIDTH
+	 if ((~| 4'b0000) != 4'b0001) $stop;
+	 if ((~| 4'b0010) != 4'b0000) $stop;
+	 if ((~& 4'b1111) != 4'b0000) $stop;
+	 if ((~& 4'b1101) != 4'b0001) $stop;
+	 //verilator lint_on WIDTH
+
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

@@ -2845,8 +2845,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'~' ~r~expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }
 	|	'|' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedOr	($1,$2); }
 	|	'^' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXor	($1,$2); }
-	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstNot($1,new AstRedAnd($1,$2)); }
-	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstNot($1,new AstRedOr ($1,$2)); }
+	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1,new AstRedAnd($1,$2)); }
+	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1,new AstRedOr ($1,$2)); }
 	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
 	//
 	//			// IEEE: inc_or_dec_expression
