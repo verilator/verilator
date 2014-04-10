@@ -3010,7 +3010,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	|	data_type assignment_pattern		{ $$ = $2; $2->childDTypep($1); }
 	|	assignment_pattern			{ $$ = $1; }
 	//
-	//UNSUP	streaming_concatenation			{ UNSUP }
+	|	streaming_concatenation			{ $$ = $1; }
 	;
 
 fexprOkLvalue<nodep>:		// exprOkLValue, For use as first part of statement (disambiguates <=)
@@ -3110,6 +3110,32 @@ argsDottedList<nodep>:		// IEEE: part of list_of_arguments
 argsDotted<nodep>:		// IEEE: part of list_of_arguments
 		'.' idAny '(' ')'			{ $$ = new AstArg($1,*$2,NULL); }
 	|	'.' idAny '(' expr ')'			{ $$ = new AstArg($1,*$2,$4); }
+	;
+
+streaming_concatenation<nodep>:	// ==IEEE: streaming_concatenation
+	//	 		// Need to disambiguate {<< expr-{ ... expr-} stream_concat }
+	//			// From                 {<< stream-{ ... stream-} }
+	//			// Likewise simple_type's idScoped from constExpr's idScope
+	//			// Thus we allow always any two operations.  Sorry
+	//			// IEEE: "'{' yP_SL/R             stream_concatenation '}'"
+	//			// IEEE: "'{' yP_SL/R simple_type stream_concatenation '}'"
+	//			// IEEE: "'{' yP_SL/R constExpr	  stream_concatenation '}'"
+		'{' yP_SLEFT              stream_concOrExprOrType '}'	{ $$ = new AstStreamL($1, $3, new AstConst($1,1)); }
+	|	'{' yP_SRIGHT             stream_concOrExprOrType '}'	{ $$ = new AstStreamR($1, $3, new AstConst($1,1)); }
+	|	'{' yP_SLEFT  stream_concOrExprOrType stream_concatenation '}'	{ $$ = new AstStreamL($1, $4, $3); }
+	|	'{' yP_SRIGHT stream_concOrExprOrType stream_concatenation '}'	{ $$ = new AstStreamR($1, $4, $3); }
+	;
+
+stream_concOrExprOrType<nodep>:	// IEEE: stream_concatenation | slice_size:simple_type | slice_size:constExpr
+		cateList				{ $$ = $1; }
+	|	simple_type				{ $$ = $1; }
+	//			// stream_concatenation found via cateList:stream_expr:'{-normal-concat'
+	//			// simple_typeRef found via cateList:stream_expr:expr:id
+	//			// constant_expression found via cateList:stream_expr:expr
+	;
+
+stream_concatenation<nodep>:	// ==IEEE: stream_concatenation
+		'{' cateList '}'			{ $$ = $2; }
 	;
 
 stream_expression<nodep>:	// ==IEEE: stream_expression
@@ -3381,6 +3407,7 @@ variable_lvalue<nodep>:		// IEEE: variable_lvalue or net_lvalue
 	//UNSUP	idClassSel yP_TICKBRA variable_lvalueList '}'	{ UNSUP }
 	//UNSUP	/**/       yP_TICKBRA variable_lvalueList '}'	{ UNSUP }
 	//UNSUP	streaming_concatenation			{ UNSUP }
+	|	streaming_concatenation			{ $$ = $1; }
 	;
 
 variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'

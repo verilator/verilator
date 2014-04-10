@@ -32,6 +32,7 @@
 #include "V3String.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
+#include "V3Number.h"
 
 #define VL_VALUE_STRING_MAX_WIDTH 8192	// We use a static char array in VL_VALUE_STRING
 
@@ -551,6 +552,28 @@ public:
 	} else {
 	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
 	}
+    }
+    virtual void visit(AstStreamL* nodep, AstNUser*) {
+	// Attempt to use a "fast" stream function for slice size = power of 2
+	if (!nodep->isWide()) {
+	    uint32_t isPow2 = nodep->rhsp()->castConst()->num().countOnes() == 1;
+	    uint32_t sliceSize = nodep->rhsp()->castConst()->toUInt();
+	    if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
+		puts("VL_STREAML_FAST_");
+		emitIQW(nodep);
+		emitIQW(nodep->lhsp());
+		puts("I(");
+		puts(cvtToStr(nodep->widthMin()));
+		puts(","+cvtToStr(nodep->lhsp()->widthMin()));
+		puts(","+cvtToStr(nodep->rhsp()->widthMin()));
+		puts(",");
+		nodep->lhsp()->iterateAndNext(*this); puts(", ");
+		uint32_t rd_log2 = V3Number::log2b(nodep->rhsp()->castConst()->toUInt());
+		puts(cvtToStr(rd_log2)+")");
+		return;
+	    }
+	}
+	emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(), nodep->rhsp(), NULL);
     }
     // Terminals
     virtual void visit(AstVarRef* nodep, AstNUser*) {

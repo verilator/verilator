@@ -4175,6 +4175,30 @@ struct AstReplicate : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
+struct AstStreamL : public AstNodeStream {
+    // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+    AstStreamL(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeStream(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(StreamL, STREAML)
+    virtual string emitVerilog() { return "%f{ << %r %k{%l} }"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opStreamL(lhs,rhs); }
+    virtual string emitC() { return "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*2; }
+};
+struct AstStreamR : public AstNodeStream {
+    // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+    AstStreamR(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeStream(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(StreamR, STREAMR)
+    virtual string emitVerilog() { return "%f{ >> %r %k{%l} }"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAssign(lhs); }
+    virtual string emitC() { return isWide() ? "VL_ASSIGN_W(%nw, %P, %li)" : "%li"; }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*2; }
+};
 struct AstBufIf1 : public AstNodeBiop {
     // lhs is enable, rhs is data to drive
     // Note unlike the Verilog bufif1() UDP, this allows any width; each lhsp bit enables respective rhsp bit

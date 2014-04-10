@@ -1358,6 +1358,122 @@ static inline WDataOutP VL_REPLICATE_WWI(int obits, int lbits, int, WDataOutP ow
     return(owp);
 }
 
+// Left stream operator. Output will always be clean. LHS and RHS must be clean.
+// Special "fast" versions for slice sizes that are a power of 2. These use
+// shifts and masks to execute faster than the slower for-loop approach where a
+// subset of bits is copied in during each iteration.
+static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_log2) {
+    // Pre-shift bits in most-significant slice:
+    //
+    // If lbits is not a multiple of the slice size (i.e., lbits % rd != 0),
+    // then we end up with a "gap" in our reversed result. For example, if we
+    // have a 5-bit Verlilog signal (lbits=5) in an 8-bit C data type:
+    //
+    //   ld = ---43210
+    //
+    // (where numbers are the Verilog signal bit numbers and '-' is an unused bit).
+    // Executing the switch statement below with a slice size of two (rd=2,
+    // rd_log2=1) produces:
+    //
+    //   ret = 1032-400
+    //
+    // Pre-shifting the bits in the most-significant slice allows us to avoid
+    // this gap in the shuffled data:
+    //
+    //   ld_adjusted = --4-3210
+    //   ret = 10324---
+    IData ret = ld;
+    if (rd_log2) {
+	vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2); // max multiple of rd <= lbits
+	vluint32_t lbitsRem = lbits - lbitsFloor; // number of bits in most-sig slice (MSS)
+	IData msbMask = VL_MASK_I(lbitsRem) << lbitsFloor; // mask to sel only bits in MSS
+	ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_UL(1) << rd_log2) - lbitsRem));
+    }
+    switch (rd_log2) {
+	case 0:
+	    ret = ((ret >> 1) & VL_UL(0x55555555)) | ((ret & VL_UL(0x55555555)) << 1);    // FALLTHRU
+	case 1:
+	    ret = ((ret >> 2) & VL_UL(0x33333333)) | ((ret & VL_UL(0x33333333)) << 2);    // FALLTHRU
+	case 2:
+	    ret = ((ret >> 4) & VL_UL(0x0f0f0f0f)) | ((ret & VL_UL(0x0f0f0f0f)) << 4);    // FALLTHRU
+	case 3:
+	    ret = ((ret >> 8) & VL_UL(0x00ff00ff)) | ((ret & VL_UL(0x00ff00ff)) << 8);    // FALLTHRU
+	case 4:
+	    ret = ((ret >> 16) | (ret << 16));
+    }
+    return ret >> (VL_WORDSIZE - lbits);
+}
+
+static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_log2) {
+    // Pre-shift bits in most-significant slice (see comment in VL_STREAML_FAST_III)
+    QData ret = ld;
+    if (rd_log2) {
+        vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);
+        vluint32_t lbitsRem = lbits - lbitsFloor;
+        QData msbMask = VL_MASK_Q(lbitsRem) << lbitsFloor;
+        ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_ULL(1) << rd_log2) - lbitsRem));
+    }
+    switch (rd_log2) {
+	case 0:
+	    ret = ((ret >>  1) & VL_ULL(0x5555555555555555)) | ((ret & VL_ULL(0x5555555555555555)) <<  1);    // FALLTHRU
+	case 1:
+	    ret = ((ret >>  2) & VL_ULL(0x3333333333333333)) | ((ret & VL_ULL(0x3333333333333333)) <<  2);    // FALLTHRU
+	case 2:
+	    ret = ((ret >>  4) & VL_ULL(0x0f0f0f0f0f0f0f0f)) | ((ret & VL_ULL(0x0f0f0f0f0f0f0f0f)) <<  4);    // FALLTHRU
+	case 3:
+	    ret = ((ret >>  8) & VL_ULL(0x00ff00ff00ff00ff)) | ((ret & VL_ULL(0x00ff00ff00ff00ff)) <<  8);    // FALLTHRU
+	case 4:
+	    ret = ((ret >> 16) & VL_ULL(0x0000ffff0000ffff)) | ((ret & VL_ULL(0x0000ffff0000ffff)) << 16);    // FALLTHRU
+	case 5:
+	    ret = ((ret >> 32) | (ret << 32));
+    }
+    return ret >> (VL_QUADSIZE - lbits);
+}
+
+// Regular "slow" streaming operators
+static inline IData VL_STREAML_III(int, int lbits, int, IData ld, IData rd) {
+    IData ret = 0;
+    // Slice size should never exceed the lhs width
+    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
+    IData mask = VL_MASK_I(rd);
+    for (int istart=0; istart<lbits; istart+=rd) {
+	int ostart=lbits-rd-istart;
+        ostart = ostart > 0 ? ostart : 0;
+        ret |= ((ld >> istart) & mask) << ostart;
+    }
+    return ret;
+}
+
+static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) {
+    QData ret = 0;
+    // Slice size should never exceed the lhs width
+    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
+    QData mask = VL_MASK_Q(rd);
+    for (int istart=0; istart<lbits; istart+=rd) {
+	int ostart=lbits-rd-istart;
+        ostart = ostart > 0 ? ostart : 0;
+        ret |= ((ld >> istart) & mask) << ostart;
+    }
+    return ret;
+}
+
+static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WDataInP lwp, IData rd) {
+    VL_ZERO_RESET_W(lbits, owp);
+    // Slice size should never exceed the lhs width
+    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
+    for (int istart=0; istart<lbits; istart+=rd) {
+	int ostart=lbits-rd-istart;
+        ostart = ostart > 0 ? ostart : 0;
+	for (int sbit=0; sbit<ssize && sbit<lbits-istart; sbit++) {
+            // Extract a single bit from lwp and shift it to the correct
+            // location for owp.
+            WData bit= ((lwp[VL_BITWORD_I(istart+sbit)] >> VL_BITBIT_I(istart+sbit)) & 1) << VL_BITBIT_I(ostart+sbit);
+            owp[VL_BITWORD_I(ostart+sbit)] |= bit;
+	}
+    }
+    return owp;
+}
+
 // Because concats are common and wide, it's valuable to always have a clean output.
 // Thus we specify inputs must be clean, so we don't need to clean the output.
 // Note the bit shifts are always constants, so the adds in these constify out.

@@ -214,6 +214,7 @@ public:
     V3Number& opConcat	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opRepl	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opRepl	(const V3Number& lhs, uint32_t rhs);
+    V3Number& opStreamL	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSel	(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
     V3Number& opSel	(const V3Number& lhs, uint32_t rhs, uint32_t ths);
     V3Number& opCond	(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);

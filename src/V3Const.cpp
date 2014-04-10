@@ -869,10 +869,10 @@ private:
 	    }
 	    if (debug()>=9) nodep->dumpTree(cout,"  Ass_old: ");
 	    // Unlink the stuff
-	    AstNode*   lc1p    = nodep->lhsp()->castConcat()->lhsp()->unlinkFrBack();
-	    AstNode*   lc2p    = nodep->lhsp()->castConcat()->rhsp()->unlinkFrBack();
-	    AstNode*   conp    = nodep->lhsp()->castConcat()->unlinkFrBack();
-	    AstNode*   rhsp    = nodep->rhsp()->unlinkFrBack();
+	    AstNode* lc1p = nodep->lhsp()->castConcat()->lhsp()->unlinkFrBack();
+	    AstNode* lc2p = nodep->lhsp()->castConcat()->rhsp()->unlinkFrBack();
+	    AstNode* conp = nodep->lhsp()->castConcat()->unlinkFrBack();
+	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    AstNode*   rhs2p   = rhsp->cloneTree(false);
 	    // Calc widths
 	    int lsb2 = 0;
@@ -939,6 +939,64 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    conp->deleteTree(); conp=NULL;
 	    // Further reduce, either node may have more reductions.
+	    return true;
+	}
+	else if (m_doV && nodep->rhsp()->castStreamR()) {
+	    // The right-streaming operator on rhs of assignment does not
+	    // change the order of bits. Eliminate stream but keep its lhsp
+	    // Unlink the stuff
+	    AstNode* srcp    = nodep->rhsp()->castStreamR()->lhsp()->unlinkFrBack();
+	    AstNode* sizep   = nodep->rhsp()->castStreamR()->rhsp()->unlinkFrBack();
+	    AstNode* streamp = nodep->rhsp()->castStreamR()->unlinkFrBack();
+	    nodep->rhsp(srcp);
+	    // Cleanup
+	    sizep->deleteTree(); sizep=NULL;
+	    streamp->deleteTree(); streamp=NULL;
+	    // Further reduce, any of the nodes may have more reductions.
+	    return true;
+	}
+	else if (m_doV && nodep->lhsp()->castStreamL()) {
+	    // Push the stream operator to the rhs of the assignment statement
+	    int dWidth = nodep->lhsp()->castStreamL()->lhsp()->width();
+	    int sWidth = nodep->rhsp()->width();
+	    // Unlink the stuff
+	    AstNode* dstp    = nodep->lhsp()->castStreamL()->lhsp()->unlinkFrBack();
+	    AstNode* streamp = nodep->lhsp()->castStreamL()->unlinkFrBack();
+	    AstNode* srcp    = nodep->rhsp()->unlinkFrBack();
+	    // Connect the rhs to the stream operator and update its width
+	    streamp->castStreamL()->lhsp(srcp);
+	    streamp->dtypeSetLogicSized((srcp->width()),
+					(srcp->widthMin()),
+					AstNumeric::UNSIGNED);
+	    // Shrink the RHS if necessary
+	    if (sWidth > dWidth) {
+		streamp = new AstSel(streamp->fileline(), streamp, sWidth-dWidth, dWidth);
+	    }
+	    // Link the nodes back in
+	    nodep->lhsp(dstp);
+	    nodep->rhsp(streamp);
+	    return true;
+	}
+	else if (m_doV && nodep->lhsp()->castStreamR()) {
+	    // The right stream operator on lhs of assignment statement does
+	    // not reorder bits. However, if the rhs is wider than the lhs,
+	    // then we select bits from the left-most, not the right-most.
+	    int dWidth = nodep->lhsp()->castStreamR()->lhsp()->width();
+	    int sWidth = nodep->rhsp()->width();
+	    // Unlink the stuff
+	    AstNode* dstp    = nodep->lhsp()->castStreamR()->lhsp()->unlinkFrBack();
+	    AstNode* sizep   = nodep->lhsp()->castStreamR()->rhsp()->unlinkFrBack();
+	    AstNode* streamp = nodep->lhsp()->castStreamR()->unlinkFrBack();
+	    AstNode* srcp    = nodep->rhsp()->unlinkFrBack();
+	    if (sWidth > dWidth) {
+		srcp = new AstSel(streamp->fileline(), srcp,  sWidth-dWidth, dWidth);
+	    }
+	    nodep->lhsp(dstp);
+	    nodep->rhsp(srcp);
+	    // Cleanup
+	    sizep->deleteTree(); sizep=NULL;
+	    streamp->deleteTree(); streamp=NULL;
+	    // Further reduce, any of the nodes may have more reductions.
 	    return true;
 	}
 	else if (replaceAssignMultiSel(nodep)) {

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support '{} assignment pattern on arrays, bug355.
 
+**    Support streaming operators, bug649. [Glen Gibb]
+
 ***   Add --no-trace-params.
 
 ***   Add assertions on 'unique if', bug725. [Jeff Bush] 

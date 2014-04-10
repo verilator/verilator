@@ -128,7 +128,8 @@ private:
     enum ExtendRule {
 	EXTEND_EXP,		// Extend if expect sign and node signed, e.g. where node=x/y in "x + y"
 	EXTEND_ZERO,		// Extend with zeros. e.g. node=x/y in "$signed(x) == $unsigned(y)"
-	EXTEND_LHS		// Extend with sign if node signed. e.g. node=x/y in "$signed(x) == $signed(y)"
+	EXTEND_LHS,		// Extend with sign if node signed. e.g. node=x/y in "$signed(x) == $signed(y)"
+	EXTEND_OFF		// No extension
     };
 
     // CLASSES
@@ -363,6 +364,35 @@ private:
 	    if (!nodep->dtypep()->widthSized()) {
 		// See also error in V3Number
 		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in replications.");
+	    }
+	}
+    }
+    virtual void visit(AstNodeStream* nodep, AstNUser* vup) {
+	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	    checkCvtUS(nodep->lhsp());
+	    checkCvtUS(nodep->rhsp());
+	    V3Const::constifyParamsEdit(nodep->rhsp()); // rhsp may change
+	    AstConst* constp = nodep->rhsp()->castConst();
+	    AstBasicDType* basicp = nodep->rhsp()->castBasicDType();
+	    if (!constp && !basicp) { nodep->v3error("Slice size isn't a constant or basic data type."); return; }
+	    if (basicp) { // Convert data type to a constant size
+		AstConst* newp = new AstConst(basicp->fileline(), basicp->width());
+		nodep->rhsp()->replaceWith(newp);
+		pushDeletep(basicp);
+	    } else {
+		uint32_t sliceSize = constp->toUInt();
+		if (!sliceSize) { nodep->v3error("Slice size cannot be zero."); return; }
+	    }
+	    nodep->dtypeSetLogicSized((nodep->lhsp()->width()),
+				      (nodep->lhsp()->widthMin()),
+				      AstNumeric::UNSIGNED);
+	}
+	if (vup->c()->final()) {
+	    if (!nodep->dtypep()->widthSized()) {
+		// See also error in V3Number
+		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in streams.");
 	    }
 	}
     }
@@ -1548,7 +1578,8 @@ private:
 	    //UINFO(0,"aw "<<awidth<<" w"<<nodep->rhsp()->width()<<" m"<<nodep->rhsp()->widthMin()<<endl);
 	    AstNodeDType* subDTypep = nodep->dtypep();
 	    // Note assignments do not look at the LHS's sign, extend based on right only
-	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),subDTypep,EXTEND_LHS);
+	    int lhsStream = nodep->lhsp()->castNodeStream() != NULL;
+	    widthCheck(nodep,"Assign RHS",nodep->rhsp(),subDTypep,lhsStream?EXTEND_OFF:EXTEND_LHS);
 	    //if (debug()) nodep->dumpTree(cout,"  AssignOut: ");
 	}
     }
@@ -2329,6 +2360,7 @@ private:
 	// It is reasonable to have sign extension with unsigned output,
 	// for example $unsigned(a)+$signed(b), the SIGNED(B) will be unsigned dtype out
 	UINFO(4,"  widthExtend_(r="<<extendRule<<") old: "<<nodep<<endl);
+	if (extendRule == EXTEND_OFF) return;
 	AstConst* constp = nodep->castConst();
 	int expWidth = expDTypep->width();
 	if (constp && !nodep->isSigned()) {
@@ -2467,7 +2499,13 @@ private:
 			  <<" bits.");
 	}
 	if (bad || underp->width()!=expWidth) {
-	    fixWidthExtend(underp, expDTypep, extendRule); underp=NULL;//Changed
+	    // If we're in an NodeAssign, don't truncate the RHS if the LHS is
+	    // a NodeStream. The streaming operator changes the rules regarding
+	    // which bits to truncate.
+	    AstNodeAssign* assignp = nodep->castNodeAssign();
+            if (!assignp || !assignp->lhsp()->castNodeStream()) {
+		fixWidthExtend(underp, expDTypep, extendRule); underp=NULL;//Changed
+	    }
 	}
     }
 

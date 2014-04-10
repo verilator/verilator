@@ -902,6 +902,23 @@ V3Number& V3Number::opRepl (const V3Number& lhs, uint32_t rhsval) {	// rhs is # 
     return *this;
 }
 
+V3Number& V3Number::opStreamL (const V3Number& lhs, const V3Number& rhs) {
+    setZero();
+    // See also error in V3Width
+    if (!lhs.sized()) {
+	m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in streams.");
+    }
+    // Slice size should never exceed the lhs width
+    int ssize=min(rhs.toUInt(), (unsigned)lhs.width());
+    for (int istart=0; istart<lhs.width(); istart+=ssize) {
+	int ostart=max(0, lhs.width()-ssize-istart);
+	for (int bit=0; bit<ssize && bit<lhs.width()-istart; bit++) {
+	    setBit(ostart+bit, lhs.bitIs(istart+bit));
+	}
+    }
+    return *this;
+}
+
 V3Number& V3Number::opLogAnd (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation
     char loutc = 0;
