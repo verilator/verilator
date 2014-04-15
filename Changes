@@ -31,6 +31,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix power operator calculation, bug730, bug735. [Clifford Wolf]
 
+****  Fix reporting struct members as reserved words, bug741. [Chris Randall]
+
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 
 ****  Fix C++-2011 warnings.

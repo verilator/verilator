@@ -203,6 +203,7 @@ class EmitCSyms : EmitCBaseVisitor {
 	}
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
+	nameCheck(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->isSigUserRdPublic()
 	    && !nodep->isParam()) {  // The VPI functions require a pointer to allow modification, but parameters are constants
@@ -220,6 +221,7 @@ class EmitCSyms : EmitCBaseVisitor {
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
+	nameCheck(nodep);
 	if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
 	    m_dpis.push_back(nodep);
 	}

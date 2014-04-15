@@ -15,10 +15,16 @@ module t (/*AUTOARG*/
    reg  vector;	// OK, as not public
    reg  switch /*verilator public*/;	// Bad
 
+   typedef struct packed {
+      logic [31:0] vector;	// OK, as not public
+   } test;
+   test t;
+
    // global is a 1800-2009 reserved word, but we allow it when possible.
    reg  global;
 
    initial begin
+      t.vector = 1;
       $write("*-* All Finished *-*\n");
       $finish;
    end

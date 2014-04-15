@@ -107,6 +107,18 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
+    virtual void visit(AstMemberDType* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    rename(nodep, false);
+	    nodep->iterateChildren(*this);
+	}
+    }
+    virtual void visit(AstMemberSel* nodep, AstNUser*) {
+	if (!nodep->user1()) {
+	    rename(nodep, false);
+	    nodep->iterateChildren(*this);
+	}
+    }
     virtual void visit(AstScope* nodep, AstNUser*) {
 	if (!nodep->user1SetOnce()) {
 	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterate(*this);
