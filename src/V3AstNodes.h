@@ -965,7 +965,7 @@ public:
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
-    string	vlArgType(bool named, bool forReturn) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
+    string	vlArgType(bool named, bool forReturn, bool forFunc) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
     string	vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string	vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     void	combineType(AstVarType type);

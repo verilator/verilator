@@ -200,7 +200,7 @@ string AstVar::verilogKwd() const {
     }
 }
 
-string AstVar::vlArgType(bool named, bool forReturn) const {
+string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     if (forReturn) named=false;
     if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
     string arg;
@@ -233,7 +233,7 @@ string AstVar::vlArgType(bool named, bool forReturn) const {
 	arg += " (& "+name();
 	arg += ")["+cvtToStr(widthWords())+"]";
     } else {
-	if (isOutput() || (strtype && isInput())) arg += "&";
+	if (forFunc && (isOutput() || (strtype && isInput()))) arg += "&";
 	if (named) arg += " "+name();
     }
     return arg;

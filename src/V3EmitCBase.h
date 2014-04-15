@@ -78,7 +78,7 @@ public:
 			args += portp->dpiArgType(true,false);
 		    else if (nodep->funcPublic())
 			args += portp->cPubArgType(true,false);
-		    else args += portp->vlArgType(true,false);
+		    else args += portp->vlArgType(true,false,true);
 		}
 	    }
 	}

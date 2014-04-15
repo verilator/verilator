@@ -604,7 +604,15 @@ public:
 	    }
 	    ofp()->printf(",0x%08" VL_PRI64 "x)", (vluint64_t)(nodep->num().dataWord(0)));
 	} else if (nodep->isDouble()) {
-	    ofp()->printf("%.17g", nodep->num().toDouble());
+	    if (int(nodep->num().toDouble()) == nodep->num().toDouble()
+		&& nodep->num().toDouble() < 1000
+		&& nodep->num().toDouble() > -1000) {
+		ofp()->printf("%3.1f", nodep->num().toDouble());  // Force decimal point
+	    } else {
+		// Not %g as will not always put in decimal point, so not obvious to compiler
+		// is a real number
+		ofp()->printf("%.17e", nodep->num().toDouble());
+	    }
 	} else if (nodep->isQuad()) {
 	    vluint64_t num = nodep->toUQuad();
 	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "d)", num);
@@ -922,6 +930,11 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	    puts(nodep->name());
 	    emitDeclArrayBrackets(nodep);
 	    puts(";\n");
+	} else if (basicp && basicp->isOpaque()) {
+	    // strings and other fundamental c types; no VL_ macro can be used
+	    puts(nodep->vlArgType(true,false,false));
+	    emitDeclArrayBrackets(nodep);
+	    puts(";\n");
 	} else { // C++ signals
 	    ofp()->putAlign(nodep->isStatic(), nodep->dtypeSkipRefp()->widthAlignBytes(),
 			    nodep->dtypeSkipRefp()->widthTotalBytes());
@@ -945,7 +958,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	}
     } else if (basicp && basicp->isOpaque()) {
 	// strings and other fundamental c types
-	puts(nodep->vlArgType(true,false));
+	puts(nodep->vlArgType(true,false,false));
 	emitDeclArrayBrackets(nodep);
 	puts(";\n");
     } else {
