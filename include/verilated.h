@@ -1434,7 +1434,6 @@ static inline QData VL_STREAML_FAST_QQI(int, int lbits, int, QData ld, IData rd_
 static inline IData VL_STREAML_III(int, int lbits, int, IData ld, IData rd) {
     IData ret = 0;
     // Slice size should never exceed the lhs width
-    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
     IData mask = VL_MASK_I(rd);
     for (int istart=0; istart<lbits; istart+=rd) {
 	int ostart=lbits-rd-istart;
@@ -1447,7 +1446,6 @@ static inline IData VL_STREAML_III(int, int lbits, int, IData ld, IData rd) {
 static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) {
     QData ret = 0;
     // Slice size should never exceed the lhs width
-    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
     QData mask = VL_MASK_Q(rd);
     for (int istart=0; istart<lbits; istart+=rd) {
 	int ostart=lbits-rd-istart;

@@ -2383,7 +2383,7 @@ private:
 	    // Extend
 	    AstNRelinker linker;
 	    nodep->unlinkFrBack(&linker);
-	    bool doSigned;
+	    bool doSigned = false;
 	    switch (extendRule) {
 	    case EXTEND_ZERO: doSigned = false; break;
 	    case EXTEND_EXP:  doSigned = nodep->isSigned() && expDTypep->isSigned(); break;

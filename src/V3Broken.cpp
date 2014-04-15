@@ -74,7 +74,8 @@ public:
 	    ((AstNode*)(nodep))->v3fatalSrc("Newing AstNode object that is already allocated\n");
 	}
 	if (iter == s_nodes.end()) {
-	    s_nodes.insert(make_pair(nodep,FLAG_ALLOCATED));
+	    int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
+	    s_nodes.insert(make_pair(nodep,flags));
 	}
     }
     static void setUnder(const AstNode* nodep, bool flag) {
