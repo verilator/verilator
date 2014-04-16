@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix tracing of package variables and real arrays.
 
+****  Fix tracing of packed arrays without --trace-structs, bug742. [Jie Xu]
+
 ****  Fix missing coverage line on else-if, bug727. [Sharad Bagri]
 
 ****  Fix modport function import not-found error.

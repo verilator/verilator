@@ -615,7 +615,9 @@ struct VNumRange {
     int hiMaxSelect() const { return (lo()<0 ? hi()-lo() : hi()); } // Maximum value a [] select may index
     bool representableByWidth() const  // Could be represented by just width=1, or [width-1:0]
 	{ return (!m_ranged || (m_lo==0 && m_hi>=1 && !m_littleEndian)); }
+    void dump(ostream& str) const { if (ranged()) str<<"["<<left()<<":"<<right()<<"]"; else str<<"[norg]"; }
 };
+inline ostream& operator<<(ostream& os, VNumRange rhs) { rhs.dump(os); return os; }
 
 //######################################################################
 

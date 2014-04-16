@@ -49,6 +49,13 @@ module t (clk);
    real         v_arr_real [2];
    string	v_string;
 
+   typedef struct packed {
+      logic [31:0] data;
+   } str32_t;
+   str32_t [1:0] v_str32x2;  // If no --trace-struct, this packed array is traced as 63:0
+   initial v_str32x2[0] = 32'hff;
+   initial v_str32x2[1] = 0;
+
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 
@@ -72,6 +79,8 @@ module t (clk);
 	    v_arru_arru[a][b] = ~v_arru_arru[a][b];
 	 end
       end
+      v_str32x2[0] <= v_str32x2[0] - 1;
+      v_str32x2[1] <= v_str32x2[1] + 1;
       if (cyc == 5) begin
 	 $write("*-* All Finished *-*\n");
 	 $finish;

@@ -108,12 +108,15 @@ private:
     void addCFuncStmt(AstCFunc* basep, AstNode* nodep, VNumRange arrayRange) {
 	basep->addStmtsp(nodep);
     }
-    void addTraceDecl(const VNumRange& arrayRange) {
+    void addTraceDecl(const VNumRange& arrayRange,
+		      int widthOverride) {  // If !=0, is packed struct/array where basicp size misreflects one element
 	VNumRange bitRange;
 	AstBasicDType* bdtypep = m_traValuep->dtypep()->basicp();
-	if (bdtypep) bitRange = bdtypep->nrange();
+	if (widthOverride) bitRange = VNumRange(widthOverride-1,0,false);
+	else if (bdtypep) bitRange = bdtypep->nrange();
 	AstTraceDecl* declp = new AstTraceDecl(m_traVscp->fileline(), m_traShowname, m_traValuep,
 					       bitRange, arrayRange);
+	UINFO(9,"Decl "<<declp<<endl);
 
 	if (m_initSubStmts && v3Global.opt.outputSplitCTrace()
 	    && m_initSubStmts > v3Global.opt.outputSplitCTrace()) {
@@ -199,7 +202,7 @@ private:
 		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
 		// Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
 		// This will put "(index)" at end of signal name for us
-		addTraceDecl(nodep->declRange());
+		addTraceDecl(nodep->declRange(), 0);
 	    } else {
 		// Unroll now, as have no other method to get right signal names
 		AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
@@ -225,7 +228,7 @@ private:
 	    if (!v3Global.opt.traceStructs()) {
 		// Everything downstream is packed, so deal with as one trace unit
 		// This may not be the nicest for user presentation, but is a much faster way to trace
-		addTraceDecl(VNumRange());
+		addTraceDecl(VNumRange(), nodep->width());
 	    } else {
 		AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
 		for (int i=nodep->lsb(); i<=nodep->msb(); ++i) {
@@ -250,7 +253,7 @@ private:
 	    if (nodep->packed() && !v3Global.opt.traceStructs()) {
 		// Everything downstream is packed, so deal with as one trace unit
 		// This may not be the nicest for user presentation, but is a much faster way to trace
-		addTraceDecl(VNumRange());
+		addTraceDecl(VNumRange(), nodep->width());
 	    } else {
 		if (!nodep->packed()) {
 		    addIgnore("Unsupported: Unpacked struct/union");
@@ -282,7 +285,7 @@ private:
 	    if (nodep->keyword()==AstBasicDTypeKwd::STRING) {
 		addIgnore("Unsupported: strings");
 	    } else {
-		addTraceDecl(VNumRange());
+		addTraceDecl(VNumRange(), 0);
 	    }
 	}
     }

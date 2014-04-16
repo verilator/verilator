@@ -835,11 +835,11 @@ void AstNodeDType::dumpSmall(ostream& str) {
 void AstNodeArrayDType::dumpSmall(ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     if (castPackArrayDType()) str<<"p"; else str<<"u";
-    str<<"["<<declRange().left()<<":"<<declRange().right()<<"]";
+    str<<" "<<declRange();
 }
 void AstNodeArrayDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
-    str<<" ["<<declRange().left()<<":"<<declRange().right()<<"]";
+    str<<" "<<declRange();
 }
 void AstNodeModule::dump(ostream& str) {
     this->AstNode::dump(str);
@@ -855,7 +855,7 @@ void AstPackageImport::dump(ostream& str) {
 void AstSel::dump(ostream& str) {
     this->AstNode::dump(str);
     if (declRange().ranged()) {
-	str<<" decl["<<declRange().left()<<":"<<declRange().right()<<"]";
+	str<<" decl"<<declRange()<<"]";
 	if (declElWidth()!=1) str<<"/"<<declElWidth();
     }
 }
