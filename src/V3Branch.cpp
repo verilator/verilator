@@ -94,9 +94,9 @@ private:
 
 public:
     // CONSTUCTORS
-    BranchVisitor(AstNetlist* rootp) {
+    BranchVisitor(AstNetlist* nodep) {
 	reset();
-	rootp->iterateChildren(*this);
+	nodep->iterateChildren(*this);
     }
     virtual ~BranchVisitor() {}
 };

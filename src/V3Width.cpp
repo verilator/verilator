@@ -1711,7 +1711,7 @@ private:
     virtual void visit(AstPslCover* nodep, AstNUser*) {
 	// TOP LEVEL NODE
 	nodep->propp()->iterateAndNext(*this,WidthVP(1,1,BOTH).p());
-	nodep->stmtsp()->iterateChildren(*this,WidthVP(ANYSIZE,0,BOTH).p());
+	nodep->stmtsp()->iterateAndNext(*this);
 	widthCheckReduce(nodep,"Property",nodep->propp());	// it's like an if() condition.
     }
     virtual void visit(AstPslAssert* nodep, AstNUser*) {

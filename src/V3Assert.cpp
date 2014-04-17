@@ -73,25 +73,31 @@ private:
     AstNode* newIfAssertOn(AstNode* nodep) {
 	// Add a internal if to check assertions are on.
 	// Don't make this a AND term, as it's unlikely to need to test this.
-	return new AstIf (nodep->fileline(),
-			  // If assertions are off, have constant propagation rip them out later
-			  // This allows syntax errors and such to be detected normally.
-			  (v3Global.opt.assertOn()
-			   ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
-			   : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
-			  nodep, NULL);
+	AstNode* newp
+	    = new AstIf (nodep->fileline(),
+			 // If assertions are off, have constant propagation rip them out later
+			 // This allows syntax errors and such to be detected normally.
+			 (v3Global.opt.assertOn()
+			  ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
+			  : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
+			 nodep, NULL);
+	newp->user1(true); // Don't assert/cover this if
+	return newp;
     }
 
     AstNode* newIfCoverageOn(AstNode* nodep) {
 	// Add a internal if to check coverage is on
 	// Don't make this a AND term, as it's unlikely to need to test this.
-	return new AstIf (nodep->fileline(),
-			  // If assertions are off, have constant propagation rip them out later
-			  // This allows syntax errors and such to be detected normally.
-			  (v3Global.opt.coverage()
-			   ? (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicTrue()))
-			   : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
-			  nodep, NULL);
+	AstNode* newp
+	    = new AstIf (nodep->fileline(),
+			 // If assertions are off, have constant propagation rip them out later
+			 // This allows syntax errors and such to be detected normally.
+			 (v3Global.opt.coverage()
+			  ? (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicTrue()))
+			  : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
+			 nodep, NULL);
+	newp->user1(true); // Don't assert/cover this if
+	return newp;
     }
 
     AstNode* newFireAssert(AstNode* nodep, const string& message) {
@@ -176,6 +182,7 @@ private:
     }
     
     virtual void visit(AstIf* nodep, AstNUser*) {
+	if (nodep->user1SetOnce()) return;
 	if (nodep->uniquePragma() || nodep->unique0Pragma()) {
 	    AstNodeIf* ifp = nodep;
 	    AstNode* propp = NULL;
@@ -184,13 +191,14 @@ private:
 		// If this statement ends with 'else if', then nextIf will point to the
 		// nextIf statement.  Otherwise it will be null.
 		AstNodeIf* nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
+		ifp->condp()->iterateAndNext(*this);
 
 		// Recurse into the true case.
-		ifp->ifsp()->iterateChildren(*this);
+		ifp->ifsp()->iterateAndNext(*this);
 		
 		// If the last else is not an else if, recurse into that too.
 		if (ifp->elsesp() && !nextifp) {
-		    ifp->elsesp()->iterateChildren(*this);
+		    ifp->elsesp()->iterateAndNext(*this);
 		}
 		
 		// Build a bitmask of the true predicates
@@ -225,8 +233,7 @@ private:
 	    nodep->replaceWith(checkifp);
 	    pushDeletep(nodep);
 	} else {
-	    nodep->ifsp()->iterateChildren(*this);
-	    nodep->elsesp()->iterateChildren(*this);
+	    nodep->iterateChildren(*this);
 	}
     }
 

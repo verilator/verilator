@@ -27,6 +27,7 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 	 toggle <= !cyc[0];
+         if (cyc==7) assert (cyc[0] == cyc[1]);  // bug743
 	 if (cyc==9) begin
 `ifdef FAILING_ASSERTIONS
 	    assert (0) else $info;

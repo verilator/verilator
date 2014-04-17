@@ -245,23 +245,23 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstFOpen* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
-	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
+	if (nodep->filep()) nodep->filep()->iterateAndNext(*this);
 	putbs(",");
-	if (nodep->filenamep()) nodep->filenamep()->iterateChildren(*this);
+	if (nodep->filenamep()) nodep->filenamep()->iterateAndNext(*this);
 	putbs(",");
-	if (nodep->modep()) nodep->modep()->iterateChildren(*this);
+	if (nodep->modep()) nodep->modep()->iterateAndNext(*this);
 	puts(");\n");
     }
     virtual void visit(AstFClose* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
-	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
+	if (nodep->filep()) nodep->filep()->iterateAndNext(*this);
 	puts(");\n");
     }
     virtual void visit(AstFFlush* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
-	if (nodep->filep()) nodep->filep()->iterateChildren(*this);
+	if (nodep->filep()) nodep->filep()->iterateAndNext(*this);
 	puts(");\n");
     }
     virtual void visit(AstJumpGo* nodep, AstNUser*) {
@@ -269,23 +269,23 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstJumpLabel* nodep, AstNUser*) {
 	putbs("begin : "+cvtToStr((void*)(nodep))+"\n");
-	if (nodep->stmtsp()) nodep->stmtsp()->iterateChildren(*this);
+	if (nodep->stmtsp()) nodep->stmtsp()->iterateAndNext(*this);
 	puts("end\n");
     }
     virtual void visit(AstReadMem* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
-	if (nodep->filenamep()) nodep->filenamep()->iterateChildren(*this);
+	if (nodep->filenamep()) nodep->filenamep()->iterateAndNext(*this);
 	putbs(",");
-	if (nodep->memp()) nodep->memp()->iterateChildren(*this);
-	if (nodep->lsbp()) { putbs(","); nodep->lsbp()->iterateChildren(*this); }
-	if (nodep->msbp()) { putbs(","); nodep->msbp()->iterateChildren(*this); }
+	if (nodep->memp()) nodep->memp()->iterateAndNext(*this);
+	if (nodep->lsbp()) { putbs(","); nodep->lsbp()->iterateAndNext(*this); }
+	if (nodep->msbp()) { putbs(","); nodep->msbp()->iterateAndNext(*this); }
 	puts(");\n");
     }
     virtual void visit(AstSysIgnore* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
-	nodep->exprsp()->iterateChildren(*this);
+	nodep->exprsp()->iterateAndNext(*this);
 	puts(");\n");
     }
     virtual void visit(AstNodeFor* nodep, AstNUser*) {

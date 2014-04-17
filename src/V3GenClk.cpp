@@ -115,7 +115,7 @@ private:
     }
     virtual void visit(AstActive* nodep, AstNUser*) {
 	m_activep = nodep;
-	nodep->sensesp()->iterateChildren(*this);
+	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
 	m_activep = NULL;
 	nodep->iterateChildren(*this);
     }
@@ -201,7 +201,7 @@ private:
     virtual void visit(AstActive* nodep, AstNUser*) {
 	UINFO(8,"ACTIVE "<<nodep<<endl);
 	m_activep = nodep;
-	nodep->sensesp()->iterateChildren(*this);
+	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
 	m_activep = NULL;
 	nodep->iterateChildren(*this);
     }
