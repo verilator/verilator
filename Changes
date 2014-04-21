@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Documentation fixes, bug723. [Glen Gibb]
 
+****  Support {} in always sensitivity lists, bug745. [Igor Lesik]
+
 ****  Fix tracing of package variables and real arrays.
 
 ****  Fix tracing of packed arrays without --trace-structs, bug742. [Jie Xu]

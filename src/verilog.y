@@ -2085,6 +2085,7 @@ senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 	|	senitemVar				{ $$ = $1; }
 	|	'(' senitemVar ')'			{ $$ = $2; }
 	//UNSUP	expr					{ UNSUP }
+	|	'{' event_expression '}'		{ $$ = $2; }
 	//UNSUP	expr yIFF expr				{ UNSUP }
 	// Since expr is unsupported we allow and ignore constants (removed in V3Const)
 	|	yaINTNUM				{ $$ = NULL; }
