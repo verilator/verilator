@@ -61,6 +61,7 @@ my $opt_vlt;
 my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
+our $Opt_Unsupported;
 our $Opt_Verilation = 1;
 our @Opt_Driver_Verilator_Flags;
 
@@ -83,6 +84,7 @@ if (! GetOptions (
 		  "site!"	=> \$opt_site,
 		  "stop!"	=> \$opt_stop,
 		  "trace!"	=> \$opt_trace,
+	  	  "unsupported!"=> \$Opt_Unsupported,
 		  "v3!"		=> \$opt_vlt,  # Old
 		  "vl!"		=> \$opt_vlt,  # Old
 		  "vlt!"	=> \$opt_vlt,
@@ -434,7 +436,9 @@ sub unsupported {
     my $self = shift;
     my $msg = join('',@_);
     warn "%Unsupported: $self->{mode}/$self->{name}: ".$msg."\n";
-    $self->{unsupporteds} ||= "Unsupported: ".$msg;
+    if (!$::Opt_Unsupported) {
+	$self->{unsupporteds} ||= "Unsupported: ".$msg;
+    }
 }
 
 sub prep {
@@ -1851,6 +1855,10 @@ Stop on the first error.
 =item --trace
 
 Set the simulator specific flags to request waveform tracing.
+
+=item --unsupported
+
+Run tests even if marked as unsupported.
 
 =item --vcs
 
