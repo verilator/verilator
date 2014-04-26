@@ -341,6 +341,37 @@ C<op4p> in turn.
 
 =back
 
+=head3 Caution on Using Iterators When Child Changes
+
+Visitors often replace one node with another node; V3Width and V3Const are
+major examples.  A visitor which is the parent of such a replacement needs
+to be aware that calling iteration may cause the children to change.  For
+example:
+
+    // nodep->lhsp() is 0x1234000
+    nodep->lhsp()->iterateAndNext(...);  // and under covers nodep->lhsp() changes
+    // nodep->lhsp() is 0x5678400
+    nodep->lhsp()->iterateAndNext(...);
+
+Will work fine, as even if the first iterate causes a new node to take the
+place of the lhsp(), that edit will update nodep->lhsp() and the second
+call will correctly see the change. Alternatively:
+
+    lp = nodep->lhsp();
+    // nodep->lhsp() is 0x1234000, lp is 0x1234000
+    lp->iterateAndNext(...); **lhsp=NULL;** // and under covers nodep->lhsp() changes
+    // nodep->lhsp() is 0x5678400, lp is 0x1234000
+    lp->iterateAndNext(...);
+
+This will cause bugs or a core dump, as lp is a dangling pointer.  Thus it
+is advisable to set lhsp=NULL shown in the *'s above to make sure these
+dangles are avoided.  Another alternative used in special cases mostly in
+V3Width is to use acceptSubtreeReturnEdits, which operates on a single node
+and returns the new pointer if any.  Note acceptSubtreeReturnEdits does not
+follow nextp() links.
+
+    lp = lp->acceptSubtreeReturnEdits()
+
 =head2 Identifying derived classes
 
 A common requirement is to identify the specific C<AstNode> class we are
@@ -372,7 +403,7 @@ Verilator primary manual.
 It is important to add tests for failures as well as success (for example to
 check that an error message is correctly triggered).
 
-Tests that fail should by convenition have the suffix C<_bad> in their name,
+Tests that fail should by convention have the suffix C<_bad> in their name,
 and include C<fails =E<gt> 1> in either their C<compile> or C<execute> step as
 appropriate.
 
@@ -388,7 +419,7 @@ For convenience, a summary of the most commonly used features is provided
 here. All drivers require a call to C<compile> subroutine to compile the
 test. For run-time tests, this is followed by a call to the C<execute>
 subroutine. Both of these functions can optionally be provided with a hash
-table as argument specifying additonal options.
+table as argument specifying additional options.
 
 The test driver assumes by default that the source Verilog file name
 matches the PERL driver name. So a test whose driver is C<t/t_mytest.pl>
@@ -608,8 +639,8 @@ Shows the value of the node's user1p...user5p, if non-NULL.
 Many nodes have an explicit data type.  "@dt=0x..." indicates the address
 of the data type (AstNodeDType) this node uses.
 
-If a data type is present and is numberic, it then prints the width of the
-item. This field is a squence of flag characters and width data as follows:
+If a data type is present and is numeric, it then prints the width of the
+item. This field is a sequence of flag characters and width data as follows:
 
 C<s> if the node is signed.
 

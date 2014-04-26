@@ -628,7 +628,7 @@ large and not desired.
 =item --dump-treei <level>
 
 Rarely needed.  Enable writing .tree debug files with a specific dumping
-level, 0 disbles dumps and is equivelent to "--no-dump-tree".  Level 9
+level, 0 disbles dumps and is equivalent to "--no-dump-tree".  Level 9
 enables dumping of every stage.
 
 =item -E
@@ -921,7 +921,7 @@ break the loop.
 In addition produces a GraphViz DOT file of the entire strongly connected
 components within the source associated with each loop. This is produced
 irrespective of whether --dump-tree is set. Such graphs may help in
-analysing the problem, but can be very large indeed.
+analyzing the problem, but can be very large indeed.
 
 Various commands exist for viewing and manipulating DOT files. For example
 the I<dot> command can be used to convert a DOT file to a PDF for
@@ -1187,7 +1187,7 @@ so the above C<always> block would not trigger.
 
 While it is not good practice, there are some designs that rely on X
 E<rarr> 0 triggering a C<negedge>, particularly in reset sequences. Using
---x-initial-edge with Verilator will replicate this behaviour. It will also
+--x-initial-edge with Verilator will replicate this behavior. It will also
 ensure that X E<rarr> 1 triggers a C<posedge>.
 
 B<Note.> Some users have reported that using this option can affect
@@ -1972,7 +1972,7 @@ please file a bug if a feature you need is missing.
 
 Verilator implements a very small subset of Verilog AMS (Verilog Analog and
 Mixed-Signal Extensions) with the subset corresponding to those VMS
-keywords with near equivelents in the Verilog 2005 or SystemVerilog 2009
+keywords with near equivalents in the Verilog 2005 or SystemVerilog 2009
 languages.
 
 AMS parsing is enabled with "--language VAMS" or "--language 1800+VAMS".
@@ -2432,7 +2432,7 @@ reset works.  (Note this is what the hardware will really do.)  In
 practice, just setting all variables to one at startup finds most problems.
 
 B<Note.> --x-assign applies to variables explicitly initialized or assigned to
-X. Unititialized clocks are initialized to zero, while all other state holding
+X. Uninitialized clocks are initialized to zero, while all other state holding
 variables are initialized to a random value.
 
 Event driven simulators will generally trigger an edge on a transition from X
