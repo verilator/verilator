@@ -3,23 +3,20 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_inst(/*AUTOARG*/
-   // Outputs
-   passed,
+module t (/*AUTOARG*/
    // Inputs
    clk, fastclk
    );
 
    input clk;
    input fastclk;
-   output passed;  reg passed; initial passed = 0;
 
    genvar unused;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire			o_com;			// From b of t_inst_b.v
-   wire			o_seq_d1r;		// From b of t_inst_b.v
+   wire			o_com;			// From b of t_inst_first_b.v
+   wire			o_seq_d1r;		// From b of t_inst_first_b.v
    // End of automatics
 
    integer _mode;  // initial _mode=0
@@ -50,7 +47,7 @@ module t_inst(/*AUTOARG*/
    wire [168:0] r_wide3 = {ra,rb,rc,rd,rd};
    reg [127:0]	_guard6; initial _guard6=0;
 
-   t_inst_a a (
+   t_inst_first_a a (
 	       .clk		(clk),
 	       // Outputs
 	       .o_w5		({ma,mb,mc,md,me}),
@@ -66,19 +63,20 @@ module t_inst(/*AUTOARG*/
    reg 		i_seq;
    reg		i_com;
    wire [15:14] o2_comhigh;
-   t_inst_b b (
+
+   t_inst_first_b b (
 	       .o2_com			(o2_comhigh),
 	       .i2_com			({i_com,~i_com}),
 	       .wide_for_trace		(128'h1234_5678_aaaa_bbbb_cccc_dddd),
 	       .wide_for_trace_2	(_guard6 + 128'h1234_5678_aaaa_bbbb_cccc_dddd),
 	       /*AUTOINST*/
-	       // Outputs
-	       .o_seq_d1r		(o_seq_d1r),
-	       .o_com			(o_com),
-	       // Inputs
-	       .clk			(clk),
-	       .i_seq			(i_seq),
-	       .i_com			(i_com));
+		     // Outputs
+		     .o_seq_d1r		(o_seq_d1r),
+		     .o_com		(o_com),
+		     // Inputs
+		     .clk		(clk),
+		     .i_seq		(i_seq),
+		     .i_com		(i_com));
 
    // surefire lint_off STMINI
    initial _mode = 0;
@@ -115,8 +113,8 @@ module t_inst(/*AUTOARG*/
 	 if ({da,db,dc,dd,de} !== 5'b10110) $stop;
 	 if (o_seq_d1r !== ~i_seq) $stop;
 	 //
-	 $write("[%0t] t_inst: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
       if (|{_guard1,_guard2,_guard3,_guard4,_guard5,_guard6}) begin
 	 $write("Guard error %x %x %x %x %x\n",_guard1,_guard2,_guard3,_guard4,_guard5);

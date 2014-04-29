@@ -3,9 +3,21 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
+module t (/*AUTOARG*/
+   // Inputs
+   fastclk
+   );
+   input fastclk;
+
+   t_netlist tnetlist
+     (.also_fastclk	(fastclk),
+      /*AUTOINST*/
+      // Inputs
+      .fastclk				(fastclk));
+
+endmodule
+
 module t_netlist (/*AUTOARG*/
-   // Outputs
-   passed,
    // Inputs
    fastclk, also_fastclk
    );
@@ -14,7 +26,6 @@ module t_netlist (/*AUTOARG*/
 
    input fastclk;
    input also_fastclk;
-   output passed;  reg passed; initial passed = 0;
    integer _mode; initial _mode = 0;
 
    // This entire module should optimize to nearly nothing...
@@ -42,8 +53,8 @@ module t_netlist (/*AUTOARG*/
       if (_mode==5) begin
 	 if (a2 != 5'd2) $stop;
 	 if (e != 5'd5) $stop;
-	 $write("[%0t] t_netlist: Passed\n",$time);
-	 passed <= 1'd1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
       _mode <= _mode + 1;
    end

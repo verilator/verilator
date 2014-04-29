@@ -3,17 +3,39 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_clk (/*AUTOARG*/
-   // Outputs
-   passed,
+module t (/*AUTOARG*/
    // Inputs
-   fastclk, clk, reset_l
+   clk, fastclk
    );
 
-   input fastclk;
-   input clk;
+   input clk /*verilator sc_clock*/;
+   input fastclk /*verilator sc_clock*/;
+   reg 	 reset_l;
+
+   int cyc;
+   initial reset_l = 0;
+   always @ (posedge clk) begin
+      if (cyc==0) reset_l <= 1'b1;
+      else if (cyc==1) reset_l <= 1'b0;
+      else if (cyc==10) reset_l <= 1'b1;
+   end
+
+   t_clk t (/*AUTOINST*/
+	    // Inputs
+	    .clk			(clk),
+	    .fastclk			(fastclk),
+	    .reset_l			(reset_l));
+endmodule
+
+module t_clk (/*AUTOARG*/
+   // Inputs
+   clk, fastclk, reset_l
+   );
+
+   input clk /*verilator sc_clock*/;
+   input fastclk /*verilator sc_clock*/;
    input reset_l;
-   output passed;  reg passed; initial passed = 0;
+
    // surefire lint_off STMINI
    // surefire lint_off CWECSB
    // surefire lint_off NBAJAM
@@ -35,7 +57,9 @@ module t_clk (/*AUTOARG*/
    // verilator lint_on GENCLK
 
    always @ (posedge clk) begin
-      //$write("CLK1 %x\n", reset_l);
+`ifdef TEST_VERBOSE
+      $write("[%0t] CLK1 %x\n", $time, reset_l);
+`endif
       if (!reset_l) begin
 	 clk_clocks <= 0;
 	 int_clocks <= 0;
@@ -46,7 +70,9 @@ module t_clk (/*AUTOARG*/
 	 internal_clk <= ~internal_clk;
 	 if (!_ranit) begin
 	    _ranit <= 1;
+`ifdef TEST_VERBOSE
 	    $write("[%0t] t_clk: Running\n",$time);
+`endif
 	    reset_int_ <= 1;
 	 end
       end
@@ -54,7 +80,9 @@ module t_clk (/*AUTOARG*/
 
    reg [7:0] sig_rst;
    always @ (posedge clk or negedge reset_l) begin
-      //$write("CLK2 %x sr=%x\n", reset_l, sig_rst);
+`ifdef TEST_VERBOSE
+      $write("[%0t] CLK2 %x sr=%x\n", $time, reset_l, sig_rst);
+`endif
       if (!reset_l) begin
 	 sig_rst <= 0;
       end
@@ -64,7 +92,9 @@ module t_clk (/*AUTOARG*/
    end
 
    always @ (posedge clk) begin
-      //$write("CLK3 %x cc=%x sr=%x\n", reset_l, clk_clocks, sig_rst);
+`ifdef TEST_VERBOSE
+      $write("[%0t] CLK3 %x cc=%x sr=%x\n", $time, reset_l, clk_clocks, sig_rst);
+`endif
       if (!reset_l) begin
 	 clk_clocks <= 0;
       end
@@ -77,15 +107,17 @@ module t_clk (/*AUTOARG*/
 	    if (int_clocks_copy !== 2) $stop;
 	    if (clk_clocks_d1r !== clk_clocks_cp2_d1r) $stop;
 	    if (clk_clocks_d1sr !== clk_clocks_cp2_d1sr) $stop;
-	    passed <= 1'b1;
-	    $write("[%0t] t_clk: Passed\n",$time);
+	    $write("*-* All Finished *-*\n");
+	    $finish;
 	 end
       end
    end
 
    reg [7:0] resetted;
    always @ (posedge clk or negedge reset_int_) begin
-      //$write("CLK4 %x\n", reset_l);
+`ifdef TEST_VERBOSE
+      $write("[%0t] CLK4 %x\n", $time, reset_l);
+`endif
       if (!reset_int_) begin
 	 resetted <= 0;
       end
@@ -111,4 +143,60 @@ module t_clk (/*AUTOARG*/
 		  .fastclk		(fastclk),
 		  .reset_l		(reset_l));
 
+endmodule
+
+module t_clk_flop (/*AUTOARG*/
+   // Outputs
+   q, q2,
+   // Inputs
+   clk, clk2, a
+   );
+   parameter WIDTH=8;
+   input clk;
+   input clk2;
+   input [(WIDTH-1):0]  a;
+   output [(WIDTH-1):0] q;
+   output [(WIDTH-1):0] q2;
+   reg [(WIDTH-1):0] q;
+   reg [(WIDTH-1):0] q2;
+   always @ (posedge clk) q<=a;
+   always @ (posedge clk2) q2<=a;
+endmodule
+
+module t_clk_two (/*AUTOARG*/
+   // Inputs
+   fastclk, reset_l
+   );
+   input fastclk;
+   input reset_l;
+   // verilator lint_off GENCLK
+   reg clk2;
+   // verilator lint_on GENCLK
+   reg [31:0] count;
+
+   t_clk_twob tb (.*);
+
+   wire reset_h = ~reset_l;
+   always @ (posedge fastclk) begin
+      if (reset_h) clk2 <= 0;
+      else clk2 <= ~clk2;
+   end
+   always @ (posedge clk2) begin
+      if (reset_h) count <= 0;
+      else count <= count + 1;
+   end
+endmodule
+
+module t_clk_twob (/*AUTOARG*/
+   // Inputs
+   fastclk, reset_l
+   );
+   input fastclk;
+   input reset_l;
+
+   always @ (posedge fastclk) begin
+      // Extra line coverage point, just to make sure coverage
+      // hierarchy under inlining lands properly
+      if (reset_l) ;
+   end
 endmodule

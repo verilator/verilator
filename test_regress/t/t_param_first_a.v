@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_param_a (/*AUTOARG*/
+module t_param_first_a (/*AUTOARG*/
    // Outputs
    varwidth, par
    );
@@ -14,13 +14,14 @@ module t_param_a (/*AUTOARG*/
 
    /*AUTOOUTPUT*/
    // Beginning of automatic outputs (from unused autoinst outputs)
-   output [4:0]		par;			// From b of t_param_b.v
-   output [X:0]		varwidth;		// From b of t_param_b.v
+   output [4:0]		par;			// From b of t_param_first_b.v
+   output [X:0]		varwidth;		// From b of t_param_first_b.v
    // End of automatics
 
-   t_param_b #(X,FIVE,TWO) b (/*AUTOINST*/
-			      // Outputs
-			      .par	(par[4:0]),
-			      .varwidth	(varwidth[X:0]));
+   t_param_first_b #(X,FIVE,TWO) b
+     (/*AUTOINST*/
+      // Outputs
+      .par				(par[4:0]),
+      .varwidth				(varwidth[X:0]));
 
 endmodule

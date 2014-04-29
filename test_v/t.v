@@ -15,57 +15,31 @@ module t (/*AUTOARG*/
    input reset_l;
    output passed;
 
-   // Combine passed signals from each sub signal
-   // verilator lint_off MULTIDRIVEN
-   wire [20:0] passedv;
-   // verilator lint_on MULTIDRIVEN
-   wire   passed = &passedv;
+   reg [31:0] count_c;
+   reg [31:0] count_f;
 
-   assign passedv[0] = 1'b1;
-   assign passedv[1] = 1'b1;
-   assign passedv[2] = 1'b1;
-   assign passedv[3] = 1'b1;
-   assign passedv[4] = 1'b1;
-   assign passedv[5] = 1'b1;
-   t_inst  tinst
-     (.passed		(passedv[6]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk),
-      .fastclk				(fastclk));
-   t_param tparam
-     (.passed		(passedv[7]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk));
-   assign passedv[8] = 1'b1;
-   assign passedv[9] = 1'b1;
-   assign passedv[10] = 1'b1;
-   t_clk tclk
-     (.passed		(passedv[11]),
-      /*AUTOINST*/
-      // Inputs
-      .fastclk				(fastclk),
-      .clk				(clk),
-      .reset_l				(reset_l));
-   assign passedv[12] = 1'b1;
-   assign passedv[13] = 1'b1;
-   t_chg tchg
-     (.passed		(passedv[14]),
-      /*AUTOINST*/
-      // Inputs
-      .clk				(clk),
-      .fastclk				(fastclk));
-   assign passedv[15] = 1'b1;
-   assign passedv[16] = 1'b1;
-   assign passedv[17] = 1'b1;
-   assign passedv[18] = 1'b1;
-   assign passedv[19] = 1'b1;
-   t_netlist tnetlist
-     (.passed		(passedv[20]),
-      .also_fastclk	(fastclk),
-      /*AUTOINST*/
-      // Inputs
-      .fastclk				(fastclk));
+   always @ (posedge clk) begin
+      if (!reset_l) begin
+	 /*AUTORESET*/
+	 // Beginning of autoreset for uninitialized flops
+	 count_c <= 32'h0;
+	 // End of automatics
+      end else begin
+	 count_c <= count_c + 1;
+      end
+   end
+
+   always @ (posedge fastclk) begin
+      if (!reset_l) begin
+	 /*AUTORESET*/
+	 // Beginning of autoreset for uninitialized flops
+	 count_f <= 32'h0;
+	 passed <= 1'h0;
+	 // End of automatics
+      end else begin
+	 count_f <= count_f + 1;
+	 if (count_f == 5) passed <= 1'b1;
+      end
+   end
 
 endmodule

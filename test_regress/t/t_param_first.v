@@ -3,29 +3,26 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_param(/*AUTOARG*/
-   // Outputs
-   passed,
+module t(/*AUTOARG*/
    // Inputs
    clk
    );
 
    input clk;
-   output passed;  reg passed; initial passed = 0;
    reg 	 _ranit;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [4:0]		par1;			// From a1 of t_param_a.v
-   wire [4:0]		par2;			// From a2 of t_param_a.v
-   wire [4:0]		par3;			// From a3 of t_param_a.v
-   wire [4:0]		par4;			// From a4 of t_param_a.v
-   wire [1:0]		varwidth1;		// From a1 of t_param_a.v
-   wire [2:0]		varwidth2;		// From a2 of t_param_a.v
-   wire [3:0]		varwidth3;		// From a3 of t_param_a.v
-   wire [3:0]		varwidth4;		// From a4 of t_param_a.v
+   wire [4:0]		par1;			// From a1 of t_param_first_a.v
+   wire [4:0]		par2;			// From a2 of t_param_first_a.v
+   wire [4:0]		par3;			// From a3 of t_param_first_a.v
+   wire [4:0]		par4;			// From a4 of t_param_first_a.v
+   wire [1:0]		varwidth1;		// From a1 of t_param_first_a.v
+   wire [2:0]		varwidth2;		// From a2 of t_param_first_a.v
+   wire [3:0]		varwidth3;		// From a3 of t_param_first_a.v
+   wire [3:0]		varwidth4;		// From a4 of t_param_first_a.v
    // End of automatics
-   /*t_param_a AUTO_TEMPLATE (
+   /*t_param_first_a AUTO_TEMPLATE (
 		      .par		(par@[]));
 		      .varwidth		(varwidth@[]));
     */
@@ -34,30 +31,34 @@ module t_param(/*AUTOARG*/
 
    parameter THREE = 3;
 
-   t_param_a #(1,5) a1 (
-			// Outputs
-			.varwidth		(varwidth1[1:0]),
-			/*AUTOINST*/
-			// Outputs
-			.par		(par1[4:0]));		 // Templated
-   t_param_a #(2,5) a2 (
-			// Outputs
-			.varwidth		(varwidth2[2:0]),
-			/*AUTOINST*/
-			// Outputs
-			.par		(par2[4:0]));		 // Templated
-   t_param_a #(THREE,5) a3 (
-			    // Outputs
-			    .varwidth		(varwidth3[3:0]),
-			    /*AUTOINST*/
-			    // Outputs
-			    .par	(par3[4:0]));		 // Templated
-   t_param_a #(THREE,5) a4 (
-			     // Outputs
-			     .varwidth		(varwidth4[3:0]),
-			     /*AUTOINST*/
-			    // Outputs
-			    .par	(par4[4:0]));		 // Templated
+   t_param_first_a #(1,5) a1
+     (
+      // Outputs
+      .varwidth		(varwidth1[1:0]),
+      /*AUTOINST*/
+      // Outputs
+      .par				(par1[4:0]));		 // Templated
+   t_param_first_a #(2,5) a2
+     (
+      // Outputs
+      .varwidth		(varwidth2[2:0]),
+      /*AUTOINST*/
+      // Outputs
+      .par				(par2[4:0]));		 // Templated
+   t_param_first_a #(THREE,5) a3
+     (
+      // Outputs
+      .varwidth		(varwidth3[3:0]),
+      /*AUTOINST*/
+      // Outputs
+      .par				(par3[4:0]));		 // Templated
+   t_param_first_a #(THREE,5) a4
+     (
+      // Outputs
+      .varwidth		(varwidth4[3:0]),
+      /*AUTOINST*/
+      // Outputs
+      .par				(par4[4:0]));		 // Templated
 
    parameter THREE_BITS_WIDE = 3'b011;
    parameter THREE_2WIDE = 2'b11;
@@ -137,8 +138,8 @@ module t_param(/*AUTOARG*/
 	 // surefire lint_on ASWCMB
 	 // surefire lint_on ASWCBB
 	 //
-	 $write("[%0t] t_param: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 

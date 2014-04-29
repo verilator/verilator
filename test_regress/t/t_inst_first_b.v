@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_inst_b (/*AUTOARG*/
+module t_inst_first_b (/*AUTOARG*/
    // Outputs
    o_seq_d1r, o_com, o2_com,
    // Inputs

@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_inst_a (/*AUTOARG*/
+module t_inst_first_a (/*AUTOARG*/
    // Outputs
    o_w5, o_w5_d1r, o_w40, o_w104,
    // Inputs

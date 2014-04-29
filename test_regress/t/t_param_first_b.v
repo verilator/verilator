@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_param_b (/*AUTOARG*/
+module t_param_first_b (/*AUTOARG*/
    // Outputs
    par, varwidth
    );

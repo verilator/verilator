@@ -28,7 +28,11 @@ module top (/*AUTOARG*/
    wire [39:0] 	 out_quad = in_quad | {40{reset_l}};
    wire [69:0] 	 out_wide = in_wide | {70{reset_l}};
 
-   // Test cases
+   initial begin
+      $write("Hello World!\n");
+   end
+
+   // Example sub module
    t t (/*AUTOINST*/
 	// Outputs
 	.passed				(passed),

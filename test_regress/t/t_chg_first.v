@@ -3,16 +3,13 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003 by Wilson Snyder.
 
-module t_chg (/*AUTOARG*/
-   // Outputs
-   passed,
+module t (/*AUTOARG*/
    // Inputs
    clk, fastclk
    );
 
    input clk;
    input fastclk;	// surefire lint_off_line UDDIXN
-   output passed;  reg passed; initial passed = 0;
 
    integer _mode;  initial _mode=0;
 
@@ -54,8 +51,8 @@ module t_chg (/*AUTOARG*/
       else if (_mode==1) begin
 	 _mode<=2;
 	 if (ord7 !== 7) $stop;
-	 $write("[%0t] t_chg: Passed\n", $time);
-	 passed <= 1'b1;
+	 $write("*-* All Finished *-*\n");
+	 $finish;
       end
    end
 
