@@ -11,6 +11,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support streaming operators, bug649. [Glen Gibb]
 
+**    Fix expression problems with -Wno-WIDTH, bug729, bug736. [Clifford Wolf]
+      Where WIDTH warnings were ignored this might result in different
+      warning messages and results, though it should better match the spec.
+
 ***   Add --no-trace-params.
 
 ***   Add assertions on 'unique if', bug725. [Jeff Bush] 
@@ -30,8 +34,6 @@ indicates the contributor was also the author of the fix; Thanks!
 ****  Fix missing coverage line on else-if, bug727. [Sharad Bagri]
 
 ****  Fix modport function import not-found error.
-
-****  Fix expression width problems with -Wno-WIDTH, bug729, bug736. [Clifford Wolf]
 
 ****  Fix power operator calculation, bug730, bug735. [Clifford Wolf]
 
