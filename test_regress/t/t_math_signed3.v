@@ -35,6 +35,8 @@ module t (/*AUTOARG*/);
    reg signed [32:0] bug349_s;
    reg signed [32:0] bug349_u;
 
+   wire signed [1:0] sb11 = 2'sb11;
+
    wire [3:0] 	     subout_u;
    sub sub (.a(2'sb11), .z(subout_u));
    initial `checkh(subout_u, 4'b1111);
@@ -78,6 +80,11 @@ module t (/*AUTOARG*/);
       `checkh(bug349_s,33'he);
 
       case (2'sb11)
+	4'b1111: ;
+	default: $stop;
+      endcase
+
+      case (sb11)
 	4'b1111: ;
 	default: $stop;
       endcase

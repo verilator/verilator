@@ -196,11 +196,6 @@ public:
 	else if (nodep->castIface()) return "interface";
 	else return nodep->prettyTypeName();
     }
-    static string ucfirst(const string& text) {
-	string out = text;
-	out[0] = toupper(out[0]);
-	return out;
-    }
 
     VSymEnt* rootEntp() const { return m_syms.rootp(); }
     VSymEnt* dunitEntp() const { return m_dunitEntp; }
@@ -1467,9 +1462,9 @@ private:
 		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 		    return;
 		}
-		nodep->v3error(LinkDotState::ucfirst(whatp)<<" not found: "<<nodep->prettyName());
+		nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
 	    } else if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
-		nodep->v3error(LinkDotState::ucfirst(whatp)<<" is not an in/out/inout/param/interface: "<<nodep->prettyName());
+		nodep->v3error(ucfirst(whatp)<<" is not an in/out/inout/param/interface: "<<nodep->prettyName());
 	    } else {
 		nodep->modVarp(refp);
 		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {

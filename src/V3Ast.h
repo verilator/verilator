@@ -1019,7 +1019,8 @@ public:
     static string encodeNumber(vlsint64_t numin);	// Encode number into internal C representation
     static string vcdName(const string& namein); // Name for printing out to vcd files
     string	prettyName() const { return prettyName(name()); }
-    string	prettyTypeName() const;			// "VARREF name" for error messages
+    string 	prettyTypeName() const;			// "VARREF" for error messages
+    virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
     FileLine*	fileline() const { return m_fileline; }
     void	fileline(FileLine* fl) { m_fileline=fl; }
     bool	width1() const;

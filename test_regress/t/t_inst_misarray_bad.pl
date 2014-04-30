@@ -11,8 +11,8 @@ compile (
 	 verilator_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_inst_misarray_bad.v:\d+: Illegal port connection \'foo\', mismatch between port which is not an array, and expression which is an array.
-%Error: Exiting due to.*',
+q{%Error: t/t_inst_misarray_bad.v:\d+: Illegal input port connection 'foo', mismatch between port which is not an array, and expression which is an array.
+%Error: Exiting due to.*},
 	 );
 
 

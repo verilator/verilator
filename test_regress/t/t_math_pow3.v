@@ -3,13 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2004 by Wilson Snyder.
 
-`ifdef VERILATOR
- `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
-`else
- `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0)
-`endif
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); fail=1; end while(0)
 
 module t (/*AUTOARG*/);
+
+   bit fail;
 
    // IEEE says for ** the size is L(i).  Thus Icarus Verilog is wrong in sizing some of the below.
 
@@ -77,7 +75,8 @@ module t (/*AUTOARG*/);
       `checkh(( 8'sh3 ** -8'sh3),  8'h0 );  // 0  // NCVERILOG bug
 
 
-      $write("*-* All Finished *-*\n");
+      if (fail) $stop;
+      else $write("*-* All Finished *-*\n");
       $finish;
    end
 endmodule

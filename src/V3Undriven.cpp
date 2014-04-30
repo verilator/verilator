@@ -75,7 +75,7 @@ public:
 
 private:
     // METHODS
-    inline bool bitNumOk(int bit) const { return bit>=0 && (bit*FLAGS_PER_BIT < (int)m_flags.size()); }
+    inline bool bitNumOk(int bit) const { return (bit*FLAGS_PER_BIT < (int)m_flags.size()); }
     inline bool usedFlag(int bit) const { return m_usedWhole || m_flags[bit*FLAGS_PER_BIT + FLAG_USED]; }
     inline bool drivenFlag(int bit) const { return m_drivenWhole || m_flags[bit*FLAGS_PER_BIT + FLAG_DRIVEN]; }
     enum BitNamesWhich { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };

@@ -19,7 +19,7 @@ if (!-r "$root/.git") {
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
     $files =~ s/\s+/ /g;
-    my $cmd = "cd $root && fgrep -n FIXME $files | sort | grep -v t_dist_fixme";
+    my $cmd = "cd $root && fgrep -n FIX"."ME $files | sort | grep -v t_dist_fixme";
     my $grep = `$cmd`;
     print "$grep\n";
     if ($grep ne "") {
@@ -27,7 +27,7 @@ if (!-r "$root/.git") {
 	foreach my $line (split /\n/, $grep) {
 	    $names{$1} = 1 if $line =~ /^([^:]+)/;
 	}
-	$Self->error("Files with FIXMEs: ",join(' ',sort keys %names));
+	$Self->error("Files with FIX"."MEs: ",join(' ',sort keys %names));
     }
 }
 

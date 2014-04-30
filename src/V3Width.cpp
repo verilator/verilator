@@ -1765,7 +1765,7 @@ private:
 		} else {
 		    // Must be a error according to spec
 		    // (Because we need to know if to connect to one or all instants)
-		    nodep->v3error("Port connection "<<nodep->prettyName()<<" as part of a module instance array "
+		    nodep->v3error(ucfirst(nodep->prettyOperatorName())<<" as part of a module instance array"
 				   <<" requires "<<pinwidth<<" or "<<pinwidth*numInsts
 				   <<" bits, but connection's "<<nodep->exprp()->prettyTypeName()
 				   <<" generates "<<expwidth<<" bits.");
@@ -1774,8 +1774,8 @@ private:
 	    } else {
 		if (nodep->modVarp()->isTristate()) {
 		    if (pinwidth != expwidth) {
-			nodep->v3error("Unsupported: Port connection "<<nodep->prettyName()<<" to inout signal "
-				       <<" requires "<<pinwidth
+			nodep->v3error("Unsupported: "<<ucfirst(nodep->prettyOperatorName())
+				       <<" to inout signal requires "<<pinwidth
 				       <<" bits, but connection's "<<nodep->exprp()->prettyTypeName()
 				       <<" generates "<<expwidth<<" bits.");
 			// otherwise would need some mess to force both sides to proper size
@@ -1785,7 +1785,7 @@ private:
 		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		if (loArray != hiArray) {
-		    nodep->v3error("Illegal port connection '"<<nodep->prettyName()<<"',"
+		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
 				   <<" mismatch between port which is"<<(hiArray?"":" not")<<" an array,"
 				   <<" and expression which is"<<(loArray?"":" not")<<" an array.");
 		    UINFO(1,"    Related lo: "<<nodep->exprp()->dtypep()->skipRefp()<<endl);
@@ -2500,7 +2500,7 @@ private:
 
 	if (bad && !ignoreWarn) {
 	    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-	    nodep->v3warn(WIDTH,"Operator "<<nodep->prettyTypeName()
+	    nodep->v3warn(WIDTH,ucfirst(nodep->prettyOperatorName())
 			  <<" expects "<<expWidth
 			  <<(expWidth!=expWidthMin?" or "+cvtToStr(expWidthMin):"")
 			  <<" bits on the "<<side<<", but "<<side<<"'s "
@@ -2531,7 +2531,7 @@ private:
 	if (bad) {
 	    if (!ignoreWarn) {
 		if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
-		nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
+		nodep->v3warn(WIDTH,"Logical "<<nodep->prettyOperatorName()
 			      <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
 			      <<underp->prettyTypeName()<<" generates "<<underp->width()
 			      <<(underp->width()!=underp->widthMin()
@@ -2548,10 +2548,9 @@ private:
 	bool bad = widthBad(underp,expWidth,expWidth);
 	if (bad && fixAutoExtend(underp/*ref*/,expWidth)) bad=false;  // Changes underp
 	if (bad) {
-	    nodep->v3warn(WIDTH,(inputPin?"Input":"Output")
-			  <<" port connection "<<nodep->prettyName()
+	    nodep->v3warn(WIDTH,ucfirst(nodep->prettyOperatorName())
 			  <<" expects "<<expWidth
-			  <<" bits but connection's "
+			  <<" bits on the pin connection, but pin connection's "
 			  <<underp->prettyTypeName()<<" generates "<<underp->width()
 			  <<(underp->width()!=underp->widthMin()
 			     ?" or "+cvtToStr(underp->widthMin()):"")

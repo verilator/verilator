@@ -1003,6 +1003,8 @@ public:
     void	trace(bool flag) { m_trace=flag; }
     // METHODS
     virtual void name(const string& name) { m_name = name; }
+    virtual string directionName() const { return (isInout() ? "inout" : isInput() ? "input"
+						   : isOutput() ? "output" : varType().ascii()); }
     bool	isInput() const { return m_input; }
     bool	isOutput() const { return m_output; }
     bool	isInOnly() const { return m_input && !m_output; }
@@ -1294,6 +1296,9 @@ public:
     virtual const char* broken() const { BROKEN_RTN(m_modVarp && !m_modVarp->brokeExists()); return NULL; }
     virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
     virtual void name(const string& name) { m_name = name; }
+    virtual string prettyOperatorName() const { return modVarp()
+	    ? (modVarp()->directionName()+" port connection '"+modVarp()->prettyName()+"'")
+	    : "port connection"; }
     bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
@@ -2236,6 +2241,7 @@ struct AstFClose : public AstNodeStmt {
 };
 
 struct AstFOpen : public AstNodeStmt {
+    // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
     AstFOpen(FileLine* fileline, AstNode* filep, AstNode* filenamep, AstNode* modep)
 	: AstNodeStmt (fileline) {
 	setOp1p(filep);
