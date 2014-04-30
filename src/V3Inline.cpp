@@ -80,7 +80,7 @@ private:
 	    if (m_modp->user2() != CIL_NOTHARD) {
 		UINFO(4,"  No inline hard: "<<reason<<" "<<m_modp<<endl);
 		m_modp->user2(CIL_NOTHARD);
-		m_statUnsup++;
+		++m_statUnsup;
 	    }
 	} else {
 	    if (m_modp->user2() == CIL_MAYBE) {

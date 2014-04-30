@@ -120,7 +120,8 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	include/.*ignore \
 	include/vltstd/*.[chv]* \
 	.*attributes */.*attributes  */*/.*attributes \
-	src/.*ignore src/*.in src/*.cpp src/*.[chly] src/astgen src/bisonpre src/*fix \
+	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
+	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \
 	src/.gdbinit \
 	src/*.pl src/*.pod \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
@@ -400,7 +401,7 @@ endif
 endif
 
 # Use --xml flag to see the cppcheck code to use for suppression
-CPPCHECK = cppcheck
+CPPCHECK = src/cppcheck_filtered
 CPPCHECK_FLAGS = --enable=all --inline-suppr --suppress=unusedScopedObject --suppress=cstyleCast
 CPPCHECK_FLAGS += --xml
 CPPCHECK_CPP = $(wildcard $(srcdir)/include/*.cpp $(srcdir)/src/*.cpp)

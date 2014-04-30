@@ -228,7 +228,8 @@ class OrderVarVertex : public OrderEitherVertex {
 protected:
     OrderVarVertex(V3Graph* graphp, const OrderVarVertex& old)
 	: OrderEitherVertex(graphp, old)
-	, m_varScp(old.m_varScp), m_pilNewVertexp(old.m_pilNewVertexp), m_isClock(old.m_isClock) {}
+	, m_varScp(old.m_varScp), m_pilNewVertexp(old.m_pilNewVertexp), m_isClock(old.m_isClock)
+	, m_isDelayed(old.m_isDelayed) {}
 public:
     OrderVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
 	: OrderEitherVertex(graphp, scopep, NULL), m_varScp(varScp)

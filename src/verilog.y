@@ -3672,6 +3672,8 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
     AstNode* outp = NULL;
     while (nodep->pinsp()) {
 	AstNode* exprp = nodep->pinsp()->unlinkFrBack();
+	// addNext can handle nulls:
+	// cppcheck-suppress nullPointer
 	outp = outp->addNext(new AstArg(exprp->fileline(), "", exprp));
     }
     if (outp) nodep->addPinsp(outp);

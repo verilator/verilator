@@ -283,7 +283,7 @@ public:
     virtual ~VerilatedVpioMemoryWordIter() {}
     static inline VerilatedVpioMemoryWordIter* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioMemoryWordIter*>((VerilatedVpio*)h); }
     virtual const vluint32_t type() { return vpiIterator; }
-    void iterationInc() { if (!(m_done = m_iteration == m_varp->array().left())) m_iteration+=m_direction; }
+    void iterationInc() { if (!(m_done = (m_iteration == m_varp->array().left()))) m_iteration+=m_direction; }
     virtual vpiHandle dovpi_scan() {
 	vpiHandle result;
 	if (m_done) return 0;
@@ -408,7 +408,7 @@ public:
 		}
 	    }
 	}
-	for (set<VerilatedVpioVar*>::iterator it=update.begin(); it!=update.end(); it++ ) {
+	for (set<VerilatedVpioVar*>::iterator it=update.begin(); it!=update.end(); ++it) {
 	    memcpy((*it)->prevDatap(), (*it)->varDatap(), (*it)->entSize());
 	}
     }
@@ -454,6 +454,7 @@ class VerilatedVpiError {
 public:
 
     VerilatedVpiError() : m_flag(false) {
+	m_buff[0] = '\0';
 	m_errorInfo.product = (PLI_BYTE8*)Verilated::productName();
     }
     ~VerilatedVpiError() {}

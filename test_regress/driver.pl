@@ -825,6 +825,11 @@ sub ok {
     return $self->{ok};
 }
 
+sub continuing {
+    my $self = (ref $_[0]? shift : $Self);
+    return !($self->errors || $self->skips || $self->unsupporteds);
+}
+
 sub errors {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{errors};

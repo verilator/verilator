@@ -929,7 +929,12 @@ private:
 
 public:
     // CONSTUCTORS
-    GateDedupeVarVisitor() {}
+    GateDedupeVarVisitor() {
+	m_assignp = NULL;
+	m_ifCondp = NULL;
+	m_always = false;
+	m_dedupable = true;
+    }
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
 	m_assignp = NULL;
@@ -978,7 +983,7 @@ private:
 		AstVarScope* dupVarScopep = dupVarRefp->varScopep();
 		GateVarVertex* dupVvertexp = (GateVarVertex*) (dupVarScopep->user1p());
 		UINFO(4,"replacing " << vvertexp << " with " << dupVvertexp << endl);
-		m_numDeduped++;
+		++m_numDeduped;
 		// Replace all of this varvertex's consumers with dupVarRefp
 		for (V3GraphEdge* outedgep = vvertexp->outBeginp();outedgep;) {
 		    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(outedgep->top());

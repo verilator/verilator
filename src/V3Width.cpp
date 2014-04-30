@@ -963,7 +963,6 @@ private:
 	bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
 	if (implicitParam) {
 	    if (nodep->valuep()) {
-		int width=0;
 		nodep->valuep()->iterateAndNext(*this,WidthVP(nodep->dtypep(),PRELIM).p());
 		UINFO(9,"implicitParamPRELIMIV "<<nodep->valuep()<<endl);
 		// Although nodep will get a different width for parameters just below,
@@ -972,6 +971,7 @@ private:
 		if (nodep->valuep()->isDouble()) {
 		    nodep->dtypeSetDouble(); bdtypep=NULL;
 		} else {
+		    int width=0;
 		    AstBasicDType* valueBdtypep = nodep->valuep()->dtypep()->basicp();
 		    bool issigned = false;
 		    if (bdtypep->isNosign()) {
@@ -1473,7 +1473,7 @@ private:
 		    }
 		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
 		}
-		if (patmap.size()) nodep->v3error("Assignment pattern with too many elements");
+		if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
 		if (newp) nodep->replaceWith(newp);
 		else nodep->v3error("Assignment pattern with no members");
 		//if (debug()>=9) newp->dumpTree("-apat-out: ");
@@ -1920,6 +1920,7 @@ private:
 			    argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
 			    AstNode* argsp = NULL;
 			    while (AstArg* nextargp = argp->nextp()->castArg()) {
+				// cppcheck-suppress nullPointer
 				argsp = argsp->addNext(nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
 				nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
 			    }

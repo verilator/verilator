@@ -1,0 +1,183 @@
+#!/usr/bin/perl -w
+# See copyright, etc in below POD section.
+######################################################################
+
+require 5.006_001;
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use strict;
+use vars qw ($Debug $VERSION);
+
+$VERSION = '3.857';
+
+#======================================================================
+# main
+
+our $Opt_Debug;
+
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev","pass_through");
+our @Opt_Args = ("cppcheck", @ARGV);
+if (! GetOptions (
+	  # Local options
+	  "help"		=> \&usage,
+	  "version"		=> sub { print "Version $VERSION\n"; system("cppcheck","--version"); exit(0); },
+    )) {
+    die "%Error: Bad usage, try 'cppcheck_filtered --help'\n";
+}
+
+process();
+
+#----------------------------------------------------------------------
+
+sub usage {
+    print "Version $VERSION\n";
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
+    exit (1);
+}
+
+#######################################################################
+
+sub process {
+    my $cmd = join(' ',@Opt_Args);
+    print "\t$cmd\n" if $Debug;
+    my $fh = IO::File->new("$cmd 2>&1 |");
+    my %uniq;
+    my %errs;
+    while (defined(my $line = $fh->getline())) {
+	$line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
+	# General gunk
+	next if $uniq{$line}++;
+	next if $line =~ m!^<\?xml version!;
+	next if $line =~ m!^<results>!;
+	next if $line =~ m!^</results>!;
+	next if $line =~ m!^<error.*id="unmatchedSuppression"!;  # --suppress=unmatchedSuppression doesn't work
+	next if $line =~ m!Cppcheck cannot find all the include files!; # An earlier id line is more specific
+	next if $line =~ m!^Checking !;
+	next if $line =~ m!^make.*Entering directory !;
+	next if $line =~ m!^make.*Leaving directory !;
+	next if $line =~ m!^\s+$!g;
+	# Specific suppressions
+	next if $line =~ m!id="missingInclude" .*systemc.h!;
+	next if $line =~ m!id="missingInclude" .*svdpi.h!;
+	next if $line =~ m!file=".*obj_dbg/V3ParseBison.c".* id="unreachableCode"!;
+	# Output
+	if ($line =~ /^cppcheck --/) {
+	    print $line if $Debug;
+	} else {
+	    my $suppress;
+	    if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
+		my $file = $1; my $linenum = $2; my $id = $3;
+		$suppress = 1 if _suppress($file,$linenum,$id);
+	    }
+	    if (!$suppress) {
+		my $eline = "%Error: cppcheck: $line";
+		print $eline;
+		$errs{$eline}++;
+	    }
+	}
+    }
+    if (scalar(keys %errs)) {
+	#my $all = join('',sort(keys %errs));
+	#$Self->error("Cppcheck errors:\n$all");
+	die "%Error: cppcheck_filtered found errors";
+    }
+}
+
+######################################################################
+
+sub _suppress {
+    my $filename = shift;
+    my $linenum = shift;
+    my $id = shift;
+    #print "-Suppression search $filename $linenum $id\n" if $Self->{verbose};
+    my $fh = IO::File->new("<$filename");
+    if (!$fh) {
+	warn "%Warning: $! $filename,";
+	return undef;
+    }
+    my $l = 0;
+    while (defined(my $line = $fh->getline())) {
+	++$l;
+	if ($l+1 == $linenum) {
+	    if ($line =~ /cppcheck-suppress\s+(\S+)/) {
+		my $supid = $1;
+		if ($supid eq $id) {
+		    return 1;
+		} else {
+		    warn "%Warning: $filename: $l: Found suppress for id='$supid', not expected id='$id'\n";
+		}
+	    }
+	}
+    }
+    return undef;
+}
+
+1;
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+cppcheck_filtered - cppcheck wrapper with post-processing
+
+=head1 SYNOPSIS
+
+  cppcheck_filtered ...normal cpp check flags...
+
+
+=head1 DESCRIPTION
+
+Cppcheck_Filtered is a wrapper for cppcheck that filters out unnecessary
+warnings related to Verilator.
+
+=head1 ARGUMENTS
+
+Most arguments are passed through to cppcheck
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=item --version
+
+Print the version number and exit.
+
+=back
+
+=head1 DISTRIBUTION
+
+This is part of the L<http://www.veripool.org/> free Verilog EDA software
+tool suite.  The latest version is available from CPAN and from
+L<http://www.veripool.org/>.
+
+Copyright 2014-2014 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<cppcheck>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./cppcheck_filtered --xml V3Width.cpp"
+### End:
