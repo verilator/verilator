@@ -91,6 +91,12 @@ module t (/*AUTOARG*/);
       w4_u = 5'b10000 / 5'b00100;
       `checkh(w4_u, 4'b0100);
 
+      // bug754
+      w5_u = 4'sb0010 << -2'sd1;  // << 3
+      `checkh(w5_u, 5'b10000);  // VCS E-2014.03 bug
+      w5_u = 4'sb1000 << 0;   // Sign extends
+      `checkh(w5_u, 5'b11000);
+
       // Reals do not propagate to children
       r = 1.0 + ( 1 + (1 / 2));
       `checkf(r, 2.0);

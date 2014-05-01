@@ -2231,14 +2231,14 @@ private:
     }
     AstNodeBiop* iterate_shift_final(AstNodeBiop* nodep, AstNUser* vup)  {
 	// Nodep maybe edited
-	if (vup->c()->prelim()) {
+	if (vup->c()->final()) {
 	    // ShiftRS converts to ShiftR, but not vice-versa
 	    if (nodep->castShiftRS()) {
 		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, nodep->isSigned())) { nodep=NULL;
 		    nodep = newp;  // Process new node instead
 		}
 	    }
-	    AstNodeDType* expDTypep = nodep->dtypep();
+	    AstNodeDType* expDTypep = vup->c()->dtypeOverridep(nodep->dtypep());
 	    AstNodeDType* subDTypep = expDTypep;
 	    nodep->dtypeFrom(expDTypep);
 	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP);
