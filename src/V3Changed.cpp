@@ -84,16 +84,16 @@ private:
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
 	AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();
-	AstStructDType *structp = varp->dtypeSkipRefp()->castStructDType();
+	AstNodeClassDType *classp = varp->dtypeSkipRefp()->castNodeClassDType();
 	bool isArray = arrayp;
-	bool isStruct = structp && structp->packedUnsup();
+	bool isClass = classp && classp->packedUnsup();
 	int elements = isArray ? arrayp->elementsConst() : 1;
 	if (isArray && (elements > DETECTARRAY_MAX_INDEXES)) {
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
 			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName()<<endl
 			 <<vscp->warnMore()
 			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(elements));
-	} else if (!isArray && !isStruct
+	} else if (!isArray && !isClass
 		   && !varp->dtypeSkipRefp()->castBasicDType()) {
 	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());

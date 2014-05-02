@@ -39,6 +39,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix reporting struct members as reserved words, bug741. [Chris Randall]
 
+****  Fix change detection error on unions, bug758. [Jie Xu]
+
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 
 ****  Fix C++-2011 warnings.
