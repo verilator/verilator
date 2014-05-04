@@ -154,14 +154,14 @@ my %ops2 =
  'VNOR'=>	{pl=>'VNOR    (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
  'VXOR'=>	{pl=>'VXOR   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
  'VXNOR'=>	{pl=>'VXNOR  (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);'},
- 'VEQ'=>	{pl=>'VEQ    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VNEQ'=>	{pl=>'VNE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VGT'=>	{pl=>'VGT    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VGTE'=>	{pl=>'VGE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VLT'=>	{pl=>'VLT    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VLTE'=>	{pl=>'VLE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VEQCASE'=>	{pl=>'VEQ    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
- 'VNEQCASE'=>	{pl=>'VNE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w);'},
+ 'VEQ'=>	{pl=>'VEQ    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VNEQ'=>	{pl=>'VNE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VGT'=>	{pl=>'VGT    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VGTE'=>	{pl=>'VGE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VLT'=>	{pl=>'VLT    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VLTE'=>	{pl=>'VLE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VEQCASE'=>	{pl=>'VEQ    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
+ 'VNEQCASE'=>	{pl=>'VNE    (%tr,%1r,%2r);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>%1w,signed=>%1g);'},
  'VLOGOR'=>	{pl=>'VLOGOR (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>0);'},
  'VLOGAND'=>	{pl=>'VLOGAND(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>0);   %2r=gen_leaf(width=>0);'},
  'VADD'=>	{pl=>'VADD   (%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>%tw,signed=>%tg);', trunc=>1,},
@@ -174,9 +174,9 @@ my %ops2 =
  'VSHIFTLS'=>	{pl=>'VSHIFTL(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>log2(%tw)+1,signed=>%tg);'},
  'VSHIFTR'=>	{pl=>'VSHIFTR(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>log2(%tw)+1,signed=>%tg);'},
  'VSHIFTRS'=>	{pl=>'VSHIFTRS(%tr,%1v,%2v);',	rnd=>'%1r=gen_leaf(width=>%tw,signed=>%tg); %2r=gen_leaf(width=>log2(%tw)+1,signed=>%tg);'},
- 'VCONCAT'=>	{pl=>'VCONCAT(%tr,%1v,%2v);',	rnd=>'my $d=(rnd(%tw-2)+1); %1r=gen_leaf(width=>$d); %2r=gen_leaf(width=>(%tw-$d));'},
- 'VREPLIC'=>	{pl=>'VREPLIC(%tr,%1v,%2v);',	rnd=>'my $d=rnd_rep_width(%tw); %1r=val_leaf($d); %2r=gen_leaf(width=>(%tw/$d));'},
- 'VREPLIC1W'=>	{pl=>'VREPLIC(%tr,%1v,%2v);',	rnd=>'%1r=val_leaf(%tw); %2r=gen_leaf(width=>1);'},
+ 'VCONCAT'=>	{pl=>'VCONCAT(%tr,%1v,%2v);',	rnd=>'my $d=(rnd(%tw-2)+1); %1r=gen_leaf(width=>$d,signed=>0); %2r=gen_leaf(width=>(%tw-$d),signed=>0);'},
+ 'VREPLIC'=>	{pl=>'VREPLIC(%tr,%1v,%2v);',	rnd=>'my $d=rnd_rep_width(%tw); %1r=val_leaf($d); %2r=gen_leaf(width=>(%tw/$d),signed=>0);'},
+ 'VREPLIC1W'=>	{pl=>'VREPLIC(%tr,%1v,%2v);',	rnd=>'%1r=val_leaf(%tw); %2r=gen_leaf(width=>1,signed=>0);'},
  'VSIGNED'=>	{pl=>'VCLONE (%tr,%1v,0);',	rnd=>'%1r=gen_leaf(width=>%tw);'},
  'VUNSIGNED'=>	{pl=>'VCLONE (%tr,%1v,0);',	rnd=>'%1r=gen_leaf(width=>%tw);'},
  # Triops
@@ -773,16 +773,19 @@ sub escapes {
     $str =~ s/%tw/\$treeref->{width}/g;
     #
     $str =~ s/%1r/\$treeref->{op1}/g;
+    $str =~ s/%1g/\$treeref->{op1}{signed}/g;
     $str =~ s/%1n/(\$treeref->{op1}{val}->Word_Read(0))/g;
     $str =~ s/%1v/\$treeref->{op1}{val}/g;
     $str =~ s/%1w/\$treeref->{op1}{width}/g;
     #
     $str =~ s/%2r/\$treeref->{op2}/g;
+    $str =~ s/%2g/\$treeref->{op2}{signed}/g;
     $str =~ s/%2n/(\$treeref->{op2}{val}->Word_Read(0))/g;
     $str =~ s/%2v/\$treeref->{op2}{val}/g;
     $str =~ s/%2w/\$treeref->{op2}{width}/g;
     #
     $str =~ s/%3r/\$treeref->{op3}/g;
+    $str =~ s/%3g/\$treeref->{op3}{signed}/g;
     $str =~ s/%3n/(\$treeref->{op3}{val}->Word_Read(0))/g;
     $str =~ s/%3v/\$treeref->{op3}{val}/g;
     $str =~ s/%3w/\$treeref->{op3}{width}/g;
