@@ -234,16 +234,19 @@ private:
     }
     bool operandHugeShiftL(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
+		&& !nodep->rhsp()->castConst()->num().isFourState()
 		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->width())
 		&& isTPure(nodep->lhsp()));
     }
     bool operandHugeShiftR(AstNodeBiop* nodep) {
 	return (nodep->rhsp()->castConst()
+		&& !nodep->rhsp()->castConst()->num().isFourState()
 		&& nodep->rhsp()->castConst()->toUInt() >= (uint32_t)(nodep->lhsp()->width())
 		&& isTPure(nodep->lhsp()));
     }
     bool operandIsTwo(AstNode* nodep) {
 	return (nodep->castConst()
+		&& !nodep->castConst()->num().isFourState()
 		&& nodep->width() <= VL_QUADSIZE
 		&& nodep->castConst()->toUQuad()==2);
     }

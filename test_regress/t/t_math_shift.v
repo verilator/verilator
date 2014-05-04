@@ -4,17 +4,22 @@
 // without warranty, 2004 by Wilson Snyder.
 
 module t (/*AUTOARG*/
+   // Outputs
+   ign,
    // Inputs
    clk
    );
 
    input clk;
+   output [31:0] ign;
 
    reg [31:0] 		right;
    reg [31:0] 		left;
    reg [63:0] 		qright;
    reg [63:0] 		qleft;
    reg [31:0] 		amt;
+
+   assign ign = {31'h0, clk} >>> 4'bx;  // bug760
 
    always @* begin
       right = 32'h819b018a >> amt;
