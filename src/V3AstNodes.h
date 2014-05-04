@@ -4164,6 +4164,8 @@ struct AstConcat : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
 struct AstReplicate : public AstNodeBiop {
+    // Also used as a "Uniop" flavor of Concat, e.g. "{a}"
+    // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
 private:
     void init() {
 	if (lhsp()) {
@@ -4173,7 +4175,6 @@ private:
 	}
     }
 public:
-    // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
     AstReplicate(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop(fl, lhsp, rhsp) { init(); }
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)

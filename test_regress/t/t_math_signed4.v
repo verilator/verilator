@@ -18,6 +18,7 @@ module t (/*AUTOARG*/);
    reg signed [4:0] w5_s;
    reg [3:0] w4_u;
    reg [4:0] w5_u;
+   reg signed [8:0] w9_s;
    real      r;
    initial begin
       // verilator lint_off WIDTH
@@ -93,7 +94,11 @@ module t (/*AUTOARG*/);
 
       // bug754
       w5_u = 4'sb0010 << -2'sd1;  // << 3
+`ifdef VCS
+      `checkh(w5_u, 5'b00000);  // VCS E-2014.03 bug
+`else
       `checkh(w5_u, 5'b10000);  // VCS E-2014.03 bug
+`endif
       w5_u = 4'sb1000 << 0;   // Sign extends
       `checkh(w5_u, 5'b11000);
 
@@ -111,6 +116,22 @@ module t (/*AUTOARG*/);
 	22.1: $stop;
 	default: $stop;
       endcase
+
+      // bug759
+      w5_u = { -4'sd7 };
+      `checkh(w5_u, 5'b01001);
+      w5_u = {2{ -2'sd1 }};
+      `checkh(w5_u, 5'b01111);
+      // Don't break concats....
+      w5_u = {{0{1'b1}}, -4'sd7 };
+      `checkh(w5_u, 5'b01001);
+      w9_s = { -4'sd7, -4'sd7 };
+      `checkh(w9_s, 9'b010011001);
+      {w5_u, {w4_u}} = 9'b10101_1100;
+      `checkh(w5_u, 5'b10101);
+      `checkh(w4_u, 4'b1100);
+      {w4_u} = 4'b1011;
+      `checkh(w4_u, 4'b1011);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");

@@ -3003,7 +3003,8 @@ exprNoStr<nodep>:		// expression with string removed
 exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 		~l~exprScope				{ $$ = $1; }
 	//			// IEEE: concatenation/constant_concatenation
-	|	'{' cateList '}'			{ $$ = $2; }
+	//			// Replicate(1) required as otherwise "{a}" would not be self-determined
+	|	'{' cateList '}'			{ $$ = new AstReplicate($1,$2,1); }
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires

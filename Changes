@@ -11,9 +11,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support streaming operators, bug649. [Glen Gibb]
 
-**    Fix expression problems with -Wno-WIDTH, bug729, bug736, bug737. [Clifford Wolf]
+**    Fix expression problems with -Wno-WIDTH, bug729, bug736, bug737, bug759.
       Where WIDTH warnings were ignored this might result in different
       warning messages and results, though it should better match the spec.
+      [Clifford Wolf]
 
 ***   Add --no-trace-params.
 
