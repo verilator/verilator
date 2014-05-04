@@ -207,7 +207,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     vluint32_t vn[VL_MULS_MAX_WORDS+1]; // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i=0; i<words; i++) { un[i]=vn[i]=0; }
+    // Note +1 as loop will use extra word
+    for (int i=0; i<words+1; i++) { un[i]=vn[i]=0; }
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set

@@ -282,6 +282,16 @@ module t (/*AUTOARG*/
 
    //============================================================
 
+   reg signed [ 83:  0] W0024                     ; //=84'h0000000000000e1fe9094
+   reg signed [ 83:  0] W0025                     ; //=84'h0f66afffffffe308b3d7c
+   always @(posedge clk) begin
+      W0024 <= 84'h0000000000000e1fe9094;
+      W0025 <= 84'h0f66afffffffe308b3d7c;
+      if ((W0024 % W0025) != 84'sh0000000000000e1fe9094) if (check) $stop;
+   end
+
+   //============================================================
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
