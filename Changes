@@ -18,11 +18,13 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add --no-trace-params.
 
-***   Add assertions on 'unique if', bug725. [Jeff Bush] 
+***   Add assertions on 'unique if', bug725. [Jeff Bush]
 
 ***   Add PINCONNECTEMPTY warning. [Holger Waechtler]
 
 ***   Support parameter arrays, bug683. [Jeremy Bennett]
+
+***   Fix begin_keywords "1800+VAMS", msg1211.
 
 ****  Documentation fixes, bug723. [Glen Gibb]
 
@@ -161,17 +163,17 @@ indicates the contributor was also the author of the fix; Thanks!
 * Verilator 3.847 2013-05-11
 
 ***   Add ALWCOMBORDER warning.  [KC Buckenmaier]
-      
+
 ***   Add --pins-sc-uint and --pins-sc-biguint, bug638. [Alex Hornung]
-      
+
 ****  Support "signal[vec]++".
-      
+
 ****  Fix simulation error when inputs and MULTIDRIVEN, bug634. [Ted Campbell]
-      
+
 ****  Fix module resolution with __, bug631. [Jason McMullan]
-      
+
 ****  Fix packed array non-zero right index select crash, bug642. [Krzysztof Jankowski]
-      
+
 ****  Fix nested union crash, bug643. [Krzysztof Jankowski]
 
 
@@ -487,7 +489,7 @@ indicates the contributor was also the author of the fix; Thanks!
 ***  Support $fopen and I/O with integer instead of `verilator_file_descriptor.
 
 ***  Support coverage in -cc and -sc output modes.  [John Li]
-     Note this requires SystemPerl 1.338 or newer.	
+     Note this requires SystemPerl 1.338 or newer.
 
 **** Fix vpi_register_cb using bad s_cb_data, bug370.  [by Thomas Watts]
 

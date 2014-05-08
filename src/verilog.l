@@ -138,7 +138,7 @@ void yyerrorf(const char* format, ...) {
 
 %s V95 V01 V05 S05 S09 S12
 %s STRING ATTRMODE TABLE
-%s VA5 SA9 PSL VLT
+%s VA5 SAX PSL VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
@@ -179,7 +179,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Verilog 1995 */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   {ws}			{ }	/* otherwise ignore white-space */
   {crnl}		{ NEXTLINE(); }		/* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
@@ -352,7 +352,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2001 */
-<V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   /*     System Tasks */
   "$signed"		{ FL; return yD_SIGNED; }
   "$unsigned"		{ FL; return yD_UNSIGNED; }
@@ -383,13 +383,13 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2005 */
-<V05,S05,S09,S12,SA9,PSL>{
+<V05,S05,S09,S12,SAX,PSL>{
   /*     Keywords */
   "uwire"		{ FL; return yWIRE; }
 }
 
   /* System Verilog 2005 */
-<S05,S09,S12,PSL>{
+<S05,S09,S12,SAX,PSL>{
   /*     System Tasks */
   "$bits"		{ FL; return yD_BITS; }
   "$clog2"		{ FL; return yD_CLOG2; }
@@ -506,7 +506,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* SystemVerilog 2005 ONLY not PSL; different rules for PSL as specified below */
-<S05,S09,S12>{
+<S05,S09,S12,SAX>{
   /*     Keywords */
   "assert"		{ FL; return yASSERT; }
   "const"		{ FL; return yCONST__LEX; }
@@ -521,7 +521,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* SystemVerilog 2009 */
-<S09,S12,PSL>{
+<S09,S12,SAX,PSL>{
   /*     Keywords */
   "global"	 	{ FL; return yGLOBAL__LEX; }
   "unique0"	 	{ FL; return yUNIQUE0; }
@@ -550,7 +550,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* System Verilog 2012 */
-<S12,PSL>{
+<S12,SAX,PSL>{
   /*     Keywords */
   "implements"	 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
   "interconnect" 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
@@ -559,7 +559,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Default PLI rule */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
 				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
 				  // Lookup unencoded name including the $, to avoid hitting normal signals
@@ -572,7 +572,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* AMS */
 
-<VA5,SA9>{
+<VA5,SA9,SAX>{
   /*     Generic unsupported warnings */
    "above"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "abs"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
@@ -666,7 +666,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* PSL */
 
   /*Entry into PSL; mode change */
-<V95,V01,V05,VA5,S05,S09,S12,SA9>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "psl"			{ yy_push_state(PSL); FL; return yPSL; }
 }
 
@@ -755,7 +755,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Meta comments */
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{ FL; return yVL_CLOCK_ENABLE; }
   "/*verilator coverage_block_off*/"	{ FL; return yVL_COVERAGE_BLOCK_OFF; }
@@ -790,11 +790,11 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
 
   /* Single character operator thingies */
-<V95,V01,V05,VA5,S05,S09,S12,SA9>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "{"			{ FL; return yytext[0]; }
   "}"			{ FL; return yytext[0]; }
 }
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "!"			{ FL; return yytext[0]; }
   "#"			{ FL; return yytext[0]; }
   "$"			{ FL; return yytext[0]; }
@@ -826,7 +826,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Operators and multi-character symbols */
 
   /* Verilog 1995 Operators */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "&&"			{ FL; return yP_ANDAND; }
   "||"			{ FL; return yP_OROR; }
   "<="			{ FL; return yP_LTE; }
@@ -848,7 +848,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2001 Operators */
-<V01,V05,VA5,S05,S09,S12,SA9,PSL>{
+<V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "<<<"			{ FL; return yP_SLEFT; }
   ">>>"			{ FL; return yP_SSRIGHT; }
   "**"			{ FL; return yP_POW; }
@@ -858,7 +858,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* SystemVerilog Operators */
-<S05,S09,S12>{
+<S05,S09,S12,SAX>{
   "'"			{ FL; return yP_TICK; }
   "'{"			{ FL; return yP_TICKBRA; }
   "==?"			{ FL; return yP_WILDEQUAL; }
@@ -907,7 +907,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Identifiers and numbers */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT>{
   {escid}		{ FL; yylval.strp = PARSEP->newString
 	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
 			  return yaID__LEX;
@@ -980,7 +980,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
-<V95,V01,V05,VA5,S05,S09,S12,SA9>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
     "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*), but (* attr_spec
 }
 
@@ -997,7 +997,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"				{ } // Verilog-XL compatibility
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ PARSEP->inCellDefine(true); }
@@ -1042,7 +1042,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2009\"		{ yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
   "`begin_keywords"[ \t]*\"1800-2012\"		{ yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800+VAMS\"		{ yy_push_state(SA9); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800[+]VAMS\"	{ yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); } /*Latest SV*/
   "`end_keywords"				{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 
   /* Verilator */
@@ -1073,7 +1073,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Default rules - leave last */
 
-<V95,V01,V05,VA5,S05,S09,S12,SA9,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT>{
   "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
   "//"[^\n]*		{ }  /* throw away single line comments */
   .			{ FL; return yytext[0]; }	/* return single char ops. */
