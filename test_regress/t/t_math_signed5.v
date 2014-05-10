@@ -111,6 +111,11 @@
       w4_u = |0 != (w5_s >>> w3_u);
       `checkh(w4_u, 4'b0000);
 
+      // bug763
+      w3_u = 2;
+      w4_u = (w3_u >> 2'b11) >> 1;
+      `checkh(w4_u, 4'b0000);
+
       if (fail) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

@@ -46,6 +46,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix -Wno-UNOPTFLAT change detection with 64-bits, bug762. [Clifford Wolf]
 
+****  Fix shift-right optimization, bug763. [Clifford Wolf]
+
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 
 ****  Fix C++-2011 warnings.

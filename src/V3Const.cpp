@@ -728,9 +728,15 @@ private:
 	AstNode* ap = lhsp->lhsp()->unlinkFrBack();
 	AstNode* shift1p = lhsp->rhsp()->unlinkFrBack();
 	AstNode* shift2p = nodep->rhsp()->unlinkFrBack();
+	// Shift1p and shift2p may have different sizes, both are self-determined so sum with infinite width
 	if (nodep->type()==lhsp->type()) {
+	    int shift1 = shift1p->castConst()->toUInt();
+	    int shift2 = shift2p->castConst()->toUInt();
+	    int newshift = shift1+shift2;
+	    shift1p->deleteTree(); shift1p=NULL;
+	    shift2p->deleteTree(); shift2p=NULL;
 	    nodep->lhsp(ap);
-	    nodep->rhsp(new AstAdd(nodep->fileline(), shift1p, shift2p));
+	    nodep->rhsp(new AstConst(nodep->fileline(), newshift));
 	    nodep->accept(*this);	// Further reduce, either node may have more reductions.
 	} else {
 	    // We know shift amounts are constant, but might be a mixed left/right shift
@@ -738,7 +744,7 @@ private:
 	    int shift2 = shift2p->castConst()->toUInt(); if (nodep->castShiftR()) shift2=-shift2;
 	    int newshift = shift1+shift2;
 	    shift1p->deleteTree(); shift1p=NULL;
-	    shift2p->deleteTree(); shift1p=NULL;
+	    shift2p->deleteTree(); shift2p=NULL;
 	    AstNode* newp;
 	    V3Number mask1 (nodep->fileline(), nodep->width());
 	    V3Number ones (nodep->fileline(), nodep->width());
