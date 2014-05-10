@@ -2242,7 +2242,10 @@ private:
 		    nodep = newp;  // Process new node instead
 		}
 	    }
-	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP);
+	    bool warnOn = true;
+	    // No warning if "X = 1'b1<<N"; assume user is doing what they want
+	    if (nodep->lhsp()->isOne() && nodep->backp()->castNodeAssign()) warnOn = false;
+	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,warnOn);
 	    if (nodep->rhsp()->width()>32) {
 		AstConst* shiftp = nodep->rhsp()->castConst();
 		if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
