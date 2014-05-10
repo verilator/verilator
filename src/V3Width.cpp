@@ -492,7 +492,7 @@ private:
 			       <<" bits from only "<<nodep->fromp()->width()<<" bit number");
 		// Extend it.
 		AstNodeDType* subDTypep = nodep->findLogicDType(width,width,nodep->fromp()->dtypep()->numeric());
-		widthCheckSized(nodep,"errorless...",nodep->fromp(),subDTypep,EXTEND_EXP,true/*noerror*/);
+		widthCheckSized(nodep,"errorless...",nodep->fromp(),subDTypep,EXTEND_EXP,false/*noerror*/);
 	    }
 	    // Check bit indexes.
 	    // What is the MSB?  We want the true MSB, not one starting at 0,
@@ -549,7 +549,7 @@ private:
 		// lsbp() must be self-determined, however for performance we want the select to be
 		// truncated to fit within the maximum select range, e.g. turn Xs outside of the select
 		// into something fast which pulls from within the array.
-		widthCheckSized(nodep,"Extract Range",nodep->lsbp(),selwidthDTypep,EXTEND_EXP,true/*NOWARN*/);
+		widthCheckSized(nodep,"Extract Range",nodep->lsbp(),selwidthDTypep,EXTEND_EXP,false/*NOWARN*/);
 	    }
 	}
     }
@@ -595,7 +595,7 @@ private:
 		}
 	    }
 	    if (!m_doGenerate) {
-		widthCheckSized(nodep,"Extract Range",nodep->bitp(),selwidthDTypep,EXTEND_EXP,true/*NOWARN*/);
+		widthCheckSized(nodep,"Extract Range",nodep->bitp(),selwidthDTypep,EXTEND_EXP,false/*NOWARN*/);
 	    }
 	}
     }
@@ -881,7 +881,7 @@ private:
 	    // Note widthCheckSized might modify nodep->lhsp()
 	    AstNodeDType* subDTypep = nodep->findLogicDType(nodep->width(),nodep->width(),
 							    nodep->lhsp()->dtypep()->numeric());
-	    widthCheckSized(nodep,"Cast",nodep->lhsp(),subDTypep,EXTEND_EXP,true);
+	    widthCheckSized(nodep,"Cast",nodep->lhsp(),subDTypep,EXTEND_EXP,false);
 	}
 	AstNode* newp = nodep->lhsp()->unlinkFrBack();
 	if (basicp->isDouble() && !newp->isDouble()) {
@@ -921,7 +921,7 @@ private:
 				    : nodep->findBitDType(width, width, underDtp->numeric()));
 	    nodep->dtypep(newDtp);
 	    // We ignore warnings as that is sort of the point of a cast
-	    iterateCheck(nodep,"Cast LHS",nodep->lhsp(),SELF,FINAL,newDtp,EXTEND_EXP,true);
+	    iterateCheck(nodep,"Cast LHS",nodep->lhsp(),SELF,FINAL,newDtp,EXTEND_EXP,false);
 	}
 	if (vup->c()->final()) {
 	    // CastSize not needed once sizes determined
@@ -2285,11 +2285,9 @@ private:
 	    AstNodeDType* expDTypep = vup->c()->dtypeOverridep(nodep->dtypep());
 	    AstNodeDType* subDTypep = expDTypep;
 	    nodep->dtypeFrom(expDTypep);
-	    // Some warning suppressions
-	    bool lhsOk=false; bool rhsOk = false;
 	    // Error report and change sizes for suboperands of this node.
-	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,lhsOk);
-	    iterateCheck(nodep,"RHS",nodep->rhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,rhsOk);
+	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP);
+	    iterateCheck(nodep,"RHS",nodep->rhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP);
 	}
     }
 
@@ -2340,18 +2338,18 @@ private:
 		nodep = newp;  // Process new node instead
 	    }
 	    // Some warning suppressions
-	    bool lhsOk=false; bool rhsOk = false;
+	    bool lhsWarn=true; bool rhsWarn = true;
 	    if (nodep->castAdd() || nodep->castSub()) {
-		lhsOk = (subDTypep->widthMin() == (nodep->lhsp()->widthMin()+1));	// Ok if user wants extra bit from carry
-		rhsOk = (subDTypep->widthMin() == (nodep->rhsp()->widthMin()+1));	// Ok if user wants extra bit from carry
+		if (subDTypep->widthMin() == (nodep->lhsp()->widthMin()+1)) lhsWarn=false;	// Warn if user wants extra bit from carry
+		if (subDTypep->widthMin() == (nodep->rhsp()->widthMin()+1)) rhsWarn=false;	// Warn if user wants extra bit from carry
 	    } else if (nodep->castMul() || nodep->castMulS()) {
-		lhsOk = (subDTypep->widthMin() >= (nodep->lhsp()->widthMin()));
-		rhsOk = (subDTypep->widthMin() >= (nodep->rhsp()->widthMin()));
+		if (subDTypep->widthMin() >= (nodep->lhsp()->widthMin())) lhsWarn=false;
+		if (subDTypep->widthMin() >= (nodep->rhsp()->widthMin())) rhsWarn=false;
 	    }
 	    // Final call, so make sure children check their sizes
 	    // Error report and change sizes for suboperands of this node.
-	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,lhsOk);
-	    iterateCheck(nodep,"RHS",nodep->rhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,rhsOk);
+	    iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,lhsWarn);
+	    iterateCheck(nodep,"RHS",nodep->rhsp(),CONTEXT,FINAL,subDTypep,EXTEND_EXP,rhsWarn);
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"-rusou-");
     }
@@ -2565,10 +2563,10 @@ private:
 	    underp->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
 	    pushDeletep(underp); underp=NULL;
 	} else {
-	    bool ignoreWarn = false; // Not used
+	    bool warnOn = true; // Not used
 	    bool bad = widthBad(underp,nodep->findLogicBoolDType());
 	    if (bad) {
-		if (!ignoreWarn) {
+		if (warnOn) {
 		    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 		    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
 				  <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
@@ -2585,7 +2583,7 @@ private:
     AstNode* iterateCheck (AstNode* nodep, const char* side, AstNode* underp,
 			   Determ determ, Stage stage, AstNodeDType* expDTypep,
 			   ExtendRule extendRule,
-			   bool ignoreWarn=false) {
+			   bool warnOn=true) {
 	// Perform data type check on underp, which is underneath nodep used for error reporting
 	// Returns the new underp
 	// Conversion to/from doubles and integers are before iterating.
@@ -2599,7 +2597,7 @@ private:
 	    underp = spliceCvtD(underp);
 	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (!expDTypep->isDouble() && underp->isDouble()) {
-	    underp = spliceCvtS(underp, false);  // Round RHS
+	    underp = spliceCvtS(underp, true);  // Round RHS
 	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else {
 	    AstBasicDType* expBasicp = expDTypep->basicp();
@@ -2626,7 +2624,7 @@ private:
 		}
 		// Note the check uses the expected size, not the child's subDTypep as we want the
 		// child node's width to end up correct for the assignment (etc)
-		widthCheckSized(nodep,side,underp,expDTypep,extendRule,ignoreWarn);
+		widthCheckSized(nodep,side,underp,expDTypep,extendRule,warnOn);
 	    }
 	    else {
 		// Hope it just works out
@@ -2639,10 +2637,10 @@ private:
 			  AstNode* underp,  // Node to be checked or have typecast added in front of
 			  AstNodeDType* expDTypep,
 			  ExtendRule extendRule,
-			  bool ignoreWarn=false) {
+			  bool warnOn=true) {
 	// Issue warnings on sized number width mismatches, then do appropriate size extension
 	// Generally iterateCheck is what is wanted instead of this
-	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<" i"<<ignoreWarn<<endl);
+	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<" i"<<warnOn<<endl);
 	AstBasicDType* expBasicp = expDTypep->basicp();
 	AstBasicDType* underBasicp = underp->dtypep()->basicp();
 	if (expDTypep == underp->dtypep()) {
@@ -2671,14 +2669,14 @@ private:
 		&& (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
 		// reg [31:0] == "foo" we'll consider probably fine.
 		// Maybe this should be a special warning?  Not for now.
-		ignoreWarn = true;
+		warnOn = false;
 	    }
 	    if ((nodep->castAdd() && underp->width()==1 && underp->isOne())
 		|| (nodep->castSub() && underp->width()==1 && underp->isOne() && 0==strcmp(side,"RHS"))) {
 		// "foo + 1'b1", or "foo - 1'b1" are very common, people assume they extend correctly
-		ignoreWarn = true;
+		warnOn = false;
 	    }
-	    if (bad && !ignoreWarn) {
+	    if (bad && warnOn) {
 		if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 		nodep->v3warn(WIDTH,ucfirst(nodep->prettyOperatorName())
 			      <<" expects "<<expWidth
@@ -2710,7 +2708,7 @@ private:
     AstNode* checkCvtUS(AstNode* nodep) {
 	if (nodep && nodep->isDouble()) {
 	    nodep->v3error("Expected integral (non-real) input to "<<nodep->backp()->prettyTypeName());
-	    nodep = spliceCvtS(nodep, false);
+	    nodep = spliceCvtS(nodep, true);
 	}
 	return nodep;
     }
@@ -2729,14 +2727,14 @@ private:
 	    return nodep;
 	}
     }
-    AstNode* spliceCvtS(AstNode* nodep, bool ignoreWarn) {
+    AstNode* spliceCvtS(AstNode* nodep, bool warnOn) {
 	// IEEE-2012 11.8.1: Signed: Type coercion creates signed
 	// 11.8.2: Argument to convert is self-determined
 	if (nodep && nodep->isDouble()) {
 	    UINFO(6,"   spliceCvtS: "<<nodep<<endl);
 	    AstNRelinker linker;
 	    nodep->unlinkFrBack(&linker);
-	    if (!ignoreWarn) nodep->v3warn(REALCVT,"Implicit conversion of real to integer");
+	    if (warnOn) nodep->v3warn(REALCVT,"Implicit conversion of real to integer");
 	    AstNode* newp = new AstRToIRoundS(nodep->fileline(), nodep);
 	    linker.relink(newp);
 	    return newp;
