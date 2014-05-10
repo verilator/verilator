@@ -568,7 +568,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstVar* nodep, AstNUser*) {
 	putfs(nodep,nodep->verilogKwd());
 	puts(" ");
-	nodep->dtypep()->iterateAndNext(*this); puts(" ");
+	nodep->dtypep()->iterate(*this); puts(" ");
 	puts(nodep->prettyName());
 	puts(";\n");
     }

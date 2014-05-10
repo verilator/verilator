@@ -712,6 +712,7 @@ private:
     virtual void visit(AstInitial* nodep, AstNUser*) { }
     virtual void visit(AstTraceInc* nodep, AstNUser*) { }
     virtual void visit(AstCoverToggle* nodep, AstNUser*) { }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) { }
 
     //--------------------
     // Default
