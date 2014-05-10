@@ -1417,8 +1417,8 @@ V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs, bool lsign,
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setQuad(1); // Overrides lhs 0 -> return 0
     // We may want to special case when the lhs is 2, so we can get larger outputs
-    if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** math not implemented yet: "<<*this);
-    if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** math not implemented yet: "<<*this);
+    if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** power operator not implemented yet: "<<*this);
+    if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** power operator not implemented yet: "<<*this);
     if (rsign && rhs.isNegative()) {
 	if (lhs.isEqZero()) return setAllBitsX();
 	else if (lhs.isEqOne()) return setQuad(1);
