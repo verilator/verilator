@@ -832,7 +832,7 @@ class EmitCImp : EmitCStmts {
 
     void emitChangeDet() {
 	puts("// Change detection\n");
-	puts("IData __req = false;  // Logically a bool\n");  // But not because it results in faster code
+	puts("QData __req = false;  // Logically a bool\n");  // But not because it results in faster code
 	bool gotOne = false;
 	for (vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
 	     it != m_blkChangeDetVec.end(); ++it) {
@@ -1663,7 +1663,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts("int __VclockLoop = 0;\n");
-    puts("IData __Vchange=1;\n");
+    puts("QData __Vchange=1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
     puts(    "VL_DEBUG_IF(VL_PRINTF(\" Clock loop\\n\"););\n");
     puts(    "vlSymsp->__Vm_activity = true;\n");
@@ -1681,7 +1681,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("_eval_initial(vlSymsp);\n");
     puts(    "vlSymsp->__Vm_activity = true;\n");
     puts(    "int __VclockLoop = 0;\n");
-    puts(    "IData __Vchange=1;\n");
+    puts(    "QData __Vchange=1;\n");
     puts(    "while (VL_LIKELY(__Vchange)) {\n");
     puts(        "_eval_settle(vlSymsp);\n");
     puts(        "_eval(vlSymsp);\n");

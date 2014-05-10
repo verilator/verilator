@@ -1,4 +1,4 @@
-Revision history for Verilator
+overRevision history for Verilator
 
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
@@ -43,6 +43,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ****  Fix reporting struct members as reserved words, bug741. [Chris Randall]
 
 ****  Fix change detection error on unions, bug758. [Jie Xu]
+
+****  Fix -Wno-UNOPTFLAT change detection with 64-bits, bug762. [Clifford Wolf]
 
 ****  Fix Mac OS-X test issues. [Holger Waechtler]
 
