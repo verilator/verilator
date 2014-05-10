@@ -12,6 +12,7 @@
 
    reg signed [3:0] w4_s;
    reg signed [4:0] w5_s;
+   reg [2:0] 	    w3_u;
    reg [3:0] 	    w4_u;
    reg [4:0] 	    w5_u;
    real 	    r;
@@ -103,6 +104,12 @@
       `checkh(w4_u, 4'b0001);
       w4_u = ((5'b0 == (5'sb11111 >>> 3'd7)));
       `checkh(w4_u, 4'b0001);
+
+      // bug756
+      w5_s = -1;
+      w3_u = 7;
+      w4_u = |0 != (w5_s >>> w3_u);
+      `checkh(w4_u, 4'b0000);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");
