@@ -572,7 +572,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* AMS */
 
-<VA5,SA9,SAX>{
+<VA5,SAX>{
   /*     Generic unsupported warnings */
    "above"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "abs"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
