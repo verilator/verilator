@@ -42,6 +42,10 @@ module t (/*AUTOARG*/
    wire       one = 1'b1;
    wire [5:0] rep6 = {6{one}};
 
+   // verilator lint_off WIDTH
+   localparam [3:0] bug764_p11 = 1'bx;
+   // verilator lint_on WIDTH
+
    always @ (posedge clk) begin
       if (!_ranit) begin
 	 _ranit <= 1;
@@ -118,6 +122,17 @@ module t (/*AUTOARG*/
 	 if ((~& 4'b1111) != 4'b0000) $stop;
 	 if ((~& 4'b1101) != 4'b0001) $stop;
 	 //verilator lint_on WIDTH
+
+	 // bug764
+	 //verilator lint_off WIDTH
+	 // X does not sign extend
+	 if (bug764_p11 !== 4'b000x) $stop;
+	 if (~& bug764_p11 !== 1'b1) $stop;
+	 //verilator lint_on WIDTH
+	 // However IEEE says for constants in 2012 5.7.1 that smaller-sizes do extend
+	 if (4'bx !== 4'bxxxx) $stop;
+	 if (4'bz !== 4'bzzzz) $stop;
+	 if (4'b1 !== 4'b0001) $stop;
 
 	 $write("*-* All Finished *-*\n");
 	 $finish;

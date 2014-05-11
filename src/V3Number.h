@@ -61,10 +61,8 @@ public:
 private:
     char bitIs	(int bit) const {
 	if (bit>=m_width) {
-	    bit = m_width-1;
 	    // We never sign extend
-	    return ( "00zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
-			     | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] );
+	    return '0';
 	}
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
