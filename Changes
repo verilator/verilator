@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.861 devel
 
+****  Fix huge shifts to zero with -Wno-WIDTH, bug765. [Clifford Wolf]
+
 
 * Verilator 3.860 2014-05-11
 

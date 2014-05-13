@@ -1458,7 +1458,7 @@ static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) {
 static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WDataInP lwp, IData rd) {
     VL_ZERO_RESET_W(lbits, owp);
     // Slice size should never exceed the lhs width
-    int ssize = ((int)rd < lbits) ? ((int)rd) : lbits;
+    int ssize = (rd < (IData)lbits) ? rd : ((IData)lbits);
     for (int istart=0; istart<lbits; istart+=rd) {
 	int ostart=lbits-rd-istart;
         ostart = ostart > 0 ? ostart : 0;
@@ -1558,7 +1558,7 @@ static inline void _VL_SHIFTL_INPLACE_W(int obits,WDataOutP iowp,IData rd/*1 or 
 static inline WDataOutP VL_SHIFTL_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);
-    if ((int)rd >= obits) {
+    if (rd >= (IData)obits) {  // rd may be huge with MSB set
 	for (int i=0; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     } else if (bit_shift==0) {  // Aligned word shift (<<0,<<32,<<64 etc)
 	for (int i=0; i < word_shift; i++) owp[i] = 0;
@@ -1576,7 +1576,7 @@ static inline WDataOutP VL_SHIFTL_WWI(int obits,int,int,WDataOutP owp,WDataInP l
 static inline WDataOutP VL_SHIFTR_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);  // Maybe 0
     int bit_shift = VL_BITBIT_I(rd);
-    if ((int)rd >= obits) {
+    if (rd >= (IData)obits) {  // rd may be huge with MSB set
 	for (int i=0; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     } else if (bit_shift==0) {  // Aligned word shift (>>0,>>32,>>64 etc)
 	int copy_words = (VL_WORDS_I(obits)-word_shift);
@@ -1622,7 +1622,7 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits,int lbits,int,WDataOutP owp,WDa
     int bit_shift = VL_BITBIT_I(rd);
     int lmsw = VL_WORDS_I(obits)-1;
     IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
-    if ((int)rd >= obits) {  // Shifting past end, sign in all of lbits
+    if (rd >= (IData)obits) {  // Shifting past end, sign in all of lbits
 	for (int i=0; i <= lmsw; i++) owp[i] = sign;
 	owp[lmsw] &= VL_MASK_I(lbits);
     } else if (bit_shift==0) {  // Aligned word shift (>>0,>>32,>>64 etc)
@@ -1661,7 +1661,7 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits,int lbits,int,WDataOutP owp,WDa
 
 static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData rd) {
     int word = VL_BITWORD_I(rd);
-    if (VL_UNLIKELY((int)rd>lbits)) {
+    if (VL_UNLIKELY(rd>(IData)lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
 	// We return all 1's as that's more likely to find bugs (?) than 0's.
     } else {
