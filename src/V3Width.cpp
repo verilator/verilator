@@ -1849,6 +1849,32 @@ private:
 	nodep->paramsp()->iterateAndNext(*this);
 	m_cellRangep = NULL;
     }
+    virtual void visit(AstGatePin* nodep, AstNUser* vup) {
+	if (vup->c()->prelim()) {
+	    nodep->rangep()->iterateAndNext(*this,WidthVP(SELF,BOTH).p());
+	    nodep->exprp()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
+	    nodep->dtypeFrom(nodep->rangep());
+	    // Very much like like an pin
+	    AstNodeDType* conDTypep = nodep->exprp()->dtypep();
+	    int numInsts = nodep->rangep()->elementsConst();
+	    int pinwidth = numInsts;
+	    int conwidth = conDTypep->width();
+	    if (conwidth == 1 && pinwidth > 1) {  // Multiple connections
+		AstNodeDType* subDTypep = nodep->findLogicDType(1,1, conDTypep->numeric());
+		nodep->exprp()->iterateAndNext(*this,WidthVP(subDTypep,FINAL).p());
+		AstNode* newp = new AstReplicate(nodep->fileline(),
+						 nodep->exprp()->unlinkFrBack(),
+						 numInsts);
+		nodep->replaceWith(newp);
+	    }
+	    else {
+		// Eliminating so pass down all of vup
+		nodep->exprp()->iterateAndNext(*this,vup);
+		nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+	    }
+	    pushDeletep(nodep); nodep=NULL;
+	}
+    }
     virtual void visit(AstNodeFTask* nodep, AstNUser* vup) {
 	// Grab width from the output variable (if it's a function)
 	if (nodep->didWidth()) return;

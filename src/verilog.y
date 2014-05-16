@@ -55,6 +55,7 @@ public:
     AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
     AstVarType	m_varIO;	// Type for next signal declaration (input/output/etc)
     AstVar*	m_varAttrp;	// Current variable for attribute adding
+    AstRange*	m_gateRangep;	// Current range for gate declarations
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
     AstNodeDType* m_varDTypep;	// Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
@@ -70,6 +71,7 @@ public:
 	m_varDecl = AstVarType::UNKNOWN;
 	m_varIO = AstVarType::UNKNOWN;
 	m_varDTypep = NULL;
+	m_gateRangep = NULL;
 	m_memDTypep = NULL;
 	m_pinNum = -1;
 	m_instModule = "";
@@ -97,6 +99,11 @@ public:
 	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::DT_ERROR,  "", NULL,NULL);
 	nodep->addNext(new AstStop(fileline));
 	return nodep;
+    }
+    AstNode* createGatePin(AstNode* exprp) {
+	AstRange* rangep = m_gateRangep;
+	if (!rangep) return exprp;
+	else return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
     }
     void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) { endLabel(fl, nodep->prettyName(), endnamep); }
     void endLabel(FileLine* fl, string name, string* endnamep) {
@@ -175,6 +182,8 @@ const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
 #define VARDONEA(fl,name,array,attrs) GRAMMARP->createVariable((fl),(name),(array),(attrs))
 #define VARDONEP(portp,array,attrs) GRAMMARP->createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
 #define PINNUMINC() (GRAMMARP->m_pinNum++)
+
+#define GATERANGE(rangep) { GRAMMARP->m_gateRangep = rangep; }
 
 #define INSTPREP(modname,paramsp) { GRAMMARP->m_impliedDecl = true; GRAMMARP->m_instModule = modname; GRAMMARP->m_instParamp = paramsp; }
 
@@ -1921,7 +1930,7 @@ sigAttr<nodep>:
 	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); }
 	|	yVL_PUBLIC_FLAT_RD			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RD); v3Global.dpi(true); }
 	|	yVL_PUBLIC_FLAT_RW			{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true); }
-	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true); 
+	|	yVL_PUBLIC_FLAT_RW attr_event_control	{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true);
 							  $$ = $$->addNext(new AstAlwaysPublic($1,$2,NULL)); }
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
 	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
@@ -3255,62 +3264,66 @@ gateUnsupList<nodep>:
 	|	gateUnsupList ',' gateUnsup		{ $$ = $1->addNext($3); }
 	;
 
+gateRangeE<nodep>:
+		instRangeE 				{ $$ = $1; GATERANGE($1); }
+	;
+
 gateBuf<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateBufif0<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); DEL($2); }
 	;
 gateBufif1<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8,$6)); DEL($2); }
 	;
 gateNot<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateNotif0<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); DEL($2); }
 	;
 gateNotif1<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' expr ',' expr ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
 			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); DEL($2); }
 	;
 gateAnd<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateAndPinList ')'
 			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateNand<nodep>:
-	 	gateIdE instRangeE '(' variable_lvalue ',' gateAndPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateAndPinList ')'
 			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateOr<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateOrPinList ')'
 			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateNor<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' gateOrPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateOrPinList ')'
 			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateXor<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateXorPinList ')'
 			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
 	;
 gateXnor<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ',' gateXorPinList ')'
+		gateIdE gateRangeE '(' variable_lvalue ',' gateXorPinList ')'
 			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gatePullup<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); DEL($2); }
+		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); DEL($2); }
 	;
 gatePulldown<nodep>:
-		gateIdE instRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); DEL($2); }
+		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); DEL($2); }
 	;
 gateUnsup<nodep>:
-		gateIdE instRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); DEL($2); }
+		gateIdE gateRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); DEL($2); }
 	;
 
 gateIdE:
@@ -3319,20 +3332,24 @@ gateIdE:
 	;
 
 gateAndPinList<nodep>:
-		expr 					{ $$ = $1; }
-	|	gateAndPinList ',' expr			{ $$ = new AstAnd($2,$1,$3); }
+		gatePinExpr 				{ $$ = $1; }
+	|	gateAndPinList ',' gatePinExpr		{ $$ = new AstAnd($2,$1,$3); }
 	;
 gateOrPinList<nodep>:
-		expr 					{ $$ = $1; }
-	|	gateOrPinList ',' expr			{ $$ = new AstOr($2,$1,$3); }
+		gatePinExpr 				{ $$ = $1; }
+	|	gateOrPinList ',' gatePinExpr		{ $$ = new AstOr($2,$1,$3); }
 	;
 gateXorPinList<nodep>:
-		expr 					{ $$ = $1; }
-	|	gateXorPinList ',' expr			{ $$ = new AstXor($2,$1,$3); }
+		gatePinExpr 				{ $$ = $1; }
+	|	gateXorPinList ',' gatePinExpr		{ $$ = new AstXor($2,$1,$3); }
 	;
 gateUnsupPinList<nodep>:
-		expr 					{ $$ = $1; }
-	|	gateUnsupPinList ',' expr		{ $$ = $1->addNext($3); }
+		gatePinExpr 				{ $$ = $1; }
+	|	gateUnsupPinList ',' gatePinExpr	{ $$ = $1->addNext($3); }
+	;
+
+gatePinExpr<nodep>:
+		expr					{ $$ = GRAMMARP ->createGatePin($1); }
 	;
 
 strengthSpecE:			// IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty

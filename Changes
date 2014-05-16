@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix huge shifts to zero with -Wno-WIDTH, bug765. [Clifford Wolf]
 
+****  Fix gate primitives with arrays and non-arrayed pins.
+
 ****  Fix ENDLABEL warnings on escaped identifiers.
 
 

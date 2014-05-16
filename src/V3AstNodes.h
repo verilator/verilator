@@ -163,6 +163,19 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
+struct AstGatePin : public AstNodeMath {
+    // Possibly expand a gate primitive input pin value to match the range of the gate primitive
+    AstGatePin(FileLine* fl, AstNode* lhsp, AstRange* rangep) : AstNodeMath(fl) {
+	setOp1p(lhsp); setOp2p(rangep);
+    }
+    ASTNODE_NODE_FUNCS(GatePin, GATEPIN)
+    virtual string emitVerilog() { return "%l"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { return true; }
+    AstNode* exprp() const { return op1p(); }			// op1 = Pin expression
+    AstRange* rangep() const { return op2p()->castRange(); }	// op2 = Range of pin
+};
+
 //######################################################################
 //==== Data Types
 
