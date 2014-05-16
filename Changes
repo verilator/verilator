@@ -9,7 +9,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support SV 2012 package import before port list.
 
-****  Fix huge shifts to zero with -Wno-WIDTH, bug765. [Clifford Wolf]
+****  Fix huge shifts to zero with -Wno-WIDTH, bug765, bug766. [Clifford Wolf]
 
 ****  Fix gate primitives with arrays and non-arrayed pins.
 

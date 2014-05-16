@@ -60,13 +60,14 @@ public:
     }
 private:
     char bitIs	(int bit) const {
-	if (bit>=m_width) {
+	if (bit>=m_width || bit<0) {
 	    // We never sign extend
 	    return '0';
 	}
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
     char bitIsExtend (int bit) const {
+	if (bit<0) return '0';
 	if (bit>=m_width) {
 	    bit = m_width-1;
 	    // We do sign extend
@@ -76,22 +77,28 @@ private:
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
     bool bitIs0	(int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return !bitIsXZ(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31)))==0 && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     bool bitIs1	(int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return false;
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     bool bitIs1Extend (int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return bitIs1Extend(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     bool bitIsX (int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return bitIsZ(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     bool bitIsXZ(int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return bitIsXZ(m_width-1);
 	return ( (m_valueX[bit/32] & (1UL<<(bit&31))) && 1);
     }
     bool bitIsZ (int bit) const {
+	if (bit<0) return false;
 	if (bit>=m_width) return bitIsZ(m_width-1);
 	return ( (~m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }
     uint32_t bitsValue(int lsb, int nbits) const {

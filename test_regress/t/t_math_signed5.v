@@ -15,6 +15,8 @@
    reg [2:0] 	    w3_u;
    reg [3:0] 	    w4_u;
    reg [4:0] 	    w5_u;
+   reg [15:0] 	    w16a_u;
+   reg [15:0] 	    w16_u;
    real 	    r;
 
    reg signed [4:0] bug754_a;
@@ -115,6 +117,11 @@
       w3_u = 2;
       w4_u = (w3_u >> 2'b11) >> 1;
       `checkh(w4_u, 4'b0000);
+
+      // bug766
+      w16a_u = 16'h1234;
+      w16_u = (w16a_u >> 16) >>> 32'h7ffffff1;
+      `checkh(w16_u, 16'h0000);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");

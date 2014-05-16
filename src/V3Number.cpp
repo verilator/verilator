@@ -1125,8 +1125,10 @@ V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     uint32_t rhsval = rhs.toUInt();
-    for (int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIs(bit + rhsval));
+    if (rhsval < (uint32_t)lhs.width()) {
+	for (int bit=0; bit<this->width(); bit++) {
+	    setBit(bit,lhs.bitIs(bit + rhsval));
+	}
     }
     return *this;
 }
@@ -1138,8 +1140,14 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     uint32_t rhsval = rhs.toUInt();
-    for (int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIsExtend(bit + rhsval));
+    if (rhsval < (uint32_t)lhs.width()) {
+	for (int bit=0; bit<this->width(); bit++) {
+	    setBit(bit,lhs.bitIsExtend(bit + rhsval));
+	}
+    } else {
+	for (int bit=0; bit<this->width(); bit++) {
+	    setBit(bit,lhs.bitIsExtend(lhs.width()-1));
+	}
     }
     return *this;
 }
