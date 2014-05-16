@@ -1088,7 +1088,8 @@ supports which the older version does not support.
 
 =item -Wno-I<message>
 
-Disable the specified warning message.
+Disable the specified warning message. This will override any lint_on
+directives in the source, i.e. the warning will still not be printed.
 
 =item -Wno-lint
 
@@ -1917,6 +1918,9 @@ purposes.
 Disables the specified lint warning, in the specified filename (or wildcard
 with '*' or '?', or all files if omitted) and range of line numbers (or all
 lines if omitted).
+
+Using '*' will override any lint_on directives in the source, i.e. the
+warning will still not be printed.
 
 If the -msg is omitted, all lint warnings are disabled.  This will override
 all later lint warning enables for the specified region.
