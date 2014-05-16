@@ -66,10 +66,12 @@ private:
 	}
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
-    char bitIsExtend (int bit) const {
+    char bitIsExtend (int bit, int lbits) const {
+	// lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
 	if (bit<0) return '0';
-	if (bit>=m_width) {
-	    bit = m_width-1;
+	UASSERT(lbits<=m_width, "Extend of wrong size");
+	if (bit>=lbits) {
+	    bit = lbits ? lbits-1 : 0;
 	    // We do sign extend
 	    return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			     | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] );
@@ -205,7 +207,7 @@ public:
     V3Number& opBitsNonZ(const V3Number& lhs); // Z->0, 0/1/X->1
     //
     V3Number& opAssign	(const V3Number& lhs);
-    V3Number& opExtendS	(const V3Number& lhs); // Sign extension
+    V3Number& opExtendS	(const V3Number& lhs, uint32_t lbits); // Sign extension
     V3Number& opRedOr 	(const V3Number& lhs);
     V3Number& opRedAnd	(const V3Number& lhs);
     V3Number& opRedXor	(const V3Number& lhs);
@@ -257,7 +259,7 @@ public:
     V3Number& opRotR	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opRotL	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opShiftR	(const V3Number& lhs, const V3Number& rhs);
-    V3Number& opShiftRS	(const V3Number& lhs, const V3Number& rhs); // Arithmetic w/carry
+    V3Number& opShiftRS	(const V3Number& lhs, const V3Number& rhs, uint32_t lbits); // Arithmetic w/carry
     V3Number& opShiftL	(const V3Number& lhs, const V3Number& rhs);
     // Comparisons
     V3Number& opEq	(const V3Number& lhs, const V3Number& rhs);

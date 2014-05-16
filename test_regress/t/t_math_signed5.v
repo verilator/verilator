@@ -123,6 +123,16 @@
       w16_u = (w16a_u >> 16) >>> 32'h7ffffff1;
       `checkh(w16_u, 16'h0000);
 
+      // bug768
+      w4_s = 4'sd4;
+      w4_u = $signed(5'd1 > w4_s-w4_s);
+      `checkh(w4_u, 4'b1111);
+`ifdef VERILATOR
+      w4_s = $c4("4");  // Eval at runtime
+`endif
+      w4_u = $signed(5'd1 > w4_s-w4_s);
+      `checkh(w4_u, 4'b1111);
+
       if (fail) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

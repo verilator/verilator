@@ -3194,9 +3194,11 @@ struct AstExtendS : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
     AstExtendS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     AstExtendS(FileLine* fl, AstNode* lhsp, int width) : AstNodeUniop(fl, lhsp) {
+	// Important that widthMin be correct, as opExtend requires it after V3Expand
 	dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(ExtendS, EXTENDS)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opExtendS(lhs); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
+	out.opExtendS(lhs, lhsp()->widthMin()); }
     virtual string emitVerilog() { return "%l"; }
     virtual string emitC() { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
@@ -3876,10 +3878,12 @@ struct AstShiftRS : public AstNodeBiop {
     // Output data type's width determines which bit is used for sign extension
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
+	// Important that widthMin be correct, as opExtend requires it after V3Expand
 	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::SIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftRS, SHIFTRS)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs,rhs); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+	out.opShiftRS(lhs,rhs,lhsp()->widthMin()); }
     virtual string emitVerilog() { return "%k(%l %f>>> %r)"; }
     virtual string emitC() { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }

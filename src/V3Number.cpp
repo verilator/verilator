@@ -1133,7 +1133,7 @@ V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 
-V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
+V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs, uint32_t lbits) {
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
     // We presume it is signed; as that's V3Width's job to convert to opShiftR
@@ -1142,11 +1142,11 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs) {
     uint32_t rhsval = rhs.toUInt();
     if (rhsval < (uint32_t)lhs.width()) {
 	for (int bit=0; bit<this->width(); bit++) {
-	    setBit(bit,lhs.bitIsExtend(bit + rhsval));
+	    setBit(bit,lhs.bitIsExtend(bit + rhsval, lbits));
 	}
     } else {
 	for (int bit=0; bit<this->width(); bit++) {
-	    setBit(bit,lhs.bitIsExtend(lhs.width()-1));
+	    setBit(bit,lhs.bitIs(lbits-1));
 	}
     }
     return *this;
@@ -1481,11 +1481,11 @@ V3Number& V3Number::opAssign (const V3Number& lhs) {
     return *this;
 }
 
-V3Number& V3Number::opExtendS (const V3Number& lhs) {
+V3Number& V3Number::opExtendS (const V3Number& lhs, uint32_t lbits) {
     // Note may be a width change during the sign extension
     setZero();
     for(int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIsExtend(bit));
+	setBit(bit,lhs.bitIsExtend(bit, lbits));
     }
     return *this;
 }
