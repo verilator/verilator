@@ -100,7 +100,8 @@ public:
     }
     void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) { endLabel(fl, nodep->prettyName(), endnamep); }
     void endLabel(FileLine* fl, string name, string* endnamep) {
-	if (fl && endnamep && *endnamep != "" && name != *endnamep) {
+	if (fl && endnamep && *endnamep != "" && name != *endnamep
+	    && name != AstNode::prettyName(*endnamep)) {
 	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
 	}
     }

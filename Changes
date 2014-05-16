@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix huge shifts to zero with -Wno-WIDTH, bug765. [Clifford Wolf]
 
+****  Fix ENDLABEL warnings on escaped identifiers.
+
 
 * Verilator 3.860 2014-05-11
 

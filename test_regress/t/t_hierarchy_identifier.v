@@ -27,10 +27,10 @@ module t (/*AUTOARG*/
 
    // finish report
    always @ (posedge clk)
-   if (cnt==SIZE) begin : if_cnt_finish
+   if (cnt==SIZE) begin : \0escaped___name
       $write("*-* All Finished *-*\n");
       $finish;
-   end : if_cnt_finish
+   end : \0escaped___name
 
    generate
    for (i=0; i<SIZE; i=i+1) begin : generate_for
