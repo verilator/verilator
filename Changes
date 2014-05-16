@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.861 devel
 
+***   Support SV 2012 package import before port list.
+
 ****  Fix huge shifts to zero with -Wno-WIDTH, bug765. [Clifford Wolf]
 
 

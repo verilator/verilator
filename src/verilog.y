@@ -727,6 +727,11 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	|	';'					{ $$ = NULL; }
 	;
 
+package_import_declarationList<nodep>:
+		package_import_declaration		{ $$ = $1; }
+	|	package_import_declarationList package_import_declaration { $$ = $1->addNextNull($2); }
+	;
+
 package_import_declaration<nodep>:	// ==IEEE: package_import_declaration
 		yIMPORT package_import_itemList ';'	{ $$ = $2; }
 	;
@@ -753,7 +758,7 @@ package_import_itemObj<strp>:	// IEEE: part of package_import_item
 module_declaration:		// ==IEEE: module_declaration
 	//			// timeunits_declaration instead in module_item
 	//			// IEEE: module_nonansi_header + module_ansi_header
-		modFront parameter_port_listE portsStarE ';'
+		modFront importsAndParametersE portsStarE ';'
 			module_itemListE yENDMODULE endLabelE
 			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
@@ -781,6 +786,12 @@ modFront<modulep>:
 			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
+	;
+
+importsAndParametersE<nodep>:	// IEEE: common part of module_declaration, interface_declaration, program_declaration
+	//			// { package_import_declaration } [ parameter_port_list ]
+		parameter_port_listE			{ $$ = $1; }
+	|	package_import_declarationList parameter_port_listE	{ $$ = $1->addNextNull($2); }
 	;
 
 udpFront<modulep>:

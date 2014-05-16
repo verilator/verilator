@@ -14,13 +14,13 @@ package pkg1;
    parameter PARAM1 = 8;
 endpackage // pkg1
 
-module t (/*AUTOARG*/
+module t
+  import pkg1::*;   // Test SV 2012 import format
+  (/*AUTOARG*/
    // Inputs
    clk
    );
    input clk;
-
-   import pkg1::*;
 
    reg [PARAM1:0] bus1;
 
