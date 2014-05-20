@@ -3384,7 +3384,7 @@ so your simulator shouldn't have to be -- and Verilator is closer to the
 synthesis interpretation, so this is a good thing for getting working
 silicon.
 
-=item Will Verilator output remain under my own copyright?
+=item Will Verilator output remain under my own license?
 
 Yes, it's just like using GCC on your programs; this is why Verilator uses
 the "GNU *Lesser* Public License Version 3" instead of the more typical
