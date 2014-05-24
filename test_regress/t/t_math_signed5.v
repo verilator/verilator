@@ -5,6 +5,11 @@
 
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); fail='1; end while(0)
 `define checkf(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); fail='1; end while(0)
+`ifdef VERILATOR
+ `define c(v,vs) ($c(vs))  // Don't constify a value
+`else
+ `define c(v,vs) (v)
+`endif
 
   module t (/*AUTOARG*/);
 
@@ -127,9 +132,7 @@
       w4_s = 4'sd4;
       w4_u = $signed(5'd1 > w4_s-w4_s);
       `checkh(w4_u, 4'b1111);
-`ifdef VERILATOR
-      w4_s = $c4("4");  // Eval at runtime
-`endif
+      w4_s = `c(4,"4");  // Eval at runtime
       w4_u = $signed(5'd1 > w4_s-w4_s);
       `checkh(w4_u, 4'b1111);
 
@@ -138,6 +141,11 @@
 `ifndef VERILATOR       // In v4 can't check value as not 4-state
       `checkh(w4_s, 4'bxxxx);
 `endif
+
+      // bug773
+      w5_u = `c(31, "31");
+      w5_s = w5_u >> ((w5_u ? 1 : 2) << w5_u);
+      `checkh(w5_s, 5'b0);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");

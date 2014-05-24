@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix shift corner issues, bug765, bug766, bug768, bug772. [Clifford Wolf]
 
+****  Fix C compiler interpreting signing, bug773. [Clifford Wolf]
+
 ****  Fix gate primitives with arrays and non-arrayed pins.
 
 ****  Fix ENDLABEL warnings on escaped identifiers.

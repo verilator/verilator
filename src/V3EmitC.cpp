@@ -622,8 +622,9 @@ public:
 	    // Only 32 bits - llx + long long here just to appease CPP format warning
 	    if (num<10) puts(cvtToStr(num));
 	    else ofp()->printf("0x%" VL_PRI64 "x", (vluint64_t)num);
-	    //Unneeded-Causes %lx format warnings:
-	    //  if (!nodep->num().isSigned() && (num & (1UL<<31))) puts("U");
+	    // If signed, we'll do our own functions
+	    // But must be here, or <= comparisons etc may end up signed
+	    puts("U");
 	}
     }
     void emitSetVarConstant(const string& assignString, AstConst* constp) {
