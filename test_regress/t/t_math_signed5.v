@@ -133,6 +133,12 @@
       w4_u = $signed(5'd1 > w4_s-w4_s);
       `checkh(w4_u, 4'b1111);
 
+      // bug772
+      w4_s = w4_u << 1 <<< 0/0;
+`ifndef VERILATOR       // In v4 can't check value as not 4-state
+      `checkh(w4_s, 4'bxxxx);
+`endif
+
       if (fail) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

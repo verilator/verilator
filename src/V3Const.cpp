@@ -274,6 +274,8 @@ private:
 	// We can only get rid of a<<b>>c or a<<b<<c, with constant b & c
 	// because bits may be masked in that process, or (b+c) may exceed the word width.
 	if (!(nodep->rhsp()->castConst() && lhsp->rhsp()->castConst())) return false;
+	if (nodep->rhsp()->castConst()->num().isFourState()
+	    || lhsp->rhsp()->castConst()->num().isFourState()) return false;
 	if (nodep->width()!=lhsp->width()) return false;
 	if (nodep->width()!=lhsp->lhsp()->width()) return false;
 	return true;
