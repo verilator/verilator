@@ -2070,7 +2070,7 @@ private:
     TREEOP ("AstAnd {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
     TREEOP ("AstOr  {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
     TREEOP ("AstXor {operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
-    TREEOP ("AstXnor{operandShiftSame(nodep)}",		"replaceShiftSame(nodep)");
+    //      "AstXnor{operandShiftSame(nodep)}",		// Cannot ShiftSame as the shifted-in zeros might create a one
     // Note can't simplify a extend{extends}, extends{extend}, as the sign bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",		"replaceExtend(nodep, nodep->lhsp()->castExtend()->lhsp())");
     TREEOPV("AstExtendS{$lhsp.castExtendS}",		"replaceExtend(nodep, nodep->lhsp()->castExtendS()->lhsp())");

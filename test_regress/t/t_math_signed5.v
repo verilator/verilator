@@ -20,6 +20,7 @@
    reg [2:0] 	    w3_u;
    reg [3:0] 	    w4_u;
    reg [4:0] 	    w5_u;
+   reg [5:0] 	    w6_u;
    reg [15:0] 	    w16a_u;
    reg [15:0] 	    w16_u;
    real 	    r;
@@ -146,6 +147,11 @@
       w5_u = `c(31, "31");
       w5_s = w5_u >> ((w5_u ? 1 : 2) << w5_u);
       `checkh(w5_s, 5'b0);
+
+      //bug776
+      w4_u = `c(4, 1);
+      w4_u = (w4_u >> w4_u) ^~ (w4_u >> w4_u);
+      `checkh(w4_u, 4'b1111);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");

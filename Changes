@@ -9,7 +9,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support SV 2012 package import before port list.
 
-****  Fix shift corner issues, bug765, bug766, bug768, bug772. [Clifford Wolf]
+****  Fix shift corner-cases, bug765, bug766, bug768, bug772, bug776. [Clifford Wolf]
 
 ****  Fix C compiler interpreting signing, bug773. [Clifford Wolf]
 
