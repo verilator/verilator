@@ -144,9 +144,10 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
-					 || m_e==IMPURE || m_e==MODDUP || m_e==SYMRSVDWORD); }
+					 || m_e==IMPURE || m_e==MODDUP); }
     // Warnings to mention manual
-    bool mentionManual() const { return ( m_e==EC_FATALSRC || pretendError() ); }
+    bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
+					  || pretendError() ); }
 
     // Warnings that are lint only
     bool lintError() const { return ( m_e==ALWCOMBORDER
