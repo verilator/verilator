@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Change SYMRSVDWORD to print as warning rather than error.
 
+****  Fix seg-fault with variable of parameterized interface, bug692. [Jie Xu]
+
 ****  Fix shift corner-cases, bug765, bug766, bug768, bug772, bug776. [Clifford Wolf]
 
 ****  Fix C compiler interpreting signing, bug773. [Clifford Wolf]

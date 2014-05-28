@@ -1451,6 +1451,7 @@ private:
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Pin: Link to submodule's port
 	checkNoDot(nodep);
+	nodep->iterateChildren(*this);
 	if (!nodep->modVarp()) {
 	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
@@ -1475,7 +1476,6 @@ private:
 		    refp->user5p(nodep);
 		}
 	    }
-	    nodep->iterateChildren(*this);
 	}
 	// Early return() above when deleted
     }
