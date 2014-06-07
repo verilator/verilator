@@ -83,17 +83,19 @@ private:
     void genChangeDet(AstVarScope* vscp) {
 	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
-	AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();
+	AstUnpackArrayDType* uarrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();
+	AstPackArrayDType* parrayp = varp->dtypeSkipRefp()->castPackArrayDType();
 	AstNodeClassDType *classp = varp->dtypeSkipRefp()->castNodeClassDType();
-	bool isArray = arrayp;
+	bool isUnpackArray = uarrayp;
+	bool isPackArray = parrayp;
 	bool isClass = classp && classp->packedUnsup();
-	int elements = isArray ? arrayp->elementsConst() : 1;
-	if (isArray && (elements > DETECTARRAY_MAX_INDEXES)) {
+	int elements = isUnpackArray ? uarrayp->elementsConst() : 1;
+	if (isUnpackArray && (elements > DETECTARRAY_MAX_INDEXES)) {
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
 			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName()<<endl
 			 <<vscp->warnMore()
 			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(elements));
-	} else if (!isArray && !isClass
+	} else if (!isUnpackArray && !isClass && !isPackArray
 		   && !varp->dtypeSkipRefp()->castBasicDType()) {
 	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
 	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
@@ -110,17 +112,17 @@ private:
 	    for (int index=0; index<elements; ++index) {
 		AstChangeDet* changep
 		    = new AstChangeDet (vscp->fileline(),
-					aselIfNeeded(isArray, index,
+					aselIfNeeded(isUnpackArray, index,
 						     new AstVarRef(vscp->fileline(), vscp, false)),
-					aselIfNeeded(isArray, index,
+					aselIfNeeded(isUnpackArray, index,
 						     new AstVarRef(vscp->fileline(), newvscp, false)),
 					false);
 		m_chgFuncp->addStmtsp(changep);
 		AstAssign* initp
 		    = new AstAssign (vscp->fileline(),
-				     aselIfNeeded(isArray, index,
+				     aselIfNeeded(isUnpackArray, index,
 						  new AstVarRef(vscp->fileline(), newvscp, true)),
-				     aselIfNeeded(isArray, index,
+				     aselIfNeeded(isUnpackArray, index,
 						  new AstVarRef(vscp->fileline(), vscp, false)));
 		m_chgFuncp->addFinalsp(initp);
 	    }
