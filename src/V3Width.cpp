@@ -163,6 +163,9 @@ private:
     bool	m_doGenerate;	// Do errors later inside generate statement
     int		m_dtTables;	// Number of created data type tables
 
+    // TYPES
+    typedef map<int,AstPatMember*> PatVecMap;
+
     // ENUMS
     enum ExtendRule {
 	EXTEND_EXP,		// Extend if expect sign and node signed, e.g. node=y in ADD(x,y), "x + y"
@@ -1398,34 +1401,16 @@ private:
 		else nodep->v3error("Assignment pattern with no members");
 		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
 	    }
-	    else if (AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType()) {
-		typedef map<int,AstPatMember*> PatMap;
-		PatMap patmap;
-		{
-		    int element = arrayp->declRange().left();
-		    for (AstPatMember* patp = nodep->itemsp()->castPatMember();
-			 patp; patp = patp->nextp()->castPatMember()) {
-			if (patp->keyp()) {
-			    if (AstConst* constp = patp->keyp()->castConst()) {
-				element = constp->toSInt();
-			    } else {
-				patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
-			    }
-			}
-			if (patmap.find(element) != patmap.end()) {
-			    patp->v3error("Assignment pattern key used multiple times: "<<element);
-			} else {
-			    patmap.insert(make_pair(element, patp));
-			}
-			element += arrayp->declRange().leftToRightInc();
-		    }
-		}
-		UINFO(9,"ent "<<arrayp->declRange().hi()<<" to "<<arrayp->declRange().lo()<<endl);
+	    else if (vdtypep->castNodeArrayDType()) {
+		AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType();
+		VNumRange range = arrayp->declRange();
+		PatVecMap patmap = patVectorMap(nodep, range);
+		UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
 		AstNode* newp = NULL;
-		for (int ent=arrayp->declRange().hi(); ent>=arrayp->declRange().lo(); --ent) {
+		for (int ent=range.hi(); ent>=range.lo(); --ent) {
 		    AstPatMember* newpatp = NULL;
 		    AstPatMember* patp = NULL;
-		    PatMap::iterator it=patmap.find(ent);
+		    PatVecMap::iterator it=patmap.find(ent);
 		    if (it == patmap.end()) {
 			if (defaultp) {
 			    newpatp = defaultp->cloneTree(false);
@@ -1442,7 +1427,7 @@ private:
 		    // Determine initial values
 		    vdtypep = arrayp->subDTypep();
 		    // Don't want the RHS an array
-		    patp->dtypep(arrayp->subDTypep());
+		    patp->dtypep(vdtypep);
 		    // Determine values - might be another InitArray
 		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
 		    // Convert to InitArray or constify immediately
@@ -1463,6 +1448,62 @@ private:
 			    newp->castInitArray()->initsp()->addHereThisAsNext(valuep);
 			}
 		    } else {  // Packed. Convert to concat for now.
+			if (!newp) newp = valuep;
+			else {
+			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+			    newp = concatp;
+			    newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     nodep->dtypep()->numeric());
+			}
+		    }
+		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
+		}
+		if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
+		if (newp) nodep->replaceWith(newp);
+		else nodep->v3error("Assignment pattern with no members");
+		//if (debug()>=9) newp->dumpTree("-apat-out: ");
+		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+	    }
+	    else if (vdtypep->castBasicDType()
+		     && vdtypep->castBasicDType()->isRanged()) {
+		AstBasicDType* bdtypep = vdtypep->castBasicDType();
+		VNumRange range = bdtypep->declRange();
+		PatVecMap patmap = patVectorMap(nodep, range);
+		UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
+		AstNode* newp = NULL;
+		for (int ent=range.hi(); ent>=range.lo(); --ent) {
+		    AstPatMember* newpatp = NULL;
+		    AstPatMember* patp = NULL;
+		    PatVecMap::iterator it=patmap.find(ent);
+		    if (it == patmap.end()) {
+			if (defaultp) {
+			    newpatp = defaultp->cloneTree(false);
+			    patp = newpatp;
+			}
+			else {
+			    nodep->v3error("Assignment pattern missed initializing elements: "<<ent);
+			}
+		    } else {
+			patp = it->second;
+			patmap.erase(it);
+		    }
+		    // Determine initial values
+		    vdtypep = nodep->findLogicBoolDType();
+		    // Don't want the RHS an array
+		    patp->dtypep(vdtypep);
+		    // Determine values - might be another InitArray
+		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+		    // Convert to InitArray or constify immediately
+		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
+		    if (valuep->castConst()) {
+			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+			    pushDeletep(valuep); valuep=NULL;
+			    valuep = newp;
+			}
+		    }
+		    {  // Packed. Convert to concat for now.
 			if (!newp) newp = valuep;
 			else {
 			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
@@ -2994,6 +3035,29 @@ private:
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	return varp;
     }
+
+    PatVecMap patVectorMap(AstPattern* nodep, const VNumRange& range) {
+	PatVecMap patmap;
+	int element = range.left();
+	for (AstPatMember* patp = nodep->itemsp()->castPatMember();
+	     patp; patp = patp->nextp()->castPatMember()) {
+	    if (patp->keyp()) {
+		if (AstConst* constp = patp->keyp()->castConst()) {
+		    element = constp->toSInt();
+		} else {
+		    patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
+		}
+	    }
+	    if (patmap.find(element) != patmap.end()) {
+		patp->v3error("Assignment pattern key used multiple times: "<<element);
+	    } else {
+		patmap.insert(make_pair(element, patp));
+	    }
+	    element += range.leftToRightInc();
+	}
+	return patmap;
+    }
+    
 
     //----------------------------------------------------------------------
     // METHODS - special type detection
