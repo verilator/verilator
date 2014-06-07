@@ -59,6 +59,7 @@ class V3Options {
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
     bool	m_makePhony;	// main switch: -MP
+    bool	m_preprocNoLine;// main switch: -P
     bool	m_assert;	// main switch: --assert
     bool	m_autoflush;	// main switch: --autoflush
     bool	m_bboxSys;	// main switch: --bbox-sys
@@ -192,6 +193,7 @@ class V3Options {
     bool preprocOnly() const { return m_preprocOnly; }
     bool makeDepend() const { return m_makeDepend; }
     bool makePhony() const { return m_makePhony; }
+    bool preprocNoLine() const { return m_preprocNoLine; }
     bool underlineZero() const { return m_underlineZero; }
     string bin() const { return m_bin; }
     string flags() const { return m_flags; }

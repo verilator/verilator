@@ -303,6 +303,7 @@ descriptions in the next sections for more information.
     --output-split <bytes>      Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .cpp functions
     --output-split-ctrace <statements>   Split tracing functions
+     -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top level ports
     --pins-sc-uint              Specify types for top level ports
     --pins-sc-biguint           Specify types for top level ports
@@ -829,6 +830,11 @@ function.
 
 Enables splitting trace functions in the output .cpp/.sp files into
 multiple functions.  Defaults to same setting as --output-split-cfuncs.
+
+=item -P
+
+With -E, disable generation of `line markers and blank lines, similar to
+GCC -P flag.
 
 =item --pins64
 

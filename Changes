@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Using command line -Wno-{WARNING} now overrides file-local lint_on.
 
+***   Add -P to suppress `line and blanks with preprocessing, bug781. [Derek Lockhart]
+
 ***   Support SV 2012 package import before port list.
 
 ****  Change SYMRSVDWORD to print as warning rather than error.

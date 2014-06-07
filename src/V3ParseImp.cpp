@@ -123,6 +123,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	string vppfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_"+modname+".vpp";
 	ofstream* ofp = NULL;
 	ostream* osp;
+	bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
 	if (v3Global.opt.preprocOnly()) {
 	    osp = &cout;
 	} else {
@@ -133,6 +134,13 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	    return;
 	} else {
 	    for (deque<string>::iterator it = m_ppBuffers.begin(); it!=m_ppBuffers.end(); ++it) {
+		if (noblanks) {
+		    bool blank = true;
+		    for (string::iterator its = it->begin(); its != it->end(); ++its) {
+			if (!isspace(*its) && *its!='\n') { blank=false; break; }
+		    }
+		    if (blank) continue;
+		}
 		*osp << *it;
 	    }
 	    if (ofp) {

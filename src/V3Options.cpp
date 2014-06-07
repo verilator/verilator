@@ -712,6 +712,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-E") )			{ m_preprocOnly = true; }
 	    else if ( onoff   (sw, "-MMD", flag/*ref*/) )	{ m_makeDepend = flag; }
 	    else if ( onoff   (sw, "-MP", flag/*ref*/) )	{ m_makePhony = flag; }
+	    else if ( !strcmp (sw, "-P") )			{ m_preprocNoLine = true; }
 	    else if ( onoff   (sw, "-assert", flag/*ref*/) )	{ m_assert = flag; }
 	    else if ( onoff   (sw, "-autoflush", flag/*ref*/) )	{ m_autoflush = flag; }
 	    else if ( onoff   (sw, "-bbox-sys", flag/*ref*/) )	{ m_bboxSys = flag; }
@@ -1212,6 +1213,7 @@ V3Options::V3Options() {
     m_pinsBv = 65;
     m_profileCFuncs = false;
     m_preprocOnly = false;
+    m_preprocNoLine = false;
     m_psl = false;
     m_public = false;
     m_savable = false;
