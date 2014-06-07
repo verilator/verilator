@@ -67,6 +67,9 @@ module t;
       if (tsu.pack2.four.quad1.b2 != 1'b0) $stop;
       if (tsu.pack2.four.quad1.b3 != 1'b1) $stop;
       //
+      tsu = 1'b0 ? '0 : '{pvec: 6'b101011};
+      if (tsu!=6'b101011) $stop;
+      //
       arr[0] = 6'b101010;
       arr[1] = 6'b010101;
       if (arr[0].four !== 4'b0101) $stop;

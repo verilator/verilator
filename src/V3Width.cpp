@@ -314,8 +314,9 @@ private:
 	    // Just once, do the conditional, expect one bit out.
 	    iterateCheckBool(nodep,"Conditional Test",nodep->condp(),BOTH);
 	    // Determine sub expression widths only relying on what's in the subops
-	    nodep->expr1p()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
-	    nodep->expr2p()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
+	    //  CONTEXT determined, but need data type for pattern assignments
+	    nodep->expr1p()->iterateAndNext(*this,WidthVP(vup->c()->dtypeNullp(),PRELIM).p());
+	    nodep->expr2p()->iterateAndNext(*this,WidthVP(vup->c()->dtypeNullp(),PRELIM).p());
 	    // Calculate width of this expression.
 	    // First call (prelim()) vup->c()->width() is probably zero, so we'll return
 	    //  the size of this subexpression only.
@@ -1369,31 +1370,35 @@ private:
 			    patp = newpatp;
 			}
 			else {
-			    patp->v3error("Assignment pattern missed initializing elements: "<<memp->prettyTypeName());
+			    if (!classp->castUnionDType()) {
+				patp->v3error("Assignment pattern missed initializing elements: "<<memp->prettyTypeName());
+			    }
 			}
 		    } else {
 			patp = it->second;
 		    }
-		    // Determine initial values
-		    vdtypep = memp;
-		    patp->dtypep(memp);
-		    patp->accept(*this,WidthVP(memp,BOTH).p());
-		    // Convert to concat for now
-		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
-		    if (valuep->castConst()) {
-			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
-			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-			    pushDeletep(valuep); valuep=NULL;
-			    valuep = newp;
+		    if (patp) {
+			// Determine initial values
+			vdtypep = memp;
+			patp->dtypep(memp);
+			patp->accept(*this,WidthVP(memp,BOTH).p());
+			// Convert to concat for now
+			AstNode* valuep = patp->lhssp()->unlinkFrBack();
+			if (valuep->castConst()) {
+			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+				pushDeletep(valuep); valuep=NULL;
+				valuep = newp;
+			    }
 			}
-		    }
-		    if (!newp) newp = valuep;
-		    else {
-			AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-			newp = concatp;
-			newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
-						 concatp->lhsp()->width()+concatp->rhsp()->width(),
-						 nodep->dtypep()->numeric());
+			if (!newp) newp = valuep;
+			else {
+			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+			    newp = concatp;
+			    newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     concatp->lhsp()->width()+concatp->rhsp()->width(),
+						     nodep->dtypep()->numeric());
+			}
 		    }
 		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
 		}
@@ -1424,37 +1429,39 @@ private:
 			patmap.erase(it);
 		    }
 
-		    // Determine initial values
-		    vdtypep = arrayp->subDTypep();
-		    // Don't want the RHS an array
-		    patp->dtypep(vdtypep);
+		    if (patp) {
+			// Determine initial values
+			vdtypep = arrayp->subDTypep();
+			// Don't want the RHS an array
+			patp->dtypep(vdtypep);
 		    // Determine values - might be another InitArray
-		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
-		    // Convert to InitArray or constify immediately
-		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
-		    if (valuep->castConst()) {
-			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
-			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-			    pushDeletep(valuep); valuep=NULL;
-			    valuep = newp;
+			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+			// Convert to InitArray or constify immediately
+			AstNode* valuep = patp->lhssp()->unlinkFrBack();
+			if (valuep->castConst()) {
+			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+				pushDeletep(valuep); valuep=NULL;
+				valuep = newp;
+			    }
 			}
-		    }
-		    if (arrayp->castUnpackArrayDType()) {
-			if (!newp) {
-			    newp = new AstInitArray(nodep->fileline(), arrayp, valuep);
-			} else {
-			    // We iterate hi()..lo() as that is what packed needs,
-			    // but INITARRAY needs lo() first
-			    newp->castInitArray()->initsp()->addHereThisAsNext(valuep);
-			}
-		    } else {  // Packed. Convert to concat for now.
-			if (!newp) newp = valuep;
-			else {
-			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-			    newp = concatp;
-			    newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
-						     concatp->lhsp()->width()+concatp->rhsp()->width(),
-						     nodep->dtypep()->numeric());
+			if (arrayp->castUnpackArrayDType()) {
+			    if (!newp) {
+				newp = new AstInitArray(nodep->fileline(), arrayp, valuep);
+			    } else {
+				// We iterate hi()..lo() as that is what packed needs,
+				// but INITARRAY needs lo() first
+				newp->castInitArray()->initsp()->addHereThisAsNext(valuep);
+			    }
+			} else {  // Packed. Convert to concat for now.
+			    if (!newp) newp = valuep;
+			    else {
+				AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+				newp = concatp;
+				newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+							 concatp->lhsp()->width()+concatp->rhsp()->width(),
+							 nodep->dtypep()->numeric());
+			    }
 			}
 		    }
 		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
@@ -1488,29 +1495,31 @@ private:
 			patp = it->second;
 			patmap.erase(it);
 		    }
-		    // Determine initial values
-		    vdtypep = nodep->findLogicBoolDType();
-		    // Don't want the RHS an array
-		    patp->dtypep(vdtypep);
-		    // Determine values - might be another InitArray
-		    patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
-		    // Convert to InitArray or constify immediately
-		    AstNode* valuep = patp->lhssp()->unlinkFrBack();
-		    if (valuep->castConst()) {
-			// Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
-			if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-			    pushDeletep(valuep); valuep=NULL;
-			    valuep = newp;
+		    if (patp) {
+			// Determine initial values
+			vdtypep = nodep->findLogicBoolDType();
+			// Don't want the RHS an array
+			patp->dtypep(vdtypep);
+			// Determine values - might be another InitArray
+			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+			// Convert to InitArray or constify immediately
+			AstNode* valuep = patp->lhssp()->unlinkFrBack();
+			if (valuep->castConst()) {
+			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
+			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
+				pushDeletep(valuep); valuep=NULL;
+				valuep = newp;
+			    }
 			}
-		    }
-		    {  // Packed. Convert to concat for now.
-			if (!newp) newp = valuep;
-			else {
-			    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-			    newp = concatp;
-			    newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
-						     concatp->lhsp()->width()+concatp->rhsp()->width(),
-						     nodep->dtypep()->numeric());
+			{  // Packed. Convert to concat for now.
+			    if (!newp) newp = valuep;
+			    else {
+				AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+				newp = concatp;
+				newp->dtypeSetLogicSized(concatp->lhsp()->width()+concatp->rhsp()->width(),
+							 concatp->lhsp()->width()+concatp->rhsp()->width(),
+							 nodep->dtypep()->numeric());
+			    }
 			}
 		    }
 		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
