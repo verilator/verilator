@@ -107,7 +107,7 @@ psl		[p]sl
 
 	/* Optional directives we recognize */
 <INITIAL>"`__FILE__"	{ static string rtnfile;
-			  rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename().c_str();
+			  rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename();
 			  rtnfile += '"'; yytext=(char*)rtnfile.c_str(); yyleng = rtnfile.length();
 			  return (VP_STRING); }
 <INITIAL>"`__LINE__"	{ static char buf[10];

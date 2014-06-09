@@ -62,8 +62,9 @@ bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t siz
 
 VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict datap, size_t size) {
     if (VL_UNLIKELY(readDiffers(datap,size))) {
+	string fn = filename();
 	string msg = (string)"Can't deserialize save-restore file as was made from different model";
-	vl_fatal(filename().c_str(), 0, "", msg.c_str());
+	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
     return *this;  // For function chaining
@@ -82,8 +83,9 @@ void VerilatedSerialize::header() {
 void VerilatedDeserialize::header() {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
+	string fn = filename();
 	string msg = (string)"Can't deserialize; file has wrong header signature";
-	vl_fatal(filename().c_str(), 0, "", msg.c_str());
+	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
     os.read(Verilated::serializedPtr(), Verilated::serializedSize());
@@ -98,8 +100,9 @@ void VerilatedSerialize::trailer() {
 void VerilatedDeserialize::trailer() {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
+	string fn = filename();
 	string msg = (string)"Can't deserialize; file has wrong end-of-file signature";
-	vl_fatal(filename().c_str(), 0, "", msg.c_str());
+	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
 }

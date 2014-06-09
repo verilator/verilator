@@ -164,16 +164,16 @@ public:
 
 	of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
 	of.puts("VM_USER_CFLAGS = \\\n");
-	for (V3StringSet::const_iterator it = v3Global.opt.cFlags().begin();
-	     it != v3Global.opt.cFlags().end(); ++it) {
+	const V3StringSet& cFlags = v3Global.opt.cFlags();
+	for (V3StringSet::const_iterator it = cFlags.begin(); it != cFlags.end(); ++it) {
 	    of.puts("\t"+*it+" \\\n");
 	}
 	of.puts("\n");
 
 	of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
 	of.puts("VM_USER_LDLIBS = \\\n");
-	for (V3StringSet::const_iterator it = v3Global.opt.ldLibs().begin();
-	     it != v3Global.opt.ldLibs().end(); ++it) {
+	const V3StringSet& ldLibs = v3Global.opt.ldLibs();
+	for (V3StringSet::const_iterator it = ldLibs.begin(); it != ldLibs.end(); ++it) {
 	    of.puts("\t"+*it+" \\\n");
 	}
 	of.puts("\n");
@@ -181,8 +181,8 @@ public:
 	V3StringSet dirs;
 	of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
 	of.puts("VM_USER_CLASSES = \\\n");
-	for (V3StringSet::const_iterator it = v3Global.opt.cppFiles().begin();
-	     it != v3Global.opt.cppFiles().end(); ++it) {
+	const V3StringSet& cppFiles = v3Global.opt.cppFiles();
+	for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 	    string cppfile = *it;
 	    of.puts("\t"+V3Options::filenameNonExt(cppfile)+" \\\n");
 	    string dir = V3Options::filenameDir(cppfile);
@@ -207,8 +207,7 @@ public:
 	    of.puts("\n### Executable rules... (from --exe)\n");
 	    of.puts("VPATH += $(VM_USER_DIR)\n");
 	    of.puts("\n");
-	    for (V3StringSet::const_iterator it = v3Global.opt.cppFiles().begin();
-		 it != v3Global.opt.cppFiles().end(); ++it) {
+	    for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 		string cppfile = *it;
 		string basename = V3Options::filenameNonExt(cppfile);
 		of.puts(basename+".o: "+cppfile+"\n");

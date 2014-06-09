@@ -73,7 +73,7 @@ private:
 	    return "Verilator trace_off";
 	}
 	else if (!v3Global.opt.traceUnderscore()) {
-	    if (prettyName.c_str()[0] == '_')
+	    if (prettyName.size()>=1 && prettyName[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";

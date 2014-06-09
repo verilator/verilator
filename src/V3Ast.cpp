@@ -915,8 +915,8 @@ ostream& operator<<(ostream& os, V3Hash rhs) {
 
 V3Hash::V3Hash(const string& name) {
     uint32_t val = 0;
-    for (const char* c=name.c_str(); *c; c++) {
-	val = val*31 + *c;
+    for (string::const_iterator it = name.begin(); it!=name.end(); ++it) {
+	val = val*31 + *it;
     }
     setBoth(1,val);
 }

@@ -1696,8 +1696,9 @@ private:
 	    string fmt = "";
 	    bool inPct = false;
 	    AstNode* argp = nodep->exprsp();
-	    for (const char* inp = nodep->text().c_str(); *inp; inp++) {
-		char ch = *inp;   // Breaks with iterators...
+	    string text = nodep->text();
+	    for (string::const_iterator it = text.begin(); it!=text.end(); ++it) {
+		char ch = *it;
 		if (!inPct && ch=='%') {
 		    inPct = true;
 		    fmt = ch;

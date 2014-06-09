@@ -1250,9 +1250,9 @@ void VerilatedScope::scopeDump() const {
 		      m_callbacksp[i], VerilatedImp::exportName(i));
 	}
     }
-    if (varsp()) {
-	for (VerilatedVarNameMap::const_iterator it = varsp()->begin();
-	     it != varsp()->end(); ++it) {
+    if (VerilatedVarNameMap* varsp = this->varsp()) {
+	for (VerilatedVarNameMap::const_iterator it = varsp->begin();
+	     it != varsp->end(); ++it) {
 	    VL_PRINTF("       VAR %p: %s\n", &(it->second), it->first);
 	}
     }

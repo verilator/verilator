@@ -246,12 +246,14 @@ public:
 	char format = '?';
 	bool pct=false;
 	int got=0;
-	for (const char* cp = nodep->text().c_str(); *cp; cp++) {
+	string txt = nodep->text();
+	for (string::const_iterator it=txt.begin(); it!=txt.end(); ++it) {
+	    char ch = *it;
 	    if (pct) {
 		pct = false;
-		switch (tolower(*cp)) {
+		switch (tolower(ch)) {
 		case '%':
-		    prefix += *cp;
+		    prefix += ch;
 		    break;
 		case 'd': // FALLTHRU
 		case 'o': // FALLTHRU
@@ -259,22 +261,22 @@ public:
 		case 'x': // FALLTHRU
 		case 'b': // FALLTHRU
 		case 's':
-		    got++; format = tolower(*cp);
+		    got++; format = tolower(ch);
 		    break;
 		case 'e': // FALLTHRU
 		case 'f': // FALLTHRU
 		case 'g':
-		    got++; format = tolower(*cp);
-		    nodep->v3error("Unsupported $value$plusargs format qualifier: '"<<*cp<<"'"<<endl);
+		    got++; format = tolower(ch);
+		    nodep->v3error("Unsupported $value$plusargs format qualifier: '"<<ch<<"'"<<endl);
 		    break;
 		default:
 		    got++;
-		    nodep->v3error("Illegal $value$plusargs format qualifier: '"<<*cp<<"'"<<endl);
+		    nodep->v3error("Illegal $value$plusargs format qualifier: '"<<ch<<"'"<<endl);
 		    break;
 		}
 	    }
-	    else if (*cp == '%') pct = true;
-	    else prefix += *cp;
+	    else if (ch == '%') pct = true;
+	    else prefix += ch;
 	}
 	if (got!=1) nodep->v3error("Missing or extra $value$plusargs format qualifier: '"<<nodep->text()<<"'"<<endl);
 	puts("VL_VALUEPLUSARGS_I");
@@ -1382,7 +1384,7 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		}
 		bool zeroit = (varp->attrFileDescr() // Zero it out, so we don't core dump if never call $fopen
 			       || (varp->basicp() && varp->basicp()->isZeroInit())
-			       || (varp->name().c_str()[0]=='_' && v3Global.opt.underlineZero()));
+			       || (varp->name().size()>=1 && varp->name()[0]=='_' && v3Global.opt.underlineZero()));
 		if (varp->isWide()) {
 		    // DOCUMENT: We randomize everything.  If the user wants a _var to be zero,
 		    // there should be a initial statement.  (Different from verilator2.)

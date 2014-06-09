@@ -258,8 +258,8 @@ public:
 	if (!m_substTreep) {
 	    clearSimple("No assignment found\n");
 	}
-	for (GateVarRefList::const_iterator it = rhsVarRefs().begin();
-	     it != rhsVarRefs().end(); ++it) {
+	for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin();
+	     it != m_rhsVarRefs.end(); ++it) {
 	    if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {
 		clearSimple("Circular logic\n");  // Oh my, we'll get a UNOPTFLAT much later.
 	    }
@@ -593,8 +593,9 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			    optimizeElimVar(vvertexp->varScp(), substp, consumerp);
 			    // If the new replacement referred to a signal,
 			    // Correct the graph to point to this new generating variable
-			    for (GateVarRefList::const_iterator it = okVisitor.rhsVarRefs().begin();
-				 it != okVisitor.rhsVarRefs().end(); ++it) {
+			    const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
+			    for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
+				 it != rhsVarRefs.end(); ++it) {
 				AstVarScope* newvarscp = (*it)->varScopep();
 				UINFO(9,"         Point-to-new vertex "<<newvarscp<<endl);
 				GateVarVertex* varvertexp = makeVarVertex(newvarscp);

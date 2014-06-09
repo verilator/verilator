@@ -116,8 +116,8 @@ void V3Global::readFiles() {
 
     V3Parse parser (v3Global.rootp(), &filter, &parseSyms);
     // Read top module
-    for (V3StringList::const_iterator it = v3Global.opt.vFiles().begin();
-	 it != v3Global.opt.vFiles().end(); ++it) {
+    const V3StringList& vFiles = v3Global.opt.vFiles();
+    for (V3StringList::const_iterator it = vFiles.begin(); it != vFiles.end(); ++it) {
 	string filename = *it;
 	parser.parseFile(new FileLine("COMMAND_LINE",0), filename, false,
 			 "Cannot find file containing module: ");
@@ -126,8 +126,8 @@ void V3Global::readFiles() {
     // Read libraries
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
-    for (V3StringSet::const_iterator it = v3Global.opt.libraryFiles().begin();
-	 it != v3Global.opt.libraryFiles().end(); ++it) {
+    const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
+    for (V3StringSet::const_iterator it = libraryFiles.begin(); it != libraryFiles.end(); ++it) {
 	string filename = *it;
 	parser.parseFile(new FileLine("COMMAND_LINE",0), filename, true,
 			 "Cannot find file containing library module: ");

@@ -1191,14 +1191,14 @@ void OrderVisitor::processMove() {
     while (!m_pomReadyDomScope.empty()) {
 	// Start with top node on ready list's domain & scope
 	OrderMoveDomScope* domScopep = m_pomReadyDomScope.begin();
-	OrderMoveVertex* topVertexp = domScopep->readyVertices().begin();
+	OrderMoveVertex* topVertexp = domScopep->readyVertices().begin(); // lintok-begin-on-ref
 	UASSERT(topVertexp, "domScope on ready list without any nodes ready under it");
 	// Work on all scopes ready inside this domain
 	while (domScopep) {
 	    UINFO(6,"   MoveDomain l="<<domScopep->domainp()<<endl);
 	    // Process all nodes ready under same domain & scope
 	    m_pomNewFuncp = NULL;
-	    while (OrderMoveVertex* vertexp = domScopep->readyVertices().begin()) {
+	    while (OrderMoveVertex* vertexp = domScopep->readyVertices().begin()) { // lintok-begin-on-ref
 		processMoveOne(vertexp, domScopep, 1);
 	    }
 	    // Done with scope/domain pair, pick new scope under same domain, or NULL if none left

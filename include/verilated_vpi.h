@@ -259,10 +259,11 @@ public:
     virtual const vluint32_t type() { return vpiIterator; }
     virtual vpiHandle dovpi_scan() {
 	if (VL_LIKELY(m_scopep->varsp())) {
-	    if (VL_UNLIKELY(!m_started)) { m_it = m_scopep->varsp()->begin(); m_started=true; }
-	    else if (VL_UNLIKELY(m_it == m_scopep->varsp()->end())) return 0;
+	    VerilatedVarNameMap* varsp = m_scopep->varsp();
+	    if (VL_UNLIKELY(!m_started)) { m_it = varsp->begin(); m_started=true; }
+	    else if (VL_UNLIKELY(m_it == varsp->end())) return 0;
 	    else ++m_it;
-	    if (m_it == m_scopep->varsp()->end()) return 0;
+	    if (m_it == varsp->end()) return 0;
 	    return ((new VerilatedVpioVar(&(m_it->second), m_scopep))
 		    ->castVpiHandle());
 	} else {
@@ -430,15 +431,10 @@ class VerilatedVpiError {
     t_vpi_error_info m_errorInfo;
     bool             m_flag;
     char             m_buff[VL_VPI_LINE_SIZE];
-    void setError(PLI_BYTE8 *message, PLI_BYTE8 *file, PLI_INT32 line) {
+    void setError(PLI_BYTE8 *message, PLI_BYTE8 *code, PLI_BYTE8 *file, PLI_INT32 line) {
 	m_errorInfo.message = message;
 	m_errorInfo.file = file;
 	m_errorInfo.line = line;
-	m_errorInfo.code = NULL;
-	do_callbacks();
-    }
-    void setError(PLI_BYTE8 *message, PLI_BYTE8 *code, PLI_BYTE8 *file, PLI_INT32 line) {
-	setError( message, file, line);
 	m_errorInfo.code = code;
 	do_callbacks();
     }
@@ -464,14 +460,11 @@ public:
         return this;
     }
     void setMessage(string file, PLI_INT32 line, string message, ...) {
+	static VL_THREAD string filehold;
         _VL_VPI_ERROR_SET;
         m_errorInfo.state = vpiPLI;
-        setError((PLI_BYTE8*)m_buff, (PLI_BYTE8*)file.c_str(), line);
-    }
-    void setMessage(PLI_BYTE8 *code, PLI_BYTE8 *file, PLI_INT32 line, string message, ...) {
-        _VL_VPI_ERROR_SET;
-        m_errorInfo.state = vpiPLI;
-        setError((PLI_BYTE8*)message.c_str(), code, file, line);
+	filehold = file;
+        setError((PLI_BYTE8*)m_buff, NULL, (PLI_BYTE8*)filehold.c_str(), line);
     }
     p_vpi_error_info getError() {
 	if (m_flag) return &m_errorInfo;

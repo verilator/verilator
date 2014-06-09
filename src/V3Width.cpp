@@ -1678,8 +1678,9 @@ private:
 	string dispout = "";
 	bool inPct = false;
 	AstNode* argp = nodep->exprsp();
-	for (const char* inp = nodep->text().c_str(); *inp; inp++) {
-	    char ch = *inp;   // Breaks with iterators...
+	string txt = nodep->text();
+	for (string::const_iterator it = txt.begin(); it!=txt.end(); ++it) {
+	    char ch = *it;
 	    if (!inPct && ch=='%') {
 		inPct = true;
 	    } else if (inPct && isdigit(ch)) {

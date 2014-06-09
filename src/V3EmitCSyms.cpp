@@ -383,7 +383,8 @@ void EmitCSyms::emitSymImp() {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (modp->isTop()) {
 	} else {
-	    ofp()->printf("\t%c %-30s ", comma, scopep->nameDotless().c_str());
+	    string nameDl = scopep->nameDotless();
+	    ofp()->printf("\t%c %-30s ", comma, nameDl.c_str());
 	    puts("(Verilated::catName(topp->name(),");
 	    // The "." is added by catName
 	    putsQuoted(scopep->prettyName());

@@ -71,7 +71,8 @@ class V3FileDependImp {
 	time_t mtime() const { return m_stat.st_mtime; }
 	void loadStats() {
 	    if (!m_stat.st_mtime) {
-		int err = stat(filename().c_str(), &m_stat);
+		string fn = filename();
+		int err = stat(fn.c_str(), &m_stat);
 		if (err!=0) {
 		    m_stat.st_mtime = 1;
 		    // Not a error... This can occur due to `line directives in the .vpp files
@@ -258,15 +259,19 @@ bool V3File::checkTimes(const string& filename, const string& cmdline) {
     return dependImp.checkTimes(filename, cmdline);
 }
 
+void V3File::createDir(const string& dirname) {
+#ifndef _WIN32
+    mkdir(dirname.c_str(), 0777);
+#else
+    mkdir(dirname.c_str());
+#endif
+}
+
 void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {
 	created = true;
-#ifndef _WIN32
-	mkdir(v3Global.opt.makeDir().c_str(), 0777);
-#else
-	mkdir(v3Global.opt.makeDir().c_str());
-#endif
+	createDir(v3Global.opt.makeDir());
     }
 }
 

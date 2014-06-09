@@ -67,6 +67,7 @@ public:
     static bool checkTimes(const string& filename, const string& cmdline);
 
     // Directory utilities
+    static void createDir(const string& dirname);
     static void createMakeDir();
 };
 
@@ -188,8 +189,8 @@ public:
     }
     virtual ~V3OutCFile() {}
     virtual void putsCellDecl(const string& classname, const string& cellname) {
-	this->printf("%-19s\t%s;\n",
-		     (classname + "*").c_str(),cellname.c_str());
+	string classStar = classname + "*";
+	this->printf("%-19s\t%s;\n", classStar.c_str(), cellname.c_str());
     }
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { }

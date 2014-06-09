@@ -622,13 +622,14 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
 
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
-    if (vFiles().empty()) {
+    const V3StringList& vFilesList = vFiles();
+    if (vFilesList.empty()) {
 	v3fatal("verilator: No Input Verilog file specified on command line, see verilator --help for more information\n");
     }
 
     // Default prefix to the filename
     if (prefix()=="" && topModule()!="") m_prefix = string("V")+topModule();
-    if (prefix()=="") m_prefix = string("V")+filenameNonExt(*(vFiles().begin()));
+    if (prefix()=="" && vFilesList.size()>=1) m_prefix = string("V")+filenameNonExt(*(vFilesList.begin()));
     if (modPrefix()=="") m_modPrefix = prefix();
 
     // Find files in makedir

@@ -29,6 +29,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix ENDLABEL warnings on escaped identifiers.
 
+****  Fix string corruption, bug780. [Derek Lockhart]
+
 
 * Verilator 3.860 2014-05-11
 

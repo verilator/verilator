@@ -172,8 +172,8 @@ void VerilatedVcd::makeNameMap() {
     // This comes from user instantiations with no name - IE Vtop("").
     bool nullScope = false;
     for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
-	const char* hiername = (*it).first.c_str();
-	if (hiername[0] == '\t') nullScope=true;
+	const string& hiername = it->first;
+	if (hiername.size() >= 1 && hiername[0] == '\t') nullScope=true;
     }
     if (nullScope) {
 	NameMap* newmapp = new NameMap;
@@ -352,7 +352,8 @@ void VerilatedVcd::dumpHeader () {
     printStr("$date "); printStr(ctime(&time_str)); printStr(" $end\n");
 
     printStr("$timescale ");
-    printStr(doubleToTimescale(m_timeRes).c_str());
+    const string& timeResStr = doubleToTimescale(m_timeRes);
+    printStr(timeResStr.c_str());
     printStr(" $end\n");
 
     makeNameMap();
@@ -370,10 +371,11 @@ void VerilatedVcd::dumpHeader () {
     // Print the signal names
     const char* lastName = "";
     for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
-	const char* hiername = (*it).first.c_str();
-	const char* decl     = (*it).second.c_str();
+	const string& hiernamestr = it->first;
+	const string& decl = it->second;
 
 	// Determine difference between the old and new names
+	const char* hiername = hiernamestr.c_str();
 	const char* lp = lastName;
 	const char* np = hiername;
 	lastName = hiername;
@@ -408,7 +410,7 @@ void VerilatedVcd::dumpHeader () {
 	}
 
 	printIndent(0);
-	printStr(decl);
+	printStr(decl.c_str());
     }
 
     while (m_modDepth>1) {

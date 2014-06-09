@@ -17,6 +17,7 @@ if (!-r "$root/.git") {
 } else {
     uint();
     printfll();
+    cstr();
 }
 
 ok(1);
@@ -64,6 +65,24 @@ sub printfll {
     }
     if (keys %names) {
 	$Self->error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
+    }
+}
+
+sub cstr {
+    my $files = "src/*.c* src/*.h include/*.c* include/*.h test_c/*.c* test_regress/t/*.c* test_regress/t/*.h";
+    my $cmd = "cd $root && grep -n -P 'c_str|begin|end' $files | sort";
+    print "C $cmd\n";
+    my $grep = `$cmd`;
+    my %names;
+    foreach my $line (split /\n/, $grep) {
+	if ($line =~ /^([^:]+).*\(\)[a-z0-9_().->]*[.->]+(c_str|r?begin|r?end)\(\)/) {
+	    next if $line =~ /lintok-begin-on-ref/;
+	    print "$line\n";
+	    $names{$1} = 1;
+	}
+    }
+    if (keys %names) {
+	$Self->error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
     }
 }
 

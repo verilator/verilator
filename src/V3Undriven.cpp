@@ -145,9 +145,10 @@ public:
 	return isUsedNotDrivenBit(0, m_flags.size()/FLAGS_PER_BIT);
     }
     bool unusedMatch(AstVar* nodep) {
-	const char* regexpp = v3Global.opt.unusedRegexp().c_str();
-	if (!regexpp || !*regexpp) return false;
-	return VString::wildmatch(nodep->prettyName().c_str(), regexpp);
+	string regexp = v3Global.opt.unusedRegexp();
+	if (regexp == "") return false;
+	string prettyName = nodep->prettyName();
+	return VString::wildmatch(prettyName.c_str(), regexp.c_str());
     }
     void reportViolations() {
 	// Combine bits into overall state

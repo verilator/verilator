@@ -250,8 +250,8 @@ private:
     void expectFormat(AstNode* nodep, const string& format, AstNode* argp, bool isScan) {
 	// Check display arguments
 	bool inPct = false;
-	for (const char* inp = format.c_str(); *inp; inp++) {
-	    char ch = tolower(*inp);   // Breaks with iterators...
+	for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
+	    char ch = tolower(*it);
 	    if (!inPct && ch=='%') {
 		inPct = true;
 	    } else if (inPct) {
