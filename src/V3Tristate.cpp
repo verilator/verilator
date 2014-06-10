@@ -579,29 +579,29 @@ class TristateVisitor : public TristateBaseVisitor {
 		nodep->addStmtp(enassp);
 
 		// now append this driver to the driver logic.
-		AstNode* ref1p = new AstVarRef(nodep->fileline(), newlhsp,false);
-		AstNode* ref2p = new AstVarRef(nodep->fileline(), newenp, false);
-		andp = new AstAnd(nodep->fileline(), ref1p, ref2p);
+		AstNode* ref1p = new AstVarRef(refp->fileline(), newlhsp,false);
+		AstNode* ref2p = new AstVarRef(refp->fileline(), newenp, false);
+		andp = new AstAnd(refp->fileline(), ref1p, ref2p);
 
 		// or this to the others
-		orp = (!orp) ? andp : new AstOr(nodep->fileline(), orp, andp);
+		orp = (!orp) ? andp : new AstOr(refp->fileline(), orp, andp);
 
 		if (envarp) {
-		    AstNode* ref3p = new AstVarRef(nodep->fileline(), newenp, false);
+		    AstNode* ref3p = new AstVarRef(refp->fileline(), newenp, false);
 		    enp = (!enp) ? ref3p : new AstOr(ref3p->fileline(), enp, ref3p);
 		}
 		AstNode* tmp = new AstNot(newenp->fileline(), new AstVarRef(newenp->fileline(), newenp, false));
 		undrivenp = ((!undrivenp) ? tmp
-			     : new AstAnd(nodep->fileline(), tmp, undrivenp));
+			     : new AstAnd(refp->fileline(), tmp, undrivenp));
 	    }
 	    if (!undrivenp) {  // No drivers on the bus
-		V3Number ones(nodep->fileline(), lhsp->width()); ones.setAllBits1();
-		undrivenp = new AstConst(nodep->fileline(), ones);
+		V3Number ones(invarp->fileline(), lhsp->width()); ones.setAllBits1();
+		undrivenp = new AstConst(invarp->fileline(), ones);
 	    }
 	    if (!outvarp) {
 		// This is the final resolution of the tristate, so we apply
 		// the pull direction to any undriven pins.
-		V3Number pull(nodep->fileline(), lhsp->width());
+		V3Number pull(invarp->fileline(), lhsp->width());
 		AstPull* pullp = (AstPull*)lhsp->user3p();
 		if (pullp && pullp->direction() == 1) {
 		    pull.setAllBits1();
@@ -609,9 +609,9 @@ class TristateVisitor : public TristateBaseVisitor {
 		} else {
 		    pull.setAllBits0(); // default pull direction is down.
 		}
-		undrivenp = new AstAnd(nodep->fileline(), undrivenp,
-				       new AstConst(nodep->fileline(), pull));
-		orp = new AstOr(nodep->fileline(), orp, undrivenp);
+		undrivenp = new AstAnd(invarp->fileline(), undrivenp,
+				       new AstConst(invarp->fileline(), pull));
+		orp = new AstOr(invarp->fileline(), orp, undrivenp);
 	    } else {
 		undrivenp->deleteTree(); undrivenp=NULL;
 	    }
