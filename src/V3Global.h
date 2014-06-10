@@ -44,6 +44,7 @@ class V3Global {
     int		m_debugFileNumber;	// Number to append to debug files created
     bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
     bool	m_assertWidthsMatch;	// Tree should have width()==widthMin()
+    bool	m_constRemoveXs;	// Const needs to strip any Xs
     bool	m_needHInlines;		// Need __Inlines file
     bool	m_needHeavy;		// Need verilated_heavy.h include
     bool	m_dpi;			// Need __Dpi include files
@@ -58,6 +59,7 @@ public:
 	m_debugFileNumber = 0;
 	m_assertDTypesResolved = false;
 	m_assertWidthsMatch = false;
+	m_constRemoveXs = false;
 	m_needHInlines = false;
 	m_needHeavy = false;
 	m_dpi = false;
@@ -77,6 +79,8 @@ public:
     static void dumpCheckGlobalTree(const string& filename, int newNumber=0, bool doDump=true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void assertWidthsMatch(bool flag) { m_assertWidthsMatch = flag; }
+    bool constRemoveXs() const { return m_constRemoveXs; }
+    void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {
 	++m_debugFileNumber;
 	if (newNumber) m_debugFileNumber = newNumber;

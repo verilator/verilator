@@ -145,6 +145,7 @@ public:
     }
 
     // SETTERS
+    V3Number& setAllBitsXRemoved();
     V3Number& setAllBitsX();
     V3Number& setAllBitsZ();
     V3Number& setAllBits0();

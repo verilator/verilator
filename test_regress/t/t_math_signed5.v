@@ -11,7 +11,10 @@
  `define c(v,vs) (v)
 `endif
 
-  module t (/*AUTOARG*/);
+   module t (/*AUTOARG*/
+   // Outputs
+   ow4_u
+   );
 
    bit fail;
 
@@ -157,4 +160,9 @@
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
+   // bug775
+   output [3:0]     ow4_u;  // Must be consumed
+   assign  ow4_u = ((0/0) ? 1 : 2) % 0;
+
 endmodule

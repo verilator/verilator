@@ -25,6 +25,7 @@
 #include <cstdarg>
 #include <algorithm>
 #include <iomanip>
+#include "V3Global.h"
 #include "V3Number.h"
 
 #define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
@@ -323,6 +324,7 @@ V3Number& V3Number::setAllBits1() {
     return *this;
 }
 V3Number& V3Number::setAllBitsX() {
+    // Use setAllBitsXRemoved if calling this based on a non-X/Z input value such as divide by zero
     for (int i=0; i<words(); i++) { m_value[i]=m_valueX[i] = ~0; }
     opCleanThis();
     return *this;
@@ -332,6 +334,20 @@ V3Number& V3Number::setAllBitsZ() {
     opCleanThis();
     return *this;
 }
+V3Number& V3Number::setAllBitsXRemoved() {
+    if (!v3Global.constRemoveXs()) {
+	return setAllBitsX();
+    } else {
+	// If we get a divide by zero we get Xs.
+	// But after V3Unknown we have removed Xs, so use --x-assign to direct-insert 0/1
+	if (v3Global.opt.xAssign() == "1") {
+	    return setAllBits1();
+	} else {
+	    return setAllBits0();
+	}
+    }
+}
+
 V3Number& V3Number::setMask(int nbits) {
     setZero();
     for (int bit=0; bit<nbits; bit++) { setBit(bit,1); }
@@ -1248,7 +1264,7 @@ V3Number& V3Number::opDiv (const V3Number& lhs, const V3Number& rhs) {
     UINFO(9, "opdiv "<<lhs<<" "<<rhs<<endl);
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsXRemoved();
     if (lhs.width()<=64) {
 	setQuad(lhs.toUQuad() / rhs.toUQuad());
 	return *this;
@@ -1261,7 +1277,7 @@ V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed divide
     //UINFO(9, ">>divs-start "<<lhs<<" "<<rhs<<endl);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsXRemoved();
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     V3Number qNoSign = opDiv(lhsNoSign,rhsNoSign);
@@ -1278,7 +1294,7 @@ V3Number& V3Number::opDivS (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsXRemoved();
     if (lhs.width()<=64) {
 	setQuad(lhs.toUQuad() % rhs.toUQuad());
 	return *this;
@@ -1290,7 +1306,7 @@ V3Number& V3Number::opModDiv (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opModDivS (const V3Number& lhs, const V3Number& rhs) {
     // Signed moddiv
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setAllBitsX();
+    if (rhs.isEqZero()) return setAllBitsXRemoved();
     V3Number lhsNoSign = lhs;  if (lhs.isNegative()) lhsNoSign.opNegate(lhs);
     V3Number rhsNoSign = rhs;  if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     V3Number qNoSign = opModDiv(lhsNoSign,rhsNoSign);
@@ -1428,7 +1444,7 @@ V3Number& V3Number::opPow (const V3Number& lhs, const V3Number& rhs, bool lsign,
     if (lhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** power operator not implemented yet: "<<*this);
     if (rhs.width()>64) m_fileline->v3fatalSrc("Unsupported: Large >64bit ** power operator not implemented yet: "<<*this);
     if (rsign && rhs.isNegative()) {
-	if (lhs.isEqZero()) return setAllBitsX();
+	if (lhs.isEqZero()) return setAllBitsXRemoved();
 	else if (lhs.isEqOne()) return setQuad(1);
 	else if (lsign && lhs.isEqAllOnes()) {
 	    if (rhs.bitIs1(0)) return setAllBits1();  // -1^odd=-1
