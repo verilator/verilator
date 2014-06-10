@@ -266,8 +266,8 @@ public:
 	if (nodep->modp()) nodep->modp()->user1p(symp);
 	checkDuplicate(abovep, nodep, nodep->origName());
 	abovep->reinsert(nodep->origName(), symp);
-	if (abovep != modSymp && !modSymp->findIdFlat(nodep->name())) {
-	    // If it's foo_DOT_bar, we need to be able to find it under that too.
+	if (forScopeCreation() && abovep != modSymp && !modSymp->findIdFlat(nodep->name())) {
+	    // If it's foo_DOT_bar, we need to be able to find it under "foo_DOT_bar" too.
 	    // Duplicates are possible, as until resolve generates might have 2 same cells under an if
 	    modSymp->reinsert(nodep->name(), symp);
 	}
