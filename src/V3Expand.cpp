@@ -448,8 +448,8 @@ private:
 	    AstNode* newp = new AstShiftR (nodep->fileline(),
 					   fromp,
 					   dropCondBound(lsbp),
-					   nodep->width());
-	    newp->dtypeFrom(nodep);
+					   fromp->width());  // {large}>>32 requires 64-bit shift operation; then cast
+	    newp->dtypeFrom(fromp);
 	    if (!nodep->isQuad() && fromp->isQuad()) {
 		newp = new AstCCast (newp->fileline(), newp, nodep);
 	    }
