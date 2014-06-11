@@ -19,8 +19,11 @@ module pads
 
 
   // **** Pinout ****
+`ifdef VERILATOR  // see t_tri_array
+  inout wire [NUMPADS:1] pad,
+`else
   inout wire pad [1:NUMPADS],
-
+`endif
 
   // **** Inputs ****
   input logic       clk,
@@ -31,6 +34,11 @@ module pads
   // ***************************************************************************
   // Code Section
   // ***************************************************************************
+
+`ifdef VERILATOR  // see t_tri_array
+   tri [NUMPADS:1] _anahack;
+`endif
+
 
   genvar i;
   for ( i = 1; i <= NUMPADS; i++ )
@@ -46,11 +54,16 @@ module pads
       case ( p_type )
         PADTYPE_GPIO:
           pad_gpio #( .ID( i ) )
-            i_pad_gpio(.pad             (pad                 [i]),
+            i_pad_gpio(
+		       .pad             (pad                 [i]),
                        // Outputs
                        .input_val       (padsif.input_val    [i]),
                        // Inouts
+`ifdef VERILATOR  // see t_tri_array
+                       .ana             (_anahack            [i]),
+`else
                        .ana             (padsif.ana          [i]),
+`endif
                        // Inputs
                        .pullup_en       (padsif.pullup_en    [i]),
                        .pulldown_en     (padsif.pulldown_en  [i]),
@@ -63,7 +76,8 @@ module pads
         PADTYPE_VDD:
           begin
             pad_vdd #( .ID( i ) )
-              i_pad_vdd(.pad            (pad[i])
+              i_pad_vdd(
+			.pad            (pad[i])
                         /*AUTOINST*/);
 // Not SV standard, yet...           assign padsif.input_val[i] = ();
           end

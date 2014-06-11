@@ -26,7 +26,9 @@ module pad_gpio
    );
 
    // **** Analog <-> pad connection ****
+`ifndef VERILATOR //TODO alias
    alias ana = pad;
+`endif
 
 
   // **** Digital driver <-> pad connection ****

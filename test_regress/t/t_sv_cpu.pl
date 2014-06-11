@@ -10,8 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # 22-Mar-2012: Modifications for this test contributed by Jeremy Bennett,
 # Embecosm.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported");
-
 compile (
     # Taken from the original VCS command line.
     v_flags2 => ["t/t_sv_cpu_code/timescale.sv",
@@ -33,7 +31,7 @@ compile (
 		 "t/t_sv_cpu_code/cpu.sv",
 		 "t/t_sv_cpu_code/chip.sv"],
     vcs_flags2 => ["-R -sverilog +memcbk -y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code"],
-    verilator_flags2 => ["-y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code"],
+    verilator_flags2 => ["-y t/t_sv_cpu_code +libext+.sv+ +incdir+t/t_sv_cpu_code --top-module t"],
     iv_flags2 => ["-yt/t_sv_cpu_code -It/t_sv_cpu_code -Y.sv"],
     );
 

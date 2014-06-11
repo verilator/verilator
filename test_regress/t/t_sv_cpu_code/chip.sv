@@ -15,7 +15,11 @@ module chip
   )
  (
   // **** Pinout ****
+`ifdef VERILATOR  // see t_tri_array
+  inout wire [NUMPADS:1] pad,
+`else
   inout wire pad [1:NUMPADS],
+`endif
 
   // **** Inputs !!!! ****
   input  logic clk,

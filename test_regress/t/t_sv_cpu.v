@@ -63,7 +63,7 @@ module t (/*AUTOARG*/
    end
 
    always @( posedge clk ) begin
-      if (500 == clk_count) begin
+      if (90 == clk_count) begin
 	 $finish ();
       end
       else begin
@@ -103,7 +103,11 @@ module testbench (/*AUTOARG*/
    // **************************************************************************
 
    // **** Pinout ****
+`ifdef VERILATOR  // see t_tri_array
+   wire   [NUMPADS:1] pad;    // GPIO Pads (PORT{A,...,R}).
+`else
    wire  pad [1:NUMPADS];    // GPIO Pads (PORT{A,...,R}).
+`endif
 
 
    // **************************************************************************
@@ -129,7 +133,7 @@ module testbench (/*AUTOARG*/
        (
         /*AUTOINST*/
 	// Inouts
-	.pad				(pad),
+	.pad				(pad[NUMPADS:1]),
 	// Inputs
 	.clk				(clk),
 	.rst				(rst));
