@@ -1810,12 +1810,13 @@ private:
     bool	m_internal:1;	// Internally created
     int		m_level;	// 1=top module, 2=cell off top module, ...
     int		m_varNum;	// Incrementing variable number
+    int		m_typeNum;	// Incrementing implicit type number
 public:
     AstNodeModule(FileLine* fl, const string& name)
 	: AstNode (fl)
 	,m_name(name), m_origName(name)
 	,m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false), m_internal(false)
-	,m_level(0), m_varNum(0) { }
+	,m_level(0), m_varNum(0), m_typeNum(0) { }
     ASTNODE_BASE_FUNCS(NodeModule)
     virtual void dump(ostream& str);
     virtual bool maybePointedTo() const { return true; }
@@ -1835,6 +1836,7 @@ public:
     int  level() const		{ return m_level; }
     bool isTop() const		{ return level()==1; }
     int  varNumGetInc() 	{ return ++m_varNum; }
+    int  typeNumGetInc() 	{ return ++m_typeNum; }
     void modPublic(bool flag) 	{ m_modPublic = flag; }
     bool modPublic() const 	{ return m_modPublic; }
     void modTrace(bool flag) 	{ m_modTrace = flag; }

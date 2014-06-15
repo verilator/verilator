@@ -221,7 +221,7 @@ private:
     void*	m_containerp;	// In what scope is the name unique, so we can know what are duplicate definitions (arbitrary value)
     int		m_uniqueNum;
 public:
-    AstDefImplicitDType(FileLine* fl, const string& name, AstNode* containerp,
+    AstDefImplicitDType(FileLine* fl, const string& name, void* containerp,
 			VFlagChildDType, AstNodeDType* dtp)
 	: AstNodeDType(fl), m_name(name), m_containerp(containerp) {
 	childDTypep(dtp);  // Only for parser

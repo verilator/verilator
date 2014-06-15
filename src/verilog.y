@@ -62,8 +62,8 @@ public:
     int		m_pinNum;	// Pin number currently parsing
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
-    AstNodeModule* m_modp;	// Module
-    int		m_modTypeImpNum; // Implicit type number, incremented each module
+
+    static int	s_modTypeImpNum; // Implicit type number, incremented each module
 
     // CONSTRUCTORS
     V3ParseGrammar() {
@@ -76,8 +76,6 @@ public:
 	m_pinNum = -1;
 	m_instModule = "";
 	m_instParamp = NULL;
-	m_modp = NULL;
-	m_modTypeImpNum = 0;
 	m_varAttrp = NULL;
 	m_caseAttrp = NULL;
     }
@@ -121,7 +119,6 @@ public:
 	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->nodep()->castPackage();
 	if (!pkgp) {
 	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
-	    GRAMMARP->m_modp = pkgp; GRAMMARP->m_modTypeImpNum = 0;
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
 	}
 	return pkgp;
@@ -166,6 +163,8 @@ public:
 
 const AstBasicDTypeKwd LOGIC = AstBasicDTypeKwd::LOGIC;	// Shorthand "LOGIC"
 const AstBasicDTypeKwd LOGIC_IMPLICIT = AstBasicDTypeKwd::LOGIC_IMPLICIT;
+
+int V3ParseGrammar::s_modTypeImpNum = 0;
 
 //======================================================================
 // Macro functions
@@ -697,7 +696,6 @@ packageFront<modulep>:
 			{ $$ = new AstPackage($1,*$2);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
 			  $$->modTrace(v3Global.opt.trace());
-			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -793,7 +791,6 @@ modFront<modulep>:
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
-			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -810,7 +807,6 @@ udpFront<modulep>:
 			  $$->modTrace(false);
 			  $$->addStmtp(new AstPragma($1,AstPragmaType::INLINE_MODULE));
 			  PARSEP->fileline()->tracingOn(false);
-			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -1029,7 +1025,6 @@ pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
 			  $$->modTrace(v3Global.opt.trace());
-			  GRAMMARP->m_modp = $$; GRAMMARP->m_modTypeImpNum = 0;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -1344,10 +1339,10 @@ data_typeBasic<dtypep>:		// IEEE: part of data_type
 
 data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc references
 		data_typeBasic				{ $$ = $1; }
-	|	struct_unionDecl packed_dimensionListE	{ $$ = GRAMMARP->createArray(new AstDefImplicitDType($1->fileline(),"__typeimpsu"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
-													     GRAMMARP->m_modp,VFlagChildDType(),$1),$2,true); }
-	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->m_modTypeImpNum++),
-										       GRAMMARP->m_modp,VFlagChildDType(),$1); }
+	|	struct_unionDecl packed_dimensionListE	{ $$ = GRAMMARP->createArray(new AstDefImplicitDType($1->fileline(),"__typeimpsu"+cvtToStr(GRAMMARP->s_modTypeImpNum++),
+													     SYMP,VFlagChildDType(),$1),$2,true); }
+	|	enumDecl				{ $$ = new AstDefImplicitDType($1->fileline(),"__typeimpenum"+cvtToStr(GRAMMARP->s_modTypeImpNum++),
+										       SYMP,VFlagChildDType(),$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	//UNSUP	yEVENT					{ UNSUP }
