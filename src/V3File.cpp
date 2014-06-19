@@ -567,7 +567,7 @@ const char* V3OutFormatter::indentStr(int num) {
     static char str[MAXSPACE+20];
     char* cp = str;
     if (num>MAXSPACE) num=MAXSPACE;
-    if (!m_lang==LA_VERILOG) {  // verilogPrefixedTree doesn't want tabs
+    if (m_lang!=LA_VERILOG) {  // verilogPrefixedTree doesn't want tabs
 	while (num>=8) {
 	    *cp++ = '\t';
 	    num -= 8;
