@@ -152,7 +152,7 @@ struct params {
       unsigned int  size;
       unsigned int  direction;
       unsigned int  scalar;
-      unsigned int  type;
+      int  type;
     } attributes, children;
 } values[] = {
     {"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
