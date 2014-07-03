@@ -2968,8 +2968,8 @@ simulators.
 Warns that an `include filename specifies an absolute path.  This means the
 code will not work on any other system with a different file system layout.
 Instead of using absolute paths, relative paths (preferably without any
-directory specified whatever) should be used, and +include used on the
-command line to specify the top include source directory.
+directory specified whatever) should be used, and +incdir used on the
+command line to specify the top include source directories.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
