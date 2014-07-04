@@ -40,6 +40,60 @@
 #include "V3Premit.h"
 #include "V3Ast.h"
 
+
+//######################################################################
+// Structure for global state
+
+class PremitAssignVisitor : public AstNVisitor {
+private:
+    // NODE STATE
+    //  AstVar::user4()		// bool; occurs on LHS of current assignment
+    AstUser4InUse	m_inuser4;
+
+    // STATE
+    bool	m_noopt;	// Disable optimization of variables in this block
+
+    // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
+    // VISITORS
+    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+        //AstNode::user4ClearTree();  // Implied by AstUser4InUse
+	// LHS first as fewer varrefs
+	nodep->lhsp()->iterateAndNext(*this);
+	// Now find vars marked as lhs
+	nodep->rhsp()->iterateAndNext(*this);
+    }
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	// it's LHS var is used so need a deep temporary
+	if (nodep->lvalue()) {
+	    nodep->varp()->user4(true);
+	} else {
+	    if (nodep->varp()->user4()) {
+		if (!m_noopt) UINFO(4, "Block has LHS+RHS var: "<<nodep<<endl);
+		m_noopt = true;
+	    }
+	}
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+    }
+
+public:
+    // CONSTRUCTORS
+    PremitAssignVisitor(AstNodeAssign* nodep) {
+	UINFO(4,"  PremitAssignVisitor on "<<nodep<<endl);
+	m_noopt = false;
+	nodep->accept(*this);
+    }
+    virtual ~PremitAssignVisitor() {}
+    bool noOpt() const { return m_noopt; }
+};
+
 //######################################################################
 // Premit state, as a visitor of each AstNode
 
@@ -49,6 +103,7 @@ private:
     //  AstNodeMath::user()	-> bool.  True if iterated already
     //  AstShiftL::user2()	-> bool.  True if converted to conditional
     //  AstShiftR::user2()	-> bool.  True if converted to conditional
+    //  *::user4()		-> See PremitAssignVisitor
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
 
@@ -174,6 +229,14 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	startStatement(nodep);
+	{
+	    bool noopt = PremitAssignVisitor(nodep).noOpt();
+	    if (noopt && !nodep->user1()) {
+		// Need to do this even if not wide, as e.g. a select may be on a wide operator
+		UINFO(4,"Deep temp for LHS/RHS\n");
+		createDeepTemp(nodep->rhsp());
+	    }
+	}
 	nodep->rhsp()->iterateAndNext(*this);
 	m_assignLhs = true;
 	nodep->lhsp()->iterateAndNext(*this);

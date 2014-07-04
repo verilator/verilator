@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix duplicate anonymous structures in $root, bug788. [Bob Newgard]
 
+****  Fix mis-optimization of bit-swap in wide signal, bug800. [Jie Xu]
+
 
 * Verilator 3.862 2014-06-10
 
