@@ -270,6 +270,10 @@ private:
 	if (afterp) afterp->unlinkFrBackWithNext();
 	nodep->scopeAttrp(new AstText(nodep->fileline(), prefix));
 	if (afterp) nodep->scopeAttrp(afterp);
+	afterp = nodep->scopeEntrp();
+	if (afterp) afterp->unlinkFrBackWithNext();
+	nodep->scopeEntrp(new AstText(nodep->fileline(), prefix));
+	if (afterp) nodep->scopeEntrp(afterp);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScope* nodep, AstNUser*) {

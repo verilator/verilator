@@ -515,6 +515,24 @@ string AstScopeName::scopeSymName() const {
     return out;
 }
 
+string AstScopeName::scopeDpiName() const {
+    string out;
+    for (AstText* textp=scopeEntrp(); textp; textp=textp->nextp()->castText()) {
+	out += textp->text();
+    }
+    if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
+    if (out.substr(0,7) == "__DOT__") out.replace(0,7,"");
+    if (out.substr(0,1) == ".") out.replace(0,1,"");
+    string::size_type pos;
+    while ((pos=out.find(".")) != string::npos) {
+	out.replace(pos, 1, "__");
+    }
+    while ((pos=out.find("__DOT__")) != string::npos) {
+	out.replace(pos, 7, "__");
+    }
+    return out;
+}
+
 bool AstSenTree::hasClocked() {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {

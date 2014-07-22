@@ -226,7 +226,9 @@ public:
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// For use under AstCCalls for dpiImports.  ScopeNames under displays are handled in AstDisplay
 	if (!nodep->dpiExport()) {
-	    putbs("(&(vlSymsp->__Vscope_"+nodep->scopeSymName()+"))");
+	    // this is where the DPI import context scope is set
+	    string scope = nodep->scopeDpiName();
+	    putbs("(&(vlSymsp->__Vscope_"+scope+"))");
 	}
     }
     virtual void visit(AstSFormat* nodep, AstNUser*) {

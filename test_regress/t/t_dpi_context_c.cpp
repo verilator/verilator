@@ -42,6 +42,7 @@ extern "C" {
     extern int dpic_line();
     extern int dpic_save(int value);
     extern int dpic_restore();
+    extern unsigned dpic_getcontext();
 }
 #endif
 
@@ -125,4 +126,10 @@ int dpic_restore() {
 	printf("%%Warning: svGetUserData failed\n");
 	return 0;
     }
+}
+
+unsigned dpic_getcontext() {
+    svScope scope = svGetScope();
+    printf("%%Info: svGetScope returned scope (%p) with name %s\n", scope, svGetNameFromScope(scope));
+    return (unsigned) (uintptr_t) scope;
 }

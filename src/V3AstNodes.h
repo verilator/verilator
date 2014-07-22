@@ -2983,7 +2983,10 @@ public:
     virtual bool cleanOut() { return true; }
     AstText*	scopeAttrp() const { return op1p()->castText(); }
     void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
+    AstText*	scopeEntrp() const { return op2p()->castText(); }
+    void 	scopeEntrp(AstNode* nodep) { addOp2p(nodep); }
     string scopeSymName() const;  // Name for __Vscope variable including children
+    string scopeDpiName() const;  // Name for DPI import scope
     string scopePrettyName() const;  // Name for __Vscope printing
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport=flag; }

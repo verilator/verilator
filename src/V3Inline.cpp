@@ -387,6 +387,10 @@ private:
 	if (afterp) afterp->unlinkFrBackWithNext();
 	nodep->scopeAttrp(new AstText(nodep->fileline(), (string)"__DOT__"+m_cellp->name()));
 	if (afterp) nodep->scopeAttrp(afterp);
+	afterp = nodep->scopeEntrp();
+	if (afterp) afterp->unlinkFrBackWithNext();
+	nodep->scopeEntrp(new AstText(nodep->fileline(), (string)"__DOT__"+m_cellp->name()));
+	if (afterp) nodep->scopeEntrp(afterp);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {

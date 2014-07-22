@@ -27,6 +27,7 @@ module sub (input integer inst);
    import "DPI-C" context function int dpic_line();
    import "DPI-C" context function int dpic_save(int value);
    import "DPI-C" context function int dpic_restore();
+   import "DPI-C" context function int unsigned dpic_getcontext();
 
    int result;
 
@@ -48,5 +49,18 @@ module sub (input integer inst);
    task test2;
       if (dpic_restore() != 23+inst) $stop;
    endtask
+
+   int unsigned cntxt1;
+   int unsigned cntxt2;
+
+   initial begin
+     cntxt1 = dpic_getcontext();
+     begin : caller_context
+       // call from a different scope - should still get the context of the function declaration
+       cntxt2 = dpic_getcontext();
+     end
+     // svContext should be the context of the function declaration, not the context of the function call
+     if (cntxt1 != cntxt2) $stop;
+   end
 
 endmodule

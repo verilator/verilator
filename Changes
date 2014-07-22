@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix error when tracing public parameters, bug722. [Jonathon Donaldson]
 
+****  Fix dpiGetContext in dotted scopes, bug740. [Geoff Barrett]
+
 
 * Verilator 3.862 2014-06-10
 
