@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix mis-optimization of bit-swap in wide signal, bug800. [Jie Xu]
 
+****  Fix error when tracing public parameters, bug722. [Jonathon Donaldson]
+
 
 * Verilator 3.862 2014-06-10
 

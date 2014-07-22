@@ -210,7 +210,8 @@ private:
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	if (nodep->dead()) {
 	    UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
-	} else if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
+	} else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
+		   || nodep->castPackage()) {	// Likewise haven't done wrapTopPackages yet
 	    // Add request to END of modules left to process
 	    m_todoModps.insert(make_pair(nodep->level(),nodep));
 	    visitModules();
