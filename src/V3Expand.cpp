@@ -583,11 +583,15 @@ private:
 								     newSelBitBit(lhsp->lsbp()),
 								     VL_WORDSIZE)),
 					  oldvalp);
+
+		// Restrict the shift amount to 0-31, see bug804.
+		AstNode* shiftp = new AstAnd(nodep->fileline(), lhsp->lsbp()->cloneTree(true),
+					     new AstConst(nodep->fileline(), VL_WORDSIZE-1));
 		AstNode* newp = new AstOr (lhsp->fileline(),
 					   oldvalp,
 					   new AstShiftL (lhsp->fileline(),
 							  rhsp,
-							  lhsp->lsbp()->cloneTree(true),
+							  shiftp,
 							  VL_WORDSIZE));
 		newp = new AstAssign (nodep->fileline(),
 				      new AstWordSel (nodep->fileline(),
