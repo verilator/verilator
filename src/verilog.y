@@ -841,8 +841,7 @@ paramPortDeclOrArgList<nodep>:	// IEEE: list_of_param_assignments + { parameter_
 
 paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaration
 	//			// We combine the two as we can't tell which follows a comma
-		param_assignment				{ $$ = $1; }
-	|	parameter_port_declarationFront param_assignment	{ $$ = $2; }
+		parameter_port_declarationFrontE param_assignment	{ $$ = $2; }
 	;
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
@@ -1149,10 +1148,13 @@ parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
 	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	;
 
-parameter_port_declarationFront: // IEEE: parameter_port_declaration w/o assignment
+parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
 	//			// IEEE: parameter_declaration (minus assignment)
-		parameter_declarationFront		{ }
-	//
+		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
+	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
+	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	//UNSUP	data_type				{ VARDTYPE($1); }
 	//UNSUP	yTYPE 					{ VARDTYPE($1); }
 	;
