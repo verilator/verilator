@@ -118,6 +118,18 @@ sub profcfunc {
 		$groups{type}{"Common code under $design"} += $pct;
 		$groups{design}{$design} += $pct;
 		$groups{module}{$design." common code"} += $pct;
+	    } elsif ($func =~ /^VL_[A-Z0-9_]+/
+		     || $func =~ /^_?vl_[a-zA-Z0-9_]+/
+		     || $func =~ /^verilated/i) {
+		$vfunc = sprintf("VLib      %s", $func);
+		$groups{type}{'VLib'} += $pct;
+		$groups{design}{'VLib'} += $pct;
+		$groups{module}{'VLib'} += $pct;
+	    } elsif ($func =~ /^_mcount_private/) {
+		$vfunc = sprintf("Prof      %s", $func);
+		$groups{type}{'Prof'} += $pct;
+		$groups{design}{'Prof'} += $pct;
+		$groups{module}{'Prof'} += $pct;
 	    } else {
 		$vfunc = sprintf("C++       %s", $func);
 		$groups{type}{'C++'} += $pct;
@@ -129,7 +141,7 @@ sub profcfunc {
     }
 
 
-    foreach my $type qw(type design module) {
+    foreach my $type (qw(type design module)) {
 	my $missing = 100;
 	foreach (sort (keys %{$groups{$type}})) {
 	    $missing -= $groups{$type}{$_};
@@ -150,8 +162,10 @@ sub profcfunc {
     print("Verilog code profile:\n");
     print("   These are split into three categories:\n");
     print("      C++:     Time in non-Verilated C++ code\n");
+    print("      Prof:    Time in profile overhead\n");
     print("      VBlock:  Time attributable to a block in a Verilog file and line\n");
     print("      VCommon: Time in a Verilated module, due to all parts of the design\n");
+    print("      VLib:    Time in Verilated common libraries, called by the Verilated code\n");
     print("\n");
 
     print("  %   cumulative   self              \n");

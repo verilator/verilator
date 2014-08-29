@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.863 devel
 
+****  Improve verilator_profcfunc time attributions. [Jonathon Donaldson]
+
 ****  Fix duplicate anonymous structures in $root, bug788. [Bob Newgard]
 
 ****  Fix mis-optimization of bit-swap in wide signal, bug800. [Jie Xu]
