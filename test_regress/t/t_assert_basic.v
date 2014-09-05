@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
 	    assert (0) else $info;
 	    assert (0) else $info("Info message");
 	    assert (0) else $info("Info message, cyc=%d", cyc);
-	    InWarningBlock: assert (0) else $warning("Warning....");
+	    InWarningBlock: assert (0) else $warning("Warning.... 1.0=%f 2.0=%f", 1.0, 2.0);
 	    InErrorBlock: assert (0) else $error("Error....");
 	    assert (0) else $fatal(1,"Fatal....");
 `endif

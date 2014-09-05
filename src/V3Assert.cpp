@@ -61,10 +61,13 @@ private:
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
 	nodep->displayType(AstDisplayType::DT_WRITE);
 	nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
-	AstNode* timesp = nodep->fmtp()->exprsp(); if (timesp) timesp->unlinkFrBack();
 	// cppcheck-suppress nullPointer
-	timesp = timesp->addNext(new AstTime(nodep->fileline()));
-	nodep->fmtp()->exprsp(timesp);
+	AstNode* timenewp = new AstTime(nodep->fileline());
+	if (AstNode* timesp = nodep->fmtp()->exprsp()) {
+	    timesp->unlinkFrBackWithNext();
+	    timenewp->addNext(timesp);
+	}
+	nodep->fmtp()->exprsp(timenewp);
 	if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
 	    nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
