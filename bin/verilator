@@ -782,8 +782,10 @@ Disables optimization of the model.
 
 =item -O3
 
-Enables slow optimizations.  This may reduce simulation runtimes at the
-cost of compile time.  This currently sets --inline-mult -1.
+Enables slow optimizations for the code Verilator itself generates (as
+opposed to "-CFLAGS -O3" which effects the C compiler's optimization.  -O3
+may reduce simulation runtimes at the cost of compile time.  This currently
+sets --inline-mult -1.
 
 =item -OI<optimization-letter>
 
