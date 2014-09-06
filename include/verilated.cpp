@@ -74,6 +74,9 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
     Verilated::gotFinish(true);
     VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
     Verilated::flushCall();
+
+    VL_PRINTF("Aborting...\n");
+    Verilated::flushCall();  // Second flush in case VL_PRINTF does something needing a flush
     abort();
 }
 #endif
