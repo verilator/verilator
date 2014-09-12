@@ -10,13 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} or $Self->skip("Verilator only test");
 
 $Self->_run (cmd=>["cd $Self->{obj_dir}"
-		   ." && g++ -c ../../t/t_flag_ldflags_a.cpp"
+		   ." && c++ -c ../../t/t_flag_ldflags_a.cpp"
 		   ." && ar r t_flag_ldflags_a.a t_flag_ldflags_a.o"
 		   ." && ranlib t_flag_ldflags_a.a "],
 	     check_finished=>0);
 $Self->_run (cmd=>["cd $Self->{obj_dir}"
-		   ." && g++ -fPIC -c ../../t/t_flag_ldflags_so.cpp"
-		   ." && g++ -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
+		   ." && c++ -fPIC -c ../../t/t_flag_ldflags_so.cpp"
+		   ." && c++ -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
 	     check_finished=>0);
 
 compile (

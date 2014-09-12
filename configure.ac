@@ -122,15 +122,17 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
 
 # For example, -Wno-div-by-zero isn't in 4.1.2
 _MY_CXX_CHECK_OPT(-Wno-char-subscripts)
+_MY_CXX_CHECK_OPT(-Wno-parentheses-equality)
 # Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
 # without this flag, even though there's a conditional to prevent the divide.
 # We still don't add no-div-by-zero as it throws message to stdout, though doesn't die.
 #_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
 _MY_CXX_CHECK_OPT(-Wno-sign-compare)
 _MY_CXX_CHECK_OPT(-Wno-uninitialized)
+_MY_CXX_CHECK_OPT(-Wno-unused-but-set-variable)
 _MY_CXX_CHECK_OPT(-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(-Wno-unused-variable)
-_MY_CXX_CHECK_OPT(-Wno-unused-but-set-variable)
+_MY_CXX_CHECK_OPT(-fbracket-depth=4096)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.

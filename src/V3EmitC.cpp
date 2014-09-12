@@ -785,6 +785,7 @@ class EmitCImp : EmitCStmts {
 
     //---------------------------------------
     // VISITORS
+    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	// TRACE_* and DPI handled elsewhere
 	if (nodep->funcType().isTrace()) return;
@@ -2305,6 +2306,7 @@ class EmitCTrace : EmitCStmts {
     }
 
     // VISITORS
+    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Top module only
 	nodep->topModulep()->accept(*this);

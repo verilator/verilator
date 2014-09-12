@@ -233,7 +233,6 @@ private:
     SplitPliVertex*	m_pliVertexp;	// Element specifying PLI ordering
     V3Graph		m_graph;	// Scoreboard of var usages/dependencies
     bool		m_inDly;	// Inside ASSIGNDLY
-    uint32_t		m_stepNum;	// Step number we need to ignore a edge in
     V3Double0		m_statSplits;	// Statistic tracking
 
     // METHODS

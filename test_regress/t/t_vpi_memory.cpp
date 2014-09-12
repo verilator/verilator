@@ -133,7 +133,7 @@ int _mon_check_memory() {
     // iterate and store
     iter_h = vpi_iterate(vpiMemoryWord, mem_h);
     cnt = 0;
-    while (lcl_h = vpi_scan(iter_h)) {
+    while ((lcl_h = vpi_scan(iter_h))) {
 	value.value.integer = ++cnt;
         vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
         // check size and range
@@ -143,7 +143,7 @@ int _mon_check_memory() {
     // iterate and accumulate
     iter_h = vpi_iterate(vpiMemoryWord, mem_h);
     cnt = 0;
-    while (lcl_h = vpi_scan(iter_h)) {
+    while ((lcl_h = vpi_scan(iter_h))) {
       ++cnt;
       vpi_get_value(lcl_h, &value);
       CHECK_RESULT(value.value.integer, cnt);

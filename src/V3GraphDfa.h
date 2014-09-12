@@ -96,6 +96,7 @@ public:
     DfaVertex(DfaGraph* graphp, bool start=false, bool accepting=false)
 	: V3GraphVertex(graphp)
 	, m_start(start), m_accepting(accepting) {}
+    using V3GraphVertex::clone;  // We are overriding, not overloading clone(V3Graph*)
     virtual DfaVertex* clone(DfaGraph* graphp) {
 	return new DfaVertex(graphp, start(), accepting()); }
     virtual ~DfaVertex() {}

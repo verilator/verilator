@@ -39,7 +39,7 @@
 //=== Ast* : Specific types
 // Netlist interconnect
 
-struct AstConst : public AstNodeMath {
+class AstConst : public AstNodeMath {
     // A constant
 private:
     V3Number	m_num;		// Constant value
@@ -100,7 +100,7 @@ public:
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMin()); }
 };
 
-struct AstConstString : public AstNodeMath {
+class AstConstString : public AstNodeMath {
     // A constant string
 private:
     string	m_name;
@@ -128,7 +128,7 @@ public:
     void name(const string& flag) { m_name = flag; rewidth(); }
 };
 
-struct AstRange : public AstNode {
+class AstRange : public AstNode {
     // Range specification, for use under variables and cells
 private:
     bool	m_littleEndian:1;	// Bit vector is little endian
@@ -163,8 +163,9 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstGatePin : public AstNodeMath {
+class AstGatePin : public AstNodeMath {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
+public:
     AstGatePin(FileLine* fl, AstNode* lhsp, AstRange* rangep) : AstNodeMath(fl) {
 	setOp1p(lhsp); setOp2p(rangep);
     }
@@ -179,7 +180,7 @@ struct AstGatePin : public AstNodeMath {
 //######################################################################
 //==== Data Types
 
-struct AstTypedef : public AstNode {
+class AstTypedef : public AstNode {
 private:
     string	m_name;
 public:
@@ -200,7 +201,7 @@ public:
     void name(const string& flag) { m_name = flag; }
 };
 
-struct AstTypedefFwd : public AstNode {
+class AstTypedefFwd : public AstNode {
     // Forward declaration of a type; stripped after netlist parsing is complete
 private:
     string	m_name;
@@ -212,7 +213,7 @@ public:
     virtual string name() const { return m_name; }
 };
 
-struct AstDefImplicitDType : public AstNodeDType {
+class AstDefImplicitDType : public AstNodeDType {
     // For parsing enum/struct/unions that are declared with a variable rather than typedef
     // This allows "var enum {...} a,b" to share the enum definition for both variables
     // After link, these become typedefs
@@ -247,7 +248,7 @@ public:
     void name(const string& flag) { m_name = flag; }
 };
 
-struct AstPackArrayDType : public AstNodeArrayDType {
+class AstPackArrayDType : public AstNodeArrayDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
@@ -272,7 +273,7 @@ public:
     ASTNODE_NODE_FUNCS(PackArrayDType, PACKARRAYDTYPE)
 };
 
-struct AstUnpackArrayDType : public AstNodeArrayDType {
+class AstUnpackArrayDType : public AstNodeArrayDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
@@ -297,7 +298,7 @@ public:
     ASTNODE_NODE_FUNCS(UnpackArrayDType, UNPACKARRAYDTYPE)
 };
 
-struct AstBasicDType : public AstNodeDType {
+class AstBasicDType : public AstNodeDType {
     // Builtin atomic/vectored data type
     // Children: RANGE (converted to constant in V3Width)
 private:
@@ -410,7 +411,7 @@ public:
     }
 };
 
-struct AstConstDType : public AstNodeDType {
+class AstConstDType : public AstNodeDType {
     // const data type, ie "const some_dtype var_name [2:0]"
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
@@ -448,7 +449,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
-struct AstIfaceRefDType : public AstNodeDType {
+class AstIfaceRefDType : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
 private:
     string		m_cellName;	// "" = no cell, such as when connects to 'input' iface
@@ -491,7 +492,7 @@ public:
     bool isModport() { return !m_modportName.empty(); }
 };
 
-struct AstRefDType : public AstNodeDType {
+class AstRefDType : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep;	// data type pointed to, BELOW the AstTypedef
     string	m_name;		// Name of an AstTypedef
@@ -541,14 +542,16 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
-struct AstStructDType : public AstNodeClassDType {
+class AstStructDType : public AstNodeClassDType {
+public:
     AstStructDType(FileLine* fl, AstNumeric numericUnpack)
 	: AstNodeClassDType(fl,numericUnpack) {}
     ASTNODE_NODE_FUNCS(StructDType, STRUCTDTYPE)
     virtual string verilogKwd() const { return "struct"; };
 };
 
-struct AstUnionDType : public AstNodeClassDType {
+class AstUnionDType : public AstNodeClassDType {
+public:
     //UNSUP: bool isTagged;
     AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
 	: AstNodeClassDType(fl,numericUnpack) {}
@@ -556,7 +559,7 @@ struct AstUnionDType : public AstNodeClassDType {
     virtual string verilogKwd() const { return "union"; };
 };
 
-struct AstMemberDType : public AstNodeDType {
+class AstMemberDType : public AstNodeDType {
     // A member of a struct/union
     // PARENT: AstClassDType
 private:
@@ -604,7 +607,7 @@ public:
     void lsb(int lsb) { m_lsb=lsb; }
 };
 
-struct AstEnumItem : public AstNode {
+class AstEnumItem : public AstNode {
 private:
     string	m_name;
 public:
@@ -623,7 +626,7 @@ public:
     void valuep(AstNode* nodep) { addOp2p(nodep); }
 };
 
-struct AstEnumItemRef : public AstNodeMath {
+class AstEnumItemRef : public AstNodeMath {
 private:
     AstEnumItem* m_itemp;	// [AfterLink] Pointer to item
     AstPackage*	m_packagep;	// Package hierarchy
@@ -648,7 +651,7 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
-struct AstEnumDType : public AstNodeDType {
+class AstEnumDType : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // Children: ENUMVALUEs
 private:
@@ -691,7 +694,7 @@ public:
 
 //######################################################################
 
-struct AstArraySel : public AstNodeSel {
+class AstArraySel : public AstNodeSel {
     // Parents: math|stmt
     // Children: varref|arraysel, math
 private:
@@ -734,8 +737,9 @@ public:
     virtual void dump(ostream& str);
 };
 
-struct AstWordSel : public AstNodeSel {
+class AstWordSel : public AstNodeSel {
     // Select a single word from a multi-word wide value
+public:
     AstWordSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodeSel(fl, fromp, bitp) {
 	dtypeSetUInt32(); // Always used on IData arrays so returns word entities
@@ -751,8 +755,9 @@ struct AstWordSel : public AstNodeSel {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstSelExtract : public AstNodePreSel {
+class AstSelExtract : public AstNodePreSel {
     // Range extraction, gets replaced with AstSel
+public:
     AstSelExtract(FileLine* fl, AstNode* fromp, AstNode* msbp, AstNode* lsbp)
 	: AstNodePreSel(fl, fromp, msbp, lsbp) {}
     ASTNODE_NODE_FUNCS(SelExtract, SELEXTRACT)
@@ -760,9 +765,10 @@ struct AstSelExtract : public AstNodePreSel {
     AstNode*	lsbp() const { return thsp(); }
 };
 
-struct AstSelBit : public AstNodePreSel {
+class AstSelBit : public AstNodePreSel {
     // Single bit range extraction, perhaps with non-constant selection or array selection
     // Gets replaced during link with AstArraySel or AstSel
+public:
     AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodePreSel(fl, fromp, bitp, NULL) {
 	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
@@ -771,9 +777,10 @@ struct AstSelBit : public AstNodePreSel {
     AstNode*	bitp() const { return rhsp(); }
 };
 
-struct AstSelPlus : public AstNodePreSel {
+class AstSelPlus : public AstNodePreSel {
     // +: range extraction, perhaps with non-constant selection
     // Gets replaced during link with AstSel
+public:
     AstSelPlus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelPlus, SELPLUS)
@@ -781,9 +788,10 @@ struct AstSelPlus : public AstNodePreSel {
     AstNode*	widthp() const { return thsp(); }
 };
 
-struct AstSelMinus : public AstNodePreSel {
+class AstSelMinus : public AstNodePreSel {
     // -: range extraction, perhaps with non-constant selection
     // Gets replaced during link with AstSel
+public:
     AstSelMinus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
 	:AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelMinus, SELMINUS)
@@ -791,7 +799,7 @@ struct AstSelMinus : public AstNodePreSel {
     AstNode*	widthp() const { return thsp(); }
 };
 
-struct AstSel : public AstNodeTriop {
+class AstSel : public AstNodeTriop {
     // Multiple bit range extraction
     // Parents: math|stmt
     // Children: varref|arraysel, math, constant math
@@ -845,7 +853,7 @@ public:
     void declElWidth(int flag) { m_declElWidth = flag; }
 };
 
-struct AstMemberSel : public AstNodeMath {
+class AstMemberSel : public AstNodeMath {
     // Parents: math|stmt
     // Children: varref|arraysel, math
 private:
@@ -876,7 +884,7 @@ public:
     void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
-struct AstVar : public AstNode {
+class AstVar : public AstNode {
     // A variable (in/out/wire/reg/param) inside a module
 private:
     string	m_name;		// Name of variable
@@ -1099,7 +1107,7 @@ public:
     }
 };
 
-struct AstDefParam : public AstNode {
+class AstDefParam : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // Children: math
@@ -1122,9 +1130,10 @@ public:
     string   path()		const { return m_path; }
 };
 
-struct AstImplicit : public AstNode {
+class AstImplicit : public AstNode {
     // Create implicit wires and do nothing else, for gates that are ignored
     // Parents: MODULE
+public:
     AstImplicit(FileLine* fl, AstNode* exprsp)
 	: AstNode(fl) {
 	addNOp1p(exprsp);
@@ -1133,7 +1142,7 @@ struct AstImplicit : public AstNode {
     AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Assign from
 };
 
-struct AstScope : public AstNode {
+class AstScope : public AstNode {
     // A particular usage of a cell
     // Parents: MODULE
     // Children: NODEBLOCK
@@ -1168,11 +1177,12 @@ public:
     bool isTop() const { return aboveScopep()==NULL; }  // At top of hierarchy
 };
 
-struct AstTopScope : public AstNode {
+class AstTopScope : public AstNode {
     // In the top level netlist, a complete scope tree
     // There may be two of these, when we support "rare" and "usual" splitting
     // Parents: topMODULE
     // Children: SCOPEs
+public:
     AstTopScope(FileLine* fl, AstScope* ascopep)
 	:AstNode(fl)
 	{addNOp2p(ascopep);}
@@ -1182,7 +1192,7 @@ struct AstTopScope : public AstNode {
     AstScope* scopep()		const { return op2p()->castScope(); }	// op1 = AstVarScope's
 };
 
-struct AstVarScope : public AstNode {
+class AstVarScope : public AstNode {
     // A particular scoped usage of a variable
     // That is, as a module is used under multiple cells, we get a different varscope for each var in the module
     // Parents: MODULE
@@ -1218,8 +1228,9 @@ public:
     void	circular(bool flag) { m_circular = flag; }
 };
 
-struct AstVarRef : public AstNodeVarRef {
+class AstVarRef : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
+public:
     AstVarRef(FileLine* fl, const string& name, bool lvalue)
 	:AstNodeVarRef(fl, name, NULL, lvalue) {}
     AstVarRef(FileLine* fl, AstVar* varp, bool lvalue)  // This form only allowed post-link
@@ -1248,7 +1259,7 @@ struct AstVarRef : public AstNodeVarRef {
     virtual bool cleanOut() { return true; }
 };
 
-struct AstVarXRef : public AstNodeVarRef {
+class AstVarXRef : public AstNodeVarRef {
     // A VarRef to something in another module before AstScope.
     // Includes pin on a cell, as part of a ASSIGN statement to connect I/Os until AstScope
 private:
@@ -1281,7 +1292,7 @@ public:
 		&& dotted()==samep->castVarXRef()->dotted()); }
 };
 
-struct AstPin : public AstNode {
+class AstPin : public AstNode {
     // A pin on a cell
 private:
     int		m_pinNum;	// Pin number
@@ -1324,7 +1335,7 @@ public:
     void        svImplicit(bool flag) { m_svImplicit=flag; }
 };
 
-struct AstArg : public AstNode {
+class AstArg : public AstNode {
     // An argument to a function/task
 private:
     string	m_name;		// Pin name, or "" for number based interconnect
@@ -1343,24 +1354,27 @@ public:
     bool	emptyConnectNoNext() const { return !exprp() && name()=="" && !nextp(); }
 };
 
-struct AstModule : public AstNodeModule {
+class AstModule : public AstNodeModule {
     // A module declaration
+public:
     AstModule(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Module, MODULE)
     virtual string verilogKwd() const { return "module"; }
 };
 
-struct AstNotFoundModule : public AstNodeModule {
+class AstNotFoundModule : public AstNodeModule {
     // A missing module declaration
+public:
     AstNotFoundModule(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(NotFoundModule, NOTFOUNDMODULE)
     virtual string verilogKwd() const { return "/*not-found-*/ module"; }
 };
 
-struct AstPackage : public AstNodeModule {
+class AstPackage : public AstNodeModule {
     // A package declaration
+public:
     AstPackage(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Package, PACKAGE)
@@ -1369,15 +1383,16 @@ struct AstPackage : public AstNodeModule {
     bool isDollarUnit() const { return name() == dollarUnitName(); }
 };
 
-struct AstPrimitive : public AstNodeModule {
+class AstPrimitive : public AstNodeModule {
     // A primitive declaration
+public:
     AstPrimitive(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) {}
     ASTNODE_NODE_FUNCS(Primitive, PRIMITIVE)
     virtual string verilogKwd() const { return "primitive"; }
 };
 
-struct AstPackageImport : public AstNode {
+class AstPackageImport : public AstNode {
 private:
     // A package import declaration
     string	m_name;
@@ -1394,14 +1409,15 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
-struct AstIface : public AstNodeModule {
+class AstIface : public AstNodeModule {
     // A module declaration
+public:
     AstIface(FileLine* fl, const string& name)
 	: AstNodeModule (fl,name) { }
     ASTNODE_NODE_FUNCS(Iface, IFACE)
 };
 
-struct AstModportFTaskRef : public AstNode {
+class AstModportFTaskRef : public AstNode {
     // An import/export referenced under a modport
     // The storage for the function itself is inside the interface/instantiator, thus this is a reference
     // PARENT: AstModport
@@ -1423,7 +1439,7 @@ public:
     void ftaskp(AstNodeFTask* ftaskp) { m_ftaskp=ftaskp; }
 };
 
-struct AstModportVarRef : public AstNode {
+class AstModportVarRef : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
     // PARENT: AstModport
@@ -1446,7 +1462,7 @@ public:
     void varp(AstVar* varp) { m_varp=varp; }
 };
 
-struct AstModport : public AstNode {
+class AstModport : public AstNode {
     // A modport in an interface
 private:
     string	m_name;		// Name of the modport
@@ -1460,7 +1476,7 @@ public:
     AstNode* varsp() const { return op1p(); }	// op1 = List of Vars
 };
 
-struct AstCell : public AstNode {
+class AstCell : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
 private:
     string	m_name;		// Cell name
@@ -1498,7 +1514,7 @@ public:
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
 };
 
-struct AstCellInline : public AstNode {
+class AstCellInline : public AstNode {
     // A instantiation cell that was removed by inlining
     // For communication between V3Inline and V3LinkDot only
     // Children: When 2 levels inlined, other CellInline under this
@@ -1517,7 +1533,7 @@ public:
     virtual void name(const string& name) { m_name = name; }
 };
 
-struct AstBind : public AstNode {
+class AstBind : public AstNode {
     // Parents: MODULE
     // Children: CELL
 private:
@@ -1536,7 +1552,7 @@ public:
     AstNode* cellsp() const { return op1p(); }	// op1= cells
 };
 
-struct AstPort : public AstNode {
+class AstPort : public AstNode {
     // A port (in/out/inout) on a module
 private:
     int		m_pinNum;	// Pin number
@@ -1553,10 +1569,11 @@ public:
 
 //######################################################################
 
-struct AstGenerate : public AstNode {
+class AstGenerate : public AstNode {
     // A Generate/end block
     // Parents: MODULE
     // Children: modItems
+public:
     AstGenerate(FileLine* fileline, AstNode* stmtsp)
 	: AstNode(fileline) {
 	addNOp1p(stmtsp);
@@ -1567,7 +1584,7 @@ struct AstGenerate : public AstNode {
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
 };
 
-struct AstParseRef : public AstNode {
+class AstParseRef : public AstNode {
     // A reference to a variable, function or task
     // We don't know which at parse time due to bison constraints
     // The link stages will replace this with AstVarRef, or AstTaskRef, etc.
@@ -1597,7 +1614,7 @@ public:
     void ftaskrefp(AstNodeFTaskRef* nodep) { setNOp2p(nodep); }	// op2 = Function/task reference
 };
 
-struct AstPackageRef : public AstNode {
+class AstPackageRef : public AstNode {
 private:
     AstPackage*	m_packagep;	// Package hierarchy
 public:
@@ -1617,7 +1634,7 @@ public:
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
 
-struct AstDot : public AstNode {
+class AstDot : public AstNode {
     // A dot separating paths in an AstXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
 public:
@@ -1637,15 +1654,17 @@ public:
 
 //######################################################################
 
-struct AstTask : public AstNodeFTask {
+class AstTask : public AstNodeFTask {
     // A task inside a module
+public:
     AstTask(FileLine* fl, const string& name, AstNode* stmtp)
 	:AstNodeFTask(fl, name, stmtp) {}
     ASTNODE_NODE_FUNCS(Task, TASK)
 };
 
-struct AstFunc : public AstNodeFTask {
+class AstFunc : public AstNodeFTask {
     // A function inside a module
+public:
     AstFunc(FileLine* fl, const string& name, AstNode* stmtp, AstNode* fvarsp)
 	:AstNodeFTask(fl, name, stmtp) {
 	addNOp1p(fvarsp);
@@ -1654,8 +1673,9 @@ struct AstFunc : public AstNodeFTask {
     virtual bool hasDType() const { return true; }
 };
 
-struct AstTaskRef : public AstNodeFTaskRef {
+class AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
+public:
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
     AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
@@ -1663,8 +1683,9 @@ struct AstTaskRef : public AstNodeFTaskRef {
     ASTNODE_NODE_FUNCS(TaskRef, TASKREF)
 };
 
-struct AstFuncRef : public AstNodeFTaskRef {
+class AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
+public:
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, namep, pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
@@ -1673,7 +1694,7 @@ struct AstFuncRef : public AstNodeFTaskRef {
     virtual bool hasDType() const { return true; }
 };
 
-struct AstDpiExport : public AstNode {
+class AstDpiExport : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.
     // (Probably AstNodeFTaskRef should be renamed AstNodeFTaskCall and have-a AstNodeFTaskRef)
@@ -1692,7 +1713,7 @@ public:
 
 //######################################################################
 
-struct AstSenItem : public AstNodeSenItem {
+class AstSenItem : public AstNodeSenItem {
     // Parents:  SENTREE
     // Children: (optional) VARREF SENGATE
 private:
@@ -1740,11 +1761,12 @@ public:
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }
 };
 
-struct AstSenGate : public AstNodeSenItem {
+class AstSenGate : public AstNodeSenItem {
     // Parents:  SENTREE
     // Children: SENITEM expr
     // AND as applied to a sensitivity list and a gating expression
     // Performing this gating is optional; it may be removed by later optimizations
+public:
     AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp) : AstNodeSenItem(fl) {
 	dtypeSetLogicBool(); addOp1p(sensesp); setOp2p(rhsp);
     }
@@ -1762,7 +1784,7 @@ struct AstSenGate : public AstNodeSenItem {
     virtual bool isNever() const { return false; }
 };
 
-struct AstSenTree : public AstNode {
+class AstSenTree : public AstNode {
     // A list of senitems
     // Parents:  MODULE | SBLOCK
     // Children: SENITEM list
@@ -1787,7 +1809,7 @@ public:
     bool hasCombo();	// Includes a COMBO SenItem
 };
 
-struct AstAlways : public AstNode {
+class AstAlways : public AstNode {
     VAlwaysKwd m_keyword;
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* bodysp)
@@ -1805,9 +1827,10 @@ public:
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
-struct AstAlwaysPublic : public AstNodeStmt {
+class AstAlwaysPublic : public AstNodeStmt {
     // "Fake" sensitivity created by /*verilator public_flat_rw @(edgelist)*/
     // Body statements are just AstVarRefs to the public signals
+public:
     AstAlwaysPublic(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
 	: AstNodeStmt(fl) {
 	addNOp1p(sensesp); addNOp2p(bodysp);
@@ -1823,8 +1846,9 @@ struct AstAlwaysPublic : public AstNodeStmt {
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
-struct AstAlwaysPost : public AstNode {
+class AstAlwaysPost : public AstNode {
     // Like always but post assignments for memory assignment IFs
+public:
     AstAlwaysPost(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
 	: AstNode(fl) {
 	addNOp1p(sensesp); addNOp2p(bodysp);
@@ -1835,7 +1859,8 @@ struct AstAlwaysPost : public AstNode {
     void	addBodysp(AstNode* newp)	{ addOp2p(newp); }
 };
 
-struct AstAssign : public AstNodeAssign {
+class AstAssign : public AstNodeAssign {
+public:
     AstAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {
 	dtypeFrom(lhsp);
@@ -1844,16 +1869,18 @@ struct AstAssign : public AstNodeAssign {
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
 };
 
-struct AstAssignAlias : public AstNodeAssign {
+class AstAssignAlias : public AstNodeAssign {
     // Like AstAssignW, but a true bidirect interconnection alias
     // If both sides are wires, there's no LHS vs RHS,
+public:
     AstAssignAlias(FileLine* fileline, AstVarRef* lhsp, AstVarRef* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignAlias, ASSIGNALIAS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA; return NULL; }
 };
 
-struct AstAssignDly : public AstNodeAssign {
+class AstAssignDly : public AstNodeAssign {
+public:
     AstAssignDly(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignDly, ASSIGNDLY)
@@ -1862,8 +1889,9 @@ struct AstAssignDly : public AstNodeAssign {
     virtual string verilogKwd() const { return "<="; }
 };
 
-struct AstAssignW : public AstNodeAssign {
+class AstAssignW : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
+public:
     AstAssignW(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) { }
     ASTNODE_NODE_FUNCS(AssignW, ASSIGNW)
@@ -1878,8 +1906,9 @@ struct AstAssignW : public AstNodeAssign {
     }
 };
 
-struct AstAssignVarScope : public AstNodeAssign {
+class AstAssignVarScope : public AstNodeAssign {
     // Assign two VarScopes to each other
+public:
     AstAssignVarScope(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {
 	dtypeFrom(rhsp);
@@ -1888,7 +1917,7 @@ struct AstAssignVarScope : public AstNodeAssign {
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignVarScope(this->fileline(), lhsp, rhsp); }
 };
 
-struct AstPull : public AstNode {
+class AstPull : public AstNode {
 private:
     bool m_direction;
 public:
@@ -1905,23 +1934,25 @@ public:
     uint32_t direction() const { return (uint32_t) m_direction; }
 };
 
-struct AstAssignPre : public AstNodeAssign {
+class AstAssignPre : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
+public:
     AstAssignPre(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPre, ASSIGNPRE)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPre(this->fileline(), lhsp, rhsp); }
 };
 
-struct AstAssignPost : public AstNodeAssign {
+class AstAssignPost : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
+public:
     AstAssignPost(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPost, ASSIGNPOST)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPost(this->fileline(), lhsp, rhsp); }
 };
 
-struct AstComment : public AstNodeStmt {
+class AstComment : public AstNodeStmt {
     // Some comment to put into the output stream
     // Parents:  {statement list}
     // Children: none
@@ -1937,25 +1968,27 @@ public:
     virtual bool same(AstNode* samep) const { return true; }  // Ignore name in comments
 };
 
-struct AstCond : public AstNodeCond {
+class AstCond : public AstNodeCond {
     // Conditional ?: statement
     // Parents:  MATH
     // Children: MATH
+public:
     AstCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
     ASTNODE_NODE_FUNCS(Cond, COND)
 };
 
-struct AstCondBound : public AstNodeCond {
+class AstCondBound : public AstNodeCond {
     // Conditional ?: statement, specially made for saftey checking of array bounds
     // Parents:  MATH
     // Children: MATH
+public:
     AstCondBound(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
     ASTNODE_NODE_FUNCS(CondBound, CONDBOUND)
 };
 
-struct AstCoverDecl : public AstNodeStmt {
+class AstCoverDecl : public AstNodeStmt {
     // Coverage analysis point declaration
     // Parents:  {statement list}
     // Children: none
@@ -2003,7 +2036,7 @@ public:
     AstCoverDecl*	dataDeclThisp() { return dataDeclNullp()?dataDeclNullp():this; }
 };
 
-struct AstCoverInc : public AstNodeStmt {
+class AstCoverInc : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
     // Parents:  {statement list}
     // Children: none
@@ -2029,10 +2062,11 @@ public:
     AstCoverDecl*	declp() const { return m_declp; }	// Where defined
 };
 
-struct AstCoverToggle : public AstNodeStmt {
+class AstCoverToggle : public AstNodeStmt {
     // Toggle analysis of given signal
     // Parents:  MODULE
     // Children: AstCoverInc, orig var, change det var
+public:
     AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNode* origp, AstNode* changep)
 	: AstNodeStmt(fl) {
 	setOp1p(incp);
@@ -2053,18 +2087,19 @@ struct AstCoverToggle : public AstNodeStmt {
     AstNode* changep() const { return op3p(); }
 };
 
-struct AstGenCase : public AstNodeCase {
+class AstGenCase : public AstNodeCase {
     // Generate Case statement
     // Parents:  {statement list}
     // exprp Children:  MATHs
     // casesp Children: CASEITEMs
+public:
     AstGenCase(FileLine* fileline, AstNode* exprp, AstNode* casesp)
 	: AstNodeCase(fileline, exprp, casesp) {
     }
     ASTNODE_NODE_FUNCS(GenCase, GENCASE)
 };
 
-struct AstCase : public AstNodeCase {
+class AstCase : public AstNodeCase {
     // Case statement
     // Parents:  {statement list}
     // exprp Children:  MATHs
@@ -2104,7 +2139,7 @@ public:
     void	priorityPragma(bool flag) { m_priorityPragma=flag; }
 };
 
-struct AstCaseItem : public AstNode {
+class AstCaseItem : public AstNode {
     // Single item of a case statement
     // Parents:  CASE
     // condsp Children: MATH  (Null condition used for default block)
@@ -2128,7 +2163,7 @@ public:
     void	ignoreOverlap(bool flag) { m_ignoreOverlap = flag; }
 };
 
-struct AstSFormatF : public AstNode {
+class AstSFormatF : public AstNode {
     // Convert format to string, generally under an AstDisplay or AstSFormat
     // Also used as "real" function for /*verilator sformat*/ functions
     string	m_text;
@@ -2154,7 +2189,7 @@ public:
     bool hidden() const { return m_hidden; }
 };
 
-struct AstDisplay : public AstNodeStmt {
+class AstDisplay : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
     // Children: SFORMATF to generate print string
@@ -2189,10 +2224,11 @@ public:
     void 	filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
 
-struct AstSFormat : public AstNode {
+class AstSFormat : public AstNode {
     // Parents: statement container
     // Children: string to load
     // Children: SFORMATF to generate print string
+public:
     AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
 	: AstNode (fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
@@ -2217,9 +2253,10 @@ struct AstSFormat : public AstNode {
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
 
-struct AstSysIgnore : public AstNodeStmt {
+class AstSysIgnore : public AstNodeStmt {
     // Parents: stmtlist
     // Children: varrefs or exprs
+public:
     AstSysIgnore(FileLine* fileline, AstNode* exprsp)
 	: AstNodeStmt (fileline) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysIgnore, SYSIGNORE)
@@ -2233,9 +2270,10 @@ struct AstSysIgnore : public AstNodeStmt {
     void 	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
 };
 
-struct AstFClose : public AstNodeStmt {
+class AstFClose : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
+public:
     AstFClose(FileLine* fileline, AstNode* filep)
 	: AstNodeStmt (fileline) {
 	setNOp2p(filep);
@@ -2253,8 +2291,9 @@ struct AstFClose : public AstNodeStmt {
     void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
-struct AstFOpen : public AstNodeStmt {
+class AstFOpen : public AstNodeStmt {
     // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
+public:
     AstFOpen(FileLine* fileline, AstNode* filep, AstNode* filenamep, AstNode* modep)
 	: AstNodeStmt (fileline) {
 	setOp1p(filep);
@@ -2275,9 +2314,10 @@ struct AstFOpen : public AstNodeStmt {
     AstNode*	modep() const { return op3p(); }
 };
 
-struct AstFFlush : public AstNodeStmt {
+class AstFFlush : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
+public:
     AstFFlush(FileLine* fileline, AstNode* filep)
 	: AstNodeStmt (fileline) {
 	setNOp2p(filep);
@@ -2295,7 +2335,7 @@ struct AstFFlush : public AstNodeStmt {
     void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
-struct AstFScanF : public AstNodeMath {
+class AstFScanF : public AstNodeMath {
     // Parents: expr
     // Children: file which must be a varref
     // Children: varrefs to load
@@ -2328,7 +2368,7 @@ public:
     void 	filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
-struct AstSScanF : public AstNodeMath {
+class AstSScanF : public AstNodeMath {
     // Parents: expr
     // Children: file which must be a varref
     // Children: varrefs to load
@@ -2361,7 +2401,7 @@ public:
     void 	fromp(AstNode* nodep) { setOp2p(nodep); }
 };
 
-struct AstReadMem : public AstNodeStmt {
+class AstReadMem : public AstNodeStmt {
 private:
     bool	m_isHex;	// readmemh, not readmemb
 public:
@@ -2386,8 +2426,9 @@ public:
     AstNode*	msbp() const { return op4p()->castNode(); }
 };
 
-struct AstSystemT : public AstNodeStmt {
+class AstSystemT : public AstNodeStmt {
     // $system used as task
+public:
     AstSystemT(FileLine* fileline, AstNode* lhsp)
 	: AstNodeStmt (fileline) {
 	setOp1p(lhsp);
@@ -2404,8 +2445,9 @@ struct AstSystemT : public AstNodeStmt {
     AstNode*	lhsp() const { return op1p(); }
 };
 
-struct AstSystemF : public AstNodeMath {
+class AstSystemF : public AstNodeMath {
     // $system used as function
+public:
     AstSystemF(FileLine* fileline, AstNode* lhsp)
 	: AstNodeMath (fileline) {
 	setOp1p(lhsp);
@@ -2425,7 +2467,7 @@ struct AstSystemF : public AstNodeMath {
     AstNode*	lhsp() const { return op1p(); }
 };
 
-struct AstValuePlusArgs : public AstNodeMath {
+class AstValuePlusArgs : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
 private:
@@ -2452,7 +2494,7 @@ public:
     void 	text(const string& text) { m_text=text; }
 };
 
-struct AstTestPlusArgs : public AstNodeMath {
+class AstTestPlusArgs : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
 private:
@@ -2475,7 +2517,8 @@ public:
     void 	text(const string& text) { m_text=text; }
 };
 
-struct AstGenFor : public AstNodeFor {
+class AstGenFor : public AstNodeFor {
+public:
     AstGenFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
 	   AstNode* incsp, AstNode* bodysp)
 	: AstNodeFor(fileline, initsp, condp, incsp, bodysp) {
@@ -2483,7 +2526,8 @@ struct AstGenFor : public AstNodeFor {
     ASTNODE_NODE_FUNCS(GenFor, GENFOR)
 };
 
-struct AstRepeat : public AstNodeStmt {
+class AstRepeat : public AstNodeStmt {
+public:
     AstRepeat(FileLine* fileline, AstNode* countp, AstNode* bodysp)
 	: AstNodeStmt(fileline) {
 	setOp2p(countp); addNOp3p(bodysp);
@@ -2497,7 +2541,8 @@ struct AstRepeat : public AstNodeStmt {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstWhile : public AstNodeStmt {
+class AstWhile : public AstNodeStmt {
+public:
     AstWhile(FileLine* fileline, AstNode* condp, AstNode* bodysp, AstNode* incsp=NULL)
 	: AstNodeStmt(fileline) {
 	setOp2p(condp); addNOp3p(bodysp); addNOp4p(incsp);
@@ -2518,7 +2563,8 @@ struct AstWhile : public AstNodeStmt {
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
 
-struct AstBreak : public AstNodeStmt {
+class AstBreak : public AstNodeStmt {
+public:
     AstBreak(FileLine* fileline)
 	: AstNodeStmt (fileline) {}
     ASTNODE_NODE_FUNCS(Break, BREAK)
@@ -2527,7 +2573,8 @@ struct AstBreak : public AstNodeStmt {
     virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
-struct AstContinue : public AstNodeStmt {
+class AstContinue : public AstNodeStmt {
+public:
     AstContinue(FileLine* fileline)
 	: AstNodeStmt (fileline) {}
     ASTNODE_NODE_FUNCS(Continue, CONTINUE)
@@ -2536,7 +2583,7 @@ struct AstContinue : public AstNodeStmt {
     virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
-struct AstDisable : public AstNodeStmt {
+class AstDisable : public AstNodeStmt {
 private:
     string	m_name;		// Name of block
 public:
@@ -2548,7 +2595,8 @@ public:
     virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
-struct AstReturn : public AstNodeStmt {
+class AstReturn : public AstNodeStmt {
+public:
     AstReturn(FileLine* fileline, AstNode* lhsp=NULL)
 	: AstNodeStmt (fileline) {
 	setNOp1p(lhsp);
@@ -2560,14 +2608,15 @@ struct AstReturn : public AstNodeStmt {
     virtual bool isBrancher() const { return true; }	// SPECIAL: We don't process code after breaks
 };
 
-struct AstGenIf : public AstNodeIf {
+class AstGenIf : public AstNodeIf {
+public:
     AstGenIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
     }
     ASTNODE_NODE_FUNCS(GenIf, GENIF)
 };
 
-struct AstIf : public AstNodeIf {
+class AstIf : public AstNodeIf {
 private:
     bool	m_uniquePragma;		// unique case
     bool	m_unique0Pragma;	// unique0 case
@@ -2586,7 +2635,7 @@ public:
     void	priorityPragma(bool flag) { m_priorityPragma=flag; }
 };
 
-struct AstJumpLabel : public AstNodeStmt {
+class AstJumpLabel : public AstNodeStmt {
     // Jump point declaration
     // Separate from AstJumpGo; as a declaration can't be deleted
     // Parents:  {statement list}
@@ -2610,7 +2659,7 @@ public:
     void labelNum(int flag) { m_labelNum=flag; }
 };
 
-struct AstJumpGo : public AstNodeStmt {
+class AstJumpGo : public AstNodeStmt {
     // Jump point; branch up to the JumpLabel
     // Parents:  {statement list}
 private:
@@ -2633,10 +2682,11 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
-struct AstUntilStable : public AstNodeStmt {
+class AstUntilStable : public AstNodeStmt {
     // Quasi-while loop until given signals are stable
     // Parents: CFUNC (generally)
     // Children: VARREF, statements
+public:
     AstUntilStable(FileLine* fileline, AstVarRef* stablesp, AstNode* bodysp)
 	: AstNodeStmt(fileline) {
 	addNOp2p(stablesp); addNOp3p(bodysp);
@@ -2653,11 +2703,12 @@ struct AstUntilStable : public AstNodeStmt {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstChangeXor : public AstNodeBiComAsv {
+class AstChangeXor : public AstNodeBiComAsv {
     // A comparison to determine change detection, common & must be fast.
     // Returns 32-bit or 64-bit value where 0 indicates no change.
     // Parents: OR or LOGOR
     // Children: VARREF
+public:
     AstChangeXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeSetUInt32(); // Always used on, and returns word entities
@@ -2673,7 +2724,7 @@ struct AstChangeXor : public AstNodeBiComAsv {
     virtual int instrCount()	const { return widthInstrs(); }
 };
 
-struct AstChangeDet : public AstNodeStmt {
+class AstChangeDet : public AstNodeStmt {
     // A comparison to determine change detection, common & must be fast.
 private:
     bool	m_clockReq;	// Type of detection
@@ -2694,7 +2745,7 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstBegin : public AstNode {
+class AstBegin : public AstNode {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
     // Children: statements
@@ -2726,7 +2777,8 @@ public:
     bool generate() const { return m_generate; }
 };
 
-struct AstInitial : public AstNode {
+class AstInitial : public AstNode {
+public:
     AstInitial(FileLine* fl, AstNode* bodysp)
 	: AstNode(fl) {
 	addNOp1p(bodysp);
@@ -2737,7 +2789,8 @@ struct AstInitial : public AstNode {
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
 
-struct AstFinal : public AstNode {
+class AstFinal : public AstNode {
+public:
     AstFinal(FileLine* fl, AstNode* bodysp)
 	: AstNode(fl) {
 	addNOp1p(bodysp);
@@ -2746,7 +2799,8 @@ struct AstFinal : public AstNode {
     AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
 };
 
-struct AstInside : public AstNodeMath {
+class AstInside : public AstNodeMath {
+public:
     AstInside(FileLine* fl, AstNode* exprp, AstNode* itemsp)
 	: AstNodeMath(fl) {
 	addOp1p(exprp); addOp2p(itemsp);
@@ -2760,7 +2814,8 @@ struct AstInside : public AstNodeMath {
     virtual bool cleanOut() { return false; }  // NA
 };
 
-struct AstInsideRange : public AstNodeMath {
+class AstInsideRange : public AstNodeMath {
+public:
     AstInsideRange(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
 	: AstNodeMath(fl) {
 	addOp1p(lhsp); addOp2p(rhsp);
@@ -2773,12 +2828,13 @@ struct AstInsideRange : public AstNodeMath {
     virtual bool cleanOut() { return false; }  // NA
 };
 
-struct AstInitArray : public AstNode {
+class AstInitArray : public AstNode {
     // Set a var to a large list of values
     // The values must be in sorted order, and not exceed the size of the var's array.
     // The first value on the initsp() list is for the lo() index of the array.
     // Parents: ASTVAR::init()
     // Children: CONSTs...
+public:
     AstInitArray(FileLine* fl, AstNodeArrayDType* newDTypep, AstNode* initsp)
 	: AstNode(fl) {
 	dtypep(newDTypep);
@@ -2792,7 +2848,7 @@ struct AstInitArray : public AstNode {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstPragma : public AstNode {
+class AstPragma : public AstNode {
 private:
     AstPragmaType	m_pragType;	// Type of pragma
 public:
@@ -2810,7 +2866,8 @@ public:
 	return pragType()==samep->castPragma()->pragType(); }
 };
 
-struct AstStop : public AstNodeStmt {
+class AstStop : public AstNodeStmt {
+public:
     AstStop(FileLine* fl)
 	: AstNodeStmt(fl) {}
     ASTNODE_NODE_FUNCS(Stop, STOP)
@@ -2825,7 +2882,8 @@ struct AstStop : public AstNodeStmt {
 	return fileline() == samep->fileline(); }
 };
 
-struct AstFinish : public AstNodeStmt {
+class AstFinish : public AstNodeStmt {
+public:
     AstFinish(FileLine* fl)
 	: AstNodeStmt(fl) {}
     ASTNODE_NODE_FUNCS(Finish, FINISH)
@@ -2840,7 +2898,7 @@ struct AstFinish : public AstNodeStmt {
 	return fileline() == samep->fileline(); }
 };
 
-struct AstTraceDecl : public AstNodeStmt {
+class AstTraceDecl : public AstNodeStmt {
     // Trace point declaration
     // Separate from AstTraceInc; as a declaration can't be deleted
     // Parents:  {statement list}
@@ -2876,7 +2934,7 @@ public:
     const VNumRange& arrayRange() const { return m_arrayRange; }
 };
 
-struct AstTraceInc : public AstNodeStmt {
+class AstTraceInc : public AstNodeStmt {
     // Trace point; incremental change detect and dump
     // Parents:  {statement list}
     // Children: incremental value
@@ -2910,7 +2968,7 @@ public:
     AstNode*	valuep() 	const { return op2p()->castNode(); }
 };
 
-struct AstActive : public AstNode {
+class AstActive : public AstNode {
     // Block of code with sensitivity activation
     // Parents:  MODULE | CFUNC
     // Children: SENTREE, statements
@@ -2949,7 +3007,7 @@ public:
     bool hasClocked() const { return m_sensesp->hasClocked(); }
 };
 
-struct AstAttrOf : public AstNode {
+class AstAttrOf : public AstNode {
 private:
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     AstAttrType	m_attrType;	// What sort of extraction
@@ -2966,7 +3024,7 @@ public:
     virtual void dump(ostream& str=cout);
 };
 
-struct AstScopeName : public AstNodeMath {
+class AstScopeName : public AstNodeMath {
     // For display %m and DPI context imports
     // Parents:  DISPLAY
     // Children: TEXT
@@ -2992,7 +3050,8 @@ public:
     void dpiExport(bool flag) { m_dpiExport=flag; }
 };
 
-struct AstUdpTable : public AstNode {
+class AstUdpTable : public AstNode {
+public:
     AstUdpTable(FileLine* fl, AstNode* bodysp)
 	: AstNode(fl) {
 	addNOp1p(bodysp);
@@ -3001,7 +3060,7 @@ struct AstUdpTable : public AstNode {
     AstUdpTableLine*	bodysp() 	const { return op1p()->castUdpTableLine(); }	// op1 = List of UdpTableLines
 };
 
-struct AstUdpTableLine : public AstNode {
+class AstUdpTableLine : public AstNode {
     string	m_text;
 public:
     AstUdpTableLine(FileLine* fl, const string& text)
@@ -3014,7 +3073,7 @@ public:
 //======================================================================
 // non-ary ops
 
-struct AstRand : public AstNodeTermop {
+class AstRand : public AstNodeTermop {
     // Return a random number, based upon width()
 private:
     bool	m_reset;	// Random reset, versus always random
@@ -3036,7 +3095,8 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstTime : public AstNodeTermop {
+class AstTime : public AstNodeTermop {
+public:
     AstTime(FileLine* fl)	: AstNodeTermop(fl) {
 	dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(Time, TIME)
@@ -3050,7 +3110,8 @@ struct AstTime : public AstNodeTermop {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstTimeD : public AstNodeTermop {
+class AstTimeD : public AstNodeTermop {
+public:
     AstTimeD(FileLine* fl)	: AstNodeTermop(fl) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(TimeD, TIMED)
@@ -3064,9 +3125,10 @@ struct AstTimeD : public AstNodeTermop {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstUCFunc : public AstNodeMath {
+class AstUCFunc : public AstNodeMath {
     // User's $c function
     // Perhaps this should be an AstNodeListop; but there's only one list math right now
+public:
     AstUCFunc(FileLine* fl, AstNode* exprsp)
 	: AstNodeMath(fl) {
 	addNOp1p(exprsp);
@@ -3089,7 +3151,8 @@ struct AstUCFunc : public AstNodeMath {
 //======================================================================
 // Unary ops
 
-struct AstNegate : public AstNodeUniop {
+class AstNegate : public AstNodeUniop {
+public:
     AstNegate(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Negate, NEGATE)
@@ -3099,7 +3162,8 @@ struct AstNegate : public AstNodeUniop {
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };
-struct AstNegateD : public AstNodeUniop {
+class AstNegateD : public AstNodeUniop {
+public:
     AstNegateD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(NegateD, NEGATED)
@@ -3112,7 +3176,8 @@ struct AstNegateD : public AstNodeUniop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstRedAnd : public AstNodeUniop {
+class AstRedAnd : public AstNodeUniop {
+public:
     AstRedAnd(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedAnd, REDAND)
@@ -3122,7 +3187,8 @@ struct AstRedAnd : public AstNodeUniop {
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
 };
-struct AstRedOr : public AstNodeUniop {
+class AstRedOr : public AstNodeUniop {
+public:
     AstRedOr(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedOr, REDOR)
@@ -3132,7 +3198,8 @@ struct AstRedOr : public AstNodeUniop {
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
 };
-struct AstRedXor : public AstNodeUniop {
+class AstRedXor : public AstNodeUniop {
+public:
     AstRedXor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedXor, REDXOR)
@@ -3145,8 +3212,9 @@ struct AstRedXor : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
 };
-struct AstRedXnor : public AstNodeUniop {
+class AstRedXnor : public AstNodeUniop {
     // AstRedXnors are replaced with AstRedXors in V3Const.
+public:
     AstRedXnor(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedXnor, REDXNOR)
@@ -3158,7 +3226,8 @@ struct AstRedXnor : public AstNodeUniop {
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
 };
 
-struct AstLogNot : public AstNodeUniop {
+class AstLogNot : public AstNodeUniop {
+public:
     AstLogNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogNot, LOGNOT)
@@ -3169,7 +3238,8 @@ struct AstLogNot : public AstNodeUniop {
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
     virtual bool sizeMattersLhs() {return false;}
 };
-struct AstNot : public AstNodeUniop {
+class AstNot : public AstNodeUniop {
+public:
     AstNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Not, NOT)
@@ -3180,8 +3250,9 @@ struct AstNot : public AstNodeUniop {
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return true;}
 };
-struct AstExtend : public AstNodeUniop {
+class AstExtend : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
+public:
     AstExtend(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     AstExtend(FileLine* fl, AstNode* lhsp, int width) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED); }
@@ -3193,8 +3264,9 @@ struct AstExtend : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}  // Because the EXTEND operator self-casts
     virtual int instrCount()	const { return 0; }
 };
-struct AstExtendS : public AstNodeUniop {
+class AstExtendS : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
+public:
     AstExtendS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     AstExtendS(FileLine* fl, AstNode* lhsp, int width) : AstNodeUniop(fl, lhsp) {
 	// Important that widthMin be correct, as opExtend requires it after V3Expand
@@ -3209,8 +3281,9 @@ struct AstExtendS : public AstNodeUniop {
     virtual int instrCount()	const { return 0; }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstSigned : public AstNodeUniop {
+class AstSigned : public AstNodeUniop {
     // $signed(lhs)
+public:
     AstSigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
     }
@@ -3222,8 +3295,9 @@ struct AstSigned : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
     virtual int instrCount()	const { return 0; }
 };
-struct AstUnsigned : public AstNodeUniop {
+class AstUnsigned : public AstNodeUniop {
     // $unsigned(lhs)
+public:
     AstUnsigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
     }
@@ -3235,8 +3309,9 @@ struct AstUnsigned : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return true;}  // Eliminated before matters
     virtual int instrCount()	const { return 0; }
 };
-struct AstRToIS : public AstNodeUniop {
+class AstRToIS : public AstNodeUniop {
     // $rtoi(lhs)
+public:
     AstRToIS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetSigned32(); }
     ASTNODE_NODE_FUNCS(RToIS, RTOIS)
@@ -3247,7 +3322,8 @@ struct AstRToIS : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}  // Eliminated before matters
     virtual int instrCount()	const { return instrCountDouble(); }
 };
-struct AstRToIRoundS : public AstNodeUniop {
+class AstRToIRoundS : public AstNodeUniop {
+public:
     AstRToIRoundS(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetSigned32(); }
     ASTNODE_NODE_FUNCS(RToIRoundS, RTOIROUNDS)
@@ -3258,7 +3334,8 @@ struct AstRToIRoundS : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}  // Eliminated before matters
     virtual int instrCount()	const { return instrCountDouble(); }
 };
-struct AstIToRD : public AstNodeUniop {
+class AstIToRD : public AstNodeUniop {
+public:
     AstIToRD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(IToRD, ITORD)
@@ -3269,7 +3346,8 @@ struct AstIToRD : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}  // Eliminated before matters
     virtual int instrCount()	const { return instrCountDouble(); }
 };
-struct AstRealToBits : public AstNodeUniop {
+class AstRealToBits : public AstNodeUniop {
+public:
     AstRealToBits(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(RealToBits, REALTOBITS)
@@ -3280,7 +3358,8 @@ struct AstRealToBits : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}  // Eliminated before matters
     virtual int instrCount()	const { return instrCountDouble(); }
 };
-struct AstBitsToRealD : public AstNodeUniop {
+class AstBitsToRealD : public AstNodeUniop {
+public:
     AstBitsToRealD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(BitsToRealD, BITSTOREALD)
@@ -3292,7 +3371,8 @@ struct AstBitsToRealD : public AstNodeUniop {
     virtual int instrCount()	const { return instrCountDouble(); }
 };
 
-struct AstCLog2 : public AstNodeUniop {
+class AstCLog2 : public AstNodeUniop {
+public:
     AstCLog2(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CLog2, CLOG2)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
@@ -3302,8 +3382,9 @@ struct AstCLog2 : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
 };
-struct AstCountOnes : public AstNodeUniop {
+class AstCountOnes : public AstNodeUniop {
     // Number of bits set in vector
+public:
     AstCountOnes(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CountOnes, COUNTONES)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCountOnes(lhs); }
@@ -3313,8 +3394,9 @@ struct AstCountOnes : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*16; }
 };
-struct AstIsUnknown : public AstNodeUniop {
+class AstIsUnknown : public AstNodeUniop {
     // True if any unknown bits
+public:
     AstIsUnknown(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(IsUnknown, ISUNKNOWN)
@@ -3324,8 +3406,9 @@ struct AstIsUnknown : public AstNodeUniop {
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return false;}
 };
-struct AstOneHot : public AstNodeUniop {
+class AstOneHot : public AstNodeUniop {
     // True if only single bit set in vector
+public:
     AstOneHot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(OneHot, ONEHOT)
@@ -3336,8 +3419,9 @@ struct AstOneHot : public AstNodeUniop {
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*4; }
 };
-struct AstOneHot0 : public AstNodeUniop {
+class AstOneHot0 : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
+public:
     AstOneHot0(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(OneHot0, ONEHOT0)
@@ -3349,8 +3433,9 @@ struct AstOneHot0 : public AstNodeUniop {
     virtual int instrCount()	const { return widthInstrs()*3; }
 };
 
-struct AstCast : public AstNode {
+class AstCast : public AstNode {
     // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
+public:
     AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp) : AstNode(fl) {
 	setOp1p(lhsp); setOp2p(dtp);
 	dtypeFrom(dtp);
@@ -3366,8 +3451,9 @@ struct AstCast : public AstNode {
     AstNodeDType* childDTypep() const { return op2p()->castNodeDType(); }
 };
 
-struct AstCastSize : public AstNode {
+class AstCastSize : public AstNode {
     // Cast to specific size; signed/twostate inherited from lower element per IEEE
+public:
     AstCastSize(FileLine* fl, AstNode* lhsp, AstConst* rhsp) : AstNode(fl) {
 	setOp1p(lhsp); setOp2p(rhsp);
     }
@@ -3380,7 +3466,7 @@ struct AstCastSize : public AstNode {
     AstNode* rhsp() const { return op2p(); }
 };
 
-struct AstCCast : public AstNodeUniop {
+class AstCCast : public AstNodeUniop {
     // Cast to C-based data type
 private:
     int		m_size;
@@ -3409,8 +3495,9 @@ public:
     int size()	const { return m_size; }
 };
 
-struct AstCvtPackString : public AstNodeUniop {
+class AstCvtPackString : public AstNodeUniop {
     // Convert to Verilator Packed Pack (aka Pack)
+public:
     AstCvtPackString(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetUInt64(); }  // Really, width should be dtypep -> STRING
     ASTNODE_NODE_FUNCS(CvtPackString, CVTPACKSTRING)
@@ -3423,7 +3510,8 @@ struct AstCvtPackString : public AstNodeUniop {
     virtual bool same(AstNode* samep) const { return true; }
 };
 
-struct AstFEof : public AstNodeUniop {
+class AstFEof : public AstNodeUniop {
+public:
     AstFEof(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FEof, FEOF)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
@@ -3436,7 +3524,8 @@ struct AstFEof : public AstNodeUniop {
     AstNode*	filep() const { return lhsp(); }
 };
 
-struct AstFGetC : public AstNodeUniop {
+class AstFGetC : public AstNodeUniop {
+public:
     AstFGetC(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FGetC, FGETC)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
@@ -3450,7 +3539,8 @@ struct AstFGetC : public AstNodeUniop {
     AstNode*	filep() const { return lhsp(); }
 };
 
-struct AstCeilD : public AstNodeUniop {
+class AstCeilD : public AstNodeUniop {
+public:
     AstCeilD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(CeilD, CEILD)
@@ -3464,7 +3554,8 @@ struct AstCeilD : public AstNodeUniop {
     virtual bool doubleFlavor() const { return true; }
 };
 
-struct AstExpD : public AstNodeUniop {
+class AstExpD : public AstNodeUniop {
+public:
     AstExpD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(ExpD, EXPD)
@@ -3478,7 +3569,8 @@ struct AstExpD : public AstNodeUniop {
     virtual bool doubleFlavor() const { return true; }
 };
 
-struct AstFloorD : public AstNodeUniop {
+class AstFloorD : public AstNodeUniop {
+public:
     AstFloorD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(FloorD, FLOORD)
@@ -3492,7 +3584,8 @@ struct AstFloorD : public AstNodeUniop {
     virtual bool doubleFlavor() const { return true; }
 };
 
-struct AstLogD : public AstNodeUniop {
+class AstLogD : public AstNodeUniop {
+public:
     AstLogD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(LogD, LOGD)
@@ -3506,7 +3599,8 @@ struct AstLogD : public AstNodeUniop {
     virtual bool doubleFlavor() const { return true; }
 };
 
-struct AstLog10D : public AstNodeUniop {
+class AstLog10D : public AstNodeUniop {
+public:
     AstLog10D(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(Log10D, LOG10D)
@@ -3520,7 +3614,8 @@ struct AstLog10D : public AstNodeUniop {
     virtual bool doubleFlavor() const { return true; }
 };
 
-struct AstSqrtD : public AstNodeUniop {
+class AstSqrtD : public AstNodeUniop {
+public:
     AstSqrtD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(SqrtD, SQRTD)
@@ -3537,7 +3632,8 @@ struct AstSqrtD : public AstNodeUniop {
 //======================================================================
 // Binary ops
 
-struct AstLogOr : public AstNodeBiop {
+class AstLogOr : public AstNodeBiop {
+public:
     AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogOr, LOGOR)
@@ -3550,7 +3646,8 @@ struct AstLogOr : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
 };
-struct AstLogAnd : public AstNodeBiop {
+class AstLogAnd : public AstNodeBiop {
+public:
     AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogAnd, LOGAND)
@@ -3563,7 +3660,8 @@ struct AstLogAnd : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
 };
-struct AstLogIf : public AstNodeBiop {
+class AstLogIf : public AstNodeBiop {
+public:
     AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogIf, LOGIF)
@@ -3576,7 +3674,8 @@ struct AstLogIf : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
 };
-struct AstLogIff : public AstNodeBiCom {
+class AstLogIff : public AstNodeBiCom {
+public:
     AstLogIff(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogIff, LOGIFF)
@@ -3589,7 +3688,8 @@ struct AstLogIff : public AstNodeBiCom {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
 };
-struct AstOr : public AstNodeBiComAsv {
+class AstOr : public AstNodeBiComAsv {
+public:
     AstOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Or, OR)
@@ -3601,7 +3701,8 @@ struct AstOr : public AstNodeBiComAsv {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstAnd : public AstNodeBiComAsv {
+class AstAnd : public AstNodeBiComAsv {
+public:
     AstAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(And, AND)
@@ -3613,7 +3714,8 @@ struct AstAnd : public AstNodeBiComAsv {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstXor : public AstNodeBiComAsv {
+class AstXor : public AstNodeBiComAsv {
+public:
     AstXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xor, XOR)
@@ -3625,7 +3727,8 @@ struct AstXor : public AstNodeBiComAsv {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstXnor : public AstNodeBiComAsv {
+class AstXnor : public AstNodeBiComAsv {
+public:
     AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xnor, XNOR)
@@ -3637,7 +3740,8 @@ struct AstXnor : public AstNodeBiComAsv {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
 };
-struct AstEq : public AstNodeBiCom {
+class AstEq : public AstNodeBiCom {
+public:
     AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Eq, EQ)
@@ -3650,7 +3754,8 @@ struct AstEq : public AstNodeBiCom {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstEqD : public AstNodeBiCom {
+class AstEqD : public AstNodeBiCom {
+public:
     AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqD, EQD)
@@ -3664,7 +3769,8 @@ struct AstEqD : public AstNodeBiCom {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstNeq : public AstNodeBiCom {
+class AstNeq : public AstNodeBiCom {
+public:
     AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Neq, NEQ)
@@ -3676,7 +3782,8 @@ struct AstNeq : public AstNodeBiCom {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstNeqD : public AstNodeBiCom {
+class AstNeqD : public AstNodeBiCom {
+public:
     AstNeqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqD, NEQD)
@@ -3690,7 +3797,8 @@ struct AstNeqD : public AstNodeBiCom {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstLt : public AstNodeBiop {
+class AstLt : public AstNodeBiop {
+public:
     AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Lt, LT)
@@ -3702,7 +3810,8 @@ struct AstLt : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstLtD : public AstNodeBiop {
+class AstLtD : public AstNodeBiop {
+public:
     AstLtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LtD, LTD)
@@ -3716,7 +3825,8 @@ struct AstLtD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstLtS : public AstNodeBiop {
+class AstLtS : public AstNodeBiop {
+public:
     AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LtS, LTS)
@@ -3729,7 +3839,8 @@ struct AstLtS : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
-struct AstGt : public AstNodeBiop {
+class AstGt : public AstNodeBiop {
+public:
     AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Gt, GT)
@@ -3741,7 +3852,8 @@ struct AstGt : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstGtD : public AstNodeBiop {
+class AstGtD : public AstNodeBiop {
+public:
     AstGtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GtD, GTD)
@@ -3755,7 +3867,8 @@ struct AstGtD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstGtS : public AstNodeBiop {
+class AstGtS : public AstNodeBiop {
+public:
     AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GtS, GTS)
@@ -3768,7 +3881,8 @@ struct AstGtS : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
-struct AstGte : public AstNodeBiop {
+class AstGte : public AstNodeBiop {
+public:
     AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Gte, GTE)
@@ -3781,7 +3895,8 @@ struct AstGte : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstGteD : public AstNodeBiop {
+class AstGteD : public AstNodeBiop {
+public:
     AstGteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GteD, GTED)
@@ -3795,7 +3910,8 @@ struct AstGteD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstGteS : public AstNodeBiop {
+class AstGteS : public AstNodeBiop {
+public:
     AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GteS, GTES)
@@ -3808,7 +3924,8 @@ struct AstGteS : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
-struct AstLte : public AstNodeBiop {
+class AstLte : public AstNodeBiop {
+public:
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Lte, LTE)
@@ -3821,7 +3938,8 @@ struct AstLte : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstLteD : public AstNodeBiop {
+class AstLteD : public AstNodeBiop {
+public:
     AstLteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LteD, LTED)
@@ -3835,7 +3953,8 @@ struct AstLteD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstLteS : public AstNodeBiop {
+class AstLteS : public AstNodeBiop {
+public:
     AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LteS, LTES)
@@ -3848,7 +3967,8 @@ struct AstLteS : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
-struct AstShiftL : public AstNodeBiop {
+class AstShiftL : public AstNodeBiop {
+public:
     AstShiftL(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED); }
@@ -3862,7 +3982,8 @@ struct AstShiftL : public AstNodeBiop {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstShiftR : public AstNodeBiop {
+class AstShiftR : public AstNodeBiop {
+public:
     AstShiftR(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	if (setwidth) { dtypeSetLogicSized(setwidth,setwidth,AstNumeric::UNSIGNED); }
@@ -3876,9 +3997,10 @@ struct AstShiftR : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}  // LHS size might be > output size, so don't want to force size
 };
-struct AstShiftRS : public AstNodeBiop {
+class AstShiftRS : public AstNodeBiop {
     // Shift right with sign extension, >>> operator
     // Output data type's width determines which bit is used for sign extension
+public:
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth=0)
 	: AstNodeBiop(fl, lhsp, rhsp) {
 	// Important that widthMin be correct, as opExtend requires it after V3Expand
@@ -3895,7 +4017,8 @@ struct AstShiftRS : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
-struct AstAdd : public AstNodeBiComAsv {
+class AstAdd : public AstNodeBiComAsv {
+public:
     AstAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Add, ADD)
@@ -3907,7 +4030,8 @@ struct AstAdd : public AstNodeBiComAsv {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
 };
-struct AstAddD : public AstNodeBiComAsv {
+class AstAddD : public AstNodeBiComAsv {
+public:
     AstAddD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(AddD, ADDD)
@@ -3921,7 +4045,8 @@ struct AstAddD : public AstNodeBiComAsv {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstSub : public AstNodeBiop {
+class AstSub : public AstNodeBiop {
+public:
     AstSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Sub, SUB)
@@ -3933,7 +4058,8 @@ struct AstSub : public AstNodeBiop {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
 };
-struct AstSubD : public AstNodeBiop {
+class AstSubD : public AstNodeBiop {
+public:
     AstSubD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(SubD, SUBD)
@@ -3947,7 +4073,8 @@ struct AstSubD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstMul : public AstNodeBiComAsv {
+class AstMul : public AstNodeBiComAsv {
+public:
     AstMul(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Mul, MUL)
@@ -3960,7 +4087,8 @@ struct AstMul : public AstNodeBiComAsv {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
     virtual int instrCount()	const { return widthInstrs()*instrCountMul(); }
 };
-struct AstMulD : public AstNodeBiComAsv {
+class AstMulD : public AstNodeBiComAsv {
+public:
     AstMulD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(MulD, MULD)
@@ -3974,7 +4102,8 @@ struct AstMulD : public AstNodeBiComAsv {
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstMulS : public AstNodeBiComAsv {
+class AstMulS : public AstNodeBiComAsv {
+public:
     AstMulS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiComAsv(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(MulS, MULS)
@@ -3988,7 +4117,8 @@ struct AstMulS : public AstNodeBiComAsv {
     virtual int instrCount()	const { return widthInstrs()*instrCountMul(); }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstDiv : public AstNodeBiop {
+class AstDiv : public AstNodeBiop {
+public:
     AstDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Div, DIV)
@@ -4000,7 +4130,8 @@ struct AstDiv : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
     virtual int instrCount()	const { return widthInstrs()*instrCountDiv(); }
 };
-struct AstDivD : public AstNodeBiop {
+class AstDivD : public AstNodeBiop {
+public:
     AstDivD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(DivD, DIVD)
@@ -4014,7 +4145,8 @@ struct AstDivD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDoubleDiv(); }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstDivS : public AstNodeBiop {
+class AstDivS : public AstNodeBiop {
+public:
     AstDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(DivS, DIVS)
@@ -4027,7 +4159,8 @@ struct AstDivS : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*instrCountDiv(); }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstModDiv : public AstNodeBiop {
+class AstModDiv : public AstNodeBiop {
+public:
     AstModDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDiv, MODDIV)
@@ -4039,7 +4172,8 @@ struct AstModDiv : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return true;}
     virtual int instrCount()	const { return widthInstrs()*instrCountDiv(); }
 };
-struct AstModDivS : public AstNodeBiop {
+class AstModDivS : public AstNodeBiop {
+public:
     AstModDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDivS, MODDIVS)
@@ -4052,7 +4186,8 @@ struct AstModDivS : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*instrCountDiv(); }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstPow : public AstNodeBiop {
+class AstPow : public AstNodeBiop {
+public:
     AstPow(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Pow, POW)
@@ -4064,7 +4199,8 @@ struct AstPow : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
 };
-struct AstPowD : public AstNodeBiop {
+class AstPowD : public AstNodeBiop {
+public:
     AstPowD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(PowD, POWD)
@@ -4077,7 +4213,8 @@ struct AstPowD : public AstNodeBiop {
     virtual int instrCount()	const { return instrCountDoubleDiv()*5; }
     virtual bool doubleFlavor() const { return true; }
 };
-struct AstPowSU : public AstNodeBiop {
+class AstPowSU : public AstNodeBiop {
+public:
     AstPowSU(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowSU, POWSU)
@@ -4090,7 +4227,8 @@ struct AstPowSU : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstPowSS : public AstNodeBiop {
+class AstPowSS : public AstNodeBiop {
+public:
     AstPowSS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowSS, POWSS)
@@ -4103,7 +4241,8 @@ struct AstPowSS : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstPowUS : public AstNodeBiop {
+class AstPowUS : public AstNodeBiop {
+public:
     AstPowUS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowUS, POWUS)
@@ -4116,7 +4255,8 @@ struct AstPowUS : public AstNodeBiop {
     virtual int instrCount()	const { return widthInstrs()*instrCountMul()*10; }
     virtual bool signedFlavor() const { return true; }
 };
-struct AstEqCase : public AstNodeBiCom {
+class AstEqCase : public AstNodeBiCom {
+public:
     AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqCase, EQCASE)
@@ -4128,7 +4268,8 @@ struct AstEqCase : public AstNodeBiCom {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstNeqCase : public AstNodeBiCom {
+class AstNeqCase : public AstNodeBiCom {
+public:
     AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqCase, NEQCASE)
@@ -4140,8 +4281,9 @@ struct AstNeqCase : public AstNodeBiCom {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstEqWild : public AstNodeBiop {
+class AstEqWild : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
+public:
     AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqWild, EQWILD)
@@ -4153,7 +4295,8 @@ struct AstEqWild : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstNeqWild : public AstNodeBiop {
+class AstNeqWild : public AstNodeBiop {
+public:
     AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqWild, NEQWILD)
@@ -4165,8 +4308,9 @@ struct AstNeqWild : public AstNodeBiop {
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstConcat : public AstNodeBiop {
+class AstConcat : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
+public:
     AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	if (lhsp->dtypep() && rhsp->dtypep()) {
 	    dtypeSetLogicSized(lhsp->dtypep()->width()+rhsp->dtypep()->width(),
@@ -4183,7 +4327,7 @@ struct AstConcat : public AstNodeBiop {
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
-struct AstReplicate : public AstNodeBiop {
+class AstReplicate : public AstNodeBiop {
     // Also used as a "Uniop" flavor of Concat, e.g. "{a}"
     // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
 private:
@@ -4208,8 +4352,9 @@ public:
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
-struct AstStreamL : public AstNodeStream {
+class AstStreamL : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+public:
     AstStreamL(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeStream(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(StreamL, STREAML)
     virtual string emitVerilog() { return "%f{ << %r %k{%l} }"; }
@@ -4220,8 +4365,9 @@ struct AstStreamL : public AstNodeStream {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
-struct AstStreamR : public AstNodeStream {
+class AstStreamR : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
+public:
     AstStreamR(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeStream(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(StreamR, STREAMR)
     virtual string emitVerilog() { return "%f{ >> %r %k{%l} }"; }
@@ -4232,9 +4378,10 @@ struct AstStreamR : public AstNodeStream {
     virtual bool sizeMattersLhs() {return true;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
-struct AstBufIf1 : public AstNodeBiop {
+class AstBufIf1 : public AstNodeBiop {
     // lhs is enable, rhs is data to drive
     // Note unlike the Verilog bufif1() UDP, this allows any width; each lhsp bit enables respective rhsp bit
+public:
     AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
 	dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(BufIf1, BUFIF1)
@@ -4246,7 +4393,8 @@ struct AstBufIf1 : public AstNodeBiop {
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
 };
-struct AstFGetS : public AstNodeBiop {
+class AstFGetS : public AstNodeBiop {
+public:
     AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(FGetS, FGETS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
@@ -4260,10 +4408,11 @@ struct AstFGetS : public AstNodeBiop {
     AstNode*	filep() const { return rhsp(); }
 };
 
-struct AstPattern : public AstNodeMath {
+class AstPattern : public AstNodeMath {
     // Verilog '{a,b,c,d...}
     // Parents: AstNodeAssign, AstPattern, ...
     // Children: expression, AstPattern, AstPatReplicate
+public:
     AstPattern(FileLine* fl, AstNode* itemsp) : AstNodeMath(fl) {
 	addNOp2p(itemsp);
     }
@@ -4280,7 +4429,7 @@ struct AstPattern : public AstNodeMath {
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     AstNode* itemsp() const { return op2p(); } // op2 = AstPatReplicate, AstPatMember, etc
 };
-struct AstPatMember : public AstNodeMath {
+class AstPatMember : public AstNodeMath {
     // Verilog '{a} or '{a{b}}
     // Parents: AstPattern
     // Children: expression, AstPattern, replication count
@@ -4306,10 +4455,11 @@ public:
 //======================================================================
 // SysVerilog assertions
 
-struct AstVAssert : public AstNodeStmt {
+class AstVAssert : public AstNodeStmt {
     // Verilog Assertion
     // Parents:  {statement list}
     // Children: expression, if pass statements, if fail statements
+public:
     AstVAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp)
 	: AstNodeStmt(fl) {
 	addOp1p(propp);
@@ -4327,10 +4477,11 @@ struct AstVAssert : public AstNodeStmt {
 //======================================================================
 // Assertions
 
-struct AstClocking : public AstNode {
+class AstClocking : public AstNode {
     // Set default clock region
     // Parents:  MODULE
     // Children: Assertions
+public:
     AstClocking(FileLine* fl, AstNodeSenItem* sensesp, AstNode* bodysp)
 	: AstNode(fl) {
 	addOp1p(sensesp);
@@ -4344,10 +4495,11 @@ struct AstClocking : public AstNode {
 //======================================================================
 // PSL
 
-struct AstPslDefClock : public AstNode {
+class AstPslDefClock : public AstNode {
     // Set default PSL clock
     // Parents:  MODULE
     // Children: SENITEM
+public:
     AstPslDefClock(FileLine* fl, AstNodeSenItem* sensesp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
@@ -4356,10 +4508,11 @@ struct AstPslDefClock : public AstNode {
     AstNodeSenItem* sensesp() const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
 };
 
-struct AstPslClocked : public AstNode {
+class AstPslClocked : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
+public:
     AstPslClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
 	: AstNode(fl) {
 	addNOp1p(sensesp);
@@ -4373,7 +4526,7 @@ struct AstPslClocked : public AstNode {
     AstNode*	propp()		const { return op3p(); }	// op3 = property
 };
 
-struct AstPslAssert : public AstNodeStmt {
+class AstPslAssert : public AstNodeStmt {
     // Psl Assertion
     // Parents:  {statement list}
     // Children: expression, report string
@@ -4394,7 +4547,7 @@ public:
     void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
 };
 
-struct AstPslCover : public AstNodeStmt {
+class AstPslCover : public AstNodeStmt {
     // Psl Cover
     // Parents:  {statement list}
     // Children: expression, report string
@@ -4423,11 +4576,12 @@ public:
 //======================================================================
 // PSL Expressions
 
-struct AstPslBool : public AstNode {
+class AstPslBool : public AstNode {
     // Separates PSL Sere/sequences from the normal expression boolean layer below.
     // Note this excludes next() and similar functions; they are time domain, so not under AstPslBool.
     // Parents: Sequences, etc.
     // Children: math
+public:
     AstPslBool(FileLine* fileline, AstNode* exprp)
 	: AstNode(fileline) {
 	addOp1p(exprp);
@@ -4445,7 +4599,7 @@ struct AstPslBool : public AstNode {
 //======================================================================
 // Text based nodes
 
-struct AstText : public AstNodeText {
+class AstText : public AstNodeText {
 private:
     bool	m_tracking;	// When emit, it's ok to parse the string to do indentation
 public:
@@ -4456,7 +4610,8 @@ public:
     bool tracking() const { return m_tracking; }
 };
 
-struct AstScCtor : public AstNodeText {
+class AstScCtor : public AstNodeText {
+public:
     AstScCtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScCtor, SCCTOR)
@@ -4464,7 +4619,8 @@ struct AstScCtor : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstScDtor : public AstNodeText {
+class AstScDtor : public AstNodeText {
+public:
     AstScDtor(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScDtor, SCDTOR)
@@ -4472,7 +4628,8 @@ struct AstScDtor : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstScHdr : public AstNodeText {
+class AstScHdr : public AstNodeText {
+public:
     AstScHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScHdr, SCHDR)
@@ -4480,7 +4637,8 @@ struct AstScHdr : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstScImp : public AstNodeText {
+class AstScImp : public AstNodeText {
+public:
     AstScImp(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScImp, SCIMP)
@@ -4488,7 +4646,8 @@ struct AstScImp : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstScImpHdr : public AstNodeText {
+class AstScImpHdr : public AstNodeText {
+public:
     AstScImpHdr(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScImpHdr, SCIMPHDR)
@@ -4496,7 +4655,8 @@ struct AstScImpHdr : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstScInt : public AstNodeText {
+class AstScInt : public AstNodeText {
+public:
     AstScInt(FileLine* fl, const string& textp)
 	: AstNodeText(fl, textp) {}
     ASTNODE_NODE_FUNCS(ScInt, SCINT)
@@ -4504,8 +4664,9 @@ struct AstScInt : public AstNodeText {
     virtual bool isOutputter() const { return true; }
 };
 
-struct AstUCStmt : public AstNodeStmt {
+class AstUCStmt : public AstNodeStmt {
     // User $c statement
+public:
     AstUCStmt(FileLine* fl, AstNode* exprsp)
 	: AstNodeStmt(fl) {
 	addNOp1p(exprsp);
@@ -4523,7 +4684,7 @@ struct AstUCStmt : public AstNodeStmt {
 //======================================================================
 // Emit C nodes
 
-struct AstCFile : public AstNode {
+class AstCFile : public AstNode {
     // C++ output file
     // Parents:  NETLIST
     // Children: nothing yet
@@ -4553,7 +4714,7 @@ public:
     void	support(bool flag) { m_support = flag; }
 };
 
-struct AstCFunc : public AstNode {
+class AstCFunc : public AstNode {
     // C++ function
     // Parents:  MODULE/SCOPE
     // Children: VAR/statements
@@ -4661,7 +4822,7 @@ public:
     bool	emptyBody() const { return argsp()==NULL && initsp()==NULL && stmtsp()==NULL && finalsp()==NULL; }
 };
 
-struct AstCCall : public AstNodeStmt {
+class AstCCall : public AstNodeStmt {
     // C++ function call
     // Parents:  Anything above a statement
     // Children: Args to the function
@@ -4709,10 +4870,11 @@ public:
     void addArgsp(AstNode* nodep) { addOp1p(nodep); }
 };
 
-struct AstCReturn : public AstNodeStmt {
+class AstCReturn : public AstNodeStmt {
     // C++ return from a function
     // Parents:  CFUNC/statement
     // Children: Math
+public:
     AstCReturn(FileLine* fl, AstNode* lhsp)
 	: AstNodeStmt(fl) {
 	setOp1p(lhsp);
@@ -4725,7 +4887,7 @@ struct AstCReturn : public AstNodeStmt {
     AstNode*	lhsp() const { return op1p(); }
 };
 
-struct AstCMath : public AstNodeMath {
+class AstCMath : public AstNodeMath {
 private:
     bool	m_cleanOut;
 public:
@@ -4753,8 +4915,9 @@ public:
 };
 
 
-struct AstCStmt : public AstNodeStmt {
+class AstCStmt : public AstNodeStmt {
     // Emit C statement
+public:
     AstCStmt(FileLine* fl, AstNode* exprsp)
 	: AstNodeStmt(fl) {
 	addNOp1p(exprsp);
@@ -4775,7 +4938,7 @@ struct AstCStmt : public AstNodeStmt {
 //######################################################################
 // Right below top
 
-struct AstTypeTable : public AstNode {
+class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
     typedef map<pair<int,int>,AstBasicDType*> LogicMap;
@@ -4807,7 +4970,7 @@ public:
 //######################################################################
 // Top
 
-struct AstNetlist : public AstNode {
+class AstNetlist : public AstNode {
     // All modules are under this single top node.
     // Parents:   none
     // Children:  MODULEs & CFILEs

@@ -685,7 +685,6 @@ public:
 class EmitVPrefixedVisitor : public EmitVBaseVisitor {
     // MEMBERS
     EmitVPrefixedFormatter m_formatter; // Special verilog formatter (Way down the inheritance is another unused V3OutFormatter)
-    bool	m_user3mark;	// nodep->user3() if set means mark with %%
     // METHODS
     virtual void putsNoTracking(const string& str) { m_formatter.putsNoTracking(str); }
     virtual void puts(const string& str) { m_formatter.puts(str); }
@@ -706,7 +705,7 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
 public:
     EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
 			 AstSenTree* domainp, bool user3mark)
-	: EmitVBaseVisitor(domainp), m_formatter(os, prefix, flWidth), m_user3mark(user3mark) {
+	: EmitVBaseVisitor(domainp), m_formatter(os, prefix, flWidth) {
 	if (user3mark) { AstUser3InUse::check(); }
 	nodep->accept(*this);
     }

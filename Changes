@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix $warning/$error multi-argument ordering, bug816. [Jonathon Donaldson]
 
+****  Fix clang warnings, bug818. [Iztok Jeras]
+
 
 * Verilator 3.862 2014-06-10
 

@@ -97,8 +97,8 @@ public:
     virtual const char* fullname() { return "<null>"; }
     virtual const char* defname() { return "<null>"; }
     virtual const vluint32_t type() { return 0; }
-    virtual const vluint32_t size() { return 0; }
-    virtual const VerilatedRange* rangep() { return 0; }
+    virtual const vluint32_t size() const { return 0; }
+    virtual const VerilatedRange* rangep() const { return NULL; }
     virtual vpiHandle dovpi_scan() { return 0; }
 };
 
@@ -136,7 +136,7 @@ public:
 
 class VerilatedVpioRange : public VerilatedVpio {
     const VerilatedRange* m_range;
-    bool	m_iteration;
+    vlsint32_t                  m_iteration;
 public:
     VerilatedVpioRange(const VerilatedRange* range) : m_range(range), m_iteration(0) {}
     virtual ~VerilatedVpioRange() {}
@@ -182,7 +182,7 @@ class VerilatedVpioVar : public VerilatedVpio {
 protected:
     void*			m_varDatap;	// varp()->datap() adjusted for array entries
     vlsint32_t			m_index;
-    const VerilatedRange&	get_range() {
+    const VerilatedRange&	get_range() const {
 	// Determine number of dimensions and return outermost
 	return (m_varp->dims()>1) ? m_varp->array() : m_varp->range();
     }
@@ -208,8 +208,8 @@ public:
       if (varp()->vldir() != vpiNoDirection) return vpiPort;
       return (varp()->dims()>1) ? vpiMemory : vpiReg; /* but might be wire, logic */
     }
-    virtual const vluint32_t size() { return get_range().elements(); }
-    virtual const VerilatedRange* rangep() { return &get_range(); }
+    virtual const vluint32_t size() const { return get_range().elements(); }
+    virtual const VerilatedRange* rangep() const { return &get_range(); }
     virtual const char* name() { return m_varp->name(); }
     virtual const char* fullname() {
 	VL_STATIC_OR_THREAD string out;
@@ -237,8 +237,8 @@ public:
     virtual ~VerilatedVpioMemoryWord() {}
     static inline VerilatedVpioMemoryWord* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioMemoryWord*>((VerilatedVpio*)h); }
     virtual const vluint32_t type() { return vpiMemoryWord; }
-    virtual const vluint32_t size() { return varp()->range().elements(); }
-    virtual const VerilatedRange* rangep() { return &(varp()->range()); }
+    virtual const vluint32_t size() const { return varp()->range().elements(); }
+    virtual const VerilatedRange* rangep() const { return &(varp()->range()); }
     virtual const char* fullname() {
 	VL_STATIC_OR_THREAD string out;
 	char num[20]; sprintf(num,"%d",m_index);
@@ -919,9 +919,9 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    value_p->value.str = outStr;
 	    switch (vop->varp()->vltype()) {
 	    // outStrSz does not include NULL termination so add one
-	    case VLVT_UINT8 : snprintf(outStr, outStrSz+1, "%hhu", (unsigned  int)*((CData*)(vop->varDatap()))); return;
-	    case VLVT_UINT16: snprintf(outStr, outStrSz+1, "%hu",  (unsigned  int)*((SData*)(vop->varDatap()))); return;
-	    case VLVT_UINT32: snprintf(outStr, outStrSz+1, "%u",   (unsigned  int)*((IData*)(vop->varDatap()))); return;
+	    case VLVT_UINT8 : snprintf(outStr, outStrSz+1, "%hhu", (unsigned char )*((CData*)(vop->varDatap()))); return;
+	    case VLVT_UINT16: snprintf(outStr, outStrSz+1, "%hu",  (unsigned short)*((SData*)(vop->varDatap()))); return;
+	    case VLVT_UINT32: snprintf(outStr, outStrSz+1, "%u",   (unsigned int  )*((IData*)(vop->varDatap()))); return;
 	    case VLVT_UINT64: snprintf(outStr, outStrSz+1, "%llu",  (unsigned long long)*((QData*)(vop->varDatap()))); return;
 	    default:
                 strcpy(outStr, "-1");

@@ -673,7 +673,7 @@ sub compile {
 
     if ($param{make_pli}) {
 	$self->oprint("Compile vpi\n");
-	my @cmd = ('g++', @{$param{pli_flags}}, "-DIS_VPI", "$self->{t_dir}/$self->{name}.cpp");
+	my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI", "$self->{t_dir}/$self->{name}.cpp");
 
 	$self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
 		    fails=>$param{fails},

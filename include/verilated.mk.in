@@ -43,14 +43,14 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVL_PRINTF=printf \
 		-DVM_TRACE=$(VM_TRACE) \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
+		$(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall \
-		$(CFG_CXXFLAGS_NO_UNUSED) \
 		-Werror
 endif
 
-CPPFLAGS += -I. $(VK_CPPFLAGS_ALWAYS) $(VK_CPPFLAGS_WALL)
+CPPFLAGS += -I. $(VK_CPPFLAGS_WALL) $(VK_CPPFLAGS_ALWAYS)
 
 VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
@@ -195,6 +195,7 @@ debug-make::
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
+	@echo CPPFLAGS: $(CPPFLAGS)
 	@echo
 
 ######################################################################

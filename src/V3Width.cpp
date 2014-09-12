@@ -902,7 +902,7 @@ private:
 	} else if (!basicp->isSigned() && newp->isSigned()) {
 	    newp = new AstUnsigned(nodep->fileline(), newp);
 	} else {
-	    newp = newp; // Can just remove cast
+	    //newp = newp; // Can just remove cast
 	}
 	nodep->replaceWith(newp);
 	pushDeletep(nodep); nodep=NULL;
