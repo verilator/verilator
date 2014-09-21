@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.863 devel
 
+***   Support power operator with real, bug809. [Jonathon Donaldson]
+
 ****  Improve verilator_profcfunc time attributions. [Jonathon Donaldson]
 
 ****  Fix duplicate anonymous structures in $root, bug788. [Bob Newgard]

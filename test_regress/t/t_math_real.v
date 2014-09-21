@@ -5,6 +5,8 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
+`define is_near_real(a,b)  ($abs((a)-(b)) < (((a)/(b))*0.0001))
+
 module t (/*AUTOARG*/
    // Inputs
    clk

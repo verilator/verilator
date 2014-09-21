@@ -25,6 +25,7 @@ module t (/*AUTOARG*/
 
    initial begin
       // Check constant propagation
+      // Note $abs is not defined in SystemVerilog (as of 2012)
       check(`__LINE__, $ceil(-1.2),	-1);
       check(`__LINE__, $ceil(1.2),	2);
       check(`__LINE__, $exp(1.2),	3.3201169227365472380597566370852291584014892578125);
@@ -43,6 +44,7 @@ module t (/*AUTOARG*/
       //check(`__LINE__, $pow(-2.3,1.2),0);	// Bad value
       check(`__LINE__, $sqrt(1.2),	1.095445115010332148841598609578795731067657470703125);
       //check(`__LINE__, $sqrt(-1.2),	0);	// Bad value
+      check(`__LINE__, ((1.5)**(1.25)), 1.660023);
 `ifndef VERILATOR
       check(`__LINE__, $acos (0.2),	1.369438406);	// Arg1 is -1..1
       check(`__LINE__, $acosh(1.2),	0.622362503);

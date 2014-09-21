@@ -690,15 +690,21 @@ private:
 	// Pow is special, output sign only depends on LHS sign, but function result depends on both signs
 	// RHS is self-determined (IEEE)
 	// Real if either side is real (as with AstAdd)
-	iterate_shift_prelim(nodep, vup);  // Iterate rhsp() as self-determined
-
 	if (vup->c()->prelim()) {
+	    nodep->lhsp()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
+	    nodep->rhsp()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
 	    if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
 		spliceCvtD(nodep->lhsp());
 		spliceCvtD(nodep->rhsp());
 		replaceWithDVersion(nodep); nodep=NULL;
+		return;
 	    }
+
+	    checkCvtUS(nodep->lhsp());
+	    iterateCheckSizedSelf(nodep,"RHS",nodep->rhsp(),SELF,BOTH);
+	    nodep->dtypeFrom(nodep->lhsp());
 	}
+
 	if (vup->c()->final()) {
 	    AstNodeDType* expDTypep = vup->c()->dtypeOverridep(nodep->dtypep());
 	    nodep->dtypeFrom(expDTypep);
@@ -2297,7 +2303,7 @@ private:
 	if (newp) {}  // Ununused
     }
     void iterate_shift_prelim(AstNodeBiop* nodep, AstNUser* vup)  {
-	// Shifts, Pow
+	// Shifts
 	// See IEEE-2012 11.4.10 and Table 11-21.
 	//   RHS is self-determined. RHS is always treated as unsigned, has no effect on result.
 	if (vup->c()->prelim()) {
@@ -2885,6 +2891,7 @@ private:
 	switch (nodep->type()) {
 	case AstType::atADD:  				newp = new AstAddD	(fl,lhsp,rhsp); break;
 	case AstType::atSUB:  				newp = new AstSubD	(fl,lhsp,rhsp); break;
+	case AstType::atPOW:				newp = new AstPowD	(fl,lhsp,rhsp); break;
 	case AstType::atEQ:	case AstType::atEQCASE:	newp = new AstEqD	(fl,lhsp,rhsp); break;
 	case AstType::atNEQ:	case AstType::atNEQCASE: newp = new AstNeqD	(fl,lhsp,rhsp); break;
 	case AstType::atGT:	case AstType::atGTS:	newp = new AstGtD	(fl,lhsp,rhsp); break;
