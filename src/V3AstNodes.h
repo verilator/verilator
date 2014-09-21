@@ -2224,13 +2224,13 @@ public:
     void 	filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
 
-class AstSFormat : public AstNode {
+class AstSFormat : public AstNodeStmt {
     // Parents: statement container
     // Children: string to load
     // Children: SFORMATF to generate print string
 public:
     AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
-	: AstNode (fileline) {
+	: AstNodeStmt (fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setOp3p(lhsp);
     }

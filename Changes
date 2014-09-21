@@ -25,6 +25,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix clang warnings, bug818. [Iztok Jeras]
 
+****  Fix string formats under deep expressions, bug820. [Iztok Jeras]
+
 
 * Verilator 3.862 2014-06-10
 

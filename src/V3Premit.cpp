@@ -170,11 +170,13 @@ private:
 	    m_inWhilep->addPrecondsp(newp);
 	} else if (m_inTracep) {
 	    m_inTracep->addPrecondsp(newp);
-	} else {
+	} else if (m_stmtp) {
 	    AstNRelinker linker;
 	    m_stmtp->unlinkFrBack(&linker);
 	    newp->addNext(m_stmtp);
 	    linker.relink(newp);
+	} else {
+	    newp->v3fatalSrc("No statement insertion point.");
 	}
     }
 
