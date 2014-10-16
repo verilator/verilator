@@ -164,15 +164,27 @@ private:
 	bool gt  = condp->castGt()  || condp->castGtS();
 	bool gte = condp->castGte() || condp->castGteS();
 	if (!lt && !lte && !gt && !gte)
-	    return cantUnroll(nodep, "condition not <= or <");
-	AstNodeBiop* condBip = condp->castNodeBiop();
-	if (!condBip->rhsp()->castVarRef())
+	    return cantUnroll(nodep, "condition not <=, <, >= or >");
+	AstNodeBiop* cmpInstrp = condp->castNodeBiop();
+	bool cmpVarLhs;
+	if (cmpInstrp->lhsp()->castVarRef()
+	    && cmpInstrp->lhsp()->castVarRef()->varp() == m_forVarp
+	    && cmpInstrp->lhsp()->castVarRef()->varScopep() == m_forVscp) {
+	    cmpVarLhs = true;
+	} else if (cmpInstrp->rhsp()->castVarRef()
+		   && cmpInstrp->rhsp()->castVarRef()->varp() == m_forVarp
+		   && cmpInstrp->rhsp()->castVarRef()->varScopep() == m_forVscp) {
+	    cmpVarLhs = false;
+	} else if (!cmpInstrp->rhsp()->castVarRef()) {
 	    return cantUnroll(nodep, "no variable on rhs of condition");
-	if (condBip->rhsp()->castVarRef()->varp() != m_forVarp
-	    || condBip->rhsp()->castVarRef()->varScopep() != m_forVscp)
+	} else {
 	    return cantUnroll(nodep, "different variable in condition");
-	if (m_generate) V3Const::constifyParamsEdit(condBip->lhsp());  // rhsp may change
-	AstConst* constStopp = condBip->lhsp()->castConst();
+	}
+
+	if (m_generate) V3Const::constifyParamsEdit(cmpVarLhs ? cmpInstrp->rhsp()
+						    : cmpInstrp->lhsp());  // rhsp/lhsp may change
+	AstConst* constStopp = (cmpVarLhs ? cmpInstrp->rhsp()->castConst()
+				: cmpInstrp->lhsp()->castConst());
 	if (!constStopp) return cantUnroll(nodep, "non-constant final value");
 	UINFO(8, "   Stop expr ok: "<<constStopp<<endl);
 	//
@@ -217,9 +229,9 @@ private:
 	if (m_varAssignHit) return cantUnroll(nodep, "genvar assigned *inside* loop");
 	//
 	// Finally, we can do it
-	forUnroller(nodep, initp, precondsp, condp, incp, bodysp,
+	forUnroller(nodep, initp, precondsp, incp, bodysp,
 		    constInitp->num(),
-		    condBip, constStopp->num(),
+		    cmpInstrp, constStopp->num(), cmpVarLhs,
 		    incInstrp, constIncp->num()); nodep = NULL;
 	// Cleanup
 	return true;
@@ -227,10 +239,10 @@ private:
 
     void forUnroller(AstNode* nodep,
 		     AstNode* initp,
-		     AstNode* precondsp, AstNode* condp,
+		     AstNode* precondsp,
 		     AstNode* incp, AstNode* bodysp,
 		     const V3Number& numInit,
-		     AstNodeBiop* cmpInstrp, const V3Number& numStop,
+		     AstNodeBiop* cmpInstrp, const V3Number& numStop, bool cmpVarLhs,
 		     AstNodeBiop* incInstrp, const V3Number& numInc) {
 	UINFO(4, "   Unroll for var="<<numInit<<"; var<"<<numStop<<"; var+="<<numInc<<endl);
 	UINFO(6, "    cmpI "<<cmpInstrp<<endl);
@@ -270,7 +282,11 @@ private:
 		UINFO(8,"      Looping "<<loopValue<<endl);
 		// if loopValue<valStop
 		V3Number contin (nodep->fileline(), 1);
-		cmpInstrp->numberOperate(contin, numStop, loopValue);
+		if (cmpVarLhs) {
+		    cmpInstrp->numberOperate(contin, loopValue, numStop);
+		} else {
+		    cmpInstrp->numberOperate(contin, numStop, loopValue);
+		}
 		if (contin.isEqZero()) {
 		    break;  // Done with the loop
 		} else {

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.865 devel
 
+****  Fix generate unrolling with function call, bug830. [Steven Slatter]
+
 
 * Verilator 3.864 2014-09-21
 
