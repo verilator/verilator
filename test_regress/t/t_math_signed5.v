@@ -26,6 +26,7 @@
    reg [5:0] 	    w6_u;
    reg [15:0] 	    w16a_u;
    reg [15:0] 	    w16_u;
+   reg [31:0] 	    w32_u;
    real 	    r;
 
    reg signed [4:0] bug754_a;
@@ -161,6 +162,16 @@
       w4_u = `c(4, 1);
       w4_u = (w4_u >> w4_u) ^~ (w4_u >> w4_u);
       `checkh(w4_u, 4'b1111);
+
+      // bug828
+      // verilator lint_off WIDTH
+      w32_u = 32'(signed'({4'b0001,5'b10000}) << 3);
+      `checkh(w32_u, 32'h0000_0180);
+      w32_u = 32'(signed'({4'b0011,5'b10000}) << 3);
+      `checkh(w32_u, 32'h0000_0380);
+      // verilator lint_on WIDTH
+      w32_u = 32'(signed'({4'b0011,5'b10000})) << 3;  // Check no width warning
+      `checkh(w32_u, 32'h0000_0380);
 
       if (fail) $stop;
       $write("*-* All Finished *-*\n");

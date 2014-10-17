@@ -931,7 +931,7 @@ private:
 				    : nodep->findBitDType(width, width, underDtp->numeric()));
 	    nodep->dtypep(newDtp);
 	    // We ignore warnings as that is sort of the point of a cast
-	    iterateCheck(nodep,"Cast LHS",nodep->lhsp(),SELF,FINAL,newDtp,EXTEND_EXP,false);
+	    iterateCheck(nodep,"Cast LHS",nodep->lhsp(),CONTEXT,FINAL,newDtp,EXTEND_EXP,false);
 	}
 	if (vup->c()->final()) {
 	    // CastSize not needed once sizes determined
