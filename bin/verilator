@@ -578,7 +578,9 @@ standard across Verilog tools while -D is an alias for GCC compatibility.
 =item --debug
 
 Select the debug built image of Verilator (if available), and enable more
-internal assertions, debugging messages, and intermediate form dump files.
+internal assertions (equivelent to C<--debug-check>), debugging messages
+(equivelent to C<--debugi 4>), and intermediate form dump files (equivilent
+to C<--dump-tree>).
 
 =item --debug-check
 
@@ -590,9 +592,9 @@ changing debug verbosity.  Enabled automatically when --debug specified.
 =item --debugi-<srcfile> <level>
 
 Rarely needed - for developer use.  Set internal debugging level globally
-to the specified debug level (1-10) or set the specified source file to the
-specified level. Higher levels produce more detailed messages (plain
-C<--debug> is equivalent to C<--debugi 4>).
+to the specified debug level (1-10) or set the specified Verilator source
+file to the specified level (e.g. C<--debugi-V3Width 9>). Higher levels
+produce more detailed messages.
 
 =item --default-language I<value>
 
