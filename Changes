@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.865 devel
 
+***   Add optimization of operators between concats, msg1447. [Jie Xu]
+
 ****  Fix generate unrolling with function call, bug830. [Steven Slatter]
 
 ****  Fix cast-to-size context-determined sizing, bug828. [Geoff Barrett]

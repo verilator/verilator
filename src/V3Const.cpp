@@ -450,6 +450,56 @@ private:
 	if (afterComment(lowerIfp->elsesp())) return false;
 	return true;
     }
+    bool ifConcatMergeableBiop(AstNode* nodep) {
+	return (nodep->castAnd()
+		|| nodep->castOr()
+		|| nodep->castXor()
+		|| nodep->castXnor());
+    }
+    bool ifAdjacent(AstNode* lhsp, AstNode* rhsp) {
+	if (!v3Global.opt.oAssemble()) return false; // opt disabled
+	AstSel* lselp = lhsp->castSel();
+	AstSel* rselp = rhsp->castSel();
+	if (!lselp || !lhsp->castVarRef()) return false;
+	if (!rselp || !rhsp->castVarRef()) return false;
+	// a[a:b] a[b-1:c] are adjacent // a a[1:0] are adjacent as well
+	AstVarRef* lvarp = lselp->fromp()->castVarRef();
+	AstVarRef* rvarp = rselp->fromp()->castVarRef();
+	if (!lvarp || !rvarp || !lvarp->same(rvarp)) return false;
+	AstConst* lstart = lselp->lsbp()->castConst();
+	AstConst* rstart = rselp->lsbp()->castConst();
+	AstConst* lwidth = lselp->widthp()->castConst();
+	AstConst* rwidth = rselp->widthp()->castConst();
+	if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
+	// a[i:j] a[j-1:k]
+	int rend = (rstart->toSInt() + rwidth->toSInt());
+	if (rend == lstart->toSInt()) return true;
+	return false;
+    }
+    bool concatMergeable(AstNode* lhsp, AstNode* rhsp) {
+	if (!v3Global.opt.oAssemble()) return false; // opt disabled
+	if (lhsp->type() != rhsp->type()) return false;
+	if (!ifConcatMergeableBiop(lhsp)) return false;
+
+	AstNodeBiop* lp = lhsp->castNodeBiop();
+	AstNodeBiop* rp = rhsp->castNodeBiop();
+	if (!lp || !rp) return false;
+	// {a[]&b[], a[]&b[]}
+	bool lad = ifAdjacent(lp->lhsp(), rp->lhsp());
+	bool rad = ifAdjacent(lp->rhsp(), rp->rhsp());
+	if (lad && lad) return true;
+	// {a[] & b[]&c[], a[] & b[]&c[]}
+	else if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
+	// {a[]&b[] & c[], a[]&b[] & c[]}
+	else if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
+	else {
+	    // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
+	    if (concatMergeable(lp->lhsp(), rp->lhsp())
+	        && concatMergeable(lp->rhsp(), rp->rhsp()))
+	        return true;
+	}
+	return false;
+    }
 
     //----------------------------------------
     // Constant Replacement functions.
@@ -667,6 +717,45 @@ private:
 	rp->deleteTree();
 	rrp->deleteTree();
 	//nodep->dumpTree(cout, "  repShiftSame_new: ");
+    }
+    void replaceConcatSel(AstConcat* nodep) {
+	// {a[1], a[0]} -> a[1:0]
+	AstSel* lselp = nodep->lhsp()->unlinkFrBack()->castSel();
+	AstSel* rselp = nodep->rhsp()->unlinkFrBack()->castSel();
+	int lstart = lselp->lsbConst();
+	int lwidth = lselp->widthConst();
+	int rstart = rselp->lsbConst();
+	int rwidth = rselp->widthConst();
+
+	if ((rstart + rwidth) != lstart) nodep->v3fatalSrc("tried to merge two selects which are not adjacent");
+	AstSel* newselp = new AstSel(lselp->fromp()->fileline(), rselp->fromp()->cloneTree(false), rstart, lwidth+rwidth);
+	UINFO(5, "merged two adjacent sel "<<lselp <<" and "<<rselp<< " to one "<<newselp<<endl);
+
+	nodep->replaceWith(newselp);
+	lselp->deleteTree(); lselp = NULL;
+	rselp->deleteTree(); rselp = NULL;
+	nodep->deleteTree(); nodep = NULL;
+    }
+    void replaceConcatMerge(AstConcat* nodep) {
+	AstNodeBiop* lp = nodep->lhsp()->castNodeBiop();
+	AstNodeBiop* rp = nodep->rhsp()->castNodeBiop();
+	AstNode* llp = lp->lhsp()->cloneTree(false);
+	AstNode* lrp = lp->rhsp()->cloneTree(false);
+	AstNode* rlp = rp->lhsp()->cloneTree(false);
+	AstNode* rrp = rp->rhsp()->cloneTree(false);
+	if (concatMergeable(lp, rp)) {
+	    AstConcat* newlp = new AstConcat(rlp->fileline(), llp, rlp);
+	    AstConcat* newrp = new AstConcat(rrp->fileline(), lrp, rrp);
+	    // use the lhs to replace the parent concat
+	    lp->lhsp()->replaceWith(newlp);
+	    lp->rhsp()->replaceWith(newrp);
+	    lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), AstNumeric::fromBool(true));
+	    UINFO(5, "merged "<< nodep <<endl);
+	    rp->unlinkFrBack()->deleteTree(); rp = NULL;
+	    nodep->replaceWith(lp->unlinkFrBack()); nodep->deleteTree(); nodep = NULL;
+	    lp->lhsp()->accept(*this);
+	    lp->rhsp()->accept(*this);
+	} else nodep->v3fatalSrc("tried to merge two Concat which are not adjacent");
     }
     void replaceExtend (AstNode* nodep, AstNode* arg0p) {
 	// -> EXTEND(nodep)
@@ -2064,6 +2153,9 @@ private:
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
     TREEOPV("AstConcat{operandConcatMove(nodep)}",	"moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",		"replaceExtend(nodep, nodep->rhsp())");
+    // CONCAT(a[1],a[0]) -> a[1:0]
+    TREEOPV("AstConcat{$lhsp->castSel(), $rhsp->castSel(), ifAdjacent($lhsp,,$rhsp)}",  "replaceConcatSel(nodep)");
+    TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");

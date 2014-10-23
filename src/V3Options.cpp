@@ -774,6 +774,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		    case 'b': m_oCombine = flag; break;
 		    case 'c': m_oConst = flag; break;
 		    case 'd': m_oDedupe = flag; break;
+		    case 'm': m_oAssemble = flag; break;
 		    case 'e': m_oCase = flag; break;
 		    case 'f': m_oFlopGater = flag; break;
 		    case 'g': m_oGate = flag; break;
@@ -1319,6 +1320,7 @@ void V3Options::optimize(int level) {
     m_oSubstConst = flag;
     m_oTable = flag;
     m_oDedupe = flag;
+    m_oAssemble = flag;
     // And set specific optimization levels
     if (level >= 3) {
 	m_inlineMult = -1;	// Maximum inlining
