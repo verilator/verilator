@@ -418,12 +418,12 @@ private:
     static bool operandsSame(AstNode* node1p, AstNode* node2p) {
 	// For now we just detect constants & simple vars, though it could be more generic
 	if (node1p->castConst() && node2p->castConst()) {
-	    return node1p->sameTree(node2p);
+	    return node1p->sameGateTree(node2p);
 	}
 	else if (node1p->castVarRef() && node2p->castVarRef()) {
 	    // Avoid comparing widthMin's, which results in lost optimization attempts
-	    // If cleanup sameTree to be smarter, this can be restored.
-	    //return node1p->sameTree(node2p);
+	    // If cleanup sameGateTree to be smarter, this can be restored.
+	    //return node1p->sameGateTree(node2p);
 	    return node1p->same(node2p);
 	} else {
 	    return false;
@@ -439,7 +439,7 @@ private:
 	AstVarRef* elsevarp = elsep->lhsp()->castVarRef();
 	if (!ifvarp || !elsevarp) return false;
 	if (ifvarp->isWide()) return false;  // Would need temporaries, so not worth it
-	if (!ifvarp->sameTree(elsevarp)) return false;
+	if (!ifvarp->sameGateTree(elsevarp)) return false;
 	return true;
     }
     bool operandIfIf(AstNodeIf* nodep) {
@@ -456,27 +456,60 @@ private:
 		|| nodep->castXor()
 		|| nodep->castXnor());
     }
-    bool ifAdjacent(AstNode* lhsp, AstNode* rhsp) {
+    bool ifAdjacentSel(AstSel* lhsp, AstSel* rhsp) {
 	if (!v3Global.opt.oAssemble()) return false; // opt disabled
+	if (!lhsp || !rhsp) return false;
+	AstNode* lfromp = lhsp->fromp();
+	AstNode* rfromp = rhsp->fromp();
+	if (!lfromp || !rfromp || !operandsSame(lfromp,rfromp)) return false;
+	AstConst* lstart = lhsp->lsbp()->castConst();
+	AstConst* rstart = rhsp->lsbp()->castConst();
+	AstConst* lwidth = lhsp->widthp()->castConst();
+	AstConst* rwidth = rhsp->widthp()->castConst();
+	if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
+	int rend = (rstart->toSInt() + rwidth->toSInt());
+	if (rend == lstart->toSInt()) return true;
+	return false;
+    }
+    bool ifMergeAdjacent(AstNode* lhsp, AstNode* rhsp) {
+	// called by concatmergeable to determine if {lhsp, rhsp} make sense
+	if (!v3Global.opt.oAssemble()) return false; // opt disabled
+	// two same varref
+	if (operandsSame(lhsp, rhsp)) return true;
 	AstSel* lselp = lhsp->castSel();
 	AstSel* rselp = rhsp->castSel();
-	if (!lselp || !lhsp->castVarRef()) return false;
-	if (!rselp || !rhsp->castVarRef()) return false;
-	// a[a:b] a[b-1:c] are adjacent // a a[1:0] are adjacent as well
-	AstVarRef* lvarp = lselp->fromp()->castVarRef();
-	AstVarRef* rvarp = rselp->fromp()->castVarRef();
-	if (!lvarp || !rvarp || !lvarp->same(rvarp)) return false;
+	// a[i:0] a
+	if (lselp && !rselp && rhsp->sameGateTree(lselp->fromp()))
+	    rselp = new AstSel(rhsp->fileline(), rhsp->cloneTree(false), 0, rhsp->width());
+	// a[i:j] {a[j-1:k], b}
+	if (lselp && !rselp && rhsp->castConcat())
+	    return ifMergeAdjacent(lhsp, rhsp->castConcat()->lhsp());
+	// a a[msb:j]
+	if (rselp && !lselp && lhsp->sameGateTree(rselp->fromp()))
+	    lselp = new AstSel(lhsp->fileline(), lhsp->cloneTree(false), 0, lhsp->width());
+	// {b, a[j:k]} a[k-1:i]
+	if (rselp && !lselp && lhsp->castConcat())
+	    return ifMergeAdjacent(lhsp->castConcat()->rhsp(), rhsp);
+	if (!lselp || !rselp) return false;
+
+	// a[a:b] a[b-1:c] are adjacent
+	AstNode* lfromp = lselp->fromp();
+	AstNode* rfromp = rselp->fromp();
+	if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
 	AstConst* lstart = lselp->lsbp()->castConst();
 	AstConst* rstart = rselp->lsbp()->castConst();
 	AstConst* lwidth = lselp->widthp()->castConst();
 	AstConst* rwidth = rselp->widthp()->castConst();
 	if (!lstart || !rstart || !lwidth || !rwidth) return false;  // too complicated
-	// a[i:j] a[j-1:k]
 	int rend = (rstart->toSInt() + rwidth->toSInt());
+	// a[i:j] a[j-1:k]
 	if (rend == lstart->toSInt()) return true;
+	// a[i:0] a[msb:j]
+	if (rend == rfromp->width() && lstart->toSInt() == 0) return true;
 	return false;
     }
     bool concatMergeable(AstNode* lhsp, AstNode* rhsp) {
+        // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantagous
 	if (!v3Global.opt.oAssemble()) return false; // opt disabled
 	if (lhsp->type() != rhsp->type()) return false;
 	if (!ifConcatMergeableBiop(lhsp)) return false;
@@ -485,9 +518,9 @@ private:
 	AstNodeBiop* rp = rhsp->castNodeBiop();
 	if (!lp || !rp) return false;
 	// {a[]&b[], a[]&b[]}
-	bool lad = ifAdjacent(lp->lhsp(), rp->lhsp());
-	bool rad = ifAdjacent(lp->rhsp(), rp->rhsp());
-	if (lad && lad) return true;
+	bool lad = ifMergeAdjacent(lp->lhsp(), rp->lhsp());
+	bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
+	if (lad && rad) return true;
 	// {a[] & b[]&c[], a[] & b[]&c[]}
 	else if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
 	// {a[]&b[] & c[], a[]&b[] & c[]}
@@ -495,8 +528,8 @@ private:
 	else {
 	    // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
 	    if (concatMergeable(lp->lhsp(), rp->lhsp())
-	        && concatMergeable(lp->rhsp(), rp->rhsp()))
-	        return true;
+		&& concatMergeable(lp->rhsp(), rp->rhsp()))
+		return true;
 	}
 	return false;
     }
@@ -881,7 +914,7 @@ private:
 	AstSel* sel2p = nextp->lhsp()->castSel(); if (!sel2p) return false;
 	AstVarRef* varref1p = sel1p->fromp()->castVarRef(); if (!varref1p) return false;
 	AstVarRef* varref2p = sel2p->fromp()->castVarRef(); if (!varref2p) return false;
-	if (!varref1p->sameTree(varref2p)) return false;
+	if (!varref1p->sameGateTree(varref2p)) return false;
 	AstConst* con1p = sel1p->lsbp()->castConst(); if (!con1p) return false;
 	AstConst* con2p = sel2p->lsbp()->castConst(); if (!con2p) return false;
 	// We need to make sure there's no self-references involved in either
@@ -1628,7 +1661,7 @@ private:
 		AstSenItem* litemp = senp->castSenItem();
 		AstSenItem* ritemp = cmpp->castSenItem();
 		if (litemp && ritemp) {
-		    if ((litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameTree(ritemp->varrefp()))
+		    if ((litemp->varrefp() && ritemp->varrefp() && litemp->varrefp()->sameGateTree(ritemp->varrefp()))
 			|| (!litemp->varrefp() && !ritemp->varrefp())) {
 			// We've sorted in the order ANY, BOTH, POS, NEG, so we don't need to try opposite orders
 			if ((   litemp->edgeType()==AstEdgeType::ET_ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY
@@ -2154,7 +2187,7 @@ private:
     TREEOPV("AstConcat{operandConcatMove(nodep)}",	"moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",		"replaceExtend(nodep, nodep->rhsp())");
     // CONCAT(a[1],a[0]) -> a[1:0]
-    TREEOPV("AstConcat{$lhsp->castSel(), $rhsp->castSel(), ifAdjacent($lhsp,,$rhsp)}",  "replaceConcatSel(nodep)");
+    TREEOPV("AstConcat{$lhsp->castSel(), $rhsp->castSel(), ifAdjacentSel($lhsp->castSel(),,$rhsp->castSel())}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");

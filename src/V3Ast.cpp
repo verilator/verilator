@@ -884,24 +884,21 @@ void AstNode::cloneRelinkTree() {
 //======================================================================
 // Comparison
 
-bool AstNode::sameTree(AstNode* node2p) {
-    return sameTreeIter(node2p, true);
-}
-
-bool AstNode::sameTreeIter(AstNode* node2p, bool ignNext) {
+bool AstNode::sameTreeIter(AstNode* node2p, bool ignNext, bool gateOnly) {
     // Return true if the two trees are identical
     if (this==NULL && node2p==NULL) return true;
     if (this==NULL || node2p==NULL) return false;
     if (this->type() != node2p->type()
 	|| this->dtypep() != node2p->dtypep()
-	|| !this->same(node2p)) {
+	|| !this->same(node2p)
+	|| (gateOnly && !this->isGateOptimizable())) {
 	return false;
     }
-    return (this->op1p()->sameTreeIter(node2p->op1p(),false)
-	    && this->op2p()->sameTreeIter(node2p->op2p(),false)
-	    && this->op3p()->sameTreeIter(node2p->op3p(),false)
-	    && this->op4p()->sameTreeIter(node2p->op4p(),false)
-	    && (ignNext || this->nextp()->sameTreeIter(node2p->nextp(),false))
+    return (this->op1p()->sameTreeIter(node2p->op1p(),false,gateOnly)
+	    && this->op2p()->sameTreeIter(node2p->op2p(),false,gateOnly)
+	    && this->op3p()->sameTreeIter(node2p->op3p(),false,gateOnly)
+	    && this->op4p()->sameTreeIter(node2p->op4p(),false,gateOnly)
+	    && (ignNext || this->nextp()->sameTreeIter(node2p->nextp(),false,gateOnly))
 	);
 }
 

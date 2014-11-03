@@ -2,6 +2,8 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2004 by Jie Xu.
+//
+// The test was added together with the concat optimization. 
 
 module t (/*AUTOARG*/
    // Inputs
@@ -17,7 +19,9 @@ module t (/*AUTOARG*/
    reg [31:0] in_d;
    reg [31:0] in_e;
    reg [15:0] in_f;
+   wire [31:0] in_g;
 
+   assign in_g =  in_a << 4;
 
    reg [31:0] out_x;
    reg [31:0] out_y;
@@ -31,7 +35,7 @@ module t (/*AUTOARG*/
    assign out_z = {in_c[31:14] & in_d[31:14] & in_e[31:14], in_c[13:0] & in_d[13:0] & in_e[13:0]};
    assign out_o = out_z | out_y;
    assign out_p = {in_a[31:16] & in_f | in_e[31:16], in_a[15:0] & in_f | in_e[15:0]};
-   assign out_q = {{in_a[31:25] ^ in_e[31:25], in_a[24:16] ^ in_e[24:16]}, {in_a[15:5] ^ in_e[15:5], in_a[4:0] ^ in_e[4:0]}};
+   assign out_q = {{in_a[31:25] ^ in_g[31:25], in_a[24:16] ^ in_g[24:16]}, {in_a[15:5] ^ in_g[15:5], in_a[4:0] ^ in_g[4:0]}};
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
@@ -53,7 +57,7 @@ module t (/*AUTOARG*/
              $stop;
          if (out_p != (in_a & {2{in_f}} | in_e))
              $stop;
-         if (out_q != (in_a ^ in_e))
+         if (out_q != (in_a ^ in_g))
              $stop;
 
 	 if (cyc==100) begin

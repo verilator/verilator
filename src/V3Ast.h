@@ -932,7 +932,7 @@ class AstNode {
     AstNode*	cloneTreeIterList();
     void	checkTreeIter(AstNode* backp);
     void	checkTreeIterList(AstNode* backp);
-    bool	sameTreeIter(AstNode* node2p, bool ignNext);
+    bool	sameTreeIter(AstNode* node2p, bool ignNext, bool gateOnly);
     void	deleteTreeIter();
     void	deleteNode();
     static void	relinkOneLink(AstNode*& pointpr, AstNode* newp);
@@ -1158,6 +1158,7 @@ public:
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);
     bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
+    bool	sameGateTree(AstNode* node2p);	// Does tree of this == node2p?, not allowing non-isGateOptimizable
     void	deleteTree();	// Always deletes the next link
     void	checkTree();  // User Interface version
     void	checkIter() const;
@@ -1886,6 +1887,8 @@ inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst
 inline bool AstNode::isOne()      { return (this->castConst() && this->castConst()->num().isEqOne()); }
 inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->isEqAllOnes()); }
 inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
+inline bool AstNode::sameTree(AstNode* node2p) { return sameTreeIter(node2p, true, false); }
+inline bool AstNode::sameGateTree(AstNode* node2p) { return sameTreeIter(node2p, true, true); }
 
 inline void AstNodeVarRef::init() { if (m_varp) dtypep(m_varp->dtypep()); }
 

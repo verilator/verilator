@@ -353,7 +353,7 @@ private:
 		    == var2p->dtypep()->arrayUnpackedElements())) {
 		AstNode* init1p = var1p->valuep()->castInitArray();
 		AstNode* init2p = var2p->valuep()->castInitArray();
-		if (init1p->sameTree(init2p)) {
+		if (init1p->sameGateTree(init2p)) {
 		    UINFO(8,"   Duplicate table var "<<vsc2p<<" == "<<vsc1p<<endl);
 		    vsc1p->unlinkFrBack()->deleteTree();
 		    return vsc2p;

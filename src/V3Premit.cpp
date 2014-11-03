@@ -352,7 +352,7 @@ private:
 	    while (searchp && searchp->castComment()) searchp = searchp->nextp();
 	    if (searchp
 		&& searchp->castDisplay()
-		&& nodep->filep()->sameTree(searchp->castDisplay()->filep())) {
+		&& nodep->filep()->sameGateTree(searchp->castDisplay()->filep())) {
 		// There's another display next; we can just wait to flush
 	    } else {
 		UINFO(4,"Autoflush "<<nodep<<endl);
