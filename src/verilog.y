@@ -62,6 +62,7 @@ public:
     int		m_pinNum;	// Pin number currently parsing
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
+    bool	m_tracingParse;	// Tracing disable for parser
 
     static int	s_modTypeImpNum; // Implicit type number, incremented each module
 
@@ -78,6 +79,7 @@ public:
 	m_instParamp = NULL;
 	m_varAttrp = NULL;
 	m_caseAttrp = NULL;
+	m_tracingParse = true;
     }
     static V3ParseGrammar* singletonp() {
 	static V3ParseGrammar singleton;
@@ -86,6 +88,9 @@ public:
 
     // METHODS
     void argWrapList(AstNodeFTaskRef* nodep);
+    bool allTracingOn(FileLine* fl) {
+	return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
+    }
     AstNodeDType* createArray(AstNodeDType* basep, AstRange* rangep, bool isPacked);
     AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
@@ -685,7 +690,7 @@ timeunits_declaration<nodep>:	// ==IEEE: timeunits_declaration
 
 package_declaration:		// ==IEEE: package_declaration
 		packageFront package_itemListE yENDPACKAGE endLabelE
-			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
+			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2);
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>4,$1,$4); }
@@ -695,7 +700,7 @@ packageFront<modulep>:
 		yPACKAGE idAny ';'
 			{ $$ = new AstPackage($1,*$2);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
-			  $$->modTrace(v3Global.opt.trace());
+			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -768,7 +773,7 @@ module_declaration:		// ==IEEE: module_declaration
 	//			// IEEE: module_nonansi_header + module_ansi_header
 		modFront importsAndParametersE portsStarE ';'
 			module_itemListE yENDMODULE endLabelE
-			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
+			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1);
@@ -778,6 +783,7 @@ module_declaration:		// ==IEEE: module_declaration
 			{ $1->modTrace(false);  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
+			  GRAMMARP->m_tracingParse = true;
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//
@@ -790,7 +796,7 @@ modFront<modulep>:
 	//			// any formal arguments, as the arguments must land in the new scope.
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
-			  $$->modTrace(v3Global.opt.trace());
+			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -806,7 +812,7 @@ udpFront<modulep>:
 			{ $$ = new AstPrimitive($1,*$3); $$->inLibrary(true);
 			  $$->modTrace(false);
 			  $$->addStmtp(new AstPragma($1,AstPragmaType::INLINE_MODULE));
-			  PARSEP->fileline()->tracingOn(false);
+			  GRAMMARP->m_tracingParse = false;
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -1011,7 +1017,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 	//			// timeunits_delcarationE is instead in program_item
 		pgmFront parameter_port_listE portsStarE ';'
 			program_itemListE yENDPROGRAM endLabelE
-			{ $1->modTrace(v3Global.opt.trace() && $1->fileline()->tracingOn());  // Stash for implicit wires, etc
+			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1);
@@ -1023,7 +1029,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
 			{ $$ = new AstModule($1,*$3); $$->inLibrary(PARSEP->inLibrary()||PARSEP->inCellDefine());
-			  $$->modTrace(v3Global.opt.trace());
+			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -3783,7 +3789,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     // Propagate from current module tracing state
     if (nodep->isGenVar()) nodep->trace(false);
     else if (nodep->isParam() && !v3Global.opt.traceParams()) nodep->trace(false);
-    else nodep->trace(v3Global.opt.trace() && nodep->fileline()->tracingOn());
+    else nodep->trace(allTracingOn(nodep->fileline()));
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;

@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix cast-to-size context-determined sizing, bug828. [Geoff Barrett]
 
+****  Fix not tracing modules following primitives, bug837. [Jie Xu]
+
 
 * Verilator 3.864 2014-09-21
 
