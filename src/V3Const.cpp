@@ -461,7 +461,7 @@ private:
 	if (!lhsp || !rhsp) return false;
 	AstNode* lfromp = lhsp->fromp();
 	AstNode* rfromp = rhsp->fromp();
-	if (!lfromp || !rfromp || !operandsSame(lfromp,rfromp)) return false;
+	if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
 	AstConst* lstart = lhsp->lsbp()->castConst();
 	AstConst* rstart = rhsp->lsbp()->castConst();
 	AstConst* lwidth = lhsp->widthp()->castConst();
