@@ -81,6 +81,7 @@ private:
     typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
 
     // STATE
+    AstNodeModule*		m_modp;		// Current module
     vector<AstNode*>		m_varEtcsp;	// List of all encountered to avoid another loop through tree
     vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
     AssignMap			m_assignMap;	// List of all simple assignments for each variable
@@ -112,6 +113,12 @@ private:
     }
 
     // VISITORS
+    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+	m_modp = nodep;
+	nodep->iterateChildren(*this);
+	checkAll(nodep);
+	m_modp = NULL;
+    }
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
@@ -168,6 +175,7 @@ private:
     virtual void visit(AstVar* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
+	if (nodep->isSigPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
 	if (mightElim(nodep)) {
 	    m_varEtcsp.push_back(nodep);
 	}
@@ -253,6 +261,7 @@ private:
 public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes) {
+	m_modp = NULL;
 	m_elimUserVars = elimUserVars;
 	m_elimDTypes = elimDTypes;
 	m_sideEffect = false;

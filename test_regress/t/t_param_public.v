@@ -36,3 +36,8 @@ module b #(
    initial if ($c32("TWO") != 2) $stop;
 `endif
 endmodule
+
+//bug804
+package p;
+   localparam INPACK /*verilator public*/ = 6;
+endpackage
