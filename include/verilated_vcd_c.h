@@ -77,7 +77,9 @@ private:
     vluint64_t		m_timeLastDump;	///< Last time we did a dump
 
     char*		m_wrBufp;	///< Output buffer
+    char*		m_wrFlushp;	///< Output buffer flush trigger location
     char*		m_writep;	///< Write pointer into output buffer
+    vluint64_t		m_wrChunkSize;	///< Output buffer size
     vluint64_t		m_wroteBytes;	///< Number of bytes written to this file
 
     vluint32_t*			m_sigs_oldvalp;	///< Pointer to old signal values
@@ -87,13 +89,12 @@ private:
     NameMap*			m_namemapp;	///< List of names for the header
     static vector<VerilatedVcd*>	s_vcdVecp;	///< List of all created traces
 
-    inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
-    inline static size_t bufferInsertSize() { return 16*1024; }
+    void bufferResize(vluint64_t minsize);
     void bufferFlush();
-    void bufferCheck() {
+    inline void bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
-	if (VL_UNLIKELY(m_writep > (m_wrBufp+(bufferSize()-bufferInsertSize())))) {
+	if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
 	    bufferFlush();
 	}
     }
@@ -135,17 +136,19 @@ protected:
 public:
     // CREATORS
     VerilatedVcd () : m_isOpen(false), m_rolloverMB(0), m_modDepth(0), m_nextCode(1) {
-	m_wrBufp = new char [bufferSize()];
-	m_writep = m_wrBufp;
 	m_namemapp = NULL;
 	m_timeRes = m_timeUnit = 1e-9;
 	m_timeLastDump = 0;
 	m_sigs_oldvalp = NULL;
 	m_evcd = false;
 	m_scopeEscape = '.';  // Backward compatibility
-	m_wroteBytes = 0;
 	m_fd = 0;
 	m_fullDump = true;
+	m_wrChunkSize = 8*1024;
+	m_wrBufp = new char [m_wrChunkSize*8];
+	m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
+	m_writep = m_wrBufp;
+	m_wroteBytes = 0;
     }
     ~VerilatedVcd();
 
