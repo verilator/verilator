@@ -303,6 +303,7 @@ private:
     V3Double0		m_statSigs;	// Statistic tracking
     V3Double0		m_statRefs;	// Statistic tracking
     V3Double0		m_statDedupLogic;	// Statistic tracking
+    V3Double0		m_statAssignMerged;	// Statistic tracking
 
     // METHODS
     void iterateNewStmt(AstNode* nodep, const char* nonReducibleReason, const char* consumeReason) {
@@ -352,6 +353,7 @@ private:
     void consumedMove();
     void replaceAssigns();
     void dedupe();
+    void mergeAssigns();
 
     // VISITORS
     virtual void visit(AstNetlist* nodep, AstNUser*) {
@@ -368,6 +370,7 @@ private:
 	optimizeSignals(true);
 	// Remove redundant logic
 	if (v3Global.opt.oDedupe()) dedupe();
+	if (v3Global.opt.oAssemble()) mergeAssigns();
 	// Warn
 	warnSignals();
 	consumedMark();
@@ -506,6 +509,7 @@ public:
 	V3Stats::addStat("Optimizations, Gate sigs deleted", m_statSigs);
 	V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);
 	V3Stats::addStat("Optimizations, Gate sigs deduped", m_statDedupLogic);
+	V3Stats::addStat("Optimizations, Gate assign merged", m_statAssignMerged);
     }
 };
 
@@ -1009,7 +1013,6 @@ private:
 		lvertexp->user(true);
 	    }
 	}
-
 	return NULL;
     }
 
@@ -1062,6 +1065,132 @@ void GateVisitor::dedupe() {
     }
     m_statDedupLogic += deduper.numDeduped();
 }
+
+
+//######################################################################
+// Recurse through the graph, try to merge assigns 
+
+class GateMergeAssignsGraphVisitor : public GateGraphBaseVisitor {
+private:
+    // NODE STATE
+    AstNodeAssign* m_assignp;
+    AstActive*     m_activep;
+    GateLogicVertex* m_logicvp;
+    V3Graph*         m_graphp;
+    V3Double0        m_numMergedAssigns;	// Statistic tracking
+
+
+    // assemble two Sel into one if possible 
+    AstSel* merge(AstSel* pre, AstSel* cur) {
+	AstVarRef* preVarRefp = pre->fromp()->castVarRef();
+	AstVarRef* curVarRefp = cur->fromp()->castVarRef();
+	if (!preVarRefp || !curVarRefp || !curVarRefp->same(preVarRefp)) return NULL; // not the same var
+	AstConst* pstart = pre->lsbp()->castConst();
+	AstConst* pwidth = pre->widthp()->castConst();
+	AstConst* cstart = cur->lsbp()->castConst();
+	AstConst* cwidth = cur->widthp()->castConst();
+	if (!pstart || !pwidth || !cstart || !cwidth) return NULL; // too complicated
+	if (cur->lsbConst()+cur->widthConst() == pre->lsbConst())
+	    return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false), cur->lsbConst(), pre->widthConst()+cur->widthConst());
+	else return NULL;
+    }
+
+    virtual AstNUser* visit(GateVarVertex *vvertexp, AstNUser*) {
+	for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; ) {
+	    V3GraphEdge* oldedgep = edgep;
+	    edgep = edgep->inNextp();  // for recursive since the edge could be deleted
+	    if (GateLogicVertex* lvertexp = dynamic_cast<GateLogicVertex*>(oldedgep->fromp())) {
+		if (AstNodeAssign* assignp = lvertexp->nodep()->castNodeAssign()) {
+		    //if (lvertexp->outSize1() && assignp->lhsp()->castSel()) {
+		    if (assignp->lhsp()->castSel() && lvertexp->outSize1()) {
+			UINFO(9, "assing to the nodep["<<assignp->lhsp()->castSel()->lsbConst()<<"]"<<endl);
+			// first assign with Sel-lhs
+			if (!m_activep) m_activep = lvertexp->activep();
+			if (!m_logicvp) m_logicvp = lvertexp;
+			if (!m_assignp) m_assignp = assignp;
+
+			// not under the same active
+			if (m_activep != lvertexp->activep()) {
+			    m_activep = lvertexp->activep();
+			    m_logicvp = lvertexp;
+			    m_assignp = assignp;
+			    continue;
+			}
+
+			AstSel* preselp = m_assignp->lhsp()->castSel();
+			AstSel* curselp = assignp->lhsp()->castSel();
+			if (!preselp || !curselp) continue;
+
+			if (AstSel* newselp = merge(preselp, curselp)) {
+			    UINFO(5, "assemble to new sel: "<<newselp<<endl);
+			    // replace preSel with newSel
+			    preselp->replaceWith(newselp); preselp->deleteTree(); preselp = NULL;
+			    // create new rhs for pre assignment
+			    AstNode* newrhsp = new AstConcat(m_assignp->rhsp()->fileline(), m_assignp->rhsp()->cloneTree(false), assignp->rhsp()->cloneTree(false));
+			    AstNode* oldrhsp = m_assignp->rhsp();
+			    oldrhsp->replaceWith(newrhsp); oldrhsp->deleteTree(); oldrhsp = NULL;
+			    m_assignp->dtypeChgWidthSigned(m_assignp->width()+assignp->width(), m_assignp->width()+assignp->width(), AstNumeric::fromBool(true));
+			    // don't need to delete, will be handled
+			    //assignp->unlinkFrBack(); assignp->deleteTree(); assignp = NULL;
+
+			    // update the graph
+			    {
+				// delete all inedges to lvertexp
+				if (!lvertexp->inEmpty()) { 
+				    for (V3GraphEdge* ledgep = lvertexp->inBeginp(); ledgep; ) {
+					V3GraphEdge* oedgep = ledgep;
+					ledgep = ledgep->inNextp();
+					GateEitherVertex* fromvp = dynamic_cast<GateEitherVertex*>(oedgep->fromp());
+					new V3GraphEdge(m_graphp, fromvp, m_logicvp, 1);
+					oedgep->unlinkDelete(); oedgep = NULL;
+				    }
+				}
+				// delete all outedges to lvertexp, only one
+				oldedgep->unlinkDelete(); oldedgep = NULL;
+			    }
+			    ++m_numMergedAssigns;
+			} else {
+			    m_assignp = assignp;
+			    m_logicvp = lvertexp;
+			}
+		    }
+		}
+	    }
+	}
+	return NULL;
+    }
+
+    virtual AstNUser* visit(GateLogicVertex* lvertexp, AstNUser* vup) {
+	return NULL;
+    }
+
+public:
+    GateMergeAssignsGraphVisitor(V3Graph* graphp) {
+	m_assignp = NULL;
+	m_activep = NULL;
+	m_logicvp = NULL;
+	m_numMergedAssigns = 0;
+	m_graphp = graphp;
+    }
+    void mergeAssignsTree(GateVarVertex* vvertexp) {
+	vvertexp->accept(*this);
+    }
+    V3Double0 numMergedAssigns() { return m_numMergedAssigns; }
+};
+
+
+//----------------------------------------------------------------------
+
+void GateVisitor::mergeAssigns() {
+    GateMergeAssignsGraphVisitor merger(&m_graph);
+    for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
+	if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+	    merger.mergeAssignsTree(vvertexp);
+	}
+    }
+    m_statAssignMerged += merger.numMergedAssigns();
+}
+
 
 //######################################################################
 // Convert VARSCOPE(ASSIGN(default, VARREF)) to just VARSCOPE(default)
