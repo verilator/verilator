@@ -236,6 +236,8 @@ public:
 	DIM_SIZE,			// V3Width processes
 	DIM_UNPK_DIMENSIONS,		// V3Width converts to constant
 	//
+	DT_PUBLIC,			// V3LinkParse moves to AstTypedef::attrPublic
+	//
 	MEMBER_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	//
 	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
@@ -255,6 +257,7 @@ public:
 	    "%E-AT",
 	    "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
 	    "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
+	    "DT_PUBLIC",
 	    "MEMBER_BASE",
 	    "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
@@ -1565,8 +1568,9 @@ public:
     virtual void dumpSmall(ostream& str);
     virtual bool hasDType() const { return true; }
     virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
-    virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs to next non-typeref type
+    virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs/const/enum to next non-typeref type
     virtual AstNodeDType* skipRefToConstp() const = 0;  // recurses over typedefs to next non-typeref-or-const type
+    virtual AstNodeDType* skipRefToEnump() const = 0;  // recurses over typedefs/const to next non-typeref-or-enum/struct type
     virtual int widthAlignBytes() const = 0; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const = 0; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     virtual bool maybePointedTo() const { return true; }
@@ -1617,6 +1621,7 @@ public:
     virtual AstBasicDType* basicp() const { return findLogicDType(width(),width(),numeric())->castBasicDType(); }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     // op1 = members
@@ -1673,6 +1678,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return elementsConst() * subDTypep()->widthTotalBytes(); }
     int		msb() const;

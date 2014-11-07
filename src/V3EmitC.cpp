@@ -96,6 +96,38 @@ public:
 	}
     }
 
+    void emitTypedefs(AstNode* firstp) {
+	bool first = true;
+	for (AstNode* loopp=firstp; loopp; loopp = loopp->nextp()) {
+	    if (AstTypedef* nodep = loopp->castTypedef()) {
+		if (nodep->attrPublic()) {
+		    if (first) {
+			first = false;
+			puts("\n// TYPEDEFS\n");
+			puts("// That were declared public\n");
+		    } else {
+			puts("\n");
+		    }
+		    if (AstEnumDType* adtypep = nodep->dtypep()->skipRefToEnump()->castEnumDType()) {
+			if (adtypep->width()>64) {
+			    puts("// enum "+nodep->name()+" // Ignored: Too wide for C++\n");
+			} else {
+			    puts("enum "+nodep->name()+" {\n");
+			    for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
+				puts(itemp->name());
+				puts(" = ");
+				itemp->valuep()->iterateAndNext(*this);
+				if (nodep->nextp()) puts(",");
+				puts("\n");
+			    }
+			    puts("};\n");
+			}
+		    }
+		}
+	    }
+	}
+    }
+
     // VISITORS
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
 	bool paren = true;  bool decind = false;
@@ -663,6 +695,7 @@ public:
 	nodep->iterateChildren(*this);
     }
     // NOPs
+    virtual void visit(AstTypedef*, AstNUser*) {}
     virtual void visit(AstPragma*, AstNUser*) {}
     virtual void visit(AstCell*, AstNUser*) {}		// Handled outside the Visit class
     virtual void visit(AstVar*, AstNUser*) {}		// Handled outside the Visit class
@@ -670,7 +703,6 @@ public:
     virtual void visit(AstTraceDecl*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstTraceInc*, AstNUser*) {}	// Handled outside the Visit class
     virtual void visit(AstCFile*, AstNUser*) {}		// Handled outside the Visit class
-    virtual void visit(AstTypedef*, AstNUser*) {}	// Nothing needed presently
     // Default
     virtual void visit(AstNode* nodep, AstNUser*) {
 	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");
@@ -1844,6 +1876,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	    }
 	}
     }
+
+    emitTypedefs(modp->stmtsp());
 
     puts("\n// PORTS\n");
     if (modp->isTop()) puts("// The application code writes and reads these signals to\n");

@@ -819,6 +819,10 @@ void AstPin::dump(ostream& str) {
     else { str<<" ->UNLINKED"; }
     if (svImplicit()) str<<" [.SV]";
 }
+void AstTypedef::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (attrPublic()) str<<" [PUBLIC]";
+}
 void AstRange::dump(ostream& str) {
     this->AstNode::dump(str);
     if (littleEndian()) str<<" [LITTLE]";

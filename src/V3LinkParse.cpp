@@ -62,6 +62,7 @@ private:
     AstNodeModule*	m_valueModp;	// If set, move AstVar->valuep() initial values to this module
     AstNodeModule*	m_modp;		// Current module
     AstNodeFTask*	m_ftaskp;	// Current task
+    AstNodeDType*	m_dtypep;	// Current data type
 
     // METHODS
     static int debug() {
@@ -102,6 +103,15 @@ private:
 	    m_valueModp = NULL;
 	    nodep->iterateChildren(*this);
 	    m_valueModp = upperValueModp;
+	}
+    }
+    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+	if (!nodep->user1SetOnce()) {  // Process only once.
+	    cleanFileline(nodep);
+	    AstNodeDType* upperDtypep = m_dtypep;
+	    m_dtypep = nodep;
+	    nodep->iterateChildren(*this);
+	    m_dtypep = upperDtypep;
 	}
     }
     virtual void visit(AstEnumItem* nodep, AstNUser*) {
@@ -176,7 +186,13 @@ private:
     virtual void visit(AstAttrOf* nodep, AstNUser*) {
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
-	if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
+	if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
+	    AstTypedef* typep = nodep->backp()->castTypedef();
+	    if (!typep) nodep->v3fatalSrc("Attribute not attached to typedef");
+	    typep->attrPublic(true);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
 	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
 	    m_varp->attrScClocked(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
@@ -265,7 +281,7 @@ private:
 		nodep->deleteTree(); nodep=NULL;
 		return;
 	    } else {
-		defp = new AstTypedef(nodep->fileline(), nodep->name(), VFlagChildDType(), dtypep);
+		defp = new AstTypedef(nodep->fileline(), nodep->name(), NULL, VFlagChildDType(), dtypep);
 		m_implTypedef.insert(make_pair(make_pair(nodep->containerp(), defp->name()), defp));
 		backp->addNextHere(defp);
 	    }
@@ -327,6 +343,7 @@ public:
 	m_varp = NULL;
 	m_modp = NULL;
 	m_ftaskp = NULL;
+	m_dtypep = NULL;
 	m_inAlways = false;
 	m_inGenerate = false;
 	m_needStart = false;

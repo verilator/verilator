@@ -183,22 +183,30 @@ public:
 class AstTypedef : public AstNode {
 private:
     string	m_name;
+    bool	m_attrPublic;
 public:
-    AstTypedef(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
+    AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType, AstNodeDType* dtp)
 	: AstNode(fl), m_name(name) {
 	childDTypep(dtp);  // Only for parser
+	addAttrsp(attrsp);
 	dtypep(NULL);  // V3Width will resolve
+	m_attrPublic = false;
     }
     ASTNODE_NODE_FUNCS(Typedef, TYPEDEF)
+    virtual void dump(ostream& str);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
+    AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
     // METHODS
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
     virtual bool hasDType() const { return true; }
     void name(const string& flag) { m_name = flag; }
+    bool attrPublic() const { return m_attrPublic; }
+    void attrPublic(bool flag) { m_attrPublic = flag; }
 };
 
 class AstTypedefFwd : public AstNode {
@@ -242,6 +250,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
     virtual string name() const { return m_name; }
@@ -384,6 +393,7 @@ public:
     virtual AstBasicDType* basicp() const { return (AstBasicDType*)this; }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     AstBasicDTypeKwd keyword() const { return m.m_keyword; }  // Avoid using - use isSomething accessors instead
@@ -445,6 +455,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
@@ -474,6 +485,7 @@ public:
     virtual AstBasicDType* basicp() const { return NULL; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
     string cellName() const { return m_cellName; }
@@ -526,6 +538,10 @@ public:
     }
     virtual AstNodeDType* skipRefToConstp() const {
 	if (defp()) return defp()->skipRefToConstp();
+	else { v3fatalSrc("Typedef not linked"); return NULL; }
+    }
+    virtual AstNodeDType* skipRefToEnump() const {
+	if (defp()) return defp()->skipRefToEnump();
 	else { v3fatalSrc("Typedef not linked"); return NULL; }
     }
     virtual int widthAlignBytes() const { return dtypeSkipRefp()->widthAlignBytes(); }
@@ -599,6 +615,7 @@ public:
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); } // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); } // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     // METHODS
@@ -688,6 +705,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };

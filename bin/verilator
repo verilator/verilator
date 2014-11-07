@@ -2251,6 +2251,14 @@ reduce the size of the final executable when a task is used a very large
 number of times.  For this flag to work, the task and tasks below it must
 be pure; they cannot reference any variables outside the task itself.
 
+=item /*verilator public*/ (typedef enum)
+
+Used after an enum typedef declaration to indicate the emitted C code
+should have the enum values visible. Due to C++ language restrictions, this
+may only be used on 64-bit or narrower integral enumerations.
+
+    typedef enum logic [2:0] { ZERO = 3'b0 } pub_t /*verilator public*/;
+
 =item /*verilator public*/ (variable)
 
 Used after an input, output, register, or wire declaration to indicate the

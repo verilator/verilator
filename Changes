@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add optimization of operators between concats, msg1447. [Jie Xu]
 
+***   Add public enums, bug833. [Jonathon Donaldson]
+
 ****  Fix public parameters in unused packages, bug804. [Jonathon Donaldson]
 
 ****  Fix generate unrolling with function call, bug830. [Steven Slatter]

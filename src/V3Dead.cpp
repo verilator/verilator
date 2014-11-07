@@ -165,6 +165,13 @@ private:
 	    nodep->packagep()->user1Inc();
 	}
     }
+    virtual void visit(AstTypedef* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	checkAll(nodep);
+	// Don't let packages with only public variables disappear
+	// Normal modules may disappear, e.g. if they are parameterized then removed
+	if (nodep->attrPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
+    }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);

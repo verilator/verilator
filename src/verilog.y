@@ -1600,8 +1600,9 @@ implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 
 type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Use idAny, as we can redeclare a typedef on an existing typedef
-		yTYPEDEF data_type idAny variable_dimensionListE ';'	{ $$ = new AstTypedef($<fl>1, *$3, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
-									  SYMP->reinsert($$); }
+		yTYPEDEF data_type idAny variable_dimensionListE dtypeAttrListE ';'
+	/**/	{ $$ = new AstTypedef($<fl>1, *$3, $5, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
+		  SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; $1->v3error("Unsupported: SystemVerilog 2005 typedef in this context"); } //UNSUP
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
@@ -1610,6 +1611,20 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	|	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
 	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); }
+	;
+
+dtypeAttrListE<nodep>:
+		/* empty */				{ $$ = NULL; }
+	|	dtypeAttrList				{ $$ = $1; }
+	;
+
+dtypeAttrList<nodep>:
+		dtypeAttr				{ $$ = $1; }
+	|	dtypeAttrList dtypeAttr			{ $$ = $1->addNextNull($2); }
+	;
+
+dtypeAttr<nodep>:
+		yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::DT_PUBLIC); }
 	;
 
 //************************************************

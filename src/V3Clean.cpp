@@ -238,6 +238,10 @@ private:
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->valuep());
     }
+    virtual void visit(AstTypedef* nodep, AstNUser*) {
+	// No cleaning, or would loose pointer to enum
+	nodep->iterateChildren(*this);
+    }
 
     // Control flow operators
     virtual void visit(AstNodeCond* nodep, AstNUser*) {
