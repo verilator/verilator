@@ -2038,9 +2038,11 @@ instnameList<nodep>:
 	|	instnameList ',' instnameParen		{ $$ = $1->addNext($3); }
 	;
 
-instnameParen<nodep>:
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2); }
+instnameParen<cellp>:
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2);
+						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2);
+						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
 	//			// Adding above and switching to the Verilog-Perl syntax
 	//			// causes a shift conflict due to use of idClassSel inside exprScope.

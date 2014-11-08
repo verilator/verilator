@@ -17,6 +17,10 @@ module t (/*AUTOARG*/
    integer c_trace_on;
    real	   r;
 
+   // verilator tracing_off
+   sub sub ();
+   // verilator tracing_on
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
@@ -33,4 +37,8 @@ module t (/*AUTOARG*/
       end
    end
 
+endmodule
+
+module sub;
+   integer inside_sub = 0;
 endmodule

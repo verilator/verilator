@@ -1219,11 +1219,13 @@ private:
     AstScope*	m_scopep;	// Scope variable is underneath
     AstVar*	m_varp;		// [AfterLink] Pointer to variable itself
     bool	m_circular:1;	// Used in circular ordering dependency, need change detect
+    bool	m_trace:1;	// Tracing is turned on for this scope
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
 	:AstNode(fl)
 	, m_scopep(scopep), m_varp(varp) {
 	m_circular = false;
+	m_trace = true;
 	dtypeFrom(varp);
     }
     ASTNODE_NODE_FUNCS(VarScope, VARSCOPE)
@@ -1244,6 +1246,8 @@ public:
     void	valuep(AstNode* valuep) { addOp1p(valuep); }
     bool	isCircular() const { return m_circular; }
     void	circular(bool flag) { m_circular = flag; }
+    bool	isTrace() const { return m_trace; }
+    void	trace(bool flag) { m_trace = flag; }
 };
 
 class AstVarRef : public AstNodeVarRef {
@@ -1501,13 +1505,14 @@ private:
     string	m_origName;	// Original name before dot addition
     string	m_modName;	// Module the cell instances
     AstNodeModule* m_modp;	// [AfterLink] Pointer to module instanced
-    bool	m_hasIfaceVar; // True if a Var has been created for this cell
+    bool	m_hasIfaceVar:1; // True if a Var has been created for this cell
+    bool	m_trace:1;	// Trace this cell
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
 	: AstNode(fl)
 	, m_name(instName), m_origName(instName), m_modName(modName)
-	, m_modp(NULL), m_hasIfaceVar(false) {
+	, m_modp(NULL), m_hasIfaceVar(false), m_trace(true) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     ASTNODE_NODE_FUNCS(Cell, CELL)
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -1530,6 +1535,8 @@ public:
     void modp(AstNodeModule* nodep)	{ m_modp = nodep; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
+    void trace(bool flag) { m_trace=flag; }
+    bool isTrace() const { return m_trace; }
 };
 
 class AstCellInline : public AstNode {

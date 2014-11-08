@@ -241,6 +241,7 @@ private:
 	if (!nodep->user1p()) {
 	    AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
 	    UINFO(6,"   New scope "<<varscp<<endl);
+	    if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
 	    nodep->user1p(varscp);
 	    if (!m_scopep) nodep->v3fatalSrc("No scope for var");
 	    m_varScopes.insert(make_pair(make_pair(nodep, m_scopep), varscp));
@@ -258,8 +259,8 @@ private:
 	    // the var's referenced package etc might not be created yet.
 	    // So push to a list and post-correct
 	    m_varRefScopes.insert(make_pair(nodep, m_scopep));
-	}
-    }
+	} 
+   }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	string prefix = (string)("__DOT__")+m_scopep->name();

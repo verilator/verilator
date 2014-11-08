@@ -64,12 +64,16 @@ private:
 	return level;
     }
 
-    const char* varIgnoreTrace(AstVar* nodep) {
+    const char* vscIgnoreTrace(AstVarScope* nodep) {
 	// Return true if this shouldn't be traced
 	// See also similar rule in V3Coverage::varIgnoreToggle
-	string prettyName = nodep->prettyName();
-	if (!nodep->isTrace()) {
+	AstVar* varp = nodep->varp();
+	string prettyName = varp->prettyName();
+	if (!varp->isTrace()) {
 	    return "Verilator trace_off";
+	}
+	else if (!nodep->isTrace()) {
+	    return "Verilator cell trace_off";
 	}
 	else if (!v3Global.opt.traceUnderscore()) {
 	    if (prettyName.size()>=1 && prettyName[0] == '_')
@@ -163,8 +167,8 @@ private:
 
 	    m_traVscp = nodep;
 	    m_traValuep = NULL;
-	    if (varIgnoreTrace(varp)) {
-		addIgnore(varIgnoreTrace(varp));
+	    if (vscIgnoreTrace(nodep)) {
+		addIgnore(vscIgnoreTrace(nodep));
 	    } else {
 		++m_statSigs;
 		if (nodep->valuep()) m_traValuep = nodep->valuep()->cloneTree(true);

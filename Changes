@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add public enums, bug833. [Jonathon Donaldson]
 
+***   Trace_off now operates on cells, bug826. [Lane Brooks]
+
 ****  Fix public parameters in unused packages, bug804. [Jonathon Donaldson]
 
 ****  Fix generate unrolling with function call, bug830. [Steven Slatter]

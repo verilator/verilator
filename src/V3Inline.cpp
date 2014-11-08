@@ -314,6 +314,7 @@ private:
 	// Also clear I/O bits, as it is now local.
 	string name = m_cellp->name() + "__DOT__" + nodep->name();
 	if (!nodep->isFuncLocal()) nodep->inlineAttrReset(name);
+	if (!m_cellp->isTrace()) nodep->trace(false);
 	if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
 	if (debug()>=9) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
 	// Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module

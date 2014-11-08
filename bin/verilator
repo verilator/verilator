@@ -2346,12 +2346,14 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 =item /*verilator tracing_off*/
 
 Disable waveform tracing for all future signals that are declared in this
-module.  Often this is placed just after a primitive's module statement, so
-that the entire module is not traced.
+module, or cells below this module.  Often this is placed just after a
+primitive's module statement, so that the entire module and cells below it
+are not traced.
 
 =item /*verilator tracing_on*/
 
-Re-enable waveform tracing for all future signals that are declared.
+Re-enable waveform tracing for all future signals or cells that are
+declared.
 
 =back
 
