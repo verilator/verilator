@@ -173,6 +173,16 @@ private:
 	if (rnodep->width() != bnodep->width()) return false;
 	return rnodep->lhsp()->castConst();
     }
+    static bool operandSubAdd(AstNode* nodep) {
+	// SUB( ADD(CONSTx,y), CONSTz) -> ADD(SUB(CONSTx,CONSTz), y)
+	AstNodeBiop* np = nodep->castNodeBiop();
+	AstNodeBiop* lp = np->lhsp()->castNodeBiop();
+	return (lp
+		&& lp->lhsp()->castConst()
+		&& np->rhsp()->castConst()
+		&& lp->width()==np->width());
+    }
+
     static bool operandAndOrSame(AstNode* nodep) {
 	// OR( AND(VAL,x), AND(VAL,y)) -> AND(VAL,OR(x,y))
 	// OR( AND(x,VAL), AND(y,VAL)) -> AND(OR(x,y),VAL)
@@ -2032,6 +2042,7 @@ private:
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}",	"replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}",	"replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",	"replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP ("AstSub   {$lhsp.castAdd, operandSubAdd(nodep)}", "AstAdd{AstSub{$lhsp->castAdd()->lhsp(),$rhsp}, $lhsp->castAdd()->rhsp()}"); // ((a+x)-y) -> (a+(x-y))
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
