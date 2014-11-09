@@ -337,14 +337,14 @@ private:
 	    // Find range of dtype we are selecting from
 	    // Similar code in V3Const::warnSelect
 	    int maxmsb = nodep->fromp()->dtypep()->width()-1;
-	    int maxlsb = maxmsb - nodep->width() + 1;
 	    if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
-	    V3Number maxlsbnum (nodep->fileline(), nodep->lsbp()->width(), maxlsb);
+	    V3Number maxmsbnum (nodep->fileline(), nodep->lsbp()->width(), maxmsb);
 
-	    // See if the condition is constant true
+	    // If (maxmsb >= selected), we're in bound
 	    AstNode* condp = new AstGte (nodep->fileline(),
-					 new AstConst(nodep->fileline(), maxlsbnum),
+					 new AstConst(nodep->fileline(), maxmsbnum),
 					 nodep->lsbp()->cloneTree(false));
+	    // See if the condition is constant true (e.g. always in bound due to constant select)
 	    // Note below has null backp(); the Edit function knows how to deal with that.
 	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {
@@ -352,7 +352,7 @@ private:
 		condp->deleteTree();
 	    }
 	    else if (!lvalue) {
-		// SEL(...) -> COND(LTE(bit<=maxlsb), ARRAYSEL(...), {width{1'bx}})
+		// SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
 		V3Number xnum (nodep->fileline(), nodep->width());

@@ -66,7 +66,7 @@ module t (/*AUTOARG*/
 	8'd04: begin if ((to^from)!==80'h6d000000000000000000) $stop; end
 	8'd05: begin if (((to^from)&~80'hf)!==80'h90000000000000000000) $stop; end  // Exceed bounds, verilator may write index 0
 	8'd06: begin if (((to^from)&~80'hf)!==80'h00000000000000000020) $stop; end  // Exceed bounds, verilator may write index 0
-	8'd07: begin if (((to^from)&~80'hf)!==80'h0c000000000000000000) $stop; end
+	8'd07: begin if (((to^from)&~80'hf)!==80'h4c000000000000000000) $stop; end
 	8'd08: begin if ((to^from)!==80'h0004d000000000000000) $stop; end
 	8'd09: begin if (((to^from)&~80'hf)!==80'h00000000000000000000) $stop; end
 	default: $stop;
