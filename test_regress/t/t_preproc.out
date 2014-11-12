@@ -788,6 +788,10 @@ module t;
  
    initial $write("GOT='%s' EXP='%s'\n", "foo `A(bar) baz", "foo `A(bar) baz");
     
+    
+    
+ 
+   initial $write("Slashed=`%s'\n", "1//2.3");
 endmodule
  
  
@@ -809,4 +813,4 @@ predef 1 1
 predef 2 2
  
 
-`line 544 "t/t_preproc.v" 2
+`line 548 "t/t_preproc.v" 2

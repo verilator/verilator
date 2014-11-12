@@ -25,6 +25,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix trace overflow on huge arrays, bug834. [Geoff Barrett]
 
+****  Fix quoted comment slashes in defines, bug845. [Adam Krolnik]
+
 
 * Verilator 3.864 2014-09-21
 

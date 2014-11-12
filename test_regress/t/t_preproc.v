@@ -520,6 +520,10 @@ module t;
 `define A(name) boo name hiss
    initial $write("GOT='%s' EXP='%s'\n", `STR(`A(bar)), "foo `A(bar) baz");
 `undef A  `undef STR
+   //----
+   // bug845
+`define SLASHED "1//2.3"
+   initial $write("Slashed=`%s'\n", `SLASHED);
 endmodule
 //======================================================================
 // IEEE mandated predefines
