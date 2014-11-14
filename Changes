@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.865 devel
 
+***   Fix +define+A+B to define A and B to match other simulators, bug847. [Adam Krolnik]
+
 ***   Add optimization of wires from arrayed cells, msg1447. [Jie Xu]
 
 ***   Add optimization of operators between concats, msg1447. [Jie Xu]

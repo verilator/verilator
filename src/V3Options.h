@@ -156,7 +156,7 @@ class V3Options {
   private:
     // METHODS
     void addArg(const string& flag);
-    void addDefine(const string& defline);
+    void addDefine(const string& defline, bool allowPlus);
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise

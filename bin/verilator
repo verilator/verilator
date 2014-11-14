@@ -267,7 +267,7 @@ descriptions in the next sections for more information.
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --default-language <lang>   Default language to parse
-     +define+<var>+<value>      Set preprocessor define
+     +define+<var>=<value>      Set preprocessor define
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
      -E                         Preprocess, but do not compile
@@ -572,8 +572,9 @@ the comment "DefaultClock":
 
 =item -DI<var>=I<value>
 
-Defines the given preprocessor symbol.  Same as +define; +define is fairly
-standard across Verilog tools while -D is an alias for GCC compatibility.
+Defines the given preprocessor symbol, without allowing.  Similar to
++define; +define is fairly standard across Verilog tools while -D is an
+alias for GCC compatibility.
 
 =item --debug
 
@@ -615,10 +616,13 @@ used.
 If no language is specified, either by this flag or +I<lang>ext+ options,
 then the latest SystemVerilog language (IEEE 1800-2012) is used.
 
-=item +define+I<var>+I<value>
+=item +define+I<var>=I<value>
 
-Defines the given preprocessor symbol.  Same as -D; +define is fairly
-standard across Verilog tools while -D is an alias for GCC compatibility.
+=item +define+I<var>=I<value>+I<var2>=I<value2>...
+
+Defines the given preprocessor symbol, or multiple symbols if separated by
+plusses.  Similar to -D; +define is fairly standard across Verilog tools
+while -D is an alias for GCC compatibility.
 
 =item --dump-tree
 

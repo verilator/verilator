@@ -107,17 +107,27 @@ void V3Options::addLangExt(const string& langext, const V3LangCode& lc) {
 void V3Options::addLibExtV(const string& libext) {
     m_impp->addLibExtV(libext);
 }
-void V3Options::addDefine(const string& defline) {
+void V3Options::addDefine(const string& defline, bool allowPlus) {
     // Split +define+foo=value into the appropriate parts and parse
-    string def = defline;
-    string value;
-    string::size_type pos;
-    if ( ((pos=defline.find("+")) != string::npos)
-	 || ((pos=defline.find("=")) != string::npos)) {
-	value = def.substr(pos+1);
-	def.erase(pos);
+    // Optional + says to allow multiple defines on the line
+    // + is not quotable, as other simulators do not allow that
+    string left = defline;
+    while (left != "") {
+	string def = left;
+	string::size_type pos;
+	if (allowPlus && ((pos=left.find("+")) != string::npos)) {
+	    left = left.substr(pos+1);
+	    def.erase(pos);
+	} else {
+	    left = "";
+	}
+	string value;
+	if ((pos=def.find("=")) != string::npos) {
+	    value = def.substr(pos+1);
+	    def.erase(pos);
+	}
+	V3PreShell::defineCmdLine(def,value);
     }
-    V3PreShell::defineCmdLine(def,value);
 }
 
 void V3Options::addCppFile(const string& filename) {
@@ -668,7 +678,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	if (argv[i][0]=='+') {
 	    char *sw = argv[i];
 	    if ( !strncmp (sw, "+define+", 8)) {
-		addDefine (string (sw+strlen("+define+")));
+		addDefine (string (sw+strlen("+define+")), true);
 	    }
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
 		addIncDirUser (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
@@ -803,7 +813,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		m_convergeLimit = atoi(argv[i]);
 	    }
 	    else if ( !strncmp (sw, "-D", 2)) {
-		addDefine (string (sw+strlen("-D")));
+		addDefine (string (sw+strlen("-D")), false);
 	    }
 	    else if ( !strcmp (sw, "-debug") ) {
 		setDebugMode(3);

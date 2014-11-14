@@ -1,0 +1,7 @@
++define+D1A
++define+D2A=VALA
++define+D3A+D3B
++define+D4A=VALA+D4B
++define+D5A=VALA+D5B=VALB
+// Quotes do NOT escape the plus
+//+define+D5A="VALA+D5B"+D5C
