@@ -134,10 +134,10 @@ int sc_main(int argc, char* argv[]) {
     cout <<("Test beginning...\n");
 
     reset_l = 1;
-    while (VL_TIME_Q() < 60 && !passed && !Verilated::gotFinish()) {
+    while (VL_TIME_Q() < 60 && !Verilated::gotFinish()) {
 #if VM_TRACE
 	// Flush the wave files each cycle so we can immediately see the output
-	// Don't do this in "real" programs, do it in a abort() handler instead
+	// Don't do this in "real" programs, do it in an abort() handler instead
 	if (tfp) tfp->flush();
 #endif
 	if (VL_TIME_Q() > 10) {
