@@ -832,7 +832,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-error-limit") && (i+1)<argc ) {
 		shift;
-		m_errorLimit = atoi(argv[i]);
+		V3Error::errorLimit(atoi(argv[i]));
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDirUser (parseFileArg(optdir, string (sw+strlen("-I"))));
@@ -946,7 +946,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		    FileLine::globalWarnStyleOff(true);
 		}
 		else if (!strcmp (sw, "-Wno-fatal")) {
-		    m_warnFatal = false;
+		    V3Error::warnFatal(false);
 		}
 		else {
 		    string msg = sw+strlen("-Wno-");
@@ -1220,7 +1220,6 @@ V3Options::V3Options() {
     m_makePhony = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
-    m_warnFatal = true;
     m_pinsBv = 65;
     m_profileCFuncs = false;
     m_preprocOnly = false;
@@ -1243,7 +1242,6 @@ V3Options::V3Options() {
 
     m_convergeLimit = 100;
     m_dumpTree = 0;
-    m_errorLimit = 50;
     m_ifDepth = 0;
     m_inlineMult = 2000;
     m_outputSplit = 0;

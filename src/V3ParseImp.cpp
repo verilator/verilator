@@ -104,7 +104,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	// of this source file is updated here, in case there have been any
 	// intervening +<lang>ext+ options since it was first ecountered.
 	FileLine *modfileline = new FileLine (modfilename, 0);
-	modfileline->updateLanguage();
+	modfileline->language(v3Global.opt.fileLanguage(modfilename));
 	ppPushText((string)"`begin_keywords \""+modfileline->language().ascii()+"\"\n");
     }
 

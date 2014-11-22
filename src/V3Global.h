@@ -26,6 +26,7 @@
 #include <string>
 
 #include "V3Error.h"
+#include "V3FileLine.h"
 #include "V3Options.h"
 
 class AstNetlist;

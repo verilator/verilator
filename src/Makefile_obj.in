@@ -186,6 +186,7 @@ RAW_OBJS = \
 	V3Error.o \
 	V3Expand.o \
 	V3File.o \
+	V3FileLine.o \
 	V3Gate.o \
 	V3GenClk.o \
 	V3Graph.o \

@@ -24,6 +24,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
+#include "V3FileLine.h"
 
 class V3ParseImp;
 class V3InFilter;

@@ -23,6 +23,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Error.h"
+#include "V3FileLine.h"
 #include <cstdio>
 #include <stack>
 #include <set>

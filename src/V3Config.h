@@ -24,6 +24,7 @@
 #include "verilatedos.h"
 #include <string>
 #include "V3Error.h"
+#include "V3FileLine.h"
 
 //######################################################################
 
