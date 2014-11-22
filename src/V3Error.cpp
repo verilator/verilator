@@ -354,21 +354,10 @@ string V3Error::lineStr (const char* filename, int lineno) {
     return out.str();
 }
 
-void V3Error::incWarnings() {
-    s_warnCount++;
-    // We don't exit on a lot of warnings.
-}
-
 void V3Error::incErrors() {
     s_errCount++;
     if (errorCount() == v3Global.opt.errorLimit()) {  // Not >= as would otherwise recurse
 	v3fatal ("Exiting due to too many errors encountered; --error-limit="<<errorCount()<<endl);
-    }
-}
-
-void V3Error::abortIfErrors() {
-    if (errorCount()) {
-	abortIfWarnings();
     }
 }
 

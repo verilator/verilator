@@ -26,8 +26,8 @@ SYSTEMC_TESTING ?= $(SYSTEMC)$(SYSTEMC_INCLUDE)
 
 ######################################################################
 ifneq ($(SYSTEMC_TESTING),)
-test_default:  precopy prep        preproc compile run
-test_debug:    precopy prep_dbg    preproc compile run
+test_default:  precopy prep        compile run
+test_debug:    precopy prep_dbg    compile run
 else
 test_default:  nosc
 test_debug:    nosc
@@ -43,9 +43,6 @@ prep:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator             $(VERILATOR_FLAGS)
 prep_dbg:
 	$(PERL) $(VERILATOR_ROOT)/bin/verilator $(DEBUG_ON) $(VERILATOR_FLAGS)
-
-preproc:
-	cd obj_dir ; $(MAKE) -j 1 -f ../Makefile_obj preproc
 
 compile:
 	cd obj_dir ; $(MAKE) -j 3 -f ../Makefile_obj

@@ -216,9 +216,9 @@ class V3Error {
     static int		errorOrWarnCount() { return errorCount()+warnCount(); }
     // METHODS
     static void		incErrors();
-    static void		incWarnings();
+    static void		incWarnings() { s_warnCount++; }
     static void		init();
-    static void		abortIfErrors();
+    static void		abortIfErrors() { if (errorCount()) abortIfWarnings(); }
     static void		abortIfWarnings();
     static void		suppressThisWarning();	// Suppress next %Warn if user has it off
     static void		pretendError(V3ErrorCode code, bool flag) { s_pretendError[code]=flag; }

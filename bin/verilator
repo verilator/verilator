@@ -24,14 +24,9 @@ BEGIN {
     }
 }
 
-use File::Path;
-use File::Basename;
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
-use IO::File;
 use Pod::Usage;
-use Config;
-use Cwd qw(abs_path getcwd);
 
 use strict;
 use vars qw ($Debug @Opt_Verilator_Sw);
@@ -1291,7 +1286,7 @@ the test_c directory in the distribution for an example.
 
 =head1 EXAMPLE SYSTEMC EXECUTION
 
-This is an example similar to the above, but using SystemPerl.
+This is an example similar to the above, but using SystemC.
 
     mkdir test_our_sc
     cd test_our_sc
@@ -1327,16 +1322,6 @@ your operating system (as an RPM), first you need to point to the kit:
 Now we run Verilator on our little example.
 
     verilator -Wall --sp our.v
-
-Then we convert the SystemPerl output to SystemC.
-
-    cd obj_dir
-    export SYSTEMPERL=/path/to/where/systemperl/kit/came/from
-    $SYSTEMPERL/sp_preproc --preproc *.sp
-
-(You can also skip the above sp_preproc by getting pure SystemC from
-Verilator by replacing the verilator --sp flag in the previous step with
--sc.)
 
 We then can compile it
 
@@ -2180,8 +2165,8 @@ Specifies the module the comment appears in may be inlined into any modules
 that use this module.  This is useful to speed up simulation time with some
 small loss of trace visibility and modularity.  Note signals under inlined
 submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
-allow "." in signal names.  SystemPerl when tracing such signals will
-replace the __DOT__ with the period.
+allow "." in signal names.  When tracing such signals the tracing routines
+will replace the __DOT__ with the period.
 
 =item /*verilator isolate_assignments*/
 
@@ -3459,10 +3444,6 @@ flag.
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-Note also older versions of Verilator used the SystemPerl package and
-SpTraceVcdC class.  This still works, but is depreciated as it requires
-strong coupling between the Verilator and SystemPerl versions.
-
     #include "verilated_vcd_c.h"
     ...
     int main(int argc, char **argv, char **env) {
@@ -3541,7 +3522,7 @@ coverage.  Both require the SystemPerl package to be installed but do not
 require use of the SystemPerl output mode.
 
 First, run verilator with the --coverage option.  If you're using your own
-makefile, compile the model with the GCC flag -DSP_COVERAGE (if using
+makefile, compile the model with the GCC flag -DVM_COVERAGE (if using
 Verilator's, it will do this for you.)
 
 Run your tests in different directories.  Each test will create a
