@@ -103,8 +103,6 @@ void V3ParseImp::verilatorCmtBad(const char* textp) {
 }
 
 // See V3Read.cpp
-//void V3ParseImp::stateExitPsl() { BEGIN VLG; }
-//void V3ParseImp::statePushVlg() { yy_push_state(VLG); }
 //void V3ParseImp::statePop() { yy_pop_state(); }
 
 //======================================================================
@@ -138,7 +136,7 @@ void yyerrorf(const char* format, ...) {
 
 %s V95 V01 V05 S05 S09 S12
 %s STRING ATTRMODE TABLE
-%s VA5 SAX PSL VLT
+%s VA5 SAX VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
@@ -179,7 +177,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Verilog 1995 */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   {ws}			{ }	/* otherwise ignore white-space */
   {crnl}		{ NEXTLINE(); }		/* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
@@ -352,7 +350,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2001 */
-<V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V01,V05,VA5,S05,S09,S12,SAX>{
   /*     System Tasks */
   "$signed"		{ FL; return yD_SIGNED; }
   "$unsigned"		{ FL; return yD_UNSIGNED; }
@@ -383,13 +381,13 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2005 */
-<V05,S05,S09,S12,SAX,PSL>{
+<V05,S05,S09,S12,SAX>{
   /*     Keywords */
   "uwire"		{ FL; return yWIRE; }
 }
 
   /* System Verilog 2005 */
-<S05,S09,S12,SAX,PSL>{
+<S05,S09,S12,SAX>{
   /*     System Tasks */
   "$bits"		{ FL; return yD_BITS; }
   "$clog2"		{ FL; return yD_CLOG2; }
@@ -414,18 +412,21 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "always_comb"		{ FL; return yALWAYS_COMB; }
   "always_ff"		{ FL; return yALWAYS_FF; }
   "always_latch"	{ FL; return yALWAYS_LATCH; }
+  "assert"		{ FL; return yASSERT; }
   "bind"		{ FL; return yBIND; }
   "bit"			{ FL; return yBIT; }
   "break"		{ FL; return yBREAK; }
   "byte"		{ FL; return yBYTE; }
   "chandle"		{ FL; return yCHANDLE; }
   "clocking"		{ FL; return yCLOCKING; }
+  "const"		{ FL; return yCONST__LEX; }
   "context"		{ FL; return yCONTEXT; }
   "continue"		{ FL; return yCONTINUE; }
+  "cover"		{ FL; return yCOVER; }
   "do"			{ FL; return yDO; }
   "endclocking"		{ FL; return yENDCLOCKING; }
-  "endpackage"		{ FL; return yENDPACKAGE; }
   "endinterface"	{ FL; return yENDINTERFACE; }
+  "endpackage"		{ FL; return yENDPACKAGE; }
   "endprogram"		{ FL; return yENDPROGRAM; }
   "endproperty"		{ FL; return yENDPROPERTY; }
   "enum"		{ FL; return yENUM; }
@@ -434,8 +435,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "iff"			{ FL; return yIFF; }
   "import"		{ FL; return yIMPORT; }
   "inside"		{ FL; return yINSIDE; }
-  "interface"		{ FL; return yINTERFACE; }
   "int"			{ FL; return yINT; }
+  "interface"		{ FL; return yINTERFACE; }
   "logic"		{ FL; return yLOGIC; }
   "longint"		{ FL; return yLONGINT; }
   "modport"		{ FL; return yMODPORT; }
@@ -443,6 +444,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "packed"		{ FL; return yPACKED; }
   "priority"		{ FL; return yPRIORITY; }
   "program"		{ FL; return yPROGRAM; }
+  "property"		{ FL; return yPROPERTY; }
   "pure"		{ FL; return yPURE; }
   "rand"		{ FL; return yRAND; }
   "randc"		{ FL; return yRANDC; }
@@ -454,6 +456,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "timeprecision"	{ FL; return yTIMEPRECISION; }
   "timeunit"		{ FL; return yTIMEUNIT; }
   "typedef"		{ FL; return yTYPEDEF; }
+  "union"		{ FL; return yUNION; }
   "unique"		{ FL; return yUNIQUE; }
   "var"			{ FL; return yVAR; }
   "void"		{ FL; return yVOID; }
@@ -461,6 +464,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "$root"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "alias"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
+  "assume"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
+  "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "binsof"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "class"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -492,6 +497,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "randomize"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "ref"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
+  "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "shortreal"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -503,25 +509,11 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "wait_order"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "wildcard"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "with"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-}
-
-  /* SystemVerilog 2005 ONLY not PSL; different rules for PSL as specified below */
-<S05,S09,S12,SAX>{
-  /*     Keywords */
-  "assert"		{ FL; return yASSERT; }
-  "const"		{ FL; return yCONST__LEX; }
-  "cover"		{ FL; return yCOVER; }
-  "property"		{ FL; return yPROPERTY; }
-  "union"		{ FL; return yUNION; }
-  /*     Generic unsupported warnings */
-  "assume"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
-  "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
-  "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
-  "within"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented in non-PSL context: %s",yytext); }
+  "within"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
 }
 
   /* SystemVerilog 2009 */
-<S09,S12,SAX,PSL>{
+<S09,S12,SAX>{
   /*     Keywords */
   "global"	 	{ FL; return yGLOBAL__LEX; }
   "unique0"	 	{ FL; return yUNIQUE0; }
@@ -550,7 +542,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* System Verilog 2012 */
-<S12,SAX,PSL>{
+<S12,SAX>{
   /*     Keywords */
   "implements"	 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
   "interconnect" 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
@@ -559,7 +551,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Default PLI rule */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
 				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
 				  // Lookup unencoded name including the $, to avoid hitting normal signals
@@ -663,99 +655,10 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /************************************************************************/
-  /* PSL */
-
-  /*Entry into PSL; mode change */
-<V95,V01,V05,VA5,S05,S09,S12,SAX>{
-  "psl"			{ yy_push_state(PSL); FL; return yPSL; }
-}
-
-<PSL>{
-  /*     Special things */
-  "psl"			{ ; }	// 'psl' may occur in middle of statement, so easier just to suppress
-  /*     Keywords */
-  "assert"		{ FL; return yPSL_ASSERT; }
-  "assume"		{ FL; return yPSL_ASSERT; } //==assert
-  "before_!"		{ yyerrorf("Illegal syntax, use before!_ instead of %s",yytext); }
-  "clock"		{ FL; return yPSL_CLOCK; }
-  "countones"		{ FL; return yD_COUNTONES; }
-  "cover"		{ FL; return yPSL_COVER; }
-  "isunknown"		{ FL; return yD_ISUNKNOWN; }
-  "onehot"		{ FL; return yD_ONEHOT; }
-  "onehot0"		{ FL; return yD_ONEHOT0; }
-  "until_!"		{ yyerrorf("Illegal syntax, use until!_ instead of %s",yytext); }
-  "report"		{ FL; return yPSL_REPORT; }
-  "true"		{ FL; return yTRUE; }
-  /*     Generic unsupported warnings */
-  /*"A"			{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"AF"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"AG"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"AX"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"E"			{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"EF"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"EG"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"EX"		{ yyerrorf("Unsupported: PSL branching reserved word not implemented: %s",yytext); } */
-  /*"F"			{ FL; return yEVENTUALLYB; } */
-  /*"G"			{ FL; return yALWAYS; } */
-  /*"U"			{ FL; return yUNTILB; } */
-  /*"W"			{ FL; return yUNTIL; } */
-  /*"X"			{ FL; return yNEXT; } */
-  /*"X!"		{ FL; return yNEXTB; } */
-  /*"restrict"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } S09 instead */
-  /*"strong"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } S09 instead */
-  /*"until"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } S09 instead */
-  "%for"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "%if"			{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "abort"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "assume_guarantee"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "before"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "before!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "before!_"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "before_"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "boolean"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "const"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "endpoint"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "eventually!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "fairness"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "fell"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "forall"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "in"			{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "inf"			{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "inherit"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "never"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_a"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_a!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_e"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_e!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event_a"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event_a!"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event_e"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "next_event_e!"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "prev"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "property"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "restrict_guarantee"	{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "rose"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "sequence"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "stable"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "union"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "until!"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "until!_"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "until_"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "vmode"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "vprop"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); } //Unsup in other tools
-  "vunit"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-  "within"		{ yyerrorf("Unsupported: PSL reserved word not implemented: %s",yytext); }
-}
-
-  /************************************************************************/
   /* Meta comments */
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"		{ FL; return yVL_CLOCK_ENABLE; }
   "/*verilator coverage_block_off*/"	{ FL; return yVL_COVERAGE_BLOCK_OFF; }
@@ -793,8 +696,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "{"			{ FL; return yytext[0]; }
   "}"			{ FL; return yytext[0]; }
-}
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
   "!"			{ FL; return yytext[0]; }
   "#"			{ FL; return yytext[0]; }
   "$"			{ FL; return yytext[0]; }
@@ -826,7 +727,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Operators and multi-character symbols */
 
   /* Verilog 1995 Operators */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX>{
   "&&"			{ FL; return yP_ANDAND; }
   "||"			{ FL; return yP_OROR; }
   "<="			{ FL; return yP_LTE; }
@@ -848,7 +749,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Verilog 2001 Operators */
-<V01,V05,VA5,S05,S09,S12,SAX,PSL>{
+<V01,V05,VA5,S05,S09,S12,SAX>{
   "<<<"			{ FL; return yP_SLEFT; }
   ">>>"			{ FL; return yP_SSRIGHT; }
   "**"			{ FL; return yP_POW; }
@@ -891,23 +792,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "["{ws}*"->"		{ FL; return yP_BRAMINUSGT; }
 }
 
-  /* PSL Operators */
-<PSL>{
-  "{"			{ FL; return yPSL_BRA; }	// Avoid parser hitting concatenate.
-  "}"			{ FL; return yPSL_KET; }	// Avoid parser hitting concatenate.
-  "<->"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } //Unsup in other tools
-  "[*"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_STAR
-  "[*]"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_STAR_KET
-  "[+]"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_PLUS_KET
-  "[->"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_MINUS_GT
-  "[->]"		{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_MINUS_GT_KET
-  "[="			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_BRA_EQ
-  "|->"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_ORMINUSGT
-  "|=>"			{ yyerrorf("Unsupported: PSL operator not implemented: %s",yytext); } // yP_OREQGT
-}
-
   /* Identifiers and numbers */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,VLT>{
   {escid}		{ FL; yylval.strp = PARSEP->newString
 	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
 			  return yaID__LEX;
@@ -997,7 +883,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"				{ } // Verilog-XL compatibility
   "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
   "`celldefine"				{ PARSEP->inCellDefine(true); }
@@ -1026,7 +912,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`portcoerce"				{ }
   "`pragma"{ws}+[^\n\r]*		{ } // Verilog 2005
   "`protect"				{ }
-  "`psl"				{ if (PARSEP->optPsl()) { BEGIN PSL; } else { BEGIN IGNORE; } }
   "`remove_gatenames"			{ } // Verilog-XL compatibility
   "`remove_netnames"			{ } // Verilog-XL compatibility
   "`resetall"				{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,true); } // Rest handled by preproc
@@ -1073,7 +958,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Default rules - leave last */
 
-<V95,V01,V05,VA5,S05,S09,S12,SAX,PSL,VLT>{
+<V95,V01,V05,VA5,S05,S09,S12,SAX,VLT>{
   "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
   "//"[^\n]*		{ }  /* throw away single line comments */
   .			{ FL; return yytext[0]; }	/* return single char ops. */

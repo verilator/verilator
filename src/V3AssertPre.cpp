@@ -73,14 +73,6 @@ private:
     }
 
     // VISITORS  //========== Statements
-    virtual void visit(AstPslDefClock* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	// Store the new default clock, reset on new module
-	m_seniDefaultp = nodep->sensesp();
-	// Trash it
-	nodep->unlinkFrBack();
-	pushDeletep(nodep); nodep=NULL;
-    }
     virtual void visit(AstClocking* nodep, AstNUser*) {
 	UINFO(8,"   CLOCKING"<<nodep<<endl);
 	// Store the new default clock, reset on new module
@@ -95,13 +87,6 @@ private:
     }
 
     virtual void visit(AstPslCover* nodep, AstNUser*) {
-	if (nodep->sentreep()) return;  // Already processed
-	clearAssertInfo();
-	nodep->iterateChildren(*this);
-	nodep->sentreep(newSenTree(nodep));
-	clearAssertInfo();
-    }
-    virtual void visit(AstPslAssert* nodep, AstNUser*) {
 	if (nodep->sentreep()) return;  // Already processed
 	clearAssertInfo();
 	nodep->iterateChildren(*this);

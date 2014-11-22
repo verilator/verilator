@@ -5,6 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.867 devel
 
+**    PSL support was removed, please use System Verilog assertions.
+
+
 * Verilator 3.866 2014-11-15
 
 ***   Fix +define+A+B to define A and B to match other simulators, bug847. [Adam Krolnik]

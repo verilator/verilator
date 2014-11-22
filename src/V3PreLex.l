@@ -42,24 +42,14 @@ void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=siz
 
 // Prevent conflicts from perl version
 static void linenoInc()  {LEXP->linenoInc();}
-static bool optPsl() { return V3PreProc::optPsl(); }
 static bool pedantic() { return LEXP->m_pedantic; }
 static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void yyerrorf(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t,l); }
-static int  pslParenLevel()    { return LEXP->m_pslParenLevel; }
-static void pslParenLevelInc() { LEXP->m_pslParenLevel++; }
-static void pslParenLevelDec() { if (pslParenLevel()) LEXP->m_pslParenLevel--; }
-static bool pslMoreNeeded()    { return LEXP->m_pslMoreNeeded; }
-static void pslMoreNeeded(bool flag) { LEXP->m_pslMoreNeeded = flag; }
 
 /**********************************************************************/
 %}
 
-%x PSLONEM
-%x PSLONEE
-%x PSLMULM
-%x PSLMUL1
 %x CMTONEM
 %x CMTBEGM
 %x CMTMODE
@@ -86,7 +76,6 @@ symb		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n]+)
 symbdef		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n`]+)
 word		[a-zA-Z0-9_]+
 drop		[\032]
-psl		[p]sl
 
 	/**************************************************************/
 %%
@@ -117,7 +106,7 @@ psl		[p]sl
 <INITIAL>"`error"	{ if (!pedantic()) return (VP_ERROR); else return(VP_DEFREF); }
 
 	/* Pass-through strings */
-<INITIAL,PSLMULM,PSLONEM>{quote}	{ yy_push_state(STRMODE); yymore(); }
+<INITIAL>{quote}	{ yy_push_state(STRMODE); yymore(); }
 <STRMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in unterminated string"); yyleng=0; yyterminate(); }
 <STRMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated string"); BEGIN(INITIAL); }
 <STRMODE>{word}		{ yymore(); }
@@ -233,57 +222,36 @@ psl		[p]sl
 <ARGMODE>.		{ appendDefValue(yytext,yyleng); }
 
 	/* One line comments. */
-<INITIAL>"//"{ws}*{psl} { if (optPsl())        { pslMoreNeeded(true); yy_push_state(PSLONEM); return(VP_PSL); }
-			  else { yy_push_state(CMTONEM); yymore(); } }
 <INITIAL>"//"{ws}*{crnl} { linenoInc(); yytext=(char*)"\n"; yyleng=1; return (VP_WHITE); }
-<INITIAL>"//" 		{ if (pslMoreNeeded()) { pslMoreNeeded(true); yy_push_state(PSLONEM); return(VP_PSL); }
-			  else { yy_push_state(CMTONEM); yymore(); } }
+<INITIAL>"//" 		{ yy_push_state(CMTONEM); yymore(); }
 <CMTONEM>[^\n\r]* 	{ yy_pop_state(); return (VP_COMMENT); }
-
-	/* Psl oneline comments */
-<PSLONEM>[{(]		{ pslParenLevelInc(); return (VP_TEXT); }
-<PSLONEM>[})]		{ pslParenLevelDec(); return (VP_TEXT); }
-<PSLONEM>[;]		{ if (!pslParenLevel()) {BEGIN PSLONEE; pslMoreNeeded(false);} return (VP_TEXT); }
-<PSLONEM>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
-
-	/* Completed psl oneline comments */
-<PSLONEE>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
-<PSLONEE>{ws}+		{ yymore(); }
-<PSLONEE>.		{ yyerrorf("Unexpected text following psl assertion\n"); }
 
 	/* C-style comments. */
 	/**** See also DEFCMT */
-	/* We distinguish between the start of a comment, and later, so we may find a "psl" prefix */
-<INITIAL>"/*"		{ yy_push_state(optPsl() ? CMTBEGM : CMTMODE); yymore(); }
-<CMTBEGM>{psl}		{ yyleng -= 3; BEGIN PSLMUL1; return (VP_COMMENT); }
+	/* We distinguish between the start of a comment, and later, to look for prefix comments (deprecated) */
+<INITIAL>"/*"		{ yy_push_state(CMTMODE); yymore(); }
 <CMTBEGM>{ws}+		{ yymore(); }
 <CMTBEGM,CMTMODE>"*/"		{ yy_pop_state(); return(VP_COMMENT); }
 <CMTBEGM,CMTMODE>{crnl}		{ linenoInc(); yymore(); }
 <CMTBEGM,CMTMODE><<EOF>>	{ yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
 <CMTMODE>{word}			{ yymore(); }
-<CMTBEGM>.			{ BEGIN CMTMODE; yymore(); }	/* Non 'psl' beginning in comment */
+<CMTBEGM>.			{ BEGIN CMTMODE; yymore(); }	/* beginning in comment */
 <CMTMODE>.			{ yymore(); }
-
-	/* Psl C-style comments. */
-	/* EOFs are normal because / * `foo(..) * / hits a unputString EOF */
-<PSLMUL1>.|{crnl}	{ yyless(0); BEGIN PSLMULM; return(VP_PSL); }
-<PSLMULM>"*/"		{ yy_pop_state(); return(VP_COMMENT); }
-<PSLMULM>"//"[^\n\r]*	{ return (VP_COMMENT); }	/* Comments inside block comments get literal inclusion (later removal) */
 
 	/* Define calls */
 	/* symbdef prevents normal lex rules from making `\`"foo a symbol {`"foo} instead of a BACKQUOTE */
-<INITIAL,PSLMULM,PSLONEM>"`"{symbdef}	{ return (VP_DEFREF); }
-<INITIAL,PSLMULM,PSLONEM>"`"{symbdef}`` { yyleng-=2; return (VP_DEFREF_JOIN); }
+<INITIAL>"`"{symbdef}	{ return (VP_DEFREF); }
+<INITIAL>"`"{symbdef}`` { yyleng-=2; return (VP_DEFREF_JOIN); }
 
 	/* Generics */
-<INITIAL,PSLMULM>{crnl}		{ linenoInc(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
-<INITIAL,PSLMULM,PSLONEM><<EOF>>  { yyterminate(); }  /* A "normal" EOF */
-<INITIAL,PSLMULM,PSLONEM>{symb}	  { return (VP_SYMBOL); }
-<INITIAL,PSLMULM,PSLONEM>{symb}`` { yyleng-=2; return (VP_SYMBOL_JOIN); }
-<INITIAL,PSLMULM,PSLONEM>{wsn}+	{ return (VP_WHITE); }
-<INITIAL,PSLMULM,PSLONEM>{drop}	{ }
-<INITIAL,PSLMULM,PSLONEM>[\r]	{ }
-<INITIAL,PSLMULM,PSLONEM>.	{ return (VP_TEXT); }
+<INITIAL>{crnl}		{ linenoInc(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
+<INITIAL><<EOF>>	{ yyterminate(); }  /* A "normal" EOF */
+<INITIAL>{symb} 	{ return (VP_SYMBOL); }
+<INITIAL>{symb}``	{ yyleng-=2; return (VP_SYMBOL_JOIN); }
+<INITIAL>{wsn}+		{ return (VP_WHITE); }
+<INITIAL>{drop}		{ }
+<INITIAL>[\r]		{ }
+<INITIAL>.		{ return (VP_TEXT); }
 %%
 
 void V3PreLex::pushStateDefArg(int level) {

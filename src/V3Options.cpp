@@ -754,7 +754,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-pins-uint8", flag/*ref*/) ){ m_pinsUint8 = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
-	    else if ( onoff   (sw, "-psl-deprecated", flag/*ref*/) )	{ m_psl = flag; }  // Undocumented
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
 	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
@@ -1226,7 +1225,6 @@ V3Options::V3Options() {
     m_profileCFuncs = false;
     m_preprocOnly = false;
     m_preprocNoLine = false;
-    m_psl = false;
     m_public = false;
     m_savable = false;
     m_skipIdentical = true;

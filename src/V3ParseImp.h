@@ -131,7 +131,6 @@ public:
 
     // Functions called by lex rules:
     int yylexThis();
-    static bool optPsl() { return v3Global.opt.psl(); }
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
     void ppline (const char* text);
@@ -190,8 +189,6 @@ public:
     // Interactions with lexer
     void lexNew(int debug);
     void lexDestroy();
-    void stateExitPsl();	// Parser -> lexer communication
-    void statePushVlg();	// Parser -> lexer communication
     void statePop();		// Parser -> lexer communication
     static int stateVerilogRecent();	// Parser -> lexer communication
     int	prevLexToken() { return m_prevLexToken; } // Parser -> lexer communication

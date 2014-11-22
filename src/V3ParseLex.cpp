@@ -47,13 +47,6 @@ public:
     V3Lexer() : V3LexerBase(NULL) {}
     ~V3Lexer() {}
     // METHODS
-    void stateExitPsl() {
-	if (YY_START != PSL) yyerrorf("Internal error: Exiting PSL state when not in PSL state");
-	yy_pop_state();
-    }
-    void statePushVlg() {
-	yy_push_state(STATE_VERILOG_RECENT);
-    }
     void statePop() {
 	yy_pop_state();
     }
@@ -65,8 +58,6 @@ public:
 	}
     }
 };
-void V3ParseImp::stateExitPsl() { parsep()->m_lexerp->stateExitPsl(); }
-void V3ParseImp::statePushVlg() { parsep()->m_lexerp->stateExitPsl(); }
 void V3ParseImp::statePop()	{ parsep()->m_lexerp->statePop(); }
 
 void V3ParseImp::unputString(const char* textp, size_t length) { parsep()->m_lexerp->unputString(textp, length); }

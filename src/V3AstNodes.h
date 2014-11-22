@@ -4520,19 +4520,6 @@ public:
 //======================================================================
 // PSL
 
-class AstPslDefClock : public AstNode {
-    // Set default PSL clock
-    // Parents:  MODULE
-    // Children: SENITEM
-public:
-    AstPslDefClock(FileLine* fl, AstNodeSenItem* sensesp)
-	: AstNode(fl) {
-	addNOp1p(sensesp);
-    }
-    ASTNODE_NODE_FUNCS(PslDefClock, PSLDEFCLOCK)
-    AstNodeSenItem* sensesp() const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
-};
-
 class AstPslClocked : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
@@ -4549,27 +4536,6 @@ public:
     AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
     AstNode*	disablep()	const { return op2p(); }	// op2 = disable
     AstNode*	propp()		const { return op3p(); }	// op3 = property
-};
-
-class AstPslAssert : public AstNodeStmt {
-    // Psl Assertion
-    // Parents:  {statement list}
-    // Children: expression, report string
-private:
-    string	m_name;		// Name to report
-public:
-    AstPslAssert(FileLine* fl, AstNode* propp, const string& name="")
-	: AstNodeStmt(fl)
-	, m_name(name) {
-	addOp1p(propp);
-    }
-    ASTNODE_NODE_FUNCS(PslAssert, PSLASSERT)
-    virtual string name()	const { return m_name; }		// * = Var name
-    virtual V3Hash sameHash() const { return V3Hash(name()); }
-    virtual bool same(AstNode* samep) const { return samep->name() == name(); }
-    AstNode*	propp()		const { return op1p(); }	// op1 = property
-    AstSenTree*	sentreep()	const { return op2p()->castSenTree(); }	// op2 = clock domain
-    void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
 };
 
 class AstPslCover : public AstNodeStmt {
@@ -4596,29 +4562,6 @@ public:
     AstNode*	coverincp()	const { return op3p(); }	// op3 = coverage node
     void coverincp(AstCoverInc* nodep)	{ addOp3p(nodep); }	// op3 = coverage node
     AstNode*	stmtsp()	const { return op4p(); }	// op4 = statements
-};
-
-//======================================================================
-// PSL Expressions
-
-class AstPslBool : public AstNode {
-    // Separates PSL Sere/sequences from the normal expression boolean layer below.
-    // Note this excludes next() and similar functions; they are time domain, so not under AstPslBool.
-    // Parents: Sequences, etc.
-    // Children: math
-public:
-    AstPslBool(FileLine* fileline, AstNode* exprp)
-	: AstNode(fileline) {
-	addOp1p(exprp);
-    }
-    ASTNODE_NODE_FUNCS(PslBool, PSLBOOL)
-    AstNode*	exprp()	const { return op1p()->castNode(); }	// op1= expression
-    virtual bool hasDType() const { return true; }
-    virtual bool isGateOptimizable() const { return false; }	// Not relevant
-    virtual bool isPredictOptimizable() const { return false; }	// Not relevant
-    virtual int instrCount()	const { return 0; }
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode* samep) const { return true; }
 };
 
 //======================================================================

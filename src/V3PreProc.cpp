@@ -282,10 +282,6 @@ V3PreProc* V3PreProc::createPreProc(FileLine* fl) {
     return preprocp;
 }
 
-bool V3PreProc::optPsl() {
-    return v3Global.opt.psl();
-}
-
 //*************************************************************************
 // Defines
 
@@ -483,7 +479,6 @@ const char* V3PreProcImp::tokenName(int tok) {
     case VP_IFNDEF	: return("IFNDEF");
     case VP_INCLUDE	: return("INCLUDE");
     case VP_LINE	: return("LINE");
-    case VP_PSL		: return("PSL");
     case VP_STRIFY	: return("STRIFY");
     case VP_STRING	: return("STRING");
     case VP_SYMBOL	: return("SYMBOL");
@@ -1103,7 +1098,7 @@ int V3PreProcImp::getStateToken() {
 		// Value of building argument is data before the lower defref
 		// we'll append it when we push the argument.
 		break;
-	    } else if (tok==VP_SYMBOL || tok==VP_STRING || VP_TEXT || VP_WHITE || VP_PSL) {
+	    } else if (tok==VP_SYMBOL || tok==VP_STRING || VP_TEXT || VP_WHITE) {
 		string rtn; rtn.assign(yyourtext(),yyourleng());
 		refp->nextarg(refp->nextarg()+rtn);
 		goto next_tok;
@@ -1340,7 +1335,6 @@ int V3PreProcImp::getStateToken() {
 	    goto next_tok;
 	case VP_SYMBOL:
 	case VP_STRING:
-	case VP_PSL:
 	case VP_TEXT: {
 	    m_defDepth = 0;
 	    if (!m_off) return tok;
@@ -1435,9 +1429,6 @@ string V3PreProcImp::getline() {
 		m_lineChars.append("\n");
 	    }
 	    gotEof = true;
-	}
-	else if (tok==VP_PSL) {
-	    m_lineChars.append(" psl ");
 	}
 	else {
 	    m_lineChars.append(buf);

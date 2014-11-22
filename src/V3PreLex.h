@@ -166,8 +166,6 @@ class V3PreLex {
     // State from lexer
     int		m_formalLevel;	// Parenthesis counting inside def formals
     int		m_parenLevel;	// Parenthesis counting inside def args
-    int		m_pslParenLevel;// PSL Parenthesis (){} counting, so we can find final ;
-    bool	m_pslMoreNeeded;// Next // comment is really psl
     bool	m_defCmtSlash;	// /*...*/ comment in define had \ ending
     bool	m_defQuote;	// Definition value inside quote
     string	m_defValue;	// Definition value being built.
@@ -186,8 +184,6 @@ class V3PreLex {
 	m_defCmtSlash = false;
 	m_tokFilelinep = filelinep;
 	m_enterExit = 0;
-	m_pslParenLevel = 0;
-	m_pslMoreNeeded = false;
 	initFirstBuffer(filelinep);
     }
     ~V3PreLex() {

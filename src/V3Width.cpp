@@ -189,7 +189,6 @@ private:
 
     // Widths: 1 bit out, lhs 1 bit; Real: converts via compare with 0
     virtual void visit(AstLogNot* nodep, AstNUser* vup) {	visit_log_not(nodep,vup); }
-    virtual void visit(AstPslBool* nodep, AstNUser* vup) {	visit_log_not(nodep,vup); }
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     virtual void visit(AstLogAnd* nodep, AstNUser* vup) {	visit_log_and_or(nodep,vup); }
     virtual void visit(AstLogOr* nodep, AstNUser* vup) {	visit_log_and_or(nodep,vup); }
@@ -1810,10 +1809,6 @@ private:
 	iterateCheckBool(nodep,"Property",nodep->propp(),BOTH);	// it's like an if() condition.
 	nodep->stmtsp()->iterateAndNext(*this);
     }
-    virtual void visit(AstPslAssert* nodep, AstNUser* vup) {
-	assertAtStatement(nodep,vup);
-	iterateCheckBool(nodep,"Property",nodep->propp(),BOTH);	// it's like an if() condition.
-    }
     virtual void visit(AstVAssert* nodep, AstNUser* vup) {
 	assertAtStatement(nodep,vup);
 	iterateCheckBool(nodep,"Property",nodep->propp(),BOTH);	// it's like an if() condition.
@@ -2131,8 +2126,7 @@ private:
     }
 
     void visit_log_not(AstNode* nodep, AstNUser* vup) {
-	// CALLER: LogNot, PslBool
-	// Note AstPslBool isn't a AstNodeUniop, or we'd only allow that here
+	// CALLER: LogNot
 	// Width-check: lhs 1 bit
 	// Real: Allowed; implicitly compares with zero
 	// We calculate the width of the UNDER expression.

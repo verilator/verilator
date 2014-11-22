@@ -131,19 +131,13 @@ private:
 		if (message!="") covincp->declp()->comment(message);
 		bodysp = covincp;
 	    }
-	} else if (nodep->castPslAssert()) {
-	    bodysp = newFireAssert(nodep,message);
-	    // We assert the property is always true... so report when it fails
-	    // (Note this is opposite the behavior of coverage statements.)
-	    // Need: 'never' operator: not hold in current or any future cycle
-	    propp = new AstLogNot (nodep->fileline(), propp);
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
 	}
 	if (stmtsp) bodysp = bodysp->addNext(stmtsp);
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
 	bodysp = ifp;
-	if (nodep->castPslAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	AstNode* newp = new AstAlways (nodep->fileline(),
 				       VAlwaysKwd::ALWAYS,
@@ -309,12 +303,6 @@ private:
 			nodep->stmtsp(), nodep->name()); nodep=NULL;
 	++m_statAsCover;
     }
-    virtual void visit(AstPslAssert* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
-			NULL, nodep->name()); nodep=NULL;
-	++m_statAsPsl;
-    }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	newVAssertion(nodep, nodep->propp()); nodep=NULL;
@@ -337,14 +325,6 @@ private:
 	    nodep->iterateChildren(*this);
 	}
 	m_beginp = lastp;
-    }
-
-    // VISITORS  //========== Temporal Layer
-
-    // VISITORS  //========== Boolean Layer
-    virtual void visit(AstPslBool* nodep, AstNUser*) {
-	nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-	pushDeletep(nodep); nodep=NULL;
     }
 
     virtual void visit(AstNode* nodep, AstNUser*) {

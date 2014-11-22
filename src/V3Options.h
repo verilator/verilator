@@ -82,7 +82,6 @@ class V3Options {
     bool	m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool	m_pinsUint8;	// main switch: --pins-uint8
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
-    bool	m_psl;		// main switch: --psl
     bool	m_public;	// main switch: --public
     bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
@@ -230,7 +229,6 @@ class V3Options {
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool profileCFuncs() const { return m_profileCFuncs; }
-    bool psl() const { return m_psl; }
     bool allPublic() const { return m_public; }
     bool l2Name() const { return m_l2Name; }
     bool lintOnly() const { return m_lintOnly; }

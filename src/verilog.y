@@ -488,12 +488,6 @@ class AstSenTree;
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
 
-%token<fl>		yPSL		"psl"
-%token<fl>		yPSL_ASSERT	"PSL assert"
-%token<fl>		yPSL_CLOCK	"PSL clock"
-%token<fl>		yPSL_COVER	"PSL cover"
-%token<fl>		yPSL_REPORT	"PSL report"
-
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fl>		yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
 %token<fl>		yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
@@ -566,8 +560,6 @@ class AstSenTree;
 %token<fl>		yP_SRIGHTEQ	">>="
 %token<fl>		yP_SSRIGHTEQ	">>>="
 
-%token<fl>		yPSL_BRA	"{"
-%token<fl>		yPSL_KET	"}"
 %token<fl>	 	yP_LOGIFF
 
 // [* is not a operator, as "[ * ]" is legal
@@ -578,7 +570,6 @@ class AstSenTree;
 // PSL op precedence
 %right	 	yP_MINUSGT  yP_LOGIFF
 %right		yP_ORMINUSGT  yP_OREQGT
-%left<fl>	prPSLCLK
 
 // Verilog op precedence
 %right		'?' ':'
@@ -637,20 +628,6 @@ class AstSenTree;
 %start source_text
 
 %%
-//**********************************************************************
-// Feedback to the Lexer
-// Note we read a parenthesis ahead, so this may not change the lexer at the right point.
-
-stateExitPsl:			// For PSL lexing, return from PSL state
-		/* empty */			 	{ PARSEP->stateExitPsl(); }
-	;
-statePushVlg:			// For PSL lexing, escape current state into Verilog state
-		/* empty */			 	{ PARSEP->statePushVlg(); }
-	;
-statePop:			// Return to previous lexing state
-		/* empty */			 	{ PARSEP->statePop(); }
-	;
-
 //**********************************************************************
 // Files
 
@@ -1698,8 +1675,6 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	yALWAYS_LATCH event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, $2,$3); }
 	|	loop_generate_construct			{ $$ = $1; }
 	|	conditional_generate_construct		{ $$ = $1; }
-	//			// Verilator only
-	|	pslStmt 				{ $$ = $1; }
 	//
 	|	error ';'				{ $$ = NULL; }
 	;
@@ -2987,7 +2962,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~noPar__IGNORE~'(' expr ')'		{ $$ = $2; }
 	//UNSUP	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'	{ $$ = $4; }
 	//			// PSL rule
-	|	'_' '(' statePushVlg expr statePop ')'	{ $$ = $4; }	// Arbitrary Verilog inside PSL
+	|	'_' '(' expr ')'			{ $$ = $3; }	// Arbitrary Verilog inside PSL
 	//
 	//			// IEEE: cast/constant_cast
 	|	casting_type yP_TICK '(' expr ')'	{ $$ = new AstCast($2,$4,$1); }
@@ -3085,11 +3060,6 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 
 fexprScope<nodep>:		// exprScope, For use as first part of statement (disambiguates <=)
 		BISONPRE_COPY(exprScope,{s/~l~/f/g})	// {copied}
-	;
-
-// Psl excludes {}'s by lexer converting to different token
-exprPsl<nodep>:
-		expr					{ $$ = $1; }
 	;
 
 // PLI calls exclude "" as integers, they're strings
@@ -3620,56 +3590,6 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	/*cont*/	yP_COLONCOLON	{ $$ = $<scp>1->castPackage(); }
 	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
 	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
-	;
-
-//************************************************
-// PSL Statements
-
-pslStmt<nodep>:
-		yPSL pslDir  stateExitPsl		{ $$ = $2; }
-	|	yPSL pslDecl stateExitPsl 		{ $$ = $2; }
-	;
-
-pslDir<nodep>:
-		id ':' pslDirOne			{ $$ = $3; }
-	|	pslDirOne		       		{ $$ = $1; }
-	;
-
-pslDirOne<nodep>:
-		yPSL_ASSERT pslProp ';'				{ $$ = new AstPslAssert($1,$2); }
-	|	yPSL_ASSERT pslProp yPSL_REPORT yaSTRING ';'	{ $$ = new AstPslAssert($1,$2,*$4); }
-	|	yPSL_COVER  pslProp ';'				{ $$ = new AstPslCover($1,$2,NULL); }
-	|	yPSL_COVER  pslProp yPSL_REPORT yaSTRING ';'	{ $$ = new AstPslCover($1,$2,NULL,*$4); }
-	;
-
-pslDecl<nodep>:
-		yDEFAULT yPSL_CLOCK '=' senitemEdge ';'		{ $$ = new AstPslDefClock($3, $4); }
-	|	yDEFAULT yPSL_CLOCK '=' '(' senitemEdge ')' ';'	{ $$ = new AstPslDefClock($3, $5); }
-	;
-
-//************************************************
-// PSL Properties, Sequences and SEREs
-// Don't use '{' or '}'; in PSL they're yPSL_BRA and yPSL_KET to avoid expr concatenates
-
-pslProp<nodep>:
-		pslSequence				{ $$ = $1; }
-	|	pslSequence '@' %prec prPSLCLK '(' senitemEdge ')' { $$ = new AstPslClocked($2,$4,NULL,$1); }  // or pslSequence @ ...?
-	;
-
-pslSequence<nodep>:
-		yPSL_BRA pslSere yPSL_KET		{ $$ = $2; }
-	;
-
-pslSere<nodep>:
-		pslExpr					{ $$ = $1; }
-	|	pslSequence				{ $$ = $1; }  // Sequence containing sequence
-	;
-
-// Undocumented PSL rule is that {} is always a SERE; concatenation is not allowed.
-// This can be bypassed with the _(...) embedding of any arbitrary expression.
-pslExpr<nodep>:
-		exprPsl					{ $$ = new AstPslBool($1->fileline(), $1); }
-	|	yTRUE					{ $$ = new AstPslBool($1, new AstConst($1, AstConst::LogicTrue())); }
 	;
 
 //**********************************************************************

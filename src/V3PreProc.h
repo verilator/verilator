@@ -75,7 +75,6 @@ public:
 	return !(v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine());
     }
     static bool pedantic() { return false; }		// Obey standard; Don't substitute `error
-    static bool optPsl();
 
     // CALLBACK METHODS
     // This probably will want to be overridden for given child users of this class.
