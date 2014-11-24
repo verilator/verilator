@@ -198,7 +198,7 @@ class V3Options {
     bool systemC() const { return m_systemC; }
     bool systemPerl() const { return m_systemPerl; }
     bool usingSystemCLibs() const { return !lintOnly() && (systemPerl() || systemC()); }
-    bool usingSystemPerlLibs() const { return !lintOnly() && (systemPerl() || coverage()); }
+    bool usingSystemPerlLibs() const { return !lintOnly() && systemPerl(); }
     bool savable() const { return m_savable; }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
