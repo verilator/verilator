@@ -199,7 +199,6 @@ The directories in the kit after de-taring are as follows:
     test_c                      => Example Verilog->C++ conversion
     test_sc                     => Example Verilog->SystemC conversion
     test_sp                     => Example Verilog->SystemPerl conversion
-    test_vcs                    => Example Verilog->VCS conversion (test the test)
     test_verilated              => Internal tests
     test_regress                => Internal tests
 

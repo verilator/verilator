@@ -100,7 +100,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 SHELL = /bin/sh
 
-SUBDIRS = src test_verilated test_c test_sc test_sp test_regress test_vcs
+SUBDIRS = src test_verilated test_c test_sc test_sp test_regress
 
 INFOS = README README.html README.pdf internals.txt internals.html \
         internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf
@@ -183,7 +183,7 @@ msg_test: all_nomsg
 
 .PHONY:test
 ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
-test: test_vcs test_c test_sc test_sp test_verilated test_regress
+test: test_c test_sc test_sp test_verilated test_regress
 else
 test: test_c test_sc test_sp
 endif
@@ -192,8 +192,6 @@ endif
 	@echo "Type 'make install' to install documentation."
 	@echo
 
-test_vcs: all_nomsg
-	@(cd test_vcs && $(MAKE))
 test_c: all_nomsg
 	@(cd test_c && $(MAKE))
 test_c_debug: all_nomsg

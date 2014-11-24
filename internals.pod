@@ -474,7 +474,7 @@ be warning free.
 =item --enable-longtests
 
 In addition to the standard C, SystemC and SystemPerl tests also run the
-tests in the C<test_vcs>, C<test_verilated> and C<test_regress> directories
+tests in the C<test_verilated> and C<test_regress> directories
 when using I<make test>.  This is disabled by default as SystemC/SystemPerl
 installation problems would otherwise falsely indicate a Verilator problem.
 
