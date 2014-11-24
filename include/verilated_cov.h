@@ -95,7 +95,7 @@ struct VlCovCvtToCStr {
 
 //=============================================================================
 //  VerilatedCov
-///  SystemPerl coverage global class
+///  Verilator coverage global class
 ////
 /// Global class with methods affecting all coverage data.
 

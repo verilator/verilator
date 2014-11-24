@@ -57,7 +57,7 @@ vector<VerilatedVcd*>	VerilatedVcd::s_vcdVecp;	///< List of all created traces
 // VerilatedVcdCallInfo
 /// Internal callback routines for each module being traced.
 ////
-/// Each SystemPerl module that wishes to be traced registers a set of
+/// Each module that wishes to be traced registers a set of
 /// callbacks stored in this class.  When the trace file is being
 /// constructed, this class provides the callback routines to be executed.
 

@@ -125,6 +125,10 @@ sub prep {
 	$wholefile =~ s/\bSpTraceVcdSig\b/VerilatedVcdSig/g;
 	$wholefile =~ s/\bSpScBvExposer/VlScBvExposer/g;
 	#
+	$wholefile =~ s/Each SystemPerl module/Each module/g;
+	$wholefile =~ s/\bSystemPerl [Tt]race file being created/Trace file being created/g;
+	$wholefile =~ s/\bSystemPerl [Tt]rac/Verilator trac/g;  # trace/tracing
+	#
 	$wholefile =~ s/\b(uint[0-9]+_t)/vl$1/g;
 	$wholefile =~ s/%ll/%" VL_PRI64 "/g;
 	$wholefile =~ s/\(long long unsigned\)n/ n/g;  # printQuad

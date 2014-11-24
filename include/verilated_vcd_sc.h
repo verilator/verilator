@@ -15,7 +15,7 @@
 //=============================================================================
 ///
 /// \file
-/// \brief SystemPerl tracing in VCD format
+/// \brief Verilator tracing in VCD format
 ///
 /// AUTHOR:  Wilson Snyder
 ///

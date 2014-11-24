@@ -395,7 +395,7 @@ public:
 /// Create a VCD dump file in C standalone (no SystemC) simulations.
 
 class VerilatedVcdC {
-    VerilatedVcd		m_sptrace;	///< SystemPerl trace file being created
+    VerilatedVcd		m_sptrace;	///< Trace file being created
 public:
     // CONSTRUCTORS
     VerilatedVcdC() {}

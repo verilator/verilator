@@ -1321,7 +1321,7 @@ your operating system (as an RPM), first you need to point to the kit:
 
 Now we run Verilator on our little example.
 
-    verilator -Wall --sp our.v
+    verilator -Wall --sc our.v
 
 We then can compile it
 
@@ -1350,7 +1350,7 @@ And we get the same output as the C++ example:
 
 Really, you're better off using a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
-the test_sp directory in the distribution for an example.
+the test_sc directory in the distribution for an example.
 
 
 =head1 BENCHMARKING & OPTIMIZATION
@@ -3466,7 +3466,7 @@ Add the --trace switch to Verilator, and in your top level C sc_main code,
 include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
 create a VerilatedVcdSc object as you would create a normal SystemC trace
 file.  For an example, see the call to VerilatedVcdSc in the
-test_sp/sc_main.cpp file of the distribution, and below.
+test_sc/sc_main.cpp file of the distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
@@ -3518,8 +3518,7 @@ network disk.  Network disks are generally far slower.
 =item How do I do coverage analysis?
 
 Verilator supports both block (line) coverage and user inserted functional
-coverage.  Both require the SystemPerl package to be installed but do not
-require use of the SystemPerl output mode.
+coverage.
 
 First, run verilator with the --coverage option.  If you're using your own
 makefile, compile the model with the GCC flag -DVM_COVERAGE (if using
@@ -3533,7 +3532,7 @@ Verilator_coverage reads the logs/coverage.pl file(s), and creates an
 annotated source code listing showing code coverage details.
 
 For an example, after running 'make test' in the Verilator distribution,
-see the test_sp/logs/coverage_source directory.  Grep for lines starting
+see the test_sc/logs directory.  Grep for lines starting
 with '%' to see what lines Verilator believes need more coverage.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)

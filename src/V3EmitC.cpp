@@ -227,9 +227,9 @@ public:
 	puts("&(vlSymsp->__Vcoverage[");
 	puts(cvtToStr(nodep->dataDeclThisp()->binNum())); puts("])");
 	// If this isn't the first instantiation of this module under this
-	// design, don't really count the bucket, and rely on SystemPerl to
+	// design, don't really count the bucket, and rely on verilator_cov to
 	// aggregate counts.  This is because Verilator combines all
-	// hiearchies itself, and if SystemPerl also did it, you'd end up
+	// hiearchies itself, and if verilator_cov also did it, you'd end up
 	// with (number-of-instant) times too many counts in this bin.
 	puts(", first");  // Enable, passed from __Vconfigure parameter
 	puts(", ");	putsQuoted(nodep->fileline()->filename());

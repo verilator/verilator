@@ -68,7 +68,7 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 
 //=============================================================================
 //  VerilatedCovKey
-///  SystemPerl coverage global class
+///  Verilator coverage global class
 ////
 /// Global class with methods affecting all coverage data.
 
