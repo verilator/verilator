@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.867 devel
 
+**    New verilator_coverage program added to replace SystemPerl's vcoverage.
+
 **    PSL support was removed, please use System Verilog assertions.
 
 

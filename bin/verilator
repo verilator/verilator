@@ -3528,9 +3528,9 @@ Verilator's, it will do this for you.)
 Run your tests in different directories.  Each test will create a
 logs/coverage.pl file.
 
-After running all of your tests, the vcoverage utility (from the SystemPerl
-package) is executed.  Vcoverage reads the logs/coverage.pl file(s), and
-creates an annotated source code listing showing code coverage details.
+After running all of your tests, verilator_coverage is executed.
+Verilator_coverage reads the logs/coverage.pl file(s), and creates an
+annotated source code listing showing code coverage details.
 
 For an example, after running 'make test' in the Verilator distribution,
 see the test_sp/logs/coverage_source directory.  Grep for lines starting
@@ -3825,7 +3825,7 @@ Major concepts by Paul Wasson and Duane Galbi.
 
 =head1 SEE ALSO
 
-L<verilator_profcfunc>, L<systemperl>, L<vcoverage>, L<make>,
+L<verilator_coverage>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 

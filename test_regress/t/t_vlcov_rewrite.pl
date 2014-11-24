@@ -9,20 +9,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-foreach my $prog (
-    "../bin/verilator",
-    "../bin/verilator_coverage",
-    "../bin/verilator_difftree",
-    "../bin/verilator_profcfunc",
+foreach my $basename ("t_vlcov_data_a.dat",
+		      "t_vlcov_data_b.dat",
+		      "t_vlcov_data_c.dat",
+		      "t_vlcov_data_d.dat",
     ) {
-    $Self->_run(fails=>1,
-		cmd=>["perl",$prog,
-		      "--help"],
-		logfile=>"$Self->{obj_dir}/t_help.log",
+    $Self->_run(cmd=>["../bin/verilator_coverage",
+		      "t/${basename}",
+		      "--write", "$Self->{obj_dir}/${basename}"
+		],
 		tee=>0,
 	);
-    file_grep ("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+    ok(files_identical("$Self->{obj_dir}/${basename}", "t/${basename}"));
 }
-
-ok(1);
 1;

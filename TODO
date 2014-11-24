@@ -30,23 +30,6 @@ Configure/Make/Install
 	* Full MSVC++ compilation (does scons support this?) (4.000?)
 	* Distribute with flex/bison already expanded?
 	  Flex library not needed.  Probably too difficult to be worth it.
-	* Integrate SystemPerl coverage
-	      see the SystemPerl git branch coverage_only
-    	      (Note in /usr/include there are no upper cased include files.)
-		Coverage.pm		-- Need all functionality, but in C?
-		Coverage/Item.pm	-- Need all functionality, but in C?
-		Coverage/ItemKey.pm	-- Need all functionality, but in C?
-		sp_preproc		-- Some steps in here need to be moved to generated C
-		--			   -- note uses Verilog::Getopt
-		src/Sp.cpp		-- n/a
-		src/SpCommon.h		-- mostly overlaps verilatedos.h
-		src/SpCoverage.cpp/h	-- All needed
-		src/SpFunctor.cpp/h	-- No longer used
-		src/SpTraceVcd.cpp/h	-- MOVED
-		src/SpTraceVcdC.cpp/h	-- MOVED
-		src/sp_log.cpp/h	-- Not needed
-		src/systemperl.h	-- some stuff may be cut
-		vcoverage		-- Need all functionality, but in C?
 
 Testing:
 	* Move test_c/sp/v/verilated into test_regress format (4.000?)

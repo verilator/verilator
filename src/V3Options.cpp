@@ -275,18 +275,18 @@ bool V3Options::filenameIsRel(const string& filename) {
 }
 
 bool V3Options::fileStatDir(const string& filename) {
-    struct stat	m_stat;		// Stat information
-    int err = stat(filename.c_str(), &m_stat);
+    struct stat	sstat;		// Stat information
+    int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
-    if (!S_ISDIR(m_stat.st_mode)) return false;
+    if (!S_ISDIR(sstat.st_mode)) return false;
     return true;
 }
 
 bool V3Options::fileStatNormal(const string& filename) {
-    struct stat	m_stat;		// Stat information
-    int err = stat(filename.c_str(), &m_stat);
+    struct stat	sstat;		// Stat information
+    int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
-    if (S_ISDIR(m_stat.st_mode)) return false;
+    if (S_ISDIR(sstat.st_mode)) return false;
     return true;
 }
 

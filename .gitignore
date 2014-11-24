@@ -23,3 +23,4 @@ gdbrun*
 internals.txt
 verilator.txt
 verilator_bin*
+verilator_coverage_bin*

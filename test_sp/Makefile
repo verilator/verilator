@@ -25,9 +25,9 @@ DEBUG_ON = --debug --trace-dups
 
 ######################################################################
 ifneq ($(SYSTEMPERL),)
-test_default:  precopy prep        preproc compile     run coverage
-test_debug:    precopy prep_dbg    preproc compile_dbg run coverage
-test_nopublic: precopy prep_dbg_np preproc compile_dbg run coverage
+test_default:  precopy prep        preproc compile     run
+test_debug:    precopy prep_dbg    preproc compile_dbg run
+test_nopublic: precopy prep_dbg_np preproc compile_dbg run
 else
 test_default:  nosp
 test_debug:    nosp
@@ -39,7 +39,7 @@ V_FLAGS = -f $(VERILATOR_ROOT)/test_v/input.vc
 # Note the --public --output-split-cfunc is here for testing only,
 # Avoid using these settings in real application Makefiles!
 VERILATOR_FLAGS = --public --output-split-cfuncs 1000 --output-split 1000 \
-	--sp --coverage --stats --trace $(V_FLAGS) top.v
+	--sp --stats --trace $(V_FLAGS) top.v
 
 precopy: obj_dir obj_dir/sc_main.cpp
 obj_dir/sc_main.cpp: ../test_sc/sc_main.cpp
@@ -66,7 +66,7 @@ run:
 	obj_dir/simx
 
 coverage:
-	vcoverage $(V_FLAGS)
+	$(VERILATOR_ROOT)/bin/verilator_coverage $(V_FLAGS)
 
 ######################################################################
 

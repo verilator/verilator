@@ -19,8 +19,8 @@ my @Opt_Cpt;
 my @Opt_I;
 Getopt::Long::config ("pass_through", "no_auto_abbrev");
 if (! GetOptions (
-	  "help"	=> \&report,
-	  "debug"	=> \&debug,
+	  "help"	=> \&usage,
+	  "debug"	=> sub { $Debug = 1; },
 	  "classes!"	=> \$opt_classes,
 	  "report!"	=> \$opt_report,
 	  "<>"		=> \&parameter,
@@ -52,10 +52,6 @@ foreach my $cpt (@Opt_Cpt) {
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
     exit (1);
-}
-
-sub debug {
-    $Debug = 1;
 }
 
 sub parameter {

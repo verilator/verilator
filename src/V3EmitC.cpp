@@ -1508,7 +1508,7 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
 void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
     if (v3Global.opt.coverage() ) {
 	puts("\n// Coverage\n");
-	// Rather than putting out SP_COVER_INSERT calls directly, we do it via this function
+	// Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments
 	// SystemPerl 1.301 is much faster, but it's nice to remain back
 	// compatible, and have a common wrapper.
@@ -1517,7 +1517,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
 	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
 	puts(   "*countp = 0;\n");
-	puts(   "SP_COVER_INSERT(countp,");
+	puts(   "VL_COVER_INSERT(countp,");
 	puts(	"  \"filename\",filenamep,");
 	puts(	"  \"lineno\",lineno,");
 	puts(	"  \"column\",column,\n");
@@ -1827,7 +1827,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("#include \"verilated_save.h\"\n");
     }
     if (v3Global.opt.coverage()) {
-	puts("#include \"SpCoverage.h\"\n");
+	puts("#include \"verilated_cov.h\"\n");
 	if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
     if (v3Global.needHInlines()) {   // Set by V3EmitCInlines; should have been called before us

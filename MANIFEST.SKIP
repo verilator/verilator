@@ -28,6 +28,7 @@ config.status$
 verilator.log
 verilator.tex
 verilator_bin.*
+verilator_coverage_bin.*
 .vcsmx_rebuild$
 autom4te\.cache/
 nodist/

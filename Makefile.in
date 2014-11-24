@@ -122,6 +122,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
 	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \
+	src/vlcovgen \
 	src/.gdbinit \
 	src/*.pl src/*.pod \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
@@ -140,6 +141,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 
 INST_PROJ_FILES = \
 	bin/verilator \
+	bin/verilator_coverage \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	include/verilated.mk \
@@ -149,6 +151,7 @@ INST_PROJ_FILES = \
 INST_PROJ_BIN_FILES = \
 	verilator_bin \
 	verilator_bin_dbg \
+	verilator_coverage_bin_dbg \
 
 DISTFILES := $(DISTFILES_INC)
 
@@ -165,7 +168,8 @@ all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 .PHONY:verilator_exe
 .PHONY:verilator_bin
 .PHONY:verilator_bin_dbg
-verilator_exe verilator_bin verilator_bin_dbg:
+.PHONY:verilator_coverage_bin_dbg
+verilator_exe verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg:
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src" ; \
 	  (cd src && $(MAKE) $(OBJCACHE_JOBS) )
@@ -261,8 +265,8 @@ internals.pdf: internals.pod Makefile
 	-rm -f internals.toc internals.aux internals.idx internals.out
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg \
-	verilator_includer verilator_profcfunc
+VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
+	verilator_coverage verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
@@ -286,9 +290,11 @@ VL_INST_DATA_SRCDIR_FILES = \
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
 	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
+	( $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
@@ -351,6 +357,7 @@ INST_PROJ_CVS = cp_if_cvs_diff
 install-project: dist
 	@echo "Install-project to $(DIRPROJECT)"
 	strip verilator_bin*
+	strip verilator_coverage_bin*
 	$(MAKE) install-project-quick
 	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
@@ -374,6 +381,7 @@ endif
 install-cadtools: dist
 	@echo "Install-project to $(CAD_DIR)"
 	strip verilator_bin*
+	strip verilator_coverage_bin*
 	$(MAKE) install-cadtools-quick
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
@@ -459,7 +467,8 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.tex
 
 distclean maintainer-clean::
-	rm -f Makefile config.status config.cache config.log verilator_bin* TAGS
+	rm -f Makefile config.status config.cache config.log TAGS
+	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
 
 TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \

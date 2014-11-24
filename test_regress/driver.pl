@@ -388,7 +388,7 @@ sub new {
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
-    $self->{coverage_filename} ||= "$self->{obj_dir}/vlt_coverage.pl";
+    $self->{coverage_filename} ||= "$self->{obj_dir}/coverage.dat";
     $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$//;
@@ -1143,7 +1143,7 @@ sub _make_main {
 
     if ($self->{coverage}) {
 	$fh->print("#if VM_COVERAGE\n");
-	$fh->print("    SpCoverage::write(\"",$self->{coverage_filename},"\");\n");
+	$fh->print("    VerilatedCov::write(\"",$self->{coverage_filename},"\");\n");
 	$fh->print("#endif //VM_COVERAGE\n");
     }
     if ($self->{trace}) {

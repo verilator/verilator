@@ -83,13 +83,13 @@ public:
 		    if (v3Global.opt.savable()) {
 			putMakeClassEntry(of, "verilated_save.cpp");
 		    }
+		    if (v3Global.opt.coverage()) {
+			putMakeClassEntry(of, "verilated_cov.cpp");
+		    }
 		    if (v3Global.opt.systemPerl()) {
 			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
 		    }
 		    else {
-			if (v3Global.opt.coverage()) {
-			    putMakeClassEntry(of, "SpCoverage.cpp");
-			}
 			if (v3Global.opt.trace()) {
 			    putMakeClassEntry(of, "verilated_vcd_c.cpp");
 			    if (v3Global.opt.systemC()) {
