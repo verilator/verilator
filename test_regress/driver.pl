@@ -633,10 +633,6 @@ sub compile {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
-	elsif ($self->{coverage} && !$Have_System_Perl) {
-	    $self->skip("Test requires SystemPerl; ignore error since not installed\n");
-	    return 1;
-	}
 
 	if (!$param{fails} && $param{verilator_make_gcc}
 	    && $param{make_main}) {

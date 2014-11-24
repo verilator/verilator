@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_assert_basic.v");
 
 compile (
-	 verilator_flags2 => ['--assert --sp --coverage-user'],
+	 verilator_flags2 => ['--assert --cc --coverage-user'],
 	 );
 
 execute (

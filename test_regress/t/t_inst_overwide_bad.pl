@@ -12,7 +12,7 @@ top_filename("t/t_inst_overwide.v");
 compile (
 	 v_flags2 => ["--lint-only"],
 	 make_top_shell=>0,
-	 verilator_flags=> [qw(-sp)],
+	 verilator_flags=> [qw(-cc)],
 	 verilator_make_gcc=>0,
 	 fails=>$Self->{v3},
 	 expect=>
