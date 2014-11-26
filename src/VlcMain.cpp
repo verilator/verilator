@@ -28,6 +28,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <unistd.h>
 
 //######################################################################
 // VlcOptions
