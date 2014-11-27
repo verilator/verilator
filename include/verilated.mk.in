@@ -23,7 +23,9 @@ CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Programs
 
 SP_PREPROC	= sp_preproc
-SP_INCLUDER     = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+SP_INCLUDER	= $(VERILATOR_INCLUDER)
+VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
+VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
 
 ######################################################################
 # Make checks
@@ -151,15 +153,15 @@ VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
-ifneq ($(VM_PARALLEL_BUILDS),1)
+ifneq ($(VM_PARALLEL_BUILDS),0)
   # Fast building, all .cpp's in one fell swoop
   # This saves about 5 sec per module, but can be slower if only a little changes
   VK_OBJS += $(VM_PREFIX)__ALLcls.o   $(VM_PREFIX)__ALLsup.o
   all_cpp:   $(VM_PREFIX)__ALLcls.cpp $(VM_PREFIX)__ALLsup.cpp
   $(VM_PREFIX)__ALLcls.cpp: $(VK_CLASSES_CPP)
-	$(SP_INCLUDER) $^ > $@
+	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
   $(VM_PREFIX)__ALLsup.cpp: $(VK_SUPPORT_CPP)
-	$(SP_INCLUDER) $^ > $@
+	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
 else
   #Slow way of building... Each .cpp file by itself
   VK_OBJS += $(addsuffix .o, $(VM_CLASSES) $(VM_SUPPORT))

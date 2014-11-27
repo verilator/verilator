@@ -21,6 +21,9 @@
 //	At each IF/(IF else).
 //	   Count underneath $display/$stop statements.
 //	   If more on if than else, this branch is unlikely, or vice-versa.
+//	At each FTASKREF,
+//	   Count calls into the function
+//	Then, if FTASK is called only once, add inline attribute
 //
 //*************************************************************************
 
@@ -40,9 +43,18 @@
 
 class BranchVisitor : public AstNVisitor {
 private:
+    // NODE STATE
+    // Entire netlist:
+    //  AstFTask::user1()	-> int.  Number of references
+    AstUser1InUse	m_inuser1;
+
+    // TYPES
+    typedef vector<AstCFunc*> CFuncVec;
+
     // STATE
     int		m_likely;	// Excuses for branch likely taken
     int		m_unlikely;	// Excuses for branch likely not taken
+    CFuncVec	m_cfuncsp;	// List of all tasks
 
     // METHODS
     static int debug() {
@@ -54,6 +66,12 @@ private:
     void reset() {
 	m_likely = false;
 	m_unlikely = false;
+    }
+    void checkUnlikely(AstNode* nodep) {
+	if (nodep->isUnlikely()) {
+	    UINFO(4,"  UNLIKELY: "<<nodep<<endl);
+	    m_unlikely++;
+	}
     }
 
     // VISITORS
@@ -83,13 +101,29 @@ private:
 	m_likely = lastLikely;
 	m_unlikely = lastUnlikely;
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
-	// Default: Just iterate
-	if (nodep->isUnlikely()) {
-	    UINFO(4,"  UNLIKELY: "<<nodep<<endl);
-	    m_unlikely++;
-	}
+    virtual void visit(AstCCall* nodep, AstNUser*) {
+	checkUnlikely(nodep);
+	nodep->funcp()->user1Inc();
 	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstCFunc* nodep, AstNUser*) {
+	checkUnlikely(nodep);
+	m_cfuncsp.push_back(nodep);
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	checkUnlikely(nodep);
+	nodep->iterateChildren(*this);
+    }
+
+    // METHODS
+    void calc_tasks() {
+	for (CFuncVec::iterator it=m_cfuncsp.begin(); it!=m_cfuncsp.end(); ++it) {
+	    AstCFunc* nodep = *it;
+	    if (!nodep->dontInline()) {
+		nodep->isInline(true);
+	    }
+	}
     }
 
 public:
@@ -97,6 +131,7 @@ public:
     BranchVisitor(AstNetlist* nodep) {
 	reset();
 	nodep->iterateChildren(*this);
+	calc_tasks();
     }
     virtual ~BranchVisitor() {}
 };

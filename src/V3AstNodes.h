@@ -4699,6 +4699,7 @@ private:
     bool	m_formCallTree:1;	// Make a global function to call entire tree of functions
     bool	m_slow:1;		// Slow routine, called once or just at init time
     bool	m_funcPublic:1;		// From user public task/function
+    bool	m_isInline:1;		// Inline function
     bool	m_isStatic:1;		// Function is declared static (no this)
     bool	m_symProlog:1;		// Setup symbol table for later instructions
     bool	m_entryPoint:1;		// User may call into this top level function
@@ -4719,6 +4720,7 @@ public:
 	m_formCallTree = false;
 	m_slow = false;
 	m_funcPublic = false;
+	m_isInline = false;
 	m_isStatic = true;	// Note defaults to static, later we see where thisp is needed
 	m_symProlog = false;
 	m_entryPoint = false;
@@ -4748,6 +4750,7 @@ public:
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }
     bool	dontCombine() const { return m_dontCombine || funcType()!=AstCFuncType::FT_NORMAL; }
     void	dontCombine(bool flag) { m_dontCombine = flag; }
+    bool	dontInline() const { return !dontCombine() && !slow() && !skipDecl() && !funcPublic(); }
     bool	skipDecl() const { return m_skipDecl; }
     void	skipDecl(bool flag) { m_skipDecl = flag; }
     bool	declPrivate() const { return m_declPrivate; }
@@ -4762,6 +4765,8 @@ public:
     string	argTypes() const { return m_argTypes; }
     void	funcType(AstCFuncType flag) { m_funcType = flag; }
     AstCFuncType funcType() const { return m_funcType; }
+    bool	isInline() const { return m_isInline; }
+    void	isInline(bool flag) { m_isInline = flag; }
     bool	isStatic() const { return m_isStatic; }
     void	isStatic(bool flag) { m_isStatic = flag; }
     bool	symProlog() const { return m_symProlog; }

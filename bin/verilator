@@ -1399,6 +1399,10 @@ especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
 both compilation and link.  Note LTO may cause excessive compile times on
 large designs.
 
+If you are using your own makefiles, you may want to compile the Verilated
+code with -DVL_INLINE_OPT=inline. This will inline functions, however this
+requires that all cpp files be compiled in a single compiler run.
+
 You may uncover further tuning possibilities by profiling the Verilog code.
 Use Verilator's --profile-cfuncs, then GCC's -g -pg.  You can then run
 either oprofile or gprof to see where in the C++ code the time is spent.

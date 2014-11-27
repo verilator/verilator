@@ -106,6 +106,13 @@
 #endif
 
 //=========================================================================
+// Optimization
+
+#ifndef VL_INLINE_OPT
+# define VL_INLINE_OPT		///< "inline" if compiling all objects in single compiler run
+#endif
+
+//=========================================================================
 // Warning disabled
 
 #ifndef VL_WARNINGS

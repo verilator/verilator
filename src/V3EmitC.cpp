@@ -829,6 +829,7 @@ class EmitCImp : EmitCStmts {
 	splitSizeInc(nodep);
 
 	puts("\n");
+	if (nodep->isInline()) puts("VL_INLINE_OPT ");
 	puts(nodep->rtnTypeVoid()); puts(" ");
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");

@@ -52,7 +52,7 @@ endif
 
 #Our own compile rules; Faster compile, all in one file
 $(VM_PREFIX)__ALLboth.cpp: $(VK_CLASSES_CPP) $(VK_SUPPORT_CPP)
-	$(SP_INCLUDER) $^ > $@
+	$(VERILATOR_INCLUDER) -DVL_INLINE_OPT=inline $^ > $@
 
 $(VM_PREFIX)__ALLboth.o: $(VM_PREFIX)__ALLboth.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
