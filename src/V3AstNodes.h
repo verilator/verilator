@@ -4750,7 +4750,7 @@ public:
     string	rtnTypeVoid() const { return ((m_rtnType=="") ? "void" : m_rtnType); }
     bool	dontCombine() const { return m_dontCombine || funcType()!=AstCFuncType::FT_NORMAL; }
     void	dontCombine(bool flag) { m_dontCombine = flag; }
-    bool	dontInline() const { return !dontCombine() && !slow() && !skipDecl() && !funcPublic(); }
+    bool	dontInline() const { return dontCombine() || slow() || skipDecl() || funcPublic(); }
     bool	skipDecl() const { return m_skipDecl; }
     void	skipDecl(bool flag) { m_skipDecl = flag; }
     bool	declPrivate() const { return m_declPrivate; }
