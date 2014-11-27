@@ -115,8 +115,14 @@ if ($#opt_tests<0) {
     foreach my $dir (@Test_Dirs) {
 	my @stats = stat($dir);  # Uniquify by inode, so different paths to same place get combined
 	next if !$stats[1] || $uniq{$stats[1]}++;
-	push @opt_tests, glob ("${dir}/t_*.pl");
+	push @opt_tests, sort(glob ("${dir}/t_*.pl"));
     }
+}
+if ($#opt_tests>=2 && $opt_jobs>=2) {
+    # Without this tests such as t_debug_sigsegv_bt_bad.pl will occasionally
+    # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
+    print STDERR "== Many jobs; redirecting STDIN\n";
+    open(STDIN,  "+>/dev/null");
 }
 
 mkdir "obj_dir";
