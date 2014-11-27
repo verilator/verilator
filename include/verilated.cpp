@@ -762,6 +762,50 @@ void VL_FCLOSE_I(IData fdi) {
     VerilatedImp::fdDelete(fdi);
 }
 
+void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
+    va_list ap;
+    va_start(ap,formatp);
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    _VL_STRING_TO_VINT(obits, &destr, (int)output.length(), output.c_str());
+}
+
+void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
+    va_list ap;
+    va_start(ap,formatp);
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    _VL_STRING_TO_VINT(obits, &destr, (int)output.length(), output.c_str());
+}
+
+void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
+    va_list ap;
+    va_start(ap,formatp);
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    _VL_STRING_TO_VINT(obits, &destr, (int)output.length(), output.c_str());
+}
+
+void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) {
+    VL_STATIC_OR_THREAD string output;  // static only for speed
+    output = "";
+    va_list ap;
+    va_start(ap,formatp);
+    _vl_vsformat(output, formatp, ap);
+    va_end(ap);
+
+    _VL_STRING_TO_VINT(obits, &destr, (int)output.length(), output.c_str());
+}
+
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
     VL_STATIC_OR_THREAD string output;  // static only for speed
     output = "";

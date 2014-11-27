@@ -13,6 +13,7 @@ module t;
    reg [63:0] q;
    reg [16*8:1] wide;
 
+   reg [8:1] 	char;
    reg [48*8:1] str;
    reg [48*8:1] str2;
 
@@ -47,6 +48,9 @@ module t;
 `else
       if (str2 !== "mod=top.t") $stop;
 `endif
+
+      $sformat(char,"%s","c");
+      if (char != "c") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

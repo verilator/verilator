@@ -375,6 +375,10 @@ extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
 extern IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...);
 
+extern void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...);
+extern void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...);
+extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...);
+extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
 
 extern IData VL_SYSTEM_IW(int lhsnwords, WDataInP lhs);
