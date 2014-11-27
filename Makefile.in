@@ -103,7 +103,8 @@ SHELL = /bin/sh
 SUBDIRS = src test_verilated test_c test_sc test_regress
 
 INFOS = README README.html README.pdf internals.txt internals.html \
-        internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf
+        internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf \
+	verilator_coverage.1
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -211,6 +212,9 @@ info: $(INFOS)
 verilator.1: ${srcdir}/bin/verilator
 	pod2man $< $@
 
+verilator_coverage.1: ${srcdir}/bin/verilator_coverage
+	pod2man $< $@
+
 verilator.txt: ${srcdir}/bin/verilator
 	$(POD2TEXT) $< $@
 
@@ -265,7 +269,7 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1
+VL_INST_MAN_FILES = verilator.1 verilator_coverage.1
 
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated.mk \
