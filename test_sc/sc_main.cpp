@@ -12,15 +12,8 @@
 #include <sys/times.h>
 #include <sys/stat.h>
 
-#ifdef SYSTEMPERL
-# include "systemperl.h"	// SystemC + SystemPerl global header
-# include "sp_log.h"		// Logging cout to files
-# include "SpTraceVcd.h"
-# include "SpCoverage.h"
-#else
-# include "systemc.h"		// SystemC global header
-# include "verilated_vcd_sc.h"	// Tracing
-#endif
+#include "systemc.h"		// SystemC global header
+#include "verilated_vcd_sc.h"	// Tracing
 
 #include "Vtop.h"		// Top level header, generated from verilog
 
@@ -33,10 +26,6 @@ int sc_main(int argc, char* argv[]) {
 
     // General logfile
     ios::sync_with_stdio();
-#ifdef SYSTEMPERL
-    sp_log_file simlog ("sim.log");
-    simlog.redirect_cout();
-#endif
 
     // Defaults
 #if (SYSTEMC_VERSION>20011000)
@@ -70,19 +59,6 @@ int sc_main(int argc, char* argv[]) {
     //==========
     // Part under test
 
-#ifdef SYSTEMPERL
-    SP_CELL (top, Vtop);
-    SP_PIN (top, clk,		clk);
-    SP_PIN (top, fastclk,	fastclk);
-    SP_PIN (top, reset_l,	reset_l);
-    SP_PIN (top, passed,	passed);
-    SP_PIN (top, in_small,	in_small);
-    SP_PIN (top, in_quad,	in_quad);
-    SP_PIN (top, in_wide,	in_wide);
-    SP_PIN (top, out_small,	out_small);
-    SP_PIN (top, out_quad,	out_quad);
-    SP_PIN (top, out_wide,	out_wide);
-#else
     Vtop* top = new Vtop("top");
     top->clk		(clk);
     top->fastclk	(fastclk);
@@ -94,7 +70,6 @@ int sc_main(int argc, char* argv[]) {
     top->out_small	(out_small);
     top->out_quad	(out_quad);
     top->out_wide	(out_wide);
-#endif
 
     //==========
     //  Waves
@@ -119,11 +94,7 @@ int sc_main(int argc, char* argv[]) {
 
 #if VM_TRACE
     cout << "Enabling waves...\n";
-# ifdef SYSTEMPERL
-    SpTraceFile* tfp = new SpTraceFile;
-# else
     VerilatedVcdSc* tfp = new VerilatedVcdSc;
-# endif
     top->trace (tfp, 99);
     tfp->open ("vlt_dump.vcd");
 #endif

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    PSL support was removed, please use System Verilog assertions.
 
+**    SystemPerl mode is deprecated and now untested.
+
 
 * Verilator 3.866 2014-11-15
 

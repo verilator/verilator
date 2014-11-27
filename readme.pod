@@ -76,14 +76,6 @@ instead.)
 
 =item
 
-If you will be using SystemPerl or coverage, download and install
-System-Perl, L<http://www.veripool.org/systemperl>.  Note you'll need to
-set a C<SYSTEMPERL> environment variable to point to the downloaded kit.
-Optionally also set C<SYSTEMPERL_INCLUDE> to point to the installed
-headers.
-
-=item
-
 You will need the C<flex> and C<bison> packages installed.
 
 =item
@@ -95,8 +87,8 @@ C<cd> to the Verilator directory containing this README.
 You now have to decide how you're going to eventually install the kit.
 
 Note Verilator builds the current value of VERILATOR_ROOT, SYSTEMC_INCLUDE,
-SYSTEMC_LIBDIR, SYSTEMPERL, and SYSTEMPERL_INCLUDE as defaults into the
-executable, so try to have them correct before configuring.
+and SYSTEMC_LIBDIR as defaults into the executable, so try to have them
+correct before configuring.
 
 =over 4
 
@@ -198,7 +190,6 @@ The directories in the kit after de-taring are as follows:
     test_v                      => Example Verilog code for other test dirs
     test_c                      => Example Verilog->C++ conversion
     test_sc                     => Example Verilog->SystemC conversion
-    test_sp                     => Example Verilog->SystemPerl conversion
     test_verilated              => Internal tests
     test_regress                => Internal tests
 

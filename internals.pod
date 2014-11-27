@@ -473,10 +473,10 @@ be warning free.
 
 =item --enable-longtests
 
-In addition to the standard C, SystemC and SystemPerl tests also run the
-tests in the C<test_verilated> and C<test_regress> directories
-when using I<make test>.  This is disabled by default as SystemC/SystemPerl
-installation problems would otherwise falsely indicate a Verilator problem.
+In addition to the standard C, SystemC tests also run the tests in the
+C<test_verilated> and C<test_regress> directories when using I<make test>.
+This is disabled by default as SystemC installation problems would
+otherwise falsely indicate a Verilator problem.
 
 =back
 
@@ -488,12 +488,6 @@ you can install using cpan.
 There are some traps to avoid when running regression tests
 
 =over 4
-
-=item *
-
-The regression tests will assume that you have a version of SystemPerl to
-match. Typically if working on Verilator from git, also use SystemPerl from
-git.
 
 =item *
 

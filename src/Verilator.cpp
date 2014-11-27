@@ -630,7 +630,7 @@ int main(int argc, char** argv, char** env) {
 	&& !v3Global.opt.lintOnly()
 	&& !v3Global.opt.xmlOnly()
 	&& !v3Global.opt.cdc()) {
-	v3fatal("verilator: Need --cc, --sc, --sp, --cdc, --lint-only, --xml_only or --E option");
+	v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
     }
     // Check environment
     V3Options::getenvSYSTEMC();

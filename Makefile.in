@@ -100,7 +100,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 SHELL = /bin/sh
 
-SUBDIRS = src test_verilated test_c test_sc test_sp test_regress
+SUBDIRS = src test_verilated test_c test_sc test_regress
 
 INFOS = README README.html README.pdf internals.txt internals.html \
         internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf
@@ -183,9 +183,9 @@ msg_test: all_nomsg
 
 .PHONY:test
 ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
-test: test_c test_sc test_sp test_verilated test_regress
+test: test_c test_sc test_verilated test_regress
 else
-test: test_c test_sc test_sp
+test: test_c test_sc
 endif
 	@echo "Tests passed!"
 	@echo
@@ -200,10 +200,6 @@ test_sc: all_nomsg
 	@(cd test_sc && $(MAKE))
 test_sc_debug: all_nomsg
 	@(cd test_sc && $(MAKE) test_debug)
-test_sp: all_nomsg
-	@(cd test_sp && $(MAKE))
-test_sp_debug: all_nomsg
-	@(cd test_sp && $(MAKE) test_debug)
 test_verilated: all_nomsg
 	@(cd test_verilated && $(MAKE))
 test_regress: all_nomsg
@@ -283,7 +279,6 @@ VL_INST_DATA_SRCDIR_FILES = \
 	test_v/*.[chv]* \
 	test_c/*.[chv]*   test_c/Makefile  test_c/Makefile_obj  \
 	test_sc/*.[chv]*  test_sc/Makefile test_sc/Makefile_obj \
-	                  test_sp/Makefile test_sp/Makefile_obj \
 
 installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
@@ -315,7 +310,6 @@ installdata:
 	done
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_c
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sc
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_sp
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/test_v
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \

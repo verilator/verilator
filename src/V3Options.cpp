@@ -759,7 +759,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
 	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = false; }
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
-	    else if ( !strcmp (sw, "-sp") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = true; }
+	    else if ( !strcmp (sw, "-sp-deprecated") )			{ m_outFormatOk = true; m_systemC = true; m_systemPerl = true; } // Undocumented, old
 	    else if ( onoff   (sw, "-stats", flag/*ref*/) )		{ m_stats = flag; }
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }

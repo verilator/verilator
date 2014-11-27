@@ -204,17 +204,13 @@ Verilator - Convert Verilog code to C++/SystemC
 =head1 DESCRIPTION
 
 Verilator converts synthesizable (not behavioral) Verilog code, plus some
-Synthesis, SystemVerilog and a small subset of Verilog AMS
-assertions, into C++, SystemC or SystemPerl code.  It is not a complete
-simulator, just a compiler.
+Synthesis, SystemVerilog and a small subset of Verilog AMS assertions, into
+C++ or SystemC code.  It is not a complete simulator, but a compiler.
 
 Verilator is invoked with parameters similar to GCC, Cadence
 Verilog-XL/NC-Verilog, or Synopsys's VCS.  It reads the specified Verilog
 code, lints it, and optionally adds coverage and waveform tracing code.
-For C++ and SystemC formats, it outputs .cpp and .h files.  For SystemPerl
-format, it outputs .sp files for the SystemPerl preprocessor, which greatly
-simplifies writing SystemC code and is available at
-L<http://www.veripool.org>.
+For C++ and SystemC formats, it outputs .cpp and .h files.
 
 The files created by Verilator are then compiled with C++.  The user writes
 a little C++ wrapper file, which instantiates the top level module, and
@@ -311,7 +307,6 @@ descriptions in the next sections for more information.
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable			Enable model save-restore
     --sc                        Create SystemC output
-    --sp                        Create SystemPerl output
     --stats                     Create statistics file
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2012ext+<ext>
@@ -447,7 +442,7 @@ run on the generated makefile these will be passed to the C++ compiler
 
 =item --cc
 
-Specifies C++ without SystemC output mode; see also --sc and --sp.
+Specifies C++ without SystemC output mode; see also --sc.
 
 =item --cdc
 
@@ -964,11 +959,7 @@ other data the process needs saved/restored.  For example:
 
 =item --sc
 
-Specifies SystemC output mode; see also --cc and -sp.
-
-=item --sp
-
-Specifies SystemPerl output mode; see also --cc and -sc.
+Specifies SystemC output mode; see also --cc.
 
 =item --stats
 
@@ -1435,11 +1426,6 @@ For -cc and -sc mode, it also creates:
     {prefix}{each_verilog_module}.cpp	// Lower level internal C++ files
     {prefix}{each_verilog_module}.h	// Lower level internal header files
 
-For -sp mode, instead of .cpp and .h it creates:
-
-    {prefix}.sp				// Top level SystemC file
-    {prefix}{each_verilog_module}.sp	// Lower level internal SC files
-
 In certain optimization modes, it also creates:
 
     {prefix}__Dpi.h			// DPI import and export declarations
@@ -1513,21 +1499,6 @@ If set, specifies the directory containing the libsystemc.a library. If not
 specified, it will come from a default optionally specified at configure
 time (before Verilator was compiled), or computed from
 SYSTEMC/lib-SYSTEMC_ARCH.
-
-=item SYSTEMPERL
-
-Specifies the directory containing the SystemPerl distribution kit.  This
-is used to find the SystemPerl library and include files.  If not
-specified, it will come from a default optionally specified at configure
-time (before Verilator was compiled).  See also SYSTEMPERL_INCLUDE.
-
-=item SYSTEMPERL_INCLUDE
-
-Specifies the directory containing the Verilog-Perl include .cpp files,
-from the src/ directory of the SystemPerl kit.  If not specified, it will
-be computed from the SYSTEMPERL environment variable if it is set, and if
-SYSTEMPERL is not set SYSTEMPERL_INCLUDE will come from a default
-optionally specified at configure time (before Verilator was compiled).
 
 =item VCS_HOME
 
