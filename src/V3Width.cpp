@@ -818,45 +818,55 @@ private:
 	m_attrp = nodep;
 	nodep->fromp()->iterateAndNext(*this,WidthVP(SELF,BOTH).p());
 	// Don't iterate children, don't want to lose VarRef.
-	if (nodep->attrType()==AstAttrType::VAR_BASE) {
+	switch (nodep->attrType()) {
+	case AstAttrType::VAR_BASE:
 	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
-	} else if (nodep->attrType()==AstAttrType::MEMBER_BASE) {
+	    break;
+	case AstAttrType::MEMBER_BASE:
 	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
-	} else if (nodep->attrType()==AstAttrType::DIM_DIMENSIONS
-		   || nodep->attrType()==AstAttrType::DIM_UNPK_DIMENSIONS) {
+	    break;
+	case AstAttrType::DIM_DIMENSIONS:
+	case AstAttrType::DIM_UNPK_DIMENSIONS: {
 	    if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
 	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
 	    int val = (nodep->attrType()==AstAttrType::DIM_UNPK_DIMENSIONS
 		       ? dim.second : (dim.first+dim.second));
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val)); nodep->deleteTree(); nodep=NULL;
-	} else if (nodep->attrType()==AstAttrType::DIM_BITS
-		   || nodep->attrType()==AstAttrType::DIM_HIGH
-		   || nodep->attrType()==AstAttrType::DIM_INCREMENT
-		   || nodep->attrType()==AstAttrType::DIM_LEFT
-		   || nodep->attrType()==AstAttrType::DIM_LOW
-		   || nodep->attrType()==AstAttrType::DIM_RIGHT
-		   || nodep->attrType()==AstAttrType::DIM_SIZE) {
+	    break;
+	}
+	case AstAttrType::DIM_BITS:
+	case AstAttrType::DIM_HIGH:
+	case AstAttrType::DIM_INCREMENT:
+	case AstAttrType::DIM_LEFT:
+	case AstAttrType::DIM_LOW:
+	case AstAttrType::DIM_RIGHT:
+	case AstAttrType::DIM_SIZE: {
 	    if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
 	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
 	    uint32_t maxdim = dim.first+dim.second;
 	    if (!nodep->dimp() || nodep->dimp()->castConst() || maxdim<1) {
 		int dim = !nodep->dimp() ? 1 : nodep->dimp()->castConst()->toSInt();
-		int val = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
-		nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val)); nodep->deleteTree(); nodep=NULL;
+		AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
+		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
 	    }
 	    else {  // Need a runtime lookup table.  Yuk.
 		if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
-		AstVar* varp = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType());
+		AstVar* varp = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), maxdim);
 		AstNode* dimp = nodep->dimp()->unlinkFrBack();
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
 		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, dimp);
 		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
 	    }
-	} else {  // Everything else resolved earlier
+	    break;
+	}
+	default: {
+	    // Everything else resolved earlier
 	    nodep->dtypeSetLogicSized(32,1,AstNumeric::UNSIGNED);	// Approximation, unsized 32
 	    UINFO(1,"Missing ATTR type case node: "<<nodep<<endl);
 	    nodep->v3fatalSrc("Missing ATTR type case");
+	    break;
+	}
 	}
 	m_attrp = oldAttr;
     }
@@ -3090,7 +3100,7 @@ private:
 	return nodep;
     }
 
-    int dimensionValue(AstNodeDType* nodep, AstAttrType attrType, int dim) {
+    AstConst* dimensionValue(AstNodeDType* nodep, AstAttrType attrType, int dim) {
 	// Return the dimension value for the specified attribute and constant dimension
 	AstNodeDType* dtypep = nodep->skipRefp();
 	VNumRange declRange;  // ranged() set false
@@ -3111,8 +3121,10 @@ private:
 	    }
 	    break;
 	}
+	AstConst* valp = NULL;  // If NULL, construct from val
 	int val = 0;
-	if (attrType==AstAttrType::DIM_BITS) {
+	switch (attrType) {
+	case AstAttrType::DIM_BITS: {
 	    int bits = 1;
 	    while (dtypep) {
 		//UINFO(9, "   bits at "<<bits<<"  "<<dtypep<<endl);
@@ -3136,29 +3148,35 @@ private:
 	    } else {
 		val = bits;
 	    }
-	} else if (attrType==AstAttrType::DIM_HIGH) {
+	    break; }
+	case AstAttrType::DIM_HIGH:
 	    val = !declRange.ranged() ? 0 : declRange.hi();
-	} else if (attrType==AstAttrType::DIM_LEFT) {
+	    break;
+	case AstAttrType::DIM_LEFT:
 	    val = !declRange.ranged() ? 0 : declRange.left();
-	} else if (attrType==AstAttrType::DIM_LOW) {
+	    break;
+	case AstAttrType::DIM_LOW:
 	    val = !declRange.ranged() ? 0 : declRange.lo();
-	} else if (attrType==AstAttrType::DIM_RIGHT) {
+	    break;
+	case AstAttrType::DIM_RIGHT:
 	    val = !declRange.ranged() ? 0 : declRange.right();
-	} else if (attrType==AstAttrType::DIM_INCREMENT) {
+	    break;
+	case AstAttrType::DIM_INCREMENT:
 	    val = (declRange.ranged() && declRange.littleEndian()) ? -1 : 1;
-	} else if (attrType==AstAttrType::DIM_SIZE) {
+	    break;
+	case AstAttrType::DIM_SIZE:
 	    val = !declRange.ranged() ? 0 : declRange.elements();
-	} else {
+	    break;
+	default:
 	    nodep->v3fatalSrc("Missing DIM ATTR type case");
+	    break;
 	}
-	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<val<<endl);
-	return val;
+	if (!valp) valp = new AstConst(nodep->fileline(), AstConst::Signed32(), val);
+	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<valp<<endl);
+	return valp;
     }
-    AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType) {
+    AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t maxdim) {
 	// Return a variable table which has specified dimension properties for this variable
-	pair<uint32_t,uint32_t> dim = nodep->skipRefp()->dimensions(true);
-	uint32_t maxdim = dim.first+dim.second;
-	//
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       nodep->findSigned32DType(),
 							       new AstRange(nodep->fileline(), maxdim, 0));
@@ -3173,11 +3191,9 @@ private:
 	// Add to root, as don't know module we are in, and aids later structure sharing
 	v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
 	// Element 0 is a non-index and has speced values
-	initp->addInitsp(new AstConst(nodep->fileline(), AstConst::Signed32(),
-				      dimensionValue(nodep, attrType, 0)));
+	initp->addInitsp(dimensionValue(nodep, attrType, 0));
 	for (unsigned i=1; i<maxdim+1; ++i) {
-	    initp->addInitsp(new AstConst(nodep->fileline(), AstConst::Signed32(),
-					  dimensionValue(nodep, attrType, i)));
+	    initp->addInitsp(dimensionValue(nodep, attrType, i));
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	return varp;
