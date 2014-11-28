@@ -138,7 +138,7 @@ private:
 	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user1()?"Y":"N")<<" IW "<<(nodep->isWide()?"Y":"N")<<endl);
 	if (m_stmtp
 	    && !nodep->user1()) {	// Not already done
-	    if (nodep->isWide()) {		// Else might be cell interconnect or something
+	    if (nodep->isWide()) {
 		if (m_assignLhs) {
 		} else if (nodep->firstAbovep()
 			   && nodep->firstAbovep()->castNodeAssign()
@@ -157,7 +157,7 @@ private:
     AstVar* getBlockTemp(AstNode* nodep) {
 	string newvarname = ((string)"__Vtemp"+cvtToStr(m_modp->varNumGetInc()));
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-				   VFlagLogicPacked(), nodep->widthMin());
+				   nodep->dtypep());
 	m_funcp->addInitsp(varp);
 	return varp;
     }
