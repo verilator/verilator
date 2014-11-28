@@ -26,6 +26,7 @@ BEGIN {
 
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
+use IO::File;
 use Pod::Usage;
 use Cwd qw(abs_path getcwd);
 
