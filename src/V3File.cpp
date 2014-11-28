@@ -757,7 +757,7 @@ void V3OutFormatter::putsQuoted(const char* strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
-    string quoted = AstNode::quoteName(strg);
+    string quoted = V3Number::quoteNameControls(strg);
     for (const char* cp=quoted.c_str(); *cp; cp++) {
 	putcNoTracking (*cp);
     }

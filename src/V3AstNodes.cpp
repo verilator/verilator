@@ -737,7 +737,7 @@ void AstNode::dump(ostream& str) {
     } else { // V3Broken will throw an error
 	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
     }
-    if (name()!="") str<<"  "<<AstNode::quoteName(name());
+    if (name()!="") str<<"  "<<V3Number::quoteNameControls(name());
 }
 
 void AstAlways::dump(ostream& str) {

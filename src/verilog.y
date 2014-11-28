@@ -3484,7 +3484,7 @@ str<strp>:			// yaSTRING but with \{escapes} need decoded
 	;
 
 strAsInt<nodep>:
-		yaSTRING				{ $$ = new AstConst($<fl>1,V3Number(V3Number::VerilogString(),$<fl>1,GRAMMARP->deQuote($<fl>1,*$1)));}
+		yaSTRING				{ $$ = new AstConst($<fl>1,V3Number(V3Number::VerilogStringLiteral(),$<fl>1,GRAMMARP->deQuote($<fl>1,*$1)));}
 	;
 
 strAsIntIgnore<nodep>:		// strAsInt, but never matches for when expr shouldn't parse strings
@@ -3735,7 +3735,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
 
 string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     // Fix up the quoted strings the user put in, for example "\"" becomes "
-    // Reverse is AstNode::quoteName(...)
+    // Reverse is V3Number::quoteNameControls(...)
     bool quoted = false;
     string newtext;
     unsigned char octal_val = 0;

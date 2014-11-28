@@ -34,7 +34,7 @@
 // Read class functions
 // CREATION
 
-V3Number::V3Number(VerilogString, FileLine* fileline, const string& str) {
+V3Number::V3Number(VerilogStringLiteral, FileLine* fileline, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
     // cppcheck bug - doesn't see init() resets these
     // cppcheck: Member variable 'm_sized/m_width' is not initialized in the constructor
@@ -402,6 +402,31 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 	out<<displayed("%0h");
     }
     return out.str();
+}
+
+string V3Number::quoteNameControls(const string& namein) {
+    // Encode control chars into C style escapes
+    // Reverse is V3Parse::deQuote
+    const char* start = namein.c_str();
+    string out;
+    for (const char* pos = start; *pos; pos++) {
+	if (pos[0]=='\\' || pos[0]=='"') {
+	    out += string("\\")+pos[0];
+	} else if (pos[0]=='\n') {
+	    out += "\\n";
+	} else if (pos[0]=='\r') {
+	    out += "\\r";
+	} else if (pos[0]=='\t') {
+	    out += "\\t";
+	} else if (isprint(pos[0])) {
+	    out += pos[0];
+	} else {
+	    // This will also cover \a etc
+	    char octal[10]; sprintf(octal,"\\%03o",pos[0]);
+	    out += octal;
+	}
+    }
+    return out;
 }
 
 bool V3Number::displayedFmtLegal(char format) {

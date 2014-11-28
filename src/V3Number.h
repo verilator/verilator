@@ -35,7 +35,7 @@ class V3Number {
     bool	m_sized:1;	// True if the user specified the width, else we track it.
     bool	m_signed:1;	// True if signed value
     bool	m_double:1;	// True if double real value
-    bool	m_fromString:1;	// True if from string
+    bool	m_fromString:1;	// True if from string literal
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;
     vector<uint32_t>	m_value;	// The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
@@ -116,13 +116,13 @@ private:
     V3Number& opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus);
 
 public:
-    class VerilogString {};	// for creator type-overload selection
+    class VerilogStringLiteral {};	// for creator type-overload selection
     // CONSTRUCTORS
     V3Number(FileLine* fileline) { init(fileline, 1); }
     V3Number(FileLine* fileline, int width) { init(fileline, width); }  // 0=unsized
     V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; opCleanThis(); }
     V3Number(FileLine* fileline, const char* source);	// Create from a verilog 32'hxxxx number.
-    V3Number(VerilogString, FileLine* fileline, const string& vvalue);
+    V3Number(VerilogStringLiteral, FileLine* fileline, const string& vvalue);
 
 private:
     void init(FileLine* fileline, int swidth) {
@@ -155,6 +155,7 @@ public:
 
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;
+    static string quoteNameControls(const string& namein); // Add backslash quotes to strings
     string displayed(const string& format) const;
     static bool displayedFmtLegal(char format);  // Is this a valid format letter?
     int width() const { return m_width; }
