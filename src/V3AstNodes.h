@@ -49,6 +49,8 @@ public:
 	,m_num(num) {
 	if (m_num.isDouble()) {
 	    dtypeSetDouble();
+	} else if (m_num.isString()) {
+	    dtypeSetString();
 	} else {
 	    dtypeSetLogicSized(m_num.width(), m_num.sized()?0:m_num.widthMin(),
 			       m_num.isSigned() ? AstNumeric::SIGNED
@@ -74,6 +76,10 @@ public:
     AstConst(FileLine* fl, RealDouble, double num)
 	:AstNodeMath(fl)
 	,m_num(V3Number(fl,64)) { m_num.setDouble(num); dtypeSetDouble(); }
+    class String {};		// for creator type-overload selection
+    AstConst(FileLine* fl, String, const string& num)
+	:AstNodeMath(fl)
+	,m_num(V3Number(V3Number::String(), fl, num)) { dtypeSetString(); }
     class LogicFalse {};
     AstConst(FileLine* fl, LogicFalse) // Shorthand const 0, know the dtype should be a logic of size 1
 	:AstNodeMath(fl)
@@ -98,34 +104,6 @@ public:
     virtual int instrCount() const { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMin()); }
-};
-
-class AstConstString : public AstNodeMath {
-    // A constant string
-private:
-    string	m_name;
-public:
-    AstConstString(FileLine* fl, const string& name)
-	: AstNodeMath(fl), m_name(name) {
-	rewidth();
-    }
-    void rewidth() {
-	if (m_name.length()==0) {
-	    dtypeSetLogicSized(1,1,AstNumeric::UNSIGNED);  // 0 width isn't allowed due to historic special cases
-	} else {
-	    dtypeSetLogicSized(((int)m_name.length())*8, ((int)m_name.length())*8, AstNumeric::UNSIGNED);
-	}
-    }
-    ASTNODE_NODE_FUNCS(ConstString, CONSTSTRING)
-    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitC() { V3ERROR_NA; return ""; }
-    virtual bool cleanOut() { return true; }
-    virtual V3Hash sameHash() const { return V3Hash(name()); }
-    virtual bool same(AstNode* samep) const {
-	return name()==samep->castConstString()->name(); }
-    virtual int instrCount() const { return 2; }  // C just loads a pointer
-    virtual string name() const { return m_name; }
-    void name(const string& flag) { m_name = flag; rewidth(); }
 };
 
 class AstRange : public AstNode {
@@ -400,6 +378,7 @@ public:
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isDouble() const { return keyword().isDouble(); }
     bool	isOpaque() const { return keyword().isOpaque(); }
+    bool	isString() const { return keyword().isString(); }
     bool	isSloppy() const { return keyword().isSloppy(); }
     bool	isZeroInit() const { return keyword().isZeroInit(); }
     bool	isRanged() const { return rangep() || m.m_nrange.ranged(); }
@@ -935,6 +914,7 @@ private:
     bool	m_isPulldown:1;	// Tri0
     bool	m_isPullup:1;	// Tri1
     bool	m_isIfaceParent:1;	// dtype is reference to interface present in this module
+    bool	m_noSubst:1;	// Do not substitute out references
     bool	m_trace:1;	// Trace this variable
 
     void	init() {
@@ -947,6 +927,7 @@ private:
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
 	m_isIfaceParent=false;
+	m_noSubst=false;
 	m_trace=false;
     }
 public:
@@ -1039,7 +1020,9 @@ public:
     void	isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void	funcLocal(bool flag) { m_funcLocal = flag; }
     void	funcReturn(bool flag) { m_funcReturn = flag; }
-    void	trace(bool flag) { m_trace=flag; }
+    void noSubst(bool flag) { m_noSubst=flag; }
+    bool noSubst() const { return m_noSubst; }
+    void trace(bool flag) { m_trace=flag; }
     // METHODS
     virtual void name(const string& name) { m_name = name; }
     virtual string directionName() const { return (isInout() ? "inout" : isInput() ? "input"
@@ -3521,10 +3504,10 @@ public:
 };
 
 class AstCvtPackString : public AstNodeUniop {
-    // Convert to Verilator Packed Pack (aka Pack)
+    // Convert to Verilator Packed String (aka verilog "string")
 public:
     AstCvtPackString(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetUInt64(); }  // Really, width should be dtypep -> STRING
+	dtypeSetString(); }  // Really, width should be dtypep -> STRING
     ASTNODE_NODE_FUNCS(CvtPackString, CVTPACKSTRING)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$_CAST(%l)"; }
@@ -3794,6 +3777,21 @@ public:
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
 };
+class AstEqN : public AstNodeBiCom {
+public:
+    AstEqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(EqN, EQN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEqN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f== %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return "=="; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
+};
 class AstNeq : public AstNodeBiCom {
 public:
     AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
@@ -3821,6 +3819,21 @@ public:
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return instrCountDouble(); }
     virtual bool doubleFlavor() const { return true; }
+};
+class AstNeqN : public AstNodeBiCom {
+public:
+    AstNeqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiCom(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(NeqN, NEQN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeqN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f!= %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return "!="; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
 };
 class AstLt : public AstNodeBiop {
 public:
@@ -3864,6 +3877,21 @@ public:
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
+class AstLtN : public AstNodeBiop {
+public:
+    AstLtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(LtN, LTN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f< %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return "<"; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
+};
 class AstGt : public AstNodeBiop {
 public:
     AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
@@ -3905,6 +3933,21 @@ public:
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
+};
+class AstGtN : public AstNodeBiop {
+public:
+    AstGtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(GtN, GTN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f> %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return ">"; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
 };
 class AstGte : public AstNodeBiop {
 public:
@@ -3949,6 +3992,21 @@ public:
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
 };
+class AstGteN : public AstNodeBiop {
+public:
+    AstGteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(GteN, GTEN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f>= %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return ">="; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
+};
 class AstLte : public AstNodeBiop {
 public:
     AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
@@ -3991,6 +4049,21 @@ public:
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual bool signedFlavor() const { return true; }
+};
+class AstLteN : public AstNodeBiop {
+public:
+    AstLteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(LteN, LTEN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteN(lhs,rhs); }
+    virtual string emitVerilog() { return "%k(%l %f<= %r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitSimpleOperator() { return "<="; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
 };
 class AstShiftL : public AstNodeBiop {
 public:
@@ -4352,6 +4425,22 @@ public:
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
 };
+class AstConcatN : public AstNodeBiop {
+    // String concatenate
+public:
+    AstConcatN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+	dtypeSetString();
+    }
+    ASTNODE_NODE_FUNCS(ConcatN, CONCATN)
+    virtual string emitVerilog() { return "%f{%l, %k%r}"; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opConcatN(lhs,rhs); }
+    virtual string emitC() { return "VL_CONCATN_NNN(%li, %ri)"; }
+    virtual bool cleanOut() {return true;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return instrCountString(); }
+    virtual bool stringFlavor() const { return true; }
+};
 class AstReplicate : public AstNodeBiop {
     // Also used as a "Uniop" flavor of Concat, e.g. "{a}"
     // Verilog {rhs{lhs}} - Note rhsp() is the replicate value, not the lhsp()
@@ -4376,6 +4465,25 @@ public:
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
     virtual int instrCount()	const { return widthInstrs()*2; }
+};
+class AstReplicateN : public AstNodeBiop {
+    // String replicate
+private:
+    void init() { dtypeSetString(); }
+public:
+    AstReplicateN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : AstNodeBiop(fl, lhsp, rhsp) { init(); }
+    AstReplicateN(FileLine* fl, AstNode* lhsp, uint32_t repCount)
+	: AstNodeBiop(fl, lhsp, new AstConst(fl, repCount)) { init(); }
+    ASTNODE_NODE_FUNCS(ReplicateN, REPLICATEN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opReplN(lhs,rhs); }
+    virtual string emitVerilog() { return "%f{%r{%k%l}}"; }
+    virtual string emitC() { return "VL_REPLICATEN_NN%rq(0,0,%rw, %li, %ri)"; }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()	const { return widthInstrs()*2; }
+    virtual bool stringFlavor() const { return true; }
 };
 class AstStreamL : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()

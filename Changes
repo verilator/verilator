@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    SystemPerl mode is deprecated and now untested.
 
+***   Add 'string' printing and comparisons, bug746, bug747, etc.
+
 ***   Inline C functions that are used only once, msg1525. [Jie Xu]
 
 

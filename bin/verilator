@@ -2597,8 +2597,9 @@ All specify blocks and timing checks are ignored.
 
 =item string
 
-String is supported only to the point that they can be passed to DPI
-imports.
+String is supported only to the point that they can be assigned,
+concatenated, compared, and passed to DPI imports.  Standard method calls
+on strings are not supported.
 
 =item timeunit, timeprecision
 

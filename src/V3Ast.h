@@ -384,9 +384,8 @@ public:
     bool isOpaque() const {  // IE not a simple number we can bit optimize
 	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
     }
-    bool isDouble() const {
-	return (m_e==DOUBLE);
-    }
+    bool isDouble() const { return m_e==DOUBLE; }
+    bool isString() const { return m_e==STRING; }
   };
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
@@ -1008,6 +1007,7 @@ public:
     static int	instrCountDouble() { return 8; }	///< Instruction cycles to convert or do floats
     static int	instrCountDoubleDiv() { return 40; }	///< Instruction cycles to divide floats
     static int	instrCountDoubleTrig() { return 200; }	///< Instruction cycles to do triganomics
+    static int	instrCountString() { return 100; }	///< Instruction cycles to do string ops
     static int	instrCountCall() { return instrCountBranch()+10; }	///< Instruction cycles to call subroutine
     static int	instrCountTime() { return instrCountCall()+5; }		///< Instruction cycles to determine simulation time
 
@@ -1042,6 +1042,7 @@ public:
     bool	isWide() const { return (width()>VL_QUADSIZE); }
     bool	isDouble() const;
     bool	isSigned() const;
+    bool	isString() const;
 
     AstNUser*	user1p() const {
 	// Slows things down measurably, so disabled by default
@@ -1119,6 +1120,7 @@ public:
     void	dtypeSetLogicSized(int width, int widthMin, AstNumeric numeric) { dtypep(findLogicDType(width,widthMin,numeric)); }
     void	dtypeSetLogicBool()	{ dtypep(findLogicBoolDType()); }
     void	dtypeSetDouble()	{ dtypep(findDoubleDType()); }
+    void	dtypeSetString()	{ dtypep(findStringDType()); }
     void	dtypeSetSigned32()	{ dtypep(findSigned32DType()); }
     void	dtypeSetUInt32()	{ dtypep(findUInt32DType()); }  // Twostate
     void	dtypeSetUInt64()	{ dtypep(findUInt64DType()); }  // Twostate
@@ -1126,6 +1128,7 @@ public:
     // Data type locators
     AstNodeDType* findLogicBoolDType()	{ return findBasicDType(AstBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType()	{ return findBasicDType(AstBasicDTypeKwd::DOUBLE); }
+    AstNodeDType* findStringDType()	{ return findBasicDType(AstBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned32DType()	{ return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT32); }  // Twostate
     AstNodeDType* findUInt64DType()	{ return findBasicDType(AstBasicDTypeKwd::UINT64); }  // Twostate
@@ -1263,8 +1266,9 @@ public:
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
     virtual bool cleanLhs() = 0;
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
-    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
     virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
+    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool stringFlavor() const { return false; }	// N flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -1287,8 +1291,9 @@ public:
     virtual bool cleanRhs() = 0; // True if RHS must have extra upper bits zero
     virtual bool sizeMattersLhs() = 0; // True if output result depends on lhs size
     virtual bool sizeMattersRhs() = 0; // True if output result depends on rhs size
-    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
     virtual bool doubleFlavor() const { return false; }	// D flavor of nodes with both flavors?
+    virtual bool signedFlavor() const { return false; }	// Signed flavor of nodes with both flavors?
+    virtual bool stringFlavor() const { return false; }	// N flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
@@ -1886,6 +1891,7 @@ inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 
 inline bool AstNode::width1() const  { return dtypep() && dtypep()->width()==1; }  // V3Const uses to know it can optimize
 inline int  AstNode::widthInstrs() const { return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1)); }
 inline bool AstNode::isDouble() const { return dtypep() && dtypep()->castBasicDType() && dtypep()->castBasicDType()->isDouble(); }
+inline bool AstNode::isString() const { return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString(); }
 inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
 
 inline bool AstNode::isZero()     { return (this->castConst() && this->castConst()->num().isEqZero()); }

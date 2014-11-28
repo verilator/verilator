@@ -737,7 +737,10 @@ void AstNode::dump(ostream& str) {
     } else { // V3Broken will throw an error
 	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
     }
-    if (name()!="") str<<"  "<<V3Number::quoteNameControls(name());
+    if (name()!="") {
+	if (castConst()) str<<"  "<<name();  // Already quoted
+	else str<<"  "<<V3Number::quoteNameControls(name());
+    }
 }
 
 void AstAlways::dump(ostream& str) {
@@ -850,7 +853,10 @@ void AstNodeDType::dumpSmall(ostream& str) {
        <<((isSigned()&&!isDouble())?"s":"")
        <<(isNosign()?"n":"")
        <<(isDouble()?"d":"")
-       <<"w"<<(widthSized()?"":"u")<<width();
+       <<(isString()?"str":"");
+    if (!isDouble() && !isString()) {
+	str<<"w"<<(widthSized()?"":"u")<<width();
+    }
     if (!widthSized()) str<<"/"<<widthMin();
     str<<")";
 }

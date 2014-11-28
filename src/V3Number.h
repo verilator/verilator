@@ -35,13 +35,16 @@ class V3Number {
     bool	m_sized:1;	// True if the user specified the width, else we track it.
     bool	m_signed:1;	// True if signed value
     bool	m_double:1;	// True if double real value
+    bool	m_isString:1;	// True if string
     bool	m_fromString:1;	// True if from string literal
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;
     vector<uint32_t>	m_value;	// The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
     vector<uint32_t>	m_valueX;	// Each bit is true if it's X or Z, 10=z, 11=x
+    string		m_stringVal;	// If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
+    V3Number& setString(const string& str) { m_isString=true; m_stringVal=str; return *this; }
     void opCleanThis();
 public:
     FileLine*	fileline() const { return m_fileline; }
@@ -116,19 +119,22 @@ private:
     V3Number& opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus);
 
 public:
-    class VerilogStringLiteral {};	// for creator type-overload selection
     // CONSTRUCTORS
     V3Number(FileLine* fileline) { init(fileline, 1); }
     V3Number(FileLine* fileline, int width) { init(fileline, width); }  // 0=unsized
     V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; opCleanThis(); }
     V3Number(FileLine* fileline, const char* source);	// Create from a verilog 32'hxxxx number.
+    class VerilogStringLiteral {};	// for creator type-overload selection
     V3Number(VerilogStringLiteral, FileLine* fileline, const string& vvalue);
+    class String {};
+    V3Number(String, FileLine* fileline, const string& value) { init(fileline, 0); setString(value); }
 
 private:
     void init(FileLine* fileline, int swidth) {
 	m_fileline = fileline;
 	m_signed = false;
 	m_double = false;
+	m_isString = false;
 	m_autoExtend = false;
 	m_fromString = false;
 	width(swidth);
@@ -166,6 +172,8 @@ public:
     bool isSigned() const { return m_signed; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     bool isDouble() const { return m_double; }	// Only correct for parsing of numbers from strings, otherwise not used (use AstConst::isSigned())
     void isDouble(bool flag)  { m_double=flag; } // Only if have 64 bit value loaded, and want to indicate it's real
+    bool isString() const { return m_isString; }
+    void isString(bool flag)  { m_isString=flag; }
     bool isNegative() const { return bitIs1(width()-1); }
     bool isFourState() const { for (int i=0;i<words();i++) {if (m_valueX[i]) return true;} return false; }
     bool hasZ() const { for(int i=0;i<words();i++) {if((~m_value[i]) & m_valueX[i]) return true;} return false;}
@@ -295,6 +303,17 @@ public:
     V3Number& opGteD	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLtD	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteD	(const V3Number& lhs, const V3Number& rhs);
+
+    // "N" - string operations
+    V3Number& opConcatN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opReplN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opReplN	(const V3Number& lhs, uint32_t rhs);
+    V3Number& opEqN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opNeqN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGtN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opGteN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLtN	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLteN	(const V3Number& lhs, const V3Number& rhs);
 };
 inline ostream& operator<<(ostream& os, V3Number rhs) { return os<<rhs.ascii(); }
 

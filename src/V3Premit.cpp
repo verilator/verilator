@@ -148,7 +148,7 @@ private:
 			   && nodep->firstAbovep()->castArraySel()) {  // ArraySel's are pointer refs, ignore
 		} else {
 		    UINFO(4,"Cre Temp: "<<nodep<<endl);
-		    createDeepTemp(nodep);
+		    createDeepTemp(nodep, false);
 		}
 	    }
 	}
@@ -180,13 +180,14 @@ private:
 	}
     }
 
-    void createDeepTemp(AstNode* nodep) {
+    void createDeepTemp(AstNode* nodep, bool noSubst) {
 	if (debug()>8) nodep->dumpTree(cout,"deepin:");
 
 	AstNRelinker linker;
 	nodep->unlinkFrBack(&linker);
 
 	AstVar* varp = getBlockTemp(nodep);
+	if (noSubst) varp->noSubst(true); // Do not remove varrefs to this in V3Const
 	// Replace node tree with reference to var
 	AstVarRef* newp = new AstVarRef (nodep->fileline(), varp, false);
 	linker.relink(newp);
@@ -236,7 +237,7 @@ private:
 	    if (noopt && !nodep->user1()) {
 		// Need to do this even if not wide, as e.g. a select may be on a wide operator
 		UINFO(4,"Deep temp for LHS/RHS\n");
-		createDeepTemp(nodep->rhsp());
+		createDeepTemp(nodep->rhsp(), false);
 	    }
 	}
 	nodep->rhsp()->iterateAndNext(*this);
@@ -337,7 +338,7 @@ private:
 	    && !nodep->condp()->castVarRef()) {
 	    // We're going to need the expression several times in the expanded code,
 	    // so might as well make it a common expression
-	    createDeepTemp(nodep->condp());
+	    createDeepTemp(nodep->condp(), false);
 	}
 	checkNode(nodep);
     }
@@ -358,6 +359,17 @@ private:
 		UINFO(4,"Autoflush "<<nodep<<endl);
 		nodep->addNextHere(new AstFFlush(nodep->fileline(),
 						 nodep->filep()->cloneTree(true)));
+	    }
+	}
+    }
+    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	// Any strings sent to a display must be var of string data type,
+	// to avoid passing a pointer to a temporary.
+	for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
+	    if (expp->dtypep()->basicp()->isString()
+		&& !expp->castVarRef()) {
+		createDeepTemp(expp, true);
 	    }
 	}
     }

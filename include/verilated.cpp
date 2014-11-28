@@ -343,6 +343,12 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		output += cstrp;
 		break;
 	    }
+	    case '@': { // Verilog/C++ string
+		va_arg(ap, int);  // # bits is ignored
+		const string* cstrp = va_arg(ap, const string*);
+		output += *cstrp;
+		break;
+	    }
 	    case 'e':
 	    case 'f':
 	    case 'g': {

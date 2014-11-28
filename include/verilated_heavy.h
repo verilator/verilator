@@ -41,12 +41,23 @@ inline string VL_CVT_PACK_STR_NQ(QData lhs) {
     IData lw[2];  VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(2, lw);
 }
-inline string VL_CVT_PACK_STR_NQ(string lhs) {
+inline string VL_CVT_PACK_STR_NQ(const string& lhs) {
     return lhs;
 }
 inline string VL_CVT_PACK_STR_NI(IData lhs) {
     IData lw[1];  lw[0] = lhs;
     return VL_CVT_PACK_STR_NW(1, lw);
+}
+inline string VL_CONCATN_NNN(const string& lhs, const string& rhs) {
+    return lhs+rhs;
+}
+inline string VL_REPLICATEN_NNQ(int,int,int rbits, const string& lhs, IData rep) {
+    string out; out.reserve(lhs.length() * rep);
+    for (unsigned times=0; times<rep; times++) out += lhs;
+    return out;
+}
+inline string VL_REPLICATEN_NNI(int obits,int lbits,int rbits, const string& lhs, IData rep) {
+    return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
 }
 
 extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...);

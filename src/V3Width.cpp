@@ -229,6 +229,13 @@ private:
     virtual void visit(AstLteD* nodep, AstNUser* vup) {		visit_cmp_real(nodep,vup); }
     virtual void visit(AstGtD* nodep, AstNUser* vup) {		visit_cmp_real(nodep,vup); }
     virtual void visit(AstGteD* nodep, AstNUser* vup) {		visit_cmp_real(nodep,vup); }
+    // ...    String compares
+    virtual void visit(AstEqN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
+    virtual void visit(AstNeqN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
+    virtual void visit(AstLtN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
+    virtual void visit(AstLteN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
+    virtual void visit(AstGtN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
+    virtual void visit(AstGteN* nodep, AstNUser* vup) {		visit_cmp_string(nodep,vup); }
 
     // Widths: out width = lhs width = rhs width
     // Signed: Output signed iff LHS & RHS signed.
@@ -368,6 +375,29 @@ private:
 		    return;
 		}
 	    }
+	    if (nodep->lhsp()->isString()
+		|| nodep->rhsp()->isString()) {
+		AstNode* newp = new AstConcatN (nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
+						nodep->rhsp()->unlinkFrBack());
+		nodep->replaceWith(newp);
+		pushDeletep(nodep); nodep=NULL;
+		return;
+	    }
+	}
+	if (vup->c()->final()) {
+	    if (!nodep->dtypep()->widthSized()) {
+		// See also error in V3Number
+		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in concatenations.");
+	    }
+	}
+    }
+    virtual void visit(AstConcatN* nodep, AstNUser* vup) {
+	// String concatenate.
+	// Already did AstConcat simplifications
+	if (vup->c()->prelim()) {
+	    iterateCheckString(nodep,"LHS",nodep->lhsp(),BOTH);
+	    iterateCheckString(nodep,"RHS",nodep->rhsp(),BOTH);
+	    nodep->dtypeSetString();
 	}
 	if (vup->c()->final()) {
 	    if (!nodep->dtypep()->widthSized()) {
@@ -390,9 +420,38 @@ private:
 	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
 		nodep->v3error("Replication value of 0 is only legal under a concatenation."); times=1;
 	    }
-	    nodep->dtypeSetLogicSized((nodep->lhsp()->width() * times),
-				      (nodep->lhsp()->widthMin() * times),
-				      AstNumeric::UNSIGNED);
+	    if (nodep->lhsp()->isString()) {
+		AstNode* newp = new AstReplicateN(nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
+						  nodep->rhsp()->unlinkFrBack());
+		nodep->replaceWith(newp);
+		pushDeletep(nodep); nodep=NULL;
+		return;
+	    } else {
+		nodep->dtypeSetLogicSized((nodep->lhsp()->width() * times),
+					  (nodep->lhsp()->widthMin() * times),
+					  AstNumeric::UNSIGNED);
+	    }
+	}
+	if (vup->c()->final()) {
+	    if (!nodep->dtypep()->widthSized()) {
+		// See also error in V3Number
+		nodep->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in replications.");
+	    }
+	}
+    }
+    virtual void visit(AstReplicateN* nodep, AstNUser* vup) {
+	// Replicate with string
+	if (vup->c()->prelim()) {
+	    iterateCheckString(nodep,"LHS",nodep->lhsp(),BOTH);
+	    iterateCheckSizedSelf(nodep,"RHS",nodep->rhsp(),SELF,BOTH);
+	    V3Const::constifyParamsEdit(nodep->rhsp()); // rhsp may change
+	    AstConst* constp = nodep->rhsp()->castConst();
+	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
+	    uint32_t times = constp->toUInt();
+	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
+		nodep->v3error("Replication value of 0 is only legal under a concatenation."); times=1;
+	    }
+	    nodep->dtypeSetString();
 	}
 	if (vup->c()->final()) {
 	    if (!nodep->dtypep()->widthSized()) {
@@ -657,9 +716,6 @@ private:
 	}
 	// We don't size the constant until we commit the widths, as need parameters
 	// to remain unsized, and numbers to remain unsized to avoid backp() warnings
-    }
-    virtual void visit(AstConstString* nodep, AstNUser* vup) {
-	nodep->rewidth();
     }
     virtual void visit(AstRand* nodep, AstNUser* vup) {
 	if (vup->c()->prelim()) {
@@ -1701,6 +1757,13 @@ private:
 		    if (argp) argp=argp->nextp();
 		    break;
 		}
+		case 's': {  // Convert string to pack string
+		    if (argp && argp->dtypep()->basicp()->isString()) { // Convert it
+			ch = '@';
+		    }
+		    if (argp) argp=argp->nextp();
+		    break;
+		}
 		default: {  // Most operators, just move to next argument
 		    if (argp) argp=argp->nextp();
 		    break;
@@ -2201,6 +2264,12 @@ private:
 		    iterateCheckReal(nodep,"LHS",nodep->lhsp(),FINAL);
 		    iterateCheckReal(nodep,"RHS",nodep->rhsp(),FINAL);
 		}
+	    } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
+		if (AstNodeBiop* newp=replaceWithNVersion(nodep)) { nodep=NULL;
+		    nodep = newp;  // Process new node instead
+		    iterateCheckString(nodep,"LHS",nodep->lhsp(),FINAL);
+		    iterateCheckString(nodep,"RHS",nodep->rhsp(),FINAL);
+		}
 	    } else {
 		bool signedFl = nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned();
 		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, signedFl)) { nodep=NULL;
@@ -2227,6 +2296,19 @@ private:
 	    // See similar handling in visit_cmp_eq_gt where created
 	    iterateCheckReal(nodep,"LHS",nodep->lhsp(),BOTH);
 	    iterateCheckReal(nodep,"RHS",nodep->rhsp(),BOTH);
+	    nodep->dtypeSetLogicBool();
+	}
+    }
+    void visit_cmp_string(AstNodeBiop* nodep, AstNUser* vup) {
+	// CALLER: EqN, LtN
+	// Widths: 1 bit out, lhs width == rhs width
+	// String compare (not output)
+	// Real if and only if real_allow set
+	if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
+	if (vup->c()->prelim()) {
+	    // See similar handling in visit_cmp_eq_gt where created
+	    iterateCheckString(nodep,"LHS",nodep->lhsp(),BOTH);
+	    iterateCheckString(nodep,"RHS",nodep->rhsp(),BOTH);
 	    nodep->dtypeSetLogicBool();
 	}
     }
@@ -2596,6 +2678,15 @@ private:
 	    underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	}
     }
+    void iterateCheckString (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+	if (stage & PRELIM) {
+	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
+	}
+	if (stage & FINAL) {
+	    AstNodeDType* expDTypep = nodep->findStringDType();
+	    underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
+	}
+    }
     void iterateCheckSizedSelf (AstNode* nodep, const char* side, AstNode* underp,
 				Determ determ, Stage stage) {
 	// Coerce child to any sized-number data type; child is self-determined i.e. isolated from expected type.
@@ -2678,6 +2769,9 @@ private:
 	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (!expDTypep->isDouble() && underp->isDouble()) {
 	    underp = spliceCvtS(underp, true);  // Round RHS
+	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	} else if (expDTypep->isString() && !underp->dtypep()->isString()) {
+	    underp = spliceCvtString(underp);
 	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else {
 	    AstBasicDType* expBasicp = expDTypep->basicp();
@@ -2822,6 +2916,20 @@ private:
 	    return nodep;
 	}
     }
+    AstNode* spliceCvtString(AstNode* nodep) {
+	// IEEE-2012 11.8.1: Signed: Type coercion creates signed
+	// 11.8.2: Argument to convert is self-determined
+	if (nodep && !nodep->dtypep()->basicp()->isString()) {
+	    UINFO(6,"   spliceCvtString: "<<nodep<<endl);
+	    AstNRelinker linker;
+	    nodep->unlinkFrBack(&linker);
+	    AstNode* newp = new AstCvtPackString(nodep->fileline(), nodep);
+	    linker.relink(newp);
+	    return newp;
+	} else {
+	    return nodep;
+	}
+    }
     AstNodeBiop* replaceWithUOrSVersion(AstNodeBiop* nodep, bool signedFlavorNeeded) {
 	// Given a signed/unsigned node type, create the opposite type
 	// Return new node or NULL if nothing
@@ -2901,6 +3009,34 @@ private:
 	UINFO(6,"   ReplaceWithDVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	// No width change; the default created type (bool or double) is correct
+	pushDeletep(nodep); nodep=NULL;
+	return newp;
+    }
+    AstNodeBiop* replaceWithNVersion(AstNodeBiop* nodep) {
+	// Given a signed/unsigned node type, replace with string version
+	// Return new node or NULL if nothing
+	if (nodep->stringFlavor()) {
+	    return NULL;
+	}
+	FileLine* fl = nodep->fileline();
+	AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+	AstNodeBiop* newp = NULL;
+	// No width change on output;...		// All below have bool or double outputs
+	switch (nodep->type()) {
+	case AstType::atEQ:	case AstType::atEQCASE:	newp = new AstEqN	(fl,lhsp,rhsp); break;
+	case AstType::atNEQ:	case AstType::atNEQCASE: newp = new AstNeqN	(fl,lhsp,rhsp); break;
+	case AstType::atGT:	case AstType::atGTS:	newp = new AstGtN	(fl,lhsp,rhsp); break;
+	case AstType::atGTE:	case AstType::atGTES:	newp = new AstGteN	(fl,lhsp,rhsp); break;
+	case AstType::atLT:	case AstType::atLTS:	newp = new AstLtN	(fl,lhsp,rhsp); break;
+	case AstType::atLTE:	case AstType::atLTES:	newp = new AstLteN	(fl,lhsp,rhsp); break;
+	default:
+	    nodep->v3fatalSrc("Node needs conversion to string, but bad case: "<<nodep<<endl);
+	    break;
+	}
+	UINFO(6,"   ReplaceWithNVersion: "<<nodep<<" w/ "<<newp<<endl);
+	nodep->replaceWith(newp);
+	// No width change; the default created type (bool or string) is correct
 	pushDeletep(nodep); nodep=NULL;
 	return newp;
     }

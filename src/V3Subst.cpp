@@ -258,6 +258,9 @@ private:
 	    return entryp;
 	}
     }
+    inline bool isSubstVar(AstVar* nodep) {
+	return nodep->isStatementTemp() && !nodep->noSubst();
+    }
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {
@@ -266,7 +269,7 @@ private:
 	nodep->rhsp()->iterateAndNext(*this);
 	bool hit=false;
 	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef()) {
-	    if (varrefp->varp()->isStatementTemp()) {
+	    if (isSubstVar(varrefp->varp())) {
 		SubstVarEntry* entryp = getEntryp(varrefp);
 		hit = true;
 		if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -281,7 +284,7 @@ private:
 	else if (AstWordSel* wordp = nodep->lhsp()->castWordSel()) {
 	    if (AstVarRef* varrefp = wordp->lhsp()->castVarRef()) {
 		if (wordp->rhsp()->castConst()
-		    && varrefp->varp()->isStatementTemp()) {
+		    && isSubstVar(varrefp->varp())) {
 		    int word = wordp->rhsp()->castConst()->toUInt();
 		    SubstVarEntry* entryp = getEntryp(varrefp);
 		    hit = true;
@@ -314,7 +317,7 @@ private:
 	nodep->rhsp()->accept(*this);
 	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
 	AstConst* constp = nodep->rhsp()->castConst();
-	if (varrefp && varrefp->varp()->isStatementTemp()
+	if (varrefp && isSubstVar(varrefp->varp())
 	    && !varrefp->lvalue()
 	    && constp) {
 	    // Nicely formed lvalues handled in NodeAssign
@@ -344,7 +347,7 @@ private:
 	    nodep->varp()->user2(m_assignStep);
 	    UINFO(9, " ASSIGNstep u2="<<nodep->varp()->user2()<<" "<<nodep<<endl);
 	}
-	if (nodep->varp()->isStatementTemp()) {
+	if (isSubstVar(nodep->varp())) {
 	    SubstVarEntry* entryp = getEntryp (nodep);
 	    if (nodep->lvalue()) {
 		UINFO(8," ASSIGNcpx "<<nodep<<endl);

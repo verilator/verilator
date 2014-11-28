@@ -620,6 +620,10 @@ public:
 	// Put out constant set to the specified variable, or given variable in a string
 	if (nodep->num().isFourState()) {
 	    nodep->v3error("Unsupported: 4-state numbers in this context");
+	} else if (nodep->num().isString()) {
+	    putbs("string(");
+	    putsQuoted(nodep->num().toString());
+	    puts(")");
 	} else if (nodep->isWide()) {
 	    putbs("VL_CONST_W_");
 	    puts(cvtToStr(VL_WORDS_I(nodep->num().widthMin())));
@@ -679,9 +683,6 @@ public:
 	} else {
 	    emitConstant(nodep, NULL, "");
 	}
-    }
-    virtual void visit(AstConstString* nodep, AstNUser*) {
-	putsQuoted(nodep->name());
     }
 
     // Just iterate
@@ -1168,17 +1169,20 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
 
 struct EmitDispState {
     string		m_format;	// "%s" and text from user
+    vector<char>	m_argsChar;	// Format of each argument to be printed
     vector<AstNode*>	m_argsp;	// Each argument to be printed
     vector<string>	m_argsFunc;	// Function before each argument to be printed
     EmitDispState() { clear(); }
     void clear() {
 	m_format = "";
+	m_argsChar.clear();
 	m_argsp.clear();
 	m_argsFunc.clear();
     }
     void pushFormat(const string& fmt) { m_format += fmt; }
     void pushFormat(char fmt) { m_format += fmt; }
-    void pushArg(AstNode* nodep, const string& func) {
+    void pushArg(char fmtChar, AstNode* nodep, const string& func) {
+	m_argsChar.push_back(fmtChar);
 	m_argsp.push_back(nodep); m_argsFunc.push_back(func);
     }
 } emitDispState;
@@ -1231,6 +1235,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	// Arguments
 	for (unsigned i=0; i < emitDispState.m_argsp.size(); i++) {
 	    puts(",");
+	    char     fmt  = emitDispState.m_argsChar[i];
 	    AstNode* argp = emitDispState.m_argsp[i];
 	    string   func = emitDispState.m_argsFunc[i];
 	    ofp()->indentInc();
@@ -1238,8 +1243,10 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    if (func!="") puts(func);
 	    if (argp) {
 		if (isScan) puts("&(");
+		else if (fmt == '@') puts("&(");
 		argp->iterate(*this);
 		if (isScan) puts(")");
+		else if (fmt == '@') puts(")");
 	    }
 	    ofp()->indentDec();
 	}
@@ -1288,8 +1295,8 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 	pfmt = string("%") + vfmt + fmtLetter;
     }
     emitDispState.pushFormat(pfmt);
-    emitDispState.pushArg(NULL,cvtToStr(argp->widthMin()));
-    emitDispState.pushArg(argp,"");
+    emitDispState.pushArg(' ',NULL,cvtToStr(argp->widthMin()));
+    emitDispState.pushArg(fmtLetter,argp,"");
 
     // Next parameter
     *elistp = (*elistp)->nextp();
@@ -1328,6 +1335,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 		break;
 	    // Special codes
 	    case '~': displayArg(nodep,&elistp,isScan, vfmt,'d'); break;  // Signed decimal
+	    case '@': displayArg(nodep,&elistp,isScan, vfmt,'@'); break;  // Packed string
 	    // Spec: h d o b c l
 	    case 'b': displayArg(nodep,&elistp,isScan, vfmt,'b'); break;
 	    case 'c': displayArg(nodep,&elistp,isScan, vfmt,'c'); break;
@@ -1345,7 +1353,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 		string suffix = scopenamep->scopePrettyName();
 		if (suffix=="") emitDispState.pushFormat("%S");
 		else emitDispState.pushFormat("%N");  // Add a . when needed
-		emitDispState.pushArg(NULL, "vlSymsp->name()");
+		emitDispState.pushArg(' ',NULL, "vlSymsp->name()");
 		emitDispState.pushFormat(suffix);
 		break;
 	    }

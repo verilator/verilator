@@ -365,6 +365,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 	if (width()!=64) out<<"%E-bad-width-double";
 	else out<<toDouble();
 	return out.str();
+    } else if (isString()) {
+	return '"'+toString()+'"';
     } else {
 	if ((m_value[words()-1] | m_valueX[words()-1]) & ~hiWordMask()) out<<"%E-hidden-bits";
     }
@@ -443,6 +445,7 @@ bool V3Number::displayedFmtLegal(char format) {
     case 's': return true;
     case 't': return true;
     case 'x': return true;
+    case '@': return true; // Packed string
     case '~': return true; // Signed decimal
     default: return false;
     }
@@ -497,6 +500,9 @@ string V3Number::displayed(const string& vformat) const {
 	int v = bitsValue(0, 8);
 	str += (char)(v);
 	return str;
+    }
+    case '@': {  // Packed string
+	return toString();
     }
     case 's': {
 	// Spec says always drop leading zeros, this isn't quite right, we space pad.
@@ -606,6 +612,7 @@ vlsint64_t V3Number::toSQuad() const {
 string V3Number::toString() const {
     UASSERT(!isFourState(),"toString with 4-state "<<*this);
     // Spec says always drop leading zeros, this isn't quite right, we space pad.
+    if (isString()) return m_stringVal;
     int bit=this->width()-1;
     bool start=true;
     while ((bit%8)!=7) bit++;
@@ -1650,4 +1657,39 @@ V3Number& V3Number::opLtD (const V3Number& lhs, const V3Number& rhs) {
 }
 V3Number& V3Number::opLteD (const V3Number& lhs, const V3Number& rhs) {
     return setSingleBits(lhs.toDouble() <= rhs.toDouble());
+}
+
+//======================================================================
+// Ops - String
+
+V3Number& V3Number::opConcatN (const V3Number& lhs, const V3Number& rhs) {
+    return setString(lhs.toString() + rhs.toString());
+}
+V3Number& V3Number::opReplN (const V3Number& lhs, const V3Number& rhs) {
+    return opReplN(lhs, rhs.toUInt());
+}
+V3Number& V3Number::opReplN (const V3Number& lhs, uint32_t rhsval) {
+    string out; out.reserve(lhs.toString().length() * rhsval);
+    for (unsigned times=0; times<rhsval; times++) {
+	out += lhs.toString();
+    }
+    return setString(out);
+}
+V3Number& V3Number::opEqN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() == rhs.toString());
+}
+V3Number& V3Number::opNeqN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() != rhs.toString());
+}
+V3Number& V3Number::opGtN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() > rhs.toString());
+}
+V3Number& V3Number::opGteN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() >= rhs.toString());
+}
+V3Number& V3Number::opLtN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() < rhs.toString());
+}
+V3Number& V3Number::opLteN (const V3Number& lhs, const V3Number& rhs) {
+    return setSingleBits(lhs.toString() <= rhs.toString());
 }
