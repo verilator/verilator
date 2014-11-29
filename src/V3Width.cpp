@@ -1421,14 +1421,12 @@ private:
 		// a map for when the value is many bits and sparse.
 		uint64_t max = 0;
 		{
-		    AstEnumItem* itemp = adtypep->itemsp();
-		    while (itemp && itemp->nextp()) {
-			itemp = itemp->nextp()->castEnumItem();
+		    for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()->castEnumItem()) {
 			AstConst* vconstp = itemp->valuep()->castConst();
 			if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
 			if (vconstp->toUQuad() >= max) max = vconstp->toUQuad();
 		    }
-		    if (itemp->width() > 64 || max >= 1024) {
+		    if (adtypep->itemsp()->width() > 64 || max >= 1024) {
 			nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
 			return;
 		    }
@@ -3312,6 +3310,7 @@ private:
 	if (pos != m_tableMap.end()) {
 	    return pos->second;
 	}
+	UINFO(9, "Construct Venumtab attr="<<attrType.ascii()<<" max="<<maxdim<<" for "<<nodep<<endl);
 	AstNodeDType* basep;
 	if (attrType == AstAttrType::ENUM_NAME) {
 	    basep = nodep->findStringDType();
@@ -3335,8 +3334,10 @@ private:
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
 	vector<AstNode*> values;
-	values.reserve(maxdim);
-	for (unsigned i=0; i<(maxdim+1); ++i) values[i] = NULL;
+	values.reserve(maxdim+1);
+	for (unsigned i=0; i<(maxdim+1); ++i) {
+	    values[i] = NULL;
+	}
 	{
 	    AstEnumItem* firstp = nodep->itemsp();
 	    AstEnumItem* prevp = firstp; // Prev must start with last item
