@@ -848,15 +848,15 @@ private:
 	case AstAttrType::DIM_SIZE: {
 	    if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
 	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-	    uint32_t maxdim = dim.first+dim.second;
-	    if (!nodep->dimp() || nodep->dimp()->castConst() || maxdim<1) {
+	    uint32_t msbdim = dim.first+dim.second;
+	    if (!nodep->dimp() || nodep->dimp()->castConst() || msbdim<1) {
 		int dim = !nodep->dimp() ? 1 : nodep->dimp()->castConst()->toSInt();
 		AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
 		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
 	    }
 	    else {  // Need a runtime lookup table.  Yuk.
 		if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
-		AstVar* varp = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), maxdim);
+		AstVar* varp = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), msbdim);
 		AstNode* dimp = nodep->dimp()->unlinkFrBack();
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
@@ -1419,19 +1419,19 @@ private:
 		// Ideally we would have a fast algorithm when a number is
 		// of small width and complete and so can use an array, and
 		// a map for when the value is many bits and sparse.
-		uint64_t max = 0;
+		uint64_t msbdim = 0;
 		{
 		    for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()->castEnumItem()) {
 			AstConst* vconstp = itemp->valuep()->castConst();
 			if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
-			if (vconstp->toUQuad() >= max) max = vconstp->toUQuad();
+			if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
 		    }
-		    if (adtypep->itemsp()->width() > 64 || max >= 1024) {
+		    if (adtypep->itemsp()->width() > 64 || msbdim >= 1024) {
 			nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
 			return;
 		    }
 		}
-		AstVar* varp = enumVarp(adtypep, attrType, max);
+		AstVar* varp = enumVarp(adtypep, attrType, msbdim);
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
 		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack());
@@ -3276,7 +3276,7 @@ private:
 	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<valp<<endl);
 	return valp;
     }
-    AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t maxdim) {
+    AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {
 	// Return a variable table which has specified dimension properties for this variable
 	TableMap::iterator pos = m_tableMap.find(make_pair(nodep,attrType));
 	if (pos != m_tableMap.end()) {
@@ -3284,7 +3284,7 @@ private:
 	}
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       nodep->findSigned32DType(),
-							       new AstRange(nodep->fileline(), maxdim, 0));
+							       new AstRange(nodep->fileline(), msbdim, 0));
 	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
@@ -3297,20 +3297,20 @@ private:
 	v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
 	// Element 0 is a non-index and has speced values
 	initp->addInitsp(dimensionValue(nodep, attrType, 0));
-	for (unsigned i=1; i<maxdim+1; ++i) {
+	for (unsigned i=1; i<msbdim+1; ++i) {
 	    initp->addInitsp(dimensionValue(nodep, attrType, i));
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));
 	return varp;
     }
-    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t maxdim) {
+    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
 	// Return a variable table which has specified dimension properties for this variable
 	TableMap::iterator pos = m_tableMap.find(make_pair(nodep,attrType));
 	if (pos != m_tableMap.end()) {
 	    return pos->second;
 	}
-	UINFO(9, "Construct Venumtab attr="<<attrType.ascii()<<" max="<<maxdim<<" for "<<nodep<<endl);
+	UINFO(9, "Construct Venumtab attr="<<attrType.ascii()<<" max="<<msbdim<<" for "<<nodep<<endl);
 	AstNodeDType* basep;
 	if (attrType == AstAttrType::ENUM_NAME) {
 	    basep = nodep->findStringDType();
@@ -3319,7 +3319,7 @@ private:
 	}
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       basep,
-							       new AstRange(nodep->fileline(), maxdim, 0));
+							       new AstRange(nodep->fileline(), msbdim, 0));
 	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
@@ -3334,8 +3334,8 @@ private:
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
 	vector<AstNode*> values;
-	values.reserve(maxdim+1);
-	for (unsigned i=0; i<(maxdim+1); ++i) {
+	values.reserve(msbdim+1);
+	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    values[i] = NULL;
 	}
 	{
@@ -3361,7 +3361,7 @@ private:
 	    }
 	}
 	// Fill in all unspecified values and add to table
-	for (unsigned i=0; i<(maxdim+1); ++i) {
+	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    AstNode* valp = values[i];
 	    if (!valp) {
 		if (attrType == AstAttrType::ENUM_NAME) {
