@@ -1392,9 +1392,6 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 	    if (varp->isIO() && modp->isTop() && optSystemC()) {
 		// System C top I/O doesn't need loading, as the lower level subinst code does it.
 	    }
-	    else if (varp->basicp() && varp->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
-		// Constructor deals with it
-	    }
 	    else if (varp->isParam()) {
 		if (!varp->valuep()) nodep->v3fatalSrc("No init for a param?");
 		// If a simple CONST value we initialize it using an enum
@@ -1412,6 +1409,9 @@ void EmitCImp::emitVarResets(AstNodeModule* modp) {
 		} else {
 		    varp->v3fatalSrc("InitArray under non-arrayed var");
 		}
+	    }
+	    else if (varp->basicp() && varp->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
+		// Constructor deals with it
 	    }
 	    else {
 		int vects = 0;

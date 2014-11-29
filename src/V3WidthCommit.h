@@ -72,8 +72,9 @@ class WidthCommitVisitor : public AstNVisitor {
 public:
     // METHODS
     static AstConst* newIfConstCommitSize (AstConst* nodep) {
-	if ((nodep->dtypep()->width() != nodep->num().width())
-	    || !nodep->num().sized()) {  // Need to force the number rrom unsized to sized
+	if (((nodep->dtypep()->width() != nodep->num().width())
+	     || !nodep->num().sized())
+	    && !nodep->num().isString()) {  // Need to force the number rrom unsized to sized
 	    V3Number num (nodep->fileline(), nodep->dtypep()->width());
 	    num.opAssign(nodep->num());
 	    num.isSigned(nodep->isSigned());

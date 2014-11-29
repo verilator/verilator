@@ -708,7 +708,9 @@ private:
 	// However a later operation may have changed the node->signed w/o changing
 	// the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
 	if (vup && vup->c()->prelim()) {
-	    if (nodep->num().sized()) {
+	    if (nodep->num().isString()) {
+		nodep->dtypeSetString();
+	    } else if (nodep->num().sized()) {
 		nodep->dtypeChgWidth(nodep->num().width(), nodep->num().width());
 	    } else {
 		nodep->dtypeChgWidth(nodep->num().width(), nodep->num().widthMin());

@@ -2219,6 +2219,7 @@ private:
     TREEOPV("AstExtend {$lhsp.castExtend}",		"replaceExtend(nodep, nodep->lhsp()->castExtend()->lhsp())");
     TREEOPV("AstExtendS{$lhsp.castExtendS}",		"replaceExtend(nodep, nodep->lhsp()->castExtendS()->lhsp())");
     TREEOPV("AstReplicate{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}",	"replaceWLhs(nodep)");  // {1{lhs}}->lhs
+    TREEOPV("AstReplicateN{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
     TREEOPV("AstSel{operandSelExtend(nodep)}",	"DONE");
