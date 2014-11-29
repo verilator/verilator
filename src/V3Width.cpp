@@ -1314,20 +1314,28 @@ private:
 	if (debug()>=9) nodep->dumpTree("-ms-in-");
 	nodep->iterateChildren(*this,WidthVP(SELF,BOTH).p());
 	// Find the fromp dtype - should be a class
-	AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+	AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
 	UINFO(9,"     from dt "<<fromDtp<<endl);
-	AstNodeClassDType* fromClassp = fromDtp->castNodeClassDType();
 	AstMemberDType* memberp = NULL;  // NULL=error below
-	if (!fromClassp) {
-	    nodep->v3error("Member selection of non-struct/union object '"
-			   <<nodep->fromp()->prettyTypeName()<<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
-	}
-	else {
-	    // No need to width-resolve the fromClassp, as it was done when we did the child
-	    memberp = fromClassp->findMember(nodep->name());
+	if (AstNodeClassDType* adtypep = fromDtp->castNodeClassDType()) {
+	    // No need to width-resolve the class, as it was done when we did the child
+	    memberp = adtypep->findMember(nodep->name());
 	    if (!memberp) {
 		nodep->v3error("Member '"<<nodep->prettyName()<<"' not found in structure");
 	    }
+	}
+	else if (fromDtp->castEnumDType()) {
+	    // Method call on enum without following parenthesis, e.g. "ENUM.next"
+	    // Convert this into a method call, and let that visitor figure out what to do next
+	    AstNode* newp = new AstMethodSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
+	    nodep->replaceWith(newp);
+	    pushDeletep(nodep); nodep=NULL;
+	    newp->accept(*this,vup);
+	    return;
+	}
+	else {
+	    nodep->v3error("Member selection of non-struct/union object '"
+			   <<nodep->fromp()->prettyTypeName()<<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
 	}
 	if (memberp) {
 	    if (m_attrp) {  // Looking for the base of the attribute
@@ -1347,6 +1355,96 @@ private:
 	if (!memberp) {  // Very bogus, but avoids core dump
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
 	    pushDeletep(nodep); nodep=NULL;
+	}
+    }
+
+    virtual void visit(AstMethodSel* nodep, AstNUser* vup) {
+	UINFO(5,"   METHODSEL "<<nodep<<endl);
+	if (debug()>=9) nodep->dumpTree("-ms-in-");
+	// Should check types the method requires, but at present we don't do much
+	nodep->fromp()->accept(*this,WidthVP(SELF,BOTH).p());
+	for (AstArg* argp = nodep->pinsp()->castArg(); argp; argp = argp->nextp()->castArg()) {
+	    if (argp->exprp()) argp->exprp()->accept(*this,WidthVP(SELF,BOTH).p());
+	}
+	// Find the fromp dtype - should be a class
+	if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
+	AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
+	UINFO(9,"     from dt "<<fromDtp<<endl);
+	if (AstEnumDType* adtypep = fromDtp->castEnumDType()) {
+	    // Method call on enum without following parenthesis, e.g. "ENUM.next"
+	    // Convert this into a method call, and let that visitor figure out what to do next
+	    if (adtypep) {}
+	    if (nodep->name() == "num"
+		|| nodep->name() == "first"
+		|| nodep->name() == "last") {
+		// Constant value
+		AstConst* newp = NULL;
+		if (nodep->pinsp()) nodep->v3error("Arguments passed to enum.num method, but it does not take arguments");
+		if (nodep->name() == "num") {
+		    int items = 0;
+		    for (AstNode* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()) ++items;
+		    newp = new AstConst(nodep->fileline(), AstConst::Signed32(), items);
+		} else if (nodep->name() == "first") {
+		    AstEnumItem* itemp = adtypep->itemsp();
+		    if (!itemp) newp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);  // Spec doesn't say what to do
+		    else newp = itemp->valuep()->cloneTree(false)->castConst();  // A const
+		} else if (nodep->name() == "last") {
+		    AstEnumItem* itemp = adtypep->itemsp();
+		    while (itemp && itemp->nextp()) itemp = itemp->nextp()->castEnumItem();
+		    if (!itemp) newp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);  // Spec doesn't say what to do
+		    else newp = itemp->valuep()->cloneTree(false)->castConst();  // A const
+		}
+		if (!newp) nodep->v3fatalSrc("Enum method (perhaps enum item) not const");
+		newp->fileline(nodep->fileline());  // Use method's filename/line number to be clearer; may have warning disables
+		nodep->replaceWith(newp);
+		pushDeletep(nodep); nodep=NULL;
+	    }
+	    else if (nodep->name() == "name"
+		     || nodep->name() == "next"
+		     || nodep->name() == "prev") {
+		AstAttrType attrType;
+		if (nodep->name() == "name") attrType = AstAttrType::ENUM_NAME;
+		else if (nodep->name() == "next") attrType = AstAttrType::ENUM_NEXT;
+		else if (nodep->name() == "prev") attrType = AstAttrType::ENUM_PREV;
+		else nodep->v3fatalSrc("Bad case");
+
+		if (nodep->pinsp() && nodep->name() == "name") {
+		    nodep->v3error("Arguments passed to enum.name method, but it does not take arguments");
+		} else if (nodep->pinsp() && !(nodep->pinsp()->castArg()->exprp()->castConst()
+					       && nodep->pinsp()->castArg()->exprp()->castConst()->toUInt()==1
+					       && !nodep->pinsp()->nextp())) {
+		    nodep->v3error("Unsupported: Arguments passed to enum.next method");
+		}
+		// Need a runtime lookup table.  Yuk.
+		// Ideally we would have a fast algorithm when a number is
+		// of small width and complete and so can use an array, and
+		// a map for when the value is many bits and sparse.
+		uint64_t max = 0;
+		{
+		    AstEnumItem* itemp = adtypep->itemsp();
+		    while (itemp && itemp->nextp()) {
+			itemp = itemp->nextp()->castEnumItem();
+			AstConst* vconstp = itemp->valuep()->castConst();
+			if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
+			if (vconstp->toUQuad() >= max) max = vconstp->toUQuad();
+		    }
+		    if (itemp->width() > 64 || max >= 1024) {
+			nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
+			return;
+		    }
+		}
+		AstVar* varp = enumVarp(adtypep, attrType, max);
+		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
+		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
+		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack());
+		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+	    } else {
+		nodep->v3error("Unknown built-in enum method '"<<nodep->fromp()->prettyTypeName()<<"'");
+	    }
+	}
+	else {
+	    nodep->v3error("Unsupported: Member call on non-enum object '"
+			   <<nodep->fromp()->prettyTypeName()<<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
 	}
     }
 
@@ -3203,6 +3301,78 @@ private:
 	initp->addInitsp(dimensionValue(nodep, attrType, 0));
 	for (unsigned i=1; i<maxdim+1; ++i) {
 	    initp->addInitsp(dimensionValue(nodep, attrType, i));
+	}
+	varp->iterate(*this);  // May have already done $unit so must do this var
+	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));
+	return varp;
+    }
+    AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t maxdim) {
+	// Return a variable table which has specified dimension properties for this variable
+	TableMap::iterator pos = m_tableMap.find(make_pair(nodep,attrType));
+	if (pos != m_tableMap.end()) {
+	    return pos->second;
+	}
+	AstNodeDType* basep;
+	if (attrType == AstAttrType::ENUM_NAME) {
+	    basep = nodep->findStringDType();
+	} else {
+	    basep = nodep->findSigned32DType();
+	}
+	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
+							       basep,
+							       new AstRange(nodep->fileline(), maxdim, 0));
+	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
+	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
+				   "__Venumtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
+				   vardtypep);
+	varp->isConst(true);
+	varp->isStatic(true);
+	varp->valuep(initp);
+	// Add to root, as don't know module we are in, and aids later structure sharing
+	v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
+
+	// Find valid values and populate
+	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
+	vector<AstNode*> values;
+	values.reserve(maxdim);
+	for (unsigned i=0; i<(maxdim+1); ++i) values[i] = NULL;
+	{
+	    AstEnumItem* firstp = nodep->itemsp();
+	    AstEnumItem* prevp = firstp; // Prev must start with last item
+	    while (prevp->nextp()) prevp = prevp->nextp()->castEnumItem();
+	    for (AstEnumItem* itemp = firstp; itemp;) {
+		AstEnumItem* nextp = itemp->nextp()->castEnumItem();
+		AstConst* vconstp = itemp->valuep()->castConst();
+		if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
+		uint32_t i = vconstp->toUInt();
+		if (attrType == AstAttrType::ENUM_NAME) {
+		    values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
+		} else if (attrType == AstAttrType::ENUM_NEXT) {
+		    values[i] = (nextp ? nextp : firstp)->valuep()->cloneTree(false); // A const
+		} else if (attrType == AstAttrType::ENUM_PREV) {
+		    values[i] = prevp->valuep()->cloneTree(false); // A const
+		} else {
+		    nodep->v3fatalSrc("Bad case");
+		}
+		prevp = itemp;
+		itemp = nextp;
+	    }
+	}
+	// Fill in all unspecified values and add to table
+	for (unsigned i=0; i<(maxdim+1); ++i) {
+	    AstNode* valp = values[i];
+	    if (!valp) {
+		if (attrType == AstAttrType::ENUM_NAME) {
+		    valp = new AstConst(nodep->fileline(), AstConst::String(), "");
+		} else if (attrType == AstAttrType::ENUM_NEXT
+			   || attrType == AstAttrType::ENUM_PREV) {
+		    valp = new AstConst(nodep->fileline(), V3Number(nodep->fileline(), nodep->width(), 0));
+		} else {
+		    nodep->v3fatalSrc("Bad case");
+		}
+	    }
+	    initp->addInitsp(valp);
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));

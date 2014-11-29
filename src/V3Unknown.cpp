@@ -410,12 +410,16 @@ private:
 		condp->deleteTree();
 	    }
 	    else if (!lvalue
-		&& !nodep->backp()->castArraySel()) {	// Too complicated and slow if mid-multidimension
+		     && !nodep->backp()->castArraySel()) {	// Too complicated and slow if mid-multidimension
 		// ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
 		V3Number xnum (nodep->fileline(), nodep->width());
-		xnum.setAllBitsX();
+		if (nodep->isString()) {
+		    xnum = V3Number(V3Number::String(), nodep->fileline(), "");
+		} else {
+		    xnum.setAllBitsX();
+		}
 		AstNode* newp = new AstCondBound (nodep->fileline(),
 						  condp,
 						  nodep,

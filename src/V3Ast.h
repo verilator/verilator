@@ -239,6 +239,13 @@ public:
 	//
 	DT_PUBLIC,			// V3LinkParse moves to AstTypedef::attrPublic
 	//
+	ENUM_FIRST,			// V3Width processes
+	ENUM_LAST,			// V3Width processes
+	ENUM_NUM,			// V3Width processes
+	ENUM_NEXT,			// V3Width processes
+	ENUM_PREV,			// V3Width processes
+	ENUM_NAME,			// V3Width processes
+	//
 	MEMBER_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
 	//
 	VAR_BASE,			// V3LinkResolve creates for AstPreSel, V3LinkParam removes
@@ -259,6 +266,7 @@ public:
 	    "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
 	    "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
 	    "DT_PUBLIC",
+	    "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM", "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME",
 	    "MEMBER_BASE",
 	    "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",

@@ -1805,6 +1805,15 @@ private:
 	// EnumItemRef may be under a dot.  Should already be resolved.
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstMethodSel* nodep, AstNUser*) {
+	// Created here so should already be resolved.
+	DotStates lastStates = m_ds;
+	{
+	    m_ds.init(m_curSymp);
+	    nodep->iterateChildren(*this);
+	}
+	m_ds = lastStates;
+    }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	checkNoDot(nodep);
 	nodep->iterateChildren(*this);
@@ -1823,6 +1832,14 @@ private:
 	    m_ds.m_dotp = NULL;
 	} else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
 	    nodep->dotted(m_ds.m_dotText);  // Maybe ""
+	} else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
+	    // Found a Var, everything following is method call.  {scope}.{var}.HERE {method} ( ARGS )
+	    AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
+	    AstNode* argsp = NULL; if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
+	    AstNode* newp = new AstMethodSel(nodep->fileline(), varEtcp, VFlagChildDType(), nodep->name(), argsp);
+	    nodep->replaceWith(newp);
+	    pushDeletep(nodep); nodep=NULL;
+	    return;
 	} else {
 	    checkNoDot(nodep);
 	}
