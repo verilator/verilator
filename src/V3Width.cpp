@@ -77,6 +77,7 @@
 #include "V3Width.h"
 #include "V3Number.h"
 #include "V3Const.h"
+#include "V3String.h"
 #include "V3Task.h"
 
 // More code; this file was getting too large; see actions there
@@ -154,6 +155,10 @@ ostream& operator<<(ostream& str, const WidthVP* vup) {
 
 class WidthVisitor : public AstNVisitor {
 private:
+    // TYPES
+    typedef map<pair<AstNodeDType*,AstAttrType>, AstVar*> TableMap;
+    typedef map<int,AstPatMember*> PatVecMap;
+
     // STATE
     bool	m_paramsOnly;	// Computing parameter value; limit operation
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
@@ -162,9 +167,7 @@ private:
     AstAttrOf*	m_attrp;	// Current attribute
     bool	m_doGenerate;	// Do errors later inside generate statement
     int		m_dtTables;	// Number of created data type tables
-
-    // TYPES
-    typedef map<int,AstPatMember*> PatVecMap;
+    TableMap	m_tableMap;	// Created tables so can remove duplicates
 
     // ENUMS
     enum ExtendRule {
@@ -3179,13 +3182,17 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t maxdim) {
 	// Return a variable table which has specified dimension properties for this variable
+	TableMap::iterator pos = m_tableMap.find(make_pair(nodep,attrType));
+	if (pos != m_tableMap.end()) {
+	    return pos->second;
+	}
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       nodep->findSigned32DType(),
 							       new AstRange(nodep->fileline(), maxdim, 0));
 	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
-				   "__Vdimtable" + cvtToStr(m_dtTables++),
+				   "__Vdimtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
 				   vardtypep);
 	varp->isConst(true);
 	varp->isStatic(true);
@@ -3198,6 +3205,7 @@ private:
 	    initp->addInitsp(dimensionValue(nodep, attrType, i));
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
+	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));
 	return varp;
     }
 
