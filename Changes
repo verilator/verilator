@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Inline C functions that are used only once, msg1525. [Jie Xu]
 
+****  Fix bare generates in interfaces, bug789. [Bob Newgard]
+
 
 * Verilator 3.866 2014-11-15
 

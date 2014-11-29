@@ -971,13 +971,19 @@ interface_itemList<nodep>:
 interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 		port_declaration ';'			{ $$ = $1; }
 	//			// IEEE: non_port_interface_item
-	//UNSUP	generate_region				{ $$ = $1; }
+	//			// IEEE: generate_region
+	|	interface_generate_region		{ $$ = $1; }
 	|	interface_or_generate_item		{ $$ = $1; }
 	//UNSUP	program_declaration			{ $$ = $1; }
 	//UNSUP	interface_declaration			{ $$ = $1; }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// See note in interface_or_generate item
 	|	module_common_item			{ $$ = $1; }
+	;
+
+interface_generate_region<nodep>:		// ==IEEE: generate_region
+		yGENERATE interface_itemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
 interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
