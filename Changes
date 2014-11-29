@@ -11,7 +11,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    SystemPerl mode is deprecated and now untested.
 
-***   Support enum.first/name and similar methods, bug848. [Jonathon Donaldson]
+***   Support enum.first/name and similar methods, bug460, bug848.
 
 ***   Add 'string' printing and comparisons, bug746, bug747, etc.
 
