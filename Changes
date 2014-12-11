@@ -17,6 +17,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Inline C functions that are used only once, msg1525. [Jie Xu]
 
+***   Fix tracing SystemC signals with structures, bug858. [Eivind Liland]
+      Note that SystemC traces will no longer show the signals
+      in the wrapper, they can be seen one level further down.
+
 ****  Fix bare generates in interfaces, bug789. [Bob Newgard]
 
 

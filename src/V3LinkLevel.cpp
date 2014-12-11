@@ -130,7 +130,12 @@ void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
 		    oldvarp->primaryIO(true);
 		    varp->primaryIO(true);
 		}
-		if (varp->isIO() && v3Global.opt.systemC()) varp->sc(true);
+		if (varp->isIO() && v3Global.opt.systemC()) {
+		    varp->sc(true);
+		    // User can see trace one level down from the wrapper
+		    // Avoids packing & unpacking SC signals a second time
+		    varp->trace(false);
+		}
 
 		AstPin* pinp = new AstPin(oldvarp->fileline(),0,oldvarp->name(),
 					  new AstVarRef(varp->fileline(),
