@@ -24,6 +24,7 @@ module t (/*AUTOARG*/
    sub_cast_bug374 sub (.cyc5(cyc[4:0]), .*);
 
    initial begin
+      if (1_00_0.0_1 != 1000.01) $stop;
       // rtoi truncates
       if ($rtoi(36.7) != 36) $stop;
       if ($rtoi(36.5) != 36) $stop;

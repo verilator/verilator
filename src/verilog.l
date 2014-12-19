@@ -972,15 +972,14 @@ int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 double V3ParseImp::parseDouble(const char* textp, size_t length) {
     char* strgp = new char[length+1];
     char* dp=strgp;
-    for (const char* sp=textp; sp<(textp+length);) {
-	if (*sp != '_') *dp++ = *sp++;
-	else sp++;
+    for (const char* sp=textp; sp<(textp+length); ++sp) {
+	if (*sp != '_') *dp++ = *sp;
     }
     *dp++ = '\0';
     char* endp = strgp;
     double d = strtod(strgp, &endp);
     size_t parsed_len = endp-strgp;
-    if (parsed_len != length) { yyerrorf("Syntax error parsing real: %s",strgp); }
+    if (parsed_len != strlen(strgp)) { yyerrorf("Syntax error parsing real: %s",strgp); }
     delete strgp;
     return d;
 }

@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix bare generates in interfaces, bug789. [Bob Newgard]
 
+****  Fix underscores in real literals, bug863. [Jonathon Donaldson]
+
 
 * Verilator 3.866 2014-11-15
 
