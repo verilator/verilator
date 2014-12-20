@@ -309,6 +309,7 @@ descriptions in the next sections for more information.
     --savable			Enable model save-restore
     --sc                        Create SystemC output
     --stats                     Create statistics file
+    --stats-vars                Provide statistics on variables
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2012ext+<ext>
     --top-module <topname>      Name of top level input module
@@ -965,6 +966,12 @@ Specifies SystemC output mode; see also --cc.
 =item --stats
 
 Creates a dump file with statistics on the design in {prefix}__stats.txt.
+
+=item --stats-vars
+
+Creates more detailed statistics including a list of all the variables by
+size (plain --stats just gives a count).  See --stats, which is implied by
+this.
 
 =item -sv
 

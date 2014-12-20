@@ -40,6 +40,9 @@
 class StatsVisitor : public AstNVisitor {
 private:
     // NODE STATE/TYPES
+
+    typedef map<string,int>	NameMap;	// Number of times a name appears
+
     // STATE
     string	m_stage;		// Name of the stage we are scanning
     bool	m_fast;			// Counting only fastpath
@@ -54,7 +57,8 @@ private:
     V3Double0		m_statPred[AstBranchPred::_ENUM_END];	// Nodes of given type
     V3Double0		m_statInstr;		// Instruction count
     V3Double0		m_statInstrFast;	// Instruction count
-    vector<V3Double0>	m_statVarWidths;	// Variables of given type
+    vector<V3Double0>	m_statVarWidths;	// Variables of given width
+    vector<NameMap>	m_statVarWidthNames;	// Var names of given width
     V3Double0		m_statVarArray;		// Statistic tracking
     V3Double0		m_statVarBytes;		// Statistic tracking
     V3Double0		m_statVarClock;		// Statistic tracking
@@ -100,8 +104,18 @@ private:
 	    else m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();
 	    if (int(m_statVarWidths.size()) <= nodep->width()) {
 		m_statVarWidths.resize(nodep->width()+5);
+		if (v3Global.opt.statsVars()) m_statVarWidthNames.resize(nodep->width()+5);
 	    }
 	    ++ m_statVarWidths.at(nodep->width());
+	    string pn = nodep->prettyName();
+	    if (v3Global.opt.statsVars()) {
+		NameMap& nameMapr = m_statVarWidthNames.at(nodep->width());
+		if (nameMapr.find(pn) != nameMapr.end()) {
+		    nameMapr[pn]++;
+		} else {
+		    nameMapr[pn]=1;
+		}
+	    }
 	}
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {
@@ -208,8 +222,16 @@ public:
 	}
 	for (unsigned i=0; i<m_statVarWidths.size(); i++) {
 	    if (double count = double(m_statVarWidths.at(i))) {
-		ostringstream os; os<<"Vars, width "<<setw(4)<<dec<<i;
-		V3Stats::addStat(m_stage, os.str(), count);
+		if (v3Global.opt.statsVars()) {
+		    NameMap& nameMapr = m_statVarWidthNames.at(i);
+		    for (NameMap::iterator it=nameMapr.begin(); it!=nameMapr.end(); ++it) {
+			ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i<<" "<<it->first;
+			V3Stats::addStat(m_stage, os.str(), it->second);
+		    }
+		} else {
+		    ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i;
+		    V3Stats::addStat(m_stage, os.str(), count);
+		}
 	    }
 	}
 	// Node types

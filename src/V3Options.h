@@ -87,6 +87,7 @@ class V3Options {
     bool	m_skipIdentical;// main switch: --skip-identical
     bool	m_systemPerl;	// main switch: --sp: System Perl instead of SystemC (m_systemC also set)
     bool	m_stats;	// main switch: --stats
+    bool	m_statsVars;	// main switch: --stats-vars
     bool	m_trace;	// main switch: --trace
     bool	m_traceDups;	// main switch: --trace-dups
     bool	m_traceParams;	// main switch: --trace-params
@@ -202,6 +203,7 @@ class V3Options {
     bool savable() const { return m_savable; }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
+    bool statsVars() const { return m_statsVars; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }

@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
       Note that SystemC traces will no longer show the signals
       in the wrapper, they can be seen one level further down.
 
+****  Add --stats-vars, bug851. [Jeremy Bennett]
+
 ****  Fix bare generates in interfaces, bug789. [Bob Newgard]
 
 ****  Fix underscores in real literals, bug863. [Jonathon Donaldson]
