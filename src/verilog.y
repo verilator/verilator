@@ -2977,8 +2977,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	yUNSIGNED    yP_TICK '(' expr ')'	{ $$ = new AstUnsigned($1,$4); }
 	//			// Spec only allows primary with addition of a type reference
 	//			// We'll be more general, and later assert LHS was a type.
-	//UNSUP	~l~expr yP_TICK '(' expr ')'		{ UNSUP }
-	|	yaINTNUM     yP_TICK '(' expr ')'	{ $$ = new AstCastSize($2,$4,new AstConst($1->fileline(),*$1)); }
+	|	~l~expr      yP_TICK '(' expr ')'	{ $$ = new AstCastParse($2,$4,$1); }
 	//
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: streaming_concatenation

@@ -3485,6 +3485,21 @@ public:
     AstNodeDType* childDTypep() const { return op2p()->castNodeDType(); }
 };
 
+class AstCastParse : public AstNode {
+    // Cast to appropriate type, where we haven't determined yet what the data type is
+public:
+    AstCastParse(FileLine* fl, AstNode* lhsp, AstNode* dtp) : AstNode(fl) {
+	setOp1p(lhsp); setOp2p(dtp);
+    }
+    ASTNODE_NODE_FUNCS(CastParse, CASTPARSE)
+    virtual string emitVerilog() { return "((%d)'(%l))"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+    AstNode* lhsp() const { return op1p(); }
+    AstNode* dtp() const { return op2p(); }
+};
+
 class AstCastSize : public AstNode {
     // Cast to specific size; signed/twostate inherited from lower element per IEEE
 public:

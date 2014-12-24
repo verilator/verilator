@@ -5,7 +5,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.869 devel
 
-****  Suppress COMBDLY when inside always_latch, bug854. [Iztok Jeras]
+****  Suppress COMBDLY when inside always_latch, bug864. [Iztok Jeras]
+
+****  Support cast operator with expression size, bug865. [Iztok Jeras]
 
 
 * Verilator 3.868 2014-12-20

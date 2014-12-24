@@ -945,6 +945,21 @@ private:
 	nodep->iterateChildren(*this);
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
     }
+    virtual void visit(AstCastParse* nodep, AstNUser* vup) {
+	// nodep->dtp could be data type, or a primary_constant
+	// Don't iterate lhsp, will deal with that once convert the type
+	V3Const::constifyParamsEdit(nodep->dtp()); // itemp may change
+	if (AstConst* constp = nodep->dtp()->castConst()) {
+	    constp->unlinkFrBack();
+	    AstNode* newp = new AstCastSize(nodep->fileline(), nodep->lhsp()->unlinkFrBack(), constp);
+	    nodep->replaceWith(newp);
+	    pushDeletep(nodep); nodep=NULL;
+	    newp->accept(*this,vup);
+	} else {
+	    nodep->v3error("Unsupported: Cast to "<<nodep->dtp()->prettyTypeName());
+	    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+	}
+    }
     virtual void visit(AstCast* nodep, AstNUser* vup) {
 	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
