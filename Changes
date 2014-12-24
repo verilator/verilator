@@ -3,6 +3,11 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.869 devel
+
+****  Suppress COMBDLY when inside always_latch, bug854. [Iztok Jeras]
+
+
 * Verilator 3.868 2014-12-20
 
 **    New verilator_coverage program added to replace SystemPerl's vcoverage.

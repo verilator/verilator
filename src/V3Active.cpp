@@ -163,7 +163,7 @@ public:
 
 class ActiveDlyVisitor : public ActiveBaseVisitor {
 public:
-    enum CheckType { CT_SEQ, CT_COMBO, CT_INITIAL };
+    enum CheckType { CT_SEQ, CT_COMBO, CT_INITIAL, CT_LATCH };
 private:
     CheckType 	m_check;	// Combo logic or other
     AstNode*	m_alwaysp;	// Always we're under
@@ -175,6 +175,8 @@ private:
 	    UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
 	    if (m_check == CT_INITIAL) {
 		nodep->v3warn(INITIALDLY,"Delayed assignments (<=) in initial or final block; suggest blocking assignments (=).");
+	    } else if (m_check == CT_LATCH) {
+		// Suppress. Shouldn't matter that the interior of the latch races 
 	    } else {
 		nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).");
 	    }
@@ -306,7 +308,7 @@ private:
     }
 
     // METHODS
-    void visitAlways(AstNode* nodep, AstSenTree* oldsensesp) {
+    void visitAlways(AstNode* nodep, AstSenTree* oldsensesp, VAlwaysKwd kwd) {
 	// Move always to appropriate ACTIVE based on its sense list
 	if (oldsensesp
 	    && oldsensesp->sensesp()
@@ -358,7 +360,11 @@ private:
 
 	// Warn and/or convert any delayed assignments
 	if (combo && !sequent) {
-	    ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_COMBO);
+	    if (kwd == VAlwaysKwd::ALWAYS_LATCH) {
+		ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_LATCH);
+	    } else {
+		ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_COMBO);
+	    }
 	}
 	else if (!combo && sequent) {
 	    ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_SEQ);
@@ -374,13 +380,13 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	    return;
 	}
-	visitAlways(nodep, nodep->sensesp());
+	visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
     virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
 	// Move always to appropriate ACTIVE based on its sense list
 	UINFO(4,"    ALWPub   "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
-	visitAlways(nodep, nodep->sensesp());
+	visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
     virtual void visit(AstSenGate* nodep, AstNUser*) {
 	AstSenItem* subitemp = nodep->sensesp();
