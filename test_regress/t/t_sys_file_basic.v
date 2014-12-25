@@ -14,6 +14,7 @@ module t;
    reg [16*8:1]	letterw;
    reg [16*8:1]	letterz;
    real		r;
+   string	s;
 
    reg [7:0] 	v_a,v_b,v_c,v_d;
    reg [31:0] 	v_worda;
@@ -130,6 +131,13 @@ module t;
 	 if (chars != 2) $stop;
 	 if (r != 0.1) $stop;
 	 if (letterq != 64'hfffffffffffc65a5) $stop;
+
+	 s = "r=0.2 d=-236124";
+	 chars = $sscanf(s, "r=%g d=%d", r, letterq);
+	 if (`verbose) $write("c=%0d d=%d\n", chars, letterq);
+	 if (chars != 2) $stop;
+	 if (r != 0.2) $stop;
+	 if (letterq != 64'hfffffffffffc65a4) $stop;
 
 	 // $fscanf
 	 if ($fscanf(file,"")!=0) $stop;

@@ -41,7 +41,7 @@ inline string VL_CVT_PACK_STR_NQ(QData lhs) {
     IData lw[2];  VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(2, lw);
 }
-inline string VL_CVT_PACK_STR_NQ(const string& lhs) {
+inline string VL_CVT_PACK_STR_NN(const string& lhs) {
     return lhs;
 }
 inline string VL_CVT_PACK_STR_NI(IData lhs) {
@@ -60,6 +60,7 @@ inline string VL_REPLICATEN_NNI(int obits,int lbits,int rbits, const string& lhs
     return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
 }
 
+extern IData VL_SSCANF_INX(int lbits, const string& ld, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...);
 extern string VL_SFORMATF_NX(const char* formatp, ...);
 

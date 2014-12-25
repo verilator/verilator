@@ -476,7 +476,7 @@ static inline void _vl_vsss_advance(FILE* fp, int& floc) {
     if (fp) fgetc(fp);
     else floc -= 8;
 }
-static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp) {
+static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const string& fstr) {
     // Get a character without advancing
     if (fp) {
 	int data = fgetc(fp);
@@ -486,23 +486,27 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp) {
     } else {
 	if (floc < 0) return EOF;
 	floc = floc & ~7;	// Align to closest character
-	int data = (fromp[VL_BITWORD_I(floc)] >> VL_BITBIT_I(floc)) & 0xff;
-	return data;
+	if (fromp == NULL) {
+	    int c = fstr[fstr.length()-1 - (floc>>3)];
+	    return fstr[fstr.length()-1 - (floc>>3)];
+	} else {
+	    return (fromp[VL_BITWORD_I(floc)] >> VL_BITBIT_I(floc)) & 0xff;
+	}
     }
 }
-static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp) {
+static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp, const string& fstr) {
     while (1) {
-	int c = _vl_vsss_peek(fp, floc, fromp);
+	int c = _vl_vsss_peek(fp, floc, fromp, fstr);
 	if (c==EOF || !isspace(c)) return;
 	_vl_vsss_advance(fp, floc);
     }
 }
-static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp,
+static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const string& fstr,
 				 char* tmpp, const char* acceptp) {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (1) {
-	int c = _vl_vsss_peek(fp, floc, fromp);
+	int c = _vl_vsss_peek(fp, floc, fromp, fstr);
 	if (c==EOF || isspace(c)) break;
 	if (acceptp!=NULL // String - allow anything
 	    && NULL==strchr(acceptp, c)) break;
@@ -547,6 +551,7 @@ static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const 
 
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		  int fbits, WDataInP fromp,  // Else if a sscanf
+		  const string& fstr,  // if a sscanf to string
 		  const char* formatp, va_list ap) {
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
@@ -557,15 +562,15 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp,floc); ++pos) {
-	//VL_PRINTF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp));
+	//VL_PRINTF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp,fstr));
 	if (!inPct && pos[0]=='%') {
 	    inPct = true;
 	} else if (!inPct && isspace(pos[0])) {   // Format spaces
 	    while (isspace(pos[1])) pos++;
-	    _vl_vsss_skipspace(fp,floc,fromp);
+	    _vl_vsss_skipspace(fp,floc,fromp,fstr);
 	} else if (!inPct) {   // Expected Format
-	    _vl_vsss_skipspace(fp,floc,fromp);
-	    int c = _vl_vsss_peek(fp,floc,fromp);
+	    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+	    int c = _vl_vsss_peek(fp,floc,fromp,fstr);
 	    if (c != pos[0]) goto done;
 	    else _vl_vsss_advance(fp,floc);
 	} else { // Format character
@@ -574,7 +579,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 	    char fmt = pos[0];
 	    switch (fmt) {
 	    case '%': {
-		int c = _vl_vsss_peek(fp,floc,fromp);
+		int c = _vl_vsss_peek(fp,floc,fromp,fstr);
 		if (c != '%') goto done;
 		else _vl_vsss_advance(fp,floc);
 		break;
@@ -591,15 +596,15 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		for (int i=0; i<VL_WORDS_I(obits); i++) owp[i] = 0;
 		switch (fmt) {
 		case 'c': {
-		    int c = _vl_vsss_peek(fp,floc,fromp);
+		    int c = _vl_vsss_peek(fp,floc,fromp,fstr);
 		    if (c==EOF) goto done;
 		    else _vl_vsss_advance(fp,floc);
 		    owp[0] = c;
 		    break;
 		}
 		case 's': {
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, NULL);
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, NULL);
 		    if (!tmp[0]) goto done;
 		    int pos = ((int)strlen(tmp))-1;
 		    int lsb = 0;
@@ -609,8 +614,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    break;
 		}
 		case 'd': { // Signed decimal
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    vlsint64_t ld;
 		    sscanf(tmp,"%30" VL_PRI64 "d",&ld);
@@ -620,8 +625,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		case 'f':
 		case 'e':
 		case 'g': { // Real number
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "+-.0123456789eE");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "+-.0123456789eE");
 		    if (!tmp[0]) goto done;
 		    union { double r; vlsint64_t ld; } u;
 		    u.r = strtod(tmp, NULL);
@@ -630,8 +635,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		}
 		case 't': // FALLTHRU  // Time
 		case 'u': { // Unsigned decimal
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789+-xXzZ?_");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    QData ld;
 		    sscanf(tmp,"%30" VL_PRI64 "u",&ld);
@@ -639,22 +644,22 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    break;
 		}
 		case 'b': {
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "01xXzZ?_");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "01xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    _vl_vsss_based(owp,obits, 1, tmp, 0, (int)strlen(tmp));
 		    break;
 		}
 		case 'o': {
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "01234567xXzZ?_");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "01234567xXzZ?_");
 		    if (!tmp[0]) goto done;
 		    _vl_vsss_based(owp,obits, 3, tmp, 0, (int)strlen(tmp));
 		    break;
 		}
 		case 'x': {
-		    _vl_vsss_skipspace(fp,floc,fromp);
-		    _vl_vsss_read(fp,floc,fromp, tmp, "0123456789abcdefABCDEFxXzZ?_");
+		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
+		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "0123456789abcdefABCDEFxXzZ?_");
 		    if (!tmp[0]) goto done;
 		    _vl_vsss_based(owp,obits, 4, tmp, 0, (int)strlen(tmp));
 		    break;
@@ -875,7 +880,7 @@ IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) {
 
     va_list ap;
     va_start(ap,formatp);
-    IData got = _vl_vsscanf(fp, 0, NULL, formatp, ap);
+    IData got = _vl_vsscanf(fp, 0, NULL, "", formatp, ap);
     va_end(ap);
     return got;
 }
@@ -885,7 +890,7 @@ IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
 
     va_list ap;
     va_start(ap,formatp);
-    IData got = _vl_vsscanf(NULL, lbits, fnw, formatp, ap);
+    IData got = _vl_vsscanf(NULL, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
@@ -894,14 +899,21 @@ IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) {
 
     va_list ap;
     va_start(ap,formatp);
-    IData got = _vl_vsscanf(NULL, lbits, fnw, formatp, ap);
+    IData got = _vl_vsscanf(NULL, lbits, fnw, "", formatp, ap);
     va_end(ap);
     return got;
 }
 IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) {
     va_list ap;
     va_start(ap,formatp);
-    IData got = _vl_vsscanf(NULL, lbits, lwp, formatp, ap);
+    IData got = _vl_vsscanf(NULL, lbits, lwp, "", formatp, ap);
+    va_end(ap);
+    return got;
+}
+IData VL_SSCANF_INX(int lbits, const string& ld, const char* formatp, ...) {
+    va_list ap;
+    va_start(ap,formatp);
+    IData got = _vl_vsscanf(NULL, ld.length()*8, NULL, ld, formatp, ap);
     va_end(ap);
     return got;
 }

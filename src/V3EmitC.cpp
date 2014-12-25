@@ -78,7 +78,9 @@ public:
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
 	// Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
-	puts (nodep->isWide()?"W":(nodep->isQuad()?"Q":"I"));
+	puts (nodep->isString() ? "N"
+	      : nodep->isWide() ? "W"
+	      : nodep->isQuad() ? "Q" : "I");
     }
     void emitScIQW(AstVar* nodep) {
 	puts (nodep->isScBigUint() ? "SB"

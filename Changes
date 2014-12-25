@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix member select error broke in 3.868, bug867. [Iztok Jeras]
 
+****  Fix $sccanf from string, bug866. [David Pierce]
+
 
 * Verilator 3.868 2014-12-20
 
