@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Support cast operator with expression size, bug865. [Iztok Jeras]
 
+****  Fix member select error broke in 3.868, bug867. [Iztok Jeras]
+
 
 * Verilator 3.868 2014-12-20
 

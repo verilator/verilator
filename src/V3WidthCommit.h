@@ -74,7 +74,7 @@ public:
     static AstConst* newIfConstCommitSize (AstConst* nodep) {
 	if (((nodep->dtypep()->width() != nodep->num().width())
 	     || !nodep->num().sized())
-	    && !nodep->num().isString()) {  // Need to force the number rrom unsized to sized
+	    && !nodep->num().isString()) {  // Need to force the number from unsized to sized
 	    V3Number num (nodep->fileline(), nodep->dtypep()->width());
 	    num.opAssign(nodep->num());
 	    num.isSigned(nodep->isSigned());

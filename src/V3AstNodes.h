@@ -434,7 +434,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
-    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
@@ -594,7 +594,7 @@ public:
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
-    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); } // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); } // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     // METHODS
