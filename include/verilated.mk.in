@@ -153,7 +153,7 @@ VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 
-ifneq ($(VM_PARALLEL_BUILDS),0)
+ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast building, all .cpp's in one fell swoop
   # This saves about 5 sec per module, but can be slower if only a little changes
   VK_OBJS += $(VM_PREFIX)__ALLcls.o   $(VM_PREFIX)__ALLsup.o
