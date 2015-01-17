@@ -1237,6 +1237,9 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 			list_of_variable_decl_assignments			{ $$ = $5; }
 	|	port_directionReset port_declNetE /*implicit*/       { VARDTYPE(NULL);/*default_nettype*/}
 			list_of_variable_decl_assignments			{ $$ = $4; }
+	//			// IEEE: interface_declaration
+	//			// Looks just like variable declaration unless has a period
+	//			// See etcInst
 	;
 
 tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
@@ -2011,7 +2014,22 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP(*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;}
+	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
+	|	id/*interface*/ '.' id/*modport*/
+			{ VARRESET_NONLIST(AstVarType::IFACEREF);
+			  VARDTYPE(new AstIfaceRefDType($<fl>1,"",*$1,*$3)); }
+		mpInstnameList ';'
+			{ $$ = VARDONEP($5,NULL,NULL); }
 	//UNSUP: strengthSpecE for udp_instantiations
+	;
+
+mpInstnameList<nodep>:		// Similar to instnameList, but for modport instantiations which have no parenthesis
+		mpInstnameParen				{ $$ = $1; }
+	|	mpInstnameList ',' mpInstnameParen	{ $$ = $1->addNext($3); }
+	;
+
+mpInstnameParen<nodep>:		// Similar to instnameParen, but for modport instantiations which have no parenthesis
+		id instRangeE sigAttrListE		{ $$ = VARDONEA($<fl>1,*$1,$2,$3); }
 	;
 
 instnameList<nodep>:
