@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix non-ANSI modport instantiations, bug868. [Kevin Thompson]
 
+****  Fix UNOPTFLAT change detect on multidim arrays, bug872. [Andrew Bardsley]
+
 
 * Verilator 3.868 2014-12-20
 

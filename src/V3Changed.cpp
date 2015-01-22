@@ -44,6 +44,130 @@
 #include "V3EmitCBase.h"
 
 //######################################################################
+
+class ChangedState {
+public:
+    // STATE
+    AstNodeModule*	m_topModp;	// Top module
+    AstScope*		m_scopetopp;	// Scope under TOPSCOPE
+    AstCFunc*		m_chgFuncp;	// Change function we're building
+    ChangedState() {
+	m_topModp = NULL;
+	m_chgFuncp = NULL;
+	m_scopetopp = NULL;
+    }
+    ~ChangedState() {}
+};
+
+//######################################################################
+// Utility visitor to find elements to be compared
+
+class ChangedInsertVisitor : public AstNVisitor {
+private:
+    // STATE
+    ChangedState*	m_statep;	// Shared state across visitors
+    AstVarScope*	m_vscp;		// Original (non-change) variable we're change-detecting
+    AstVarScope*	m_newvscp;	// New (change detect) variable we're change-detecting
+    AstNode*		m_varEqnp;	// Original var's equation to get var value
+    AstNode*		m_newLvEqnp;	// New var's equation to read value 
+    AstNode*		m_newRvEqnp;	// New var's equation to set value 
+    uint32_t		m_detects;	// # detects created
+
+    // CONSTANTS
+    enum MiscConsts {
+	DETECTARRAY_MAX_INDEXES = 256	// How many indexes before error
+	// Ok to increase this, but may result in much slower model
+    };
+
+    void newChangeDet() {
+	if (++m_detects > DETECTARRAY_MAX_INDEXES) {
+	    m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
+			   <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<m_vscp->prettyName()<<endl
+			   <<m_vscp->warnMore()
+			   <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased"<<endl);
+	    return;
+	}
+	AstChangeDet* changep = new AstChangeDet (m_vscp->fileline(),
+						  m_varEqnp->cloneTree(true),
+						  m_newRvEqnp->cloneTree(true), false);
+	m_statep->m_chgFuncp->addStmtsp(changep);
+	AstAssign* initp = new AstAssign (m_vscp->fileline(),
+					  m_newLvEqnp->cloneTree(true),
+					  m_varEqnp->cloneTree(true));
+	m_statep->m_chgFuncp->addFinalsp(initp);
+    }
+
+    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+	newChangeDet();
+    }
+    virtual void visit(AstPackArrayDType* nodep, AstNUser*) {
+	newChangeDet();
+    }
+    virtual void visit(AstUnpackArrayDType* nodep, AstNUser*) {
+	for (int index=0; index < nodep->elementsConst(); ++index) {
+	    AstNode* origVEp = m_varEqnp;
+	    AstNode* origNLEp = m_newLvEqnp;
+	    AstNode* origNREp = m_newRvEqnp;
+
+	    m_varEqnp   = new AstArraySel(nodep->fileline(), m_varEqnp->cloneTree(true), index);
+	    m_newLvEqnp = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
+	    m_newRvEqnp = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
+
+	    nodep->subDTypep()->skipRefp()->accept(*this);
+
+	    m_varEqnp->deleteTree();
+	    m_newLvEqnp->deleteTree();
+	    m_newRvEqnp->deleteTree();
+
+	    m_varEqnp   = origVEp;
+	    m_newLvEqnp = origNLEp;
+	    m_newRvEqnp = origNREp;
+	}
+    }
+    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	if (nodep->packedUnsup()) {
+	    newChangeDet();
+	} else {
+	    if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-class-");
+	    m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
+	}
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	nodep->iterateChildren(*this);
+	if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-general-");
+	m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
+    }
+public:
+    // CONSTUCTORS
+    ChangedInsertVisitor(AstVarScope* vscp, ChangedState* statep) {
+	m_statep = statep;
+	m_vscp = vscp;
+	m_detects = 0;
+	{
+	    AstVar* varp = m_vscp->varp();
+	    string newvarname = "__Vchglast__"+m_vscp->scopep()->nameDotless()+"__"+varp->shortName();
+	    // Create:  VARREF(_last)
+	    //          ASSIGN(VARREF(_last), VARREF(var))
+	    //          ...
+	    //          CHANGEDET(VARREF(_last), VARREF(var))
+	    AstVar* newvarp = new AstVar (varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+	    m_statep->m_topModp->addStmtp(newvarp);
+	    m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
+	    m_statep->m_scopetopp->addVarp(m_newvscp);
+
+	    m_varEqnp   = new AstVarRef(m_vscp->fileline(), m_vscp, false);
+	    m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, true);
+	    m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, false);
+	}
+	vscp->dtypep()->skipRefp()->accept(*this);
+	m_varEqnp->deleteTree();
+	m_newLvEqnp->deleteTree();
+	m_newRvEqnp->deleteTree();
+    }
+    virtual ~ChangedInsertVisitor() {}
+};
+
+//######################################################################
 // Changed state, as a visitor of each AstNode
 
 class ChangedVisitor : public AstNVisitor {
@@ -54,15 +178,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstNodeModule*	m_topModp;	// Top module
-    AstScope*		m_scopetopp;	// Scope under TOPSCOPE
-    AstCFunc*		m_chgFuncp;	// Change function we're building
-
-    // CONSTANTS
-    enum MiscConsts {
-	DETECTARRAY_MAX_INDEXES = 256	// How many indexes before error
-	// Ok to increase this, but may result in much slower model
-    };
+    ChangedState*	m_statep;	// Shared state across visitors
 
     // METHODS
     static int debug() {
@@ -71,69 +187,16 @@ private:
 	return level;
     }
 
-    AstNode* aselIfNeeded(bool isArray, int index, AstNode* childp) {
-	if (isArray) {
-	    return new AstArraySel(childp->fileline(), childp,
-				   new AstConst(childp->fileline(), index));
-	} else {
-	    return childp;
-	}
-    }
-
     void genChangeDet(AstVarScope* vscp) {
-	AstVar* varp = vscp->varp();
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
-	AstUnpackArrayDType* uarrayp = varp->dtypeSkipRefp()->castUnpackArrayDType();
-	AstPackArrayDType* parrayp = varp->dtypeSkipRefp()->castPackArrayDType();
-	AstNodeClassDType *classp = varp->dtypeSkipRefp()->castNodeClassDType();
-	bool isUnpackArray = uarrayp;
-	bool isPackArray = parrayp;
-	bool isClass = classp && classp->packedUnsup();
-	int elements = isUnpackArray ? uarrayp->elementsConst() : 1;
-	if (isUnpackArray && (elements > DETECTARRAY_MAX_INDEXES)) {
-	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect more than "<<cvtToStr(DETECTARRAY_MAX_INDEXES)
-			 <<" array indexes (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName()<<endl
-			 <<vscp->warnMore()
-			 <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased to at least "<<cvtToStr(elements));
-	} else if (!isUnpackArray && !isClass && !isPackArray
-		   && !varp->dtypeSkipRefp()->castBasicDType()) {
-	    if (debug()) varp->dumpTree(cout,"-DETECTARRAY-");
-	    vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<varp->prettyName());
-	} else {
-	    string newvarname = "__Vchglast__"+vscp->scopep()->nameDotless()+"__"+varp->shortName();
-	    // Create:  VARREF(_last)
-	    //          ASSIGN(VARREF(_last), VARREF(var))
-	    //          ...
-	    //          CHANGEDET(VARREF(_last), VARREF(var))
-	    AstVar* newvarp = new AstVar (varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
-	    m_topModp->addStmtp(newvarp);
-	    AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
-	    m_scopetopp->addVarp(newvscp);
-	    for (int index=0; index<elements; ++index) {
-		AstChangeDet* changep
-		    = new AstChangeDet (vscp->fileline(),
-					aselIfNeeded(isUnpackArray, index,
-						     new AstVarRef(vscp->fileline(), vscp, false)),
-					aselIfNeeded(isUnpackArray, index,
-						     new AstVarRef(vscp->fileline(), newvscp, false)),
-					false);
-		m_chgFuncp->addStmtsp(changep);
-		AstAssign* initp
-		    = new AstAssign (vscp->fileline(),
-				     aselIfNeeded(isUnpackArray, index,
-						  new AstVarRef(vscp->fileline(), newvscp, true)),
-				     aselIfNeeded(isUnpackArray, index,
-						  new AstVarRef(vscp->fileline(), vscp, false)));
-		m_chgFuncp->addFinalsp(initp);
-	    }
-	}
+	ChangedInsertVisitor visitor (vscp, m_statep);
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	if (nodep->isTop()) {
-	    m_topModp = nodep;
+	    m_statep->m_topModp = nodep;
 	}
 	nodep->iterateChildren(*this);
     }
@@ -144,15 +207,15 @@ private:
 	// Create the change detection function
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
-	m_scopetopp = scopep;
+	m_statep->m_scopetopp = scopep;
 	// Create change detection function
-	m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
-	m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
-	m_chgFuncp->symProlog(true);
-	m_chgFuncp->declPrivate(true);
-	m_scopetopp->addActivep(m_chgFuncp);
+	m_statep->m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
+	m_statep->m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
+	m_statep->m_chgFuncp->symProlog(true);
+	m_statep->m_chgFuncp->declPrivate(true);
+	m_statep->m_scopetopp->addActivep(m_statep->m_chgFuncp);
 	// We need at least one change detect so we know to emit the correct code
-	m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
+	m_statep->m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
 	//
 	nodep->iterateChildren(*this);
     }
@@ -164,6 +227,9 @@ private:
 	    }
 	}
     }
+    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+	// Short-circuit 
+    }
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep, AstNUser*) {
@@ -172,10 +238,8 @@ private:
 
 public:
     // CONSTUCTORS
-    ChangedVisitor(AstNetlist* nodep) {
-	m_topModp = NULL;
-	m_chgFuncp = NULL;
-	m_scopetopp = NULL;
+    ChangedVisitor(AstNetlist* nodep, ChangedState* statep) {
+	m_statep = statep;
 	nodep->accept(*this);
     }
     virtual ~ChangedVisitor() {}
@@ -186,5 +250,6 @@ public:
 
 void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ChangedVisitor visitor (nodep);
+    ChangedState state;
+    ChangedVisitor visitor (nodep, &state);
 }

@@ -863,7 +863,7 @@ void AstNodeDType::dumpSmall(ostream& str) {
 void AstNodeArrayDType::dumpSmall(ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     if (castPackArrayDType()) str<<"p"; else str<<"u";
-    str<<" "<<declRange();
+    str<<declRange();
 }
 void AstNodeArrayDType::dump(ostream& str) {
     this->AstNodeDType::dump(str);
