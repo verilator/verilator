@@ -68,7 +68,7 @@ module t (/*AUTOARG*/);
       $display("PINID8 %s", STR_PINID[8]);
       if (STR_PINID[1] != "ERR") $stop;
       if (STR_PINID[8] != "PA0") $stop;
-      if (pinout_static_const[0][0] != 0) $stop;
+      if (pinout_static_const[1][0] != 0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

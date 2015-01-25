@@ -74,11 +74,12 @@ module t (/*AUTOARG*/
 	    // verilator lint_on width
 	    if (np2_guard[6]!=0 || np2_guard[7]!=0) $stop;
 	 end
-	 // lint_checking BNDMEM OFF
+	 // verilator lint_off SELRANGE
 	 if (np2_mem[6] !== np2_mem[7]) begin
 	    $write("Mem[6]!=Mem[7] during randomize...\n");
 	    //$stop;  // Random value, so this can happen
 	 end
+	 // verilator lint_on SELRANGE
 	 //if (np2_mem[8] !== np2_mem[9]) $stop;  // Enhancement: Illegal indexes, make sure map to X's
 	 //
 	 vec_wide[32:31] <= 2'b11;

@@ -98,9 +98,6 @@ module t (/*AUTOARG*/
 	 if (active_command2[3] != 2'b11) begin
 	    $stop;
 	 end
-	 if (active_command3[3][1][2] != 2'b11) begin
-	    $stop;
-	 end
       end
    end
 

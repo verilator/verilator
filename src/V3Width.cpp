@@ -660,6 +660,15 @@ private:
 		}
 	    }
 	    if (!m_doGenerate) {
+		// Must check bounds before adding a select that truncates the bound
+		// Note we've already subtracted off LSB
+		if (nodep->bitp()->castConst() && (nodep->bitp()->castConst()->toSInt() > (frommsb-fromlsb)
+						   || nodep->bitp()->castConst()->toSInt() < 0)) {
+		    nodep->v3warn(SELRANGE,"Selection index out of range: "
+				  <<(nodep->bitp()->castConst()->toSInt()+fromlsb)
+				  <<" outside "<<frommsb<<":"<<fromlsb);
+		    UINFO(1,"    Related node: "<<nodep<<endl);
+		}
 		widthCheckSized(nodep,"Extract Range",nodep->bitp(),selwidthDTypep,EXTEND_EXP,false/*NOWARN*/);
 	    }
 	}

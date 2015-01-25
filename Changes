@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Support cast operator with expression size, bug865. [Iztok Jeras]
 
+****  Add warning on slice selection out of bounds, bug875. [Cong Van Nguyen].
+
 ****  Fix member select error broke in 3.868, bug867. [Iztok Jeras]
 
 ****  Fix $sccanf from string, bug866. [David Pierce]

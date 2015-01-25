@@ -41,7 +41,9 @@ module t;
       if (vec[0] != 32'h333) $stop;
       if (vec[1] != 32'hdef) $stop;
 
+      // verilator lint_off SELRANGE
       incr(vec[2],vec[0],vec[2]);  // Reading/Writing past end of vector!
+      // verilator lint_on SELRANGE
 
       n=1;
       nil();
