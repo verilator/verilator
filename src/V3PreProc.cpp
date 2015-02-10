@@ -623,7 +623,6 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     string out = "";
     {   // Parse substitution define using arguments
 	string argName;
-	string prev;
 	bool quote = false;
 	bool backslashesc = false;  // In \.....{space} block
 	// Note we go through the loop once more at the NULL end-of-string

@@ -308,13 +308,11 @@ void VerilatedVcd::bufferFlush () {
 // Simple methods
 
 void VerilatedVcd::set_time_unit (const char* unitp) {
-    string unitstr (unitp);
     //cout<<" set_time_unit ("<<unitp<<") == "<<timescaleToDouble(unitp)<<" == "<<doubleToTimescale(timescaleToDouble(unitp))<<endl;
     m_timeUnit = timescaleToDouble(unitp);
 }
 
 void VerilatedVcd::set_time_resolution (const char* unitp) {
-    string unitstr (unitp);
     //cout<<"set_time_resolution ("<<unitp<<") == "<<timescaleToDouble(unitp)<<" == "<<doubleToTimescale(timescaleToDouble(unitp))<<endl;
     m_timeRes = timescaleToDouble(unitp);
 }
@@ -440,7 +438,7 @@ void VerilatedVcd::dumpHeader () {
     deleteNameMap();
 }
 
-void VerilatedVcd::module (string name) {
+void VerilatedVcd::module (const string& name) {
     m_modName = name;
 }
 

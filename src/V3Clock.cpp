@@ -99,18 +99,6 @@ private:
 	UINFO(4,"New Last: "<<newvscp<<endl);
 	return newvscp;
     }
-    AstVarScope* getCreateLocalVar(FileLine* fl, const string& name, AstVar* examplep, int width) {
-	AstVar* newvarp;
-	if (width) {
-	    newvarp = new AstVar (fl, AstVarType::BLOCKTEMP, name, VFlagLogicPacked(), width);
-	} else {
-	    newvarp = new AstVar (fl, AstVarType::BLOCKTEMP, name, examplep); // No range; 1 bit.
-	}
-	m_modp->addStmtp(newvarp);
-	AstVarScope* newvscp = new AstVarScope(fl, m_scopep, newvarp);
-	m_scopep->addVarp(newvscp);
-	return newvscp;
-    }
     AstNode* createSenItemEquation(AstSenItem* nodep) {
 	// We know the var is clean, and one bit, so we use binary ops
 	// for speed instead of logical ops.

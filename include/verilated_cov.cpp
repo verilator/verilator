@@ -52,7 +52,10 @@ public:  // But only local to this file
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
-	for (int i=0; i<MAX_KEYS; i++) m_keys[i]=KEY_UNDEF;
+	for (int i=0; i<MAX_KEYS; i++) {
+	    m_keys[i]=KEY_UNDEF;
+	    m_vals[i]=0;
+	}
     }
     virtual ~VerilatedCovImpItem() {}
     virtual vluint64_t count() const = 0;

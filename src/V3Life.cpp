@@ -163,7 +163,7 @@ public:
 		if (debug()>4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
 		entp->complexAssign();
 		m_statep->pushUnlinkDeletep(oldassp); oldassp=NULL;
-		m_statep->m_statAssnDel++;
+		++m_statep->m_statAssnDel;
 	    }
 	}
     }
@@ -200,7 +200,7 @@ public:
 		    UINFO(4,"     replaceconst: "<<varrefp<<endl);
 		    varrefp->replaceWith(constp->cloneTree(false));
 		    varrefp->deleteTree(); varrefp=NULL;
-		    m_statep->m_statAssnCon++;
+		    ++m_statep->m_statAssnCon;
 		    return;  // **DONE, no longer a var reference**
 		}
 	    }

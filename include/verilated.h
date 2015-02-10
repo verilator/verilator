@@ -1132,7 +1132,9 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataI
     int words = VL_WORDS_I(lbits);
     IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
     IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
+    // cppcheck-suppress variableScope
     IData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    // cppcheck-suppress variableScope
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
@@ -1151,7 +1153,9 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     int words = VL_WORDS_I(lbits);
     IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
     IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
+    // cppcheck-suppress variableScope
     IData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    // cppcheck-suppress variableScope
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;

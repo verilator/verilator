@@ -82,7 +82,7 @@ void svGetPartselLogic(svLogicVecVal* d, const svLogicVecVal* s, int i, int w) {
 void svPutPartselBit(svBitVecVal* d, const svBitVecVal s, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
-void svPutPartselLogic(svLogicVecVal* d, const svLogicVecVal s, int i, int w) {
+void svPutPartselLogic(svLogicVecVal* d, const svLogicVecVal* s, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
 

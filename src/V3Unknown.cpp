@@ -92,7 +92,7 @@ private:
 	    UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
 	    m_assignwp->convertToAlways(); pushDeletep(m_assignwp); m_assignwp=NULL;
 	}
-	bool needDly = m_assigndlyp;
+	bool needDly = (m_assigndlyp != NULL);
 	if (m_assigndlyp) {
 	    // Delayed assignments become normal assignments,
 	    // then the temp created becomes the delayed assignment

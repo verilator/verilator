@@ -487,7 +487,6 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const stri
 	if (floc < 0) return EOF;
 	floc = floc & ~7;	// Align to closest character
 	if (fromp == NULL) {
-	    int c = fstr[fstr.length()-1 - (floc>>3)];
 	    return fstr[fstr.length()-1 - (floc>>3)];
 	} else {
 	    return (fromp[VL_BITWORD_I(floc)] >> VL_BITBIT_I(floc)) & 0xff;

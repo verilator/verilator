@@ -47,6 +47,7 @@ sub process {
     my %uniq;
     my %errs;
     while (defined(my $line = $fh->getline())) {
+	$line =~ s/^\s+//;
 	$line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
 	# General gunk
 	next if $uniq{$line}++;
@@ -62,6 +63,8 @@ sub process {
 	# Specific suppressions
 	next if $line =~ m!id="missingInclude" .*systemc.h!;
 	next if $line =~ m!id="missingInclude" .*svdpi.h!;
+	next if $line =~ m!id="unusedFunction" .*sv! && $line =~ m!verilated_dpi.cpp!;
+	next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
 	next if $line =~ m!file=".*obj_dbg/V3ParseBison.c".* id="unreachableCode"!;
 	# Output
 	if ($line =~ /^cppcheck --/) {
@@ -82,7 +85,8 @@ sub process {
     if (scalar(keys %errs)) {
 	#my $all = join('',sort(keys %errs));
 	#$Self->error("Cppcheck errors:\n$all");
-	die "%Error: cppcheck_filtered found errors";
+	#die "%Error: cppcheck_filtered found errors\n";
+	exit(1);
     }
 }
 
@@ -93,6 +97,9 @@ sub _suppress {
     my $linenum = shift;
     my $id = shift;
     #print "-Suppression search $filename $linenum $id\n" if $Self->{verbose};
+
+    return undef if $filename eq "*";
+
     my $fh = IO::File->new("<$filename");
     if (!$fh) {
 	warn "%Warning: $! $filename,";
@@ -109,6 +116,13 @@ sub _suppress {
 		} else {
 		    warn "%Warning: $filename: $l: Found suppress for id='$supid', not expected id='$id'\n";
 		}
+	    }
+	}
+	if ($l == $linenum) {
+	    if ($id eq "uselessAssignmentPtrArg"
+		&& $line =~ /(delete|Delete|Edit).*p *= *NULL;/) {
+		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
+		return 1;
 	    }
 	}
     }

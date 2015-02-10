@@ -411,6 +411,7 @@ private:
 		AstNode* itemexprp = ifexprp;  ifexprp=NULL;
 		if (depth == (CASE_ENCODER_GROUP_DEPTH)) { // End of group - can skip the condition
 		    itemexprp->deleteTree(); itemexprp=NULL;
+		    // cppcheck-suppress redundantAssignment
 		    itemexprp = new AstConst(itemp->fileline(), AstConst::LogicTrue());
 		}
 		AstIf* newp = new AstIf(itemp->fileline(), itemexprp, istmtsp, NULL);
@@ -462,6 +463,7 @@ private:
 	    replaceCaseFast(nodep); nodep=NULL;
 	} else {
 	    ++m_statCaseSlow;
+	    // cppcheck-supporess uselessAssignmentPtrArg
 	    replaceCaseComplicated(nodep); nodep=NULL;
 	}
     }

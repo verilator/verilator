@@ -191,7 +191,7 @@ public:
 		      void* userthis);
 
     /// Inside dumping routines, declare a module
-    void module (const string name);
+    void module (const string& name);
     /// Inside dumping routines, declare a signal
     void declBit      (vluint32_t code, const char* name, int arraynum);
     void declBus      (vluint32_t code, const char* name, int arraynum, int msb, int lsb);

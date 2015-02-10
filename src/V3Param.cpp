@@ -340,6 +340,7 @@ private:
 		AstNode* nextp = ep->nextp(); //May edit list
 		ep->iterateAndNext(*this);
 		V3Const::constifyParamsEdit(ep); ep=NULL; // ep may change
+		// cppcheck-suppress redundantAssignment
 		ep = nextp;
 	    }
 	}

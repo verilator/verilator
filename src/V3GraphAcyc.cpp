@@ -47,7 +47,8 @@ protected:
 public:
 
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
-	: V3GraphVertex(graphp), m_origVertexp(origVertexp), m_onWorkList(false), m_deleted(false) {
+	: V3GraphVertex(graphp), m_origVertexp(origVertexp)
+	, m_storedRank(0), m_onWorkList(false), m_deleted(false) {
     }
     virtual ~GraphAcycVertex() {}
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
@@ -185,6 +186,7 @@ public:
     GraphAcyc(V3Graph* origGraphp, V3EdgeFuncP edgeFuncp) {
 	m_origGraphp = origGraphp;
 	m_origEdgeFuncp = edgeFuncp;
+	m_placeStep = 0;
     }
     ~GraphAcyc() {
 	for (vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin(); it != m_origEdgeDelp.end(); ++it) {

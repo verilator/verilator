@@ -1558,9 +1558,9 @@ private:
 	    string expectWhat;
 	    bool allowScope = false;
 	    bool allowVar = false;
-	    AstPackage* packagep = NULL;
 	    if (m_ds.m_dotPos == DP_PACKAGE) {
 		// {package}::{a}
+		AstPackage* packagep = NULL;
 		expectWhat = "scope/variable";
 		allowScope = true;
 		allowVar = true;

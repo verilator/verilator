@@ -545,7 +545,6 @@ class TristateVisitor : public TristateBaseVisitor {
 	    }
 
 	    AstNode* orp = NULL;
-	    AstNode* andp = NULL;
 	    AstNode* enp = NULL;
 	    AstNode* undrivenp = NULL;
 
@@ -581,7 +580,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		// now append this driver to the driver logic.
 		AstNode* ref1p = new AstVarRef(refp->fileline(), newlhsp,false);
 		AstNode* ref2p = new AstVarRef(refp->fileline(), newenp, false);
-		andp = new AstAnd(refp->fileline(), ref1p, ref2p);
+		AstNode* andp = new AstAnd(refp->fileline(), ref1p, ref2p);
 
 		// or this to the others
 		orp = (!orp) ? andp : new AstOr(refp->fileline(), orp, andp);

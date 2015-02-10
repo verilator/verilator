@@ -211,6 +211,7 @@ public:
 	m_prevLexToken = 0;
 	m_ahead = false;
 	m_aheadToken = 0;
+	// m_aheadVal not used as m_ahead = false
     }
     ~V3ParseImp();
     void parserClear();

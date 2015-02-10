@@ -98,7 +98,7 @@ class SplitLogicVertex : public SplitNodeVertex {
     uint32_t	m_splitColor;	// Copied from color() when determined
 public:
     SplitLogicVertex(V3Graph* graphp, AstNode* nodep)
-	: SplitNodeVertex(graphp,nodep) {}
+	: SplitNodeVertex(graphp,nodep), m_splitColor(0) {}
     void splitColor(uint32_t flag) { m_splitColor=flag; }
     uint32_t splitColor() const { return m_splitColor; }
     virtual ~SplitLogicVertex() {}

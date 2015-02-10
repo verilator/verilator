@@ -88,21 +88,6 @@ private:
 	return newp;
     }
 
-    AstNode* newIfCoverageOn(AstNode* nodep) {
-	// Add a internal if to check coverage is on
-	// Don't make this a AND term, as it's unlikely to need to test this.
-	AstNode* newp
-	    = new AstIf (nodep->fileline(),
-			 // If assertions are off, have constant propagation rip them out later
-			 // This allows syntax errors and such to be detected normally.
-			 (v3Global.opt.coverage()
-			  ? (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicTrue()))
-			  : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
-			 nodep, NULL);
-	newp->user1(true); // Don't assert/cover this if
-	return newp;
-    }
-
     AstNode* newFireAssert(AstNode* nodep, const string& message) {
 	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::DT_ERROR, message, NULL, NULL);
 	AstNode* bodysp = dispp;

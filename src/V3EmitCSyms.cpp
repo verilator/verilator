@@ -70,6 +70,7 @@ class EmitCSyms : EmitCBaseVisitor {
     struct CmpDpi {
 	inline bool operator () (const AstCFunc* lhsp, const AstCFunc* rhsp) const {
 	    if (lhsp->dpiImport() != rhsp->dpiImport()) {
+		// cppcheck-suppress comparisonOfFuncReturningBoolError
 		return lhsp->dpiImport() < rhsp->dpiImport();
 	    }
 	    return lhsp->name() < rhsp->name();

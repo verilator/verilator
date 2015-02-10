@@ -787,6 +787,7 @@ void vpi_put_delays(vpiHandle object, p_vpi_delay delay_p) {
 
 void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
     static VL_THREAD char outStr[1+VL_MULS_MAX_WORDS*32]; // Maximum required size is for binary string, one byte per bit plus null termination
+    // cppcheck-suppress variableScope
     static VL_THREAD int outStrSz = sizeof(outStr)-1;
     VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  vpi_get_value %p\n",object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status

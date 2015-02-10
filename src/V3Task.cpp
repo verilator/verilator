@@ -548,7 +548,7 @@ private:
 	return beginp;
     }
 
-    string dpiprotoName(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    string dpiprotoName(AstNodeFTask* nodep, AstVar* rtnvarp) const {
 	// Return fancy export-ish name for DPI function
 	// Variable names are NOT included so differences in only IO names won't matter
 	string dpiproto;
@@ -645,8 +645,6 @@ private:
     }
 
     AstCFunc* makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
-	string dpiproto = dpiprotoName(nodep,rtnvarp);
-
 	AstCFunc* dpip = new AstCFunc(nodep->fileline(),
 				      nodep->cname(),
 				      m_scopep,

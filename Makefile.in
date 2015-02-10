@@ -406,7 +406,8 @@ endif
 
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK = src/cppcheck_filtered
-CPPCHECK_FLAGS = --enable=all --inline-suppr --suppress=unusedScopedObject --suppress=cstyleCast
+CPPCHECK_FLAGS = --enable=all --inline-suppr \
+	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList
 CPPCHECK_FLAGS += --xml
 CPPCHECK_CPP = $(wildcard $(srcdir)/include/*.cpp $(srcdir)/src/*.cpp)
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))

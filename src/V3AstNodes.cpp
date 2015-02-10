@@ -918,7 +918,6 @@ void AstTypeTable::dump(ostream& str) {
 	for (DetailedMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
 	    AstBasicDType* dtypep = it->second;
 	    str<<endl;  // Newline from caller, so newline first
-	    stringstream nsstr;
 	    str<<"\t\tdetailed  ->  ";
 	    dtypep->dump(str);
 	}

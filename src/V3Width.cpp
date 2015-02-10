@@ -2872,9 +2872,9 @@ private:
 	    underp->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
 	    pushDeletep(underp); underp=NULL;
 	} else {
-	    bool warnOn = true; // Not used
 	    bool bad = widthBad(underp,nodep->findLogicBoolDType());
 	    if (bad) {
+		bool warnOn = true; // Not used
 		if (warnOn) {
 		    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 		    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
@@ -3437,11 +3437,6 @@ private:
 	    UINFO(1,"-: "<<vup->c()<<endl);
 	    nodep->v3fatalSrc("No dtype expected at statement "<<nodep->prettyTypeName());
 	}
-    }
-    bool backRequiresUnsigned(AstNode* nodep) {
-	// The spec doesn't state this, but if you have an array select where the selection
-	// index is NOT wide enough, you do not sign extend, but always zero extend.
-	return (nodep->castArraySel() || nodep->castSel());
     }
     void checkConstantOrReplace(AstNode* nodep, const string& message) {
 	// See also V3WidthSel::checkConstantOrReplace

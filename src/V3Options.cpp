@@ -587,7 +587,7 @@ string V3Options::getenvVERILATOR_ROOT() {
     string var = getenvStr("VERILATOR_ROOT","");
     if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
 	var = DEFENV_VERILATOR_ROOT;
-	setenvStr("VERILATOR_ROOT", var.c_str(), "Hardcoded at build time");
+	setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
     }
     if (var == "") {
 	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
@@ -1074,7 +1074,6 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     }
 
     string whole_file;
-    string::size_type pos;
     bool inCmt = false;
     while (!ifp->eof()) {
 	string line;
@@ -1107,7 +1106,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Split into argument list and process
     // Note we don't respect quotes.  It seems most simulators dont.
     // Woez those that expect it; we'll at least complain.
-    if ((pos=whole_file.find("\"")) != string::npos) {
+    if (whole_file.find("\"") != string::npos) {
 	fl->v3error("Double quotes in -f files cause unspecified behavior.");
     }
 
@@ -1207,7 +1206,11 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_assert = false;
     m_autoflush = false;
+    m_bboxSys = false;
+    m_bboxUnsup = false;
+    m_cdc = false;
     m_coverageLine = false;
     m_coverageToggle = false;
     m_coverageUnderscore = false;
@@ -1215,6 +1218,7 @@ V3Options::V3Options() {
     m_debugCheck = false;
     m_exe = false;
     m_ignc = false;
+    m_inhibitSim = false;
     m_l2Name = true;
     m_lintOnly = false;
     m_makeDepend = true;
@@ -1222,6 +1226,9 @@ V3Options::V3Options() {
     m_orderClockDly = true;
     m_outFormatOk = false;
     m_pinsBv = 65;
+    m_pinsScUint = false;
+    m_pinsScBigUint = false;
+    m_pinsUint8 = false;
     m_profileCFuncs = false;
     m_preprocOnly = false;
     m_preprocNoLine = false;

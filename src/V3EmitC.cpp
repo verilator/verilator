@@ -737,7 +737,6 @@ class EmitCImp : EmitCStmts {
     // METHODS
 
     void doubleOrDetect(AstChangeDet* changep, bool& gotOne) {
-	static int addDoubleOr = 10;	// Determined experimentally as best
 	if (!changep->rhsp()) {
 	    if (!gotOne) gotOne = true;
 	    else puts(" | ");
@@ -746,6 +745,7 @@ class EmitCImp : EmitCStmts {
 	else {
 	    AstNode* lhsp = changep->lhsp();
 	    AstNode* rhsp = changep->rhsp();
+	    static int addDoubleOr = 10;	// Determined experimentally as best
 	    if (!lhsp->castVarRef() && !lhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
 	    if (!rhsp->castVarRef() && !rhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
 	    for (int word=0; word<changep->lhsp()->widthWords(); word++) {
@@ -2103,7 +2103,6 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     m_modp = modp;
     m_slow = slow;
     m_fast = fast;
-    string filenameNoExt = v3Global.opt.makeDir()+"/"+ modClassName(modp)+(m_fast ? "" : "__Slow");
 
     if (debug()>=5) {
 	UINFO(0,"  Emitting "<<modClassName(modp)<<endl);

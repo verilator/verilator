@@ -74,7 +74,7 @@ private:
     // METHODS
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
     bool nfaState(V3GraphVertex* vertexp) { return vertexp->color()==0; }
-    bool dfaState(V3GraphVertex* vertexp) { return vertexp->color()==1; }
+    //bool dfaState(V3GraphVertex* vertexp) { return vertexp->color()==1; }
 
     void nextStep() { m_step++; }
 
