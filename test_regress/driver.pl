@@ -52,6 +52,7 @@ my $opt_gdbsim;
 my $opt_ghdl;
 my $opt_iv;
 my $opt_jobs = 1;
+my $opt_ms;
 my $opt_nc;
 my $opt_optimize;
 my $opt_site;
@@ -79,6 +80,7 @@ if (! GetOptions (
 		  "help"	=> \&usage,
 		  "iverilog!"	=> \$opt_iv,
 		  "j=i"		=> \$opt_jobs,
+		  "ms!"		=> \$opt_ms,
 		  "nc!"		=> \$opt_nc,
 		  "optimize:s"	=> \$opt_optimize,
 		  "site!"	=> \$opt_site,
@@ -102,7 +104,7 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_atsim && !$opt_ghdl && !$opt_iv && !$opt_vcs && !$opt_nc && !$opt_vlt) {
+if (!$opt_atsim && !$opt_ghdl && !$opt_iv && !$opt_vcs && !$opt_ms && !$opt_nc && !$opt_vlt) {
     $opt_vlt = 1;
 }
 
@@ -135,6 +137,7 @@ foreach my $testpl (@opt_tests) {
     one_test(pl_filename => $testpl, atsim=>1) if $opt_atsim;
     one_test(pl_filename => $testpl, ghdl=>1) if $opt_ghdl;
     one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
+    one_test(pl_filename => $testpl, ms=>1) if $opt_ms;
     one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
     one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
     one_test(pl_filename => $testpl, vlt=>1, 'v3'=>1) if $opt_vlt;
@@ -301,6 +304,7 @@ sub new {
     $self->{mode} ||= "vcs" if $self->{vcs};
     $self->{mode} ||= "vlt" if $self->{vlt};
     $self->{mode} ||= "nc" if $self->{nc};
+    $self->{mode} ||= "ms" if $self->{ms};
     $self->{mode} ||= "iv" if $self->{iv};
 
     # For backward compatibility, the verilator tests have no prefix
@@ -376,6 +380,11 @@ sub new {
 				  .($opt_trace ? " +access+r":"")))],
 	nc_flags2 => [],  # Overridden in some sim files
 	nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
+	# ModelSim
+	ms => 0,
+	ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
+	ms_flags2 => [],  # Overridden in some sim files
+	ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
 	# Verilator
 	vlt => 0,
 	'v3' => 0,
@@ -616,6 +625,21 @@ sub compile {
 			  @more_args
 			  ]);
     }
+    elsif ($param{ms}) {
+	$self->_make_top();
+	$self->_run(logfile=>"$self->{obj_dir}/ms_compile.log",
+		    fails=>$param{fails},
+		    cmd=>[("vlib $self->{obj_dir}/work && "),
+                          ($ENV{VERILATOR_MODELSIM}||"vlog"),
+			  @{$param{ms_flags}},
+			  @{$param{ms_flags2}},
+			  @{$param{v_flags}},
+			  @{$param{v_flags2}},
+			  $param{top_filename},
+			  $param{top_shell_filename},
+			  @{$param{v_other_filenames}}
+			  ]);
+    }
     elsif ($param{iv}) {
 	$self->_make_top();
 	my @cmd = (($ENV{VERILATOR_IVERILOG}||"iverilog"),
@@ -730,6 +754,18 @@ sub execute {
 		    cmd=> \@cmd,
 		    %param,
 		    expect=>$param{iv_run_expect},	# non-verilator expect isn't the same
+		    );
+    }
+    elsif ($param{ms}) {
+	$self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
+		    fails=>$param{fails},
+		    cmd=>["echo q | ".$run_env.($ENV{VERILATOR_MODELSIM}||"vsim"),
+			  @{$param{ms_run_flags}},
+			  @{$param{all_run_flags}},
+                          (" top")
+		          ],
+		    %param,
+		    expect=>$param{ms_run_expect},	# non-verilator expect isn't the same
 		    );
     }
     elsif ($param{nc}) {
@@ -1661,6 +1697,15 @@ Set to 0 to disable the automatic creation of a top level shell to run the
 executable (for example when a hand-written test wrapper is provided using
 C<--exe>).
 
+=item ms_flags
+
+=item ms_flags2
+
+=item ms_run_flags
+
+The equivalent of C<v_flags>, C<v_flags2> and C<all_run_flags>, but only
+for use with the ModelSim simulator.
+
 =item nc_flags
 
 =item nc_flags2
@@ -1691,7 +1736,8 @@ A list of standard Verilog simulator flags to be passed to the simulator
 compiler (Verilator or one of the other simulators). Unlike v_flags, these
 options may be overridden in some simulation files.
 
-Similar sets of flags exist for atsim, GHDL, Cadence NC and Synopsys VCS.
+Similar sets of flags exist for atsim, GHDL, Cadence NC, Modelsim and
+Synopsys VCS.
 
 =item vcs_flags
 
@@ -1842,6 +1888,10 @@ Run using Icarus Verilog simulator.
 Run number of parallel tests, or 0 to determine the count based on the
 number of cores installed.  Requires Perl's Parallel::Forker package.
 
+=item --ms
+
+Run using ModelSim simulator.
+
 =item --nc
 
 Run using Cadence NC-Verilog simulator.
@@ -1901,6 +1951,10 @@ Command to use to invoke GHDL.
 =item VERILATOR_IVERILOG
 
 Command to use to invoke Icarus Verilog.
+
+=item VERILATOR_MODELSIM
+
+Command to use to invoke ModelSim.
 
 =item VERILATOR_NCVERILOG
 
