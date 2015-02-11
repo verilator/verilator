@@ -62,6 +62,8 @@ CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CPPFLAGS += @CPPFLAGS@
 LDFLAGS += @LDFLAGS@
 EXEEXT = @EXEEXT@
+CFG_CXXFLAGS_SRC = @CFG_CXXFLAGS_SRC@
+CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 
 #### End of system configuration section. ####
 
@@ -85,7 +87,8 @@ endif
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
 
 # -lfl not needed as Flex invoked with %nowrap option
-LIBS = -lm
+# -lstdc++ needed for clang, believed harmless with gcc
+LIBS = -lm -lstdc++
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
@@ -94,11 +97,11 @@ CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
-CPPFLAGS += -W -Wall -Wno-unused-parameter -Wno-char-subscripts -Werror
+CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_SRC) -Werror
 #CPPFLAGS += -pedantic-errors
 endif
 CPPFLAGSWALL   = $(CPPFLAGS)
-CPPFLAGSNOWALL = $(CPPFLAGS) -Wno-unused
+CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
 
 ifneq ($(SYSTEMPERL),)	# Intuit SYSTEMPERL_INCLUDE as it's new
  SYSTEMPERL_INCLUDE ?= $(SYSTEMPERL)/src
@@ -277,16 +280,16 @@ V3Number_test: V3Number_test.o
 	$(OBJCACHE) ${CC}  ${CPPFLAGSWALL} -c $<
 
 V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
 
 V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
 
 V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
 
 V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
-	$(OBJCACHE) ${CXX} ${CPPFLAGSNOWALL} -c $<
+	$(OBJCACHE) ${CXX} ${CPPFLAGSPARSER} -c $<
 
 #### Generated files
 

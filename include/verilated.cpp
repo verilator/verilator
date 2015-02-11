@@ -909,7 +909,7 @@ IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) {
     va_end(ap);
     return got;
 }
-IData VL_SSCANF_INX(int lbits, const string& ld, const char* formatp, ...) {
+IData VL_SSCANF_INX(int, const string& ld, const char* formatp, ...) {
     va_list ap;
     va_start(ap,formatp);
     IData got = _vl_vsscanf(NULL, ld.length()*8, NULL, ld, formatp, ap);

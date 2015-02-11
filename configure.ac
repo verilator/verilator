@@ -107,32 +107,46 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
    [# _MY_CXX_CHECK_OPT(flag) -- Check if compiler supports specific options
     ACO_SAVE_CXXFLAGS="$CXXFLAGS"
     # -Werror needed otherwise unknown -Wno-div-by-zero won't report problems
-    CXXFLAGS="$CXXFLAGS $1 -Werror"
-    AC_MSG_CHECKING([whether $CXX accepts $1])
+    CXXFLAGS="$CXXFLAGS $2 -Werror"
+    AC_MSG_CHECKING([whether $CXX accepts $2])
     AC_COMPILE_IFELSE(
          [AC_LANG_PROGRAM([],[])],
 	 [_my_result=yes],
 	 [_my_result=no])
     AC_MSG_RESULT($_my_result)
     if test "$_my_result" = "yes" ; then
-       CFG_CXXFLAGS_NO_UNUSED="$CFG_CXXFLAGS_NO_UNUSED $1"
+       $1="$$1 $2"
     fi
     CXXFLAGS="$ACO_SAVE_CXXFLAGS"
    ])# _MY_CXX_CHECK_OPT
 
+# Flags for compiling Verilator internals including parser
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-char-subscripts)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
+AC_SUBST(CFG_CXXFLAGS_SRC)
+
+# Flags for compiling Verilator parser
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-parentheses-equality)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-null-conversion)
+AC_SUBST(CFG_CXXFLAGS_PARSER)
+
+# Flags for Verilated makefile
 # For example, -Wno-div-by-zero isn't in 4.1.2
-_MY_CXX_CHECK_OPT(-Wno-char-subscripts)
-_MY_CXX_CHECK_OPT(-Wno-parentheses-equality)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-char-subscripts)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-parentheses-equality)
 # Random code often does / 0.  Unfortunately VL_DIV_I(0,0) will warn
 # without this flag, even though there's a conditional to prevent the divide.
 # We still don't add no-div-by-zero as it throws message to stdout, though doesn't die.
 #_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
-_MY_CXX_CHECK_OPT(-Wno-sign-compare)
-_MY_CXX_CHECK_OPT(-Wno-uninitialized)
-_MY_CXX_CHECK_OPT(-Wno-unused-but-set-variable)
-_MY_CXX_CHECK_OPT(-Wno-unused-parameter)
-_MY_CXX_CHECK_OPT(-Wno-unused-variable)
-_MY_CXX_CHECK_OPT(-fbracket-depth=4096)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-sign-compare)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-uninitialized)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-but-set-variable)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-parameter)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-variable)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-fbracket-depth=4096)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Qunused-arguments)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.

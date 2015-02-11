@@ -1972,6 +1972,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (v3Global.opt.trace() && !optSystemPerl()) {
 	if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
 	puts("void trace (VerilatedVcdC* tfp, int levels, int options=0);\n");
+	if (modp->isTop() && optSystemC()) {
+	    puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
+	    puts("virtual void trace (sc_trace_file* tfp) const { ::sc_core::sc_module::trace(tfp); }\n");
+	}
     }
 
     puts("\n// USER METHODS\n");

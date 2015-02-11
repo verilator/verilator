@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix slice connections of arrays to ports, bug880. [Varun Koyyalagunta]
 
+****  Fix clang compile warnings.
+
 
 * Verilator 3.868 2014-12-20
 

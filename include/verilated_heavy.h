@@ -51,7 +51,7 @@ inline string VL_CVT_PACK_STR_NI(IData lhs) {
 inline string VL_CONCATN_NNN(const string& lhs, const string& rhs) {
     return lhs+rhs;
 }
-inline string VL_REPLICATEN_NNQ(int,int,int rbits, const string& lhs, IData rep) {
+inline string VL_REPLICATEN_NNQ(int,int,int, const string& lhs, IData rep) {
     string out; out.reserve(lhs.length() * rep);
     for (unsigned times=0; times<rep; times++) out += lhs;
     return out;
