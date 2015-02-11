@@ -8,13 +8,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 verilator_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
-q{%Error: t/t_inst_misarray_bad.v:\d+: Illegal assignment of constant to unpacked array
-%Error: Exiting due to.*},
-	 );
-
+    v_flags2 => ["--lint-only"],
+    fails=>0,
+    verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
+    );
 
 ok(1);
 1;

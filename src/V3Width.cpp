@@ -2072,7 +2072,7 @@ private:
 		// TODO Simple dtype checking, should be a more general check
 		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
-		if (loArray != hiArray) {
+		if (loArray != hiArray && pinwidth != conwidth) {
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
 				   <<" mismatch between port which is"<<(hiArray?"":" not")<<" an array,"
 				   <<" and expression which is"<<(loArray?"":" not")<<" an array.");

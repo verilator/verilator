@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix UNOPTFLAT change detect on multidim arrays, bug872. [Andrew Bardsley]
 
+****  Fix slice connections of arrays to ports, bug880. [Varun Koyyalagunta]
+
 
 * Verilator 3.868 2014-12-20
 
