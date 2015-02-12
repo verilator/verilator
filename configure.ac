@@ -111,7 +111,12 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
     AC_MSG_CHECKING([whether $CXX accepts $2])
     AC_COMPILE_IFELSE(
          [AC_LANG_PROGRAM([],[])],
-	 [_my_result=yes],
+	 [_my_result=yes
+	  if test -s conftest.err; then
+	    if grep -e "$2" conftest.err >/dev/null; then
+	      _my_result=no
+	    fi
+	  fi],
 	 [_my_result=no])
     AC_MSG_RESULT($_my_result)
     if test "$_my_result" = "yes" ; then
