@@ -8,9 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 fails=>$Self->{v3},
+    fails=>$Self->{v3},
+    # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
+    # However we no longer gate optimize this
 	 expect=>
-'%Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
+'%Warning-UNOPT: t/t_order_wireloop.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: bar
 ',
 	 );
 

@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <vector>
 #include <list>
+#include <map>
 
 #include "V3Global.h"
 #include "V3Gate.h"
@@ -346,6 +347,7 @@ private:
     }
 
     void optimizeSignals(bool allowMultiIn);
+    bool elimLogicOkOutputs(GateLogicVertex* consumeVertexp, const GateOkVisitor& okVisitor);
     void optimizeElimVar(AstVarScope* varscp, AstNode* logicp, AstNode* consumerp);
     void warnSignals();
     void consumedMark();
@@ -591,45 +593,80 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 			if (debug()>=5) logicp->dumpTree(cout,"\telimVar:  ");
 			if (debug()>=5) substp->dumpTree(cout,"\t  subst:  ");
 			++m_statSigs;
-			while (V3GraphEdge* edgep = vvertexp->outBeginp()) {
+			bool removedAllUsages = true;
+			for (V3GraphEdge* edgep = vvertexp->outBeginp();
+			     edgep; ) {
 			    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(edgep->top());
 			    AstNode* consumerp = consumeVertexp->nodep();
-			    optimizeElimVar(vvertexp->varScp(), substp, consumerp);
-			    // If the new replacement referred to a signal,
-			    // Correct the graph to point to this new generating variable
-			    const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
-			    for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
-				 it != rhsVarRefs.end(); ++it) {
-				AstVarScope* newvarscp = (*it)->varScopep();
-				UINFO(9,"         Point-to-new vertex "<<newvarscp<<endl);
-				GateVarVertex* varvertexp = makeVarVertex(newvarscp);
-				new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
-				// Propagate clock attribute onto generating node
-				varvertexp->propagateAttrClocksFrom(vvertexp);
+			    if (!elimLogicOkOutputs(consumeVertexp, okVisitor/*ref*/)) {
+				// Cannot optimize this replacement
+				removedAllUsages = false;
+				edgep = edgep->outNextp();
+			    } else {
+				optimizeElimVar(vvertexp->varScp(), substp, consumerp);
+				// If the new replacement referred to a signal,
+				// Correct the graph to point to this new generating variable
+				const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
+				for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
+				     it != rhsVarRefs.end(); ++it) {
+				    AstVarScope* newvarscp = (*it)->varScopep();
+				    UINFO(9,"         Point-to-new vertex "<<newvarscp<<endl);
+				    GateVarVertex* varvertexp = makeVarVertex(newvarscp);
+				    new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
+				    // Propagate clock attribute onto generating node
+				    varvertexp->propagateAttrClocksFrom(vvertexp);
+				}
+				// Remove the edge
+				edgep->unlinkDelete(); edgep=NULL;
+				++m_statRefs;
+				edgep = vvertexp->outBeginp();
 			    }
-			    // Remove the edge
-			    edgep->unlinkDelete(); edgep=NULL;
-			    ++m_statRefs;
 			}
-			// Remove input links
-			while (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-			    edgep->unlinkDelete(); edgep=NULL;
+			if (removedAllUsages) {
+			    // Remove input links
+			    while (V3GraphEdge* edgep = vvertexp->inBeginp()) {
+				edgep->unlinkDelete(); edgep=NULL;
+			    }
+			    // Clone tree so we remember it for tracing, and keep the pointer
+			    // to the "ALWAYS" part of the tree as part of this statement
+			    // That way if a later signal optimization that retained a pointer to the always
+			    // can optimize it further
+			    logicp->unlinkFrBack();
+			    vvertexp->varScp()->valuep(logicp);
+			    logicp = NULL;
+			    // Mark the vertex so we don't mark it as being unconsumed in the next step
+			    vvertexp->user(true);
+			    logicVertexp->user(true);
 			}
-			// Clone tree so we remember it for tracing, and keep the pointer
-			// to the "ALWAYS" part of the tree as part of this statement
-			// That way if a later signal optimization that retained a pointer to the always
-			// can optimize it further
-			logicp->unlinkFrBack();
-			vvertexp->varScp()->valuep(logicp);
-			logicp = NULL;
-			// Mark the vertex so we don't mark it as being unconsumed in the next step
-			vvertexp->user(true);
-			logicVertexp->user(true);
 		    }
 		}
 	    }
 	}
     }
+}
+
+bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp, const GateOkVisitor& okVisitor) {
+    // Return true if can optimize
+    // Return false if the consuming logic has an output signal that the replacement logic has as an input
+    typedef set<AstVarScope*> VarScopeSet;
+    // Use map to find duplicates between two lists
+    VarScopeSet varscopes;
+    // Replacement logic usually has shorter input list, so faster to build list based on it
+    const GateVarRefList& rhsVarRefs = okVisitor.rhsVarRefs();
+    for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
+	 it != rhsVarRefs.end(); ++it) {
+	AstVarScope* vscp = (*it)->varScopep();
+	if (varscopes.find(vscp) == varscopes.end()) varscopes.insert(vscp);
+    }
+    for (V3GraphEdge* edgep = consumeVertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+	GateVarVertex* consVVertexp = dynamic_cast<GateVarVertex*>(edgep->top());
+	AstVarScope* vscp = consVVertexp->varScp();
+	if (varscopes.find(vscp) != varscopes.end()) {
+	    UINFO(9,"    Block-unopt, insertion generates input vscp "<<vscp<<endl);
+	    return false;
+	}
+    }
+    return true;
 }
 
 void GateVisitor::replaceAssigns() {

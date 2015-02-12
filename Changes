@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix slice connections of arrays to ports, bug880. [Varun Koyyalagunta]
 
+****  Fix mis-optimizing gate assignments in unopt blocks, bug881. [Mike Thyer]
+
 ****  Fix clang compile warnings.
 
 
