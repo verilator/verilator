@@ -25,6 +25,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix mis-optimizing gate assignments in unopt blocks, bug881. [Mike Thyer]
 
+****  Fix sign extension of pattern members, bug882. [Iztok Jeras]
+
 ****  Fix clang compile warnings.
 
 

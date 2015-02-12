@@ -1741,7 +1741,7 @@ private:
 	if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
 	// Need to propagate assignment type downwards, even on prelim
 	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
-	iterateCheck(nodep,"Pattern value",nodep->lhssp(),CONTEXT,FINAL,vdtypep,EXTEND_EXP);
+	iterateCheck(nodep,"Pattern value",nodep->lhssp(),CONTEXT,FINAL,vdtypep,EXTEND_LHS);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
 	uint32_t times = 1;
