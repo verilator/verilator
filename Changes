@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.869 devel
+* Verilator 3.870 2015-02-12
 
 ****  Suppress COMBDLY when inside always_latch, bug864. [Iztok Jeras]
 
