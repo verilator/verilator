@@ -2013,7 +2013,8 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP(*$1,$2);} instnameList ';'
-			{ $$ = $4; GRAMMARP->m_impliedDecl=false;}
+			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
+			  if (GRAMMARP->m_instParamp) { GRAMMARP->m_instParamp->deleteTree(); GRAMMARP->m_instParamp = NULL; } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
 			{ VARRESET_NONLIST(AstVarType::IFACEREF);
@@ -2038,9 +2039,10 @@ instnameList<nodep>:
 	;
 
 instnameParen<cellp>:
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp,$2);
+	//			// Must clone m_instParamp as may be comma'ed list of instances
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp->cloneTree(true),$2);
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp,$2);
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp->cloneTree(true),$2);
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
 	//			// Adding above and switching to the Verilog-Perl syntax

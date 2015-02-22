@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.871 devel
 
+****  Fix comma-instantiations with parameters, bug884. [Franck Jullien]
+
 
 * Verilator 3.870 2015-02-12
 
