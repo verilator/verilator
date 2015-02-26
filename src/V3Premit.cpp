@@ -124,7 +124,7 @@ private:
 
     bool assignNoTemp(AstNodeAssign* nodep) {
 	return (nodep->lhsp()->castVarRef()
-		&& !nodep->lhsp()->castVarRef()->varp()->isSc()
+		&& !AstVar::scVarRecurse(nodep->lhsp())
 		&& nodep->rhsp()->castConst());
     }
     void checkNode(AstNode* nodep) {

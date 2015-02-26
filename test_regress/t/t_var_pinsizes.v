@@ -8,9 +8,9 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   o1, o8, o16, o32, o64, o65, o128, o513, obv1, obv16,
+   o1, o8, o16, o32, o64, o65, o128, o513, o1a2, o94a3, obv1, obv16,
    // Inputs
-   clk, i1, i8, i16, i32, i64, i65, i128, i513, ibv1, ibv16
+   clk, i1, i8, i16, i32, i64, i65, i128, i513, i1a2, i94a3, ibv1, ibv16
    );
 
    input clk;
@@ -23,6 +23,9 @@ module t (/*AUTOARG*/
    input [64:0]	 i65;
    input [127:0] i128;
    input [512:0] i513;
+   input 	 i1a2 [1:0];
+   input [93:0]  i94a3 [2:0];
+   
 
    output 	  o1;
    output [7:0]   o8;
@@ -32,6 +35,8 @@ module t (/*AUTOARG*/
    output [64:0]  o65;
    output [127:0] o128;
    output [512:0] o513;
+   output	  o1a2 [1:0];
+   output [93:0]  o94a3 [2:0];
 
    input [0:0] 	 ibv1 /*verilator sc_bv*/;
    input [15:0]  ibv16 /*verilator sc_bv*/;
@@ -50,6 +55,8 @@ module t (/*AUTOARG*/
       o513 <= i513;
       obv1 <= ibv1;
       obv16 <= ibv16;
+      o1a2 <= i1a2;
+      o94a3 <= i94a3;
    end
 
 endmodule

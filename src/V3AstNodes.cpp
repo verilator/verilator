@@ -350,6 +350,27 @@ string AstVar::scType() const {
     }
 }
 
+AstVar* AstVar::scVarRecurse(AstNode* nodep) {
+    // See if this is a SC assignment; if so return that type
+    // Historically sc variables are identified by a variable
+    // attribute. TODO it would better be a data type attribute.
+    if (AstVar* anodep = nodep->castVar()) {
+	if (anodep->isSc()) return anodep;
+	else return NULL;
+    }
+    else if (nodep->castVarRef()) {
+	if (nodep->castVarRef()->varp()->isSc()) return nodep->castVarRef()->varp();
+	else return NULL;
+    }
+    else if (nodep->castArraySel()) {
+	if (nodep->op1p()) if (AstVar* p = scVarRecurse(nodep->op1p())) return p;
+	if (nodep->op2p()) if (AstVar* p = scVarRecurse(nodep->op2p())) return p;
+	if (nodep->op3p()) if (AstVar* p = scVarRecurse(nodep->op3p())) return p;
+	if (nodep->op4p()) if (AstVar* p = scVarRecurse(nodep->op4p())) return p;
+    }
+    return NULL;
+}
+
 AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     // dimension passed from AstArraySel::dimension
     // Dimension 0 means the VAR itself, 1 is the closest SEL to the AstVar,

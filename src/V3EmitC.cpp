@@ -83,6 +83,7 @@ public:
 	      : nodep->isQuad() ? "Q" : "I");
     }
     void emitScIQW(AstVar* nodep) {
+	if (!nodep->isSc()) nodep->v3fatalSrc("emitting SystemC operator on non-SC variable");
 	puts (nodep->isScBigUint() ? "SB"
 	      : nodep->isScUint()  ? "SU"
 	      : nodep->isScBv()    ? "SW"
@@ -155,19 +156,17 @@ public:
 		selp->lsbp()->iterateAndNext(*this); puts(", ");
 		selp->fromp()->iterateAndNext(*this); puts(", ");
 	    }
-	} else if (nodep->lhsp()->castVarRef()
-		   && nodep->lhsp()->castVarRef()->varp()->isSc()) {
+	} else if (AstVar* varp = AstVar::scVarRecurse(nodep->lhsp())) {
 	    putbs("VL_ASSIGN_"); 	// Set a systemC variable
-	    emitScIQW(nodep->lhsp()->castVarRef()->varp());
+	    emitScIQW(varp);
 	    emitIQW(nodep);
 	    puts("(");
 	    puts(cvtToStr(nodep->widthMin())+",");
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
-	} else if (nodep->rhsp()->castVarRef()
-		   && nodep->rhsp()->castVarRef()->varp()->isSc()) {
+	} else if (AstVar* varp = AstVar::scVarRecurse(nodep->rhsp())) {
 	    putbs("VL_ASSIGN_"); 	// Get a systemC variable
 	    emitIQW(nodep);
-	    emitScIQW(nodep->rhsp()->castVarRef()->varp());
+	    emitScIQW(varp);
 	    puts("(");
 	    puts(cvtToStr(nodep->widthMin())+",");
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");

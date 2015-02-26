@@ -1132,6 +1132,7 @@ public:
 	if (varType()==AstVarType::INOUT) m_varType = AstVarType::TRIWIRE;
 	if (varType()==AstVarType::INPUT || varType()==AstVarType::OUTPUT) m_varType = AstVarType::WIRE;
     }
+    static AstVar* scVarRecurse(AstNode* nodep);
 };
 
 class AstDefParam : public AstNode {

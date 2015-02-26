@@ -874,16 +874,13 @@ private:
 	nodep->iterateChildren(*this);
 	bool did = false;
 	if (nodep->isWide() && ((nodep->lhsp()->castVarRef()
-				 && !nodep->lhsp()->castVarRef()->varp()->isSc())
-				|| nodep->lhsp()->castArraySel())) {
+				|| nodep->lhsp()->castArraySel()))
+	    && !AstVar::scVarRecurse(nodep->lhsp())	// Need special function for SC
+	    && !AstVar::scVarRecurse(nodep->rhsp())) {
 	    if (AstConst* rhsp = nodep->rhsp()->castConst()) {
 		did = expandWide(nodep,rhsp);
 	    } else if (AstVarRef* rhsp = nodep->rhsp()->castVarRef()) {
-		if (rhsp->varp()->isSc()) {
-		    // Still need special access function
-		} else {
-		    did = expandWide(nodep,rhsp);
-		}
+		did = expandWide(nodep,rhsp);
 	    } else if (AstSel* rhsp = nodep->rhsp()->castSel()) {
 		did = expandWide(nodep,rhsp);
 	    } else if (AstArraySel* rhsp = nodep->rhsp()->castArraySel()) {

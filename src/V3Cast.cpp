@@ -149,6 +149,7 @@ private:
 	if (!nodep->lvalue()
 	    && !nodep->backp()->castCCast()
 	    && nodep->backp()->castNodeMath()
+	    && !nodep->backp()->castArraySel()
 	    && nodep->backp()->width()
 	    && castSize(nodep) != castSize(nodep->varp())) {
 	    // Cast vars to IData first, else below has upper bits wrongly set
