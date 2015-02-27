@@ -36,6 +36,7 @@
 
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3Os.h"
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3ParseImp.h"
@@ -91,7 +92,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
 			   const string& errmsg) {  // "" for no error, make fake node
-    string modname = V3Options::filenameNonExt(modfilename);
+    string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2,__FUNCTION__<<": "<<modname<<(inLibrary?" [LIB]":"")<<endl);
     m_fileline = new FileLine(fileline);

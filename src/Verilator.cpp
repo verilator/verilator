@@ -68,6 +68,7 @@
 #include "V3Localize.h"
 #include "V3Name.h"
 #include "V3Order.h"
+#include "V3Os.h"
 #include "V3Param.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
@@ -660,9 +661,9 @@ int main(int argc, char** argv, char** env) {
     //--FRONTEND------------------
 
     // Cleanup
-    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.tree");
-    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.dot");
-    V3Options::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.txt");
+    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.tree");
+    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.dot");
+    V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.txt");
 
     // Read first filename
     v3Global.readFiles();

@@ -42,6 +42,7 @@ private:
     VlcSources	m_sources;	//< List of all source files to annotate
 
     // METHODS
+    void createDir(const string& dirname);
     void annotateCalc();
     void annotateCalcNeeded();
     void annotateOutputFiles(const string& dirname);

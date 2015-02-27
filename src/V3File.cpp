@@ -40,6 +40,7 @@
 
 #include "V3Global.h"
 #include "V3File.h"
+#include "V3Os.h"
 #include "V3PreShell.h"
 #include "V3Ast.h"
 
@@ -259,19 +260,11 @@ bool V3File::checkTimes(const string& filename, const string& cmdline) {
     return dependImp.checkTimes(filename, cmdline);
 }
 
-void V3File::createDir(const string& dirname) {
-#ifndef _WIN32
-    mkdir(dirname.c_str(), 0777);
-#else
-    mkdir(dirname.c_str());
-#endif
-}
-
 void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {
 	created = true;
-	createDir(v3Global.opt.makeDir());
+	V3Os::createDir(v3Global.opt.makeDir());
     }
 }
 

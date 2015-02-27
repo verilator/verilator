@@ -18,8 +18,8 @@
 //
 //*************************************************************************
 
-// Cheat for speed and compile .cpp files into one object
 #include "V3Error.h"
+#include "V3Os.h"
 #include "VlcOptions.h"
 #include "VlcTop.h"
 
@@ -194,12 +194,12 @@ void VlcTop::annotateCalcNeeded() {
 
 void VlcTop::annotateOutputFiles(const string& dirname) {
     // Create if uncreated, ignore errors
-    mkdir(dirname.c_str(), 0777);
+    V3Os::createDir(dirname);
     for (VlcSources::NameMap::iterator sit=m_sources.begin(); sit!=m_sources.end(); ++sit) {
 	VlcSource& source = sit->second;
 	if (!source.needed()) continue;
 	string filename = source.name();
-	string outfilename = dirname+"/"+VlcOptions::filenameNonDir(filename);
+	string outfilename = dirname+"/"+V3Os::filenameNonDir(filename);
 
 	UINFO(1,"annotateOutputFile "<<filename<<" -> "<<outfilename<<endl);
 

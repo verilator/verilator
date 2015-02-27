@@ -77,9 +77,6 @@ public:
     
     // METHODS (from main)
     static string version();
-
-    // METHODS (file searching)
-    static string filenameNonDir(const string& filename);
 };
 
 //######################################################################

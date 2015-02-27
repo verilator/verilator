@@ -21,6 +21,8 @@
 // Cheat for speed and compile .cpp files into one object
 #define _V3ERROR_NO_GLOBAL_ 1
 #include "V3Error.cpp"
+#include "V3String.cpp"
+#include "V3Os.cpp"
 #include "VlcTop.cpp"
 
 #include "VlcOptions.h"
@@ -128,19 +130,6 @@ void VlcOptions::showVersion(bool verbose) {
 
     cout <<endl;
     cout << "See http://www.veripool.org/verilator for documentation\n";
-}
-
-//######################################################################
-// File searching
-// (TODO: Make a V3Os with these functions and share with Verilator)
-
-string VlcOptions::filenameNonDir (const string& filename) {
-    string::size_type pos;
-    if ((pos = filename.rfind("/")) != string::npos) {
-	return filename.substr(pos+1);
-    } else {
-	return filename;
-    }
 }
 
 //######################################################################

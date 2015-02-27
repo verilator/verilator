@@ -36,6 +36,7 @@
 
 #include "V3Global.h"
 #include "V3String.h"
+#include "V3Os.h"
 #include "V3Options.h"
 #include "V3Error.h"
 #include "V3File.h"
@@ -197,83 +198,6 @@ V3LangCode::V3LangCode (const char* textp) {
 //######################################################################
 // File searching
 
-string V3Options::filenameFromDirBase (const string& dir, const string& basename) {
-    // Don't return ./{filename} because if filename was absolute, that makes it relative
-    if (dir == ".") return basename;
-    else return dir+"/"+basename;
-}
-
-string V3Options::filenameDir (const string& filename) {
-    string::size_type pos;
-    if ((pos = filename.rfind("/")) != string::npos) {
-	return filename.substr(0,pos);
-    } else {
-	return ".";
-    }
-}
-
-string V3Options::filenameNonDir (const string& filename) {
-    string::size_type pos;
-    if ((pos = filename.rfind("/")) != string::npos) {
-	return filename.substr(pos+1);
-    } else {
-	return filename;
-    }
-}
-
-string V3Options::filenameNonExt (const string& filename) {
-    string base = filenameNonDir(filename);
-    string::size_type pos;
-    if ((pos = base.find(".")) != string::npos) {
-	base.erase(pos);
-    }
-    return base;
-}
-
-string V3Options::filenameSubstitute (const string& filename) {
-    string out;
-    enum { NONE, PAREN, CURLY } brackets = NONE;
-    for (string::size_type pos = 0; pos < filename.length(); ++pos) {
-        if ((filename[pos] == '$') && (pos+1 < filename.length())) {
-	    switch (filename[pos+1]) {
-	        case '{': brackets = CURLY; break;
-	        case '(': brackets = PAREN; break;
-	        default: brackets = NONE; break;
-	    }
-	    if (brackets != NONE) pos = pos+1;
-	    string::size_type endpos = pos+1;
-	    while (((endpos+1) < filename.length()) &&
-		   (((brackets==NONE) && (isalnum(filename[endpos+1]) || filename[endpos+1]=='_')) ||
-		    ((brackets==CURLY) && (filename[endpos+1]!='}')) ||
-		    ((brackets==PAREN) && (filename[endpos+1]!=')'))))
-		++endpos;
-	    // Catch bracket errors
-	    if (((brackets==CURLY) && (filename[endpos+1]!='}')) ||
-		((brackets==PAREN) && (filename[endpos+1]!=')'))) {
-	      v3fatal("Unmatched brackets in variable substitution in file: "+filename);
-	    }
-	    string envvar = filename.substr(pos+1,endpos-pos);
-	    const char* envvalue = NULL;
-	    if (envvar != "") envvalue = getenv(envvar.c_str());
-	    if (envvalue) {
-		out += envvalue;
-		if (brackets==NONE) pos = endpos;
-		else pos = endpos+1;
-	    } else {
-		out += filename[pos];  // *pos == '$'
-	    }
-	} else {
-	    out += filename[pos];
-	}
-    }
-    return out;
-
-}
-
-bool V3Options::filenameIsRel(const string& filename) {
-    return (filename.length()>0 && filename[0] != '/');
-}
-
 bool V3Options::fileStatDir(const string& filename) {
     struct stat	sstat;		// Stat information
     int err = stat(filename.c_str(), &sstat);
@@ -306,8 +230,8 @@ string V3Options::fileExists (const string& filename) {
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
 
-    string dir = filenameDir(filename);
-    string basename = filenameNonDir(filename);
+    string dir = V3Os::filenameDir(filename);
+    string basename = V3Os::filenameNonDir(filename);
 
     V3OptionsImp::DirMap::iterator diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
@@ -332,14 +256,14 @@ string V3Options::fileExists (const string& filename) {
 	return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    string filenameOut = filenameFromDirBase (dir, basename);
+    string filenameOut = V3Os::filenameFromDirBase (dir, basename);
     if (!fileStatNormal(filenameOut)) return "";   // Directory
     return filenameOut;
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
     for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
-	string fn = filenameFromDirBase(dirname, modname+*extIter);
+	string fn = V3Os::filenameFromDirBase(dirname, modname+*extIter);
 	string exists = fileExists(fn);
 	if (exists!="") {
 	    // Strip ./, it just looks ugly
@@ -385,14 +309,14 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 	for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
 	     dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
 	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
-		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
+		string fn = V3Os::filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
 	}
 	for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
 	     dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
 	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
-		string fn = filenameFromDirBase(*dirIter,modname+*extIter);
+		string fn = V3Os::filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
 	}
@@ -404,7 +328,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 //! If we recognize the extension, use its language, otherwise, use the
 //! default language.
 V3LangCode V3Options::fileLanguage(const string &filename) {
-    string ext = filenameNonDir(filename);
+    string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
     if ((pos = ext.rfind(".")) != string::npos) {
 	ext.erase(0, pos + 1);
@@ -417,63 +341,27 @@ V3LangCode V3Options::fileLanguage(const string &filename) {
 }
 
 
-void V3Options::unlinkRegexp(const string& dir, const string& regexp) {
-    if (DIR* dirp = opendir(dir.c_str())) {
-	while (struct dirent* direntp = readdir(dirp)) {
-	    if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
-		string fullname = dir + "/" + string(direntp->d_name);
-		unlink (fullname.c_str());
-	    }
-	}
-	closedir(dirp);
-    }
-}
-
 //######################################################################
 // Environment
 
-string V3Options::getenvStr(const string& envvar, const string& defaultValue) {
-    if (const char* envvalue = getenv(envvar.c_str())) {
-	return envvalue;
-    } else {
-	return defaultValue;
-    }
-}
-
-void V3Options::setenvStr(const string& envvar, const string& value, const string& why) {
-    if (why != "") {
-	UINFO(1,"export "<<envvar<<"="<<value<<" # "<<why<<endl);
-    } else {
-	UINFO(1,"export "<<envvar<<"="<<value<<endl);
-    }
-#if defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
-    setenv(envvar.c_str(),value.c_str(),true);
-#else
-    //setenv() replaced by putenv() in MinGW/Solaris environment. Prototype is different
-    //putenv() requires NAME=VALUE format
-    string vareq = envvar + "=" + value;
-    putenv(const_cast<char*>(vareq.c_str()));
-#endif
-}
-
 string V3Options::getenvPERL() {
-    return getenvStr("PERL","perl");
+    return V3Os::getenvStr("PERL","perl");
 }
 
 string V3Options::getenvSYSTEMC() {
-    string var = getenvStr("SYSTEMC","");
+    string var = V3Os::getenvStr("SYSTEMC","");
     if (var == "" && string(DEFENV_SYSTEMC) != "") {
 	var = DEFENV_SYSTEMC;
-	setenvStr("SYSTEMC", var, "Hardcoded at build time");
+	V3Os::setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
     return var;
 }
 
 string V3Options::getenvSYSTEMC_ARCH() {
-    string var = getenvStr("SYSTEMC_ARCH","");
+    string var = V3Os::getenvStr("SYSTEMC_ARCH","");
     if (var == "" && string(DEFENV_SYSTEMC_ARCH) != "") {
 	var = DEFENV_SYSTEMC_ARCH;
-	setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
+	V3Os::setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
     }
     if (var == "") {
 #if defined (__MINGW32__)
@@ -491,16 +379,16 @@ string V3Options::getenvSYSTEMC_ARCH() {
 	else if (VString::wildmatch(sysname.c_str(), "*cygwin*")) { var ="cygwin"; }
 	else { var = "linux"; }
 #endif
-	setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
+	V3Os::setenvStr("SYSTEMC_ARCH", var,"From sysname '"+sysname+"'");
     }
     return var;
 }
 
 string V3Options::getenvSYSTEMC_INCLUDE() {
-    string var = getenvStr("SYSTEMC_INCLUDE","");
+    string var = V3Os::getenvStr("SYSTEMC_INCLUDE","");
     if (var == "" && string(DEFENV_SYSTEMC_INCLUDE) != "") {
 	var = DEFENV_SYSTEMC_INCLUDE;
-	setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
+	V3Os::setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
     }
     if (var == "") {
 	string sc = getenvSYSTEMC();
@@ -517,10 +405,10 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
 }
 
 string V3Options::getenvSYSTEMC_LIBDIR() {
-    string var = getenvStr("SYSTEMC_LIBDIR","");
+    string var = V3Os::getenvStr("SYSTEMC_LIBDIR","");
     if (var == "" && string(DEFENV_SYSTEMC_LIBDIR) != "") {
 	var = DEFENV_SYSTEMC_LIBDIR;
-	setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
+	V3Os::setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
     }
     if (var == "") {
 	string sc = getenvSYSTEMC();
@@ -546,26 +434,26 @@ string V3Options::getenvSYSTEMPERL() {
 
 string V3Options::getenvSYSTEMPERLGuts() {
     // Get SYSTEMPERL when SYSTEMPERL_INCLUDE has already been tested
-    string var = getenvStr("SYSTEMPERL","");
+    string var = V3Os::getenvStr("SYSTEMPERL","");
     if (var == "" && string(DEFENV_SYSTEMPERL) != "") {
 	var = DEFENV_SYSTEMPERL;
-	setenvStr("SYSTEMPERL", var, "Hardcoded at build time");
+	V3Os::setenvStr("SYSTEMPERL", var, "Hardcoded at build time");
     }
     return var;
 }
 
 string V3Options::getenvSYSTEMPERL_INCLUDE() {
-    string var = getenvStr("SYSTEMPERL_INCLUDE","");
+    string var = V3Os::getenvStr("SYSTEMPERL_INCLUDE","");
     if (var == "") {
 	string sp_src = V3Options::getenvSYSTEMPERLGuts()+"/src";
 	if (V3Options::fileStatNormal(sp_src+"/systemperl.h")) {
  	    var = sp_src;
-	    setenvStr ("SYSTEMPERL_INCLUDE", var, "From $SYSTEMPERL/src");
+	    V3Os::setenvStr ("SYSTEMPERL_INCLUDE", var, "From $SYSTEMPERL/src");
 	} else if (string(DEFENV_SYSTEMPERL_INCLUDE) != "") {
 	    // Note if SYSTEMPERL is DEFENVed, then SYSTEMPERL_INCLUDE is also DEFENVed
 	    // So we don't need to sweat testing DEFENV_SYSTEMPERL also
 	    var = DEFENV_SYSTEMPERL_INCLUDE;
-	    setenvStr("SYSTEMPERL_INCLUDE", var, "Hardcoded at build time");
+	    V3Os::setenvStr("SYSTEMPERL_INCLUDE", var, "Hardcoded at build time");
 	}
     }
     // Only correct or check it if we really need the value
@@ -584,10 +472,10 @@ string V3Options::getenvSYSTEMPERL_INCLUDE() {
 }
 
 string V3Options::getenvVERILATOR_ROOT() {
-    string var = getenvStr("VERILATOR_ROOT","");
+    string var = V3Os::getenvStr("VERILATOR_ROOT","");
     if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
 	var = DEFENV_VERILATOR_ROOT;
-	setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
+	V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
     }
     if (var == "") {
 	v3fatal("$VERILATOR_ROOT needs to be in environment\n");
@@ -639,7 +527,7 @@ void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
 
     // Default prefix to the filename
     if (prefix()=="" && topModule()!="") m_prefix = string("V")+topModule();
-    if (prefix()=="" && vFilesList.size()>=1) m_prefix = string("V")+filenameNonExt(*(vFilesList.begin()));
+    if (prefix()=="" && vFilesList.size()>=1) m_prefix = string("V")+V3Os::filenameNonExt(*(vFilesList.begin()));
     if (modPrefix()=="") m_modPrefix = prefix();
 
     // Find files in makedir
@@ -1126,7 +1014,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     }
 
     // Path
-    string optdir = (rel ? V3Options::filenameDir(filename) : ".");
+    string optdir = (rel ? V3Os::filenameDir(filename) : ".");
 
     // Convert to argv style arg list and parse them
     char* argv [args.size()+1];
@@ -1139,8 +1027,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 //======================================================================
 
 string V3Options::parseFileArg(const string& optdir, const string& relfilename) {
-    string filename = V3Options::filenameSubstitute(relfilename);
-    if (optdir != "." && filenameIsRel(filename)) {
+    string filename = V3Os::filenameSubstitute(relfilename);
+    if (optdir != "." && V3Os::filenameIsRel(filename)) {
 	filename = optdir + "/" + filename;
     }
     return filename;
@@ -1190,15 +1078,15 @@ void V3Options::showVersion(bool verbose) {
 
     cout <<endl;
     cout << "Environment:\n";
-    cout << "    PERL               = " << getenvStr("PERL","")<<endl;
-    cout << "    SYSTEMC            = " << getenvStr("SYSTEMC","")<<endl;
-    cout << "    SYSTEMC_ARCH       = " << getenvStr("SYSTEMC_ARCH","")<<endl;
-    cout << "    SYSTEMC_INCLUDE    = " << getenvStr("SYSTEMC_INCLUDE","")<<endl;
-    cout << "    SYSTEMC_LIBDIR     = " << getenvStr("SYSTEMC_LIBDIR","")<<endl;
-    cout << "    SYSTEMPERL         = " << getenvStr("SYSTEMPERL","")<<endl;
-    cout << "    SYSTEMPERL_INCLUDE = " << getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
-    cout << "    VERILATOR_ROOT     = " << getenvStr("VERILATOR_ROOT","")<<endl;
-    cout << "    VERILATOR_BIN      = " << getenvStr("VERILATOR_BIN","")<<endl;  // wrapper uses this
+    cout << "    PERL               = " << V3Os::getenvStr("PERL","")<<endl;
+    cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC","")<<endl;
+    cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH","")<<endl;
+    cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE","")<<endl;
+    cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR","")<<endl;
+    cout << "    SYSTEMPERL         = " << V3Os::getenvStr("SYSTEMPERL","")<<endl;
+    cout << "    SYSTEMPERL_INCLUDE = " << V3Os::getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
+    cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT","")<<endl;
+    cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN","")<<endl;  // wrapper uses this
 }
 
 //======================================================================
@@ -1306,7 +1194,7 @@ void V3Options::setDebugSrcLevel(const string& srcfile, int level) {
 int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
-    string srcfile = V3Options::filenameNonDirExt(srcfile_path);
+    string srcfile = V3Os::filenameNonDirExt(srcfile_path);
     DebugSrcMap::iterator iter = m_debugSrcs.find(srcfile);
     if (iter!=m_debugSrcs.end()) {
 	return iter->second;

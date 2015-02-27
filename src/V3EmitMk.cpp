@@ -29,6 +29,7 @@
 #include <algorithm>
 
 #include "V3Global.h"
+#include "V3Os.h"
 #include "V3EmitMk.h"
 #include "V3EmitCBase.h"
 
@@ -46,7 +47,7 @@ public:
     }
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
-	of.puts("\t"+V3Options::filenameNonDirExt(name)+" \\\n");
+	of.puts("\t"+V3Os::filenameNonDirExt(name)+" \\\n");
     }
 
     void emitClassMake() {
@@ -184,8 +185,8 @@ public:
 	const V3StringSet& cppFiles = v3Global.opt.cppFiles();
 	for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 	    string cppfile = *it;
-	    of.puts("\t"+V3Options::filenameNonExt(cppfile)+" \\\n");
-	    string dir = V3Options::filenameDir(cppfile);
+	    of.puts("\t"+V3Os::filenameNonExt(cppfile)+" \\\n");
+	    string dir = V3Os::filenameDir(cppfile);
 	    if (dirs.find(dir) == dirs.end()) dirs.insert(dir);
 	}
 	of.puts("\n");
@@ -209,7 +210,7 @@ public:
 	    of.puts("\n");
 	    for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 		string cppfile = *it;
-		string basename = V3Options::filenameNonExt(cppfile);
+		string basename = V3Os::filenameNonExt(cppfile);
 		of.puts(basename+".o: "+cppfile+"\n");
 		of.puts("\t$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
 	    }

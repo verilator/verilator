@@ -67,7 +67,6 @@ public:
     static bool checkTimes(const string& filename, const string& cmdline);
 
     // Directory utilities
-    static void createDir(const string& dirname);
     static void createMakeDir();
 };
 

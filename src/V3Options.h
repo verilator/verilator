@@ -169,8 +169,6 @@ class V3Options {
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
 
-    static string getenvStr(const string& envvar, const string& defaultValue);
-    static void setenvStr(const string& envvar, const string& value, const string& why);
     static string getenvSYSTEMPERLGuts();
 
   public:
@@ -305,16 +303,6 @@ class V3Options {
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList (FileLine* fl, const string& optdir, int argc, char** argv);
     void parseOptsFile (FileLine* fl, const string& filename, bool rel);
-
-    // METHODS (generic file utilities)
-    static string filenameFromDirBase (const string& dir, const string& basename);
-    static string filenameNonDir (const string& filename);	///< Return non-directory part of filename
-    static string filenameNonExt (const string& filename);	///< Return non-extensioned (no .) part of filename
-    static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
-    static string filenameDir (const string& filename);	///< Return directory part of filename
-    static string filenameSubstitute (const string& filename);	///< Return filename with env vars removed
-    static bool   filenameIsRel (const string& filename);	///< True if relative
-    static void   unlinkRegexp(const string& dir, const string& regexp);
 
     // METHODS (environment)
     // Most of these may be built into the executable with --enable-defenv,

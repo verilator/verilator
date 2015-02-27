@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix SystemC arrayed bit vectors, bug886. [David Poole]
 
+****  Fix compile error on MinGW, bug887. [HyungKi Jeong]
+
 
 * Verilator 3.870 2015-02-12
 
