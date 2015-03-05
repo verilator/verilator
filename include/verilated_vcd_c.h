@@ -37,6 +37,22 @@ class VerilatedVcdCallInfo;
 
 // SPDIFF_ON
 //=============================================================================
+// VerilatedFile
+/// File handling routines, which can be overrode for e.g. socket I/O
+
+class VerilatedVcdFile {
+private:
+    int			m_fd;		///< File descriptor we're writing to
+public:
+    // METHODS
+    VerilatedVcdFile() : m_fd(0) {}
+    virtual ~VerilatedVcdFile() {}
+    virtual bool open(const string& name);
+    virtual void close();
+    virtual ssize_t write(const char* bufp, ssize_t len);
+};
+
+//=============================================================================
 // VerilatedVcdSig
 /// Internal data on one signal being traced.
 
@@ -62,9 +78,10 @@ typedef void (*VerilatedVcdCallback_t)(VerilatedVcd* vcdp, void* userthis, vluin
 
 class VerilatedVcd {
 private:
+    VerilatedVcdFile*	m_filep;	///< File we're writing to
+    bool		m_fileNewed;	///< m_filep needs destruction
     bool 		m_isOpen;	///< True indicates open file
     bool		m_evcd;		///< True for evcd format
-    int			m_fd;		///< File descriptor we're writing to
     string		m_filename;	///< Filename we're writing to (if open)
     vluint64_t		m_rolloverMB;	///< MB of file size to rollover at
     char		m_scopeEscape;	///< Character to separate scope components
@@ -135,21 +152,7 @@ protected:
 
 public:
     // CREATORS
-    VerilatedVcd () : m_isOpen(false), m_rolloverMB(0), m_modDepth(0), m_nextCode(1) {
-	m_namemapp = NULL;
-	m_timeRes = m_timeUnit = 1e-9;
-	m_timeLastDump = 0;
-	m_sigs_oldvalp = NULL;
-	m_evcd = false;
-	m_scopeEscape = '.';  // Backward compatibility
-	m_fd = 0;
-	m_fullDump = true;
-	m_wrChunkSize = 8*1024;
-	m_wrBufp = new char [m_wrChunkSize*8];
-	m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
-	m_writep = m_wrBufp;
-	m_wroteBytes = 0;
-    }
+    VerilatedVcd(VerilatedVcdFile* filep=NULL);
     ~VerilatedVcd();
 
     // ACCESSORS

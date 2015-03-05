@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.871 devel
 
+***   Add VerilatedVcdFile to allow real-time waveforms, bug890. [HyungKi Jeong]
+
 ****  Fix comma-instantiations with parameters, bug884. [Franck Jullien]
 
 ****  Fix SystemC arrayed bit vectors, bug886. [David Poole]

@@ -660,10 +660,10 @@ int main(int argc, char **argv, char **env) {
 # endif
 #endif
 
-    Verilated::traceEverOn(true);
-    VerilatedVcdC* tfp = new VerilatedVcdC;
 #if VM_TRACE
+    Verilated::traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
+    VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace (tfp, 99);
     tfp->open ("obj_dir/t_vpi_var/simx.vcd");
 #endif

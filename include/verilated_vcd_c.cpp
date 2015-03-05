@@ -79,7 +79,44 @@ protected:
 //=============================================================================
 //=============================================================================
 //=============================================================================
+// VerilatedVcdFile
+
+bool VerilatedVcdFile::open(const string& name) {
+    m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK, 0666);
+    return (m_fd>=0);
+}
+
+void VerilatedVcdFile::close() {
+    ::close(m_fd);
+}
+
+ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) {
+    return ::write(m_fd, bufp, len);
+}
+
+//=============================================================================
+//=============================================================================
+//=============================================================================
 // Opening/Closing
+
+VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
+    : m_isOpen(false), m_rolloverMB(0), m_modDepth(0), m_nextCode(1) {
+    // Not in header to avoid link issue if header is included without this .cpp file
+    m_fileNewed = (filep == NULL);
+    m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
+    m_namemapp = NULL;
+    m_timeRes = m_timeUnit = 1e-9;
+    m_timeLastDump = 0;
+    m_sigs_oldvalp = NULL;
+    m_evcd = false;
+    m_scopeEscape = '.';  // Backward compatibility
+    m_fullDump = true;
+    m_wrChunkSize = 8*1024;
+    m_wrBufp = new char [m_wrChunkSize*8];
+    m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
+    m_writep = m_wrBufp;
+    m_wroteBytes = 0;
+}
 
 void VerilatedVcd::open (const char* filename) {
     if (isOpen()) return;
@@ -142,9 +179,7 @@ void VerilatedVcd::openNext (bool incFilename) {
 	assert(0);	// Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
-	m_fd = ::open (m_filename.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
-		       , 0666);
-	if (m_fd<0) {
+	if (!m_filep->open(m_filename)) {
 	    // User code can check isOpen()
 	    m_isOpen = false;
 	    return;
@@ -199,6 +234,7 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_wrBufp) { delete[] m_wrBufp; m_wrBufp=NULL; }
     if (m_sigs_oldvalp) { delete[] m_sigs_oldvalp; m_sigs_oldvalp=NULL; }
     deleteNameMap();
+    if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
     // Remove from list of traces
     vector<VerilatedVcd*>::iterator pos = find(s_vcdVecp.begin(), s_vcdVecp.end(), this);
     if (pos != s_vcdVecp.end()) { s_vcdVecp.erase(pos); }
@@ -209,7 +245,7 @@ void VerilatedVcd::closePrev () {
 
     bufferFlush();
     m_isOpen = false;
-    ::close(m_fd);
+    m_filep->close();
 }
 
 void VerilatedVcd::closeErr () {
@@ -219,7 +255,7 @@ void VerilatedVcd::closeErr () {
 
     // No buffer flush, just fclose
     m_isOpen = false;
-    ::close(m_fd);  // May get error, just ignore it
+    m_filep->close();  // May get error, just ignore it
 }
 
 void VerilatedVcd::close() {
@@ -285,7 +321,7 @@ void VerilatedVcd::bufferFlush () {
 	ssize_t remaining = (m_writep - wp);
 	if (remaining==0) break;
 	errno = 0;
-	ssize_t got = write (m_fd, wp, remaining);
+	ssize_t got = m_filep->write(wp, remaining);
 	if (got>0) {
 	    wp += got;
 	    m_wroteBytes += got;
