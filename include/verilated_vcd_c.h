@@ -401,7 +401,7 @@ class VerilatedVcdC {
     VerilatedVcd		m_sptrace;	///< Trace file being created
 public:
     // CONSTRUCTORS
-    VerilatedVcdC() {}
+    VerilatedVcdC(VerilatedVcdFile* filep=NULL) : m_sptrace(filep) {}
     ~VerilatedVcdC() {}
     // ACCESSORS
     /// Is file open?
