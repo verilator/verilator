@@ -157,10 +157,25 @@ bool V3Options::isFuture(const string& flag) const {
 bool V3Options::isLibraryFile(const string& filename) const {
     return m_libraryFiles.find(filename) != m_libraryFiles.end();
 }
-
 void V3Options::addLibraryFile(const string& filename) {
     if (m_libraryFiles.find(filename) == m_libraryFiles.end()) {
 	m_libraryFiles.insert(filename);
+    }
+}
+bool V3Options::isClocker(const string& signame) const {
+    return m_clockers.find(signame) != m_clockers.end();
+}
+void V3Options::addClocker(const string& signame) {
+    if (m_clockers.find(signame) == m_clockers.end()) {
+	m_clockers.insert(signame);
+    }
+}
+bool V3Options::isNoClocker(const string& signame) const {
+    return m_noClockers.find(signame) != m_noClockers.end();
+}
+void V3Options::addNoClocker(const string& signame) {
+    if (m_noClockers.find(signame) == m_noClockers.end()) {
+	m_noClockers.insert(signame);
     }
 }
 void V3Options::addVFile(const string& filename) {
@@ -797,6 +812,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-v") && (i+1)<argc ) {
 		shift;
 		V3Options::addLibraryFile(parseFileArg(optdir,argv[i]));
+	    }
+	    else if ( !strcmp (sw, "-clk") && (i+1)<argc ) {
+		shift;
+		V3Options::addClocker(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-no-clk") && (i+1)<argc ) {
+		shift;
+		V3Options::addNoClocker(argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-V") ) {
 		showVersion(true);

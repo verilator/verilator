@@ -176,6 +176,10 @@ string AstNode::prettyName(const string& namein) {
 	    pretty += ".";
 	    pos += 7;
 	}
+	else if (0==strncmp(pos,"->",2)) {
+	    pretty += ".";
+	    pos += 2;
+	}
 	else if (0==strncmp(pos,"__PVT__",7)) {
 	    pretty += "";
 	    pos += 7;

@@ -53,6 +53,8 @@ class V3Options {
     V3StringSet	m_ldLibs;	// argument: user LDFLAGS
     V3StringSet	m_futures;	// argument: -Wfuture- list
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
+    V3StringSet	m_clockers;	// argument: Verilog -clk signals
+    V3StringSet	m_noClockers;	// argument: Verilog -noclk signals
     V3StringList m_vFiles;	// argument: Verilog files to read
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
 
@@ -184,6 +186,8 @@ class V3Options {
     void addCFlags(const string& filename);
     void addLdLibs(const string& filename);
     void addLibraryFile(const string& filename);
+    void addClocker(const string& signame);
+    void addNoClocker(const string& signame);
     void addVFile(const string& filename);
 
     // ACCESSORS (options)
@@ -270,6 +274,8 @@ class V3Options {
 
     bool isFuture(const string& flag) const;
     bool isLibraryFile(const string& filename) const;
+    bool isClocker(const string& signame) const;
+    bool isNoClocker(const string& signame) const;
 
     // ACCESSORS (optimization options)
     bool oAcycSimp() const { return m_oAcycSimp; }

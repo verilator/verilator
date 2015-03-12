@@ -942,6 +942,7 @@ private:
     bool	m_isIfaceParent:1;	// dtype is reference to interface present in this module
     bool	m_noSubst:1;	// Do not substitute out references
     bool	m_trace:1;	// Trace this variable
+    AstVarAttrClocker m_attrClocker;
 
     void	init() {
 	m_input=false; m_output=false; m_tristate=false; m_declOutput=false;
@@ -952,8 +953,7 @@ private:
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
-	m_isIfaceParent=false;
-	m_noSubst=false;
+	m_isIfaceParent=false; m_attrClocker=AstVarAttrClocker::CLOCKER_UNKNOWN; m_noSubst=false;
 	m_trace=false;
     }
 public:
@@ -1026,6 +1026,7 @@ public:
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
+    void	attrClocker(AstVarAttrClocker flag) { m_attrClocker = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
     void	attrScClocked(bool flag) { m_scClocked = flag; }
     void	attrScBv(bool flag) { m_attrScBv = flag; }
@@ -1105,6 +1106,7 @@ public:
     bool	attrScClocked() const { return m_scClocked; }
     bool	attrSFormat() const { return m_attrSFormat; }
     bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
+    AstVarAttrClocker attrClocker() const { return m_attrClocker; }
     virtual string verilogKwd() const;
     void	propagateAttrFrom(AstVar* fromp) {
 	// This is getting connected to fromp; keep attributes

@@ -39,30 +39,23 @@ module t (clk);
 	 if (cyc==3) begin
 	    d1 <= 1'b1; d3<=3'h3; d8<=8'h44;
 	    ena <= 1'b1;
-	    // PROPER ANSWER is 8'h11, but we are negative-testing
-	    //if (q8 != 8'h11) $stop;
-	    if (q8 != 8'h33) $stop;
+	    if (q8 != 8'h11) $stop;
 	 end
 	 if (cyc==4) begin
 	    d1 <= 1'b1; d3<=3'h4; d8<=8'h77;
 	    ena <= 1'b1;
-	    // PROPER ANSWER is 8'h11, but we are negative-testing
-	    //if (q8 != 8'h11) $stop;
-	    if (q8 != 8'h33) $stop;
+	    if (q8 != 8'h11) $stop;
 	 end
 	 if (cyc==5) begin
 	    d1 <= 1'b1; d3<=3'h0; d8<=8'h88;
 	    ena <= 1'b1;
-	    // PROPER ANSWER is 8'h44, but we are negative-testing
-	    //if (q8 != 8'h44) $stop;
+	    if (q8 != 8'h44) $stop;
 	 end
 	 if (cyc==6) begin
-	    // PROPER ANSWER is 8'h77, but we are negative-testing
-	    //if (q8 != 8'h77) $stop;
+	    if (q8 != 8'h77) $stop;
 	 end
 	 if (cyc==7) begin
-	    // PROPER ANSWER is 8'h88, but we are negative-testing
-	    //if (q8 != 8'h88) $stop;
+	    if (q8 != 8'h88) $stop;
 	 end
 	 //
 	 if (cyc==20) begin

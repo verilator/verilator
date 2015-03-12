@@ -65,6 +65,7 @@ public:
 	CASEWITHX,	// Case with X values
 	CASEX,		// Casex
 	CDCRSTLOGIC,	// Logic in async reset path
+	CLKDATA,        // Clock used as data
 	CMPCONST,	// Comparison is constant due to limited range
 	COMBDLY,	// Combinatorial delayed assignment
 	DEFPARAM,	// Style: Defparam
@@ -119,8 +120,8 @@ public:
 	    " EC_FIRST_WARN",
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKSEQ",
-	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CMPCONST",
-	    "COMBDLY", "DEFPARAM", "DECLFILENAME",
+	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
+	    "CMPCONST", "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "ENDLABEL", "GENCLK",
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "INCABSPATH", "INITIALDLY",

@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add VerilatedVcdFile to allow real-time waveforms, bug890. [HyungKi Jeong]
 
+***   Add --clk and related optimizations, msg1533. [Jie Xu]
+
 ****  Fix comma-instantiations with parameters, bug884. [Franck Jullien]
 
 ****  Fix SystemC arrayed bit vectors, bug886. [David Poole]

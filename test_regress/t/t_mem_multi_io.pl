@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
 	 # Disable inlining, this test is trivial without it
 	 verilator_flags2 => ["-Oi --trace"],
+	 verilator_flags3 => [],
 	 );
 
 execute (

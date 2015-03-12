@@ -257,7 +257,9 @@ public:
 	VAR_PUBLIC_FLAT_RW,		// V3LinkParse moves to AstVar::sigPublic
 	VAR_ISOLATE_ASSIGNMENTS,	// V3LinkParse moves to AstVar::attrIsolateAssign
 	VAR_SC_BV,			// V3LinkParse moves to AstVar::attrScBv
-	VAR_SFORMAT			// V3LinkParse moves to AstVar::attrSFormat
+	VAR_SFORMAT,			// V3LinkParse moves to AstVar::attrSFormat
+	VAR_CLOCKER,                    // V3LinkParse moves to AstVar::attrClocker
+	VAR_NO_CLOCKER                  // V3LinkParse moves to AstVar::attrClocker
     };
     enum en m_e;
     const char* ascii() const {
@@ -270,7 +272,8 @@ public:
 	    "MEMBER_BASE",
 	    "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
 	    "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD","VAR_PUBLIC_FLAT_RW",
-	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT"
+	    "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
+	    "VAR_NO_CLOCKER"
 	};
 	return names[m_e];
     };
@@ -482,6 +485,37 @@ public:
   inline bool operator== (AstBranchPred lhs, AstBranchPred::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstBranchPred::en lhs, AstBranchPred rhs) { return (lhs == rhs.m_e); }
   inline ostream& operator<<(ostream& os, AstBranchPred rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
+class AstVarAttrClocker {
+public:
+    enum en {
+	CLOCKER_UNKNOWN=0,
+	CLOCKER_YES,
+	CLOCKER_NO,
+	_ENUM_END
+    };
+    enum en m_e;
+    // CONSTRUCTOR - note defaults to *UNKNOWN*
+    inline AstVarAttrClocker () : m_e(CLOCKER_UNKNOWN) {}
+    inline AstVarAttrClocker (en _e) : m_e(_e) {}
+    explicit inline AstVarAttrClocker (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+    AstVarAttrClocker invert() const {
+	if (m_e==CLOCKER_YES) return CLOCKER_NO;
+	else if (m_e==CLOCKER_NO) return CLOCKER_YES;
+	else return m_e;
+    }
+    const char* ascii() const {
+	static const char* names[] = {
+	    "","clker","non_clker"};
+	return names[m_e]; }
+  };
+  inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (AstVarAttrClocker::en lhs, AstVarAttrClocker rhs) { return (lhs == rhs.m_e); }
+  inline ostream& operator<<(ostream& os, AstVarAttrClocker rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 

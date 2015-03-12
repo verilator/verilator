@@ -237,6 +237,16 @@ private:
 	    m_varp->attrScBv(true);
 	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
 	}
+	else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrClocker(AstVarAttrClocker::CLOCKER_YES);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
+	else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
+	    if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+	    m_varp->attrClocker(AstVarAttrClocker::CLOCKER_NO);
+	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	}
     }
 
     virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {

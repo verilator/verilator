@@ -246,6 +246,7 @@ descriptions in the next sections for more information.
      -CFLAGS <flags>            C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
+    --clk <signal-name>         Mark specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
@@ -284,6 +285,7 @@ descriptions in the next sections for more information.
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
     --mod-prefix <topname>      Name to prepend to lower classes
+    --no-clk <signal-name>      Prevent marking specified signal as clock
     --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
@@ -455,6 +457,23 @@ information is also written to the file {prefix}__cdc.txt.
 
 Currently only checks some items that other CDC tools missed; if you have
 interest in adding more traditional CDC checks, please contact the authors.
+
+=item --clk I<signal-name>
+
+Sometimes it is quite difficult for Verilator to distinguish clock signals from
+other data signals. Occasionally the clock signals can end up in the checking
+list of signals which determines if further evaluation is needed. This will
+heavily degrade the performance of verilated model.
+
+With --clk <signal-name>, user can specified root clock into the model, then
+Verilator will mark the signal as clocker and propagate the clocker attribute
+automatically to other signals derived from that. In this way, Verilator will
+try to avoid taking the clocker signal into checking list.
+
+Note signal-name is specified by the RTL hiearchy path. For example, v.foo.bar.
+If the signal is the input to top-module, the directly the signal name. If you
+find it difficult to find the exact name, try to use C</*verilator clocker*/> in
+RTL file to mark the signal directly.
 
 =item --compiler I<compiler-name>
 
@@ -760,6 +779,10 @@ otherwise manually create the Mdir before calling Verilator.
 
 Specifies the name to prepend to all lower level classes.  Defaults to
 the same as --prefix.
+
+=item --no-clk <signal-name>
+
+Prevent the specified signal from being marked as clock. See C<--clk>.
 
 =item --no-pins64
 
@@ -2126,6 +2149,15 @@ scheduling algorithm, sometimes required for correct clock behavior, and
 always improving performance.  It's also a good idea to enable the
 IMPERFECTSCH warning, to insure all clock enables are properly recognized.
 
+=item /*verilator clocker*/
+
+=item /*verilator no_clocker*/
+
+Used after a signal declaration to indicate the signal is used as clock or
+not. This information is used by Verilator to mark the signal as clocker
+and propagate the clocker attribute automatically to derived signals. See
+C<--clk> for more information.
+
 =item /*verilator coverage_block_off*/
 
 Specifies the entire begin/end block should be ignored for coverage
@@ -2841,6 +2873,16 @@ correctly.
 With --cdc only, warns that asynchronous flop reset terms come from other
 than primary inputs or flopped outputs, creating the potential for reset
 glitches.
+
+=item CLKDATA
+
+Warns that clock signal is mixed used with/as data signal. The checking for
+this warning is enabled only if user has explicitly marked some signal as
+clocker using command line option or in-source meta comment (see C<--clk>).
+
+The warning can be disabled without affecting the simulation result. But it
+is recommanded to check the warning as this may degrade the performance of
+the Verilated model.
 
 =item CMPCONST
 

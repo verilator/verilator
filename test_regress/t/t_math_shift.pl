@@ -8,6 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
+    verilator_flags2 => ["-Wno-CLKDATA"]
 	 );
 
 execute (

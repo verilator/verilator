@@ -393,6 +393,7 @@ sub new {
 			    "-OD",  # As currently disabled unless -O3
 			    "--debug-check"],
 	verilator_flags2 => [],
+	verilator_flags3 => ["--clk clk"],
 	verilator_make_gcc => 1,
 	verilated_debug => $Opt_Verilated_Debug,
 	stdout_filename => undef,	# Redirect stdout
@@ -502,7 +503,8 @@ sub compile_vlt_flags {
     my $checkflags = join(' ',@{$param{v_flags}},
 			  @{$param{v_flags2}},
 			  @{$param{verilator_flags}},
-			  @{$param{verilator_flags2}});
+			  @{$param{verilator_flags2}},
+			  @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
@@ -533,6 +535,7 @@ sub compile_vlt_flags {
 		   "--prefix ".$param{VM_PREFIX},
 		   @verilator_flags,
 		   @{$param{verilator_flags2}},
+		   @{$param{verilator_flags3}},
 		   @{$param{v_flags}},
 		   @{$param{v_flags2}},
 		   $param{top_filename},

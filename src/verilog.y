@@ -489,6 +489,8 @@ class AstSenTree;
 %token<fl>		yD_WRITE	"$write"
 
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
+%token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
+%token<fl>		yVL_NO_CLOCKER		"/*verilator no_clocker*/"
 %token<fl>		yVL_CLOCK_ENABLE	"/*verilator clock_enable*/"
 %token<fl>		yVL_COVERAGE_BLOCK_OFF	"/*verilator coverage_block_off*/"
 %token<fl>		yVL_FULL_CASE		"/*verilator full_case*/"
@@ -1927,6 +1929,8 @@ sigAttrList<nodep>:
 
 sigAttr<nodep>:
 		yVL_CLOCK				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK); }
+	|	yVL_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCKER); }
+	|	yVL_NO_CLOCKER				{ $$ = new AstAttrOf($1,AstAttrType::VAR_NO_CLOCKER); }
 	|	yVL_CLOCK_ENABLE			{ $$ = new AstAttrOf($1,AstAttrType::VAR_CLOCK_ENABLE); }
 	|	yVL_PUBLIC				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC); v3Global.dpi(true); }
 	|	yVL_PUBLIC_FLAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); }
