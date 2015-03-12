@@ -407,4 +407,5 @@ public:
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ClockVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("clock.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

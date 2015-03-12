@@ -403,4 +403,5 @@ public:
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     PremitVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("premit.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

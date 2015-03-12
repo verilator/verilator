@@ -914,4 +914,5 @@ void V3ClkGater::clkGaterAll(AstNetlist* nodep) {
     // While the gater does well at some modules, it seems to slow down many others
     UINFO(5,"ClkGater is disabled due to performance issues\n");
     //GaterVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("clkgater.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

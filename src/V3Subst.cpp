@@ -401,4 +401,5 @@ public:
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     SubstVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("subst.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

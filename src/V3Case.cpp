@@ -491,6 +491,7 @@ public:
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     CaseVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("case.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);

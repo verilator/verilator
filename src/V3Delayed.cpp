@@ -471,4 +471,5 @@ public:
 void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DelayedVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("delayed.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

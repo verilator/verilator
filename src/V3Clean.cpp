@@ -292,4 +292,5 @@ public:
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     CleanVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("clean.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

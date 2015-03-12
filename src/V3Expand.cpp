@@ -937,4 +937,5 @@ public:
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ExpandVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("expand.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

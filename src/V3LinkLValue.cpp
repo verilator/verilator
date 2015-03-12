@@ -269,6 +269,7 @@ public:
 void V3LinkLValue::linkLValue(AstNetlist* rootp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     LinkLValueVisitor visitor(rootp, false);
+    V3Global::dumpCheckGlobalTree("linklvalue.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {
     // Called by later link functions when it is known a node needs

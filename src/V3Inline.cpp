@@ -563,4 +563,5 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
 	    modp->unlinkFrBack()->deleteTree(); modp=NULL;
 	}
     }
+    V3Global::dumpCheckGlobalTree("inline.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -80,6 +80,7 @@ void V3LinkLevel::modSortByLevel() {
 	v3Global.rootp()->addModulep(nodep);
     }
     UINFO(9,"modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
+    V3Global::dumpCheckGlobalTree("cells.tree", false, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 //######################################################################

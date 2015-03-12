@@ -291,12 +291,15 @@ public:
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DeadVisitor visitor (nodep, false, false);
+    V3Global::dumpCheckGlobalTree("deadModules.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DeadVisitor visitor (nodep, false, true);
+    V3Global::dumpCheckGlobalTree("deadDType.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DeadVisitor visitor (nodep, true, true);
+    V3Global::dumpCheckGlobalTree("deadAll.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

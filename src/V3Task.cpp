@@ -1294,4 +1294,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     TaskStateVisitor visitors (nodep);
     TaskVisitor visitor (nodep, &visitors);
+    V3Global::dumpCheckGlobalTree("task.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

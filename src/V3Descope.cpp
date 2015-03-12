@@ -262,4 +262,5 @@ public:
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DescopeVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("descope.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

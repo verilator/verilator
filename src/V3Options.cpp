@@ -734,6 +734,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		m_dumpTree = atoi(argv[i]);
 	    }
+	    else if ( !strncmp (sw, "-dump-treei-", strlen("-dump-treei-"))) {
+		const char* src = sw+strlen("-dump-treei-");
+		shift;
+		setDumpTreeLevel(src, atoi(argv[i]));
+	    }
 	    else if ( !strcmp (sw, "-error-limit") && (i+1)<argc ) {
 		shift;
 		V3Error::errorLimit(atoi(argv[i]));
@@ -1199,7 +1204,7 @@ V3Options::~V3Options() {
 
 void V3Options::setDebugMode(int level) {
     V3Error::debugDefault(level);
-    if (!m_dumpTree) m_dumpTree = true;	// Don't override if already set.
+    if (!m_dumpTree) m_dumpTree = 3;	// Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
     cout << "Starting "<<version()<<endl;
@@ -1223,6 +1228,27 @@ int V3Options::debugSrcLevel(const string& srcfile_path, int default_level) {
 	return iter->second;
     } else {
 	return default_level;
+    }
+}
+
+void V3Options::setDumpTreeLevel(const string& srcfile, int level) {
+    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    if (iter!=m_dumpTrees.end()) {
+	iter->second = level;
+    } else {
+	m_dumpTrees.insert(make_pair(srcfile,level));
+    }
+}
+
+int V3Options::dumpTreeLevel(const string& srcfile_path) {
+    // For simplicity, calling functions can just use __FILE__ for srcfile.
+    // That means though we need to cleanup the filename from ../Foo.cpp -> Foo
+    string srcfile = V3Os::filenameNonDirExt(srcfile_path);
+    DebugSrcMap::iterator iter = m_dumpTrees.find(srcfile);
+    if (iter!=m_dumpTrees.end()) {
+	return iter->second;
+    } else {
+	return m_dumpTree;
     }
 }
 

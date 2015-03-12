@@ -463,6 +463,7 @@ public:
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     UnrollVisitor visitor (nodep, false, "");
+    V3Global::dumpCheckGlobalTree("unroll.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Unroll::unrollGen(AstNodeFor* nodep, string beginName) {

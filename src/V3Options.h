@@ -57,6 +57,7 @@ class V3Options {
     V3StringSet	m_noClockers;	// argument: Verilog -noclk signals
     V3StringList m_vFiles;	// argument: Verilog files to read
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
+    DebugSrcMap m_dumpTrees;	// argument: --dump-treei-<srcfile>=<level>
 
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
@@ -180,6 +181,8 @@ class V3Options {
     void setDebugMode(int level);
     void setDebugSrcLevel(const string& srcfile, int level);
     int debugSrcLevel(const string& srcfile, int default_level=V3Error::debugDefault());
+    void setDumpTreeLevel(const string& srcfile, int level);
+    int dumpTreeLevel(const string& srcfile);
 
     // METHODS
     void addCppFile(const string& filename);

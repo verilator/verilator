@@ -515,4 +515,5 @@ void V3Life::lifeAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     LifeState state;
     LifeTopVisitor visitor (nodep, &state);
+    V3Global::dumpCheckGlobalTree("life.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

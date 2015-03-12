@@ -709,4 +709,5 @@ public:
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     TraceVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("trace.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

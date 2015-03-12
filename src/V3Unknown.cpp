@@ -475,4 +475,5 @@ public:
 void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     UnknownVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("unknown.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

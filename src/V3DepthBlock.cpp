@@ -140,4 +140,5 @@ public:
 void V3DepthBlock::depthBlockAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DepthBlockVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("deepblock.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

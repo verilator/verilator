@@ -135,4 +135,5 @@ public:
 void V3CoverageJoin::coverageJoin(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     CoverageJoinVisitor visitor (rootp);
+    V3Global::dumpCheckGlobalTree("coveragejoin.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

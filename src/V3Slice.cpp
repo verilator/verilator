@@ -501,4 +501,5 @@ public:
 void V3Slice::sliceAll(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     SliceVisitor visitor(rootp);
+    V3Global::dumpCheckGlobalTree("slices.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

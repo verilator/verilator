@@ -175,4 +175,5 @@ public:
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     DepthVisitor visitor (nodep);
+    V3Global::dumpCheckGlobalTree("depth.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
