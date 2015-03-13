@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add --clk and related optimizations, msg1533. [Jie Xu]
 
+***   Fix order of C style arrays. [Duraid Madina]
+
 ****  Add --dump-treei-<srcfile>, bug894. [Jie Xu]
 
 ****  Fix comma-instantiations with parameters, bug884. [Franck Jullien]
