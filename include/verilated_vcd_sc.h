@@ -17,8 +17,6 @@
 /// \file
 /// \brief Verilator tracing in VCD format
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 // SPDIFF_OFF
 

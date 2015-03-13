@@ -2009,6 +2009,7 @@ Verilator likewise also asserts any "unique" or "priority" SystemVerilog
 keywords on case statement, as well as "unique" on if statements.
 However, "priority if" is currently simply ignored.
 
+
 =head1 LANGUAGE EXTENSIONS
 
 The following additional constructs are the extensions Verilator supports
@@ -3792,49 +3793,74 @@ as the need arises.  Verilator is now about 3x faster than in 2002, and is
 faster than many popular commercial simulators.
 
 
+=head1 AUTHORS
+
+When possible, please instead report bugs to L<http://www.veripool.org/>.
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+Major concepts by Paul Wasson, Duane Galbi and Jie Xu.
+
+
 =head1 CONTRIBUTORS
 
 Many people have provided ideas and other assistance with Verilator.
 
 The major corporate sponsors of Verilator, by providing significant
-contributions of time or funds include include Cavium Networks, Compaq
-Corporation, Digital Equipment Corporation, Embecosm Ltd., Hicamp Systems,
-Intel Corporation, Mindspeed Technologies Inc., MicroTune Inc., picoChip
-Designs Ltd., Sun Microsystems, Nauticus Networks, and SiCortex Inc.
+contributions of time or funds include include Atmel Corporation, Cavium
+Inc., Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd.,
+Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
+Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
+and SiCortex Inc.
 
 The people who have contributed major functionality are Byron Bradley,
-Jeremy Bennett, Lane Brooks, Duane Galbi, Paul Wasson, and Wilson Snyder.
-Major testers include Jeff Dutton, Ralf Karge, David Hewson, Wim Michiels,
-Alex Solomatnikov, Sebastien Van Cauwenberghe and Gene Weber.
+Jeremy Bennett, Jie Xu, Lane Brooks, Duane Galbi, Paul Wasson, and Wilson
+Snyder.  Major testers include Jeff Dutton, Jonathon Donaldson, Ralf Karge,
+David Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov, Sebastien Van
+Cauwenberghe, Gene Weber, and Clifford Wolf.
 
 Some of the people who have provided ideas and feedback for Verilator
-include: David Addison, Vasu Arasanipalai, Jens Arm, J Baxter, Jeremy
-Bennett, David Black, Gregg Bouchard, Christopher Boumenot, Nick Bowler,
-Byron Bradley, Bryan Brady, Lane Brooks, John Brownlee, Lawrence Butcher,
-Chris Candler, Lauren Carlson, Donal Casey, Terry Chen, Robert A. Clark,
-Allan Cochrane, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman, Mike
-Denio, John Deroo, John Dickol, Ruben Diez, Danny Ding, Ivan Djordjevic,
-Alex Duller, Jeff Dutton, Chandan Egbert, Joe Eiler, Ahmed El-Mahmoudy,
-Robert Farrell, Eugen Fekete, Andrea Foletto, Bob Fredieu, Shankar Giri,
-Sam Gladstone, Amir Gonnen, Chitlesh Goorah, Neil Hamilton, Thomas Hawkins,
-David Hewson, Jae Hossell, Ben Jackson, Iztok Jeras, Christophe Joly, Mike
-Kagen, Guy-Armand Kamendje, Vasu Kandadi, Patricio Kaplan, Ralf Karge, Dan
-Katz, Sol Katzman, Jonathan Kimmitt, Gernot Koch, Soon Koh, Steve Kolecki,
-David Kravitz, Steve Lang, Stephane Laurent, Walter Lavino, Christian
-Leber, John Li, Charlie Lind, Andrew Ling, Paul Liu, Dan Lussier, Fred Ma,
-Duraid Madina, Mark Marshall, Jason McMullan, Wim Michiels, Dennis
-Muhlestein, John Murphy, Richard Myers, Dimitris Nalbantis, Paul Nitza,
-Pete Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Brad Parker, Dominic
-Plunkett, Niranjan Prabhu, Usha Priyadharshini, Alberto Del Rio, Oleg
-Rodionov, John Sanguinetti, Salman Sheikh, Mike Shinkarovsky, Rafael
-Shirakawa, Jeffrey Short, Rodney Sinclair, Brian Small, Alex Solomatnikov,
-Art Stamness, John Stroebel, Emerson Suguimoto, Gene Sullivan, Renga
-Sundararajan, Stefan Thiede, Gary Thomas, Steve Tong, Hans Van Antwerpen,
-Holger Waechtler, Stefan Wallentowitz, Shawn Wang, Greg Waters, Thomas
-Watts, Eugene Weber, David Welch, Leon Wildman, Gerald Williams, Trevor
-Williams, Jeff Winston, Joshua Wise, Johan Wouters, and Ding Xiaoliang.
+include: Yves Mathieu, David Addison, Nikana Anastasiadis, Hans Van
+Antwerpen, Vasu Arasanipalai, Jens Arm, Sharad Bagri, Andrew Bardsley,
+Geoff Barrett, J Baxter, Julius Baxter, Jeremy Bennett, Michael Berman,
+David Binderman, David Black, Daniel Bone, Gregg Bouchard, Christopher
+Boumenot, Nick Bowler, Byron Bradley, Bryan Brady, Charlie Brej, Lane
+Brooks, John Brownlee, Jeff Bush, Lawrence Butcher, Ted Campbell, Chris
+Candler, Lauren Carlson, Donal Casey, Terry Chen, Robert A. Clark, Allan
+Cochrane, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman, Mike Denio,
+John Deroo, Philip Derrick, John Dickol, R. Diez, Ruben Diez, Danny Ding,
+Ivan Djordjevic, Jonathon Donaldson, Alex Duller, Jeff Dutton, Chandan
+Egbert, Joe Eiler, Ahmed El-Mahmoudy, Robert Farrell, Eugen Fekete,
+Fabrizio Ferrandi, Andrea Foletto, Bob Fredieu, Christian Gelinek, Glen
+Gibb, Shankar Giri, Sam Gladstone, Amir Gonnen, Chitlesh Goorah, Neil
+Hamilton, Junji Hashimoto, Thomas Hawkins, David Hewson, Hiroki Honda, Alex
+Hornung, Jae Hossell, Ben Jackson, Krzysztof Jankowski, HyungKi Jeong,
+Iztok Jeras, James Johnson, Christophe Joly, Franck Jullien, Mike Kagen,
+Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi, Patricio Kaplan, Ralf
+Karge, Dan Katz, Sol Katzman, Jonathan Kimmitt, Sobhan Klnv, Gernot Koch,
+Soon Koh, Steve Kolecki, Brett Koonce, Wojciech Koszek, Varun Koyyalagunta,
+David Kravitz, Roland Kruse, Ed Lander, Steve Lang, Stephane Laurent,
+Walter Lavino, Christian Leber, Igor Lesik, John Li, Eivind Liland, Charlie
+Lind, Andrew Ling, Paul Liu, Derek Lockhart, Arthur Low, Stefan Ludwig, Dan
+Lussier, Fred Ma, Duraid Madina, Mark Marshall, Jason McMullan, Wim
+Michiels, Wai Sum Mong, Sean Moore, Dennis Muhlestein, John Murphy, Richard
+Myers, Dimitris Nalbantis, Bob Newgard, Cong Van Nguyen, Paul Nitza, Pete
+Nixon, Lisa Noack, Mark Nodine, Andreas Olofsson, Brad Parker, David
+Pierce, Dominic Plunkett, David Poole, Rich Porter, Niranjan Prabhu, Usha
+Priyadharshini, Mark Jackson Pulver, Prateek Puri, Chris Randall, Frederic
+Requin, Alberto Del Rio, Oleg Rodionov, Jan Egil Ruud, John Sanguinetti,
+Salman Sheikh, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Rodney
+Sinclair, Steven Slatter, Brian Small, Wilson Snyder, Alex Solomatnikov,
+Art Stamness, John Stevenson, Todd Strader, John Stroebel, Emerson
+Suguimoto, Gene Sullivan, Renga Sundararajan, Yutetsu Takatsukasa, Peter
+Tengstrand, Stefan Thiede, Gary Thomas, Kevin Thompson, Mike Thyer, Steve
+Tong, Holger Waechtler, Stefan Wallentowitz, Shawn Wang, Greg Waters,
+Thomas Watts, Eugene Weber, David Welch, Leon Wildman, Gerald Williams,
+Trevor Williams, Jeff Winston, Joshua Wise, Clifford Wolf, Johan Wouters,
+Ding Xiaoliang, Jie Xu, and Amir Yazdanbakhsh.
 
 Thanks to them, and all those we've missed including above.
+
 
 =head1 DISTRIBUTION
 
@@ -3845,13 +3871,6 @@ redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.
 
-=head1 AUTHORS
-
-When possible, please instead report bugs to L<http://www.veripool.org/>.
-
-Wilson Snyder <wsnyder@wsnyder.org>
-
-Major concepts by Paul Wasson and Duane Galbi.
 
 =head1 SEE ALSO
 

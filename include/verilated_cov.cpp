@@ -17,8 +17,6 @@
 /// \file
 /// \brief Verilator coverage analysis
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 
 #include "verilatedos.h"

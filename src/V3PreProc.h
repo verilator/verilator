@@ -4,8 +4,6 @@
 //
 // Code available from: http://www.veripool.org/verilator
 //
-// Authors: Wilson Snyder
-//
 //*************************************************************************
 //
 // Copyright 2000-2015 by Wilson Snyder.  This program is free software;

@@ -17,8 +17,6 @@
 /// \file
 /// \brief Save-restore serialization of verilated modules
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 
 #ifndef _VERILATED_SAVE_C_H_

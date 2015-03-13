@@ -17,8 +17,6 @@
 /// \file
 /// \brief Coverage analysis support
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 
 #ifndef _VERILATED_COV_H_

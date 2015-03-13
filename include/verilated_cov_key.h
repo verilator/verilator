@@ -17,8 +17,6 @@
 /// \file
 /// \brief Coverage item keys
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 
 #ifndef _VERILATED_COV_KEY_H_

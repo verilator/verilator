@@ -17,8 +17,6 @@
 /// \file
 /// \brief C++ Tracing in VCD Format
 ///
-/// AUTHOR:  Wilson Snyder
-///
 //=============================================================================
 
 #include "verilatedos.h"
