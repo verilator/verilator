@@ -228,16 +228,16 @@ verilator.pdf: ${srcdir}/bin/verilator Makefile
 	pdflatex verilator.tex
 	-rm -f verilator.toc verilator.aux verilator.idx verilator.out
 
-README: readme.pod
+README: README.pod
 	-rm -f $@
 	$(POD2TEXT) --loose $< > $@
 
-README.html: readme.pod
+README.html: README.pod
 	pod2html $< >$@
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-README.pdf: readme.pod Makefile
-	pod2latex --full --out README.tex readme.pod
+README.pdf: README.pod Makefile
+	pod2latex --full --out README.tex README.pod
 	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) README File" "${DISTDATE}" < README.tex > README2.tex
 	mv README2.tex README.tex
 	pdflatex README.tex

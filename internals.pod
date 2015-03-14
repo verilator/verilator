@@ -407,6 +407,18 @@ Tests that fail should by convention have the suffix C<_bad> in their name,
 and include C<fails =E<gt> 1> in either their C<compile> or C<execute> step as
 appropriate.
 
+=head2 Preparing to Run Tests
+
+For all tests to pass you must install the following packages:
+
+* SystemC to compile the SystemC outputs, see http://systemc.org
+
+* Parallel::Forker from CPAN to run tests in parallel, you can install this
+with e.g. "sudo cpan install Parallel::Forker".
+
+* vcddiff to find differences in VCD outputs. See the readme at
+https://github.com/veripool/vcddiff
+
 =head2 Controlling the Test Driver
 
 Test drivers are written in PERL. All invoke the main test driver script,
