@@ -178,6 +178,7 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 #else // Linux or compliant Unix flavors, -m64
 
 # include <stdint.h>	// Linux and most flavors
+# include <unistd.h>	// Linux ssize_t
 # include <inttypes.h>	// Solaris
 typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
 typedef uint16_t		vluint16_t;	///< 32-bit unsigned type
