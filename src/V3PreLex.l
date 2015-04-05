@@ -124,16 +124,16 @@ drop		[\032]
 	/* Protected blocks */
 <INITIAL>"`protected"	{ yy_push_state(PRTMODE); yymore(); }
 <PRTMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in `protected"); yyleng=0; yyterminate(); }
-<PRTMODE>{crnl}		{ linenoInc(); yymore(); }
+<PRTMODE>{crnl}		{ linenoInc(); return VP_TEXT; }
 <PRTMODE>.	 	{ yymore(); }
-<PRTMODE>"`endprotected" { yy_pop_state(); return (VP_TEXT); }
+<PRTMODE>"`endprotected" { yy_pop_state(); return VP_TEXT; }
 
 	/* Pass-through include <> filenames */
 <INCMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in unterminated include filename"); yyleng=0; yyterminate(); }
 <INCMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated include filename"); BEGIN(INITIAL); }
 <INCMODE>[^\>\\]	{ yymore(); }
 <INCMODE>{backslash}.	{ yymore(); }
-<INCMODE>[\>]	 	{ yy_pop_state(); return (VP_STRING); }
+<INCMODE>[\>]	 	{ yy_pop_state(); return VP_STRING; }
 
 	/* Reading definition formal parenthesis (or not) to begin formal arguments */
 	/* Note '(' must IMMEDIATELY follow definition name */
