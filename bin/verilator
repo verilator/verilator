@@ -1359,6 +1359,7 @@ And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
+    export LD_LIBRARY_PATH=$SYSTEMC_LIBDIR:$LD_LIBRARY_PATH
     # Might be needed if SystemC 2.3.0
     export SYSTEMC_CXX_FLAGS=-pthread
 
@@ -1497,6 +1498,12 @@ After running Make, the C++ compiler should produce the following:
 =head1 ENVIRONMENT
 
 =over 4
+
+=item LD_LIBRARY_PATH
+
+A generic Linux/OS variable specifying what directories have shared object
+(.so) files.  This path should include SystemC and any other shared objects
+needed at runtime.
 
 =item OBJCACHE
 
