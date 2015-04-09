@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.873 devel
+
+
+
 * Verilator 3.872 2015-04-05
 
 ***   Add VerilatedVcdFile to allow real-time waveforms, bug890. [HyungKi Jeong]
