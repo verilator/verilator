@@ -207,10 +207,7 @@ test_regress: all_nomsg
 info: $(INFOS)
 
 # Use --no-split to avoid creating filenames > 14 chars.
-verilator.1: ${srcdir}/bin/verilator
-	pod2man $< $@
-
-verilator_coverage.1: ${srcdir}/bin/verilator_coverage
+%.1: ${srcdir}/bin/%
 	pod2man $< $@
 
 verilator.txt: ${srcdir}/bin/verilator
@@ -267,7 +264,7 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1 verilator_coverage.1
+VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_profcfunc.1
 
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated.mk \
@@ -297,7 +294,7 @@ installbin:
 # So important we use $< so VPATH is searched
 installman: $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
-	for p in $< ; do \
+	for p in $^ ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 

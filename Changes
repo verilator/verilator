@@ -5,6 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.873 devel
 
+****  Fix installing missing manpages, bug908.  [Ahmed El-Mahmoudy]
 
 
 * Verilator 3.872 2015-04-05
