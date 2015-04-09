@@ -2894,7 +2894,7 @@ this warning is enabled only if user has explicitly marked some signal as
 clocker using command line option or in-source meta comment (see C<--clk>).
 
 The warning can be disabled without affecting the simulation result. But it
-is recommanded to check the warning as this may degrade the performance of
+is recommended to check the warning as this may degrade the performance of
 the Verilated model.
 
 =item CMPCONST
