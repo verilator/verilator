@@ -362,6 +362,7 @@ private:
 	nodep->iterateChildren(*this);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("gate_pre");
+	warnSignals();  // Before loss of sync/async pointers
 	m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
 	m_graph.dumpDotFilePrefixed("gate_simp");
 	// Find gate interconnect and optimize
@@ -373,8 +374,7 @@ private:
 	// Remove redundant logic
 	if (v3Global.opt.oDedupe()) dedupe();
 	if (v3Global.opt.oAssemble()) mergeAssigns();
-	// Warn
-	warnSignals();
+	// Consumption warnings
 	consumedMark();
 	m_graph.dumpDotFilePrefixed("gate_opt");
 	// Rewrite assignments
