@@ -101,8 +101,8 @@ SHELL = /bin/sh
 SUBDIRS = src test_verilated test_c test_sc test_regress
 
 INFOS = README README.html README.pdf internals.txt internals.html \
-        internals.pdf verilator.txt verilator.html verilator.1 verilator.pdf \
-	verilator_coverage.1
+        internals.pdf verilator.txt verilator.html verilator.pdf \
+	$(VL_INST_MAN_FILES)
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
