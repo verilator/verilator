@@ -345,6 +345,7 @@ private:
 	while (!m_readEof && (size<0 || size>sizegot)) {
 	    ssize_t todo = INFILTER_IPC_BUFSIZ;
 	    if (size>0 && size<todo) todo = size;
+	    errno = 0;
 	    ssize_t got = read (fd, buf, todo);
 	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) {
@@ -384,6 +385,7 @@ private:
 	if (!m_pid) { v3error("--pipe-filter: write to closed file\n"); m_readEof = true; stop(); }
 	unsigned offset = 0;
 	while (!m_readEof && out.length()>offset) {
+	    errno = 0;
 	    int got = write (m_writeFd, (out.c_str())+offset, out.length()-offset);
 	    //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) offset += got;
