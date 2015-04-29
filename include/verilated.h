@@ -594,13 +594,13 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
 
 #define VL_ASSIGN_SWI(obits,svar,rd) { \
     sc_bv<obits> _bvtemp; \
-    _bvtemp.set_word(0,rd); \
+    _bvtemp.set_word(0,(rd));			\
     svar.write(_bvtemp); \
 }
 #define VL_ASSIGN_SWQ(obits,svar,rd) { \
     sc_bv<obits> _bvtemp; \
-    _bvtemp.set_word(0,rd); \
-    _bvtemp.set_word(1,rd>>VL_WORDSIZE); \
+    _bvtemp.set_word(0,(IData)(rd));	 \
+    _bvtemp.set_word(1,(IData)((rd)>>VL_WORDSIZE));	\
     svar.write(_bvtemp); \
 }
 #define VL_ASSIGN_SWW(obits,svar,rwp) { \

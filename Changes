@@ -5,9 +5,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.873 devel
 
-****  Fix installing missing manpages, bug908.  [Ahmed El-Mahmoudy]
+****  Fix installing missing manpages, bug908. [Ahmed El-Mahmoudy]
 
-****  Fix core dump in sync-async warnings, bug911.  [Sebastian Dressler]
+****  Fix core dump in sync-async warnings, bug911. [Sebastian Dressler]
+
+****  Fix truncation warning with -pins-bv, bug912. [Alfonso Martinez]
 
 
 * Verilator 3.872 2015-04-05
