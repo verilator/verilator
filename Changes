@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix truncation warning with -pins-bv, bug912. [Alfonso Martinez]
 
+****  Fix Cygwin uint32 compile, bug914. [Matthew Barr]
+
 
 * Verilator 3.872 2015-04-05
 

@@ -139,7 +139,7 @@ typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward comp
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
-# ifdef __uint32_t_defined      		// Newer Cygwin uint32_t in stdint.h as an unsigned int
+# if defined(__uint32_t_defined) || defined(___int32_t_defined)    // Newer Cygwin uint32_t in stdint.h as an unsigned int
 typedef int32_t			vlsint32_t;	///< 32-bit signed type
 typedef uint32_t		vluint32_t;	///< 32-bit unsigned type
 # else				 		// Older Cygwin has long==uint32_t
