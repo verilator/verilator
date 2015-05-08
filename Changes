@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix Cygwin uint32 compile, bug914. [Matthew Barr]
 
+****  Fix preprocessing stringified newline escapes, bug915. [Anton Rapp]
+
 
 * Verilator 3.872 2015-04-05
 

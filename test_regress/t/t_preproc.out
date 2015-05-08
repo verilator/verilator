@@ -792,6 +792,13 @@ module t;
     
  
    initial $write("Slashed=`%s'\n", "1//2.3");
+    
+    
+ 
+
+   initial 
+`line 531 "t/t_preproc.v" 0
+       $display("%s%s","a1","b2c3\n");
 endmodule
  
  
@@ -813,4 +820,4 @@ predef 1 1
 predef 2 2
  
 
-`line 548 "t/t_preproc.v" 2
+`line 553 "t/t_preproc.v" 2

@@ -524,6 +524,11 @@ module t;
    // bug845
 `define SLASHED "1//2.3"
    initial $write("Slashed=`%s'\n", `SLASHED);
+   //----
+   // bug915
+`define BUG915(a,b,c) \
+       $display("%s%s",a,`"b``c``\n`")
+   initial `BUG915("a1",b2,c3);
 endmodule
 //======================================================================
 // IEEE mandated predefines
