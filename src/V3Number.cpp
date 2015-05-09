@@ -1569,6 +1569,24 @@ V3Number& V3Number::opSel (const V3Number& lhs, uint32_t msbval, uint32_t lsbval
     return *this;
 }
 
+V3Number& V3Number::opSelInto (const V3Number& lhs, const V3Number& lsb, int width) {
+    return opSelInto(lhs, lsb.toSInt(), width);
+}
+
+V3Number& V3Number::opSelInto (const V3Number& lhs, int lsbval, int width) {
+    // this[lsbval+width-1 : lsbval] = lhs;  Other bits of this are not affected
+    int ibit=0;
+    for(int bit=lsbval; bit<lsbval+width; bit++) {
+	if (ibit>=0 && ibit<(uint32_t)lhs.width()) {
+	    setBit(bit,lhs.bitIs(ibit));
+	} else {
+	    setBit(bit,'x');
+	}
+	ibit++;
+    }
+    return *this;
+}
+
 V3Number& V3Number::opCond  (const V3Number& lhs, const V3Number& if1s, const V3Number& if0s) {
     V3Number lhstrue (lhs.m_fileline);  lhstrue.opRedOr(lhs);
     if (lhstrue.bitIs0(0)) {

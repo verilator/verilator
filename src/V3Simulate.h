@@ -224,15 +224,23 @@ private:
 	if (!vscp) nodep->v3fatalSrc("Not linked");
 	return vscp;
     }
-
     int unrollCount() {
 	return m_params ? v3Global.opt.unrollCount()*16
 	    : v3Global.opt.unrollCount();
     }
-
     bool jumpingOver(AstNode* nodep) {
 	// True to jump over this node - all visitors must call this up front
 	return (m_jumpp && m_jumpp->labelp()!=nodep);
+    }
+    void assignOutNumber(AstNodeAssign* nodep, AstNode* vscp, const V3Number* nump) {
+	// Don't do setNumber, as value isn't yet visible to following statements
+	if (nodep->castAssignDly()) {
+	    // Don't do setNumber, as value isn't yet visible to following statements
+	    newOutNumber(vscp)->opAssign(*nump);
+	} else {
+	    newNumber(vscp)->opAssign(*nump);
+	    newOutNumber(vscp)->opAssign(*nump);
+	}
     }
 
     // VISITORS
@@ -438,7 +446,43 @@ private:
 	    if (m_anyAssignDly) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
 	    m_anyAssignComb = true;
 	}
-	if (!nodep->lhsp()->castVarRef()) {
+	if (AstSel* selp = nodep->lhsp()->castSel()) {
+	    if (!m_params) { clearOptimizable(nodep, "LHS has select"); return; }
+	    checkNodeInfo(selp);
+	    AstVarRef* varrefp = selp->fromp()->castVarRef();
+	    if (!varrefp) { 
+		clearOptimizable(nodep, "Select LHS isn't simple variable");
+		return;
+	    }
+	    if (m_checkOnly) {
+		nodep->iterateChildren(*this);
+	    } else {
+		selp->lsbp()->iterateAndNext(*this);
+		nodep->rhsp()->iterateAndNext(*this);
+		if (optimizable()) {
+		    AstNode* vscp = varOrScope(varrefp);
+		    if (optimizable()) {
+			V3Number outnum (nodep->fileline(), varrefp->varp()->widthMin());
+			if (V3Number* outnump = fetchOutNumberNull(vscp)) {
+			    outnum = *outnump;
+			} else if (V3Number* outnump = fetchNumberNull(vscp)) {
+			    outnum = *outnump;
+			} else {  // Assignment to unassigned variable, all bits are X or 0
+			    if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
+				outnum.setAllBits0();
+			    } else {
+				outnum.setAllBitsX();
+			    }
+			}
+			outnum.opSelInto(*fetchNumber(nodep->rhsp()),
+					 *fetchNumber(selp->lsbp()),
+					 selp->widthConst());
+			assignOutNumber(nodep, vscp, &outnum);
+		    }
+		}
+	    }
+	}
+	else if (!nodep->lhsp()->castVarRef()) {
 	    clearOptimizable(nodep, "LHS isn't simple variable");
 	}
 	else if (m_checkOnly) {
@@ -448,14 +492,7 @@ private:
 	    nodep->rhsp()->iterateAndNext(*this);
 	    if (optimizable()) {
 		AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
-		// Copy by value, not reference, as we don't want a=a+1 to get right results
-		if (nodep->castAssignDly()) {
-		    // Don't do setNumber, as value isn't yet visible to following statements
-		    newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
-		} else {
-		    newNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
-		    newOutNumber(vscp)->opAssign(*fetchNumber(nodep->rhsp()));
-		}
+		assignOutNumber(nodep, vscp, fetchNumber(nodep->rhsp()));
 	    }
 	}
 	m_inDlyAssign = false;

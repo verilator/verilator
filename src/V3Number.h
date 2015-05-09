@@ -235,6 +235,8 @@ public:
     V3Number& opStreamL	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSel	(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
     V3Number& opSel	(const V3Number& lhs, uint32_t rhs, uint32_t ths);
+    V3Number& opSelInto	(const V3Number& lhs, const V3Number& lsb, int width);
+    V3Number& opSelInto	(const V3Number& lhs, int lsb, int width);
     V3Number& opCond	(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
     V3Number& opCaseEq	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opCaseNeq	(const V3Number& lhs, const V3Number& rhs);
