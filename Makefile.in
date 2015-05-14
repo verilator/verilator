@@ -84,6 +84,10 @@ infodir = @infodir@
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 
+# Directory in which to install pkgconfig file
+# Generall ${prefix}/share/pkgconfig
+pkgconfigdir = @pkgconfigdir@
+
 # Directory in which to install data across multiple architectures
 datarootdir = @datarootdir@
 
@@ -314,6 +318,8 @@ installdata:
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/examples/$$p; \
 	done
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL_DATA) verilator.pc $(DESTDIR)$(pkgconfigdir)
 
 # We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
 uninstall:
@@ -323,6 +329,7 @@ uninstall:
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_BLDDIR_FILES)
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_SRCDIR_FILES)
 	-cd $(DESTDIR)$(pkgdatadir)/examples && rm -f $(VL_INST_DATA_SRCDIR_FILES)
+	-rm $(DESTDIR)$(pkgconfigdir)/verilator.pc
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
@@ -332,6 +339,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/test_v
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
+	-rmdir $(DESTDIR)$(pkgconfigdir)
 
 install: all_nomsg install-all
 install-all: installbin installman installdata install-msg

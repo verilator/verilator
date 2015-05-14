@@ -8,7 +8,7 @@
 #AC_INIT([Verilator],[#.### devel])
 AC_INIT([Verilator],[3.873 devel])
 AC_CONFIG_HEADER(src/config_build.h)
-AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h)
+AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc)
 
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 
@@ -161,6 +161,8 @@ AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 # Other install directories
 pkgdatadir=${datadir}/verilator
 AC_SUBST(pkgdatadir)
+pkgconfigdir=${datadir}/pkgconfig
+AC_SUBST(pkgconfigdir)
 
 AC_OUTPUT
 

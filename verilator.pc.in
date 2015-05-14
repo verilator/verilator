@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+datarootdir=@datarootdir@
+includedir=@pkgdatadir@/include
+
+Name: verilator
+Description: fast free Verilog simulator
+URL: http://www.veripool.org/verilator
+Version: @PACKAGE_VERSION@
+Requires:
+Libs:
+Cflags: -I${includedir}

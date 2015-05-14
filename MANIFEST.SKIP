@@ -12,6 +12,7 @@
 .*\.tex
 .*\.key
 .*\.vcd
+.*\.1
 /obj_dir/
 /obj_dbg/
 /obj_opt/
@@ -27,6 +28,7 @@ config.cache$
 config.status$
 verilator.log
 verilator.tex
+verilator.pc$
 verilator_bin.*
 verilator_coverage_bin.*
 .vcsmx_rebuild$
