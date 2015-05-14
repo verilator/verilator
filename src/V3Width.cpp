@@ -3005,9 +3005,10 @@ private:
 		// which bits to truncate.
 		AstNodeAssign* assignp = nodep->castNodeAssign();
 		AstPin* pinp = nodep->castPin();
-		if (assignp && assignp->lhsp()->castNodeStream()) { }
-		else if (pinp && !pinp->modVarp()->isInput()) { }
-		else {
+		if (assignp && assignp->lhsp()->castNodeStream()) {
+		} else if (pinp && !pinp->modVarp()->isInput()) {  // V3Inst::pinReconnectSimple must deal
+		    UINFO(5,"pinInSizeMismatch: "<<pinp);
+		} else {
 		    fixWidthExtend(underp, expDTypep, extendRule); underp=NULL;//Changed
 		}
 	    }
