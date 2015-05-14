@@ -29,12 +29,8 @@ module t (/*AUTOARG*/
 `endif
       if (sgn_wide[2:0] != 3'sh7) $stop;
       if (unsgn_wide[2:0] != 3'h7) $stop;
-      if (sgn_wide !== 8'sh7) $stop;
       // Simulators differ here.
       if (sgn_wide     !== 8'sbzzzzz111  // z-extension - NC
-`ifdef VERILATOR
-	  && sgn_wide  !== 8'sb00000111  // 0-extension - verilator as it doesn't have Z
-`endif
 	  && sgn_wide  !== 8'sb11111111) $stop;  // sign extension - VCS
       if (unsgn_wide   !== 8'sbzzzzz111
 	  && unsgn_wide!== 8'sb00000111) $stop;

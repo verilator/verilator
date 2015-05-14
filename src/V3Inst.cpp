@@ -256,10 +256,12 @@ private:
 	    rhsp = (rhsp->isSigned()
 		    ? (new AstExtendS(fl, rhsp))->castNode()
 		    : (new AstExtend (fl, rhsp))->castNode());
+	    rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
 	} else if (cmpWidthp->width() < rhsp->width()) {
 	    rhsp = new AstSel (fl, rhsp, 0, cmpWidthp->width());
+	    rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
 	}
-	rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
+	// else don't change dtype, as might be e.g. array of something
 	return rhsp;
     }
 
@@ -312,9 +314,11 @@ public:
 	    } else if (pinVarp->isOutput()) {
 		// See also V3Inst
 		AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
+		UINFO(5,"pinRecon width "<<pinVarp->width()<<" >? "<<rhsp->width()<<" >? "<<pinexprp->width()<<endl);
 		rhsp = extendOrSel (pinp->fileline(), rhsp, pinVarp);
-		assignp = new AstAssignW (pinp->fileline(), pinexprp, rhsp);
-		pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, true));
+		pinp->exprp(new AstVarRef (newvarp->fileline(), newvarp, true));
+		AstNode* rhsSelp = extendOrSel (pinp->fileline(), rhsp, pinexprp);
+		assignp = new AstAssignW (pinp->fileline(), pinexprp, rhsSelp);
 	    } else {
 		// V3 width should have range/extended to make the widths correct
 		assignp = new AstAssignW (pinp->fileline(),
