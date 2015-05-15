@@ -187,7 +187,7 @@ void process () {
     // Commit to the widths we've chosen; Make widthMin==width
     V3Width::widthCommit(v3Global.rootp());
     v3Global.assertDTypesResolved(true);
-    v3Global.assertWidthsMatch(true);
+    v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
 
     // Coverage insertion
     //    Before we do dead code elimination and inlining, or we'll lose it.
@@ -448,7 +448,7 @@ void process () {
 
 	// Here down, widthMin() is the Verilog width, and width() is the C++ width
 	// Bits between widthMin() and width() are irrelevant, but may be non zero.
-	v3Global.assertWidthsMatch(false);
+	v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
 	// Make all math operations either 8, 16, 32 or 64 bits
 	V3Clean::cleanAll(v3Global.rootp());

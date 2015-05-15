@@ -1079,6 +1079,7 @@ public:
     //TODO stomp these width functions out, and call via dtypep() instead
     int		width() const;
     int		widthMin() const;
+    int		widthMinV() const { return v3Global.widthMinUsage()==VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width(); }
     int		widthWords() const { return VL_WORDS_I(width()); }
     bool	isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
     bool	isWide() const { return (width()>VL_QUADSIZE); }

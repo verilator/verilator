@@ -103,7 +103,7 @@ public:
 	return num().isCaseEq(samep->castConst()->num()); }
     virtual int instrCount() const { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
-    bool isEqAllOnesV() const { return num().isEqAllOnes(widthMin()); }
+    bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
 };
 
 class AstRange : public AstNode {
@@ -3310,7 +3310,8 @@ public:
 	dtypeSetLogicSized(width,width,AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(ExtendS, EXTENDS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.opExtendS(lhs, lhsp()->widthMin()); }
+	out.opExtendS(lhs, lhsp()->widthMinV());
+    }
     virtual string emitVerilog() { return "%l"; }
     virtual string emitC() { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
     virtual bool cleanOut() {return false;} virtual bool cleanLhs() {return true;}
@@ -4150,7 +4151,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(ShiftRS, SHIFTRS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
-	out.opShiftRS(lhs,rhs,lhsp()->widthMin()); }
+	out.opShiftRS(lhs,rhs,lhsp()->widthMinV()); }
     virtual string emitVerilog() { return "%k(%l %f>>> %r)"; }
     virtual string emitC() { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     virtual string emitSimpleOperator() { return ""; }

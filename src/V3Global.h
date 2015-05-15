@@ -36,15 +36,35 @@ class AstNetlist;
 
 
 //######################################################################
-// V3 - The top level class for the entire program
+
+class VWidthMinUsage {
+public:
+    enum en {
+	LINT_WIDTH,
+	MATCHES_WIDTH,
+	VERILOG_WIDTH
+    };
+    enum en m_e;
+    inline VWidthMinUsage () : m_e(LINT_WIDTH) {}
+    inline VWidthMinUsage (en _e) : m_e(_e) {}
+    explicit inline VWidthMinUsage (int _e) : m_e(static_cast<en>(_e)) {}
+    operator en () const { return m_e; }
+  };
+  inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VWidthMinUsage::en lhs, VWidthMinUsage rhs) { return (lhs == rhs.m_e); }
+
+//######################################################################
+// V3Global - The top level class for the entire program
 
 class V3Global {
     // Globals
     AstNetlist*	m_rootp;		// Root of entire netlist
+    VWidthMinUsage m_widthMinUsage;	// What AstNode::widthMin() is used for
 
     int		m_debugFileNumber;	// Number to append to debug files created
+    int		m_assertWidthsMatch;	// Tree should have width()==widthMin()
     bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
-    bool	m_assertWidthsMatch;	// Tree should have width()==widthMin()
     bool	m_constRemoveXs;	// Const needs to strip any Xs
     bool	m_needHInlines;		// Need __Inlines file
     bool	m_needHeavy;		// Need verilated_heavy.h include
@@ -58,8 +78,8 @@ public:
     // CREATORS
     V3Global() {
 	m_debugFileNumber = 0;
+	m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
 	m_assertDTypesResolved = false;
-	m_assertWidthsMatch = false;
 	m_constRemoveXs = false;
 	m_needHInlines = false;
 	m_needHeavy = false;
@@ -71,15 +91,15 @@ public:
     void clear();
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }
+    VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
-    bool assertWidthsMatch() const { return m_assertWidthsMatch; }
 
     // METHODS
     void readFiles();
     void checkTree();
     static void dumpCheckGlobalTree(const string& filename, int newNumber=0, bool doDump=true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
-    void assertWidthsMatch(bool flag) { m_assertWidthsMatch = flag; }
+    void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {

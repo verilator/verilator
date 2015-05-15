@@ -204,6 +204,12 @@ public:
 
 class BrokenCheckVisitor : public AstNVisitor {
 private:
+    void checkWidthMin(AstNode* nodep) {
+	if (nodep->width() != nodep->widthMin()
+	    && v3Global.widthMinUsage()==VWidthMinUsage::MATCHES_WIDTH) {
+	    nodep->v3fatalSrc("Width != WidthMin");
+	}
+    }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	BrokenTable::setUnder(nodep,true);
 	if (const char* whyp=nodep->broken()) {
@@ -220,18 +226,9 @@ private:
 		if (nodep->dtypep()) nodep->v3fatalSrc("DType on node without hasDType(): "<<nodep->prettyTypeName());
 	    }
 	    if (nodep->getChildDTypep()) nodep->v3fatalSrc("childDTypep() non-null on node after should have removed");
-	    if (AstNodeDType* dnodep = nodep->castNodeDType()) {
-		if (dnodep->width() != dnodep->widthMin()
-		    && v3Global.assertWidthsMatch()) {
-		    dnodep->v3fatalSrc("Width != WidthMin");
-		}
-	    }
+	    if (AstNodeDType* dnodep = nodep->castNodeDType()) checkWidthMin(dnodep);
 	}
-	if (v3Global.assertWidthsMatch()) {
-	    if (nodep->width() != nodep->widthMin()) {
-		nodep->v3fatalSrc("Width != WidthMin");
-	    }
-	}
+	checkWidthMin(nodep);
 	nodep->iterateChildrenConst(*this);
 	BrokenTable::setUnder(nodep,false);
     }
