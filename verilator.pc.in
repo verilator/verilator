@@ -10,4 +10,4 @@ URL: http://www.veripool.org/verilator
 Version: @PACKAGE_VERSION@
 Requires:
 Libs:
-Cflags: -I${includedir}
+Cflags: -I${includedir} -I${includedir}/vltstd

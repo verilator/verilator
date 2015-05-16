@@ -425,7 +425,7 @@ ftp: info
 install-msg:
 	@echo "Installed!"
 	@echo
-	@echo "Fod documentation see 'man verilator' or 'verilator --help'"
+	@echo "For documentation see 'man verilator' or 'verilator --help'"
 	@echo "For forums and to report bugs see http://www.veripool.org/verilator"
 	@echo
 
