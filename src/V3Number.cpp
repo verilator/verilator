@@ -1577,7 +1577,7 @@ V3Number& V3Number::opSelInto (const V3Number& lhs, int lsbval, int width) {
     // this[lsbval+width-1 : lsbval] = lhs;  Other bits of this are not affected
     int ibit=0;
     for(int bit=lsbval; bit<lsbval+width; bit++) {
-	if (ibit>=0 && ibit<(uint32_t)lhs.width()) {
+	if (ibit>=0 && ibit<lhs.width()) {
 	    setBit(bit,lhs.bitIs(ibit));
 	} else {
 	    setBit(bit,'x');
