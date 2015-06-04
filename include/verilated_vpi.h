@@ -421,7 +421,7 @@ public:
     do { \
         va_list args; \
         va_start(args, message); \
-        vsnprintf(m_buff, sizeof(m_buff), message.c_str(), args); \
+        VL_VSNPRINTF(m_buff, sizeof(m_buff), message.c_str(), args); \
         va_end(args); \
     } while (0)
 

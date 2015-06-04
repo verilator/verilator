@@ -117,7 +117,7 @@ void yyerrorf(const char* format, ...) {
 
     va_list ap;
     va_start(ap,format);
-    vsnprintf(msg,maxlen,format,ap);
+    VL_VSNPRINTF(msg,maxlen,format,ap);
     msg[maxlen-1] = '\0';
     va_end(ap);
 

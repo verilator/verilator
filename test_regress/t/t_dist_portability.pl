@@ -18,6 +18,7 @@ if (!-r "$root/.git") {
     uint();
     printfll();
     cstr();
+    vsnprintf();
 }
 
 ok(1);
@@ -83,6 +84,24 @@ sub cstr {
     }
     if (keys %names) {
 	$Self->error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
+    }
+}
+
+sub vsnprintf {
+    my $files = "src/*.c* src/*.h include/*.c* include/*.h test_c/*.c* test_regress/t/*.c* test_regress/t/*.h";
+    my $cmd = "cd $root && grep -n -P 'vsnprintf' $files | sort";
+    print "C $cmd\n";
+    my $grep = `$cmd`;
+    my %names;
+    foreach my $line (split /\n/, $grep) {
+	if ($line =~ /\b(vsnprintf)\b/) {
+	    next if $line =~ /# *define\s*VL_VSNPRINTF/;
+	    print "$line\n";
+	    $names{$1} = 1;
+	}
+    }
+    if (keys %names) {
+	$Self->error("Files with vsnprintf, use VL_VSNPRINTF: ",join(' ',sort keys %names));
     }
 }
 

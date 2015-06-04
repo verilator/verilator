@@ -207,6 +207,22 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 # endif
 #endif
 
+#ifdef _WIN32
+# define VL_VSNPRINTF vl_vsnprintf
+inline int vl_vsnprintf(char* str, size_t size, const char* format, va_list ap) {
+    int count = -1;
+    if (size != 0) {
+        count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+    }
+    if (count == -1) {
+        count = _vscprintf(format, ap);
+    }
+    return count;
+}
+#else
+# define VL_VSNPRINTF vsnprintf
+#endif
+
 //=========================================================================
 // File system functions
 
