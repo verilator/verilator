@@ -169,6 +169,10 @@
       `checkh(w32_u, 32'h0000_0180);
       w32_u = 32'(signed'({4'b0011,5'b10000}) << 3);
       `checkh(w32_u, 32'h0000_0380);
+      w32_u = signed'(32'({4'b0001,5'b10000}) << 3);
+      `checkh(w32_u, 32'h0000_0180);
+      w32_u = signed'(32'({4'b0011,5'b10000}) << 3);
+      `checkh(w32_u, 32'h0000_0380);
       // verilator lint_on WIDTH
       w32_u = 32'(signed'({4'b0011,5'b10000})) << 3;  // Check no width warning
       `checkh(w32_u, 32'h0000_0380);

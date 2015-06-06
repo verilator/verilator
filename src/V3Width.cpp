@@ -1009,8 +1009,10 @@ private:
 	//if (debug()) newp->dumpTree(cout,"  CastOut: ");
     }
     virtual void visit(AstCastSize* nodep, AstNUser* vup) {
+	// IEEE: Signedness of result is same as self-determined signedness
+	// However, the result is same as BITSEL, so we do not sign extend the LHS
 	if (!nodep->rhsp()->castConst()) nodep->v3fatalSrc("Unsupported: Non-const cast of size");
-	//if (debug()) nodep->dumpTree(cout,"  CastPre: ");
+	//if (debug()) nodep->dumpTree(cout,"  CastSizePre: ");
 	if (vup->c()->prelim()) {
 	    int width = nodep->rhsp()->castConst()->toSInt();
 	    if (width < 1) { nodep->v3error("Size-changing cast to zero or negative size"); width=1; }
@@ -1020,12 +1022,29 @@ private:
 		nodep->v3error("Unsupported: Size-changing cast on non-basic data type");
 		underDtp = nodep->findLogicBoolDType()->castBasicDType();
 	    }
-	    AstNodeDType* newDtp = (underDtp->keyword().isFourstate()
-				    ? nodep->findLogicDType(width, width, underDtp->numeric())
-				    : nodep->findBitDType(width, width, underDtp->numeric()));
-	    nodep->dtypep(newDtp);
-	    // We ignore warnings as that is sort of the point of a cast
-	    iterateCheck(nodep,"Cast LHS",nodep->lhsp(),CONTEXT,FINAL,newDtp,EXTEND_EXP,false);
+	    // A cast propagates its size to the lower expression and is included in the maximum
+	    // width, so 23'(1'b1 + 1'b1) uses 23-bit math, but 1'(2'h2 * 2'h1) uses two-bit math.
+	    // However the output width is exactly that requested.
+	    // So two steps, first do the calculation's width (max of the two widths)
+	    {
+		int calcWidth  = max(width, underDtp->width());
+		AstNodeDType* calcDtp = (underDtp->keyword().isFourstate()
+					 ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
+					 : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
+		nodep->dtypep(calcDtp);
+		// We ignore warnings as that is sort of the point of a cast
+		iterateCheck(nodep,"Cast expr",nodep->lhsp(),CONTEXT,FINAL,calcDtp,EXTEND_EXP,false);
+	    }
+	    if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
+	    // Next step, make the proper output width
+	    {
+		AstNodeDType* outDtp = (underDtp->keyword().isFourstate()
+					? nodep->findLogicDType(width, width, underDtp->numeric())
+					: nodep->findBitDType(width, width, underDtp->numeric()));
+		nodep->dtypep(outDtp);
+		// We ignore warnings as that is sort of the point of a cast
+		widthCheckSized(nodep,"Cast expr",nodep->lhsp(),outDtp,EXTEND_EXP,false);
+	    }
 	}
 	if (vup->c()->final()) {
 	    // CastSize not needed once sizes determined
@@ -1033,6 +1052,7 @@ private:
 	    nodep->replaceWith(underp);
 	    pushDeletep(nodep); nodep=NULL;
 	}
+	//if (debug()) nodep->dumpTree(cout,"  CastSizeOut: ");
     }
     virtual void visit(AstVar* nodep, AstNUser* vup) {
 	//if (debug()) nodep->dumpTree(cout,"  InitPre: ");

@@ -13,6 +13,23 @@ module t;
    logic [15:0] allones = 16'hffff;
    parameter FOUR = 4;
 
+   // bug925
+   localparam [6:0] RESULT = 7'((6*9+92)%96);
+
+   logic signed [14:0] samp0 = 15'h0000;
+   logic signed [14:0] samp1 = 15'h0000;
+   logic signed [14:0] samp2 = 15'h6000;
+   logic signed [11:0] coeff0 = 12'h009;
+   logic signed [11:0] coeff1 = 12'h280;
+   logic signed [11:0] coeff2 = 12'h4C5;
+   logic signed [26:0] mida =    ((27'(coeff2 * samp2) >>> 11));
+   // verilator lint_off WIDTH
+   logic signed [26:0] midb = 15'((27'(coeff2 * samp2) >>> 11));
+   // verilator lint_on WIDTH
+   logic signed [14:0] outa = 15'((27'(coeff0 * samp0) >>> 11) + // 27' size casting in order for intermediate result to not be truncated to the width of LHS vector
+				  (27'(coeff1 * samp1) >>> 11) +
+				  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
+
    initial begin
       if (4'shf > 4'sh0) $stop;
       if (signed'(4'hf) > 4'sh0) $stop;
@@ -24,9 +41,14 @@ module t;
       if ((4+2)'(allones) !== 6'h3f) $stop;
       if ((4-2)'(allones) !== 2'h3) $stop;
       if ((FOUR+2)'(allones) !== 6'h3f) $stop;
+      if (50 !== RESULT) $stop;
 
       o = tocast_t'(4'b1);
       if (o != 4'b1) $stop;
+
+      if (15'h6cec != outa) $stop;
+      if (27'h7ffecec != mida) $stop;
+      if (27'h7ffecec != midb) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

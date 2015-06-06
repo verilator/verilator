@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix width extension on mis-width ports, bug918. [Patrick Maupin]
 
+****  Fix width propagation on sized casts, bug925. [Jonathon Donaldson]
+
 ****  Fix MSVC++ compiler error, bug927. [Hans Tichelaar]
 
 
