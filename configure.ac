@@ -6,7 +6,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[3.873 devel])
+AC_INIT([Verilator],[3.874 2015-06-06])
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc)
 
