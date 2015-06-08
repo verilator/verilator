@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.875 devel
 
+****  Fix MinGW compiler error, bug929. [Hans Tichelaar]
+
 * Verilator 3.874 2015-06-06
 
 ***   Add pkg-config .pc file, bug919. [Stefan Wallentowitz]

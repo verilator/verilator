@@ -55,7 +55,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
     } else {
 	UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
-#if defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
+#if !defined(__MINGW32__) && (defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L))
     setenv(envvar.c_str(),value.c_str(),true);
 #else
     //setenv() replaced by putenv() in MinGW/Solaris environment. Prototype is different
