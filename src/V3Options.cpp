@@ -960,6 +960,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    if (suffixed(filename.c_str(), ".cpp")
 		|| suffixed(filename.c_str(), ".cxx")
 		|| suffixed(filename.c_str(), ".cc")
+		|| suffixed(filename.c_str(), ".c")
 		|| suffixed(filename.c_str(), ".sp")) {
 		V3Options::addCppFile(filename);
 	    }

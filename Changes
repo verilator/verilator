@@ -7,6 +7,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix MinGW compiler error, bug929. [Hans Tichelaar]
 
+****  Fix .c files to be treated as .cpp, bug930. [Jonathon Donaldson]
+
+
 * Verilator 3.874 2015-06-06
 
 ***   Add pkg-config .pc file, bug919. [Stefan Wallentowitz]
