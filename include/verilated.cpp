@@ -708,8 +708,8 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
 	    start = false;	// Drop leading 0s
 	}
     }
-    *destp++ = '\0'; // Terminate
-    while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
+    *destp = '\0'; // Terminate
+    if (!start) while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
 }
 
 void _VL_STRING_TO_VINT(int obits, void* destp, int srclen, const char* srcp) {

@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix .c files to be treated as .cpp, bug930. [Jonathon Donaldson]
 
+****  Fix string-to-int space conversion, bug931. [Fabrizio Ferrandi]
+
 
 * Verilator 3.874 2015-06-06
 
