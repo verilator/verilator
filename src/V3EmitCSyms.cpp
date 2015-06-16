@@ -193,14 +193,18 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	string name = nodep->scopeSymName();
-	//UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettyName()<<" ss "<<name<<endl);
+	//UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()<<" ss "<<name<<endl);
 	if (m_scopeNames.find(name) == m_scopeNames.end()) {
-	    m_scopeNames.insert(make_pair(name, ScopeNameData(name, nodep->scopePrettyName())));
+	    m_scopeNames.insert(make_pair(name, ScopeNameData(name, nodep->scopePrettySymName())));
 	}
 	if (nodep->dpiExport()) {
 	    if (!m_funcp) nodep->v3fatalSrc("ScopeName not under DPI function");
 	    m_scopeFuncs.insert(make_pair(name + " " + m_funcp->name(),
 					  ScopeFuncData(nodep, m_funcp, m_modp)));
+	} else {
+	    if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
+		m_scopeNames.insert(make_pair(nodep->scopeDpiName(), ScopeNameData(nodep->scopeDpiName(), nodep->scopePrettyDpiName())));
+	    }
 	}
     }
     virtual void visit(AstVar* nodep, AstNUser*) {

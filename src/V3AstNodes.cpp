@@ -506,9 +506,9 @@ string AstScope::nameDotless() const {
     return out;
 }
 
-string AstScopeName::scopePrettyName() const {
+string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp=scopeAttrp(); textp; textp=textp->nextp()->castText()) {
+    for (AstText* textp=scopeTextp; textp; textp=textp->nextp()->castText()) {
 	out += textp->text();
     }
     // TOP will be replaced by top->name()
@@ -518,27 +518,9 @@ string AstScopeName::scopePrettyName() const {
     return AstNode::prettyName(out);
 }
 
-string AstScopeName::scopeSymName() const {
+string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp=scopeAttrp(); textp; textp=textp->nextp()->castText()) {
-	out += textp->text();
-    }
-    if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
-    if (out.substr(0,7) == "__DOT__") out.replace(0,7,"");
-    if (out.substr(0,1) == ".") out.replace(0,1,"");
-    string::size_type pos;
-    while ((pos=out.find(".")) != string::npos) {
-	out.replace(pos, 1, "__");
-    }
-    while ((pos=out.find("__DOT__")) != string::npos) {
-	out.replace(pos, 7, "__");
-    }
-    return out;
-}
-
-string AstScopeName::scopeDpiName() const {
-    string out;
-    for (AstText* textp=scopeEntrp(); textp; textp=textp->nextp()->castText()) {
+    for (AstText* textp=scopeTextp; textp; textp=textp->nextp()->castText()) {
 	out += textp->text();
     }
     if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");

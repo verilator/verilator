@@ -1351,7 +1351,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 	    case 'g': displayArg(nodep,&elistp,isScan, vfmt,'g'); break;
 	    case 'm': {
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
-		string suffix = scopenamep->scopePrettyName();
+		string suffix = scopenamep->scopePrettySymName();
 		if (suffix=="") emitDispState.pushFormat("%S");
 		else emitDispState.pushFormat("%N");  // Add a . when needed
 		emitDispState.pushArg(' ',NULL, "vlSymsp->name()");

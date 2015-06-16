@@ -3067,6 +3067,8 @@ class AstScopeName : public AstNodeMath {
     // Children: TEXT
 private:
     bool	m_dpiExport;	// Is for dpiExport
+    string scopeNameFormatter(AstText* textp) const;
+    string scopePrettyNameFormatter(AstText* textp) const;
 public:
     AstScopeName(FileLine* fl) : AstNodeMath(fl), m_dpiExport(false) {
 	dtypeSetUInt64(); }
@@ -3080,9 +3082,10 @@ public:
     void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
     AstText*	scopeEntrp() const { return op2p()->castText(); }
     void 	scopeEntrp(AstNode* nodep) { addOp2p(nodep); }
-    string scopeSymName() const;  // Name for __Vscope variable including children
-    string scopeDpiName() const;  // Name for DPI import scope
-    string scopePrettyName() const;  // Name for __Vscope printing
+    string scopeSymName() const { return scopeNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
+    string scopeDpiName() const { return scopeNameFormatter(scopeEntrp()); }  // Name for DPI import scope
+    string scopePrettySymName() const { return scopePrettyNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
+    string scopePrettyDpiName() const { return scopePrettyNameFormatter(scopeEntrp()); }  // Name for __Vscope variable including children
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport=flag; }
 };
