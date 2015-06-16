@@ -207,7 +207,8 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 # endif
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
+# define VL_SNPRINTF _snprintf
 # define VL_VSNPRINTF vl_vsnprintf
 inline int vl_vsnprintf(char* str, size_t size, const char* format, va_list ap) {
     int count = -1;
@@ -220,6 +221,7 @@ inline int vl_vsnprintf(char* str, size_t size, const char* format, va_list ap) 
     return count;
 }
 #else
+# define VL_SNPRINTF snprintf
 # define VL_VSNPRINTF vsnprintf
 #endif
 

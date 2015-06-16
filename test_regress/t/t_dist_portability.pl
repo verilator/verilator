@@ -88,14 +88,15 @@ sub cstr {
 }
 
 sub vsnprintf {
-    my $files = "src/*.c* src/*.h include/*.c* include/*.h test_c/*.c* test_regress/t/*.c* test_regress/t/*.h";
-    my $cmd = "cd $root && grep -n -P 'vsnprintf' $files | sort";
+    # Note do not do test_regress, as VPI files need to compile without verilatedos.h
+    my $files = "src/*.c* src/*.h include/*.c* include/*.h test_c/*.c*";
+    my $cmd = "cd $root && grep -n -P '(snprintf|vsnprintf)' $files | sort";
     print "C $cmd\n";
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	if ($line =~ /\b(vsnprintf)\b/) {
-	    next if $line =~ /# *define\s*VL_VSNPRINTF/;
+	if ($line =~ /\b(snprintf|vsnprintf)\b/) {
+	    next if $line =~ /# *define\s*VL_V?SNPRINTF/;
 	    print "$line\n";
 	    $names{$1} = 1;
 	}

@@ -920,10 +920,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    value_p->value.str = outStr;
 	    switch (vop->varp()->vltype()) {
 	    // outStrSz does not include NULL termination so add one
-	    case VLVT_UINT8 : snprintf(outStr, outStrSz+1, "%hhu", (unsigned char )*((CData*)(vop->varDatap()))); return;
-	    case VLVT_UINT16: snprintf(outStr, outStrSz+1, "%hu",  (unsigned short)*((SData*)(vop->varDatap()))); return;
-	    case VLVT_UINT32: snprintf(outStr, outStrSz+1, "%u",   (unsigned int  )*((IData*)(vop->varDatap()))); return;
-	    case VLVT_UINT64: snprintf(outStr, outStrSz+1, "%llu",  (unsigned long long)*((QData*)(vop->varDatap()))); return;
+	    case VLVT_UINT8 : VL_SNPRINTF(outStr, outStrSz+1, "%hhu", (unsigned char )*((CData*)(vop->varDatap()))); return;
+	    case VLVT_UINT16: VL_SNPRINTF(outStr, outStrSz+1, "%hu",  (unsigned short)*((SData*)(vop->varDatap()))); return;
+	    case VLVT_UINT32: VL_SNPRINTF(outStr, outStrSz+1, "%u",   (unsigned int  )*((IData*)(vop->varDatap()))); return;
+	    case VLVT_UINT64: VL_SNPRINTF(outStr, outStrSz+1, "%llu",  (unsigned long long)*((QData*)(vop->varDatap()))); return;
 	    default:
                 strcpy(outStr, "-1");
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",

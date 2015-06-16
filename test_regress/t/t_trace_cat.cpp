@@ -26,11 +26,11 @@ double sc_time_stamp() {
 const char* trace_name() {
     static char name[1000];
 #if defined(T_TRACE_CAT)
-    snprintf(name,1000,"obj_dir/t_trace_cat/simpart_%04d.vcd", (int)main_time);
+    VL_SNPRINTF(name,1000,"obj_dir/t_trace_cat/simpart_%04d.vcd", (int)main_time);
 #elif defined(T_TRACE_CAT_REOPEN)
-    snprintf(name,1000,"obj_dir/t_trace_cat_reopen/simpart_%04d.vcd", (int)main_time);
+    VL_SNPRINTF(name,1000,"obj_dir/t_trace_cat_reopen/simpart_%04d.vcd", (int)main_time);
 #elif defined(T_TRACE_CAT_RENEW)
-    snprintf(name,1000,"obj_dir/t_trace_cat_renew/simpart_%04d.vcd", (int)main_time);
+    VL_SNPRINTF(name,1000,"obj_dir/t_trace_cat_renew/simpart_%04d.vcd", (int)main_time);
 #else
 # error "Unknown test"
 #endif
