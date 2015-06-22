@@ -1948,6 +1948,10 @@ Disable waveform tracing for all future signals declared in the specified
 filename (or wildcard with '*' or '?', or all files if omitted) and range
 of line numbers (or all lines if omitted).
 
+Cells below any module in the files/ranges specified will also not be
+traced.
+
+
 =back
 
 

@@ -208,18 +208,12 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #endif
 
 #if defined(_WIN32) && defined(_MSC_VER)
-# define VL_SNPRINTF _snprintf
-# define VL_VSNPRINTF vl_vsnprintf
-inline int vl_vsnprintf(char* str, size_t size, const char* format, va_list ap) {
-    int count = -1;
-    if (size != 0) {
-        count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
-    }
-    if (count == -1) {
-        count = _vscprintf(format, ap);
-    }
-    return count;
-}
+# if (_MSC_VER < 1900)
+#  define VL_SNPRINTF _snprintf
+# else
+#  define VL_SNPRINTF snprintf
+# endif
+# define VL_VSNPRINTF vsnprintf
 #else
 # define VL_SNPRINTF snprintf
 # define VL_VSNPRINTF vsnprintf
