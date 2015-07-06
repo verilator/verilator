@@ -1563,12 +1563,12 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 	    VHashFnv hash;
 	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 		if (AstVar* varp = nodep->castVar()) {
-		    hash.hash(varp->name());
-		    hash.hash(varp->dtypep()->width());
+		    hash.insert(varp->name());
+		    hash.insert(varp->dtypep()->width());
 		}
 	    }
 	    ofp()->printf(   "vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
-			     hash.value());
+			     hash.digestUInt64());
 	    if (de) {
 		puts("os.readAssert(__Vcheckval);\n");
 	    } else {

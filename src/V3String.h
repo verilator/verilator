@@ -55,35 +55,35 @@ public:
     VHashFnv() : m_hash(FNV1_64_INIT) {}
     ~VHashFnv() {}
 
-    vluint64_t value() const { return m_hash; }
+    vluint64_t digestUInt64() const { return m_hash; }
 
-    VHashFnv& hash(const void* bufp, size_t len) {  // Memory
+    VHashFnv& insert(const void* bufp, size_t len) {  // Memory
 	const uint8_t* bp = (const uint8_t*)bufp;
 	const uint8_t* be = bp + len;
 	while (bp < be) hashC((vluint64_t)*bp++);
 	return *this;
     }
-    VHashFnv& hash(const char* strp) {  // String
+    VHashFnv& insert(const char* strp) {  // String
 	const uint8_t* sp = (const uint8_t*)strp;
 	while (*sp) hashC((vluint64_t)*sp++);
 	return *this;
     }
-    VHashFnv& hash(const string& str) { return hash(str.data(), str.length()); }
-    VHashFnv& hash(vluint64_t n) {
+    VHashFnv& insert(const string& str) { return insert(str.data(), str.length()); }
+    VHashFnv& insert(vluint64_t n) {
 	hashC(n>>0); hashC(n>>8); hashC(n>>16); hashC(n>>24);
 	hashC(n>>32); hashC(n>>40); hashC(n>>48); hashC(n>>56);
 	return *this;
     }
-    VHashFnv& hash(uint32_t n) {
+    VHashFnv& insert(uint32_t n) {
 	hashC(n>>0); hashC(n>>8); hashC(n>>16); hashC(n>>24);
 	return *this;
     }
-    VHashFnv& hash(uint16_t n) {
+    VHashFnv& insert(uint16_t n) {
 	hashC(n>>0); hashC(n>>8);
 	return *this;
     }
-    VHashFnv& hash(uint8_t n) { hashC(n); return *this; }
-    VHashFnv& hash(int n) { hashC((vluint64_t)n); return *this; }
+    VHashFnv& insert(uint8_t n) { hashC(n); return *this; }
+    VHashFnv& insert(int n) { hashC((vluint64_t)n); return *this; }
 };
 
 //######################################################################
