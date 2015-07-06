@@ -68,7 +68,7 @@ public:
 	while (*sp) hashC((vluint64_t)*sp++);
 	return *this;
     }
-    VHashFnv& hash(const string& str) { return hash(str.c_str()); }
+    VHashFnv& hash(const string& str) { return hash(str.data(), str.length()); }
     VHashFnv& hash(vluint64_t n) {
 	hashC(n>>0); hashC(n>>8); hashC(n>>16); hashC(n>>24);
 	hashC(n>>32); hashC(n>>40); hashC(n>>48); hashC(n>>56);
