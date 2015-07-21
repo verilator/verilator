@@ -357,6 +357,7 @@ extern IData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
 extern IData VL_FOPEN_QI(QData ofilename, IData mode);
 inline IData VL_FOPEN_II(IData ofilename, IData mode) { return VL_FOPEN_QI(ofilename,mode); }
 
+
 extern void VL_FCLOSE_I(IData fdi);
 
 extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,

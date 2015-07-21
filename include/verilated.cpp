@@ -750,6 +750,11 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
     return got;
 }
 
+IData VL_FOPEN_NI(const string& filename, IData mode) {
+    char modez[5];
+    _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
+    return VL_FOPEN_S(filename.c_str(), modez);
+}
 IData VL_FOPEN_QI(QData filename, IData mode) {
     IData fnw[2];  VL_SET_WQ(fnw, filename);
     return VL_FOPEN_WI(2, fnw, mode);

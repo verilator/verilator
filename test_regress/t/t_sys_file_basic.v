@@ -67,6 +67,14 @@ module t;
       end
 
       begin
+	 // Check read functions w/string
+	 s = "t/t_sys_file_basic_input.dat";
+	 file = $fopen(s,"r");
+	 if ($feof(file)) $stop;
+	 $fclose(file);
+      end
+
+      begin
 	 // Check read functions
 	 file = $fopen("t/t_sys_file_basic_input.dat","r");
 	 if ($feof(file)) $stop;
