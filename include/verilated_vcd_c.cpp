@@ -378,7 +378,7 @@ string VerilatedVcd::doubleToTimescale (double value) {
     else if (value>=1e-12) { suffixp="ps"; value *= 1e12; }
     else if (value>=1e-15) { suffixp="fs"; value *= 1e15; }
     else if (value>=1e-18) { suffixp="as"; value *= 1e18; }
-    char valuestr[100]; sprintf(valuestr,"%d%s",(int)(value), suffixp);
+    char valuestr[100]; sprintf(valuestr,"%3.0f%s", value, suffixp);
     return valuestr;  // Gets converted to string, so no ref to stack
 }
 

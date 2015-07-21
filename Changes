@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix dpi imports inside generates. [Michael Tresidder]
 
+****  Fix rounding in trace $timescale, bug946. [Frederic Requin]
+
 
 * Verilator 3.874 2015-06-06
 
