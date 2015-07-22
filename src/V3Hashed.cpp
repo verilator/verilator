@@ -89,6 +89,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstVar*, AstNUser*) {}
+    virtual void visit(AstTypedef*, AstNUser*) {}
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodeHashIterate(nodep);
     }

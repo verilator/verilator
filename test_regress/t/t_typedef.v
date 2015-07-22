@@ -25,6 +25,13 @@ program t;
 //reg [SIZE-1:0] a; initial a =0;
 //reg [SIZE-1:0] b; initial b =0;
 
+   initial begin
+      typedef logic [3:0][7:0] instr_mem_t;
+      instr_mem_t a;
+      a[0] = 8'h12;
+      if (a[0] != 8'h12) $stop;
+   end
+
    integer j;
    initial begin
       for (j=0;j<=(1<<SIZE);j=j+1) begin

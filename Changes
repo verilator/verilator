@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix $fopen with SV string, bug947. [Sven Stucki]
 
+****  Fix hashed error with typedef inside block, bug948. [Sven Stucki]
+
 
 * Verilator 3.874 2015-06-06
 
