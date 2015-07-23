@@ -243,8 +243,11 @@ class AstSenTree;
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
 
 %token<fl>		yVLT_COVERAGE_OFF "coverage_off"
-%token<fl>		yVLT_LINT_OFF	"lint_off"
-%token<fl>		yVLT_TRACING_OFF "tracing_off"
+%token<fl>		yVLT_COVERAGE_ON  "coverage_on"
+%token<fl>		yVLT_LINT_OFF	  "lint_off"
+%token<fl>		yVLT_LINT_ON	  "lint_on"
+%token<fl>		yVLT_TRACING_OFF  "tracing_off"
+%token<fl>		yVLT_TRACING_ON   "tracing_on"
 
 %token<fl>		yVLT_D_FILE	"--file"
 %token<fl>		yVLT_D_LINES	"--lines"
@@ -3625,10 +3628,14 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 // VLT Files
 
 vltItem:
-		vltOffFront				{ V3Config::addIgnore($1,"*",0,0); }
-	|	vltOffFront yVLT_D_FILE yaSTRING	{ V3Config::addIgnore($1,*$3,0,0); }
-	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,*$3,$5->toUInt(),$5->toUInt()+1); }
-	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,*$3,$5->toUInt(),$7->toUInt()+1); }
+		vltOffFront				{ V3Config::addIgnore($1,false,"*",0,0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING	{ V3Config::addIgnore($1,false,*$3,0,0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,false,*$3,$5->toUInt(),$5->toUInt()+1); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,false,*$3,$5->toUInt(),$7->toUInt()+1); }
+	|	vltOnFront				{ V3Config::addIgnore($1,true,"*",0,0); }
+	|	vltOnFront yVLT_D_FILE yaSTRING		{ V3Config::addIgnore($1,true,*$3,0,0); }
+	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,true,*$3,$5->toUInt(),$5->toUInt()+1); }
+	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,true,*$3,$5->toUInt(),$7->toUInt()+1); }
 	;
 
 vltOffFront<errcodeen>:
@@ -3636,6 +3643,15 @@ vltOffFront<errcodeen>:
 	|	yVLT_TRACING_OFF			{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
+			{ $$ = V3ErrorCode((*$3).c_str());
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+	;
+
+vltOnFront<errcodeen>:
+		yVLT_COVERAGE_ON			{ $$ = V3ErrorCode::I_COVERAGE; }
+	|	yVLT_TRACING_ON				{ $$ = V3ErrorCode::I_TRACING; }
+	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
+	|	yVLT_LINT_ON yVLT_D_MSG yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;

@@ -30,7 +30,7 @@
 
 class V3Config {
 public:
-    static void addIgnore(V3ErrorCode code, string filename, int min, int max);
+    static void addIgnore(V3ErrorCode code, bool on, string filename, int min, int max);
     static void applyIgnores(FileLine* filelinep);
 };
 

@@ -167,8 +167,11 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   {crnl}		{ NEXTLINE(); }		/* Count line numbers */
 
   "coverage_off"	{ FL; return yVLT_COVERAGE_OFF; }
+  "coverage_on"		{ FL; return yVLT_COVERAGE_ON; }
   "lint_off"		{ FL; return yVLT_LINT_OFF; }
+  "lint_on"		{ FL; return yVLT_LINT_ON; }
   "tracing_off"		{ FL; return yVLT_TRACING_OFF; }
+  "tracing_on"		{ FL; return yVLT_TRACING_ON; }
 
   -?"-file"		{ FL; return yVLT_D_FILE; }
   -?"-lines"		{ FL; return yVLT_D_LINES; }

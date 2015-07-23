@@ -1923,33 +1923,39 @@ The grammar of configuration commands is as follows:
 Take remaining text up the the next `verilog mode switch and treat it as
 Verilator configuration commands.
 
+=item coverage_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
+
 =item coverage_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-Disable coverage for the specified filename (or wildcard with '*' or '?',
-or all files if omitted) and range of line numbers (or all lines if
+Enable/disable coverage for the specified filename (or wildcard with '*' or
+'?', or all files if omitted) and range of line numbers (or all lines if
 omitted).  Often used to ignore an entire module for coverage analysis
 purposes.
 
+=item lint_on  [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+
 =item lint_off [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-Disables the specified lint warning, in the specified filename (or wildcard
-with '*' or '?', or all files if omitted) and range of line numbers (or all
-lines if omitted).
+Enable/disables the specified lint warning, in the specified filename (or
+wildcard with '*' or '?', or all files if omitted) and range of line
+numbers (or all lines if omitted).
 
-Using '*' will override any lint_on directives in the source, i.e. the
-warning will still not be printed.
+With lint_off using '*' will override any lint_on directives in the source,
+i.e. the warning will still not be printed.
 
-If the -msg is omitted, all lint warnings are disabled.  This will override
-all later lint warning enables for the specified region.
+If the -msg is omitted, all lint warnings are enabled/disabled.  This will
+override all later lint warning enables for the specified region.
+
+=item tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
 =item tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-Disable waveform tracing for all future signals declared in the specified
-filename (or wildcard with '*' or '?', or all files if omitted) and range
-of line numbers (or all lines if omitted).
+Enable/disable waveform tracing for all future signals declared in the
+specified filename (or wildcard with '*' or '?', or all files if omitted)
+and range of line numbers (or all lines if omitted).
 
-Cells below any module in the files/ranges specified will also not be
-traced.
+For tracing_off, cells below any module in the files/ranges specified will
+also not be traced.
 
 
 =back

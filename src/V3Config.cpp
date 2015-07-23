@@ -144,12 +144,12 @@ V3ConfigIgnores V3ConfigIgnores::s_singleton;
 //######################################################################
 // V3Config
 
-void V3Config::addIgnore(V3ErrorCode code, string filename, int min, int max) {
+void V3Config::addIgnore(V3ErrorCode code, bool on, string filename, int min, int max) {
     if (filename=="*") {
-	FileLine::globalWarnOff(code,true);
+	FileLine::globalWarnOff(code,!on);
     } else {
-	V3ConfigIgnores::singleton().addIgnore(code, filename, min, false);
-	if (max) V3ConfigIgnores::singleton().addIgnore(code, filename, max, true);
+	V3ConfigIgnores::singleton().addIgnore(code, filename, min, on);
+	if (max) V3ConfigIgnores::singleton().addIgnore(code, filename, max, !on);
     }
 }
 

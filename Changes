@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.875 devel
 
+***   Add tracing_on, etc to vlt files, bug932. [Frederic Requin]
+
 ****  Fix MinGW compiler error, bug927, bug929. [Hans Tichelaar]
 
 ****  Fix .c files to be treated as .cpp, bug930. [Jonathon Donaldson]
