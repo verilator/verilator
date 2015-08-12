@@ -140,8 +140,8 @@ int sc_main(int argc, char* argv[]) {
     //  Coverage analysis (since test passed)
     mkdir("logs", 0777);
 #if VM_COVERAGE
-    SpCoverage::write();  // Writes logs/coverage.pl
-#endif
+    VerilatedCov::write("logs/coverage.dat");
+#endif // VM_COVERAGE
 
     //==========
     //  Close LogFiles

@@ -3573,7 +3573,10 @@ First, run verilator with the --coverage option.  If you're using your own
 makefile, compile the model with the GCC flag -DVM_COVERAGE (if using
 Verilator's, it will do this for you.)
 
-Run your tests in different directories.  Each test will create a
+At the end of your test, call VerilatedCov::write passing the name of the
+coverage data file (typically "logs/coverage.dat").
+
+Run each of your tests in different directories.  Each test will create a
 logs/coverage.pl file.
 
 After running all of your tests, verilator_coverage is executed.

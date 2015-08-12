@@ -23,6 +23,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix makefile with --coverage, bug953. [Eivind Liland]
 
+****  Fix coverage documentation, bug954. [Thomas J Whatson]
+
 
 * Verilator 3.874 2015-06-06
 
