@@ -3514,6 +3514,7 @@ public:
 	setOp1p(lhsp); setOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(CastSize, CASTSIZE)
+    // No hasDType because widthing removes this node before the hasDType check
     virtual string emitVerilog() { return "((%r)'(%l))"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { V3ERROR_NA; return true;} virtual bool cleanLhs() {return true;}

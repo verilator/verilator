@@ -27,6 +27,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix parameters with function parameter arguments, bug952. [Jie Xu]
 
+****  Fix size casts as second argument of cast item, bug950. [Jonathon Donaldson]
+
 
 * Verilator 3.874 2015-06-06
 

@@ -1825,7 +1825,8 @@ private:
 	// Apply width
         iterateCheck(nodep,"Case expression",nodep->exprp(),CONTEXT,FINAL,subDTypep,EXTEND_LHS);
 	for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
-	    for (AstNode* condp = itemp->condsp(); condp; condp=condp->nextp()) {
+	    for (AstNode* nextcp, *condp = itemp->condsp(); condp; condp=nextcp) {
+		nextcp = condp->nextp(); // Final may cause the node to get replaced
 		iterateCheck(nodep,"Case Item",condp,CONTEXT,FINAL,subDTypep,EXTEND_LHS);
 	    }
 	}
