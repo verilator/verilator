@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix hashed error with typedef inside block, bug948. [Sven Stucki]
 
+****  Fix makefile with --coverage, bug953. [Eivind Liland]
+
 
 * Verilator 3.874 2015-06-06
 

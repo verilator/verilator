@@ -120,10 +120,6 @@ ifeq ($(VM_SP),1)
 	 $(SP_PREPROC) -M sp_preproc.d --tree $(VM_PREFIX).sp_tree \
 		--preproc $(VK_CLASSES_SP)
 else
- ifeq ($(VM_COVERAGE),1)
-  CPPFLAGS += -I$(SYSTEMPERL_INCLUDE)
-  VPATH    +=   $(SYSTEMPERL_INCLUDE)
- endif
   preproc:
 endif
 
