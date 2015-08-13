@@ -7,6 +7,8 @@
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
 AC_INIT([Verilator],[3.876 2015-08-12])
+# When releasing, also update header of Changes file
+
 AC_CONFIG_HEADER(src/config_build.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc)
 
