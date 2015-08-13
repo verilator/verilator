@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Add tracing_on, etc to vlt files, bug932. [Frederic Requin]
 
+****  Support extraction of enum bits, bug951. [Jonathon Donaldson]
+
 ****  Fix MinGW compiler error, bug927, bug929. [Hans Tichelaar]
 
 ****  Fix .c files to be treated as .cpp, bug930. [Jonathon Donaldson]

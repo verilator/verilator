@@ -834,9 +834,8 @@ private:
 	// Don't iterate children, don't want to lose VarRef.
 	switch (nodep->attrType()) {
 	case AstAttrType::VAR_BASE:
-	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
-	    break;
 	case AstAttrType::MEMBER_BASE:
+	case AstAttrType::ENUM_BASE:
 	    // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
 	    break;
 	case AstAttrType::DIM_DIMENSIONS:

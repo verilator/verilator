@@ -207,7 +207,11 @@ private:
 	    } else if (AstMemberSel* fromp = basefromp->castMemberSel()) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
 					   fromp->cloneTree(false)));
+	    } else if (AstEnumItemRef* fromp = basefromp->castEnumItemRef()) {
+		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
+					   fromp->cloneTree(false)));
 	    } else {
+		if (basefromp) { UINFO(1,"    Related node: "<<basefromp<<endl); }
 		nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
 	    }
 	}
