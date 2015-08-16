@@ -16,7 +16,7 @@ module t_bitsel_enum
 		       } MyEnum;
 
    assign out0 = CNST_VAL[0];
-   // This is not supported by NC-verilog nor VCS, so Verilator does not support it either
+   // Not supported by NC-verilog nor VCS, but other simulators do
    assign out1 = ENUM_VAL[0]; // named values of an enumeration should act like constants so this should work just like the line above works
 
    initial begin
