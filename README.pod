@@ -117,9 +117,10 @@ and add it to path using Modules/modulecmd:
     After installing you'll want a module file like the following:
 
     set install_root /CAD_DISK/verilator/{version-number-used-above}
-    setenv VERILATOR_ROOT $install_root
+    unsetenv VERILATOR_ROOT
     prepend-path PATH $install_root/bin
     prepend-path MANPATH $install_root/man
+    prepend-path PKG_CONFIG_PATH $install_root/share/pkgconfig
 
 =item 3.
 
