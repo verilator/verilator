@@ -2085,45 +2085,52 @@ per the C standard (it's unspecified in Verilog).
 
 =item `coverage_block_off
 
-Specifies the entire begin/end block should be ignored for coverage analysis.
+Specifies the entire begin/end block should be ignored for coverage
+analysis.  Must be inside a basic block, e.g. within a begin/end pair.
 Same as /* verilator coverage_block_off */.
 
 =item `systemc_header
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
-place it verbatim into the output .h file's header.  Despite the name of this
-macro, this also works in pure C++ code.
+place it verbatim into the output .h file's header.  Must be placed as a
+module item, e.g. directly inside a module/endmodule pair. Despite the name
+of this macro, this also works in pure C++ code.
 
 =item `systemc_ctor
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
-place it verbatim into the C++ class constructor.  Despite the name of this
-macro, this also works in pure C++ code.
+place it verbatim into the C++ class constructor.  Must be placed as a
+module item, e.g. directly inside a module/endmodule pair. Despite the name
+of this macro, this also works in pure C++ code.
 
 =item `systemc_dtor
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
-place it verbatim into the C++ class destructor.  Despite the name of this
-macro, this also works in pure C++ code.
+place it verbatim into the C++ class destructor.  Must be placed as a
+module item, e.g. directly inside a module/endmodule pair. Despite the name
+of this macro, this also works in pure C++ code.
 
 =item `systemc_interface
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
-place it verbatim into the C++ class interface.  Despite the name of this
-macro, this also works in pure C++ code.
+place it verbatim into the C++ class interface.  Must be placed as a module
+item, e.g. directly inside a module/endmodule pair. Despite the name of
+this macro, this also works in pure C++ code.
 
 =item `systemc_imp_header
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
 place it verbatim into the header of all files for this C++ class
-implementation.  Despite the name of this macro, this also works in pure
-C++ code.
+implementation.  Must be placed as a module item, e.g. directly inside a
+module/endmodule pair. Despite the name of this macro, this also works in
+pure C++ code.
 
 =item `systemc_implementation
 
 Take remaining text up to the next `verilog or `systemc_... mode switch and
-place it verbatim into a single file of the C++ class implementation.
-Despite the name of this macro, this also works in pure C++ code.
+place it verbatim into a single file of the C++ class implementation.  Must
+be placed as a module item, e.g. directly inside a module/endmodule
+pair. Despite the name of this macro, this also works in pure C++ code.
 
 If you will be reading or writing any Verilog variables in the C++
 functions, the Verilog signals must be declared with /*verilator public*/.
