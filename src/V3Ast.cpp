@@ -863,6 +863,16 @@ void AstNode::cloneRelinkTree() {
 //======================================================================
 // Comparison
 
+bool AstNode::gateTreeIter() {
+    // Return true if the two trees are identical
+    if (this==NULL) return true;
+    if (!isGateOptimizable()) return false;
+    return (this->op1p()->gateTreeIter()
+	    && this->op2p()->gateTreeIter()
+	    && this->op3p()->gateTreeIter()
+	    && this->op4p()->gateTreeIter());
+}
+
 bool AstNode::sameTreeIter(AstNode* node2p, bool ignNext, bool gateOnly) {
     // Return true if the two trees are identical
     if (this==NULL && node2p==NULL) return true;

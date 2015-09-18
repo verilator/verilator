@@ -20,7 +20,13 @@
 //======================================================================
 
 #if defined(VERILATOR)
-# include "Vt_dpi_shortcircuit__Dpi.h"
+# if defined(T_DPI_SHORTCIRCUIT)
+#  include "Vt_dpi_shortcircuit__Dpi.h"
+# elif defined(T_DPI_SHORTCIRCUIT2)
+#  include "Vt_dpi_shortcircuit2__Dpi.h"
+# else
+#  error "Unknown test"
+# endif
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)
@@ -55,5 +61,5 @@ unsigned char dpii_incx (int idx, unsigned char value) {
     if (idx >= 0 && idx<COUNTERS) global_count[idx]++;
     return value;
 }
-unsigned char dpii_inc0 (int idx) { return dpii_incx(idx,false); }
-unsigned char dpii_inc1 (int idx) { return dpii_incx(idx,true); }
+unsigned char dpii_inc0 (int idx) { return dpii_incx(idx,0); }
+unsigned char dpii_inc1 (int idx) { return dpii_incx(idx,1); }

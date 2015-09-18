@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.877 devel
 
+****  Fix mis-optimizing public DPI functions, bug963. [Wei Song]
+
 
 * Verilator 3.876 2015-08-12
 

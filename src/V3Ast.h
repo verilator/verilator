@@ -974,12 +974,15 @@ class AstNode {
 
     void	init();	// initialize value of AstNode
     void	iterateListBackwards(AstNVisitor& v, AstNUser* vup=NULL);
+private:
     AstNode*	cloneTreeIter();
     AstNode*	cloneTreeIterList();
     void	checkTreeIter(AstNode* backp);
     void	checkTreeIterList(AstNode* backp);
+    bool	gateTreeIter();
     bool	sameTreeIter(AstNode* node2p, bool ignNext, bool gateOnly);
     void	deleteTreeIter();
+public:
     void	deleteNode();
     static void	relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
@@ -1207,6 +1210,7 @@ public:
 
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);
+    bool	gateTree() { return gateTreeIter(); }  // Is tree gateOptimizable?
     bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
     bool	sameGateTree(AstNode* node2p);	// Does tree of this == node2p?, not allowing non-isGateOptimizable
     void	deleteTree();	// Always deletes the next link
@@ -1790,6 +1794,7 @@ public:
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
+    virtual bool isGateOptimizable() const { return !((m_dpiExport || m_dpiImport) && !m_pure); }
     // {AstFunc only} op1 = Range output variable
     virtual void name(const string& name) 	{ m_name = name; }
     string cname() const { return m_cname; }
@@ -1848,6 +1853,7 @@ public:
     }}
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
+    virtual bool isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
     string	dotted()	const { return m_dotted; }		// * = Scope name or ""
     string	prettyDotted() const { return prettyName(dotted()); }
     string	inlinedDots() const { return m_inlinedDots; }
