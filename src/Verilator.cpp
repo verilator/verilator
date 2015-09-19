@@ -79,6 +79,7 @@
 #include "V3Split.h"
 #include "V3SplitAs.h"
 #include "V3Stats.h"
+#include "V3String.h"
 #include "V3Subst.h"
 #include "V3Table.h"
 #include "V3Task.h"
@@ -576,6 +577,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     // Internal tests (after option parsing as need debug() setting)
+    VHashSha1::selfTest();
     AstBasicDTypeKwd::test();
     V3Graph::test();
 

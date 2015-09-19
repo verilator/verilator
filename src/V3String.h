@@ -24,6 +24,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include <string>
+#include "V3Error.h"
 
 //######################################################################
 // VString - String manipulation
@@ -37,53 +38,47 @@ public:
 };
 
 //######################################################################
-// Compute FNV1a (Fowler/Noll/Vo) hashes
-// See http://www.isthe.com/chongo/tech/comp/fnv/index.html
-// Algorithmic basis for these functions was in the public domain, by chongo <Landon Curt Noll>
+// VHashSha1 - Compute Sha1 hashes
 
-class VHashFnv {
-    enum { FNV1_64_INIT = 0xcbf29ce484222325ULL };  // Initial value
-    vluint64_t	m_hash;
+class VHashSha1 {
+    // As blocks must be processed in 64 byte chunks, this does not at present
+    // support calling input() on multiple non-64B chunks and getting the correct
+    // hash. To do that first combine the string before calling here.
+    // Or improve to store 0-63 bytes of data between calls to input().
 
-    inline void hashC(uint8_t c) {
-	m_hash ^= c;
-	// Below is faster than m_hash *= 0x100000001b3ULL;
-	m_hash += ((m_hash << 1) + (m_hash << 4) + (m_hash << 5)
-		   + (m_hash << 7) + (m_hash << 8) + (m_hash << 40));
-    }
+    // MEMBERS
+    uint32_t	m_inthash[5];		// Intermediate hash, in host order
+    string	m_remainder;		// Unhashed data
+    bool	m_final;		// Finalized
+    size_t	m_totLength;		// Total all-chunk length as needed by output digest
 public:
-    VHashFnv() : m_hash(FNV1_64_INIT) {}
-    ~VHashFnv() {}
+    // CONSTRUCTORS
+    VHashSha1() { init(); }
+    VHashSha1(const string& data) { init(); insert(data); }
+    ~VHashSha1() {}
+    // METHODS
+   
+    string digestBinary();		// Return digest as 20 character binary
+    string digestHex();			// Return digest formatted as a hex string
+    string digestSymbol();		// Return digest formatted as C symbol/base64ish
+    uint64_t digestUInt64();		// Return 64-bits of digest
+    static void selfTest();		// Test this class
 
-    vluint64_t digestUInt64() const { return m_hash; }
+    // Inerting hash data
+    void insert(const void* datap, size_t length);  // Process data into the digest
+    void insert(const string& data) { insert(data.data(), data.length()); }  // Process data into the digest
+    void insert(uint64_t value) { insert(cvtToStr(value)); }
 
-    VHashFnv& insert(const void* bufp, size_t len) {  // Memory
-	const uint8_t* bp = (const uint8_t*)bufp;
-	const uint8_t* be = bp + len;
-	while (bp < be) hashC((vluint64_t)*bp++);
-	return *this;
+private:
+    void init() {
+	m_inthash[0] = 0x67452301; m_inthash[1] = 0xefcdab89; m_inthash[2] = 0x98badcfe;
+	m_inthash[3] = 0x10325476; m_inthash[4] = 0xc3d2e1f0;
+	m_final = false;
+	m_totLength = 0;
     }
-    VHashFnv& insert(const char* strp) {  // String
-	const uint8_t* sp = (const uint8_t*)strp;
-	while (*sp) hashC((vluint64_t)*sp++);
-	return *this;
-    }
-    VHashFnv& insert(const string& str) { return insert(str.data(), str.length()); }
-    VHashFnv& insert(vluint64_t n) {
-	hashC(n>>0); hashC(n>>8); hashC(n>>16); hashC(n>>24);
-	hashC(n>>32); hashC(n>>40); hashC(n>>48); hashC(n>>56);
-	return *this;
-    }
-    VHashFnv& insert(uint32_t n) {
-	hashC(n>>0); hashC(n>>8); hashC(n>>16); hashC(n>>24);
-	return *this;
-    }
-    VHashFnv& insert(uint16_t n) {
-	hashC(n>>0); hashC(n>>8);
-	return *this;
-    }
-    VHashFnv& insert(uint8_t n) { hashC(n); return *this; }
-    VHashFnv& insert(int n) { hashC((vluint64_t)n); return *this; }
+    static void selfTestOne(const string& data, const string& data2,
+			    const string& exp, const string& exp64);
+    void finalize();			// Process remaining data
 };
 
 //######################################################################

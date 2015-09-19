@@ -1560,7 +1560,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 	    puts("void "+modClassName(modp)+"::"+funcname+"("+classname+"& os) {\n");
 	    // Place a computed checksum to insure proper structure save/restore formatting
 	    // OK if this hash includes some things we won't dump, since just looking for loading the wrong model
-	    VHashFnv hash;
+	    VHashSha1 hash;
 	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 		if (AstVar* varp = nodep->castVar()) {
 		    hash.insert(varp->name());
