@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.877 devel
 
+****  Fix internal error on dotted refs into generates, bug958. [Jie Xu]
+
 ****  Fix mis-optimizing public DPI functions, bug963. [Wei Song]
 
 

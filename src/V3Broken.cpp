@@ -186,10 +186,14 @@ private:
     // NODE STATE
     //  Nothing!	// This may be called deep inside other routines
     //			// so userp and friends may not be used
-    // VISITORS
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    // METHODS
+    void processAndIterate(AstNode* nodep) {
 	BrokenTable::addInTree(nodep, nodep->maybePointedTo());
 	nodep->iterateChildrenConst(*this);
+    }
+    // VISITORS
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	processAndIterate(nodep);
     }
 public:
     // CONSTUCTORS
@@ -210,7 +214,7 @@ private:
 	    nodep->v3fatalSrc("Width != WidthMin");
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    void processAndIterate(AstNode* nodep) {
 	BrokenTable::setUnder(nodep,true);
 	if (const char* whyp=nodep->broken()) {
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
@@ -231,6 +235,9 @@ private:
 	checkWidthMin(nodep);
 	nodep->iterateChildrenConst(*this);
 	BrokenTable::setUnder(nodep,false);
+    }
+    virtual void visit(AstNode* nodep, AstNUser*) {
+	processAndIterate(nodep);
     }
 public:
     // CONSTUCTORS

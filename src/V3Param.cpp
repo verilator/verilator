@@ -248,6 +248,9 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (nodep->varp()) nodep->varp()->iterate(*this);
     }
+    virtual void visit(AstVarXRef* nodep, AstNUser*) {
+	nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
+    }
 
     // Generate Statements
     virtual void visit(AstGenerate* nodep, AstNUser*) {
