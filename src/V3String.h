@@ -56,8 +56,8 @@ public:
     VHashSha1() { init(); }
     VHashSha1(const string& data) { init(); insert(data); }
     ~VHashSha1() {}
+
     // METHODS
-   
     string digestBinary();		// Return digest as 20 character binary
     string digestHex();			// Return digest formatted as a hex string
     string digestSymbol();		// Return digest formatted as C symbol/base64ish
@@ -79,6 +79,29 @@ private:
     static void selfTestOne(const string& data, const string& data2,
 			    const string& exp, const string& exp64);
     void finalize();			// Process remaining data
+};
+
+//######################################################################
+// VName - string which contains a possibly hashed string
+// TODO use this wherever there is currently a "string m_name"
+
+class VName {
+    string m_name;
+    string m_hashed;
+
+    static size_t s_maxLength;		// Length at which to start hashing
+    static size_t s_minLength;		// Length to preserve if over maxLength
+public:
+    // CONSTRUCTORS
+    VName (const string& name) : m_name(name) {}
+    ~VName() {}
+    // METHODS
+    void name(const string& name) { m_name = name; m_hashed = ""; }
+    string name() const { return m_name; }
+    string hashedName();
+    // CONFIG STATIC METHORS
+    static void maxLength(size_t flag) { s_maxLength=flag; } // Length at which to start hashing, 0=disable
+    static size_t maxLength() { return s_maxLength; }
 };
 
 //######################################################################

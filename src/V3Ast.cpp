@@ -28,6 +28,7 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Broken.h"
+#include "V3String.h"
 
 //======================================================================
 // Statics
@@ -115,6 +116,10 @@ string AstNode::encodeName(const string& namein) {
 	    out += hex;
 	}
     }
+    // Shorten names
+    // TODO long term use VName in place of "string name"
+    VName vname(out);
+    out = vname.hashedName();
     return out;
 }
 

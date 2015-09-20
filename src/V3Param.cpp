@@ -470,6 +470,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	} else {
 	    // If the name is very long, we don't want to overwhelm the filename limit
 	    // We don't do this always, as it aids debugability to have intuitive naming.
+	    // TODO can use new V3Name hash replacement instead of this
 	    string newname = longname;
 	    if (longname.length()>30) {
 		LongMap::iterator iter = m_longMap.find(longname);

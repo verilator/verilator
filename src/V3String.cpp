@@ -21,8 +21,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Global.h"
 #include "V3String.h"
 #include "V3Error.h"
+
+
+size_t VName::s_minLength = 32;
+size_t VName::s_maxLength = 0;	// Disabled
 
 //######################################################################
 // Wildcard
@@ -281,4 +286,25 @@ void VHashSha1::selfTest() {
     selfTestOne("Test using", " larger than block-size key and larger than one block-size data",
 		"9026e8faed6ef4ec5ae3ff049020d7f0af7abbbf",
 		"kCboAu1u9Oxa4B8EkCDX8K96u78");
+}
+
+//######################################################################
+// VName
+
+string VName::hashedName() {
+    if (m_name=="") return "";
+    if (m_hashed!="") return m_hashed; // Memoized
+    if (s_maxLength==0 || m_name.length() < s_maxLength) {
+	m_hashed = m_name;
+	return m_hashed;
+    } else {
+	VHashSha1 hash(m_name);
+	string suffix = "__Vhsh"+hash.digestSymbol();
+	if (s_minLength < s_maxLength) {
+	    m_hashed = m_name.substr(0,s_minLength) + suffix;
+	} else {
+	    m_hashed = suffix;
+	}
+	return m_hashed;
+    }
 }

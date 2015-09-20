@@ -711,6 +711,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		addCFlags(argv[i]);
 	    }
+	    else if ( !strcmp (sw, "-comp-limits-syms") && (i+1)<argc ) {  // Undocumented
+		shift;
+		VName::maxLength(atoi(argv[i]));
+	    }
 	    else if ( !strcmp (sw, "-converge-limit") && (i+1)<argc ) {
 		shift;
 		m_convergeLimit = atoi(argv[i]);
@@ -1189,6 +1193,8 @@ V3Options::V3Options() {
     m_xAssign = "fast";
 
     m_defaultLanguage = V3LangCode::mostRecent();
+
+    VName::maxLength(128); // Linux filename limits 256; leave half for prefix
 
     optimize(true);
     // Default +libext+
