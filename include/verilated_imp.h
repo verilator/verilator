@@ -49,7 +49,6 @@ class VerilatedImp {
     // TYPES
     typedef vector<string> ArgVec;
     typedef map<pair<const void*,void*>,void*> UserMap;
-    typedef map<const char*, const VerilatedScope*, VerilatedCStrCmp>  ScopeNameMap;
     typedef map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
 
     // MEMBERS
@@ -60,7 +59,7 @@ class VerilatedImp {
     ArgVec		m_argVec;	///< Argument list (NOT save-restored, may want different results)
     bool		m_argVecLoaded;	///< Ever loaded argument list
     UserMap	 	m_userMap;	///< Map of <(scope,userkey), userData>
-    ScopeNameMap	m_nameMap;	///< Map of <scope_name, scope pointer>
+    VerilatedScopeNameMap	m_nameMap;	///< Map of <scope_name, scope pointer>
     // Slow - somewhat static:
     ExportNameMap	m_exportMap;	///< Map of <export_func_proto, func number>
     int			m_exportNext;	///< Next export funcnum
@@ -154,29 +153,32 @@ public: // But only for verilated*.cpp
     // METHODS - scope name
     static void scopeInsert(const VerilatedScope* scopep) {
 	// Slow ok - called once/scope at construction
-	ScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
+	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it == s_s.m_nameMap.end()) {
 	    s_s.m_nameMap.insert(it, make_pair(scopep->name(),scopep));
 	}
     }
     static inline const VerilatedScope* scopeFind(const char* namep) {
-	ScopeNameMap::iterator it=s_s.m_nameMap.find(namep);
+	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_nameMap.end())) return it->second;
 	else return NULL;
     }
     static void scopeErase(const VerilatedScope* scopep) {
 	// Slow ok - called once/scope at destruction
 	userEraseScope(scopep);
-	ScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
+	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() {
 	VL_PRINTF("  scopesDump:\n");
-	for (ScopeNameMap::iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
+	for (VerilatedScopeNameMap::iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
 	    scopep->scopeDump();
 	}
 	VL_PRINTF("\n");
+    }
+    static const VerilatedScopeNameMap* scopeNameMap() {
+        return &s_s.m_nameMap;
     }
 
 public: // But only for verilated*.cpp

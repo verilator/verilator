@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cmath>
 // <iostream> avoided to reduce compile time
+// <map> avoided and instead in verilated_heavy.h to reduce compile time
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
 using namespace std;
 
@@ -68,6 +69,7 @@ typedef void (*VerilatedVoidCb)(void);
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedScopeNameMap;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
@@ -308,6 +310,7 @@ public:
     static const char* catName(const char* n1, const char* n2); // Returns new'ed data
     // Internal: Find scope
     static const VerilatedScope* scopeFind(const char* namep);
+    static const VerilatedScopeNameMap* scopeNameMap();
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() { return t_dpiScopep; }
     static void dpiScope(const VerilatedScope* scopep) { t_dpiScopep=scopep; }

@@ -1170,6 +1170,10 @@ int Verilated::exportFuncNum(const char* namep) {
     return VerilatedImp::exportFind(namep);
 }
 
+const VerilatedScopeNameMap* Verilated::scopeNameMap() {
+    return VerilatedImp::scopeNameMap();
+}
+
 //===========================================================================
 // VerilatedModule:: Methods
 

@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.877 devel
 
+****  Add VerilatedScopeNameMap for introspection, bug966. [Todd Strader]
+
 ****  Fix very long module names, bug937. [Todd Strader]
 
 ****  Fix internal error on dotted refs into generates, bug958. [Jie Xu]
