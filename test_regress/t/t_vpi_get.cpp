@@ -27,7 +27,6 @@
 #include "Vt_vpi_get__Dpi.h"
 
 #include "verilated_vpi.h"
-#include "verilated_vpi.cpp"
 #include "verilated_vcd_c.h"
 
 #endif

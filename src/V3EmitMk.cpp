@@ -81,6 +81,9 @@ public:
 		    if (v3Global.dpi()) {
 			putMakeClassEntry(of, "verilated_dpi.cpp");
 		    }
+		    if (v3Global.opt.vpi()) {
+			putMakeClassEntry(of, "verilated_vpi.cpp");
+		    }
 		    if (v3Global.opt.savable()) {
 			putMakeClassEntry(of, "verilated_save.cpp");
 		    }

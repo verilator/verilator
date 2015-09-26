@@ -85,6 +85,7 @@ class V3Options {
     bool	m_pinsUint8;	// main switch: --pins-uint8
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_public;	// main switch: --public
+    bool	m_reportUnoptflat; // main switch: --report-unoptflat
     bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
     bool	m_skipIdentical;// main switch: --skip-identical
@@ -97,7 +98,7 @@ class V3Options {
     bool	m_traceStructs;	// main switch: --trace-structs
     bool	m_traceUnderscore;// main switch: --trace-underscore
     bool	m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
-    bool	m_reportUnoptflat; // main switch: --report-unoptflat
+    bool	m_vpi;		// main switch: --vpi
     bool	m_xInitialEdge;	// main switch: --x-initial-edge
     bool	m_xmlOnly;	// main switch: --xml-netlist
 
@@ -239,6 +240,7 @@ class V3Options {
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
 

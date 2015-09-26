@@ -26,7 +26,6 @@
 #include "Vt_vpi_var__Dpi.h"
 
 #include "verilated_vpi.h"
-#include "verilated_vpi.cpp"
 #include "verilated_vcd_c.h"
 
 #endif
@@ -550,47 +549,6 @@ int _mon_check_vlog_info() {
     return 0;
 }
 
-#ifndef IS_VPI
-
-#define CHECK_ENUM_STR(fn, enum) \
-    do { \
-        const char* strVal = VerilatedVpiError::fn(enum); \
-        CHECK_RESULT_CSTR(strVal, #enum); \
-    } while (0)
-
-int _mon_check_vl_str() {
-
-    CHECK_ENUM_STR(strFromVpiVal, vpiBinStrVal);
-    CHECK_ENUM_STR(strFromVpiVal, vpiRawFourStateVal);
-
-    CHECK_ENUM_STR(strFromVpiObjType, vpiAlways);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiWhile);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiAttribute);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiUdpArray);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiContAssignBit);
-    CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
-
-    CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
-    CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
-
-    CHECK_ENUM_STR(strFromVpiCallbackReason, cbValueChange);
-    CHECK_ENUM_STR(strFromVpiCallbackReason, cbAtEndOfSimTime);
-
-    CHECK_ENUM_STR(strFromVpiProp, vpiType);
-    CHECK_ENUM_STR(strFromVpiProp, vpiProtected);
-    CHECK_ENUM_STR(strFromVpiProp, vpiDirection);
-    CHECK_ENUM_STR(strFromVpiProp, vpiTermIndex);
-    CHECK_ENUM_STR(strFromVpiProp, vpiConstType);
-    CHECK_ENUM_STR(strFromVpiProp, vpiAutomatic);
-    CHECK_ENUM_STR(strFromVpiProp, vpiOffset);
-    CHECK_ENUM_STR(strFromVpiProp, vpiStop);
-    CHECK_ENUM_STR(strFromVpiProp, vpiIsProtected);
-
-    return 0;
-}
-
-#endif
-
 int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_mcd()) return status;
@@ -604,7 +562,7 @@ int mon_check() {
     if (int status = _mon_check_putget_str(NULL)) return status;
     if (int status = _mon_check_vlog_info()) return status;
 #ifndef IS_VPI
-    if (int status = _mon_check_vl_str()) return status;
+    VerilatedVpiError::selfTest();
 #endif
     return 0; // Ok
 }

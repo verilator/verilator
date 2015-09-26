@@ -19,9 +19,8 @@
 
 #include "Vt_vpi_unimpl__Dpi.h"
 
-#include "verilated_vpi.h"
-#include "verilated_vpi.cpp"
 #include "verilated_vcd_c.h"
+// No verilated_vpi.h, make sure can link without it
 
 #include <iostream>
 
@@ -174,7 +173,7 @@ int main(int argc, char **argv, char **env) {
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
 	main_time += 1;
 	topp->eval();
-	VerilatedVpi::callValueCbs();
+	//VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
 	topp->clk = !topp->clk;
 	//mon_do();
 #if VM_TRACE

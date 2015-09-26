@@ -331,6 +331,7 @@ descriptions in the next sections for more information.
      -v <filename>              Verilog library
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
+    --vpi                       Enable VPI compiles
      -Werror-<message>          Convert warning to error
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
@@ -1103,6 +1104,10 @@ Note -v is fairly standard across Verilog tools.
 
 Synonyms for C<+1364-1995ext+>I<ext> and C<+1364-2001ext+>I<ext> respectively
 
+=item --vpi
+
+Enable use of VPI and linking against the verilated_vpi.cpp files.
+
 =item -Wall
 
 Enable all warnings, including code style warnings that are normally
@@ -1802,6 +1807,8 @@ Verilator supports a very limited subset of the VPI.  This subset allows
 inspection, examination, value change callbacks, and depositing of values
 to public signals only.
 
+VPI is enabled with the verilator --vpi switch.
+
 To access signals via the VPI, Verilator must be told exactly which signals
 are to be accessed.  This is done using the Verilator public pragmas
 documented below.
@@ -1835,17 +1842,28 @@ changed on the specified clock edge.
 There are many online tutorials and books on the VPI, but an example that
 accesses the above would be:
 
-void read_and_check() {
-    vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.readme", NULL);
-    if (!vh1) { error... }
-    const char* name = vpi_get_str(vpiName, vh1);
-    printf("Module name: %s\n");  // Prints "readme"
+    void read_and_check() {
+        vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.readme", NULL);
+        if (!vh1) { error... }
+        const char* name = vpi_get_str(vpiName, vh1);
+        printf("Module name: %s\n");  // Prints "readme"
+    
+        s_vpi_value v;
+        v.format = vpiIntVal;
+        vpi_get_value(vh1, &v);
+        printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
+    }
 
-    s_vpi_value v;
-    v.format = vpiIntVal;
-    vpi_get_value(vh1, &v);
-    printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
-}
+For signal callbacks to work the main loop of the program must call
+VerilatedVpi::callValueCbs().
+
+    #include "verilated_vpi.h"  // Required to get definitions
+    ...
+    while (time passes) {
+        ...
+	topp->eval();
+	VerilatedVpi::callValueCbs();
+    }
 
 
 =head1 CROSS COMPILATION

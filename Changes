@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.877 devel
 
+**    Add --vpi flag, and fix VPI linkage, bug969. [Arthur Kahlich]
+
 ****  Add VerilatedScopeNameMap for introspection, bug966. [Todd Strader]
 
 ****  Fix very long module names, bug937. [Todd Strader]
