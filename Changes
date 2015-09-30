@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix internal error on dotted refs into generates, bug958. [Jie Xu]
 
+****  Fix structure parameter constant propagation, bug968. [Todd Strader]
+
 ****  Fix mis-optimizing public DPI functions, bug963. [Wei Song]
 
 

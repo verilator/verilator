@@ -261,7 +261,8 @@ private:
 	// as we don't figure out variable ordering.
 	// Delayed is OK though, as we'll decode the next state separately.
 	if (!nodep->varp()->dtypeSkipRefp()->castBasicDType()
-            && !nodep->varp()->dtypeSkipRefp()->castPackArrayDType())
+            && !nodep->varp()->dtypeSkipRefp()->castPackArrayDType()
+            && !nodep->varp()->dtypeSkipRefp()->castStructDType())
             clearOptimizable(nodep,"Array references/not basic");
 	if (nodep->lvalue()) {
 	    if (m_inDlyAssign) {
