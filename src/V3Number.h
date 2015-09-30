@@ -63,7 +63,7 @@ public:
 	} else if (value=='1'|| value==1) {
 	    m_value [bit/32] |=  mask;
 	    m_valueX[bit/32] &= ~mask;
-	} else if (value=='z'|| value==3) {
+	} else if (value=='z'|| value==2) {
 	    m_value [bit/32] &= ~mask;
 	    m_valueX[bit/32] |=  mask;
 	} else { // X
