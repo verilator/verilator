@@ -345,6 +345,19 @@ private:
 	    setNumber(nodep, &(nodep->num()));
 	}
     }
+    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+	checkNodeInfo(nodep);
+	if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
+	if (!m_checkOnly && optimizable()) {
+            AstNode* valuep = nodep->itemp()->valuep();
+	    if (valuep) {
+	        valuep->iterateAndNext(*this);
+	        newNumber(nodep)->opAssign(*fetchNumber(valuep));
+            } else {
+                clearOptimizable(nodep, "No value found for enum item");
+            }
+        }
+    }
     virtual void visit(AstNodeUniop* nodep, AstNUser*) {
 	if (!optimizable()) return;  // Accelerate
 	checkNodeInfo(nodep);
