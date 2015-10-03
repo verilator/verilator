@@ -474,6 +474,7 @@ class AstSenTree;
 %token<fl>		yD_RIGHT	"$right"
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SFORMAT	"$sformat"
+%token<fl>		yD_SFORMATF	"$sformatf"
 %token<fl>		yD_SIGNED	"$signed"
 %token<fl>		yD_SIZE		"$size"
 %token<fl>		yD_SQRT		"$sqrt"
@@ -2655,7 +2656,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_RIGHT '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
-	//|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }  // Have AST, just need testing and debug
+	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_SIZE '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,NULL); }
 	|	yD_SIZE '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }

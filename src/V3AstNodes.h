@@ -2208,11 +2208,13 @@ class AstSFormatF : public AstNode {
 public:
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp)
 	: AstNode(fl), m_text(text), m_hidden(hidden) {
+	dtypeSetString();
 	addNOp1p(exprsp); addNOp2p(NULL); }
     ASTNODE_NODE_FUNCS(SFormatF, SFORMATF)
     virtual string name() const { return m_text; }
     virtual int instrCount() const { return instrCountPli(); }
     virtual V3Hash sameHash() const { return V3Hash(text()); }
+    virtual bool hasDType() const { return true; }
     virtual bool same(AstNode* samep) const { return text()==samep->castSFormatF()->text(); }
     virtual string verilogKwd() const { return "$sformatf"; }
     void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output

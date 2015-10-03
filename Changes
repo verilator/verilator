@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Add --vpi flag, and fix VPI linkage, bug969. [Arthur Kahlich]
 
+**    Support $sformatf, bug977. [Johan Bjork]
+
 ****  Add VerilatedScopeNameMap for introspection, bug966. [Todd Strader]
 
 ****  Fix very long module names, bug937. [Todd Strader]

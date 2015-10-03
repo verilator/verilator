@@ -16,6 +16,8 @@ module t;
    reg [8:1] 	char;
    reg [48*8:1] str;
    reg [48*8:1] str2;
+   string str3;
+
 
    real 	r;
 
@@ -31,6 +33,10 @@ module t;
       $swrite(str2, "n=%b q=%d w=%s", n, q, wide);
 `ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
       if (str2 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
+
+      str3 = $sformatf("n=%b q=%d w=%s", n, q, wide);
+`ifdef TEST_VERBOSE  $display("str3=%0s",str3);  `endif
+      if (str3 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
 
       $swrite(str2, "e=%e", r);
       $swrite(str2, "e=%f", r);

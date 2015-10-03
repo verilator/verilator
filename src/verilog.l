@@ -221,6 +221,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$setup"		{ FL; return yaTIMINGSPEC; }
   "$setuphold"		{ FL; return yaTIMINGSPEC; }
   "$sformat"		{ FL; return yD_SFORMAT; }
+  "$sformatf"		{ FL; return yD_SFORMATF; }
   "$skew"		{ FL; return yaTIMINGSPEC; }
   "$sqrt"		{ FL; return yD_SQRT; }
   "$sscanf"		{ FL; return yD_SSCANF; }
