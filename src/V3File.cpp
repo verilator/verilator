@@ -185,7 +185,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const auto_ptr<ifstream> ifp (V3File::new_ifstream_nodepend(filename));
+    const VL_UNIQUE_PTR<ifstream> ifp (V3File::new_ifstream_nodepend(filename));
     if (ifp->fail()) {
 	UINFO(2,"   --check-times failed: no input "<<filename<<endl);
 	return false;

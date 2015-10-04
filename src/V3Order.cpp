@@ -1646,7 +1646,7 @@ void OrderVisitor::process() {
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (0 && debug()) {
 	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order.tree";
-	const auto_ptr<ofstream> logp (V3File::new_ofstream(dfilename));
+	const VL_UNIQUE_PTR<ofstream> logp (V3File::new_ofstream(dfilename));
 	if (logp->fail()) v3fatalSrc("Can't write "<<dfilename);
 	m_graph.dump(*logp);
     }

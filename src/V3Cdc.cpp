@@ -496,7 +496,7 @@ private:
 	}
 
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc_edges.txt";
-	const auto_ptr<ofstream> ofp (V3File::new_ofstream(filename));
+	const VL_UNIQUE_PTR<ofstream> ofp (V3File::new_ofstream(filename));
 	if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 	*ofp<<"Edge Report for "<<v3Global.opt.prefix()<<endl;
 
