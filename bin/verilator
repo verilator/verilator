@@ -472,7 +472,7 @@ Verilator will mark the signal as clocker and propagate the clocker attribute
 automatically to other signals derived from that. In this way, Verilator will
 try to avoid taking the clocker signal into checking list.
 
-Note signal-name is specified by the RTL hiearchy path. For example, v.foo.bar.
+Note signal-name is specified by the RTL hierarchy path. For example, v.foo.bar.
 If the signal is the input to top-module, the directly the signal name. If you
 find it difficult to find the exact name, try to use C</*verilator clocker*/> in
 RTL file to mark the signal directly.

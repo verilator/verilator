@@ -225,7 +225,7 @@ inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   string& rhs) {
     return os.write(rhs.data(), len);
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, string& rhs) {
-    vluint32_t len;
+    vluint32_t len=0;
     os>>len;
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);

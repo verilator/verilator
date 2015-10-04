@@ -70,6 +70,8 @@ sub process {
 	# Output
 	if ($line =~ /^cppcheck --/) {
 	    print $line if $Debug;
+	} elsif ($line =~ m!^\d+/\d+ files checked!) {
+	    print $line;
 	} else {
 	    my $suppress;
 	    if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {

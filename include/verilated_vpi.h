@@ -318,7 +318,6 @@ class VerilatedVpi {
 
     struct product_info {
 	PLI_BYTE8* product;
-	PLI_BYTE8* version;
     };
 
     VpioCbList		m_cbObjLists[CB_ENUM_MAX_VALUE];	// Callbacks for each supported reason

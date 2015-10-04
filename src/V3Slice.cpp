@@ -446,17 +446,19 @@ class SliceVisitor : public AstNVisitor {
 	    if ((int)(dim - varDim.second) < 0) {
 		// Unpacked dimensions are referenced first, make sure we have them all
 		nodep->v3error("Unary operator used across unpacked dimensions");
-	    } else if ((int)(dim - (varDim.second)) < 0) {
-		// Implicit packed dimensions are allowed, make them explicit
-		uint32_t newDim = (varDim.second) - dim;
-		AstNode* clonep = nodep->lhsp()->cloneTree(false);
-		clonep->user1p(refp);
-		AstNode* newp = insertImplicit(clonep, dim+1, newDim);
-		nodep->lhsp()->replaceWith(newp); refp = NULL;
-		int clones = countClones(nodep->lhsp()->castArraySel());
-		nodep->user2(clones);
-		SliceCloneVisitor scv(nodep);
 	    }
+	    //Dead code
+	    //else if ((int)(dim - (varDim.second)) < 0) {
+	    //	// Implicit packed dimensions are allowed, make them explicit
+	    //	uint32_t newDim = (varDim.second) - dim;
+	    //	AstNode* clonep = nodep->lhsp()->cloneTree(false);
+	    //	clonep->user1p(refp);
+	    //	AstNode* newp = insertImplicit(clonep, dim+1, newDim);
+	    //	nodep->lhsp()->replaceWith(newp); VL_DANGLING(refp);
+	    //	int clones = countClones(nodep->lhsp()->castArraySel());
+	    //	nodep->user2(clones);
+	    //	SliceCloneVisitor scv(nodep);
+	    //}
 	}
     }
     virtual void visit(AstRedOr* nodep, AstNUser*) {

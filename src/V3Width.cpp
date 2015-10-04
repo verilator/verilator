@@ -2820,6 +2820,7 @@ private:
 	underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
 	AstNodeDType* expDTypep = underp->findUInt32DType();
 	underp = iterateCheck(nodep,"file_descriptor",underp,SELF,FINAL,expDTypep,EXTEND_EXP);
+	if (underp) {} // cppcheck
     }
     void iterateCheckReal (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	// Coerce child to real if not already. Child is self-determined
@@ -2835,6 +2836,7 @@ private:
 	    AstNodeDType* expDTypep = nodep->findDoubleDType();
 	    underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	}
+	if (underp) {} // cppcheck
     }
     void iterateCheckString (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	if (stage & PRELIM) {
@@ -2844,6 +2846,7 @@ private:
 	    AstNodeDType* expDTypep = nodep->findStringDType();
 	    underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	}
+	if (underp) {} // cppcheck
     }
     void iterateCheckSizedSelf (AstNode* nodep, const char* side, AstNode* underp,
 				Determ determ, Stage stage) {
@@ -2856,6 +2859,7 @@ private:
 	underp = checkCvtUS(underp);
 	AstNodeDType* expDTypep = underp->dtypep();
 	underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
+	if (underp) {} // cppcheck
     }
     void iterateCheckAssign(AstNode* nodep, const char* side,
 			    AstNode* rhsp, Stage stage, AstNodeDType* lhsDTypep) {
@@ -2867,6 +2871,7 @@ private:
 			  && nodep->castNodeAssign()->lhsp()->castNodeStream());
 	rhsp = iterateCheck(nodep,side,rhsp,ASSIGN,FINAL,lhsDTypep,lhsStream?EXTEND_OFF:EXTEND_LHS);
 	//if (debug()) nodep->dumpTree(cout,"-checkout: ");
+	if (rhsp) {} // cppcheck
     }
 
     void iterateCheckBool (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {

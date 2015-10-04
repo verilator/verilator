@@ -363,7 +363,7 @@ private:
 	}
 	return out;
     }
-    // cppcheck-suppress unusedFunction
+    // cppcheck-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
 	// Slow, but we don't need it much
 	UINFO(9,"readFilterLine\n");
@@ -381,7 +381,7 @@ private:
 	UINFO(6,"filter-line-in: "<<line);
 	return line;
     }
-    // cppcheck-suppress unusedFunction
+    // cppcheck-suppress unusedFunction unusedPrivateFunction
     void writeFilter(const string& out) {
 	if (debug()>=6) { UINFO(6,"filter-out: "<<out); if (out[out.length()-1]!='\n') cout<<endl; }
 	if (!m_pid) { v3error("--pipe-filter: write to closed file\n"); m_readEof = true; stop(); }
