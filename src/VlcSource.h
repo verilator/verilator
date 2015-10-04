@@ -77,7 +77,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcSource(const string& name) {
+    explicit VlcSource(const string& name) {
 	m_name = name;
 	m_needed = false;
     }

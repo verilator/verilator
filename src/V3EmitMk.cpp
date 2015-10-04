@@ -234,7 +234,7 @@ public:
     }
 
 public:
-    EmitMkVisitor(AstNetlist*) {
+    explicit EmitMkVisitor(AstNetlist*) {
 	emitClassMake();
 	emitOverallMake();
     }

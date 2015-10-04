@@ -589,7 +589,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
 public:
-    EmitVBaseVisitor(AstSenTree* domainp=NULL) {   // Domain for printing one a ALWAYS under a ACTIVE
+    explicit EmitVBaseVisitor(AstSenTree* domainp=NULL) {   // Domain for printing one a ALWAYS under a ACTIVE
 	m_suppressSemi = false;
 	m_sensesp = domainp;
     }

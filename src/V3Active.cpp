@@ -421,7 +421,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ActiveVisitor(AstNetlist* nodep) {
+    explicit ActiveVisitor(AstNetlist* nodep) {
 	m_scopeFinalp = NULL;
 	m_itemCombo = false;
 	m_itemSequent = false;

@@ -399,7 +399,7 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkResolveVisitor(AstNetlist* rootp) {
+    explicit LinkResolveVisitor(AstNetlist* rootp) {
 	m_ftaskp = NULL;
 	m_modp = NULL;
 	m_assertp = NULL;
@@ -451,7 +451,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    LinkBotupVisitor(AstNetlist* rootp) {
+    explicit LinkBotupVisitor(AstNetlist* rootp) {
 	m_modp = NULL;
 	//
 	rootp->accept(*this);

@@ -85,7 +85,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    PremitAssignVisitor(AstNodeAssign* nodep) {
+    explicit PremitAssignVisitor(AstNodeAssign* nodep) {
 	UINFO(4,"  PremitAssignVisitor on "<<nodep<<endl);
 	m_noopt = false;
 	nodep->accept(*this);
@@ -383,7 +383,7 @@ private:
 
 public:
     // CONSTUCTORS
-    PremitVisitor(AstNetlist* nodep) {
+    explicit PremitVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_funcp = NULL;
 	m_stmtp = NULL;

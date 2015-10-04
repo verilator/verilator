@@ -93,7 +93,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    LocalizeDehierVisitor(AstNetlist* nodep) {
+    explicit LocalizeDehierVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~LocalizeDehierVisitor() {}
@@ -233,7 +233,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    LocalizeVisitor(AstNetlist* nodep) {
+    explicit LocalizeVisitor(AstNetlist* nodep) {
 	m_cfuncp = NULL;
 	nodep->accept(*this);
     }

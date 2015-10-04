@@ -280,7 +280,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CleanVisitor(AstNetlist* nodep) {
+    explicit CleanVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~CleanVisitor() {}

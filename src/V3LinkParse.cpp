@@ -349,7 +349,7 @@ private:
 
 public:
     // CONSTUCTORS
-    LinkParseVisitor(AstNetlist* rootp) {
+    explicit LinkParseVisitor(AstNetlist* rootp) {
 	m_varp = NULL;
 	m_modp = NULL;
 	m_ftaskp = NULL;

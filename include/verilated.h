@@ -104,9 +104,9 @@ class VerilatedModule {
 private:
     const char*		m_namep;	///< Module name
     VerilatedModule();				///< N/A, always use named constructor below
-    VerilatedModule(const VerilatedModule& );	///< N/A, no copying modules
+    VerilatedModule(const VerilatedModule& );	///< N/A, no copy constructor
 public:
-    VerilatedModule(const char* namep);	///< Create module with given hierarchy name
+    explicit VerilatedModule(const char* namep);	///< Create module with given hierarchy name
     ~VerilatedModule();
     const char* name() const { return m_namep; }	///< Return name of module
 };

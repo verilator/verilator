@@ -84,6 +84,7 @@ template< class T> std::string vlCovCvtToStr (const T& t) {
 struct VlCovCvtToCStr {
     string m_str;
     // Casters
+    // cppcheck-suppress noExplicitConstructor
     template< class T> VlCovCvtToCStr (const T& t) {
 	ostringstream os; os<<t; m_str=os.str();
     }

@@ -108,9 +108,6 @@ private:
 	basep->addStmtsp(callp);
 	return funcp;
     }
-    void addCFuncStmt(AstCFunc* basep, AstNode* nodep, VNumRange arrayRange) {
-	basep->addStmtsp(nodep);
-    }
     void addTraceDecl(const VNumRange& arrayRange,
 		      int widthOverride) {  // If !=0, is packed struct/array where basicp size misreflects one element
 	VNumRange bitRange;
@@ -305,7 +302,7 @@ private:
 
 public:
     // CONSTUCTORS
-    TraceDeclVisitor(AstNetlist* nodep) {
+    explicit TraceDeclVisitor(AstNetlist* nodep) {
 	m_scopetopp = NULL;
 	m_initFuncp = NULL;
 	m_initSubFuncp = NULL;

@@ -88,7 +88,7 @@ private:
     struct ModInfo {
 	AstNodeModule*	m_modp;		// Module with specified name
 	VarCloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
-	ModInfo(AstNodeModule* modp) { m_modp=modp; }
+	explicit ModInfo(AstNodeModule* modp) { m_modp=modp; }
     };
     typedef map<string,ModInfo> ModNameMap;
     ModNameMap	m_modNameMap;	// Hash of created module flavors by name
@@ -385,7 +385,7 @@ private:
 
 public:
     // CONSTUCTORS
-    ParamVisitor(AstNetlist* nodep) {
+    explicit ParamVisitor(AstNetlist* nodep) {
 	m_longId = 0;
 	//
 	nodep->accept(*this);

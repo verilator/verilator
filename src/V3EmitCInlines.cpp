@@ -71,7 +71,7 @@ class EmitCInlines : EmitCBaseVisitor {
     //---------------------------------------
     // ACCESSORS
 public:
-    EmitCInlines(AstNetlist* nodep) {
+    explicit EmitCInlines(AstNetlist* nodep) {
 	nodep->accept(*this);
 	if (v3Global.needHInlines()) {
 	    emitInt();

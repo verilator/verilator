@@ -169,7 +169,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    CombMarkVisitor(AstNode* nodep) {
+    explicit CombMarkVisitor(AstNode* nodep) {
 	nodep->accept(*this);
     }
     virtual ~CombMarkVisitor() {}
@@ -457,7 +457,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CombineVisitor(AstNetlist* nodep) {
+    explicit CombineVisitor(AstNetlist* nodep) {
 	m_modp=NULL;
 	m_funcp = NULL;
 	m_state = STATE_IDLE;

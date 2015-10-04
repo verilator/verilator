@@ -139,7 +139,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    InstVisitor(AstNode* nodep) {
+    explicit InstVisitor(AstNode* nodep) {
 	m_modp=NULL;
 	m_cellp=NULL;
 	//
@@ -229,7 +229,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    InstDeVisitor(AstNode* nodep) {
+    explicit InstDeVisitor(AstNode* nodep) {
 	m_cellRangep=NULL;
 	m_instNum=0;
 	m_instLsb=0;

@@ -112,7 +112,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    CaseLintVisitor(AstNodeCase* nodep) {
+    explicit CaseLintVisitor(AstNodeCase* nodep) {
 	m_caseExprp = NULL;
 	nodep->accept(*this);
     }
@@ -475,7 +475,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CaseVisitor(AstNetlist* nodep) {
+    explicit CaseVisitor(AstNetlist* nodep) {
 	m_caseNoOverlapsAllCovered = false;
 	nodep->accept(*this);
     }

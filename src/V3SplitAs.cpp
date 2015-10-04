@@ -71,7 +71,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    SplitAsFindVisitor(AstAlways* nodep) {
+    explicit SplitAsFindVisitor(AstAlways* nodep) {
 	m_splitVscp = NULL;
 	nodep->accept(*this);
     }
@@ -200,7 +200,7 @@ private:
 
 public:
     // CONSTUCTORS
-    SplitAsVisitor(AstNetlist* nodep) {
+    explicit SplitAsVisitor(AstNetlist* nodep) {
 	m_splitVscp = NULL;
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->accept(*this);

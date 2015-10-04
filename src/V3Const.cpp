@@ -54,7 +54,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ConstVarMarkVisitor(AstNode* nodep) {
+    explicit ConstVarMarkVisitor(AstNode* nodep) {
 	AstNode::user4ClearTree();  // Check marked InUse before we're called
 	nodep->accept(*this);
     }
@@ -76,7 +76,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ConstVarFindVisitor(AstNode* nodep) {
+    explicit ConstVarFindVisitor(AstNode* nodep) {
 	m_found = false;
 	nodep->iterateAndNext(*this, NULL);
     }
@@ -2292,7 +2292,7 @@ public:
     };
 
     // CONSTUCTORS
-    ConstVisitor(ProcMode pmode) {
+    explicit ConstVisitor(ProcMode pmode) {
 	m_params = false;
 	m_required = false;
 	m_doExpensive = false;

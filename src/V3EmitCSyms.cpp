@@ -244,7 +244,7 @@ class EmitCSyms : EmitCBaseVisitor {
     //---------------------------------------
     // ACCESSORS
 public:
-    EmitCSyms(AstNetlist* nodep) {
+    explicit EmitCSyms(AstNetlist* nodep) {
 	m_funcp = NULL;
 	m_modp = NULL;
 	m_coverBins = 0;

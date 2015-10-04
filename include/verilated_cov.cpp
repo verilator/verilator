@@ -75,6 +75,7 @@ public:
     virtual vluint64_t count() const { return *m_countp; }
     virtual void zero() const { *m_countp = 0; }
     // CONSTRUCTORS
+    // cppcheck-suppress noExplicitConstructor
     VerilatedCoverItemSpec(T* countp) : m_countp(countp) { zero(); }
     virtual ~VerilatedCoverItemSpec() {}
 };

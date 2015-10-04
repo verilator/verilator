@@ -921,7 +921,7 @@ private:
 
 public:
     // CONSTUCTORS
-    ExpandVisitor(AstNetlist* nodep) {
+    explicit ExpandVisitor(AstNetlist* nodep) {
 	m_stmtp=NULL;
 	nodep->accept(*this);
     }

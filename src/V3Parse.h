@@ -36,6 +36,7 @@ class V3Parse {
 private:
     V3ParseImp*	m_impp;
 
+    V3Parse(const V3Parse&); ///< N/A, no copy constructor
 public:
     // CONSTRUCTORS
     // We must allow reading multiple files into one parser

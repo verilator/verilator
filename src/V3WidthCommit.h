@@ -151,7 +151,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    WidthCommitVisitor(AstNetlist* nodep) {
+    explicit WidthCommitVisitor(AstNetlist* nodep) {
 	// Were changing widthMin's, so the table is now somewhat trashed
 	nodep->typeTablep()->clearCache();
 	nodep->accept(*this);

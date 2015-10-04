@@ -175,6 +175,8 @@ class V3Options {
 
     static string getenvSYSTEMPERLGuts();
 
+    V3Options(const V3Options&); ///< N/A, no copy constructor
+
   public:
     // CREATORS
     V3Options();

@@ -60,7 +60,7 @@ public:
     virtual void varRefCb(AstVarRef* nodep);	///< Call other-this function on all new var references
 
     // CONSTRUCTORS
-    TableSimulateVisitor(TableVisitor* cbthis) {
+    explicit TableSimulateVisitor(TableVisitor* cbthis) {
 	m_cbthis = cbthis;
     }
     virtual ~TableSimulateVisitor() {}
@@ -437,7 +437,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    TableVisitor(AstNetlist* nodep) {
+    explicit TableVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_modTables = 0;
 	m_scopep = NULL;

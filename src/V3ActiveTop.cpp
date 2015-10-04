@@ -147,7 +147,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ActiveTopVisitor(AstNetlist* nodep) {
+    explicit ActiveTopVisitor(AstNetlist* nodep) {
 	m_topscopep = NULL;
 	nodep->accept(*this);
     }

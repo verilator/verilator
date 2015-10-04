@@ -86,7 +86,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    LifePostElimVisitor(AstTopScope* nodep) {
+    explicit LifePostElimVisitor(AstTopScope* nodep) {
 	nodep->accept(*this);
     }
     virtual ~LifePostElimVisitor() {}
@@ -178,7 +178,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    LifePostDlyVisitor(AstNetlist* nodep) {
+    explicit LifePostDlyVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~LifePostDlyVisitor() {

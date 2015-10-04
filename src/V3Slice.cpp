@@ -185,7 +185,7 @@ class SliceCloneVisitor : public AstNVisitor {
     }
 public:
     // CONSTUCTORS
-    SliceCloneVisitor(AstNode* nodep) {
+    explicit SliceCloneVisitor(AstNode* nodep) {
 	nodep->accept(*this);
     }
     virtual ~SliceCloneVisitor() {}
@@ -487,7 +487,7 @@ class SliceVisitor : public AstNVisitor {
 
 public:
     // CONSTUCTORS
-    SliceVisitor(AstNetlist* rootp) {
+    explicit SliceVisitor(AstNetlist* rootp) {
 	m_assignp = NULL;
 	m_lhsVarRefp = NULL;
 	rootp->accept(*this);

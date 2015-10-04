@@ -452,7 +452,7 @@ private:
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
 	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
-		nodep->v3error("Replication value of 0 is only legal under a concatenation."); times=1;
+		nodep->v3error("Replication value of 0 is only legal under a concatenation.");
 	    }
 	    nodep->dtypeSetString();
 	}

@@ -130,7 +130,7 @@ public:
 class VerilatedVpioConst : public VerilatedVpio {
     vlsint32_t	m_num;
 public:
-    VerilatedVpioConst(vlsint32_t num) : m_num(num) {}
+    explicit VerilatedVpioConst(vlsint32_t num) : m_num(num) {}
     virtual ~VerilatedVpioConst() {}
     static inline VerilatedVpioConst* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioConst*>((VerilatedVpio*)h); }
     virtual const vluint32_t type() { return vpiUndefined; }
@@ -141,7 +141,7 @@ class VerilatedVpioRange : public VerilatedVpio {
     const VerilatedRange* m_range;
     vlsint32_t                  m_iteration;
 public:
-    VerilatedVpioRange(const VerilatedRange* range) : m_range(range), m_iteration(0) {}
+    explicit VerilatedVpioRange(const VerilatedRange* range) : m_range(range), m_iteration(0) {}
     virtual ~VerilatedVpioRange() {}
     static inline VerilatedVpioRange* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioRange*>((VerilatedVpio*)h); }
     virtual const vluint32_t type() { return vpiRange; }
@@ -163,7 +163,7 @@ public:
 class VerilatedVpioScope : public VerilatedVpio {
     const VerilatedScope*	m_scopep;
 public:
-    VerilatedVpioScope(const VerilatedScope* scopep)
+    explicit VerilatedVpioScope(const VerilatedScope* scopep)
 	: m_scopep(scopep) {}
     virtual ~VerilatedVpioScope() {}
     static inline VerilatedVpioScope* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioScope*>((VerilatedVpio*)h); }
@@ -255,7 +255,7 @@ class VerilatedVpioVarIter : public VerilatedVpio {
     VerilatedVarNameMap::iterator m_it;
     bool m_started;
 public:
-    VerilatedVpioVarIter(const VerilatedScope* scopep)
+    explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
 	: m_scopep(scopep), m_started(false) {  }
     virtual ~VerilatedVpioVarIter() {}
     static inline VerilatedVpioVarIter* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioVarIter*>((VerilatedVpio*)h); }

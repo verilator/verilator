@@ -246,7 +246,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    LinkJumpVisitor(AstNetlist* nodep) {
+    explicit LinkJumpVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_ftaskp = NULL;
 	m_loopp = NULL;

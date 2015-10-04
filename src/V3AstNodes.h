@@ -2604,7 +2604,7 @@ public:
 
 class AstBreak : public AstNodeStmt {
 public:
-    AstBreak(FileLine* fileline)
+    explicit AstBreak(FileLine* fileline)
 	: AstNodeStmt (fileline) {}
     ASTNODE_NODE_FUNCS(Break, BREAK)
     virtual string verilogKwd() const { return "break"; };
@@ -2614,7 +2614,7 @@ public:
 
 class AstContinue : public AstNodeStmt {
 public:
-    AstContinue(FileLine* fileline)
+    explicit AstContinue(FileLine* fileline)
 	: AstNodeStmt (fileline) {}
     ASTNODE_NODE_FUNCS(Continue, CONTINUE)
     virtual string verilogKwd() const { return "continue"; };
@@ -2907,7 +2907,7 @@ public:
 
 class AstStop : public AstNodeStmt {
 public:
-    AstStop(FileLine* fl)
+    explicit AstStop(FileLine* fl)
 	: AstNodeStmt(fl) {}
     ASTNODE_NODE_FUNCS(Stop, STOP)
     virtual bool isGateOptimizable() const { return false; }
@@ -2923,7 +2923,7 @@ public:
 
 class AstFinish : public AstNodeStmt {
 public:
-    AstFinish(FileLine* fl)
+    explicit AstFinish(FileLine* fl)
 	: AstNodeStmt(fl) {}
     ASTNODE_NODE_FUNCS(Finish, FINISH)
     virtual bool isGateOptimizable() const { return false; }
@@ -3072,7 +3072,7 @@ private:
     string scopeNameFormatter(AstText* textp) const;
     string scopePrettyNameFormatter(AstText* textp) const;
 public:
-    AstScopeName(FileLine* fl) : AstNodeMath(fl), m_dpiExport(false) {
+    explicit AstScopeName(FileLine* fl) : AstNodeMath(fl), m_dpiExport(false) {
 	dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(ScopeName, SCOPENAME)
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -3122,7 +3122,7 @@ private:
 public:
     AstRand(FileLine* fl, AstNodeDType* dtp, bool reset) : AstNodeTermop(fl) {
 	dtypep(dtp); m_reset=reset; }
-    AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
+    explicit AstRand(FileLine* fl) : AstNodeTermop(fl), m_reset(false) { }
     ASTNODE_NODE_FUNCS(Rand, RAND)
     virtual string emitVerilog() { return "%f$random"; }
     virtual string emitC() {
@@ -3139,7 +3139,7 @@ public:
 
 class AstTime : public AstNodeTermop {
 public:
-    AstTime(FileLine* fl)	: AstNodeTermop(fl) {
+    explicit AstTime(FileLine* fl) : AstNodeTermop(fl) {
 	dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(Time, TIME)
     virtual string emitVerilog() { return "%f$time"; }
@@ -3154,7 +3154,7 @@ public:
 
 class AstTimeD : public AstNodeTermop {
 public:
-    AstTimeD(FileLine* fl)	: AstNodeTermop(fl) {
+    explicit AstTimeD(FileLine* fl) : AstNodeTermop(fl) {
 	dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(TimeD, TIMED)
     virtual string emitVerilog() { return "%f$realtime"; }
@@ -5082,7 +5082,7 @@ class AstTypeTable : public AstNode {
     typedef map<VBasicTypeKey,AstBasicDType*> DetailedMap;
     DetailedMap m_detailedMap;
 public:
-    AstTypeTable(FileLine* fl) : AstNode(fl) {
+    explicit AstTypeTable(FileLine* fl) : AstNode(fl) {
 	for (int i=0; i<AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
     }
     ASTNODE_NODE_FUNCS(TypeTable, TYPETABLE)

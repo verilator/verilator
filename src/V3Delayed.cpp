@@ -450,7 +450,7 @@ private:
 
 public:
     // CONSTUCTORS
-    DelayedVisitor(AstNetlist* nodep) {
+    explicit DelayedVisitor(AstNetlist* nodep) {
 	m_inDly = false;
 	m_activep=NULL;
 	m_cfuncp=NULL;

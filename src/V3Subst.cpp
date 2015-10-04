@@ -86,7 +86,7 @@ class SubstVarEntry {
 
 public:
     // CONSTRUCTORS
-    SubstVarEntry (AstVar* varp) {	// Construction for when a var is used
+    explicit SubstVarEntry (AstVar* varp) {	// Construction for when a var is used
 	m_varp = varp;
 	m_whole.m_use = false;
 	m_wordAssign = false;
@@ -379,7 +379,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    SubstVisitor(AstNode* nodep) {
+    explicit SubstVisitor(AstNode* nodep) {
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	m_ops = 0;

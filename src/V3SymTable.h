@@ -226,6 +226,8 @@ private:
     VSymEnt*	m_symRootp;		// Root symbol table
     SymStack	m_symsp;		// All symbol tables, to cleanup
 
+    VSymGraph(const VSymGraph&);	///< N/A, no copy constructor
+
 protected:
     friend class VSymEnt;
     void pushNewEnt(VSymEnt* entp) { m_symsp.push_back(entp); }
@@ -256,7 +258,7 @@ public:
     }
 public:
     // CREATORS
-    VSymGraph(AstNetlist* nodep) {
+    explicit VSymGraph(AstNetlist* nodep) {
 	m_symRootp = new VSymEnt(this, nodep);
     }
     ~VSymGraph() {

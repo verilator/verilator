@@ -177,7 +177,7 @@ public:
     }
 
     // CONSTRUCTORS
-    StatsReport(ofstream* aofp)
+    explicit StatsReport(ofstream* aofp)
 	: os(*aofp) {
 	header();
 	sumit();

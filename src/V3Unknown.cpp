@@ -457,7 +457,7 @@ private:
 
 public:
     // CONSTUCTORS
-    UnknownVisitor(AstNetlist* nodep) {
+    explicit UnknownVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_assigndlyp = NULL;
 	m_assignwp = NULL;

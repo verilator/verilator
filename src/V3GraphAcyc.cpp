@@ -319,6 +319,7 @@ void GraphAcyc::simplifyOne (GraphAcycVertex* avertexp) {
 					    && (!outEdgep->cutable()
 						|| inEdgep->weight()<outEdgep->weight() ))
 					   ? inEdgep : outEdgep);
+	    // cppcheck-suppress leakReturnValNotUsed
 	    edgeFromEdge(templateEdgep, inVertexp, outVertexp);
 	    // Remove old edge
 	    inEdgep->unlinkDelete(); inEdgep = NULL;
@@ -353,6 +354,7 @@ void GraphAcyc::simplifyOut (GraphAcycVertex* avertexp) {
 		    return;
 		}
 		// Make a new edge connecting the two vertices directly
+		// cppcheck-suppress leakReturnValNotUsed
 		edgeFromEdge(inEdgep, inVertexp, outVertexp);
 		// Remove old edge
 		inEdgep->unlinkDelete(); inEdgep = NULL;

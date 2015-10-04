@@ -167,7 +167,7 @@ protected:
     // CONSTRUCTORS
     V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
 public:
-    V3GraphVertex(V3Graph* graphp);
+    explicit V3GraphVertex(V3Graph* graphp);
     //! Clone copy constructor. Doesn't copy edges or user/userp.
     virtual V3GraphVertex* clone(V3Graph* graphp) const {
 	return new V3GraphVertex(graphp, *this); }

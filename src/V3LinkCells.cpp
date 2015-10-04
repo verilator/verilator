@@ -66,7 +66,7 @@ public:
 
 class LibraryVertex : public V3GraphVertex {
 public:
-    LibraryVertex(V3Graph* graphp)
+    explicit LibraryVertex(V3Graph* graphp)
 	: V3GraphVertex(graphp) {}
     virtual ~LibraryVertex() {}
     virtual string name() const { return "*LIBRARY*"; }

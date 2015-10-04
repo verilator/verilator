@@ -184,7 +184,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    CdcWidthVisitor(AstNode* nodep) {
+    explicit CdcWidthVisitor(AstNode* nodep) {
 	m_maxLineno = 0;
 	m_maxFilenameLen = 0;
 	nodep->accept(*this);
@@ -726,7 +726,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CdcVisitor(AstNode* nodep) {
+    explicit CdcVisitor(AstNode* nodep) {
 	m_logicVertexp = NULL;
 	m_scopep = NULL;
 	m_modp = NULL;

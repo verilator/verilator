@@ -66,7 +66,7 @@ class GaterVarVertex;
 class GaterVertex : public V3GraphVertex {
     static uint32_t s_rankNum;
 public:
-    GaterVertex(V3Graph* graphp)
+    explicit GaterVertex(V3Graph* graphp)
 	: V3GraphVertex(graphp) {
 	s_rankNum++; rank(s_rankNum);
     }
@@ -79,7 +79,7 @@ uint32_t GaterVertex::s_rankNum = 0;
 
 class GaterHeadVertex : public GaterVertex {
 public:
-    GaterHeadVertex(V3Graph* graphp)
+    explicit GaterHeadVertex(V3Graph* graphp)
 	: GaterVertex(graphp) {}
     virtual ~GaterHeadVertex() {}
     virtual int typeNum() const { return __LINE__; }  // C++ typeof() equivelent
@@ -89,7 +89,7 @@ public:
 
 class GaterPliVertex : public GaterVertex {
 public:
-    GaterPliVertex(V3Graph* graphp)
+    explicit GaterPliVertex(V3Graph* graphp)
 	: GaterVertex(graphp) {}
     virtual ~GaterPliVertex() {}
     virtual int typeNum() const { return __LINE__; }  // C++ typeof() equivelent
@@ -217,7 +217,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    GaterCondVisitor(AstNode* nodep) {
+    explicit GaterCondVisitor(AstNode* nodep) {
 	m_isSimple = true;
 	nodep->accept(*this);
     }
@@ -878,7 +878,7 @@ class GaterVisitor : public GaterBaseVisitor {
 
 public:
     // CONSTUCTORS
-    GaterVisitor(AstNode* nodep) {
+    explicit GaterVisitor(AstNode* nodep) {
 	// AstAlways visitor does the real work, so most zeroing needs to be in clear()
 	clear();
 	nodep->accept(*this);

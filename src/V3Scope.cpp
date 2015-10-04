@@ -294,7 +294,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ScopeVisitor(AstNetlist* nodep) {
+    explicit ScopeVisitor(AstNetlist* nodep) {
 	m_aboveCellp = NULL;
 	m_aboveScopep = NULL;
 	m_modp = NULL;
@@ -402,7 +402,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    ScopeCleanupVisitor(AstNetlist* nodep) {
+    explicit ScopeCleanupVisitor(AstNetlist* nodep) {
 	m_scopep = NULL;
 	nodep->accept(*this);
     }

@@ -48,6 +48,8 @@ protected:
 	m_bufp = new vluint8_t [bufferSize()];
 	m_cp = m_bufp;
     }
+private:
+    VerilatedSerialBase(const VerilatedSerialBase& );	///< N/A, no copy constructor
 public:
     // CREATORS
     virtual ~VerilatedSerialBase() {

@@ -64,6 +64,7 @@ sub process {
 	next if $line =~ m!id="missingInclude" .*systemc.h!;
 	next if $line =~ m!id="missingInclude" .*svdpi.h!;
 	next if $line =~ m!id="unusedFunction" .*sv! && $line =~ m!verilated_dpi.cpp!;
+	next if $line =~ m!id="unusedFunction" .*vpi! && $line =~ m!verilated_vpi.cpp!;
 	next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
 	next if $line =~ m!file=".*obj_dbg/V3ParseBison.c".* id="unreachableCode"!;
 	# Output
@@ -121,6 +122,12 @@ sub _suppress {
 	if ($l == $linenum) {
 	    if ($id eq "uselessAssignmentPtrArg"
 		&& $line =~ /(delete|Delete|Edit).*p *= *NULL;/) {
+		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
+		return 1;
+	    }
+	    if (($id eq "uselessAssignment"
+		 || $id eq "uselessAssignmentPtrArg")
+		&& $line =~ /;.*p *= *NULL;/) {
 		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
 		return 1;
 	    }

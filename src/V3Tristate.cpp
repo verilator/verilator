@@ -1302,7 +1302,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
 public:
     // CONSTUCTORS
-    TristateVisitor(AstNode* nodep) {
+    explicit TristateVisitor(AstNode* nodep) {
 	m_graphing = false;
 	m_modp  = NULL;
 	m_cellp = NULL;

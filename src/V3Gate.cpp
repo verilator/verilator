@@ -496,7 +496,7 @@ private:
 
 public:
     // CONSTUCTORS
-    GateVisitor(AstNode* nodep) {
+    explicit GateVisitor(AstNode* nodep) {
 	AstNode::user1ClearTree();
 	m_logicVertexp = NULL;
 	m_scopep = NULL;
@@ -1202,7 +1202,7 @@ private:
     }
 
 public:
-    GateMergeAssignsGraphVisitor(V3Graph* graphp) {
+    explicit GateMergeAssignsGraphVisitor(V3Graph* graphp) {
 	m_assignp = NULL;
 	m_activep = NULL;
 	m_logicvp = NULL;
@@ -1253,7 +1253,7 @@ private:
 
 public:
     // CONSTUCTORS
-    GateDeassignVisitor(AstNode* nodep) {
+    explicit GateDeassignVisitor(AstNode* nodep) {
 	nodep->accept(*this);
     }
     virtual ~GateDeassignVisitor() {}

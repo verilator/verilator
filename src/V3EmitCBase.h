@@ -106,7 +106,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    EmitCBaseCounterVisitor(AstNode* nodep) {
+    explicit EmitCBaseCounterVisitor(AstNode* nodep) {
 	m_count = 0;
 	nodep->accept(*this);
     }

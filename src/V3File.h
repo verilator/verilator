@@ -77,6 +77,7 @@ class V3InFilterImp;
 
 class V3InFilter {
     V3InFilterImp* m_impp;
+    V3InFilter(const V3InFilter&); ///< N/A, no copy constructor
 public:
     // TYPES
     typedef list<string> StrList;
@@ -86,7 +87,7 @@ public:
     bool readWholefile(const string& filename, StrList& outl);
 
     // CONSTRUCTORS
-    V3InFilter(const string& command);
+    explicit V3InFilter(const string& command);
     ~V3InFilter();
 };
 
@@ -183,7 +184,7 @@ private:
 class V3OutCFile : public V3OutFile {
     int		m_private;
 public:
-    V3OutCFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_C) {
+    explicit V3OutCFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_C) {
 	resetPrivate();
     }
     virtual ~V3OutCFile() {}
@@ -208,7 +209,7 @@ public:
 
 class V3OutScFile : public V3OutCFile {
 public:
-    V3OutScFile(const string& filename) : V3OutCFile(filename) {}
+    explicit V3OutScFile(const string& filename) : V3OutCFile(filename) {}
     virtual ~V3OutScFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
@@ -219,7 +220,7 @@ public:
 
 class V3OutSpFile : public V3OutCFile {
 public:
-    V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
+    explicit V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
     virtual ~V3OutSpFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
@@ -230,21 +231,21 @@ public:
 
 class V3OutVFile : public V3OutFile {
 public:
-    V3OutVFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}
+    explicit V3OutVFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}
     virtual ~V3OutVFile() {}
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
 class V3OutXmlFile : public V3OutFile {
 public:
-    V3OutXmlFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_XML) {}
+    explicit V3OutXmlFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_XML) {}
     virtual ~V3OutXmlFile() {}
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
 class V3OutMkFile : public V3OutFile {
 public:
-    V3OutMkFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_MK) {}
+    explicit V3OutMkFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_MK) {}
     virtual ~V3OutMkFile() {}
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.

@@ -431,6 +431,7 @@ void VerilatedVpiError::selfTest() {
 
 vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     _VL_VPI_ERROR_RESET(); // reset vpi error status
+    // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!cb_data_p)) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "%s : callback data pointer is null", VL_FUNC);
         return NULL;
@@ -440,7 +441,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
 	QData time = 0;
 	if (cb_data_p->time) time = _VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
 	VerilatedVpioCb* vop = new VerilatedVpioCb(cb_data_p, VL_TIME_Q()+time);
-	VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  vpi_register_cb %d %p delay=%" VL_PRI64 "d\n",cb_data_p->reason,vop,time););
+	VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  vpi_register_cb %d %p delay=%" VL_PRI64 "u\n",cb_data_p->reason,vop,time););
 	VerilatedVpi::cbTimedAdd(vop);
 	return vop->castVpiHandle();
     }
@@ -1244,6 +1245,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 // time processing
 
 void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
+    // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!time_p)) {
 	_VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_get_time with NULL value pointer");
 	return;
@@ -1303,6 +1305,7 @@ PLI_INT32 vpi_vprintf(PLI_BYTE8* formatp, va_list ap) {
 PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8 *format, va_list ap) {
     FILE* fp = VL_CVT_I_FP(mcd);
     _VL_VPI_ERROR_RESET(); // reset vpi error status
+    // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!fp)) return 0;
     int chars = vfprintf(fp, format, ap);
     return chars;

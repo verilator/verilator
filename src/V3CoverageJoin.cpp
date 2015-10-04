@@ -121,7 +121,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CoverageJoinVisitor(AstNetlist* nodep) {
+    explicit CoverageJoinVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~CoverageJoinVisitor() {

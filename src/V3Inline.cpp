@@ -185,7 +185,7 @@ private:
 
 public:
     // CONSTUCTORS
-    InlineMarkVisitor(AstNode* nodep) {
+    explicit InlineMarkVisitor(AstNode* nodep) {
 	m_modp = NULL;
 	m_stmtCnt = 0;
 	nodep->accept(*this);
@@ -227,7 +227,7 @@ private:
 
 public:
     // CONSTUCTORS
-    InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
+    explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
 	nodep->accept(*this);
     }
     virtual ~InlineCollectVisitor() {}
@@ -537,7 +537,7 @@ private:
 
 public:
     // CONSTUCTORS
-    InlineVisitor(AstNode* nodep) {
+    explicit InlineVisitor(AstNode* nodep) {
 	m_modp = NULL;
 	nodep->accept(*this);
     }

@@ -176,7 +176,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CastVisitor(AstNetlist* nodep) {
+    explicit CastVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~CastVisitor() {}

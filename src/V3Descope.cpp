@@ -247,7 +247,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    DescopeVisitor(AstNetlist* nodep) {
+    explicit DescopeVisitor(AstNetlist* nodep) {
 	m_modp = NULL;
 	m_scopep = NULL;
 	m_needThis = false;

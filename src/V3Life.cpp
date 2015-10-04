@@ -93,10 +93,10 @@ public:
     LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* assp) {
 	init(true); simpleAssign(assp);
     }
-    LifeVarEntry(COMPLEXASSIGN) {
+    explicit LifeVarEntry(COMPLEXASSIGN) {
 	init(false); complexAssign();
     }
-    LifeVarEntry(CONSUMED) {
+    explicit LifeVarEntry(CONSUMED) {
 	init(false); consumed();
     }
     ~LifeVarEntry() {}
@@ -455,14 +455,14 @@ public:
 	m_sideEffect = false;
 	m_noopt = false;
 	{
-	    // Cpp check bug, it is deleted
-	    // cppcheck-suppress leak
 	    m_lifep = new LifeBlock (NULL, m_statep);
 	    nodep->accept(*this);
-	    delete m_lifep; m_lifep=NULL;
+	    if (m_lifep) { delete m_lifep; m_lifep=NULL; }
 	}
     }
-    virtual ~LifeVisitor() {}
+    virtual ~LifeVisitor() {
+	if (m_lifep) { delete m_lifep; m_lifep=NULL; }
+    }
 };
 
 //######################################################################

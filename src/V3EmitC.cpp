@@ -656,7 +656,7 @@ public:
 	    }
 	} else if (nodep->isQuad()) {
 	    vluint64_t num = nodep->toUQuad();
-	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "d)", num);
+	    if (num<10) ofp()->printf("VL_ULL(%" VL_PRI64 "u)", num);
 	    else ofp()->printf("VL_ULL(0x%" VL_PRI64 "x)", num);
 	} else {
 	    uint32_t num = nodep->toUInt();
@@ -2434,7 +2434,7 @@ class EmitCTrace : EmitCStmts {
     }
 
 public:
-    EmitCTrace(bool slow) {
+    explicit EmitCTrace(bool slow) {
 	m_funcp = NULL;
 	m_slow = slow;
     }

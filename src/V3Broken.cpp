@@ -197,7 +197,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    BrokenMarkVisitor(AstNetlist* nodep) {
+    explicit BrokenMarkVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~BrokenMarkVisitor() {}
@@ -241,7 +241,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    BrokenCheckVisitor(AstNetlist* nodep) {
+    explicit BrokenCheckVisitor(AstNetlist* nodep) {
 	nodep->accept(*this);
     }
     virtual ~BrokenCheckVisitor() {}

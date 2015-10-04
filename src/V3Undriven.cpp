@@ -60,7 +60,7 @@ class UndrivenVarEntry {
 
 public:
     // CONSTRUCTORS
-    UndrivenVarEntry (AstVar* varp) {	// Construction for when a var is used
+    explicit UndrivenVarEntry (AstVar* varp) {	// Construction for when a var is used
 	UINFO(9, "create "<<varp<<endl);
 	m_varp = varp;
 	m_usedWhole = false;
@@ -370,7 +370,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    UndrivenVisitor(AstNetlist* nodep) {
+    explicit UndrivenVisitor(AstNetlist* nodep) {
 	m_markBoth = false;
 	m_taskp = NULL;
 	m_alwaysp = NULL;

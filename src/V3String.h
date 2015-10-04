@@ -54,7 +54,7 @@ class VHashSha1 {
 public:
     // CONSTRUCTORS
     VHashSha1() { init(); }
-    VHashSha1(const string& data) { init(); insert(data); }
+    explicit VHashSha1(const string& data) { init(); insert(data); }
     ~VHashSha1() {}
 
     // METHODS
@@ -93,7 +93,7 @@ class VName {
     static size_t s_minLength;		// Length to preserve if over maxLength
 public:
     // CONSTRUCTORS
-    VName (const string& name) : m_name(name) {}
+    explicit VName (const string& name) : m_name(name) {}
     ~VName() {}
     // METHODS
     void name(const string& name) { m_name = name; m_hashed = ""; }

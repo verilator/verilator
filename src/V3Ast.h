@@ -53,6 +53,7 @@ public:
     enum en m_e;
     // cppcheck-suppress uninitVar  // responsiblity of each subclass
     inline AstType () {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstType (en _e) : m_e(_e) {}
     explicit inline AstType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -87,7 +88,9 @@ public:
 	return names[m_e];
     };
     inline AstNumeric () : m_e(UNSIGNED) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstNumeric (en _e) : m_e(_e) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstNumeric (VSignedState signst) {
 	if (signst==signedst_UNSIGNED) m_e=UNSIGNED;
 	else if (signst==signedst_SIGNED) m_e=SIGNED;
@@ -121,6 +124,7 @@ public:
     };
     enum en m_e;
     inline AstPragmaType () : m_e(ILLEGAL) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstPragmaType (en _e) : m_e(_e) {}
     explicit inline AstPragmaType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -144,6 +148,7 @@ public:
     };
     enum en m_e;
     inline AstCFuncType () : m_e(FT_NORMAL) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstCFuncType (en _e) : m_e(_e) {}
     explicit inline AstCFuncType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -212,6 +217,7 @@ public:
 	return names[m_e];
     };
     inline AstEdgeType () : m_e(ET_ILLEGAL) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstEdgeType (en _e) : m_e(_e) {}
     explicit inline AstEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -279,6 +285,7 @@ public:
 	return names[m_e];
     };
     inline AstAttrType () : m_e(ILLEGAL) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstAttrType (en _e) : m_e(_e) {}
     explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -338,6 +345,7 @@ public:
 	UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType()," MAX"),"Enum array mismatch");
     }
     inline AstBasicDTypeKwd () : m_e(UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
     explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -432,6 +440,7 @@ public:
     };
     enum en m_e;
     inline AstVarType () : m_e(UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstVarType (en _e) : m_e(_e) {}
     explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -469,6 +478,7 @@ public:
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline AstBranchPred () : m_e(BP_UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstBranchPred (en _e) : m_e(_e) {}
     explicit inline AstBranchPred (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -500,6 +510,7 @@ public:
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
     inline AstVarAttrClocker () : m_e(CLOCKER_UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstVarAttrClocker (en _e) : m_e(_e) {}
     explicit inline AstVarAttrClocker (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -530,6 +541,7 @@ public:
     };
     enum en m_e;
     inline VAlwaysKwd () : m_e(ALWAYS) {}
+    // cppcheck-suppress noExplicitConstructor
     inline VAlwaysKwd (en _e) : m_e(_e) {}
     explicit inline VAlwaysKwd (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -554,6 +566,7 @@ public:
     };
     enum en m_e;
     inline VCaseType () : m_e(CT_CASE) {}
+    // cppcheck-suppress noExplicitConstructor
     inline VCaseType (en _e) : m_e(_e) {}
     explicit inline VCaseType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -576,6 +589,7 @@ public:
     };
     enum en m_e;
     inline AstDisplayType () : m_e(DT_DISPLAY) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstDisplayType (en _e) : m_e(_e) {}
     explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -600,6 +614,7 @@ public:
     };
     enum en m_e;
     inline AstParseRefExp() : m_e(PX_NONE) {}
+    // cppcheck-suppress noExplicitConstructor
     inline AstParseRefExp (en _e) : m_e(_e) {}
     explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -897,16 +912,19 @@ public:
     // CREATORS
     class Illegal {};		// for creator type-overload selection
     class FullValue {};		// for creator type-overload selection
-    V3Hash(Illegal) { m_both=0; }
+    explicit V3Hash(Illegal) { m_both=0; }
     // Saving and restoring inside a userp
-    V3Hash(AstNUser* up) { m_both=up->castInt(); }
+    explicit V3Hash(AstNUser* up) { m_both=up->castInt(); }
     V3Hash operator+= (const V3Hash& rh) {
 	setBoth(depth()+rh.depth(), (hshval()*31+rh.hshval()));
 	return *this; };
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1,0); }
+    // cppcheck-suppress noExplicitConstructor
     V3Hash(uint32_t val) { setBoth(1,val); }
+    // cppcheck-suppress noExplicitConstructor
     V3Hash(const void* vp) { setBoth(1,cvtToHash(vp)); }
+    // cppcheck-suppress noExplicitConstructor
     V3Hash(const string& name);
     V3Hash(V3Hash h1, V3Hash h2) {
 	setBoth(1,h1.hshval()*31+h2.hshval()); }
@@ -991,7 +1009,7 @@ public:
 protected:
     // CONSTUCTORS
     AstNode() {init(); }
-    AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
+    explicit AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
     virtual AstNode* clone() = 0;	// Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void 	cloneRelinkTree();
@@ -1274,7 +1292,7 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 class AstNodeMath : public AstNode {
     // Math -- anything that's part of an expression tree
 public:
-    AstNodeMath(FileLine* fl)
+    explicit AstNodeMath(FileLine* fl)
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
@@ -1291,7 +1309,7 @@ public:
 class AstNodeTermop : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
 public:
-    AstNodeTermop(FileLine* fl)
+    explicit AstNodeTermop(FileLine* fl)
 	: AstNodeMath(fl) {}
     ASTNODE_BASE_FUNCS(NodeTermop)
     // Know no children, and hot function, so skip iterator for speed
@@ -1435,7 +1453,7 @@ public:
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
 public:
-    AstNodeStmt(FileLine* fl)
+    explicit AstNodeStmt(FileLine* fl)
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
@@ -1525,7 +1543,7 @@ public:
 class AstNodeSenItem : public AstNode {
     // An AstSenItem or AstSenGate
 public:
-    AstNodeSenItem(FileLine* fl) : AstNode(fl) {}
+    explicit AstNodeSenItem(FileLine* fl) : AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeSenItem)
     virtual bool isClocked() const = 0;
     virtual bool isCombo() const = 0;
@@ -1612,7 +1630,7 @@ private:
     static int	s_uniqueNum;	// Unique number assigned to each dtype during creation for IEEE matching
 public:
     // CONSTRUCTORS
-    AstNodeDType(FileLine* fl) : AstNode(fl) {
+    explicit AstNodeDType(FileLine* fl) : AstNode(fl) {
 	m_width=0; m_widthMin=0; m_generic=false;
     }
     ASTNODE_BASE_FUNCS(NodeDType)
@@ -1701,7 +1719,7 @@ private:
     AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
     AstNode*	rangenp() const { return op2p(); }	// op2 = Array(s) of variable
 public:
-    AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {
+    explicit AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {
 	m_refDTypep = NULL;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)

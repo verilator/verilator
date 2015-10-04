@@ -317,7 +317,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    AssertVisitor(AstNetlist* nodep) {
+    explicit AssertVisitor(AstNetlist* nodep) {
 	m_beginp = NULL;
 	m_modp = NULL;
 	// Process

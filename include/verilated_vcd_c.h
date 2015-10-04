@@ -144,13 +144,15 @@ private:
 	return out + ((char)((code)%94+33));
     }
 
+    VerilatedVcd(const VerilatedVcd& );	///< N/A, no copy constructor
+
 protected:
     // METHODS
     void evcd(bool flag) { m_evcd = flag; }
 
 public:
     // CREATORS
-    VerilatedVcd(VerilatedVcdFile* filep=NULL);
+    explicit VerilatedVcd(VerilatedVcdFile* filep=NULL);
     ~VerilatedVcd();
 
     // ACCESSORS
@@ -399,7 +401,7 @@ class VerilatedVcdC {
     VerilatedVcd		m_sptrace;	///< Trace file being created
 public:
     // CONSTRUCTORS
-    VerilatedVcdC(VerilatedVcdFile* filep=NULL) : m_sptrace(filep) {}
+    explicit VerilatedVcdC(VerilatedVcdFile* filep=NULL) : m_sptrace(filep) {}
     ~VerilatedVcdC() {}
     // ACCESSORS
     /// Is file open?

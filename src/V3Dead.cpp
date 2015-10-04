@@ -58,7 +58,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    DeadModVisitor(AstNodeModule* nodep) {
+    explicit DeadModVisitor(AstNodeModule* nodep) {
 	nodep->accept(*this);
     }
     virtual ~DeadModVisitor() {}

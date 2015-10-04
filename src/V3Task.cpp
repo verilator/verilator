@@ -49,7 +49,7 @@ class TaskBaseVertex : public V3GraphVertex {
     AstNode*	m_impurep;	// Node causing impure function w/ outside references
     bool	m_noInline;	// Marked with pragma
 public:
-    TaskBaseVertex(V3Graph* graphp)
+    explicit TaskBaseVertex(V3Graph* graphp)
 	: V3GraphVertex(graphp), m_impurep(NULL), m_noInline(false) {}
     virtual ~TaskBaseVertex() {}
     bool pure() const { return m_impurep==NULL; }
@@ -79,7 +79,7 @@ public:
 class TaskCodeVertex : public TaskBaseVertex {
     // Top vertex for all calls not under another task
 public:
-    TaskCodeVertex(V3Graph* graphp)
+    explicit TaskCodeVertex(V3Graph* graphp)
 	: TaskBaseVertex(graphp) {}
     virtual ~TaskCodeVertex() {}
     virtual string name() const { return "*CODE*"; }
@@ -234,7 +234,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    TaskStateVisitor(AstNetlist* nodep) {
+    explicit TaskStateVisitor(AstNetlist* nodep) {
 	m_assignwp = NULL;
 	m_curVxp = new TaskCodeVertex(&m_callGraph);
 	AstNode::user3ClearTree();
@@ -277,7 +277,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
+    explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
 	nodep->accept(*this);
     }
     virtual ~TaskRelinkVisitor() {}

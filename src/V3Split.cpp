@@ -69,7 +69,7 @@
 
 class SplitPliVertex : public V3GraphVertex {
 public:
-    SplitPliVertex(V3Graph* graphp)
+    explicit SplitPliVertex(V3Graph* graphp)
 	: V3GraphVertex(graphp) {}
     virtual ~SplitPliVertex() {}
     virtual string name() const { return "*PLI*"; }

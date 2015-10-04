@@ -213,7 +213,7 @@ private:
     }
 public:
     // CONSTRUCTORS
-    GenClkReadVisitor(AstNetlist* nodep) {
+    explicit GenClkReadVisitor(AstNetlist* nodep) {
 	m_activep = NULL;
 	m_assignp = NULL;
 	m_topModp = NULL;

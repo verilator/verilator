@@ -986,7 +986,7 @@ double V3ParseImp::parseDouble(const char* textp, size_t length) {
     double d = strtod(strgp, &endp);
     size_t parsed_len = endp-strgp;
     if (parsed_len != strlen(strgp)) { yyerrorf("Syntax error parsing real: %s",strgp); }
-    delete strgp;
+    delete[] strgp;
     return d;
 }
 

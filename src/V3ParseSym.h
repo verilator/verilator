@@ -133,7 +133,7 @@ public:
     }
 public:
     // CREATORS
-    V3ParseSym(AstNetlist* rootp)
+    explicit V3ParseSym(AstNetlist* rootp)
 	: m_syms(rootp) {
 	s_anonNum = 0;		// Number of next anonymous object
 	pushScope(findNewTable(rootp));

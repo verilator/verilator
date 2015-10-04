@@ -378,7 +378,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CoverageVisitor(AstNetlist* rootp) {
+    explicit CoverageVisitor(AstNetlist* rootp) {
 	// Operate on all modules
 	m_checkBlock = true;
 	m_beginHier = "";

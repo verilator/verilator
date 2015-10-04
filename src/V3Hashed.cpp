@@ -96,7 +96,7 @@ private:
 
 public:
     // CONSTUCTORS
-    HashedVisitor(AstNode* nodep) {
+    explicit HashedVisitor(AstNode* nodep) {
 	nodeHashIterate(nodep);
 	//UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }

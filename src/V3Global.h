@@ -46,6 +46,7 @@ public:
     };
     enum en m_e;
     inline VWidthMinUsage () : m_e(LINT_WIDTH) {}
+    // cppcheck-suppress noExplicitConstructor
     inline VWidthMinUsage (en _e) : m_e(_e) {}
     explicit inline VWidthMinUsage (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
@@ -63,7 +64,6 @@ class V3Global {
     VWidthMinUsage m_widthMinUsage;	// What AstNode::widthMin() is used for
 
     int		m_debugFileNumber;	// Number to append to debug files created
-    int		m_assertWidthsMatch;	// Tree should have width()==widthMin()
     bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
     bool	m_constRemoveXs;	// Const needs to strip any Xs
     bool	m_needHInlines;		// Need __Inlines file

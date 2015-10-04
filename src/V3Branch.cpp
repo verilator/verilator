@@ -128,7 +128,7 @@ private:
 
 public:
     // CONSTUCTORS
-    BranchVisitor(AstNetlist* nodep) {
+    explicit BranchVisitor(AstNetlist* nodep) {
 	reset();
 	nodep->iterateChildren(*this);
 	calc_tasks();

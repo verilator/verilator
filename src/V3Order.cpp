@@ -363,7 +363,7 @@ private:
 
 public:
     // CONSTUCTORS
-    OrderClkMarkVisitor(AstNode* nodep) {
+    explicit OrderClkMarkVisitor(AstNode* nodep) {
 	m_hasClk    = false;
 	m_inClocked = false;
 	m_inAss     = false;
@@ -410,7 +410,7 @@ private:
 
 public:
     // CONSTUCTORS
-    OrderClkAssVisitor(AstNode* nodep) {
+    explicit OrderClkAssVisitor(AstNode* nodep) {
 	m_clkAss = false;
 	nodep->accept(*this);
     }

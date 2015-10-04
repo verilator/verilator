@@ -122,7 +122,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    AssertPreVisitor(AstNetlist* nodep) {
+    explicit AssertPreVisitor(AstNetlist* nodep) {
 	m_seniDefaultp = NULL;
 	clearAssertInfo();
 	// Process

@@ -102,9 +102,9 @@ public:
     FileLine (const string& filename, int lineno) {
 	m_lineno=lineno; m_filenameno = singleton().nameToNumber(filename);
 	m_warnOn=defaultFileLine().m_warnOn; }
-    FileLine (FileLine* fromp) {
+    explicit FileLine (FileLine* fromp) {
 	m_lineno=fromp->m_lineno; m_filenameno = fromp->m_filenameno; m_warnOn=fromp->m_warnOn; }
-    FileLine (EmptySecret);
+    explicit FileLine (EmptySecret);
     ~FileLine() { }
     FileLine* create(const string& filename, int lineno) { return new FileLine(filename,lineno); }
     FileLine* create(int lineno) { return create(filename(), lineno); }

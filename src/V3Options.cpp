@@ -1002,6 +1002,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 	getline(*ifp, line);
 	// Strip simple comments
 	string oline;
+	// cppcheck-suppress StlMissingComparison
 	for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
 	    if (inCmt) {
 		if (*pos=='*' && *(pos+1)=='/') {
