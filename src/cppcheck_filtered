@@ -112,24 +112,20 @@ sub _suppress {
     while (defined(my $line = $fh->getline())) {
 	++$l;
 	if ($l+1 == $linenum) {
-	    if ($line =~ /cppcheck-suppress\s+(\S+)/) {
-		my $supid = $1;
-		if ($supid eq $id) {
-		    return 1;
-		} else {
-		    warn "%Warning: $filename: $l: Found suppress for id='$supid', not expected id='$id'\n";
+	    if ($line =~ /cppcheck-suppress((\s+\S+)+)/) {
+		my $supids = $1;
+		foreach my $supid (split /\s+/, $supids) {
+		    if ($supid eq $id) {
+			return 1;
+		    }
 		}
+		warn "%Warning: $filename: $l: Found suppress for ids='$supids', not expected id='$id'\n";
 	    }
 	}
 	if ($l == $linenum) {
-	    if ($id eq "uselessAssignmentPtrArg"
-		&& $line =~ /(delete|Delete|Edit).*p *= *NULL;/) {
-		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
-		return 1;
-	    }
-	    if (($id eq "uselessAssignment"
-		 || $id eq "uselessAssignmentPtrArg")
-		&& $line =~ /;.*p *= *NULL;/) {
+	    if (0 &&   # We now use VL_DANGLING instead of this rule
+		$id eq "uselessAssignmentPtrArg"
+		&& $line =~ /(delete|Delete|Edit).*p *= *(NULL|nullptr);/) {
 		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
 		return 1;
 	    }

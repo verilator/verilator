@@ -367,14 +367,14 @@ private:
 	    if (AstReplicate* repp=nodep->lhsp()->castReplicate()) {
 		if (repp->width()==0) {  // Keep rhs
 		    nodep->replaceWith(nodep->rhsp()->unlinkFrBack());
-		    pushDeletep(nodep); nodep=NULL;
+		    pushDeletep(nodep); VL_DANGLING(nodep);
 		    return;
 		}
 	    }
 	    if (AstReplicate* repp=nodep->rhsp()->castReplicate()) {
 		if (repp->width()==0) {  // Keep lhs
 		    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
-		    pushDeletep(nodep); nodep=NULL;
+		    pushDeletep(nodep); VL_DANGLING(nodep);
 		    return;
 		}
 	    }
@@ -383,7 +383,7 @@ private:
 		AstNode* newp = new AstConcatN (nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
 						nodep->rhsp()->unlinkFrBack());
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 		return;
 	    }
 	}
@@ -427,7 +427,7 @@ private:
 		AstNode* newp = new AstReplicateN(nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
 						  nodep->rhsp()->unlinkFrBack());
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 		return;
 	    } else {
 		nodep->dtypeSetLogicSized((nodep->lhsp()->width() * times),
@@ -765,7 +765,7 @@ private:
 	    if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
 		spliceCvtD(nodep->lhsp());
 		spliceCvtD(nodep->rhsp());
-		replaceWithDVersion(nodep); nodep=NULL;
+		replaceWithDVersion(nodep); VL_DANGLING(nodep);
 		return;
 	    }
 
@@ -795,7 +795,7 @@ private:
 		newp->dtypeFrom(nodep);
 		UINFO(9,"powOld "<<nodep<<endl);
 		UINFO(9,"powNew "<<newp<<endl);
-		nodep->replaceWith(newp); nodep=NULL;
+		nodep->replaceWith(newp); VL_DANGLING(nodep);
 	    }
 	}
     }
@@ -844,7 +844,7 @@ private:
 	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
 	    int val = (nodep->attrType()==AstAttrType::DIM_UNPK_DIMENSIONS
 		       ? dim.second : (dim.first+dim.second));
-	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val)); nodep->deleteTree(); nodep=NULL;
+	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val)); nodep->deleteTree(); VL_DANGLING(nodep);
 	    break;
 	}
 	case AstAttrType::DIM_BITS:
@@ -860,7 +860,7 @@ private:
 	    if (!nodep->dimp() || nodep->dimp()->castConst() || msbdim<1) {
 		int dim = !nodep->dimp() ? 1 : nodep->dimp()->castConst()->toSInt();
 		AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
-		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    }
 	    else {  // Need a runtime lookup table.  Yuk.
 		if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
@@ -869,7 +869,7 @@ private:
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
 		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, dimp);
-		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    }
 	    break;
 	}
@@ -961,7 +961,7 @@ private:
 	    constp->unlinkFrBack();
 	    AstNode* newp = new AstCastSize(nodep->fileline(), nodep->lhsp()->unlinkFrBack(), constp);
 	    nodep->replaceWith(newp);
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	    newp->accept(*this,vup);
 	} else {
 	    nodep->v3error("Unsupported: Cast to "<<nodep->dtp()->prettyTypeName());
@@ -1004,7 +1004,7 @@ private:
 	    //newp = newp; // Can just remove cast
 	}
 	nodep->replaceWith(newp);
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	//if (debug()) newp->dumpTree(cout,"  CastOut: ");
     }
     virtual void visit(AstCastSize* nodep, AstNUser* vup) {
@@ -1049,7 +1049,7 @@ private:
 	    // CastSize not needed once sizes determined
 	    AstNode* underp = nodep->lhsp()->unlinkFrBack();
 	    nodep->replaceWith(underp);
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
 	//if (debug()) nodep->dumpTree(cout,"  CastSizeOut: ");
     }
@@ -1093,7 +1093,7 @@ private:
 		// we want the init numbers to retain their width/minwidth until parameters are replaced.
 		// This prevents width warnings at the location the parameter is substituted in
 		if (nodep->valuep()->isDouble()) {
-		    nodep->dtypeSetDouble(); bdtypep=NULL;
+		    nodep->dtypeSetDouble(); VL_DANGLING(bdtypep);
 		} else {
 		    int width=0;
 		    AstBasicDType* valueBdtypep = nodep->valuep()->dtypep()->basicp();
@@ -1128,11 +1128,11 @@ private:
 		//UINFO below will print variable nodep
 	    } else {
 		// Or, if nothing assigned, they're integral
-		nodep->dtypeSetSigned32(); bdtypep=NULL;
+		nodep->dtypeSetSigned32(); VL_DANGLING(bdtypep);
 	    }
 	}
 	else if (bdtypep && bdtypep->implicit()) {  // Implicits get converted to size 1
-	    nodep->dtypeSetLogicSized(1,1,bdtypep->numeric()); bdtypep=NULL;
+	    nodep->dtypeSetLogicSized(1,1,bdtypep->numeric()); VL_DANGLING(bdtypep);
 	}
 	if (nodep->valuep() && !didchk) {
 	    //if (debug()) nodep->dumpTree(cout,"  final: ");
@@ -1236,7 +1236,7 @@ private:
 		if (enump->castEnumDType()) break;
 	    }
 	    if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to an Enum");
-	    enump->iterate(*this,vup);  enump=NULL;  // parent's connection to enump may be relinked
+	    enump->iterate(*this,vup); VL_DANGLING(enump);  // parent's connection to enump may be relinked
 	}
 	nodep->dtypeFrom(nodep->itemp());
     }
@@ -1257,7 +1257,7 @@ private:
 	nodep->exprp()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
 	for (AstNode* nextip, *itemp = nodep->itemsp(); itemp; itemp=nextip) {
 	    nextip = itemp->nextp(); // Prelim may cause the node to get replaced
-	    itemp->iterate(*this,WidthVP(CONTEXT,PRELIM).p()); itemp=NULL;
+	    itemp->iterate(*this,WidthVP(CONTEXT,PRELIM).p()); VL_DANGLING(itemp);
 	}
 	// Take width as maximum across all items
 	int width = nodep->exprp()->width();
@@ -1298,7 +1298,7 @@ private:
 	}
 	if (!newp) newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
 	if (debug()>=9) newp->dumpTree(cout,"-inside-out: ");
-	nodep->replaceWith(newp); pushDeletep(nodep); nodep=NULL;
+	nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstInsideRange* nodep, AstNUser* vup) {
 	// Just do each side; AstInside will rip these nodes out later
@@ -1373,7 +1373,7 @@ private:
 	    // Convert this into a method call, and let that visitor figure out what to do next
 	    AstNode* newp = new AstMethodSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
 	    nodep->replaceWith(newp);
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	    newp->accept(*this,vup);
 	    return;
 	}
@@ -1394,13 +1394,13 @@ private:
 		UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
 		UINFO(9,"           dt-> "<<newp->dtypep()<<endl);
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 		// Should be able to treat it as a normal-ish nodesel - maybe.  The lhsp() will be strange until this stage; create the number here?
 	    }
 	}
 	if (!memberp) {  // Very bogus, but avoids core dump
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
 
@@ -1443,7 +1443,7 @@ private:
 		if (!newp) nodep->v3fatalSrc("Enum method (perhaps enum item) not const");
 		newp->fileline(nodep->fileline());  // Use method's filename/line number to be clearer; may have warning disables
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 	    }
 	    else if (nodep->name() == "name"
 		     || nodep->name() == "next"
@@ -1481,7 +1481,7 @@ private:
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
 		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack());
-		nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    } else {
 		nodep->v3error("Unknown built-in enum method '"<<nodep->fromp()->prettyTypeName()<<"'");
 	    }
@@ -1605,7 +1605,7 @@ private:
 			if (valuep->castConst()) {
 			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
 			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-				pushDeletep(valuep); valuep=NULL;
+				pushDeletep(valuep); VL_DANGLING(valuep);
 				valuep = newp;
 			    }
 			}
@@ -1618,11 +1618,11 @@ private:
 						     nodep->dtypep()->numeric());
 			}
 		    }
-		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
+		    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
 		}
 		if (newp) nodep->replaceWith(newp);
 		else nodep->v3error("Assignment pattern with no members");
-		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+		pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
 	    }
 	    else if (vdtypep->castNodeArrayDType()) {
 		AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType();
@@ -1659,7 +1659,7 @@ private:
 			if (valuep->castConst()) {
 			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
 			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-				pushDeletep(valuep); valuep=NULL;
+				pushDeletep(valuep); VL_DANGLING(valuep);
 				valuep = newp;
 			    }
 			}
@@ -1682,13 +1682,13 @@ private:
 			    }
 			}
 		    }
-		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
+		    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
 		}
 		if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
 		if (newp) nodep->replaceWith(newp);
 		else nodep->v3error("Assignment pattern with no members");
 		//if (debug()>=9) newp->dumpTree("-apat-out: ");
-		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+		pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
 	    }
 	    else if (vdtypep->castBasicDType()
 		     && vdtypep->castBasicDType()->isRanged()) {
@@ -1725,7 +1725,7 @@ private:
 			if (valuep->castConst()) {
 			    // Forming a AstConcat will cause problems with unsized (uncommitted sized) constants
 			    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(valuep->castConst())) {
-				pushDeletep(valuep); valuep=NULL;
+				pushDeletep(valuep); VL_DANGLING(valuep);
 				valuep = newp;
 			    }
 			}
@@ -1740,13 +1740,13 @@ private:
 			    }
 			}
 		    }
-		    if (newpatp) { pushDeletep(newpatp); newpatp=NULL; }
+		    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
 		}
 		if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
 		if (newp) nodep->replaceWith(newp);
 		else nodep->v3error("Assignment pattern with no members");
 		//if (debug()>=9) newp->dumpTree("-apat-out: ");
-		pushDeletep(nodep); nodep = NULL;  // Deletes defaultp also, if present
+		pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
 	    } else {
 		nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "<<vdtypep->prettyTypeName());
 	    }
@@ -1801,7 +1801,7 @@ private:
 	    if (!nodep->castGenCase()) itemp->bodysp()->iterateAndNext(*this);
 	    for (AstNode* nextcp, *condp = itemp->condsp(); condp; condp=nextcp) {
 		nextcp = condp->nextp(); // Prelim may cause the node to get replaced
-		condp->iterate(*this,WidthVP(CONTEXT,PRELIM).p()); condp=NULL;
+		condp->iterate(*this,WidthVP(CONTEXT,PRELIM).p()); VL_DANGLING(condp);
 	    }
 	}
 
@@ -2145,7 +2145,7 @@ private:
 		nodep->exprp()->iterateAndNext(*this,vup);
 		nodep->replaceWith(nodep->exprp()->unlinkFrBack());
 	    }
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser* vup) {
@@ -2227,7 +2227,7 @@ private:
 			    string format;
 			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
 			    else pinp->v3error("Format to $display-like function must have constant format string");
-			    pushDeletep(argp); argp=NULL;
+			    pushDeletep(argp); VL_DANGLING(argp);
 			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
 			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
 				newp->scopeNamep(new AstScopeName(newp->fileline()));
@@ -2248,11 +2248,11 @@ private:
 			    pinp = newp;
 			}
 			// AstPattern requires assignments to pass datatype on PRELIM
-			pinp->accept(*this,WidthVP(portp->dtypep(),PRELIM).p());  pinp=NULL;
+			pinp->accept(*this,WidthVP(portp->dtypep(),PRELIM).p()); VL_DANGLING(pinp);
 		    } else if (accept_mode==1) {
 			// Change data types based on above accept completion
 			if (portp->isDouble()) {
-			    spliceCvtD(pinp); pinp=NULL;
+			    spliceCvtD(pinp); VL_DANGLING(pinp);
 			}
 		    } else if (accept_mode==2) {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
@@ -2417,20 +2417,20 @@ private:
 	    nodep->rhsp()->iterateAndNext(*this,WidthVP(CONTEXT,PRELIM).p());
 	    if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
 		if (!realok) nodep->v3error("Real not allowed as operand to in ?== operator");
-		if (AstNodeBiop* newp=replaceWithDVersion(nodep)) { nodep=NULL;
+		if (AstNodeBiop* newp=replaceWithDVersion(nodep)) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		    iterateCheckReal(nodep,"LHS",nodep->lhsp(),FINAL);
 		    iterateCheckReal(nodep,"RHS",nodep->rhsp(),FINAL);
 		}
 	    } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
-		if (AstNodeBiop* newp=replaceWithNVersion(nodep)) { nodep=NULL;
+		if (AstNodeBiop* newp=replaceWithNVersion(nodep)) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		    iterateCheckString(nodep,"LHS",nodep->lhsp(),FINAL);
 		    iterateCheckString(nodep,"RHS",nodep->rhsp(),FINAL);
 		}
 	    } else {
 		bool signedFl = nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned();
-		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, signedFl)) { nodep=NULL;
+		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, signedFl)) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		}
 		int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
@@ -2484,7 +2484,7 @@ private:
 	}
 	if (real_ok && nodep->lhsp()->isDouble()) {
 	    spliceCvtD(nodep->lhsp());
-	    if (AstNodeUniop* newp=replaceWithDVersion(nodep)) { nodep=NULL;
+	    if (AstNodeUniop* newp=replaceWithDVersion(nodep)) { VL_DANGLING(nodep);
 		nodep = newp;  // Process new node instead
 		iterateCheckReal(nodep,"LHS",nodep->lhsp(),BOTH);
 		nodep->dtypeSetDouble();
@@ -2533,7 +2533,7 @@ private:
 	//   RHS is self-determined. RHS is always treated as unsigned, has no effect on result.
 	iterate_shift_prelim(nodep,vup);
 	nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
-	AstNodeBiop* newp = iterate_shift_final(nodep,vup); nodep=NULL;
+	AstNodeBiop* newp = iterate_shift_final(nodep,vup); VL_DANGLING(nodep);
 	if (newp) {}  // Ununused
     }
     void iterate_shift_prelim(AstNodeBiop* nodep, AstNUser* vup)  {
@@ -2555,7 +2555,7 @@ private:
 	    nodep->dtypeFrom(expDTypep);
 	    // ShiftRS converts to ShiftR, but not vice-versa
 	    if (nodep->castShiftRS()) {
-		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, nodep->isSigned())) { nodep=NULL;
+		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, nodep->isSigned())) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		}
 	    }
@@ -2570,7 +2570,7 @@ private:
 		    V3Number num (shiftp->fileline(), 32, 0); num.opAssign(shiftp->num());
 		    AstNode* shiftp = nodep->rhsp();
 		    nodep->rhsp()->replaceWith(new AstConst(shiftp->fileline(), num));
-		    shiftp->deleteTree(); shiftp=NULL;
+		    shiftp->deleteTree(); VL_DANGLING(shiftp);
 		} else {
 		    nodep->rhsp()->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
 					   <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
@@ -2635,7 +2635,7 @@ private:
 	    if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
 		spliceCvtD(nodep->lhsp());
 		spliceCvtD(nodep->rhsp());
-		if (AstNodeBiop* newp=replaceWithDVersion(nodep)) { nodep=NULL;
+		if (AstNodeBiop* newp=replaceWithDVersion(nodep)) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		}
 		nodep->dtypeSetDouble();
@@ -2654,7 +2654,7 @@ private:
 	    AstNodeDType* expDTypep = vup->c()->dtypeOverridep(nodep->dtypep());
 	    AstNodeDType* subDTypep = expDTypep;
 	    nodep->dtypeFrom(expDTypep);
-	    if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, expDTypep->isSigned())) { nodep=NULL;
+	    if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, expDTypep->isSigned())) { VL_DANGLING(nodep);
 		nodep = newp;  // Process new node instead
 	    }
 	    // Some warning suppressions
@@ -2728,7 +2728,7 @@ private:
 	    num.isSigned(expDTypep->isSigned());
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
-	    pushDeletep(constp); constp=NULL; nodep=NULL;
+	    pushDeletep(constp); VL_DANGLING(constp); VL_DANGLING(nodep);
 	    nodep=newp;
 	} else if (expWidth<nodep->width()) {
 	    // Trunc - Extract
@@ -2780,7 +2780,7 @@ private:
 	    num.isSigned(expSigned);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
-	    constp->deleteTree(); constp=NULL; nodep=NULL;
+	    constp->deleteTree(); VL_DANGLING(constp); VL_DANGLING(nodep);
 	    nodep=newp;
 	} else {
 	    AstNRelinker linker;
@@ -2805,7 +2805,7 @@ private:
 		if (debug()>4) constp->dumpTree(cout,"  fixAutoExtend_old: ");
 		if (debug()>4)   newp->dumpTree(cout,"               _new: ");
 		constp->replaceWith(newp);
-		constp->deleteTree(); constp=NULL;
+		constp->deleteTree(); VL_DANGLING(constp);
 		// Tell caller the new constp, and that we changed it.
 		nodepr = newp;
 		return true;
@@ -2895,7 +2895,7 @@ private:
 	    nodep->v3error("Logical Operator "<<nodep->prettyTypeName()
 			   <<" expects a non-complex data type on the "<<side<<".");
 	    underp->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
-	    pushDeletep(underp); underp=NULL;
+	    pushDeletep(underp); VL_DANGLING(underp);
 	} else {
 	    bool bad = widthBad(underp,nodep->findLogicBoolDType());
 	    if (bad) {
@@ -2909,7 +2909,7 @@ private:
 				     ?" or "+cvtToStr(underp->widthMin()):"")
 				  <<" bits.");
 		}
-		fixWidthReduce(underp); underp=NULL;//Changed
+		fixWidthReduce(underp); VL_DANGLING(underp);//Changed
 	    }
 	}
     }
@@ -3034,7 +3034,7 @@ private:
 		} else if (pinp && !pinp->modVarp()->isInput()) {  // V3Inst::pinReconnectSimple must deal
 		    UINFO(5,"pinInSizeMismatch: "<<pinp);
 		} else {
-		    fixWidthExtend(underp, expDTypep, extendRule); underp=NULL;//Changed
+		    fixWidthExtend(underp, expDTypep, extendRule); VL_DANGLING(underp);//Changed
 		}
 	    }
 	}
@@ -3140,7 +3140,7 @@ private:
 	UINFO(6,"   ReplaceWithUOrSVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	newp->dtypeFrom(nodep);
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	return newp;
     }
     AstNodeBiop* replaceWithDVersion(AstNodeBiop* nodep) {
@@ -3173,7 +3173,7 @@ private:
 	UINFO(6,"   ReplaceWithDVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	// No width change; the default created type (bool or double) is correct
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	return newp;
     }
     AstNodeBiop* replaceWithNVersion(AstNodeBiop* nodep) {
@@ -3201,7 +3201,7 @@ private:
 	UINFO(6,"   ReplaceWithNVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	// No width change; the default created type (bool or string) is correct
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	return newp;
     }
     AstNodeUniop* replaceWithDVersion(AstNodeUniop* nodep) {
@@ -3222,7 +3222,7 @@ private:
 	UINFO(6,"   ReplaceWithDVersion: "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	newp->dtypeFrom(nodep);
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	return newp;
     }
 
@@ -3470,7 +3470,7 @@ private:
 	if (!nodep->castConst()) {
 	    nodep->v3error(message);
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
 

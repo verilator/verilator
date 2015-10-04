@@ -135,14 +135,14 @@ private:
 	    } else {
 		m_modp->user1(1);
 	    }
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
 	} else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
 	    if (!m_modp) {
 		nodep->v3error("Inline pragma not under a module");
 	    } else {
 		cantInline("Pragma NO_INLINE_MODULE",false);
 	    }
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;  // Remove so don't propagate to upper cell...
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
 	} else {
 	    nodep->iterateChildren(*this);
 	}
@@ -347,7 +347,7 @@ private:
 	    AstVarRef* exprvarrefp = nodep->varp()->user2p()->castNode()->castVarRef();
 	    if (exprconstp) {
 		nodep->replaceWith(exprconstp->cloneTree(true));
-		nodep->deleteTree(); nodep=NULL;
+		nodep->deleteTree(); VL_DANGLING(nodep);
 		return;
 	    }
 	    else if (exprvarrefp) {
@@ -521,9 +521,9 @@ private:
 	    if (stmtsp) stmtsp->unlinkFrBackWithNext();
 	    if (stmtsp) m_modp->addStmtp(stmtsp);
 	    // Remove the cell
-	    newmodp->deleteTree(); newmodp=NULL; // Clear any leftover ports, etc
+	    newmodp->deleteTree(); VL_DANGLING(newmodp); // Clear any leftover ports, etc
 	    nodep->unlinkFrBack();
-	    pushDeletep(nodep); nodep = NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	    if (debug()>=9) { m_modp->dumpTree(cout,"donemod:"); }
 	}
     }
@@ -560,7 +560,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
 	nextmodp = modp->nextp()->castNodeModule();
 	if (modp->user1()) { // Was inlined
-	    modp->unlinkFrBack()->deleteTree(); modp=NULL;
+	    modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
 	}
     }
     V3Global::dumpCheckGlobalTree("inline.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);

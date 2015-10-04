@@ -162,7 +162,7 @@ public:
 		// above our current iteration point.
 		if (debug()>4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
 		entp->complexAssign();
-		m_statep->pushUnlinkDeletep(oldassp); oldassp=NULL;
+		m_statep->pushUnlinkDeletep(oldassp); VL_DANGLING(oldassp);
 		++m_statep->m_statAssnDel;
 	    }
 	}
@@ -199,7 +199,7 @@ public:
 		    // We'll later constant propagate
 		    UINFO(4,"     replaceconst: "<<varrefp<<endl);
 		    varrefp->replaceWith(constp->cloneTree(false));
-		    varrefp->deleteTree(); varrefp=NULL;
+		    varrefp->deleteTree(); VL_DANGLING(varrefp);
 		    ++m_statep->m_statAssnCon;
 		    return;  // **DONE, no longer a var reference**
 		}
@@ -313,7 +313,7 @@ private:
 	if (nodep->lvalue()) {
 	    m_lifep->complexAssign(vscp);
 	} else {
-	    m_lifep->varUsageReplace(vscp, nodep); nodep=NULL;
+	    m_lifep->varUsageReplace(vscp, nodep); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstNodeAssign* nodep, AstNUser*) {

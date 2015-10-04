@@ -118,7 +118,7 @@ private:
 	}
 
 	// We're done with the pin
-	nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
 
     virtual void visit(AstUdpTable* nodep, AstNUser*) {
@@ -188,7 +188,7 @@ private:
 
 	    // Done.  Delete original
 	    m_cellRangep=NULL;
-	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstPin* nodep, AstNUser*) {

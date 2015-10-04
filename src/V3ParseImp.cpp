@@ -146,7 +146,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	    }
 	    if (ofp) {
 		ofp->close();
-		delete ofp; ofp = NULL;
+		delete ofp; VL_DANGLING(ofp);
 	    }
 	}
     }

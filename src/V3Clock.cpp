@@ -268,7 +268,7 @@ private:
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
-	nodep->deleteTree(); nodep = NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstAlwaysPost* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
@@ -277,7 +277,7 @@ private:
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
-	nodep->deleteTree(); nodep = NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstCoverToggle* nodep, AstNUser*) {
 	//nodep->dumpTree(cout,"ct:");
@@ -297,7 +297,7 @@ private:
 	newp->addIfsp(new AstAssign(nodep->fileline(),
 				    changep->cloneTree(false),
 				    origp->cloneTree(false)));
-	nodep->replaceWith(newp); nodep->deleteTree(); nodep=NULL;
+	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstInitial* nodep, AstNUser*) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
@@ -306,7 +306,7 @@ private:
 	    stmtsp->unlinkFrBackWithNext();
 	    cmtp->addNextHere(stmtsp);
 	}
-	nodep->deleteTree(); nodep = NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -342,7 +342,7 @@ private:
 	    // Not at the top or empty block...
 	    // Only empty blocks should be leftover on the non-top.  Killem.
 	    if (nodep->stmtsp()) nodep->v3fatalSrc("Non-empty lower active");
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	} else {
 	    UINFO(4,"  ACTIVE  "<<nodep<<endl);
 	    AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -374,7 +374,7 @@ private:
 		// Move statements to function
 		addToEvalLoop(stmtsp);
 	    }
-	    nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
     }
 

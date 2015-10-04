@@ -159,7 +159,7 @@ private:
 	initsp = initsp->addNext(newp);
 	newp = initsp;
 	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstWhile* nodep, AstNUser*) {
 	// Don't need to track AstRepeat/AstFor as they have already been converted
@@ -192,7 +192,7 @@ private:
 	    AstJumpLabel* labelp = findAddLabel(m_ftaskp, false);
 	    nodep->addPrev(new AstJumpGo(nodep->fileline(), labelp));
 	}
-	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstBreak* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -202,7 +202,7 @@ private:
 	    AstJumpLabel* labelp = findAddLabel(m_loopp, false);
 	    nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
 	}
-	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstContinue* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -213,7 +213,7 @@ private:
 	    AstJumpLabel* labelp = findAddLabel(m_loopp, true);
 	    nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
 	}
-	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstDisable* nodep, AstNUser*) {
 	UINFO(8,"   DISABLE "<<nodep<<endl);
@@ -233,7 +233,7 @@ private:
 	    AstJumpLabel* labelp = findAddLabel(beginp, false);
 	    nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
 	}
-	nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	//if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout,"  labelo: "); }
     }
     virtual void visit(AstVarRef* nodep, AstNUser*) {

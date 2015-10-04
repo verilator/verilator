@@ -82,7 +82,7 @@ private:
 	nodep->iterateChildren(*this);
 	// Initial assignments under function/tasks can just be simple assignments without the initial
 	if (m_ftaskp) {
-	    nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); nodep=NULL;
+	    nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
@@ -167,18 +167,18 @@ private:
 		did=0;
 		if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
-		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 		// NodeSel doesn't include AstSel....
 		if (AstSel* selp = nodep->sensp()->castSel()) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
-		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 		if (AstNodePreSel* selp = nodep->sensp()->castNodePreSel()) {
 		    AstNode* fromp = selp->lhsp()->unlinkFrBack();
-		    selp->replaceWith(fromp); selp->deleteTree(); selp=NULL;
+		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 	    }
@@ -233,17 +233,17 @@ private:
 	if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
 	    if (!m_modp) nodep->v3fatalSrc("PUBLIC_MODULE not under a module\n");
 	    m_modp->modPublic(true);
-	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
 	else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
 	    if (!m_ftaskp) nodep->v3fatalSrc("PUBLIC_TASK not under a task\n");
 	    m_ftaskp->taskPublic(true);
 	    m_modp->modPublic(true);  // Need to get to the task...
-	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
 	else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
 	    if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize better without
-		nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+		nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	    }
 	}
 	else {
@@ -372,7 +372,7 @@ private:
 		    }
 		}
 	    }
-	    nodep->unlinkFrBack(); pushDeletep(nodep); nodep=NULL;
+	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
 

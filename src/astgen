@@ -527,7 +527,7 @@ sub treeop_exec_func {
 
 	$out .= "AstNode* newp = " . _exec_new_recurse($aref).";\n";
 	$out .= "nodep->replaceWith(newp);";
-	$out .= "nodep->deleteTree(); nodep=NULL;";
+	$out .= "nodep->deleteTree(); VL_DANGLING(nodep);";
 	#print "FF $out\n" if $Debug;
     } elsif ($func eq "NEVER") {
 	$out .= "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";

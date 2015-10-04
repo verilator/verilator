@@ -160,7 +160,7 @@ private:
 	} else {
 	    nodep->unlinkFrBack();
 	}
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
 	if (m_unnamedScope != "") {

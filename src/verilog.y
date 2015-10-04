@@ -150,7 +150,7 @@ public:
 		    // It's no longer implicit but a real logic type
 		    AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
 							    dtypep->numeric(), dtypep->width(), dtypep->widthMin());
-		    dtypep->deleteTree();  dtypep=NULL;
+		    dtypep->deleteTree(); VL_DANGLING(dtypep);
 		    dtypep = newp;
 		}
 		dtypep->rangep(finalp);
@@ -1816,7 +1816,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  // for loop won't get an extra layer of hierarchy tacked on
 			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
 			  $$ = blkp;
-			  lowerBegp->deleteTree(); lowerBegp=NULL;
+			  lowerBegp->deleteTree(); VL_DANGLING(lowerBegp);
 			}
 	;
 
@@ -3736,7 +3736,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     }
     AstVarType type = GRAMMARP->m_varIO;
     if (dtypep->castIfaceRefDType()) {
-	if (arrayp) { fileline->v3error("Unsupported: Arrayed interfaces"); arrayp=NULL; }
+	if (arrayp) { fileline->v3error("Unsupported: Arrayed interfaces"); VL_DANGLING(arrayp); }
     }
     if (!dtypep) {  // Created implicitly
 	dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);

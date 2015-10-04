@@ -124,7 +124,7 @@ class SliceCloneVisitor : public AstNVisitor {
 	    clonep->iterateChildren(*this);
 	    nodep->addNextHere(clonep);
 	}
-	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
 
     // Not all Uniop nodes should be cloned down to a single bit
@@ -164,7 +164,7 @@ class SliceCloneVisitor : public AstNVisitor {
 	    }
 	}
 	nodep->addNextHere(lhsp);
-	nodep->unlinkFrBack()->deleteTree(); nodep = NULL;
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstRedOr* nodep, AstNUser*) {
 	cloneUniop(nodep);
@@ -295,7 +295,7 @@ class SliceVisitor : public AstNVisitor {
 		AstVarRef* clonep = nodep->cloneTree(false);
 		clonep->user1p(nodep);
 		AstNode* newp = insertImplicit(clonep, 1, dimensions);
-		nodep->replaceWith(newp); nodep = NULL;
+		nodep->replaceWith(newp); VL_DANGLING(nodep);
 		newp->accept(*this);
 	    }
 	}
@@ -422,7 +422,7 @@ class SliceVisitor : public AstNVisitor {
 		}
 		//if (debug()>=9) newp->dumpTreeAndNext(cout, "-InitArrayOut: ");
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 		return;  // WIll iterate in a moment
 	    }
 	    // Hasn't been searched for implicit slices yet

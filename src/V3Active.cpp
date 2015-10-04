@@ -83,7 +83,7 @@ private:
     }
     virtual void visit(AstSenTree* nodep, AstNUser*) {
 	// Simplify sensitivity list
-	V3Const::constifyExpensiveEdit(nodep); nodep=NULL;
+	V3Const::constifyExpensiveEdit(nodep); VL_DANGLING(nodep);
     }
     // Empty visitors, speed things up
     virtual void visit(AstNodeStmt* nodep, AstNUser*) { }
@@ -184,7 +184,7 @@ private:
 					   nodep->lhsp()->unlinkFrBack(),
 					   nodep->rhsp()->unlinkFrBack());
 	    nodep->replaceWith(newp);
-	    nodep->deleteTree(); nodep = NULL;
+	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstAssign* nodep, AstNUser*) {
@@ -288,7 +288,7 @@ private:
 	// Relink to CFUNC for the final
 	UINFO(4,"    FINAL "<<nodep<<endl);
 	if (!nodep->bodysp()) { // Empty, Kill it.
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    return;
 	}
 	ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_INITIAL);
@@ -304,7 +304,7 @@ private:
 	nodep->unlinkFrBack();
 	m_scopeFinalp->addStmtsp(new AstComment(nodep->fileline(), nodep->typeName()));
 	m_scopeFinalp->addStmtsp(nodep->bodysp()->unlinkFrBackWithNext());
-	nodep->deleteTree(); nodep = NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
 
     // METHODS
@@ -316,7 +316,7 @@ private:
 	    && oldsensesp->sensesp()->castSenItem()->isNever()) {
 	    // Never executing.  Kill it.
 	    if (oldsensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    return;
 	}
 
@@ -351,7 +351,7 @@ private:
 
 	// Delete sensitivity list
 	if (oldsensesp) {
-	    oldsensesp->unlinkFrBackWithNext()->deleteTree(); oldsensesp=NULL;
+	    oldsensesp->unlinkFrBackWithNext()->deleteTree(); VL_DANGLING(oldsensesp);
 	}
 
 	// Move node to new active
@@ -377,7 +377,7 @@ private:
 
 	if (!nodep->bodysp()) {
 	    // Empty always.  Kill it.
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    return;
 	}
 	visitAlways(nodep, nodep->sensesp(), nodep->keyword());
@@ -402,7 +402,7 @@ private:
 	    m_itemCombo = true;
 	    // Delete the sensitivity
 	    // We'll add it as a generic COMBO SenItem in a moment.
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	} else if (nodep->varrefp()) {
 	    // V3LinkResolve should have cleaned most of these up
 	    if (!nodep->varrefp()->width1()) nodep->v3error("Unsupported: Non-single bit wide signal pos/negedge sensitivity: "

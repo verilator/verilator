@@ -109,7 +109,7 @@ private:
 		AstVarScope* newvscp = genInpClk(vscp);
 		AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
 		nodep->replaceWith(newrefp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 	    }
 	}
     }

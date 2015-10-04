@@ -109,7 +109,7 @@ private:
 	    prep=prep->backp();
 	}
 	FileLine* fl = nodep->fileline();
-	nodep=NULL;  // Zap it so we don't use it by mistake - use prep
+	VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
 
 	// Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
 	// Saves us teaching V3Const how to optimize, and it won't be needed again.
@@ -154,12 +154,12 @@ private:
     }
     virtual void visit(AstAssignDly* nodep, AstNUser*) {
 	m_assigndlyp = nodep;
-	nodep->iterateChildren(*this); nodep=NULL;  // May delete nodep.
+	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
 	m_assigndlyp = NULL;
     }
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	m_assignwp = nodep;
-	nodep->iterateChildren(*this); nodep=NULL;  // May delete nodep.
+	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
 	m_assignwp = NULL;
     }
     virtual void visit(AstCaseItem* nodep, AstNUser*) {
@@ -179,7 +179,7 @@ private:
 	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
 	    // Both sides are constant, node can be constant
-	    V3Const::constifyEdit(nodep); nodep=NULL;
+	    V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
 	    return;
 	} else {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -190,15 +190,15 @@ private:
 		 || (rhsp->castConst() && rhsp->castConst()->num().isFourState()))) {
 		V3Number num (nodep->fileline(), 1, (nodep->castEqCase()?0:1));
 		newp = new AstConst (nodep->fileline(), num);
-		lhsp->deleteTree(); lhsp=NULL;
-		rhsp->deleteTree(); rhsp=NULL;
+		lhsp->deleteTree(); VL_DANGLING(lhsp);
+		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    } else {
 		if (nodep->castEqCase())
 		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
 		else newp = new AstNeq (nodep->fileline(), lhsp, rhsp);
 	    }
 	    nodep->replaceWith(newp);
-	    nodep->deleteTree(); nodep=NULL;
+	    nodep->deleteTree(); VL_DANGLING(nodep);
 	    // Iterate tree now that we may have gotten rid of Xs
 	    newp->iterateChildren(*this);
 	}
@@ -209,7 +209,7 @@ private:
 	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
 	    // Both sides are constant, node can be constant
-	    V3Const::constifyEdit(nodep); nodep=NULL;
+	    V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
 	    return;
 	} else {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -231,10 +231,10 @@ private:
 		if (nodep->castEqWild())
 		    newp  = new AstEq  (nodep->fileline(), and1p, and2p);
 		else newp = new AstNeq (nodep->fileline(), and1p, and2p);
-		rhsp->deleteTree(); rhsp=NULL;
+		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    }
 	    nodep->replaceWith(newp);
-	    nodep->deleteTree(); nodep=NULL;
+	    nodep->deleteTree(); VL_DANGLING(nodep);
 	    // Iterate tree now that we may have gotten rid of the compare
 	    newp->iterateChildren(*this);
 	}
@@ -259,7 +259,7 @@ private:
 	V3Number zero (nodep->fileline(), 1, 0);
 	AstConst* newp = new AstConst (nodep->fileline(), zero);
 	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstConst* nodep, AstNUser*) {
 	if (m_constXCvt
@@ -283,7 +283,7 @@ private:
 		}
 		AstConst* newp = new AstConst(nodep->fileline(), numnew);
 		nodep->replaceWith(newp);
-		nodep->deleteTree(); nodep=NULL;
+		nodep->deleteTree(); VL_DANGLING(nodep);
 		UINFO(4,"   -> "<<newp<<endl);
 	    } else {
 		// Make a Vxrand variable
@@ -320,7 +320,7 @@ private:
 		if (debug()>=9) newref1p->dumpTree(cout,"     _new: ");
 		if (debug()>=9) newvarp->dumpTree(cout,"     _new: ");
 		if (debug()>=9) newinitp->dumpTree(cout,"     _new: ");
-		nodep->deleteTree(); nodep=NULL;
+		nodep->deleteTree(); VL_DANGLING(nodep);
 	    }
 	}
     }

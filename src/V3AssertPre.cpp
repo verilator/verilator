@@ -83,7 +83,7 @@ private:
 	} else {
 	    nodep->unlinkFrBack();
 	}
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
     virtual void visit(AstPslCover* nodep, AstNUser*) {
@@ -109,7 +109,7 @@ private:
 	// Unlink and just keep a pointer to it, convert to sentree as needed
 	m_senip = nodep->sensesp();
 	nodep->replaceWith(blockp);
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);

@@ -232,7 +232,7 @@ private:
 	forUnroller(nodep, initp, precondsp, incp, bodysp,
 		    constInitp->num(),
 		    cmpInstrp, constStopp->num(), cmpVarLhs,
-		    incInstrp, constIncp->num()); nodep = NULL;
+		    incInstrp, constIncp->num()); VL_DANGLING(nodep);
 	// Cleanup
 	return true;
     }
@@ -301,7 +301,7 @@ private:
 			m_varModeReplace = true;
 			tempp->stmtsp()->iterateAndNext(*this);
 			m_varModeReplace = false;
-			oneloopp = tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+			oneloopp = tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
 		    }
 		    if (m_generate) {
 			string index = AstNode::encodeNumber(m_varValuep->toSInt());
@@ -330,10 +330,10 @@ private:
 	// Replace the FOR()
 	if (newbodysp) nodep->replaceWith(newbodysp);
 	else nodep->unlinkFrBack();
-	if (bodysp) { pushDeletep(bodysp); bodysp=NULL; }
-	if (precondsp) { pushDeletep(precondsp); precondsp=NULL; }
-	if (initp) { pushDeletep(initp); initp=NULL; }
-	if (incp && !incp->backp()) { pushDeletep(incp); incp=NULL; }
+	if (bodysp) { pushDeletep(bodysp); VL_DANGLING(bodysp); }
+	if (precondsp) { pushDeletep(precondsp); VL_DANGLING(precondsp); }
+	if (initp) { pushDeletep(initp); VL_DANGLING(initp); }
+	if (incp && !incp->backp()) { pushDeletep(incp); VL_DANGLING(incp); }
 	if (debug()>=9) newbodysp->dumpTree(cout,"-  _new: ");
     }
 
@@ -347,7 +347,7 @@ private:
 	    // Grab initial value
 	    AstNode* initp = NULL;  // Should be statement before the while.
 	    if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
-	    if (initp) { V3Const::constifyEdit(initp); initp=NULL; }
+	    if (initp) { V3Const::constifyEdit(initp); VL_DANGLING(initp); }
 	    if (nodep->backp()->nextp() == nodep) initp=nodep->backp();
 	    // Grab assignment
 	    AstNode* incp = NULL;  // Should be last statement
@@ -355,14 +355,14 @@ private:
 	    if (nodep->incsp()) incp = nodep->incsp();
 	    else {
 		for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
-		if (incp) { V3Const::constifyEdit(incp); incp=NULL; }
+		if (incp) { V3Const::constifyEdit(incp); VL_DANGLING(incp); }
 		for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
 	    }
 	    // And check it
 	    if (forUnrollCheck(nodep, initp,
 			       nodep->precondsp(), nodep->condp(),
 			       incp, nodep->bodysp())) {
-		pushDeletep(nodep); nodep=NULL; // Did replacement
+		pushDeletep(nodep); VL_DANGLING(nodep); // Did replacement
 	    }
 	}
     }
@@ -384,11 +384,11 @@ private:
 		// we'd need to initialize the variable to the initial
 		// condition, but they'll become while's which can be
 		// deleted by V3Const.
-		nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+		nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    } else if (forUnrollCheck(nodep, nodep->initsp(),
 				      NULL, nodep->condp(),
 				      nodep->incsp(), nodep->bodysp())) {
-		pushDeletep(nodep); nodep=NULL; // Did replacement
+		pushDeletep(nodep); VL_DANGLING(nodep); // Did replacement
 	    } else {
 		nodep->v3error("For loop doesn't have genvar index, or is malformed");
 	    }

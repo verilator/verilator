@@ -653,9 +653,7 @@ private:
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
 	AstNodeFTask* funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
-	// cppcheck-suppress redundantAssignment
-	if (m_params) { V3Width::widthParamsEdit(funcp); } funcp=NULL; // Make sure we've sized the function
-	// cppcheck-suppress redundantAssignment
+	if (m_params) { V3Width::widthParamsEdit(funcp); } VL_DANGLING(funcp); // Make sure we've sized the function
 	funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());

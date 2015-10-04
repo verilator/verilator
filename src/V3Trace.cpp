@@ -529,7 +529,7 @@ private:
 	    m_fullSubStmts += EmitCBaseCounterVisitor(nodep).count();
 	} else {
 	    // Duplicates don't need a TraceInc
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
 	return incAddp;
     }

@@ -182,7 +182,7 @@ private:
     }
     virtual void visit(AstAssignW* nodep, AstNUser*) {
 	m_assignwp = nodep;
-	nodep->iterateChildren(*this); nodep=NULL;  // May delete nodep.
+	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
 	m_assignwp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
@@ -456,7 +456,7 @@ private:
 	{
 	    AstBegin* tempp = new AstBegin(beginp->fileline(),"[EditWrapper]",beginp);
 	    TaskRelinkVisitor visit (tempp);
-	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
 	}
 	//
 	if (debug()>=9) { beginp->dumpTreeAndNext(cout,"-iotask: "); }
@@ -718,7 +718,7 @@ private:
 	    stmt += "(*__Vcb)(";
 	    args += ");\n";
 	    AstCStmt* newp = new AstCStmt(nodep->fileline(), stmt);
-	    newp->addBodysp(argnodesp); argnodesp=NULL;
+	    newp->addBodysp(argnodesp); VL_DANGLING(argnodesp);
 	    newp->addBodysp(new AstText(nodep->fileline(), args, true));
 	    dpip->addStmtsp(newp);
 	}
@@ -968,10 +968,10 @@ private:
 	{
 	    AstBegin* tempp = new AstBegin(cfuncp->fileline(),"[EditWrapper]",cfuncp);
 	    TaskRelinkVisitor visit (tempp);
-	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); tempp=NULL;
+	    tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
 	}
 	// Delete rest of cloned task and return new func
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
 	if (debug()>=9) { cfuncp->dumpTree(cout,"-userFunc: "); }
 	return cfuncp;
     }
@@ -1069,7 +1069,7 @@ private:
 	    nodep->replaceWith(beginp);
 	}
 	// Cleanup
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
 	UINFO(4,"  FTask REF Done.\n");
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
@@ -1106,7 +1106,7 @@ private:
 		if (AstVar* portp = nodep->fvarp()->castVar()) {
 		    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
 		    UINFO(9,"   funcremovevsc "<<vscp<<endl);
-		    pushDeletep(vscp->unlinkFrBack()); vscp=NULL;
+		    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
 		}
 	    }
 	    for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {
@@ -1114,13 +1114,13 @@ private:
 		if (AstVar* portp = stmtp->castVar()) {
 		    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
 		    UINFO(9,"   funcremovevsc "<<vscp<<endl);
-		    pushDeletep(vscp->unlinkFrBack()); vscp=NULL;
+		    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
 		}
 	    }
 	    // Just push for deletion, as other references to func may
 	    // remain until visitor exits
 	    nodep->unlinkFrBack();
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
 	m_insMode = prevInsMode;
 	m_insStmtp = prevInsStmtp;
@@ -1215,7 +1215,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 		pinp->v3error("No such argument '"<<argp->prettyName()
 			      <<"' in function call to "<<nodep->taskp()->prettyTypeName());
 		// We'll just delete it; seems less error prone than making a false argument
-		pinp->unlinkFrBack()->deleteTree(); pinp=NULL;
+		pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
 	    } else {
 		if (tconnects[it->second].second) {
 		    pinp->v3error("Duplicate argument '"<<argp->prettyName()
@@ -1234,7 +1234,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 		} else {
 		    pinp->v3error("Too many arguments in function call to "<<nodep->taskp()->prettyTypeName());
 		    // We'll just delete it; seems less error prone than making a false argument
-		    pinp->unlinkFrBack()->deleteTree(); pinp=NULL;
+		    pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
 		}
 	    } else {
 		tconnects[ppinnum].second = argp;

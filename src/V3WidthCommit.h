@@ -37,10 +37,10 @@ class WidthRemoveVisitor : public AstNVisitor {
 private:
     // VISITORS
     virtual void visit(AstSigned* nodep, AstNUser*) {
-	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); nodep=NULL;
+	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); VL_DANGLING(nodep);
     }
     virtual void visit(AstUnsigned* nodep, AstNUser*) {
-	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); nodep=NULL;
+	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); VL_DANGLING(nodep);
     }
     virtual void visit(AstNode* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
@@ -49,7 +49,7 @@ private:
 	UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
 	nodep->replaceWith(newp);
 	newp->dtypeFrom(nodep);
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -119,7 +119,7 @@ private:
 	    AstNode* oldp = nodep; nodep = newp;
 	    //if (debug()>4) oldp->dumpTree(cout,"  fixConstSize_old: ");
 	    //if (debug()>4) newp->dumpTree(cout,"              _new: ");
-	    pushDeletep(oldp); oldp=NULL;
+	    pushDeletep(oldp); VL_DANGLING(oldp);
 	}
 	editDType(nodep);
     }

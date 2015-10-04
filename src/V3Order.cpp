@@ -1265,7 +1265,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 			domainp->dumpTree(cout);
 			cout<<endl;
 		    }
-		    newtreep->deleteTree(); newtreep=NULL;
+		    newtreep->deleteTree(); VL_DANGLING(newtreep);
 		}
 	    }
 	} // next input edgep
@@ -1476,7 +1476,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
 	UINFO(9,"          Clear to "<<(toVertexp->inEmpty()?"[EMP] ":"      ")
 	      <<toVertexp<<endl);
 	// Delete this edge
-	edgep->unlinkDelete(); edgep=NULL;
+	edgep->unlinkDelete(); VL_DANGLING(edgep);
 	if (toVertexp->inEmpty()) {
 	    // If destination node now has all inputs resolved; recurse to move that vertex
 	    // This is thus depth first (before width) which keeps the resulting executable's d-cache happy.
@@ -1530,7 +1530,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	nodep->unlinkFrBack();
 	if (domainp == m_deleteDomainp) {
 	    UINFO(4," Ordering deleting pre-settled "<<nodep<<endl);
-	    pushDeletep(nodep); nodep=NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	} else {
 	    m_pomNewFuncp->addStmtsp(nodep);
 	    if (v3Global.opt.outputSplitCFuncs()) {

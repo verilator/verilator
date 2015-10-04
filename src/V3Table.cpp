@@ -422,7 +422,7 @@ private:
 	UINFO(4,"  ALWAYS  "<<nodep<<endl);
 	if (treeTest(nodep)) {
 	    // Well, then, I'll be a memory hog.
-	    createTable(nodep); nodep=NULL;
+	    createTable(nodep); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstAssignAlias* nodep, AstNUser*) {}

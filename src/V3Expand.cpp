@@ -86,7 +86,7 @@ private:
     void replaceWithDelete (AstNode* nodep, AstNode* newp) {
 	newp->user1(1);  // Already processed, don't need to re-iterate
 	nodep->replaceWith(newp);
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     AstNode* newWordAssign (AstNodeAssign* placep, int word, AstNode* lhsp, AstNode* rhsp) {
 	AstAssign* newp = new AstAssign (placep->fileline(),
@@ -332,7 +332,7 @@ private:
 		    lhsp->dtypeFrom(nodep);	// Just mark it, else nop
 		}
 	    }
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     bool expandWide (AstNodeAssign* nodep, AstExtend* rhsp) {
@@ -438,7 +438,7 @@ private:
 	    if (midp) newp = new AstOr (nodep->fileline(), midp, newp);
 	    if (hip) newp = new AstOr (nodep->fileline(), hip, newp);
 	    newp->dtypeFrom(nodep);
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
 	else { // Long/Quad from Long/Quad
 	    UINFO(8,"    SEL->SHIFT "<<nodep<<endl);
@@ -454,7 +454,7 @@ private:
 		newp = new AstCCast (newp->fileline(), newp, nodep);
 	    }
 	    newp->dtypeFrom(nodep);
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
 
@@ -541,8 +541,8 @@ private:
 								  rhsp, lsb)));
 		    }
 		}
-		rhsp->deleteTree(); rhsp=NULL;
-		destp->deleteTree(); destp=NULL;
+		rhsp->deleteTree(); VL_DANGLING(rhsp);
+		destp->deleteTree(); VL_DANGLING(destp);
 	    } else {
 		UINFO(8,"    ASSIGNSEL(const,narrow) "<<nodep<<endl);
 		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
@@ -667,7 +667,7 @@ private:
 						      nodep->width()),
 				       rhsp);
 	    newp->dtypeFrom(nodep); // Unsigned
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     bool expandWide (AstNodeAssign* nodep, AstConcat* rhsp) {
@@ -720,7 +720,7 @@ private:
 		lhsp->deleteTree();	// Never used
 	    }
 	    newp->dtypeFrom(nodep); // Unsigned
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     bool expandWide (AstNodeAssign* nodep, AstReplicate* rhsp) {
@@ -761,7 +761,7 @@ private:
 				       newAstWordSelClone (nodep->rhsp(), w));
 	    newp = (newp==NULL) ? eqp : (new AstOr (nodep->fileline(), newp, eqp));
 	}
-	replaceWithDelete(nodep,newp); nodep=NULL;
+	replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
     }
 
     void visitEqNeq(AstNodeBiop* nodep) {
@@ -784,7 +784,7 @@ private:
 		newp = new AstEq (nodep->fileline(),
 				  new AstConst (nodep->fileline(), 0), newp);
 	    }
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstEq* nodep, AstNUser*) { visitEqNeq (nodep); }
@@ -803,7 +803,7 @@ private:
 	    }
 	    newp = new AstNeq (nodep->fileline(),
 			       new AstConst (nodep->fileline(), 0), newp);
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	} else {
 	    UINFO(8,"    REDOR->EQ "<<nodep<<endl);
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -811,7 +811,7 @@ private:
 	    AstNode* newp = new AstNeq (nodep->fileline(),
 					new AstConst (nodep->fileline(), zero),
 					lhsp);
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstRedAnd* nodep, AstNUser*) {
@@ -833,14 +833,14 @@ private:
 	    }
 	    newp = new AstEq (nodep->fileline(),
 			      new AstConst (nodep->fileline(), ~0), newp);
-	    replaceWithDelete(nodep, newp); nodep=NULL;
+	    replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
 	} else {
 	    UINFO(8,"    REDAND->EQ "<<nodep<<endl);
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	    AstNode* newp = new AstEq (nodep->fileline(),
 				       new AstConst (nodep->fileline(), wordMask(lhsp)),
 				       lhsp);
-	    replaceWithDelete(nodep,newp); nodep=NULL;
+	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstRedXor* nodep, AstNUser*) {
@@ -856,7 +856,7 @@ private:
 	    }
 	    newp = new AstRedXor (nodep->fileline(), newp);
 	    UINFO(8,"    Wordize REDXORnew "<<newp<<endl);
-	    replaceWithDelete(nodep, newp); nodep=NULL;
+	    replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
 	}
 	// We don't reduce non-wide XORs, as its more efficient to use a temp register,
 	// which the inlined function does nicely.
@@ -907,7 +907,7 @@ private:
 	}
 	// Cleanup common code
 	if (did) {
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
 	m_stmtp = NULL;
     }

@@ -265,7 +265,7 @@ private:
 	} else {
 	    nodep->unlinkFrBack();
 	}
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstGenIf* nodep, AstNUser*) {
 	UINFO(9,"  GENIF "<<nodep<<endl);
@@ -286,7 +286,7 @@ private:
 	    } else {
 		nodep->unlinkFrBack();
 	    }
-	    nodep->deleteTree(); nodep=NULL;
+	    nodep->deleteTree(); VL_DANGLING(nodep);
 	    // Normal edit rules will now recurse the replacement
 	} else {
 	    nodep->condp()->v3error("Generate If condition must evaluate to constant");
@@ -313,7 +313,7 @@ private:
 	    string beginName = nodep->name();
 	    // Leave the original Begin, as need a container for the (possible) GENVAR
 	    // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
-	    V3Unroll::unrollGen(forp, beginName); forp=NULL;
+	    V3Unroll::unrollGen(forp, beginName); VL_DANGLING(forp);
 	    // Blocks were constructed under the special begin, move them up
 	    // Note forp is null, so grab statements again
 	    if (AstNode* stmtsp = nodep->genforp()) {
@@ -342,8 +342,7 @@ private:
 	    for (AstNode* ep = itemp->condsp(); ep; ) {
 		AstNode* nextp = ep->nextp(); //May edit list
 		ep->iterateAndNext(*this);
-		V3Const::constifyParamsEdit(ep); ep=NULL; // ep may change
-		// cppcheck-suppress redundantAssignment
+		V3Const::constifyParamsEdit(ep); VL_DANGLING(ep); // ep may change
 		ep = nextp;
 	    }
 	}
@@ -375,7 +374,7 @@ private:
 	    nodep->replaceWith(keepp);
 	}
 	else nodep->unlinkFrBack();
-	nodep->deleteTree(); nodep=NULL;
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
 
     // Default: Just iterate

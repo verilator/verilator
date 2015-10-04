@@ -612,7 +612,7 @@ class TristateVisitor : public TristateBaseVisitor {
 				       new AstConst(invarp->fileline(), pull));
 		orp = new AstOr(invarp->fileline(), orp, undrivenp);
 	    } else {
-		undrivenp->deleteTree(); undrivenp=NULL;
+		undrivenp->deleteTree(); VL_DANGLING(undrivenp);
 	    }
 	    if (envarp) {
 		nodep->addStmtp(new AstAssignW(enp->fileline(),
@@ -651,7 +651,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		AstNode* newp = new AstVarRef(nodep->fileline(), varp, true);
 		UINFO(9," const->"<<newp<<endl);
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep = NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 	    }
 	    else if (m_tgraph.isTristate(nodep)) {
 		m_tgraph.didProcess(nodep);
@@ -662,7 +662,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		AstConst* newconstp = new AstConst(fl, num1);
 		AstConst* enp       = new AstConst(fl, numz0);
 		nodep->replaceWith(newconstp);
-		pushDeletep(nodep); nodep = NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 		newconstp->user1p(enp); // propagate up constant with non-Z bits as 1
 	    }
 	}
@@ -818,7 +818,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    nodep->replaceWith(expr2p);
 	    UINFO(9,"   bufif  datap="<<expr2p<<endl);
 	    UINFO(9,"   bufif  enp="<<enp<<endl);
-	    pushDeletep(nodep); nodep = NULL;
+	    pushDeletep(nodep); VL_DANGLING(nodep);
 	}
     }
 
@@ -950,7 +950,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		if (debug()>=9) nodep->dumpTree(cout,"-caseeq-old: ");
 		if (debug()>=9) newp->dumpTree(cout,"-caseeq-new: ");
 		nodep->replaceWith(newp);
-		pushDeletep(nodep); nodep=NULL;
+		pushDeletep(nodep); VL_DANGLING(nodep);
 	    } else {
 		checkUnhandled(nodep);
 	    }
@@ -1006,7 +1006,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		nodep->v3error("Unsupported pullup/down (weak driver) construct.");
 	    }
 	    nodep->unlinkFrBack();
-	    pushDeletep(nodep); nodep = NULL;  // Node must persist as user3p points to it
+	    pushDeletep(nodep); VL_DANGLING(nodep);  // Node must persist as user3p points to it
 	}
     }
 

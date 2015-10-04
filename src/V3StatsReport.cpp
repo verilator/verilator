@@ -214,5 +214,5 @@ void V3Stats::statsReport() {
     StatsReport reporter (ofp);
 
     // Cleanup
-    ofp->close(); delete ofp; ofp = NULL;
+    ofp->close(); delete ofp; VL_DANGLING(ofp);
 }

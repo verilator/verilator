@@ -138,7 +138,7 @@ private:
 	    nodep->replaceWith(newp);
 	}
 	// Bye
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
     void newVAssertion(AstVAssert* nodep, AstNode* propp) {
@@ -160,7 +160,7 @@ private:
 	// Install it
 	nodep->replaceWith(newp);
 	// Bye
-	pushDeletep(nodep); nodep=NULL;
+	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     
     virtual void visit(AstIf* nodep, AstNUser*) {
@@ -285,12 +285,12 @@ private:
 	nodep->iterateChildren(*this);
 	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
-			nodep->stmtsp(), nodep->name()); nodep=NULL;
+			nodep->stmtsp(), nodep->name()); VL_DANGLING(nodep);
 	++m_statAsCover;
     }
     virtual void visit(AstVAssert* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	newVAssertion(nodep, nodep->propp()); nodep=NULL;
+	newVAssertion(nodep, nodep->propp()); VL_DANGLING(nodep);
 	++m_statAsSV;
     }
 

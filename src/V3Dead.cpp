@@ -229,7 +229,7 @@ private:
 		    // And its children may now be killable too; correct counts
 		    // Recurse, as cells may not be directly under the module but in a generate
 		    DeadModVisitor visitor(modp);
-		    modp->unlinkFrBack()->deleteTree(); modp=NULL;
+		    modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
 		    retry = true;
 		}
 	    }
@@ -252,9 +252,9 @@ private:
 		for (AssignMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
 		    AstNodeAssign* assp = it->second;
 		    UINFO(4,"    Dead assign "<<assp<<endl);
-		    assp->unlinkFrBack()->deleteTree(); assp=NULL;
+		    assp->unlinkFrBack()->deleteTree(); VL_DANGLING(assp);
 		}
-		vscp->unlinkFrBack()->deleteTree(); vscp=NULL;
+		vscp->unlinkFrBack()->deleteTree(); VL_DANGLING(vscp);
 	    }
 	}
 	for (vector<AstNode*>::iterator it = m_varEtcsp.begin(); it!=m_varEtcsp.end(); ++it) {

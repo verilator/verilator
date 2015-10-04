@@ -68,7 +68,7 @@ private:
 	    UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
 	    AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
 	    nodep->replaceWith(newrefp);
-	    nodep->deleteTree(); nodep=NULL;
+	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
@@ -155,7 +155,7 @@ private:
 		    UINFO(4,"    DELETE "<<nodep<<endl);
 		    // Mark so LifePostElimVisitor will get it
 		    rhsp->varScopep()->user4p(lhsp->varScopep());
-		    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+		    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 		    ++m_statAssnDel;
 		}
 	    }

@@ -109,10 +109,10 @@ private:
 		    }
 		    if (saveOld) {
 			if (m_sumWeights) prevEdgep->weight(prevEdgep->weight() + edgep->weight());
-			edgep->unlinkDelete(); edgep = NULL;
+			edgep->unlinkDelete(); VL_DANGLING(edgep);
 		    } else {
 			if (m_sumWeights) edgep->weight(prevEdgep->weight() + edgep->weight());
-			prevEdgep->unlinkDelete(); prevEdgep = NULL;
+			prevEdgep->unlinkDelete(); VL_DANGLING(prevEdgep);
 			outVertexp->userp(edgep);
 		    }
 		}

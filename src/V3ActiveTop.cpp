@@ -87,7 +87,7 @@ private:
 	    && sensesp->sensesp()->castSenItem()->isNever()) {
 	    // Never executing.  Kill it.
 	    if (sensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    return;
 	}
 	// Copy combo tree to settlement tree with duplicated statements

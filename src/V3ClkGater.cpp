@@ -296,7 +296,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
 	}
 
 	if ((childstate & STATE_DELETE) && !(childstate & STATE_KEEP)) {
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	    // Pass upwards we did delete
 	    m_state |= STATE_DELETE;
 	} else {
@@ -427,7 +427,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    for (V3GraphEdge* nextp,* edgep = m_pliVertexp->outBeginp(); edgep; edgep = nextp) {
 		nextp = edgep->outNextp();  // We may edit the list
 		if (GaterVarVertex* vVxp = dynamic_cast<GaterVarVertex*>(edgep->top())) {
-		    vVxp->unlinkDelete(&m_graph); vVxp=NULL; edgep=NULL;
+		    vVxp->unlinkDelete(&m_graph); VL_DANGLING(vVxp); VL_DANGLING(edgep);
 		} else {
 		    m_graph.dump();
 		    v3fatalSrc("PLI vertex points to non-signal");
@@ -463,7 +463,7 @@ class GaterVisitor : public GaterBaseVisitor {
 		V3GraphVertex* toVxp = edgep->top();
 		//UINFO(9," to "<<toVxp->user()<<" "<<toVxp<<endl);
 		if ((toVxp->user() & VU_IF) && (toVxp->user() & VU_ELSE)) {
-		    edgep->unlinkDelete(); edgep = NULL;
+		    edgep->unlinkDelete(); VL_DANGLING(edgep);
 		    if (!(toVxp->user() & VU_MADE)) {   // Make an edge only once
 			toVxp->user(toVxp->user() | VU_MADE);
 			GaterEdge* inedgep = static_cast<GaterEdge*>(vertexp->inBeginp());
@@ -487,7 +487,7 @@ class GaterVisitor : public GaterBaseVisitor {
 		if (toVxp->user() && toVxp->user() < depth) {
 		    // A recursion "above" us marked it,
 		    // Remove this edge, it's redundant with the upper edge
-		    edgep->unlinkDelete(); edgep=NULL;
+		    edgep->unlinkDelete(); VL_DANGLING(edgep);
 		} else {
 		    GaterEdge* cedgep = static_cast<GaterEdge*>(edgep);
 		    if (cedgep->ifelseBoth()) {
@@ -515,7 +515,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    if (GaterIfVertex* toVxp = dynamic_cast<GaterIfVertex*>(edgep->top())) {
 		if (!toVxp->outBeginp()) {
 		    if (!nextp || nextp->top() != edgep->top()) {  // Else next would disappear; we'll do it next loop
-			toVxp->unlinkDelete(&m_graph); toVxp=NULL; edgep=NULL;
+			toVxp->unlinkDelete(&m_graph); VL_DANGLING(toVxp); VL_DANGLING(edgep);
 		    }
 		}
 	    }
@@ -529,7 +529,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    nextp = edgep->outNextp();  // We may edit the list
 	    if (GaterVarVertex* toVxp = dynamic_cast<GaterVarVertex*>(edgep->top())) {
 		if (!nextp || nextp->top() != edgep->top()) {  // Else next would disappear; we'll do it next loop
-		    toVxp->unlinkDelete(&m_graph); toVxp=NULL; edgep=NULL;
+		    toVxp->unlinkDelete(&m_graph); VL_DANGLING(toVxp); VL_DANGLING(edgep);
 		}
 	    }
 	}

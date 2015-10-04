@@ -331,7 +331,7 @@ private:
 	for (V3GraphVertex* nextp,*vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=nextp) {
 	    nextp = vertexp->verticesNextp();
 	    if (nfaState(vertexp)) {
-		vertexp->unlinkDelete(m_graphp); vertexp=NULL;
+		vertexp->unlinkDelete(m_graphp); VL_DANGLING(vertexp);
 	    }
 	}
 
@@ -381,7 +381,7 @@ private:
 		if (vvertexp->accepting()) {
 		    for (V3GraphEdge* nextp,*edgep = vertexp->outBeginp(); edgep; edgep=nextp) {
 			nextp = edgep->outNextp();
-			edgep->unlinkDelete(); edgep=NULL;
+			edgep->unlinkDelete(); VL_DANGLING(edgep);
 		    }
 		}
 	    }
@@ -417,7 +417,7 @@ private:
 	for (V3GraphVertex* nextp,*vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=nextp) {
 	    nextp = vertexp->verticesNextp();
 	    if (!vertexp->user()) {
-		vertexp->unlinkDelete(m_graphp); vertexp=NULL;
+		vertexp->unlinkDelete(m_graphp); VL_DANGLING(vertexp);
 	    }
 	}
     }
@@ -458,7 +458,7 @@ private:
 		    }
 		}
 		// Transitions to this state removed by the unlink function
-		vertexp->unlinkDelete(m_graphp); vertexp=NULL;
+		vertexp->unlinkDelete(m_graphp); VL_DANGLING(vertexp);
 	    }
 	}
     }
@@ -535,7 +535,7 @@ private:
 			    DfaVertex* tovertexp = static_cast<DfaVertex*>(edgep->top());
 			    if (tovertexp->accepting()) {
 				new DfaEdge(graphp(), vvertexp, m_tempNewerReject, vedgep);
-				edgep->unlinkDelete(); edgep=NULL;
+				edgep->unlinkDelete(); VL_DANGLING(edgep);
 			    }
 
 			    // NOT of all values goes to accept

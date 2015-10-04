@@ -334,7 +334,7 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    // A block that was just moved under a scope, Kill it.
-	    nodep->unlinkFrBack()->deleteTree(); nodep=NULL;
+	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
     }
 

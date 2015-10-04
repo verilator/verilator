@@ -1074,7 +1074,7 @@ int V3PreProcImp::getStateToken() {
 		    out = defineSubst(refp);
 		    //NOP: out = m_preprocp->defSubstitute(out);
 		}
-		m_defRefs.pop();  refp=NULL;
+		m_defRefs.pop(); VL_DANGLING(refp);
 		if (m_defRefs.empty()) {
 		    statePop();
 		    if (!m_off) unputDefrefString(out);

@@ -828,10 +828,10 @@ AstNode* AstNode::acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
 	// Calling on standalone tree; insert a shim node so we can keep track, then delete it on completion
 	AstBegin* tempp = new AstBegin(nodep->fileline(),"[EditWrapper]",nodep);
 	{
-	    tempp->stmtsp()->accept(v, vup);  nodep=NULL; // nodep to null as may be replaced
+	    tempp->stmtsp()->accept(v, vup); VL_DANGLING(nodep); // nodep to null as may be replaced
 	}
 	nodep = tempp->stmtsp()->unlinkFrBackWithNext();
-	tempp->deleteTree(); tempp=NULL;
+	tempp->deleteTree(); VL_DANGLING(tempp);
     } else {
 	// Use back to determine who's pointing at us (IE assume new node grafts into same place as old one)
 	AstNode** nextnodepp = NULL;
@@ -842,7 +842,7 @@ AstNode* AstNode::acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
 	else if (this->m_backp->m_nextp == this) nextnodepp = &(this->m_backp->m_nextp);
 	if (!nextnodepp) this->v3fatalSrc("Node's back doesn't point to forward to node itself");
 	{
-	    nodep->accept(v, vup); nodep=NULL; // nodep to null as may be replaced
+	    nodep->accept(v, vup); VL_DANGLING(nodep); // nodep to null as may be replaced
 	}
 	nodep = *nextnodepp;  // Grab new node from point where old was connected
     }
