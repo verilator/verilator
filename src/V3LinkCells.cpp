@@ -348,34 +348,14 @@ private:
 	    // This is quite similar to how classes work; when unpacked classes are better supported
 	    // may remap interfaces to be more like a class.
 	    if (!nodep->hasIfaceVar()) {
-		if (nodep->rangep()) {
-		    int count = nodep->rangep()->lsbConst();
-		    for (int i = 0; i < count; i++) {
-			string varName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__" +
-			    "__Viftop";  // V3LinkDot looks for this naming
-			AstIfaceRefDType *idtypep = new AstIfaceRefDType(nodep->fileline(),
-									 nodep->name(),
-									 nodep->modp()->name());
-			idtypep->cellp(nodep);  // Only set when real parent cell known
-			idtypep->ifacep(NULL);  // cellp overrides
-			AstVar *varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
-						  VFlagChildDType(), idtypep);
-			varp->isIfaceParent(true);
-			nodep->addNextHere(varp);
-			nodep->hasIfaceVar(true);
-		    }
-		} else {
-		    string varName = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
-		    AstIfaceRefDType *idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
-								     nodep->modp()->name());
-		    idtypep->cellp(nodep);  // Only set when real parent cell known
-		    idtypep->ifacep(NULL);  // cellp overrides
-		    AstVar *varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
-					      VFlagChildDType(), idtypep);
-		    varp->isIfaceParent(true);
-		    nodep->addNextHere(varp);
-		    nodep->hasIfaceVar(true);
-		}
+		string varName = nodep->name()+"__Viftop";  // V3LinkDot looks for this naming
+		AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(), nodep->modp()->name());
+		idtypep->cellp(nodep);  // Only set when real parent cell known
+		idtypep->ifacep(NULL);  // cellp overrides
+		AstVar* varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
+		varp->isIfaceParent(true);
+		nodep->addNextHere(varp);
+		nodep->hasIfaceVar(true);
 	    }
 	}
 	if (nodep->modp()) {

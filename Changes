@@ -21,8 +21,6 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix mis-optimizing public DPI functions, bug963. [Wei Song]
 
-****  Fix internal error on interface array, bug978. [Johan Bjork]
-
 
 * Verilator 3.876 2015-08-12
 
