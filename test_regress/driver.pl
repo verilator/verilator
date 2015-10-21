@@ -928,7 +928,7 @@ sub _run {
     my %param = (tee=>1,
 		 @_);
     my $command = join(' ',@{$param{cmd}});
-    $command = "time $command" if $opt_benchmark;
+    $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
     print "\t$command";
     print "   > $param{logfile}" if $param{logfile};
     print "\n";
