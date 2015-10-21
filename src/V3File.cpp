@@ -551,7 +551,7 @@ bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
-    : m_filename(filename), m_lang(lang)
+    : m_filename(filename), m_lang(lang), m_blockIndent(4)
     , m_lineno(1), m_column(0)
     , m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
     , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
@@ -619,7 +619,7 @@ int V3OutFormatter::endLevels (const char *strg) {
 	// label/public/private:  Deindent by 2 spaces
 	const char* mp=cp;
 	for (; isalnum(*mp); mp++) ;
-	if (mp[0]==':' && mp[1]!=':') return (levels-INDBLK/2);
+	if (mp[0]==':' && mp[1]!=':') return (levels-m_blockIndent/2);
     }
 
     // We want "} else {" to be one level to the left of normal
@@ -627,16 +627,16 @@ int V3OutFormatter::endLevels (const char *strg) {
 	switch (*cp) {
 	case '}':
 	case ')':
-	    levels-=INDBLK;
+	    levels-=m_blockIndent;
 	    break;
 	case '<':
 	    if (m_lang==LA_XML) {
-		if (cp[1] == '/') levels-=INDBLK;
+		if (cp[1] == '/') levels-=m_blockIndent;
 	    }
 	    break;
 	case 'e':
 	    if (m_lang==LA_VERILOG && tokenEnd(cp)) {
-		levels-=INDBLK;
+		levels-=m_blockIndent;
 	    }
 	    break;
 	case '\t':

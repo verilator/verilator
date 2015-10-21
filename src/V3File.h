@@ -97,7 +97,6 @@ public:
 class V3OutFormatter {
     // TYPES
     enum MiscConsts {
-	INDBLK = 4,	// Indentation per block level
 	WIDTH = 50,	// Width after which to break at ,'s
 	MAXSPACE = 80};	// After this indent, stop indenting more
 public:
@@ -115,6 +114,7 @@ private:
     // MEMBERS
     string	m_filename;
     Language	m_lang;		// Indenting Verilog code
+    int		m_blockIndent;	// Characters per block indent
     int		m_lineno;
     int		m_column;
     int		m_nobreak;	// Basic operator or begin paren, don't break next
@@ -133,7 +133,9 @@ public:
     V3OutFormatter(const string& filename, Language lang);
     virtual ~V3OutFormatter() {}
     // ACCESSORS
-    int  column() const { return m_column; }
+    int column() const { return m_column; }
+    int blockIndent() const { return m_blockIndent; }
+    void blockIndent(int flag) { m_blockIndent=flag; }
     // METHODS
     void printf(const char* fmt...) VL_ATTR_PRINTF(2);
     void puts(const char* strg);
@@ -150,12 +152,12 @@ public:
     bool exceededWidth() const { return m_column > WIDTH; }
     bool tokenStart(const char* cp, const char* cmp);
     bool tokenEnd(const char* cp);
-    void indentInc() { m_indentLevel += INDBLK; }
+    void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
-	m_indentLevel -= INDBLK;
+	m_indentLevel -= m_blockIndent;
 	UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation\n");
     }
-    void blockInc() { m_parenVec.push(m_indentLevel + INDBLK); }
+    void blockInc() { m_parenVec.push(m_indentLevel + m_blockIndent); }
     void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }
     // STATIC METHODS
     static const string indentSpaces(int levels);
@@ -238,7 +240,9 @@ public:
 
 class V3OutXmlFile : public V3OutFile {
 public:
-    explicit V3OutXmlFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_XML) {}
+    explicit V3OutXmlFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_XML) {
+	blockIndent(2);
+    }
     virtual ~V3OutXmlFile() {}
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
