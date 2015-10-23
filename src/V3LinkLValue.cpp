@@ -211,6 +211,14 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstCellArrayRef* nodep, AstNUser*) {
+	bool last_setRefLvalue = m_setRefLvalue;
+	{   // selp is not an lvalue
+	    m_setRefLvalue = false;
+	    nodep->selp()->iterateAndNext(*this);
+	}
+	m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstNodePreSel* nodep, AstNUser*) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{   // Only set lvalues on the from

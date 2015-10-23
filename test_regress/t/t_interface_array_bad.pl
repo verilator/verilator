@@ -7,8 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# Compile time only test
 compile (
+	fails=>1,
+	expect=>
+'%Error: t/t_interface_array_bad.v:\d+: Expecting expression to be constant, but variable isn\'t const: bar
+%Error: t/t_interface_array_bad.v:\d+: Could not expand constant selection inside dotted reference: bar
+%Error: t/t_interface_array_bad.v:\d+: Can\'t find definition of \'a\' in dotted signal: .a
+%Error:      Known scopes under \'a\':.*
+%Error: Exiting due to.*',
     );
 
 ok(1);

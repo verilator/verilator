@@ -108,6 +108,8 @@ private:
     typedef deque<AstCell*> CellList;
     CellList	m_cellps;	// Cells left to process (in this module)
 
+    string m_unlinkedTxt;	// Text for AstUnlinkedVarXRef
+
     // METHODS
     static int debug() {
 	static int level = -1;
@@ -250,6 +252,41 @@ private:
     }
     virtual void visit(AstVarXRef* nodep, AstNUser*) {
 	nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
+    }
+    virtual void visit(AstUnlinkedVarXRef* nodep, AstNUser*) {
+	m_unlinkedTxt.clear();
+	nodep->cellrefp()->iterate(*this);
+	nodep->varxrefp()->dotted(m_unlinkedTxt);
+	nodep->replaceWith(nodep->varxrefp()->unlinkFrBack());
+	pushDeletep(nodep); VL_DANGLING(nodep);
+    }
+    virtual void visit(AstCellArrayRef* nodep, AstNUser*) {
+	V3Const::constifyParamsEdit(nodep->selp());
+	if (AstConst* constp = nodep->selp()->castConst()) {
+	    string index = AstNode::encodeNumber(constp->toSInt());
+	    m_unlinkedTxt += nodep->name() + "__BRA__"+index+"__KET__";
+	} else {
+	    nodep->v3error("Could not expand constant selection inside dotted reference: "<<nodep->selp()->prettyName());
+	    return;
+	}
+    }
+    virtual void visit(AstCellRef* nodep, AstNUser*) {
+	// Children must be CellArrayRef, CellRef or ParseRef
+	if (nodep->cellp()->castCellArrayRef() || nodep->cellp()->castCellRef()) {
+	    nodep->cellp()->iterate(*this);
+	} else if (nodep->cellp()->castParseRef()) {
+	    m_unlinkedTxt += nodep->cellp()->name();
+	} else {
+	    nodep->v3error("Could not elaborate dotted reference (LHS): "<<nodep->cellp()->prettyName());
+	}
+	m_unlinkedTxt += ".";
+	if (nodep->exprp()->castCellArrayRef() || nodep->exprp()->castCellRef()) {
+	    nodep->exprp()->iterate(*this);
+	} else if (nodep->exprp()->castParseRef()) {
+	    m_unlinkedTxt += nodep->exprp()->name();
+	} else {
+	    nodep->v3error("Could not elaborate dotted reference (RHS): "<<nodep->exprp()->prettyName());
+	}
     }
 
     // Generate Statements

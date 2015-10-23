@@ -1446,7 +1446,7 @@ private:
 	}
 	m_selp = NULL;
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
