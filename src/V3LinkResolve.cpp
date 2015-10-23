@@ -343,13 +343,6 @@ private:
     virtual void visit(AstDisplay* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this);
 	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
-	if (!m_assertp
-	    && (nodep->displayType() == AstDisplayType::DT_INFO
-		|| nodep->displayType() == AstDisplayType::DT_WARNING
-		|| nodep->displayType() == AstDisplayType::DT_ERROR
-		|| nodep->displayType() == AstDisplayType::DT_FATAL)) {
-	    nodep->v3error(nodep->verilogKwd()+" only allowed under an assertion.");
-	}
     }
 
     virtual void visit(AstUdpTable* nodep, AstNUser*) {

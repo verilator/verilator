@@ -96,6 +96,10 @@ public:
 	UNPACKED,	// Unsupported unpacked
 	UNSIGNED,	// Comparison is constant due to unsigned arithmetic
 	UNUSED,		// No receivers
+	USERERROR,	// Elaboration time $error
+	USERFATAL,	// Elaboration time $fatal
+	USERINFO,	// Elaboration time $info
+	USERWARN,	// Elaboration time $warning
 	VARHIDDEN,	// Hiding variable
 	WIDTH,		// Width mismatch
 	WIDTHCONCAT,	// Unsized numbers/parameters in concatenations
@@ -132,6 +136,7 @@ public:
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
 	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNPACKED", "UNSIGNED", "UNUSED",
+	    "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"
 	};

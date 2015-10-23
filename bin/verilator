@@ -3340,6 +3340,10 @@ with "unused" in the name, or put the appropriate lint_off around the wire.
 Having unused signals in one place makes it easy to find what is unused,
 and reduces the number of lint_off pragmas, reducing bugs.
 
+=item USERINFO, USERWARN, USERERROR, USERFATAL
+
+A SystemVerilog elaboration-time assertion print was executed.
+
 =item VARHIDDEN
 
 Warns that a task, function, or begin/end block is declaring a variable by

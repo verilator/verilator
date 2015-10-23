@@ -580,6 +580,7 @@ private:
 	}
     }
     virtual void visit(AstStop* nodep, AstNUser*) {
+	if (jumpingOver(nodep)) return;
 	if (m_params) {  // This message seems better than an obscure $stop
 	    // The spec says $stop is just ignored, it seems evil to ignore assertions
 	    clearOptimizable(nodep,"$stop executed during function constification; maybe indicates assertion firing");
@@ -695,9 +696,78 @@ private:
 	if (!m_params) { badNodeType(nodep); return; }
     }
 
+    virtual void visit(AstSFormatF *nodep, AstNUser *) {
+	if (jumpingOver(nodep)) return;
+	nodep->iterateChildren(*this);
+	if (m_params) {
+	    AstNode* nextArgp = nodep->exprsp();
+
+	    string result = "";
+	    string format = nodep->text();
+	    string::const_iterator pos = format.begin();
+	    bool inPct = false;
+	    for (; pos != format.end(); ++pos) {
+		if (!inPct && pos[0] == '%') {
+		    inPct = true;
+		} else if (!inPct) {   // Normal text
+		    result += *pos;
+		} else { // Format character
+		    AstNode* argp = nextArgp;
+		    inPct = false;
+		    nextArgp = nextArgp->nextp();
+
+		    if (V3Number::displayedFmtLegal(tolower(pos[0]))) {
+			V3Number* nump = fetchNumberNull(argp);
+			if (!nump) {
+			    clearOptimizable(nodep, "Argument for $display like statement is not constant");
+			    break;
+			}
+			string format = string("%") + pos[0];
+			result += nump->displayed(format);
+		    } else {
+			switch (tolower(pos[0])) {
+			case '%':
+			    result += "%";
+			    break;
+			default:
+			    clearOptimizable(nodep, "Unknown $display-like format code.");
+			    break;
+			}
+		    }
+		}
+	    }
+	    nodep->text(result);
+	}
+    }
+
+    virtual void visit(AstDisplay *nodep, AstNUser *) {
+	if (jumpingOver(nodep)) return;
+	nodep->iterateChildren(*this);
+	if (m_params) {
+	    switch (nodep->displayType()) {
+	    case AstDisplayType::DT_DISPLAY:  // FALLTHRU
+	    case AstDisplayType::DT_INFO:
+		v3warn(USERINFO, nodep->fmtp()->text());
+		break;
+	    case AstDisplayType::DT_ERROR:
+		v3warn(USERERROR, nodep->fmtp()->text());
+		break;
+	    case AstDisplayType::DT_WARNING:
+		v3warn(USERWARN, nodep->fmtp()->text());
+		break;
+	    case AstDisplayType::DT_FATAL:
+		v3warn(USERFATAL, nodep->fmtp()->text());
+		break;
+	    case AstDisplayType::DT_WRITE:  // FALLTHRU
+	    default:
+		clearOptimizable(nodep, "Unexpected display type");
+	    }
+	}
+    }
+
     // default
     // These types are definately not reducable
-    //   AstCoverInc, AstDisplay, AstArraySel, AstStop, AstFinish,
+    //   AstCoverInc, AstArraySel, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     virtual void visit(AstNode* nodep, AstNUser*) {
 	if (jumpingOver(nodep)) return;

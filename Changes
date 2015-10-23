@@ -11,6 +11,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support $sformatf, bug977. [Johan Bjork]
 
+***   Support elaboration assertions, bug973. [Johan Bjork]
+
 ****  Add VerilatedScopeNameMap for introspection, bug966. [Todd Strader]
 
 ****  Fix very long module names, bug937. [Todd Strader]
