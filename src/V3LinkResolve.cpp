@@ -309,23 +309,8 @@ private:
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
-    virtual void visit(AstFFlush* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	if (nodep->filep()) {
-	    expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
-	}
-    }
-    virtual void visit(AstFGetC* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
-    }
-    virtual void visit(AstFGetS* nodep, AstNUser*) {
-	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
-    }
     virtual void visit(AstFScanF* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstSScanF* nodep, AstNUser*) {
@@ -342,7 +327,6 @@ private:
     }
     virtual void visit(AstDisplay* nodep, AstNUser* vup) {
 	nodep->iterateChildren(*this);
-	if (nodep->filep()) expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
 
     virtual void visit(AstUdpTable* nodep, AstNUser*) {
