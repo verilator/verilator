@@ -1145,8 +1145,9 @@ class LinkDotScopeVisitor : public AstNVisitor {
 	VSymEnt* rhsSymp;
 	{
 	    AstVarRef* refp = nodep->rhsp()->castVarRef();
-	    if (!refp) nodep->v3fatalSrc("Unsupported: Non VarRef attached to interface pin");
-	    string scopename = refp->name();
+	    AstVarXRef* xrefp = nodep->rhsp()->castVarXRef();
+	    if (!refp && !xrefp) nodep->v3fatalSrc("Unsupported: Non Var(X)Ref attached to interface pin");
+	    string scopename = refp ? refp->name() : xrefp->name();
 	    string baddot; VSymEnt* okSymp;
 	    VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
 	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias rhs");

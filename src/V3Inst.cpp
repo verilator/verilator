@@ -109,8 +109,9 @@ private:
 		// Create an AstAssignVarScope for Vars to Cells so we can link with their scope later
 		AstNode* lhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
 		AstVarRef* refp = exprp->castVarRef();
-		if (!refp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef");
-		AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, refp);
+		AstVarXRef* xrefp = exprp->castVarXRef();
+		if (!refp && !xrefp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef or VarXRef");
+		AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, exprp);
 		m_modp->addStmtp(assp);
 	    } else {
 		nodep->v3error("Assigned pin is neither input nor output");
@@ -169,6 +170,12 @@ private:
 	if (nodep->rangep()) {
 	    m_cellRangep = nodep->rangep();
 	    UINFO(4,"  CELL   "<<nodep<<endl);
+
+	    AstVar *ifaceVarp = nodep->nextp()->castVar();
+	    bool isIface = ifaceVarp
+		&& ifaceVarp->dtypep()->castUnpackArrayDType()
+		&& ifaceVarp->dtypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
+
 	    // Make all of the required clones
 	    m_instLsb = m_cellRangep->lsbConst();
 	    for (m_instNum = m_instLsb; m_instNum<=m_cellRangep->msbConst(); m_instNum++) {
@@ -181,6 +188,22 @@ private:
 		// The spec says we add [x], but that won't work in C...
 		newp->name(newp->name()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
 		newp->origName(newp->origName()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
+
+		// If this AstCell is actually an interface instantiation, let's ensure we also clone
+		// the IfaceRef.
+		if (isIface) {
+		    AstUnpackArrayDType *arrdtype = ifaceVarp->dtypep()->castUnpackArrayDType();
+		    AstVar* varNewp = ifaceVarp->cloneTree(false);
+		    AstIfaceRefDType *ifaceRefp = arrdtype->subDTypep()->castIfaceRefDType()->cloneTree(false);
+		    arrdtype->addNextHere(ifaceRefp);
+		    ifaceRefp->cellp(newp);
+		    ifaceRefp->cellName(newp->name());
+		    varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(m_instNum) + "__KET__");
+		    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(m_instNum) + "__KET__");
+		    varNewp->dtypep(ifaceRefp);
+		    newp->addNextHere(varNewp);
+		    if (debug()==9) { varNewp->dumpTree(cout, "newintf: "); cout << endl; }
+		}
 		// Fixup pins
 		newp->pinsp()->iterateAndNext(*this);
 		if (debug()==9) { newp->dumpTree(cout,"newcell: "); cout<<endl; }
@@ -188,9 +211,14 @@ private:
 
 	    // Done.  Delete original
 	    m_cellRangep=NULL;
+	    if (isIface) {
+		ifaceVarp->unlinkFrBack(); pushDeletep(ifaceVarp); VL_DANGLING(ifaceVarp);
+	    }
 	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
+	nodep->iterateChildren(*this);
     }
+
     virtual void visit(AstPin* nodep, AstNUser*) {
 	// Any non-direct pins need reconnection with a part-select
 	if (!nodep->exprp()) return; // No-connect
@@ -216,6 +244,29 @@ private:
 		nodep->exprp(exprp);
 	    } else {
 		nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
+	    }
+	} else if(AstArraySel *arrselp = nodep->exprp()->castArraySel()) {
+	    if (AstUnpackArrayDType *arrp = arrselp->lhsp()->dtypep()->castUnpackArrayDType()) {
+		if (!arrp->subDTypep()->castIfaceRefDType())
+		    return;
+
+		AstConst *constp = arrselp->rhsp()->castConst();
+		if (!constp) {
+		    nodep->v3error("Unsupported: Non-constant index when passing interface to module");
+		    return;
+		}
+		string index = AstNode::encodeNumber(constp->toSInt());
+		AstVarRef *varrefp = arrselp->lhsp()->castVarRef();
+		AstVarXRef *newp = new AstVarXRef(nodep->fileline(),varrefp->name () + "__BRA__" + index  + "__KET__", "", true);
+		AstVar *varp = varrefp->varp()->cloneTree(true);
+		varp->name(varp->name() + "__TMP__" + "__BRA__" + index  + "__KET__");
+		varp->dtypep(arrp->subDTypep()->backp()->castIfaceRefDType());
+		newp->addNextHere(varp);
+		newp->varp(varp);
+		newp->dtypep(arrp->subDTypep()->castIfaceRefDType());
+		newp->packagep(varrefp->packagep());
+		arrselp->addNextHere(newp);
+		arrselp->unlinkFrBack()->deleteTree();
 	    }
 	}
     }
@@ -272,8 +323,10 @@ public:
 	// Else create a intermediate wire to perform the interconnect
 	// Return the new assignment, if one was made
 	// Note this module calles cloneTree() via new AstVar
+
 	AstVar* pinVarp = pinp->modVarp();
 	AstVarRef* connectRefp = pinp->exprp()->castVarRef();
+	AstVarXRef* connectXRefp = pinp->exprp()->castVarXRef();
 	AstBasicDType* pinBasicp = pinVarp->dtypep()->basicp();  // Maybe NULL
 	AstBasicDType* connBasicp = NULL;
 	AstAssignW* assignp = NULL;
@@ -288,6 +341,9 @@ public:
 		   && connectRefp
 		   && connectRefp->varp()->isIfaceRef()) {
 	    // Done. Interface
+	} else if (!alwaysCvt
+		   && connectXRefp
+		   && connectXRefp->varp()->isIfaceRef()) {
 	} else if (!alwaysCvt
 		   && connBasicp
 		   && pinBasicp

@@ -481,15 +481,28 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    AstVar* modvarp = pinp->modVarp();
 	    if (modvarp->isIfaceRef()) {
 		AstIfaceRefDType* portIrefp = modvarp->subDTypep()->castIfaceRefDType();
+		AstIfaceRefDType* pinIrefp = NULL;
+		AstNode *exprp = pinp->exprp();
+		if (exprp
+		    && exprp->castVarRef()
+		    && exprp->castVarRef()->varp()
+		    && exprp->castVarRef()->varp()->subDTypep()
+		    && exprp->castVarRef()->varp()->subDTypep()->castIfaceRefDType())
+		    pinIrefp = exprp->castVarRef()->varp()->subDTypep()->castIfaceRefDType();
+		else if (exprp
+			 && exprp->op1p()
+			 && exprp->op1p()->castVarRef()
+			 && exprp->op1p()->castVarRef()->varp()
+			 && exprp->op1p()->castVarRef()->varp()->subDTypep()
+			 && exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()
+			 && exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()
+			 && exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType())
+		    pinIrefp = exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
 		//UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
-		if (!pinp->exprp()
-		    || !pinp->exprp()->castVarRef()
-		    || !pinp->exprp()->castVarRef()->varp()
-		    || !pinp->exprp()->castVarRef()->varp()->subDTypep()
-		    || !pinp->exprp()->castVarRef()->varp()->subDTypep()->castIfaceRefDType()) {
+
+		if (!pinIrefp) {
 		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not connected to interface/modport pin expression");
 		} else {
-		    AstIfaceRefDType* pinIrefp = pinp->exprp()->castVarRef()->varp()->subDTypep()->castIfaceRefDType();
 		    //UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
 		    if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
 			UINFO(9,"     IfaceRefDType needs reconnect  "<<pinIrefp<<endl);
