@@ -1389,7 +1389,7 @@ private:
 	    } else {
 		AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
 					  memberp->lsb(), memberp->width());
-		newp->dtypep(memberp->skipRefp());  // Must skip over the member to find the union; as the member may disappear later
+		newp->dtypep(memberp->subDTypep()->skipRefToEnump());  // Must skip over the member to find the union; as the member may disappear later
 		newp->didWidth(true);  // Don't replace dtype with basic type
 		UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
 		UINFO(9,"           dt-> "<<newp->dtypep()<<endl);

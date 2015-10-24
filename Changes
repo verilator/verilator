@@ -29,6 +29,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix $fwrite to constant stderr/stdout, bug961. [Wei Song]
 
+****  Fix struct.enum.name method calls, bug855. [Jonathon Donaldson]
+
 
 * Verilator 3.876 2015-08-12
 
