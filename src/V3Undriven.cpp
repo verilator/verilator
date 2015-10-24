@@ -229,7 +229,7 @@ private:
 
     // STATE
     vector<UndrivenVarEntry*>	m_entryps[3];	// Nodes to delete when we are finished
-    bool		m_markBoth;	// Mark as driven+used
+    bool		m_inBBox;	// In black box; mark as driven+used
     AstNodeFTask*	m_taskp;	// Current task
     AstAlways*		m_alwaysp;	// Current always
 
@@ -258,6 +258,7 @@ private:
     void warnAlwCombOrder(AstVarRef* nodep) {
 	AstVar* varp = nodep->varp();
 	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
+	    && !m_inBBox   // We may have falsely considered a SysIgnore as a driver
 	    && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
 	    nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "<<nodep->prettyName());
 	    varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
@@ -294,7 +295,7 @@ private:
 	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 		UndrivenVarEntry* entryp = getEntryp (varrefp->varp(), usr);
 		int lsb = constp->toUInt();
-		if (m_markBoth || varrefp->lvalue()) {
+		if (m_inBBox || varrefp->lvalue()) {
 		    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
 		    if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
 			UINFO(9," Select.  Entryp="<<(void*)entryp<<endl);
@@ -302,7 +303,7 @@ private:
 		    }
 		    entryp->drivenBit(lsb, nodep->width());
 		}
-		if (m_markBoth || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
+		if (m_inBBox || !varrefp->lvalue()) entryp->usedBit(lsb, nodep->width());
 	    }
 	} else {
 	    // else other varrefs handled as unknown mess in AstVarRef
@@ -314,23 +315,23 @@ private:
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 	    UndrivenVarEntry* entryp = getEntryp (nodep->varp(), usr);
 	    bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
-	    if (m_markBoth || nodep->lvalue()) {
+	    if (m_inBBox || nodep->lvalue()) {
 		if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenAny()) {
 		    UINFO(9," Full bus.  Entryp="<<(void*)entryp<<endl);
 		    warnAlwCombOrder(nodep);
 		}
 		entryp->drivenWhole();
 	    }
-	    if (m_markBoth || !nodep->lvalue() || fdrv) entryp->usedWhole();
+	    if (m_inBBox || !nodep->lvalue() || fdrv) entryp->usedWhole();
 	}
     }
 
     // Don't know what black boxed calls do, assume in+out
     virtual void visit(AstSysIgnore* nodep, AstNUser*) {
-	bool prevMark = m_markBoth;
-	m_markBoth = true;
+	bool prevMark = m_inBBox;
+	m_inBBox = true;
 	nodep->iterateChildren(*this);
-	m_markBoth = prevMark;
+	m_inBBox = prevMark;
     }
 
     virtual void visit(AstAlways* nodep, AstNUser*) {
@@ -371,7 +372,7 @@ private:
 public:
     // CONSTUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {
-	m_markBoth = false;
+	m_inBBox = false;
 	m_taskp = NULL;
 	m_alwaysp = NULL;
 	nodep->accept(*this);
