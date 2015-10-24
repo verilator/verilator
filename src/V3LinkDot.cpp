@@ -1491,7 +1491,7 @@ private:
 	if (nodep->user3SetOnce()) return;
 	UINFO(8,"     "<<nodep<<endl);
 	DotStates lastStates = m_ds;
-	bool start = !m_ds.m_dotp;  // Save, as m_dotp will be changed
+	bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
 	{
 	    if (start) {  // Starting dot sequence
 		if (debug()>=9) nodep->dumpTree("-dot-in: ");
@@ -1502,7 +1502,7 @@ private:
 
 	    // m_ds.m_dotText communicates the cell prefix between stages
 	    if (nodep->lhsp()->castPackageRef()) {
-		if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in dotted reference"); m_ds.m_dotErr=true; }
+		//if (!start) { nodep->lhsp()->v3error("Package reference may not be embedded in dotted reference"); m_ds.m_dotErr=true; }
 		m_ds.m_dotPos = DP_PACKAGE;
 	    } else {
 		m_ds.m_dotPos = DP_SCOPE;
@@ -1552,7 +1552,7 @@ private:
 	if (!m_ds.m_dotSymp) nodep->v3fatalSrc("NULL lookup symbol table");
 	if (!m_statep->forPrimary()) nodep->v3fatalSrc("ParseRefs should no longer exist");
 	DotStates lastStates = m_ds;
-	bool start = !m_ds.m_dotp;
+	bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
 	if (start) {
 	    m_ds.init(m_curSymp);
 	    // Note m_ds.m_dot remains NULL; this is a reference not under a dot

@@ -25,6 +25,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix mis-optimizing public DPI functions, bug963. [Wei Song]
 
+****  Fix package:scope.scope variable references.
+
 
 * Verilator 3.876 2015-08-12
 
