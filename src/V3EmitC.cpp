@@ -1358,9 +1358,13 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 		emitDispState.pushFormat(suffix);
 		break;
 	    }
+	    case 'l': {
+                // Better than not compiling
+		emitDispState.pushFormat("----");
+		break;
+	    }
 	    case 'u':
 	    case 'z':
-	    case 'l':
 	    case 'v':
 		nodep->v3error("Unsupported: $display-like format code: %"<<pos[0]);
 		break;

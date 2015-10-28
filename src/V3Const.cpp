@@ -1846,6 +1846,7 @@ private:
 		    switch (tolower(ch)) {
 		    case '%': break;  // %% - just output a %
 		    case 'm': break;  // %m - auto insert "name"
+		    case 'l': break;  // %m - auto insert "library"
 		    default:  // Most operators, just move to next argument
 			if (argp) {
 			    AstNode* nextp=argp->nextp();

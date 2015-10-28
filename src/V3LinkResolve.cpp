@@ -273,6 +273,9 @@ private:
 		case 'm':  // %m - auto insert "name"
 		    if (isScan) nodep->v3error("Unsupported: %m in $fscanf");
 		    break;
+		case 'l':  // %l - auto insert "library"
+		    if (isScan) nodep->v3error("Unsupported: %l in $fscanf");
+		    break;
 		default:  // Most operators, just move to next argument
 		    if (!V3Number::displayedFmtLegal(ch)) {
 			nodep->v3error("Unknown $display-like format code: %"<<ch);

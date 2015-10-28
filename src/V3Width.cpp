@@ -1908,6 +1908,7 @@ private:
 		switch (tolower(ch)) {
 		case '%': break;  // %% - just output a %
 		case 'm': break;  // %m - auto insert "name"
+		case 'l': break;  // %m - auto insert "library"
 		case 'd': {  // Convert decimal to either 'd' or 'u'
 		    if (argp && argp->isSigned()) { // Convert it
 			ch = '~';
