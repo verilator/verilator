@@ -254,7 +254,7 @@ private:
 	}
     }
 
-    void expectFormat(AstNode* nodep, const string& format, AstNode* argp, bool isScan) {
+    string expectFormat(AstNode* nodep, const string& format, AstNode* argp, bool isScan) {
 	// Check display arguments
 	bool inPct = false;
 	for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
@@ -290,8 +290,57 @@ private:
 		} // switch
 	    }
 	}
-	if (argp) {
-	    argp->v3error("Extra arguments for $display-like format");
+	if (argp && !isScan) {
+	    int skipCount = 0; // number of args consume by any additional format strings
+	    string newFormat(format);
+	    while (argp) {
+		if (skipCount) {
+		    argp = argp->nextp();
+		    skipCount--;
+		    continue;
+		}
+		AstConst *constp = argp->castConst();
+		bool isFromString = (constp) ? constp->num().isFromString() : false;
+		if (isFromString) {
+		    int numchars = argp->dtypep()->width()/8;
+		    string str(numchars, ' ');
+		    // now scan for % operators
+		    bool inpercent = false;
+		    for (int i = 0; i < numchars; i++) {
+			int ii = numchars - i - 1;
+			char c = constp->num().dataByte(ii);
+			str[i] = c;
+			if (!inpercent && c == '%') {
+			    inpercent = true;
+			} else if (inpercent) {
+			    inpercent = 0;
+			    switch (c) {
+			    case '0': case '1': case '2': case '3': case '4':
+			    case '5': case '6': case '7': case '8': case '9':
+			    case '.':
+				inpercent = true;
+				break;
+			    case '%':
+				break;
+			    default:
+				if (V3Number::displayedFmtLegal(c)) {
+				    skipCount++;
+				}
+			    }
+			}
+		    }
+		    newFormat.append(str);
+		    AstNode *nextp = argp->nextp();
+		    argp->unlinkFrBack(); pushDeletep(argp); VL_DANGLING(argp);
+		    argp = nextp;
+		} else {
+		    newFormat.append("%h");
+		    argp = argp->nextp();
+		}
+	    }
+	    return newFormat;
+	} else {
+	    return string();
 	}
     }
 
@@ -322,7 +371,9 @@ private:
     }
     virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
+	if (newFormat.size())
+	    nodep->text(newFormat);
 	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
 	    || nodep->formatScopeTracking()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));

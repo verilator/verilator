@@ -13,6 +13,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ***   Support elaboration assertions, bug973. [Johan Bjork]
 
+***   Support $display with non-format arguments, bug467. [Jamey Hicks]
+
 ****  Add VerilatedScopeNameMap for introspection, bug966. [Todd Strader]
 
 ****  Ignore %l in $display, bug983. [Todd Strader]

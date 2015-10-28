@@ -43,6 +43,9 @@ module t;
 
       $display("[%0t] %s%s%s", $time,
 	       "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
+      $display("hel", "lo, fr", "om a concatenated string.");
+      $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
+      $display("extra argument: ", $time);
       $write("[%0t] Embedded \r return\n", $time);
       $display("[%0t] Embedded\
 multiline", $time);

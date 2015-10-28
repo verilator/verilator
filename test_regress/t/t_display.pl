@@ -28,6 +28,9 @@ execute (
 
 [0] %s=! %s= what! %s= hmmm!1234
 [0] hello, from a very long string. Percent %s are literally substituted in.
+hello, from a concatenated string.
+hello, from a concatenated format string [0].
+extra argument: 0000000000000000
 [0] Embedded <#013> return
 [0] Embedded
 multiline

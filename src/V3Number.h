@@ -205,6 +205,7 @@ public:
     double toDouble() const;
     uint32_t toHash() const;
     uint32_t dataWord(int word) const;
+    uint8_t dataByte(int byte) const { return (dataWord(byte/4) >> (8*(byte&3))) & 0xff; }
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;	// Highest bit set plus one, IE for 16 return 5, for 0 return 0.
 

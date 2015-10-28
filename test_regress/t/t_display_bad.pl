@@ -12,7 +12,6 @@ compile (
 	 fails=>1,
 	 expect=>
 '%Error: t/t_display_bad.v:\d+: Missing arguments for \$display-like format
-%Error: t/t_display_bad.v:\d+: Extra arguments for \$display-like format
 %Error: t/t_display_bad.v:\d+: Unknown \$display-like format code: %q
 %Error: Exiting due to.*',
 	 );
