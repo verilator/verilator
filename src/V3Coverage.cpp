@@ -87,7 +87,7 @@ private:
 	if (!nodep->isToggleCoverable())
 	    return "Not relevant signal type";
 	if (!v3Global.opt.coverageUnderscore()) {
-	    if (prettyName.c_str()[0] == '_')
+	    if (prettyName[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";

@@ -563,9 +563,9 @@ bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
     return false;
 }
 
-bool V3Options::suffixed(const char* sw, const char* arg) {
-    if (strlen(arg) > strlen(sw)) return false;
-    return (0==strcmp(sw+strlen(sw)-strlen(arg), arg));
+bool V3Options::suffixed(const string& sw, const char* arg) {
+    if (strlen(arg) > sw.length()) return false;
+    return (0==strcmp(sw.c_str()+sw.length()-strlen(arg), arg));
 }
 
 void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) {
@@ -962,16 +962,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	else {
 	    // Filename
 	    string filename = parseFileArg(optdir,argv[i]);
-	    if (suffixed(filename.c_str(), ".cpp")
-		|| suffixed(filename.c_str(), ".cxx")
-		|| suffixed(filename.c_str(), ".cc")
-		|| suffixed(filename.c_str(), ".c")
-		|| suffixed(filename.c_str(), ".sp")) {
+	    if (suffixed(filename, ".cpp")
+		|| suffixed(filename, ".cxx")
+		|| suffixed(filename, ".cc")
+		|| suffixed(filename, ".c")
+		|| suffixed(filename, ".sp")) {
 		V3Options::addCppFile(filename);
 	    }
-	    else if (suffixed(filename.c_str(), ".a")
-		     || suffixed(filename.c_str(), ".o")
-		     || suffixed(filename.c_str(), ".so")) {
+	    else if (suffixed(filename, ".a")
+		     || suffixed(filename, ".o")
+		     || suffixed(filename, ".so")) {
 		V3Options::addLdLibs(filename);
 	    }
 	    else {
