@@ -78,20 +78,6 @@ template< class T> std::string vlCovCvtToStr (const T& t) {
     ostringstream os; os<<t; return os.str();
 }
 
-/// Usage: something(VlCovCvtToCStr(i))
-/// Note the pointer will only be valid for as long as the object remains
-/// in scope!
-struct VlCovCvtToCStr {
-    string m_str;
-    // Casters
-    // cppcheck-suppress noExplicitConstructor
-    template< class T> VlCovCvtToCStr (const T& t) {
-	ostringstream os; os<<t; m_str=os.str();
-    }
-    ~VlCovCvtToCStr() {}
-    operator const char* () const { return m_str.c_str(); };
-};
-
 //=============================================================================
 //  VerilatedCov
 ///  Verilator coverage global class

@@ -262,8 +262,8 @@ public:
 	assert(m_insertp);
 	// First two key/vals are filename
 	ckeyps[0]="filename";	valps[0]=m_insertFilenamep;
-	VlCovCvtToCStr linestrp (m_insertLineno);
-	ckeyps[1]="lineno";	valps[1]=linestrp;
+	string linestr = vlCovCvtToStr(m_insertLineno);
+	ckeyps[1]="lineno";	valps[1]=linestr.c_str();
 	// Default page if not specified
 	const char* fnstartp = m_insertFilenamep;
 	while (const char* foundp = strchr(fnstartp,'/')) fnstartp=foundp+1;
@@ -441,8 +441,10 @@ void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
 // Backward compatibility for Verilator
 void VerilatedCov::_insertp (A(0), A(1),  K(2),int val2,  K(3),int val3,
 			     K(4),const string& val4,  A(5),A(6)) {
+    string val2str = vlCovCvtToStr(val2);
+    string val3str = vlCovCvtToStr(val3);
     _insertp(C(0),C(1),
-	     key2,VlCovCvtToCStr(val2),  key3,VlCovCvtToCStr(val3),  key4, val4.c_str(),
+	     key2,val2str.c_str(),  key3,val3str.c_str(),  key4, val4.c_str(),
 	     C(5),C(6),N(7),N(8),N(9),
 	     N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
 	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
