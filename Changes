@@ -39,6 +39,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix crash in commandArgsPlusMatch, bug987. [Jamie Iles]
 
+****  Fix error message on missing interface, bug985. [Todd Strader]
+
 
 * Verilator 3.876 2015-08-12
 

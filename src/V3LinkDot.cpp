@@ -372,7 +372,14 @@ public:
 	    UINFO(9, "  insAllIface se"<<(void*)varSymp<<" "<<varp<<endl);
 	    AstIfaceRefDType* ifacerefp = varp->subDTypep()->castIfaceRefDType();
 	    if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
-	    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
+	    if (!ifacerefp->ifaceViaCellp()) {
+		if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if made mistake
+		    ifacerefp->v3error("Cannot find file containing interface: "<<AstNode::prettyName(ifacerefp->ifaceName()));
+		    continue;
+		} else {
+		    ifacerefp->v3fatalSrc("Unlinked interface");
+		}
+	    }
 	    VSymEnt* ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
 	    VSymEnt* ifOrPortSymp = ifaceSymp;
 	    // Link Modport names to the Modport Node under the Interface
