@@ -1151,7 +1151,8 @@ void Verilated::commandArgs(int argc, const char** argv) {
 }
 
 const char* Verilated::commandArgsPlusMatch(const char* prefixp) {
-    return VerilatedImp::argPlusMatch(prefixp).c_str();
+    const char* strp = vl_mc_scan_plusargs(prefixp);
+    return strp ? strp : "";  // Backward compatible interface, "" for no match
 }
 
 void Verilated::internalsDump() {

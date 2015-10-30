@@ -1139,8 +1139,8 @@ sub _make_main {
 
     if ($self->{savable}) {
 	$fh->print("    const char* save_time_strp  = Verilated::commandArgsPlusMatch(\"save_time=\");\n");
-	$fh->print("    const char* save_restore_strp = Verilated::commandArgsPlusMatch(\"save_restore=\");\n");
 	$fh->print("    unsigned int save_time = !save_time_strp[0] ? 0 : atoi(save_time_strp+strlen(\"+save_time=\"));\n");
+	$fh->print("    const char* save_restore_strp = Verilated::commandArgsPlusMatch(\"save_restore=\");\n");
 	$fh->print("    unsigned int save_restore = !save_restore_strp[0] ? 0 : 1;\n");
     }
 

@@ -37,6 +37,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix dot indexing into arrayed inferfaces, bug978.  [Johan Bjork]
 
+****  Fix crash in commandArgsPlusMatch, bug987. [Jamie Iles]
+
 
 * Verilator 3.876 2015-08-12
 

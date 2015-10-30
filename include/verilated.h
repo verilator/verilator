@@ -289,6 +289,7 @@ public:
     static void commandArgs(int argc, const char** argv);
     static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
     static CommandArgValues* getCommandArgs() {return &s_args;}
+    /// Match plusargs with a given prefix. Returns static char* valid only for a single call
     static const char* commandArgsPlusMatch(const char* prefixp);
 
     /// Produce name & version for (at least) VPI
