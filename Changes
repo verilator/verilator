@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+* Verilator 3.879 devel
+
+
 * Verilator 3.878 2015-11-01
 
 **    Add --vpi flag, and fix VPI linkage, bug969. [Arthur Kahlich]
