@@ -1151,8 +1151,12 @@ void Verilated::commandArgs(int argc, const char** argv) {
 }
 
 const char* Verilated::commandArgsPlusMatch(const char* prefixp) {
-    const char* strp = vl_mc_scan_plusargs(prefixp);
-    return strp ? strp : "";  // Backward compatible interface, "" for no match
+    const string& match = VerilatedImp::argPlusMatch(prefixp);
+    static VL_THREAD char outstr[VL_VALUE_STRING_MAX_WIDTH];
+    if (match == "") return "";
+    strncpy(outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH);
+    outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
+    return outstr;
 }
 
 void Verilated::internalsDump() {
