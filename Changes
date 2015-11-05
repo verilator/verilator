@@ -5,6 +5,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.879 devel
 
+****  Fix real parameters causing bad module names, bug992. [Johan Bjork]
+
 
 * Verilator 3.878 2015-11-01
 

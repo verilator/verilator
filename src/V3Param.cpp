@@ -148,7 +148,7 @@ private:
 	// Given a compilcated object create a number to use for param module assignment
 	// Ideally would be relatively stable if design changes (not use pointer value),
 	// and must return same value given same input node
-	// Return must presently be numberic so doesn't collide with 'small' alphanumeric parameter names
+	// Return must presently be numeric so doesn't collide with 'small' alphanumeric parameter names
 	ValueMap::iterator it = m_valueMap.find(nodep);
 	if (it != m_valueMap.end()) {
 	    return cvtToStr(it->second);
@@ -470,8 +470,12 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		    // Setting parameter to its default value.  Just ignore it.
 		    // This prevents making additional modules, and makes coverage more
 		    // obvious as it won't show up under a unique module page name.
-		} else {
+		} else if (!constp->num().isDouble() && !constp->num().isString()
+			   && !constp->num().isFourState() && !constp->num().isNegative()) {
 		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+constp->num().ascii(false);
+		    any_overrides = true;
+		} else {
+		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+paramValueNumber(constp);
 		    any_overrides = true;
 		}
 	    }
