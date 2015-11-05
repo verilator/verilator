@@ -139,7 +139,7 @@ private:
 	char ch   = varp->user4()&255;
 	string st = cvtToStr(ch);
 	while (index) {
-	    st += cvtToStr(char((index%26)+'A'));
+	    st += cvtToStr(char((index%25)+'A'));
 	    index /= 26;
 	}
 	return st;
@@ -162,7 +162,8 @@ private:
 	    else { m_nextValueMap.insert(make_pair(bucket, offset + 1)); }
 	    int num = bucket + offset * BUCKETS;
 	    m_valueMap.insert(make_pair(nodep, num));
-	    return cvtToStr(num);
+	    // 'z' just to make sure we don't collide with a normal non-hashed number
+	    return (string)"z"+cvtToStr(num);
 	}
     }
     void relinkPins(VarCloneMap* clonemapp, AstPin* startpinp) {
