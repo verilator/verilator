@@ -1018,6 +1018,9 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this,WidthVP(SELF,PRELIM).p());
 	    AstBasicDType* underDtp = nodep->lhsp()->dtypep()->castBasicDType();
 	    if (!underDtp) {
+		underDtp = nodep->lhsp()->dtypep()->basicp();
+	    }
+	    if (!underDtp) {
 		nodep->v3error("Unsupported: Size-changing cast on non-basic data type");
 		underDtp = nodep->findLogicBoolDType()->castBasicDType();
 	    }

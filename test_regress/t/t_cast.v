@@ -8,6 +8,15 @@ module t;
    typedef logic [3:0] mc_t;
    typedef mc_t tocast_t;
 
+   typedef struct packed {
+      logic [15:0] data;
+   } packed_t;
+
+   packed_t pdata;
+   assign pdata.data = 16'h1234;
+   logic [7:0] logic8bit;
+   assign logic8bit = $bits(logic8bit)'(pdata >> 8);
+
    mc_t o;
 
    logic [15:0] allones = 16'hffff;
@@ -31,6 +40,7 @@ module t;
 				  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
 
    initial begin
+      if (logic8bit != 8'h12) $stop;
       if (4'shf > 4'sh0) $stop;
       if (signed'(4'hf) > 4'sh0) $stop;
       if (4'hf < 4'h0) $stop;
