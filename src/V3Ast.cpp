@@ -94,10 +94,9 @@ void AstNode::init() {
 
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
-    const char* start = namein.c_str();
     string out;
-    for (const char* pos = start; *pos; pos++) {
-	if ((pos==start) ? isalpha(pos[0])  // digits can't lead identifiers
+    for (string::const_iterator pos = namein.begin(); pos!=namein.end(); ++pos) {
+	if ((pos==namein.begin()) ? isalpha(pos[0])  // digits can't lead identifiers
 	    : isalnum(pos[0])) {
 	    out += pos[0];
 	} else if (pos[0]=='_') {

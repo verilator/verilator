@@ -750,19 +750,19 @@ void V3OutFormatter::putBreak () {
     }
 }
 
-void V3OutFormatter::putsQuoted(const char* strg) {
+void V3OutFormatter::putsQuoted(const string& strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
     putcNoTracking('"');
     string quoted = V3Number::quoteNameControls(strg);
-    for (const char* cp=quoted.c_str(); *cp; cp++) {
-	putcNoTracking (*cp);
+    for (string::const_iterator cp=quoted.begin(); cp!=quoted.end(); ++cp) {
+    	putcNoTracking (*cp);
     }
     putcNoTracking('"');
 }
-void V3OutFormatter::putsNoTracking (const char *strg) {
+void V3OutFormatter::putsNoTracking (const string& strg) {
     // Don't track {}'s, probably because it's a $display format string
-    for (const char* cp=strg; *cp; cp++) {
+    for (string::const_iterator cp=strg.begin(); cp!=strg.end(); ++cp) {
 	putcNoTracking (*cp);
     }
 }
@@ -791,7 +791,7 @@ void V3OutFormatter::putcNoTracking (char chr) {
     putcOutput (chr);
 }
 
-void V3OutFormatter::putAlign (bool/*AlignClass*/ isStatic, int align, int size, const char* prefix) {
+void V3OutFormatter::putAlign (bool/*AlignClass*/ isStatic, int align, int size, const string& prefix) {
     if (size==0) size=align;
     int alignSize = size; if (alignSize>8) alignSize=8;
     int& alignr = isStatic ? m_declSAlign : m_declNSAlign;

@@ -1789,7 +1789,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 		}
 	    }
 	}
-	ofp()->putAlign(isstatic, 4, 0, prefixIfImp.c_str());
+	ofp()->putAlign(isstatic, 4, 0, prefixIfImp);
     }
 }
 

@@ -3786,7 +3786,7 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     string newtext;
     unsigned char octal_val = 0;
     int octal_digits = 0;
-    for (const char* cp=text.c_str(); *cp; ++cp) {
+    for (string::const_iterator cp=text.begin(); cp!=text.end(); ++cp) {
 	if (quoted) {
 	    if (isdigit(*cp)) {
 		octal_val = octal_val*8 + (*cp-'0');

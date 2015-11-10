@@ -409,9 +409,8 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 string V3Number::quoteNameControls(const string& namein) {
     // Encode control chars into C style escapes
     // Reverse is V3Parse::deQuote
-    const char* start = namein.c_str();
     string out;
-    for (const char* pos = start; *pos; pos++) {
+    for (string::const_iterator pos=namein.begin(); pos!=namein.end(); ++pos) {
 	if (pos[0]=='\\' || pos[0]=='"') {
 	    out += string("\\")+pos[0];
 	} else if (pos[0]=='\n') {

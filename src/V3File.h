@@ -140,13 +140,11 @@ public:
     void printf(const char* fmt...) VL_ATTR_PRINTF(2);
     void puts(const char* strg);
     void puts(const string& strg) { puts(strg.c_str()); }
-    void putsNoTracking(const char* strg);
-    void putsNoTracking(const string& strg) { putsNoTracking(strg.c_str()); }
-    void putsQuoted(const char* strg);
-    void putsQuoted(const string& strg) { putsQuoted(strg.c_str()); }
+    void putsNoTracking(const string& strg);
+    void putsQuoted(const string& strg);
     void putBreak();  // Print linebreak if line is too wide
     void putBreakExpr();  // Print linebreak in expression if line is too wide
-    void putAlign(bool isstatic/*AlignClass*/, int align, int size=0/*=align*/, const char* prefix=""); // Declare a variable, with natural alignment
+    void putAlign(bool isstatic/*AlignClass*/, int align, int size=0/*=align*/, const string& prefix=""); // Declare a variable, with natural alignment
     void putbs(const char* strg) { putBreakExpr(); puts(strg); }
     void putbs(const string& strg) {  putBreakExpr(); puts(strg); }
     bool exceededWidth() const { return m_column > WIDTH; }
