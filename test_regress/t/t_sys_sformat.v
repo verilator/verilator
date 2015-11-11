@@ -13,7 +13,7 @@ module t;
    reg [63:0] q;
    reg [16*8:1] wide;
 
-   reg [8:1] 	char;
+   reg [8:1] 	ochar;
    reg [48*8:1] str;
    reg [48*8:1] str2;
    string str3;
@@ -55,8 +55,19 @@ module t;
       if (str2 !== "mod=top.t") $stop;
 `endif
 
-      $sformat(char,"%s","c");
-      if (char != "c") $stop;
+      $swrite(str2, "lib=%l");
+`ifdef TEST_VERBOSE  $display("chkl %0s",str2);  `endif
+      if (str2 !== "lib=t") $stop;
+
+      str3 = $sformatf("u=%u", {"a","b","c","d"}); // Value selected so is printable
+`ifdef TEST_VERBOSE  $display("chku %0x %s",str3,str3);  `endif
+      if (str3 !== "u=dcba") $stop;
+
+      str3 = $sformatf("v=%v", {"a","b","c","d"}); // Value selected so is printable
+`ifdef TEST_VERBOSE  $display("chkv %0x %s",str3,str3);  `endif
+
+      $sformat(ochar,"%s","c");
+      if (ochar != "c") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

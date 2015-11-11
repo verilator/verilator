@@ -171,7 +171,7 @@ public:
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;
     static string quoteNameControls(const string& namein); // Add backslash quotes to strings
-    string displayed(const string& format) const;
+    string displayed(FileLine* fl, const string& format) const;
     static bool displayedFmtLegal(char format);  // Is this a valid format letter?
     int width() const { return m_width; }
     int widthMin() const;	// Minimum width that can represent this number (~== log2(num)+1)

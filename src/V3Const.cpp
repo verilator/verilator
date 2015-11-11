@@ -33,6 +33,7 @@
 #include <algorithm>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3Const.h"
 #include "V3Ast.h"
 #include "V3Width.h"
@@ -1828,7 +1829,7 @@ private:
 	}
 	if (m_doNConst && anyconst) {
 	    //UINFO(9,"  Display in  "<<nodep->text()<<endl);
-	    string dispout = "";
+	    string newFormat = "";
 	    string fmt = "";
 	    bool inPct = false;
 	    AstNode* argp = nodep->exprsp();
@@ -1846,33 +1847,30 @@ private:
 		    switch (tolower(ch)) {
 		    case '%': break;  // %% - just output a %
 		    case 'm': break;  // %m - auto insert "name"
-		    case 'l': break;  // %m - auto insert "library"
+		    case 'l': break;  // %l - auto insert "library"
 		    default:  // Most operators, just move to next argument
 			if (argp) {
 			    AstNode* nextp=argp->nextp();
 			    if (argp && argp->castConst()) { // Convert it
-				string out = argp->castConst()->num().displayed(fmt);
+				string out = argp->castConst()->num().displayed(nodep->fileline(), fmt);
 				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
-				{   // fmt = out w/ replace % with %% as it must be literal.
-				    fmt = "";
-				    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
-					if (*pos == '%') fmt += '%';
-					fmt += *pos;
-				    }
-				}
+				// fmt = out w/ replace % with %% as it must be literal.
+				fmt = VString::quotePercent(out);
 				argp->unlinkFrBack()->deleteTree();
 			    }
 			    argp=nextp;
 			}
 			break;
 		    } // switch
-		    dispout += fmt;
+		    newFormat += fmt;
 		} else {
-		    dispout += ch;
+		    newFormat += ch;
 		}
 	    }
-	    nodep->text(dispout);
-	    //UINFO(9,"  Display out "<<nodep->text()<<endl);
+	    if (newFormat != nodep->text()) {
+		nodep->text(newFormat);
+		UINFO(9,"  Display out "<<nodep<<endl);
+	    }
 	}
 	if (!nodep->exprsp()
 	    && nodep->name().find("%") == string::npos

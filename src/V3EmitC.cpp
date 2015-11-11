@@ -295,6 +295,7 @@ public:
 		case 'h': // FALLTHRU
 		case 'x': // FALLTHRU
 		case 'b': // FALLTHRU
+		case 'v': // FALLTHRU
 		case 's':
 		    got++; format = tolower(ch);
 		    break;
@@ -1273,17 +1274,18 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 	dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any $display-like arguments");
     }
     if (argp && argp->isWide()
-	&& (fmtLetter=='d'||fmtLetter=='u')) {
+	&& (fmtLetter=='d'||fmtLetter=='#')) {
 	argp->v3error("Unsupported: "<<dispp->verilogKwd()<<" of dec format of > 64 bit results (use hex format instead)");
     }
     if (argp && argp->widthMin()>8 && fmtLetter=='c') {
 	// Technically legal, but surely not what the user intended.
-	argp->v3error(dispp->verilogKwd()<<" of char format of > 8 bit result");
+	argp->v3warn(WIDTH,dispp->verilogKwd()<<"of %c format of > 8 bit value");
+
     }
 
     //string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
-    if ((fmtLetter=='u' || fmtLetter=='d' || fmtLetter=='t')
+    if ((fmtLetter=='#' || fmtLetter=='d' || fmtLetter=='t')
 	&& !isScan
 	&& vfmt == "") { // Size decimal output.  Spec says leading spaces, not zeros
 	double mantissabits = argp->widthMin() - ((fmtLetter=='d')?1:0);
@@ -1341,14 +1343,15 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 	    case 'b': displayArg(nodep,&elistp,isScan, vfmt,'b'); break;
 	    case 'c': displayArg(nodep,&elistp,isScan, vfmt,'c'); break;
 	    case 't': displayArg(nodep,&elistp,isScan, vfmt,'t'); break;
-	    case 'd': displayArg(nodep,&elistp,isScan, vfmt,'u'); break;  // Unsigned decimal
+	    case 'd': displayArg(nodep,&elistp,isScan, vfmt,'#'); break;  // Unsigned decimal
 	    case 'o': displayArg(nodep,&elistp,isScan, vfmt,'o'); break;
-	    case 'h':
+	    case 'h': //FALLTHRU
 	    case 'x': displayArg(nodep,&elistp,isScan, vfmt,'x'); break;
 	    case 's': displayArg(nodep,&elistp,isScan, vfmt,'s'); break;
 	    case 'e': displayArg(nodep,&elistp,isScan, vfmt,'e'); break;
 	    case 'f': displayArg(nodep,&elistp,isScan, vfmt,'f'); break;
 	    case 'g': displayArg(nodep,&elistp,isScan, vfmt,'g'); break;
+	    case 'v': displayArg(nodep,&elistp,isScan, vfmt,'v'); break;
 	    case 'm': {
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
 		string suffix = scopenamep->scopePrettySymName();
@@ -1363,11 +1366,6 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 		emitDispState.pushFormat("----");
 		break;
 	    }
-	    case 'u':
-	    case 'z':
-	    case 'v':
-		nodep->v3error("Unsupported: $display-like format code: %"<<pos[0]);
-		break;
 	    default:
 		nodep->v3error("Unknown $display-like format code: %"<<pos[0]);
 		break;

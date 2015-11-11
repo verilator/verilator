@@ -396,12 +396,12 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
     if (binary) {
 	out<<"b";
-	out<<displayed("%0b");
+	out<<displayed(m_fileline, "%0b");
     }
     else {
 	if (prefixed) out<<"h";
 	// Always deal with 4 bits at once.  Note no 4-state, it's above.
-	out<<displayed("%0h");
+	out<<displayed(m_fileline, "%0h");
     }
     return out.str();
 }
@@ -423,7 +423,8 @@ string V3Number::quoteNameControls(const string& namein) {
 	    out += pos[0];
 	} else {
 	    // This will also cover \a etc
-	    char octal[10]; sprintf(octal,"\\%03o",pos[0]);
+	    // Can't use %03o as messes up when signed
+	    char octal[10]; sprintf(octal,"\\%o%o%o",(pos[0]>>6)&3, (pos[0]>>3)&7, pos[0]&7);
 	    out += octal;
 	}
     }
@@ -441,16 +442,20 @@ bool V3Number::displayedFmtLegal(char format) {
     case 'g': return true;
     case 'h': return true;
     case 'o': return true;
+    case 'p': return true; // Pattern
     case 's': return true;
     case 't': return true;
+    case 'u': return true; // Packed 2-state
+    case 'v': return true; // Strength 
     case 'x': return true;
+    case 'z': return true; // Packed 4-state
     case '@': return true; // Packed string
     case '~': return true; // Signed decimal
     default: return false;
     }
 }
 
-string V3Number::displayed(const string& vformat) const {
+string V3Number::displayed(FileLine*fl, const string& vformat) const {
     string::const_iterator pos = vformat.begin();
     UASSERT(pos != vformat.end() && pos[0]=='%', "$display-like function with non format argument "<<*this);
     ++pos;
@@ -495,13 +500,11 @@ string V3Number::displayed(const string& vformat) const {
 	return str;
     }
     case 'c': {
-	if (this->width()>8) m_fileline->v3error("$display-like format of char of > 8 bit value");
-	int v = bitsValue(0, 8);
-	str += (char)(v);
+	if (this->width()>8) fl->v3warn(WIDTH,"$display-like format of %c format of > 8 bit value");
+	unsigned int v = bitsValue(0, 8);
+	char strc[2]; strc[0] = v&0xff; strc[1] = '\0';
+	str = strc;
 	return str;
-    }
-    case '@': {  // Packed string
-	return toString();
     }
     case 's': {
 	// Spec says always drop leading zeros, this isn't quite right, we space pad.
@@ -531,7 +534,7 @@ string V3Number::displayed(const string& vformat) const {
 	    fmtsize = cvtToStr(int(dchars));
 	}
 	if (width() > 64) {
-	    m_fileline->v3error("Unsupported: $display-like format of decimal of > 64 bit results (use hex format instead)");
+	    fl->v3error("Unsupported: $display-like format of decimal of > 64 bit results (use hex format instead)");
 	    return "ERR";
 	}
 	if (issigned) {
@@ -554,8 +557,45 @@ string V3Number::displayed(const string& vformat) const {
 	sprintf(tmp, vformat.c_str(), toDouble());
 	return tmp;
     }
+    // 'l'   // Library - converted to text by V3LinkResolve
+    // 'p'   // Packed - converted to another code by V3Width
+    case 'u': {  // Packed 2-state
+	for (int i=0; i<words(); i++) {
+	    str += (char)((m_value[i] >> 0) & 0xff);
+	    str += (char)((m_value[i] >> 8) & 0xff);
+	    str += (char)((m_value[i] >> 16) & 0xff);
+	    str += (char)((m_value[i] >> 24) & 0xff);
+	}
+	return str;
+    }
+    case 'z': {  // Packed 4-state
+	for (int i=0; i<words(); i++) {
+	    str += (char)((m_value[i] >> 0) & 0xff);
+	    str += (char)((m_value[i] >> 8) & 0xff);
+	    str += (char)((m_value[i] >> 16) & 0xff);
+	    str += (char)((m_value[i] >> 24) & 0xff);
+	    str += (char)((m_valueX[i] >> 0) & 0xff);
+	    str += (char)((m_valueX[i] >> 8) & 0xff);
+	    str += (char)((m_valueX[i] >> 16) & 0xff);
+	    str += (char)((m_valueX[i] >> 24) & 0xff);
+	}
+	return str;
+    }
+    case 'v': {  // Strength
+	int bit = width()-1;
+	for (; bit>=0; bit--) {
+	    if (bitIs0(bit)) str+="St0 ";  // Yes, always a space even for bit 0
+	    else if (bitIs1(bit)) str+="St1 ";
+	    else if (bitIsZ(bit)) str+="StZ ";
+	    else str+="StX";
+	}
+	return str;
+    }
+    case '@': {  // Packed string
+	return toString();
+    }
     default:
-	m_fileline->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);
+	fl->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);
 	return "ERR";
     }
 }

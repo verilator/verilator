@@ -10,6 +10,7 @@ module t;
    reg [47:0] str2; initial str2 = "\000what!";
    reg [79:0] str3; initial str3 = "\000hmmm!1234";
    reg [8:0]  nine; initial nine = 12;
+   string     svs = "sv-str";
 
    sub sub ();
    sub2 sub2 ();
@@ -44,6 +45,30 @@ module t;
       $display("[%0t] %%X=%X %%0X=%0X  %%X=%X %%0X=%0X  %%X=%X %%0X=%0X", $time,
 	       nine, nine, quad, quad, wide, wide);
       //
+      // verilator lint_off WIDTH
+      $display("[%0t] %%C=%C %%0C=%0C", $time,
+	       "a"+nine, "a"+nine);
+      $display("[%0t] %%c=%c %%0c=%0c", $time,
+	       "a"+nine, "a"+nine);
+      // verilator lint_on WIDTH
+
+      $display("[%0t] %%v=%v %%0v=%0v  %%v=%v %%0v=%0v  %%v=%v %%0v=%0v", $time,
+	       nine, nine, quad, quad, wide, wide);
+      $display("[%0t] %%V=%V %%0V=%0V  %%V=%V %%0V=%0V  %%V=%V %%0V=%0V", $time,
+	       nine, nine, quad, quad, wide, wide);
+      $display("[%0t] %%p=%p %%0p=%0p  %%p=%p %%0p=%0p  %%p=%p %%0p=%0p", $time,
+	       nine, nine, quad, quad, wide, wide);
+      $display("[%0t] %%P=%P %%0P=%0P  %%P=%P %%0P=%0P  %%P=%P %%0P=%0P", $time,
+	       nine, nine, quad, quad, wide, wide);
+      $display("[%0t] %%P=%P", $time,
+	       svs);
+
+      $display("[%0t] %%u=%u %%0u=%0u", $time,
+	       {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
+      $display("[%0t] %%U=%U %%0U=%0U", $time,
+	       {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
+      // %z is tested in t_sys_sformat.v
+
       $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d", $time,
 	       nine, nine, nine, nine, nine);
       $display("[%0t] %%t=%t %%03t=%03t %%0t=%0t", $time,
@@ -74,9 +99,9 @@ endmodule
 module sub;
    task write_m;
       begin
-	 $write("[%0t] In %m\n", $time);
+	 $write("[%0t] In %m (%l)\n", $time);
 	 begin : subblock
-	    $write("[%0t] In %M\n", $time); // Uppercase %M test
+	    $write("[%0t] In %M (%L)\n", $time); // Uppercase %M test
 	 end
       end
    endtask
@@ -86,9 +111,9 @@ module sub2;
    // verilator no_inline_module
    task write_m;
       begin
-	 $write("[%0t] In %m\n", $time);
+	 $write("[%0t] In %m (%l)\n", $time);
 	 begin : subblock2
-	    $write("[%0t] In %m\n", $time);
+	    $write("[%0t] In %m (%L)\n", $time);
 	 end
       end
    endtask

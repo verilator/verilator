@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix size-changing cast on packed struct, bug993. [Johan Bjork]
 
+****  Fix display %u, %v, %p, %z, bug989. [Johan Bjork]
+
 
 * Verilator 3.878 2015-11-01
 

@@ -723,7 +723,7 @@ private:
 			    break;
 			}
 			string format = string("%") + pos[0];
-			result += nump->displayed(format);
+			result += nump->displayed(nodep->fileline(), format);
 		    } else {
 			switch (tolower(pos[0])) {
 			case '%':

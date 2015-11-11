@@ -1897,24 +1897,40 @@ private:
 	nodep->iterateChildren(*this,WidthVP(SELF,BOTH).p());
 	//
 	UINFO(9,"  Display in "<<nodep->text()<<endl);
-	string dispout = "";
+	string newFormat;
 	bool inPct = false;
 	AstNode* argp = nodep->exprsp();
 	string txt = nodep->text();
+	string fmt;
 	for (string::const_iterator it = txt.begin(); it!=txt.end(); ++it) {
 	    char ch = *it;
 	    if (!inPct && ch=='%') {
 		inPct = true;
-	    } else if (inPct && isdigit(ch)) {
+		fmt = ch;
+	    } else if (inPct && (isdigit(ch) || ch=='.')) {
+		fmt += ch;
 	    } else if (tolower(inPct)) {
 		inPct = false;
+		bool added = false;
 		switch (tolower(ch)) {
 		case '%': break;  // %% - just output a %
 		case 'm': break;  // %m - auto insert "name"
 		case 'l': break;  // %m - auto insert "library"
-		case 'd': {  // Convert decimal to either 'd' or 'u'
+		case 'd': {  // Convert decimal to either 'd' or '#'
 		    if (argp && argp->isSigned()) { // Convert it
 			ch = '~';
+		    }
+		    if (argp) argp=argp->nextp();
+		    break;
+		}
+		case 'p': {  // Packed
+		    // Very hacky and non-compliant; print strings as strings, otherwise as hex
+		    if (argp && argp->dtypep()->basicp()->isString()) { // Convert it
+			added = true;
+			newFormat += "\"%@\"";
+		    } else {
+			added = true;
+			newFormat += "'h%0h";
 		    }
 		    if (argp) argp=argp->nextp();
 		    break;
@@ -1931,10 +1947,15 @@ private:
 		    break;
 		}
 		} // switch
+		if (!added) {
+		    fmt += ch;
+		    newFormat += fmt;
+		}
+	    } else {
+		newFormat += ch;
 	    }
-	    dispout += ch;
 	}
-	nodep->text(dispout);
+	nodep->text(newFormat);
 	UINFO(9,"  Display out "<<nodep->text()<<endl);
     }
     virtual void visit(AstDisplay* nodep, AstNUser* vup) {

@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "V3Global.h"
+#include "V3String.h"
 #include "V3LinkResolve.h"
 #include "V3Ast.h"
 
@@ -255,26 +256,29 @@ private:
     }
 
     string expectFormat(AstNode* nodep, const string& format, AstNode* argp, bool isScan) {
-	// Check display arguments
+	// Check display arguments, return new format string
+	string newFormat;
 	bool inPct = false;
+	string fmt = "";
 	for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
-	    char ch = tolower(*it);
+	    char ch = *it;
 	    if (!inPct && ch=='%') {
 		inPct = true;
+		fmt = ch;
+	    } else if (inPct && (isdigit(ch) || ch=='.')) {
+		fmt += ch;
 	    } else if (inPct) {
 		inPct = false;
+		fmt += ch;
 		switch (tolower(ch)) {
-		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-		case '.':
-		    inPct = true;
+		case '%':  // %% - just output a %
 		    break;
-		case '%': break;  // %% - just output a %
 		case 'm':  // %m - auto insert "name"
-		    if (isScan) nodep->v3error("Unsupported: %m in $fscanf");
+		    if (isScan) { nodep->v3error("Unsupported: %m in $fscanf"); fmt = ""; }
 		    break;
 		case 'l':  // %l - auto insert "library"
-		    if (isScan) nodep->v3error("Unsupported: %l in $fscanf");
+		    if (isScan) { nodep->v3error("Unsupported: %l in $fscanf"); fmt = ""; }
+		    if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
 		    break;
 		default:  // Most operators, just move to next argument
 		    if (!V3Number::displayedFmtLegal(ch)) {
@@ -288,11 +292,14 @@ private:
 		    }
 		    break;
 		} // switch
+		newFormat += fmt;
+	    } else {
+		newFormat += ch;
 	    }
 	}
+
 	if (argp && !isScan) {
 	    int skipCount = 0; // number of args consume by any additional format strings
-	    string newFormat(format);
 	    while (argp) {
 		if (skipCount) {
 		    argp = argp->nextp();
@@ -338,10 +345,8 @@ private:
 		    argp = argp->nextp();
 		}
 	    }
-	    return newFormat;
-	} else {
-	    return string();
 	}
+	return newFormat;
     }
 
     void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
@@ -372,8 +377,7 @@ private:
     virtual void visit(AstSFormatF* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
-	if (newFormat.size())
-	    nodep->text(newFormat);
+	nodep->text(newFormat);
 	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
 	    || nodep->formatScopeTracking()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));

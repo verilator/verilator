@@ -1013,7 +1013,8 @@ sub _run {
 	    if ($param{expect}) {
 		# Compare
 		my $quoted = quotemeta ($param{expect});
-		my $bad = ($wholefile !~ /$param{expect}/ms
+		my $bad = ($wholefile ne $param{expect}
+			   && $wholefile !~ /$param{expect}/ms
 			   && $wholefile !~ /$quoted/ms);
 		if ($bad) {
 		    #print "**BAD  $self->{name} $param{logfile} MT $moretry  $try\n";

@@ -77,6 +77,15 @@ string VString::downcase(const string& str) {
     return out;
 }
 
+string VString::quotePercent(const string& str) {
+    string out;
+    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
+	if (*pos == '%') out += '%';
+	out += *pos;
+    }
+    return out;
+}
+
 //######################################################################
 // VHashSha1
 

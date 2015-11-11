@@ -374,7 +374,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		} else {
 		    lwp = va_arg(ap,WDataInP);
 		    ld = lwp[0];
-		    if (fmt == 'u' || fmt == 'd') fmt = 'x';  // Not supported, but show something
+		    if (fmt == 'd' || fmt == '#') fmt = 'x';  // Not supported, but show something
 		}
 		int lsb=lbits-1;
 		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) lsb--;
@@ -404,7 +404,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    output += tmp;
 		    break;
 		}
-		case 'u': { // Unsigned decimal
+		case '#': { // Unsigned decimal
 		    int digits=sprintf(tmp,"%" VL_PRI64 "u",ld);
 		    int needmore = width-digits;
 		    if (needmore>0) {
@@ -438,6 +438,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
 		    }
 		    break;
+		    break;
 		case 'o':
 		    for (; lsb>=0; lsb--) {
 			lsb = (lsb / 3) * 3; // Next digit
@@ -450,6 +451,28 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 				   + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb+2)) ? 4 : 0));
 		    }
 		    break;
+		case 'u':  // Packed 2-state
+		    output.reserve(output.size() + 4*VL_WORDS_I(lbits));
+		    for (int i=0; i<VL_WORDS_I(lbits); i++) {
+			output += (char)((lwp[i] >> 0) & 0xff);
+			output += (char)((lwp[i] >> 8) & 0xff);
+			output += (char)((lwp[i] >> 16) & 0xff);
+			output += (char)((lwp[i] >> 24) & 0xff);
+		    }
+		case 'z':  // Packed 4-state
+		    output.reserve(output.size() + 8*VL_WORDS_I(lbits));
+		    for (int i=0; i<VL_WORDS_I(lbits); i++) {
+			output += (char)((lwp[i] >> 0) & 0xff);
+			output += (char)((lwp[i] >> 8) & 0xff);
+			output += (char)((lwp[i] >> 16) & 0xff);
+			output += (char)((lwp[i] >> 24) & 0xff);
+			output += "\0\0\0\0"; // No tristate
+		    }
+		case 'v': // Strength; assume always strong
+		    for (lsb=lbits-1; lsb>=0; lsb--) {
+			if ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) output += "St1 ";
+			else output += "St0 ";
+		    }
 		case 'x':
 		    for (; lsb>=0; lsb--) {
 			lsb = (lsb / 4) * 4; // Next digit
@@ -633,7 +656,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    break;
 		}
 		case 't': // FALLTHRU  // Time
-		case 'u': { // Unsigned decimal
+		case '#': { // Unsigned decimal
 		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
 		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "0123456789+-xXzZ?_");
 		    if (!tmp[0]) goto done;

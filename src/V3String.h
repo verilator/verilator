@@ -35,6 +35,7 @@ public:
     // METHODS (generic string utilities)
     static bool wildmatch(const char* s, const char* p);
     static string downcase(const string& str);
+    static string quotePercent(const string& str);
 };
 
 //######################################################################
