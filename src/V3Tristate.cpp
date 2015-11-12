@@ -1114,6 +1114,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstPin* outpinp;
 	    {
 		AstVar* outModVarp = (AstVar*) nodep->modVarp()->user4p();
+		if (!outModVarp) nodep->v3fatalSrc("Unlinked");
 		AstNode* outexprp = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
 		outpinp = new AstPin(nodep->fileline(),
 				     nodep->pinNum(),
