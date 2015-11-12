@@ -205,7 +205,7 @@ private:
 	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {  // Maybe varxref - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   varrefp->cloneTree(false)));
-	    } else if (AstUnlinkedVarXRef* uvxrp = basefromp->castUnlinkedVarXRef()) {  // Maybe varxref - so need to clone
+	    } else if (AstUnlinkedRef* uvxrp = basefromp->castUnlinkedRef()) {  // Maybe unlinked - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   uvxrp->cloneTree(false)));
 	    } else if (AstMemberSel* fromp = basefromp->castMemberSel()) {

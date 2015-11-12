@@ -108,7 +108,7 @@ private:
     typedef deque<AstCell*> CellList;
     CellList	m_cellps;	// Cells left to process (in this module)
 
-    string m_unlinkedTxt;	// Text for AstUnlinkedVarXRef
+    string m_unlinkedTxt;	// Text for AstUnlinkedRef
 
     // METHODS
     static int debug() {
@@ -254,11 +254,20 @@ private:
     virtual void visit(AstVarXRef* nodep, AstNUser*) {
 	nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
     }
-    virtual void visit(AstUnlinkedVarXRef* nodep, AstNUser*) {
+
+    virtual void visit(AstUnlinkedRef* nodep, AstNUser*) {
 	m_unlinkedTxt.clear();
 	nodep->cellrefp()->iterate(*this);
-	nodep->varxrefp()->dotted(m_unlinkedTxt);
-	nodep->replaceWith(nodep->varxrefp()->unlinkFrBack());
+	AstVarXRef* varxrefp = nodep->op1p()->castVarXRef();
+	AstNodeFTaskRef* taskref = nodep->op1p()->castNodeFTaskRef();
+	if (varxrefp) {
+	    varxrefp->dotted(m_unlinkedTxt);
+	} else if (taskref) {
+	    taskref->dotted(m_unlinkedTxt);
+	} else {
+	    nodep->v3fatalSrc("Unexpected AstUnlinkedRef node");
+	}
+	nodep->replaceWith(nodep->op1p()->unlinkFrBack());
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstCellArrayRef* nodep, AstNUser*) {

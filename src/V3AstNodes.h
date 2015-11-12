@@ -1604,21 +1604,21 @@ public:
     AstNode* selp()		const { return op1p(); }	// op1 = Select expression
 };
 
-class AstUnlinkedVarXRef : public AstNode {
-    // As-of-yet unlinkable VarXRef
+class AstUnlinkedRef : public AstNode {
+    // As-of-yet unlinkable Ref
 private:
     string      m_name;    // Var name
 public:
-    AstUnlinkedVarXRef(FileLine* fl,
-	    AstVarXRef* vxrp, string name, AstNode* crp)
+    AstUnlinkedRef(FileLine* fl,
+		   AstNode* refp, string name, AstNode* crp)
 	: AstNode(fl)
 	, m_name(name) {
-	addNOp1p(vxrp); addNOp2p(crp); }
-    ASTNODE_NODE_FUNCS(UnlinkedVarXRef, UNLINKEDVARXREF)
+	addNOp1p(refp); addNOp2p(crp); }
+    ASTNODE_NODE_FUNCS(UnlinkedRef, UNLINKEDREF)
     // ACCESSORS
-    virtual string name()	const { return m_name; }	// * = Var name
-    AstVarXRef* varxrefp()	const { return op1p()->castVarXRef(); }	// op1 = VarXRef
-    AstNode* cellrefp()		const { return op2p(); }	// op1 = CellArrayRef or CellRef
+    virtual string name() const { return m_name; }	// * = Var name
+    AstNode* refp() const { return op1p(); }		// op1 = VarXRef or AstNodeFTaskRef
+    AstNode* cellrefp() const { return op2p(); }	// op2 = CellArrayRef or CellRef
 };
 
 class AstBind : public AstNode {

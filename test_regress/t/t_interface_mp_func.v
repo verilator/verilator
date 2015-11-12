@@ -18,10 +18,16 @@ interface pads_if();
 endinterface
 
 module t();
-   pads_if padsif();
+   pads_if padsif[1:0]();
+   pads_if padsif_arr[1:0]();
    initial begin
-      padsif.fOut(3);
-      if (padsif.fIn(3) != 33) $stop;
+      padsif[0].fOut(3);
+      if (padsif[0].fIn(3) != 33) $stop;
+
+      padsif_arr[0].fOut(3);
+      if (padsif_arr[0].fIn(3) != 33) $stop;
+      padsif_arr[1].fOut(3);
+      if (padsif_arr[1].fIn(3) != 33) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

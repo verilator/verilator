@@ -1662,11 +1662,13 @@ private:
 		else if (allowVar) {
 		    AstNode* newp;
 		    if (m_ds.m_dotText != "") {
-			AstVarXRef* refp = new AstVarXRef(nodep->fileline(), nodep->name(), m_ds.m_dotText, false);  // lvalue'ness computed later
+			AstVarXRef* refp = new AstVarXRef(nodep->fileline(), nodep->name(),
+							  m_ds.m_dotText, false);  // lvalue'ness computed later
 			refp->varp(varp);
 			m_ds.m_dotText = "";
 			if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
-			    newp = new AstUnlinkedVarXRef(nodep->fileline(), refp->castVarXRef(), refp->name(), m_ds.m_unlinkedScope->unlinkFrBack());
+			    newp = new AstUnlinkedRef(nodep->fileline(), refp->castVarXRef(),
+						      refp->name(), m_ds.m_unlinkedScope->unlinkFrBack());
 			    m_ds.m_unlinkedScope = NULL;
 			    m_ds.m_unresolved = false;
 			} else {
@@ -1857,7 +1859,15 @@ private:
 	    m_ds.m_dotPos = DP_SCOPE;
 	    m_ds.m_dotp = NULL;
 	} else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
-	    nodep->dotted(m_ds.m_dotText);  // Maybe ""
+	    if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
+		AstNode* newp = new AstUnlinkedRef(nodep->fileline(), nodep->cloneTree(false), nodep->name(), m_ds.m_unlinkedScope->unlinkFrBack());
+		m_ds.m_unlinkedScope = NULL;
+		m_ds.m_unresolved = false;
+		nodep->replaceWith(newp);
+		return;
+	    } else {
+		nodep->dotted(m_ds.m_dotText);  // Maybe ""
+	    }
 	} else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
 	    // Found a Var, everything following is method call.  {scope}.{var}.HERE {method} ( ARGS )
 	    AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
@@ -2054,7 +2064,7 @@ private:
 	UINFO(5,"  AstCellArrayRef: "<<nodep<<" "<<m_ds.ascii()<<endl);
 	// Expression already iterated
     }
-    virtual void visit(AstUnlinkedVarXRef* nodep, AstNUser*) {
+    virtual void visit(AstUnlinkedRef* nodep, AstNUser*) {
 	UINFO(5,"  AstCellArrayRef: "<<nodep<<" "<<m_ds.ascii()<<endl);
 	// No need to iterate, if we have a UnlinkedVarXRef, we're already done
     }
