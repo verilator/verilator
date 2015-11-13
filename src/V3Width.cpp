@@ -3544,8 +3544,7 @@ AstNode* V3Width::widthParamsEdit (AstNode* nodep) {
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (true, false);
     nodep = visitor.mainAcceptEdit(nodep);
-    WidthRemoveVisitor rvisitor;
-    nodep = rvisitor.mainAcceptEdit(nodep);
+    // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }
 
@@ -3564,8 +3563,7 @@ AstNode* V3Width::widthGenerateParamsEdit(
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (true, true);
     nodep = visitor.mainAcceptEdit(nodep);
-    WidthRemoveVisitor rvisitor;
-    nodep = rvisitor.mainAcceptEdit(nodep);
+    // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }
 

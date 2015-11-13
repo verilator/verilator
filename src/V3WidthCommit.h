@@ -32,6 +32,7 @@
 //######################################################################
 
 /// Remove all $signed, $unsigned, we're done with them.
+/// This step is only called on real V3Width, not intermediate e.g. widthParams
 
 class WidthRemoveVisitor : public AstNVisitor {
 private:

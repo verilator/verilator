@@ -5,7 +5,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.879 devel
 
-****  Fix display %u, %v, %p, %z, bug989. [Johan Bjork]
+***   Support display %u, %v, %p, %z, bug989. [Johan Bjork]
 
 ****  Fix real parameters causing bad module names, bug992. [Johan Bjork]
 
@@ -14,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ****  Fix function calls on arrayed interface, bug994. [Johan Bjork]
 
 ****  Fix constant function assigned to packed structs, bug997. [Johan Bjork]
+
+****  Fix $signed casts under generates, bug999. [Clifford Wolf]
 
 
 * Verilator 3.878 2015-11-01
