@@ -56,7 +56,7 @@ public:
 	m_anyFuncInBegin = false;
     }
     ~BeginState() {}
-    void userMarkChanged(AstNodeFTask* nodep) {
+    void userMarkChanged(AstNode* nodep) {
 	nodep->user1(true);
 	m_anyFuncInBegin = true;
     }
@@ -166,6 +166,7 @@ private:
 	if (m_unnamedScope != "") {
 	    // Rename it
 	    nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
+	    m_statep->userMarkChanged(nodep);
 	    // Move to module
 	    nodep->unlinkFrBack();
 	    if (m_ftaskp) m_ftaskp->addStmtsp(nodep);   // Begins under funcs just move into the func
@@ -175,6 +176,7 @@ private:
     virtual void visit(AstCell* nodep, AstNUser*) {
 	UINFO(8,"   CELL "<<nodep<<endl);
 	if (m_namedScope != "") {
+	    m_statep->userMarkChanged(nodep);
 	    // Rename it
 	    nodep->name(m_namedScope+"__DOT__"+nodep->name());
 	    UINFO(8,"     rename to "<<nodep->name()<<endl);
@@ -182,6 +184,7 @@ private:
 	    nodep->unlinkFrBack();
 	    m_modp->addStmtp(nodep);
 	}
+	nodep->iterateChildren(*this);
     }
     virtual void visit(AstScopeName* nodep, AstNUser*) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
@@ -247,6 +250,21 @@ private:
 	    UINFO(9, "    relinkFTask "<<nodep<<endl);
 	    nodep->name(nodep->taskp()->name());
 	}
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstVarRef* nodep, AstNUser*) {
+	if (nodep->varp()->user1()) { // It was converted
+	    UINFO(9, "    relinVarRef "<<nodep<<endl);
+	    nodep->name(nodep->varp()->name());
+	}
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstIfaceRefDType* nodep, AstNUser*) {
+	// May have changed cell names
+	// TypeTable is always after all modules, so names are stable
+	UINFO(8,"   IFACEREFDTYPE "<<nodep<<endl);
+	if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
+	UINFO(8,"       rename to "<<nodep<<endl);
 	nodep->iterateChildren(*this);
     }
     //--------------------
