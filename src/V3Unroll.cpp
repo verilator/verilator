@@ -51,7 +51,6 @@ private:
     AstVarScope*	m_forVscp;		// Iterator variable scope (NULL for generate pass)
     AstConst*		m_varValuep;		// Current value of loop
     AstNode*		m_ignoreIncp;		// Increment node to ignore
-    AstAttrOf*		m_attrp;		// Current attribute
     bool		m_varModeCheck;		// Just checking RHS assignments
     bool		m_varModeReplace;	// Replacing varrefs
     bool		m_varAssignHit;		// Assign var hit
@@ -401,12 +400,6 @@ private:
 	    nodep->v3error("V3Begin should have removed standard FORs");
 	}
     }
-    virtual void visit(AstAttrOf* nodep, AstNUser*) {
-	AstAttrOf* oldAttr = m_attrp;
-	m_attrp = nodep;
-	nodep->iterateChildren(*this);
-	m_attrp = oldAttr;
-    }
 
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (m_varModeCheck
@@ -416,11 +409,11 @@ private:
 	    UINFO(8,"   Itervar assigned to: "<<nodep<<endl);
 	    m_varAssignHit = true;
 	}
+
 	if (m_varModeReplace
 	    && nodep->varp() == m_forVarp
 	    && nodep->varScopep() == m_forVscp
-	    && !nodep->lvalue()
-	    && !m_attrp) {  // Most likely under a select
+	    && !nodep->lvalue()) {
 	    AstNode* newconstp = m_varValuep->cloneTree(false);
 	    nodep->replaceWith(newconstp);
 	    pushDeletep(nodep);
@@ -447,7 +440,6 @@ public:
 	m_varModeReplace = false;
 	m_generate = generate;
 	m_beginName = beginName;
-	m_attrp = NULL;
 	//
 	nodep->accept(*this);
     }
