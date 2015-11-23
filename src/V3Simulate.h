@@ -255,6 +255,7 @@ private:
     virtual void visit(AstVarRef* nodep, AstNUser*) {
 	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
+	nodep->varp()->iterateChildren(*this);
 	AstNode* vscp = varOrScope(nodep);
 
 	// We can't have non-delayed assignments with same value on LHS and RHS
@@ -282,10 +283,10 @@ private:
 		if (!m_params && (vscp->user1() & VU_LV)) clearOptimizable(nodep,"Var write & read");
 		vscp->user1( vscp->user1() | VU_RV);
 		bool isConst = nodep->varp()->isParam();
-		AstConst* constp = (isConst ? nodep->varp()->valuep()->castConst() : NULL);
-		if (isConst && constp) { // Propagate PARAM constants for constant function analysis
+		V3Number* nump = isConst ? fetchNumberNull(nodep->varp()->valuep()) : NULL;
+		if (isConst && nump) { // Propagate PARAM constants for constant function analysis
 		    if (!m_checkOnly && optimizable()) {
-			newNumber(vscp)->opAssign(constp->num());
+			newNumber(vscp)->opAssign(*nump);
 		    }
 		} else {
 		    if (m_checkOnly) varRefCb (nodep);

@@ -3,6 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2009 by Wilson Snyder.
 
+package testpackage;
+ localparam PARAM = 1024 >> 3;
+endpackage
+import testpackage::*;
+
 module t;
 
    localparam P4 = f_add(P3,1);
@@ -12,6 +17,7 @@ module t;
    localparam P18 = f_case(P4);
    localparam P6 = f_return(P4);
    localparam P3 = 3;
+   localparam P128 = f_package();
 
    typedef struct packed {
       logic [7:0] data;
@@ -42,9 +48,14 @@ module t;
       if (bigparam.first != 1'b1) $stop;
       if (bigparam.second != 1'b0) $stop;
       if (bigparam.data != 32'hfff12fff) $stop;
+      if (P128 != 128) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
+   function integer f_package();
+      return PARAM;
+   endfunction
 
    function integer f_add(input [31:0] a, input [31:0] b);
       f_add = a+b;
