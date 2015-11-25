@@ -36,6 +36,7 @@
 #include "V3Inst.h"
 #include "V3Ast.h"
 #include "V3Changed.h"
+#include "V3Const.h"
 
 //######################################################################
 // Inst state, as a visitor of each AstNode
@@ -250,6 +251,7 @@ private:
 		if (!arrp->subDTypep()->castIfaceRefDType())
 		    return;
 
+		V3Const::constifyParamsEdit(arrselp->rhsp());
 		AstConst *constp = arrselp->rhsp()->castConst();
 		if (!constp) {
 		    nodep->v3error("Unsupported: Non-constant index when passing interface to module");

@@ -17,6 +17,10 @@ intf.source intf_inst
 assign intf_inst.logic_in_intf = value;
 endmodule
 
+function integer return_3();
+    return 3;
+endfunction
+
 module t
 #(
     parameter N = 6
@@ -27,16 +31,19 @@ module t
 
     generate
         genvar i;
-        for (i = 0;i < 4; i++) begin
+        for (i = 0;i < 3; i++) begin
             assign ifs[i].logic_in_intf  = data[i];
         end
     endgenerate
+    modify_interface m3 (
+        .value(data[return_3()]),
+        .intf_inst(ifs[return_3()]));
 
-    modify_interface m (
+    modify_interface m4 (
     	.value(data[4]),
     	.intf_inst(ifs[4]));
 
-    modify_interface m1 (
+    modify_interface m5 (
     	.value(~ifs[4].logic_in_intf),
     	.intf_inst(ifs[5]));
 

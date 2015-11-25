@@ -23,6 +23,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix parameter constant propagation from package, bug1004. [Johan Bjork]
 
+****  Fix array slicing of non-const indexes, bug1006. [Johan Bjork]
+
+
 
 * Verilator 3.878 2015-11-01
 
