@@ -262,10 +262,11 @@ private:
 		AstVarXRef *newp = new AstVarXRef(nodep->fileline(),varrefp->name () + "__BRA__" + index  + "__KET__", "", true);
 		AstVar *varp = varrefp->varp()->cloneTree(true);
 		varp->name(varp->name() + "__TMP__" + "__BRA__" + index  + "__KET__");
-		varp->dtypep(arrp->subDTypep()->backp()->castIfaceRefDType());
+		if (!nodep->modVarp()->dtypep()) nodep->v3fatalSrc("No dtype for AstPin");
+		varp->dtypep(nodep->modVarp()->dtypep());
 		newp->addNextHere(varp);
 		newp->varp(varp);
-		newp->dtypep(arrp->subDTypep()->castIfaceRefDType());
+		newp->dtypep(nodep->modVarp()->dtypep());
 		newp->packagep(varrefp->packagep());
 		arrselp->addNextHere(newp);
 		arrselp->unlinkFrBack()->deleteTree();
