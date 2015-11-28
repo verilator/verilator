@@ -42,6 +42,8 @@ ifeq ($(VM_SP_OR_SC),1)
    LIBS += $(SC_LIBS)
 endif
 
+.SUFFIXES:
+
 #Default compile, pick up OBJCACHE
 %.o:	%.cpp
 	$(OBJCACHE) $(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $<

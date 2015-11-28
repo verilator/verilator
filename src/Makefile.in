@@ -46,6 +46,8 @@ obj_opt:
 obj_dbg:
 	mkdir $@
 
+.SUFFIXES:
+
 .PHONY: ../verilator_bin ../verilator_bin_dbg ../verilator_coverage_bin_dbg
 
 opt: ../verilator_bin

@@ -327,6 +327,8 @@ V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
 V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
 	$(PERL) $(FLEXFIX) V3PreLex <$< >$@
 
+.SUFFIXES:
+
 ######################################################################
 ######################################################################
 

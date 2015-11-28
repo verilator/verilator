@@ -40,6 +40,8 @@ ifeq ($(CFG_WITH_LONGTESTS),yes)
  DRIVER_FLAGS += -j 0
 endif
 
+.SUFFIXES:
+
 ######################################################################
 
 .PHONY: test
