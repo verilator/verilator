@@ -2060,7 +2060,7 @@ instnameParen<cellp>:
 
 instRangeE<rangep>:
 		/* empty */				{ $$ = NULL; }
-	|	'[' constExpr ']'			{ $$ = new AstRange($1,$2,$2->cloneTree(true)); }
+	|	'[' constExpr ']'			{ $$ = new AstRange($1,new AstConst($1,0),$2); }
 	|	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
