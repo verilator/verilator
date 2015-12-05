@@ -496,7 +496,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    if (modvarp->isIfaceRef()) {
 		AstIfaceRefDType* portIrefp = modvarp->subDTypep()->castIfaceRefDType();
 		AstIfaceRefDType* pinIrefp = NULL;
-		AstNode *exprp = pinp->exprp();
+		AstNode* exprp = pinp->exprp();
 		if (exprp
 		    && exprp->castVarRef()
 		    && exprp->castVarRef()->varp()

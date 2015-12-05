@@ -172,7 +172,7 @@ private:
 	    m_cellRangep = nodep->rangep();
 	    UINFO(4,"  CELL   "<<nodep<<endl);
 
-	    AstVar *ifaceVarp = nodep->nextp()->castVar();
+	    AstVar* ifaceVarp = nodep->nextp()->castVar();
 	    bool isIface = ifaceVarp
 		&& ifaceVarp->dtypep()->castUnpackArrayDType()
 		&& ifaceVarp->dtypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
@@ -193,9 +193,9 @@ private:
 		// If this AstCell is actually an interface instantiation, let's ensure we also clone
 		// the IfaceRef.
 		if (isIface) {
-		    AstUnpackArrayDType *arrdtype = ifaceVarp->dtypep()->castUnpackArrayDType();
+		    AstUnpackArrayDType* arrdtype = ifaceVarp->dtypep()->castUnpackArrayDType();
 		    AstVar* varNewp = ifaceVarp->cloneTree(false);
-		    AstIfaceRefDType *ifaceRefp = arrdtype->subDTypep()->castIfaceRefDType()->cloneTree(false);
+		    AstIfaceRefDType* ifaceRefp = arrdtype->subDTypep()->castIfaceRefDType()->cloneTree(false);
 		    arrdtype->addNextHere(ifaceRefp);
 		    ifaceRefp->cellp(newp);
 		    ifaceRefp->cellName(newp->name());
@@ -246,21 +246,21 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
 	    }
-	} else if(AstArraySel *arrselp = nodep->exprp()->castArraySel()) {
-	    if (AstUnpackArrayDType *arrp = arrselp->lhsp()->dtypep()->castUnpackArrayDType()) {
+	} else if(AstArraySel* arrselp = nodep->exprp()->castArraySel()) {
+	    if (AstUnpackArrayDType* arrp = arrselp->lhsp()->dtypep()->castUnpackArrayDType()) {
 		if (!arrp->subDTypep()->castIfaceRefDType())
 		    return;
 
 		V3Const::constifyParamsEdit(arrselp->rhsp());
-		AstConst *constp = arrselp->rhsp()->castConst();
+		AstConst* constp = arrselp->rhsp()->castConst();
 		if (!constp) {
 		    nodep->v3error("Unsupported: Non-constant index when passing interface to module");
 		    return;
 		}
 		string index = AstNode::encodeNumber(constp->toSInt());
-		AstVarRef *varrefp = arrselp->lhsp()->castVarRef();
-		AstVarXRef *newp = new AstVarXRef(nodep->fileline(),varrefp->name () + "__BRA__" + index  + "__KET__", "", true);
-		AstVar *varp = varrefp->varp()->cloneTree(true);
+		AstVarRef* varrefp = arrselp->lhsp()->castVarRef();
+		AstVarXRef* newp = new AstVarXRef(nodep->fileline(),varrefp->name () + "__BRA__" + index  + "__KET__", "", true);
+		AstVar* varp = varrefp->varp()->cloneTree(true);
 		varp->name(varp->name() + "__TMP__" + "__BRA__" + index  + "__KET__");
 		if (!nodep->modVarp()->dtypep()) nodep->v3fatalSrc("No dtype for AstPin");
 		varp->dtypep(nodep->modVarp()->dtypep());

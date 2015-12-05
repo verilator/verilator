@@ -349,12 +349,12 @@ private:
 	    // may remap interfaces to be more like a class.
 	    if (!nodep->hasIfaceVar()) {
 		string varName = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
-		AstIfaceRefDType *idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
+		AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
 								 nodep->modp()->name());
 		idtypep->ifacep(NULL);  // cellp overrides
-		AstVar *varp;
+		AstVar* varp;
 		if (nodep->rangep()) {
-		    AstNodeArrayDType *arrp = new AstUnpackArrayDType(nodep->fileline(),VFlagChildDType(), idtypep, nodep->rangep()->cloneTree(true));
+		    AstNodeArrayDType* arrp = new AstUnpackArrayDType(nodep->fileline(),VFlagChildDType(), idtypep, nodep->rangep()->cloneTree(true));
 		    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
 				      VFlagChildDType(), arrp);
 		} else {
