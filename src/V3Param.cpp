@@ -256,16 +256,22 @@ private:
     }
 
     virtual void visit(AstUnlinkedRef* nodep, AstNUser*) {
-	m_unlinkedTxt.clear();
-	nodep->cellrefp()->iterate(*this);
 	AstVarXRef* varxrefp = nodep->op1p()->castVarXRef();
-	AstNodeFTaskRef* taskref = nodep->op1p()->castNodeFTaskRef();
+	AstNodeFTaskRef* taskrefp = nodep->op1p()->castNodeFTaskRef();
 	if (varxrefp) {
-	    varxrefp->dotted(m_unlinkedTxt);
-	} else if (taskref) {
-	    taskref->dotted(m_unlinkedTxt);
+	    m_unlinkedTxt = varxrefp->dotted();
+	} else if (taskrefp) {
+	    m_unlinkedTxt = taskrefp->dotted();
 	} else {
 	    nodep->v3fatalSrc("Unexpected AstUnlinkedRef node");
+	    return;
+	}
+	nodep->cellrefp()->iterate(*this);
+
+	if (varxrefp) {
+	    varxrefp->dotted(m_unlinkedTxt);
+	} else {
+	    taskrefp->dotted(m_unlinkedTxt);
 	}
 	nodep->replaceWith(nodep->op1p()->unlinkFrBack());
 	pushDeletep(nodep); VL_DANGLING(nodep);
@@ -274,28 +280,16 @@ private:
 	V3Const::constifyParamsEdit(nodep->selp());
 	if (AstConst* constp = nodep->selp()->castConst()) {
 	    string index = AstNode::encodeNumber(constp->toSInt());
-	    m_unlinkedTxt += nodep->name() + "__BRA__"+index+"__KET__";
+	    string replacestr = nodep->name() + "__BRA__??__KET__";
+	    size_t pos = m_unlinkedTxt.find(replacestr);
+	    if (pos == string::npos) {
+		nodep->v3error("Could not find array index in unlinked text: '" << m_unlinkedTxt << "' for node: " << nodep);
+		return;
+	    }
+	    m_unlinkedTxt.replace(pos, replacestr.length(), nodep->name() + "__BRA__"+index+"__KET__");
 	} else {
 	    nodep->v3error("Could not expand constant selection inside dotted reference: "<<nodep->selp()->prettyName());
 	    return;
-	}
-    }
-    virtual void visit(AstCellRef* nodep, AstNUser*) {
-	// Children must be CellArrayRef, CellRef or ParseRef
-	if (nodep->cellp()->castCellArrayRef() || nodep->cellp()->castCellRef()) {
-	    nodep->cellp()->iterate(*this);
-	} else if (nodep->cellp()->castParseRef()) {
-	    m_unlinkedTxt += nodep->cellp()->name();
-	} else {
-	    nodep->v3error("Could not elaborate dotted reference (LHS): "<<nodep->cellp()->prettyName());
-	}
-	m_unlinkedTxt += ".";
-	if (nodep->exprp()->castCellArrayRef() || nodep->exprp()->castCellRef()) {
-	    nodep->exprp()->iterate(*this);
-	} else if (nodep->exprp()->castParseRef()) {
-	    m_unlinkedTxt += nodep->exprp()->name();
-	} else {
-	    nodep->v3error("Could not elaborate dotted reference (RHS): "<<nodep->exprp()->prettyName());
 	}
     }
 

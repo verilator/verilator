@@ -1905,7 +1905,9 @@ private:
 	    m_ds.m_dotp = NULL;
 	} else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
 	    if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
-		AstNode* newp = new AstUnlinkedRef(nodep->fileline(), nodep->cloneTree(false), nodep->name(), m_ds.m_unlinkedScope->unlinkFrBack());
+		AstNodeFTaskRef *newftaskp = nodep->cloneTree(false);
+		newftaskp->dotted(m_ds.m_dotText);
+		AstNode* newp = new AstUnlinkedRef(nodep->fileline(), newftaskp, nodep->name(), m_ds.m_unlinkedScope->unlinkFrBack());
 		m_ds.m_unlinkedScope = NULL;
 		m_ds.m_unresolved = false;
 		nodep->replaceWith(newp);
