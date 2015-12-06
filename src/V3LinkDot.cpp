@@ -365,12 +365,22 @@ public:
     void insertIfaceVarSym(VSymEnt* symp) {  // Where sym is for a VAR of dtype IFACEREFDTYPE
 	m_ifaceVarSyms.push_back(symp);
     }
+    // Iface for a raw or arrayed iface
+    static AstIfaceRefDType* ifaceRefFromArray(AstNodeDType* nodep) {
+	AstIfaceRefDType* ifacerefp = nodep->castIfaceRefDType();
+	if (!ifacerefp) {
+	    if (AstUnpackArrayDType* arrp = nodep->castUnpackArrayDType()) {
+		ifacerefp = arrp->subDTypep()->castIfaceRefDType();
+	    }
+	}
+	return ifacerefp;
+    }
     void computeIfaceVarSyms() {
 	for (IfaceVarSyms::iterator it = m_ifaceVarSyms.begin(); it != m_ifaceVarSyms.end(); ++it) {
 	    VSymEnt* varSymp = *it;
 	    AstVar* varp = varSymp->nodep()->castVar();
 	    UINFO(9, "  insAllIface se"<<(void*)varSymp<<" "<<varp<<endl);
-	    AstIfaceRefDType* ifacerefp = varp->subDTypep()->castIfaceRefDType();
+	    AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
 	    if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
 	    if (!ifacerefp->ifaceViaCellp()) {
 		if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if made mistake
@@ -408,6 +418,10 @@ public:
 	// Track and later insert scope aliases; an interface referenced by a child cell connecting to that interface
 	// Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
 	UINFO(9,"   insertScopeAlias se"<<(void*)lhsp<<" se"<<(void*)rhsp<<endl);
+	if (rhsp->nodep()->castCell()
+	    && !rhsp->nodep()->castCell()->modp()->castIface()) {
+	    rhsp->nodep()->v3fatalSrc("Got a non-IFACE alias RHS");
+	}
 	m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
     }
     void computeScopeAliases() {
@@ -515,6 +529,17 @@ public:
 	return lookupSymp;
     }
 
+    static string removeLastInlineScope(const string& name) {
+	string out = name;
+	string dot = "__DOT__";
+	size_t dotPos = out.rfind(dot, out.size() - dot.length() - 2);
+	if (dotPos == string::npos) {
+	    return "";
+	} else {
+	    return out.erase(dotPos + dot.length(), string::npos);
+	}
+    }
+
     VSymEnt* findSymPrefixed(VSymEnt* lookupSymp, const string& dotname, string& baddot) {
 	// Find symbol in given point in hierarchy, allowing prefix (post-Inline)
 	// For simplicity lookupSymp may be passed NULL result from findDotted
@@ -525,7 +550,15 @@ public:
 	      <<((lookupSymp->symPrefix()=="") ? "" : lookupSymp->symPrefix()+dotname)
 	      <<"  at se"<<lookupSymp
 	      <<endl);
-	VSymEnt* foundp = lookupSymp->findIdFallback(lookupSymp->symPrefix() + dotname);  // Might be NULL
+	string prefix = lookupSymp->symPrefix();
+	VSymEnt* foundp = NULL;
+	while (!foundp) {
+	    foundp = lookupSymp->findIdFallback(prefix + dotname);  // Might be NULL
+	    if (prefix == "") {
+		break;
+	    }
+	    prefix = removeLastInlineScope(prefix);
+	}
 	if (!foundp) baddot = dotname;
 	return foundp;
     }
@@ -842,10 +875,12 @@ class LinkDotFindVisitor : public AstNVisitor {
 		VSymEnt* insp = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
 		if (m_statep->forPrimary() && nodep->isGParam()) {
 		    m_paramNum++;
-		    VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber"+cvtToStr(m_paramNum), nodep, m_packagep);
+		    VSymEnt* symp = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
+							nodep, m_packagep);
 		    symp->exported(false);
 		}
-		if (nodep->subDTypep()->castIfaceRefDType()) {
+		AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(nodep->subDTypep());
+		if (ifacerefp) {
 		    // Can't resolve until interfaces and modport names are known; see notes at top
 		    m_statep->insertIfaceVarSym(insp);
 		}
@@ -1111,7 +1146,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 		&& nodep->varp()->isIfaceParent()) {
 		UINFO(9,"Iface parent ref var "<<nodep->varp()->name()<<" "<<nodep<<endl);
 		// Find the interface cell the var references
-		AstIfaceRefDType* dtypep = nodep->varp()->dtypep()->castIfaceRefDType();
+		AstIfaceRefDType* dtypep = LinkDotState::ifaceRefFromArray(nodep->varp()->dtypep());
 		if (!dtypep) nodep->v3fatalSrc("Non AstIfaceRefDType on isIfaceRef() var");
 		UINFO(9,"Iface parent dtype "<<dtypep<<endl);
 		string ifcellname = dtypep->cellName();
@@ -1154,9 +1189,18 @@ class LinkDotScopeVisitor : public AstNVisitor {
 	    AstVarRef* refp = nodep->rhsp()->castVarRef();
 	    AstVarXRef* xrefp = nodep->rhsp()->castVarXRef();
 	    if (!refp && !xrefp) nodep->v3fatalSrc("Unsupported: Non Var(X)Ref attached to interface pin");
-	    string scopename = refp ? refp->name() : xrefp->name();
-	    string baddot; VSymEnt* okSymp;
-	    VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
+	    string inl = (xrefp && xrefp->inlinedDots().size()) ? (xrefp->inlinedDots() + "__DOT__") : "";
+	    VSymEnt* symp = NULL;
+	    string scopename;
+	    while (!symp) {
+		scopename = refp ? refp->name() : (inl.size() ? (inl + xrefp->name()) : xrefp->name());
+		string baddot; VSymEnt* okSymp;
+		symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
+		if (inl == "")
+		    break;
+		inl = LinkDotState::removeLastInlineScope(inl);
+	    }
+	    if (!symp) UINFO(9,"No symbol for interface alias rhs ("<<string(refp?"VARREF ":"VARXREF ")<<scopename<<")"<<endl);
 	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias rhs");
 	    UINFO(5, "       Found a linked scope RHS: "<<scopename<<"  se"<<(void*)symp<<" "<<symp->nodep()<<endl);
 	    rhsSymp = symp;
@@ -1647,7 +1691,8 @@ private:
 		}
 	    }
 	    else if (AstVar* varp = foundp->nodep()->castVar()) {
-		if (AstIfaceRefDType* ifacerefp = varp->subDTypep()->castIfaceRefDType()) {
+		AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
+		if (ifacerefp) {
 		    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
 		    // Really this is a scope reference into an interface
 		    UINFO(9,"varref-ifaceref "<<m_ds.m_dotText<<"  "<<nodep<<endl);
@@ -2068,6 +2113,7 @@ private:
 	UINFO(5,"  AstCellArrayRef: "<<nodep<<" "<<m_ds.ascii()<<endl);
 	// No need to iterate, if we have a UnlinkedVarXRef, we're already done
     }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	checkNoDot(nodep);

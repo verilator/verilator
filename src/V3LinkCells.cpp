@@ -352,13 +352,14 @@ private:
 		AstIfaceRefDType* idtypep = new AstIfaceRefDType(nodep->fileline(), nodep->name(),
 								 nodep->modp()->name());
 		idtypep->ifacep(NULL);  // cellp overrides
+		// In the case of arrayed interfaces, we replace cellp when de-arraying in V3Inst
+		idtypep->cellp(nodep);  // Only set when real parent cell known.
 		AstVar* varp;
 		if (nodep->rangep()) {
 		    AstNodeArrayDType* arrp = new AstUnpackArrayDType(nodep->fileline(),VFlagChildDType(), idtypep, nodep->rangep()->cloneTree(true));
 		    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
 				      VFlagChildDType(), arrp);
 		} else {
-		    idtypep->cellp(nodep);  // Only set when real parent cell known
 		    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
 				      VFlagChildDType(), idtypep);
 		}

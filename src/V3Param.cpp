@@ -495,6 +495,10 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    AstVar* modvarp = pinp->modVarp();
 	    if (modvarp->isIfaceRef()) {
 		AstIfaceRefDType* portIrefp = modvarp->subDTypep()->castIfaceRefDType();
+		if (!portIrefp) {
+		    portIrefp = modvarp->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
+		}
+
 		AstIfaceRefDType* pinIrefp = NULL;
 		AstNode* exprp = pinp->exprp();
 		if (exprp
@@ -512,12 +516,23 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			 && exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()
 			 && exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType())
 		    pinIrefp = exprp->op1p()->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
-		//UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
+		else if (exprp
+			 && exprp->castVarRef()
+			 && exprp->castVarRef()->varp()
+			 && exprp->castVarRef()->varp()->subDTypep()
+			 && exprp->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()
+			 && exprp->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()
+			 && exprp->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType())
+		    pinIrefp = exprp->castVarRef()->varp()->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
 
-		if (!pinIrefp) {
+		UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
+
+		if (!portIrefp) {
+		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not an interface" << modvarp);
+		} else if (!pinIrefp) {
 		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not connected to interface/modport pin expression");
 		} else {
-		    //UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
+		    UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
 		    if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
 			UINFO(9,"     IfaceRefDType needs reconnect  "<<pinIrefp<<endl);
 			longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+paramValueNumber(pinIrefp);

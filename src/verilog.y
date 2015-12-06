@@ -3735,9 +3735,6 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
 	return NULL;
     }
     AstVarType type = GRAMMARP->m_varIO;
-    if (dtypep->castIfaceRefDType()) {
-	if (arrayp) { fileline->v3error("Unsupported: Arrayed interfaces"); VL_DANGLING(arrayp); }
-    }
     if (!dtypep) {  // Created implicitly
 	dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
     } else {  // May make new variables with same type, so clone
