@@ -13,9 +13,11 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix function calls on arrayed interface, bug994. [Johan Bjork]
 
+****  Fix arrayed interfaces, bug879, bug1001. [Todd Strader]
+
 ****  Fix constant function assigned to packed structs, bug997. [Johan Bjork]
 
-****  Fix interface inside generate, bug998, bug1001, bug1003. [Johan Bjork]
+****  Fix interface inside generate, bug998. [Johan Bjork]
 
 ****  Fix $signed casts under generates, bug999. [Clifford Wolf]
 
