@@ -1666,14 +1666,18 @@ V3Number& V3Number::opRealToBits (const V3Number& lhs) {
     if (lhs.width()!=64 || this->width()!=64) {
 	m_fileline->v3fatalSrc("Real operation on wrong sized number");
     }
-    return opAssign(lhs);
+    opAssign(lhs);
+    m_double = false;
+    return *this;
 }
 V3Number& V3Number::opBitsToRealD (const V3Number& lhs) {
     // Conveniently our internal format is identical so we can copy bits...
     if (lhs.width()!=64 || this->width()!=64) {
 	m_fileline->v3fatalSrc("Real operation on wrong sized number");
     }
-    return opAssign(lhs);
+    opAssign(lhs);
+    m_double = true;
+    return *this;
 }
 V3Number& V3Number::opNegateD (const V3Number& lhs) {
     return setDouble(- lhs.toDouble());

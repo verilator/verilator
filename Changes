@@ -31,6 +31,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix error instead of warning on large concat, msg1768. [Paul Rolfe]
 
+****  Fix $bitstoreal constant propagation, bug1012. [Jonathan Kimmitt]
+
 
 * Verilator 3.878 2015-11-01
 

@@ -5,7 +5,7 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
-`define is_near_real(a,b)  ($abs((a)-(b)) < (((a)/(b))*0.0001))
+`define is_near_real(a,b)  (( ((a)<(b)) ? (b)-(a) : (a)-(b)) < (((a)/(b))*0.0001))
 
 module t (/*AUTOARG*/
    // Inputs
@@ -78,6 +78,9 @@ module t (/*AUTOARG*/
       i=0;
       for (r=1.0; r<2.0; r=r+0.1) i++;
       if (i!=10) $stop;
+      // bug
+      r = $bitstoreal($realtobits(1.414));
+      if (r != 1.414) $stop;
    end
 
    // Test loop
