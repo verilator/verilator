@@ -33,6 +33,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix $bitstoreal constant propagation, bug1012. [Jonathan Kimmitt]
 
+****  Fix model restore crash, bug1013. [Jason McMullan]
+
 
 * Verilator 3.878 2015-11-01
 

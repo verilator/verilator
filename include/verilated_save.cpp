@@ -201,7 +201,7 @@ void VerilatedRestore::fill() {
     if (VL_UNLIKELY(!isOpen())) return;
     // Move remaining characters down to start of buffer.  (No memcpy, overlaps allowed)
     vluint8_t* rp = m_bufp;
-    for (vluint8_t* sp=m_cp; rp < m_endp;) *rp++ = *sp++;  // Overlaps
+    for (vluint8_t* sp=m_cp; sp < m_endp;) *rp++ = *sp++;  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp; // Reset buffer
     // Read into buffer starting at m_endp 
