@@ -35,6 +35,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix model restore crash, bug1013. [Jason McMullan]
 
+****  Fix arrayed instances to unpacked of same size, bug1015. [Varun Koyyalagunta]
+
+****  Fix slices of unpacked arrays with non-zero LSBs.
+
 
 * Verilator 3.878 2015-11-01
 

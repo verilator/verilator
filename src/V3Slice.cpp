@@ -99,7 +99,9 @@ class SliceCloneVisitor : public AstNVisitor {
 	// Reassign the bitp()
 	if (nodep->length() > 1) {
 	    if (AstConst* bitp = nodep->bitp()->castConst()) {
-		unsigned idx = nodep->start() + m_selBits[m_vecIdx][m_depth];
+		AstUnpackArrayDType* adtypep = nodep->fromp()->dtypep()->skipRefp()->castUnpackArrayDType();
+		if (!adtypep) nodep->v3fatalSrc("slice select tried to expand an array without an ArrayDType");
+		unsigned idx = nodep->start() + m_selBits[m_vecIdx][m_depth] - adtypep->lsb();
 		AstNode* constp = new AstConst(bitp->fileline(), V3Number(bitp->fileline(), bitp->castConst()->num().width(), idx));
 		bitp->replaceWith(constp);
 	    } else {
@@ -272,7 +274,9 @@ class SliceVisitor : public AstNVisitor {
 		int x = msb; msb = lsb; lsb = x;
 	    }
 	    UINFO(9,"    ArraySel-child: "<<topp<<endl);
-	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp, new AstConst(nodep->fileline(),lsb));
+	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp,
+						// "lsb-lsb": Arrays are zero-based so index 0 is always lsb
+						new AstConst(nodep->fileline(), lsb-lsb));
 	    if (!newp->dtypep()) {
 		newp->v3fatalSrc("ArraySel dtyping failed when resolving slice");  // see ArraySel constructor
 	    }
@@ -503,5 +507,5 @@ public:
 void V3Slice::sliceAll(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     SliceVisitor visitor(rootp);
-    V3Global::dumpCheckGlobalTree("slices.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("slice.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

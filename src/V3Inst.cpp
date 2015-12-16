@@ -257,7 +257,20 @@ private:
 	    UINFO(4,"   PIN  "<<nodep<<endl);
 	    int pinwidth = nodep->modVarp()->width();
 	    int expwidth = nodep->exprp()->width();
-	    if (expwidth == pinwidth) {
+	    pair<uint32_t,uint32_t> pinDim = nodep->modVarp()->dtypep()->dimensions(false);
+	    pair<uint32_t,uint32_t> expDim = nodep->exprp()->dtypep()->dimensions(false);
+	    UINFO(4,"   PINVAR  "<<nodep->modVarp()<<endl);
+	    UINFO(4,"   EXP     "<<nodep->exprp()<<endl);
+	    UINFO(4,"   pinwidth ew="<<expwidth<<" pw="<<pinwidth
+		  <<"  ed="<<expDim.first<<","<<expDim.second
+		  <<"  pd="<<pinDim.first<<","<<pinDim.second<<endl);
+	    if (expDim.first == pinDim.first && expDim.second == pinDim.second+1) {
+		// Connection to array, where array dimensions match the instant dimension
+		AstNode* exprp = nodep->exprp()->unlinkFrBack();
+		exprp = new AstArraySel (exprp->fileline(), exprp,
+					 (m_instNum-m_instLsb));
+		nodep->exprp(exprp);
+	    } else if (expwidth == pinwidth) {
 		// NOP: Arrayed instants: widths match so connect to each instance
 	    } else if (expwidth == pinwidth*m_cellRangep->elementsConst()) {
 		// Arrayed instants: one bit for each of the instants (each assign is 1 pinwidth wide)
@@ -276,7 +289,7 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
 	    }
-	} else if(AstArraySel* arrselp = nodep->exprp()->castArraySel()) {
+	} else if (AstArraySel* arrselp = nodep->exprp()->castArraySel()) {
 	    if (AstUnpackArrayDType* arrp = arrselp->lhsp()->dtypep()->castUnpackArrayDType()) {
 		if (!arrp->subDTypep()->castIfaceRefDType())
 		    return;
