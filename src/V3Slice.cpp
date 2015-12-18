@@ -365,6 +365,8 @@ class SliceVisitor : public AstNVisitor {
 	// The conditional must be a single bit so only look at the expressions
 	nodep->expr1p()->accept(*this);
 	nodep->expr2p()->accept(*this);
+	// Downstream data type may have changed; propagate up
+	nodep->dtypeFrom(nodep->expr1p());
     }
 
     // Return the first AstVarRef under the node
@@ -451,18 +453,6 @@ class SliceVisitor : public AstNVisitor {
 		// Unpacked dimensions are referenced first, make sure we have them all
 		nodep->v3error("Unary operator used across unpacked dimensions");
 	    }
-	    //Dead code
-	    //else if ((int)(dim - (varDim.second)) < 0) {
-	    //	// Implicit packed dimensions are allowed, make them explicit
-	    //	uint32_t newDim = (varDim.second) - dim;
-	    //	AstNode* clonep = nodep->lhsp()->cloneTree(false);
-	    //	clonep->user1p(refp);
-	    //	AstNode* newp = insertImplicit(clonep, dim+1, newDim);
-	    //	nodep->lhsp()->replaceWith(newp); VL_DANGLING(refp);
-	    //	int clones = countClones(nodep->lhsp()->castArraySel());
-	    //	nodep->user2(clones);
-	    //	SliceCloneVisitor scv(nodep);
-	    //}
 	}
     }
     virtual void visit(AstRedOr* nodep, AstNUser*) {
