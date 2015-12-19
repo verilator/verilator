@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
-* Verilator 3.879 devel
+* Verilator 3.880 2015-12-19
 
 ***   Support display %u, %v, %p, %z, bug989. [Johan Bjork]
 
