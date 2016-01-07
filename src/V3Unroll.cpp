@@ -444,8 +444,8 @@ public:
 	nodep->accept(*this);
     }
     virtual ~UnrollVisitor() {
-	V3Stats::addStat("Optimizations, Unrolled Loops", m_statLoops);
-	V3Stats::addStat("Optimizations, Unrolled Iterations", m_statIters);
+	V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);
+	V3Stats::addStatSum("Optimizations, Unrolled Iterations", m_statIters);
     }
 };
 
