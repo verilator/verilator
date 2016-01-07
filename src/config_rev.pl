@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 ######################################################################
 #
-# Copyright 2005-2015 by Wilson Snyder.  Verilator is free software; you
+# Copyright 2005-2016 by Wilson Snyder.  Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
