@@ -248,8 +248,15 @@ sub write_impl {
     my $fh = open_file(@_);
     foreach my $type (sort (keys %Classes)) {
 	next if $type eq "Node";	# Special, just a return (this);
-	printf $fh "inline Ast%-16s AstNode::cast${type}() { return (dynamic_cast<Ast${type}*>(this)); }\n"
-	    ,$type."*";
+	# For performance, prefer static_cast where we can
+	if (children_of($type)) {
+	    printf $fh "inline Ast%-16s AstNode::cast${type}() { return (dynamic_cast<Ast${type}*>(this)); }\n"
+		,$type."*";
+	} else {
+	    my $ucType = uc $type;
+	    printf $fh "inline Ast%-16s AstNode::cast${type}() { return (this && this->type() == AstType::at${ucType}) ? static_cast<Ast${type}*>(this) : NULL; }\n"
+		,$type."*";
+	}
     }
     $fh->close();
 }
