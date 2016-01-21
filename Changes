@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix stats file containing multiple unroll entries, bug1020. [Johan Bjork]
 
+****  Fix using short parameter names on negative params, bug1022. [Duraid Madina]
+
 
 * Verilator 3.880 2015-12-19
 
