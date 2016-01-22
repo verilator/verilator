@@ -831,12 +831,16 @@ public:
 	// Move all allocated numbers to the free pool
 	m_numFreeps = m_numAllps;
     }
-    void mainTableCheck   (AstNode* nodep) {
+    void mainTableCheck (AstNode* nodep) {
 	setMode(true/*scoped*/,true/*checking*/, false/*params*/);
 	mainGuts(nodep);
     }
     void mainTableEmulate (AstNode* nodep) {
 	setMode(true/*scoped*/,false/*checking*/, false/*params*/);
+	mainGuts(nodep);
+    }
+    void mainCheckTree (AstNode* nodep) {
+	setMode(false/*scoped*/,true/*checking*/, false/*params*/);
 	mainGuts(nodep);
     }
     void mainParamEmulate (AstNode* nodep) {
