@@ -151,14 +151,6 @@ private:
 	// Cleanup link until V3LinkDot can correct it
 	nodep->varp(NULL);
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
-	// Can't look at AstIfaceRefDType directly as it is no longer underneath the module
-	if (nodep->isIfaceRef()) {
-	    // Unsupported: Inlining of modules with ifaces (see AstIface comment above)
-	    if (m_modp) cantInline("Interfaced",true);
-	}
-	nodep->iterateChildren(*this);
-    }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
 	// Cleanup link until V3LinkDot can correct it
 	if (!nodep->packagep()) nodep->taskp(NULL);
@@ -238,11 +230,14 @@ public:
 
 class InlineRelinkVisitor : public AstNVisitor {
 private:
+    typedef std::set<string> RenamedInterfacesSet;
+
     // NODE STATE
     //  Input:
     //   See InlineVisitor
 
     // STATE
+    RenamedInterfacesSet m_renamedInterfaces;	// Name of renamed interface variables
     AstNodeModule*	m_modp;		// Current module
     AstCell*		m_cellp;	// Cell being cloned
 
@@ -268,6 +263,10 @@ private:
 	// Cell under the inline cell, need to rename to avoid conflicts
 	string name = m_cellp->name() + "__DOT__" + nodep->name();
 	nodep->name(name);
+	nodep->iterateChildren(*this);
+    }
+    virtual void visit(AstModule* nodep, AstNUser*) {
+	m_renamedInterfaces.clear();
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstVar* nodep, AstNUser*) {
@@ -310,6 +309,25 @@ private:
 		nodebp->fileline()->modifyStateInherit(nodep ->fileline());
 	    }
 	}
+	// Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
+	if (AstIfaceRefDType* ifacerefp = nodep->dtypep()->castIfaceRefDType()) {
+	    m_renamedInterfaces.insert(nodep->name());
+	    // Each inlined cell that contain an interface variable need to copy the IfaceRefDType and point it to
+	    // the newly cloned interface cell.
+	    AstIfaceRefDType* newdp = ifacerefp->cloneTree(false)->castIfaceRefDType();
+	    nodep->dtypep(newdp);
+	    ifacerefp->addNextHere(newdp);
+	    // Relink to point to newly cloned cell
+	    if (newdp->cellp()) {
+		if (AstCell* newcellp = newdp->cellp()->user4p()->castNode()->castCell()) {
+		    newdp->cellp(newcellp);
+		    newdp->cellName(newcellp->name());
+		    // Tag the old ifacerefp to ensure it leaves no stale reference to the inlined cell.
+		    newdp->user5(false);
+		    ifacerefp->user5(true);
+		}
+	    }
+	}
 	// Variable under the inline cell, need to rename to avoid conflicts
 	// Also clear I/O bits, as it is now local.
 	string name = m_cellp->name() + "__DOT__" + nodep->name();
@@ -317,16 +335,6 @@ private:
 	if (!m_cellp->isTrace()) nodep->trace(false);
 	if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
 	if (debug()>=9) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
-	// Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
-	if (AstIfaceRefDType* ifacerefp = nodep->dtypep()->castIfaceRefDType()) {
-	    // Relink to point to newly cloned cell
-	    if (ifacerefp->cellp()) {
-		if (AstCell* newcellp = ifacerefp->cellp()->user4p()->castNode()->castCell()) {
-		    ifacerefp->cellp(newcellp);
-		    ifacerefp->cellName(newcellp->name());
-		}
-	    }
-	}
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {
@@ -365,7 +373,9 @@ private:
 	string newname = m_cellp->name();
 	if (nodep->inlinedDots() != "") { newname += "." + nodep->inlinedDots(); }
 	nodep->inlinedDots(newname);
-	UINFO(8,"   "<<nodep<<endl);
+	if (m_renamedInterfaces.count(nodep->dotted())) {
+	    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
+	}
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
@@ -373,6 +383,9 @@ private:
 	string newname = m_cellp->name();
 	if (nodep->inlinedDots() != "") { newname += "." + nodep->inlinedDots(); }
 	nodep->inlinedDots(newname);
+	if (m_renamedInterfaces.count(nodep->dotted())) {
+	    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
+	}
 	UINFO(8,"   "<<nodep<<endl);
 	nodep->iterateChildren(*this);
     }
@@ -422,6 +435,7 @@ class InlineVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared entire netlist
+    //  AstIfaceRefDType::user5p() // Whether the cell pointed to by this AstIfaceRefDType has been inlined
     //  Input:
     //   AstNodeModule::user1p()	// bool. True to inline this module (from InlineMarkVisitor)
     // Cleared each cell
@@ -430,6 +444,7 @@ private:
     //   AstCell::user4		// AstCell* of the created clone
 
     AstUser4InUse	m_inuser4;
+    AstUser5InUse	m_inuser5;
 
     // STATE
     AstNodeModule*	m_modp;		// Current module
@@ -445,6 +460,14 @@ private:
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Iterate modules backwards, in bottom-up order.  Required!
 	nodep->iterateChildrenBackwards(*this);
+    }
+    virtual void visit(AstIfaceRefDType* nodep, AstNUser*) {
+	if (nodep->user5()) {
+	    // The cell has been removed so let's make sure we don't leave a reference to it
+	    // This dtype may still be in use by the AstAssignVarScope created earlier
+	    // but that'll get cleared up later
+	    nodep->cellp(NULL);
+	}
     }
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	m_modp = nodep;

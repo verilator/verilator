@@ -7,6 +7,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Internal Verilation-time performance enhancements, bug1021. [Johan Bjork]
 
+****  Support inlining interfaces, bug1018. [Johan Bjork]
+
 ****  Fix unrolling complicated for-loop bounds, bug677. [Johan Bjork]
 
 ****  Fix stats file containing multiple unroll entries, bug1020. [Johan Bjork]
