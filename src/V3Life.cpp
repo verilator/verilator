@@ -59,8 +59,8 @@ public:
     // CONSTRUCTORS
     LifeState() {}
     ~LifeState() {
-	V3Stats::addStat("Optimizations, Lifetime assign deletions", m_statAssnDel);
-	V3Stats::addStat("Optimizations, Lifetime constant prop", m_statAssnCon);
+	V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
+	V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
 	for (vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
 	    (*it)->unlinkFrBack();
 	    (*it)->deleteTree();

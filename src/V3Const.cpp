@@ -451,7 +451,6 @@ private:
 	if (!ifvarp || !elsevarp) return false;
 	if (ifvarp->isWide()) return false;  // Would need temporaries, so not worth it
 	if (!ifvarp->sameGateTree(elsevarp)) return false;
-	UINFO(1,"HERE "<<nodep<<endl);
 	if (!ifp->rhsp()->gateTree()) return false;
 	if (!elsep->rhsp()->gateTree()) return false;
 	return true;
