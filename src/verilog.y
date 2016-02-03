@@ -121,10 +121,13 @@ public:
     }
     AstPackage* unitPackage(FileLine* fl) {
 	// Find one made earlier?
-	AstPackage* pkgp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName())->nodep()->castPackage();
-	if (!pkgp) {
+	VSymEnt* symp = SYMP->symRootp()->findIdFlat(AstPackage::dollarUnitName());
+	AstPackage* pkgp;
+	if (!symp) {
 	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
+	} else {
+	    pkgp = symp->nodep()->castPackage(); 
 	}
 	return pkgp;
     }

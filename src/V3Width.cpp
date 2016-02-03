@@ -137,9 +137,7 @@ public:
     bool prelim() const { return m_stage & PRELIM; }
     bool final() const { return m_stage & FINAL; }
     void dump(ostream& str) const {
-	if (!this) {
-	    str<<"  VUP(NULL)";
-	} else if (!m_dtypep) {
+	if (!m_dtypep) {
 	    str<<"  VUP(s="<<m_stage<<",self)";
 	} else {
 	    str<<"  VUP(s="<<m_stage<<",dt="<<(void*)dtypep()<<")";
@@ -147,7 +145,7 @@ public:
     }
 };
 ostream& operator<<(ostream& str, const WidthVP* vup) {
-    vup->dump(str);
+    if (vup) vup->dump(str);
     return str;
 }
 

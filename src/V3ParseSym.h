@@ -118,7 +118,9 @@ public:
     }
     AstNode* findEntUpward (const string& name) {
 	// Lookup the given string as an identifier, return type of the id, scanning upward
-	return symCurrentp()->findIdFallback(name)->nodep();
+	VSymEnt* foundp = symCurrentp()->findIdFallback(name);
+	if (foundp) return foundp->nodep();
+	else return NULL;
     }
     void import(AstNode* packagep, const string& id_or_star) {
 	// Import from package::id_or_star to this

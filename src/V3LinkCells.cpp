@@ -122,8 +122,14 @@ private:
 	return (nodep->user1p()->castGraphVertex());
     }
 
+    AstNodeModule* findModuleSym(const string& modName) {
+	VSymEnt* foundp = m_mods.rootp()->findIdFallback(modName);
+	if (!foundp) return NULL;
+	else return foundp->nodep()->castNodeModule();
+    }
+
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName) {
-	AstNodeModule* modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
+	AstNodeModule* modp = findModuleSym(modName);
 	if (!modp) {
 	    // Read-subfile
 	    // If file not found, make AstNotFoundModule, rather than error out.
@@ -135,7 +141,7 @@ private:
 	    // We've read new modules, grab new pointers to their names
 	    readModNames();
 	    // Check again
-	    modp = m_mods.rootp()->findIdFallback(modName)->nodep()->castNodeModule();
+	    modp = findModuleSym(modName);
 	    if (!modp) {
 		// This shouldn't throw a message as parseFile will create a AstNotFoundModule for us
 		nodep->v3error("Can't resolve module reference: "<<prettyName);
@@ -387,7 +393,7 @@ private:
 	// Look at all modules, and store pointers to all module names
 	for (AstNodeModule* nextp,* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nextp) {
 	    nextp = nodep->nextp()->castNodeModule();
-	    AstNode* foundp = m_mods.rootp()->findIdFallback(nodep->name())->nodep();
+	    AstNodeModule* foundp = findModuleSym(nodep->name());
 	    if (foundp && foundp != nodep) {
 		if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP) || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
 		    nodep->v3warn(MODDUP,"Duplicate declaration of module: "<<nodep->prettyName()<<endl

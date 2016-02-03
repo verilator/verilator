@@ -207,7 +207,7 @@ public:
 	// Note we only check for conflicts at the same level; it's ok if one block hides another
 	// We also wouldn't want to not insert it even though it's lower down
 	VSymEnt* foundp = lookupSymp->findIdFlat(name);
-	AstNode* fnodep = foundp->nodep();
+	AstNode* fnodep = foundp ? foundp->nodep() : NULL;
 	if (!fnodep) {
 	    // Not found, will add in a moment.
 	} else if (nodep==fnodep) {  // Already inserted.
@@ -378,7 +378,7 @@ public:
     void computeIfaceVarSyms() {
 	for (IfaceVarSyms::iterator it = m_ifaceVarSyms.begin(); it != m_ifaceVarSyms.end(); ++it) {
 	    VSymEnt* varSymp = *it;
-	    AstVar* varp = varSymp->nodep()->castVar();
+	    AstVar* varp = varSymp ? varSymp->nodep()->castVar() : NULL;
 	    UINFO(9, "  insAllIface se"<<(void*)varSymp<<" "<<varp<<endl);
 	    AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
 	    if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
@@ -489,8 +489,8 @@ public:
 	    // then look up (inst name or modname)
 	    if (firstId) {
 		// Check this module - subcellnames
-		AstCell* cellp = lookupSymp->nodep()->castCell();  // Replicated below
-		AstCellInline* inlinep = lookupSymp->nodep()->castCellInline(); // Replicated below
+		AstCell* cellp = lookupSymp ? lookupSymp->nodep()->castCell() : NULL;  // Replicated below
+		AstCellInline* inlinep = lookupSymp ? lookupSymp->nodep()->castCellInline() : NULL; // Replicated below
 		if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
 		    lookupSymp = findSymp;
 		}
@@ -501,8 +501,8 @@ public:
 		else {
 		    while (lookupSymp) {
 			lookupSymp = lookupSymp->parentp();
-			cellp = lookupSymp->nodep()->castCell(); // Replicated above
-			inlinep = lookupSymp->nodep()->castCellInline(); // Replicated above
+			cellp   = lookupSymp ? lookupSymp->nodep()->castCell() : NULL; // Replicated above
+			inlinep = lookupSymp ? lookupSymp->nodep()->castCellInline() : NULL; // Replicated above
 			if (lookupSymp) {
 			    UINFO(9,"\t\tUp to "<<lookupSymp<<endl);
 			    if ((cellp && cellp->modp()->origName() == ident)
@@ -1033,7 +1033,7 @@ private:
 	nodep->iterateChildren(*this);
 	nodep->v3warn(DEFPARAM,"Suggest replace defparam with Verilog 2001 #(."<<nodep->prettyName()<<"(...etc...))");
 	VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
-	AstCell* cellp = foundp->nodep()->castCell();
+	AstCell* cellp = foundp ? foundp->nodep()->castCell() : NULL;
 	if (!cellp) {
 	    nodep->v3error("In defparam, cell "<<nodep->path()<<" never declared");
 	} else {
@@ -1055,7 +1055,7 @@ private:
 	// Need to set pin numbers after varnames are created
 	// But before we do the final resolution based on names
 	VSymEnt* foundp = m_statep->getNodeSym(m_modp)->findIdFlat(nodep->name());
-	AstVar* refp = foundp->nodep()->castVar();
+	AstVar* refp = foundp ? foundp->nodep()->castVar() : NULL;
 	if (!refp) {
 	    nodep->v3error("Input/output/inout declaration not found for port: "<<nodep->prettyName());
 	} else if (!refp->isIO() && !refp->isIfaceRef()) {
@@ -1513,7 +1513,7 @@ private:
 	if (!nodep->modVarp()) {
 	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
-	    AstVar* refp = foundp->nodep()->castVar();
+	    AstVar* refp = foundp ? foundp->nodep()->castVar() : NULL;
 	    const char* whatp = nodep->param() ? "parameter pin" : "pin";
 	    if (!refp) {
 		if (nodep->name() == "__paramNumber1" && m_cellp->modp()->castPrimitive()) {
@@ -1661,8 +1661,10 @@ private:
 			      <<"  n="<<foundp->nodep()<<endl);
 	    // What fell out?
 	    bool ok = false;
-	    if (foundp->nodep()->castCell() || foundp->nodep()->castBegin()
-		|| foundp->nodep()->castModule()) {  // if top
+	    if (!foundp) {
+	    } else if (foundp->nodep()->castCell()
+		       || foundp->nodep()->castBegin()
+		       || foundp->nodep()->castModule()) {  // if top
 		if (allowScope) {
 		    ok = true;
 		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
@@ -1679,7 +1681,8 @@ private:
 		    VSymEnt* cellEntp = m_statep->getNodeSym(cellp);  if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
 		    VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
 		    string findName = nodep->name()+"__Viftop";
-		    AstVar* ifaceRefVarp = parentEntp->findIdFallback(findName)->nodep()->castVar();
+		    VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
+		    AstVar* ifaceRefVarp = ifaceSymp ? ifaceSymp->nodep()->castVar() : NULL;
 		    if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "<<findName);
 		    //
 		    ok = true;
@@ -1811,7 +1814,7 @@ private:
 	    UINFO(9," linkVarRef se"<<(void*)m_curSymp<<"  n="<<nodep<<endl);
 	    if (!m_curSymp) nodep->v3fatalSrc("NULL lookup symbol table");
 	    VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
-	    if (AstVar* varp = foundp->nodep()->castVar()) {
+	    if (AstVar* varp = foundp ? foundp->nodep()->castVar() : NULL) {
 		nodep->varp(varp);
 		nodep->packagep(foundp->packagep());  // Generally set by parse, but might be an import
 	    }
@@ -1845,7 +1848,7 @@ private:
 	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    if (!m_statep->forScopeCreation()) {
 		VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-		AstVar* varp = foundp->nodep()->castVar();  // maybe NULL
+		AstVar* varp = foundp ? foundp->nodep()->castVar() : NULL;
 		nodep->varp(varp);
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
 		if (!nodep->varp()) {
@@ -1864,7 +1867,7 @@ private:
 	    } else {
 		string baddot;
 		VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-		AstVarScope* vscp = foundp->nodep()->castVarScope();  // maybe NULL
+		AstVarScope* vscp = foundp ? foundp->nodep()->castVarScope() : NULL;
 		if (!vscp) {
 		    nodep->v3error("Can't find varpin scope of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
 		    okSymp->cellErrorScopes(nodep);
@@ -2085,7 +2088,7 @@ private:
 	    } else {
 		foundp = m_curSymp->findIdFallback(nodep->name());
 	    }
-	    if (AstTypedef* defp = foundp->nodep()->castTypedef()) {
+	    if (AstTypedef* defp = foundp ? foundp->nodep()->castTypedef() : NULL) {
 		nodep->refDTypep(defp->subDTypep());
 		nodep->packagep(foundp->packagep());
 	    } else {
@@ -2099,7 +2102,7 @@ private:
 	nodep->iterateChildren(*this);
 	checkNoDot(nodep);
 	VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
-	AstNodeFTask* taskp = foundp->nodep()->castNodeFTask();
+	AstNodeFTask* taskp = foundp ? foundp->nodep()->castNodeFTask() : NULL;
 	if (!taskp) { nodep->v3error("Can't find definition of exported task/function: "<<nodep->prettyName()); }
 	else if (taskp->dpiExport()) {
 	    nodep->v3error("Function was already DPI Exported, duplicate not allowed: "<<nodep->prettyName());

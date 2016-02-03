@@ -1030,19 +1030,20 @@ int V3ParseImp::lexToken() {
     // If an id, change the type based on symbol table
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     if (token == yaID__LEX) {
-	AstNode* scp;
+	VSymEnt* foundp;
 	if (VSymEnt* look_underp = SYMP->nextId()) {
 	    if (debugFlex()) { cout<<"   lexToken: next id lookup forced under "<<look_underp<<endl; }
-	    scp = look_underp->findIdFallback(*(yylval.strp))->nodep();
+	    foundp = look_underp->findIdFallback(*(yylval.strp));
 	    // "consume" it.  Must set again if want another token under temp scope
 	    SYMP->nextId(NULL);
 	} else {
 	    UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()<<" for '"<<*(yylval.strp)<<"'"<<endl);
 	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
-	    scp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp))->nodep();
+	    foundp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
 	}
-	yylval.scp = scp;
-	if (scp) {
+	if (foundp) {
+	    AstNode* scp = foundp->nodep();
+	    yylval.scp = scp;
 	    UINFO(7,"   lexToken: Found "<<scp<<endl);
 	    if (scp->castTypedef())		token = yaID__aTYPE;
 	    else if (scp->castTypedefFwd())	token = yaID__aTYPE;
@@ -1051,6 +1052,7 @@ int V3ParseImp::lexToken() {
 	    //UNSUP else if (scp->castCoverGroup()) 	token = yaID__aCOVERGROUP;
 	    else token = yaID__ETC;
 	} else {  // Not found
+	    yylval.scp = NULL;
 	    token = yaID__ETC;
 	}
     }
