@@ -18,6 +18,8 @@
 my $Opt_Prefix = $ARGV[0] or die "%Error: No prefix specified,";
 
 foreach my $line (<STDIN>) {
+    # Fix flex 2.6.0 warning
+    $line =~ s/ number_to_move == YY_MORE_ADJ / (int)number_to_move == (int)YY_MORE_ADJ /;
     # Fix flex 2.5.4 namespace omission
     $line =~ s/^class istream;/\#include <iostream>\nusing namespace std;\n/;
     # Fix flex 2.5.31 redefinition
