@@ -674,7 +674,7 @@ private:
 	    stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
 	    // If dpiScope is fails and is null; the exportFind function throws and error
 	    string cbtype = v3Global.opt.prefix()+"__Vcb_"+nodep->cname()+"_t";
-	    stmt += cbtype+" __Vcb = ("+cbtype+")__Vscopep->exportFind(__Vfuncnum);\n";
+	    stmt += cbtype+" __Vcb = ("+cbtype+")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use static_cast
 	    // If __Vcb is null the exportFind function throws and error
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}

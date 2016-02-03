@@ -1324,7 +1324,7 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const {
     return NULL;
 }
 
-void* VerilatedScope::exportFindNullError(int funcnum) const {
+void* VerilatedScope::exportFindNullError(int funcnum) {
     // Slowpath - Called only when find has failed
     string msg = (string("Testbench C called '")
 		  +VerilatedImp::exportName(funcnum)

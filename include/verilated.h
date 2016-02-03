@@ -201,16 +201,16 @@ public:  // But internals only - called from VerilatedModule's
     inline VerilatedSyms* symsp() const { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const;
     VerilatedVarNameMap* varsp() const { return m_varsp; }
-    void* exportFindError(int funcnum) const;
-    void* exportFindNullError(int funcnum) const;
     void scopeDump() const;
-    inline void* exportFind(int funcnum) const {
-	if (VL_UNLIKELY(!this)) return exportFindNullError(funcnum);
-	if (VL_LIKELY(funcnum < m_funcnumMax)) {
+    void* exportFindError(int funcnum) const;
+    static void* exportFindNullError(int funcnum);
+    static inline void* exportFind(const VerilatedScope* scopep, int funcnum) {
+	if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
+	if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
 	    // m_callbacksp must be declared, as Max'es are > 0
-	    return m_callbacksp[funcnum];
+	    return scopep->m_callbacksp[funcnum];
 	} else {
-	    return exportFindError(funcnum);
+	    return scopep->exportFindError(funcnum);
 	}
     }
 };
