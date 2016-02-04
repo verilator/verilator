@@ -6,6 +6,7 @@
 module t;
    localparam str = "string";
    function logic checkParameter(input logic [8:0] N);
+      $display("x is %d.", N);
       if (N == 1)
         return 0;
       $fatal(1, "Parameter %d is invalid...%s and %s", N, str, "constant both work");

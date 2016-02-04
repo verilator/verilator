@@ -17,6 +17,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix read-after-free error, bug1031. [Johan Bjork]
 
+****  Fix elaboration-time display warnings, bug1032. [Johan Bjork]
+
 
 * Verilator 3.880 2015-12-19
 
