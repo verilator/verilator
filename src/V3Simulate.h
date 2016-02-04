@@ -473,9 +473,8 @@ private:
 	    nodep->rhsp()->iterateAndNext(*this);
 
 	    if (optimizable()) {
-		AstNode* vscp;
 		if (varrefp) {
-		    vscp = varOrScope(varrefp);
+		    AstNode* vscp = varOrScope(varrefp);
 		    V3Number outnum = V3Number(nodep->fileline());
 		    if (V3Number* vscpnump = fetchOutNumberNull(vscp)) {
 			outnum = *vscpnump;

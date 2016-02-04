@@ -275,8 +275,8 @@ class SliceVisitor : public AstNVisitor {
 	    }
 	    UINFO(9,"    ArraySel-child: "<<topp<<endl);
 	    AstArraySel* newp = new AstArraySel(nodep->fileline(), topp,
-						// "lsb-lsb": Arrays are zero-based so index 0 is always lsb
-						new AstConst(nodep->fileline(), lsb-lsb));
+						// Arrays are zero-based so index 0 is always lsb (e.g. lsb-lsb -> 0)
+						new AstConst(nodep->fileline(), 0));
 	    if (!newp->dtypep()) {
 		newp->v3fatalSrc("ArraySel dtyping failed when resolving slice");  // see ArraySel constructor
 	    }

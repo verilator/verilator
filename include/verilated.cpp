@@ -650,6 +650,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
 		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, "+-.0123456789eE");
 		    if (!tmp[0]) goto done;
+		    // cppcheck-suppress unusedStructMember  // It's used
 		    union { double r; vlsint64_t ld; } u;
 		    u.r = strtod(tmp, NULL);
 		    VL_SET_WQ(owp,u.ld);

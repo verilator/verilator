@@ -36,7 +36,7 @@
 //######################################################################
 // Emit statements and math operators
 
-class EmitXmlFileVisitor : public EmitCBaseVisitor {
+class EmitXmlFileVisitor : public AstNVisitor {
     // MEMBERS
     V3OutFile*	m_ofp;
 

@@ -102,7 +102,8 @@ string AstNode::encodeName(const string& namein) {
 	} else if (pos[0]=='_') {
 	    if (pos[1]=='_') {
 		out += "_"; out += "__05F";  // hex(_) = 0x5F
-		pos++;
+		++pos;
+		if (pos==namein.end()) break;
 	    } else {
 		out += pos[0];
 	    }
@@ -198,7 +199,7 @@ string AstNode::prettyName(const string& namein) {
 	}
 	else {
 	    pretty += pos[0];
-	    pos++;
+	    ++pos;
 	}
     }
     if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");

@@ -325,7 +325,7 @@ private:
 	}
     }
 
-    void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
 	if (!nodep->user1SetOnce()) {
 	    // Guard against reading/writing past end of bit vector array

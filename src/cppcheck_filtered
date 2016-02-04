@@ -9,7 +9,12 @@ use Pod::Usage;
 use strict;
 use vars qw ($Debug $VERSION);
 
-$VERSION = '3.857';
+$VERSION = '3.881';
+
+our %SuppressMap = (
+    # New cpp check error          Can suppress with old error
+    'nullPointerRedundantCheck' => 'nullPointer',
+    );
 
 #======================================================================
 # main
@@ -44,6 +49,7 @@ sub process {
     my $cmd = join(' ',@Opt_Args);
     print "\t$cmd\n" if $Debug;
     my $fh = IO::File->new("$cmd 2>&1 |");
+    $fh or die "%Error: '$cmd' failed: $!\n";
     my %uniq;
     my %errs;
     while (defined(my $line = $fh->getline())) {
@@ -115,7 +121,8 @@ sub _suppress {
 	    if ($line =~ /cppcheck-suppress((\s+\S+)+)/) {
 		my $supids = $1;
 		foreach my $supid (split /\s+/, $supids) {
-		    if ($supid eq $id) {
+		    if ($supid eq $id
+			|| $supid eq $SuppressMap{$id}) {
 			return 1;
 		    }
 		}
