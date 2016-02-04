@@ -334,7 +334,9 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    // A block that was just moved under a scope, Kill it.
-	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+	    // Certain nodes can be referenced later in this pass, notably
+	    // an FTaskRef needs to access the FTask to find the cloned task
+	    pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
 	}
     }
 
