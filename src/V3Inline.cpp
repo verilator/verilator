@@ -334,7 +334,7 @@ private:
 	if (!nodep->isFuncLocal()) nodep->inlineAttrReset(name);
 	if (!m_cellp->isTrace()) nodep->trace(false);
 	if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
-	if (debug()>=9) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
+	if (debug()>=9 && nodep->valuep()) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeFTask* nodep, AstNUser*) {

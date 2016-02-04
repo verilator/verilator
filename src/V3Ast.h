@@ -998,10 +998,10 @@ private:
     void	checkTreeIter(AstNode* backp);
     void	checkTreeIterList(AstNode* backp);
     bool	gateTreeIter();
-    bool	sameTreeIter(AstNode* node2p, bool ignNext, bool gateOnly);
+    bool	sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool gateOnly);
     void	deleteTreeIter();
-public:
     void	deleteNode();
+public:
     static void	relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
     void	debugTreeChange(const char* prefix, int lineno, bool next);
@@ -1265,7 +1265,6 @@ public:
     void	iterate(AstNVisitor& v, AstNUser* vup=NULL) { this->accept(v,vup); } 	  // Does this; excludes following this->next
     void	iterateAndNext(AstNVisitor& v, AstNUser* vup=NULL);
     void	iterateAndNextConst(AstNVisitor& v, AstNUser* vup=NULL);
-    void	iterateAndNextIgnoreEdit(AstNVisitor& v, AstNUser* vup=NULL) { iterateAndNextConst(v, vup); }
     void	iterateChildren(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenConst(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
@@ -1967,8 +1966,8 @@ inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst
 inline bool AstNode::isOne()      { return (this->castConst() && this->castConst()->num().isEqOne()); }
 inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->isEqAllOnes()); }
 inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
-inline bool AstNode::sameTree(AstNode* node2p) { return sameTreeIter(node2p, true, false); }
-inline bool AstNode::sameGateTree(AstNode* node2p) { return sameTreeIter(node2p, true, true); }
+inline bool AstNode::sameTree(AstNode* node2p) { return sameTreeIter(this, node2p, true, false); }
+inline bool AstNode::sameGateTree(AstNode* node2p) { return sameTreeIter(this, node2p, true, true); }
 
 inline void AstNodeVarRef::init() { if (m_varp) dtypep(m_varp->dtypep()); }
 

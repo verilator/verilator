@@ -235,7 +235,7 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
 }
 
 void FileLine::v3errorEnd(ostringstream& str) {
-    if (this && m_lineno) {
+    if (m_lineno) {
 	ostringstream nsstr;
 	nsstr<<this<<str.str();
 	if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
