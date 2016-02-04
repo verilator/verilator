@@ -110,7 +110,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     const char *ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
-	this->lineno(atoi(ln));
+	lineno(atoi(ln));
     }
     while (*textp && (isspace(*textp) || *textp=='"')) textp++;
 
@@ -120,7 +120,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     if (textp != fn) {
 	string strfn = fn;
 	strfn = strfn.substr(0, textp-fn);
-	this->filename(strfn);
+	filename(strfn);
     }
 
     // Grab level
@@ -229,7 +229,7 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
 	V3ErrorCode code = (V3ErrorCode)codei;
 	if (fromp->warnIsOff(code)) {
-	    this->warnOff(code, true);
+	    warnOff(code, true);
 	}
     }
 }
@@ -246,7 +246,7 @@ void FileLine::v3errorEnd(ostringstream& str) {
 }
 
 string FileLine::warnMore() const {
-    if (this && m_lineno) {
+    if (m_lineno) {
 	return V3Error::warnMore()+ascii()+": ";
     } else {
 	return V3Error::warnMore();

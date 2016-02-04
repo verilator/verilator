@@ -239,7 +239,7 @@ AstNode* AstNode::addNext(AstNode* newp) {
     UASSERT(newp,"Null item passed to addNext\n");
     this->debugTreeChange("-addNextThs: ", __LINE__, false);
     newp->debugTreeChange("-addNextNew: ", __LINE__, true);
-    if (this == NULL) {
+    if (!this) {
 	return (newp);
     } else {
 	// Find end of old list
@@ -754,7 +754,6 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
-    // if (!this) return;  // Part of for()
     // Future versions of this function may require the node to have a back to be iterated;
     // there's no lower level reason yet though the back must exist.
     AstNode* nodep=this;

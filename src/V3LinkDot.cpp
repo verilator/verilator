@@ -2110,7 +2110,7 @@ private:
 	    taskp->dpiExport(true);
 	    if (nodep->cname()!="") taskp->cname(nodep->cname());
 	}
-	nodep->unlinkFrBack()->deleteTree();
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstPackageImport* nodep, AstNUser*) {
 	// No longer needed
