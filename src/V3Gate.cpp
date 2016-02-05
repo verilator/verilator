@@ -46,6 +46,8 @@
 
 typedef list<AstNodeVarRef*> GateVarRefList;
 
+#define GATE_DEDUP_MAX_DEPTH  20
+
 //######################################################################
 
 class GateBaseVisitor : public AstNVisitor {
@@ -1008,52 +1010,58 @@ private:
     // AstUser2InUse		m_inuser2;	(Allocated for use in GateVisitor)
     V3Double0			m_numDeduped;	// Statistic tracking
     GateDedupeVarVisitor	m_varVisitor;	// Looks for a dupe of the logic
+    int				m_depth;	// Iteration depth
 
-    virtual AstNUser* visit(GateVarVertex *vvertexp, AstNUser*) {
+    virtual AstNUser* visit(GateVarVertex* vvertexp, AstNUser*) {
 	// Check that we haven't been here before
+	if (m_depth > GATE_DEDUP_MAX_DEPTH) return NULL;  // Break loops; before user2 set so hit this vertex later
 	if (vvertexp->varScp()->user2()) return NULL;
 	vvertexp->varScp()->user2(true);
 
-	AstNodeVarRef* dupVarRefp = (AstNodeVarRef*) vvertexp->iterateInEdges(*this, (AstNUser*) vvertexp);
+	m_depth++;
+	if (vvertexp->inSize1()) {
+	    AstNodeVarRef* dupVarRefp = (AstNodeVarRef*) vvertexp->iterateInEdges(*this, (AstNUser*) vvertexp);
 
-	if (dupVarRefp && vvertexp->inSize1()) {
-	    V3GraphEdge* edgep = vvertexp->inBeginp();
-	    GateLogicVertex* lvertexp = (GateLogicVertex*)edgep->fromp();
-	    if (!vvertexp->dedupable()) vvertexp->varScp()->v3fatalSrc("GateLogicVertex* visit should have returned NULL if consumer var vertex is not dedupable.");
-	    GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
-	    if (okVisitor.isSimple()) {
-		AstVarScope* dupVarScopep = dupVarRefp->varScopep();
-		GateVarVertex* dupVvertexp = (GateVarVertex*) (dupVarScopep->user1p());
-		UINFO(4,"replacing " << vvertexp << " with " << dupVvertexp << endl);
-		++m_numDeduped;
-		// Replace all of this varvertex's consumers with dupVarRefp
-		for (V3GraphEdge* outedgep = vvertexp->outBeginp();outedgep;) {
-		    GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(outedgep->top());
-		    AstNode* consumerp = consumeVertexp->nodep();
-		    GateElimVisitor elimVisitor(consumerp,vvertexp->varScp(),dupVarRefp);
-		    outedgep = outedgep->relinkFromp(dupVvertexp);
+	    if (dupVarRefp) {
+		V3GraphEdge* edgep = vvertexp->inBeginp();
+		GateLogicVertex* lvertexp = (GateLogicVertex*)edgep->fromp();
+		if (!vvertexp->dedupable()) vvertexp->varScp()->v3fatalSrc("GateLogicVertex* visit should have returned NULL if consumer var vertex is not dedupable.");
+		GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
+		if (okVisitor.isSimple()) {
+		    AstVarScope* dupVarScopep = dupVarRefp->varScopep();
+		    GateVarVertex* dupVvertexp = (GateVarVertex*) (dupVarScopep->user1p());
+		    UINFO(4,"replacing " << vvertexp << " with " << dupVvertexp << endl);
+		    ++m_numDeduped;
+		    // Replace all of this varvertex's consumers with dupVarRefp
+		    for (V3GraphEdge* outedgep = vvertexp->outBeginp(); outedgep; ) {
+			GateLogicVertex* consumeVertexp = dynamic_cast<GateLogicVertex*>(outedgep->top());
+			AstNode* consumerp = consumeVertexp->nodep();
+			GateElimVisitor elimVisitor(consumerp,vvertexp->varScp(),dupVarRefp);
+			outedgep = outedgep->relinkFromp(dupVvertexp);
+		    }
+
+		    // Propagate attributes
+		    dupVvertexp->propagateAttrClocksFrom(vvertexp);
+		    // Remove inputs links
+		    while (V3GraphEdge* inedgep = vvertexp->inBeginp()) {
+			inedgep->unlinkDelete(); VL_DANGLING(inedgep);
+		    }
+		    // replaceAssigns() does the deleteTree on lvertexNodep in a later step
+		    AstNode* lvertexNodep = lvertexp->nodep();
+		    lvertexNodep->unlinkFrBack();
+		    vvertexp->varScp()->valuep(lvertexNodep);
+		    lvertexNodep = NULL;
+		    vvertexp->user(true);
+		    lvertexp->user(true);
 		}
-
-		// Propogate attributes
-		dupVvertexp->propagateAttrClocksFrom(vvertexp);
-
-		// Remove inputs links
-		while (V3GraphEdge* inedgep = vvertexp->inBeginp()) {
-		    inedgep->unlinkDelete(); VL_DANGLING(inedgep);
-		}
-		// replaceAssigns() does the deleteTree on lvertexNodep in a later step
-		AstNode* lvertexNodep = lvertexp->nodep();
-		lvertexNodep->unlinkFrBack();
-		vvertexp->varScp()->valuep(lvertexNodep);
-		lvertexNodep = NULL;
-		vvertexp->user(true);
-		lvertexp->user(true);
 	    }
 	}
+	m_depth--;
 	return NULL;
     }
 
-    // Returns a varref that has the same logic input
+    // Given iterated logic, starting at vup which was consumer's GateVarVertex
+    // Returns a varref that has the same logic input; or NULL if none
     virtual AstNUser* visit(GateLogicVertex* lvertexp, AstNUser* vup) {
 	lvertexp->iterateInEdges(*this);
 
@@ -1072,7 +1080,9 @@ private:
     }
 
 public:
-    GateDedupeGraphVisitor() {}
+    GateDedupeGraphVisitor() {
+	m_depth = 0;
+    }
     void dedupeTree(GateVarVertex* vvertexp) {
 	vvertexp->accept(*this);
     }
