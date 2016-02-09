@@ -386,6 +386,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     // TODO this function should be removed in favor of recursing the dtype(),
     // as that allows for more complicated data types.
     int dim = 0;
+    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
@@ -420,6 +421,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
 
 uint32_t AstNodeDType::arrayUnpackedElements() {
     uint32_t entries=1;
+    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
@@ -438,6 +440,7 @@ pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
     uint32_t unpacked = 0;
+    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
 	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {

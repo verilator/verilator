@@ -220,8 +220,9 @@ private:
 		ifaceVarp->unlinkFrBack(); pushDeletep(ifaceVarp); VL_DANGLING(ifaceVarp);
 	    }
 	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+	} else {
+	    nodep->iterateChildren(*this);
 	}
-	nodep->iterateChildren(*this);
     }
 
     virtual void visit(AstVar* nodep, AstNUser*) {

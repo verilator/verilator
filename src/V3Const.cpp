@@ -1037,10 +1037,8 @@ private:
 		AstNodeAssign* asn2ap=nodep->cloneType(lc2p, sel2p)->castNodeAssign();
 		asn1ap->dtypeFrom(sel1p);
 		asn2ap->dtypeFrom(sel2p);
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn1ap);
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn2ap);
+		newp = AstNode::addNext(newp, asn1ap);
+		newp = AstNode::addNext(newp, asn2ap);
 	    } else {
 		if (!m_modp) nodep->v3fatalSrc("Not under module");
 		// We could create just one temp variable, but we'll get better optimization
@@ -1070,14 +1068,10 @@ private:
 		asn2ap->dtypeFrom(temp2p);
 		asn2bp->dtypeFrom(temp2p);
 		// This order matters
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn1ap);
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn2ap);
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn1bp);
-		// cppcheck-suppress nullPointer  // addNext deals with it
-		newp = newp->addNext(asn2bp);
+		newp = AstNode::addNext(newp, asn1ap);
+		newp = AstNode::addNext(newp, asn2ap);
+		newp = AstNode::addNext(newp, asn1bp);
+		newp = AstNode::addNext(newp, asn2bp);
 	    }
 	    if (debug()>=9 && newp) newp->dumpTreeAndNext(cout,"     _new: ");
 	    nodep->addNextHere(newp);

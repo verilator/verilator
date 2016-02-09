@@ -2243,8 +2243,7 @@ private:
 			    argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
 			    AstNode* argsp = NULL;
 			    while (AstArg* nextargp = argp->nextp()->castArg()) {
-				// cppcheck-suppress nullPointer
-				argsp = argsp->addNext(nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
+				argsp = AstNode::addNext(argsp, nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
 				nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
 			    }
 			    string format;

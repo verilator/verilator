@@ -423,8 +423,7 @@ class SliceVisitor : public AstNVisitor {
 		    AstNode* lhsp = new AstArraySel(nodep->fileline(),
 						    nodep->lhsp()->cloneTree(false),
 						    index++);
-		    // cppcheck-suppress nullPointer
-		    newp = newp->addNext(nodep->cloneType(lhsp, subp->unlinkFrBack()));
+		    newp = AstNode::addNext(newp, nodep->cloneType(lhsp, subp->unlinkFrBack()));
 		}
 		//if (debug()>=9) newp->dumpTreeAndNext(cout, "-InitArrayOut: ");
 		nodep->replaceWith(newp);

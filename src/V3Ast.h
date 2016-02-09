@@ -861,7 +861,8 @@ public:
     }
 #include "V3Ast__gen_visitor.h"	// From ./astgen
     // Things like:
-    //  virtual void visit(type*) = 0;
+    //  virtual void visit(AstBreak* nodep, AstNUser* vup) { visit((AstNodeStmt*)(nodep),vup); }
+    //  virtual void visit(AstNodeStmt* nodep, AstNUser* vup) { visit((AstNode*)(nodep),vup); }
 };
 
 //######################################################################
@@ -1211,8 +1212,10 @@ public:
     void	dumpGdbHeader() const;
 
     // METHODS - Tree modifications
-    AstNode*	addNext(AstNode* newp);		// Returns this, adds to end of list
-    AstNode*	addNextNull(AstNode* newp);	// Returns this, adds to end of list, NULL is OK
+    static AstNode* addNext(AstNode* nodep, AstNode* newp);	// Returns nodep, adds newp to end of nodep's list
+    static AstNode* addNextNull(AstNode* nodep, AstNode* newp);	// Returns nodep, adds newp (maybe NULL) to end of nodep's list
+    inline AstNode* addNext(AstNode* newp) { return addNext(this, newp); }
+    inline AstNode* addNextNull(AstNode* newp) { return addNextNull(this, newp); }
     void	addNextHere(AstNode* newp);	// Adds after speced node
     void	addPrev(AstNode* newp) { replaceWith(newp); newp->addNext(this); }
     void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
