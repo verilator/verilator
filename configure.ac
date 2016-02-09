@@ -130,6 +130,7 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
 # Flags for compiling Verilator internals including parser
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-char-subscripts)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
