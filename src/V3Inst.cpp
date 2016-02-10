@@ -412,10 +412,10 @@ public:
 	AstVar* pinVarp = pinp->modVarp();
 	AstVarRef* connectRefp = pinp->exprp()->castVarRef();
 	AstVarXRef* connectXRefp = pinp->exprp()->castVarXRef();
-	AstBasicDType* pinBasicp = pinVarp->dtypep()->basicp();  // Maybe NULL
+	AstBasicDType* pinBasicp = pinVarp->dtypep()->castBasicDType();  // Maybe NULL
 	AstBasicDType* connBasicp = NULL;
 	AstAssignW* assignp = NULL;
-	if (connectRefp) connBasicp = connectRefp->varp()->dtypep()->basicp();
+	if (connectRefp) connBasicp = connectRefp->varp()->dtypep()->castBasicDType();
 	//
 	if (!alwaysCvt
 	    && connectRefp

@@ -102,6 +102,9 @@ class SliceCloneVisitor : public AstNVisitor {
 		AstUnpackArrayDType* adtypep = nodep->fromp()->dtypep()->skipRefp()->castUnpackArrayDType();
 		if (!adtypep) nodep->v3fatalSrc("slice select tried to expand an array without an ArrayDType");
 		unsigned idx = nodep->start() + m_selBits[m_vecIdx][m_depth] - adtypep->lsb();
+		if (adtypep->rangep()->littleEndian()) {  // Little must iterate backwards
+		    idx = adtypep->rangep()->elementsConst() - 1 - idx;
+		}
 		AstNode* constp = new AstConst(bitp->fileline(), V3Number(bitp->fileline(), bitp->castConst()->num().width(), idx));
 		bitp->replaceWith(constp);
 	    } else {
@@ -255,15 +258,15 @@ class SliceVisitor : public AstNVisitor {
 	return clones;
     }
 
-    AstArraySel* insertImplicit(AstNode* nodep, unsigned start, unsigned count) {
+    AstArraySel* insertImplicit(AstNode* nodep, unsigned startDim, unsigned numDimensions) {
 	// Insert any implicit slices as explicit slices (ArraySel nodes).
 	// Return a new pointer to replace nodep() in the ArraySel.
-	UINFO(9,"  insertImplicit (start="<<start<<",c="<<count<<") "<<nodep<<endl);
+	UINFO(9,"  insertImplicit (startDim="<<startDim<<",c="<<numDimensions<<") "<<nodep<<endl);
 	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
 	if (!refp) nodep->v3fatalSrc("No VarRef in user1 of node "<<nodep);
 	AstVar* varp = refp->varp();
 	AstNode* topp = nodep;
-	for (unsigned i = start; i < start + count; ++i) {
+	for (unsigned i = startDim; i < startDim + numDimensions; ++i) {
 	    AstNodeDType* dtypep = varp->dtypep()->dtypeDimensionp(i-1);
 	    AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType();
 	    if (!adtypep) nodep->v3fatalSrc("insertImplicit tried to expand an array without an ArrayDType");

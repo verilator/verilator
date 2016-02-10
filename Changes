@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix crash on very deep function trees, bug1028. [Jonathan Kimmitt]
 
+****  Fix slicing mix of big and little-endian, bug1033. [Geoff Barrett]
+
 
 * Verilator 3.880 2015-12-19
 
