@@ -1600,7 +1600,8 @@ private:
 			// Determine initial values
 			vdtypep = memp;
 			patp->dtypep(memp);
-			patp->accept(*this,WidthVP(memp,BOTH).p());
+			patp->accept(*this,WidthVP(memp,BOTH).p());  // See visit(AstPatMember*
+
 			// Convert to concat for now
 			AstNode* valuep = patp->lhssp()->unlinkFrBack();
 			if (valuep->castConst()) {
@@ -1653,8 +1654,8 @@ private:
 			vdtypep = arrayp->subDTypep();
 			// Don't want the RHS an array
 			patp->dtypep(vdtypep);
-		    // Determine values - might be another InitArray
-			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+			// Determine values - might be another InitArray
+			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());  // See visit(AstPatMember*
 			// Convert to InitArray or constify immediately
 			AstNode* valuep = patp->lhssp()->unlinkFrBack();
 			if (valuep->castConst()) {
@@ -1760,8 +1761,8 @@ private:
 	UINFO(9,"   PATMEMBER "<<nodep<<endl);
 	if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
 	// Need to propagate assignment type downwards, even on prelim
-	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),BOTH).p());
-	iterateCheck(nodep,"Pattern value",nodep->lhssp(),CONTEXT,FINAL,vdtypep,EXTEND_LHS);
+	nodep->iterateChildren(*this,WidthVP(nodep->dtypep(),PRELIM).p());
+	iterateCheck(nodep,"Pattern value",nodep->lhssp(),ASSIGN,FINAL,vdtypep,EXTEND_LHS);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
 	uint32_t times = 1;
