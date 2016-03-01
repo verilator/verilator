@@ -9,6 +9,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Support inlining interfaces, bug1018. [Johan Bjork]
 
+****  Support SV strings to readmemh, bug1040. [Stefan Wallentowitz]
+
 ****  Fix unrolling complicated for-loop bounds, bug677. [Johan Bjork]
 
 ****  Fix stats file containing multiple unroll entries, bug1020. [Johan Bjork]

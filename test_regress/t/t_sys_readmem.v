@@ -6,6 +6,7 @@
 module t;
 
    // verilator lint_off LITENDIAN
+   reg [5:0] binary_string [2:15];
    reg [5:0] binary_nostart [2:15];
    reg [5:0] binary_start [0:15];
    reg [175:0] hex [0:15];
@@ -55,6 +56,15 @@ module t;
 	 if (hex['h0a] != 176'h400a37654321276543211765432107654321abcdef11) $stop;
 	 if (hex['h0b] != 176'h400b37654321276543211765432107654321abcdef12) $stop;
 	 if (hex['h0c] != 176'h400c37654321276543211765432107654321abcdef13) $stop;
+      end
+
+      begin
+	 string fns = "t/t_sys_readmem_b.mem";
+	 $readmemb(fns, binary_string);
+`ifdef TEST_VERBOSE
+	 for (i=0; i<16; i=i+1) $write("    @%x = %x\n", i, binary_string[i]);
+`endif
+	 if (binary_string['h2] != 6'h02) $stop;
       end
 
       $write("*-* All Finished *-*\n");
