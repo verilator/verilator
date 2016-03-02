@@ -3,6 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
+
+* Verilator 3.883 devel
+
+
 * Verilator 3.882 2016-03-01
 
 ****  Internal Verilation-time performance enhancements, bug1021. [Johan Bjork]
