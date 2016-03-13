@@ -55,9 +55,11 @@ module mod_typ #(
    parameter type TYP = byte
 )(
    input  logic clk,
-   output TYP   cnt = 0,
+   output TYP   cnt,
    output int   siz
 );
+
+   initial cnt = 0;
 
    always @ (posedge clk)
      cnt <= cnt + 1;

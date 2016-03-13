@@ -805,7 +805,7 @@ udpFront<modulep>:
 
 parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 		/* empty */				{ $$ = NULL; }
-	|	'#' '(' cellpinList ')'			{ $$ = $3; }
+	|	'#' '(' cellparamList ')'		{ $$ = $3; }
 	//			// Parentheses are optional around a single parameter
 	|	'#' yaINTNUM				{ $$ = new AstPin($1,1,"",new AstConst($1,*$2)); }
 	|	'#' yaFLOATNUM				{ $$ = new AstPin($1,1,"",new AstConst($1,AstConst::Unsized32(),(int)(($2<0)?($2-0.5):($2+0.5)))); }
@@ -1123,6 +1123,7 @@ genvar_identifierDecl<varp>:		// IEEE: genvar_identifier (for declaration)
 
 local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
 	//			// See notes in parameter_declaration
+	//			// Front must execute first so VARDTYPE is ready before list of vars
 		local_parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
 	;
 
@@ -1131,30 +1132,33 @@ parameter_declaration<nodep>:	// IEEE: parameter_declaration
 	//			// Instead of list_of_type_assignments
 	//			// we use list_of_param_assignments because for port handling
 	//			// it already must accept types, so simpler to have code only one place
+	//			// Front must execute first so VARDTYPE is ready before list of vars
 		parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
 	;
 
 local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	//UNSUP	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
+	//UNSUP	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
 	//			// IEEE: parameter_declaration (minus assignment)
+	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
+	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
-	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	//UNSUP	data_type				{ VARDTYPE($1); }
-	//UNSUP	yTYPE 					{ VARDTYPE($1); }
+	//UNSUP	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
 	;
 
 net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
@@ -1988,9 +1992,9 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
+	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
 		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
-	//UNSUP:  exprOrDataType instead of expr
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
@@ -2067,16 +2071,25 @@ instRangeE<rangep>:
 	|	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
+cellparamList<pinp>:
+		{VARRESET_LIST(UNKNOWN);} cellparamItList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+	;
+
 cellpinList<pinp>:
 		{VARRESET_LIST(UNKNOWN);} cellpinItList	{ $$ = $2; VARRESET_NONLIST(UNKNOWN); }
 	;
 
-cellpinItList<pinp>:		// IEEE: list_of_port_connections + list_of_parameter_assignmente
+cellparamItList<pinp>:		// IEEE: list_of_parameter_assignmente
+		cellparamItemE				{ $$ = $1; }
+	|	cellparamItList ',' cellparamItemE	{ $$ = $1->addNextNull($3)->castPin(); }
+	;
+
+cellpinItList<pinp>:		// IEEE: list_of_port_connections
 		cellpinItemE				{ $$ = $1; }
 	|	cellpinItList ',' cellpinItemE		{ $$ = $1->addNextNull($3)->castPin(); }
 	;
 
-cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment + empty
+cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
 		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
@@ -2088,9 +2101,26 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + named_parameter_assignment
 	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
 	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
 	//			// For parameters
-	//UNSUP	'.' idAny '(' data_type ')'		{ PINDONE($1,$2,$4);  GRAMMARP->pinNumInc(); }
+	|	'.' idAny '(' data_type ')'		{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
 	//			// For parameters
-	//UNSUP	data_type				{ PINDONE($1->fileline(),"",$1);  GRAMMARP->pinNumInc(); }
+	|	data_type				{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
+	//
+	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
+	//UNSUP	expr ':' expr				{ }
+	//UNSUP	expr ':' expr ':' expr			{ }
+	;
+
+cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
+				// Note empty can match either () or (,); V3LinkCells cleans up ()
+		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
+	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
+	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' idAny '(' ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,NULL); }
+	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
+	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
+	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
+	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
 	//
 	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
 	//UNSUP	expr ':' expr				{ }

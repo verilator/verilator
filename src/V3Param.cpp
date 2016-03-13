@@ -84,10 +84,10 @@ private:
     typedef deque<pair<AstIfaceRefDType*,AstIfaceRefDType*> > IfaceRefRefs;  // Note may have duplicate entries
 
     // STATE
-    typedef map<AstVar*,AstVar*> VarCloneMap;
+    typedef map<AstNode*,AstNode*> CloneMap;
     struct ModInfo {
 	AstNodeModule*	m_modp;		// Module with specified name
-	VarCloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
+	CloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
 	explicit ModInfo(AstNodeModule* modp) { m_modp=modp; }
     };
     typedef map<string,ModInfo> ModNameMap;
@@ -131,7 +131,7 @@ private:
 	    }
 	}
     }
-    string paramSmallName(AstNodeModule* modp, AstVar* varp) {
+    string paramSmallName(AstNodeModule* modp, AstNode* varp) {
 	if (varp->user4()<=1) {
 	    makeSmallNames(modp);
 	}
@@ -145,7 +145,7 @@ private:
 	return st;
     }
     string paramValueNumber(AstNode* nodep) {
-	// Given a compilcated object create a number to use for param module assignment
+	// Given a complicated object create a number to use for param module assignment
 	// Ideally would be relatively stable if design changes (not use pointer value),
 	// and must return same value given same input node
 	// Return must presently be numeric so doesn't collide with 'small' alphanumeric parameter names
@@ -166,14 +166,31 @@ private:
 	    return (string)"z"+cvtToStr(num);
 	}
     }
-    void relinkPins(VarCloneMap* clonemapp, AstPin* startpinp) {
+    void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
+	// Grab all I/O so we can remap our pins later
+	for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+	    if (AstVar* varp = stmtp->castVar()) {
+		if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
+		    // Cloning saved a pointer to the new node for us, so just follow that link.
+		    AstVar* oldvarp = varp->clonep()->castVar();
+		    //UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
+		    clonemapp->insert(make_pair(oldvarp, varp));
+		}
+	    }
+	}
+    }
+    void relinkPins(CloneMap* clonemapp, AstPin* startpinp) {
 	for (AstPin* pinp = startpinp; pinp; pinp=pinp->nextp()->castPin()) {
-	    if (!pinp->modVarp()) pinp->v3fatalSrc("Not linked?\n");
-	    // Find it in the clone structure
-	    //UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
-	    VarCloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
-	    UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
-	    pinp->modVarp(cloneiter->second);
+	    if (pinp->modVarp()) {
+		// Find it in the clone structure
+		//UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
+		CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
+		UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
+		pinp->modVarp(cloneiter->second->castVar());
+	    }
+	    else {
+		pinp->v3fatalSrc("Not linked?\n");
+	    }
 	}
     }
     void visitCell(AstCell* nodep);
@@ -458,31 +475,32 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
 	for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 	    if (!pinp->exprp()) continue; // No-connect
-	    AstVar* modvarp = pinp->modVarp();
-	    if (!modvarp) {
-		pinp->v3error("Parameter not found in sub-module: Param "<<pinp->name()<<" of "<<nodep->prettyName());
-	    } else if (!modvarp->isGParam()) {
-		pinp->v3error("Attempted parameter setting of non-parameter: Param "<<pinp->name()<<" of "<<nodep->prettyName());
-	    } else {
-		AstConst* constp = pinp->exprp()->castConst();
-		AstConst* origconstp = modvarp->valuep()->castConst();
-		if (!constp) {
-		    //if (debug()) pinp->dumpTree(cout,"error:");
-		    pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
-		    pinp->exprp()->replaceWith(new AstConst(pinp->fileline(), V3Number(pinp->fileline(), modvarp->width(), 0)));
-		} else if (origconstp && constp->sameTree(origconstp)) {
-		    // Setting parameter to its default value.  Just ignore it.
-		    // This prevents making additional modules, and makes coverage more
-		    // obvious as it won't show up under a unique module page name.
-		} else if (constp->num().isDouble()
-			   || constp->num().isString()
-			   ||  constp->num().isFourState()) {
-		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+paramValueNumber(constp);
-		    any_overrides = true;
+	    if (AstVar* modvarp = pinp->modVarp()) {
+		if (!modvarp->isGParam()) {
+		    pinp->v3error("Attempted parameter setting of non-parameter: Param "<<pinp->prettyName()<<" of "<<nodep->prettyName());
 		} else {
-		    longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+constp->num().ascii(false);
-		    any_overrides = true;
+		    AstConst* exprp = pinp->exprp()->castConst();
+		    AstConst* origp = modvarp->valuep()->castConst();
+		    if (!exprp) {
+			//if (debug()) pinp->dumpTree(cout,"error:");
+			pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
+			pinp->exprp()->replaceWith(new AstConst(pinp->fileline(), V3Number(pinp->fileline(), modvarp->width(), 0)));
+		    } else if (origp && exprp->sameTree(origp)) {
+			// Setting parameter to its default value.  Just ignore it.
+			// This prevents making additional modules, and makes coverage more
+			// obvious as it won't show up under a unique module page name.
+		    } else if (exprp->num().isDouble()
+			       || exprp->num().isString()
+			       ||  exprp->num().isFourState()) {
+			longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+			any_overrides = true;
+		    } else {
+			longname += "_" + paramSmallName(nodep->modp(),modvarp)+exprp->num().ascii(false);
+			any_overrides = true;
+		    }
 		}
+	    } else {
+		pinp->v3error("Parameter not found in sub-module: Param "<<pinp->prettyName()<<" of "<<nodep->prettyName());
 	    }
 	}
 	IfaceRefRefs ifaceRefRefs;
@@ -573,22 +591,12 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 
 		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
 		iter = m_modNameMap.find(newname);
-		VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
+		CloneMap* clonemapp = &(iter->second.m_cloneMap);
 		UINFO(4,"     De-parameterize to new: "<<modp<<endl);
 
 		// Grab all I/O so we can remap our pins later
 		// Note we allow multiple users of a parameterized model, thus we need to stash this info.
-		for (AstNode* stmtp=modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-		    if (AstVar* varp = stmtp->castVar()) {
-			if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
-			    // Cloning saved a pointer to the new node for us, so just follow that link.
-			    AstVar* oldvarp = varp->clonep()->castVar();
-			    //UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
-			    clonemapp->insert(make_pair(oldvarp, varp));
-			}
-		    }
-		}
-
+		collectPins(clonemapp, modp);
 		// Relink parameter vars to the new module
 		relinkPins(clonemapp, nodep->paramsp());
 
@@ -608,15 +616,17 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		// Assign parameters to the constants specified
 		// DOES clone() so must be finished with module clonep() before here
 		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
-		    AstVar* modvarp = pinp->modVarp();
-		    if (modvarp && pinp->exprp()) {
-			AstConst* constp = pinp->exprp()->castConst();
-			// Remove any existing parameter
-			if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
-			// Set this parameter to value requested by cell
-			modvarp->valuep(constp->cloneTree(false));
+		    if (pinp->exprp()) {
+			if (AstVar* modvarp = pinp->modVarp()) {
+			    AstConst* constp = pinp->exprp()->castConst();
+			    // Remove any existing parameter
+			    if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
+			    // Set this parameter to value requested by cell
+			    modvarp->valuep(constp->cloneTree(false));
+			}
 		    }
 		}
+
 	    } else {
 		UINFO(4,"     De-parameterize to old: "<<modp<<endl);
 	    }
@@ -626,7 +636,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    nodep->modName(newname);
 
 	    // We need to relink the pins to the new module
-	    VarCloneMap* clonemapp = &(iter->second.m_cloneMap);
+	    CloneMap* clonemapp = &(iter->second.m_cloneMap);
 	    relinkPins(clonemapp, nodep->pinsp());
 	    UINFO(8,"     Done with "<<modp<<endl);
 	} // if any_overrides

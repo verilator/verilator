@@ -1440,6 +1440,15 @@ private:
 	m_modp->addStmtp(varp);
 	return varp;
     }
+    void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
+	if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
+	    nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
+			   <<refp->user5p()->castNode()->warnMore()
+			   <<"... Location of original "<<whatp<<" connection");
+	} else {
+	    refp->user5p(nodep);
+	}
+    }
 
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser* vup) {
@@ -1513,26 +1522,25 @@ private:
 	if (!nodep->modVarp()) {
 	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?\n");
 	    VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
-	    AstVar* refp = foundp ? foundp->nodep()->castVar() : NULL;
 	    const char* whatp = nodep->param() ? "parameter pin" : "pin";
-	    if (!refp) {
+	    if (!foundp) {
 		if (nodep->name() == "__paramNumber1" && m_cellp->modp()->castPrimitive()) {
 		    // Primitive parameter is really a delay we can just ignore
 		    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 		    return;
 		}
 		nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
-	    } else if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
-		nodep->v3error(ucfirst(whatp)<<" is not an in/out/inout/param/interface: "<<nodep->prettyName());
-	    } else {
-		nodep->modVarp(refp);
-		if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
-		    nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
-				   <<refp->user5p()->castNode()->warnMore()
-				   <<"... Location of original "<<whatp<<" connection");
+	    }
+	    else if (AstVar* refp = foundp->nodep()->castVar()) {
+		if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
+		    nodep->v3error(ucfirst(whatp)<<" is not an in/out/inout/param/interface: "<<nodep->prettyName());
 		} else {
-		    refp->user5p(nodep);
+		    nodep->modVarp(refp);
+		    markAndCheckPinDup(nodep, refp, whatp);
 		}
+	    }
+	    else {
+		nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
 	    }
 	}
 	// Early return() above when deleted

@@ -1157,7 +1157,7 @@ private:
 	// Note genvar's are also entered as integers
 	nodep->dtypeFrom(nodep->varp());
 	if (nodep->backp()->castNodeAssign() && nodep->lvalue()) {  // On LHS
-	    if (!nodep->widthMin()) v3fatalSrc("LHS var should be size complete");
+	    if (!nodep->widthMin()) nodep->v3fatalSrc("LHS var should be size complete");
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"  VRout ");
 	if (nodep->lvalue() && nodep->varp()->isConst()
