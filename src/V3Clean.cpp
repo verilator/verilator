@@ -242,6 +242,10 @@ private:
 	// No cleaning, or would loose pointer to enum
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+	// No cleaning, or would loose pointer to enum
+	nodep->iterateChildren(*this);
+    }
 
     // Control flow operators
     virtual void visit(AstNodeCond* nodep, AstNUser*) {

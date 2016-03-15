@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.883 devel
 
+**    Support parameter type, bug376. [Alan Hunter, et al]
+
 
 * Verilator 3.882 2016-03-01
 
@@ -2715,5 +2717,5 @@ Version 2.0.
 
 Local variables:
 mode: outline
-paragraph-separate: "[ 	\f\n]*$"
+paragraph-separate: "[  \f\n]*$"
 end:

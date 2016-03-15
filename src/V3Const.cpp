@@ -2260,8 +2260,12 @@ private:
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	if (m_required) {
-	    nodep->v3error("Expecting expression to be constant, but can't convert a "
-			   <<nodep->prettyTypeName()<<" to constant.");
+	    if (nodep->castNodeDType() || nodep->castRange()) {
+		// Ignore dtypes for parameter type pins
+	    } else {
+		nodep->v3error("Expecting expression to be constant, but can't convert a "
+			       <<nodep->prettyTypeName()<<" to constant.");
+	    }
 	} else {
 	    // Calculate the width of this operation
 	    if (m_params && !nodep->width()) {

@@ -177,6 +177,12 @@ private:
 		    clonemapp->insert(make_pair(oldvarp, varp));
 		}
 	    }
+	    else if (AstParamTypeDType* ptp = stmtp->castParamTypeDType()) {
+		if (ptp->isGParam()) {
+		    AstParamTypeDType* oldptp = ptp->clonep()->castParamTypeDType();
+		    clonemapp->insert(make_pair(oldptp, ptp));
+		}
+	    }
 	}
     }
     void relinkPins(CloneMap* clonemapp, AstPin* startpinp) {
@@ -187,6 +193,11 @@ private:
 		CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
 		UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
 		pinp->modVarp(cloneiter->second->castVar());
+	    }
+	    else if (pinp->modPTypep()) {
+		CloneMap::iterator cloneiter = clonemapp->find(pinp->modPTypep());
+		UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
+		pinp->modPTypep(cloneiter->second->castParamTypeDType());
 	    }
 	    else {
 		pinp->v3fatalSrc("Not linked?\n");
@@ -499,6 +510,24 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			any_overrides = true;
 		    }
 		}
+	    } else if (AstParamTypeDType* modvarp = pinp->modPTypep()) {
+		AstNodeDType* exprp = pinp->exprp()->castNodeDType();
+		AstNodeDType* origp = modvarp->subDTypep();
+		if (!exprp) {
+		    pinp->v3error("Parameter type pin value isn't a type: Param "<<pinp->prettyName()<<" of "<<nodep->prettyName());
+		} else if (!origp) {
+		    pinp->v3error("Parameter type variable isn't a type: Param "<<modvarp->prettyName());
+		} else {
+		    UINFO(9,"Parameter type assignment expr="<<exprp<<" to "<<origp<<endl);
+		    if (origp && exprp->sameTree(origp)) {
+			// Setting parameter to its default value.  Just ignore it.
+			// This prevents making additional modules, and makes coverage more
+			// obvious as it won't show up under a unique module page name.
+		    } else {
+			longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+			any_overrides = true;
+		    }
+		}
 	    } else {
 		pinp->v3error("Parameter not found in sub-module: Param "<<pinp->prettyName()<<" of "<<nodep->prettyName());
 	    }
@@ -623,6 +652,15 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			    if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
 			    // Set this parameter to value requested by cell
 			    modvarp->valuep(constp->cloneTree(false));
+			}
+			else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
+			    AstNodeDType* dtypep = pinp->exprp()->castNodeDType();
+			    if (!dtypep) pinp->v3fatalSrc("unlinked param dtype");
+			    if (modptp->childDTypep()) pushDeletep(modptp->childDTypep()->unlinkFrBack());
+			    // Set this parameter to value requested by cell
+			    modptp->childDTypep(dtypep->cloneTree(false));
+			    // Later V3LinkDot will convert the ParamDType to a Typedef
+			    // Not done here as may be localparams, etc, that also need conversion
 			}
 		    }
 		}

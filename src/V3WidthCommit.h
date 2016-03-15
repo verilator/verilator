@@ -128,8 +128,16 @@ private:
 	visitIterateNodeDType(nodep);
     }
     virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+	if (nodep->user1SetOnce()) return;  // Process once
 	visitIterateNodeDType(nodep);
 	nodep->clearCache();
+    }
+    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+	if (nodep->user1SetOnce()) return;  // Process once
+	visitIterateNodeDType(nodep);
+	// Move to type table as all dtype pointers must resolve there
+	nodep->unlinkFrBack();  // Make non-child
+	v3Global.rootp()->typeTablep()->addTypesp(nodep);
     }
     void visitIterateNodeDType(AstNodeDType* nodep) {
 	// Rather than use dtypeChg which may make new nodes, we simply edit in place,

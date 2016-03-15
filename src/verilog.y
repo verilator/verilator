@@ -421,6 +421,7 @@ class AstSenTree;
 %token<fl>		yTRI0		"tri0"
 %token<fl>		yTRI1		"tri1"
 %token<fl>		yTRUE		"true"
+%token<fl>		yTYPE		"type"
 %token<fl>		yTYPEDEF	"typedef"
 %token<fl>		yUNION		"union"
 %token<fl>		yUNIQUE		"unique"
@@ -1140,14 +1141,14 @@ local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assig
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	//UNSUP	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
@@ -1155,10 +1156,10 @@ parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assign
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	//UNSUP	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
-	//UNSUP	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
+	|	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
 	;
 
 net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
@@ -1993,7 +1994,7 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
 	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	;
 
@@ -2702,6 +2703,12 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_UNPACKED_DIMENSIONS '(' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 	|	yD_VALUEPLUSARGS '(' str ',' expr ')'	{ $$ = new AstValuePlusArgs($1,*$3,$5); }
+	;
+
+exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
+		expr					{ $$ = $1; }
+	//			// data_type includes id that overlaps expr, so special flavor
+	|	data_type				{ $$ = $1; }
 	;
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
@@ -3794,6 +3801,12 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
     }
     if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
 	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
+    }
+    if (dtypep->castParseTypeDType()) {
+	// Parser needs to know what is a type
+	AstNode* newp = new AstTypedefFwd(fileline, name);
+	nodep->addNext(newp);
+	SYMP->reinsert(newp);
     }
     // Don't set dtypep in the ranging;
     // We need to autosize parameters and integers separately

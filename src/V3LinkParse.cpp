@@ -140,6 +140,21 @@ private:
 
     virtual void visit(AstVar* nodep, AstNUser*) {
 	cleanFileline(nodep);
+	if (nodep->subDTypep()->castParseTypeDType()) {
+	    // It's a parameter type. Use a different node type for this.
+	    AstNodeDType* dtypep = nodep->valuep()->castNodeDType();
+	    if (!dtypep) {
+		nodep->v3error("Parameter type's initial value isn't a type: "<<nodep->prettyName());
+		nodep->unlinkFrBack();
+	    } else {
+		dtypep->unlinkFrBack();
+		AstNode* newp = new AstParamTypeDType(nodep->fileline(), nodep->varType(), nodep->name(),
+						      VFlagChildDType(), dtypep);
+		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+	    }
+	    return;
+	}
+
 	// We used modTrace before leveling, and we may now
 	// want to turn it off now that we know the levelizations
 	if (v3Global.opt.traceDepth()

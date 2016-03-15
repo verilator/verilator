@@ -151,6 +151,26 @@ ostream& operator<<(ostream& str, const WidthVP* vup) {
 
 //######################################################################
 
+class WidthClearVisitor {
+    // Rather than a AstNVisitor, can just quickly touch every node
+    void clearWidthRecurse(AstNode* nodep) {
+	nodep->didWidth(false);
+	if (nodep->op1p()) clearWidthRecurse(nodep->op1p());
+	if (nodep->op2p()) clearWidthRecurse(nodep->op2p());
+	if (nodep->op3p()) clearWidthRecurse(nodep->op3p());
+	if (nodep->op4p()) clearWidthRecurse(nodep->op4p());
+	if (nodep->nextp()) clearWidthRecurse(nodep->nextp());
+    }
+public:
+    // CONSTUCTORS
+    explicit WidthClearVisitor(AstNetlist* nodep) {
+	clearWidthRecurse(nodep);
+    }
+    virtual ~WidthClearVisitor() {}
+};
+
+//######################################################################
+
 class WidthVisitor : public AstNVisitor {
 private:
     // TYPES
@@ -913,6 +933,9 @@ private:
 	    // calculation would return identical values.  Therefore we can directly replace the width
 	    nodep->widthForce(nodep->rangep()->elementsConst(), nodep->rangep()->elementsConst());
 	}
+	else if (nodep->isRanged()) {
+	    nodep->widthForce(nodep->nrange().elements(), nodep->nrange().elements());
+	}
 	else if (nodep->implicit()) {
 	    // Parameters may notice implicitness and change to different dtype
 	    nodep->widthForce(1,1);
@@ -950,6 +973,13 @@ private:
 	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
 	nodep->iterateChildren(*this);
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+    }
+    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
+	nodep->iterateChildren(*this);
+	nodep->dtypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+	nodep->widthFromSub(nodep->subDTypep());
     }
     virtual void visit(AstCastParse* nodep, AstNUser* vup) {
 	// nodep->dtp could be data type, or a primary_constant
@@ -2724,6 +2754,7 @@ private:
 	if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
 	if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
 	if (expWidthMin==0) expWidthMin = expWidth;
+	if (nodep->dtypep()->width() == expWidth) return false;
 	if (nodep->dtypep()->widthSized()  && nodep->width() != expWidthMin) return true;
 	if (!nodep->dtypep()->widthSized() && nodep->widthMin() > expWidthMin) return true;
 	return false;
@@ -3528,6 +3559,7 @@ int V3Width::debug() {
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We should do it in bottom-up module order, but it works in any order.
+    WidthClearVisitor cvisitor (nodep);
     WidthVisitor visitor (false, false);
     (void)visitor.mainAcceptEdit(nodep);
     WidthRemoveVisitor rvisitor;

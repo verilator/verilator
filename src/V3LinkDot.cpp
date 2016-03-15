@@ -194,6 +194,7 @@ public:
 	else if (nodep->castFunc()) return "function";
 	else if (nodep->castBegin()) return "block";
 	else if (nodep->castIface()) return "interface";
+	else if (nodep->castParamTypeDType()) return "parameter type";
 	else return nodep->prettyTypeName();
     }
 
@@ -893,6 +894,11 @@ class LinkDotFindVisitor : public AstNVisitor {
 	nodep->iterateChildren(*this);
 	m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
+    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+	if (!m_curSymp) nodep->v3fatalSrc("Parameter type not under module??\n");
+	nodep->iterateChildren(*this);
+	m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
+    }
     virtual void visit(AstCFunc* nodep, AstNUser*) {
 	// For dotted resolution, ignore all AstVars under functions, otherwise shouldn't exist
 	if (m_statep->forScopeCreation()) nodep->v3fatalSrc("No CFuncs expected in tree yet");
@@ -1539,6 +1545,10 @@ private:
 		    markAndCheckPinDup(nodep, refp, whatp);
 		}
 	    }
+	    else if (AstParamTypeDType* refp = foundp->nodep()->castParamTypeDType()) {
+		nodep->modPTypep(refp);
+		markAndCheckPinDup(nodep, refp, whatp);
+	    }
 	    else {
 		nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
 	    }
@@ -2099,7 +2109,12 @@ private:
 	    if (AstTypedef* defp = foundp ? foundp->nodep()->castTypedef() : NULL) {
 		nodep->refDTypep(defp->subDTypep());
 		nodep->packagep(foundp->packagep());
-	    } else {
+	    }
+	    else if (AstParamTypeDType* defp = foundp ? foundp->nodep()->castParamTypeDType() : NULL) {
+		nodep->refDTypep(defp);
+		nodep->packagep(foundp->packagep());
+	    }
+	    else {
 		nodep->v3error("Can't find typedef: "<<nodep->prettyName());
 	    }
 	}
