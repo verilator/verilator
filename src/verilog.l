@@ -975,9 +975,10 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 %%
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 
-double V3ParseImp::parseDouble(const char* textp, size_t length) {
+double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp) {
     char* strgp = new char[length+1];
     char* dp=strgp;
+    if (successp) *successp = true;
     for (const char* sp=textp; sp<(textp+length); ++sp) {
 	if (*sp != '_') *dp++ = *sp;
     }
@@ -985,7 +986,10 @@ double V3ParseImp::parseDouble(const char* textp, size_t length) {
     char* endp = strgp;
     double d = strtod(strgp, &endp);
     size_t parsed_len = endp-strgp;
-    if (parsed_len != strlen(strgp)) { yyerrorf("Syntax error parsing real: %s",strgp); }
+    if (parsed_len != strlen(strgp)) {
+        if (successp) *successp = false;
+        else yyerrorf("Syntax error parsing real: %s",strgp);
+    }
     delete[] strgp;
     return d;
 }
