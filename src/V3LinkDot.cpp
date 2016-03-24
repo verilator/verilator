@@ -77,6 +77,7 @@
 #include "V3SymTable.h"
 #include "V3Graph.h"
 #include "V3Ast.h"
+#include "V3ParseImp.h"
 
 //######################################################################
 // LinkDot state, as a visitor of each AstNode
@@ -586,6 +587,42 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
+    virtual AstConst* parseParamLiteral(FileLine* fl, string literal) {
+	bool success = false;
+        if (literal[0] == '"') {
+	    // This is a string
+            string v = literal.substr(1, literal.find('"', 1) - 1);
+            V3Number n(V3Number::VerilogStringLiteral(), fl, v);
+            return new AstConst(fl,n);
+        } else if ((literal.find(".") != string::npos)
+		   || (literal.find("e") != string::npos)) {
+	    // This may be a real
+            double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
+            if (success) {
+                return new AstConst(fl, AstConst::RealDouble(), v);
+            }
+        }
+        if (!success) {
+            // This is either an integer or an error
+            // We first try to convert it as C literal. If strtol returns
+            // 0 this is either an error or 0 was parsed. But in any case
+            // we will try to parse it as a verilog literal, hence having
+            // the false negative for 0 is okay. If anything remains in
+            // the string after the number, this is invalid C and we try
+            // the Verilog literal parser.
+            char* endp;
+            int v = strtol(literal.c_str(), &endp, 0);
+            if ((v != 0) && (endp[0] == 0)) { // C literal
+                V3Number n(fl, 32, v);
+                return new AstConst(fl, n);
+            } else { // Try a Verilog literal (fatals if not)
+                V3Number n(fl, literal.c_str());
+                return new AstConst(fl, n);
+            }
+        }
+	return NULL;
+    }
+
     // VISITs
     virtual void visit(AstNetlist* nodep, AstNUser*) {
 	// Process $unit or other packages
@@ -873,6 +910,24 @@ class LinkDotFindVisitor : public AstNVisitor {
 		}
 	    }
 	    if (ins) {
+	        if (m_statep->forPrimary() && nodep->isGParam()
+		    && (m_statep->rootEntp()->nodep() == m_modSymp->parentp()->nodep())) {
+	            // This is the toplevel module. Check for command line overwrites of parameters
+	            // We first search if the parameter is overwritten and then replace it with a
+	            // new value. It will keep the same FileLine information.
+	            if (v3Global.opt.hasParameter(nodep->name())) {
+	                AstVar* newp = new AstVar(nodep->fileline(), AstVarType(AstVarType::GPARAM),
+						  nodep->name(), nodep);
+	                string svalue = v3Global.opt.parameter(nodep->name());
+			if (AstNode* valuep = parseParamLiteral(nodep->fileline(), svalue)) {
+			    newp->valuep(valuep);
+			    UINFO(9,"       replace parameter "<<nodep<<endl);
+			    UINFO(9,"       with "<<newp<<endl);
+			    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+			    nodep = newp;
+			}
+	            }
+	        }
 		VSymEnt* insp = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
 		if (m_statep->forPrimary() && nodep->isGParam()) {
 		    m_paramNum++;

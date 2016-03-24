@@ -1,0 +1,15 @@
+-Greal11=0.2
+-pvalue+real12=0.2
+-Greal21=4e2
+-pvalue+real22=4e2
+-Greal31=0.2e2
+-pvalue+real32=0.2e2
+-Gint11=0x10
+-pvalue+int12=0x10
+-Gint21=020
+-pvalue+int22=020
+-Gint31=123
+-pvalue+int32=123
+-Gint41=32'hdead_beef
+-pvalue+int42=32'hdead_beef
+

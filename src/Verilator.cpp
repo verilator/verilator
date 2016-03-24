@@ -160,6 +160,8 @@ void process () {
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrimary(v3Global.rootp());
     v3Global.checkTree();  // Force a check, as link is most likely place for problems
+    // Check if all parameters have been found
+    v3Global.opt.checkParameters();
     // Correct state we couldn't know at parse time, repair SEL's
     V3LinkResolve::linkResolve(v3Global.rootp());
     // Set Lvalue's in variable refs

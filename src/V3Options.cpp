@@ -130,6 +130,52 @@ void V3Options::addDefine(const string& defline, bool allowPlus) {
 	V3PreShell::defineCmdLine(def,value);
     }
 }
+void V3Options::addParameter(const string& paramline, bool allowPlus) {
+    // Split +define+foo=value into the appropriate parts and parse
+    // Optional + says to allow multiple defines on the line
+    // + is not quotable, as other simulators do not allow that
+    string left = paramline;
+    while (left != "") {
+        string param = left;
+        string::size_type pos;
+        if (allowPlus && ((pos=left.find("+")) != string::npos)) {
+            left = left.substr(pos+1);
+            param.erase(pos);
+        } else {
+            left = "";
+        }
+        string value;
+        if ((pos=param.find("=")) != string::npos) {
+            value = param.substr(pos+1);
+            param.erase(pos);
+        }
+        UINFO(4,"Add parameter"<<param<<"="<<value<<endl);
+        (void)m_parameters.erase(param);
+        m_parameters[param] = value;
+    }
+}
+
+bool V3Options::hasParameter(string name) {
+    return m_parameters.find(name) != m_parameters.end();
+}
+
+string V3Options::parameter(string name) {
+    string value = m_parameters.find(name)->second;
+    m_parameters.erase(m_parameters.find(name));
+    return value;
+}
+
+void V3Options::checkParameters() {
+    if (!m_parameters.empty()) {
+        stringstream msg;
+        msg << "Parameters from the command line were not found in the design:";
+        for (map<string,string>::iterator it = m_parameters.begin();
+                it != m_parameters.end(); ++it) {
+            msg << " " << it->first;
+        }
+        v3fatal(msg.str()<<endl);
+    }
+}
 
 void V3Options::addCppFile(const string& filename) {
     if (m_cppFiles.find(filename) == m_cppFiles.end()) {
@@ -658,6 +704,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
+            else if ( !strncmp(sw, "-pvalue+", strlen("-pvalue+")))	{ addParameter(string(sw+strlen("-pvalue+")), false); }
 	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
 	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = false; }
@@ -747,6 +794,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-error-limit") && (i+1)<argc ) {
 		shift;
 		V3Error::errorLimit(atoi(argv[i]));
+	    }
+	    else if ( !strncmp (sw, "-G", strlen("-G"))) {
+		addParameter (string (sw+strlen("-G")), false);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDirUser (parseFileArg(optdir, string (sw+strlen("-I"))));

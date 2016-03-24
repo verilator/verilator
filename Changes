@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support parameter type, bug376. [Alan Hunter, et al]
 
+**    Support command-line -G/+pvalue param overrides, bug1045. [Stefan Wallentowitz]
+
 
 * Verilator 3.882 2016-03-01
 

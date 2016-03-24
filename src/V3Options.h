@@ -58,6 +58,8 @@ class V3Options {
     V3StringList m_vFiles;	// argument: Verilog files to read
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;	// argument: --dump-treei-<srcfile>=<level>
+    map<string,string>  m_parameters;   // Parameters
+
 
     bool	m_preprocOnly;	// main switch: -E
     bool	m_makeDepend;	// main switch: -MMD
@@ -162,6 +164,7 @@ class V3Options {
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
+    void addParameter(const string& paramline, bool allowPlus);
     void addLangExt(const string& langext, const V3LangCode& lc);
     void addLibExtV(const string& libext);
     void optimize(int level);
@@ -278,6 +281,10 @@ class V3Options {
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
+
+    bool hasParameter(string name);
+    string parameter(string name);
+    void checkParameters();
 
     bool isFuture(const string& flag) const;
     bool isLibraryFile(const string& filename) const;

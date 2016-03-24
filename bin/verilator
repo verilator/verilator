@@ -54,7 +54,18 @@ push @ARGV, (split ' ',$ENV{VERILATOR_TEST_FLAGS}||"");
 # We sneak a look at the flags so we can do some pre-environment checks
 # All flags will hit verilator...
 foreach my $sw (@ARGV) {
-    $sw = "'$sw'" if $sw =~ m![^---a-zA-Z0-9_/\\:.+]!;
+    # Some special treatment for parameters to allow verilog literals for numbers
+    if ((substr($sw, 0, 2) eq "-G") || (substr($sw, 0, 8) eq "-pvalue+")) {
+        # If there is a single quote in the parameter put it double quotes ,
+        # else just put it in double quotes
+        if ($sw =~ m![\']!) {
+            $sw = "\"$sw\"";
+        } else {
+            $sw = "'$sw'";
+        }
+    } else {
+        $sw = "'$sw'" if $sw =~ m![^---a-zA-Z0-9_/\\:.+]!;
+    }
     push @Opt_Verilator_Sw, $sw;
 }
 
@@ -269,6 +280,7 @@ descriptions in the next sections for more information.
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
+     -G<name>=<value>           Overwrite toplevel parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --help                      Display this help
@@ -308,6 +320,7 @@ descriptions in the next sections for more information.
     --profile-cfuncs            Name functions for profiling
     --private                   Debugging; see docs
     --public                    Debugging; see docs
+     -pvalue+<name>=<value>     Overwrite toplevel parameter
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable			Enable model save-restore
     --sc                        Create SystemC output
@@ -688,6 +701,35 @@ The file may contain // comments which are ignored to the end of the line.
 Any $VAR, $(VAR), or ${VAR} will be replaced with the specified environment
 variable.
 
+=item -GI<name>=I<value>
+
+Overwrites the given parameter of the toplevel module. The value is limited
+to basic data literals:
+
+=over 4
+
+=item Verilog integer literals
+
+The standard verilog integer literals are supported, so values like 32'h8,
+2'b00, 4 etc. are allowed. Care must be taken that the single quote (I') is
+properly escaped in an interactive shell, e.g., as -GWIDTH=8\'hx.
+
+=item C integer literals
+
+It is also possible to use C integer notation, including hexadecimal (0x..),
+octal (0..) or binary (0b..) notation.
+
+=item Double literals
+
+Double literals must contain a dot (.) and/or an exponent (e).
+
+=item Strings
+
+String must in double quotes ("). On the command line it is required to escape
+them properly, e.g. as -GSTR="\"My String\"" or -GSTR='"My String"'.
+
+=back
+
 =item --gdb
 
 Run Verilator underneath an interactive GDB (or VERILATOR_GDB environment
@@ -945,6 +987,11 @@ optimizations as if all signals had a /*verilator public*/ comments and
 inlining.  This will also turn off inlining as if all modules had a
 /*verilator public_module*/, unless the module specifically enabled it with
 /*verilator inline_module*/.
+
+=item -pvalue+I<name>=I<value>
+
+Overwrites the given parameter(s) of the toplevel module. See -G for a
+detailed description.
 
 =item --report-unoptflat
 
@@ -1340,7 +1387,7 @@ This is an example similar to the above, but using SystemC.
           top = new Vour("top");   // SP_CELL (top, Vour);
           top->clk(clk);           // SP_PIN  (top, clk, clk);
           while (!Verilated::gotFinish()) { sc_start(1, SC_NS); }
-          delete top; 
+          delete top;
           exit(0);
       }
     EOF
@@ -1603,7 +1650,7 @@ example:
 
 	double sc_time_stamp () {	// Called by $time in Verilog
 	    return main_time;		// converts to double, to match
-					// what SystemC does    
+					// what SystemC does
 	}
 
 	int main(int argc, char** argv) {
@@ -1847,7 +1894,7 @@ accesses the above would be:
         if (!vh1) { error... }
         const char* name = vpi_get_str(vpiName, vh1);
         printf("Module name: %s\n");  // Prints "readme"
-    
+
         s_vpi_value v;
         v.format = vpiIntVal;
         vpi_get_value(vh1, &v);
