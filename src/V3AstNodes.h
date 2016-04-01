@@ -722,10 +722,11 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
-struct AstParseTypeDType : public AstNodeDType {
+class AstParseTypeDType : public AstNodeDType {
     // Parents: VAR
     // During parsing, this indicates the type of a parameter is a "parameter type"
     // e.g. the data type is a container of any data type
+public:
     AstParseTypeDType(FileLine* fl)
 	: AstNodeDType(fl) {}
     ASTNODE_NODE_FUNCS(ParseTypeDType, PARSETYPEDTYPE)

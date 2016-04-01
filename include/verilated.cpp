@@ -961,7 +961,8 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 }
 
 void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
-                         const string& ofilenamep, void* memp, IData start, IData end) {
+		  const string& ofilenamep, void* memp, IData start, IData end) {
+    if (fnwords) {}
     FILE* fp = fopen(ofilenamep.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
