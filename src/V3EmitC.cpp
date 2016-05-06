@@ -120,7 +120,7 @@ public:
 				puts(itemp->name());
 				puts(" = ");
 				itemp->valuep()->iterateAndNext(*this);
-				if (nodep->nextp()) puts(",");
+				if (itemp->nextp()->castEnumItem()) puts(",");
 				puts("\n");
 			    }
 			    puts("};\n");
