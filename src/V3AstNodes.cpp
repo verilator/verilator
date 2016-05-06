@@ -977,6 +977,7 @@ void AstVar::dump(ostream& str) {
     if (attrFileDescr()) str<<" [aFD]";
     if (isFuncReturn()) str<<" [FUNCRTN]";
     else if (isFuncLocal()) str<<" [FUNC]";
+    if (!attrClocker().unknown()) str<<" ["<<attrClocker().ascii()<<"] ";
     str<<" "<<varType();
 }
 void AstSenTree::dump(ostream& str) {

@@ -514,6 +514,7 @@ public:
     inline AstVarAttrClocker (en _e) : m_e(_e) {}
     explicit inline AstVarAttrClocker (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
+    bool unknown() const { return m_e==CLOCKER_UNKNOWN; }
     AstVarAttrClocker invert() const {
 	if (m_e==CLOCKER_YES) return CLOCKER_NO;
 	else if (m_e==CLOCKER_NO) return CLOCKER_YES;
