@@ -291,6 +291,7 @@ descriptions in the next sections for more information.
     --inline-mult <value>       Tune module inlining
      -LDFLAGS <flags>           Linker pre-object flags for makefile
      -LDLIBS <flags>            Linker library flags for makefile
+    --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
@@ -784,6 +785,15 @@ that's the traditional name in simulators; it's would have been better
 called LDLIBS as that's the Makefile variable it controls.  (In Make,
 LDFLAGS is before the first object, LDLIBS after.  -L libraries need to be
 in the Make variable LDLIBS, not LDFLAGS.)
+
+=item --l2-name I<value>
+
+Instead of using the module name when showing Verilog scope, use the name
+provided. Default is "--l2-name v" and is used to standardize some wrapping
+methodologies.
+
+The program "module t; initial $display("= %m"); endmodule" will show by
+default "= t". With "--l2-name v" it will print "= v".
 
 =item --language I<value>
 

@@ -113,7 +113,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
 
     // Add instance
     AstCell* cellp = new AstCell(newmodp->fileline(),
-				 (v3Global.opt.l2Name() ? "v" : oldmodp->name()),
+				 ((v3Global.opt.l2Name()!="") ? v3Global.opt.l2Name() : oldmodp->name()),
 				 oldmodp->name(),
 				 NULL, NULL, NULL);
     cellp->modp(oldmodp);

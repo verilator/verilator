@@ -693,7 +693,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
 	    else if ( onoff   (sw, "-inhibit-sim", flag/*ref*/)){ m_inhibitSim = flag; }
-	    else if ( onoff   (sw, "-l2name", flag/*ref*/) )	{ m_l2Name = flag; }
 	    else if ( onoff   (sw, "-lint-only", flag/*ref*/) )	{ m_lintOnly = flag; }
 	    else if ( !strcmp (sw, "-no-pins64") )		{ m_pinsBv = 33; }
 	    else if ( onoff   (sw, "-order-clock-delay", flag/*ref*/) )	{ m_orderClockDly = flag; }
@@ -812,6 +811,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-LDFLAGS") && (i+1)<argc ) {
 		shift;
 		addLdLibs(argv[i]);
+	    }
+	    else if ( !strcmp (sw, "-l2-name") && (i+1)<argc ) {
+		shift;
+		m_l2Name = argv[i];
+	    }
+	    else if ( !strcmp (sw, "-l2name")) {  // Historical and undocumented
+		m_l2Name = "v";
+	    }
+	    else if ( !strcmp (sw, "-no-l2name")) {  // Historical and undocumented
+		m_l2Name = "";
 	    }
 	    else if ( (!strcmp (sw, "-language") && (i+1)<argc)
 		      || (!strcmp (sw, "-default-language") && (i+1)<argc)) {
@@ -1192,7 +1201,6 @@ V3Options::V3Options() {
     m_exe = false;
     m_ignc = false;
     m_inhibitSim = false;
-    m_l2Name = true;
     m_lintOnly = false;
     m_makeDepend = true;
     m_makePhony = false;
@@ -1242,6 +1250,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
+    m_l2Name = "v";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 

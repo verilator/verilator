@@ -78,7 +78,6 @@ class V3Options {
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
-    bool	m_l2Name;	// main switch: --l2name
     bool	m_lintOnly;	// main switch: --lint-only
     bool	m_orderClockDly;// main switch: --order-clock-delay
     bool	m_outFormatOk;	// main switch: --cc, --sc or --sp was specified
@@ -124,6 +123,7 @@ class V3Options {
     string	m_bin;		// main switch: --bin {binary}
     string	m_exeName;	// main switch: -o {name}
     string	m_flags;	// main switch: -f {name}
+    string	m_l2Name;	// main switch: --l2name; "" for top-module's name
     string	m_makeDir;	// main switch: -Mdir
     string	m_modPrefix;	// main switch: --mod-prefix
     string	m_pipeFilter;	// main switch: --pipe-filter
@@ -240,7 +240,6 @@ class V3Options {
     bool pinsUint8() const { return m_pinsUint8; }
     bool profileCFuncs() const { return m_profileCFuncs; }
     bool allPublic() const { return m_public; }
-    bool l2Name() const { return m_l2Name; }
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
@@ -267,6 +266,7 @@ class V3Options {
     int    compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
+    string l2Name() const { return m_l2Name; }
     string makeDir() const { return m_makeDir; }
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }

@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support command-line -G/+pvalue param overrides, bug1045. [Stefan Wallentowitz]
 
+***   Add --l2-name option for controlling "v" naming, bug1050.
+
 
 * Verilator 3.882 2016-03-01
 
