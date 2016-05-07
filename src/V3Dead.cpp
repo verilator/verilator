@@ -49,7 +49,7 @@ private:
     // VISITORS
     virtual void visit(AstCell* nodep, AstNUser*) {
 	nodep->iterateChildren(*this);
-	nodep->modp()->user1(nodep->modp()->user1() - 1);
+	nodep->modp()->user1Inc(-1);
     }
     //-----
     virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
