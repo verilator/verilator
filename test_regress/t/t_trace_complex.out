@@ -8,7 +8,7 @@ $timescale 1ns $end
   $scope module $unit $end
    $var wire  1 # global_bit $end
   $upscope $end
-  $scope module v $end
+  $scope module t $end
    $var wire  1 9 clk $end
    $var wire 32 $ cyc [31:0] $end
    $var real 64 3 v_arr_real(0) $end

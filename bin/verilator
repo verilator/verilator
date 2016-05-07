@@ -789,11 +789,12 @@ in the Make variable LDLIBS, not LDFLAGS.)
 =item --l2-name I<value>
 
 Instead of using the module name when showing Verilog scope, use the name
-provided. Default is "--l2-name v" and is used to standardize some wrapping
-methodologies.
+provided. This allows simplifying some Verilator-embedded modeling
+methodologies. Default is an l2-name matching the top module. The default
+before 3.884 was "--l2-name v"
 
-The program "module t; initial $display("= %m"); endmodule" will show by
-default "= t". With "--l2-name v" it will print "= v".
+For example, the program "module t; initial $display("%m"); endmodule" will
+show by default "t". With "--l2-name v" it will print "v".
 
 =item --language I<value>
 

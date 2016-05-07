@@ -16,7 +16,7 @@ compile (
     expect=>
 '%Error: Circular logic when ordering code .*
 %Error:      Example path: t/t_order_loop_bad.v:\d+:  ALWAYS
-%Error:      Example path: t/t_order_loop_bad.v:\d+:  v.ready
+%Error:      Example path: t/t_order_loop_bad.v:\d+:  t.ready
 %Error:      Example path: t/t_order_loop_bad.v:\d+:  ACTIVE
 .*',
     );

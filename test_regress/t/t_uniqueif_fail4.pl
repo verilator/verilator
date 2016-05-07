@@ -19,7 +19,7 @@ compile (
 execute (
     fails => $Self->{vlt},
     expect=>
-'.*%Error: t_uniqueif.v:\d+: Assertion failed in top.v: \'unique if\' statement violated
+'.*%Error: t_uniqueif.v:\d+: Assertion failed in top.t: \'unique if\' statement violated
 %Error: t/t_uniqueif.v:\d+: Verilog \$stop
 .*',
     );

@@ -95,25 +95,25 @@ module alpha (/*AUTOARG*/
    input clk;
 
    input toggle;
-   // CHECK_COVER(-1,"top.v.a*",4)
+   // CHECK_COVER(-1,"top.t.a*",4)
    // 2 edges * (t.a1 and t.a2)
 
    input [7:0] cyc_copy;
-   // CHECK_COVER(-1,"top.v.a*","cyc_copy[0]",22)
-   // CHECK_COVER(-2,"top.v.a*","cyc_copy[1]",10)
-   // CHECK_COVER(-3,"top.v.a*","cyc_copy[2]",4)
-   // CHECK_COVER(-4,"top.v.a*","cyc_copy[3]",2)
-   // CHECK_COVER(-5,"top.v.a*","cyc_copy[4]",0)
-   // CHECK_COVER(-6,"top.v.a*","cyc_copy[5]",0)
-   // CHECK_COVER(-7,"top.v.a*","cyc_copy[6]",0)
-   // CHECK_COVER(-8,"top.v.a*","cyc_copy[7]",0)
+   // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
+   // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
+   // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)
+   // CHECK_COVER(-4,"top.t.a*","cyc_copy[3]",2)
+   // CHECK_COVER(-5,"top.t.a*","cyc_copy[4]",0)
+   // CHECK_COVER(-6,"top.t.a*","cyc_copy[5]",0)
+   // CHECK_COVER(-7,"top.t.a*","cyc_copy[6]",0)
+   // CHECK_COVER(-8,"top.t.a*","cyc_copy[7]",0)
 
    reg 	       toggle_internal;
-   // CHECK_COVER(-1,"top.v.a*",4)
+   // CHECK_COVER(-1,"top.t.a*",4)
    // 2 edges * (t.a1 and t.a2)
 
    output reg  toggle_up;
-   // CHECK_COVER(-1,"top.v.a*",4)
+   // CHECK_COVER(-1,"top.t.a*",4)
    // 2 edges * (t.a1 and t.a2)
 
    always @ (posedge clk) begin
@@ -130,7 +130,7 @@ module beta (/*AUTOARG*/
    input clk;
 
    input toggle_up;
-   // CHECK_COVER(-1,"top.v.b1","toggle_up",2)
+   // CHECK_COVER(-1,"top.t.b1","toggle_up",2)
 
    /* verilator public_module */
 
@@ -150,6 +150,6 @@ module off (/*AUTOARG*/
 
    // verilator coverage_on
    input toggle;
-   // CHECK_COVER(-1,"top.v.o1","toggle",2)
+   // CHECK_COVER(-1,"top.t.o1","toggle",2)
 
 endmodule

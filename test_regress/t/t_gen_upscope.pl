@@ -13,17 +13,17 @@ compile (
 execute (
     check_finished=>1,
 	 expect=>quotemeta(
-q{created tag with scope = top.v.b.gen[0].tag
-created tag with scope = top.v.b.gen[1].tag
-created tag with scope = top.v.tag
-mod a has scope = top.v
-mod a has tag   = top.v.tag
-mod b has scope = top.v.b
-mod b has tag   = top.v.tag
-mod c has scope = top.v.b.gen[0].c
-mod c has tag   = top.v.b.gen[0].tag
-mod c has scope = top.v.b.gen[1].c
-mod c has tag   = top.v.b.gen[1].tag
+q{created tag with scope = top.t.b.gen[0].tag
+created tag with scope = top.t.b.gen[1].tag
+created tag with scope = top.t.tag
+mod a has scope = top.t
+mod a has tag   = top.t.tag
+mod b has scope = top.t.b
+mod b has tag   = top.t.tag
+mod c has scope = top.t.b.gen[0].c
+mod c has tag   = top.t.b.gen[0].tag
+mod c has scope = top.t.b.gen[1].c
+mod c has tag   = top.t.b.gen[1].tag
 *-* All Finished *-*}),
     );
 

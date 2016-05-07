@@ -76,7 +76,7 @@ module alpha (/*AUTOARG*/
    input toggle;
    always @ (posedge clk) begin
       if (toggle) begin
-	 // CHECK_COVER(-1,"top.v.a*",2)
+	 // CHECK_COVER(-1,"top.t.a*",2)
 	 // t.a1 and t.a2 collapse to a count of 2
       end
       if (toggle) begin
@@ -99,11 +99,11 @@ module beta (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (0) begin
-	 // CHECK_COVER(-1,"top.v.b*",0)
+	 // CHECK_COVER(-1,"top.t.b*",0)
 	 // Make sure that we don't optimize away zero buckets
       end
       if (toggle) begin
-	 // CHECK_COVER(-1,"top.v.b*",2)
+	 // CHECK_COVER(-1,"top.t.b*",2)
 	 // t.b1 and t.b2 collapse to a count of 2
       end
       if (toggle) begin
@@ -132,10 +132,10 @@ module tsk (/*AUTOARG*/
       input external;
       begin
 	 if (toggle) begin
-	    // CHECK_COVER(-1,"top.v.t1",1)
+	    // CHECK_COVER(-1,"top.t.t1",1)
 	 end
 	 if (external) begin
-	    // CHECK_COVER(-1,"top.v.t1",1)
+	    // CHECK_COVER(-1,"top.t.t1",1)
 	    $write("[%0t] Got external pulse\n", $time);
 	 end
       end
@@ -160,7 +160,7 @@ module off (/*AUTOARG*/
    // verilator coverage_on
    always @ (posedge clk) begin
       if (toggle) begin
-	 // CHECK_COVER(-1,"top.v.o1",1)
+	 // CHECK_COVER(-1,"top.t.o1",1)
 	 // because under coverage_module_off
       end
    end

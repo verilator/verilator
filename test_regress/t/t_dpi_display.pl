@@ -22,8 +22,8 @@ dpii_display_call: constant
 dpii_display_call: constant_value
 one10=0000000a 
 dpii_display_call: one10=0000000a 
-Mod=top.v 16=         10 10=0000000a 
-dpii_display_call: Mod=top.v 16=         10 10=0000000a 
+Mod=top.t 16=         10 10=0000000a 
+dpii_display_call: Mod=top.t 16=         10 10=0000000a 
 *-* All Finished *-*
 }),
      );

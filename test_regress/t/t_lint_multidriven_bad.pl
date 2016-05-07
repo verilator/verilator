@@ -16,7 +16,7 @@ compile (
     make_top_shell => 0,
     make_main => 0,
     expect=>
-'%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: Signal has multiple driving blocks: v.mem
+'%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: Signal has multiple driving blocks: t.mem
 %Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of first driving block
 %Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of other driving block
 %Warning-MULTIDRIVEN: Use ".*" and lint_on around source to disable this message.

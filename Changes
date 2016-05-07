@@ -10,7 +10,10 @@ indicates the contributor was also the author of the fix; Thanks!
 
 **    Support command-line -G/+pvalue param overrides, bug1045. [Stefan Wallentowitz]
 
-***   Add --l2-name option for controlling "v" naming, bug1050.
+***   The default l2 scope name is now the same as the top-level module, bug1050.
+      Use "--l2-name v" for the historical behavior.
+
+***   Add --l2-name option for controlling "v" naming.
 
 
 * Verilator 3.882 2016-03-01

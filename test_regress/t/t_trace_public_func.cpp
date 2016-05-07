@@ -33,7 +33,7 @@ int main(int argc, char **argv, char **env) {
 	top->CLK   = (main_time/dt_2)%2;
 	top->eval();
 
-	top->v->glbl->setGSR(main_time < 7);
+	top->t->glbl->setGSR(main_time < 7);
 
 	tfp->dump((unsigned int)(main_time));
 	++main_time;

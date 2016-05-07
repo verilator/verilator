@@ -12,11 +12,11 @@ compile (
 	 verilator_make_gcc => 0,
 	 fails => 1,
 	 expect=>
-'%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: v.rst2_bad_n
+'%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst2_bad_n
 %Warning-CDCRSTLOGIC: Use "/\* verilator lint_off CDCRSTLOGIC \*/" and lint_on around source to disable this message.
 %Warning-CDCRSTLOGIC:      See details in obj_dir/t_cdc_async_bad/Vt_cdc_async_bad__cdc.txt
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: v.rst6a_bad_n
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: v.rst6b_bad_n
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst6a_bad_n
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:\d+: Logic in path that feeds async reset, via signal: t.rst6b_bad_n
 %Error: Exiting due to.*',
 	 );
 

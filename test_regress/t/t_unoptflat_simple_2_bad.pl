@@ -16,7 +16,7 @@ compile (
     fails => 1,
     expect=>
 '.*%Warning-UNOPTFLAT:      Widest candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:\d+:  v.x, width 3, fanout \d+
+%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:\d+:  t.x, width 3, fanout \d+
 .*%Error: Exiting due to ',
     );
 

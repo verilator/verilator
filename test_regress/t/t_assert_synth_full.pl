@@ -19,7 +19,7 @@ execute (
 	 check_finished=>0,
 	 fails=> $Self->{vlt},
 	 expect=>
-'%Error: t_assert_synth.v:\d+: Assertion failed in top.v: synthesis full_case'
+'%Error: t_assert_synth.v:\d+: Assertion failed in top.t: synthesis full_case'
 	 );
 
 ok(1);

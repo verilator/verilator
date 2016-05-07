@@ -9,7 +9,7 @@ $timescale 1ns $end
   $var wire  1 ' clk $end
   $var wire  1 ) double__underscore $end
   $var wire  1 ( escaped_normal $end
-  $scope module v $end
+  $scope module t $end
    $var wire  1 * 9num $end
    $var wire 32 & a0.cyc [31:0] $end
    $var wire  1 + bra[ket]slash/dash-colon:9backslash\done $end

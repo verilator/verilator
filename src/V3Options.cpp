@@ -1250,7 +1250,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_bin = "";
     m_flags = "";
-    m_l2Name = "v";
+    m_l2Name = "";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
 

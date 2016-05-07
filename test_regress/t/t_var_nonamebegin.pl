@@ -13,14 +13,14 @@ compile (
 
 execute (
 	 expect=>quotemeta(
-'ingen: {mod}.genblk1 top.v.genblk1
-d3a: {mod}.d3nameda top.v.d3nameda
-b2: {mod} top.v
-b3n: {mod}.b3named: top.v.b3named
-b3: {mod} top.v
-b4: {mod} top.v
-t1 {mod}.tsk top.v
-t2 {mod}.tsk top.v
+'ingen: {mod}.genblk1 top.t.genblk1
+d3a: {mod}.d3nameda top.t.d3nameda
+b2: {mod} top.t
+b3n: {mod}.b3named: top.t.b3named
+b3: {mod} top.t
+b4: {mod} top.t
+t1 {mod}.tsk top.t
+t2 {mod}.tsk top.t
 *-* All Finished *-*'),
     );
 

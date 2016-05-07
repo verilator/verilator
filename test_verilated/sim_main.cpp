@@ -29,7 +29,7 @@ int main(int argc, char **argv, char **env) {
 #define CYCTIME 10
 
     // Cycle the interpreter
-    while (main_time < CYCTIME*top->v->CYCLES) {
+    while (main_time < CYCTIME*top->vgen->CYCLES) {
 	top->eval();
 	main_time += CYCTIME/2;
 	top->clk = !top->clk;

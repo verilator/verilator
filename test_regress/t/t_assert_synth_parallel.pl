@@ -19,7 +19,7 @@ execute (
 	 check_finished=>0,
 	 fails => $Self->{v3},
 	 expect=>
-'%Error: t_assert_synth.v:\d+: Assertion failed in top.v: synthesis parallel_case'
+'%Error: t_assert_synth.v:\d+: Assertion failed in top.t: synthesis parallel_case'
 	 );
 
 ok(1);

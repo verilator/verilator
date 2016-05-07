@@ -90,7 +90,7 @@ checkResult (bool    p,
 int main ()
 {
     Vt_dpi_accessors *dut = new Vt_dpi_accessors ("dut");
-    svSetScope (svGetScopeFromName ("dut.v"));
+    svSetScope (svGetScopeFromName ("dut.t"));
 
     // evaluate the model with no signal changes to get the initial blocks
     // executed.

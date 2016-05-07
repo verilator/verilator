@@ -16,7 +16,7 @@ compile (
 execute (
 	 check_finished=>1,
 	 expect=>
-'\] (%m|.*v\.ps): Clocked
+'\] (%m|.*t\.ps): Clocked
 ',
      );
 
