@@ -33,8 +33,10 @@ public:
     static void deadifyModules(AstNetlist* nodep);
     // Modules, Data types
     static void deadifyDTypes(AstNetlist* nodep);
+    static void deadifyDTypesScoped(AstNetlist* nodep);
     // Everything that's possible
     static void deadifyAll(AstNetlist* nodep);
+    static void deadifyAllScoped(AstNetlist* nodep);
 };
 
 #endif // Guard

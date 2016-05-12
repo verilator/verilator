@@ -284,7 +284,7 @@ void process () {
     if (!v3Global.opt.xmlOnly()) {
 	// Cleanup
 	V3Const::constifyAll(v3Global.rootp());
-	V3Dead::deadifyDTypes(v3Global.rootp());
+	V3Dead::deadifyDTypesScoped(v3Global.rootp());
 	v3Global.checkTree();
 
 	// Convert case statements to if() blocks.  Must be after V3Unknown
@@ -319,7 +319,7 @@ void process () {
 
 	// Cleanup
 	V3Const::constifyAll(v3Global.rootp());
-	V3Dead::deadifyDTypes(v3Global.rootp());
+	V3Dead::deadifyDTypesScoped(v3Global.rootp());
 	v3Global.checkTree();
 
 	// Detect clock enables and mode into sensitives, and split always based on clocks
@@ -359,7 +359,7 @@ void process () {
 
 	// Remove unused vars
 	V3Const::constifyAll(v3Global.rootp());
-	V3Dead::deadifyAll(v3Global.rootp());
+	V3Dead::deadifyAllScoped(v3Global.rootp());
 
 	// Clock domain crossing analysis
 	if (v3Global.opt.cdc()) {
@@ -404,7 +404,7 @@ void process () {
 
 	// Remove unused vars
 	V3Const::constifyAll(v3Global.rootp());
-	V3Dead::deadifyAll(v3Global.rootp());
+	V3Dead::deadifyAllScoped(v3Global.rootp());
 
 	// Detect change loop
 	V3Changed::changedAll(v3Global.rootp());
