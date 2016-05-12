@@ -51,12 +51,54 @@ public:
     AstNodeModule*	m_topModp;	// Top module
     AstScope*		m_scopetopp;	// Scope under TOPSCOPE
     AstCFunc*		m_chgFuncp;	// Change function we're building
+    AstCFunc*		m_tlChgFuncp;	// Top level change function we're building
+    int			m_numStmts;     // Number of statements added to m_chgFuncp
+    int 		m_funcNum;	// Number of change functions emitted
+
     ChangedState() {
 	m_topModp = NULL;
 	m_chgFuncp = NULL;
 	m_scopetopp = NULL;
+	m_tlChgFuncp = NULL;
+	m_numStmts = 0;
+	m_funcNum = 0;
     }
     ~ChangedState() {}
+
+    void maybeCreateChgFuncp() {
+	// Don't create an extra function call if splitting is disabled
+	if (!v3Global.opt.outputSplitCFuncs()) {
+	    m_chgFuncp = m_tlChgFuncp;
+	    return;
+	}
+	if (!m_chgFuncp || v3Global.opt.outputSplitCFuncs() < m_numStmts) {
+	    m_chgFuncp = new AstCFunc(m_scopetopp->fileline(), "_change_request_" + cvtToStr(++m_funcNum), m_scopetopp, "QData");
+	    m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
+	    m_chgFuncp->symProlog(true);
+	    m_chgFuncp->declPrivate(true);
+	    m_scopetopp->addActivep(m_chgFuncp);
+
+	    // Add a top call to it
+	    AstCCall* callp = new AstCCall(m_scopetopp->fileline(), m_chgFuncp);
+	    callp->argTypes("vlSymsp");
+
+	    if (!m_tlChgFuncp->stmtsp()) {
+		m_tlChgFuncp->addStmtsp(new AstCReturn(m_scopetopp->fileline(), callp));
+	    } else {
+		AstCReturn* returnp = m_tlChgFuncp->stmtsp()->castCReturn();
+		if (!returnp) m_scopetopp->v3fatalSrc("Lost CReturn in top change function");
+		// This is currently using AstLogOr which will shortcut the evaluation if
+		// any function returns true. This is likely what we want and is similar to the logic already in use
+		// inside V3EmitC, however, it also means that verbose logging may miss to print change detect variables.
+		AstNode* newp = new AstCReturn(m_scopetopp->fileline(),
+					       new AstLogOr(m_scopetopp->fileline(), callp,
+							    returnp->lhsp()->unlinkFrBack()));
+		returnp->replaceWith(newp);
+		returnp->deleteTree(); VL_DANGLING(returnp);
+	    }
+	    m_numStmts = 0;
+	}
+    }
 };
 
 //######################################################################
@@ -87,6 +129,8 @@ private:
 			   <<"... Could recompile with DETECTARRAY_MAX_INDEXES increased"<<endl);
 	    return;
 	}
+	m_statep->maybeCreateChgFuncp();
+
 	AstChangeDet* changep = new AstChangeDet (m_vscp->fileline(),
 						  m_varEqnp->cloneTree(true),
 						  m_newRvEqnp->cloneTree(true), false);
@@ -95,6 +139,8 @@ private:
 					  m_newLvEqnp->cloneTree(true),
 					  m_varEqnp->cloneTree(true));
 	m_statep->m_chgFuncp->addFinalsp(initp);
+	EmitCBaseCounterVisitor visitor(initp);
+	m_statep->m_numStmts += visitor.count();
     }
 
     virtual void visit(AstBasicDType* nodep, AstNUser*) {
@@ -200,6 +246,7 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
+
     virtual void visit(AstTopScope* nodep, AstNUser*) {
 	UINFO(4," TS "<<nodep<<endl);
 	// Clearing
@@ -208,15 +255,18 @@ private:
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?\n");
 	m_statep->m_scopetopp = scopep;
-	// Create change detection function
-	m_statep->m_chgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
-	m_statep->m_chgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
-	m_statep->m_chgFuncp->symProlog(true);
-	m_statep->m_chgFuncp->declPrivate(true);
-	m_statep->m_scopetopp->addActivep(m_statep->m_chgFuncp);
-	// We need at least one change detect so we know to emit the correct code
+
+	// Create a wrapper change detection function that calls each change detection function
+	m_statep->m_tlChgFuncp = new AstCFunc(nodep->fileline(), "_change_request", scopep, "QData");
+	m_statep->m_tlChgFuncp->argTypes(EmitCBaseVisitor::symClassVar());
+	m_statep->m_tlChgFuncp->symProlog(true);
+	m_statep->m_tlChgFuncp->declPrivate(true);
+	m_statep->m_scopetopp->addActivep(m_statep->m_tlChgFuncp);
+	// Each change detection function needs at least one AstChangeDet
+	// to ensure that V3EmitC outputs the necessary code.
+	m_statep->maybeCreateChgFuncp();
 	m_statep->m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
-	//
+
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstVarScope* nodep, AstNUser*) {

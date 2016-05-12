@@ -235,6 +235,7 @@ RAW_OBJS = \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
+	V3VarResets.o \
 	V3Width.o \
 	V3WidthSel.o \
 

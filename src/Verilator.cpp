@@ -39,6 +39,7 @@
 #include "V3Const.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
+#include "V3VarResets.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -497,6 +498,10 @@ void process () {
     }
 
     V3Error::abortIfErrors();
+    if (!v3Global.opt.lintOnly()
+	&& !v3Global.opt.xmlOnly()) {
+	V3VarResets::emitResets();
+    }
 
     // Output the text
     if (!v3Global.opt.lintOnly()
