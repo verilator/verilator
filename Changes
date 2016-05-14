@@ -19,6 +19,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix removal of empty packages, modules and cells, bug1034. [Johan Bjork]
 
+****  Fix core dump on Arch Linux/GCC 6.1.1, bug1058. [Jannis Harder]
+
 
 * Verilator 3.882 2016-03-01
 
