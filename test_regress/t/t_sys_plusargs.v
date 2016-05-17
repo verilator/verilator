@@ -7,6 +7,7 @@ module t;
 
    integer p_i;
    reg [7*8:1] p_str;
+   string      sv_str;
 
    initial begin
       if ($test$plusargs("PLUS")!==1) $stop;
@@ -31,6 +32,10 @@ module t;
       if ($value$plusargs("IN%s", p_str)!==1) $stop;
       $display("str='%s'",p_str);
       if (p_str !== "T=1234") $stop;
+
+      if ($value$plusargs("IN%s", sv_str)!==1) $stop;
+      $display("str='%s'",sv_str);
+      if (sv_str != "T=1234") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

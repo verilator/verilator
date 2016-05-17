@@ -1077,6 +1077,14 @@ IData VL_TESTPLUSARGS_I(const char* formatp) {
     else return 1;
 }
 
+IData VL_VALUEPLUSARGS_IN(int, const char* prefixp, char, string& ldr) {
+    const string& match = VerilatedImp::argPlusMatch(prefixp);
+    const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);
+    if (match == "") return 0;
+    ldr = string(dp);
+    return 1;
+}
+
 IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp) {
     const string& match = VerilatedImp::argPlusMatch(prefixp);
     const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);

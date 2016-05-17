@@ -21,6 +21,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix core dump on Arch Linux/GCC 6.1.1, bug1058. [Jannis Harder]
 
+****  Fix $value$plusargs to string, msg1890. [Frederic Requin]
+
 
 * Verilator 3.882 2016-03-01
 

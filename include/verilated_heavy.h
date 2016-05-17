@@ -66,5 +66,6 @@ extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwo
 extern IData VL_SSCANF_INX(int lbits, const string& ld, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...);
 extern string VL_SFORMATF_NX(const char* formatp, ...);
+extern IData VL_VALUEPLUSARGS_IN(int rbits, const char* prefixp, char fmt, string& ldr);
 
 #endif // Guard
