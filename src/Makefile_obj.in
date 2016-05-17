@@ -99,6 +99,8 @@ CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
 CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_SRC) -Werror
 #CPPFLAGS += -pedantic-errors
+else
+CPPFLAGS += $(CFG_CXXFLAGS_SRC)
 endif
 CPPFLAGSWALL   = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
