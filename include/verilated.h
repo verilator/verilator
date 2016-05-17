@@ -288,6 +288,7 @@ public:
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);
     static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
+    static void commandArgsAdd(int argc, const char** argv);
     static CommandArgValues* getCommandArgs() {return &s_args;}
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
     static const char* commandArgsPlusMatch(const char* prefixp);

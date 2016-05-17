@@ -92,7 +92,11 @@ public: // But only for verilated*.cpp
 
     // METHODS - arguments
     static void commandArgs(int argc, const char** argv) {
-	s_s.m_argVec.clear();
+	s_s.m_argVec.clear();  // Always clear
+	commandArgsAdd(argc, argv);
+    }
+    static void commandArgsAdd(int argc, const char** argv) {
+	if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
 	for (int i=0; i<argc; i++) s_s.m_argVec.push_back(argv[i]);
 	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
     }
