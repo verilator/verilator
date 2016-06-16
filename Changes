@@ -6,6 +6,9 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.885 devel
 
+****  Fix false warnings on non-power-2 enums using .next/.prev.
+
+
 * Verilator 3.884 2016-05-18
 
 **    Support parameter type, bug376. [Alan Hunter, et al]

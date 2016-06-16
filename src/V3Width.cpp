@@ -1493,6 +1493,7 @@ private:
 		    nodep->v3error("Unsupported: Arguments passed to enum.next method");
 		}
 		// Need a runtime lookup table.  Yuk.
+		// Most enums unless overridden are 32 bits, so we size array based on max enum value used.
 		// Ideally we would have a fast algorithm when a number is
 		// of small width and complete and so can use an array, and
 		// a map for when the value is many bits and sparse.
@@ -1508,10 +1509,15 @@ private:
 			return;
 		    }
 		}
+		int selwidth = V3Number::log2b(msbdim)+1;	// Width to address a bit
 		AstVar* varp = enumVarp(adtypep, attrType, msbdim);
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
-		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp, nodep->fromp()->unlinkFrBack());
+		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp,
+						// Select in case widths are off due to msblen!=width
+						new AstSel(nodep->fileline(),
+							   nodep->fromp()->unlinkFrBack(),
+							   0, selwidth));
 		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    } else {
 		nodep->v3error("Unknown built-in enum method '"<<nodep->fromp()->prettyTypeName()<<"'");
@@ -3413,7 +3419,7 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, AstAttrType attrType, uint32_t msbdim) {
 	// Return a variable table which has specified dimension properties for this variable
-	TableMap::iterator pos = m_tableMap.find(make_pair(nodep,attrType));
+	TableMap::iterator pos = m_tableMap.find(make_pair(nodep, attrType));
 	if (pos != m_tableMap.end()) {
 	    return pos->second;
 	}
@@ -3422,7 +3428,7 @@ private:
 	if (attrType == AstAttrType::ENUM_NAME) {
 	    basep = nodep->findStringDType();
 	} else {
-	    basep = nodep->findSigned32DType();
+	    basep = nodep->dtypep();
 	}
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       basep,

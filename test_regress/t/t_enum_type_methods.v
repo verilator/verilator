@@ -12,11 +12,11 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   typedef enum {
-		 E01 = 1,
-		 E03 = 3,
-		 E04 = 4
-		 } my_t;
+   typedef enum [3:0] {
+		       E01 = 1,
+		       E03 = 3,
+		       E04 = 4
+		       } my_t;
 
    integer 	cyc=0;
    my_t e;
