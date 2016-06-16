@@ -1397,12 +1397,20 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 	//puts("// parameter "+varp->name()+" = "+varp->valuep()->name()+"\n");
     }
     else if (AstInitArray* initarp = varp->valuep()->castInitArray()) {
-	AstConst* constsp = initarp->initsp()->castConst();
 	if (AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType()) {
-	    for (int i=0; i<arrayp->elementsConst(); i++) {
-		if (!constsp) initarp->v3fatalSrc("Not enough values in array initalizement");
-		emitSetVarConstant(varp->name()+"["+cvtToStr(i)+"]", constsp);
-		constsp = constsp->nextp()->castConst();
+	    if (initarp->defaultp()) {
+		// MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
+		puts("{ int __Vi=0;");
+		puts(" for (; __Vi<"+cvtToStr(arrayp->elementsConst()));
+		puts("; ++__Vi) {\n");
+		emitSetVarConstant(varp->name()+"[__Vi]", initarp->defaultp()->castConst());
+		puts("}}\n");
+	    }
+	    int pos = 0;
+	    for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
+		int index = initarp->posIndex(pos);
+		if (!initarp->defaultp() && index!=pos) initarp->v3fatalSrc("Not enough values in array initalizement");
+		emitSetVarConstant(varp->name()+"["+cvtToStr(index)+"]", itemp->castConst());
 	    }
 	} else {
 	    varp->v3fatalSrc("InitArray under non-arrayed var");

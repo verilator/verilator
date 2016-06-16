@@ -1504,13 +1504,13 @@ private:
 			if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
 			if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
 		    }
-		    if (adtypep->itemsp()->width() > 64 || msbdim >= 1024) {
+		    if (adtypep->itemsp()->width() > 64 || msbdim >= (1<<16)) {
 			nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
 			return;
 		    }
 		}
 		int selwidth = V3Number::log2b(msbdim)+1;	// Width to address a bit
-		AstVar* varp = enumVarp(adtypep, attrType, msbdim);
+		AstVar* varp = enumVarp(adtypep, attrType, (VL_ULL(1)<<selwidth)-1);
 		AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
 		varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
 		AstNode* newp = new AstArraySel(nodep->fileline(), varrefp,
@@ -1703,11 +1703,13 @@ private:
 			}
 			if (arrayp->castUnpackArrayDType()) {
 			    if (!newp) {
-				newp = new AstInitArray(nodep->fileline(), arrayp, valuep);
+				AstInitArray* newap = new AstInitArray(nodep->fileline(), arrayp, NULL);
+				newap->addValuep(valuep);
+				newp = newap;
 			    } else {
 				// We iterate hi()..lo() as that is what packed needs,
 				// but INITARRAY needs lo() first
-				newp->castInitArray()->initsp()->addHereThisAsNext(valuep);
+				newp->castInitArray()->addFrontValuep(valuep);
 			    }
 			} else {  // Packed. Convert to concat for now.
 			    if (!newp) newp = valuep;
@@ -3409,9 +3411,9 @@ private:
 	// Add to root, as don't know module we are in, and aids later structure sharing
 	v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
 	// Element 0 is a non-index and has speced values
-	initp->addInitsp(dimensionValue(nodep, attrType, 0));
+	initp->addValuep(dimensionValue(nodep, attrType, 0));
 	for (unsigned i=1; i<msbdim+1; ++i) {
-	    initp->addInitsp(dimensionValue(nodep, attrType, i));
+	    initp->addValuep(dimensionValue(nodep, attrType, i));
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));
@@ -3444,6 +3446,16 @@ private:
 	// Add to root, as don't know module we are in, and aids later structure sharing
 	v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
 
+	// Default for all unspecified values
+	if (attrType == AstAttrType::ENUM_NAME) {
+	    initp->defaultp(new AstConst(nodep->fileline(), AstConst::String(), ""));
+	} else if (attrType == AstAttrType::ENUM_NEXT
+		   || attrType == AstAttrType::ENUM_PREV) {
+	    initp->defaultp(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), nodep->width(), 0)));
+	} else {
+	    nodep->v3fatalSrc("Bad case");
+	}
+
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
 	vector<AstNode*> values;
@@ -3473,20 +3485,10 @@ private:
 		itemp = nextp;
 	    }
 	}
-	// Fill in all unspecified values and add to table
+	// Add all specified values to table
 	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    AstNode* valp = values[i];
-	    if (!valp) {
-		if (attrType == AstAttrType::ENUM_NAME) {
-		    valp = new AstConst(nodep->fileline(), AstConst::String(), "");
-		} else if (attrType == AstAttrType::ENUM_NEXT
-			   || attrType == AstAttrType::ENUM_PREV) {
-		    valp = new AstConst(nodep->fileline(), V3Number(nodep->fileline(), nodep->width(), 0));
-		} else {
-		    nodep->v3fatalSrc("Bad case");
-		}
-	    }
-	    initp->addInitsp(valp);
+	    if (valp) initp->addIndexValuep(i, valp);
 	}
 	varp->iterate(*this);  // May have already done $unit so must do this var
 	m_tableMap.insert(make_pair(make_pair(nodep,attrType), varp));

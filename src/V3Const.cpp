@@ -1464,9 +1464,21 @@ private:
 		    did=true;
 		}
 		else if (m_selp && valuep->castInitArray()) {
-		    int bit = m_selp->bitConst();
-		    AstNode* itemp = valuep->castInitArray()->initsp();
-		    for (int n=0; n<bit && itemp; ++n, itemp=itemp->nextp()) {}
+		    AstInitArray* initarp = valuep->castInitArray();
+		    uint32_t bit = m_selp->bitConst();
+		    int pos = 0;
+		    AstNode* itemp = initarp->initsp();
+		    for (; itemp; ++pos, itemp=itemp->nextp()) {
+			uint32_t index = initarp->posIndex(pos);
+			if (index == bit) break;
+			if (index > bit) {
+			    if (initarp->defaultp()) {
+				itemp = initarp->defaultp();
+			    } else {
+				initarp->v3fatalSrc("Not enough values in array initalizement");
+			    }
+			}
+		    }
 		    if (itemp->castConst()) {
 			const V3Number& num = itemp->castConst()->num();
 			//UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);

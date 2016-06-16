@@ -448,9 +448,13 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstInitArray* nodep, AstNUser*) {
 	putfs(nodep,"`{");
-	for (AstNode* subp = nodep->initsp(); subp; subp=subp->nextp()) {
-	    subp->accept(*this);
-	    if (subp->nextp()) putbs(",");
+	int pos = 0;
+	for (AstNode* itemp = nodep->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
+	    int index = nodep->posIndex(pos);
+	    puts(cvtToStr(index));
+	    puts(":");
+	    itemp->accept(*this);
+	    if (itemp->nextp()) putbs(",");
 	}
 	puts("}");
     }

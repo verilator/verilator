@@ -421,17 +421,19 @@ class SliceVisitor : public AstNVisitor {
 	    if (AstInitArray* initp = nodep->rhsp()->castInitArray()) {
 		//if (debug()>=9) nodep->dumpTree(cout, "-InitArrayIn:  ");
 		AstNode* newp = NULL;
-		int index = 0;
-		while (AstNode* subp=initp->initsp()) {
+		for (int pos = 0; AstNode* itemp=initp->initsp(); ++pos) {
+		    int index = initp->posIndex(pos);
 		    AstNode* lhsp = new AstArraySel(nodep->fileline(),
 						    nodep->lhsp()->cloneTree(false),
-						    index++);
-		    newp = AstNode::addNext(newp, nodep->cloneType(lhsp, subp->unlinkFrBack()));
+						    index);
+		    newp = AstNode::addNext(newp, nodep->cloneType(lhsp, itemp->unlinkFrBack()));
+		    // Deleted from list of items without correcting posIndex, but that's ok as about
+		    // to delete the entire InitArray
 		}
 		//if (debug()>=9) newp->dumpTreeAndNext(cout, "-InitArrayOut: ");
 		nodep->replaceWith(newp);
 		pushDeletep(nodep); VL_DANGLING(nodep);
-		return;  // WIll iterate in a moment
+		return;  // Will iterate in a moment
 	    }
 	    // Hasn't been searched for implicit slices yet
 	    findImplicit(nodep);

@@ -328,7 +328,7 @@ private:
 		    setp = new AstConst (outnump->fileline(), *outnump);
 		}
 		// Note InitArray requires us to have the values in inValue order
-		m_tableVarps[outnum]->varp()->valuep()->castInitArray()->addInitsp(setp);
+		m_tableVarps[outnum]->varp()->valuep()->castInitArray()->addValuep(setp);
 		outnum++;
 	    }
 
@@ -336,7 +336,7 @@ private:
 		if (inValue != inValueNextInitArray++)
 		    nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
 		AstNode* setp = new AstConst (nodep->fileline(), outputChgMask);
-		chgVscp->varp()->valuep()->castInitArray()->addInitsp(setp);
+		chgVscp->varp()->valuep()->castInitArray()->addValuep(setp);
 	    }
 	} // each value
     }
