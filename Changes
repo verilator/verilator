@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix false warnings on non-power-2 enums using .next/.prev.
 
+****  Fix compiler warning in GCC 6. [David Horton]
+
 
 * Verilator 3.884 2016-05-18
 

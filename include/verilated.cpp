@@ -1226,7 +1226,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 }
 
 VerilatedModule::~VerilatedModule() {
-    if (m_namep) free((void*)m_namep); m_namep=NULL;
+    if (m_namep) { free((void*)m_namep); m_namep=NULL; }
 }
 
 //======================================================================
