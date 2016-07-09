@@ -493,7 +493,7 @@ RTL file to mark the signal directly.
 
 =item --compiler I<compiler-name>
 
-Enables tunings and work-arounds for the specified C++ compiler.
+Enables tunings and workarounds for the specified C++ compiler.
 
 =over 4
 
@@ -606,8 +606,8 @@ alias for GCC compatibility.
 =item --debug
 
 Select the debug built image of Verilator (if available), and enable more
-internal assertions (equivelent to C<--debug-check>), debugging messages
-(equivelent to C<--debugi 4>), and intermediate form dump files (equivilent
+internal assertions (equivalent to C<--debug-check>), debugging messages
+(equivalent to C<--debugi 4>), and intermediate form dump files (equivalent
 to C<--dump-treei 3>).
 
 =item --debug-check
@@ -798,7 +798,7 @@ show by default "t". With "--l2-name v" it will print "v".
 
 =item --language I<value>
 
-A synonym for C<--default-langauge>, for compatibility with other tools and
+A synonym for C<--default-language>, for compatibility with other tools and
 earlier versions of Verilator.
 
 =item +libext+I<ext>+I<ext>...
@@ -2489,7 +2489,7 @@ simulates as Synopsys's Design Compiler would; namely a block of the form:
 This will recompute y when there is even a potential for change in x or a
 change in z, that is when the flops computing x or z evaluate (which is
 what Design Compiler will synthesize.)  A compliant simulator would only
-calculate y if x changes.  Use verilog-mode's /*AS*/ or Verilog 2001's
+calculate y if x changes.  Use Verilog-Mode's /*AS*/ or Verilog 2001's
 always @* to reduce missing activity items.  Avoid putting $displays in
 combo blocks, as they may print multiple times when not desired, even on
 compliant simulators as event ordering is not specified.
@@ -2572,7 +2572,7 @@ variables are initialized to a random value.
 Event driven simulators will generally trigger an edge on a transition from X
 to 1 (C<posedge>) or X to 0 (C<negedge>). However, by default, since clocks
 are initialized to zero, Verilator will not trigger an initial negedge. Some
-code (particulary for reset) may rely on X->0 triggering an edge. Verilator
+code (particularly for reset) may rely on X->0 triggering an edge. Verilator
 provides a switch (see --x-initial-edge) to enable this behavior. Comparing
 runs with and without this switch will find such problems.
 
@@ -2625,7 +2625,7 @@ clock_enable*/ attribute.
 =head2 Ranges must be big-bit-endian
 
 Bit ranges must be numbered with the MSB being numbered greater or the same
-as the LSB.  Little-bit-endian busses [0:15] are not supported as they
+as the LSB.  Little-bit-endian buses [0:15] are not supported as they
 aren't easily made compatible with C++.
 
 =head2 Gate Primitives
