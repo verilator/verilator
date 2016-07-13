@@ -17,9 +17,7 @@ compile (
     stdout_filename => $stdout_filename,
     fails=>1,
     expect=>
-'%Error: t_pipe_exit_bad.pf: Intentional bad exit status...
-%Error: File not found: t/t_pipe_filter.v
-%Error: Exiting due to.*',
+'%Error: t_pipe_exit_bad.pf: Intentional bad exit status....*',
     );
 ok(1);
 

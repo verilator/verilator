@@ -377,17 +377,15 @@ sub rnd_const {
     my $val = Bit::Vector->new($width);
     if ($v<25) {	# zero
     } elsif ($v<50) {	# ones
-	$val->Word_Store(0,~0);
-	$val->Word_Store(1,~0) if $width>32;
-	$val->Word_Store(2,~0) if $width>64;
-	$val->Word_Store(3,~0) if $width>96;
+	for (my $w=0; $w<$val->Word_Size; ++$w) {
+	    $val->Word_Store(0,~0);
+	}
     } elsif ($v<60) {	# one
 	$val->Word_Store(0,1);
     } else { #random
-	$val->Word_Store(0,rnd_int());
-	$val->Word_Store(1,rnd_int()) if $width>32;
-	$val->Word_Store(2,rnd_int()) if $width>64;
-	$val->Word_Store(3,rnd_int()) if $width>96;
+	for (my $w=0; $w<$val->Word_Size; ++$w) {
+	    $val->Word_Store($w,rnd_int());
+	}
     }
     $treeref->{val} = $val;
 }
