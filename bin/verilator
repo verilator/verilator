@@ -2824,13 +2824,17 @@ when displaying all times, model wide.
 
 =head1 ERRORS AND WARNINGS
 
-Warnings may be disabled in two ways.  First, when the warning is
+Warnings may be disabled in three ways.  First, when the warning is
 printed it will include a warning code.  Simply surround the offending
 line with a warn_off/warn_on pair:
 
 	// verilator lint_off UNSIGNED
 	if (`DEF_THAT_IS_EQ_ZERO <= 3) $stop;
 	// verilator lint_on UNSIGNED
+
+Second, warnings may be disabled using a configuration file with a lint_off
+command.  This is useful when a script is suppressing warnings and the
+Verilog source should not be changed.
 
 Warnings may also be globally disabled by invoking Verilator with the
 C<-Wno-I<warning>> switch.  This should be avoided, as it removes all
