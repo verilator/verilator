@@ -196,7 +196,7 @@ foreach my $op (keys %ops2) {
 
 
 my  $opt_seed=5;
-our $Opt_NumOps = 300;
+our $Opt_NumOps = 30;
 our $Opt_Depth = 4;
 our $Opt_Signed = 1;
 our $Opt_Raise;
