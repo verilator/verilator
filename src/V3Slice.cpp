@@ -139,37 +139,34 @@ class SliceCloneVisitor : public AstNVisitor {
 	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
 
 	AstNode* lhsp = NULL;
-	AstNode* rhsp = NULL;
 	for (int i = 0; i < nodep->user2(); ++i) {
 	    // Clone the node and iterate over the clone
 	    m_vecIdx = -1;
 	    AstNodeUniop* clonep = nodep->cloneTree(false)->castNodeUniop();
 	    clonep->iterateChildren(*this);
 	    if (!lhsp) lhsp = clonep;
-	    else rhsp = clonep;
-	    if (lhsp && rhsp) {
+	    else {
 		switch (nodep->type()) {
 		case AstType::atREDOR:
-		    lhsp = new AstOr(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstOr(nodep->fileline(), lhsp, clonep);
 		    break;
 		case AstType::atREDAND:
-		    lhsp = new AstAnd(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstAnd(nodep->fileline(), lhsp, clonep);
 		    break;
 		case AstType::atREDXOR:
-		    lhsp = new AstXor(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstXor(nodep->fileline(), lhsp, clonep);
 		    break;
 		case AstType::atREDXNOR:
-		    lhsp = new AstXnor(nodep->fileline(), lhsp, rhsp);
+		    lhsp = new AstXnor(nodep->fileline(), lhsp, clonep);
 		    break;
 		default:
 		    nodep->v3fatalSrc("Unsupported: Unary operation on multiple packed dimensions");
 		    break;
 		}
-		rhsp = NULL;
 	    }
 	}
-	nodep->addNextHere(lhsp);
-	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+	nodep->replaceWith(lhsp);
+	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstRedOr* nodep, AstNUser*) {
 	cloneUniop(nodep);
@@ -441,43 +438,37 @@ class SliceVisitor : public AstNVisitor {
     }
 
     void expandUniOp(AstNodeUniop* nodep) {
-	nodep->user1(true);
-	unsigned dim = 0;
-	if (AstArraySel* selp = nodep->lhsp()->castArraySel()) {
-	    // We have explicit dimensions, either packed or unpacked
-	    dim = explicitDimensions(selp);
-	}
-	if (dim == 0 && !nodep->lhsp()->castVarRef()) {
-	    // No ArraySel nor VarRef, not something we can expand
-	    nodep->iterateChildren(*this);
-	} else {
-	    AstVarRef* refp = findVarRefRecurse(nodep->lhsp());
-	    ArrayDimensions varDim = refp->varp()->dtypep()->dimensions(false);
-	    if ((int)(dim - varDim.second) < 0) {
-		// Unpacked dimensions are referenced first, make sure we have them all
-		nodep->v3error("Unary operator used across unpacked dimensions");
+	if (!nodep->user1()) {
+	    nodep->user1(true);
+	    unsigned dim = 0;
+	    if (AstArraySel* selp = nodep->lhsp()->castArraySel()) {
+		// We have explicit dimensions, either packed or unpacked
+		dim = explicitDimensions(selp);
+	    }
+	    if (dim == 0 && !nodep->lhsp()->castVarRef()) {
+		// No ArraySel nor VarRef, not something we can expand
+		nodep->iterateChildren(*this);
+	    } else {
+		AstVarRef* refp = findVarRefRecurse(nodep->lhsp());
+		ArrayDimensions varDim = refp->varp()->dtypep()->dimensions(false);
+		if ((int)(dim - varDim.second) < 0) {
+		    // Unpacked dimensions are referenced first, make sure we have them all
+		    nodep->v3error("Unary operator used across unpacked dimensions");
+		}
 	    }
 	}
     }
     virtual void visit(AstRedOr* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    expandUniOp(nodep);
-	}
+	expandUniOp(nodep);
     }
     virtual void visit(AstRedAnd* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    expandUniOp(nodep);
-	}
+	expandUniOp(nodep);
     }
     virtual void visit(AstRedXor* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    expandUniOp(nodep);
-	}
+	expandUniOp(nodep);
     }
     virtual void visit(AstRedXnor* nodep, AstNUser*) {
-	if (!nodep->user1()) {
-	    expandUniOp(nodep);
-	}
+	expandUniOp(nodep);
     }
 
     virtual void visit(AstNode* nodep, AstNUser*) {
