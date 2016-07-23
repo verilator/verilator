@@ -471,6 +471,62 @@ class SliceVisitor : public AstNVisitor {
 	expandUniOp(nodep);
     }
 
+    void expandBiOp(AstNodeBiop* nodep) {
+	if (!nodep->user1()) {
+	    nodep->user1(true);
+	    // If it's a unpacked array, blow it up into comparing each element
+	    AstNodeDType* fromDtp = nodep->lhsp()->dtypep()->skipRefp();
+	    UINFO(9, "  Bi-Eq/Neq expansion "<<nodep<<endl);
+	    if (AstUnpackArrayDType* adtypep = fromDtp->castUnpackArrayDType()) {
+		AstNodeBiop* logp = NULL;
+		for (int index = adtypep->rangep()->lsbConst();
+		     index <= adtypep->rangep()->msbConst(); ++index) {
+		    // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
+		    AstNodeBiop* clonep = nodep->cloneType
+			(new AstArraySel(nodep->fileline(),
+					 nodep->lhsp()->cloneTree(false),
+					 index),
+			 new AstArraySel(nodep->fileline(),
+					 nodep->rhsp()->cloneTree(false),
+					 index))->castNodeBiop();
+		    if (!logp) logp = clonep;
+		    else {
+			switch (nodep->type()) {
+			case AstType::atEQ:  // FALLTHRU
+			case AstType::atEQCASE:
+			    logp = new AstLogAnd(nodep->fileline(), logp, clonep);
+			    break;
+			case AstType::atNEQ:  // FALLTHRU
+			case AstType::atNEQCASE:
+			    logp = new AstLogOr(nodep->fileline(), logp, clonep);
+			    break;
+			default:
+			    nodep->v3fatalSrc("Unknown node type processing array slice");
+			    break;
+			}
+		    }
+		}
+		if (!logp) nodep->v3fatalSrc("Unpacked array with empty indices range");
+		nodep->replaceWith(logp);
+		pushDeletep(nodep); VL_DANGLING(nodep);
+		nodep = logp;
+	    }
+	    nodep->iterateChildren(*this);
+	}
+    }
+    virtual void visit(AstEq* nodep, AstNUser*) {
+	expandBiOp(nodep);
+    }
+    virtual void visit(AstNeq* nodep, AstNUser*) {
+	expandBiOp(nodep);
+    }
+    virtual void visit(AstEqCase* nodep, AstNUser*) {
+	expandBiOp(nodep);
+    }
+    virtual void visit(AstNeqCase* nodep, AstNUser*) {
+	expandBiOp(nodep);
+    }
+
     virtual void visit(AstNode* nodep, AstNUser*) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
