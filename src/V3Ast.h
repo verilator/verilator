@@ -1350,6 +1350,8 @@ public:
 	: AstNodeMath(fl) {
 	setOp1p(lhs); setOp2p(rhs); }
     ASTNODE_BASE_FUNCS(NodeBiop)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp)=0;	// Clone single node, just get same type back.
+    // ACCESSORS
     AstNode*	lhsp() 	const { return op1p()->castNode(); }
     AstNode*	rhsp() 	const { return op2p()->castNode(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
