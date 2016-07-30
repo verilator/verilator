@@ -4,6 +4,9 @@ The contributors that suggested a given feature are shown in [].  [by ...]
 indicates the contributor was also the author of the fix; Thanks!
 
 
+* Verilator 3.887 devel
+
+
 * Verilator 3.886 2016-07-30
 
 ****  Fix enum values of 11-16 bits wide using .next/.prev, bug1062. [Brian Flachs]
