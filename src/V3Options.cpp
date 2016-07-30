@@ -986,6 +986,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-pins-bv") && (i+1)<argc ) {
 		shift; m_pinsBv = atoi(argv[i]);
+		if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: "<<argv[i]);
 	    }
 	    else if ( !strcmp (sw, "-pipe-filter") && (i+1)<argc ) {
 		shift; m_pipeFilter = argv[i];
