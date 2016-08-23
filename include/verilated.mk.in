@@ -43,8 +43,9 @@ VK_CPPFLAGS_ALWAYS += \
 		-I$(VERILATOR_ROOT)/include \
 		-I$(VERILATOR_ROOT)/include/vltstd \
 		-DVL_PRINTF=printf \
-		-DVM_TRACE=$(VM_TRACE) \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
+		-DVM_SC=$(VM_SC) \
+		-DVM_TRACE=$(VM_TRACE) \
 		$(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
@@ -124,18 +125,9 @@ else
 endif
 
 #######################################################################
-##### SystemC w/o SystemPerl builds
-
-ifeq ($(VM_SC),1)
-  LIBS   += -lm -lstdc++
-endif
-
-#######################################################################
 ##### C/H builds
 
-ifeq ($(VM_PCLI),1)
-  LIBS   += -lm -lstdc++
-endif
+LIBS   += -lm -lstdc++
 
 #######################################################################
 # Overall Objects Linking

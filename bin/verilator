@@ -1353,8 +1353,7 @@ section below for descriptions of some of the files that were created.
 
 We then can compile it
 
-    cd obj_dir
-    make -j -f Vour.mk Vour
+    make -j -C obj_dir -f Vour.mk Vour
 
 (Verilator included a default compile rule and link rule, since we used
 --exe and passed a .cpp file on the Verilator command line.  You can also
@@ -1362,7 +1361,6 @@ write your own compile rules, as we'll show in the SYSTEMC section.)
 
 And now we run it
 
-    cd ..
     obj_dir/Vour
 
 And we get as output
@@ -1371,8 +1369,9 @@ And we get as output
     - our.v:2: Verilog $finish
 
 Really, you're better off writing a Makefile to do all this for you.  Then,
-when your source changes it will automatically run all of these steps.  See
-the test_c directory in the distribution for an example.
+when your source changes it will automatically run all of these steps; to
+aid this Verilator can create a makefile dependency file.  See the test_c
+directory in the distribution for an example.
 
 
 =head1 EXAMPLE SYSTEMC EXECUTION
@@ -1416,6 +1415,7 @@ Now we run Verilator on our little example.
 
 We then can compile it
 
+    cd obj_dir
     make -j -f Vour.mk Vour__ALL.a
     make -j -f Vour.mk ../sc_main.o verilated.o
 

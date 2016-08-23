@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.887 devel
 
+****  Fix SystemC compiles with VPI, bug1081. [Arthur Kahlich]
+
 
 * Verilator 3.886 2016-07-30
 

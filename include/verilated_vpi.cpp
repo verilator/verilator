@@ -26,6 +26,9 @@
 //=========================================================================
 
 
+#if VM_SC
+# include "verilated_sc.h"
+#endif
 #include "verilated.h"
 #include "verilated_vpi.h"
 
