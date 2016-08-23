@@ -7,10 +7,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# Really we shouldn't need to warn in this case.
-# When supported, make a new test case that checks the warning
-#$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug477");
-
 top_filename("t/t_param_sel_range.v");
 
 compile (
