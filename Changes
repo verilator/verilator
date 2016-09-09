@@ -8,6 +8,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix SystemC compiles with VPI, bug1081. [Arthur Kahlich]
 
+****  Fix error on wide numbers that represent small msb/lsb, msg1991. [Mandy Xu]
+
 
 * Verilator 3.886 2016-07-30
 

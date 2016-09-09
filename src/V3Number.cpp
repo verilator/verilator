@@ -605,7 +605,10 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 
 uint32_t V3Number::toUInt() const {
     UASSERT(!isFourState(),"toUInt with 4-state "<<*this);
-    UASSERT((width()<33 || (width()<65 && m_value[1]==0)), "Value too wide "<<*this);
+    // We allow wide numbers that represent values <= 32 bits
+    for (int i=1; i<words(); ++i) {
+	UASSERT(!m_value[i], "Value too wide for 32-bits expected in this context "<<*this);
+    }
     return m_value[0];
 }
 
@@ -636,7 +639,10 @@ vlsint32_t V3Number::toSInt() const {
 
 vluint64_t V3Number::toUQuad() const {
     UASSERT(!isFourState(),"toUQuad with 4-state "<<*this);
-    UASSERT(width()<65, "Value too wide "<<*this);
+    // We allow wide numbers that represent values <= 64 bits
+    for (int i=2; i<words(); ++i) {
+	UASSERT(!m_value[i], "Value too wide for 64-bits expected in this context "<<*this);
+    }
     if (width()<=32) return ((vluint64_t)(toUInt()));
     return ((vluint64_t)m_value[1]<<VL_ULL(32)) | ((vluint64_t)m_value[0]);
 }
