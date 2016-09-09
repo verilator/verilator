@@ -166,44 +166,53 @@ string AstNode::vcdName(const string& namein) {
 }
 
 string AstNode::prettyName(const string& namein) {
+    // This function is somewhat hot, so we short-circuit some compares
     string pretty;
     pretty = "";
+    pretty.reserve(namein.length());
     for (const char* pos = namein.c_str(); *pos; ) {
-	if (0==strncmp(pos,"__BRA__",7)) {
-	    pretty += "[";
-	    pos += 7;
-	}
-	else if (0==strncmp(pos,"__KET__",7)) {
-	    pretty += "]";
-	    pos += 7;
-	}
-	else if (0==strncmp(pos,"__DOT__",7)) {
-	    pretty += ".";
-	    pos += 7;
-	}
-	else if (0==strncmp(pos,"->",2)) {
+	if (pos[0]=='-' && pos[1]=='>') { // ->
 	    pretty += ".";
 	    pos += 2;
+	    continue;
 	}
-	else if (0==strncmp(pos,"__PVT__",7)) {
-	    pretty += "";
-	    pos += 7;
+	if (pos[0]=='_' && pos[1]=='_') { // Short-circuit
+	    if (0==strncmp(pos,"__BRA__",7)) {
+		pretty += "[";
+		pos += 7;
+		continue;
+	    }
+	    if (0==strncmp(pos,"__KET__",7)) {
+		pretty += "]";
+		pos += 7;
+		continue;
+	    }
+	    if (0==strncmp(pos,"__DOT__",7)) {
+		pretty += ".";
+		pos += 7;
+		continue;
+	    }
+	    if (0==strncmp(pos,"__PVT__",7)) {
+		pretty += "";
+		pos += 7;
+		continue;
+	    }
+	    if (pos[0]=='_' && pos[1]=='_' && pos[2]=='0'
+		     && isxdigit(pos[3]) && isxdigit(pos[4])) {
+		char value = 0;
+		value += 16*(isdigit(pos[3]) ? (pos[3]-'0') : (tolower(pos[3])-'a'+10));
+		value +=    (isdigit(pos[4]) ? (pos[4]-'0') : (tolower(pos[4])-'a'+10));
+		pretty += value;
+		pos += 5;
+		continue;
+	    }
 	}
-	else if (pos[0]=='_' && pos[1]=='_' && pos[2]=='0'
-		 && isxdigit(pos[3]) && isxdigit(pos[4])) {
-	    char value = 0;
-	    value += 16*(isdigit(pos[3]) ? (pos[3]-'0') : (tolower(pos[3])-'a'+10));
-	    value +=    (isdigit(pos[4]) ? (pos[4]-'0') : (tolower(pos[4])-'a'+10));
-	    pretty += value;
-	    pos += 5;
-	}
-	else {
-	    pretty += pos[0];
-	    ++pos;
-	}
+	// Default
+	pretty += pos[0];
+	++pos;
     }
-    if (pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
-    if (pretty.substr(0,5) == "TOP->") pretty.replace(0,5,"");
+    if (pretty[0]=='T' && pretty.substr(0,4) == "TOP.") pretty.replace(0,4,"");
+    if (pretty[0]=='T' && pretty.substr(0,5) == "TOP->") pretty.replace(0,5,"");
     return pretty;
 }
 

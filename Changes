@@ -10,6 +10,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix error on wide numbers that represent small msb/lsb, msg1991. [Mandy Xu]
 
+****  Improve Verilation performance on internal strings, msg1975. [Johan Bjork]
+
 
 * Verilator 3.886 2016-07-30
 
