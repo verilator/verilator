@@ -6,6 +6,8 @@ indicates the contributor was also the author of the fix; Thanks!
 
 * Verilator 3.887 devel
 
+****  Add error on DPI functions > 32 bits, msg1995. [Elliot Mednick]
+
 ****  Fix SystemC compiles with VPI, bug1081. [Arthur Kahlich]
 
 ****  Fix error on wide numbers that represent small msb/lsb, msg1991. [Mandy Xu]

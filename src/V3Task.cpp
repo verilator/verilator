@@ -584,9 +584,14 @@ private:
 	return new AstCStmt(portp->fileline(), stmt);
     }
 
-    AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix, const string& toSuffix) {
+    AstNode* createAssignInternalToDpi(AstVar* portp, bool isRtn, bool isPtr,
+				       const string& frSuffix, const string& toSuffix) {
 	// Create assignment from internal format into DPI temporary
 	bool bitvec = (portp->basicp()->isBitLogic() && portp->width() > 32);
+	if (isRtn && bitvec) {
+	    portp->v3error("DPI functions cannot return > 32 bits; use a two-state type or task instead: "<<portp->prettyName());
+	    // Code below works, but won't compile right, and IEEE illegal
+	}
 	string stmt;
 	string ket;
 	// Someday we'll have better type support, and this can make variables and casts.
@@ -727,14 +732,14 @@ private:
 	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
 		if (portp->isIO() && portp->isOutput() && !portp->isFuncReturn()) {
-		    dpip->addStmtsp(createAssignInternalToDpi(portp,true,"__Vcvt",""));
+		    dpip->addStmtsp(createAssignInternalToDpi(portp,false,true,"__Vcvt",""));
 		}
 	    }
 	}
 
 	if (rtnvarp) {
 	    dpip->addStmtsp(createDpiTemp(rtnvarp,""));
-	    dpip->addStmtsp(createAssignInternalToDpi(rtnvarp,false,"__Vcvt",""));
+	    dpip->addStmtsp(createAssignInternalToDpi(rtnvarp,true,false,"__Vcvt",""));
 	    string stmt = "return "+rtnvarp->name()+";\n";
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
@@ -784,7 +789,7 @@ private:
 
 		    cfuncp->addStmtsp(createDpiTemp(portp,"__Vcvt"));
 		    if (portp->isInput()) {
-			cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,"","__Vcvt"));
+			cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,false,"","__Vcvt"));
 		    }
 		}
 	    }

@@ -46,6 +46,8 @@ extern "C" {
     extern int dpix_int123();
 
     extern unsigned char dpix_f_bit(unsigned char i);
+    extern svBitVecVal   dpix_f_bit15(const svBitVecVal* i);
+    extern svBitVecVal   dpix_f_bit48(const svBitVecVal* i);
     extern int           dpix_f_int(int i);
     extern char          dpix_f_byte(char i);
     extern short int     dpix_f_shortint(short int i);
@@ -136,6 +138,17 @@ int dpix_run_tests() {
     CHECK_RESULT (unsigned long long, dpix_f_longint(1), 0xfffffffffffffffeULL);
     CHECK_RESULT (void*, dpix_f_chandle((void*)(12345)), (void*)(12345));
 
+    {
+	svBitVecVal i_vec48[2] = {0xab782a12,0x8a413bd9};
+	svBitVecVal o_vec48[2] = {0,0};
+	dpix_t_bit48(i_vec48, o_vec48);
+	CHECK_RESULT(int, o_vec48[0], ~i_vec48[0]);
+#ifdef VCS  // VCS has bug where doesn't clean input
+	CHECK_RESULT(int, o_vec48[1], (~i_vec48[1]));
+#else
+	CHECK_RESULT(int, o_vec48[1], (~i_vec48[1])&0x0000ffffUL);
+#endif
+    }
     {
 	svBitVecVal i_vec95[3] = {0x72912312,0xab782a12,0x8a413bd9};
 	svBitVecVal o_vec95[3] = {0,0,0};
