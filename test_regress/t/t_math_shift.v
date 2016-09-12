@@ -13,10 +13,13 @@ module t (/*AUTOARG*/
    input clk;
    output [31:0] ign;
 
+   parameter [95:0] P6 = 6;
+   localparam P64 = (1 << P6);
+
    reg [31:0] 		right;
    reg [31:0] 		left;
-   reg [63:0] 		qright;
-   reg [63:0] 		qleft;
+   reg [P64-1:0] 	qright;
+   reg [P64-1:0] 	qleft;
    reg [31:0] 		amt;
 
    assign ign = {31'h0, clk} >>> 4'bx;  // bug760
@@ -37,6 +40,7 @@ module t (/*AUTOARG*/
 `endif
 	 if (cyc==1) begin
 	    amt <= 32'd0;
+	    if (P64 != 64) $stop;
 	    if (5'b10110>>2  != 5'b00101) $stop;
 	    if (5'b10110>>>2 != 5'b00101) $stop;  // Note it cares about sign-ness
 	    if (5'b10110<<2  != 5'b11000) $stop;
