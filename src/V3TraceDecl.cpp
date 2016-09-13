@@ -68,7 +68,6 @@ private:
 	// Return true if this shouldn't be traced
 	// See also similar rule in V3Coverage::varIgnoreToggle
 	AstVar* varp = nodep->varp();
-	string prettyName = varp->prettyName();
 	if (!varp->isTrace()) {
 	    return "Verilator trace_off";
 	}
@@ -76,6 +75,7 @@ private:
 	    return "Verilator cell trace_off";
 	}
 	else if (!v3Global.opt.traceUnderscore()) {
+	    string prettyName = varp->prettyName();
 	    if (prettyName.size()>=1 && prettyName[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)

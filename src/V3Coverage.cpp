@@ -83,10 +83,10 @@ private:
     const char* varIgnoreToggle(AstVar* nodep) {
 	// Return true if this shouldn't be traced
 	// See also similar rule in V3TraceDecl::varIgnoreTrace
-	string prettyName = nodep->prettyName();
 	if (!nodep->isToggleCoverable())
 	    return "Not relevant signal type";
 	if (!v3Global.opt.coverageUnderscore()) {
+	    string prettyName = nodep->prettyName();
 	    if (prettyName[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)
