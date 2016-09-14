@@ -75,6 +75,7 @@ class V3Options {
     bool	m_coverageUnderscore;// main switch: --coverage-underscore
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
+    bool	m_decoration;	// main switch: --decoration
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
@@ -226,6 +227,7 @@ class V3Options {
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
+    bool decoration() const { return m_decoration; }
     bool exe() const { return m_exe; }
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }

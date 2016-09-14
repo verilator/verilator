@@ -689,6 +689,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
+	    else if ( onoff   (sw, "-decoration", flag/*ref*/) ) { m_decoration = flag; }
 	    else if ( onoff   (sw, "-dump-tree", flag/*ref*/) )	{ m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
 	    else if ( onoff   (sw, "-exe", flag/*ref*/) )	{ m_exe = flag; }
 	    else if ( onoff   (sw, "-ignc", flag/*ref*/) )	{ m_ignc = flag; }
@@ -1199,6 +1200,7 @@ V3Options::V3Options() {
     m_coverageUnderscore = false;
     m_coverageUser = false;
     m_debugCheck = false;
+    m_decoration = true;
     m_exe = false;
     m_ignc = false;
     m_inhibitSim = false;

@@ -300,6 +300,7 @@ descriptions in the next sections for more information.
     --Mdir <directory>          Name of output object directory
     --mod-prefix <topname>      Name to prepend to lower classes
     --no-clk <signal-name>      Prevent marking specified signal as clock
+    --no-decoration             Disable comments and symbol decorations
     --no-pins64                 Don't use vluint64_t's for 33-64 bit sigs
     --no-skip-identical         Disable skipping identical output
      +notimingchecks            Ignored
@@ -842,6 +843,13 @@ the same as --prefix.
 =item --no-clk <signal-name>
 
 Prevent the specified signal from being marked as clock. See C<--clk>.
+
+=item --no-decoration
+
+When creating output Verilated code, minimize comments, whitespace, symbol
+names and other decorative items, at the cost of greatly reduced
+readability. This may assist C++ compile times. This will not typically
+change the ultimate model's performance, but may in some cases.
 
 =item --no-pins64
 

@@ -43,6 +43,7 @@ public:
     V3OutCFile*	ofp() const { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
     void putbs(const string& str) { ofp()->putbs(str); }
+    void putsDecoration(const string& str) { if (v3Global.opt.decoration()) puts(str); }
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }
     bool optSystemC() { return v3Global.opt.systemC(); }
     bool optSystemPerl() { return v3Global.opt.systemPerl(); }

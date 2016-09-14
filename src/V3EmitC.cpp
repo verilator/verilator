@@ -113,7 +113,7 @@ public:
 		    }
 		    if (AstEnumDType* adtypep = nodep->dtypep()->skipRefToEnump()->castEnumDType()) {
 			if (adtypep->width()>64) {
-			    puts("// enum "+nodep->name()+" // Ignored: Too wide for C++\n");
+			    putsDecoration("// enum "+nodep->name()+" // Ignored: Too wide for C++\n");
 			} else {
 			    puts("enum "+nodep->name()+" {\n");
 			    for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
@@ -220,7 +220,7 @@ public:
 	nodep->v3fatalSrc("Case statements should have been reduced out\n");
     }
     virtual void visit(AstComment* nodep, AstNUser*) {
-	puts((string)"// "+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
+	putsDecoration((string)"// "+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstCoverDecl* nodep, AstNUser*) {
@@ -499,13 +499,13 @@ public:
 	nodep->bodysp()->iterateAndNext(*this);
     }
     virtual void visit(AstUCStmt* nodep, AstNUser*) {
-	puts("// $c statement at "+nodep->fileline()->ascii()+"\n");
+	putsDecoration("// $c statement at "+nodep->fileline()->ascii()+"\n");
 	nodep->bodysp()->iterateAndNext(*this);
 	puts("\n");
     }
     virtual void visit(AstUCFunc* nodep, AstNUser*) {
 	puts("\n");
-	puts("// $c function at "+nodep->fileline()->ascii()+"\n");
+	putsDecoration("// $c function at "+nodep->fileline()->ascii()+"\n");
 	nodep->bodysp()->iterateAndNext(*this);
 	puts("\n");
     }
@@ -844,7 +844,7 @@ class EmitCImp : EmitCStmts {
 
 	if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
-	if (nodep->initsp()) puts("// Variables\n");
+	if (nodep->initsp()) putsDecoration("// Variables\n");
 	ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 	for (AstNode* subnodep=nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
 	    if (AstVar* varp=subnodep->castVar()) {
@@ -858,11 +858,11 @@ class EmitCImp : EmitCStmts {
 
 	nodep->initsp()->iterateAndNext(*this);
 
-	if (nodep->stmtsp()) puts("// Body\n");
+	if (nodep->stmtsp()) putsDecoration("// Body\n");
 	nodep->stmtsp()->iterateAndNext(*this);
 	if (!m_blkChangeDetVec.empty()) emitChangeDet();
 
-	if (nodep->finalsp()) puts("// Final\n");
+	if (nodep->finalsp()) putsDecoration("// Final\n");
 	nodep->finalsp()->iterateAndNext(*this);
 	//
 
@@ -873,7 +873,7 @@ class EmitCImp : EmitCStmts {
     }
 
     void emitChangeDet() {
-	puts("// Change detection\n");
+	putsDecoration("// Change detection\n");
 	puts("QData __req = false;  // Logically a bool\n");  // But not because it results in faster code
 	bool gotOne = false;
 	for (vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
@@ -1474,7 +1474,7 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
     if (v3Global.opt.coverage()) {
 	ofp()->putsPrivate(true);
-	puts("// Coverage\n");
+	putsDecoration("// Coverage\n");
 	puts("void __vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
 	puts(  	"const char* hierp, const char* pagep, const char* commentp);\n");
     }
@@ -1494,12 +1494,12 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     emitCellCtors(modp);
     emitSensitives();
 
-    puts("// Reset internal values\n");
+    putsDecoration("// Reset internal values\n");
     if (modp->isTop()) {
 	if (v3Global.opt.inhibitSim()) puts("__Vm_inhibitSim = false;\n");
 	puts("\n");
     }
-    puts("// Reset structure values\n");
+    putsDecoration("// Reset structure values\n");
     puts("_ctor_var_reset();\n");
     emitTextSection(AstType::atSCCTOR);
     if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
@@ -1515,7 +1515,7 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
 	if (nodep->castCoverDecl()) {
 	    if (first) {
 		first = false;
-		puts("// Coverage Declarations\n");
+		putsDecoration("// Coverage Declarations\n");
 	    }
 	    nodep->accept(*this);
 	    splitSizeInc(nodep);
@@ -1681,7 +1681,7 @@ void EmitCImp::emitSensitives() {
     // Create sensitivity list for when to evaluate the model.
     // If C++ code, the user must call this routine themself.
     if (m_modp->isTop() && optSystemC()) {
-	puts("// Sensitivities on all clocks and combo inputs\n");
+	putsDecoration("// Sensitivities on all clocks and combo inputs\n");
 	puts("SC_METHOD(eval);\n");
 	for (AstNode* nodep=m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	    if (AstVar* varp = nodep->castVar()) {
@@ -1713,12 +1713,12 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp; // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
-    puts("// Initialize\n");
+    putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) _eval_initial_loop(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
-    puts("// Evaluate till stable\n");
+    putsDecoration("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange=1;\n");
@@ -1887,7 +1887,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (optSystemPerl()) {
 	puts("/*AUTOSUBCELLS*/\n\n");
     } else {
-	puts("// CELLS\n");
+	putsDecoration("// CELLS\n");
 	if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
 	if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
 	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -1939,9 +1939,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 		// These should be static const values, however microsloth VC++ doesn't
 		// support them.  They also cause problems with GDB under GCC2.95.
 		if (varp->isWide()) {   // Unsupported for output
-		    puts("// enum WData "+varp->name()+"  //wide");
+		    putsDecoration("// enum WData "+varp->name()+"  //wide");
 		} else if (!varp->valuep()->castConst()) {   // Unsupported for output
-		    //puts("// enum ..... "+varp->name()+"  //not simple value, see variable above instead");
+		    //putsDecoration("// enum ..... "+varp->name()+"  //not simple value, see variable above instead");
 		} else {
 		    puts("enum ");
 		    puts(varp->isQuad()?"_QData":"_IData");
@@ -2222,7 +2222,7 @@ class EmitCTrace : EmitCStmts {
 
 	puts("void "+topClassName()+"::traceInit("
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
-	puts("// Callback from vcd->open()\n");
+	putsDecoration("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
@@ -2235,7 +2235,7 @@ class EmitCTrace : EmitCStmts {
 
 	puts("void "+topClassName()+"::traceFull("
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
-	puts("// Callback from vcd->dump()\n");
+	putsDecoration("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("t->traceFullThis (vlSymsp, vcdp, code);\n");
@@ -2250,7 +2250,7 @@ class EmitCTrace : EmitCStmts {
 
 	puts("void "+topClassName()+"::traceChg("
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
-	puts("// Callback from vcd->dump()\n");
+	putsDecoration("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
 	puts("if (vlSymsp->getClearActivity()) {\n");
@@ -2404,16 +2404,16 @@ class EmitCTrace : EmitCStmts {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
 	    } else nodep->v3fatalSrc("Bad Case");
 
-	    if (nodep->initsp()) puts("// Variables\n");
+	    if (nodep->initsp()) putsDecoration("// Variables\n");
 	    emitVarList(nodep->initsp(), EVL_ALL, "");
 	    nodep->initsp()->iterateAndNext(*this);
 	    ofp()->putAlign(V3OutFile::AL_AUTO, 4);
 
-	    puts("// Body\n");
+	    putsDecoration("// Body\n");
 	    puts("{\n");
 	    nodep->stmtsp()->iterateAndNext(*this);
 	    puts("}\n");
-	    if (nodep->finalsp()) puts("// Final\n");
+	    if (nodep->finalsp()) putsDecoration("// Final\n");
 	    nodep->finalsp()->iterateAndNext(*this);
 	    puts("}\n");
 	}
