@@ -97,7 +97,6 @@ public:
 class V3OutFormatter {
     // TYPES
     enum MiscConsts {
-	WIDTH = 50,	// Width after which to break at ,'s
 	MAXSPACE = 80};	// After this indent, stop indenting more
 public:
     enum AlignClass {
@@ -115,6 +114,7 @@ private:
     string	m_filename;
     Language	m_lang;		// Indenting Verilog code
     int		m_blockIndent;	// Characters per block indent
+    int		m_commaWidth;	// Width after which to break at ,'s
     int		m_lineno;
     int		m_column;
     int		m_nobreak;	// Basic operator or begin paren, don't break next
@@ -147,7 +147,7 @@ public:
     void putAlign(bool isstatic/*AlignClass*/, int align, int size=0/*=align*/, const string& prefix=""); // Declare a variable, with natural alignment
     void putbs(const char* strg) { putBreakExpr(); puts(strg); }
     void putbs(const string& strg) {  putBreakExpr(); puts(strg); }
-    bool exceededWidth() const { return m_column > WIDTH; }
+    bool exceededWidth() const { return m_column > m_commaWidth; }
     bool tokenStart(const char* cp, const char* cmp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }

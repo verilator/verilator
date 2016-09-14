@@ -551,10 +551,12 @@ bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
-    : m_filename(filename), m_lang(lang), m_blockIndent(4)
+    : m_filename(filename), m_lang(lang)
     , m_lineno(1), m_column(0)
     , m_nobreak(false), m_prependIndent(true), m_indentLevel(0)
     , m_declSAlign(0), m_declNSAlign(0), m_declPadNum(0) {
+    m_blockIndent = v3Global.opt.decoration() ? 4 : 1;
+    m_commaWidth  = v3Global.opt.decoration() ? 50 : 150;
 }
 
 //----------------------------------------------------------------------
@@ -682,7 +684,11 @@ void V3OutFormatter::puts (const char *strg) {
 	    break;
 	case '(':
 	    indentInc();
-	    m_parenVec.push(m_column);
+	    if (v3Global.opt.decoration()) {
+		m_parenVec.push(m_column);  // Line up continuation with open paren, plus one indent
+	    } else {
+		m_parenVec.push(m_indentLevel*m_blockIndent); // Line up continuation with block+1
+	    }
 	    break;
 	case ')':
 	    if (!m_parenVec.empty()) m_parenVec.pop();
