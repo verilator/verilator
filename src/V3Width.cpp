@@ -2632,9 +2632,6 @@ private:
 		    AstNode* shiftp = nodep->rhsp();
 		    nodep->rhsp()->replaceWith(new AstConst(shiftp->fileline(), num));
 		    shiftp->deleteTree(); VL_DANGLING(shiftp);
-		} else if (!m_paramsOnly) {
-		    nodep->rhsp()->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
-					   <<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
 		}
 	    }
 	}

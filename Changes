@@ -12,7 +12,7 @@ indicates the contributor was also the author of the fix; Thanks!
 
 ****  Fix SystemC compiles with VPI, bug1081. [Arthur Kahlich]
 
-****  Fix error on wide numbers that represent msb/lsb or shifts, msg1991. [Mandy Xu]
+****  Fix error on wide numbers that represent shifts, msg1991, bug1088. [Mandy Xu]
 
 ****  Improve Verilation performance on internal strings, msg1975. [Johan Bjork]
 

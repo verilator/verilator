@@ -263,6 +263,11 @@ private:
 	// Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
 	if (!nodep->user2SetOnce()) {
 	    UINFO(4,"  ShiftFix  "<<nodep<<endl);
+	    AstConst* shiftp = nodep->rhsp()->castConst();
+	    if (shiftp && shiftp->num().mostSetBitP1() > 32) {
+		shiftp->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
+				<<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+	    }
 	    if (nodep->widthMin()<=64  // Else we'll use large operators which work right
 		// C operator's width must be < maximum shift which is based on Verilog width
 		&& nodep->width() < (1LL<<nodep->rhsp()->widthMin())) {
