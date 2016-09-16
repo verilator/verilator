@@ -144,8 +144,12 @@ private:
 			   && nodep->firstAbovep()->castNodeAssign()
 			   && assignNoTemp(nodep->firstAbovep()->castNodeAssign())) {
 		    // Not much point if it's just a direct assignment to a constant
+		} else if (nodep->backp()->castSel()
+			   && nodep->backp()->castSel()->widthp() == nodep) {
+		    // AstSel::width must remain a constant
 		} else if (nodep->firstAbovep()
-			   && nodep->firstAbovep()->castArraySel()) {  // ArraySel's are pointer refs, ignore
+			   && nodep->firstAbovep()->castArraySel()) {
+		    // ArraySel's are pointer refs, ignore
 		} else {
 		    UINFO(4,"Cre Temp: "<<nodep<<endl);
 		    createDeepTemp(nodep, false);
