@@ -15,7 +15,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Improve Verilation performance on internal strings, msg1975. [Johan Bjork]
 
-****  Improve Verilation performance on trace duplicates, msg2017. [Johan Bjork]
+****  Improve Verilation performance on trace duplicates, bug1090. [Johan Bjork]
 
 
 * Verilator 3.886 2016-07-30
