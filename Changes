@@ -7,6 +7,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --no-decoration to remove output comments, msg2015. [Frederic Requin]
 
+***   If VM_PARALLEL_BUILDS=1, use OPT_FAST and OPT_SLOW. [Frederic Requin]
+      Set VM_DEFAULT_RULES=0 for old behavior.
+
 ****  Add error on DPI functions > 32 bits, msg1995. [Elliot Mednick]
 
 ****  Fix SystemC compiles with VPI, bug1081. [Arthur Kahlich]

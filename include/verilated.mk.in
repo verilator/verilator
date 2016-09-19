@@ -163,15 +163,23 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS)
 ######################################################################
 ### Compile rules
 
-#Default rule embedded in make:  (Not defined so user makefiles can override it)
-#.cpp.o:
-#	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
-
+ifneq ($(VM_DEFAULT_RULES),0)
 $(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
 
 $(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+
+$(VM_PREFIX)%__Slow.o: $(VM_PREFIX)%__Slow.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+
+$(VM_PREFIX)%.o: $(VM_PREFIX)%.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+endif
+
+#Default rule embedded in make:
+#.cpp.o:
+#	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 ######################################################################
 ### Debugging
