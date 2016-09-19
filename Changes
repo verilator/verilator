@@ -1,7 +1,6 @@
 Revision history for Verilator
 
-The contributors that suggested a given feature are shown in [].  [by ...]
-indicates the contributor was also the author of the fix; Thanks!
+The contributors that suggested a given feature are shown in []. Thanks!
 
 
 * Verilator 3.887 devel
@@ -15,6 +14,8 @@ indicates the contributor was also the author of the fix; Thanks!
 ****  Fix error on wide numbers that represent shifts, msg1991, bug1088. [Mandy Xu]
 
 ****  Improve Verilation performance on internal strings, msg1975. [Johan Bjork]
+
+****  Improve Verilation performance on trace duplicates, msg2017. [Johan Bjork]
 
 
 * Verilator 3.886 2016-07-30

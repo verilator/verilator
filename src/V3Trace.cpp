@@ -206,8 +206,13 @@ private:
 		AstTraceInc* nodep = vvertexp->nodep();
 		if (nodep->valuep()) {
 		    if (nodep->valuep()->backp() != nodep) nodep->v3fatalSrc("Trace duplicate back needs consistency, so we can map duplicates back to TRACEINCs");
-		    hashed.hashAndInsert(nodep->valuep());
+		    hashed.hash(nodep->valuep());
 		    UINFO(8, "  Hashed "<<hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
+
+		    // Just keep one node in the map and point all duplicates to this node
+		    if (hashed.findDuplicate(nodep->valuep()) == hashed.end()) {
+			hashed.hashAndInsert(nodep->valuep());
+		    }
 		}
 	    }
 	}
@@ -223,11 +228,8 @@ private:
 			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1p()->castGraphVertex());
 			UINFO(8,"  Orig "<<nodep<<endl);
 			UINFO(8,"   dup "<<dupincp<<endl);
-			// Mark the found node as a duplicate of the first node
-			// (Not vice-versa as we get the iterator for the found node)
-			dupvertexp->duplicatep(vvertexp);
-			// Remove node from comparison so don't hit it again
-			hashed.erase(dupit);
+			// Mark the hashed node as the original and our iterating node as duplicated
+			vvertexp->duplicatep(dupvertexp);
 		    }
 		}
 	    }
@@ -493,11 +495,13 @@ private:
 	//if (debug()>=9) nodep->dumpTree(cout,"-   assnnode: ");
 	// Find non-duplicated node; note some nodep's maybe null, as they were deleted below
 	TraceTraceVertex* dupvertexp = vvertexp;
-	while (dupvertexp->duplicatep()) {
+	if (dupvertexp->duplicatep()) {
 	    dupvertexp = dupvertexp->duplicatep();
 	    UINFO(9,"   dupOf "<<((void*)dupvertexp)<<" "<<((void*)dupvertexp->nodep())
 		  <<" "<<dupvertexp<<endl);
+	    if (dupvertexp->duplicatep()) dupvertexp->nodep()->v3fatalSrc("Original node was marked as a duplicate");
 	}
+
 	if (dupvertexp != vvertexp) {
 	    // It's an exact copy.  We'll assign the code to the master on
 	    // the first one we hit; the later ones will share the code.
