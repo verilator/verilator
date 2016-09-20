@@ -322,6 +322,51 @@ private:
 	nodep->unlinkFrBack()->deleteTree();
     }
 
+    virtual void visit(AstForeach* nodep, AstNUser*) {
+	// FOREACH(array,loopvars,body)
+	// -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
+	//nodep->dumpTree(cout, "-foreach-old:");
+	AstNode* newp = nodep->bodysp()->unlinkFrBackWithNext();
+	AstNode* arrayp = nodep->arrayp();
+	int dimension = 1;
+	// Must do innermost (last) variable first
+	AstNode* firstVarsp = nodep->varsp()->unlinkFrBackWithNext();
+	AstNode* lastVarsp = firstVarsp;
+	while (lastVarsp->nextp()) { lastVarsp = lastVarsp->nextp(); dimension++; }
+	for (AstNode* varsp = lastVarsp; varsp; varsp=varsp->backp()) {
+	    UINFO(0,"foreachVar "<<varsp<<endl);
+	    FileLine* fl = varsp->fileline();
+	    AstNode* varp = new AstVar(fl, AstVarType::BLOCKTEMP,
+				       varsp->name(), nodep->findSigned32DType());
+	    AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
+					   new AstVarRef(fl, arrayp->name(), false),
+					   new AstConst(fl, dimension));
+	    AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT,
+					    new AstVarRef(fl, arrayp->name(), false),
+					    new AstConst(fl, dimension));
+	    AstNode* stmtsp = varp;
+	    stmtsp->addNext(new AstAssign(fl, new AstVarRef(fl, varp->name(), true), leftp));
+	    AstNode* comparep =
+		new AstCond(fl, new AstLte(fl, leftp->cloneTree(true), rightp->cloneTree(true)),
+			    // left increments up to right
+			    new AstLte(fl, new AstVarRef(fl, varp->name(), false), rightp->cloneTree(true)),
+			    // left decrements down to right
+			    new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+	    AstNode* incp =
+		new AstAssign(fl, new AstVarRef(fl, varp->name(), true),
+			      new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
+					 new AstNegate(fl, new AstAttrOf(fl, AstAttrType::DIM_INCREMENT,
+									 new AstVarRef(fl, arrayp->name(), false),
+									 new AstConst(fl, dimension)))));
+	    stmtsp->addNext(new AstWhile(fl, comparep, newp, incp));
+	    newp = new AstBegin(nodep->fileline(),"",stmtsp);
+	    dimension--;
+	}
+	//newp->dumpTree(cout, "-foreach-new:");
+	firstVarsp->deleteTree(); VL_DANGLING(firstVarsp);
+	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+    }
+
     virtual void visit(AstNodeModule* nodep, AstNUser*) {
 	// Module: Create sim table for entire module and iterate
 	cleanFileline(nodep);

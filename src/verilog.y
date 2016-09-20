@@ -344,6 +344,7 @@ class AstSenTree;
 %token<fl>		yEXPORT		"export"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
+%token<fl>		yFOREACH	"foreach"
 %token<fl>		yFOREVER	"forever"
 %token<fl>		yFUNCTION	"function"
 %token<fl>		yGENERATE	"generate"
@@ -2327,7 +2328,7 @@ statement_item<nodep>:		// IEEE: statement_item
 							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
 	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
-	//UNSUP	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' stmt	{ UNSUP }
+	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' stmtBlock	{ $$ = new AstForeach($1,$3,$5,$8); }
 	//
 	//			// IEEE: jump_statement
 	|	yRETURN ';'				{ $$ = new AstReturn($1); }
@@ -2557,6 +2558,11 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 for_step<nodep>:		// IEEE: for_step
 	//UNSUP: List of steps, instead we keep it simple
 		genvar_iteration			{ $$ = $1; }
+	;
+
+loop_variables<nodep>:		// IEEE: loop_variables
+		varRefBase				{ $$ = $1; }
+	|	loop_variables ',' varRefBase		{ $$ = $1;$1->addNext($3); }
 	;
 
 //************************************************
@@ -3545,6 +3551,17 @@ idArrayed<nodep>:		// IEEE: id + select
 	|	idArrayed '[' expr yP_PLUSCOLON  constExpr ']'	{ $$ = new AstSelPlus($2,$1,$3,$5); }
 	|	idArrayed '[' expr yP_MINUSCOLON constExpr ']'	{ $$ = new AstSelMinus($2,$1,$3,$5); }
 	;
+
+idClassForeach<nodep>:
+		idForeach				{ $$ = $1; }
+	|	package_scopeIdFollows idForeach	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
+	;
+
+idForeach<nodep>:
+		varRefBase				{ $$ = $1; }
+	|	idForeach '.' varRefBase	 	{ $$ = new AstDot($2,$1,$3); }
+	;
+
 
 // VarRef without any dots or vectorizaion
 varRefBase<varrefp>:

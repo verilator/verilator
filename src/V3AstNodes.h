@@ -2677,6 +2677,23 @@ public:
     ASTNODE_NODE_FUNCS(GenFor, GENFOR)
 };
 
+class AstForeach : public AstNodeStmt {
+public:
+    AstForeach(FileLine* fileline, AstNode* arrayp, AstNode* varsp,
+	       AstNode* bodysp)
+	: AstNodeStmt(fileline) {
+	setOp1p(arrayp); addNOp2p(varsp); addNOp4p(bodysp);
+    }
+    ASTNODE_NODE_FUNCS(Foreach, FOREACH)
+    AstNode* arrayp() const { return op1p()->castNode(); }	// op1= array
+    AstNode* varsp() const { return op2p()->castNode(); }	// op2= variable index list
+    AstNode* bodysp() const { return op4p()->castNode(); }	// op4= body of loop
+    virtual bool isGateOptimizable() const { return false; }
+    virtual int  instrCount() const { return instrCountBranch(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+};
+
 class AstRepeat : public AstNodeStmt {
 public:
     AstRepeat(FileLine* fileline, AstNode* countp, AstNode* bodysp)
