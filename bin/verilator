@@ -1660,6 +1660,7 @@ The user must write the top level of the simulation.  Here's a simple
 example:
 
         #include <verilated.h>          // Defines common routines
+        #include <iostream>             // Need std::cout
         #include "Vtop.h"               // From Verilating "top.v"
 
         Vtop *top;                      // Instantiation of module
