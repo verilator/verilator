@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.889 devel
 
+****  Fix error on bad interface name, bug1097. [Todd Strader]
+
 
 * Verilator 3.888 2016-10-14
 

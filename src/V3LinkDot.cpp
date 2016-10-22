@@ -391,6 +391,9 @@ public:
 		} else {
 		    ifacerefp->v3fatalSrc("Unlinked interface");
 		}
+	    } else if (ifacerefp->ifaceViaCellp()->dead()) {
+		ifacerefp->v3error("Parent cell's interface is not found: "<<AstNode::prettyName(ifacerefp->ifaceName()));
+		continue;
 	    }
 	    VSymEnt* ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
 	    VSymEnt* ifOrPortSymp = ifaceSymp;
@@ -740,6 +743,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    m_scope = m_scope+"."+nodep->name();
 	    m_curSymp = m_modSymp = m_statep->insertCell(aboveSymp, m_modSymp, nodep, m_scope);
 	    m_beginp = NULL;
+	    // We don't report NotFoundModule, as may be a unused module in a generate
 	    if (nodep->modp()) nodep->modp()->accept(*this);
 	}
 	m_scope = oldscope;
