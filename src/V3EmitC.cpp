@@ -1510,16 +1510,8 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::__Vconfigure("+symClassName()+"* vlSymsp, bool first) {\n");
     puts(   "if (0 && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
-    bool first=true;
-    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (nodep->castCoverDecl()) {
-	    if (first) {
-		first = false;
-		putsDecoration("// Coverage Declarations\n");
-	    }
-	    nodep->accept(*this);
-	    splitSizeInc(nodep);
-	}
+    if (v3Global.opt.coverage() ) {
+	puts("this->_configure_coverage(vlSymsp, first);\n");
     }
     puts("}\n");
     splitSizeInc(10);

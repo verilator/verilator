@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.889 devel
 
+***   Honor --output-split on coverage constructors, bug1098. [Johan Bjork]
+
 ****  Fix error on bad interface name, bug1097. [Todd Strader]
 
 
