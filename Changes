@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error on bad interface name, bug1097. [Todd Strader]
 
+****  Fix error on referencing variable in parent, bug1099. [Ian Thompson]
+
 ****  Fix type parameters with low optimization, bug1101. [Stefan Wallentowitz]
 
 

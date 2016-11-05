@@ -490,7 +490,7 @@ public:
 		}
 	    }
 	    UINFO(8,"         id "<<ident<<" alt "<<altIdent<<" left "<<leftname<<" at se"<<lookupSymp<<endl);
-	    // Spec says; Look at exiting module (cellnames then modname),
+	    // Spec says; Look at existing module (cellnames then modname),
 	    // then look up (inst name or modname)
 	    if (firstId) {
 		// Check this module - subcellnames
@@ -504,18 +504,26 @@ public:
 			 || (inlinep && inlinep->origModName() == ident)) {}
 		// Move up and check cellname + modname
 		else {
+		    bool crossedCell = false;  // Crossed a cell boundary
 		    while (lookupSymp) {
 			lookupSymp = lookupSymp->parentp();
 			cellp   = lookupSymp ? lookupSymp->nodep()->castCell() : NULL; // Replicated above
 			inlinep = lookupSymp ? lookupSymp->nodep()->castCellInline() : NULL; // Replicated above
 			if (lookupSymp) {
 			    UINFO(9,"\t\tUp to "<<lookupSymp<<endl);
+			    if (cellp || inlinep) {
+				crossedCell = true;
+			    }
 			    if ((cellp && cellp->modp()->origName() == ident)
 				|| (inlinep && inlinep->origModName() == ident)) {
 				break;
 			    }
 			    else if (VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
 				lookupSymp = findSymp;
+				if (crossedCell && lookupSymp->nodep()->castVar()) {
+				    UINFO(9,"\t\tNot found but matches var name in parent "<<lookupSymp<<endl);
+				    return NULL;  // Not found (but happens to be var name in parent)
+				}
 				break;
 			    }
 			} else break;
