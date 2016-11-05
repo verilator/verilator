@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error on bad interface name, bug1097. [Todd Strader]
 
+****  Fix type parameters with low optimization, bug1101. [Stefan Wallentowitz]
+
 
 * Verilator 3.888 2016-10-14
 

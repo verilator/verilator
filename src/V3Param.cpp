@@ -128,6 +128,10 @@ private:
 		    varp->user4(usedLetter[static_cast<int>(ch)]*256 + ch);
 		    usedLetter[static_cast<int>(ch)]++;
 		}
+	    } else if (AstParamTypeDType* typep = stmtp->castParamTypeDType()) {
+	        char ch = 'T';
+	        typep->user4(usedLetter[static_cast<int>(ch)]*256 + ch);
+	        usedLetter[static_cast<int>(ch)]++;
 	    }
 	}
     }
