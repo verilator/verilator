@@ -44,6 +44,8 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 
 //######################################################################
 
+//######################################################################
+
 class AstType {
 public:
 #include "V3Ast__gen_types.h"	// From ./astgen

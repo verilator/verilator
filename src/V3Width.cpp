@@ -3162,13 +3162,13 @@ private:
 	if (!nodep->dtypep()) nodep->dtypeFrom(nodep->lhsp());
 	// To simplify callers, some node types don't need to change
 	switch (nodep->type()) {
-	case AstType::atEQ:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atNEQ:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atEQCASE:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atNEQCASE: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atADD:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atSUB:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
-	case AstType::atSHIFTL:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atEq:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atNeq:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atEqCase:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atAdd:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atSub:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+	case AstType::atShiftL:	nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
 	default: break;
 	}
 	FileLine* fl = nodep->fileline();
@@ -3176,22 +3176,22 @@ private:
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	AstNodeBiop* newp = NULL;
 	switch (nodep->type()) {
-	case AstType::atGT:	newp = new AstGtS	(fl,lhsp,rhsp); break;
-	case AstType::atGTS:	newp = new AstGt	(fl,lhsp,rhsp); break;
-	case AstType::atGTE:	newp = new AstGteS	(fl,lhsp,rhsp); break;
-	case AstType::atGTES:	newp = new AstGte	(fl,lhsp,rhsp); break;
-	case AstType::atLT:	newp = new AstLtS	(fl,lhsp,rhsp); break;
-	case AstType::atLTS:	newp = new AstLt	(fl,lhsp,rhsp); break;
-	case AstType::atLTE:	newp = new AstLteS	(fl,lhsp,rhsp); break;
-	case AstType::atLTES:	newp = new AstLte	(fl,lhsp,rhsp); break;
-	case AstType::atDIV:	newp = new AstDivS	(fl,lhsp,rhsp); break;
-	case AstType::atDIVS:	newp = new AstDiv	(fl,lhsp,rhsp); break;
-	case AstType::atMODDIV:	newp = new AstModDivS	(fl,lhsp,rhsp); break;
-	case AstType::atMODDIVS: newp = new AstModDiv 	(fl,lhsp,rhsp); break;
-	case AstType::atMUL:	newp = new AstMulS	(fl,lhsp,rhsp); break;
-	case AstType::atMULS:	newp = new AstMul	(fl,lhsp,rhsp); break;
-	case AstType::atSHIFTR:	newp = new AstShiftRS	(fl,lhsp,rhsp); break;
-	case AstType::atSHIFTRS: newp = new AstShiftR	(fl,lhsp,rhsp); break;
+	case AstType::atGt:	newp = new AstGtS	(fl,lhsp,rhsp); break;
+	case AstType::atGtS:	newp = new AstGt	(fl,lhsp,rhsp); break;
+	case AstType::atGte:	newp = new AstGteS	(fl,lhsp,rhsp); break;
+	case AstType::atGteS:	newp = new AstGte	(fl,lhsp,rhsp); break;
+	case AstType::atLt:	newp = new AstLtS	(fl,lhsp,rhsp); break;
+	case AstType::atLtS:	newp = new AstLt	(fl,lhsp,rhsp); break;
+	case AstType::atLte:	newp = new AstLteS	(fl,lhsp,rhsp); break;
+	case AstType::atLteS:	newp = new AstLte	(fl,lhsp,rhsp); break;
+	case AstType::atDiv:	newp = new AstDivS	(fl,lhsp,rhsp); break;
+	case AstType::atDivS:	newp = new AstDiv	(fl,lhsp,rhsp); break;
+	case AstType::atModDiv:	newp = new AstModDivS	(fl,lhsp,rhsp); break;
+	case AstType::atModDivS: newp = new AstModDiv 	(fl,lhsp,rhsp); break;
+	case AstType::atMul:	newp = new AstMulS	(fl,lhsp,rhsp); break;
+	case AstType::atMulS:	newp = new AstMul	(fl,lhsp,rhsp); break;
+	case AstType::atShiftR:	newp = new AstShiftRS	(fl,lhsp,rhsp); break;
+	case AstType::atShiftRS: newp = new AstShiftR	(fl,lhsp,rhsp); break;
 	default:
 	    nodep->v3fatalSrc("Node needs sign change, but bad case: "<<nodep<<endl);
 	    break;
@@ -3214,17 +3214,17 @@ private:
 	AstNodeBiop* newp = NULL;
 	// No width change on output;...		// All below have bool or double outputs
 	switch (nodep->type()) {
-	case AstType::atADD:  				newp = new AstAddD	(fl,lhsp,rhsp); break;
-	case AstType::atSUB:  				newp = new AstSubD	(fl,lhsp,rhsp); break;
-	case AstType::atPOW:				newp = new AstPowD	(fl,lhsp,rhsp); break;
-	case AstType::atEQ:	case AstType::atEQCASE:	newp = new AstEqD	(fl,lhsp,rhsp); break;
-	case AstType::atNEQ:	case AstType::atNEQCASE: newp = new AstNeqD	(fl,lhsp,rhsp); break;
-	case AstType::atGT:	case AstType::atGTS:	newp = new AstGtD	(fl,lhsp,rhsp); break;
-	case AstType::atGTE:	case AstType::atGTES:	newp = new AstGteD	(fl,lhsp,rhsp); break;
-	case AstType::atLT:	case AstType::atLTS:	newp = new AstLtD	(fl,lhsp,rhsp); break;
-	case AstType::atLTE:	case AstType::atLTES:	newp = new AstLteD	(fl,lhsp,rhsp); break;
-	case AstType::atDIV:	case AstType::atDIVS:	newp = new AstDivD	(fl,lhsp,rhsp); break;
-	case AstType::atMUL:	case AstType::atMULS:	newp = new AstMulD	(fl,lhsp,rhsp); break;
+	case AstType::atAdd:  				newp = new AstAddD	(fl,lhsp,rhsp); break;
+	case AstType::atSub:  				newp = new AstSubD	(fl,lhsp,rhsp); break;
+	case AstType::atPow:				newp = new AstPowD	(fl,lhsp,rhsp); break;
+	case AstType::atEq:	case AstType::atEqCase:	newp = new AstEqD	(fl,lhsp,rhsp); break;
+	case AstType::atNeq:	case AstType::atNeqCase: newp = new AstNeqD	(fl,lhsp,rhsp); break;
+	case AstType::atGt:	case AstType::atGtS:	newp = new AstGtD	(fl,lhsp,rhsp); break;
+	case AstType::atGte:	case AstType::atGteS:	newp = new AstGteD	(fl,lhsp,rhsp); break;
+	case AstType::atLt:	case AstType::atLtS:	newp = new AstLtD	(fl,lhsp,rhsp); break;
+	case AstType::atLte:	case AstType::atLteS:	newp = new AstLteD	(fl,lhsp,rhsp); break;
+	case AstType::atDiv:	case AstType::atDivS:	newp = new AstDivD	(fl,lhsp,rhsp); break;
+	case AstType::atMul:	case AstType::atMulS:	newp = new AstMulD	(fl,lhsp,rhsp); break;
 	default:
 	    nodep->v3fatalSrc("Node needs conversion to double, but bad case: "<<nodep<<endl);
 	    break;
@@ -3247,12 +3247,12 @@ private:
 	AstNodeBiop* newp = NULL;
 	// No width change on output;...		// All below have bool or double outputs
 	switch (nodep->type()) {
-	case AstType::atEQ:	case AstType::atEQCASE:	newp = new AstEqN	(fl,lhsp,rhsp); break;
-	case AstType::atNEQ:	case AstType::atNEQCASE: newp = new AstNeqN	(fl,lhsp,rhsp); break;
-	case AstType::atGT:	case AstType::atGTS:	newp = new AstGtN	(fl,lhsp,rhsp); break;
-	case AstType::atGTE:	case AstType::atGTES:	newp = new AstGteN	(fl,lhsp,rhsp); break;
-	case AstType::atLT:	case AstType::atLTS:	newp = new AstLtN	(fl,lhsp,rhsp); break;
-	case AstType::atLTE:	case AstType::atLTES:	newp = new AstLteN	(fl,lhsp,rhsp); break;
+	case AstType::atEq:	case AstType::atEqCase:	newp = new AstEqN	(fl,lhsp,rhsp); break;
+	case AstType::atNeq:	case AstType::atNeqCase: newp = new AstNeqN	(fl,lhsp,rhsp); break;
+	case AstType::atGt:	case AstType::atGtS:	newp = new AstGtN	(fl,lhsp,rhsp); break;
+	case AstType::atGte:	case AstType::atGteS:	newp = new AstGteN	(fl,lhsp,rhsp); break;
+	case AstType::atLt:	case AstType::atLtS:	newp = new AstLtN	(fl,lhsp,rhsp); break;
+	case AstType::atLte:	case AstType::atLteS:	newp = new AstLteN	(fl,lhsp,rhsp); break;
 	default:
 	    nodep->v3fatalSrc("Node needs conversion to string, but bad case: "<<nodep<<endl);
 	    break;
@@ -3273,7 +3273,7 @@ private:
 	AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	AstNodeUniop* newp = NULL;
 	switch (nodep->type()) {
-	case AstType::atNEGATE:			newp = new AstNegateD	(fl,lhsp); break;
+	case AstType::atNegate:			newp = new AstNegateD	(fl,lhsp); break;
 	default:
 	    nodep->v3fatalSrc("Node needs conversion to double, but bad case: "<<nodep<<endl);
 	    break;

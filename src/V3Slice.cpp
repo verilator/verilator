@@ -147,16 +147,16 @@ class SliceCloneVisitor : public AstNVisitor {
 	    if (!lhsp) lhsp = clonep;
 	    else {
 		switch (nodep->type()) {
-		case AstType::atREDOR:
+		case AstType::atRedOr:
 		    lhsp = new AstOr(nodep->fileline(), lhsp, clonep);
 		    break;
-		case AstType::atREDAND:
+		case AstType::atRedAnd:
 		    lhsp = new AstAnd(nodep->fileline(), lhsp, clonep);
 		    break;
-		case AstType::atREDXOR:
+		case AstType::atRedXor:
 		    lhsp = new AstXor(nodep->fileline(), lhsp, clonep);
 		    break;
-		case AstType::atREDXNOR:
+		case AstType::atRedXnor:
 		    lhsp = new AstXnor(nodep->fileline(), lhsp, clonep);
 		    break;
 		default:
@@ -492,12 +492,12 @@ class SliceVisitor : public AstNVisitor {
 		    if (!logp) logp = clonep;
 		    else {
 			switch (nodep->type()) {
-			case AstType::atEQ:  // FALLTHRU
-			case AstType::atEQCASE:
+			case AstType::atEq:  // FALLTHRU
+			case AstType::atEqCase:
 			    logp = new AstLogAnd(nodep->fileline(), logp, clonep);
 			    break;
-			case AstType::atNEQ:  // FALLTHRU
-			case AstType::atNEQCASE:
+			case AstType::atNeq:  // FALLTHRU
+			case AstType::atNeqCase:
 			    logp = new AstLogOr(nodep->fileline(), logp, clonep);
 			    break;
 			default:
