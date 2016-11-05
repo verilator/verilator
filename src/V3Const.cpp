@@ -808,8 +808,8 @@ private:
 	// like a AstExtend{$rhsp}, but we need to set the width correctly from base node
 	arg0p->unlinkFrBack();
 	AstNode* newp = (nodep->castExtendS()
-			 ? (new AstExtendS(nodep->fileline(), arg0p))->castNode()
-			 : (new AstExtend (nodep->fileline(), arg0p))->castNode());
+			 ? static_cast<AstNode*>(new AstExtendS(nodep->fileline(), arg0p))
+			 : static_cast<AstNode*>(new AstExtend (nodep->fileline(), arg0p)));
 	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }

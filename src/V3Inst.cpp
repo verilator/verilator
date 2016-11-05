@@ -390,8 +390,8 @@ private:
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
 	if (cmpWidthp->width() > rhsp->width()) {
 	    rhsp = (rhsp->isSigned()
-		    ? (new AstExtendS(fl, rhsp))->castNode()
-		    : (new AstExtend (fl, rhsp))->castNode());
+		    ? static_cast<AstNode*>(new AstExtendS(fl, rhsp))
+		    : static_cast<AstNode*>(new AstExtend (fl, rhsp)));
 	    rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
 	} else if (cmpWidthp->width() < rhsp->width()) {
 	    rhsp = new AstSel (fl, rhsp, 0, cmpWidthp->width());

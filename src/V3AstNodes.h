@@ -126,8 +126,8 @@ public:
 	setOp2p(new AstConst(fl,range.hi())); setOp3p(new AstConst(fl,range.lo()));
     }
     ASTNODE_NODE_FUNCS(Range)
-    AstNode* msbp() const { return op2p()->castNode(); }	// op2 = Msb expression
-    AstNode* lsbp() const { return op3p()->castNode(); }	// op3 = Lsb expression
+    AstNode* msbp() const { return op2p(); }	// op2 = Msb expression
+    AstNode* lsbp() const { return op3p(); }	// op3 = Lsb expression
     AstNode* leftp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
     AstNode* rightp() const { return littleEndian()?msbp():lsbp(); }
     int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
@@ -210,7 +210,7 @@ public:
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
-    AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
+    AstNode*	attrsp() const { return op4p(); }	// op4 = Attributes during early parse
     // METHODS
     virtual string name() const { return m_name; }
     virtual bool maybePointedTo() const { return true; }
@@ -891,9 +891,9 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
     virtual int instrCount() const { return widthInstrs()*(lsbp()->castConst()?3:10); }
-    AstNode* fromp()		const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
-    AstNode* lsbp()		const { return op2p()->castNode(); }	// op2 = Msb selection expression
-    AstNode* widthp()		const { return op3p()->castNode(); }	// op3 = Width
+    AstNode* fromp()		const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* lsbp()		const { return op2p(); }	// op2 = Msb selection expression
+    AstNode* widthp()		const { return op3p(); }	// op3 = Width
     int		widthConst() const { return widthp()->castConst()->toSInt(); }
     int		lsbConst()   const { return lsbp()->castConst()->toSInt(); }
     int		msbConst()   const { return lsbConst()+widthConst()-1; }
@@ -930,7 +930,7 @@ public:
     virtual bool cleanOut() { return false; }
     virtual bool same(AstNode* samep) const { return true; } // dtype comparison does it all for us
     virtual int instrCount() const { return widthInstrs(); }
-    AstNode* fromp() const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
@@ -954,9 +954,9 @@ public:
     ASTNODE_NODE_FUNCS(MethodSel)
     virtual string name() const { return m_name; }		// * = Var name
     virtual void name(const string& name) { m_name = name; }
-    AstNode* fromp() const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
-    AstNode* pinsp() const { return op2p()->castNode(); }	// op2 = Pin interconnection list
+    AstNode* pinsp() const { return op2p(); }	// op2 = Pin interconnection list
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
 };
 
@@ -1072,10 +1072,10 @@ public:
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
     AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
-    AstNode* 	valuep() const { return op3p()->castNode(); } // op3 = Initial value that never changes (static const)
+    AstNode* 	valuep() const { return op3p(); } // op3 = Initial value that never changes (static const)
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
-    AstNode*	attrsp() const { return op4p()->castNode(); }	// op4 = Attributes during early parse
+    AstNode*	attrsp() const { return op4p(); }	// op4 = Attributes during early parse
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
@@ -1209,7 +1209,7 @@ public:
     virtual bool cleanRhs() { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
-    AstNode* rhsp()		const { return op1p()->castNode(); }	// op1 = Assign from
+    AstNode* rhsp()		const { return op1p(); }	// op1 = Assign from
     string   path()		const { return m_path; }
 };
 
@@ -1222,7 +1222,7 @@ public:
 	addNOp1p(exprsp);
     }
     ASTNODE_NODE_FUNCS(Implicit)
-    AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Assign from
+    AstNode* exprsp() const { return op1p(); }	// op1 = Assign from
 };
 
 class AstScope : public AstNode {
@@ -1250,11 +1250,11 @@ public:
     string nameVlSym() const { return (((string)"vlSymsp->") + nameDotless()); }
     AstNodeModule* modp()		const { return m_modp; }
     void addVarp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode* varsp()		const { return op1p()->castNode(); }	// op1 = AstVarScope's
+    AstNode* varsp()		const { return op1p(); }	// op1 = AstVarScope's
     void addActivep(AstNode* nodep) { addOp2p(nodep); }
-    AstNode* blocksp()		const { return op2p()->castNode(); }	// op2 = Block names
+    AstNode* blocksp()		const { return op2p(); }	// op2 = Block names
     void addFinalClkp(AstNode* nodep) { addOp3p(nodep); }
-    AstNode* finalClksp()		const { return op3p()->castNode(); }	// op3 = Final assigns for clock correction
+    AstNode* finalClksp()		const { return op3p(); }	// op3 = Final assigns for clock correction
     AstScope* aboveScopep() const { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
     bool isTop() const { return aboveScopep()==NULL; }  // At top of hierarchy
@@ -1270,7 +1270,7 @@ public:
 	:AstNode(fl)
 	{addNOp2p(ascopep);}
     ASTNODE_NODE_FUNCS(TopScope)
-    AstNode*	stmtsp() 	const { return op1p()->castNode(); }
+    AstNode*	stmtsp() 	const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
     AstScope* scopep()		const { return op2p()->castScope(); }	// op1 = AstVarScope's
 };
@@ -1420,7 +1420,7 @@ public:
     bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin, NULL if unconnected
+    AstNode*	exprp()		const { return op1p(); }	// op1 = Expression connected to pin, NULL if unconnected
     AstVar*	modVarp()	const { return m_modVarp; }		// [After Link] Pointer to variable
     void  	modVarp(AstVar* nodep) { m_modVarp=nodep; }
     AstParamTypeDType*	modPTypep()	const { return m_modPTypep; }		// [After Link] Pointer to variable
@@ -1446,7 +1446,7 @@ public:
     virtual void name(const string& name) { m_name = name; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode*	exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to pin, NULL if unconnected
+    AstNode*	exprp()		const { return op1p(); }	// op1 = Expression connected to pin, NULL if unconnected
     bool	emptyConnectNoNext() const { return !exprp() && name()=="" && !nextp(); }
 };
 
@@ -1713,7 +1713,7 @@ public:
     ASTNODE_NODE_FUNCS(Port)
     virtual string name()	const { return m_name; }		// * = Port name
     int pinNum()		const { return m_pinNum; }		// * = Pin number, for order based instantiation
-    AstNode* exprp()		const { return op1p()->castNode(); }	// op1 = Expression connected to port
+    AstNode* exprp()		const { return op1p(); }	// op1 = Expression connected to port
 };
 
 //######################################################################
@@ -1729,7 +1729,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Generate)
     // op1 = Statements
-    AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
+    AstNode*	stmtsp() 	const { return op1p(); }	// op1 = List of statements
     void addStmtp(AstNode* nodep) { addOp1p(nodep); }
 };
 
@@ -1922,7 +1922,7 @@ public:
     ASTNODE_NODE_FUNCS(SenGate)
     virtual string emitVerilog() { return "(%l) %f&& (%r)"; }
     AstSenItem*	sensesp() const { return op1p()->castSenItem(); }
-    AstNode*	rhsp() 	const { return op2p()->castNode(); }
+    AstNode*	rhsp() 	const { return op2p(); }
     void	sensesp(AstSenItem* nodep)  { addOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { setOp2p(nodep); }
     //
@@ -1969,7 +1969,7 @@ public:
     //
     virtual void dump(ostream& str);
     AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
-    AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
+    AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
     // Special accessors
@@ -1989,7 +1989,7 @@ public:
     virtual bool same(AstNode* samep) const { return true; }
     //
     AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
-    AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
+    AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
@@ -2004,7 +2004,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(AlwaysPost)
     //
-    AstNode*	bodysp() 	const { return op2p()->castNode(); }	// op2 = Statements to evaluate
+    AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
     void	addBodysp(AstNode* newp)	{ addOp2p(newp); }
 };
 
@@ -2079,7 +2079,7 @@ public:
     virtual bool same(AstNode* samep) const {
 	return direction()==samep->castPull()->direction(); }
     void lhsp(AstNode* np) { setOp1p(np); }
-    AstNode* lhsp() const { return op1p()->castNode(); }	// op1 = Assign to
+    AstNode* lhsp() const { return op1p(); }	// op1 = Assign to
     uint32_t direction() const { return (uint32_t) m_direction; }
 };
 
@@ -2303,8 +2303,8 @@ public:
     }
     ASTNODE_NODE_FUNCS(CaseItem)
     virtual int instrCount()	const { return widthInstrs()+instrCountBranch(); }
-    AstNode*	condsp()		const { return op1p()->castNode(); }	// op1= list of possible matching expressions
-    AstNode*	bodysp()	const { return op2p()->castNode(); }	// op2= what to do
+    AstNode*	condsp()		const { return op1p(); }	// op1= list of possible matching expressions
+    AstNode*	bodysp()	const { return op2p(); }	// op2= what to do
     void	condsp(AstNode* nodep) { setOp1p(nodep); }
     void	addBodysp(AstNode* newp)	{ addOp2p(newp); }
     bool	isDefault() const { return condsp()==NULL; }
@@ -2330,7 +2330,7 @@ public:
     virtual bool same(AstNode* samep) const { return text()==samep->castSFormatF()->text(); }
     virtual string verilogKwd() const { return "$sformatf"; }
     void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
-    AstNode* exprsp() const { return op1p()->castNode(); }	// op1 = Expressions to output
+    AstNode* exprsp() const { return op1p(); }	// op1 = Expressions to output
     string text() const { return m_text; }		// * = Text to display
     void text(const string& text) { m_text=text; }
     AstScopeName* scopeNamep() const { return op2p()->castScopeName(); }
@@ -2417,7 +2417,7 @@ public:
     virtual bool isPure() const { return false; }  // Though deleted before opt
     virtual bool isOutputter() const { return true; }  // Though deleted before opt
     virtual int instrCount()	const { return instrCountPli(); }
-    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    AstNode*	exprsp()	const { return op1p(); }	// op1 = Expressions to output
     void 	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
 };
 
@@ -2511,7 +2511,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
 	return text()==samep->castFScanF()->text(); }
-    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    AstNode*	exprsp()	const { return op1p(); }	// op1 = Expressions to output
     void 	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
     string 	text()		const { return m_text; }		// * = Text to display
     void 	text(const string& text) { m_text=text; }
@@ -2544,7 +2544,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
 	return text()==samep->castSScanF()->text(); }
-    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    AstNode*	exprsp()	const { return op1p(); }	// op1 = Expressions to output
     void	exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
     string 	text()		const { return m_text; }		// * = Text to display
     void 	text(const string& text) { m_text=text; }
@@ -2571,10 +2571,10 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return isHex()==samep->castReadMem()->isHex(); }
     bool	isHex() const { return m_isHex; }
-    AstNode*	filenamep() const { return op1p()->castNode(); }
-    AstNode*	memp() const { return op2p()->castNode(); }
-    AstNode*	lsbp() const { return op3p()->castNode(); }
-    AstNode*	msbp() const { return op4p()->castNode(); }
+    AstNode*	filenamep() const { return op1p(); }
+    AstNode*	memp() const { return op2p(); }
+    AstNode*	lsbp() const { return op3p(); }
+    AstNode*	msbp() const { return op4p(); }
 };
 
 class AstSystemT : public AstNodeStmt {
@@ -2639,7 +2639,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(AstNode* samep) const {
 	return text()==samep->castValuePlusArgs()->text(); }
-    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1 = Expressions to output
+    AstNode*	exprsp()	const { return op1p(); }	// op1 = Expressions to output
     void 	exprsp(AstNode* nodep)	{ setOp1p(nodep); }	// op1 = Expressions to output
     string 	text()		const { return m_text; }	// * = Text to display
     void 	text(const string& text) { m_text=text; }
@@ -2685,9 +2685,9 @@ public:
 	setOp1p(arrayp); addNOp2p(varsp); addNOp4p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Foreach)
-    AstNode* arrayp() const { return op1p()->castNode(); }	// op1= array
-    AstNode* varsp() const { return op2p()->castNode(); }	// op2= variable index list
-    AstNode* bodysp() const { return op4p()->castNode(); }	// op4= body of loop
+    AstNode* arrayp() const { return op1p(); }	// op1= array
+    AstNode* varsp() const { return op2p(); }	// op2= variable index list
+    AstNode* bodysp() const { return op4p(); }	// op4= body of loop
     virtual bool isGateOptimizable() const { return false; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -2701,8 +2701,8 @@ public:
 	setOp2p(countp); addNOp3p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Repeat)
-    AstNode*	countp()	const { return op2p()->castNode(); }	// op2= condition to continue
-    AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
+    AstNode*	countp()	const { return op2p(); }	// op2= condition to continue
+    AstNode*	bodysp()	const { return op3p(); }	// op3= body of loop
     virtual bool isGateOptimizable() const { return false; }  // Not releavant - converted to FOR
     virtual int instrCount()	const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -2716,10 +2716,10 @@ public:
 	setOp2p(condp); addNOp3p(bodysp); addNOp4p(incsp);
     }
     ASTNODE_NODE_FUNCS(While)
-    AstNode*	precondsp()	const { return op1p()->castNode(); }	// op1= prepare statements for condition (exec every loop)
-    AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
-    AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
-    AstNode*	incsp()		const { return op4p()->castNode(); }	// op4= increment (if from a FOR loop)
+    AstNode*	precondsp()	const { return op1p(); }	// op1= prepare statements for condition (exec every loop)
+    AstNode*	condp()		const { return op2p(); }	// op2= condition to continue
+    AstNode*	bodysp()	const { return op3p(); }	// op3= body of loop
+    AstNode*	incsp()		const { return op4p(); }	// op4= increment (if from a FOR loop)
     void	addPrecondsp(AstNode* newp)	{ addOp1p(newp); }
     void	addBodysp(AstNode* newp)	{ addOp3p(newp); }
     void	addIncsp(AstNode* newp)		{ addOp4p(newp); }
@@ -2821,7 +2821,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     // op1 = Statements
-    AstNode*	stmtsp() 	const { return op1p()->castNode(); }	// op1 = List of statements
+    AstNode*	stmtsp() 	const { return op1p(); }	// op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
     int labelNum() const { return m_labelNum; }
     void labelNum(int flag) { m_labelNum=flag; }
@@ -2861,7 +2861,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(UntilStable)
     AstVarRef* stablesp()	const { return op2p()->castVarRef(); } // op2= list of variables that must become stable
-    AstNode*	bodysp()	const { return op3p()->castNode(); }	// op3= body of loop
+    AstNode*	bodysp()	const { return op3p(); }	// op3= body of loop
     void	addStablesp(AstVarRef* newp)	{ addOp2p(newp); }
     void	addBodysp(AstNode* newp)	{ addOp3p(newp); }
     virtual bool isGateOptimizable() const { return false; }	// Not relevant
@@ -2936,7 +2936,7 @@ public:
     virtual string name()	const { return m_name; }		// * = Block name
     virtual void name(const string& name) { m_name = name; }
     // op1 = Statements
-    AstNode* stmtsp() const { return op1p()->castNode(); }	// op1 = List of statements
+    AstNode* stmtsp() const { return op1p(); }	// op1 = List of statements
     void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
     AstNode* genforp() const { return op2p(); } // op2 = GENFOR, if applicable,
     // might NOT be a GenFor, as loop unrolling replaces with Begin
@@ -2953,7 +2953,7 @@ public:
 	addNOp1p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Initial)
-    AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
+    AstNode*	bodysp() 	const { return op1p(); }	// op1 = Expressions to evaluate
     // Special accessors
     bool isJustOneBodyStmt() const { return bodysp() && !bodysp()->nextp(); }
 };
@@ -2965,7 +2965,7 @@ public:
 	addNOp1p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Final)
-    AstNode*	bodysp() 	const { return op1p()->castNode(); }	// op1 = Expressions to evaluate
+    AstNode*	bodysp() 	const { return op1p(); }	// op1 = Expressions to evaluate
 };
 
 class AstInside : public AstNodeMath {
@@ -2976,8 +2976,8 @@ public:
 	dtypeSetLogicBool();
     }
     ASTNODE_NODE_FUNCS(Inside)
-    AstNode* exprp() const { return op1p()->castNode(); }	// op1 = LHS expression to compare with
-    AstNode* itemsp() const { return op2p()->castNode(); }	// op2 = RHS, possibly a list of expr or AstInsideRange
+    AstNode* exprp() const { return op1p(); }	// op1 = LHS expression to compare with
+    AstNode* itemsp() const { return op2p(); }	// op2 = RHS, possibly a list of expr or AstInsideRange
     virtual string emitVerilog() { return "%l inside { %r }"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return false; }  // NA
@@ -2990,8 +2990,8 @@ public:
 	addOp1p(lhsp); addOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(InsideRange)
-    AstNode* lhsp() const { return op1p()->castNode(); }	// op1 = LHS
-    AstNode* rhsp() const { return op2p()->castNode(); }	// op2 = RHS
+    AstNode* lhsp() const { return op1p(); }	// op1 = LHS
+    AstNode* rhsp() const { return op2p(); }	// op2 = RHS
     virtual string emitVerilog() { return "[%l:%r]"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return false; }  // NA
@@ -3012,9 +3012,9 @@ public:
 	addNOp1p(defaultp);
     }
     ASTNODE_NODE_FUNCS(InitArray)
-    AstNode* defaultp() const { return op1p()->castNode(); }	// op1 = Default if sparse
+    AstNode* defaultp() const { return op1p(); }	// op1 = Default if sparse
     void defaultp(AstNode* newp) { setOp1p(newp); }
-    AstNode* initsp() const { return op2p()->castNode(); }	// op2 = Initial value expressions
+    AstNode* initsp() const { return op2p(); }	// op2 = Initial value expressions
     void addValuep(AstNode* newp) { addIndexValuep(m_indices.size(), newp); }
     void addIndexValuep(uint32_t index, AstNode* newp) {
 	// Must insert in sorted order
@@ -3147,11 +3147,11 @@ public:
     virtual bool isOutputter() const { return true; }
     // but isPure()  true
     // op1 = Statements before the value
-    AstNode*	precondsp()	const { return op1p()->castNode(); }	// op1= prepare statements for condition (exec every loop)
+    AstNode*	precondsp()	const { return op1p(); }	// op1= prepare statements for condition (exec every loop)
     void	addPrecondsp(AstNode* newp) { addOp1p(newp); }
     // op2 = Value to trace
     AstTraceDecl*	declp() const { return m_declp; }	// Where defined
-    AstNode*	valuep() 	const { return op2p()->castNode(); }
+    AstNode*	valuep() 	const { return op2p(); }
 };
 
 class AstActive : public AstNode {
@@ -3185,7 +3185,7 @@ public:
     void	sensesStorep(AstSenTree* nodep) { addOp1p(nodep); }
     AstSenTree*	sensesStorep() 	const { return op1p()->castSenTree(); }
     // op2 = Combo logic
-    AstNode*	stmtsp() 	const { return op2p()->castNode(); }
+    AstNode*	stmtsp() 	const { return op2p(); }
     void addStmtsp(AstNode* nodep) { addOp2p(nodep); }
     // METHODS
     bool hasInitial() const { return m_sensesp->hasInitial(); }
@@ -3326,7 +3326,7 @@ public:
     virtual bool cleanOut() { return false; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
+    AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
     virtual bool isPure() const { return false; }	// SPECIAL: User may order w/other sigs
     virtual bool isOutputter() const { return true; }
     virtual bool isGateOptimizable() const { return false; }
@@ -5008,7 +5008,7 @@ public:
 	addNOp1p(exprsp);
     }
     ASTNODE_NODE_FUNCS(UCStmt)
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
+    AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
@@ -5151,13 +5151,13 @@ public:
     void	dpiImport(bool flag) { m_dpiImport = flag; }
     //
     // If adding node accessors, see below emptyBody
-    AstNode*	argsp() 	const { return op1p()->castNode(); }
+    AstNode*	argsp() 	const { return op1p(); }
     void addArgsp(AstNode* nodep) { addOp1p(nodep); }
-    AstNode*	initsp() 	const { return op2p()->castNode(); }
+    AstNode*	initsp() 	const { return op2p(); }
     void addInitsp(AstNode* nodep) { addOp2p(nodep); }
-    AstNode*	stmtsp() 	const { return op3p()->castNode(); }
+    AstNode*	stmtsp() 	const { return op3p(); }
     void addStmtsp(AstNode* nodep) { addOp3p(nodep); }
-    AstNode*	finalsp() 	const { return op4p()->castNode(); }
+    AstNode*	finalsp() 	const { return op4p(); }
     void addFinalsp(AstNode* nodep) { addOp4p(nodep); }
     // Special methods
     bool	emptyBody() const { return argsp()==NULL && initsp()==NULL && stmtsp()==NULL && finalsp()==NULL; }
@@ -5196,7 +5196,7 @@ public:
     virtual bool same(AstNode* samep) const {
 	return (funcp()==samep->castCCall()->funcp()
 		&& argTypes()==samep->castCCall()->argTypes()); }
-    AstNode*	exprsp()	const { return op1p()->castNode(); }	// op1= expressions to print
+    AstNode*	exprsp()	const { return op1p(); }	// op1= expressions to print
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return funcp()->pure(); }
@@ -5207,7 +5207,7 @@ public:
     void	argTypes(const string& str) { m_argTypes = str; }
     string	argTypes() const { return m_argTypes; }
     //
-    AstNode*	argsp() 	const { return op1p()->castNode(); }
+    AstNode*	argsp() 	const { return op1p(); }
     void addArgsp(AstNode* nodep) { addOp1p(nodep); }
 };
 
@@ -5252,7 +5252,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
+    AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
 };
 
 
@@ -5288,7 +5288,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
-    AstNode*	bodysp()	const { return op1p()->castNode(); }	// op1= expressions to print
+    AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
 };
 
 //######################################################################

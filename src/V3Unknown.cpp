@@ -133,10 +133,12 @@ private:
 	    prep->replaceWith(new AstVarRef(fl, varp, true));
 	    AstNode* newp = new AstIf(fl, condp,
 				      (needDly
-				       ? ((new AstAssignDly(fl, prep,
-							    new AstVarRef(fl, varp, false)))->castNode())
-				       : ((new AstAssign   (fl, prep,
-							    new AstVarRef(fl, varp, false)))->castNode())),
+				       ? static_cast<AstNode*>
+				       (new AstAssignDly(fl, prep,
+							 new AstVarRef(fl, varp, false)))
+				       : static_cast<AstNode*>
+				       (new AstAssign   (fl, prep,
+							 new AstVarRef(fl, varp, false)))),
 				      NULL);
 	    if (debug()>=9) newp->dumpTree(cout,"     _new: ");
 	    abovep->addNextStmt(newp,abovep);

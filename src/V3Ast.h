@@ -44,8 +44,6 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 
 //######################################################################
 
-//######################################################################
-
 class AstType {
 public:
 #include "V3Ast__gen_types.h"	// From ./astgen
@@ -1277,7 +1275,6 @@ public:
     AstNode*	acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
 
     // CONVERSION
-    AstNode*	castNode() { return this; }
 #include "V3Ast__gen_interface.h"	// From ./astgen
     // Things like:
     //  AstAlways*	castAlways();
@@ -1331,7 +1328,7 @@ public:
 	dtypeFrom(lhsp);
 	setOp1p(lhsp); }
     ASTNODE_BASE_FUNCS(NodeUniop)
-    AstNode*	lhsp() 	const { return op1p()->castNode(); }
+    AstNode*	lhsp() 	const { return op1p(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     // METHODS
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0; // Set out to evaluation of a AstConst'ed lhs
@@ -1354,8 +1351,8 @@ public:
     ASTNODE_BASE_FUNCS(NodeBiop)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp)=0;	// Clone single node, just get same type back.
     // ACCESSORS
-    AstNode*	lhsp() 	const { return op1p()->castNode(); }
-    AstNode*	rhsp() 	const { return op2p()->castNode(); }
+    AstNode*	lhsp() 	const { return op1p(); }
+    AstNode*	rhsp() 	const { return op2p(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
     // METHODS
@@ -1379,9 +1376,9 @@ public:
 	: AstNodeMath(fl) {
 	setOp1p(lhs); setOp2p(rhs); setOp3p(ths); }
     ASTNODE_BASE_FUNCS(NodeTriop)
-    AstNode*	lhsp() 	const { return op1p()->castNode(); }
-    AstNode*	rhsp() 	const { return op2p()->castNode(); }
-    AstNode*	thsp() 	const { return op3p()->castNode(); }
+    AstNode*	lhsp() 	const { return op1p(); }
+    AstNode*	rhsp() 	const { return op2p(); }
+    AstNode*	thsp() 	const { return op3p(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
     void	thsp(AstNode* nodep)  { return setOp3p(nodep); }
@@ -1423,9 +1420,9 @@ public:
     ASTNODE_BASE_FUNCS(NodeCond)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
 	if (lhs.isNeqZero()) out.opAssign(rhs); else out.opAssign(ths); }
-    AstNode*	condp() 	const { return op1p()->castNode(); }	// op1 = Condition
-    AstNode*	expr1p() 	const { return op2p()->castNode(); }	// op2 = If true...
-    AstNode*	expr2p() 	const { return op3p()->castNode(); }	// op3 = If false...
+    AstNode*	condp() 	const { return op1p(); }	// op1 = Condition
+    AstNode*	expr1p() 	const { return op2p(); }	// op2 = If true...
+    AstNode*	expr2p() 	const { return op3p(); }	// op3 = If false...
     virtual string emitVerilog() { return "%k(%l %f? %r %k: %t)"; }
     virtual string emitC() { return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
     virtual bool cleanOut() { return false; } // clean if e1 & e2 clean
@@ -1443,10 +1440,10 @@ public:
 	: AstNode(fl) {
 	setOp1p(lhs); setOp2p(rhs); setNOp3p(ths); }
     ASTNODE_BASE_FUNCS(NodePreSel)
-    AstNode*	lhsp() 	const { return op1p()->castNode(); }
+    AstNode*	lhsp() 	const { return op1p(); }
     AstNode*	fromp() const { return lhsp(); }
-    AstNode*	rhsp() 	const { return op2p()->castNode(); }
-    AstNode*	thsp() 	const { return op3p()->castNode(); }
+    AstNode*	rhsp() 	const { return op2p(); }
+    AstNode*	thsp() 	const { return op3p(); }
     AstAttrOf*	attrp() const { return op4p()->castAttrOf(); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
@@ -1478,8 +1475,8 @@ public:
     ASTNODE_BASE_FUNCS(NodeAssign)
     virtual AstNode*	cloneType(AstNode* lhsp, AstNode* rhsp)=0;	// Clone single node, just get same type back.
     // So iteration hits the RHS which is "earlier" in execution order, it's op1, not op2
-    AstNode* rhsp()		const { return op1p()->castNode(); }	// op1 = Assign from
-    AstNode* lhsp()		const { return op2p()->castNode(); }	// op2 = Assign to
+    AstNode* rhsp()		const { return op1p(); }	// op1 = Assign from
+    AstNode* lhsp()		const { return op2p(); }	// op2 = Assign to
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
     virtual bool hasDType() const { return true; }
@@ -1498,10 +1495,10 @@ public:
 	addNOp1p(initsp); setOp2p(condp); addNOp3p(incsp); addNOp4p(bodysp);
     }
     ASTNODE_BASE_FUNCS(NodeFor)
-    AstNode*	initsp()	const { return op1p()->castNode(); }	// op1= initial statements
-    AstNode*	condp()		const { return op2p()->castNode(); }	// op2= condition to continue
-    AstNode*	incsp()		const { return op3p()->castNode(); }	// op3= increment statements
-    AstNode*	bodysp()	const { return op4p()->castNode(); }	// op4= body of loop
+    AstNode*	initsp()	const { return op1p(); }	// op1= initial statements
+    AstNode*	condp()		const { return op2p(); }	// op2= condition to continue
+    AstNode*	incsp()		const { return op3p(); }	// op3= increment statements
+    AstNode*	bodysp()	const { return op4p(); }	// op4= body of loop
     virtual bool isGateOptimizable() const { return false; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -1540,9 +1537,9 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeCase)
     virtual int   instrCount()	const { return instrCountBranch(); }
-    AstNode*	  exprp()	const { return op1p()->castNode(); }	// op1 = case condition <expression>
+    AstNode*	  exprp()	const { return op1p(); }	// op1 = case condition <expression>
     AstCaseItem*  itemsp()	const { return op2p()->castCaseItem(); }  // op2 = list of case expressions
-    AstNode*	  notParallelp() const { return op3p()->castNode(); }	// op3 = assertion code for non-full case's
+    AstNode*	  notParallelp() const { return op3p(); }	// op3 = assertion code for non-full case's
     void addItemsp(AstNode* nodep) { addOp2p(nodep); }
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
 };
@@ -1771,9 +1768,9 @@ public:
     AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
 	:AstNodeBiop(fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
-    AstNode* fromp() const { return op1p()->castNode(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
-    AstNode* bitp() const { return op2p()->castNode(); }	// op2 = Msb selection expression
+    AstNode* bitp() const { return op2p(); }	// op2 = Msb selection expression
     void bitp(AstNode* nodep) { setOp2p(nodep); }
     int	     bitConst()	const;
     virtual bool hasDType() const { return true; }
@@ -1825,11 +1822,11 @@ public:
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
     // op1 = Output variable (functions only, NULL for tasks)
-    AstNode*	fvarp() 	const { return op1p()->castNode(); }
+    AstNode*	fvarp() 	const { return op1p(); }
     void 	addFvarp(AstNode* nodep) { addNOp1p(nodep); }
     bool	isFunction() const { return fvarp()!=NULL; }
     // op3 = Statements/Ports/Vars
-    AstNode*	stmtsp() 	const { return op3p()->castNode(); }	// op3 = List of statements
+    AstNode*	stmtsp() 	const { return op3p(); }	// op3 = List of statements
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     // op4 = scope name
     AstScopeName* scopeNamep() const { return op4p()->castScopeName(); }
@@ -1892,7 +1889,7 @@ public:
     // op1 = namep
     AstNode*	namep()		const { return op1p(); }
     // op2 = Pin interconnection list
-    AstNode*	pinsp() 	const { return op2p()->castNode(); }
+    AstNode*	pinsp() 	const { return op2p(); }
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
     // op3 = scope tracking
     AstScopeName* scopeNamep() const { return op3p()->castScopeName(); }
@@ -1924,7 +1921,7 @@ public:
     virtual void dump(ostream& str);
     virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }
-    AstNode*	stmtsp() 	const { return op2p()->castNode(); }	// op2 = List of statements
+    AstNode*	stmtsp() 	const { return op2p(); }	// op2 = List of statements
     AstActive*  activesp()	const { return op3p()->castActive(); }	// op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }

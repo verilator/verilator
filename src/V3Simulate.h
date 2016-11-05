@@ -715,7 +715,7 @@ private:
 	if (!m_params) { badNodeType(nodep); return; }
     }
 
-    virtual void visit(AstSFormatF *nodep, AstNUser *) {
+    virtual void visit(AstSFormatF *nodep, AstNUser*) {
 	if (jumpingOver(nodep)) return;
 	nodep->iterateChildren(*this);
 	if (m_params) {
@@ -759,7 +759,7 @@ private:
 	}
     }
 
-    virtual void visit(AstDisplay *nodep, AstNUser *) {
+    virtual void visit(AstDisplay *nodep, AstNUser*) {
 	if (jumpingOver(nodep)) return;
 	nodep->iterateChildren(*this);
 	if (m_params) {

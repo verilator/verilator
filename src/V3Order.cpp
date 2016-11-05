@@ -320,7 +320,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstConcat* nodep, AstNUser* wp) {
+    virtual void visit(AstConcat* nodep, AstNUser*) {
 	if (m_inAss) {
 	    nodep->lhsp()->iterateAndNext(*this);
 	    int lw = m_childClkWidth;
@@ -329,7 +329,7 @@ private:
 	    m_childClkWidth = lw + rw;  // Pass up
 	}
     }
-    virtual void visit(AstNodeSel* nodep, AstNUser* wp) {
+    virtual void visit(AstNodeSel* nodep, AstNUser*) {
 	if (m_inAss) {
 	    nodep->iterateChildren(*this);
 	    // Pass up result width

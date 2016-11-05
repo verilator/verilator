@@ -205,8 +205,8 @@ private:
 	    // Note: if this ends with an 'else', then we don't need to validate that one of the
 	    // predicates evaluates to true.
 	    AstNode* ohot = ((allow_none || hasDefaultElse)
-			     ? (new AstOneHot0(nodep->fileline(), propp))->castNode()
-			     : (new AstOneHot (nodep->fileline(), propp))->castNode());
+			     ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
+			     : static_cast<AstNode*>(new AstOneHot (nodep->fileline(), propp)));
 	    AstIf* checkifp = new AstIf (nodep->fileline(),
 					 new AstLogNot (nodep->fileline(), ohot),
 					 newFireAssert(nodep, "'unique if' statement violated"),
@@ -254,8 +254,8 @@ private:
 		    }
 		    bool allow_none = has_default || nodep->unique0Pragma();
 		    AstNode* ohot = (allow_none
-				     ? (new AstOneHot0(nodep->fileline(), propp))->castNode()
-				     : (new AstOneHot (nodep->fileline(), propp))->castNode());
+				     ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
+				     : static_cast<AstNode*>(new AstOneHot (nodep->fileline(), propp)));
 		    AstIf* ifp = new AstIf (nodep->fileline(),
 					    new AstLogNot (nodep->fileline(), ohot),
 					    newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),

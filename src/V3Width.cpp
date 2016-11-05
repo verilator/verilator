@@ -2809,8 +2809,8 @@ private:
 	    default: nodep->v3fatalSrc("bad case");
 	    }
 	    AstNode* newp = (doSigned
-			     ? (new AstExtendS(nodep->fileline(), nodep))->castNode()
-			     : (new AstExtend (nodep->fileline(), nodep))->castNode());
+			     ? static_cast<AstNode*>(new AstExtendS(nodep->fileline(), nodep))
+			     : static_cast<AstNode*>(new AstExtend (nodep->fileline(), nodep)));
 	    linker.relink(newp);
 	    nodep=newp;
 	}
