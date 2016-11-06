@@ -2282,15 +2282,17 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: conditional_statement
 	|	unique_priorityE yIF '(' expr ')' stmtBlock	%prec prLOWER_THAN_ELSE
-							{ $$ = new AstIf($2,$4,$6,NULL);
-							  if ($1 == uniq_UNIQUE) $$->castIf()->uniquePragma(true);
-							  if ($1 == uniq_UNIQUE0) $$->castIf()->unique0Pragma(true);
-							  if ($1 == uniq_PRIORITY) $$->castIf()->priorityPragma(true); }
+							{ AstIf* newp = new AstIf($2,$4,$6,NULL);
+							  $$ = newp;
+							  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
 	|	unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
-							{ $$ = new AstIf($2,$4,$6,$8);
-							  if ($1 == uniq_UNIQUE) $$->castIf()->uniquePragma(true);
-							  if ($1 == uniq_UNIQUE0) $$->castIf()->unique0Pragma(true);
-							  if ($1 == uniq_PRIORITY) $$->castIf()->priorityPragma(true); }
+							{ AstIf* newp = new AstIf($2,$4,$6,$8);
+							  $$ = newp;
+							  if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
+							  if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
+							  if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
 	//
 	|	finc_or_dec_expression ';'		{ $$ = $1; }
 	//			// IEEE: inc_or_dec_expression
