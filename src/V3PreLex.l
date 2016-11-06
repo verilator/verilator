@@ -210,7 +210,7 @@ drop		[\032]
 <ARGMODE>[(]		{ LEXP->m_parenLevel++;
 			  // Note paren level 0 means before "(" of starting args
 			  // Level 1 means "," between arguments
-			  // Level 2+ means one argument's internal ()
+			  // Level 2+ means one inside the () of an argument
 			  if (LEXP->m_parenLevel>1) {
 			      appendDefValue(yytext,yyleng);
 			  } else {

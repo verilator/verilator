@@ -821,7 +821,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 				  // Push rest for later parse
 				  PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
 				  FL; LINECHECKS(yytext,shortlen);
-				  // Return is stuff before '
+				  // Return is stuff before the tick
 				  yytext[shortlen] = '\0';
 				  yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
 				  return yaINTNUM;

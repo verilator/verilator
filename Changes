@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Honor --output-split on coverage constructors, bug1098. [Johan Bjork]
 
+****  Fix flex 2.6.2 bug, bug1103. [Sergey Kvachonok]
+
 ****  Fix error on bad interface name, bug1097. [Todd Strader]
 
 ****  Fix error on referencing variable in parent, bug1099. [Ian Thompson]
