@@ -42,9 +42,6 @@
 #      reconstructed with this Makefile.  This typically includes
 #      everything deleted by distclean, plus more: C source files
 #      produced by Bison, tags tables, info files, and so on.
-#
-# make extraclean
-#      Still more severe - delete backup and autosave files, too.
 
 #### Start of system configuration section. ####
 
@@ -71,7 +68,7 @@ exec_prefix = @exec_prefix@
 # Directory in which to install scripts.
 bindir = @bindir@
 
-# Directory in which to install scripts.
+# Directory in which to install manpages.
 mandir = @mandir@
 
 # Directory in which to install library files.
