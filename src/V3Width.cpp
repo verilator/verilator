@@ -64,7 +64,7 @@
 // same value on each nextp().
 //*************************************************************************
 // See notes in internal.txt about misuse of iterateAndNext and use of
-// acceptSubtreeReturnEdits.
+// iterateSubtreeReturnEdits.
 //*************************************************************************
 
 #include "config_build.h"
@@ -170,6 +170,8 @@ public:
 };
 
 //######################################################################
+
+#define accept in_WidthVisitor_use_AstNode_iterate_instead_of_AstNode_accept
 
 class WidthVisitor : public AstNVisitor {
 private:
@@ -990,7 +992,7 @@ private:
 	    AstNode* newp = new AstCastSize(nodep->fileline(), nodep->lhsp()->unlinkFrBack(), constp);
 	    nodep->replaceWith(newp);
 	    pushDeletep(nodep); VL_DANGLING(nodep);
-	    newp->accept(*this,vup);
+	    newp->iterate(*this,vup);
 	} else {
 	    nodep->v3error("Unsupported: Cast to "<<nodep->dtp()->prettyTypeName());
 	    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
@@ -1405,7 +1407,7 @@ private:
 	    AstNode* newp = new AstMethodSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
 	    nodep->replaceWith(newp);
 	    pushDeletep(nodep); VL_DANGLING(nodep);
-	    newp->accept(*this,vup);
+	    newp->iterate(*this,vup);
 	    return;
 	}
 	else {
@@ -1439,9 +1441,9 @@ private:
 	UINFO(5,"   METHODSEL "<<nodep<<endl);
 	if (debug()>=9) nodep->dumpTree("-mts-in: ");
 	// Should check types the method requires, but at present we don't do much
-	nodep->fromp()->accept(*this,WidthVP(SELF,BOTH).p());
+	nodep->fromp()->iterate(*this,WidthVP(SELF,BOTH).p());
 	for (AstArg* argp = nodep->pinsp()->castArg(); argp; argp = argp->nextp()->castArg()) {
-	    if (argp->exprp()) argp->exprp()->accept(*this,WidthVP(SELF,BOTH).p());
+	    if (argp->exprp()) argp->exprp()->iterate(*this,WidthVP(SELF,BOTH).p());
 	}
 	// Find the fromp dtype - should be a class
 	if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
@@ -1636,7 +1638,7 @@ private:
 			// Determine initial values
 			vdtypep = memp;
 			patp->dtypep(memp);
-			patp->accept(*this,WidthVP(memp,BOTH).p());  // See visit(AstPatMember*
+			patp->iterate(*this,WidthVP(memp,BOTH).p());  // See visit(AstPatMember*
 
 			// Convert to concat for now
 			AstNode* valuep = patp->lhssp()->unlinkFrBack();
@@ -1691,7 +1693,7 @@ private:
 			// Don't want the RHS an array
 			patp->dtypep(vdtypep);
 			// Determine values - might be another InitArray
-			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());  // See visit(AstPatMember*
+			patp->iterate(*this,WidthVP(patp->dtypep(),BOTH).p());  // See visit(AstPatMember*
 			// Convert to InitArray or constify immediately
 			AstNode* valuep = patp->lhssp()->unlinkFrBack();
 			if (valuep->castConst()) {
@@ -1759,7 +1761,7 @@ private:
 			// Don't want the RHS an array
 			patp->dtypep(vdtypep);
 			// Determine values - might be another InitArray
-			patp->accept(*this,WidthVP(patp->dtypep(),BOTH).p());
+			patp->iterate(*this,WidthVP(patp->dtypep(),BOTH).p());
 			// Convert to InitArray or constify immediately
 			AstNode* valuep = patp->lhssp()->unlinkFrBack();
 			if (valuep->castConst()) {
@@ -2309,7 +2311,7 @@ private:
 			    pinp = newp;
 			}
 			// AstPattern requires assignments to pass datatype on PRELIM
-			pinp->accept(*this,WidthVP(portp->dtypep(),PRELIM).p()); VL_DANGLING(pinp);
+			pinp->iterate(*this,WidthVP(portp->dtypep(),PRELIM).p()); VL_DANGLING(pinp);
 		    } else if (accept_mode==1) {
 			// Change data types based on above accept completion
 			if (portp->isDouble()) {
@@ -2317,7 +2319,7 @@ private:
 			}
 		    } else if (accept_mode==2) {
 			// Do PRELIM again, because above accept may have exited early due to node replacement
-			pinp->accept(*this,WidthVP(portp->dtypep(),PRELIM).p());
+			pinp->iterate(*this,WidthVP(portp->dtypep(),PRELIM).p());
 			if ((portp->isOutput() || portp->isInout())
 			    && pinp->width() != portp->width()) {
 			    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
@@ -2328,7 +2330,7 @@ private:
 			    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
 			}
 			if (!portp->basicp() || portp->basicp()->isOpaque()) {
-			    pinp->accept(*this,WidthVP(portp->dtypep(),FINAL).p());
+			    pinp->iterate(*this,WidthVP(portp->dtypep(),FINAL).p());
 			} else {
 			    iterateCheckAssign(nodep,"Function Argument",pinp,FINAL,portp->dtypep());
 			}
@@ -2876,7 +2878,7 @@ private:
     void iterateCheckFileDesc (AstNode* nodep, AstNode* underp, Stage stage) {
 	if (stage != BOTH) nodep->v3fatalSrc("Bad call");
 	// underp may change as a result of replacement
-	underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
+	underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
 	AstNodeDType* expDTypep = underp->findUInt32DType();
 	underp = iterateCheck(nodep,"file_descriptor",underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	if (underp) {} // cppcheck
@@ -2889,7 +2891,7 @@ private:
 	// otherwise self-determined was correct
 	// underp may change as a result of replacement
 	if (stage & PRELIM) {
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
 	}
 	if (stage & FINAL) {
 	    AstNodeDType* expDTypep = nodep->findDoubleDType();
@@ -2899,7 +2901,7 @@ private:
     }
     void iterateCheckString (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	if (stage & PRELIM) {
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
 	}
 	if (stage & FINAL) {
 	    AstNodeDType* expDTypep = nodep->findStringDType();
@@ -2914,7 +2916,7 @@ private:
 	if (determ != SELF) nodep->v3fatalSrc("Bad call");
 	if (stage != FINAL && stage != BOTH) nodep->v3fatalSrc("Bad call");
 	// underp may change as a result of replacement
-	if (stage & PRELIM) underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
+	if (stage & PRELIM) underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,PRELIM).p());
 	underp = checkCvtUS(underp);
 	AstNodeDType* expDTypep = underp->dtypep();
 	underp = iterateCheck(nodep,side,underp,SELF,FINAL,expDTypep,EXTEND_EXP);
@@ -2939,7 +2941,7 @@ private:
 	// stage is always BOTH so not passed as argument
 	// underp may change as a result of replacement
 	if (!underp) underp->v3fatalSrc("Node has no type");
-	underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,BOTH).p());
+	underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,BOTH).p());
 	if (!underp || !underp->dtypep()) underp->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
 	//
 	// For DOUBLE under a logical op, add implied test against zero, never a warning
@@ -2983,18 +2985,18 @@ private:
 	if (stage != FINAL) nodep->v3fatalSrc("Bad state to iterateCheck");
 	if (!underp || !underp->dtypep()) underp->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
 	if (expDTypep == underp->dtypep()) {  // Perfect
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (expDTypep->isDouble() && !underp->isDouble()) {
 	    underp = spliceCvtD(underp);
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (!expDTypep->isDouble() && underp->isDouble()) {
 	    underp = spliceCvtS(underp, true);  // Round RHS
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else if (expDTypep->isString() && !underp->dtypep()->isString()) {
 	    underp = spliceCvtString(underp);
-	    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+	    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 	} else {
 	    AstBasicDType* expBasicp = expDTypep->basicp();
 	    AstBasicDType* underBasicp = underp->dtypep()->basicp();
@@ -3004,7 +3006,7 @@ private:
 		// is e.g. an ADD, the ADD will auto-adjust to the proper data type
 		// or if another operation e.g. ATOI will not.
 		if (determ == SELF) {
-		    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
+		    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(SELF,FINAL).p());
 		} else if (determ == ASSIGN) {
 		    // IEEE: Signedness is solely determined by the RHS (underp), not by the LHS (expDTypep)
 		    if (underp->isSigned() != subDTypep->isSigned()
@@ -3014,9 +3016,9 @@ private:
 							  AstNumeric::fromBool(underp->isSigned()));
 			UINFO(9,"Assignment of opposite-signed RHS to LHS: "<<nodep<<endl);
 		    }
-		    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(subDTypep,FINAL).p());
+		    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(subDTypep,FINAL).p());
 		} else {
-		    underp = underp->acceptSubtreeReturnEdits(*this,WidthVP(subDTypep,FINAL).p());
+		    underp = underp->iterateSubtreeReturnEdits(*this,WidthVP(subDTypep,FINAL).p());
 		}
 		// Note the check uses the expected size, not the child's subDTypep as we want the
 		// child node's width to end up correct for the assignment (etc)
@@ -3547,7 +3549,7 @@ public:
 	m_dtTables = 0;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {
-	return nodep->acceptSubtreeReturnEdits(*this, WidthVP(SELF,BOTH).p());
+	return nodep->iterateSubtreeReturnEdits(*this, WidthVP(SELF,BOTH).p());
     }
     virtual ~WidthVisitor() {}
 };

@@ -1272,7 +1272,7 @@ public:
     void	iterateChildren(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
     void	iterateChildrenConst(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
-    AstNode*	acceptSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
+    AstNode*	iterateSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
 
     // CONVERSION
 #include "V3Ast__gen_interface.h"	// From ./astgen

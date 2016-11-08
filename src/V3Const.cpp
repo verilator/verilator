@@ -2329,7 +2329,7 @@ public:
     virtual ~ConstVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
 	// Operate starting at a random place
-	return nodep->acceptSubtreeReturnEdits(*this);
+	return nodep->iterateSubtreeReturnEdits(*this);
     }
 };
 
