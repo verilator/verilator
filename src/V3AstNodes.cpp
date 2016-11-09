@@ -53,7 +53,7 @@ const char* AstNodeVarRef::broken() const {
 }
 
 void AstNodeVarRef::cloneRelink() {
-    if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep()->castVar(); }
+    if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); }
 }
 
 int AstNodeSel::bitConst() const {
@@ -495,9 +495,9 @@ const char* AstScope::broken() const {
 }
 
 void AstScope::cloneRelink() {
-    if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep()->castScope();
-    if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep()->castCell();
-    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep()->castNodeModule();
+    if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
+    if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep();
+    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep();
 }
 
 string AstScope::nameDotless() const {

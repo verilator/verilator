@@ -1289,7 +1289,8 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 #define ASTNODE_BASE_FUNCS(name)	\
     virtual ~Ast ##name() {} \
-    Ast ##name * cloneTree(bool cloneNext) { return AstNode::cloneTree(cloneNext)->cast ##name(); }
+    Ast ##name * cloneTree(bool cloneNext) { return static_cast<Ast ##name *>(AstNode::cloneTree(cloneNext)); } \
+    Ast ##name * clonep() const { return static_cast<Ast ##name *>(AstNode::clonep()); }
 
 class AstNodeMath : public AstNode {
     // Math -- anything that's part of an expression tree
@@ -1732,7 +1733,7 @@ public:
     virtual const char* broken() const { BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
 						     || (!m_refDTypep && childDTypep()))); return NULL; }
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
-	m_refDTypep = m_refDTypep->clonep()->castNodeDType();
+	m_refDTypep = m_refDTypep->clonep();
     }}
     virtual bool same(AstNode* samep) const {
 	AstNodeArrayDType* sp = samep->castNodeArrayDType();
@@ -1871,7 +1872,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const { BROKEN_RTN(m_taskp && !m_taskp->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_taskp && m_taskp->clonep()) {
-	m_taskp = m_taskp->clonep()->castNodeFTask();
+	m_taskp = m_taskp->clonep();
     }}
     virtual void dump(ostream& str=cout);
     virtual string name()	const { return m_name; }		// * = Var name
@@ -1983,8 +1984,8 @@ inline int AstNodeArrayDType::elementsConst() const { return rangep()->elementsC
 inline VNumRange AstNodeArrayDType::declRange() const { return VNumRange(msb(), lsb(), rangep()->littleEndian()); }
 
 inline void AstIfaceRefDType::cloneRelink() {
-    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep()->castCell();
-    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep()->castIface();
-    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep()->castModport(); }
+    if (m_cellp && m_cellp->clonep()) m_cellp = m_cellp->clonep();
+    if (m_ifacep && m_ifacep->clonep()) m_ifacep = m_ifacep->clonep();
+    if (m_modportp && m_modportp->clonep()) m_modportp = m_modportp->clonep(); }
 
 #endif // Guard

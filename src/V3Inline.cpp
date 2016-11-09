@@ -509,7 +509,7 @@ private:
 		// need an alias to trace correctly.  If tracing is disabled, we'll
 		// delete it in later optimizations.
 		AstVar* pinOldVarp = pinp->modVarp();
-		AstVar* pinNewVarp = pinOldVarp->clonep()->castVar();
+		AstVar* pinNewVarp = pinOldVarp->clonep();
 
 		AstNode* connectRefp = pinp->exprp();
 		if (!connectRefp->castConst() && !connectRefp->castVarRef()) {

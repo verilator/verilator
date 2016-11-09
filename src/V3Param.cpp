@@ -176,14 +176,14 @@ private:
 	    if (AstVar* varp = stmtp->castVar()) {
 		if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
 		    // Cloning saved a pointer to the new node for us, so just follow that link.
-		    AstVar* oldvarp = varp->clonep()->castVar();
+		    AstVar* oldvarp = varp->clonep();
 		    //UINFO(8,"Clone list 0x"<<hex<<(uint32_t)oldvarp<<" -> 0x"<<(uint32_t)varp<<endl);
 		    clonemapp->insert(make_pair(oldvarp, varp));
 		}
 	    }
 	    else if (AstParamTypeDType* ptp = stmtp->castParamTypeDType()) {
 		if (ptp->isGParam()) {
-		    AstParamTypeDType* oldptp = ptp->clonep()->castParamTypeDType();
+		    AstParamTypeDType* oldptp = ptp->clonep();
 		    clonemapp->insert(make_pair(oldptp, ptp));
 		}
 	    }
@@ -637,7 +637,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		for (IfaceRefRefs::iterator it=ifaceRefRefs.begin(); it!=ifaceRefRefs.end(); ++it) {
 		    AstIfaceRefDType* portIrefp = it->first;
 		    AstIfaceRefDType* pinIrefp = it->second;
-		    AstIfaceRefDType* cloneIrefp = portIrefp->clonep()->castIfaceRefDType();
+		    AstIfaceRefDType* cloneIrefp = portIrefp->clonep();
 		    UINFO(8,"     IfaceOld "<<portIrefp<<endl);
 		    UINFO(8,"     IfaceTo  "<<pinIrefp<<endl);
 		    if (!cloneIrefp) portIrefp->v3fatalSrc("parameter clone didn't hit AstIfaceRefDType");

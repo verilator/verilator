@@ -858,7 +858,7 @@ void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
     for (AstNode* nodep=this; nodep; nodep=nodep->m_nextp) {
 	if (m_dtypep && m_dtypep->clonep()) {
-	    m_dtypep = m_dtypep->clonep()->castNodeDType();
+	    m_dtypep = m_dtypep->clonep();
 	}
 	nodep->cloneRelink();
 	if (nodep->m_op1p) nodep->m_op1p->cloneRelinkTree();
