@@ -15,7 +15,7 @@ AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk incl
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 
 # Special Substitutions - CFG_WITH_DEFENV
-AC_MSG_CHECKING(whether to disable hardcoded paths)
+AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
               [AS_HELP_STRING([--disable-defenv],
                               [disable using some hardcoded data paths extracted from some default environment variables (the default is to use hardcoded paths)])],
