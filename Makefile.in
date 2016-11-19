@@ -270,6 +270,7 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage
 VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_profcfunc.1
 
 VL_INST_INC_BLDDIR_FILES = \
+	include/verilated_config.h \
 	include/verilated.mk \
 
 # Files under srcdir, instead of build time
@@ -297,7 +298,8 @@ installbin:
 # So important we use $< so VPATH is searched
 installman: $(VL_INST_MAN_FILES)
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
-	for p in $^ ; do \
+	cd $(srcdir) \
+	; for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 

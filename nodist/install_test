@@ -115,7 +115,8 @@ sub write_verilog {
 
 sub cleanenv {
     foreach my $var (keys %ENV) {
-	if ($var eq "VERILATOR_ROOT") {
+	if ($var eq "VERILATOR_ROOT"
+	    || $var eq "VERILATOR_INCLUDE") {
 	    print "unset $var # Was '$ENV{$var}'\n";
 	    delete $ENV{$var}
 	}
