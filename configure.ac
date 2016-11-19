@@ -120,6 +120,18 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
 	    fi
 	  fi],
 	 [_my_result=no])
+    # GCC is annoying, trying to be helpful, it postpones unknown -Wno-
+    # options if there's no error We want to see them regardless, so try
+    # forcing an error and see if we get a gcc warning
+    AC_COMPILE_IFELSE(
+         [AC_LANG_PROGRAM([[an_error "intentional-error-for-test.h"
+	                  ]],[])],
+         [], # Ignore ok exit
+         [if test -s conftest.err; then
+            if grep -e "$2" conftest.err >/dev/null; then
+              _my_result=no
+            fi
+          fi])
     AC_MSG_RESULT($_my_result)
     if test "$_my_result" = "yes" ; then
        $1="$$1 $2"
