@@ -47,7 +47,7 @@ private:
     // METHODS
     static VSymEnt* getTable(AstNode* nodep) {
 	if (!nodep->user4p()) nodep->v3fatalSrc("Current symtable not found");
-	return nodep->user4p()->castSymEnt();
+	return nodep->user4u().toSymEnt();
     }
 
 public:

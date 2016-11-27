@@ -268,7 +268,7 @@ private:
 	    // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
 	    // This is good for code like:
 	    //    for (i=0; i<5; i++)  vector[i] <= something;
-	    setvscp = nodep->user3p()->castNode()->castVarScope();
+	    setvscp = nodep->user3p()->castVarScope();
 	    ++m_statSharedSet;
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
@@ -303,9 +303,9 @@ private:
 	// Build "IF (changeit) ...
 	UINFO(9,"   For "<<setvscp<<endl);
 	UINFO(9,"     & "<<varrefp<<endl);
-	AstAlwaysPost* finalp = varrefp->varScopep()->user4p()->castNode()->castAlwaysPost();
+	AstAlwaysPost* finalp = varrefp->varScopep()->user4p()->castAlwaysPost();
 	if (finalp) {
-	    AstActive* oldactivep = finalp->user2p()->castNode()->castActive();
+	    AstActive* oldactivep = finalp->user2p()->castActive();
 	    checkActivePost(varrefp, oldactivep);
 	    if (setinitp) oldactivep->addStmtsp(setinitp);
 	} else { // first time we've dealt with this memory
@@ -318,10 +318,10 @@ private:
 	    if (setinitp) newactp->addStmtsp(setinitp);
 	}
 	AstIf* postLogicp;
-	if (finalp->user3p()->castNode() == setvscp) {
+	if (finalp->user3p() == setvscp) {
 	    // Optimize as above; if sharing Vdlyvset *ON SAME VARIABLE*,
 	    // we can share the IF statement too
-	    postLogicp = finalp->user4p()->castNode()->castIf();
+	    postLogicp = finalp->user4p()->castIf();
 	    if (!postLogicp) nodep->v3fatalSrc("Delayed assignment misoptimized; prev var found w/o associated IF");
 	} else {
 	    postLogicp = new AstIf (nodep->fileline(),
@@ -394,9 +394,9 @@ private:
 		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
 		AstVarScope* oldvscp = nodep->varScopep();
 		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
-		AstVarScope* dlyvscp = oldvscp->user1p()->castNode()->castVarScope();
+		AstVarScope* dlyvscp = oldvscp->user1p()->castVarScope();
 		if (dlyvscp) {  // Multiple use of delayed variable
-		    AstActive* oldactivep = dlyvscp->user2p()->castNode()->castActive();
+		    AstActive* oldactivep = dlyvscp->user2p()->castActive();
 		    checkActivePost(nodep, oldactivep);
 		}
 		if (!dlyvscp) {  // First use of this delayed variable

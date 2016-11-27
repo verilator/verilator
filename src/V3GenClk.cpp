@@ -65,7 +65,7 @@ private:
     // METHODS
     AstVarScope* genInpClk(AstVarScope* vscp) {
 	if (vscp->user2p()) {
-	    return vscp->user2p()->castNode()->castVarScope();
+	    return vscp->user2p()->castVarScope();
 	} else {
 	    AstVar* varp = vscp->varp();
 	    string newvarname = "__VinpClk__"+vscp->scopep()->nameDotless()+"__"+varp->name();

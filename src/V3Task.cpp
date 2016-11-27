@@ -118,7 +118,7 @@ private:
 public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
-	AstScope* scopep = nodep->user3p()->castNode()->castScope();
+	AstScope* scopep = nodep->user3p()->castScope();
 	if (!scopep) nodep->v3fatalSrc("No scope for function");
 	return scopep;
     }
@@ -155,7 +155,7 @@ private:
 	if (!nodep->user4p()) {
 	    nodep->user4p(new TaskFTaskVertex(&m_callGraph, nodep));
 	}
-	return static_cast<TaskFTaskVertex*>(nodep->user4p()->castGraphVertex());
+	return static_cast<TaskFTaskVertex*>(nodep->user4u().toGraphVertex());
     }
 
     // VISITORS
@@ -220,7 +220,7 @@ private:
     }
     virtual void visit(AstVarRef* nodep) {
 	nodep->iterateChildren(*this);
-	if (nodep->varp()->user4p() != m_curVxp) {
+	if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
 	    if (m_curVxp->pure()
 		&& !nodep->varp()->isXTemp()) {
 		m_curVxp->impure(nodep);
@@ -262,7 +262,7 @@ private:
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
 	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
-	    AstVarScope* newvscp = nodep->varp()->user2p()->castNode()->castVarScope();
+	    AstVarScope* newvscp = nodep->varp()->user2p()->castVarScope();
 	    if (!newvscp) nodep->v3fatalSrc("Null?\n");
 	    nodep->varScopep(newvscp);
 	    nodep->varp(nodep->varScopep()->varp());
@@ -773,7 +773,7 @@ private:
 	string args;
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
-		AstVarScope* portvscp = portp->user2p()->castNode()->castVarScope();  // Remembered when we created it earlier
+		AstVarScope* portvscp = portp->user2p()->castVarScope();  // Remembered when we created it earlier
 		if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
 		    && portp->name() != "__Vscopep"	// Passed to dpiContext, not callee
 		    && portp->name() != "__Vfilenamep"
@@ -814,7 +814,7 @@ private:
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
 		if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())) {
-		    AstVarScope* portvscp = portp->user2p()->castNode()->castVarScope();  // Remembered when we created it earlier
+		    AstVarScope* portvscp = portp->user2p()->castVarScope();  // Remembered when we created it earlier
 		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt",true));
 		}
 	    }

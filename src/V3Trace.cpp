@@ -225,7 +225,7 @@ private:
 		    if (dupit != hashed.end()) {
 			AstTraceInc* dupincp = hashed.iteratorNodep(dupit)->backp()->castTraceInc();
 			if (!dupincp) nodep->v3fatalSrc("Trace duplicate of wrong type");
-			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1p()->castGraphVertex());
+			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1u().toGraphVertex());
 			UINFO(8,"  Orig "<<nodep<<endl);
 			UINFO(8,"   dup "<<dupincp<<endl);
 			// Mark the hashed node as the original and our iterating node as duplicated
@@ -539,7 +539,7 @@ private:
     }
 
     TraceCFuncVertex* getCFuncVertexp(AstCFunc* nodep) {
-	TraceCFuncVertex* vertexp = dynamic_cast<TraceCFuncVertex*>(nodep->user1p()->castGraphVertex());
+	TraceCFuncVertex* vertexp = dynamic_cast<TraceCFuncVertex*>(nodep->user1u().toGraphVertex());
 	if (!vertexp) {
 	    vertexp = new TraceCFuncVertex(&m_graph, nodep);
 	    nodep->user1p(vertexp);
@@ -547,7 +547,7 @@ private:
 	return vertexp;
     }
     TraceActivityVertex* getActivityVertexp(AstNode* nodep, bool slow) {
-	TraceActivityVertex* vertexp = dynamic_cast<TraceActivityVertex*>(nodep->user3p()->castGraphVertex());
+	TraceActivityVertex* vertexp = dynamic_cast<TraceActivityVertex*>(nodep->user3u().toGraphVertex());
 	if (!vertexp) {
 	    vertexp = new TraceActivityVertex(&m_graph, nodep, slow);
 	    nodep->user3p(vertexp);
@@ -653,12 +653,12 @@ private:
 	if (m_tracep) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    if (nodep->lvalue()) nodep->v3fatalSrc("Lvalue in trace?  Should be const.");
-	    V3GraphVertex* varVtxp = nodep->varScopep()->user1p()->castGraphVertex();
+	    V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
 	    if (!varVtxp) {
 		varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());
 		nodep->varScopep()->user1p(varVtxp);
 	    }
-	    V3GraphVertex* traceVtxp = m_tracep->user1p()->castGraphVertex();
+	    V3GraphVertex* traceVtxp = m_tracep->user1u().toGraphVertex();
 	    new V3GraphEdge(&m_graph, varVtxp, traceVtxp, 1);
 	    if (nodep->varp()->isPrimaryIn()   // Always need to trace primary inputs
 		|| nodep->varp()->isSigPublic()) {  // Or ones user can change
@@ -668,7 +668,7 @@ private:
 	else if (m_funcp && m_finding && nodep->lvalue()) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    V3GraphVertex* funcVtxp = getCFuncVertexp(m_funcp);
-	    V3GraphVertex* varVtxp = nodep->varScopep()->user1p()->castGraphVertex();
+	    V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
 	    if (varVtxp) { // else we're not tracing this signal
 		new V3GraphEdge(&m_graph, funcVtxp, varVtxp, 1);
 	    }

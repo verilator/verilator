@@ -186,11 +186,11 @@ public:
 private:
     inline void setNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
-	nodep->user3p((AstNUser*)nump);
+	nodep->user3p((void*)nump);
     }
     inline void setOutNumber(AstNode* nodep, const V3Number* nump) {
 	UINFO(9,"     set num "<<*nump<<" on "<<nodep<<endl);
-	nodep->user2p((AstNUser*)nump);
+	nodep->user2p((void*)nump);
     }
 
     void checkNodeInfo(AstNode* nodep) {

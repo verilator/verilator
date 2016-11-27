@@ -273,9 +273,9 @@ private:
 	if (nodep->user2p()) {
 	    // Make an assignment, so we'll trace it properly
 	    // user2p is either a const or a var.
-	    AstConst*  exprconstp  = nodep->user2p()->castNode()->castConst();
-	    AstVarRef* exprvarrefp = nodep->user2p()->castNode()->castVarRef();
-	    UINFO(8,"connectto: "<<nodep->user2p()->castNode()<<endl);
+	    AstConst*  exprconstp  = nodep->user2p()->castConst();
+	    AstVarRef* exprvarrefp = nodep->user2p()->castVarRef();
+	    UINFO(8,"connectto: "<<nodep->user2p()<<endl);
 	    if (!exprconstp && !exprvarrefp) {
 		nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
 	    }
@@ -319,7 +319,7 @@ private:
 	    ifacerefp->addNextHere(newdp);
 	    // Relink to point to newly cloned cell
 	    if (newdp->cellp()) {
-		if (AstCell* newcellp = newdp->cellp()->user4p()->castNode()->castCell()) {
+		if (AstCell* newcellp = newdp->cellp()->user4p()->castCell()) {
 		    newdp->cellp(newcellp);
 		    newdp->cellName(newcellp->name());
 		    // Tag the old ifacerefp to ensure it leaves no stale reference to the inlined cell.
@@ -351,8 +351,8 @@ private:
 	if (nodep->varp()->user2p()  // It's being converted to an alias.
 	    && !nodep->varp()->user3()
 	    && !nodep->backp()->castAssignAlias()) { 	// Don't constant propagate aliases (we just made)
-	    AstConst*  exprconstp  = nodep->varp()->user2p()->castNode()->castConst();
-	    AstVarRef* exprvarrefp = nodep->varp()->user2p()->castNode()->castVarRef();
+	    AstConst*  exprconstp  = nodep->varp()->user2p()->castConst();
+	    AstVarRef* exprvarrefp = nodep->varp()->user2p()->castVarRef();
 	    if (exprconstp) {
 		nodep->replaceWith(exprconstp->cloneTree(true));
 		nodep->deleteTree(); VL_DANGLING(nodep);

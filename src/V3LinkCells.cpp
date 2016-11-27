@@ -119,7 +119,7 @@ private:
 	if (!nodep->user1p()) {
 	    nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
 	}
-	return (nodep->user1p()->castGraphVertex());
+	return (nodep->user1u().toGraphVertex());
     }
 
     AstNodeModule* findModuleSym(const string& modName) {

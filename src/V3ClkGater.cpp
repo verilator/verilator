@@ -251,7 +251,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
     virtual void visit(AstVarRef* nodep) {
 	if (nodep->lvalue()) {
 	    AstVarScope* vscp = nodep->varScopep();
-	    if (vscp->user2p()->castNode() == m_exprp) {
+	    if (vscp->user2p() == m_exprp) {
 		// This variable's block needs to move to the new always
 		if (m_original) {
 		    UINFO(9,"  VARREF delete in old: "<<nodep<<endl);

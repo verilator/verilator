@@ -381,7 +381,7 @@ private:
 	if (nodep->packagep()) {
 	    // Point to the clone
 	    if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
-	    AstNodeFTask* newp = nodep->taskp()->user2p()->castNode()->castNodeFTask();
+	    AstNodeFTask* newp = nodep->taskp()->user2p()->castNodeFTask();
 	    if (!newp) nodep->v3fatalSrc("No clone for package function");
 	    nodep->taskp(newp);
 	    UINFO(9,"   New pkg-taskref "<<nodep<<endl);

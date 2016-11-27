@@ -141,7 +141,7 @@ private:
 		// We don't need to test for tracing; it would be in the tracefunc if it was needed
 		UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
 		++m_statLocVars;
-		AstCFunc* newfuncp = nodep->user1p()->castNode()->castCFunc();
+		AstCFunc* newfuncp = nodep->user1p()->castCFunc();
 		nodep->unlinkFrBack();
 		newfuncp->addInitsp(nodep);
 		// Done
@@ -208,7 +208,7 @@ private:
 		// If we're scoping down to it, it isn't really in the same block
 		if (!nodep->hierThis()) clearOptimizable(nodep->varp(),"HierRef");
 		// Allow a variable to appear in only a single function
-		AstNode* oldfunc = nodep->varp()->user1p()->castNode();
+		AstNode* oldfunc = nodep->varp()->user1p();
 		if (!oldfunc) {
 		    UINFO(4,"      BVnewref "<<nodep<<endl);
 		    nodep->varp()->user1p(m_cfuncp); // Remember where it was used

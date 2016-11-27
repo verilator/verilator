@@ -141,7 +141,7 @@ public:
 
 //============================================================================
 
-class V3GraphVertex : public AstNUser {
+class V3GraphVertex {
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
     friend class V3Graph;    friend class V3GraphEdge;

@@ -71,7 +71,7 @@ class SliceCloneVisitor : public AstNVisitor {
     virtual void visit(AstArraySel* nodep) {
 	if (!nodep->backp()->castArraySel()) {
 	    // This is the top of an ArraySel, setup for iteration
-	    m_refp = nodep->user1p()->castNode()->castVarRef();
+	    m_refp = nodep->user1p()->castVarRef();
 	    m_vecIdx += 1;
 	    if (m_vecIdx == (int)m_selBits.size()) {
 		m_selBits.push_back(vector<unsigned>());
@@ -259,7 +259,7 @@ class SliceVisitor : public AstNVisitor {
 	// Insert any implicit slices as explicit slices (ArraySel nodes).
 	// Return a new pointer to replace nodep() in the ArraySel.
 	UINFO(9,"  insertImplicit (startDim="<<startDim<<",c="<<numDimensions<<") "<<nodep<<endl);
-	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
+	AstVarRef* refp = nodep->user1p()->castVarRef();
 	if (!refp) nodep->v3fatalSrc("No VarRef in user1 of node "<<nodep);
 	AstVar* varp = refp->varp();
 	AstNode* topp = nodep;
@@ -326,7 +326,7 @@ class SliceVisitor : public AstNVisitor {
 	if (!m_assignp) return;
 	if (nodep->user3()) return;  // Prevent recursion on just created nodes
 	unsigned dim = explicitDimensions(nodep);
-	AstVarRef* refp = nodep->user1p()->castNode()->castVarRef();
+	AstVarRef* refp = nodep->user1p()->castVarRef();
 	pair<uint32_t,uint32_t> arrDim = refp->varp()->dtypep()->dimensions(false);
 	uint32_t implicit = (arrDim.second) - dim;
 	if (implicit > 0) {

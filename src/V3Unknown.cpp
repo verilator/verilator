@@ -113,7 +113,7 @@ private:
 
 	// Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
 	// Saves us teaching V3Const how to optimize, and it won't be needed again.
-	if (AstIf* ifp = prep->user2p()->castNode()->castIf()) {
+	if (AstIf* ifp = prep->user2p()->castIf()) {
 	    if (needDly) prep->v3fatalSrc("Should have already converted to non-delay");
 	    AstNRelinker replaceHandle;
 	    AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);

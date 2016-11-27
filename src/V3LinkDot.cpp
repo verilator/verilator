@@ -332,7 +332,7 @@ public:
     }
     static VSymEnt* getNodeSym(AstNode* nodep) {
 	// Don't use this in ResolveVisitor, as we need to pick up the proper reference under each SCOPE
-	VSymEnt* symp = nodep->user1p()->castSymEnt();
+	VSymEnt* symp = nodep->user1u().toSymEnt();
 	if (!symp) nodep->v3fatalSrc("Module/etc never assigned a symbol entry?");
 	return symp;
     }
@@ -1514,9 +1514,9 @@ private:
 	return varp;
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
-	if (refp->user5p() && refp->user5p()->castNode()!=nodep) {
+	if (refp->user5p() && refp->user5p()!=nodep) {
 	    nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
-			   <<refp->user5p()->castNode()->warnMore()
+			   <<refp->user5p()->warnMore()
 			   <<"... Location of original "<<whatp<<" connection");
 	} else {
 	    refp->user5p(nodep);
@@ -1959,7 +1959,7 @@ private:
 		} else {
 		    while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
 			UINFO(7,"         Resolved pre-alias "<<vscp<<endl);  // Also prints taskp
-			vscp = vscp->user2p()->castNode()->castVarScope();
+			vscp = vscp->user2p()->castVarScope();
 		    }
 		    // Convert the VarXRef to a VarRef, so we don't need later optimizations to deal with VarXRef.
 		    nodep->varp(vscp->varp());

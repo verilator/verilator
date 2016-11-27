@@ -373,7 +373,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstNode* enp = new AstConst(nodep->fileline(), num);
 	    nodep->user1p(enp);
 	}
-	return nodep->user1p()->castNode();
+	return nodep->user1p();
     }
 
     AstVar* getCreateEnVarp(AstVar* invarp) {
@@ -388,7 +388,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    else m_modp->addStmtp(newp);
 	    invarp->user1p(newp); // find envar given invarp
 	}
-	return invarp->user1p()->castNode()->castVar();
+	return invarp->user1p()->castVar();
     }
 
     AstVar* getCreateOutVarp(AstVar* invarp) {
@@ -403,7 +403,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    else m_modp->addStmtp(newp);
 	    invarp->user4p(newp);  // find outvar given invarp
 	}
-	return invarp->user4p()->castNode()->castVar();
+	return invarp->user4p()->castVar();
     }
 
     AstVar* getCreateUnconnVarp(AstNode* fromp, AstNodeDType* dtypep) {
@@ -541,7 +541,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		outvarp->user3p(invarp->user3p()); // AstPull* propagation
 		if (invarp->user3p()) UINFO(9, "propagate pull to "<<outvarp<<endl);
 	    } else if (invarp->user1p()) {
-		envarp = invarp->user1p()->castNode()->castVar();  // From CASEEQ, foo === 1'bz
+		envarp = invarp->user1p()->castVar();  // From CASEEQ, foo === 1'bz
 	    }
 
 	    AstNode* orp = NULL;
@@ -720,7 +720,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		UINFO(9,dbgState()<<nodep<<endl);
 		if (nodep->user1p()) {
 		    // Form a "deposit" instruction.  Would be nicer if we made this a new AST type
-		    AstNode* newp = newEnableDeposit(nodep, nodep->user1p()->castNode());
+		    AstNode* newp = newEnableDeposit(nodep, nodep->user1p());
 		    nodep->fromp()->user1p(newp);  // Push to varref (etc)
 		    if (debug()>=9) newp->dumpTree(cout,"-assign-sel; ");
 		    m_tgraph.didProcess(nodep);
@@ -760,7 +760,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		UINFO(9,dbgState()<<nodep<<endl);
 		if (nodep->user1p()) {
 		    // Each half of the concat gets a select of the enable expression
-		    AstNode* enp = nodep->user1p()->castNode();
+		    AstNode* enp = nodep->user1p();
 		    nodep->user1p(NULL);
 		    nodep->lhsp()->user1p(new AstSel(nodep->fileline(),
 						     enp->cloneTree(true),
@@ -807,7 +807,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    AstNode* expr1p = nodep->lhsp()->unlinkFrBack();
 	    AstNode* expr2p = nodep->rhsp()->unlinkFrBack();
 	    AstNode* enp;
-	    if (AstNode* en2p = expr2p->user1p()->castNode()) {
+	    if (AstNode* en2p = expr2p->user1p()) {
 		enp = new AstAnd(nodep->fileline(), expr1p, en2p);
 	    } else {
 		enp = expr1p;
@@ -937,7 +937,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		// 3'b1z0 -> ((3'b101 == in__en) && (3'b100 == in))
 		varrefp->unlinkFrBack();
 		FileLine* fl = nodep->fileline();
-		V3Number oneIfEn = constp->user1p()->castNode()->castConst()->num();  // visit(AstConst) already split into en/ones
+		V3Number oneIfEn = constp->user1p()->castConst()->num();  // visit(AstConst) already split into en/ones
 		V3Number oneIfEnOne = constp->num();
 		AstVar* envarp = getCreateEnVarp(varrefp->varp());
 		AstNode* newp = new AstLogAnd (fl, new AstEq (fl, new AstConst(fl, oneIfEn),

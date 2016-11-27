@@ -78,7 +78,7 @@ private:
 	if (old_dtypep->width() != width) {
 	    // Since any given dtype's cppWidth() is the same, we can just
 	    // remember one convertion for each, and reuse it
-	    if (AstNodeDType* new_dtypep = old_dtypep->user3p()->castNode()->castNodeDType()) {
+	    if (AstNodeDType* new_dtypep = old_dtypep->user3p()->castNodeDType()) {
 		nodep->dtypep(new_dtypep);
 	    } else {
 		nodep->dtypeChgWidth(width, nodep->widthMin());

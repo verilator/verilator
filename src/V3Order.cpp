@@ -1493,7 +1493,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
-    AstNodeModule* modp = scopep->user1p()->castNode()->castNodeModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
+    AstNodeModule* modp = scopep->user1p()->castNodeModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
     if (nodep->castUntilStable()) {
 	nodep->v3fatalSrc("Not implemented");
     }

@@ -111,7 +111,8 @@ public:
 
 //============================================================================
 /// Abstract type indicating a specific "input" to the NFA
-typedef AstNUser* DfaInput;
+/// DFA assumes each .toInt() is unique
+typedef VNUser DfaInput;
 
 //============================================================================
 // Edge types
@@ -120,8 +121,8 @@ class DfaEdge : public V3GraphEdge {
     DfaInput	m_input;
     bool	m_complement;	// Invert value when doing compare
 public:
-    static DfaInput EPSILON() { return NULL; }
-    static DfaInput NA() { return AstNUser::fromInt(1); }	// as in not-applicable
+    static DfaInput EPSILON() { return VNUser::fromInt(0); }
+    static DfaInput NA() { return VNUser::fromInt(1); }	// as in not-applicable
     // CONSTRUCTORS
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, DfaInput input)
 	: V3GraphEdge(graphp, fromp, top, 1)
@@ -138,11 +139,11 @@ public:
     virtual string dotLabel() const {
 	return (na() ? ""
 		: epsilon() ? "e"
-		: complement() ? ("not "+cvtToStr((void*)(input())))
-		: cvtToStr((void*)(input()))); }
+		: complement() ? ("not "+cvtToStr(input().toInt()))
+		: cvtToStr(input().toInt())); }
     virtual string dotStyle() const { return (na()||cutable())?"dashed":""; }
-    bool epsilon() const { return input()==EPSILON(); }
-    bool na() const { return input()==NA(); }
+    bool epsilon() const { return input().toInt()==EPSILON().toInt(); }
+    bool na() const { return input().toInt()==NA().toInt(); }
     bool complement() const { return m_complement; }
     void complement(bool value) { m_complement=value; }
     DfaInput	input() const { return m_input; }

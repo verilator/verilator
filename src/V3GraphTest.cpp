@@ -292,9 +292,9 @@ public:
 	DfaTestVertex*  sz  = new DfaTestVertex(gp,"sZ");
 	DfaTestVertex*  sac = new DfaTestVertex(gp,"*ACCEPT*");  sac->accepting(true);
 
-	AstNUser* L = AstNUser::fromInt(0xaa);
-	AstNUser* R = AstNUser::fromInt(0xbb);
-	AstNUser* Z = AstNUser::fromInt(0xcc);
+	VNUser L = VNUser::fromInt(0xaa);
+	VNUser R = VNUser::fromInt(0xbb);
+	VNUser Z = VNUser::fromInt(0xcc);
 
 	new DfaEdge(gp, st,  sl,  DfaEdge::EPSILON());
 	new DfaEdge(gp, sl,  srs, L);

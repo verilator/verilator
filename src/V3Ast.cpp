@@ -80,15 +80,15 @@ void AstNode::init() {
     // Attributes
     m_didWidth = false;
     m_doingWidth = false;
-    m_user1p = NULL;
+    m_user1u = VNUser(0);
     m_user1Cnt = 0;
-    m_user2p = NULL;
+    m_user2u = VNUser(0);
     m_user2Cnt = 0;
-    m_user3p = NULL;
+    m_user3u = VNUser(0);
     m_user3Cnt = 0;
-    m_user4p = NULL;
+    m_user4u = VNUser(0);
     m_user4Cnt = 0;
-    m_user5p = NULL;
+    m_user5u = VNUser(0);
     m_user5Cnt = 0;
 }
 

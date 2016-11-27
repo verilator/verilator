@@ -65,8 +65,8 @@ class GateLogicVertex;
 class GateVarVertex;
 class GateGraphBaseVisitor {
 public:
-    virtual AstNUser* visit(GateLogicVertex* vertexp, AstNUser* vup=NULL) =0;
-    virtual AstNUser* visit(GateVarVertex* vertexp, AstNUser* vup=NULL) =0;
+    virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu=VNUser(0)) =0;
+    virtual VNUser visit(GateVarVertex* vertexp, VNUser vu=VNUser(0)) =0;
     virtual ~GateGraphBaseVisitor() {}
 };
 
@@ -104,14 +104,14 @@ public:
 	clearReducible(nonReducibleReason);
 	clearDedupable(nonReducibleReason);
     }
-    virtual AstNUser* accept(GateGraphBaseVisitor& v, AstNUser* vup=NULL) =0;
+    virtual VNUser accept(GateGraphBaseVisitor& v, VNUser vu=VNUser(0)) =0;
     // Returns only the result from the LAST vertex iterated over
-    AstNUser* iterateInEdges(GateGraphBaseVisitor& v, AstNUser* vup=NULL) {
-	AstNUser* retp = NULL;
+    VNUser iterateInEdges(GateGraphBaseVisitor& v, VNUser vu=VNUser(0)) {
+	VNUser ret = VNUser(0);
 	for (V3GraphEdge* edgep = inBeginp(); edgep; edgep = edgep->inNextp()) {
-	    retp = dynamic_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vup);
+	    ret = dynamic_cast<GateEitherVertex*>(edgep->fromp())->accept(v, vu);
 	}
-	return retp;
+	return ret;
     }
 };
 
@@ -147,7 +147,7 @@ public:
 	    setIsClock();
 	}
     }
-    AstNUser* accept(GateGraphBaseVisitor& v, AstNUser* vup=NULL) { return v.visit(this,vup); }
+    VNUser accept(GateGraphBaseVisitor& v, VNUser vu=VNUser(0)) { return v.visit(this,vu); }
 };
 
 class GateLogicVertex : public GateEitherVertex {
@@ -164,7 +164,7 @@ public:
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }
     bool	slow() const { return m_slow; }
-    AstNUser* accept(GateGraphBaseVisitor& v, AstNUser* vup=NULL) { return v.visit(this,vup); }
+    VNUser accept(GateGraphBaseVisitor& v, VNUser vu=VNUser(0)) { return v.visit(this,vu); }
 };
 
 //######################################################################
@@ -875,13 +875,13 @@ private:
 		&& !node2p->sameHash().isIllegal()
 		&& m_hashed.sameNodes(node1p,node2p));
     }
-    bool same(AstNUser* node1p, AstNUser* node2p) {
-	return node1p == node2p || sameHash((AstNode*)node1p,(AstNode*)node2p);
+    bool same(AstNode* node1p, AstNode* node2p) {
+	return node1p == node2p || sameHash(node1p,node2p);
     }
 public:
     bool check(AstNode* node1p,AstNode* node2p)  {
 	return same(node1p->user3p(),node2p->user3p()) && same(node1p->user5p(),node2p->user5p())
-	    && node1p->user2p()->castNode()->type() == node2p->user2p()->castNode()->type()
+	    && node1p->user2p()->type() == node2p->user2p()->type()
 	    ;
     }
 
@@ -901,7 +901,7 @@ public:
 	// So dupit is either a different, duplicate rhsp, or the end of the hash.
 	if (dupit != m_hashed.end()) {
 	    m_hashed.erase(inserted);
-	    return m_hashed.iteratorNodep(dupit)->user2p()->castNode()->castNodeAssign();
+	    return m_hashed.iteratorNodep(dupit)->user2p()->castNodeAssign();
 	}
 	return NULL;
     }
@@ -1012,15 +1012,15 @@ private:
     GateDedupeVarVisitor	m_varVisitor;	// Looks for a dupe of the logic
     int				m_depth;	// Iteration depth
 
-    virtual AstNUser* visit(GateVarVertex* vvertexp, AstNUser*) {
+    virtual VNUser visit(GateVarVertex* vvertexp, VNUser) {
 	// Check that we haven't been here before
-	if (m_depth > GATE_DEDUP_MAX_DEPTH) return NULL;  // Break loops; before user2 set so hit this vertex later
-	if (vvertexp->varScp()->user2()) return NULL;
+	if (m_depth > GATE_DEDUP_MAX_DEPTH) return VNUser(0);  // Break loops; before user2 set so hit this vertex later
+	if (vvertexp->varScp()->user2()) return VNUser(0);
 	vvertexp->varScp()->user2(true);
 
 	m_depth++;
 	if (vvertexp->inSize1()) {
-	    AstNodeVarRef* dupVarRefp = (AstNodeVarRef*) vvertexp->iterateInEdges(*this, (AstNUser*) vvertexp);
+	    AstNodeVarRef* dupVarRefp = (AstNodeVarRef*) vvertexp->iterateInEdges(*this, VNUser(vvertexp)).toNodep();
 
 	    if (dupVarRefp) {
 		V3GraphEdge* edgep = vvertexp->inBeginp();
@@ -1057,15 +1057,15 @@ private:
 	    }
 	}
 	m_depth--;
-	return NULL;
+	return VNUser(0);
     }
 
-    // Given iterated logic, starting at vup which was consumer's GateVarVertex
+    // Given iterated logic, starting at vu which was consumer's GateVarVertex
     // Returns a varref that has the same logic input; or NULL if none
-    virtual AstNUser* visit(GateLogicVertex* lvertexp, AstNUser* vup) {
+    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
 	lvertexp->iterateInEdges(*this);
 
-	GateVarVertex* consumerVvertexpp = (GateVarVertex*) vup;
+	GateVarVertex* consumerVvertexpp = (GateVarVertex*) vu.toGraphVertex();
 	if (lvertexp->dedupable() && consumerVvertexpp->dedupable()) {
 	    AstNode* nodep = lvertexp->nodep();
 	    AstVarScope* consumerVarScopep = consumerVvertexpp->varScp();
@@ -1074,9 +1074,9 @@ private:
 	    // different generated clocks will never compare as equal, even if the
 	    // generated clocks are deduped into one clock.
 	    AstActive* activep = lvertexp->activep();
-	    return (AstNUser*) m_varVisitor.findDupe(nodep, consumerVarScopep, activep);
+	    return VNUser(m_varVisitor.findDupe(nodep, consumerVarScopep, activep));
 	}
-	return NULL;
+	return VNUser(0);
     }
 
 public:
@@ -1142,7 +1142,7 @@ private:
 	else return NULL;
     }
 
-    virtual AstNUser* visit(GateVarVertex *vvertexp, AstNUser*) {
+    virtual VNUser visit(GateVarVertex *vvertexp, VNUser) {
 	for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; ) {
 	    V3GraphEdge* oldedgep = edgep;
 	    edgep = edgep->inNextp();  // for recursive since the edge could be deleted
@@ -1204,11 +1204,11 @@ private:
 		}
 	    }
 	}
-	return NULL;
+	return VNUser(0);
     }
 
-    virtual AstNUser* visit(GateLogicVertex* lvertexp, AstNUser* vup) {
-	return NULL;
+    virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
+	return VNUser(0);
     }
 
 public:
