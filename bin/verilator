@@ -209,9 +209,9 @@ Verilator - Convert Verilog code to C++/SystemC
 
     verilator --help
     verilator --version
-    verilator --cc [options] [top_level.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --sc [options] [top_level.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --lint-only    [top_level.v]...
+    verilator --cc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
+    verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
+    verilator --lint-only    [source_files.v]...
 
 =head1 DESCRIPTION
 
@@ -239,7 +239,7 @@ To get started, jump down to "EXAMPLE C++ EXECUTION".
 This is a short summary of the arguments to Verilator.  See the detailed
 descriptions in the next sections for more information.
 
-    {file.v}                    Verilog top level filenames
+    {file.v}                    Verilog package, module and top module filenames
     {file.c/cc/cpp}             Optional C++ files to compile in
     {file.a/o/so}               Optional C++ files to link in
 
