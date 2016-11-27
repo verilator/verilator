@@ -32,7 +32,7 @@
     virtual ~Ast ##name() {} \
     virtual AstType type() const { return AstType::at ## name; } \
     virtual AstNode* clone() { return new Ast ##name (*this); } \
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) { v.visit(this,vup); } \
+    virtual void accept(AstNVisitor& v) { v.visit(this); } \
     Ast ##name * cloneTree(bool cloneNext) { return static_cast<Ast ##name *>(AstNode::cloneTree(cloneNext)); } \
     Ast ##name * clonep() const { return static_cast<Ast ##name *>(AstNode::clonep()); }
 

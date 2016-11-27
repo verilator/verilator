@@ -195,7 +195,7 @@ private:
 	return (SubstVarEntry*)(nodep->varp()->user1p());  // Might be NULL
     }
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	SubstVarEntry* entryp = findEntryp (nodep);
 	if (entryp) {
 	    // Don't sweat it.  We assign a new temp variable for every new assignment,
@@ -208,8 +208,8 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstConst* nodep, AstNUser*) {}	// Accelerate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {}	// Accelerate
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -263,7 +263,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	m_ops = 0;
 	m_assignStep++;
 	nodep->rhsp()->iterateAndNext(*this);
@@ -313,7 +313,7 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
 	++m_statSubsts;
     }
-    virtual void visit(AstWordSel* nodep, AstNUser*) {
+    virtual void visit(AstWordSel* nodep) {
 	nodep->rhsp()->accept(*this);
 	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
 	AstConst* constp = nodep->rhsp()->castConst();
@@ -340,7 +340,7 @@ private:
 	    nodep->lhsp()->accept(*this);
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Any variable
 	if (nodep->lvalue()) {
 	    m_assignStep++;
@@ -368,9 +368,9 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {}
-    virtual void visit(AstConst* nodep, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {}
+    virtual void visit(AstConst* nodep) {}
+    virtual void visit(AstNode* nodep) {
 	m_ops++;
 	if (!nodep->isSubstOptimizable()) {
 	    m_ops = SUBST_MAX_OPS_NA;

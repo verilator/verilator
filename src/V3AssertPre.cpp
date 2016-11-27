@@ -73,7 +73,7 @@ private:
     }
 
     // VISITORS  //========== Statements
-    virtual void visit(AstClocking* nodep, AstNUser*) {
+    virtual void visit(AstClocking* nodep) {
 	UINFO(8,"   CLOCKING"<<nodep<<endl);
 	// Store the new default clock, reset on new module
 	m_seniDefaultp = nodep->sensesp();
@@ -86,14 +86,14 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
-    virtual void visit(AstPslCover* nodep, AstNUser*) {
+    virtual void visit(AstPslCover* nodep) {
 	if (nodep->sentreep()) return;  // Already processed
 	clearAssertInfo();
 	nodep->iterateChildren(*this);
 	nodep->sentreep(newSenTree(nodep));
 	clearAssertInfo();
     }
-    virtual void visit(AstPslClocked* nodep, AstNUser*) {
+    virtual void visit(AstPslClocked* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_senip) {
 	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
@@ -111,12 +111,12 @@ private:
 	nodep->replaceWith(blockp);
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	nodep->iterateChildren(*this);
 	// Reset defaults
 	m_seniDefaultp = NULL;
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

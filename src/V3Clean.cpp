@@ -173,12 +173,12 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstNodeUniop* nodep, AstNUser*) {
+    virtual void visit(AstNodeUniop* nodep) {
 	nodep->iterateChildren(*this);
 	computeCppWidth(nodep);
 	if (nodep->cleanLhs()) {
@@ -186,45 +186,45 @@ private:
 	}
 	setClean (nodep, nodep->cleanOut());
     }
-    virtual void visit(AstNodeBiop* nodep, AstNUser*) {
+    virtual void visit(AstNodeBiop* nodep) {
 	operandBiop(nodep);
 	setClean (nodep, nodep->cleanOut());
     }
-    virtual void visit(AstAnd* nodep, AstNUser*) {
+    virtual void visit(AstAnd* nodep) {
 	operandBiop(nodep);
 	setClean (nodep, isClean(nodep->lhsp()) || isClean(nodep->rhsp()));
     }
-    virtual void visit(AstXor* nodep, AstNUser*) {
+    virtual void visit(AstXor* nodep) {
 	operandBiop(nodep);
 	setClean (nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
-    virtual void visit(AstOr* nodep, AstNUser*) {
+    virtual void visit(AstOr* nodep) {
 	operandBiop(nodep);
 	setClean (nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {
 	nodep->iterateChildren(*this);
 	computeCppWidth(nodep);
         setClean (nodep, nodep->cleanOut());
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	nodep->iterateChildren(*this);
 	computeCppWidth(nodep);
 	if (nodep->cleanRhs()) {
 	    insureClean(nodep->rhsp());
 	}
     }
-    virtual void visit(AstText* nodep, AstNUser*) {
+    virtual void visit(AstText* nodep) {
 	setClean (nodep, true);
     }
-    virtual void visit(AstScopeName* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep) {
 	setClean (nodep, true);
     }
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	operandTriop(nodep);
         setClean (nodep, nodep->cleanOut());
     }
-    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+    virtual void visit(AstUCFunc* nodep) {
 	nodep->iterateChildren(*this);
 	computeCppWidth(nodep);
         setClean (nodep, false);
@@ -234,43 +234,43 @@ private:
 	}
 	insureCleanAndNext (nodep->bodysp());
     }
-    virtual void visit(AstTraceInc* nodep, AstNUser*) {
+    virtual void visit(AstTraceInc* nodep) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->valuep());
     }
-    virtual void visit(AstTypedef* nodep, AstNUser*) {
+    virtual void visit(AstTypedef* nodep) {
 	// No cleaning, or would loose pointer to enum
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+    virtual void visit(AstParamTypeDType* nodep) {
 	// No cleaning, or would loose pointer to enum
 	nodep->iterateChildren(*this);
     }
 
     // Control flow operators
-    virtual void visit(AstNodeCond* nodep, AstNUser*) {
+    virtual void visit(AstNodeCond* nodep) {
 	nodep->iterateChildren(*this);
 	insureClean(nodep->condp());
 	setClean(nodep, isClean(nodep->expr1p()) && isClean(nodep->expr2p()));
     }
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	nodep->iterateChildren(*this);
 	insureClean(nodep->condp());
     }
-    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+    virtual void visit(AstNodeIf* nodep) {
 	nodep->iterateChildren(*this);
 	insureClean(nodep->condp());
     }
-    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+    virtual void visit(AstSFormatF* nodep) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->exprsp());
 	setClean(nodep, true);  // generates a string, so not relevant
     }
-    virtual void visit(AstUCStmt* nodep, AstNUser*) {
+    virtual void visit(AstUCStmt* nodep) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->bodysp());
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
 	insureCleanAndNext (nodep->argsp());
 	setClean (nodep, true);
@@ -278,7 +278,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	computeCppWidth(nodep);
     }

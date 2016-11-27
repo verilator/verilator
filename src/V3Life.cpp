@@ -303,7 +303,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Consumption/generation of a variable,
 	// it's used so can't elim assignment before this use.
 	if (!nodep->varScopep()) nodep->v3fatalSrc("NULL");
@@ -316,7 +316,7 @@ private:
 	    m_lifep->varUsageReplace(vscp, nodep); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	// Collect any used variables first, as lhs may also be on rhs
 	// Similar code in V3Dead
 	vluint64_t lastEdit = AstNode::editCountGbl();	// When it was last edited
@@ -336,13 +336,13 @@ private:
 	    nodep->lhsp()->iterateAndNext(*this);
 	}
     }
-    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+    virtual void visit(AstAssignDly* nodep) {
 	// Don't treat as normal assign; V3Life doesn't understand time sense
 	nodep->iterateChildren(*this);
     }
 
     //---- Track control flow changes
-    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+    virtual void visit(AstNodeIf* nodep) {
 	UINFO(4,"   IF "<<nodep<<endl);
 	// Condition is part of PREVIOUS block
 	nodep->condp()->iterateAndNext(*this);
@@ -369,7 +369,7 @@ private:
 	delete elseLifep;
     }
 
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	// While's are a problem, as we don't allow loops in the graph.  We
 	// may go around the cond/body multiple times.  Thus a
 	// lifelication just in the body is ok, but we can't delete an
@@ -399,7 +399,7 @@ private:
 	delete condLifep;
 	delete bodyLifep;
     }
-    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+    virtual void visit(AstJumpLabel* nodep) {
 	// As with While's we can't predict if a JumpGo will kill us or not
 	// It's worse though as an IF(..., JUMPGO) may change the control flow.
 	// Just don't optimize blocks with labels; they're rare - so far.
@@ -418,7 +418,7 @@ private:
 	bodyLifep->lifeToAbove();
 	delete bodyLifep;
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
@@ -426,24 +426,24 @@ private:
 	    nodep->funcp()->accept(*this);
 	}
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
 	if (nodep->dpiImport() && !nodep->pure()) {
 	    m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+    virtual void visit(AstUCFunc* nodep) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCMath* nodep, AstNUser*) {
+    virtual void visit(AstCMath* nodep) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstVar*, AstNUser*) {}	// Don't want varrefs under it
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 
@@ -475,28 +475,28 @@ private:
     LifeState* m_statep;	// Current state
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	if (nodep->entryPoint()) {
 	    // Usage model 1: Simulate all C code, doing lifetime analysis
 	    LifeVisitor visitor (nodep, m_statep);
 	}
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	// Usage model 2: Cleanup basic blocks
 	LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	// Usage model 2: Cleanup basic blocks
 	LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	// Usage model 2: Cleanup basic blocks
 	LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstVar*, AstNUser*) {}		// Accelerate
-    virtual void visit(AstNodeStmt*, AstNUser*) {}	// Accelerate
-    virtual void visit(AstNodeMath*, AstNUser*) {}	// Accelerate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}		// Accelerate
+    virtual void visit(AstNodeStmt*) {}	// Accelerate
+    virtual void visit(AstNodeMath*) {}	// Accelerate
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

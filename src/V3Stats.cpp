@@ -78,7 +78,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	allNodes(nodep);
 	if (!m_fast) {
 	    nodep->iterateChildrenConst(*this);
@@ -95,7 +95,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
 	if (m_counting && nodep->dtypep()) {
@@ -118,7 +118,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
 	if (m_counting) {
@@ -127,7 +127,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+    virtual void visit(AstNodeIf* nodep) {
 	UINFO(4,"   IF "<<nodep<<endl);
 	allNodes(nodep);
 	// Condition is part of PREVIOUS block
@@ -175,9 +175,9 @@ private:
 	}
     }
     // While's we assume evaluate once.
-    //virtual void visit(AstWhile* nodep, AstNUser*) {
+    //virtual void visit(AstWhile* nodep) {
 
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
@@ -186,13 +186,13 @@ private:
 	    nodep->funcp()->accept(*this);
 	}
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	m_cfuncp = nodep;
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
 	m_cfuncp = NULL;
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
     }

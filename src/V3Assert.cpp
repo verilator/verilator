@@ -163,7 +163,7 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     
-    virtual void visit(AstIf* nodep, AstNUser*) {
+    virtual void visit(AstIf* nodep) {
 	if (nodep->user1SetOnce()) return;
 	if (nodep->uniquePragma() || nodep->unique0Pragma()) {
 	    AstNodeIf* ifp = nodep;
@@ -220,7 +220,7 @@ private:
     }
 
     // VISITORS  //========== Case assertions
-    virtual void visit(AstCase* nodep, AstNUser*) {
+    virtual void visit(AstCase* nodep) {
 	nodep->iterateChildren(*this);
 	if (!nodep->user1SetOnce()) {
 	    bool has_default=false;
@@ -268,7 +268,7 @@ private:
     }
 
     // VISITORS  //========== Statements
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+    virtual void visit(AstDisplay* nodep) {
 	nodep->iterateChildren(*this);
 	// Replace the special types with standard text
 	if (nodep->displayType()==AstDisplayType::DT_INFO) {
@@ -281,27 +281,27 @@ private:
 	}
     }
 
-    virtual void visit(AstPslCover* nodep, AstNUser*) {
+    virtual void visit(AstPslCover* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
 			nodep->stmtsp(), nodep->name()); VL_DANGLING(nodep);
 	++m_statAsCover;
     }
-    virtual void visit(AstVAssert* nodep, AstNUser*) {
+    virtual void visit(AstVAssert* nodep) {
 	nodep->iterateChildren(*this);
 	newVAssertion(nodep, nodep->propp()); VL_DANGLING(nodep);
 	++m_statAsSV;
     }
 
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	//
 	nodep->iterateChildren(*this);
 	// Reset defaults
 	m_modp = NULL;
     }
-    virtual void visit(AstBegin* nodep, AstNUser*) {
+    virtual void visit(AstBegin* nodep) {
 	// This code is needed rather than a visitor in V3Begin,
 	// because V3Assert is called before V3Begin
 	AstBegin* lastp = m_beginp;
@@ -312,7 +312,7 @@ private:
 	m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

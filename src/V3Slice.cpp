@@ -68,7 +68,7 @@ class SliceCloneVisitor : public AstNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
+    virtual void visit(AstArraySel* nodep) {
 	if (!nodep->backp()->castArraySel()) {
 	    // This is the top of an ArraySel, setup for iteration
 	    m_refp = nodep->user1p()->castNode()->castVarRef();
@@ -118,7 +118,7 @@ class SliceCloneVisitor : public AstNVisitor {
 	nodep->length(1);
     }
 
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	if (nodep->user2() < 2) return; // Don't need clones
 	m_selBits.clear();
 	UINFO(4, "Cloning "<<nodep->user2()<<" times: "<<nodep<<endl);
@@ -168,20 +168,20 @@ class SliceCloneVisitor : public AstNVisitor {
 	nodep->replaceWith(lhsp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstRedOr* nodep, AstNUser*) {
+    virtual void visit(AstRedOr* nodep) {
 	cloneUniop(nodep);
     }
-    virtual void visit(AstRedAnd* nodep, AstNUser*) {
+    virtual void visit(AstRedAnd* nodep) {
 	cloneUniop(nodep);
     }
-    virtual void visit(AstRedXor* nodep, AstNUser*) {
+    virtual void visit(AstRedXor* nodep) {
 	cloneUniop(nodep);
     }
-    virtual void visit(AstRedXnor* nodep, AstNUser*) {
+    virtual void visit(AstRedXnor* nodep) {
 	cloneUniop(nodep);
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }
@@ -289,7 +289,7 @@ class SliceVisitor : public AstNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// The LHS/RHS of an Assign may be to a Var that is an array. In this
 	// case we need to create a slice across the entire Var
 	if (m_assignp && !nodep->backp()->castArraySel()) {
@@ -305,7 +305,7 @@ class SliceVisitor : public AstNVisitor {
 	}
     }
 
-    virtual void visit(AstExtend* nodep, AstNUser*) {
+    virtual void visit(AstExtend* nodep) {
 	m_extend = true;
 	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
 	    m_assignp->v3error("Unsupported: Assignment between unpacked arrays of different dimensions");
@@ -314,7 +314,7 @@ class SliceVisitor : public AstNVisitor {
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	m_extend = true;
 	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
 	    m_assignp->v3error("Unsupported: Assignment between a constant and an array slice");
@@ -322,7 +322,7 @@ class SliceVisitor : public AstNVisitor {
 	}
     }
 
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
+    virtual void visit(AstArraySel* nodep) {
 	if (!m_assignp) return;
 	if (nodep->user3()) return;  // Prevent recursion on just created nodes
 	unsigned dim = explicitDimensions(nodep);
@@ -352,7 +352,7 @@ class SliceVisitor : public AstNVisitor {
 	}
     }
 
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	m_extend = true;
 	if (m_assignp && m_assignp->user2() > 1 && !m_assignError) {
 	    m_assignp->v3error("Unsupported: Assignment between unpacked arrays of different dimensions");
@@ -361,7 +361,7 @@ class SliceVisitor : public AstNVisitor {
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstNodeCond* nodep, AstNUser*) {
+    virtual void visit(AstNodeCond* nodep) {
 	// The conditional must be a single bit so only look at the expressions
 	nodep->expr1p()->accept(*this);
 	nodep->expr2p()->accept(*this);
@@ -412,7 +412,7 @@ class SliceVisitor : public AstNVisitor {
 	m_assignp = NULL;
     }
 
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	if (!nodep->user1()) {
 	    // Cleanup initArrays
 	    if (AstInitArray* initp = nodep->rhsp()->castInitArray()) {
@@ -458,16 +458,16 @@ class SliceVisitor : public AstNVisitor {
 	    }
 	}
     }
-    virtual void visit(AstRedOr* nodep, AstNUser*) {
+    virtual void visit(AstRedOr* nodep) {
 	expandUniOp(nodep);
     }
-    virtual void visit(AstRedAnd* nodep, AstNUser*) {
+    virtual void visit(AstRedAnd* nodep) {
 	expandUniOp(nodep);
     }
-    virtual void visit(AstRedXor* nodep, AstNUser*) {
+    virtual void visit(AstRedXor* nodep) {
 	expandUniOp(nodep);
     }
-    virtual void visit(AstRedXnor* nodep, AstNUser*) {
+    virtual void visit(AstRedXnor* nodep) {
 	expandUniOp(nodep);
     }
 
@@ -514,20 +514,20 @@ class SliceVisitor : public AstNVisitor {
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstEq* nodep, AstNUser*) {
+    virtual void visit(AstEq* nodep) {
 	expandBiOp(nodep);
     }
-    virtual void visit(AstNeq* nodep, AstNUser*) {
+    virtual void visit(AstNeq* nodep) {
 	expandBiOp(nodep);
     }
-    virtual void visit(AstEqCase* nodep, AstNUser*) {
+    virtual void visit(AstEqCase* nodep) {
 	expandBiOp(nodep);
     }
-    virtual void visit(AstNeqCase* nodep, AstNUser*) {
+    virtual void visit(AstNeqCase* nodep) {
 	expandBiOp(nodep);
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }

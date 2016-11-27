@@ -138,7 +138,7 @@ private:
     ofstream*		m_ofp;		// Output file
     string		m_prefix;
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	*m_ofp<<m_prefix;
 	if (nodep->user3()) *m_ofp<<" %%";
 	else *m_ofp<<"  ";
@@ -172,7 +172,7 @@ private:
     int		m_maxLineno;
     size_t	m_maxFilenameLen;
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	// Keeping line+filename lengths separate is much faster than calling ascii().length()
 	if (nodep->fileline()->lineno() >= m_maxLineno) {
@@ -604,19 +604,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVertexp = NULL;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Create required blocks and add to module
 	UINFO(4,"  BLOCK  "<<nodep<<endl);
 	AstNode::user2ClearTree();
@@ -627,7 +627,7 @@ private:
 	m_domainp = NULL;
 	AstNode::user2ClearTree();
     }
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
 	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block\n");
 	    AstVarScope* varscp = nodep->varScopep();
@@ -655,72 +655,72 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+    virtual void visit(AstAssignDly* nodep) {
 	m_inDly = true;
 	nodep->iterateChildren(*this);
 	m_inDly = false;
     }
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep) {
 	// Note we look at only AstSenItems, not AstSenGate's
 	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
 	nodep->iterateChildren(*this);
 	m_inSenItem = false;
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	// CDC doesn't care about public variables
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstSenGate* nodep, AstNUser*) {
+    virtual void visit(AstSenGate* nodep) {
 	// First handle the clock part will be handled in a minute by visit AstSenItem
 	// The logic gating term is delt with as logic
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	iterateNewStmt(nodep);
     }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst* nodep, AstNUser*) { }
-    virtual void visit(AstReplicate* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) { }
+    virtual void visit(AstReplicate* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstConcat* nodep, AstNUser*) {
+    virtual void visit(AstConcat* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNot* nodep, AstNUser*) {
+    virtual void visit(AstNot* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	if (!nodep->lsbp()->castConst()) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNodeSel* nodep, AstNUser*) {
+    virtual void visit(AstNodeSel* nodep) {
 	if (!nodep->bitp()->castConst()) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
 
     // Ignores
-    virtual void visit(AstInitial* nodep, AstNUser*) { }
-    virtual void visit(AstTraceInc* nodep, AstNUser*) { }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) { }
-    virtual void visit(AstNodeDType* nodep, AstNUser*) { }
+    virtual void visit(AstInitial* nodep) { }
+    virtual void visit(AstTraceInc* nodep) { }
+    virtual void visit(AstCoverToggle* nodep) { }
+    virtual void visit(AstNodeDType* nodep) { }
 
     //--------------------
     // Default
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {
 	setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

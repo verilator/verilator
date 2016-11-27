@@ -189,7 +189,7 @@ private:
 	}
     }
     // VISITORS
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	nodep->iterateChildren(*this);
 	// We only allow a LHS ref for the var being set, and a RHS ref for something else being read.
 	if (nodep->varScopep()->varp()->isSc()) {
@@ -215,7 +215,7 @@ private:
 	    m_rhsVarRefs.push_back(nodep);
 	}
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	m_substTreep = nodep->rhsp();
 	if (!nodep->lhsp()->castNodeVarRef())
 	    clearSimple("ASSIGN(non-VARREF)");
@@ -236,7 +236,7 @@ private:
     }
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// *** Special iterator
 	if (!m_isSimple) return;	// Fastpath
 	if (!(m_dedupe ? nodep->isGateDedupable() : nodep->isGateOptimizable())
@@ -360,7 +360,7 @@ private:
     void mergeAssigns();
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	nodep->iterateChildren(*this);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("gate_pre");
@@ -383,20 +383,20 @@ private:
 	consumedMove();
 	replaceAssigns();
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_activeReducible = true;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVertexp = NULL;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Create required blocks and add to module
 	UINFO(4,"  BLOCK  "<<nodep<<endl);
 	m_activeReducible = !(nodep->hasClocked());  // Seq logic outputs aren't reducible
@@ -407,7 +407,7 @@ private:
 	m_activep = NULL;
 	m_activeReducible = true;
     }
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
 	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block\n");
 	    AstVarScope* varscp = nodep->varScopep();
@@ -433,19 +433,19 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	iterateNewStmt(nodep, (nodep->isJustOneBodyStmt()?NULL:"Multiple Stmts"), NULL);
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	bool lastslow = m_inSlow;
 	m_inSlow = true;
 	iterateNewStmt(nodep, "AlwaysPublic", NULL);
 	m_inSlow = lastslow;
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	iterateNewStmt(nodep, "User C Function", "User C Function");
     }
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep) {
 	// Note we look at only AstSenItems, not AstSenGate's
 	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
@@ -456,33 +456,33 @@ private:
 	}
 	m_inSenItem = false;
     }
-    virtual void visit(AstSenGate* nodep, AstNUser*) {
+    virtual void visit(AstSenGate* nodep) {
 	// First handle the clock part will be handled in a minute by visit AstSenItem
 	// The logic gating term is delt with as logic
 	iterateNewStmt(nodep, "Clock gater", "Clock gater");
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	bool lastslow = m_inSlow;
 	m_inSlow = true;
 	iterateNewStmt(nodep, (nodep->isJustOneBodyStmt()?NULL:"Multiple Stmts"), NULL);
 	m_inSlow = lastslow;
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	iterateNewStmt(nodep, NULL, NULL);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	iterateNewStmt(nodep, NULL, NULL);
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	iterateNewStmt(nodep, "CoverToggle", "CoverToggle");
     }
-    virtual void visit(AstTraceInc* nodep, AstNUser*) {
+    virtual void visit(AstTraceInc* nodep) {
 	bool lastslow = m_inSlow;
 	m_inSlow = true;
 	iterateNewStmt(nodep, "Tracing", "Tracing");
 	m_inSlow = lastslow;
     }
-    virtual void visit(AstConcat* nodep, AstNUser*) {
+    virtual void visit(AstConcat* nodep) {
 	if (nodep->backp()->castNodeAssign() && nodep->backp()->castNodeAssign()->lhsp()==nodep) {
 	    nodep->v3fatalSrc("Concat on LHS of assignment; V3Const should have deleted it\n");
 	}
@@ -491,7 +491,7 @@ private:
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	if (nodep->isOutputter() && m_logicVertexp) m_logicVertexp->setConsumed("outputter");
     }
@@ -796,7 +796,7 @@ private:
     AstNode*	 m_replaceTreep;	// What to replace the variable with
     bool	 m_didReplace;		// Did we do any replacements
     // VISITORS
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	if (nodep->varScopep() == m_elimVarScp) {
 	    // Substitute in the new tree
 	    // It's possible we substitute into something that will be reduced more later
@@ -822,7 +822,7 @@ private:
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -929,7 +929,7 @@ private:
     bool		m_dedupable;		// Determined the assign to be dedupable
 
     // VISITORS
-    virtual void visit(AstNodeAssign* assignp, AstNUser*) {
+    virtual void visit(AstNodeAssign* assignp) {
 	if (m_dedupable) {
 	    // I think we could safely dedupe an always block with multiple non-blocking statements, but erring on side of caution here
 	    if (!m_assignp) {
@@ -939,7 +939,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstAlways* alwaysp, AstNUser*) {
+    virtual void visit(AstAlways* alwaysp) {
 	if (m_dedupable) {
 	    if (!m_always) {
 		m_always = true;
@@ -953,7 +953,7 @@ private:
     //  always @(...)
     //    if (...)
     //       foo = ...; // or foo <= ...;
-    virtual void visit(AstNodeIf* ifp, AstNUser*) {
+    virtual void visit(AstNodeIf* ifp) {
 	if (m_dedupable) {
 	    if (m_always && !m_ifCondp && !ifp->elsesp()) {  //we're under an always, this is the first IF,  and there's no else
 		m_ifCondp = ifp->condp();
@@ -964,10 +964,10 @@ private:
 	}
     }
 
-    virtual void visit(AstComment*, AstNUser*) {}  // NOP
+    virtual void visit(AstComment*) {}  // NOP
     //--------------------
     // Default
-    virtual void visit(AstNode*, AstNUser*) {
+    virtual void visit(AstNode*) {
 	m_dedupable = false;
     }
 
@@ -1245,7 +1245,7 @@ void GateVisitor::mergeAssigns() {
 class GateDeassignVisitor : public GateBaseVisitor {
 private:
     // VISITORS
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	if (AstNodeAssign* assp = nodep->valuep()->castNodeAssign()) {
 	    UINFO(5," Removeassign "<<assp<<endl);
 	    AstNode* valuep = assp->rhsp();
@@ -1255,9 +1255,9 @@ private:
 	}
     }
     // Speedups
-    virtual void visit(AstVar* nodep, AstNUser*) {}
-    virtual void visit(AstActive* nodep, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {}
+    virtual void visit(AstActive* nodep) {}
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

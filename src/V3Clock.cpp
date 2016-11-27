@@ -182,7 +182,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	UINFO(4," TOPSCOPE   "<<nodep<<endl);
 	m_topScopep=nodep;
 	m_scopep = nodep->scopep();
@@ -243,14 +243,14 @@ private:
 	m_topScopep=NULL;
 	m_scopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_stableNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp= NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	//UINFO(4," SCOPE   "<<nodep<<endl);
 	m_scopep = nodep;
 	nodep->iterateChildren(*this);
@@ -261,7 +261,7 @@ private:
 	}
 	m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
 	if (AstNode* stmtsp = nodep->bodysp()) {
@@ -270,7 +270,7 @@ private:
 	}
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPost* nodep) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
 	if (AstNode* stmtsp = nodep->bodysp()) {
@@ -279,7 +279,7 @@ private:
 	}
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	//nodep->dumpTree(cout,"ct:");
 	//COVERTOGGLE(INC, ORIG, CHANGE) ->
 	//   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -299,7 +299,7 @@ private:
 				    origp->cloneTree(false)));
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
 	nodep->replaceWith(cmtp);
 	if (AstNode* stmtsp = nodep->bodysp()) {
@@ -308,7 +308,7 @@ private:
 	}
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	nodep->iterateChildren(*this);
 	// Link to global function
 	if (nodep->formCallTree()) {
@@ -318,7 +318,7 @@ private:
 	    m_finalFuncp->addStmtsp(callp);
 	}
     }
-    virtual void visit(AstSenTree* nodep, AstNUser*) {
+    virtual void visit(AstSenTree* nodep) {
 	// Delete it later; Actives still pointing to it
 	nodep->unlinkFrBack();
 	pushDeletep(nodep);
@@ -335,7 +335,7 @@ private:
 	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
 	else m_initFuncp->addStmtsp(stmtsp);  // else add to top level function
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Careful if adding variables here, ACTIVES can be under other ACTIVES
 	// Need to save and restore any member state in AstUntilStable block
 	if (!m_topScopep || !nodep->stmtsp()) {
@@ -380,7 +380,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

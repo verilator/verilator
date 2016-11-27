@@ -101,7 +101,7 @@ private:
     // STATE
     int			m_count;	// Number of statements
     // VISITORS
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	m_count++;
 	nodep->iterateChildren(*this);
     }

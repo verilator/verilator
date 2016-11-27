@@ -266,7 +266,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 	    UndrivenVarEntry* entryp = getEntryp (nodep, usr);
 	    if (nodep->isInput()
@@ -284,11 +284,11 @@ private:
 	// Discover variables used in bit definitions, etc
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
+    virtual void visit(AstArraySel* nodep) {
 	// Arrays are rarely constant assigned, so for now we punt and do all entries
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	AstVarRef* varrefp = nodep->fromp()->castVarRef();
 	AstConst* constp = nodep->lsbp()->castConst();
 	if (varrefp && constp && !constp->num().isFourState()) {
@@ -310,7 +310,7 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Any variable
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 	    UndrivenVarEntry* entryp = getEntryp (nodep->varp(), usr);
@@ -327,14 +327,14 @@ private:
     }
 
     // Don't know what black boxed calls do, assume in+out
-    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+    virtual void visit(AstSysIgnore* nodep) {
 	bool prevMark = m_inBBox;
 	m_inBBox = true;
 	nodep->iterateChildren(*this);
 	m_inBBox = prevMark;
     }
 
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	AstAlways* prevAlwp = m_alwaysp;
 	{
 	    AstNode::user2ClearTree();
@@ -347,7 +347,7 @@ private:
 	m_alwaysp = prevAlwp;
     }
 
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	AstNodeFTask* prevTaskp = m_taskp;
 	m_taskp = nodep;
 	nodep->iterateChildren(*this);
@@ -355,18 +355,18 @@ private:
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive* nodep, AstNUser*) {}
+    virtual void visit(AstPrimitive* nodep) {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl* nodep, AstNUser*) {}
-    virtual void visit(AstCoverInc* nodep, AstNUser*) {}
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {}
-    virtual void visit(AstTraceDecl* nodep, AstNUser*) {}
-    virtual void visit(AstTraceInc* nodep, AstNUser*) {}
+    virtual void visit(AstCoverDecl* nodep) {}
+    virtual void visit(AstCoverInc* nodep) {}
+    virtual void visit(AstCoverToggle* nodep) {}
+    virtual void visit(AstTraceDecl* nodep) {}
+    virtual void visit(AstTraceInc* nodep) {}
 
     // iterate
-    virtual void visit(AstConst* nodep, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {}
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

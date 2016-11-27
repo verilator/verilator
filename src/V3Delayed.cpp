@@ -338,22 +338,22 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	//VV*****  We reset all userp() on the netlist
 	m_modVarMap.clear();
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	AstNode::user3ClearTree();
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	m_cfuncp = nodep;
 	nodep->iterateChildren(*this);
 	m_cfuncp = NULL;
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	m_activep = nodep;
 	bool oldinit = m_inInitial;
 	m_inInitial = nodep->hasInitial();
@@ -361,7 +361,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_inInitial = oldinit;
     }
-    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+    virtual void visit(AstAssignDly* nodep) {
 	m_inDly = true;
 	m_nextDlyp = nodep->nextp()->castAssignDly();  // Next assignment in same block, maybe NULL.
 	if (m_cfuncp) nodep->v3error("Unsupported: Delayed assignment inside public function/task");
@@ -385,7 +385,7 @@ private:
 	m_nextDlyp = NULL;
     }
 
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (!nodep->user2Inc()) {  // Not done yet
 	    if (m_inDly && nodep->lvalue()) {
 		UINFO(4,"AssignDlyVar: "<<nodep<<endl);
@@ -432,10 +432,10 @@ private:
 	}
     }
 
-    virtual void visit(AstNodeFor* nodep, AstNUser*) {
+    virtual void visit(AstNodeFor* nodep) {
 	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin\n");
     }
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	bool oldloop = m_inLoop;
 	m_inLoop = true;
 	nodep->iterateChildren(*this);
@@ -444,7 +444,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

@@ -178,24 +178,24 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_modFuncs.clear();
 	nodep->iterateChildren(*this);
 	makePublicFuncWrappers();
 	m_modp = NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	// Delete the varscope when we're finished
 	nodep->unlinkFrBack();
 	pushDeletep(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	nodep->iterateChildren(*this);
 	// Convert the hierch name
 	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
@@ -204,7 +204,7 @@ private:
 	nodep->hierThis(hierThis);
 	nodep->varScopep(NULL);
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	//UINFO(9,"       "<<nodep<<endl);
 	nodep->iterateChildren(*this);
 	// Convert the hierch name
@@ -215,7 +215,7 @@ private:
 	// Can't do this, as we may have more calls later
 	// nodep->funcp()->scopep(NULL);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
 	    m_needThis = false;
 	    nodep->iterateChildren(*this);
@@ -241,8 +241,8 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstVar*, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

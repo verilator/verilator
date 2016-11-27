@@ -65,7 +65,7 @@ private:
 	return level;
     }
 
-    virtual void visit(AstNodeCase* nodep, AstNUser*) {
+    virtual void visit(AstNodeCase* nodep) {
 	if (nodep->castCase() && nodep->castCase()->casex()) {
 	    nodep->v3warn(CASEX,"Suggest casez (with ?'s) in place of casex (with X's)");
 	}
@@ -90,7 +90,7 @@ private:
 	    m_caseExprp = NULL;
 	}
     }
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	// See also neverItem
 	if (m_caseExprp && nodep->num().isFourState()) {
 	    if (m_caseExprp->castGenCase()) {
@@ -107,7 +107,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -451,7 +451,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCase* nodep, AstNUser*) {
+    virtual void visit(AstCase* nodep) {
 	V3Case::caseLint(nodep);
 	nodep->iterateChildren(*this);
 	if (debug()>=9) nodep->dumpTree(cout," case_old: ");
@@ -467,7 +467,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

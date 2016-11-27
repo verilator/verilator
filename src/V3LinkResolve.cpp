@@ -70,7 +70,7 @@ private:
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDecriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Module: Create sim table for entire module and iterate
 	UINFO(8,"MODULE "<<nodep<<endl);
 	if (nodep->dead()) return;
@@ -79,21 +79,21 @@ private:
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	nodep->iterateChildren(*this);
 	// Initial assignments under function/tasks can just be simple assignments without the initial
 	if (m_ftaskp) {
 	    nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstVAssert* nodep, AstNUser*) {
+    virtual void visit(AstVAssert* nodep) {
 	if (m_assertp) nodep->v3error("Assert not allowed under another assert");
 	m_assertp = nodep;
 	nodep->iterateChildren(*this);
 	m_assertp = NULL;
     }
 
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_ftaskp) nodep->funcLocal(true);
 	if (nodep->isSigModPublic()) {
@@ -102,7 +102,7 @@ private:
 	}
     }
 
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	// VarRef: Resolve its reference
 	if (nodep->varp()) {
 	    nodep->varp()->usedParam(true);
@@ -110,7 +110,7 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	// NodeTask: Remember its name for later resolution
 	// Remember the existing symbol table scope
 	m_ftaskp = nodep;
@@ -120,14 +120,14 @@ private:
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	nodep->iterateChildren(*this);
 	if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
 
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep) {
 	// Remove bit selects, and bark if it's not a simple variable
 	nodep->iterateChildren(*this);
 	if (nodep->isClocked()) {
@@ -190,11 +190,11 @@ private:
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
 	}
     }
-    virtual void visit(AstSenGate* nodep, AstNUser*) {
+    virtual void visit(AstSenGate* nodep) {
 	nodep->v3fatalSrc("SenGates shouldn't be in tree yet");
     }
 
-    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
+    virtual void visit(AstNodePreSel* nodep) {
 	if (!nodep->attrp()) {
 	    nodep->iterateChildren(*this);
 	    // Constification may change the fromp() to a constant, which will lose the
@@ -221,7 +221,7 @@ private:
 	}
     }
 
-    virtual void visit(AstCaseItem* nodep, AstNUser*) {
+    virtual void visit(AstCaseItem* nodep) {
 	// Move default caseItems to the bottom of the list
 	// That saves us from having to search each case list twice, for non-defaults and defaults
 	nodep->iterateChildren(*this);
@@ -233,7 +233,7 @@ private:
 	}
     }
 
-    virtual void visit(AstPragma* nodep, AstNUser*) {
+    virtual void visit(AstPragma* nodep) {
 	if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
 	    if (!m_modp) nodep->v3fatalSrc("PUBLIC_MODULE not under a module\n");
 	    m_modp->modPublic(true);
@@ -354,27 +354,27 @@ private:
 	if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
-    virtual void visit(AstFOpen* nodep, AstNUser*) {
+    virtual void visit(AstFOpen* nodep) {
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
-    virtual void visit(AstFClose* nodep, AstNUser*) {
+    virtual void visit(AstFClose* nodep) {
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
-    virtual void visit(AstFEof* nodep, AstNUser*) {
+    virtual void visit(AstFEof* nodep) {
 	nodep->iterateChildren(*this);
 	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
     }
-    virtual void visit(AstFScanF* nodep, AstNUser*) {
+    virtual void visit(AstFScanF* nodep) {
 	nodep->iterateChildren(*this);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSScanF* nodep, AstNUser*) {
+    virtual void visit(AstSScanF* nodep) {
 	nodep->iterateChildren(*this);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+    virtual void visit(AstSFormatF* nodep) {
 	nodep->iterateChildren(*this);
 	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
 	nodep->text(newFormat);
@@ -383,11 +383,11 @@ private:
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
-    virtual void visit(AstDisplay* nodep, AstNUser* vup) {
+    virtual void visit(AstDisplay* nodep) {
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstUdpTable* nodep, AstNUser*) {
+    virtual void visit(AstUdpTable* nodep) {
 	UINFO(5,"UDPTABLE  "<<nodep<<endl);
 	if (!v3Global.opt.bboxUnsup()) {
 	    // We don't warn until V3Inst, so that UDPs that are in libraries and
@@ -414,23 +414,23 @@ private:
 	}
     }
 
-    virtual void visit(AstScCtor* nodep, AstNUser*) {
+    virtual void visit(AstScCtor* nodep) {
 	// Constructor info means the module must remain public
 	m_modp->modPublic(true);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScDtor* nodep, AstNUser*) {
+    virtual void visit(AstScDtor* nodep) {
 	// Destructor info means the module must remain public
 	m_modp->modPublic(true);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScInt* nodep, AstNUser*) {
+    virtual void visit(AstScInt* nodep) {
 	// Special class info means the module must remain public
 	m_modp->modPublic(true);
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }
@@ -466,24 +466,24 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	// Iterate modules backwards, in bottom-up order.
 	nodep->iterateChildrenBackwards(*this);
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	// Parent module inherits child's publicity
 	if (nodep->modp()->modPublic()) m_modp->modPublic(true);
 	//** No iteration for speed
     }
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {
 	// Speedup
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }

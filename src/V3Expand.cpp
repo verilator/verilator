@@ -308,7 +308,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstExtend* nodep, AstNUser*) {
+    virtual void visit(AstExtend* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
@@ -347,7 +347,7 @@ private:
 	return true;
     }
 
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	// Remember, Sel's may have non-integer rhs, so need to optimize for that!
@@ -648,7 +648,7 @@ private:
 	}
     }
 
-    virtual void visit(AstConcat* nodep, AstNUser*) {
+    virtual void visit(AstConcat* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
@@ -688,7 +688,7 @@ private:
 	return true;
     }
 
-    virtual void visit(AstReplicate* nodep, AstNUser*) {
+    virtual void visit(AstReplicate* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->isWide()) {
@@ -749,7 +749,7 @@ private:
 	return true;
     }
 
-    virtual void visit(AstChangeXor* nodep, AstNUser*) {
+    virtual void visit(AstChangeXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	UINFO(8,"    Wordize ChangeXor "<<nodep<<endl);
@@ -787,10 +787,10 @@ private:
 	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstEq* nodep, AstNUser*) { visitEqNeq (nodep); }
-    virtual void visit(AstNeq* nodep, AstNUser*) { visitEqNeq (nodep); }
+    virtual void visit(AstEq* nodep) { visitEqNeq (nodep); }
+    virtual void visit(AstNeq* nodep) { visitEqNeq (nodep); }
 
-    virtual void visit(AstRedOr* nodep, AstNUser*) {
+    virtual void visit(AstRedOr* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
@@ -814,7 +814,7 @@ private:
 	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstRedAnd* nodep, AstNUser*) {
+    virtual void visit(AstRedAnd* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
@@ -843,7 +843,7 @@ private:
 	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstRedXor* nodep, AstNUser*) {
+    virtual void visit(AstRedXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	nodep->iterateChildren(*this);
 	if (nodep->lhsp()->isWide()) {
@@ -862,13 +862,13 @@ private:
 	// which the inlined function does nicely.
     }
 
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
 	nodep->iterateChildren(*this);
 	m_stmtp = NULL;
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
 	nodep->iterateChildren(*this);
@@ -914,8 +914,8 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*, AstNUser*) {}	// Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}	// Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

@@ -132,7 +132,7 @@ public:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	bool paren = true;  bool decind = false;
 	if (AstSel* selp=nodep->lhsp()->castSel()) {
 	    if (selp->widthMin()==1) {
@@ -195,9 +195,9 @@ public:
 	if (decind) ofp()->blockDec();
 	if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstAlwaysPublic*, AstNUser*) {
+    virtual void visit(AstAlwaysPublic*) {
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	puts(nodep->hiername());
 	puts(nodep->funcp()->name());
 	puts("(");
@@ -215,15 +215,15 @@ public:
 	    puts(");\n");
 	}
     }
-    virtual void visit(AstNodeCase* nodep, AstNUser*) {
+    virtual void visit(AstNodeCase* nodep) {
 	// In V3Case...
 	nodep->v3fatalSrc("Case statements should have been reduced out\n");
     }
-    virtual void visit(AstComment* nodep, AstNUser*) {
+    virtual void visit(AstComment* nodep) {
 	putsDecoration((string)"// "+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCoverDecl* nodep, AstNUser*) {
+    virtual void visit(AstCoverDecl* nodep) {
 	puts("__vlCoverInsert(");	// As Declared in emitCoverageDecl
 	puts("&(vlSymsp->__Vcoverage[");
 	puts(cvtToStr(nodep->dataDeclThisp()->binNum())); puts("])");
@@ -241,22 +241,22 @@ public:
 	puts(", ");	putsQuoted(nodep->comment());
 	puts(");\n");
     }
-    virtual void visit(AstCoverInc* nodep, AstNUser*) {
+    virtual void visit(AstCoverInc* nodep) {
 	puts("++(vlSymsp->__Vcoverage[");
 	puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
 	puts("]);\n");
     }
-    virtual void visit(AstCReturn* nodep, AstNUser*) {
+    virtual void visit(AstCReturn* nodep) {
 	puts("return (");
 	nodep->lhsp()->iterateAndNext(*this);
 	puts(");\n");
     }
-    virtual void visit(AstDisplay* nodep, AstNUser*) {
+    virtual void visit(AstDisplay* nodep) {
 	string text = nodep->fmtp()->text();
 	if (nodep->addNewline()) text += "\n";
 	displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
     }
-    virtual void visit(AstScopeName* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep) {
 	// For use under AstCCalls for dpiImports.  ScopeNames under displays are handled in AstDisplay
 	if (!nodep->dpiExport()) {
 	    // this is where the DPI import context scope is set
@@ -264,19 +264,19 @@ public:
 	    putbs("(&(vlSymsp->__Vscope_"+scope+"))");
 	}
     }
-    virtual void visit(AstSFormat* nodep, AstNUser*) {
+    virtual void visit(AstSFormat* nodep) {
 	displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);
     }
-    virtual void visit(AstSFormatF* nodep, AstNUser*) {
+    virtual void visit(AstSFormatF* nodep) {
 	displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
     }
-    virtual void visit(AstFScanF* nodep, AstNUser*) {
+    virtual void visit(AstFScanF* nodep) {
 	displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSScanF* nodep, AstNUser*) {
+    virtual void visit(AstSScanF* nodep) {
 	displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
+    virtual void visit(AstValuePlusArgs* nodep) {
 	string prefix;
 	char format = '?';
 	bool pct=false;
@@ -327,12 +327,12 @@ public:
 	nodep->exprsp()->iterateAndNext(*this);
 	puts(")");
     }
-    virtual void visit(AstTestPlusArgs* nodep, AstNUser*) {
+    virtual void visit(AstTestPlusArgs* nodep) {
 	puts("VL_TESTPLUSARGS_I(");
 	putsQuoted(nodep->text());
 	puts(")");
     }
-    virtual void visit(AstFGetS* nodep, AstNUser*) {
+    virtual void visit(AstFGetS* nodep) {
 	checkMaxWords(nodep);
 	emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
     }
@@ -342,7 +342,7 @@ public:
 	    nodep->v3error("String of "<<nodep->width()<<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h");
 	}
     }
-    virtual void visit(AstFOpen* nodep, AstNUser*) {
+    virtual void visit(AstFOpen* nodep) {
 	nodep->filep()->iterateAndNext(*this);
 	puts(" = VL_FOPEN_");
 	emitIQW(nodep->filenamep());
@@ -359,7 +359,7 @@ public:
 	nodep->modep()->iterateAndNext(*this);
 	puts(");\n");
     }
-    virtual void visit(AstReadMem* nodep, AstNUser*) {
+    virtual void visit(AstReadMem* nodep) {
 	puts("VL_READMEM_");
 	emitIQW(nodep->filenamep());
 	puts(" (");  // We take a void* rather than emitIQW(nodep->memp());
@@ -393,14 +393,14 @@ public:
 	putbs(","); if (nodep->msbp()) { nodep->msbp()->iterateAndNext(*this); } else puts("~0");
 	puts(");\n");
     }
-    virtual void visit(AstFClose* nodep, AstNUser*) {
+    virtual void visit(AstFClose* nodep) {
 	puts("VL_FCLOSE_I(");
 	nodep->filep()->iterateAndNext(*this);
 	puts("); ");
 	nodep->filep()->iterateAndNext(*this);	// For saftey, so user doesn't later WRITE with it.
 	puts("=0;\n");
     }
-    virtual void visit(AstFFlush* nodep, AstNUser*) {
+    virtual void visit(AstFFlush* nodep) {
 	if (!nodep->filep()) {
 	    puts("fflush (stdout);\n");
 	} else {
@@ -411,7 +411,7 @@ public:
 	    puts(")); }\n");
 	}
     }
-    virtual void visit(AstSystemT* nodep, AstNUser*) {
+    virtual void visit(AstSystemT* nodep) {
 	puts("(void)VL_SYSTEM_I");
 	emitIQW(nodep->lhsp());
 	puts("(");
@@ -423,7 +423,7 @@ public:
 	nodep->lhsp()->iterateAndNext(*this);
 	puts(");\n");
     }
-    virtual void visit(AstSystemF* nodep, AstNUser*) {
+    virtual void visit(AstSystemF* nodep) {
 	puts("VL_SYSTEM_I");
 	emitIQW(nodep->lhsp());
 	puts("(");
@@ -435,16 +435,16 @@ public:
 	nodep->lhsp()->iterateAndNext(*this);
 	puts(")");
     }
-    virtual void visit(AstJumpGo* nodep, AstNUser*) {
+    virtual void visit(AstJumpGo* nodep) {
 	puts("goto __Vlabel"+cvtToStr(nodep->labelp()->labelNum())+";\n");
     }
-    virtual void visit(AstJumpLabel* nodep, AstNUser*) {
+    virtual void visit(AstJumpLabel* nodep) {
 	puts("{\n");
 	nodep->stmtsp()->iterateAndNext(*this);
 	puts("}\n");
 	puts("__Vlabel"+cvtToStr(nodep->labelNum())+": ;\n");
     }
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	nodep->precondsp()->iterateAndNext(*this);
 	puts("while (");
 	nodep->condp()->iterateAndNext(*this);
@@ -454,7 +454,7 @@ public:
 	nodep->precondsp()->iterateAndNext(*this);  // Need to recompute before next loop
 	puts("}\n");
     }
-    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+    virtual void visit(AstNodeIf* nodep) {
 	puts("if (");
 	if (nodep->branchPred() != AstBranchPred::BP_UNKNOWN) {
 	    puts(nodep->branchPred().ascii()); puts("(");
@@ -469,41 +469,41 @@ public:
 	}
 	puts("}\n");
     }
-    virtual void visit(AstStop* nodep, AstNUser*) {
+    virtual void visit(AstStop* nodep) {
 	puts("vl_stop(");
 	putsQuoted(nodep->fileline()->filename());
 	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(",\"\");\n");
     }
-    virtual void visit(AstFinish* nodep, AstNUser*) {
+    virtual void visit(AstFinish* nodep) {
 	puts("vl_finish(");
 	putsQuoted(nodep->fileline()->filename());
 	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(",\"\");\n");
     }
-    virtual void visit(AstText* nodep, AstNUser*) {
+    virtual void visit(AstText* nodep) {
 	if (nodep->tracking()) {
 	    puts(nodep->text());
 	} else {
 	    ofp()->putsNoTracking(nodep->text());
 	}
     }
-    virtual void visit(AstCStmt* nodep, AstNUser*) {
+    virtual void visit(AstCStmt* nodep) {
 	putbs("");
 	nodep->bodysp()->iterateAndNext(*this);
     }
-    virtual void visit(AstCMath* nodep, AstNUser*) {
+    virtual void visit(AstCMath* nodep) {
 	putbs("");
 	nodep->bodysp()->iterateAndNext(*this);
     }
-    virtual void visit(AstUCStmt* nodep, AstNUser*) {
+    virtual void visit(AstUCStmt* nodep) {
 	putsDecoration("// $c statement at "+nodep->fileline()->ascii()+"\n");
 	nodep->bodysp()->iterateAndNext(*this);
 	puts("\n");
     }
-    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+    virtual void visit(AstUCFunc* nodep) {
 	puts("\n");
 	putsDecoration("// $c function at "+nodep->fileline()->ascii()+"\n");
 	nodep->bodysp()->iterateAndNext(*this);
@@ -511,10 +511,10 @@ public:
     }
 
     // Operators
-    virtual void visit(AstNodeTermop* nodep, AstNUser*) {
+    virtual void visit(AstNodeTermop* nodep) {
 	emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
     }
-    virtual void visit(AstNodeUniop* nodep, AstNUser*) {
+    virtual void visit(AstNodeUniop* nodep) {
 	if (emitSimpleOk(nodep)) {
 	    putbs("("); puts(nodep->emitSimpleOperator()); puts(" ");
 	    nodep->lhsp()->iterateAndNext(*this); puts(")");
@@ -522,7 +522,7 @@ public:
 	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), NULL, NULL);
 	}
     }
-    virtual void visit(AstNodeBiop* nodep, AstNUser*) {
+    virtual void visit(AstNodeBiop* nodep) {
 	if (emitSimpleOk(nodep)) {
 	    putbs("("); nodep->lhsp()->iterateAndNext(*this);
 	    puts(" "); putbs(nodep->emitSimpleOperator()); puts(" ");
@@ -531,9 +531,9 @@ public:
 	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
 	}
     }
-    virtual void visit(AstRedXor* nodep, AstNUser* vup) {
+    virtual void visit(AstRedXor* nodep) {
 	if (nodep->lhsp()->isWide()) {
-	    visit(nodep->castNodeUniop(), vup);
+	    visit(nodep->castNodeUniop());
 	} else {
 	    putbs("VL_REDXOR_");
 	    puts(cvtToStr(nodep->lhsp()->dtypep()->widthPow2()));
@@ -542,13 +542,13 @@ public:
 	    puts(")");
 	}
     }
-    virtual void visit(AstMulS* nodep, AstNUser* vup) {
+    virtual void visit(AstMulS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop(), vup);
+	visit(nodep->castNodeBiop());
     }
-    virtual void visit(AstCCast* nodep, AstNUser*) {
+    virtual void visit(AstCCast* nodep) {
 	// Extending a value of the same word width is just a NOP.
 	if (nodep->size()>VL_WORDSIZE) {
 	    puts("(QData)(");
@@ -558,7 +558,7 @@ public:
 	nodep->lhsp()->iterateAndNext(*this);
 	puts(")");
     }
-    virtual void visit(AstNodeCond* nodep, AstNUser*) {
+    virtual void visit(AstNodeCond* nodep) {
 	// Widths match up already, so we'll just use C++'s operator w/o any temps.
 	if (nodep->expr1p()->isWide()) {
 	    emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->expr1p(), nodep->expr2p());
@@ -569,11 +569,11 @@ public:
 	    nodep->expr2p()->iterateAndNext(*this); puts(")");
 	}
     }
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	// Note ASSIGN checks for this on a LHS
 	emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
     }
-    virtual void visit(AstReplicate* nodep, AstNUser*) {
+    virtual void visit(AstReplicate* nodep) {
 	if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
 	    if (((int)nodep->rhsp()->castConst()->toUInt()
 		     * nodep->lhsp()->widthMin()) != nodep->widthMin())
@@ -591,7 +591,7 @@ public:
 	    emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
 	}
     }
-    virtual void visit(AstStreamL* nodep, AstNUser*) {
+    virtual void visit(AstStreamL* nodep) {
 	// Attempt to use a "fast" stream function for slice size = power of 2
 	if (!nodep->isWide()) {
 	    uint32_t isPow2 = nodep->rhsp()->castConst()->num().countOnes() == 1;
@@ -614,7 +614,7 @@ public:
 	emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)", nodep->lhsp(), nodep->rhsp(), NULL);
     }
     // Terminals
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	puts(nodep->hiername());
 	puts(nodep->varp()->name());
     }
@@ -677,7 +677,7 @@ public:
 	emitConstant(constp, NULL, assignString);
 	puts(";\n");
     }
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	if (nodep->isWide()) {
 	    if (!m_wideTempRefp) nodep->v3fatalSrc("Wide Constant w/ no temp");
 	    emitConstant(nodep, m_wideTempRefp, "");
@@ -688,26 +688,26 @@ public:
     }
 
     // Just iterate
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	nodep->iterateChildren(*this);
     }
     // NOPs
-    virtual void visit(AstTypedef*, AstNUser*) {}
-    virtual void visit(AstPragma*, AstNUser*) {}
-    virtual void visit(AstCell*, AstNUser*) {}		// Handled outside the Visit class
-    virtual void visit(AstVar*, AstNUser*) {}		// Handled outside the Visit class
-    virtual void visit(AstNodeText*, AstNUser*) {}	// Handled outside the Visit class
-    virtual void visit(AstTraceDecl*, AstNUser*) {}	// Handled outside the Visit class
-    virtual void visit(AstTraceInc*, AstNUser*) {}	// Handled outside the Visit class
-    virtual void visit(AstCFile*, AstNUser*) {}		// Handled outside the Visit class
+    virtual void visit(AstTypedef*) {}
+    virtual void visit(AstPragma*) {}
+    virtual void visit(AstCell*) {}		// Handled outside the Visit class
+    virtual void visit(AstVar*) {}		// Handled outside the Visit class
+    virtual void visit(AstNodeText*) {}	// Handled outside the Visit class
+    virtual void visit(AstTraceDecl*) {}	// Handled outside the Visit class
+    virtual void visit(AstTraceInc*) {}	// Handled outside the Visit class
+    virtual void visit(AstCFile*) {}		// Handled outside the Visit class
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");
 	nodep->iterateChildren(*this);
 	nodep->v3fatalSrc("Unknown node type reached emitter: "<<nodep->prettyTypeName());
@@ -821,7 +821,7 @@ class EmitCImp : EmitCStmts {
     //---------------------------------------
     // VISITORS
     using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	// TRACE_* and DPI handled elsewhere
 	if (nodep->funcType().isTrace()) return;
 	if (nodep->dpiImport()) return;
@@ -908,11 +908,11 @@ class EmitCImp : EmitCStmts {
 	}
     }
 
-    virtual void visit(AstChangeDet* nodep, AstNUser*) {
+    virtual void visit(AstChangeDet* nodep) {
 	m_blkChangeDetVec.push_back(nodep);
     }
 
-    virtual void visit(AstCReset* nodep, AstNUser*) {
+    virtual void visit(AstCReset* nodep) {
 	AstVar* varp = nodep->varrefp()->varp();
 	emitVarReset(varp);
     }
@@ -2357,14 +2357,14 @@ class EmitCTrace : EmitCStmts {
 
     // VISITORS
     using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	// Top module only
 	nodep->topModulep()->accept(*this);
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	if (nodep->slow() != m_slow) return;
 	if (nodep->funcType().isTrace()) {   // TRACE_*
 	    m_funcp = nodep;
@@ -2411,7 +2411,7 @@ class EmitCTrace : EmitCStmts {
 	}
 	m_funcp = NULL;
     }
-    virtual void visit(AstTraceDecl* nodep, AstNUser*) {
+    virtual void visit(AstTraceDecl* nodep) {
 	if (nodep->arrayRange().ranged()) {
 	    puts("{int i; for (i=0; i<"+cvtToStr(nodep->arrayRange().elements())+"; i++) {\n");
 	    emitTraceInitOne(nodep);
@@ -2421,7 +2421,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("\n");
 	}
     }
-    virtual void visit(AstTraceInc* nodep, AstNUser*) {
+    virtual void visit(AstTraceInc* nodep) {
 	if (nodep->declp()->arrayRange().ranged()) {
 	    // It traces faster if we unroll the loop
 	    for (int i=0; i<nodep->declp()->arrayRange().elements(); i++) {
@@ -2431,9 +2431,9 @@ class EmitCTrace : EmitCStmts {
 	    emitTraceChangeOne(nodep, -1);
 	}
     }
-    virtual void visit(AstCoverDecl* nodep, AstNUser*) {
+    virtual void visit(AstCoverDecl* nodep) {
     }
-    virtual void visit(AstCoverInc* nodep, AstNUser*) {
+    virtual void visit(AstCoverInc* nodep) {
     }
 
 public:

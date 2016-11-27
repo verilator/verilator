@@ -76,50 +76,50 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
     // Add __PVT__ to names of local signals
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	// Don't iterate... Don't need temps for RANGES under the Var.
 	rename(nodep, (!m_modp->isTop()
 		       && !nodep->isSigPublic()
 		       && !nodep->isFuncLocal()	// Isn't exposed, and would mess up dpi import wrappers
 		       && !nodep->isTemp()));	// Don't bother to rename internal signals
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
 	    nodep->iterateChildren(*this);
 	    rename(nodep, false);
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()) {
 	    nodep->varp()->iterate(*this);
 	    nodep->name(nodep->varp()->name());
 	}
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, !nodep->modp()->modPublic());
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstMemberDType* nodep, AstNUser*) {
+    virtual void visit(AstMemberDType* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, false);
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstMemberSel* nodep, AstNUser*) {
+    virtual void visit(AstMemberSel* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, false);
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	if (!nodep->user1SetOnce()) {
 	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterate(*this);
 	    if (nodep->aboveCellp()) nodep->aboveCellp()->iterate(*this);
@@ -132,7 +132,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

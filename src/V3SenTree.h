@@ -62,31 +62,31 @@ private:
 	return level;
     }
 
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Only do the top
 	if (nodep->isTop()) {
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	m_topscopep = nodep;
 	nodep->iterateChildren(*this);
 	// Don't clear topscopep, the namer persists beyond this visit
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	// But no SenTrees under TopScope's scope
     }
     // Memorize existing block names
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Don't grab SenTrees under Actives, only those that are global (under Scope directly)
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstSenTree* nodep, AstNUser*) {
+    virtual void visit(AstSenTree* nodep) {
 	m_treesp.push_back(nodep);
     }
     // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) { }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) { }
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
     // METHODS

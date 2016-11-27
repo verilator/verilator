@@ -85,14 +85,14 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_funcp = NULL;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	m_funcp = nodep;
 	m_depth = 0;
 	m_maxdepth = 0;
@@ -106,13 +106,13 @@ private:
 	nodep->iterateChildren(*this);
 	m_stmtp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	visitStmt(nodep);
     }
     // Operators
-    virtual void visit(AstNodeTermop* nodep, AstNUser*) {
+    virtual void visit(AstNodeTermop* nodep) {
     }
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {
 	// We have some operator defines that use 2 parens, so += 2.
 	m_depth += 2;
 	if (m_depth>m_maxdepth) m_maxdepth=m_depth;
@@ -139,19 +139,19 @@ private:
 	    m_funcp->isStatic(false);
 	}
     }
-    virtual void visit(AstUCFunc* nodep, AstNUser*) {
+    virtual void visit(AstUCFunc* nodep) {
 	needNonStaticFunc(nodep);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstUCStmt* nodep, AstNUser*) {
+    virtual void visit(AstUCStmt* nodep) {
 	needNonStaticFunc(nodep);
 	visitStmt(nodep);
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep, AstNUser*) {}	// Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

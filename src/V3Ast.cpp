@@ -732,31 +732,31 @@ void AstNode::operator delete(void* objp, size_t size) {
 //======================================================================
 // Iterators
 
-void AstNode::iterateChildren(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateChildren(AstNVisitor& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
     ASTNODE_PREFETCH(m_op3p);
     ASTNODE_PREFETCH(m_op4p);
-    if (m_op1p) m_op1p->iterateAndNext(v, vup);
-    if (m_op2p) m_op2p->iterateAndNext(v, vup);
-    if (m_op3p) m_op3p->iterateAndNext(v, vup);
-    if (m_op4p) m_op4p->iterateAndNext(v, vup);
+    if (m_op1p) m_op1p->iterateAndNext(v);
+    if (m_op2p) m_op2p->iterateAndNext(v);
+    if (m_op3p) m_op3p->iterateAndNext(v);
+    if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
-void AstNode::iterateChildrenConst(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateChildrenConst(AstNVisitor& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
     ASTNODE_PREFETCH(m_op3p);
     ASTNODE_PREFETCH(m_op4p);
-    if (m_op1p) m_op1p->iterateAndNextConst(v, vup);
-    if (m_op2p) m_op2p->iterateAndNextConst(v, vup);
-    if (m_op3p) m_op3p->iterateAndNextConst(v, vup);
-    if (m_op4p) m_op4p->iterateAndNextConst(v, vup);
+    if (m_op1p) m_op1p->iterateAndNextConst(v);
+    if (m_op2p) m_op2p->iterateAndNextConst(v);
+    if (m_op3p) m_op3p->iterateAndNextConst(v);
+    if (m_op4p) m_op4p->iterateAndNextConst(v);
 }
 
-void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateAndNext(AstNVisitor& v) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
@@ -773,7 +773,7 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
 	//if (VL_UNLIKELY(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
 	// cppcheck-suppress nullPointer
 	niterp->m_iterpp = &niterp;
-	niterp->accept(v, vup);
+	niterp->accept(v);
 	// accept may do a replaceNode and change niterp on us...
 	//if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep<<" now into "<<(void*)niterp<<endl);  // niterp maybe NULL, so need cast
 	if (!niterp) return;  // Perhaps node deleted inside accept
@@ -786,37 +786,37 @@ void AstNode::iterateAndNext(AstNVisitor& v, AstNUser* vup) {
     }
 }
 
-void AstNode::iterateListBackwards(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateListBackwards(AstNVisitor& v) {
     UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     AstNode* nodep=this;
     while (nodep->m_nextp) nodep=nodep->m_nextp;
     while (nodep) {
 	// Edits not supported: nodep->m_iterpp = &nodep;
-	nodep->accept(v, vup);
+	nodep->accept(v);
 	if (nodep->backp()->m_nextp == nodep) nodep=nodep->backp();
 	else nodep = NULL;  // else: backp points up the tree.
     }
 }
 
-void AstNode::iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup) {
-    if (m_op1p) m_op1p->iterateListBackwards(v,vup);
-    if (m_op2p) m_op2p->iterateListBackwards(v,vup);
-    if (m_op3p) m_op3p->iterateListBackwards(v,vup);
-    if (m_op4p) m_op4p->iterateListBackwards(v,vup);
+void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
+    if (m_op1p) m_op1p->iterateListBackwards(v);
+    if (m_op2p) m_op2p->iterateListBackwards(v);
+    if (m_op3p) m_op3p->iterateListBackwards(v);
+    if (m_op4p) m_op4p->iterateListBackwards(v);
 }
 
-void AstNode::iterateAndNextConst(AstNVisitor& v, AstNUser* vup) {
+void AstNode::iterateAndNextConst(AstNVisitor& v) {
     // Keep following the current list even if edits change it
     if (!this) return;  // A few cases could be cleaned up, but want symmetry with iterateAndNext
     for (AstNode* nodep=this; nodep; ) {   // effectively: if (!this) return;  // Callers rely on this
 	AstNode* nnextp = nodep->m_nextp;
 	ASTNODE_PREFETCH(nnextp);
-	nodep->accept(v, vup);
+	nodep->accept(v);
 	nodep = nnextp;
     }
 }
 
-AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
+AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
     // Some visitors perform tree edits (such as V3Const), and may even
     // replace/delete the exact nodep that the visitor is called with.  If
     // this happens, the parent will lose the handle to the node that was
@@ -826,12 +826,12 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
     AstNode* nodep = this;  // Note "this" may point to bogus point later in this function
     if (nodep->castNetlist()) {
 	// Calling on top level; we know the netlist won't get replaced
-	nodep->accept(v, vup);
+	nodep->accept(v);
     } else if (!nodep->backp()) {
 	// Calling on standalone tree; insert a shim node so we can keep track, then delete it on completion
 	AstBegin* tempp = new AstBegin(nodep->fileline(),"[EditWrapper]",nodep);
 	{
-	    tempp->stmtsp()->accept(v, vup); VL_DANGLING(nodep); // nodep to null as may be replaced
+	    tempp->stmtsp()->accept(v); VL_DANGLING(nodep); // nodep to null as may be replaced
 	}
 	nodep = tempp->stmtsp()->unlinkFrBackWithNext();
 	tempp->deleteTree(); VL_DANGLING(tempp);
@@ -845,7 +845,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup) {
 	else if (this->m_backp->m_nextp == this) nextnodepp = &(this->m_backp->m_nextp);
 	if (!nextnodepp) this->v3fatalSrc("Node's back doesn't point to forward to node itself");
 	{
-	    nodep->accept(v, vup); VL_DANGLING(nodep); // nodep to null as may be replaced
+	    nodep->accept(v); VL_DANGLING(nodep); // nodep to null as may be replaced
 	}
 	nodep = *nextnodepp;  // Grab new node from point where old was connected
     }

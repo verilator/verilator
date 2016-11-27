@@ -286,7 +286,7 @@ class TristatePinVisitor : public TristateBaseVisitor {
     TristateGraph& m_tgraph;
     bool m_lvalue;	// Flip to be an LVALUE
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (m_lvalue && !nodep->lvalue()) {
 	    UINFO(9,"  Flip-to-LValue "<<nodep<<endl);
 	    nodep->lvalue(true);
@@ -298,12 +298,12 @@ class TristatePinVisitor : public TristateBaseVisitor {
 	    m_tgraph.setTristate(nodep->varp());
 	}
     }
-    virtual void visit(AstArraySel* nodep, AstNUser*) {
+    virtual void visit(AstArraySel* nodep) {
 	// Doesn't work because we'd set lvalue on the array index's var
 	if (m_lvalue) nodep->v3fatalSrc("ArraySel conversion to output, under tristate node");
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -635,7 +635,7 @@ class TristateVisitor : public TristateBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	UINFO(9,dbgState()<<nodep<<endl);
 	if (m_graphing) {
 	    if (!m_alhs && nodep->num().hasZ()) {
@@ -668,7 +668,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstCond* nodep, AstNUser*) {
+    virtual void visit(AstCond* nodep) {
 	if (m_graphing) {
 	    nodep->iterateChildren(*this);
 	    if (m_alhs) {
@@ -707,7 +707,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	if (m_graphing) {
 	    nodep->iterateChildren(*this);
 	    if (m_alhs) {
@@ -744,7 +744,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstConcat* nodep, AstNUser*) {
+    virtual void visit(AstConcat* nodep) {
 	if (m_graphing) {
 	    nodep->iterateChildren(*this);
 	    if (m_alhs) {
@@ -793,7 +793,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstBufIf1* nodep, AstNUser*) {
+    virtual void visit(AstBufIf1* nodep) {
 	// For BufIf1, the enable is the LHS expression
 	nodep->iterateChildren(*this);
 	UINFO(9,dbgState()<<nodep<<endl);
@@ -873,10 +873,10 @@ class TristateVisitor : public TristateBaseVisitor {
 	    expr2p->user1p(NULL);
 	}
     }
-    virtual void visit(AstAnd* nodep, AstNUser*) {
+    virtual void visit(AstAnd* nodep) {
 	visitAndOr(nodep,true);
     }
-    virtual void visit(AstOr* nodep, AstNUser*) {
+    virtual void visit(AstOr* nodep) {
 	visitAndOr(nodep,false);
     }
 
@@ -913,10 +913,10 @@ class TristateVisitor : public TristateBaseVisitor {
 	    m_alhs = false;
 	}
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	visitAssign(nodep);
     }
-    virtual void visit(AstAssign* nodep, AstNUser*) {
+    virtual void visit(AstAssign* nodep) {
 	visitAssign(nodep);
     }
 
@@ -964,20 +964,20 @@ class TristateVisitor : public TristateBaseVisitor {
 	nodep->lhsp()->iterateAndNext(*this);
 	if (nodep->lhsp()->user1p()) { nodep->v3error("Unsupported LHS tristate construct: "<<nodep->prettyTypeName()); return; }
     }
-    virtual void visit(AstEqCase* nodep, AstNUser*) {
+    virtual void visit(AstEqCase* nodep) {
 	visitCaseEq(nodep,false);
     }
-    virtual void visit(AstNeqCase* nodep, AstNUser*) {
+    virtual void visit(AstNeqCase* nodep) {
 	visitCaseEq(nodep,true);
     }
-    virtual void visit(AstEqWild* nodep, AstNUser*) {
+    virtual void visit(AstEqWild* nodep) {
 	visitEqNeqWild(nodep);
     }
-    virtual void visit(AstNeqWild* nodep, AstNUser*) {
+    virtual void visit(AstNeqWild* nodep) {
 	visitEqNeqWild(nodep);
     }
 
-    virtual void visit(AstPull* nodep, AstNUser*) {
+    virtual void visit(AstPull* nodep) {
 	UINFO(9,dbgState()<<nodep<<endl);
 	if (m_graphing) {
 	    if (AstVarRef* lhsp = nodep->lhsp()->castVarRef()) {
@@ -1046,7 +1046,7 @@ class TristateVisitor : public TristateBaseVisitor {
     //     const input	in(from-resolver-with-const-value), __en(from-resolver-const), __out(to-resolver-only)
     //     const inout	Spec says illegal
     //     const output	Unsupported; Illegal?
-    virtual void visit(AstPin* nodep, AstNUser*) {
+    virtual void visit(AstPin* nodep) {
 	if (m_graphing) {
 	    if (nodep->user2() & U2_GRAPHING) return;  // This pin is already expanded
 	    nodep->user2(U2_GRAPHING);
@@ -1185,7 +1185,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	UINFO(9,dbgState()<<nodep<<endl);
 	if (m_graphing) {
 	    if (nodep->lvalue()) {
@@ -1219,7 +1219,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	nodep->iterateChildren(*this);
 	UINFO(9,dbgState()<<nodep<<endl);
 	if (m_graphing) {
@@ -1251,7 +1251,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	}
     }
 
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	UINFO(8, nodep<<endl);
 	if (m_graphing) nodep->v3fatalSrc("Modules under modules not supported");  // Lots of per-module state breaks
 	// Clear state
@@ -1275,28 +1275,28 @@ class TristateVisitor : public TristateBaseVisitor {
 	m_modp = NULL;
     }
 
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	// don't deal with functions
     }
 
-    virtual void visit(AstCaseItem* nodep, AstNUser*) {
+    virtual void visit(AstCaseItem* nodep) {
 	// don't deal with casez compare '???? values
 	nodep->bodysp()->iterateAndNext(*this);
     }
 
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	m_cellp = nodep;
 	m_alhs = false;
 	nodep->iterateChildren(*this);
 	m_cellp = NULL;
     }
 
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	nodep->iterateChildrenBackwards(*this);
     }
 
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	checkUnhandled(nodep);
     }

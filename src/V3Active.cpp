@@ -73,7 +73,7 @@ private:
 	m_scopep->addActivep(nodep);
     }
     // VISITORS
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
 	m_iActivep = NULL;
 	m_cActivep = NULL;
@@ -81,15 +81,15 @@ private:
 	nodep->iterateChildren(*this);
 	// Don't clear scopep, the namer persists beyond this visit
     }
-    virtual void visit(AstSenTree* nodep, AstNUser*) {
+    virtual void visit(AstSenTree* nodep) {
 	// Simplify sensitivity list
 	V3Const::constifyExpensiveEdit(nodep); VL_DANGLING(nodep);
     }
     // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) { }
+    virtual void visit(AstNodeStmt* nodep) { }
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }
@@ -169,7 +169,7 @@ private:
     AstNode*	m_alwaysp;	// Always we're under
     AstNode*	m_assignp;	// In assign
     // VISITORS
-    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+    virtual void visit(AstAssignDly* nodep) {
 	if (m_check != CT_SEQ) {
 	    // Convert to a non-delayed assignment
 	    UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
@@ -187,7 +187,7 @@ private:
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstAssign* nodep, AstNUser*) {
+    virtual void visit(AstAssign* nodep) {
 	if (m_check == CT_SEQ) {
 	    AstNode* las = m_assignp;
 	    m_assignp = nodep;
@@ -195,7 +195,7 @@ private:
 	    m_assignp = las;
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	AstVar* varp=nodep->varp();
 	if (m_check == CT_SEQ
 	    && m_assignp
@@ -214,7 +214,7 @@ private:
 	}
     }
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -244,7 +244,7 @@ private:
     bool	m_itemSequent;	// Found a SenItem sequential
 
     // VISITORS
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	// Create required actives and add to scope
 	UINFO(4," SCOPE   "<<nodep<<endl);
 	// Clear last scope's names, and collect this scope's existing names
@@ -252,10 +252,10 @@ private:
 	m_scopeFinalp = NULL;
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Actives are being formed, so we can ignore any already made
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	// Relink to IACTIVE, unless already under it
 	UINFO(4,"    INITIAL "<<nodep<<endl);
 	ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_INITIAL);
@@ -263,28 +263,28 @@ private:
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	// Relink to CACTIVE, unless already under it
 	UINFO(4,"    ASSIGNW "<<nodep<<endl);
 	AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	// Relink to CACTIVE, unless already under it
 	UINFO(4,"    ASSIGNW "<<nodep<<endl);
 	AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	// Relink to CACTIVE, unless already under it
 	UINFO(4,"    COVERTOGGLE "<<nodep<<endl);
 	AstActive* wantactivep = m_namer.getCActive(nodep->fileline());
 	nodep->unlinkFrBack();
 	wantactivep->addStmtsp(nodep);
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	// Relink to CFUNC for the final
 	UINFO(4,"    FINAL "<<nodep<<endl);
 	if (!nodep->bodysp()) { // Empty, Kill it.
@@ -370,7 +370,7 @@ private:
 	    ActiveDlyVisitor dlyvisitor (nodep, ActiveDlyVisitor::CT_SEQ);
 	}
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	// Move always to appropriate ACTIVE based on its sense list
 	UINFO(4,"    ALW   "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
@@ -382,13 +382,13 @@ private:
 	}
 	visitAlways(nodep, nodep->sensesp(), nodep->keyword());
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	// Move always to appropriate ACTIVE based on its sense list
 	UINFO(4,"    ALWPub   "<<nodep<<endl);
 	//if (debug()>=9) nodep->dumpTree(cout,"  Alw: ");
 	visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
-    virtual void visit(AstSenGate* nodep, AstNUser*) {
+    virtual void visit(AstSenGate* nodep) {
 	AstSenItem* subitemp = nodep->sensesp();
 	if (subitemp->edgeType() != AstEdgeType::ET_ANYEDGE
 	    && subitemp->edgeType() != AstEdgeType::ET_POSEDGE
@@ -397,7 +397,7 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep) {
 	if (nodep->edgeType() == AstEdgeType::ET_ANYEDGE) {
 	    m_itemCombo = true;
 	    // Delete the sensitivity
@@ -413,10 +413,10 @@ private:
     }
 
     // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
-    virtual void visit(AstVarScope* nodep, AstNUser*) {}
+    virtual void visit(AstNodeMath* nodep) {}
+    virtual void visit(AstVarScope* nodep) {}
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

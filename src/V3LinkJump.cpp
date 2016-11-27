@@ -113,25 +113,25 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_repeatNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	m_ftaskp = nodep;
 	nodep->iterateChildren(*this);
 	m_ftaskp = NULL;
     }
-    virtual void visit(AstBegin* nodep, AstNUser*) {
+    virtual void visit(AstBegin* nodep) {
 	UINFO(8,"  "<<nodep<<endl);
 	m_beginStack.push_back(nodep);
 	nodep->iterateChildren(*this);
 	m_beginStack.pop_back();
     }
-    virtual void visit(AstRepeat* nodep, AstNUser*) {
+    virtual void visit(AstRepeat* nodep) {
 	// So later optimizations don't need to deal with them,
 	//    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
 	// Note var can be signed or unsigned based on original number.
@@ -161,7 +161,7 @@ private:
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	// Don't need to track AstRepeat/AstFor as they have already been converted
 	AstWhile* lastLoopp = m_loopp;
 	bool lastInc = m_loopInc;
@@ -175,7 +175,7 @@ private:
 	m_loopInc = lastInc;
 	m_loopp = lastLoopp;
     }
-    virtual void visit(AstReturn* nodep, AstNUser*) {
+    virtual void visit(AstReturn* nodep) {
 	nodep->iterateChildren(*this);
 	AstFunc* funcp = m_ftaskp->castFunc();
 	if (!m_ftaskp) { nodep->v3error("Return isn't underneath a task or function"); }
@@ -194,7 +194,7 @@ private:
 	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstBreak* nodep, AstNUser*) {
+    virtual void visit(AstBreak* nodep) {
 	nodep->iterateChildren(*this);
 	if (!m_loopp) { nodep->v3error("break isn't underneath a loop"); }
 	else {
@@ -204,7 +204,7 @@ private:
 	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstContinue* nodep, AstNUser*) {
+    virtual void visit(AstContinue* nodep) {
 	nodep->iterateChildren(*this);
 	if (!m_loopp) { nodep->v3error("continue isn't underneath a loop"); }
 	else {
@@ -215,7 +215,7 @@ private:
 	}
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstDisable* nodep, AstNUser*) {
+    virtual void visit(AstDisable* nodep) {
 	UINFO(8,"   DISABLE "<<nodep<<endl);
 	nodep->iterateChildren(*this);
 	AstBegin* beginp = NULL;
@@ -236,12 +236,12 @@ private:
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	//if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout,"  labelo: "); }
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }
 
-    virtual void visit(AstConst* nodep, AstNUser*) {}
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {}
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

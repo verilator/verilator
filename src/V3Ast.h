@@ -862,8 +862,8 @@ public:
     }
 #include "V3Ast__gen_visitor.h"	// From ./astgen
     // Things like:
-    //  virtual void visit(AstBreak* nodep, AstNUser* vup) { visit((AstNodeStmt*)(nodep),vup); }
-    //  virtual void visit(AstNodeStmt* nodep, AstNUser* vup) { visit((AstNode*)(nodep),vup); }
+    //  virtual void visit(AstBreak* nodep) { visit((AstNodeStmt*)(nodep)); }
+    //  virtual void visit(AstNodeStmt* nodep) { visit((AstNode*)(nodep)); }
 };
 
 //######################################################################
@@ -993,7 +993,7 @@ class AstNode {
     void	op4p(AstNode* nodep) { m_op4p = nodep; if (nodep) nodep->m_backp = this; }
 
     void	init();	// initialize value of AstNode
-    void	iterateListBackwards(AstNVisitor& v, AstNUser* vup=NULL);
+    void	iterateListBackwards(AstNVisitor& v);
 private:
     AstNode*	cloneTreeIter();
     AstNode*	cloneTreeIterList();
@@ -1265,14 +1265,14 @@ public:
     virtual const char* broken() const { return NULL; }
 
     // INVOKERS
-    virtual void accept(AstNVisitor& v, AstNUser* vup=NULL) = 0;
-    void	iterate(AstNVisitor& v, AstNUser* vup=NULL) { this->accept(v,vup); } 	  // Does this; excludes following this->next
-    void	iterateAndNext(AstNVisitor& v, AstNUser* vup=NULL);
-    void	iterateAndNextConst(AstNVisitor& v, AstNUser* vup=NULL);
-    void	iterateChildren(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
-    void	iterateChildrenBackwards(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
-    void	iterateChildrenConst(AstNVisitor& v, AstNUser* vup=NULL);  // Excludes following this->next
-    AstNode*	iterateSubtreeReturnEdits(AstNVisitor& v, AstNUser* vup=NULL);  // Return edited nodep; see comments in V3Ast.cpp
+    virtual void accept(AstNVisitor& v) = 0;
+    void	iterate(AstNVisitor& v) { this->accept(v); } 	  // Does this; excludes following this->next
+    void	iterateAndNext(AstNVisitor& v);
+    void	iterateAndNextConst(AstNVisitor& v);
+    void	iterateChildren(AstNVisitor& v);  // Excludes following this->next
+    void	iterateChildrenBackwards(AstNVisitor& v);  // Excludes following this->next
+    void	iterateChildrenConst(AstNVisitor& v);  // Excludes following this->next
+    AstNode*	iterateSubtreeReturnEdits(AstNVisitor& v);  // Return edited nodep; see comments in V3Ast.cpp
 
     // CONVERSION
 #include "V3Ast__gen_interface.h"	// From ./astgen
@@ -1318,7 +1318,7 @@ public:
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
-    void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
+    void iterateChildren(AstNVisitor& v) { }
 };
 
 class AstNodeUniop : public AstNodeMath {
@@ -1602,7 +1602,7 @@ public:
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
-    void iterateChildren(AstNVisitor& v, AstNUser* vup=NULL) { }
+    void iterateChildren(AstNVisitor& v) { }
 };
 
 class AstNodeText : public AstNode {

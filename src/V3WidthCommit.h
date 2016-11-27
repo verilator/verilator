@@ -37,13 +37,13 @@
 class WidthRemoveVisitor : public AstNVisitor {
 private:
     // VISITORS
-    virtual void visit(AstSigned* nodep, AstNUser*) {
+    virtual void visit(AstSigned* nodep) {
 	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); VL_DANGLING(nodep);
     }
-    virtual void visit(AstUnsigned* nodep, AstNUser*) {
+    virtual void visit(AstUnsigned* nodep) {
 	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); VL_DANGLING(nodep);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
@@ -99,7 +99,7 @@ private:
 	// dtypep() figures into sameTree() results in better optimizations
 	if (!nodep) return NULL;
 	// Recurse to handle the data type, as may change the size etc of this type
-	if (!nodep->user1()) nodep->accept(*this,NULL);
+	if (!nodep->user1()) nodep->accept(*this);
 	// Look for duplicate
 	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
 	    AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
@@ -112,7 +112,7 @@ private:
 	return nodep;
     }
     // VISITORS
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype");
 	nodep->dtypep()->accept(*this);  // Do datatype first
 	if (AstConst* newp = newIfConstCommitSize(nodep)) {
@@ -124,15 +124,15 @@ private:
 	}
 	editDType(nodep);
     }
-    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeDType* nodep) {
 	visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeClassDType* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	visitIterateNodeDType(nodep);
 	nodep->clearCache();
     }
-    virtual void visit(AstParamTypeDType* nodep, AstNUser*) {
+    virtual void visit(AstParamTypeDType* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	visitIterateNodeDType(nodep);
 	// Move to type table as all dtype pointers must resolve there
@@ -150,11 +150,11 @@ private:
 	nodep->iterateChildren(*this);
 	nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
     }
-    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
+    virtual void visit(AstNodePreSel* nodep) {
 	// This check could go anywhere after V3Param
 	nodep->v3fatalSrc("Presels should have been removed before this point");
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	editDType(nodep);
     }

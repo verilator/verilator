@@ -159,7 +159,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	// Each FTask is unique per-scope, so AstNodeFTaskRefs do not need
 	// pointers to what scope the FTask is to be invoked under.
 	// However, to create variables, we need to track the scopes involved.
@@ -180,12 +180,12 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	m_assignwp = nodep;
 	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
 	m_assignwp = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	if (m_assignwp) {
 	    // Wire assigns must become always statements to deal with insertion
 	    // of multiple statements.  Perhaps someday make all wassigns into always's?
@@ -196,7 +196,7 @@ private:
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked task");
 	new TaskEdge (&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	UINFO(9,"  TASK "<<nodep<<endl);
 	TaskBaseVertex* lastVxp = m_curVxp;
 	m_curVxp = getFTaskVertex(nodep);
@@ -204,7 +204,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_curVxp = lastVxp;
     }
-    virtual void visit(AstPragma* nodep, AstNUser*) {
+    virtual void visit(AstPragma* nodep) {
 	if (nodep->pragType() == AstPragmaType::NO_INLINE_TASK) {
 	    // Just mark for the next steps, and we're done with it.
 	    m_curVxp->noInline(true);
@@ -214,11 +214,11 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->user4p(m_curVxp);  // Remember what task it's under
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	nodep->iterateChildren(*this);
 	if (nodep->varp()->user4p() != m_curVxp) {
 	    if (m_curVxp->pure()
@@ -229,7 +229,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -258,7 +258,7 @@ private:
     //   AstVar::user2p		// AstVarScope* to replace varref with
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
 	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
@@ -272,7 +272,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -1021,24 +1021,24 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_insStmtp = NULL;
 	m_modNCalls = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	m_topScopep = nodep;
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
 	m_insStmtp = NULL;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked?");
 	iterateIntoFTask(nodep->taskp());	// First, do hierarchical funcs
 	UINFO(4," FTask REF   "<<nodep<<endl);
@@ -1077,7 +1077,7 @@ private:
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	UINFO(4,"  FTask REF Done.\n");
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	UINFO(4," Inline   "<<nodep<<endl);
 	InsertMode prevInsMode = m_insMode;
 	AstNode* prevInsStmtp = m_insStmtp;
@@ -1130,7 +1130,7 @@ private:
 	m_insMode = prevInsMode;
 	m_insStmtp = prevInsStmtp;
     }
-    virtual void visit(AstWhile* nodep, AstNUser*) {
+    virtual void visit(AstWhile* nodep) {
 	// Special, as statements need to be put in different places
 	// Preconditions insert first just before themselves (the normal rule for other statement types)
 	m_insStmtp = NULL;	// First thing should be new statement
@@ -1146,10 +1146,10 @@ private:
 	// Done the loop
 	m_insStmtp = NULL;	// Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep, AstNUser*) {
+    virtual void visit(AstNodeFor* nodep) {
 	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp\n");
     }
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep;
 	nodep->iterateChildren(*this);
@@ -1157,7 +1157,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

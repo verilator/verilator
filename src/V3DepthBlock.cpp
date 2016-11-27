@@ -76,14 +76,14 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_deepNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	// We recurse into this.
 	int lastDepth = m_depth;
 	AstCFunc* lastFuncp = m_funcp;
@@ -111,15 +111,15 @@ private:
 	}
 	m_depth--;
     }
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	visitStmt(nodep);
     }
 
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
+    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep, AstNUser*) {}	// Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

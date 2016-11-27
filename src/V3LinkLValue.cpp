@@ -55,7 +55,7 @@ private:
 
     // VISITs
     // Result handing
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	// VarRef: LValue its reference
 	if (m_setRefLvalue) {
 	    nodep->lvalue(true);
@@ -71,7 +71,7 @@ private:
     }
 
     // Nodes that start propagating down lvalues
-    virtual void visit(AstPin* nodep, AstNUser*) {
+    virtual void visit(AstPin* nodep) {
 	if (nodep->modVarp() && nodep->modVarp()->isOutput()) {
 	    // When the varref's were created, we didn't know the I/O state
 	    // Now that we do, and it's from a output, we know it's a lvalue
@@ -82,7 +82,7 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -92,7 +92,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFOpen* nodep, AstNUser*) {
+    virtual void visit(AstFOpen* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -103,7 +103,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFClose* nodep, AstNUser*) {
+    virtual void visit(AstFClose* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -111,7 +111,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFFlush* nodep, AstNUser*) {
+    virtual void visit(AstFFlush* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -119,7 +119,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFGetC* nodep, AstNUser*) {
+    virtual void visit(AstFGetC* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -127,7 +127,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFGetS* nodep, AstNUser*) {
+    virtual void visit(AstFGetS* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -136,7 +136,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstFScanF* nodep, AstNUser*) {
+    virtual void visit(AstFScanF* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -145,7 +145,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSScanF* nodep, AstNUser*) {
+    virtual void visit(AstSScanF* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -153,13 +153,13 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSysIgnore* nodep, AstNUser*) {
+    virtual void visit(AstSysIgnore* nodep) {
 	// Can't know if lvalue or not; presume so as stricter
 	bool last_setRefLvalue = m_setRefLvalue;
 	nodep->iterateChildren(*this);
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstReadMem* nodep, AstNUser*) {
+    virtual void visit(AstReadMem* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -171,7 +171,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstValuePlusArgs* nodep, AstNUser*) {
+    virtual void visit(AstValuePlusArgs* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -179,7 +179,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstSFormat* nodep, AstNUser*) {
+    virtual void visit(AstSFormat* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    m_setRefLvalue = true;
@@ -191,7 +191,7 @@ private:
     }
 
     // Nodes that change LValue state
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
 	    nodep->lhsp()->iterateAndNext(*this);
@@ -202,7 +202,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodeSel* nodep, AstNUser*) {
+    virtual void visit(AstNodeSel* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{   // Only set lvalues on the from
 	    nodep->lhsp()->iterateAndNext(*this);
@@ -211,7 +211,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstCellArrayRef* nodep, AstNUser*) {
+    virtual void visit(AstCellArrayRef* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{   // selp is not an lvalue
 	    m_setRefLvalue = false;
@@ -219,7 +219,7 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodePreSel* nodep, AstNUser*) {
+    virtual void visit(AstNodePreSel* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{   // Only set lvalues on the from
 	    nodep->lhsp()->iterateAndNext(*this);
@@ -229,12 +229,12 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	m_ftaskp = nodep;
 	nodep->iterateChildren(*this);
 	m_ftaskp = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	AstNode* pinp = nodep->pinsp();
 	AstNodeFTask* taskp = nodep->taskp();
 	// We'll deal with mismatching pins later
@@ -256,7 +256,7 @@ private:
 	}
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	nodep->iterateChildren(*this);
     }

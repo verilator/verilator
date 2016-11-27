@@ -60,13 +60,13 @@ private:
     AstVarScope* m_splitVscp;	// Variable we want to split
 
     // METHODS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->lvalue() && !m_splitVscp
 	    && nodep->varp()->attrIsolateAssign()) {
 	    m_splitVscp = nodep->varScopep();
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -92,7 +92,7 @@ private:
     bool	 m_matches;	// Statement below has matching lvalue reference
 
     // METHODS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->lvalue()) {
 	    if (nodep->varScopep()==m_splitVscp) {
 		UINFO(6,"       CL VAR "<<nodep<<endl);
@@ -100,7 +100,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	UINFO(6,"     CL STMT "<<nodep<<endl);
 	bool oldKeep = m_keepStmt;
 	{
@@ -122,7 +122,7 @@ private:
 	m_keepStmt = oldKeep || m_keepStmt;
 	UINFO(9,"     upKeep="<<m_keepStmt<<" STMT "<<nodep<<endl);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -167,7 +167,7 @@ private:
 	}
     }
 
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	// Are there any lvalue references below this?
 	// There could be more than one.  So, we process the first one found first.
 	AstVarScope* lastSplitVscp = NULL;
@@ -192,9 +192,9 @@ private:
     }
 
     // Speedup; no always under math
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
+    virtual void visit(AstNodeMath* nodep) {}
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

@@ -87,7 +87,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 
 	AstScope* scopep = nodep->scopep();
@@ -97,7 +97,7 @@ private:
 	nodep->iterateChildren(*this);
     }
     //----
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
@@ -113,18 +113,18 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	m_activep = nodep;
 	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
 	m_activep = NULL;
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	nodep->iterateChildren(*this);
     }
 
     //-----
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -154,7 +154,7 @@ private:
     AstNodeModule*	m_topModp;	// Top module
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	nodep->iterateChildren(*this);
 	{
@@ -163,21 +163,21 @@ private:
 	    GenClkRenameVisitor visitor (nodep, m_topModp);
 	}
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) {
 	    m_topModp = nodep;
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
 	nodep->funcp()->accept(*this);
     }
     //----
 
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
@@ -192,13 +192,13 @@ private:
 	    vscp->circular(true);
 	}
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	//UINFO(8,"ASS "<<nodep<<endl);
 	m_assignp = nodep;
 	nodep->iterateChildren(*this);
 	m_assignp = NULL;
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	UINFO(8,"ACTIVE "<<nodep<<endl);
 	m_activep = nodep;
 	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
@@ -207,8 +207,8 @@ private:
     }
 
     //-----
-    virtual void visit(AstVar*, AstNUser*) {}	// Don't want varrefs under it
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

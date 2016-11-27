@@ -84,13 +84,13 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_repeatNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	UINFO(8,"  "<<nodep<<endl);
 	// Rename it
 	if (m_unnamedScope != "") {
@@ -113,7 +113,7 @@ private:
 	m_namedScope = oldScope;
 	m_unnamedScope = oldUnnamed;
     }
-    virtual void visit(AstBegin* nodep, AstNUser*) {
+    virtual void visit(AstBegin* nodep) {
 	// Begin blocks were only useful in variable creation, change names and delete
 	UINFO(8,"  "<<nodep<<endl);
 	string oldScope = m_namedScope;
@@ -162,7 +162,7 @@ private:
 	}
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	if (m_unnamedScope != "") {
 	    // Rename it
 	    nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
@@ -173,7 +173,7 @@ private:
 	    else m_modp->addStmtp(nodep);
 	}
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	UINFO(8,"   CELL "<<nodep<<endl);
 	if (m_namedScope != "") {
 	    m_statep->userMarkChanged(nodep);
@@ -186,14 +186,14 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstVarXRef* nodep, AstNUser*) {
+    virtual void visit(AstVarXRef* nodep) {
 	UINFO(9, "   VARXREF "<<nodep<<endl);
 	if (m_namedScope != "" && nodep->inlinedDots() == "") {
 	    nodep->inlinedDots(m_namedScope);
 	    UINFO(9, "    rescope to "<<nodep<<endl);
 	}
     }
-    virtual void visit(AstScopeName* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	// Similar code in V3Inline
 	if (nodep->user1SetOnce()) return;  // Don't double-add text's
@@ -206,13 +206,13 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCoverDecl* nodep, AstNUser*) {
+    virtual void visit(AstCoverDecl* nodep) {
 	// Don't need to fix path in coverage statements, they're not under
 	// any BEGINs, but V3Coverage adds them all under the module itself.
 	nodep->iterateChildren(*this);
     }
     // VISITORS - LINT CHECK
-    virtual void visit(AstIf* nodep, AstNUser*) { // Note not AstNodeIf; other types don't get covered
+    virtual void visit(AstIf* nodep) { // Note not AstNodeIf; other types don't get covered
 	// Check IFDEPTH warning - could be in other transform files if desire
 	int prevIfDepth = m_ifDepth;
 	if (m_ifDepth == -1 || v3Global.opt.ifDepth()<1) { // Turned off
@@ -226,7 +226,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_ifDepth = prevIfDepth;
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -252,21 +252,21 @@ private:
     //   AstNodeFTask::user1p		// Node replaced, rename it
 
     // VISITORS
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	if (nodep->taskp()->user1()) { // It was converted
 	    UINFO(9, "    relinkFTask "<<nodep<<endl);
 	    nodep->name(nodep->taskp()->name());
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()->user1()) { // It was converted
 	    UINFO(9, "    relinVarRef "<<nodep<<endl);
 	    nodep->name(nodep->varp()->name());
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstIfaceRefDType* nodep, AstNUser*) {
+    virtual void visit(AstIfaceRefDType* nodep) {
 	// May have changed cell names
 	// TypeTable is always after all modules, so names are stable
 	UINFO(8,"   IFACEREFDTYPE "<<nodep<<endl);
@@ -275,7 +275,7 @@ private:
 	nodep->iterateChildren(*this);
     }
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

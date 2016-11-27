@@ -199,19 +199,19 @@ private:
 	if (m_isSimple) nodep->iterateChildren(*this);
     }
     // VISITORS
-    virtual void visit(AstOr* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstAnd* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstNot* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstLogOr* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstLogAnd* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstLogNot* nodep, AstNUser*) {	okIterate(nodep); }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {	okIterate(nodep); }
+    virtual void visit(AstOr* nodep) {	okIterate(nodep); }
+    virtual void visit(AstAnd* nodep) {	okIterate(nodep); }
+    virtual void visit(AstNot* nodep) {	okIterate(nodep); }
+    virtual void visit(AstLogOr* nodep) {	okIterate(nodep); }
+    virtual void visit(AstLogAnd* nodep) {	okIterate(nodep); }
+    virtual void visit(AstLogNot* nodep) {	okIterate(nodep); }
+    virtual void visit(AstVarRef* nodep) {	okIterate(nodep); }
 
     // Other possibilities are equals, etc
     // But, we don't want to get too complicated or it will take too much
     // effort to calculate the gater
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	m_isSimple = false;
 	//nodep->iterateChildren(*this);
     }
@@ -248,7 +248,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
     uint32_t	m_state;	// Parsing state
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->lvalue()) {
 	    AstVarScope* vscp = nodep->varScopep();
 	    if (vscp->user2p()->castNode() == m_exprp) {
@@ -272,11 +272,11 @@ class GaterBodyVisitor : public GaterBaseVisitor {
 	}
     }
 
-    //virtual void visit(AstNodeIf* nodep, AstNUser*) { ... }
+    //virtual void visit(AstNodeIf* nodep) { ... }
     // Not needed, it's the same handling as any other statement.  Cool, huh?
     // (We may get empty IFs but the constant propagater will rip them up for us)
 
-    virtual void visit(AstNodeStmt* nodep, AstNUser*) {
+    virtual void visit(AstNodeStmt* nodep) {
 	uint32_t oldstate = m_state;
 	// Find if children want to delete this or not.
 	// Note children may bicker, and want to both keep and delete (branches on a if)
@@ -304,7 +304,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
 	    m_state |= STATE_KEEP;
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -701,7 +701,7 @@ class GaterVisitor : public GaterBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	if (debug()>=9) cout<<endl<<endl<<endl;
 	UINFO(5, "Gater: ALWAYS: "<<nodep<<endl);
 	if (nodep->user4SetOnce()) return;
@@ -751,7 +751,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	}
 	UINFO(5, "  Gater done"<<endl);
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->lvalue()) {
 	    AstVarScope* vscp = nodep->varScopep();
 	    if (nodep->varp()->isSigPublic()) {
@@ -778,7 +778,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    }
 	}
     }
-    virtual void visit(AstNodeIf* nodep, AstNUser*) {
+    virtual void visit(AstNodeIf* nodep) {
 	m_ifDepth++;
 	bool allowGater = m_directlyUnderAlw && m_ifDepth <= IF_DEPTH_MAX;
 	if (allowGater) {
@@ -819,12 +819,12 @@ class GaterVisitor : public GaterBaseVisitor {
 	m_ifDepth--;
     }
 
-    virtual void visit(AstAssignDly* nodep, AstNUser*) {
+    virtual void visit(AstAssignDly* nodep) {
 	// iterateChildrenAlw will detect this is a statement for us
 	iterateChildrenAlw(nodep, false);
     }
 
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	// Note NOT AssignDly; handled above, We'll just mark this block as
 	// not optimizable.
 	//
@@ -836,7 +836,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	// No reason to iterate.
     }
 
-    virtual void visit(AstSenItem* nodep, AstNUser*) {
+    virtual void visit(AstSenItem* nodep) {
 	if (!nodep->isClocked()) {
 	    nonOptimizable(nodep, "Non-clocked sensitivity");
 	}
@@ -844,7 +844,7 @@ class GaterVisitor : public GaterBaseVisitor {
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	if (m_nonopt=="") {  // Else accelerate
 	    iterateChildrenAlw(nodep, false);
 	}

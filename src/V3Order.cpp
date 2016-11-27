@@ -270,10 +270,10 @@ private:
 	return level;
     }
 
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	m_hasClk = false;
 	if (AstVarRef* varrefp = nodep->rhsp()->castVarRef()) {
-	    this->visit(varrefp, NULL);
+	    this->visit(varrefp);
 	    m_rightClkWidth = varrefp->width();
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 		if (m_inClocked) {
@@ -309,7 +309,7 @@ private:
 	}
     }
 
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (m_inAss && nodep->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 	    if (m_inClocked) {
 		nodep->v3warn(CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "<<nodep->prettyName());
@@ -320,7 +320,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstConcat* nodep, AstNUser*) {
+    virtual void visit(AstConcat* nodep) {
 	if (m_inAss) {
 	    nodep->lhsp()->iterateAndNext(*this);
 	    int lw = m_childClkWidth;
@@ -329,20 +329,20 @@ private:
 	    m_childClkWidth = lw + rw;  // Pass up
 	}
     }
-    virtual void visit(AstNodeSel* nodep, AstNUser*) {
+    virtual void visit(AstNodeSel* nodep) {
 	if (m_inAss) {
 	    nodep->iterateChildren(*this);
 	    // Pass up result width
 	    if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
 	}
     }
-    virtual void visit(AstSel* nodep, AstNUser*) {
+    virtual void visit(AstSel* nodep) {
 	if (m_inAss) {
 	    nodep->iterateChildren(*this);
 	    if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
 	}
     }
-    virtual void visit(AstReplicate* nodep, AstNUser*) {
+    virtual void visit(AstReplicate* nodep) {
 	if (m_inAss) {
 	    nodep->iterateChildren(*this);
 	    if (nodep->rhsp()->castConst()) {
@@ -352,12 +352,12 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	m_inClocked = nodep->hasClocked();
 	nodep->iterateChildren(*this);
 	m_inClocked = false;
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 
@@ -390,7 +390,7 @@ private:
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef() )
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 		m_clkAss = true;
@@ -398,13 +398,13 @@ private:
 	    }
 	nodep->rhsp()->iterateChildren(*this);
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 	    m_clkAss = true;
 	    UINFO(6, "node was marked as clocker "<<nodep<<endl);
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 
@@ -722,7 +722,7 @@ private:
 	}
     }
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	{
 	    AstUser4InUse	m_inuser4;	// Used only when building tree, so below
 	    nodep->iterateChildren(*this);
@@ -730,7 +730,7 @@ private:
 	// We're finished, complete the topscopes
 	if (m_topScopep) { process(); m_topScopep=NULL; }
     }
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	// Process the last thing we're finishing
 	if (m_topScopep) nodep->v3fatalSrc("Only one topscope should ever be created");
 	UINFO(2,"  Loading tree...\n");
@@ -768,12 +768,12 @@ private:
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVxp = NULL;
@@ -783,7 +783,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	// Create required activation blocks and add to module
 	UINFO(4,"  ACTIVE  "<<nodep<<endl);
 	m_activep = nodep;
@@ -796,14 +796,14 @@ private:
 	nodep->iterateChildren(*this);
 	m_activep = NULL;
     }
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	// Create links to all input signals
 	if (m_modp->isTop() && nodep->varp()->isInput()) {
 	    OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
 	    new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
 	}
     }
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
 	    AstVarScope* varscp = nodep->varScopep();
 	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
@@ -926,7 +926,7 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstSenTree* nodep, AstNUser*) {
+    virtual void visit(AstSenTree* nodep) {
 	// Having a node derived from the sentree isn't required for
 	// correctness, it mearly makes the graph better connected
 	// and improves graph algorithmic performance
@@ -941,27 +941,27 @@ private:
 	    m_inSenTree = false;
 	}
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPost* nodep) {
 	m_inPost = true;
 	iterateNewStmt(nodep);
 	m_inPost = false;
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	OrderClkAssVisitor visitor(nodep);
 	m_inClkAss = visitor.isClkAss();
 	iterateNewStmt(nodep);
 	m_inClkAss = false;
     }
-    virtual void visit(AstAssignPre* nodep, AstNUser*) {
+    virtual void visit(AstAssignPre* nodep) {
 	OrderClkAssVisitor visitor(nodep);
 	m_inClkAss = visitor.isClkAss();
 	m_inPre = true;
@@ -969,7 +969,7 @@ private:
 	m_inPre = false;
 	m_inClkAss = false;
     }
-    virtual void visit(AstAssignPost* nodep, AstNUser*) {
+    virtual void visit(AstAssignPost* nodep) {
 	OrderClkAssVisitor visitor(nodep);
 	m_inClkAss = visitor.isClkAss();
 	m_inPost = true;
@@ -977,15 +977,15 @@ private:
 	m_inPost = false;
 	m_inClkAss = false;
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	// We use initials to setup parameters and static consts's which may be referenced
 	// in user initial blocks.  So use ordering to sort them all out.
 	iterateNewStmt(nodep);
     }
-    virtual void visit(AstCFunc*, AstNUser*) {
+    virtual void visit(AstCFunc*) {
 	// Ignore for now
 	// We should detect what variables are set in the function, and make
 	// settlement code for them, then set a global flag, so we call "settle"
@@ -993,7 +993,7 @@ private:
     }
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

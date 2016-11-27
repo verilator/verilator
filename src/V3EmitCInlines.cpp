@@ -44,7 +44,7 @@ class EmitCInlines : EmitCBaseVisitor {
     void emitInt();
 
     // VISITORS
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	// All wide constants load into variables, so we can just hunt for them
 	nodep->iterateChildren(*this);
 	int words = nodep->widthWords();
@@ -56,16 +56,16 @@ class EmitCInlines : EmitCBaseVisitor {
 	    v3Global.needHInlines(true);
 	}
     }
-    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+    virtual void visit(AstBasicDType* nodep) {
 	if (nodep->keyword() == AstBasicDTypeKwd::STRING) {
 	    v3Global.needHeavy(true);  // #include <string> via verilated_heavy.h when we create symbol file
 	}
     }
 
     // NOPs
-    virtual void visit(AstNodeStmt*, AstNUser*) {}
+    virtual void visit(AstNodeStmt*) {}
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
     //---------------------------------------

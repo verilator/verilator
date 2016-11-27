@@ -557,7 +557,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	m_code = 1; 	// Multiple TopScopes will require fixing how code#s
 	// are assigned as duplicate varscopes must result in the same tracing code#.
 
@@ -585,17 +585,17 @@ private:
 	assignActivity();
 	putTracesIntoTree();
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	if (nodep->isTop()) m_topModp = nodep;
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_highScopep = scopep;
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	UINFO(8,"   CCALL "<<nodep<<endl);
 	if (!m_finding && !nodep->user2()) {
 	    // See if there are other calls in same statement list;
@@ -613,7 +613,7 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	UINFO(8,"   CFUNC "<<nodep<<endl);
 	if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
 	    m_initFuncp = nodep;
@@ -636,7 +636,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_funcp = NULL;
     }
-    virtual void visit(AstTraceInc* nodep, AstNUser*) {
+    virtual void visit(AstTraceInc* nodep) {
 	UINFO(8,"   TRACE "<<nodep<<endl);
 	if (m_finding) nodep->v3fatalSrc("Traces should have been removed in prev step.");
 	nodep->unlinkFrBack();
@@ -649,7 +649,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_tracep = NULL;
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (m_tracep) {
 	    if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
 	    if (nodep->lvalue()) nodep->v3fatalSrc("Lvalue in trace?  Should be const.");
@@ -675,7 +675,7 @@ private:
 	}
     }
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

@@ -143,13 +143,13 @@ private:
 	m_statep->m_numStmts += visitor.count();
     }
 
-    virtual void visit(AstBasicDType* nodep, AstNUser*) {
+    virtual void visit(AstBasicDType* nodep) {
 	newChangeDet();
     }
-    virtual void visit(AstPackArrayDType* nodep, AstNUser*) {
+    virtual void visit(AstPackArrayDType* nodep) {
 	newChangeDet();
     }
-    virtual void visit(AstUnpackArrayDType* nodep, AstNUser*) {
+    virtual void visit(AstUnpackArrayDType* nodep) {
 	for (int index=0; index < nodep->elementsConst(); ++index) {
 	    AstNode* origVEp = m_varEqnp;
 	    AstNode* origNLEp = m_newLvEqnp;
@@ -170,7 +170,7 @@ private:
 	    m_newRvEqnp = origNREp;
 	}
     }
-    virtual void visit(AstNodeClassDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeClassDType* nodep) {
 	if (nodep->packedUnsup()) {
 	    newChangeDet();
 	} else {
@@ -178,7 +178,7 @@ private:
 	    m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
 	}
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-general-");
 	m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
@@ -239,7 +239,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	if (nodep->isTop()) {
 	    m_statep->m_topModp = nodep;
@@ -247,7 +247,7 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	UINFO(4," TS "<<nodep<<endl);
 	// Clearing
 	AstNode::user1ClearTree();
@@ -269,7 +269,7 @@ private:
 
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	if (nodep->isCircular()) {
 	    UINFO(8,"  CIRC "<<nodep<<endl);
 	    if (!nodep->user1SetOnce()) {
@@ -277,12 +277,12 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {
 	// Short-circuit 
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

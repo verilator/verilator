@@ -60,14 +60,14 @@ private:
     //int m_debug;  int debug() { return m_debug; }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	//if (nodep->name() == "t_chg") m_debug = 9; else m_debug=0;
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	UINFO(4,"  CELL   "<<nodep<<endl);
 	m_cellp = nodep;
 	//VV*****  We reset user1p() on each cell!!!
@@ -75,7 +75,7 @@ private:
 	nodep->iterateChildren(*this);
 	m_cellp = NULL;
     }
-    virtual void visit(AstPin* nodep, AstNUser*) {
+    virtual void visit(AstPin* nodep) {
 	// PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
 	//	      or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
 	UINFO(4,"   PIN  "<<nodep<<endl);
@@ -125,7 +125,7 @@ private:
 	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
 
-    virtual void visit(AstUdpTable* nodep, AstNUser*) {
+    virtual void visit(AstUdpTable* nodep) {
 	if (!v3Global.opt.bboxUnsup()) {
 	    // If we support primitives, update V3Undriven to remove special case
 	    nodep->v3error("Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.");
@@ -133,12 +133,12 @@ private:
     }
 
     // Save some time
-    virtual void visit(AstNodeAssign*, AstNUser*) {}
-    virtual void visit(AstAlways*, AstNUser*) {}
+    virtual void visit(AstNodeAssign*) {}
+    virtual void visit(AstAlways*) {}
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -169,7 +169,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	if (nodep->rangep()) {
 	    m_cellRangep = nodep->rangep();
 	    UINFO(4,"  CELL   "<<nodep<<endl);
@@ -225,7 +225,7 @@ private:
 	}
     }
 
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	bool isIface = nodep->dtypep()->castUnpackArrayDType()
 	    && nodep->dtypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
 	if (isIface) {
@@ -251,7 +251,7 @@ private:
 	nodep->iterateChildren(*this);
     }
 
-    virtual void visit(AstPin* nodep, AstNUser*) {
+    virtual void visit(AstPin* nodep) {
 	// Any non-direct pins need reconnection with a part-select
 	if (!nodep->exprp()) return; // No-connect
 	if (m_cellRangep) {
@@ -357,10 +357,10 @@ private:
     }
 
     // Save some time
-    virtual void visit(AstNodeMath*, AstNUser*) {}
+    virtual void visit(AstNodeMath*) {}
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

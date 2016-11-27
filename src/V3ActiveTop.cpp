@@ -65,19 +65,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	m_topscopep = nodep;
 	m_finder.main(m_topscopep);
 	nodep->iterateChildren(*this);
 	m_topscopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Create required actives and add to module
 	// We can start ordering at a module, or a scope
 	UINFO(4," MOD   "<<nodep<<endl);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	UINFO(4,"   ACTIVE "<<nodep<<endl);
 	V3Const::constifyExpensiveEdit(nodep); // Remove duplicate clocks and such; sensesp() may change!
 	AstSenTree* sensesp = nodep->sensesp();
@@ -120,29 +120,29 @@ private:
 	// No need to do statements under it, they're already moved.
 	//nodep->iterateChildren(*this);
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	nodep->v3fatalSrc("Node should have been deleted");
     }
     // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}
-    virtual void visit(AstVarScope* nodep, AstNUser*) {}
+    virtual void visit(AstNodeMath* nodep) {}
+    virtual void visit(AstVarScope* nodep) {}
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

@@ -90,7 +90,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	AstNodeModule* modp = nodep->topModulep();
 	if (!modp) { nodep->v3error("No root module specified"); return; }
 	// Operate starting at the top of the hierarchy
@@ -99,7 +99,7 @@ private:
 	modp->accept(*this);
 	cleanupVarRefs();
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Create required blocks and add to module
 	string scopename;
 	if (!m_aboveScopep) scopename = "TOP";
@@ -149,10 +149,10 @@ private:
 
 	// ***Note m_scopep is passed back to the caller of the routine (above)
     }
-    virtual void visit(AstActive* nodep, AstNUser*) {
+    virtual void visit(AstActive* nodep) {
 	nodep->v3fatalSrc("Actives now made after scoping");
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstInitial* clonep = nodep->cloneTree(false);
@@ -160,7 +160,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstFinal* clonep = nodep->cloneTree(false);
@@ -168,7 +168,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -176,7 +176,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
+    virtual void visit(AstAssignVarScope* nodep) {
 	// Copy under the scope but don't recurse
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -184,7 +184,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -192,7 +192,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -200,7 +200,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -208,7 +208,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    Move "<<nodep<<endl);
 	AstNode* clonep = nodep->cloneTree(false);
@@ -216,7 +216,7 @@ private:
 	m_scopep->addActivep(clonep);
 	clonep->iterateChildren(*this);	// We iterate under the *clone*
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    CFUNC "<<nodep<<endl);
 	AstCFunc* clonep = nodep->cloneTree(false);
@@ -226,7 +226,7 @@ private:
 	// We iterate under the *clone*
 	clonep->iterateChildren(*this);
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	// Add to list of blocks under this scope
 	UINFO(4,"    FTASK "<<nodep<<endl);
 	AstNodeFTask* clonep = nodep->cloneTree(false);
@@ -235,7 +235,7 @@ private:
 	// We iterate under the *clone*
 	clonep->iterateChildren(*this);
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	// Make new scope variable
 	// This is called cross-module by AstVar, so we cannot trust any m_ variables
 	if (!nodep->user1p()) {
@@ -254,7 +254,7 @@ private:
 	    m_scopep->addVarp(varscp);
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// VarRef needs to point to VarScope
 	// Make sure variable has made user1p.
 	if (!nodep->varp()) nodep->v3fatalSrc("Unlinked");
@@ -267,7 +267,7 @@ private:
 	    m_varRefScopes.insert(make_pair(nodep, m_scopep));
 	} 
    }
-    virtual void visit(AstScopeName* nodep, AstNUser*) {
+    virtual void visit(AstScopeName* nodep) {
 	// If there's a %m in the display text, we add a special node that will contain the name()
 	string prefix = (string)("__DOT__")+m_scopep->name();
 	// TOP and above will be the user's name().
@@ -283,13 +283,13 @@ private:
 	if (afterp) nodep->scopeEntrp(afterp);
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	// Scope that was made by this module for different cell;
 	// Want to ignore blocks under it, so just do nothing
     }
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -321,7 +321,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	// Want to ignore blocks under it
 	m_scopep = nodep;
 	nodep->iterateChildren(*this);
@@ -340,42 +340,42 @@ private:
 	}
     }
 
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstAssignVarScope* nodep, AstNUser*) {
+    virtual void visit(AstAssignVarScope* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignW* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	movedDeleteOrIterate(nodep);
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	movedDeleteOrIterate(nodep);
     }
 
-    virtual void visit(AstVarXRef* nodep, AstNUser*) {
+    virtual void visit(AstVarXRef* nodep) {
 	// The crossrefs are dealt with in V3LinkDot
 	nodep->varp(NULL);
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	// The crossrefs are dealt with in V3LinkDot
 	UINFO(9,"   Old pkg-taskref "<<nodep<<endl);
 	if (nodep->packagep()) {
@@ -391,7 +391,7 @@ private:
 	}
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstModportFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstModportFTaskRef* nodep) {
 	// The crossrefs are dealt with in V3LinkDot
 	nodep->ftaskp(NULL);
 	nodep->iterateChildren(*this);
@@ -399,7 +399,7 @@ private:
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

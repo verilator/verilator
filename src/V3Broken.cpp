@@ -192,7 +192,7 @@ private:
 	nodep->iterateChildrenConst(*this);
     }
     // VISITORS
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	processAndIterate(nodep);
     }
 public:
@@ -236,7 +236,7 @@ private:
 	nodep->iterateChildrenConst(*this);
 	BrokenTable::setUnder(nodep,false);
     }
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	processAndIterate(nodep);
     }
 public:

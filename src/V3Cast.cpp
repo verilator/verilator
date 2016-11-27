@@ -107,19 +107,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeUniop* nodep, AstNUser*) {
+    virtual void visit(AstNodeUniop* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
     }
-    virtual void visit(AstNodeBiop* nodep, AstNUser*) {
+    virtual void visit(AstNodeBiop* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
     }
-    virtual void visit(AstNodeTriop* nodep, AstNUser*) {
+    virtual void visit(AstNodeTriop* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1()
@@ -128,12 +128,12 @@ private:
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
 	if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
     }
-    virtual void visit(AstCCast* nodep, AstNUser*) {
+    virtual void visit(AstCCast* nodep) {
 	nodep->iterateChildren(*this);
 	insureLower32Cast(nodep);
 	nodep->user1(1);
     }
-    virtual void visit(AstNegate* nodep, AstNUser*) {
+    virtual void visit(AstNegate* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->lhsp()->widthMin()==1) {
@@ -145,7 +145,7 @@ private:
 	    insureCast(nodep->lhsp());
 	}
     }
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (!nodep->lvalue()
 	    && !nodep->backp()->castCCast()
 	    && nodep->backp()->castNodeMath()
@@ -158,7 +158,7 @@ private:
 	}
 	nodep->user1(1);
     }
-    virtual void visit(AstConst* nodep, AstNUser*) {
+    virtual void visit(AstConst* nodep) {
 	// Constants are of unknown size if smaller than 33 bits, becase
 	// we're too lazy to wrap every constant in the universe in
 	// ((IData)#).
@@ -166,11 +166,11 @@ private:
     }
 
     // NOPs
-    virtual void visit(AstVar* nodep, AstNUser*) {}
+    virtual void visit(AstVar* nodep) {}
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

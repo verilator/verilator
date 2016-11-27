@@ -402,37 +402,37 @@ private:
 
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modTables = 0;
 	m_modTableVscs.clear();
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	m_modp = NULL;
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	nodep->iterateChildren(*this);
 	m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	UINFO(4,"  ALWAYS  "<<nodep<<endl);
 	if (treeTest(nodep)) {
 	    // Well, then, I'll be a memory hog.
 	    createTable(nodep); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstAssignAlias* nodep, AstNUser*) {}
-    virtual void visit(AstAssignW* nodep, AstNUser*) {
+    virtual void visit(AstAssignAlias* nodep) {}
+    virtual void visit(AstAssignW* nodep) {
 	// It's nearly impossible to have a large enough assign to make this worthwhile
 	// For now we won't bother.
 	// Accelerated: no iterate
     }
     // default
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

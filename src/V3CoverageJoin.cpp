@@ -103,19 +103,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	// Find all Coverage's
 	nodep->iterateChildren(*this);
 	// Simplify
 	detectDuplicates();
     }
-    virtual void visit(AstCoverToggle* nodep, AstNUser*) {
+    virtual void visit(AstCoverToggle* nodep) {
 	m_toggleps.push_back(nodep);
 	nodep->iterateChildren(*this);
     }
     //--------------------
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

@@ -238,11 +238,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep, AstNUser*) {
+    virtual void visit(AstNetlist* nodep) {
 	// Modules must be done in top-down-order
 	nodep->iterateChildren(*this);
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	if (nodep->dead()) {
 	    UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
 	} else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
@@ -256,13 +256,13 @@ private:
 	    UINFO(4," MOD-dead?  "<<nodep<<endl);  // Should have been done by now, if not dead
 	}
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	// Must do ifaces first, so push to list and do in proper order
 	m_cellps.push_back(nodep);
     }
 
     // Make sure all parameters are constantified
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	if (!nodep->user5SetOnce()) {  // Process once
 	    nodep->iterateChildren(*this);
 	    if (nodep->isParam()) {
@@ -280,14 +280,14 @@ private:
 	}
     }
     // Make sure varrefs cause vars to constify before things above
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()) nodep->varp()->iterate(*this);
     }
-    virtual void visit(AstVarXRef* nodep, AstNUser*) {
+    virtual void visit(AstVarXRef* nodep) {
 	nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
     }
 
-    virtual void visit(AstUnlinkedRef* nodep, AstNUser*) {
+    virtual void visit(AstUnlinkedRef* nodep) {
 	AstVarXRef* varxrefp = nodep->op1p()->castVarXRef();
 	AstNodeFTaskRef* taskrefp = nodep->op1p()->castNodeFTaskRef();
 	if (varxrefp) {
@@ -308,7 +308,7 @@ private:
 	nodep->replaceWith(nodep->op1p()->unlinkFrBack());
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    virtual void visit(AstCellArrayRef* nodep, AstNUser*) {
+    virtual void visit(AstCellArrayRef* nodep) {
 	V3Const::constifyParamsEdit(nodep->selp());
 	if (AstConst* constp = nodep->selp()->castConst()) {
 	    string index = AstNode::encodeNumber(constp->toSInt());
@@ -326,7 +326,7 @@ private:
     }
 
     // Generate Statements
-    virtual void visit(AstGenerate* nodep, AstNUser*) {
+    virtual void visit(AstGenerate* nodep) {
 	if (debug()>=9) nodep->dumpTree(cout,"-genin: ");
 	nodep->iterateChildren(*this);
 	// After expanding the generate, all statements under it can be moved
@@ -340,7 +340,7 @@ private:
 	}
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    virtual void visit(AstGenIf* nodep, AstNUser*) {
+    virtual void visit(AstGenIf* nodep) {
 	UINFO(9,"  GENIF "<<nodep<<endl);
 	nodep->condp()->iterateAndNext(*this);
 	// We suppress errors when widthing params since short-circuiting in
@@ -370,7 +370,7 @@ private:
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.
-    virtual void visit(AstBegin* nodep, AstNUser*) {
+    virtual void visit(AstBegin* nodep) {
 	if (nodep->genforp()) {
 	    AstGenFor* forp = nodep->genforp()->castGenFor();
 	    if (!forp) nodep->v3fatalSrc("Non-GENFOR under generate-for BEGIN");
@@ -398,10 +398,10 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstGenFor* nodep, AstNUser*) {
+    virtual void visit(AstGenFor* nodep) {
 	nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
-    virtual void visit(AstGenCase* nodep, AstNUser*) {
+    virtual void visit(AstGenCase* nodep) {
 	UINFO(9,"  GENCASE "<<nodep<<endl);
 	AstNode* keepp = NULL;
 	nodep->exprp()->iterateAndNext(*this);
@@ -451,7 +451,7 @@ private:
     }
 
     // Default: Just iterate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 

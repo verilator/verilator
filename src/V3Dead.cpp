@@ -58,13 +58,13 @@ private:
     // NODE STATE
     // ** Shared with DeadVisitor **
     // VISITORS
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	nodep->iterateChildren(*this);
 	nodep->modp()->user1Inc(-1);
     }
     //-----
-    virtual void visit(AstNodeMath* nodep, AstNUser*) {}  // Accelerate
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -135,18 +135,18 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep, AstNUser*) {
+    virtual void visit(AstCFunc* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->scopep()) nodep->scopep()->user1Inc();
     }
-    virtual void visit(AstScope* nodep, AstNUser*) {
+    virtual void visit(AstScope* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->aboveScopep()) nodep->aboveScopep()->user1Inc();
@@ -155,14 +155,14 @@ private:
 	    m_scopesp.push_back(nodep);
 	}
     }
-    virtual void visit(AstCell* nodep, AstNUser*) {
+    virtual void visit(AstCell* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	m_cellsp.push_back(nodep);
 	nodep->modp()->user1Inc();
     }
 
-    virtual void visit(AstNodeVarRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->varScopep()) {
@@ -177,7 +177,7 @@ private:
 	    else nodep->packagep()->user1Inc();
 	}
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->packagep()) {
@@ -185,7 +185,7 @@ private:
 	    else nodep->packagep()->user1Inc();
 	}
     }
-    virtual void visit(AstRefDType* nodep, AstNUser*) {
+    virtual void visit(AstRefDType* nodep) {
 	nodep->iterateChildren(*this);
 	checkDType(nodep);
 	checkAll(nodep);
@@ -194,12 +194,12 @@ private:
 	    else nodep->packagep()->user1Inc();
 	}
     }
-    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeDType* nodep) {
 	nodep->iterateChildren(*this);
 	checkDType(nodep);
 	checkAll(nodep);
     }
-    virtual void visit(AstEnumItemRef* nodep, AstNUser*) {
+    virtual void visit(AstEnumItemRef* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->packagep()) {
@@ -208,7 +208,7 @@ private:
 	}
 	checkAll(nodep);
     }
-    virtual void visit(AstModport* nodep, AstNUser*) {
+    virtual void visit(AstModport* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_elimCells) {
 	    if (!nodep->varsp()) {
@@ -218,7 +218,7 @@ private:
 	}
 	checkAll(nodep);
     }
-    virtual void visit(AstTypedef* nodep, AstNUser*) {
+    virtual void visit(AstTypedef* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_elimCells && !nodep->attrPublic()) {
 	    pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
@@ -229,7 +229,7 @@ private:
 	// Normal modules may disappear, e.g. if they are parameterized then removed
 	if (nodep->attrPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
     }
-    virtual void visit(AstVarScope* nodep, AstNUser*) {
+    virtual void visit(AstVarScope* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->scopep()) nodep->scopep()->user1Inc();
@@ -237,7 +237,7 @@ private:
 	    m_vscsp.push_back(nodep);
 	}
     }
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
 	if (nodep->isSigPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
@@ -245,7 +245,7 @@ private:
 	    m_varsp.push_back(nodep);
 	}
     }
-    virtual void visit(AstNodeAssign* nodep, AstNUser*) {
+    virtual void visit(AstNodeAssign* nodep) {
 	// See if simple assignments to variables may be eliminated because that variable is never used.
 	// Similar code in V3Life
 	m_sideEffect = false;
@@ -264,7 +264,7 @@ private:
     }
 
     //-----
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	if (nodep->isOutputter()) m_sideEffect=true;
 	nodep->iterateChildren(*this);
 	checkAll(nodep);

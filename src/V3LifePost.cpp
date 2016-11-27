@@ -61,7 +61,7 @@ private:
     //  AstVarScope::user4p()	-> AstVarScope*, If set, replace this varscope with specified new one
     // STATE
     // VISITORS
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
 	if (AstVarScope* newvscp = (AstVarScope*)vscp->user4p()) {
@@ -71,17 +71,17 @@ private:
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
 	nodep->funcp()->accept(*this);
     }
-    virtual void visit(AstVar*, AstNUser*) {}	// Don't want varrefs under it
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:
@@ -111,7 +111,7 @@ private:
     V3Double0		m_statAssnDel;	// Statistic tracking
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep, AstNUser*) {
+    virtual void visit(AstTopScope* nodep) {
 	AstNode::user1ClearTree();	// user1p() used on entire tree
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	AstNode::user4ClearTree();	// user4p() used on entire tree
@@ -122,7 +122,7 @@ private:
 	LifePostElimVisitor visitor (nodep);
     }
 
-    virtual void visit(AstVarRef* nodep, AstNUser*) {
+    virtual void visit(AstVarRef* nodep) {
 	// Consumption/generation of a variable,
 	AstVarScope* vscp = nodep->varScopep();
 	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
@@ -135,7 +135,7 @@ private:
 	    vscp->user2(m_sequence);
 	}
     }
-    virtual void visit(AstAssignPost* nodep, AstNUser*) {
+    virtual void visit(AstAssignPost* nodep) {
 	if (AstVarRef* lhsp = nodep->lhsp()->castVarRef()) {
 	    if (AstVarRef* rhsp = nodep->rhsp()->castVarRef()) {
 		// Scrunch these:
@@ -161,19 +161,19 @@ private:
 	    }
 	}
     }
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) nodep->iterateChildren(*this);
     }
-    virtual void visit(AstCCall* nodep, AstNUser*) {
+    virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
 	nodep->funcp()->accept(*this);
     }
 
     //-----
-    virtual void visit(AstVar*, AstNUser*) {}	// Don't want varrefs under it
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }
 public:

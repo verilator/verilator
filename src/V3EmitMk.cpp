@@ -229,7 +229,7 @@ public:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	nodep->v3fatalSrc("No visitors implemented.");
     }
 

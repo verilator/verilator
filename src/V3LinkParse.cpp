@@ -87,7 +87,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNodeFTask* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTask* nodep) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    m_ftaskp = nodep;
@@ -95,7 +95,7 @@ private:
 	    m_ftaskp = NULL;
 	}
     }
-    virtual void visit(AstNodeFTaskRef* nodep, AstNUser*) {
+    virtual void visit(AstNodeFTaskRef* nodep) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    UINFO(5,"   "<<nodep<<endl);
@@ -105,7 +105,7 @@ private:
 	    m_valueModp = upperValueModp;
 	}
     }
-    virtual void visit(AstNodeDType* nodep, AstNUser*) {
+    virtual void visit(AstNodeDType* nodep) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    AstNodeDType* upperDtypep = m_dtypep;
@@ -114,7 +114,7 @@ private:
 	    m_dtypep = upperDtypep;
 	}
     }
-    virtual void visit(AstEnumItem* nodep, AstNUser*) {
+    virtual void visit(AstEnumItem* nodep) {
 	// Expand ranges
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
@@ -138,7 +138,7 @@ private:
 	}
     }
 
-    virtual void visit(AstVar* nodep, AstNUser*) {
+    virtual void visit(AstVar* nodep) {
 	cleanFileline(nodep);
 	if (nodep->subDTypep()->castParseTypeDType()) {
 	    // It's a parameter type. Use a different node type for this.
@@ -198,7 +198,7 @@ private:
 	}
     }
 
-    virtual void visit(AstAttrOf* nodep, AstNUser*) {
+    virtual void visit(AstAttrOf* nodep) {
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
@@ -264,7 +264,7 @@ private:
 	}
     }
 
-    virtual void visit(AstAlwaysPublic* nodep, AstNUser*) {
+    virtual void visit(AstAlwaysPublic* nodep) {
 	// AlwaysPublic was attached under a var, but it's a statement that should be
 	// at the same level as the var
 	cleanFileline(nodep);
@@ -279,7 +279,7 @@ private:
 	}
     }
 
-    virtual void visit(AstDefImplicitDType* nodep, AstNUser*) {
+    virtual void visit(AstDefImplicitDType* nodep) {
 	cleanFileline(nodep);
 	UINFO(8,"   DEFIMPLICIT "<<nodep<<endl);
 	// Must remember what names we've already created, and combine duplicates
@@ -315,14 +315,14 @@ private:
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
 
-    virtual void visit(AstTypedefFwd* nodep, AstNUser*) {
+    virtual void visit(AstTypedefFwd* nodep) {
 	// We only needed the forward declaration in order to parse correctly.
 	// We won't even check it was ever really defined, as it might have been in a header
 	// file referring to a module we never needed
 	nodep->unlinkFrBack()->deleteTree();
     }
 
-    virtual void visit(AstForeach* nodep, AstNUser*) {
+    virtual void visit(AstForeach* nodep) {
 	// FOREACH(array,loopvars,body)
 	// -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
 	//nodep->dumpTree(cout, "-foreach-old:");
@@ -367,7 +367,7 @@ private:
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep, AstNUser*) {
+    virtual void visit(AstNodeModule* nodep) {
 	// Module: Create sim table for entire module and iterate
 	cleanFileline(nodep);
 	//
@@ -386,22 +386,22 @@ private:
 	nodep->iterateChildren(*this);
 	m_valueModp = upperValueModp;
     }
-    virtual void visit(AstInitial* nodep, AstNUser*) {
+    virtual void visit(AstInitial* nodep) {
 	visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstFinal* nodep, AstNUser*) {
+    virtual void visit(AstFinal* nodep) {
 	visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstAlways* nodep, AstNUser*) {
+    virtual void visit(AstAlways* nodep) {
 	m_inAlways = true;
 	visitIterateNoValueMod(nodep);
 	m_inAlways = false;
     }
-    virtual void visit(AstPslCover* nodep, AstNUser*) {
+    virtual void visit(AstPslCover* nodep) {
 	visitIterateNoValueMod(nodep);
     }
 
-    virtual void visit(AstNode* nodep, AstNUser*) {
+    virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
