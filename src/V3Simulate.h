@@ -353,7 +353,9 @@ private:
             AstNode* valuep = nodep->itemp()->valuep();
 	    if (valuep) {
 	        valuep->iterateAndNext(*this);
-	        newNumber(nodep)->opAssign(*fetchNumber(valuep));
+		if (optimizable()) {
+		    newNumber(nodep)->opAssign(*fetchNumber(valuep));
+		}
             } else {
                 clearOptimizable(nodep, "No value found for enum item");
             }
@@ -394,11 +396,13 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->lhsp()->accept(*this);
-	    if (fetchNumber(nodep->lhsp())->isNeqZero()) {
-		nodep->rhsp()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
-	    } else {
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a zero
+	    if (optimizable()) {
+		if (fetchNumber(nodep->lhsp())->isNeqZero()) {
+		    nodep->rhsp()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+		} else {
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a zero
+		}
 	    }
 	}
     }
@@ -410,11 +414,13 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->lhsp()->accept(*this);
-	    if (fetchNumber(nodep->lhsp())->isNeqZero()) {
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a one
-	    } else {
-		nodep->rhsp()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+	    if (optimizable()) {
+		if (fetchNumber(nodep->lhsp())->isNeqZero()) {
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a one
+		} else {
+		    nodep->rhsp()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+		}
 	    }
 	}
     }
@@ -426,11 +432,13 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->lhsp()->accept(*this);
-	    if (fetchNumber(nodep->lhsp())->isEqZero()) {
-		newNumber(nodep)->opAssign(V3Number(nodep->fileline(), 1, 1));  // a one
-	    } else {
-		nodep->rhsp()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+	    if (optimizable()) {
+		if (fetchNumber(nodep->lhsp())->isEqZero()) {
+		    newNumber(nodep)->opAssign(V3Number(nodep->fileline(), 1, 1));  // a one
+		} else {
+		    nodep->rhsp()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+		}
 	    }
 	}
     }
@@ -443,12 +451,14 @@ private:
 	    nodep->iterateChildren(*this);
 	} else {
 	    nodep->condp()->accept(*this);
-	    if (fetchNumber(nodep->condp())->isNeqZero()) {
-		nodep->expr1p()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
-	    } else {
-		nodep->expr2p()->accept(*this);
-		newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
+	    if (optimizable()) {
+		if (fetchNumber(nodep->condp())->isNeqZero()) {
+		    nodep->expr1p()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
+		} else {
+		    nodep->expr2p()->accept(*this);
+		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
+		}
 	    }
 	}
     }
@@ -670,6 +680,7 @@ private:
 
     virtual void visit(AstFuncRef* nodep) {
 	if (jumpingOver(nodep)) return;
+	if (!optimizable()) return;  // Accelerate
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
 	AstNodeFTask* funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
@@ -717,6 +728,7 @@ private:
 
     virtual void visit(AstSFormatF *nodep) {
 	if (jumpingOver(nodep)) return;
+	if (!optimizable()) return;  // Accelerate
 	nodep->iterateChildren(*this);
 	if (m_params) {
 	    AstNode* nextArgp = nodep->exprsp();
@@ -761,6 +773,7 @@ private:
 
     virtual void visit(AstDisplay *nodep) {
 	if (jumpingOver(nodep)) return;
+	if (!optimizable()) return;  // Accelerate
 	nodep->iterateChildren(*this);
 	if (m_params) {
 	    switch (nodep->displayType()) {

@@ -269,6 +269,7 @@ private:
 		     AstNode* condp,
 		     AstNode* precondsp,
 		     AstNode* incp, AstNode* bodysp) {
+	UINFO(9, "forUnroller "<<nodep<<endl);
 	V3Number loopValue = V3Number(nodep->fileline());
 	if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
 	    return false;
@@ -354,7 +355,7 @@ private:
 	if (precondsp) { pushDeletep(precondsp); VL_DANGLING(precondsp); }
 	if (initp) { pushDeletep(initp); VL_DANGLING(initp); }
 	if (incp && !incp->backp()) { pushDeletep(incp); VL_DANGLING(incp); }
-	if (debug()>=9) newbodysp->dumpTree(cout,"-  _new: ");
+	if (debug()>=9 && newbodysp) newbodysp->dumpTree(cout,"-  _new: ");
 	return true;
     }
 

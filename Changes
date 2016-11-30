@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.891 devel
 
+****  Fix internal error on double-for loop unrolling, bug1044. [Jan Egil Ruud]
+
 
 * Verilator 3.890 2016-11-25
 
