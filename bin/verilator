@@ -1344,9 +1344,15 @@ We'll compile this example into C++.
       }
     EOF
 
-If you installed Verilator from sources, or a tarball, but not as part of
-your operating system (as an RPM), first you need to point to the kit:
+See the README in the source kit for various ways to install or point to
+Verilator binaries.  In brief, if you are running Verilator that came from
+your operating system (as an RPM), or did a "make install" to place
+Verilator into your default path, you do not need anything special in your
+environment, and should not have VERILATOR_ROOT set.  However, if you
+installed Verilator from sources and want to run Verilator out of where you
+compiled Verilator, you need to point to the kit:
 
+    # See above; don't do this if using an OS-distributed Verilator
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
     export PATH=$VERILATOR_ROOT/bin:$PATH
 
@@ -1411,9 +1417,15 @@ This is an example similar to the above, but using SystemC.
       }
     EOF
 
-If you installed Verilator from sources, or a tarball, but not as part of
-your operating system (as an RPM), first you need to point to the kit:
+See the README in the source kit for various ways to install or point to
+Verilator binaries.  In brief, if you are running Verilator that came from
+your operating system (as an RPM), or did a "make install" to place
+Verilator into your default path, you do not need anything special in your
+environment, and should not have VERILATOR_ROOT set.  However, if you
+installed Verilator from sources and want to run Verilator out of where you
+compiled Verilator, you need to point to the kit:
 
+    # See above; don't do this if using an OS-distributed Verilator
     export VERILATOR_ROOT=/path/to/where/verilator/was/installed
     export PATH=$VERILATOR_ROOT/bin:$PATH
 
