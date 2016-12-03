@@ -245,9 +245,26 @@ private:
 		    AstNode* propp = NULL;
 		    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
 			for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
-			    AstNode* onep = new AstEq(icondp->fileline(),
-						      nodep->exprp()->cloneTree(false),
-						      icondp->cloneTree(false));
+			    AstNode* onep;
+			    AstConst* iconstp = icondp->castConst();
+			    if (iconstp && iconstp->num().isFourState()
+				&& (nodep->casex() || nodep->casez() || nodep->caseInside())) {
+				V3Number nummask (itemp->fileline(), iconstp->width());
+				nummask.opBitsNonX(iconstp->num());
+				V3Number numval  (itemp->fileline(), iconstp->width());
+				numval.opBitsOne(iconstp->num());
+				AstNode* and1p = new AstAnd(itemp->fileline(), nodep->exprp()->cloneTree(false),
+							    new AstConst(itemp->fileline(), nummask));
+				AstNode* and2p = new AstAnd(itemp->fileline(),
+							    new AstConst(itemp->fileline(), numval),
+							    new AstConst(itemp->fileline(), nummask));
+				onep = AstEq::newTyped(itemp->fileline(), and1p, and2p);
+
+			    } else {
+				onep = AstEq::newTyped(icondp->fileline(),
+						       nodep->exprp()->cloneTree(false),
+						       icondp->cloneTree(false));
+			    }
 			    if (propp) propp = new AstConcat(icondp->fileline(), onep, propp);
 			    else propp = onep;
 			}
