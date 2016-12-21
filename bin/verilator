@@ -2041,8 +2041,9 @@ numbers (or all lines if omitted).
 With lint_off using '*' will override any lint_on directives in the source,
 i.e. the warning will still not be printed.
 
-If the -msg is omitted, all lint warnings are enabled/disabled.  This will
-override all later lint warning enables for the specified region.
+If the -msg is omitted, all lint warnings (see list in -Wno-lint) are
+enabled/disabled.  This will override all later lint warning enables for
+the specified region.
 
 =item tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
