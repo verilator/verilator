@@ -247,6 +247,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "casex"		{ FL; return yCASEX; }
   "casez"		{ FL; return yCASEZ; }
   "cmos"		{ FL; return yCMOS; }
+  "deassign"		{ FL; return yDEASSIGN; }
   "default"		{ FL; return yDEFAULT; }
   "defparam"		{ FL; return yDEFPARAM; }
   "disable"		{ FL; return yDISABLE; }
@@ -329,7 +330,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$writeh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
   "$writeo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
   /*     Generic unsupported warnings */
-  "deassign"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "event"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "force"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
   "fork"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }

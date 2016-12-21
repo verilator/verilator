@@ -320,6 +320,7 @@ class AstSenTree;
 %token<fl>		yCONTEXT	"context"
 %token<fl>		yCONTINUE	"continue"
 %token<fl>		yCOVER		"cover"
+%token<fl>		yDEASSIGN	"deassign"
 %token<fl>		yDEFAULT	"default"
 %token<fl>		yDEFPARAM	"defparam"
 %token<fl>		yDISABLE	"disable"
@@ -2263,7 +2264,8 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// IEEE: procedural_continuous_assignment
 	|	yASSIGN idClassSel '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
 	//UNSUP:			delay_or_event_controlE above
-	//UNSUP	yDEASSIGN variable_lvalue ';'		{ UNSUP }
+	|	yDEASSIGN variable_lvalue ';'		{ if (!v3Global.opt.bboxUnsup()) $1->v3error("Unsupported: Verilog 1995 deassign"); $$ = NULL; }
+
 	//UNSUP	yFORCE expr '=' expr ';'		{ UNSUP }
 	//UNSUP	yRELEASE variable_lvalue ';'		{ UNSUP }
 	//
