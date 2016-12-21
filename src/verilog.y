@@ -2169,15 +2169,14 @@ event_expression<senitemp>:	// IEEE: event_expression - split over several
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 		senitemEdge				{ $$ = $1; }
 	|	senitemVar				{ $$ = $1; }
-	|	'(' senitemVar ')'			{ $$ = $2; }
+	|	'(' senitem ')'				{ $$ = $2; }
 	//UNSUP	expr					{ UNSUP }
 	|	'{' event_expression '}'		{ $$ = $2; }
+	|	senitem yP_ANDAND senitem		{ $$ = new AstSenItem($2, AstSenItem::Illegal()); }
 	//UNSUP	expr yIFF expr				{ UNSUP }
 	// Since expr is unsupported we allow and ignore constants (removed in V3Const)
 	|	yaINTNUM				{ $$ = NULL; }
 	|	yaFLOATNUM				{ $$ = NULL; }
-	|	'(' yaINTNUM ')'			{ $$ = NULL; }
-	|	'(' yaFLOATNUM ')'			{ $$ = NULL; }
 	;
 
 senitemVar<senitemp>:

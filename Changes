@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  With --bbox-unsup, suppress desassign and mixed edges, bug1120. [Galen Seitz]
 
+****  Fix parsing sensitivity with &&, bug934. [Luke Yang]
+
 ****  Fix internal error on double-for loop unrolling, bug1044. [Jan Egil Ruud]
 
 ****  Fix internal error on unique casez with --assert, bug1117. [Enzo Chi]

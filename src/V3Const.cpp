@@ -1554,6 +1554,7 @@ private:
 	} else if (!m_doNConst  // Deal with later when doNConst missing
 		   && (nodep->sensp()->castEnumItemRef()
 		       || nodep->sensp()->castConst())) {
+	} else if (nodep->isIllegal()) {  // Deal with later
 	} else {
 	    if (nodep->hasVar() && !nodep->varrefp()) nodep->v3fatalSrc("Null sensitivity variable");
 	}

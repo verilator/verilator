@@ -1870,6 +1870,7 @@ private:
     AstEdgeType	m_edgeType;		// Edge type
 public:
     class Combo {};		// for creator type-overload selection
+    class Illegal {};		// for creator type-overload selection
     class Initial {};		// for creator type-overload selection
     class Settle {};		// for creator type-overload selection
     class Never {};		// for creator type-overload selection
@@ -1880,6 +1881,10 @@ public:
     AstSenItem(FileLine* fl, Combo)
 	: AstNodeSenItem(fl) {
 	m_edgeType = AstEdgeType::ET_COMBO;
+    }
+    AstSenItem(FileLine* fl, Illegal)
+	: AstNodeSenItem(fl) {
+	m_edgeType = AstEdgeType::ET_ILLEGAL;
     }
     AstSenItem(FileLine* fl, Initial)
 	: AstNodeSenItem(fl) {
@@ -1906,6 +1911,7 @@ public:
     virtual bool isClocked() const { return edgeType().clockedStmt(); }
     virtual bool isCombo() const { return edgeType()==AstEdgeType::ET_COMBO; }
     virtual bool isInitial() const { return edgeType()==AstEdgeType::ET_INITIAL; }
+    virtual bool isIllegal() const { return edgeType()==AstEdgeType::ET_ILLEGAL; }
     virtual bool isSettle() const { return edgeType()==AstEdgeType::ET_SETTLE; }
     virtual bool isNever() const { return edgeType()==AstEdgeType::ET_NEVER; }
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }

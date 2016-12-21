@@ -108,6 +108,12 @@ private:
 	// HIGHEDGE:  var
 	// LOWEDGE:  ~var
 	AstNode* newp = NULL;
+	if (nodep->edgeType()==AstEdgeType::ET_ILLEGAL) {
+	    if (!v3Global.opt.bboxUnsup()) {
+		nodep->v3error("Unsupported: Complicated event expression in sensitive activity list");
+	    }
+	    return NULL;
+	}
 	AstVarScope* clkvscp = nodep->varrefp()->varScopep();
 	if (nodep->edgeType()==AstEdgeType::ET_POSEDGE) {
 	    AstVarScope* lastVscp = getCreateLastClk(clkvscp);

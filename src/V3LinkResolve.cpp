@@ -185,7 +185,8 @@ private:
 	    }
 	}
 	if (!nodep->sensp()->castNodeVarRef()
-	    && !nodep->sensp()->castEnumItemRef()) {  // V3Const will cleanup
+	    && !nodep->sensp()->castEnumItemRef()  // V3Const will cleanup
+	    && !nodep->isIllegal()) {
 	    if (debug()) nodep->dumpTree(cout,"-tree: ");
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
 	}
