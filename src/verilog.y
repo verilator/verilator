@@ -868,9 +868,9 @@ port<nodep>:			// ==IEEE: port
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual interfaces"); $$=NULL; }
+			{ $<fl>2->v3error("Unsupported: virtual or generic interfaces"); $$=NULL; }
 	|	portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual interfaces"); $$=NULL; }
+			{ $<fl>2->v3error("Unsupported: virtual or generic interfaces"); $$=NULL; }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
