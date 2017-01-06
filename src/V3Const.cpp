@@ -1435,7 +1435,12 @@ private:
 	    if (!m_selp) {
 		nodep->v3error("Illegal assignment of constant to unpacked array");
 	    } else {
-		nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+		AstNode* fromp = nodep->fromp()->unlinkFrBack();
+		nodep->replaceWith(fromp);
+		if (fromp->dtypep()->skipRefp()->castNodeArrayDType()) {
+		    // Strip off array to find what array references
+		    fromp->dtypeFrom(fromp->dtypep()->skipRefp()->castNodeArrayDType()->subDTypep());
+		}
 	    }
 	}
 	m_selp = NULL;
