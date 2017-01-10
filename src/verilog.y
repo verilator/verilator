@@ -2629,13 +2629,13 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemT($1,$3); }
 	//
-	|	yD_DISPLAY  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,"", NULL,NULL); }
-	|	yD_DISPLAY  '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,*$3,NULL,$4); }
+	|	yD_DISPLAY  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,NULL); }
+	|	yD_DISPLAY  '(' exprList ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,$3); }
 	|	yD_WRITE    parenE				{ $$ = NULL; } // NOP
-	|	yD_WRITE    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  *$3,NULL,$4); }
-	|	yD_FDISPLAY '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,"",$3,NULL); }
-	|	yD_FDISPLAY '(' expr ',' str commaEListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,*$5,$3,$6); }
-	|	yD_FWRITE   '(' expr ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  *$5,$3,$6); }
+	|	yD_WRITE    '(' exprList ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  NULL,$3); }
+	|	yD_FDISPLAY '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,$3,NULL); }
+	|	yD_FDISPLAY '(' expr ',' exprListE ')' 		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,$3,$5); }
+	|	yD_FWRITE   '(' expr ',' exprListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  $3,$5); }
 	|	yD_INFO	    parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   "", NULL,NULL); }
 	|	yD_INFO	    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   *$3,NULL,$4); }
 	|	yD_WARNING  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,"", NULL,NULL); }
@@ -3160,6 +3160,11 @@ cateList<nodep>:
 	//			// Not just 'expr' to prevent conflict via stream_concOrExprOrType
 		stream_expression			{ $$ = $1; }
 	|	cateList ',' stream_expression		{ $$ = new AstConcat($2,$1,$3); }
+	;
+
+exprListE<nodep>:
+		/* empty */				{ $$ = NULL; }
+	|	exprList				{ $$ = $1; }
 	;
 
 exprList<nodep>:

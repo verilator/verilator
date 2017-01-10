@@ -2324,9 +2324,15 @@ class AstSFormatF : public AstNode {
     // Also used as "real" function for /*verilator sformat*/ functions
     string	m_text;
     bool	m_hidden;	// Under display, etc
+    bool	m_hasFormat;	// Has format code
 public:
+    class NoFormat {};
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp)
-	: AstNode(fl), m_text(text), m_hidden(hidden) {
+	: AstNode(fl), m_text(text), m_hidden(hidden), m_hasFormat(true) {
+	dtypeSetString();
+	addNOp1p(exprsp); addNOp2p(NULL); }
+    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp)
+	: AstNode(fl), m_text(""), m_hidden(true), m_hasFormat(false) {
 	dtypeSetString();
 	addNOp1p(exprsp); addNOp2p(NULL); }
     ASTNODE_NODE_FUNCS(SFormatF)
@@ -2345,6 +2351,8 @@ public:
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
 	return (name().find("%m") != string::npos || name().find("%M") != string::npos); }
     bool hidden() const { return m_hidden; }
+    void hasFormat(bool flag) { m_hasFormat=flag; }
+    bool hasFormat() const { return m_hasFormat; }
 };
 
 class AstDisplay : public AstNodeStmt {
@@ -2357,6 +2365,12 @@ public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
 	: AstNodeStmt (fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
+	setNOp3p(filep);
+	m_displayType = dispType;
+    }
+    AstDisplay(FileLine* fileline, AstDisplayType dispType, AstNode* filep, AstNode* exprsp)
+	: AstNodeStmt (fileline) {
+	setOp1p(new AstSFormatF(fileline, AstSFormatF::NoFormat(), exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
     }

@@ -377,6 +377,17 @@ private:
     }
     virtual void visit(AstSFormatF* nodep) {
 	nodep->iterateChildren(*this);
+	// Cleanup old-school displays without format arguments
+	if (!nodep->hasFormat()) {
+	    if (nodep->text()!="") nodep->v3fatalSrc("Non-format $sformatf should have \"\" format");
+	    if (nodep->exprsp()->castConst()
+		&& nodep->exprsp()->castConst()->num().isFromString()) {
+		AstConst* fmtp = nodep->exprsp()->unlinkFrBack()->castConst();
+		nodep->text(fmtp->num().toString());
+		pushDeletep(fmtp); VL_DANGLING(fmtp);
+	    }
+	    nodep->hasFormat(true);
+	}
 	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
 	nodep->text(newFormat);
 	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
