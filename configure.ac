@@ -1,12 +1,12 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2016 by Wilson Snyder. Verilator is free software; you can
+# Copyright 2003-2017 by Wilson Snyder. Verilator is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[3.891 devel])
+AC_INIT([Verilator],[3.900 2017-01-15])
 # When releasing, also update header of Changes file
 
 AC_CONFIG_HEADER(src/config_build.h)
