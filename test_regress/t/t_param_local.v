@@ -1,0 +1,28 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2017 by Wilson Snyder.
+
+module t (/*AUTOARG*/
+   // Inputs
+   a, y
+   );
+
+   input [1:0] a;
+   output [3:0] y;
+
+   Test #(.C(2))
+      test (.*);
+endmodule
+
+module Test
+  #(C = 3,
+    localparam O = 1 << C)
+   (input [C-1:0] a,
+    output reg [O-1:0] y);
+   initial begin
+      if (O != 4) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+   end
+endmodule

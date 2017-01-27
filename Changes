@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.901 devel
 
+****  Fix 2009 localparam syntax, msg2139. [Galen Seitz]
+
 
 * Verilator 3.900 2017-01-15
 

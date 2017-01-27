@@ -1155,10 +1155,14 @@ parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
 
 parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
 	//			// IEEE: parameter_declaration (minus assignment)
+	//			// IEEE: local_parameter_declaration (minus assignment)
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
+	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
+	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
