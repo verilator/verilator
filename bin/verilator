@@ -2518,6 +2518,14 @@ always @* to reduce missing activity items.  Avoid putting $displays in
 combo blocks, as they may print multiple times when not desired, even on
 compliant simulators as event ordering is not specified.
 
+=head2 Signal Naming
+
+To avoid conflicts with C symbol naming, any character in a signal name
+that is not alphanumeric nor a single underscore will be replaced by __0hh
+where hh is the hex code of the character. To avoid conflicts with
+Verilator's internal symbols, any double underscore are replaced with
+___05F (5F is the hex code of an underscore.)
+
 =head2 Bind
 
 Verilator only supports "bind" to a target module name, not an instance
