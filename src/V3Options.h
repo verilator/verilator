@@ -56,6 +56,7 @@ class V3Options {
     V3StringSet	m_clockers;	// argument: Verilog -clk signals
     V3StringSet	m_noClockers;	// argument: Verilog -noclk signals
     V3StringList m_vFiles;	// argument: Verilog files to read
+    V3StringList m_forceIncs;	// argument: -FI
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;	// argument: --dump-treei-<srcfile>=<level>
     map<string,string>  m_parameters;   // Parameters
@@ -199,6 +200,7 @@ class V3Options {
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
+    void addForceInc(const string& filename);
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
@@ -282,6 +284,7 @@ class V3Options {
     const V3StringSet& ldLibs() const { return m_ldLibs; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
+    const V3StringList& forceIncs() const { return m_forceIncs; }
     const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
 
     bool hasParameter(string name);

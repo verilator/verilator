@@ -280,6 +280,7 @@ descriptions in the next sections for more information.
     --exe                       Link to create executable
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
+     -FI <file>                 Force include of a file
      -G<name>=<value>           Overwrite toplevel parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
@@ -703,6 +704,14 @@ directory.  See also -F. Note -f is fairly standard across Verilog tools.
 The file may contain // comments which are ignored to the end of the line.
 Any $VAR, $(VAR), or ${VAR} will be replaced with the specified environment
 variable.
+
+=item -FI <file>
+
+Force include of the specified C++ header file.  All generated C++ files
+will insert a #include of the specified file before any other includes. The
+specified file might be used to contain define prototypes of custom
+VL_VPRINTF functions, and may need to include verilatedos.h as this file is
+included before any other standard includes.
 
 =item -GI<name>=I<value>
 

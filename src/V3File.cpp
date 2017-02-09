@@ -841,3 +841,10 @@ V3OutFile::~V3OutFile() {
     if (m_fp) fclose(m_fp);
     m_fp = NULL;
 }
+
+void V3OutFile::putsForceIncs() {
+    const V3StringList& forceIncs = v3Global.opt.forceIncs();
+    for (V3StringList::const_iterator it = forceIncs.begin(); it != forceIncs.end(); ++it) {
+	puts("#include \""+*it+"\"\n");
+    }
+}

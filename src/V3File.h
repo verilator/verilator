@@ -173,6 +173,7 @@ class V3OutFile : public V3OutFormatter {
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
     virtual ~V3OutFile();
+    void putsForceIncs();
 private:
     // CALLBACKS
     virtual void putcOutput(char chr) { fputc(chr, m_fp); }
@@ -193,7 +194,9 @@ public:
 	this->printf("%-19s\t%s;\n", classStar.c_str(), cellname.c_str());
     }
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
-    virtual void putsIntTopInclude() { }
+    virtual void putsIntTopInclude() {
+	putsForceIncs();
+    }
     // Print out public/privates
     void resetPrivate() { m_private = 0; }
     void putsPrivate(bool setPrivate) {
@@ -213,6 +216,7 @@ public:
     virtual ~V3OutScFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
+	putsForceIncs();
 	puts("#include \"systemc.h\"\n");
 	puts("#include \"verilated_sc.h\"\n");
     }
@@ -224,6 +228,7 @@ public:
     virtual ~V3OutSpFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
+	putsForceIncs();
 	puts("#include \"systemperl.h\"\n");
 	puts("#include \"verilated_sc.h\"\n");
     }

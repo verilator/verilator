@@ -229,6 +229,10 @@ void V3Options::addVFile(const string& filename) {
     // in a specific order and multiple of them.
     m_vFiles.push_back(filename);
 }
+void V3Options::addForceInc(const string& filename) {
+    m_forceIncs.push_back(filename);
+}
+
 void V3Options::addArg(const string& arg) {
     m_impp->m_allArgs.push_back(arg);
 }
@@ -795,11 +799,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		V3Error::errorLimit(atoi(argv[i]));
 	    }
+	    else if ( !strcmp (sw, "-FI") && (i+1)<argc ) {
+		shift;
+		addForceInc(parseFileArg(optdir, string (argv[i])));
+	    }
 	    else if ( !strncmp (sw, "-G", strlen("-G"))) {
-		addParameter (string (sw+strlen("-G")), false);
+		addParameter(string (sw+strlen("-G")), false);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
-		addIncDirUser (parseFileArg(optdir, string (sw+strlen("-I"))));
+		addIncDirUser(parseFileArg(optdir, string (sw+strlen("-I"))));
 	    }
 	    else if ( !strcmp (sw, "-if-depth") && (i+1)<argc ) {
 		shift;
