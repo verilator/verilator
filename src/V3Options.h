@@ -89,6 +89,7 @@ class V3Options {
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_public;	// main switch: --public
     bool	m_reportUnoptflat; // main switch: --report-unoptflat
+    bool	m_relativeIncludes; // main switch: --relative-includes
     bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
     bool	m_skipIdentical;// main switch: --skip-identical
@@ -344,7 +345,7 @@ class V3Options {
 
     // METHODS (file utilities using these options)
     string fileExists (const string& filename);
-    string filePath (FileLine* fl, const string& modname, const string& errmsg);
+    string filePath(FileLine* fl, const string& modname, const string& lastpath, const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string &filename);
     static bool fileStatDir (const string& filename);

@@ -41,6 +41,7 @@ public:
     static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
     static string filenameDir (const string& filename);	///< Return directory part of filename
     static string filenameSubstitute (const string& filename);	///< Return filename with env vars removed
+    static string filenameRealPath(const string& fn);  ///< Return realpath of filename
     static bool   filenameIsRel (const string& filename);	///< True if relative
 
     // METHODS (directory utilities)

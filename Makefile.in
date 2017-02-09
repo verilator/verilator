@@ -132,6 +132,8 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	test_verilated/vgen*.pl \
 	test_regress/t/t*/*.sv* \
 	test_regress/t/t*/*.v* \
+	test_regress/t/t*/*/*.sv* \
+	test_regress/t/t*/*/*.v* \
 	test_regress/t/*.cpp \
 	test_regress/t/*.h \
 	test_regress/t/*.dat \

@@ -324,6 +324,7 @@ descriptions in the next sections for more information.
     --private                   Debugging; see docs
     --public                    Debugging; see docs
      -pvalue+<name>=<value>     Overwrite toplevel parameter
+    --relative-includes         Resolve includes relative to current file
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
@@ -1022,6 +1023,12 @@ inlining.  This will also turn off inlining as if all modules had a
 
 Overwrites the given parameter(s) of the toplevel module. See -G for a
 detailed description.
+
+=item --relative-includes
+
+When a file references an include file, resolve the filename relative to
+the path of the referencing file, instead of relative to the current
+directory.
 
 =item --report-unoptflat
 

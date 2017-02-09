@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add -FI option to force includes,msg2146. [Amir Gonnen]
 
+**    Add --relative-includes. [Rob Stoddard]
+
 ****  Fix 2009 localparam syntax, msg2139. [Galen Seitz]
 
 

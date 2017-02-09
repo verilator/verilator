@@ -25,6 +25,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <climits>
+#include <cstdlib>
 #include <cerrno>
 #include <fcntl.h>
 #include <iomanip>
@@ -139,6 +141,14 @@ string V3Os::filenameSubstitute (const string& filename) {
     }
     return out;
 
+}
+
+string V3Os::filenameRealPath(const string& filename) {
+    // Get rid of all the ../ behavior in the middle of the paths.
+    // If there is a ../ that goes down from the 'root' of this path it is preserved.
+    char retpath[PATH_MAX];
+    realpath(filename.c_str(), retpath);
+    return string(retpath);
 }
 
 bool V3Os::filenameIsRel(const string& filename) {

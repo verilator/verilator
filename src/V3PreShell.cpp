@@ -33,6 +33,7 @@
 #include "V3PreProc.h"
 #include "V3File.h"
 #include "V3Parse.h"
+#include "V3Os.h"
 
 //######################################################################
 
@@ -102,7 +103,7 @@ protected:
 
 	// Preprocess
 	s_filterp = filterp;
-	bool ok = preprocOpen(fl, s_filterp, modname, errmsg);
+	bool ok = preprocOpen(fl, s_filterp, modname, "", errmsg);
 	if (!ok) return false;
 
 	while (!s_preprocp->isEof()) {
@@ -116,10 +117,10 @@ protected:
 	if (modname[0]=='/' || modname[0]=='\\') {
 	    fl->v3warn(INCABSPATH,"Suggest `include with absolute path be made relative, and use +include: "<<modname);
 	}
-	preprocOpen(fl, s_filterp, modname, "Cannot find include file: ");
+	preprocOpen(fl, s_filterp, modname, V3Os::filenameDir(fl->filename()), "Cannot find include file: ");
     }
 
-    bool preprocOpen (FileLine* fl, V3InFilter* filterp, const string& modname,
+    bool preprocOpen (FileLine* fl, V3InFilter* filterp, const string& modname, const string& lastpath,
 		      const string& errmsg) {  // Error message or "" to suppress
 	// Returns true if successful
 	// Allow user to put `defined names on the command line instead of filenames,
@@ -127,7 +128,7 @@ protected:
 	string ppmodname = s_preprocp->removeDefines (modname);
 
 	// Open include or master file
-	string filename = v3Global.opt.filePath (fl, ppmodname, errmsg);
+	string filename = v3Global.opt.filePath (fl, ppmodname, lastpath, errmsg);
 	if (filename=="") return false;  // Not found
 
 	UINFO(2,"    Reading "<<filename<<endl);

@@ -339,7 +339,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
     return "";
 }
 
-string V3Options::filePath (FileLine* fl, const string& modname,
+string V3Options::filePath (FileLine* fl, const string& modname, const string& lastpath,
 			    const string& errmsg) {   // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
@@ -353,6 +353,11 @@ string V3Options::filePath (FileLine* fl, const string& modname,
 	 dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
 	string exists = filePathCheckOneDir(modname, *dirIter);
 	if (exists!="") return exists;
+    }
+
+    if (m_relativeIncludes) {
+	string exists = filePathCheckOneDir(modname, lastpath);
+	if (exists!="") return V3Os::filenameRealPath(exists);
     }
 
     // Warn and return not found
@@ -710,6 +715,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
             else if ( !strncmp(sw, "-pvalue+", strlen("-pvalue+")))	{ addParameter(string(sw+strlen("-pvalue+")), false); }
 	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
+	    else if ( onoff   (sw, "-relative-includes", flag/*ref*/) )	{ m_relativeIncludes = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
 	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = false; }
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
@@ -1226,6 +1232,7 @@ V3Options::V3Options() {
     m_preprocNoLine = false;
     m_public = false;
     m_reportUnoptflat = false;
+    m_relativeIncludes = false;
     m_savable = false;
     m_skipIdentical = true;
     m_stats = false;
