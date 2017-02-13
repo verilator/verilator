@@ -147,8 +147,11 @@ string V3Os::filenameRealPath(const string& filename) {
     // Get rid of all the ../ behavior in the middle of the paths.
     // If there is a ../ that goes down from the 'root' of this path it is preserved.
     char retpath[PATH_MAX];
-    realpath(filename.c_str(), retpath);
-    return string(retpath);
+    if (realpath(filename.c_str(), retpath)) {
+	return string(retpath);
+    } else {
+	return filename;
+    }
 }
 
 bool V3Os::filenameIsRel(const string& filename) {
