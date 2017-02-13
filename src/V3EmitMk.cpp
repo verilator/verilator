@@ -168,16 +168,16 @@ public:
 
 	of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
 	of.puts("VM_USER_CFLAGS = \\\n");
-	const V3StringSet& cFlags = v3Global.opt.cFlags();
-	for (V3StringSet::const_iterator it = cFlags.begin(); it != cFlags.end(); ++it) {
+	const V3StringList& cFlags = v3Global.opt.cFlags();
+	for (V3StringList::const_iterator it = cFlags.begin(); it != cFlags.end(); ++it) {
 	    of.puts("\t"+*it+" \\\n");
 	}
 	of.puts("\n");
 
 	of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
 	of.puts("VM_USER_LDLIBS = \\\n");
-	const V3StringSet& ldLibs = v3Global.opt.ldLibs();
-	for (V3StringSet::const_iterator it = ldLibs.begin(); it != ldLibs.end(); ++it) {
+	const V3StringList& ldLibs = v3Global.opt.ldLibs();
+	for (V3StringList::const_iterator it = ldLibs.begin(); it != ldLibs.end(); ++it) {
 	    of.puts("\t"+*it+" \\\n");
 	}
 	of.puts("\n");

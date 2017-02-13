@@ -48,9 +48,9 @@ class V3Options {
     // MEMBERS (general options)
     V3OptionsImp*	m_impp;		// Slow hidden options
 
-    V3StringSet	m_cppFiles;	// argument: C++ files to link against
-    V3StringSet	m_cFlags;	// argument: user CFLAGS
-    V3StringSet	m_ldLibs;	// argument: user LDFLAGS
+    V3StringSet m_cppFiles;	// argument: C++ files to link against
+    V3StringList m_cFlags;	// argument: user CFLAGS
+    V3StringList m_ldLibs;	// argument: user LDFLAGS
     V3StringSet	m_futures;	// argument: -Wfuture- list
     V3StringSet	m_libraryFiles;	// argument: Verilog -v files
     V3StringSet	m_clockers;	// argument: Verilog -clk signals
@@ -281,8 +281,8 @@ class V3Options {
     string xAssign() const { return m_xAssign; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
-    const V3StringSet& cFlags() const { return m_cFlags; }
-    const V3StringSet& ldLibs() const { return m_ldLibs; }
+    const V3StringList& cFlags() const { return m_cFlags; }
+    const V3StringList& ldLibs() const { return m_ldLibs; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }

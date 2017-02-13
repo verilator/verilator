@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix 2009 localparam syntax, msg2139. [Galen Seitz]
 
+****  Fix LDFLAGS and CFLAGS not preserving order, bug1130. [Olof Kindgren]
+
 
 * Verilator 3.900 2017-01-15
 

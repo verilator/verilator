@@ -183,14 +183,10 @@ void V3Options::addCppFile(const string& filename) {
     }
 }
 void V3Options::addCFlags(const string& filename) {
-    if (m_cFlags.find(filename) == m_cFlags.end()) {
-	m_cFlags.insert(filename);
-    }
+    m_cFlags.push_back(filename);
 }
 void V3Options::addLdLibs(const string& filename) {
-    if (m_ldLibs.find(filename) == m_ldLibs.end()) {
-	m_ldLibs.insert(filename);
-    }
+    m_ldLibs.push_back(filename);
 }
 void V3Options::addFuture(const string& flag) {
     if (m_futures.find(flag) == m_futures.end()) {
