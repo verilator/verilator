@@ -13,6 +13,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix LDFLAGS and CFLAGS not preserving order, bug1130. [Olof Kindgren]
 
+****  Fix internal error on initializing parameter array, bug1131. [Jie Xu]
+
 
 * Verilator 3.900 2017-01-15
 

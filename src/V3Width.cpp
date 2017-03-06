@@ -1283,7 +1283,7 @@ private:
 	    AstNodeDType* vdtypep = m_vup->dtypep();
 	    if (!vdtypep) nodep->v3fatalSrc("InitArray type not assigned by AstPattern/Var visitor");
 	    nodep->dtypep(vdtypep);
-	    if (AstNodeArrayDType* arrayp = vdtypep->castNodeArrayDType()) {
+	    if (AstNodeArrayDType* arrayp = vdtypep->skipRefp()->castNodeArrayDType()) {
 		userIterateChildren(nodep, WidthVP(arrayp->subDTypep(),BOTH).p());
 	    } else {
 		nodep->v3fatalSrc("InitArray on non-array");
