@@ -143,7 +143,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    explicit InstVisitor(AstNode* nodep) {
+    explicit InstVisitor(AstNetlist* nodep) {
 	m_modp=NULL;
 	m_cellp=NULL;
 	//
@@ -162,6 +162,9 @@ private:
     int		m_instNum;	// Current instantiation number
     int		m_instLsb;	// Current instantiation number
 
+    typedef map<string,AstVar*> VarNameMap;
+    VarNameMap	m_modVarNameMap;	// Per module, name of cloned variables
+
     static int debug() {
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
@@ -169,6 +172,11 @@ private:
     }
 
     // VISITORS
+    virtual void visit(AstNodeModule* nodep) {
+	m_modVarNameMap.clear();
+	nodep->iterateChildren(*this);
+    }
+
     virtual void visit(AstCell* nodep) {
 	if (nodep->rangep()) {
 	    m_cellRangep = nodep->rangep();
@@ -232,21 +240,27 @@ private:
 	    AstUnpackArrayDType* arrdtype = nodep->dtypep()->castUnpackArrayDType();
 	    AstNode* prev = NULL;
 	    for (int i = arrdtype->lsb(); i <= arrdtype->msb(); ++i) {
-		AstVar* varNewp = nodep->cloneTree(false);
 		AstIfaceRefDType* ifaceRefp = arrdtype->subDTypep()->castIfaceRefDType()->cloneTree(false);
 		arrdtype->addNextHere(ifaceRefp);
 		ifaceRefp->cellp(NULL);
-		varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
-		varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
-		varNewp->dtypep(ifaceRefp);
-		if (!prev) {
-		    prev = varNewp;
-		} else {
-		    prev->addNextHere(varNewp);
+
+		string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+		VarNameMap::iterator it = m_modVarNameMap.find(varNewName);
+		if (it == m_modVarNameMap.end()) {
+		    AstVar* varNewp = nodep->cloneTree(false);
+		    m_modVarNameMap.insert(make_pair(varNewName, varNewp));
+		    varNewp->name(varNewName);
+		    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
+		    varNewp->dtypep(ifaceRefp);
+		    if (!prev) {
+			prev = varNewp;
+		    } else {
+			prev->addNextHere(varNewp);
+		    }
 		}
 	    }
-	    nodep->addNextHere(prev);
-	    if (debug()==9) { prev->dumpTree(cout, "newintf: "); cout << endl; }
+	    if (prev) nodep->addNextHere(prev);
+	    if (prev && debug()==9) { prev->dumpTree(cout, "newintf: "); cout << endl; }
 	}
 	nodep->iterateChildren(*this);
     }
@@ -303,7 +317,7 @@ private:
 		}
 		string index = AstNode::encodeNumber(constp->toSInt());
 		AstVarRef* varrefp = arrselp->lhsp()->castVarRef();
-		AstVarXRef* newp = new AstVarXRef(nodep->fileline(),varrefp->name () + "__BRA__" + index  + "__KET__", "", true);
+		AstVarXRef* newp = new AstVarXRef(nodep->fileline(), varrefp->name()+"__BRA__"+index+"__KET__", "", true);
 		newp->dtypep(nodep->modVarp()->dtypep());
 		newp->packagep(varrefp->packagep());
 		arrselp->addNextHere(newp);
@@ -319,16 +333,25 @@ private:
 	    // Clone the var referenced by the pin, and clone each var referenced by the varref
 	    // Clone pin varp:
 	    for (int i = pinArrp->lsb(); i <= pinArrp->msb(); ++i) {
-		AstVar* varNewp = pinVarp->cloneTree(false);
 		AstIfaceRefDType* ifaceRefp = pinArrp->subDTypep()->castIfaceRefDType();
 		ifaceRefp->cellp(NULL);
-		varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
-		varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
-		varNewp->dtypep(ifaceRefp);
-		if (!prevp) {
-		    prevp = varNewp;
+
+		string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+		VarNameMap::iterator it = m_modVarNameMap.find(varNewName);
+		AstVar* varNewp;
+		if (it != m_modVarNameMap.end()) {
+		    varNewp = it->second;
 		} else {
-		    prevp->addNextHere(varNewp);
+		    varNewp = pinVarp->cloneTree(false);
+		    m_modVarNameMap.insert(make_pair(varNewName, varNewp));
+		    varNewp->name(varNewName);
+		    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(i) + "__KET__");
+		    varNewp->dtypep(ifaceRefp);
+		    if (!prevp) {
+			prevp = varNewp;
+		    } else {
+			prevp->addNextHere(varNewp);
+		    }
 		}
 		// Now also clone the pin itself and update its varref
 		AstPin* newp = nodep->cloneTree(false);
@@ -336,7 +359,7 @@ private:
 		newp->name(newp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
 		// And replace exprp with a new varxref
 		AstVarRef* varrefp = newp->exprp()->castVarRef();
-		string newname = varrefp->name () + "__BRA__" + cvtToStr(i) + "__KET__";
+		string newname = varrefp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
 		AstVarXRef* newVarXRefp = new AstVarXRef (nodep->fileline(), newname, "", true);
 		newVarXRefp->varp(newp->modVarp());
 		newVarXRefp->dtypep(newp->modVarp()->dtypep());
@@ -348,11 +371,12 @@ private:
 		    prevPinp->addNextHere(newp);
 		}
 	    }
-	    pinVarp->replaceWith(prevp);
+	    if (prevp) {
+		pinVarp->replaceWith(prevp);
+		pushDeletep(pinVarp);
+	    }  // else pinVarp already unlinked when another instance did this step
 	    nodep->replaceWith(prevPinp);
-	    pushDeletep(pinVarp);
 	    pushDeletep(nodep);
-
 	}
     }
 
@@ -365,7 +389,7 @@ private:
     }
 public:
     // CONSTUCTORS
-    explicit InstDeVisitor(AstNode* nodep) {
+    explicit InstDeVisitor(AstNetlist* nodep) {
 	m_cellRangep=NULL;
 	m_instNum=0;
 	m_instLsb=0;

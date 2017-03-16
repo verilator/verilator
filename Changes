@@ -15,6 +15,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix internal error on initializing parameter array, bug1131. [Jie Xu]
 
+****  Fix internal error on interface arrays, bug1135. [John Stevenson]
+
 
 * Verilator 3.900 2017-01-15
 
