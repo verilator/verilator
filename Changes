@@ -17,6 +17,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix internal error on interface arrays, bug1135. [John Stevenson]
 
+****  Fix realpath compile issue on MSVC++, bug1141. [Miodrag Milanovic]
+
 
 * Verilator 3.900 2017-01-15
 
