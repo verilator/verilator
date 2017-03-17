@@ -2157,15 +2157,25 @@ private:
 			// otherwise would need some mess to force both sides to proper size
 		    }
 		}
+                // Check if an interface is connected to a non-interface and vice versa
+                AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
+                AstNodeDType* exprDTypep = nodep->exprp()->dtypep();
+                if ((modDTypep->castIfaceRefDType() && !exprDTypep->castIfaceRefDType()) ||
+		    (exprDTypep->castIfaceRefDType() && !modDTypep->castIfaceRefDType())) {
+		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
+				   <<" mismatch between port which is"<<(modDTypep->castIfaceRefDType()?"":" not")<<" an interface,"
+				   <<" and expression which is"<<(exprDTypep->castIfaceRefDType()?"":" not")<<" an interface.");
+                }
+
 		// TODO Simple dtype checking, should be a more general check
-		bool hiArray = nodep->exprp()->dtypep()->skipRefp()->castUnpackArrayDType();
-		bool loArray = nodep->modVarp()->dtypep()->skipRefp()->castUnpackArrayDType();
+		bool hiArray = exprDTypep->skipRefp()->castUnpackArrayDType();
+		bool loArray = modDTypep->skipRefp()->castUnpackArrayDType();
 		if (loArray != hiArray && pinwidth != conwidth) {
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
 				   <<" mismatch between port which is"<<(hiArray?"":" not")<<" an array,"
 				   <<" and expression which is"<<(loArray?"":" not")<<" an array.");
-		    UINFO(1,"    Related lo: "<<nodep->exprp()->dtypep()->skipRefp()<<endl);
-		    UINFO(1,"    Related hi: "<<nodep->modVarp()->dtypep()->skipRefp()<<endl);
+		    UINFO(1,"    Related lo: "<<exprDTypep->skipRefp()<<endl);
+		    UINFO(1,"    Related hi: "<<modDTypep->skipRefp()<<endl);
 		}
 		iterateCheckAssign(nodep,"pin connection",nodep->exprp(),FINAL,subDTypep);
 	    }

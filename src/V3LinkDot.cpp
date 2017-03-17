@@ -1759,26 +1759,29 @@ private:
 		    // Upper AstDot visitor will handle it from here
 		}
 		else if (foundp->nodep()->castCell()
-			 && allowVar && m_cellp
-			 && foundp->nodep()->castCell()->modp()->castIface()) {
-		    // Interfaces can be referenced like a variable for interconnect
+			 && allowVar && m_cellp) {
 		    AstCell* cellp = foundp->nodep()->castCell();
-		    VSymEnt* cellEntp = m_statep->getNodeSym(cellp);  if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
-		    VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
-		    string findName = nodep->name()+"__Viftop";
-		    VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
-		    AstVar* ifaceRefVarp = ifaceSymp ? ifaceSymp->nodep()->castVar() : NULL;
-		    if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "<<findName);
-		    //
-		    ok = true;
-		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
-		    m_ds.m_dotText += nodep->name();
-		    m_ds.m_dotSymp = foundp;
-		    m_ds.m_dotPos = DP_SCOPE;
-		    UINFO(9," cell -> iface varref "<<foundp->nodep()<<endl);
-		    AstNode* newp = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, false);
-		    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
-		}
+                    if (cellp->modp()->castIface()) {
+                        // Interfaces can be referenced like a variable for interconnect
+                        VSymEnt* cellEntp = m_statep->getNodeSym(cellp);  if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
+                        VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
+                        string findName = nodep->name()+"__Viftop";
+                        VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
+                        AstVar* ifaceRefVarp = ifaceSymp ? ifaceSymp->nodep()->castVar() : NULL;
+                        if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "<<findName);
+                        //
+                        ok = true;
+                        if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
+                        m_ds.m_dotText += nodep->name();
+                        m_ds.m_dotSymp = foundp;
+                        m_ds.m_dotPos = DP_SCOPE;
+                        UINFO(9," cell -> iface varref "<<foundp->nodep()<<endl);
+                        AstNode* newp = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, false);
+                        nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                    } else if (cellp->modp()->castNotFoundModule()) {
+			cellp->v3error("Cannot find file containing interface: " << AstNode::prettyName(cellp->modp()->name()));
+                    }
+                }
 	    }
 	    else if (AstVar* varp = foundp->nodep()->castVar()) {
 		AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
@@ -1858,7 +1861,9 @@ private:
 	    }
 	    //
 	    if (!ok) {
-		bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText=="");
+                //Cells/interfaces can't be implicit
+		bool isCell = foundp ? foundp->nodep()->castCell() != NULL : false;
+		bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText=="" && !isCell);
 		bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
 		if (err) {
 		    if (foundp) {

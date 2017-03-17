@@ -17,7 +17,8 @@ compile (
     # However we no longer gate optimize this
     expect=>
 q{%Error: t/t_interface_typo_bad.v:\d+: Parent cell's interface is not found: foo_intf
-%Warning-IMPLICIT: t/t_interface_typo_bad.v:\d+: Signal definition not found, creating implicitly: the_foo
+%Error: t/t_interface_typo_bad.v:\d+: Cannot find file containing interface: fo_intf
+%Error: t/t_interface_typo_bad.v:\d+: Found definition of 'the_foo' as a CELL but expected a variable
 .*},
 	 );
 

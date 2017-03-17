@@ -541,7 +541,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    AstVar* modvarp = pinp->modVarp();
 	    if (modvarp->isIfaceRef()) {
 		AstIfaceRefDType* portIrefp = modvarp->subDTypep()->castIfaceRefDType();
-		if (!portIrefp) {
+		if (!portIrefp && modvarp->subDTypep()->castUnpackArrayDType()) {
 		    portIrefp = modvarp->subDTypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
 		}
 
@@ -574,7 +574,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
 
 		if (!portIrefp) {
-		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not an interface" << modvarp);
+		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not an interface " << modvarp);
 		} else if (!pinIrefp) {
 		    pinp->v3error("Interface port '"<<modvarp->prettyName()<<"' is not connected to interface/modport pin expression");
 		} else {
