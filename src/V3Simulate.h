@@ -91,6 +91,11 @@ private:
     deque<V3Number*>	m_numFreeps;	///< List of all numbers free and not in use
     deque<V3Number*>	m_numAllps; 	///< List of all numbers free and in use
 
+    // Cleanup
+    // V3Numbers that represents strings are a bit special and the API for V3Number does not allow changing them.
+    deque<V3Number*>    m_stringNumbersp; // List of allocated string numbers
+
+
     // Note level 8&9 include debugging each simulation value
     static int debug() {
 	static int level = -1;
@@ -726,6 +731,12 @@ private:
 	if (!m_params) { badNodeType(nodep); return; }
     }
 
+    virtual void visit(AstScopeName *nodep) {
+	if (jumpingOver(nodep)) return;
+	if (!m_params) { badNodeType(nodep); return; }
+	// Ignore
+    }
+
     virtual void visit(AstSFormatF *nodep) {
 	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
@@ -743,11 +754,11 @@ private:
 		} else if (!inPct) {   // Normal text
 		    result += *pos;
 		} else { // Format character
-		    AstNode* argp = nextArgp;
 		    inPct = false;
-		    nextArgp = nextArgp->nextp();
 
 		    if (V3Number::displayedFmtLegal(tolower(pos[0]))) {
+			AstNode* argp = nextArgp;
+			nextArgp = nextArgp->nextp();
 			V3Number* nump = fetchNumberNull(argp);
 			if (!nump) {
 			    clearOptimizable(nodep, "Argument for $display like statement is not constant");
@@ -760,6 +771,10 @@ private:
 			case '%':
 			    result += "%";
 			    break;
+			case 'm':
+			    // This happens prior to AstScope so we don't know the scope name. Leave the %m in place.
+			    result += "%m";
+			    break;
 			default:
 			    clearOptimizable(nodep, "Unknown $display-like format code.");
 			    break;
@@ -767,7 +782,11 @@ private:
 		    }
 		}
 	    }
-	    nodep->text(result);
+
+	    V3Number* resultNump = new V3Number(V3Number::String(), nodep->fileline(), result);
+	    setNumber(nodep, resultNump);
+	    m_stringNumbersp.push_back(resultNump);
+
 	}
     }
 
@@ -776,19 +795,20 @@ private:
 	if (!optimizable()) return;  // Accelerate
 	nodep->iterateChildren(*this);
 	if (m_params) {
+	    V3Number* textp = fetchNumber(nodep->fmtp());
 	    switch (nodep->displayType()) {
 	    case AstDisplayType::DT_DISPLAY:  // FALLTHRU
 	    case AstDisplayType::DT_INFO:
-		v3warn(USERINFO, nodep->fmtp()->text());
+		v3warn(USERINFO, textp->toString());
 		break;
 	    case AstDisplayType::DT_ERROR:
-		v3warn(USERERROR, nodep->fmtp()->text());
+		v3warn(USERERROR, textp->toString());
 		break;
 	    case AstDisplayType::DT_WARNING:
-		v3warn(USERWARN, nodep->fmtp()->text());
+		v3warn(USERWARN, textp->toString());
 		break;
 	    case AstDisplayType::DT_FATAL:
-		v3warn(USERFATAL, nodep->fmtp()->text());
+		v3warn(USERFATAL, textp->toString());
 		break;
 	    case AstDisplayType::DT_WRITE:  // FALLTHRU
 	    default:
@@ -863,6 +883,10 @@ public:
 	for (deque<V3Number*>::iterator it = m_numAllps.begin(); it != m_numAllps.end(); ++it) {
 	    delete (*it);
 	}
+	for (deque<V3Number*>::iterator it = m_stringNumbersp.begin(); it != m_stringNumbersp.end(); ++it) {
+	    delete (*it);
+	}
+	m_stringNumbersp.clear();
 	m_numFreeps.clear();
 	m_numAllps.clear();
     }

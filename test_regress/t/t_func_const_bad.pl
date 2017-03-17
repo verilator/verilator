@@ -21,6 +21,13 @@ q{%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can
 %Error: t/t_func_const_bad.v:\d+: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above 1024
 %Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_stop'
 %Error: t/t_func_const_bad.v:\d+: ... Location of non-constant STOP: .stop executed during function constification; maybe indicates assertion firing
+-Info: Printing in loop:           0
+-Info: Printing in loop:           1
+-Info: Printing in loop:           2
+%Warning-USERFATAL: Fatal Error
+%Warning-USERFATAL: Use ... verilator lint_off USERFATAL ... and lint_on around source to disable this message.
+%Error: t/t_func_const_bad.v:\d+: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_fatal'
+%Error: t/t_func_const_bad.v:\d+: ... Location of non-constant STOP: .stop executed during function constification; maybe indicates assertion firing
 %Error: Exiting due to.*},
 	 );
 
