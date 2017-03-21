@@ -2168,14 +2168,24 @@ private:
                 }
 
 		// TODO Simple dtype checking, should be a more general check
-		bool hiArray = exprDTypep->skipRefp()->castUnpackArrayDType();
-		bool loArray = modDTypep->skipRefp()->castUnpackArrayDType();
-		if (loArray != hiArray && pinwidth != conwidth) {
+		AstNodeArrayDType* loArrayp = exprDTypep->skipRefp()->castUnpackArrayDType();
+		AstNodeArrayDType* hiArrayp = modDTypep->skipRefp()->castUnpackArrayDType();
+		if (loArrayp && hiArrayp && loArrayp->subDTypep()->skipRefp()->castIfaceRefDType() 
+		    && loArrayp->declRange().elements() != hiArrayp->declRange().elements()) {
+		    int loSize = loArrayp->declRange().elements();
+		    int hiSize = hiArrayp->declRange().elements();
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
-				   <<" mismatch between port which is"<<(hiArray?"":" not")<<" an array,"
-				   <<" and expression which is"<<(loArray?"":" not")<<" an array.");
-		    UINFO(1,"    Related lo: "<<exprDTypep->skipRefp()<<endl);
-		    UINFO(1,"    Related hi: "<<modDTypep->skipRefp()<<endl);
+				   <<" mismatch between port which is an interface array of size "<<loSize<<","
+				   <<" and expression which is an interface array of size "<<hiSize<<".");
+		    UINFO(1,"    Related lo: "<<modDTypep->skipRefp()<<endl);
+		    UINFO(1,"    Related hi: "<<exprDTypep->skipRefp()<<endl);
+		} else if ((loArrayp && !hiArrayp && pinwidth != conwidth)
+			   || (!loArrayp && hiArrayp && pinwidth != conwidth)) {
+		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
+				   <<" mismatch between port which is"<<(loArrayp?"":" not")<<" an array,"
+				   <<" and expression which is"<<(hiArrayp?"":" not")<<" an array.");
+		    UINFO(1,"    Related lo: "<<modDTypep->skipRefp()<<endl);
+		    UINFO(1,"    Related hi: "<<exprDTypep->skipRefp()<<endl);
 		}
 		iterateCheckAssign(nodep,"pin connection",nodep->exprp(),FINAL,subDTypep);
 	    }
