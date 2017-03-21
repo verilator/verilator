@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add --relative-includes. [Rob Stoddard]
 
+****  Fix error on improperly widthed default function, bug984. [Todd Strader]
+
 ****  Fix 2009 localparam syntax, msg2139. [Galen Seitz]
 
 ****  Fix ugly interface-to-non-interface errors, bug1112. [Johan Bjork]

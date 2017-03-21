@@ -2806,11 +2806,11 @@ private:
 	if (extendRule == EXTEND_OFF) return;
 	AstConst* constp = nodep->castConst();
 	int expWidth = expDTypep->width();
-	if (constp && !nodep->isSigned()) {
+	if (constp && !constp->num().isNegative()) {
 	    // Save later constant propagation work, just right-size it.
 	    V3Number num (nodep->fileline(), expWidth);
 	    num.opAssign(constp->num());
-	    num.isSigned(expDTypep->isSigned());
+	    num.isSigned(false);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
 	    pushDeletep(constp); VL_DANGLING(constp); VL_DANGLING(nodep);
