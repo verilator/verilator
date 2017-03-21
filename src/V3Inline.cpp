@@ -510,6 +510,7 @@ private:
 		// delete it in later optimizations.
 		AstVar* pinOldVarp = pinp->modVarp();
 		AstVar* pinNewVarp = pinOldVarp->clonep();
+		if (!pinNewVarp) pinOldVarp->v3fatalSrc("Cloning failed");
 
 		AstNode* connectRefp = pinp->exprp();
 		if (!connectRefp->castConst() && !connectRefp->castVarRef()) {
