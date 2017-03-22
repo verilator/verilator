@@ -102,4 +102,19 @@ module t
     .uids     ( uids      ),
     .thing_inp( thing_inp ),
     .thing_out( thing_out ));
+
+   // Previously there was a problem in V3Inst if non-default parameters was used
+   localparam K = 2;
+   the_intf #(.M(K)) thing_inp2();
+   the_intf #(.M(K)) thing_out2();
+
+   Thinker #(
+    .M        ( K         ),
+    .N        ( N         ))
+   thinker2(
+    .clk      ( clk       ),
+    .reset    ( reset     ),
+    .uids     ( uids      ),
+    .thing_inp( thing_inp2 ),
+    .thing_out( thing_out2 ));
 endmodule

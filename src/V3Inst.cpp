@@ -333,15 +333,18 @@ private:
 	    // Clone the var referenced by the pin, and clone each var referenced by the varref
 	    // Clone pin varp:
 	    for (int i = pinArrp->lsb(); i <= pinArrp->msb(); ++i) {
-		AstIfaceRefDType* ifaceRefp = pinArrp->subDTypep()->castIfaceRefDType();
-		ifaceRefp->cellp(NULL);
-
 		string varNewName = pinVarp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
 		VarNameMap::iterator it = m_modVarNameMap.find(varNewName);
-		AstVar* varNewp;
-		if (it != m_modVarNameMap.end()) {
-		    varNewp = it->second;
+		AstVar* varNewp = NULL;
+
+		// Only clone the var once for each module
+		if (!pinVarp->backp()) {
+		    if (it != m_modVarNameMap.end()) {
+			varNewp = it->second;
+		    }
 		} else {
+		    AstIfaceRefDType* ifaceRefp = pinArrp->subDTypep()->castIfaceRefDType();
+		    ifaceRefp->cellp(NULL);
 		    varNewp = pinVarp->cloneTree(false);
 		    m_modVarNameMap.insert(make_pair(varNewName, varNewp));
 		    varNewp->name(varNewName);
@@ -353,6 +356,11 @@ private:
 			prevp->addNextHere(varNewp);
 		    }
 		}
+		if (varNewp == NULL) {
+		    nodep->v3fatalSrc("Module dearray failed\n");
+		}
+
+		// But clone the pin for each module instance
 		// Now also clone the pin itself and update its varref
 		AstPin* newp = nodep->cloneTree(false);
 		newp->modVarp(varNewp);
