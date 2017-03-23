@@ -1613,7 +1613,10 @@ private:
 			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
 			    memp=NULL; patp=NULL; break;
 			} else {
-			    patmap.insert(make_pair(memp, patp));
+			    pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
+			    if (!ret.second) {
+				patp->v3error("Assignment pattern contains duplicate entry: " << patp->keyp()->castText()->text());
+			    }
 			}
 			// Next
 			if (memp) memp = memp->nextp()->castMemberDType();

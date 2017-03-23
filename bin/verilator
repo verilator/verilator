@@ -2946,13 +2946,12 @@ Simply use a different register for the flop:
       always @* foo[0] = foo_flopped[0];
       always @* foo[1] = ...
 
-This is good coding practice anyways.
-
 It is also possible to disable this error when one of the assignments is
 inside a public task.
 
-Ignoring this warning may make Verilator simulations differ from other
-simulators.
+This is not illegal in SystemVerilog, but a violation of good coding
+practice. Verilator reports this as an error, because ignoring this warning
+may make Verilator simulations differ from other simulators.
 
 =item BLKSEQ
 

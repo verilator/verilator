@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add --relative-includes. [Rob Stoddard]
 
+***   Add error on duplicate pattern assignments, bug1145. [Johan Bjork]
+
 ****  Fix error on improperly widthed default function, bug984. [Todd Strader]
 
 ****  Fix 2009 localparam syntax, msg2139. [Galen Seitz]

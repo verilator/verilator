@@ -49,6 +49,10 @@ module t;
 
    pack2_t arr[2];
 
+`ifdef T_STRUCT_INIT_BAD
+   const b4_t b4_const_c = '{b1: 1'b1, b1: 1'b0, b0:1'b0, b2: 1'b1, b3: 1'b1};
+`endif
+
    initial begin
       pack3_t tsu;
       tsu = 6'b110110;
@@ -119,5 +123,5 @@ module t;
       if (in !== cmp) $stop;
       pat = 1'b0;
    endfunction
-   
+
 endmodule
