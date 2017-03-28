@@ -1184,7 +1184,14 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
 	if (nodep->didWidth()) return;
-	if (!nodep->varp()) nodep->v3fatalSrc("Unlinked varref");
+	if (!nodep->varp()) {
+	    if (m_paramsOnly && nodep->castVarXRef()) {
+		checkConstantOrReplace(nodep, "Parameter-resolved constants must not use dotted references: "+nodep->prettyName()); VL_DANGLING(nodep);
+		return;
+	    } else {
+		nodep->v3fatalSrc("Unlinked varref");
+	    }
+	}
 	if (!nodep->varp()->didWidth()) {
 	    // Var hasn't been widthed, so make it so.
 	    userIterate(nodep->varp(), NULL);

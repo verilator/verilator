@@ -29,6 +29,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix missing error on interface size mismatch, bug1143.  [Johan Bjork]
 
+****  Fix error on parameters with dotted references, bug1146. [Johan Bjork]
+
 
 * Verilator 3.900 2017-01-15
 
