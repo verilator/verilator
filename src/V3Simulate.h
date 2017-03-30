@@ -468,52 +468,53 @@ private:
 	}
     }
 
-    bool handleAssignSel(AstNodeAssign* nodep, AstSel* selp, AstVarRef** outVarrefp, int depth) {
+    void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
+	AstVarRef* varrefp = NULL;
+	V3Number lsb = V3Number(nodep->fileline());
+	nodep->rhsp()->iterateAndNext(*this); // Value to assign
+	handleAssignSelRecurse(nodep, selp, varrefp/*ref*/, lsb/*ref*/, 0);
+	if (!m_checkOnly && optimizable()) {
+	    if (!varrefp) nodep->v3fatalSrc("Indicated optimizable, but no variable found on RHS of select");
+	    AstNode* vscp = varOrScope(varrefp);
+	    V3Number outnum = V3Number(nodep->fileline());
+	    if (V3Number* vscpnump = fetchOutNumberNull(vscp)) {
+		outnum = *vscpnump;
+	    } else if (V3Number* vscpnump = fetchNumberNull(vscp)) {
+		outnum = *vscpnump;
+	    } else {  // Assignment to unassigned variable, all bits are X or 0
+		outnum = V3Number(nodep->fileline(), varrefp->varp()->widthMin());
+		if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
+		    outnum.setAllBits0();
+		} else {
+		    outnum.setAllBitsX();
+		}
+	    }
+	    outnum.opSelInto(*fetchNumber(nodep->rhsp()),
+			     lsb,
+			     selp->widthConst());
+	    assignOutNumber(nodep, vscp, &outnum);
+	}
+    }
+    void handleAssignSelRecurse (AstNodeAssign* nodep, AstSel* selp,
+				 AstVarRef*& outVarrefpRef, V3Number& lsbRef,
+				 int depth) {
+	// Recurse down to find final variable being set (outVarrefp), with value to write on nodep->rhsp()
 	checkNodeInfo(selp);
-	AstVarRef* varrefp = selp->fromp()->castVarRef();
-	if (!varrefp) {
-	    selp = selp->lhsp()->castSel();
-	    if (selp) {
-		if (!handleAssignSel(nodep, selp, &varrefp, depth+1)) {
-		    clearOptimizable(nodep, "Select LHS isn't simple variable");
-		    return false;
-		}
-	    }
-	}
-
-	if (m_checkOnly) {
-	    nodep->iterateChildren(*this);
-	} else {
-	    selp->lsbp()->iterateAndNext(*this);
-	    nodep->rhsp()->iterateAndNext(*this);
-
+	selp->lsbp()->iterateAndNext(*this);  // Bit index
+	if (AstVarRef* varrefp = selp->fromp()->castVarRef()) {
+	    outVarrefpRef = varrefp;
+	    lsbRef = *fetchNumber(selp->lsbp());
+	    return;  // And presumably still optimizable()
+	} else if (AstSel* subselp = selp->lhsp()->castSel()) {
+	    V3Number sublsb = V3Number(nodep->fileline());
+	    handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb/*ref*/, depth+1);
 	    if (optimizable()) {
-		if (varrefp) {
-		    AstNode* vscp = varOrScope(varrefp);
-		    V3Number outnum = V3Number(nodep->fileline());
-		    if (V3Number* vscpnump = fetchOutNumberNull(vscp)) {
-			outnum = *vscpnump;
-		    } else if (V3Number* vscpnump = fetchNumberNull(vscp)) {
-			outnum = *vscpnump;
-		    } else {  // Assignment to unassigned variable, all bits are X or 0
-			outnum = V3Number(nodep->fileline(), varrefp->varp()->widthMin());
-			if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
-			    outnum.setAllBits0();
-			} else {
-			    outnum.setAllBitsX();
-			}
-		    }
-		    if (depth == 0) {
-			outnum.opSelInto(*fetchNumber(nodep->rhsp()),
-					 *fetchNumber(selp->lsbp()),
-					 selp->widthConst());
-			assignOutNumber(nodep, vscp, &outnum);
-		    }
-		}
+		lsbRef = sublsb;
+		lsbRef.opAdd(sublsb, *fetchNumber(selp->lsbp()));
 	    }
+	} else {
+	    clearOptimizable(nodep, "Select LHS isn't simple variable");
 	}
-	if (outVarrefp) *outVarrefp = varrefp;
-	return true;
     }
 
     virtual void visit(AstNodeAssign* nodep) {
@@ -530,7 +531,7 @@ private:
 
 	if (AstSel* selp = nodep->lhsp()->castSel()) {
 	    if (!m_params) { clearOptimizable(nodep, "LHS has select"); return; }
-	    handleAssignSel(nodep, selp, NULL, 0);
+	    handleAssignSel(nodep, selp);
 	}
 	else if (!nodep->lhsp()->castVarRef()) {
 	    clearOptimizable(nodep, "LHS isn't simple variable");

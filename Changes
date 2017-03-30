@@ -33,6 +33,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix wreal not handling continuous assign, bug1150. [J Briquet]
 
+****  Fix nested structure parameter selects, bug1150. [J Briquet]
+
 
 * Verilator 3.900 2017-01-15
 
