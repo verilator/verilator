@@ -195,6 +195,8 @@ string AstVar::verilogKwd() const {
 	return "tri";
     } else if (varType()==AstVarType::WIRE) {
 	return "wire";
+    } else if (varType()==AstVarType::WREAL) {
+	return "wreal";
     } else {
 	return dtypep()->name();
     }

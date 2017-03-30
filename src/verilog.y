@@ -934,13 +934,13 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 	//			// Per spec, if direction given default the nettype.
 	//			// The higher level rule may override this VARDTYPE with one later in the parse.
 	|	port_direction					{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); }
-	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARNET
-	|	net_type					{ } // net_type calls VARNET
+	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARDECL
+	|	net_type					{ } // net_type calls VARDECL
  	;
 
 port_declNetE:			// IEEE: part of port_declaration, optional net type
 		/* empty */				{ }
-	|	net_type				{ } // net_type calls VARNET
+	|	net_type				{ } // net_type calls VARDECL
  	;
 
 portSig<nodep>:
@@ -1209,6 +1209,8 @@ net_type:			// ==IEEE: net_type
 	//UNSUP	yWAND 					{ VARDECL(WAND); }
 	|	yWIRE 					{ VARDECL(WIRE); }
 	//UNSUP	yWOR 					{ VARDECL(WOR); }
+	//			// VAMS - somewhat hackish
+	|	yWREAL 					{ VARDECL(WREAL); }
 	;
 
 varGParamReset:
@@ -1291,8 +1293,6 @@ non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	//UNSUP	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::FLOAT); }
-	//			// VAMS - somewhat hackish
-	|	yWREAL 					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); VARDECL(WIRE); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
@@ -3803,6 +3803,10 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
 	return NULL;
     }
     AstVarType type = GRAMMARP->m_varIO;
+    if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
+	// dtypep might not be null, might be implicit LOGIC before we knew better
+	dtypep = new AstBasicDType(fileline,AstBasicDTypeKwd::DOUBLE);
+    }
     if (!dtypep) {  // Created implicitly
 	dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
     } else {  // May make new variables with same type, so clone

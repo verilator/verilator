@@ -31,6 +31,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error on parameters with dotted references, bug1146. [Johan Bjork]
 
+****  Fix wreal not handling continuous assign, bug1150. [J Briquet]
+
 
 * Verilator 3.900 2017-01-15
 

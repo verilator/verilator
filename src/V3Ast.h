@@ -427,6 +427,7 @@ public:
 	SUPPLY0,
 	SUPPLY1,
 	WIRE,
+	WREAL,
 	IMPLICITWIRE,
 	TRIWIRE,
 	TRI0,
@@ -448,13 +449,13 @@ public:
 	static const char* names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "VAR","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","IMPLICITWIRE",
+	    "SUPPLY0","SUPPLY1","WIRE","WREAL","IMPLICITWIRE",
 	    "TRIWIRE","TRI0","TRI1",
 	    "PORT",
 	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP",
 	    "IFACEREF"};
 	return names[m_e]; }
-    bool isSignal() const  { return (m_e==WIRE || m_e==IMPLICITWIRE
+    bool isSignal() const  { return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
 				     || m_e==TRIWIRE
 				     || m_e==TRI0 || m_e==TRI1
 				     || m_e==SUPPLY0 || m_e==SUPPLY1
