@@ -269,7 +269,12 @@ inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 #define UINFO(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
 #define UINFONL(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<stmsg; } }
 
-#define UDEBUGONLY(stmts) {stmts}
+#ifdef VL_DEBUG
+# define UDEBUGONLY(stmts) {stmts}
+#else
+# define UDEBUGONLY(stmts) {if (0) {stmts}}
+#endif
+
 #define UASSERT(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { v3fatalSrc(stmsg); }}
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { cerr<<"Internal Error: "<<__FILE__<<":"<<dec<<__LINE__<<":"<<(stmsg)<<endl; abort(); } }
