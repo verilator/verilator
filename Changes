@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 3.901 devel
+* Verilator 3.902 2017-04-02
 
 **    Add -FI option to force includes,msg2146. [Amir Gonnen]
 
