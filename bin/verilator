@@ -1913,17 +1913,20 @@ documented below.
 Verilator has an important difference from an event based simulator; signal
 values that are changed by the VPI will not immediately propagate their
 values, instead the top level header file's eval() method must be called.
-Normally this would be part of the normal evaluation (IE the next clock
+Normally this would be part of the normal evaluation (i.e. the next clock
 edge), not as part of the value change.  This makes the performance of VPI
 routines extremely fast compared to event based simulators, but can confuse
 some test-benches that expect immediate propagation.
 
-Note the VPI by it's specified implementation will always be much slower
+Note the VPI by its specified implementation will always be much slower
 than accessing the Verilator values by direct reference
 (structure->module->signame), as the VPI accessors perform lookup in
 functions at runtime requiring at best hundreds of instructions, while the
 direct references are evaluated by the compiler and result in only a couple
 of instructions.
+
+For signal callbacks to work the main loop of the program must call
+VerilatedVpi::callValueCbs().
 
 =head2 VPI Example
 
@@ -1931,36 +1934,50 @@ In the below example, we have readme marked read-only, and writeme which if
 written from outside the model will have the same semantics as if it
 changed on the specified clock edge.
 
-    module t;
-       reg readme   /*verilator public_flat_rd*/;
-       reg writeme  /*verilator public_flat_rw @(posedge clk) */;
-    endmodule
+    cat <<EOF >our.v
+      module our (input clk);
+         reg readme   /*verilator public_flat_rd*/;
+         reg writeme  /*verilator public_flat_rw @(posedge clk) */;
+         initial $finish;
+      endmodule
+    EOF
 
 There are many online tutorials and books on the VPI, but an example that
-accesses the above would be:
+accesses the above signal "readme" would be:
 
-    void read_and_check() {
-        vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.readme", NULL);
-        if (!vh1) { error... }
-        const char* name = vpi_get_str(vpiName, vh1);
-        printf("Module name: %s\n");  // Prints "readme"
+    cat <<EOF >sim_main.cpp
+      #include "Vour.h"
+      #include "verilated.h"
+      #include "verilated_vpi.h"  // Required to get definitions
 
-        s_vpi_value v;
-        v.format = vpiIntVal;
-        vpi_get_value(vh1, &v);
-        printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
-    }
+      vluint64_t main_time = 0;   // See comments in first example
+      double sc_time_stamp () { return main_time; }
 
-For signal callbacks to work the main loop of the program must call
-VerilatedVpi::callValueCbs().
+      void read_and_check() {
+          vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"TOP.our.readme", NULL);
+          if (!vh1) { vl_fatal(__FILE__, __LINE__, "sim_main", "No handle found"); }
+          const char* name = vpi_get_str(vpiName, vh1);
+          printf("Module name: %s\n", name);  // Prints "readme"
 
-    #include "verilated_vpi.h"  // Required to get definitions
-    ...
-    while (time passes) {
-        ...
-        topp->eval();
-        VerilatedVpi::callValueCbs();
-    }
+          s_vpi_value v;
+          v.format = vpiIntVal;
+          vpi_get_value(vh1, &v);
+          printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
+      }
+
+      int main(int argc, char **argv, char **env) {
+          Verilated::commandArgs(argc, argv);
+          Vour* top = new Vour;
+          Verilated::internalsDump();  // See scopes to help debug
+          while (!Verilated::gotFinish()) {
+              top->eval();
+              VerilatedVpi::callValueCbs();  // For signal callbacks
+              read_and_check();
+          }
+          delete top;
+          exit(0);
+      }
+    EOF
 
 
 =head1 CROSS COMPILATION
