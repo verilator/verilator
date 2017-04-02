@@ -2401,6 +2401,14 @@ reduce the size of the final executable when a task is used a very large
 number of times.  For this flag to work, the task and tasks below it must
 be pure; they cannot reference any variables outside the task itself.
 
+=item /*verilator public*/ (parameter)
+
+Used after a parameter declaration to indicate the emitted C code should
+have the parameter values visible. Due to C++ language restrictions, this
+may only be used on 64-bit or narrower integral enumerations.
+
+    parameter [2:0] PARAM /*verilator public*/ = 2'b0;
+
 =item /*verilator public*/ (typedef enum)
 
 Used after an enum typedef declaration to indicate the emitted C code
