@@ -6,8 +6,6 @@
 `begin_keywords "VAMS-2.3"
 
 module t (/*autoarg*/
-   // Outputs
-   aout,
    // Inputs
    clk, in
    );
@@ -15,17 +13,19 @@ module t (/*autoarg*/
    input clk;
 
    input [15:0] in;
-   output 	aout; 
    wreal aout;
 
    integer 	cyc=0;
 
-   real vin;
-   real gnd;
+   real 	vin;
+   wreal 	vpass;
+   through through (.vin, .vpass);
+
+   real 	gnd;
    wire 	out;
    within_range within_range (/*AUTOINST*/
 			      // Interfaces
-			      .vin		(vin),
+			      .vpass		(vpass),
 			      .gnd		(gnd),
 			      // Outputs
 			      .out		(out));
@@ -70,14 +70,20 @@ module t (/*autoarg*/
 
 endmodule
 
-module within_range
+module through
   (input wreal vin,
+   output wreal vpass);
+   assign vpass = vin;
+endmodule
+
+module within_range
+  (input wreal vpass,
    input wreal gnd,
    output out);
 
    parameter real V_MIN = 0.5;
    parameter real V_MAX = 10;
 
-   wreal in_int = vin - gnd;
+   wreal in_int = vpass - gnd;
    wire out = (V_MIN <= in_int && in_int <= V_MAX);
 endmodule
