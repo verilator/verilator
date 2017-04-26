@@ -45,7 +45,7 @@ class V3Number {
     // METHODS
     V3Number& setSingleBits(char value);
     V3Number& setString(const string& str) { m_isString=true; m_stringVal=str; return *this; }
-    void opCleanThis();
+    void opCleanThis(bool warnOnTruncation = false);
 public:
     FileLine*	fileline() const { return m_fileline; }
     void	fileline(FileLine* fl) { m_fileline=fl; }

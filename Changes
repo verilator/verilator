@@ -5,6 +5,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.903 devel
 
+****  Add warning on mis-sized literal, bug1156. [Todd Strader]
 
 
 * Verilator 3.902 2017-04-02

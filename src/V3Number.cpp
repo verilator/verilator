@@ -48,7 +48,7 @@ V3Number::V3Number(VerilogStringLiteral, FileLine* fileline, const string& str) 
 	    }
 	}
     }
-    opCleanThis();
+    opCleanThis(true);
 }
 
 V3Number::V3Number (FileLine* fileline, const char* sourcep) {
@@ -254,7 +254,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	setBit(obit, bitIs(obit-1));
 	obit++;
     }
-    opCleanThis();
+    opCleanThis(true);
 
     //printf("Dump \"%s\"  CP \"%s\"  B '%c' %d W %d\n", sourcep, value_startp, base, width(), m_value[0]);
 }
@@ -1587,10 +1587,16 @@ V3Number& V3Number::opClean (const V3Number& lhs, uint32_t bits) {
     return opSel(lhs, bits-1, 0);
 }
 
-void V3Number::opCleanThis() {
-    // Clean in place number
-    m_value[words()-1]  &= hiWordMask();
-    m_valueX[words()-1] &= hiWordMask();
+void V3Number::opCleanThis(bool warnOnTruncation) {
+    // Clean MSB of number
+    uint32_t newValueMsb = m_value[words()-1]  & hiWordMask();
+    uint32_t newValueXMsb = m_valueX[words()-1] & hiWordMask();
+    if (warnOnTruncation && (newValueMsb != m_value[words()-1] || newValueXMsb != m_valueX[words()-1])) {
+	// Displaying in decimal avoids hiWordMask truncation
+	m_fileline->v3warn(WIDTH,"Value too large for "<<width()<<" bit number: "<<displayed(m_fileline, "%d"));
+    }
+    m_value[words()-1]  = newValueMsb;
+    m_valueX[words()-1] = newValueXMsb;
 }
 
 V3Number& V3Number::opSel (const V3Number& lhs, const V3Number& msb, const V3Number& lsb) {
