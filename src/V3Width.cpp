@@ -2178,22 +2178,22 @@ private:
                 }
 
 		// TODO Simple dtype checking, should be a more general check
-		AstNodeArrayDType* loArrayp = exprDTypep->skipRefp()->castUnpackArrayDType();
-		AstNodeArrayDType* hiArrayp = modDTypep->skipRefp()->castUnpackArrayDType();
-		if (loArrayp && hiArrayp && loArrayp->subDTypep()->skipRefp()->castIfaceRefDType() 
-		    && loArrayp->declRange().elements() != hiArrayp->declRange().elements()) {
-		    int loSize = loArrayp->declRange().elements();
-		    int hiSize = hiArrayp->declRange().elements();
+		AstNodeArrayDType* exprArrayp = exprDTypep->skipRefp()->castUnpackArrayDType();
+		AstNodeArrayDType* modArrayp = modDTypep->skipRefp()->castUnpackArrayDType();
+		if (exprArrayp && modArrayp && exprArrayp->subDTypep()->skipRefp()->castIfaceRefDType() 
+		    && exprArrayp->declRange().elements() != modArrayp->declRange().elements()) {
+		    int exprSize = exprArrayp->declRange().elements();
+		    int modSize = modArrayp->declRange().elements();
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
-				   <<" mismatch between port which is an interface array of size "<<loSize<<","
-				   <<" and expression which is an interface array of size "<<hiSize<<".");
+				   <<" mismatch between port which is an interface array of size "<<modSize<<","
+				   <<" and expression which is an interface array of size "<<exprSize<<".");
 		    UINFO(1,"    Related lo: "<<modDTypep->skipRefp()<<endl);
 		    UINFO(1,"    Related hi: "<<exprDTypep->skipRefp()<<endl);
-		} else if ((loArrayp && !hiArrayp && pinwidth != conwidth)
-			   || (!loArrayp && hiArrayp && pinwidth != conwidth)) {
+		} else if ((exprArrayp && !modArrayp && pinwidth != conwidth)
+			   || (!exprArrayp && modArrayp && pinwidth != conwidth)) {
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
-				   <<" mismatch between port which is"<<(loArrayp?"":" not")<<" an array,"
-				   <<" and expression which is"<<(hiArrayp?"":" not")<<" an array.");
+				   <<" mismatch between port which is"<<(modArrayp?"":" not")<<" an array,"
+				   <<" and expression which is"<<(exprArrayp?"":" not")<<" an array.");
 		    UINFO(1,"    Related lo: "<<modDTypep->skipRefp()<<endl);
 		    UINFO(1,"    Related hi: "<<exprDTypep->skipRefp()<<endl);
 		}

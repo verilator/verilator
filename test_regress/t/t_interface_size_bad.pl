@@ -10,8 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
 	fails=>1,
 	expect=>
-q{%Error: t/t_interface_size_bad.v:\d+: Illegal IFACEREF port connection 'foo', mismatch between port which is an interface array of size 4, and expression which is an interface array of size 5.
-%Error: t/t_interface_size_bad.v:\d+: Illegal IFACEREF port connection 'foo', mismatch between port which is an interface array of size 6, and expression which is an interface array of size 5.
+q{%Error: t/t_interface_size_bad.v:\d+: Illegal IFACEREF port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 4.
+%Error: t/t_interface_size_bad.v:\d+: Illegal IFACEREF port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 6.
 %Error: Exiting due to.*},
     );
 
