@@ -2136,7 +2136,8 @@ private:
 	    AstNodeDType* subDTypep = pinDTypep;
 	    int pinwidth = pinDTypep->width();
 	    int conwidth = conDTypep->width();
-	    if (conDTypep == pinDTypep) {  // If match, we're golden
+	    if (conDTypep == pinDTypep  // If match, we're golden
+		|| similarDTypeRecurse(conDTypep, pinDTypep)) {
 		userIterateAndNext(nodep->exprp(), WidthVP(subDTypep,FINAL).p());
 	    }
 	    else if (m_cellRangep) {
@@ -2909,6 +2910,9 @@ private:
 	return false; // No change
     }
 
+    bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
+	return node1p->skipRefp()->similarDType(node2p->skipRefp());
+    }
     void iterateCheckFileDesc (AstNode* nodep, AstNode* underp, Stage stage) {
 	if (stage != BOTH) nodep->v3fatalSrc("Bad call");
 	// underp may change as a result of replacement

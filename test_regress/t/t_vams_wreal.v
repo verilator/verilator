@@ -30,6 +30,26 @@ module t (/*autoarg*/
 			      // Outputs
 			      .out		(out));
 
+    // wreal bus declaration
+    wreal vin_upper_bus[1:0];
+
+    // wreal nets declaration
+    wreal vout_split_0;
+    wreal vout_split_1;
+
+    wreal_bus wreal_bus( .vin_bus(vin_upper_bus[1:0]),
+                         .vout_split_0(vout_split_0),
+                         .vout_split_1(vout_split_1));
+
+
+    // implicit declaration of wreal
+`ifdef VERILATOR
+   wreal wreal_implicit_net;  // implicit declaration of wreal not supported yet
+`endif
+   // verilator lint_off IMPLICIT
+   first_level first_level(.in(cyc[0]), .out(wreal_implicit_net));
+   // verilator lint_on IMPLICIT
+
    parameter real lsb = 1;
    // verilator lint_off WIDTH
    assign  aout = $itor(in) * lsb;
@@ -86,4 +106,31 @@ module within_range
 
    wreal in_int = vpass - gnd;
    wire out = (V_MIN <= in_int && in_int <= V_MAX);
+endmodule
+
+
+module wreal_bus
+  (input wreal vin_bus [1:0],
+   output wreal vout_split_0,
+   output wreal vout_split_1);
+   assign vout_split_0 = vin_bus[0];
+   assign vout_split_1 = vin_bus[1];
+endmodule
+
+module first_level
+  (input in,
+`ifdef VERILATOR
+   output wreal out
+`else
+   output out  // Implicity becomes real
+`endif
+);
+   second_level second_level(.in(in), .out(out));
+endmodule
+
+module second_level
+  (input in,
+   output out);
+   wreal out;
+   assign out = in ? 1.23456: 7.8910;
 endmodule

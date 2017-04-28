@@ -180,6 +180,10 @@ public:
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
     virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+	AstParamTypeDType* sp = samep->castParamTypeDType();
+	return (sp && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp()));
+    }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
     // METHODS
@@ -250,7 +254,9 @@ public:
 	m_uniqueNum = uniqueNumInc();
     }
     ASTNODE_NODE_FUNCS(DefImplicitDType)
-    virtual bool same(AstNode* samep) const { return m_uniqueNum==samep->castDefImplicitDType()->m_uniqueNum; }
+    virtual bool same(AstNode* samep) const { return m_uniqueNum==samep->castDefImplicitDType()->m_uniqueNum; } 
+    virtual bool similarDType(AstNodeDType* samep) const {
+	return type()==samep->type() && same(samep); }
     virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
@@ -392,6 +398,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m.m_keyword), V3Hash(m.m_nrange.hi())); }
     virtual bool same(AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
 	return samep->castBasicDType()->m == m; }
+    virtual bool similarDType(AstNodeDType* samep) const {
+	return type()==samep->type() && same(samep); }
     virtual string name()	const { return m.m_keyword.ascii(); }
     virtual const char* broken() const { BROKEN_RTN(dtypep()!=this); return NULL; }
     AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
@@ -456,6 +464,8 @@ public:
     }}
     virtual bool same(AstNode* samep) const {
 	return (m_refDTypep==samep->castConstDType()->m_refDTypep); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+	return skipRefp()->similarDType(samep->skipRefp()); }
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }  // node's type() included elsewhere
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
@@ -499,6 +509,7 @@ public:
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
     string cellName() const { return m_cellName; }
@@ -540,6 +551,8 @@ public:
 	return (m_refDTypep==samep->castRefDType()->m_refDTypep
 		&& m_name==samep->castRefDType()->m_name
 		&& m_packagep==samep->castRefDType()->m_packagep); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+	return skipRefp()->similarDType(samep->skipRefp()); }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(m_packagep)); }
     virtual void dump(ostream& str=cout);
     virtual string name() const { return m_name; }
@@ -623,6 +636,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     //
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
@@ -704,6 +718,7 @@ public:
 	m_refDTypep = m_refDTypep->clonep();
     }}
     virtual bool same(AstNode* samep) const { return m_uniqueNum==samep->castEnumDType()->m_uniqueNum; }
+    virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Data type
@@ -733,6 +748,7 @@ public:
     ASTNODE_NODE_FUNCS(ParseTypeDType)
     AstNodeDType* dtypep() const { return NULL; }
     // METHODS
+    virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual AstBasicDType* basicp() const { return NULL; }
     virtual AstNodeDType* skipRefp() const { return NULL; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }

@@ -1861,7 +1861,7 @@ private:
 	    }
 	    //
 	    if (!ok) {
-                //Cells/interfaces can't be implicit
+                // Cells/interfaces can't be implicit
 		bool isCell = foundp ? foundp->nodep()->castCell() != NULL : false;
 		bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText=="" && !isCell);
 		bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));

@@ -1675,6 +1675,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     virtual AstNodeDType* virtRefDTypep() const { return NULL; } // Iff has a non-null refDTypep(), as generic node function
     virtual void virtRefDTypep(AstNodeDType* nodep) { }	// Iff has refDTypep(), set as generic node function
+    virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
     //
     // Changing the width may confuse the data type resolution, so must clear TypeTable cache after use.
     void widthForce(int width, int sized) { m_width=width; m_widthMin=sized; }
@@ -1724,6 +1725,9 @@ public:
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     // op1 = members
+    virtual bool similarDType(AstNodeDType* samep) const {
+	return this==samep;  // We don't compare members, require exact equivalence
+    }
     AstMemberDType* membersp() const { return op1p()->castMemberDType(); } // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
@@ -1754,7 +1758,7 @@ public:
     virtual void dump(ostream& str);
     virtual void dumpSmall(ostream& str);
     virtual const char* broken() const { BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
-						     || (!m_refDTypep && childDTypep()))); return NULL; }
+						      || (!m_refDTypep && childDTypep()))); return NULL; }
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
 	m_refDTypep = m_refDTypep->clonep();
     }}
@@ -1763,6 +1767,14 @@ public:
 	return (msb()==sp->msb()
 		&& subDTypep()==sp->subDTypep()
 		&& rangenp()->sameTree(sp->rangenp())); }  // HashedDT doesn't recurse, so need to check children
+    virtual bool similarDType(AstNodeDType* samep) const {
+	AstNodeArrayDType* sp = samep->castNodeArrayDType();
+	return (sp
+		&& type() == samep->type()
+		&& msb() == sp->msb()
+		&& rangenp()->sameTree(sp->rangenp())
+		&& subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp()));
+    }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
