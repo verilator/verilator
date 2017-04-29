@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support ports of array of reals, bug1154.  [J Briquet]
 
+****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
+
 ****  Add warning on mis-sized literal, bug1156. [Todd Strader]
 
 
