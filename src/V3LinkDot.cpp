@@ -839,7 +839,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstNodeFTask* nodep) {
 	// NodeTask: Remember its name for later resolution
 	UINFO(5,"   "<<nodep<<endl);
-	if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Function/Task not under module??\n");
+	if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Function/Task not under module?");
 	// Remember the existing symbol table scope
 	VSymEnt* oldCurSymp = m_curSymp;
 	{
@@ -873,7 +873,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     }
     virtual void visit(AstVar* nodep) {
 	// Var: Remember its name for later resolution
-	if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Var not under module??\n");
+	if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Var not under module?");
 	nodep->iterateChildren(*this);
 	if (!m_statep->forScopeCreation()) {
 	    // Find under either a task or the module's vars
@@ -957,12 +957,12 @@ class LinkDotFindVisitor : public AstNVisitor {
     }
     virtual void visit(AstTypedef* nodep) {
 	// Remember its name for later resolution
-	if (!m_curSymp) nodep->v3fatalSrc("Typedef not under module??\n");
+	if (!m_curSymp) nodep->v3fatalSrc("Typedef not under module?");
 	nodep->iterateChildren(*this);
 	m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
     virtual void visit(AstParamTypeDType* nodep) {
-	if (!m_curSymp) nodep->v3fatalSrc("Parameter type not under module??\n");
+	if (!m_curSymp) nodep->v3fatalSrc("Parameter type not under module?");
 	nodep->iterateChildren(*this);
 	m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
@@ -1593,7 +1593,7 @@ private:
 	checkNoDot(nodep);
 	nodep->iterateChildren(*this);
 	if (!nodep->modVarp()) {
-	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?\n");
+	    if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?");
 	    VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
 	    const char* whatp = nodep->param() ? "parameter pin" : "pin";
 	    if (!foundp) {

@@ -555,7 +555,7 @@ private:
 	// Replace oldp node with a constant set to specified value
 	UASSERT (oldp, "Null old\n");
 	if (oldp->castConst() && !oldp->castConst()->num().isFourState()) {
-	    oldp->v3fatalSrc("Already constant??\n");
+	    oldp->v3fatalSrc("Already constant??");
 	}
 	AstNode* newp = new AstConst(oldp->fileline(), num);
 	newp->dtypeFrom(oldp);

@@ -239,7 +239,7 @@ private:
 	    V3Hash hashval = it->first;
 	    AstNode* node1p = it->second;
 	    if (!node1p->castCFunc()) continue;
-	    if (hashval.isIllegal()) node1p->v3fatalSrc("Illegal (unhashed) nodes\n");
+	    if (hashval.isIllegal()) node1p->v3fatalSrc("Illegal (unhashed) nodes");
 	    for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
 		AstNode* node2p = eqit->second;
 		if (!(eqit->first == hashval)) break;

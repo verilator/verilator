@@ -559,7 +559,7 @@ class GaterVisitor : public GaterBaseVisitor {
 		if (!vVxp->inBeginp()) {
 		    // At this point, any variable not linked is an error
 		    // (It should have at least landed under the Head node)
-		    vVxp->nodep()->v3fatalSrc("Variable became stranded in clk gate detection\n");
+		    vVxp->nodep()->v3fatalSrc("Variable became stranded in clk gate detection");
 		}
 		if (!lastVxp || vVxp->sortCmp(lastVxp)) {
 		    // Different sources for this new node

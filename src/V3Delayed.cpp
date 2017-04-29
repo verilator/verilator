@@ -207,8 +207,8 @@ private:
 	    dimvalp.push_front(valp);
 	}
 	AstVarRef* varrefp = dimselp->castVarRef();
-	if (!varrefp) nodep->v3fatalSrc("No var underneath arraysels\n");
-	if (!varrefp->varScopep()) varrefp->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
+	if (!varrefp) nodep->v3fatalSrc("No var underneath arraysels");
+	if (!varrefp->varScopep()) varrefp->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	varrefp->unlinkFrBack();
 	AstVar* oldvarp = varrefp->varp();
 	int modVecNum = oldvarp->user4();  oldvarp->user4(modVecNum+1);
@@ -393,7 +393,7 @@ private:
 		if (!m_activep) nodep->v3fatalSrc("<= not under sensitivity block");
 		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
 		AstVarScope* oldvscp = nodep->varScopep();
-		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
+		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 		AstVarScope* dlyvscp = oldvscp->user1p()->castVarScope();
 		if (dlyvscp) {  // Multiple use of delayed variable
 		    AstActive* oldactivep = dlyvscp->user2p()->castActive();
@@ -433,7 +433,7 @@ private:
     }
 
     virtual void visit(AstNodeFor* nodep) {
-	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin\n");
+	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin");
     }
     virtual void visit(AstWhile* nodep) {
 	bool oldloop = m_inLoop;

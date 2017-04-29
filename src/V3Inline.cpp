@@ -277,7 +277,7 @@ private:
 	    AstVarRef* exprvarrefp = nodep->user2p()->castVarRef();
 	    UINFO(8,"connectto: "<<nodep->user2p()<<endl);
 	    if (!exprconstp && !exprvarrefp) {
-		nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
+		nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
 	    }
 	    if (exprconstp) {
 		m_modp->addStmtp(new AstAssignW(nodep->fileline(),
@@ -362,7 +362,7 @@ private:
 		nodep->varp( exprvarrefp->varp() );
 	    }
 	    else {
-		nodep->v3fatalSrc("Null connection?\n");
+		nodep->v3fatalSrc("Null connection?");
 	    }
 	}
 	nodep->name(nodep->varp()->name());
@@ -514,7 +514,7 @@ private:
 
 		AstNode* connectRefp = pinp->exprp();
 		if (!connectRefp->castConst() && !connectRefp->castVarRef()) {
-		    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up\n");
+		    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
 		}
 		if (pinNewVarp->isOutOnly() && connectRefp->castConst()) {
 		    pinp->v3error("Output port is connected to a constant pin, electrical short");

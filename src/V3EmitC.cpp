@@ -217,7 +217,7 @@ public:
     }
     virtual void visit(AstNodeCase* nodep) {
 	// In V3Case...
-	nodep->v3fatalSrc("Case statements should have been reduced out\n");
+	nodep->v3fatalSrc("Case statements should have been reduced out");
     }
     virtual void visit(AstComment* nodep) {
 	putsDecoration((string)"// "+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");

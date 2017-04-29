@@ -108,7 +108,7 @@ private:
 	    // Move the active's contents to the other active
 	    UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
 	    if (nodep->sensesStorep()) {
-		if (sensesp != nodep->sensesStorep()) nodep->v3fatalSrc("sensesStore should have been deleted earlier if different\n");
+		if (sensesp != nodep->sensesStorep()) nodep->v3fatalSrc("sensesStore should have been deleted earlier if different");
 		sensesp->unlinkFrBack();
 		// There may be other references to same sense tree,
 		// we'll be removing all references when we get to them,

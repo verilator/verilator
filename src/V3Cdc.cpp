@@ -629,9 +629,9 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
-	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block\n");
+	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block");
 	    AstVarScope* varscp = nodep->varScopep();
-	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
+	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	    CdcVarVertex* varvertexp = makeVarVertex(varscp);
 	    UINFO(5," VARREF to "<<varscp<<endl);
 	    // We use weight of one for normal edges,

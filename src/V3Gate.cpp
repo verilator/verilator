@@ -409,9 +409,9 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
-	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block\n");
+	    if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block");
 	    AstVarScope* varscp = nodep->varScopep();
-	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
+	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	    GateVarVertex* vvertexp = makeVarVertex(varscp);
 	    UINFO(5," VARREF to "<<varscp<<endl);
 	    if (m_inSenItem) vvertexp->setIsClock();
@@ -484,7 +484,7 @@ private:
     }
     virtual void visit(AstConcat* nodep) {
 	if (nodep->backp()->castNodeAssign() && nodep->backp()->castNodeAssign()->lhsp()==nodep) {
-	    nodep->v3fatalSrc("Concat on LHS of assignment; V3Const should have deleted it\n");
+	    nodep->v3fatalSrc("Concat on LHS of assignment; V3Const should have deleted it");
 	}
 	nodep->iterateChildren(*this);
     }
@@ -704,7 +704,7 @@ void GateVisitor::replaceAssigns() {
 		if (!vscp->valuep()->castNodeMath()
 		    || vscp->valuep()->nextp()) {
 		    vscp->dumpTree(cerr, "vscStrange: ");
-		    vscp->v3fatalSrc("Value of varscope not mathematical\n");
+		    vscp->v3fatalSrc("Value of varscope not mathematical");
 		}
 	    }
 	}

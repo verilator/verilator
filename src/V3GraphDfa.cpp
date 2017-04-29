@@ -44,7 +44,7 @@ DfaVertex* DfaGraph::findStart() {
 		startp = vvertexp;
 	    }
 	} else {
-	    v3fatalSrc("Non DfaVertex in DfaGraph\n");
+	    v3fatalSrc("Non DfaVertex in DfaGraph");
 	}
     }
     if (!startp) v3fatalSrc("No start point in NFA graph");
@@ -520,7 +520,7 @@ private:
 		}
 	    }
 	}
-	if (!acceptp) v3fatalSrc("No accepting vertex in DFA\n");
+	if (!acceptp) v3fatalSrc("No accepting vertex in DFA");
 
 	// Remap edges
 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {

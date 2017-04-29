@@ -194,7 +194,7 @@ public:
     // METHODS
     OrderVarVertex* newVarUserVertex(V3Graph* graphp, AstScope* scopep,
 				     AstVarScope* varscp, WhichVertex type, bool* createdp=NULL) {
-	if (type>=WV_MAX) varscp->v3fatalSrc("Bad Case\n");
+	if (type>=WV_MAX) varscp->v3fatalSrc("Bad case");
 	OrderVarVertex* vertexp = m_vertexp[type];
 	if (!vertexp) {
 	    UINFO(6,"New vertex "<<varscp<<endl);
@@ -205,7 +205,7 @@ public:
 	    case WV_PORD: vertexp = new OrderVarPordVertex  (graphp, scopep, varscp); break;
 	    case WV_POST: vertexp = new OrderVarPostVertex  (graphp, scopep, varscp); break;
 	    case WV_SETL: vertexp = new OrderVarSettleVertex(graphp, scopep, varscp); break;
-	    default: varscp->v3fatalSrc("Bad Case\n");
+	    default: varscp->v3fatalSrc("Bad case");
 	    }
 	    m_vertexp[type] = vertexp;
 	} else {
@@ -806,15 +806,15 @@ private:
     virtual void visit(AstNodeVarRef* nodep) {
 	if (m_scopep) {
 	    AstVarScope* varscp = nodep->varScopep();
-	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp\n");
+	    if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	    if (m_inSenTree) {
 		// Add CLOCK dependency... This is a root of the tree we'll trace
-		if (nodep->lvalue()) nodep->v3fatalSrc("How can a sensitivity be setting a var?\n");
+		if (nodep->lvalue()) nodep->v3fatalSrc("How can a sensitivity be setting a var?");
 		OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_STD);
 		varVxp->isClock(true);
 		new OrderEdge(&m_graph, varVxp, m_activeSenVxp, WEIGHT_MEDIUM);
 	    } else {
-		if (!m_logicVxp) nodep->v3fatalSrc("Var ref not under a logic block\n");
+		if (!m_logicVxp) nodep->v3fatalSrc("Var ref not under a logic block");
 		// What new directions is this used
 		// We don't want to add extra edges if the logic block has many usages of same var
 		bool gen = false;

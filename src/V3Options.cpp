@@ -607,7 +607,7 @@ bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
     // if sw=="-no-arg", then return true (found it), and flag=false
     // if sw=="-noarg", then return true (found it), and flag=false
     // else return false
-    if (arg[0]!='-') v3fatalSrc("OnOff switches must have leading dash.\n");
+    if (arg[0]!='-') v3fatalSrc("OnOff switches must have leading dash");
     if (0==strcmp(sw,arg)) { flag=true; return true; }
     else if (0==strncmp(sw,"-no",3) && (0==strcmp(sw+3,arg+1))) { flag=false; return true; }
     else if (0==strncmp(sw,"-no-",4) && (0==strcmp(sw+4,arg+1))) { flag=false; return true; }

@@ -204,7 +204,7 @@ private:
 		pinp->modPTypep(cloneiter->second->castParamTypeDType());
 	    }
 	    else {
-		pinp->v3fatalSrc("Not linked?\n");
+		pinp->v3fatalSrc("Not linked?");
 	    }
 	}
     }

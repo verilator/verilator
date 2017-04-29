@@ -263,7 +263,7 @@ private:
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
 	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
 	    AstVarScope* newvscp = nodep->varp()->user2p()->castVarScope();
-	    if (!newvscp) nodep->v3fatalSrc("Null?\n");
+	    if (!newvscp) nodep->v3fatalSrc("not linked");
 	    nodep->varScopep(newvscp);
 	    nodep->varp(nodep->varScopep()->varp());
 	    nodep->name(nodep->varp()->name());
@@ -1147,7 +1147,7 @@ private:
 	m_insStmtp = NULL;	// Next thing should be new statement
     }
     virtual void visit(AstNodeFor* nodep) {
-	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp\n");
+	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp");
     }
     virtual void visit(AstNodeStmt* nodep) {
 	m_insMode = IM_BEFORE;

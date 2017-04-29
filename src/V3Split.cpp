@@ -272,12 +272,12 @@ private:
 	//UINFO(9,"    push "<<nodep<<endl);
 	SplitLogicVertex* vertexp = new SplitLogicVertex(&m_graph, nodep);
 	m_stmtStackps.push_back(vertexp);
-	if (nodep->user3p()) nodep->v3fatalSrc("user3p should not be used; cleared in processBlock\n");
+	if (nodep->user3p()) nodep->v3fatalSrc("user3p should not be used; cleared in processBlock");
 	nodep->user3p(vertexp);
     }
     void scoreboardPopStmt() {
 	//UINFO(9,"    pop"<<endl);
-	if (m_stmtStackps.empty()) v3fatalSrc("Stack underflow\n");
+	if (m_stmtStackps.empty()) v3fatalSrc("Stack underflow");
 	m_stmtStackps.pop_back();
     }
 
@@ -346,8 +346,8 @@ private:
 	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
 	    vvertexp->splitColor(vvertexp->color());
 	    uint32_t color = vvertexp->splitColor();
-	    if (color >= numVertexes) nextp->v3fatalSrc("More colors than vertexes!\n");
-	    if (!color) nextp->v3fatalSrc("No node color assigned\n");
+	    if (color >= numVertexes) nextp->v3fatalSrc("More colors than vertexes");
+	    if (!color) nextp->v3fatalSrc("No node color assigned");
 	    if (lastOfColor[color]) {
 		new SplitStrictEdge(&m_graph, lastOfColor[color], vvertexp);
 	    }

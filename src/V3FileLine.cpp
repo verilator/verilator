@@ -270,7 +270,7 @@ void FileLine::operator delete(void* objp, size_t size) {
     if (it != fileLineLeakChecks.end()) {
 	fileLineLeakChecks.erase(it);
     } else {
-	flp->v3fatalSrc("Deleting FileLine object that was never tracked\n");
+	flp->v3fatalSrc("Deleting FileLine object that was never tracked");
     }
     ::operator delete(objp);
 }
