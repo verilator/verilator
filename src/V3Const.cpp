@@ -1491,6 +1491,14 @@ private:
 			did=true;
 		    }
 		}
+		else if (m_params && valuep->castInitArray() && nodep->backp()->castPin()) {
+		    // Allow parameters to pass arrays
+		    // Earlier recursion of InitArray made sure each array value is constant
+		    // This exception is fairly fragile, i.e. doesn't support arrays of arrays or other stuff
+		    AstNode* newp = valuep->cloneTree(false);
+		    nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+		    did = true;
+		}
 	    }
 	}
 	if (!did && m_required) {

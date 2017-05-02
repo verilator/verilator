@@ -493,6 +493,12 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    if (AstVar* modvarp = pinp->modVarp()) {
 		if (!modvarp->isGParam()) {
 		    pinp->v3error("Attempted parameter setting of non-parameter: Param "<<pinp->prettyName()<<" of "<<nodep->prettyName());
+		} else if (pinp->exprp()->castInitArray()
+			   && modvarp->subDTypep()->castUnpackArrayDType()) {
+		    // Array assigned to array
+		    AstNode* exprp = pinp->exprp();
+		    longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+		    any_overrides = true;
 		} else {
 		    AstConst* exprp = pinp->exprp()->castConst();
 		    AstConst* origp = modvarp->valuep()->castConst();
@@ -651,11 +657,11 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		    if (pinp->exprp()) {
 			if (AstVar* modvarp = pinp->modVarp()) {
-			    AstConst* constp = pinp->exprp()->castConst();
+			    AstNode* newp = pinp->exprp();  // Const or InitArray
 			    // Remove any existing parameter
 			    if (modvarp->valuep()) modvarp->valuep()->unlinkFrBack()->deleteTree();
 			    // Set this parameter to value requested by cell
-			    modvarp->valuep(constp->cloneTree(false));
+			    modvarp->valuep(newp->cloneTree(false));
 			}
 			else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
 			    AstNodeDType* dtypep = pinp->exprp()->castNodeDType();

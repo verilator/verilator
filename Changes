@@ -5,7 +5,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.903 devel
 
-***   Support ports of array of reals, bug1154.  [J Briquet]
+***   Support ports of array of reals, bug1154. [J Briquet]
+
+***   Support arrayed parameter overrides, bug1153. [John Stevenson]
 
 ****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
 

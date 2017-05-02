@@ -873,7 +873,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
 <V95,V01,V05,VA5,S05,S09,S12,SAX>{
-    "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	// Doesn't match (*), but (* attr_spec
+    "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	/* Doesn't match (*), but (* attr_spec */
 }
 
   /************************************************************************/
