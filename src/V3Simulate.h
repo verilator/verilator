@@ -44,11 +44,24 @@
 #include "V3Task.h"
 
 #include <deque>
+#include <sstream>
 
 //============================================================================
 
 //######################################################################
 // Simulate class functions
+
+class SimulateStackNode {
+public:
+    // MEMBERS
+    AstFuncRef*		m_funcp;
+    V3TaskConnects*	m_tconnects;
+    // CONSTRUCTORS
+    SimulateStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects):
+	m_funcp(funcp),
+	m_tconnects(tconnects) {}
+    ~SimulateStackNode() {}
+};
 
 class SimulateVisitor : public AstNVisitor {
     // Simulate a node tree, returning value of variables
@@ -90,6 +103,7 @@ private:
     // Simulating:
     deque<V3Number*>	m_numFreeps;	///< List of all numbers free and not in use
     deque<V3Number*>	m_numAllps; 	///< List of all numbers free and in use
+    deque<SimulateStackNode*>	m_callStack;	///< Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for V3Number does not allow changing them.
@@ -101,6 +115,54 @@ private:
 	static int level = -1;
 	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
 	return level;
+    }
+
+    // Potentially very slow, intended for debugging
+    string prettyNumber(V3Number* nump, AstNodeDType* dtypep) {
+	if (AstRefDType* refdtypep = dtypep->castRefDType()) {
+	    dtypep = refdtypep->skipRefp();
+	}
+	if (AstStructDType* stp = dtypep->castStructDType()) {
+	    if (stp->packed()) {
+		ostringstream out;
+		out<<"'{";
+		for (AstMemberDType* itemp = stp->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+		    int width = itemp->width();
+		    int lsb = itemp->lsb();
+		    int msb = lsb + width - 1;
+		    V3Number fieldNum = V3Number(nump->fileline(), width);
+		    fieldNum.opSel(*nump, msb, lsb);
+		    out<<itemp->name()<<": ";
+		    if (AstNodeDType * childTypep = itemp->subDTypep()) {
+			out<<prettyNumber(&fieldNum, childTypep);
+		    } else {
+			out<<fieldNum;
+		    }
+		    if (itemp->nextp()) out<<", ";
+		}
+		out<<"}";
+		return out.str();
+	    }
+	} else if (AstPackArrayDType * arrayp = dtypep->castPackArrayDType()) {
+	    if (AstNodeDType * childTypep = arrayp->subDTypep()) {
+		ostringstream out;
+		out<<"[";
+		int arrayElements = arrayp->elementsConst();
+		for (int element = 0; element < arrayElements; ++element) {
+		    int width = childTypep->width();
+		    int lsb = width * element;
+		    int msb = lsb + width - 1;
+		    V3Number fieldNum = V3Number(nump->fileline(), width);
+		    fieldNum.opSel(*nump, msb, lsb);
+		    int arrayElem = arrayp->lsb() + element;
+		    out<<arrayElem<<" = "<<prettyNumber(&fieldNum, childTypep);
+		    if (element < arrayElements - 1) out<<", ";
+		}
+		out<<"]";
+		return out.str();
+	    }
+	}
+	return nump->ascii();
     }
 
     // Checking METHODS
@@ -119,6 +181,19 @@ public:
 		cout<<endl;
 	    }
 	    m_whyNotOptimizable = why;
+	    ostringstream stack;
+	    for (deque<SimulateStackNode*>::iterator it=m_callStack.begin(); it !=m_callStack.end(); ++it) {
+		AstFuncRef* funcp = (*it)->m_funcp;
+		stack<<"\nCalled from:\n"<<funcp->fileline()<<" "<<funcp->prettyName()<<"() with parameters:";
+		V3TaskConnects* tconnects = (*it)->m_tconnects;
+		for (V3TaskConnects::iterator conIt = tconnects->begin(); conIt != tconnects->end(); ++conIt) {
+		    AstVar* portp = conIt->first;
+		    AstNode* pinp = conIt->second->exprp();
+		    AstNodeDType* dtypep = pinp->dtypep();
+		    stack<<"\n    "<<portp->prettyName()<<" = "<<prettyNumber(fetchNumber(pinp), dtypep);
+		}
+	    }
+	    m_whyNotOptimizable += stack.str();
 	}
     }
     inline bool optimizable() const { return m_whyNotNodep==NULL; }
@@ -718,8 +793,11 @@ private:
 		}
 	    }
 	}
+	SimulateStackNode stackNode(nodep, &tconnects);
+	m_callStack.push_front(&stackNode);
 	// Evaluate the function
 	funcp->accept(*this);
+	m_callStack.pop_front();
 	if (!m_checkOnly && optimizable()) {
 	    // Grab return value from output variable (if it's a function)
 	    if (!funcp->fvarp()) nodep->v3fatalSrc("Function reference points at non-function");
