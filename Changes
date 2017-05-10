@@ -11,11 +11,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support arrayed parameter overrides, bug1153. [John Stevenson]
 
-****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
+****  Support modport access to un-modport objects, bug1161. [Todd Strader]
 
 ****  Add stack trace when can't optimize function, bug1158. [Todd Strader]
 
 ****  Add warning on mis-sized literal, bug1156. [Todd Strader]
+
+****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
 
 
 * Verilator 3.902 2017-04-02

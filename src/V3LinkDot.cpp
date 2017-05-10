@@ -445,6 +445,10 @@ public:
 		      <<") <- se"<<srcp<<" "<<srcp->nodep()<<endl);
 		// srcp should be an interface reference pointing to the interface we want to import
 		lhsp->importFromIface(symsp(), srcp);
+		// Allow access to objects not permissible to be listed in a modport
+		if (srcp->nodep()->castModport()) {
+		    lhsp->importFromIface(symsp(), srcp->parentp(), true);
+		}
 	    }
 	    //m_scopeAliasMap[samn].clear();  // Done with it, but put into debug file
 	}

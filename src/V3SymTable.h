@@ -183,16 +183,19 @@ public:
 	}
 	return any;
     }
-    void importFromIface(VSymGraph* graphp, const VSymEnt* srcp) {
+    void importFromIface(VSymGraph* graphp, const VSymEnt* srcp, bool onlyUnmodportable = false) {
 	// Import interface tokens from source symbol table into this symbol table, recursively
 	UINFO(9, "     importIf  se"<<(void*)this<<" from se"<<(void*)srcp<<endl);
 	for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
 	    const string& name = it->first;
 	    VSymEnt* subSrcp = it->second;
-	    VSymEnt* subSymp = new VSymEnt(graphp, subSrcp);
-	    reinsert(name, subSymp);
-	    // And recurse to create children
-	    subSymp->importFromIface(graphp, subSrcp);
+	    AstVar* varp = subSrcp->nodep()->castVar();
+	    if (!onlyUnmodportable || (varp && varp->varType() == AstVarType::GPARAM)) {
+		VSymEnt* subSymp = new VSymEnt(graphp, subSrcp);
+		reinsert(name, subSymp);
+		// And recurse to create children
+		subSymp->importFromIface(graphp, subSrcp);
+	    }
 	}
     }
     void cellErrorScopes(AstNode* lookp, string prettyName="") {
