@@ -140,6 +140,13 @@ AstNodeBiop* AstLte::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
+AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+    if (lhsp->isDouble() && rhsp->isDouble()) {
+	return new AstEqD(fl, lhsp, rhsp);
+    } else {
+	return new AstEqWild(fl, lhsp, rhsp);
+    }
+}
 
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));

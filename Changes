@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
 
+****  Fix --assert with complex case statements, bug1164. [Enzo Chi]
+
 
 * Verilator 3.902 2017-04-02
 
