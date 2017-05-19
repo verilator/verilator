@@ -283,7 +283,59 @@ private:
     virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()) nodep->varp()->iterate(*this);
     }
+    bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
+	for (; candp; candp = candp->nextp()) {
+	    if (nodep->name() == candp->name()) {
+		if (AstVar* varp = candp->castVar()) {
+		    UINFO(9,"Found interface parameter: "<<varp<<endl);
+		    nodep->varp(varp);
+		    return true;
+		} else if (AstPin* pinp = candp->castPin()) {
+		    UINFO(9,"Found interface parameter: "<<pinp<<endl);
+		    if (!pinp->exprp()) pinp->v3fatalSrc("Interface parameter pin missing expression");
+		    nodep->replaceWith(pinp->exprp()->cloneTree(false)); VL_DANGLING(nodep);
+		    return true;
+		}
+	    }
+	}
+	return false;
+    }
     virtual void visit(AstVarXRef* nodep) {
+	// Check to see if the scope is just an interface because interfaces are special
+	string dotted = nodep->dotted();
+	if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
+	    AstNode* backp = nodep;
+	    while ((backp = backp->backp())) {
+		if (backp->castNodeModule()) {
+		    UINFO(9,"Hit module boundary, done looking for interface"<<endl);
+		    break;
+		}
+		if (backp->castVar()
+		    && backp->castVar()->isIfaceRef()
+		    && backp->castVar()->childDTypep()
+		    && backp->castVar()->childDTypep()->castIfaceRefDType()) {
+		    AstIfaceRefDType* ifacerefp = backp->castVar()->childDTypep()->castIfaceRefDType();
+		    // Interfaces passed in on the port map have ifaces
+		    if (AstIface* ifacep = ifacerefp->ifacep()) {
+			if (dotted == backp->name()) {
+			    UINFO(9,"Iface matching scope:  "<<ifacep<<endl);
+			    if (ifaceParamReplace(nodep, ifacep->stmtsp())) {
+				return;
+			    }
+			}
+		    }
+		    // Interfaces declared in this module have cells
+		    else if (AstCell* cellp = ifacerefp->cellp()) {
+			if (dotted == cellp->name()) {
+			    UINFO(9,"Iface matching scope:  "<<cellp<<endl);
+			    if (ifaceParamReplace(nodep, cellp->paramsp())) {
+				return;
+			    }
+			}
+		    }
+		}
+	    }
+	}
 	nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
     }
 

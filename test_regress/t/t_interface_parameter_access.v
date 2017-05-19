@@ -22,6 +22,10 @@ interface test_if #(parameter integer FOO = 1);
 
 endinterface // test_if
 
+function integer identity (input integer x);
+   return x;
+endfunction
+
 
 module t (/*AUTOARG*/
 	  // Inputs
@@ -29,12 +33,21 @@ module t (/*AUTOARG*/
 	  );
    input clk;
 
-   test_if #( .FOO (5) ) the_interface ();
+   test_if #( .FOO (identity(5)) ) the_interface ();
 
    testmod testmod_i (.clk (clk),
 		      .intf (the_interface),
                       .intf_no_mp (the_interface)
                       );
+
+   localparam THE_TOP_FOO = the_interface.FOO;
+
+   initial begin
+      if (THE_TOP_FOO != 5) begin
+         $display("%%Error: THE_TOP_FOO = %0d", THE_TOP_FOO);
+	 $stop;
+      end
+   end
 
 endmodule
 
@@ -46,30 +59,26 @@ module testmod
    test_if intf_no_mp
    );
 
-`ifdef ELAB_TIME
    localparam THE_FOO = intf.FOO;
-   //   localparam THE_OTHER_FOO = intf_no_mp.FOO;
-`endif
+   localparam THE_OTHER_FOO = intf_no_mp.FOO;
 
    always @(posedge clk) begin
-`ifdef ELAB_TIME
       if (THE_FOO != 5) begin
          $display("%%Error: THE_FOO = %0d", THE_FOO);
 	 $stop;
       end
-      //      if (THE_OTHER_FOO != 5) begin
-      //         $display("%%Error: THE_OTHER_FOO = %0d", THE_OTHER_FOO);
-      //	 $stop;
-      //      end
-`endif
+      if (THE_OTHER_FOO != 5) begin
+         $display("%%Error: THE_OTHER_FOO = %0d", THE_OTHER_FOO);
+         $stop;
+      end
       if (intf.FOO != 5) begin
          $display("%%Error: intf.FOO = %0d", intf.FOO);
 	 $stop;
       end
-      //      if (intf_no_mp.FOO != 5) begin
-      //         $display("%%Error: intf_no_mp.FOO = %0d", intf_no_mp.FOO);
-      //	 $stop;
-      //      end
+      if (intf_no_mp.FOO != 5) begin
+         $display("%%Error: intf_no_mp.FOO = %0d", intf_no_mp.FOO);
+         $stop;
+      end
       //      if (i.getFoo() != 5) begin
       //         $display("%%Error: i.getFoo() = %0d", i.getFoo());
       //	 $stop;

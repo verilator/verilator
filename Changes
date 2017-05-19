@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add warning on mis-sized literal, bug1156. [Todd Strader]
 
+****  Fix interface functions returning wrong parameters, bug996. [Todd Strader]
+
 ****  Fix non-arrayed cells with interface arrays, bug1153. [John Stevenson]
 
 ****  Fix --assert with complex case statements, bug1164. [Enzo Chi]
