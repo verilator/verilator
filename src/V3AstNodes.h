@@ -2658,28 +2658,24 @@ public:
 class AstValuePlusArgs : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
-private:
-    string	m_text;
 public:
-    AstValuePlusArgs(FileLine* fileline, const string& text, AstNode* exprsp)
-	: AstNodeMath (fileline), m_text(text) {
-	setOp1p(exprsp);
+    AstValuePlusArgs(FileLine* fileline, AstNode* searchp, AstNode* outp)
+	: AstNodeMath (fileline) {
+	setOp1p(searchp); setOp2p(outp);
     }
     ASTNODE_NODE_FUNCS(ValuePlusArgs)
-    virtual string name()	const { return m_text; }
     virtual string verilogKwd() const { return "$value$plusargs"; }
-    virtual string emitVerilog() { return verilogKwd(); }
-    virtual string emitC() { return "VL_VALUEPLUSARGS_%nq(%lw, %P, NULL)"; }
+    virtual string emitVerilog() { return "%f$value$plusargs(%l, %k%r)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool cleanOut() { return true; }
-    virtual V3Hash sameHash() const { return V3Hash(text()); }
-    virtual bool same(AstNode* samep) const {
-	return text()==samep->castValuePlusArgs()->text(); }
-    AstNode*	exprsp()	const { return op1p(); }	// op1 = Expressions to output
-    void 	exprsp(AstNode* nodep)	{ setOp1p(nodep); }	// op1 = Expressions to output
-    string 	text()		const { return m_text; }	// * = Text to display
-    void 	text(const string& text) { m_text=text; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(AstNode* samep) const { return true; }
+    AstNode*	searchp() const { return op1p(); }	// op1 = Search expression
+    void 	searchp(AstNode* nodep)	{ setOp1p(nodep); }
+    AstNode*	outp() const { return op2p(); }		// op2 = Expressions to output
+    void 	outp(AstNode* nodep) { setOp2p(nodep); }
 };
 
 class AstTestPlusArgs : public AstNodeMath {

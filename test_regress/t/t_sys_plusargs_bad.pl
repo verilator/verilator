@@ -8,13 +8,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 fails=>$Self->{v3},
-	 expect=>
-q{%Error: t/t_sys_plusargs_bad.v:\d+: Missing or extra \$value\$plusargs format qualifier: 'NOTTHERE'
-%Error: t/t_sys_plusargs_bad.v:\d+: Illegal \$value\$plusargs format qualifier: 'z'
-%Error: t/t_sys_plusargs_bad.v:\d+: Missing or extra \$value\$plusargs format qualifier: 'INT=%x%x'
-%Error: Exiting due to.*},
-	 );
+    );
+
+execute (
+    check_finished=>1,
+    );
 
 ok(1);
 1;

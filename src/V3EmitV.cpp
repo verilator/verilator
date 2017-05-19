@@ -238,10 +238,6 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstSFormatF* nodep) {
 	visitNodeDisplay(nodep, NULL, nodep->text(), nodep->exprsp());
     }
-    virtual void visit(AstValuePlusArgs* nodep) {
-	visitNodeDisplay(nodep, NULL, nodep->text(), nodep->exprsp());
-    }
-
     virtual void visit(AstFOpen* nodep) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");

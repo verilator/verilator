@@ -17,6 +17,7 @@ module t;
       // BAD: Multi letter
       if ($value$plusargs("INT=%x%x", p_i)!==0) $stop;
 
-      $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

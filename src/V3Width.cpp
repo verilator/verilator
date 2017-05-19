@@ -2094,7 +2094,8 @@ private:
     }
     virtual void visit(AstValuePlusArgs* nodep) {
 	if (m_vup->prelim()) {
-	    userIterateAndNext(nodep->exprsp(), WidthVP(SELF,BOTH).p());
+	    userIterateAndNext(nodep->searchp(), WidthVP(SELF,BOTH).p());
+	    userIterateAndNext(nodep->outp(), WidthVP(SELF,BOTH).p());
 	    nodep->dtypeSetSigned32();  // Spec says integer return
 	}
     }

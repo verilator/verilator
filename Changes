@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support arrayed parameter overrides, bug1153. [John Stevenson]
 
+***   Support $value$plusargs with variables, bug1165. [Wesley Terpstra]
+
 ****  Support modport access to un-modport objects, bug1161. [Todd Strader]
 
 ****  Add stack trace when can't optimize function, bug1158. [Todd Strader]

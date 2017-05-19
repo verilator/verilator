@@ -66,6 +66,19 @@ extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwo
 extern IData VL_SSCANF_INX(int lbits, const string& ld, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp, ...);
 extern string VL_SFORMATF_NX(const char* formatp, ...);
-extern IData VL_VALUEPLUSARGS_IN(int rbits, const char* prefixp, char fmt, string& ldr);
+extern IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rdp);
+inline IData VL_VALUEPLUSARGS_INI(int rbits, const string& ld, IData& rdr) {
+    IData rwp[1];
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = rwp[0];
+    return got;
+}
+inline IData VL_VALUEPLUSARGS_INQ(int rbits, const string& ld, QData& rdr) {
+    IData rwp[2];
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = VL_SET_QW(rwp);
+    return got;
+}
+extern IData VL_VALUEPLUSARGS_INN(int, const string& ld, string& rdr);
 
 #endif // Guard

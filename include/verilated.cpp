@@ -302,8 +302,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
     bool inPct = false;
     bool widthSet = false;
     int width = 0;
-    const char* pos = formatp;
-    for (; *pos; ++pos) {
+    for (const char* pos = formatp; *pos; ++pos) {
 	if (!inPct && pos[0]=='%') {
 	    pctp = pos;
 	    inPct = true;
@@ -1077,22 +1076,36 @@ IData VL_TESTPLUSARGS_I(const char* formatp) {
     else return 1;
 }
 
-IData VL_VALUEPLUSARGS_IN(int, const char* prefixp, char, string& ldr) {
-    const string& match = VerilatedImp::argPlusMatch(prefixp);
-    const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);
-    if (match == "") return 0;
-    ldr = string(dp);
-    return 1;
-}
+IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rwp) {
+    string prefix;
+    bool inPct = false;
+    bool done = false;
+    char fmt = ' ';
+    for (const char* posp = ld.c_str(); !done && *posp; ++posp) {
+	if (!inPct && posp[0]=='%') {
+	    inPct = true;
+	} else if (!inPct) {   // Normal text
+	    prefix += *posp;
+	} else { // Format character
+	    switch (tolower(*posp)) {
+	    case '%':
+		prefix += *posp;
+		inPct = false;
+		break;
+	    default:
+		fmt = *posp;
+		done = true;
+		break;
+	    }
+	}
+    }
 
-IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp) {
-    const string& match = VerilatedImp::argPlusMatch(prefixp);
-    const char* dp = match.c_str() + 1 /*leading + */ + strlen(prefixp);
+    const string& match = VerilatedImp::argPlusMatch(prefix.c_str());
+    const char* dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match == "") return 0;
+
     VL_ZERO_RESET_W(rbits, rwp);
     switch (tolower(fmt)) {
-    case '%':
-	break;
     case 'd':
 	vlsint64_t ld;
 	sscanf(dp,"%30" VL_PRI64 "d",&ld);
@@ -1108,16 +1121,45 @@ IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rw
     case 'x':
 	_vl_vsss_based(rwp,rbits, 4, dp, 0, (int)strlen(dp));
 	break;
-    case 's':
-	for (int i=0, lsb=0, pos=((int)strlen(dp))-1; i<rbits && pos>=0; pos--) {
-	    _vl_vsss_setbit(rwp,rbits,lsb, 8, dp[pos]); lsb+=8;
+    case 's': // string/no conversion
+	for (int i=0, lsb=0, posp=((int)strlen(dp))-1; i<rbits && posp>=0; posp--) {
+	    _vl_vsss_setbit(rwp,rbits,lsb, 8, dp[posp]); lsb+=8;
 	}
 	break;
-    default:  // Compile time should have found all errors before this
-	vl_fatal (__FILE__, __LINE__, "", "$value$plusargs format error");
-	break;
+    case 'e': //FALLTHRU - Unsupported
+    case 'f': //FALLTHRU - Unsupported
+    case 'g': //FALLTHRU - Unsupported
+    default:  // Other simulators simply return 0 in these cases and don't error out
+	return 0;
     }
     _VL_CLEAN_INPLACE_W(rbits,rwp);
+    return 1;
+}
+IData VL_VALUEPLUSARGS_INN(int rbits, const string& ld, string& rdr) {
+    string prefix;
+    bool inPct = false;
+    bool done = false;
+    for (const char* posp = ld.c_str(); !done && *posp; ++posp) {
+	if (!inPct && posp[0]=='%') {
+	    inPct = true;
+	} else if (!inPct) {   // Normal text
+	    prefix += *posp;
+	} else { // Format character
+	    switch (tolower(*posp)) {
+	    case '%':
+		prefix += *posp;
+		inPct = false;
+		break;
+	    default:
+		done = true;
+		break;
+	    }
+	}
+    }
+    const string& match = VerilatedImp::argPlusMatch(prefix.c_str());
+    const char* dp = match.c_str() + 1 /*leading + */ + prefix.length();
+    if (match == "") return 0;
+    rdr = string(dp);
     return 1;
 }
 

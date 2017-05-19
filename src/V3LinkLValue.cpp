@@ -174,8 +174,10 @@ private:
     virtual void visit(AstValuePlusArgs* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{
+	    m_setRefLvalue = false;
+	    nodep->searchp()->iterateAndNext(*this);
 	    m_setRefLvalue = true;
-	    nodep->exprsp()->iterateAndNext(*this);
+	    nodep->outp()->iterateAndNext(*this);
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
