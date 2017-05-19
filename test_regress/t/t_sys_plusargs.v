@@ -22,13 +22,17 @@ module t;
       if ($value$plusargs("NOTTHERE%d", p_i)!==0) $stop;
       if (p_i !== 10) $stop;
 
+      p_i = 0;
       if ($value$plusargs("INT=%d", p_i)!==1) $stop;
       if (p_i !== 32'd1234) $stop;
 
+      p_i = 0;
       if ($value$plusargs("INT=%H", p_i)!==1) $stop;  // tests uppercase % also
       if (p_i !== 32'h1234) $stop;
 
-      if ($value$plusargs("INT=%o", p_i)!==1) $stop;
+      p_i = 0;
+      // Check octal and WIDTH
+      if (!$value$plusargs("INT=%o", p_i)) $stop;
       if (p_i !== 32'o1234) $stop;
 
       p_str = "none";

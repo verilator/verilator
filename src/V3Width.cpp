@@ -2096,7 +2096,7 @@ private:
 	if (m_vup->prelim()) {
 	    userIterateAndNext(nodep->searchp(), WidthVP(SELF,BOTH).p());
 	    userIterateAndNext(nodep->outp(), WidthVP(SELF,BOTH).p());
-	    nodep->dtypeSetSigned32();  // Spec says integer return
+	    nodep->dtypeChgWidthSigned(32,1,AstNumeric::SIGNED);  // Spec says integer return
 	}
     }
     virtual void visit(AstUCStmt* nodep) {
