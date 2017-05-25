@@ -1077,7 +1077,9 @@ static inline QData VL_MULS_QQQ(int,int lbits,int, QData lhs,QData rhs) {
 
 static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lwp,WDataInP rwp){
     int words = VL_WORDS_I(lbits);
+    // cppcheck-suppress variableScope
     IData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    // cppcheck-suppress variableScope
     IData rwstore[VL_MULS_MAX_WORDS];
     WDataInP lwusp = lwp;
     WDataInP rwusp = rwp;

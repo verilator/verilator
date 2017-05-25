@@ -75,7 +75,8 @@ public:
 	m_numStmts += 1;
     }
 
-    V3CCtorsVisitor(AstNodeModule* nodep, string basename, string argsp="", string callargsp="") {
+    V3CCtorsVisitor(AstNodeModule* nodep, string basename, string argsp="", string callargsp="",
+		    const string& stmt="") {
 	m_basename = basename;
 	m_argsp = argsp;
 	m_callargsp = callargsp;
@@ -87,6 +88,9 @@ public:
 	m_tlFuncp->isStatic(false);
 	m_tlFuncp->slow(true);
 	m_tlFuncp->argTypes(m_argsp);
+	if (stmt != "") {
+	    m_tlFuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+	}
 	m_funcp = m_tlFuncp;
 	m_modp->addStmtp(m_tlFuncp);
     }
@@ -100,7 +104,8 @@ void V3CCtors::cctorsAll() {
 	// Process each module in turn
 	V3CCtorsVisitor var_reset (modp, "_ctor_var_reset");
 	V3CCtorsVisitor configure_coverage (modp, "_configure_coverage",
-						   EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first");
+					    EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first",
+					    "if (0 && vlSymsp && first) {} // Prevent unused\n");
 
 	for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
 	    AstVar* varp = np->castVar();

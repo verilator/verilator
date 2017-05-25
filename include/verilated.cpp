@@ -1135,7 +1135,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rwp) {
     _VL_CLEAN_INPLACE_W(rbits,rwp);
     return 1;
 }
-IData VL_VALUEPLUSARGS_INN(int rbits, const string& ld, string& rdr) {
+IData VL_VALUEPLUSARGS_INN(int, const string& ld, string& rdr) {
     string prefix;
     bool inPct = false;
     bool done = false;

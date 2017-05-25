@@ -560,7 +560,7 @@ string V3Options::version() {
 
 void V3Options::throwSigsegv() {
     // cppcheck-suppress nullPointer
-    char* zp=NULL; *zp=0;
+    char* zp=NULL; *zp=0; // Intentional core dump, ignore warnings here
 }
 
 //######################################################################
