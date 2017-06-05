@@ -5,13 +5,15 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   ign,
+   ign, ign2, ign3,
    // Inputs
    clk
    );
 
    input clk;
    output [31:0] ign;
+   output [3:0]  ign2;
+   output [11:0]  ign3;
 
    parameter [95:0] P6 = 6;
    localparam P64 = (1 << P6);
@@ -23,6 +25,14 @@ module t (/*AUTOARG*/
    reg [31:0] 		amt;
 
    assign ign = {31'h0, clk} >>> 4'bx;  // bug760
+   assign ign2 = {amt[1:0] >> {22{amt[5:2]}}, amt[1:0] << (0 <<< amt[5:2])}; // bug1174
+   assign ign3 = {amt[1:0] >> {22{amt[5:2]}},
+		  amt[1:0] >> {11{amt[5:2]}},
+		  $signed(amt[1:0]) >>> {22{amt[5:2]}},
+		  $signed(amt[1:0]) >>> {11{amt[5:2]}},
+		  amt[1:0] << {22{amt[5:2]}},
+                  amt[1:0] << {11{amt[5:2]}}};
+
 
    always @* begin
       right = 32'h819b018a >> amt;

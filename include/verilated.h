@@ -1585,6 +1585,22 @@ static inline WDataOutP VL_SHIFTL_WWI(int obits,int,int,WDataOutP owp,WDataInP l
     }
     return(owp);
 }
+static inline WDataOutP VL_SHIFTL_WWW(int obits,int lbits,int rbits,WDataOutP owp,WDataInP lwp, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    return VL_ZERO_RESET_W(obits, owp);
+	}
+    }
+    return VL_SHIFTL_WWI(obits,lbits,32,owp,lwp,rwp[0]);
+}
+static inline IData VL_SHIFTL_IIW(int obits,int,int rbits,IData lhs, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    return 0;
+	}
+    }
+    return VL_CLEAN_II(obits,obits,lhs<<rwp[0]);
+}
 
 // EMIT_RULE: VL_SHIFTR:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
@@ -1613,6 +1629,22 @@ static inline WDataOutP VL_SHIFTR_WWI(int obits,int,int,WDataOutP owp,WDataInP l
 	for (int i=words; i<VL_WORDS_I(obits); i++) owp[i]=0;
     }
     return(owp);
+}
+static inline WDataOutP VL_SHIFTR_WWW(int obits,int lbits,int rbits,WDataOutP owp,WDataInP lwp, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    return VL_ZERO_RESET_W(obits, owp);
+	}
+    }
+    return VL_SHIFTR_WWI(obits,lbits,32,owp,lwp,rwp[0]);
+}
+static inline IData VL_SHIFTR_IIW(int obits,int,int rbits,IData lhs, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    return 0;
+	}
+    }
+    return VL_CLEAN_II(obits,obits,lhs>>rwp[0]);
 }
 
 // EMIT_RULE: VL_SHIFTRS:  oclean=false; lclean=clean, rclean==clean;
@@ -1664,6 +1696,44 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits,int lbits,int,WDataOutP owp,WDa
 	owp[lmsw] &= VL_MASK_I(lbits);
     }
     return(owp);
+}
+static inline WDataOutP VL_SHIFTRS_WWW(int obits,int lbits,int rbits,WDataOutP owp,WDataInP lwp, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    int lmsw = VL_WORDS_I(obits)-1;
+	    IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
+	    for (int i=0; i <= lmsw; i++) owp[i] = sign;
+	    owp[lmsw] &= VL_MASK_I(lbits);
+	    return owp;
+	}
+    }
+    return VL_SHIFTRS_WWI(obits,lbits,32,owp,lwp,rwp[0]);
+}
+static inline IData VL_SHIFTRS_IIW(int obits,int lbits,int rbits,IData lhs, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    IData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
+	    return VL_CLEAN_II(obits,obits,sign);
+	}
+    }
+    return VL_SHIFTRS_III(obits,lbits,32,lhs,rwp[0]);
+}
+static inline QData VL_SHIFTRS_QQW(int obits,int lbits,int rbits,QData lhs, WDataInP rwp) {
+    for (int i=1; i < VL_WORDS_I(rbits); i++) {
+	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
+	    QData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
+	    return VL_CLEAN_QQ(obits,obits,sign);
+	}
+    }
+    return VL_SHIFTRS_QQI(obits,lbits,32,lhs,rwp[0]);
+}
+static inline IData VL_SHIFTRS_IIQ(int obits,int lbits,int rbits,IData lhs, QData rhs) {
+    WData rwp[2]; VL_SET_WQ(rwp,rhs);
+    return VL_SHIFTRS_IIW(obits,lbits,rbits,lhs,rwp);
+}
+static inline QData VL_SHIFTRS_QQQ(int obits,int lbits,int rbits,QData lhs, QData rhs) {
+    WData rwp[2]; VL_SET_WQ(rwp,rhs);
+    return VL_SHIFTRS_QQW(obits,lbits,rbits,lhs,rwp);
 }
 
 //===================================================================
