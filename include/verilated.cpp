@@ -779,7 +779,7 @@ IData VL_FOPEN_NI(const string& filename, IData mode) {
     return VL_FOPEN_S(filename.c_str(), modez);
 }
 IData VL_FOPEN_QI(QData filename, IData mode) {
-    IData fnw[2];  VL_SET_WQ(fnw, filename);
+    WData fnw[2];  VL_SET_WQ(fnw, filename);
     return VL_FOPEN_WI(2, fnw, mode);
 }
 IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
@@ -913,7 +913,7 @@ IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) {
 }
 
 IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
-    IData fnw[2];  VL_SET_WI(fnw, ld);
+    WData fnw[2];  VL_SET_WI(fnw, ld);
 
     va_list ap;
     va_start(ap,formatp);
@@ -922,7 +922,7 @@ IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
     return got;
 }
 IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) {
-    IData fnw[2];  VL_SET_WQ(fnw, ld);
+    WData fnw[2];  VL_SET_WQ(fnw, ld);
 
     va_list ap;
     va_start(ap,formatp);
@@ -947,7 +947,7 @@ IData VL_SSCANF_INX(int, const string& ld, const char* formatp, ...) {
 
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
 		  QData ofilename, void* memp, IData start, IData end) {
-    IData fnw[2];  VL_SET_WQ(fnw, ofilename);
+    WData fnw[2];  VL_SET_WQ(fnw, ofilename);
     return VL_READMEM_W(hex,width,depth,array_lsb,2, fnw,memp,start,end);
 }
 
@@ -1060,7 +1060,7 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
 }
 
 IData VL_SYSTEM_IQ(QData lhs) {
-    IData lhsw[2];  VL_SET_WQ(lhsw, lhs);
+    WData lhsw[2];  VL_SET_WQ(lhsw, lhs);
     return VL_SYSTEM_IW(2, lhsw);
 }
 IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) {

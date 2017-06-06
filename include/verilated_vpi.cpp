@@ -1255,7 +1255,7 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     }
     if (time_p->type == vpiSimTime) {
 	QData qtime = VL_TIME_Q();
-	IData itime[2];
+	WData itime[2];
 	VL_SET_WQ(itime, qtime);
 	time_p->low = itime[0];
 	time_p->high = itime[1];

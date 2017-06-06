@@ -38,14 +38,14 @@
 
 extern string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp);
 inline string VL_CVT_PACK_STR_NQ(QData lhs) {
-    IData lw[2];  VL_SET_WQ(lw, lhs);
+    WData lw[2];  VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(2, lw);
 }
 inline string VL_CVT_PACK_STR_NN(const string& lhs) {
     return lhs;
 }
 inline string VL_CVT_PACK_STR_NI(IData lhs) {
-    IData lw[1];  lw[0] = lhs;
+    WData lw[1];  lw[0] = lhs;
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline string VL_CONCATN_NNN(const string& lhs, const string& rhs) {
@@ -68,13 +68,13 @@ extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp,
 extern string VL_SFORMATF_NX(const char* formatp, ...);
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rdp);
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const string& ld, IData& rdr) {
-    IData rwp[1];
+    WData rwp[1];
     IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const string& ld, QData& rdr) {
-    IData rwp[2];
+    WData rwp[2];
     IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
