@@ -1217,6 +1217,9 @@ V3Number& V3Number::opShiftR (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
+    for (int bit=32; bit<rhs.width(); bit++) {
+	if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
+    }
     uint32_t rhsval = rhs.toUInt();
     if (rhsval < (uint32_t)lhs.width()) {
 	for (int bit=0; bit<this->width(); bit++) {
@@ -1232,6 +1235,13 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs, uint32_
     // We presume it is signed; as that's V3Width's job to convert to opShiftR
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
+    for (int bit=32; bit<rhs.width(); bit++) {
+	for (int bit=0; bit<this->width(); bit++) {
+	    setBit(bit,lhs.bitIs(lbits-1)); // 0/1/X/Z
+	}
+	if (rhs.bitIs1(lbits-1)) setAllBits1(); // -1 else 0
+	return *this;  // shift of over 2^32 must be -1/0
+    }
     uint32_t rhsval = rhs.toUInt();
     if (rhsval < (uint32_t)lhs.width()) {
 	for (int bit=0; bit<this->width(); bit++) {
@@ -1239,7 +1249,7 @@ V3Number& V3Number::opShiftRS (const V3Number& lhs, const V3Number& rhs, uint32_
 	}
     } else {
 	for (int bit=0; bit<this->width(); bit++) {
-	    setBit(bit,lhs.bitIs(lbits-1));
+	    setBit(bit,lhs.bitIs(lbits-1)); // 0/1/X/Z
 	}
     }
     return *this;
@@ -1249,6 +1259,9 @@ V3Number& V3Number::opShiftL (const V3Number& lhs, const V3Number& rhs) {
     // L(lhs) bit return
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
+    for (int bit=32; bit<rhs.width(); bit++) {
+	if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
+    }
     uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
 	if (bit >= (int)rhsval) {

@@ -18,6 +18,11 @@ module t (/*AUTOARG*/
    parameter [95:0] P6 = 6;
    localparam P64 = (1 << P6);
 
+   // verilator lint_off WIDTH
+   localparam [4:0] PBIG23 = 1'b1 << ~73'b0;
+   localparam [3:0] PBIG29 = 4'b1 << 33'h100000000;
+   // verilator lint_on WIDTH
+
    reg [31:0] 		right;
    reg [31:0] 		left;
    reg [P64-1:0] 	qright;
