@@ -509,6 +509,30 @@ public:
 	}
 	visit(nodep->castNodeBiop());
     }
+    virtual void visit(AstPow* nodep) {
+	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
+	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+	}
+	visit(nodep->castNodeBiop());
+    }
+    virtual void visit(AstPowSS* nodep) {
+	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
+	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+	}
+	visit(nodep->castNodeBiop());
+    }
+    virtual void visit(AstPowSU* nodep) {
+	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
+	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+	}
+	visit(nodep->castNodeBiop());
+    }
+    virtual void visit(AstPowUS* nodep) {
+	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
+	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+	}
+	visit(nodep->castNodeBiop());
+    }
     virtual void visit(AstCCast* nodep) {
 	// Extending a value of the same word width is just a NOP.
 	if (nodep->size()>VL_WORDSIZE) {

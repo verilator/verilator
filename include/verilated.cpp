@@ -282,6 +282,48 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     }
 }
 
+WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) {
+    owp[0] = 1;
+    for (int i=1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
+    // cppcheck-suppress variableScope
+    WData powstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    WData lastpowstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    WData lastoutstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    // cppcheck-suppress variableScope
+    VL_ASSIGN_W(obits, powstore, lwp);
+    for (int bit=0; bit<rbits; bit++) {
+	if (bit>0) {  // power = power*power
+	    VL_ASSIGN_W(obits, lastpowstore, powstore);
+	    VL_MUL_W(VL_WORDS_I(obits), powstore, lastpowstore, lastpowstore);
+	}
+	if (VL_BITISSET_W(rwp,bit)) {  // out *= power
+	    VL_ASSIGN_W(obits, lastoutstore, owp);
+	    VL_MUL_W(VL_WORDS_I(obits), owp, lastoutstore, powstore);
+	}
+    }
+    return owp;
+}
+
+WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign) {
+    if (rsign && VL_SIGN_W(rbits, rwp)) {
+	int words = VL_WORDS_I(obits);
+	VL_ZERO_W(obits, owp);
+	IData lor = 0; // 0=all zeros, ~0=all ones, else mix
+	for (int i=1; i < (words-1); ++i) {
+	    lor |= lwp[i];
+	}
+	lor |= ( (lwp[words-1] == VL_MASK_I(rbits)) ? ~VL_UL(0) : 0);
+	if (lor==0 && lwp[0]==0) { return owp; } // "X" so return 0
+	else if (lor==0 && lwp[0]==1) { owp[0] = 1; return owp; } // 1
+	else if (lsign && lor == ~VL_UL(0) && lwp[0]==~VL_UL(0)) {  // -1
+	    if (rwp[0] & 1) { return VL_ALLONES_W(obits, owp); } // -1^odd=-1
+	    else { owp[0] = 1; return owp; } // -1^even=1
+	}
+	return 0;
+    }
+    return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
+}
+
 //===========================================================================
 // Formatting
 

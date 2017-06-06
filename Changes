@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix shifts by more than 32-bit numbers, bug1174. [Clifford Wolf]
 
+***   Fix power operator on wide constants, bug761. [Clifford Wolf]
+
 
 * Verilator 3.904 2017-05-30
 

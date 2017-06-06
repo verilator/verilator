@@ -433,6 +433,7 @@ static inline IData  VL_RTOIROUND_I_D(double lhs) { return ((vlsint32_t)(VL_ROUN
 // (Requires clean input)
 #define VL_SIGN_I(nbits,lhs)      ((lhs) >> VL_BITBIT_I((nbits) - VL_UL(1)))
 #define VL_SIGN_Q(nbits,lhs)      ((lhs) >> VL_BITBIT_Q((nbits) - VL_ULL(1)))
+#define VL_SIGN_W(nbits,rwp)      ((rwp)[VL_BITWORD_I((nbits)-VL_UL(1))] >> VL_BITBIT_I((nbits)-VL_UL(1)))
 #define VL_SIGNONES_I(nbits,lhs)  (-(VL_SIGN_I(nbits,lhs)))
 
 // Sign bit extended up to MSB, doesn't include unsigned portion
@@ -511,6 +512,12 @@ static inline WDataOutP VL_CLEAN_WW(int obits, int, WDataOutP owp, WDataInP lwp)
 static inline WDataOutP VL_ZERO_W(int obits, WDataOutP owp) {
     int words = VL_WORDS_I(obits);
     for (int i=0; i < words; ++i) owp[i] = 0;
+    return owp;
+}
+static inline WDataOutP VL_ALLONES_W(int obits, WDataOutP owp) {
+    int words = VL_WORDS_I(obits);
+    for (int i=0; (i < (words-1)); ++i) owp[i] = ~VL_UL(0);
+    owp[words-1] = VL_MASK_I(obits);
     return owp;
 }
 
@@ -1208,6 +1215,7 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
     }
     return out;
 }
+WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp);
 
 #define VL_POWSS_QQI(obits,lbits,rbits,lhs,rhs,lsign,rsign) VL_POWSS_QQQ(obits,lbits,rbits,lhs,rhs,lsign,rsign)
 
@@ -1216,28 +1224,28 @@ static inline IData VL_POWSS_III(int obits, int, int rbits, IData lhs, IData rhs
     if (rsign && VL_SIGN_I(rbits, rhs)) {
 	if (lhs==0) return 0;	// "X"
 	else if (lhs==1) return 1;
-	else if (lsign && lhs==VL_MASK_I(obits)) {  //-1
+	else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
 	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
 	    else return 1; // -1^even=1
 	}
 	return 0;
     }
-    return VL_POW_III(obits, obits, rbits, lhs, rhs);
+    return VL_POW_III(obits, rbits, rbits, lhs, rhs);
 }
-
 static inline QData VL_POWSS_QQQ(int obits, int, int rbits, QData lhs, QData rhs, bool lsign, bool rsign) {
     if (VL_UNLIKELY(rhs==0)) return 1;
     if (rsign && VL_SIGN_I(rbits, rhs)) {
 	if (lhs==0) return 0;	// "X"
 	else if (lhs==1) return 1;
-	else if (lsign && lhs==VL_MASK_I(obits)) {  //-1
+	else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
 	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
 	    else return 1; // -1^even=1
 	}
 	return 0;
     }
-    return VL_POW_QQQ(obits, obits, rbits, lhs, rhs);
+    return VL_POW_QQQ(obits, rbits, rbits, lhs, rhs);
 }
+WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign);
 
 //===================================================================
 // Concat/replication

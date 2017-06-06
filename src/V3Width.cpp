@@ -803,7 +803,6 @@ private:
 	    nodep->dtypeFrom(expDTypep);
 	    // rhs already finalized in iterate_shift_prelim
 	    iterateCheck(nodep,"LHS",nodep->lhsp(),SELF,FINAL,nodep->dtypep(),EXTEND_EXP);
-	    if (nodep->width()>64) nodep->v3error("Unsupported: Large >64bit ** power operator not implemented.");
 	    AstNode* newp = NULL;  // No change
 	    if (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
 		newp = new AstPowSS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
