@@ -115,7 +115,7 @@ QData VL_RANDOM_Q(int obits) {
 }
 
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) {
-    for (int i=0; i<VL_WORDS_I(obits); i++) {
+    for (int i=0; i<VL_WORDS_I(obits); ++i) {
 	if (i<(VL_WORDS_I(obits)-1)) {
 	    outwp[i] = VL_RAND32();
 	} else {
@@ -146,7 +146,7 @@ QData VL_RAND_RESET_Q(int obits) {
 }
 
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) {
-    for (int i=0; i<VL_WORDS_I(obits); i++) {
+    for (int i=0; i<VL_WORDS_I(obits); ++i) {
 	if (i<(VL_WORDS_I(obits)-1)) {
 	    outwp[i] = VL_RAND_RESET_I(32);
 	} else {
@@ -157,7 +157,7 @@ WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) {
 }
 
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
-    for (int i=0; i<VL_WORDS_I(obits); i++) outwp[i] = 0;
+    for (int i=0; i<VL_WORDS_I(obits); ++i) outwp[i] = 0;
     return outwp;
 }
 
@@ -166,7 +166,7 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 
 void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
     VL_PRINTF("  Data: w%d: ", lbits);
-    for (int i=VL_WORDS_I(lbits)-1; i>=0; i--) { VL_PRINTF("%08x ",iwp[i]); }
+    for (int i=VL_WORDS_I(lbits)-1; i>=0; --i) { VL_PRINTF("%08x ",iwp[i]); }
     VL_PRINTF("\n");
 }
 
@@ -179,7 +179,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     // for debug see V3Number version
     // Requires clean input
     int words = VL_WORDS_I(lbits);
-    for (int i=0; i<words; i++) owp[i]=0;
+    for (int i=0; i<words; ++i) owp[i]=0;
     // Find MSB and check for zero.
     int umsbp1 = VL_MOSTSETBITP1_W(words,lwp); // dividend
     int vmsbp1 = VL_MOSTSETBITP1_W(words,rwp); // divisor
@@ -193,14 +193,14 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
 	vluint64_t k = 0;
-	for (int j = uw-1; j >= 0; j--) {
+	for (int j = uw-1; j >= 0; --j) {
 	    vluint64_t unw64 = ((k<<VL_ULL(32)) + (vluint64_t)(lwp[j]));
 	    owp[j] = unw64 / (vluint64_t)(rwp[0]);
 	    k      = unw64 - (vluint64_t)(owp[j])*(vluint64_t)(rwp[0]);
 	}
 	if (is_modulus) {
 	    owp[0] = k;
-	    for (int i=1; i<words; i++) owp[i]=0;
+	    for (int i=1; i<words; ++i) owp[i]=0;
 	}
 	return owp;
     }
@@ -211,13 +211,13 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 
     // Zero for ease of debugging and to save having to zero for shifts
     // Note +1 as loop will use extra word
-    for (int i=0; i<words+1; i++) { un[i]=vn[i]=0; }
+    for (int i=0; i<words+1; ++i) { un[i]=vn[i]=0; }
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
     int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
     vluint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
-    for (int i = vw-1; i>0; i--) {
+    for (int i = vw-1; i>0; --i) {
 	vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i-1] >> (32-s)));
     }
     vn[0] = rwp[0] << s;
@@ -225,13 +225,13 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     // Copy and shift dividend by same amount; may set new upper word
     if (s) un[uw] = lwp[uw-1] >> (32-s);
     else un[uw] = 0;
-    for (int i=uw-1; i>0; i--) {
+    for (int i=uw-1; i>0; --i) {
 	un[i] = (lwp[i] << s) | (shift_mask & (lwp[i-1] >> (32-s)));
     }
     un[0] = lwp[0] << s;
 
     // Main loop
-    for (int j = uw - vw; j >= 0; j--) {
+    for (int j = uw - vw; j >= 0; --j) {
 	// Estimate
 	vluint64_t unw64 = ((vluint64_t)(un[j+vw])<<VL_ULL(32) | (vluint64_t)(un[j+vw-1]));
 	vluint64_t qhat = unw64 / (vluint64_t)(vn[vw-1]);
@@ -247,7 +247,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 
 	vlsint64_t t = 0;  // Must be signed
 	vluint64_t k = 0;
-	for (int i=0; i<vw; i++) {
+	for (int i=0; i<vw; ++i) {
 	    vluint64_t p = qhat*vn[i];  // Multiply by estimate
 	    t = un[i+j] - k - (p & VL_ULL(0xFFFFFFFF));  // Subtract
 	    un[i+j] = t;
@@ -261,7 +261,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 	    // Over subtracted; correct by adding back
 	    owp[j]--;
 	    k = 0;
-	    for (int i=0; i<vw; i++) {
+	    for (int i=0; i<vw; ++i) {
 		t = (vluint64_t)(un[i+j]) + (vluint64_t)(vn[i]) + k;
 		un[i+j] = t;
 		k = t >> VL_ULL(32);
@@ -272,10 +272,10 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 
     if (is_modulus) { // modulus
 	// Need to reverse normalization on copy to output
-	for (int i=0; i<vw; i++) {
+	for (int i=0; i<vw; ++i) {
 	    owp[i] = (un[i] >> s) | (shift_mask & (un[i+1] << (32-s)));
 	}
-	for (int i=vw; i<words; i++) owp[i] = 0;
+	for (int i=vw; i<words; ++i) owp[i] = 0;
 	return owp;
     } else { // division
 	return owp;
@@ -376,7 +376,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    if (fmt == 'd' || fmt == '#') fmt = 'x';  // Not supported, but show something
 		}
 		int lsb=lbits-1;
-		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) lsb--;
+		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) --lsb;
 		switch (fmt) {
 		case 'c': {
 		    IData charval = ld & 0xff;
@@ -384,7 +384,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    break;
 		}
 		case 's':
-		    for (; lsb>=0; lsb--) {
+		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 8) * 8; // Next digit
 			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
 			output += (charval==0)?' ':charval;
@@ -433,13 +433,13 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    break;
 		}
 		case 'b':
-		    for (; lsb>=0; lsb--) {
+		    for (; lsb>=0; --lsb) {
 			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
 		    }
 		    break;
 		    break;
 		case 'o':
-		    for (; lsb>=0; lsb--) {
+		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 3) * 3; // Next digit
 			// Octal numbers may span more than one wide word,
 			// so we need to grab each bit separately and check for overrun
@@ -452,7 +452,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    break;
 		case 'u':  // Packed 2-state
 		    output.reserve(output.size() + 4*VL_WORDS_I(lbits));
-		    for (int i=0; i<VL_WORDS_I(lbits); i++) {
+		    for (int i=0; i<VL_WORDS_I(lbits); ++i) {
 			output += (char)((lwp[i] >> 0) & 0xff);
 			output += (char)((lwp[i] >> 8) & 0xff);
 			output += (char)((lwp[i] >> 16) & 0xff);
@@ -460,7 +460,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		    }
 		case 'z':  // Packed 4-state
 		    output.reserve(output.size() + 8*VL_WORDS_I(lbits));
-		    for (int i=0; i<VL_WORDS_I(lbits); i++) {
+		    for (int i=0; i<VL_WORDS_I(lbits); ++i) {
 			output += (char)((lwp[i] >> 0) & 0xff);
 			output += (char)((lwp[i] >> 8) & 0xff);
 			output += (char)((lwp[i] >> 16) & 0xff);
@@ -468,12 +468,12 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 			output += "\0\0\0\0"; // No tristate
 		    }
 		case 'v': // Strength; assume always strong
-		    for (lsb=lbits-1; lsb>=0; lsb--) {
+		    for (lsb=lbits-1; lsb>=0; --lsb) {
 			if ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) output += "St1 ";
 			else output += "St0 ";
 		    }
 		case 'x':
-		    for (; lsb>=0; lsb--) {
+		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 4) * 4; // Next digit
 			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xf;
 			output += "0123456789abcdef"[charval];
@@ -546,7 +546,7 @@ static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits,
 static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, int posstart, int posend) {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     int lsb = 0;
-    for (int i=0, pos=posend-1; i<obits && pos>=posstart; pos--) {
+    for (int i=0, pos=posend-1; i<obits && pos>=posstart; --pos) {
 	switch (tolower (strp[pos])) {
 	case 'x': case 'z': case '?': //FALLTHRU
 	case '0': lsb += baseLog2; break;
@@ -614,7 +614,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		if (obits > VL_QUADSIZE) {
 		    owp = va_arg(ap,WDataOutP);
 		}
-		for (int i=0; i<VL_WORDS_I(obits); i++) owp[i] = 0;
+		for (int i=0; i<VL_WORDS_I(obits); ++i) owp[i] = 0;
 		switch (fmt) {
 		case 'c': {
 		    int c = _vl_vsss_peek(fp,floc,fromp,fstr);
@@ -629,7 +629,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    if (!tmp[0]) goto done;
 		    int pos = ((int)strlen(tmp))-1;
 		    int lsb = 0;
-		    for (int i=0; i<obits && pos>=0; pos--) {
+		    for (int i=0; i<obits && pos>=0; --pos) {
 			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[pos]); lsb+=8;
 		    }
 		    break;
@@ -723,7 +723,7 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
     int lsb=obits-1;
     bool start=true;
     char* destp = destoutp;
-    for (; lsb>=0; lsb--) {
+    for (; lsb>=0; --lsb) {
 	lsb = (lsb / 8) * 8; // Next digit
 	IData charval = (sourcep[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
 	if (!start || charval) {
@@ -741,8 +741,8 @@ void _VL_STRING_TO_VINT(int obits, void* destp, int srclen, const char* srcp) {
     char* op = ((char*)(destp));
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
     int i;
-    for (i=0; i<srclen; i++) { *op++ = srcp[srclen-1-i]; }
-    for (; i<bytes; i++) { *op++ = 0; }
+    for (i=0; i<srclen; ++i) { *op++ = srcp[srclen-1-i]; }
+    for (; i<bytes; ++i) { *op++ = 0; }
 }
 
 IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
@@ -1122,7 +1122,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rwp) {
 	_vl_vsss_based(rwp,rbits, 4, dp, 0, (int)strlen(dp));
 	break;
     case 's': // string/no conversion
-	for (int i=0, lsb=0, posp=((int)strlen(dp))-1; i<rbits && posp>=0; posp--) {
+	for (int i=0, lsb=0, posp=((int)strlen(dp))-1; i<rbits && posp>=0; --posp) {
 	    _vl_vsss_setbit(rwp,rbits,lsb, 8, dp[posp]); lsb+=8;
 	}
 	break;
@@ -1184,7 +1184,7 @@ string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) {
     bool start=true;
     char* destp = destout;
     int len = 0;
-    for (; lsb>=0; lsb--) {
+    for (; lsb>=0; --lsb) {
 	lsb = (lsb / 8) * 8; // Next digit
 	IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
 	if (!start || charval) {
@@ -1403,7 +1403,7 @@ void* VerilatedScope::exportFindError(int funcnum) const {
 
 void VerilatedScope::scopeDump() const {
     VL_PRINTF("    SCOPE %p: %s\n", this, name());
-    for (int i=0; i<m_funcnumMax; i++) {
+    for (int i=0; i<m_funcnumMax; ++i) {
 	if (m_callbacksp && m_callbacksp[i]) {
 	    VL_PRINTF("       DPI-EXPORT %p: %s\n",
 		      m_callbacksp[i], VerilatedImp::exportName(i));

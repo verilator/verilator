@@ -60,9 +60,9 @@ using namespace std;
 ///
 ///	vluint32_t m_cases[10];
 ///	constructor {
-///	    for (int i=0; i<10; i++) { m_cases[i]=0; }
+///	    for (int i=0; i<10; ++i) { m_cases[i]=0; }
 ///     }
-///	for (int i=0; i<10; i++) {
+///	for (int i=0; i<10; ++i) {
 ///		VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
 ///	}
 

@@ -53,7 +53,7 @@ inline string VL_CONCATN_NNN(const string& lhs, const string& rhs) {
 }
 inline string VL_REPLICATEN_NNQ(int,int,int, const string& lhs, IData rep) {
     string out; out.reserve(lhs.length() * rep);
-    for (unsigned times=0; times<rep; times++) out += lhs;
+    for (unsigned times=0; times<rep; ++times) out += lhs;
     return out;
 }
 inline string VL_REPLICATEN_NNI(int obits,int lbits,int rbits, const string& lhs, IData rep) {

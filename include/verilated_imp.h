@@ -97,7 +97,7 @@ public: // But only for verilated*.cpp
     }
     static void commandArgsAdd(int argc, const char** argv) {
 	if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
-	for (int i=0; i<argc; i++) s_s.m_argVec.push_back(argv[i]);
+	for (int i=0; i<argc; ++i) s_s.m_argVec.push_back(argv[i]);
 	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
     }
     static string argPlusMatch(const char* prefixp) {
@@ -238,7 +238,7 @@ public: // But only for verilated*.cpp
 	    // Need to create more space in m_fdps and m_fdFree
 	    size_t start = s_s.m_fdps.size();
 	    s_s.m_fdps.resize(start*2);
-	    for (size_t i=start; i<start*2; i++) s_s.m_fdFree.push_back((IData)i);
+	    for (size_t i=start; i<start*2; ++i) s_s.m_fdFree.push_back((IData)i);
 	}
 	IData idx = s_s.m_fdFree.back(); s_s.m_fdFree.pop_back();
 	s_s.m_fdps[idx] = fp;
