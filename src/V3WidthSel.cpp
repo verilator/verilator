@@ -223,7 +223,11 @@ private:
 	    // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
 	    AstNode* subp = rhsp;
 	    if (fromRange.lo()!=0 || fromRange.hi()<0) {
-		subp = newSubNeg (subp, fromRange.lo());
+		if (fromRange.littleEndian()) {
+		    subp = newSubNeg(fromRange.hi(), subp);
+		} else {
+		    subp = newSubNeg(subp, fromRange.lo());
+		}
 	    }
 	    if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
 		adtypep->v3fatalSrc("Array extraction with width miscomputed "
@@ -311,11 +315,20 @@ private:
 	    if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
 		adtypep->v3fatalSrc("Array extraction with width miscomputed "
 				    <<adtypep->width()<<"/"<<fromRange.elements());
+	    if (fromRange.littleEndian()) {
+		// Below code assumes big bit endian; just works out if we swap
+		int x = msb; msb = lsb; lsb = x;
+	    }
+	    if (lsb > msb) {
+		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
+		int x = msb; msb = lsb; lsb = x;
+	    }
 	    int elwidth = adtypep->width() / fromRange.elements();
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
-				       new AstConst(nodep->fileline(),AstConst::Unsized32(),lsb*elwidth),
-				       new AstConst(nodep->fileline(),AstConst::Unsized32(),(msb-lsb+1)*elwidth));
+				       new AstMul(nodep->fileline(), newSubLsbOf(lsbp, fromRange),
+						  new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth)),
+				       new AstConst(nodep->fileline(), AstConst::Unsized32(), (msb-lsb+1)*elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
 	    newp->dtypeFrom(sliceDType(adtypep, msb, lsb));

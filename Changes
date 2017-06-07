@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.905 devel
 
+***   Fix extract of packed array with non-zero LSB, bug1172. [James Pallister]
+
 ***   Fix shifts by more than 32-bit numbers, bug1174. [Clifford Wolf]
 
 ***   Fix power operator on wide constants, bug761. [Clifford Wolf]
