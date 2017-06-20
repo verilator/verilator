@@ -82,8 +82,9 @@ our $Raise_Weight_Max = 50;
  'VADD'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'(%1 + %2)', },
  'VSUB'=>	{weight=>1&&10, width=>0, 	    sc=>1, terminal=>0, v=>'(%1 - %2)', },
  'VMUL'=>	{weight=>1&&15,width=>0, 	    sc=>1, terminal=>0, v=>'(%1 * %2)', },  # High % as rarely applyable
- 'VDIV'=>	{weight=>1&&8, width=>0,	    sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 / %2))', },
- 'VMODDIV'=>	{weight=>1&&8, width=>0,	    sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 %% %2))', },
+ # Unspecified behavior with == (a-signed / b) -- see t_math_signed5.v test
+ 'VDIV'=>	{weight=>1&&8, width=>0, signed=>0, sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 / %2))', },
+ 'VMODDIV'=>	{weight=>1&&8, width=>0, signed=>0, sc=>1, terminal=>0, v=>'((%2)==%xw\'h0 ? %xw\'%xsh0:(%1 %% %2))', },
  #'VPOW'=>	{weight=>2&&0,width=>-64, 	    sc=>0, terminal=>0, v=>'(%1 ** %2)', },
  'VSHIFTL'=>	{weight=>1&&8, width=>0, signed=>0, sc=>0, terminal=>0, v=>'(%1 << %2)', },
  'VSHIFTLS'=>	{weight=>1&&8, width=>0, signed=>1, sc=>0, terminal=>0, v=>'(%1 <<< %2)', },

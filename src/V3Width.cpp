@@ -2749,6 +2749,8 @@ private:
 	    AstNodeDType* expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
 	    AstNodeDType* subDTypep = expDTypep;
 	    nodep->dtypeFrom(expDTypep);
+	    // We don't use LHS && RHS -- unspecified language corner, see t_math_signed5 test
+	    //bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
 	    if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, expDTypep->isSigned())) { VL_DANGLING(nodep);
 		nodep = newp;  // Process new node instead
 	    }

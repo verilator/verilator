@@ -83,6 +83,7 @@
       w4_u = ((5'b01010 == (5'sb11111 / 5'sd3)));    // Exp 0     Vlt 0  // Must be signed result (-1/3) to make this result zero
 `ifdef VCS  // I-2014.03
       `checkh(w4_u, 4'b0000);  // Wrong, gets 5'b0==..., unsigned does not propagate
+      // Somewhat questionable, as spec says division signed depends on only LHS and RHS, however differs from others
 `else
       `checkh(w4_u, 4'b0001);  // NC-Verilog, Modelsim, XSim, ...
 `endif
