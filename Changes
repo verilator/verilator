@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix power operator on wide constants, bug761. [Clifford Wolf]
 
+***   Fix .* on interface pins, bug1176. [Maciej Piechotka]
+
 
 * Verilator 3.904 2017-05-30
 

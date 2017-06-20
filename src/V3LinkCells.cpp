@@ -335,7 +335,8 @@ private:
 			    UINFO(9,"    need .* PORT  "<<portp<<endl);
 			    // Create any not already connected
 			    AstPin* newp = new AstPin(nodep->fileline(),0,portp->name(),
-						      new AstVarRef(nodep->fileline(),portp->name(),false));
+						      new AstParseRef(nodep->fileline(),
+								      AstParseRefExp::PX_TEXT, portp->name(), NULL, NULL));
 			    newp->svImplicit(true);
 			    nodep->addPinsp(newp);
 			} else {  // warn on the CELL that needs it, not the port
