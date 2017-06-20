@@ -1463,9 +1463,12 @@ sub vcd_identical {
     if (!-r $fn2) { $self->error("File does not exist $fn2\n"); return 0; }
     {
 	# vcddiff to check transitions, if installed
-	my $out = `vcddiff --help`;
+	my $cmd = qq{vcddiff --help};
+	print "\t$cmd\n" if $::Debug;
+	my $out = `$cmd`;
 	if ($out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
-	my $cmd = qq{vcddiff "$fn1" "$fn2"};
+
+	$cmd = qq{vcddiff "$fn1" "$fn2"};
 	print "\t$cmd\n" if $::Debug;
 	$out = `$cmd`;
 	if ($out ne '') {

@@ -1,0 +1,48 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2008 by Wilson Snyder.
+
+#include <verilated.h>
+#include <verilated_vcd_c.h>
+
+#if defined(T_TRACE_TIMESCALE)
+# include "Vt_trace_timescale.h"
+#else
+# error "Unknown test"
+#endif
+
+unsigned long long main_time = 0;
+double sc_time_stamp() {
+    return ((double)main_time) / VL_TIME_MULTIPLIER;
+}
+
+int main(int argc, char **argv, char **env) {
+    VM_PREFIX* top = new VM_PREFIX("top");
+
+    Verilated::debug(0);
+    Verilated::traceEverOn(true);
+
+    VerilatedVcdC* tfp = new VerilatedVcdC;
+    tfp->set_time_resolution("1ps");
+    tfp->set_time_unit("1ns");
+
+    top->trace(tfp,99);
+
+    tfp->open("obj_dir/t_trace_timescale/t_trace_timescale.vcd");
+
+    top->clk = 0;
+
+    while (main_time < 190*VL_TIME_MULTIPLIER) {
+	top->clk   = ~top->clk;
+	top->eval();
+	tfp->dump((unsigned int)(main_time));
+	main_time += VL_TIME_MULTIPLIER/2;
+    }
+    tfp->close();
+    top->final();
+    printf ("*-* All Finished *-*\n");
+    return 0;
+}

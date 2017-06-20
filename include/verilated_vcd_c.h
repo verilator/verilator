@@ -428,6 +428,15 @@ public:
     void dump (double timestamp) { dump((vluint64_t)timestamp); }
     void dump (vluint32_t timestamp) { dump((vluint64_t)timestamp); }
     void dump (int timestamp) { dump((vluint64_t)timestamp); }
+    /// Set time units (s/ms, defaults to ns)
+    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    void set_time_unit (const char* unit) { m_sptrace.set_time_unit(unit); }
+    void set_time_unit (const string& unit) { set_time_unit(unit.c_str()); }
+    /// Set time resolution (s/ms, defaults to ns)
+    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    void set_time_resolution (const char* unit) { m_sptrace.set_time_resolution(unit); }
+    void set_time_resolution (const string& unit) { set_time_resolution(unit.c_str()); }
+
     /// Internal class access
     inline VerilatedVcd* spTrace () { return &m_sptrace; };
 };
