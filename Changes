@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 3.905 devel
+* Verilator 3.906 2017-06-22
 
 ***   Support set_time_unit/set_time_precision in C traces, msg2261.
 
