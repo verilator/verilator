@@ -1038,9 +1038,9 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
             else if (c=='_') {}
             else if (c=='@') { reading_addr = true; innum=false; needinc=false; }
             // Check for hex or binary digits as file format requests
-            else if (isxdigit(c)) {
+            else if (isxdigit(c) || (!reading_addr && (c=='x' || c=='X'))) {
                 c = tolower(c);
-                int value = (c >= 'a' ? (c-'a'+10) : (c-'0'));
+                int value = (c >= 'a' ? (c=='x' ? VL_RAND_RESET_I(4) : (c-'a'+10)) : (c-'0'));
                 if (!innum) {  // Prep for next number
                     if (needinc) { addr++; needinc=false; }
                 }
