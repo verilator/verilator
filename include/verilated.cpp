@@ -500,6 +500,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 			output += (char)((lwp[i] >> 16) & 0xff);
 			output += (char)((lwp[i] >> 24) & 0xff);
 		    }
+		    break;
 		case 'z':  // Packed 4-state
 		    output.reserve(output.size() + 8*VL_WORDS_I(lbits));
 		    for (int i=0; i<VL_WORDS_I(lbits); ++i) {
@@ -509,11 +510,13 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 			output += (char)((lwp[i] >> 24) & 0xff);
 			output += "\0\0\0\0"; // No tristate
 		    }
+		    break;
 		case 'v': // Strength; assume always strong
 		    for (lsb=lbits-1; lsb>=0; --lsb) {
 			if ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) output += "St1 ";
 			else output += "St0 ";
 		    }
+		    break;
 		case 'x':
 		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 4) * 4; // Next digit

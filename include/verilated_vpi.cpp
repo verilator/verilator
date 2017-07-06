@@ -946,11 +946,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT32:
 		value_p->value.integer = *((IData*)(vop->varDatap()));
 		return;
-	    case VLVT_WDATA:
-	    case VLVT_UINT64:
-		// Not legal
-		value_p->value.integer = 0;
+	    case VLVT_WDATA: // FALLTHRU
+	    case VLVT_UINT64: // FALLTHRU
 	    default:
+		value_p->value.integer = 0;
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
 		return;
