@@ -68,7 +68,7 @@ extern void VL_SFORMAT_X(int obits_ignored, string &output, const char* formatp,
 extern string VL_SFORMATF_NX(const char* formatp, ...);
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rdp);
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const string& ld, IData& rdr) {
-    WData rwp[1];
+    WData rwp[2];  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
     if (got) rdr = rwp[0];
     return got;

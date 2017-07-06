@@ -405,6 +405,7 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define VL_BITISSETLIMIT_W(data,width,bit) (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
 /// Create two 32-bit words from quadword
+/// WData is always at least 2 words; does not clean upper bits
 #define VL_SET_WQ(owp,data)	{ owp[0]=(IData)(data); owp[1]=(IData)((data)>>VL_WORDSIZE); }
 #define VL_SET_WI(owp,data)	{ owp[0]=(IData)(data); owp[1]=0; }
 #define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
@@ -524,7 +525,7 @@ static inline WDataOutP VL_ALLONES_W(int obits, WDataOutP owp) {
 // EMIT_RULE: VL_ASSIGN:  oclean=rclean; obits==lbits;
 // For now, we always have a clean rhs.
 // Note: If a ASSIGN isn't clean, use VL_ASSIGNCLEAN instead to do the same thing.
-static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp,WDataInP lwp){
+static inline WDataOutP VL_ASSIGN_W(int obits, WDataOutP owp, WDataInP lwp) {
     int words = VL_WORDS_I(obits);
     for (int i=0; i < words; ++i) owp[i] = lwp[i];
     return(owp);
