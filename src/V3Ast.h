@@ -903,7 +903,8 @@ class V3Hash {
     uint32_t	m_both;
     static const uint32_t M24 = ((1<<24)-1);
     void setBoth(uint32_t depth, uint32_t hshval) {
-	if (depth==0) depth=1; if (depth>255) depth=255;
+	if (depth==0) depth=1;
+	if (depth>255) depth=255;
 	m_both = (depth<<24) | (hshval & M24);
     }
 public:

@@ -591,14 +591,14 @@ private:
 	    vertexp->dstDomainp(senoutp);
 	    if (debug()>=9) {
 		UINFO(9,spaces(level)+"     Tracedst "<<vertexp);
-		if (senoutp) V3EmitV::verilogForTree(senoutp, cout); cout<<endl;
+		if (senoutp) { V3EmitV::verilogForTree(senoutp, cout); cout<<endl; }
 	    }
 	} else {
 	    vertexp->srcDomainSet(true);  // Note it's set - domainp may be null, so can't use that
 	    vertexp->srcDomainp(senoutp);
 	    if (debug()>=9) {
 		UINFO(9,spaces(level)+"     Tracesrc "<<vertexp);
-		if (senoutp) V3EmitV::verilogForTree(senoutp, cout); cout<<endl;
+		if (senoutp) { V3EmitV::verilogForTree(senoutp, cout); cout<<endl; }
 	    }
 	}
     }

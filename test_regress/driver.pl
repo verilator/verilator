@@ -18,6 +18,7 @@ use Data::Dumper; $Data::Dumper::Sortkeys=1;
 use strict;
 use vars qw ($Debug %Vars $Driver $Fork);
 use POSIX qw(strftime);
+use lib ".";
 
 $::Driver = 1;
 $::Have_Forker = 0;

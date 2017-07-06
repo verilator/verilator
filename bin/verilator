@@ -1510,7 +1510,7 @@ OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
 the compiler or linker.  Or, just for one run, pass them on the command
 line to make:
 
-    make OPT_FAST="-O2" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-O2 -fno-stack-protector" -f Vour.mk Vour__ALL.a
 
 OPT_FAST specifies optimizations for those programs that are part of the
 fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
