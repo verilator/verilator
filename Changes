@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix GCC 6 warnings.
 
+****  Fix compile error on unused VL_VALUEPLUSARGS_IW, bug1181. [Thomas J Whatson]
+
 
 * Verilator 3.906 2017-06-22
 

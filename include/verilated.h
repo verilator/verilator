@@ -392,7 +392,6 @@ extern IData VL_SYSTEM_IQ(QData lhs);
 inline IData VL_SYSTEM_II(IData lhs) { return VL_SYSTEM_IQ(lhs); }
 
 extern IData VL_TESTPLUSARGS_I(const char* formatp);
-extern IData VL_VALUEPLUSARGS_IW(int rbits, const char* prefixp, char fmt, WDataOutP rwp);
 extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 //=========================================================================
@@ -1879,26 +1878,6 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
     int words = VL_WORDS_I(obits);
     for (int i=0; i < words; ++i) owp[i] = cond ? w1p[i] : w2p[i];
     return(owp);
-}
-
-//======================================================================
-// System Functions
-
-inline IData VL_VALUEPLUSARGS_IQ(int rbits, const char* prefixp, char fmt, QData& ldr) {
-    WData wd[2]; IData v=VL_VALUEPLUSARGS_IW(rbits,prefixp,fmt,wd); if (v) ldr=VL_SET_QW(wd);
-    return v;
-}
-inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, CData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(CData)qd;
-    return v;
-}
-inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, SData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(SData)qd;
-    return v;
-}
-inline IData VL_VALUEPLUSARGS_II(int rbits, const char* prefixp, char fmt, IData& ldr) {
-    QData qd; IData v=VL_VALUEPLUSARGS_IQ(rbits,prefixp,fmt,qd); if (v) ldr=(IData)qd;
-    return v;
 }
 
 //======================================================================
