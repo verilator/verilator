@@ -95,7 +95,7 @@
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
 #define VL_UL(c) ((IData)(c##UL))	///< Add appropriate suffix to 32-bit constant
 
-#ifdef VL_CPPCHECK
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
 # define VL_DANGLING(v)
 #else
 # define VL_DANGLING(v) do { (v) = NULL; } while(0)	///< After e.g. delete, set variable to NULL to indicate must not use later

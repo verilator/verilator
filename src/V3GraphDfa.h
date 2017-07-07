@@ -124,7 +124,7 @@ public:
     static DfaInput EPSILON() { return VNUser::fromInt(0); }
     static DfaInput NA() { return VNUser::fromInt(1); }	// as in not-applicable
     // CONSTRUCTORS
-    DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, DfaInput input)
+    DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaInput& input)
 	: V3GraphEdge(graphp, fromp, top, 1)
 	, m_input(input), m_complement(false) {}
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaEdge* copyfrom)

@@ -495,7 +495,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		case 'u':  // Packed 2-state
 		    output.reserve(output.size() + 4*VL_WORDS_I(lbits));
 		    for (int i=0; i<VL_WORDS_I(lbits); ++i) {
-			output += (char)((lwp[i] >> 0) & 0xff);
+			output += (char)((lwp[i]     ) & 0xff);
 			output += (char)((lwp[i] >> 8) & 0xff);
 			output += (char)((lwp[i] >> 16) & 0xff);
 			output += (char)((lwp[i] >> 24) & 0xff);
@@ -504,7 +504,7 @@ void _vl_vsformat(string& output, const char* formatp, va_list ap) {
 		case 'z':  // Packed 4-state
 		    output.reserve(output.size() + 8*VL_WORDS_I(lbits));
 		    for (int i=0; i<VL_WORDS_I(lbits); ++i) {
-			output += (char)((lwp[i] >> 0) & 0xff);
+			output += (char)((lwp[i]     ) & 0xff);
 			output += (char)((lwp[i] >> 8) & 0xff);
 			output += (char)((lwp[i] >> 16) & 0xff);
 			output += (char)((lwp[i] >> 24) & 0xff);
@@ -654,7 +654,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		// Deal with all read-and-scan somethings
 		// Note LSBs are preserved if there's an overflow
 		const int obits = va_arg(ap, int);
-		WData qowp[2];
+		WData qowp[2] = {0, 0};
 		WDataOutP owp = qowp;
 		if (obits > VL_QUADSIZE) {
 		    owp = va_arg(ap,WDataOutP);
@@ -1095,7 +1095,7 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
         }
         lastc = c;
     }
-    if (needinc) { addr++; needinc=false; }
+    if (needinc) { addr++; }
 
     // Final checks
     fclose(fp);
@@ -1250,7 +1250,7 @@ const char* Verilated::catName(const char* n1, const char* n2) {
     static char* strp = NULL;
     static size_t len  = 0;
     size_t newlen = strlen(n1)+strlen(n2)+2;
-    if (newlen > len) {
+    if (!strp || newlen > len) {
 	if (strp) delete [] strp;
 	strp = new char[newlen];
 	len = newlen;

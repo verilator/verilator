@@ -138,8 +138,9 @@ private:
 		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 			if (AstVar* portp = stmtp->castVar()) {
 			    if (portp->isIO() && !portp->isFuncReturn()) {
-				argsp = argsp->addNextNull(new AstVarRef(portp->fileline(), portp,
-									 portp->isOutput()));
+				AstNode* newp = new AstVarRef(portp->fileline(), portp, portp->isOutput());
+				if (argsp) argsp = argsp->addNextNull(newp);
+				else argsp = newp;
 			    }
 			}
 		    }

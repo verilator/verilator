@@ -94,6 +94,7 @@ public:
 	m_funcp = m_tlFuncp;
 	m_modp->addStmtp(m_tlFuncp);
     }
+    ~V3CCtorsVisitor() {}
 };
 
 //######################################################################

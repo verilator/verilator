@@ -327,6 +327,6 @@ public:
     V3Number& opLtN	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteN	(const V3Number& lhs, const V3Number& rhs);
 };
-inline ostream& operator<<(ostream& os, V3Number rhs) { return os<<rhs.ascii(); }
+inline ostream& operator<<(ostream& os, const V3Number& rhs) { return os<<rhs.ascii(); }
 
 #endif // Guard

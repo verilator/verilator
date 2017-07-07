@@ -32,7 +32,7 @@
 #include <algorithm>
 #include "V3Number.h"
 
-void test(string lhss, string op, string rhss, string exps) {
+void test(const string& lhss, const string& op, const string& rhss, const string& exps) {
     char* l1 = strdup(lhss.c_str());
     char* r1 = strdup(rhss.c_str());
     char* e1 = strdup(exps.c_str());

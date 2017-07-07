@@ -902,7 +902,7 @@ bool AstNode::sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool 
 //======================================================================
 // Static utilities
 
-ostream& operator<<(ostream& os, V3Hash rhs) {
+ostream& operator<<(ostream& os, const V3Hash& rhs) {
     return os<<hex<<setw(2)<<setfill('0')<<rhs.depth()
 	     <<"_"<<setw(6)<<setfill('0')<<rhs.hshval();
 }
@@ -1056,6 +1056,8 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
     // Next dump can indicate start from here
     editCountSetLast();
 }
+
+void AstNode::v3errorEndFatal(ostringstream& str) const { v3errorEnd(str); assert(0); }
 
 void AstNode::v3errorEnd(ostringstream& str) const {
     if (!dynamic_cast<const AstNode*>(this)) {

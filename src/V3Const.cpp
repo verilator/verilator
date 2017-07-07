@@ -1374,6 +1374,7 @@ private:
 	AstNode* fromp = repp->lhsp()->unlinkFrBack();
 	AstConst* lsbp = nodep->lsbp()->castConst();
 	AstNode* widthp = nodep->widthp()->unlinkFrBack();
+	if (!fromp->width()) nodep->v3fatalSrc("Not widthed");
 	AstSel* newp = new AstSel(nodep->fileline(),
 				  fromp,
 				  new AstConst(lsbp->fileline(), lsbp->toUInt() % fromp->width()),

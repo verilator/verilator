@@ -570,6 +570,7 @@ void VerilatedVcd::declDouble   (vluint32_t code, const char* name, int arraynum
 //=============================================================================
 
 void VerilatedVcd::fullDouble (vluint32_t code, const double newval) {
+    // cppcheck-suppress invalidPointerCast
     (*((double*)&m_sigs_oldvalp[code])) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(m_writep, "r%.16g", newval);
@@ -578,6 +579,7 @@ void VerilatedVcd::fullDouble (vluint32_t code, const double newval) {
     bufferCheck();
 }
 void VerilatedVcd::fullFloat (vluint32_t code, const float newval) {
+    // cppcheck-suppress invalidPointerCast
     (*((float*)&m_sigs_oldvalp[code])) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(m_writep, "r%.16g", (double)newval);

@@ -71,7 +71,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 	    if (*cp != '_') *wp++ = *cp;
 	}
 	*wp++ = '\0';
-	while (*cp && *cp == '_') cp++;
+	while (*cp == '_') cp++;
 	if (*cp && tolower(*cp)=='s') {
 	    cp++; isSigned(true);
 	}

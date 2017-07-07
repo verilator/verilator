@@ -423,7 +423,7 @@ private:
 	// Handle any assertions
 	replaceCaseParallel(nodep, false);
 	// Replace the CASE... with IF...
-	if (debug()>=9) grouprootp->dumpTree(cout,"     _new: ");
+	if (debug()>=9 && grouprootp) grouprootp->dumpTree(cout,"     _new: ");
 	if (grouprootp) nodep->replaceWith(grouprootp);
 	else nodep->unlinkFrBack();
 	nodep->deleteTree(); VL_DANGLING(nodep);

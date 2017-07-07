@@ -104,7 +104,7 @@ class V3ConfigIgnores {
 public:
     inline static V3ConfigIgnores& singleton() { return s_singleton; }
 
-    void addIgnore(V3ErrorCode code, string wildname, int lineno, bool on) {
+    void addIgnore(V3ErrorCode code, const string& wildname, int lineno, bool on) {
 	// Insert
 	IgnLines* linesp = findWilds(wildname);
 	UINFO(9,"config addIgnore "<<wildname<<":"<<lineno<<", "<<code<<", "<<on<<endl);

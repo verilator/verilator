@@ -61,7 +61,7 @@ public:
   inline bool operator== (AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstType lhs, AstType::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstType::en lhs, AstType rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstType rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstType& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -107,7 +107,7 @@ public:
   inline bool operator== (AstNumeric lhs, AstNumeric rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstNumeric lhs, AstNumeric::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstNumeric::en lhs, AstNumeric rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstNumeric rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstNumeric& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -464,7 +464,7 @@ public:
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstVarType::en lhs, AstVarType rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstVarType rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstVarType& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -496,7 +496,7 @@ public:
   inline bool operator== (AstBranchPred lhs, AstBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBranchPred lhs, AstBranchPred::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstBranchPred::en lhs, AstBranchPred rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstBranchPred rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstBranchPred& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -529,7 +529,7 @@ public:
   inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstVarAttrClocker::en lhs, AstVarAttrClocker rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstVarAttrClocker rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstVarAttrClocker& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -628,7 +628,7 @@ public:
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstParseRefExp::en lhs, AstParseRefExp rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, AstParseRefExp rhs) { return os<<rhs.ascii(); }
+  inline ostream& operator<<(ostream& os, const AstParseRefExp& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 // VNumRange - Structure containing numberic range information
@@ -680,7 +680,7 @@ struct VNumRange {
 	{ return (!m_ranged || (m_lo==0 && m_hi>=1 && !m_littleEndian)); }
     void dump(ostream& str) const { if (ranged()) str<<"["<<left()<<":"<<right()<<"]"; else str<<"[norg]"; }
 };
-inline ostream& operator<<(ostream& os, VNumRange rhs) { rhs.dump(os); return os; }
+inline ostream& operator<<(ostream& os, const VNumRange& rhs) { rhs.dump(os); return os; }
 
 //######################################################################
 
@@ -709,7 +709,7 @@ struct VBasicTypeKey {
 	if (!(m_nrange == rhs.m_nrange)) return false;  // lhs > rhs
 	return false; }
     VBasicTypeKey(int width, int widthMin, AstNumeric numeric, AstBasicDTypeKwd kwd,
-	     VNumRange nrange)
+		  const VNumRange& nrange)
 	: m_width(width), m_widthMin(widthMin), m_numeric(numeric),
 	  m_keyword(kwd), m_nrange(nrange) {}
     ~VBasicTypeKey() {}
@@ -733,8 +733,9 @@ class VNUser {
     } m_u;
 public:
     VNUser() {}
+    // non-explicit:
     VNUser(int i) { m_u.up = 0; m_u.ui = i; }
-    VNUser(void* p) { m_u.up = p; }
+    explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() {}
     // Casters
     WidthVP*	c() { return ((WidthVP*)m_u.up); }
@@ -891,7 +892,7 @@ public:
     AstNode* oldp() const { return m_oldp; }
     void dump(ostream& str=cout) const;
 };
-inline ostream& operator<<(ostream& os, AstNRelinker& rhs) { rhs.dump(os); return os;}
+inline ostream& operator<<(ostream& os, const AstNRelinker& rhs) { rhs.dump(os); return os;}
 
 //######################################################################
 // V3Hash -- Node hashing for V3Combine
@@ -941,7 +942,7 @@ public:
     V3Hash(V3Hash h1, V3Hash h2, V3Hash h3, V3Hash h4) {
 	setBoth(1,((h1.hshval()*31+h2.hshval())*31+h3.hshval())*31+h4.hshval()); }
 };
-ostream& operator<<(ostream& os, V3Hash rhs);
+ostream& operator<<(ostream& os, const V3Hash& rhs);
 
 //######################################################################
 // AstNode -- Base type of all Ast types
@@ -1231,6 +1232,7 @@ public:
 
     // METHODS - dump and error
     void	v3errorEnd(ostringstream& str) const;
+    void	v3errorEndFatal(ostringstream& str) const VL_ATTR_NORETURN;
     string	warnMore() const;
     virtual void dump(ostream& str=cout);
     void	dumpGdb(); // For GDB only

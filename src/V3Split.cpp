@@ -411,7 +411,8 @@ private:
 		    UINFO(6, "    Color="<<color<<"  New order: "<<nextp<<endl);
 		    if (nextp == nodep && !splitAlwaysp) nodep->unlinkFrBack(&replaceHandle);
 		    else nextp->unlinkFrBack();
-		    newListp = newListp->addNext(nextp);
+		    if (newListp) newListp = newListp->addNext(nextp);
+		    else newListp = nextp;
 		}
 		if (splitAlwaysp) {
 		    ++m_statSplits;

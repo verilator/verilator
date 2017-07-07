@@ -69,7 +69,7 @@ public:
 		     const string& vformat, AstNode* exprsp, bool isScan);
     void displayEmit(AstNode* nodep, bool isScan);
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
-		    string vfmt, char fmtLetter);
+		    const string& vfmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_PAR, EVL_ALL} EisWhich;
@@ -1237,7 +1237,6 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    if (dispp) {}
 	    puts("VL_SFORMATF_NX(");
 	} else {
-	    isStmt = true;
 	    nodep->v3fatalSrc("Unknown displayEmit node type");
 	}
 	ofp()->putsQuoted(emitDispState.m_format);
@@ -1269,7 +1268,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 }
 
 void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
-			    string vfmt, char fmtLetter) {
+			    const string& vfmt, char fmtLetter) {
     // Print display argument, edits elistp
     AstNode* argp = *elistp;
     if (!argp) {

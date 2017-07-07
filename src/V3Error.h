@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <deque>
+#include <cassert>
 
 //######################################################################
 
@@ -253,18 +254,21 @@ class V3Error {
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
 inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
+inline void v3errorEndFatal(ostringstream& sstr) VL_ATTR_NORETURN;
+inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); assert(0); }
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
 // Note the commas are the comma operator, not separating arguments. These are needed to insure
 // evaluation order as otherwise we couldn't insure v3errorPrep is called first.
 #define v3warnCode(code,msg) v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
-#define v3warn(code,msg) v3warnCode(V3ErrorCode::code,msg)
-#define v3info(msg)  v3warn(EC_INFO,msg)
-#define v3fatal(msg) v3warn(EC_FATAL,msg)
-#define v3error(msg) v3warn(EC_ERROR,msg)
+#define v3warnCodeFatal(code,msg) v3errorEndFatal((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
+#define v3warn(code,msg) v3warnCode(V3ErrorCode::code, msg)
+#define v3info(msg)  v3warnCode(V3ErrorCode::EC_INFO, msg)
+#define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
+#define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
 // Use this instead of fatal() to mention the source code line.
-#define v3fatalSrc(msg) v3warn(EC_FATALSRC,__FILE__<<":"<<dec<<__LINE__<<": "<<msg)
+#define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<dec<<__LINE__<<": "<<msg)
 
 #define UINFO(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
 #define UINFONL(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<stmsg; } }

@@ -52,14 +52,19 @@ sub process {
     $fh or die "%Error: '$cmd' failed: $!\n";
     my %uniq;
     my %errs;
+    my $last_error = "";
     while (defined(my $line = $fh->getline())) {
 	$line =~ s/^\s+//;
 	$line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
 	# General gunk
 	next if $uniq{$line}++;
 	next if $line =~ m!^<\?xml version!;
-	next if $line =~ m!^<results>!;
+	next if $line =~ m!^<cppcheck!;
+	next if $line =~ m!^<results!;
 	next if $line =~ m!^</results>!;
+	next if $line =~ m!^<errors!;
+	next if $line =~ m!^</error>!;
+	next if $line =~ m!^</errors>!;
 	next if $line =~ m!^<error.*id="unmatchedSuppression"!;  # --suppress=unmatchedSuppression doesn't work
 	next if $line =~ m!Cppcheck cannot find all the include files!; # An earlier id line is more specific
 	next if $line =~ m!^Checking !;
@@ -80,9 +85,31 @@ sub process {
 	    print $line;
 	} else {
 	    my $suppress;
+	    # --xml-format=1
 	    if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
 		my $file = $1; my $linenum = $2; my $id = $3;
 		$suppress = 1 if _suppress($file,$linenum,$id);
+	    }
+	    # --xml-format=2
+	    if ($line =~ /<error id.*/) {
+		$last_error = $line;
+		chomp $last_error;
+		$suppress = 1;
+	    }
+	    elsif ($line =~ /<location.* file="([^"]+)"\s+line="(\d+)"/) {
+		my $file = $1; my $linenum = $2; my $id;
+		if ($last_error =~ / id="([^"]+)"/) {
+		    $id = $1;
+		} else {
+		    $id = "?";
+		}
+		$suppress = 1 if _suppress($file,$linenum,$id);
+		$suppress = 1 if $file eq "*";
+		if (!$suppress) {
+		    chomp $line;
+		    print "$file:$linenum: ".$last_error."\n";
+		    $suppress = 1;
+		}
 	    }
 	    if (!$suppress) {
 		my $eline = "%Error: cppcheck: $line";
@@ -122,7 +149,7 @@ sub _suppress {
 		my $supids = $1;
 		foreach my $supid (split /\s+/, $supids) {
 		    if ($supid eq $id
-			|| $supid eq $SuppressMap{$id}) {
+			|| $supid eq ($SuppressMap{$id}||'')) {
 			return 1;
 		    }
 		}

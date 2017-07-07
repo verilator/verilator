@@ -323,7 +323,7 @@ private:
 	// Read sensitivitues
 	m_itemCombo = false;
 	m_itemSequent = false;
-	oldsensesp->iterateAndNext(*this);
+	if (oldsensesp) oldsensesp->iterateAndNext(*this);
 	bool combo = m_itemCombo;
 	bool sequent = m_itemSequent;
 

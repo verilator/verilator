@@ -357,7 +357,7 @@ private:
 	return newvscp;
     }
 
-    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, string namePrefix, AstVarScope* outvscp) {
+    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix, AstVarScope* outvscp) {
 	// outvscp is the variable for functions only, if NULL, it's a task
 	if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
 	AstNode* newbodysp = refp->taskp()->stmtsp()->cloneTree(true);  // Maybe NULL
@@ -463,7 +463,7 @@ private:
 	return beginp;
     }
 
-    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, string namePrefix, AstVarScope* outvscp) {
+    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix, AstVarScope* outvscp) {
 	// outvscp is the variable for functions only, if NULL, it's a task
 	if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
 	AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());

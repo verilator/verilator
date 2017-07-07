@@ -611,7 +611,8 @@ class GaterVisitor : public GaterBaseVisitor {
 		    // Edges from IFs represent a real IF branch in the equation tree
 		    //UINFO(9,"  ifver "<<(void*)(edgep)<<" cc"<<edgep->dotColor()<<endl);
 		    eqnp = cVxp->nodep()->condp()->cloneTree(true);
-		    if (eqnp && cedgep->ifelseFalse()) {
+		    if (!eqnp) cVxp->nodep()->v3fatalSrc("null condition");
+		    if (cedgep->ifelseFalse()) {
 			eqnp = new AstNot(eqnp->fileline(),eqnp);
 		    }
 		    // We need to AND this term onto whatever was found below it

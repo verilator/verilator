@@ -72,6 +72,7 @@ private:
     T*	m_countp;	///< Count value
 public:
     // METHODS
+    // cppcheck-suppress truncLongCastReturn
     virtual vluint64_t count() const { return *m_countp; }
     virtual void zero() const { *m_countp = 0; }
     // CONSTRUCTORS

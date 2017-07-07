@@ -119,7 +119,7 @@ private:
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
 	}
-	if (stmtsp) bodysp = bodysp->addNext(stmtsp);
+	if (bodysp && stmtsp) bodysp = bodysp->addNext(stmtsp);
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
 	bodysp = ifp;
 	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);

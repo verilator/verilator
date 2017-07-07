@@ -121,7 +121,7 @@ public:
 	m_littleEndian = false;
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
     }
-    AstRange(FileLine* fl, VNumRange range)
+    AstRange(FileLine* fl, const VNumRange& range)
 	:AstNode(fl) {
 	m_littleEndian = range.littleEndian();
 	setOp2p(new AstConst(fl,range.hi())); setOp3p(new AstConst(fl,range.lo()));
@@ -743,7 +743,7 @@ class AstParseTypeDType : public AstNodeDType {
     // During parsing, this indicates the type of a parameter is a "parameter type"
     // e.g. the data type is a container of any data type
 public:
-    AstParseTypeDType(FileLine* fl)
+    explicit AstParseTypeDType(FileLine* fl)
 	: AstNodeDType(fl) {}
     ASTNODE_NODE_FUNCS(ParseTypeDType)
     AstNodeDType* dtypep() const { return NULL; }
@@ -1655,7 +1655,7 @@ private:
     string      m_name;    // Cell name
 public:
     AstCellRef(FileLine* fl,
-	       string name, AstNode* cellp, AstNode* exprp)
+	       const string& name, AstNode* cellp, AstNode* exprp)
 	: AstNode(fl)
 	, m_name(name) {
 	addNOp1p(cellp); addNOp2p(exprp); }
@@ -1672,7 +1672,7 @@ private:
     string      m_name;    // Array name
 public:
     AstCellArrayRef(FileLine* fl,
-		    string name, AstNode* selectExprp)
+		    const string& name, AstNode* selectExprp)
 	: AstNode(fl)
 	, m_name(name) {
 	addNOp1p(selectExprp); }
@@ -1688,7 +1688,7 @@ private:
     string      m_name;    // Var name
 public:
     AstUnlinkedRef(FileLine* fl,
-		   AstNode* refp, string name, AstNode* crp)
+		   AstNode* refp, const string& name, AstNode* crp)
 	: AstNode(fl)
 	, m_name(name) {
 	addNOp1p(refp); addNOp2p(crp); }

@@ -1409,7 +1409,7 @@ private:
     }
 
 public:
-    GateClkDecompGraphVisitor(V3Graph* graphp) {
+    explicit GateClkDecompGraphVisitor(V3Graph* graphp) {
 	m_graphp = graphp;
 	m_seen_clk_vectors = 0;
 	m_clk_vsp = NULL;

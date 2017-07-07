@@ -559,8 +559,9 @@ string V3Options::version() {
 }
 
 void V3Options::throwSigsegv() {
-    // cppcheck-suppress nullPointer
+#if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     char* zp=NULL; *zp=0; // Intentional core dump, ignore warnings here
+#endif
 }
 
 //######################################################################

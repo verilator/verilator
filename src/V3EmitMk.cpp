@@ -106,7 +106,7 @@ public:
 		}
 		else {
 		    for (AstCFile* nodep = v3Global.rootp()->filesp(); nodep; nodep=nodep->nextp()->castCFile()) {
-			if (nodep->source() && nodep->slow()==slow && nodep->support()==support) {
+			if (nodep->source() && nodep->slow()==(slow!=0) && nodep->support()==(support!=0)) {
 			    putMakeClassEntry(of, nodep->name());
 			}
 		    }

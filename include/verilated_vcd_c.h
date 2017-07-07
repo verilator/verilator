@@ -382,11 +382,13 @@ public:
 	}
     }
     inline void chgDouble (vluint32_t code, const double newval) {
+	// cppcheck-suppress invalidPointerCast
 	if (VL_UNLIKELY((*((double*)&m_sigs_oldvalp[code])) != newval)) {
 	    fullDouble (code, newval);
 	}
     }
     inline void chgFloat (vluint32_t code, const float newval) {
+	// cppcheck-suppress invalidPointerCast
 	if (VL_UNLIKELY((*((float*)&m_sigs_oldvalp[code])) != newval)) {
 	    fullFloat (code, newval);
 	}

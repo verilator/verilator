@@ -154,7 +154,7 @@ private:
 	return newp;
     }
 
-    AstNode* newSubLsbOf(AstNode* underp, VNumRange fromRange) {
+    AstNode* newSubLsbOf(AstNode* underp, const VNumRange& fromRange) {
 	// Account for a variable's LSB in bit selections
 	// Will likely become SUB(underp, lsb_of_signal)
 	// Don't report WIDTH warnings etc here, as may be inside a generate branch that will be deleted

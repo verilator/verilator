@@ -131,7 +131,9 @@ private:
 		AstNode* valuep = NULL;
 		if (nodep->valuep()) valuep = new AstAdd(nodep->fileline(), nodep->valuep()->cloneTree(true),
 							 new AstConst(nodep->fileline(), AstConst::Unsized32(), offset_from_init));
-		addp = addp->addNextNull(new AstEnumItem(nodep->fileline(), name, NULL, valuep));
+		AstNode* newp = new AstEnumItem(nodep->fileline(), name, NULL, valuep);
+		if (addp) addp = addp->addNextNull(newp);
+		else addp = newp;
 	    }
 	    nodep->replaceWith(addp);
 	    nodep->deleteTree();
