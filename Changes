@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix compile error on unused VL_VALUEPLUSARGS_IW, bug1181. [Thomas J Whatson]
 
+****  Fix undefined VL_POW_WWI. [Clifford Wolf]
+
 
 * Verilator 3.906 2017-06-22
 

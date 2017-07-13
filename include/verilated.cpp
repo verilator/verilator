@@ -283,6 +283,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 }
 
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) {
+    // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i=1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-suppress variableScope
@@ -303,8 +304,24 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDa
     }
     return owp;
 }
+WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs) {
+    WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
+    return VL_POW_WWW(obits,lbits,rbits,owp,lwp,rhsw);
+}
+QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp) {
+    // Skip check for rhs == 0, as short-circuit doesn't save time
+    if (VL_UNLIKELY(lhs==0)) return 0;
+    QData power = lhs;
+    QData out = VL_ULL(1);
+    for (int bit=0; bit<rbits; ++bit) {
+	if (bit>0) power = power*power;
+	if (VL_BITISSET_W(rwp,bit)) out *= power;
+    }
+    return out;
+}
 
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign) {
+    // obits==lbits, rbits can be different
     if (rsign && VL_SIGN_W(rbits, rwp)) {
 	int words = VL_WORDS_I(obits);
 	VL_ZERO_W(obits, owp);
@@ -322,6 +339,23 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
 	return 0;
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
+}
+WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs, bool lsign, bool rsign) {
+    WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
+    return VL_POWSS_WWW(obits,lbits,rbits,owp,lwp,rhsw,lsign,rsign);
+}
+QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign, bool rsign) {
+    // Skip check for rhs == 0, as short-circuit doesn't save time
+    if (rsign && VL_SIGN_W(rbits, rwp)) {
+	if (lhs==0) return 0;	// "X"
+	else if (lhs==1) return 1;
+	else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
+	    if (rwp[0] & 1) return VL_MASK_I(obits);  // -1^odd=-1
+	    else return 1; // -1^even=1
+	}
+	return 0;
+    }
+    return VL_POW_QQW(obits, rbits, rbits, lhs, rwp);
 }
 
 //===========================================================================

@@ -1191,7 +1191,10 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     }
 }
 
+#define VL_POW_IIQ(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
+#define VL_POW_IIW(obits,lbits,rbits,lhs,rwp) VL_POW_QQW(obits,lbits,rbits,lhs,rwp)
 #define VL_POW_QQI(obits,lbits,rbits,lhs,rhs) VL_POW_QQQ(obits,lbits,rbits,lhs,rhs)
+#define VL_POW_WWI(obits,lbits,rbits,owp,lwp,rhs) VL_POW_WWQ(obits,lbits,rbits,owp,lwp,rhs)
 
 static inline IData VL_POW_III(int, int, int rbits, IData lhs, IData rhs) {
     if (VL_UNLIKELY(rhs==0)) return 1;
@@ -1216,8 +1219,14 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) {
     return out;
 }
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp);
+WDataOutP VL_POW_WWQ(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, QData rhs);
+QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp);
 
+#define VL_POWSS_IIQ(obits,lbits,rbits,lhs,rhs,lsign,rsign) VL_POWSS_QQQ(obits,lbits,rbits,lhs,rhs,lsign,rsign)
+#define VL_POWSS_IIQ(obits,lbits,rbits,lhs,rhs,lsign,rsign) VL_POWSS_QQQ(obits,lbits,rbits,lhs,rhs,lsign,rsign)
+#define VL_POWSS_IIW(obits,lbits,rbits,lhs,rwp,lsign,rsign) VL_POWSS_QQW(obits,lbits,rbits,lhs,rwp,lsign,rsign)
 #define VL_POWSS_QQI(obits,lbits,rbits,lhs,rhs,lsign,rsign) VL_POWSS_QQQ(obits,lbits,rbits,lhs,rhs,lsign,rsign)
+#define VL_POWSS_WWI(obits,lbits,rbits,owp,lwp,rhs,lsign,rsign) VL_POWSS_WWQ(obits,lbits,rbits,owp,lwp,rhs,lsign,rsign)
 
 static inline IData VL_POWSS_III(int obits, int, int rbits, IData lhs, IData rhs, bool lsign, bool rsign) {
     if (VL_UNLIKELY(rhs==0)) return 1;
@@ -1246,6 +1255,8 @@ static inline QData VL_POWSS_QQQ(int obits, int, int rbits, QData lhs, QData rhs
     return VL_POW_QQQ(obits, rbits, rbits, lhs, rhs);
 }
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign);
+WDataOutP VL_POWSS_WWQ(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, QData rhs, bool lsign, bool rsign);
+QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign, bool rsign);
 
 //===================================================================
 // Concat/replication
