@@ -396,7 +396,7 @@ public:
 	return (m_e==LOGIC || m_e==BIT);
     }
     bool isDpiUnsupported() const {
-	return (m_e==LOGIC || m_e==TIME);
+	return (m_e==TIME);
     }
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
 	return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);

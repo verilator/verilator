@@ -58,6 +58,7 @@ extern "C" {
     extern void dpii_v_ushort	(unsigned short i, unsigned short *o);
     extern void dpii_v_longint	(long long i,	long long *o);
     extern void dpii_v_ulong	(unsigned long long i, unsigned long long *o);
+    extern void dpii_v_struct	(const svBitVecVal* i, svBitVecVal* o);
     extern void dpii_v_chandle	(void* i,	void* *o);
     extern void dpii_v_string   (const char* i, const char** o);
     extern void dpii_v_real     (double i,      double* o);
@@ -107,6 +108,13 @@ void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
 void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
 
+void dpii_v_struct (const svBitVecVal* i, svBitVecVal* o) {
+    o[0] = ~i[0];
+    o[1] = ~i[1];
+    o[2] = ~i[2];
+    o[3] = ~i[3];
+    o[4] = ~i[4];
+}
 void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o)	{
     o[0] = ~i[0];
     o[1] = ~i[1];

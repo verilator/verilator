@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support x in $readmem, bug1180. [Arthur Kahlich]
 
+****  Support packed struct DPI imports, bug1190. [Rob Stoddard]
+
 ****  Fix GCC 6 warnings.
 
 ****  Fix compile error on unused VL_VALUEPLUSARGS_IW, bug1181. [Thomas J Whatson]

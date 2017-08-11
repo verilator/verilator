@@ -21,6 +21,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
+   typedef struct packed { bit [47:0] lo; bit [47:0] hi; } str_t;
+
    // Allowed import return types:
    //         void, byte, shortint, int, longint, real, shortreal, chandle, and string
    //         Scalar bit and logic
@@ -53,6 +55,7 @@ module t (/*AUTOARG*/
    import "DPI-C" pure function void dpii_v_byte     (input byte      i, output byte      o);
    import "DPI-C" pure function void dpii_v_shortint (input shortint  i, output shortint  o);
    import "DPI-C" pure function void dpii_v_longint  (input longint   i, output longint   o);
+   import "DPI-C" pure function void dpii_v_struct   (input str_t     i, output str_t     o);
    import "DPI-C" pure function void dpii_v_chandle  (input chandle   i, output chandle   o);
    import "DPI-C" pure function void dpii_v_string   (input string    i, output string    o);
    import "DPI-C" pure function void dpii_v_real     (input real      i, output real      o);
@@ -96,6 +99,7 @@ module t (/*AUTOARG*/
    byte		i_y,	o_y;
    shortint	i_s,	o_s;
    longint	i_l,	o_l;
+   str_t        i_t,    o_t;
    int unsigned		i_iu,	o_iu;
    shortint unsigned	i_su,	o_su;
    longint unsigned	i_lu,	o_lu;
@@ -133,6 +137,7 @@ module t (/*AUTOARG*/
       i_su= {1'b1,wide[16-2:0]};
       i_l = {1'b1,wide[64-2:0]};
       i_lu= {1'b1,wide[64-2:0]};
+      i_t = {1'b1,wide[95-1:0]};
       i_d = 32.1;
 `ifndef NO_SHORTREAL
       i_f = 30.2;
@@ -173,6 +178,7 @@ module t (/*AUTOARG*/
       dpii_v_uint     (i_iu,o_iu); if (o_iu !== ~i_iu) $stop;
       dpii_v_ushort   (i_su,o_su); if (o_su !== ~i_su) $stop;
       dpii_v_ulong    (i_lu,o_lu); if (o_lu !== ~i_lu) $stop;
+      dpii_v_struct   (i_t,o_t); if (o_t !== ~i_t) $stop;
       dpii_v_chandle  (i_c,o_c); if (o_c !== i_c) $stop;
       dpii_v_string   (i_n,o_n); if (o_n != i_n) $stop;
       dpii_v_real     (i_d,o_d); if (o_d != i_d+1.5) $stop;

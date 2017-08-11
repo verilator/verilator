@@ -938,6 +938,8 @@ private:
 			if (!portp->basicp() || portp->basicp()->keyword().isDpiUnsupported()) {
 			    portp->v3error("Unsupported: DPI argument of type "<<portp->basicp()->prettyTypeName()<<endl
 					   <<portp->warnMore()<<"... For best portability, use bit, byte, int, or longint");
+			    // We don't warn on logic either, although the 4-stateness is lost.
+			    // That's what other simulators do.
 			}
 		    }
 		} else {
