@@ -236,6 +236,15 @@ private:
 	nodep->iterateChildrenConst(*this);
 	BrokenTable::setUnder(nodep,false);
     }
+    virtual void visit(AstNodeAssign* nodep) {
+	processAndIterate(nodep);
+	if (v3Global.assertDTypesResolved()
+	    && nodep->brokeLhsMustBeLvalue()
+	    && nodep->lhsp()->castNodeVarRef()
+	    && !nodep->lhsp()->castNodeVarRef()->lvalue()) {
+	    nodep->v3fatalSrc("Assignment LHS is not an lvalue");
+	}
+    }
     virtual void visit(AstNode* nodep) {
 	processAndIterate(nodep);
     }

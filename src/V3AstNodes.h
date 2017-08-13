@@ -2039,6 +2039,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Assign)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssign(this->fileline(), lhsp, rhsp); }
+    virtual bool brokeLhsMustBeLvalue() const { return true; }
 };
 
 class AstAssignAlias : public AstNodeAssign {
@@ -2049,6 +2050,7 @@ public:
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignAlias)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA; return NULL; }
+    virtual bool brokeLhsMustBeLvalue() const { return false; }
 };
 
 class AstAssignDly : public AstNodeAssign {
@@ -2059,6 +2061,7 @@ public:
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignDly(this->fileline(), lhsp, rhsp); }
     virtual bool isGateOptimizable() const { return false; }
     virtual string verilogKwd() const { return "<="; }
+    virtual bool brokeLhsMustBeLvalue() const { return true; }
 };
 
 class AstAssignW : public AstNodeAssign {
@@ -2068,6 +2071,7 @@ public:
 	: AstNodeAssign(fileline, lhsp, rhsp) { }
     ASTNODE_NODE_FUNCS(AssignW)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignW(this->fileline(), lhsp, rhsp); }
+    virtual bool brokeLhsMustBeLvalue() const { return true; }
     AstAlways* convertToAlways() {
 	AstNode* lhs1p = lhsp()->unlinkFrBack();
 	AstNode* rhs1p = rhsp()->unlinkFrBack();
@@ -2087,6 +2091,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(AssignVarScope)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignVarScope(this->fileline(), lhsp, rhsp); }
+    virtual bool brokeLhsMustBeLvalue() const { return false; }
 };
 
 class AstPull : public AstNode {
@@ -2113,6 +2118,7 @@ public:
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPre)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPre(this->fileline(), lhsp, rhsp); }
+    virtual bool brokeLhsMustBeLvalue() const { return true; }
 };
 
 class AstAssignPost : public AstNodeAssign {
@@ -2122,6 +2128,7 @@ public:
 	: AstNodeAssign(fileline, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPost)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPost(this->fileline(), lhsp, rhsp); }
+    virtual bool brokeLhsMustBeLvalue() const { return true; }
 };
 
 class AstComment : public AstNodeStmt {

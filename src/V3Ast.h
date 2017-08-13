@@ -1512,6 +1512,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode*) const { return true; }
     virtual string verilogKwd() const { return "="; }
+    virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 
 class AstNodeFor : public AstNodeStmt {
