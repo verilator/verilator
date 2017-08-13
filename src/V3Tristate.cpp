@@ -1074,7 +1074,8 @@ class TristateVisitor : public TristateBaseVisitor {
 		UINFO(5,"Unconnected pin terminate "<<nodep<<endl);
 		AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
 		nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
-					   nodep->modVarp()->isOutput()));
+					   // We converted, so use declaration output state
+					   nodep->modVarp()->isDeclOutput()));
 		m_tgraph.setTristate(ucVarp);
 		// We don't need a driver on the wire; the lack of one will default to tristate
 	    } else if (inDeclProcessing) {   // Not an input that was a converted tristate

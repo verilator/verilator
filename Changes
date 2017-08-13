@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix undefined VL_POW_WWI. [Clifford Wolf]
 
+****  Fix internal error on unconnected inouts, bug1187. [Rob Stoddard]
+
 
 * Verilator 3.906 2017-06-22
 
