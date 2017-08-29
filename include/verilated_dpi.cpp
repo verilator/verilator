@@ -58,31 +58,31 @@ const char* svDpiVersion() {
 //======================================================================
 // Bit-select utility functions.
 
-svBit svGetBitselBit(const svBitVecVal* s, int i) {
+svBit svGetBitselBit(const svBitVecVal* sp, int bit) {
+    return VL_BITISSET_W(sp,bit);
+}
+svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
     _VL_SVDPI_UNIMP(); return 0;
 }
-svLogic svGetBitselLogic(const svLogicVecVal* s, int i) {
-    _VL_SVDPI_UNIMP(); return 0;
-}
 
-void svPutBitselBit(svBitVecVal* d, int i, svBit s) {
-    _VL_SVDPI_UNIMP();
+void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) {
+    VL_ASSIGNBIT_WI(32, bit, dp, s);
 }
-void svPutBitselLogic(svLogicVecVal* d, int i, svLogic s) {
+void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     _VL_SVDPI_UNIMP();
 }
 
-void svGetPartselBit(svBitVecVal* d, const svBitVecVal* s, int i, int w) {
+void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
-void svGetPartselLogic(svLogicVecVal* d, const svLogicVecVal* s, int i, int w) {
+void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
 
-void svPutPartselBit(svBitVecVal* d, const svBitVecVal s, int i, int w) {
+void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
-void svPutPartselLogic(svLogicVecVal* d, const svLogicVecVal* s, int i, int w) {
+void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int i, int w) {
     _VL_SVDPI_UNIMP();
 }
 

@@ -29,8 +29,12 @@
 # error "Unknown simulator for DPI test"
 #endif
 
+typedef struct { int a; int b; } substruct_t;
+
 #ifdef NEED_EXTERNS
 extern "C" {
+    // If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
+    // Then probably forgot to list a function here.
 
     extern unsigned char dpii_f_bit     (unsigned char i);
     extern svBitVecVal   dpii_f_bit8    (const svBitVecVal* i);
@@ -59,17 +63,24 @@ extern "C" {
     extern void dpii_v_longint	(long long i,	long long *o);
     extern void dpii_v_ulong	(unsigned long long i, unsigned long long *o);
     extern void dpii_v_struct	(const svBitVecVal* i, svBitVecVal* o);
+    extern void dpii_v_substruct	(const svBitVecVal* i, int* o);
     extern void dpii_v_chandle	(void* i,	void* *o);
     extern void dpii_v_string   (const char* i, const char** o);
     extern void dpii_v_real     (double i,      double* o);
     extern void dpii_v_shortreal(float i,       float* o);
 
+    extern void dpii_v_struct	(const svBitVecVal* i, svBitVecVal* o);
+    extern void dpii_v_substruct	(const svBitVecVal* i, int* o);
+    extern void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o);
+    extern void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o);
+    extern void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o);
+
+    extern int dpii_f_strlen (const char* i);
+
     extern void dpii_f_void	();
     extern int dpii_t_void	();
     extern int dpii_t_void_context ();
     extern int dpii_t_int	(int i,		int *o);
-
-    extern int dpii_f_strlen (const char* i);
 
     extern int dpii_fa_bit(int i);
 }
@@ -114,6 +125,12 @@ void dpii_v_struct (const svBitVecVal* i, svBitVecVal* o) {
     o[2] = ~i[2];
     o[3] = ~i[3];
     o[4] = ~i[4];
+}
+void dpii_v_substruct (const svBitVecVal* i, int* o) {
+    // To be most like other tools, this should automagically take the substruct_t
+    // as an argument, and not require this cast...
+    substruct_t* issp = (substruct_t*) i;
+    o[0] = issp->b - issp->a;
 }
 void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o)	{
     o[0] = ~i[0];
