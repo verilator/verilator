@@ -303,14 +303,10 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsPrivate(false);  // public:
 
     puts("\n// LOCAL STATE\n");
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
     puts("const char* __Vm_namep;\n");	// Must be before subcells, as constructor order needed before _vlCoverInsert.
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
     puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(bool));
     puts("bool\t__Vm_didInit;\n");
 
-    ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(vluint64_t));
     puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
@@ -326,7 +322,6 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// COVERAGE\n");
     if (m_coverBins) {
-	ofp()->putAlign(V3OutFile::AL_AUTO, sizeof(uint32_t));
 	puts("uint32_t\t__Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
     }
 
