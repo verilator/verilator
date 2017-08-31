@@ -483,7 +483,7 @@ interest in adding more traditional CDC checks, please contact the authors.
 Sometimes it is quite difficult for Verilator to distinguish clock signals from
 other data signals. Occasionally the clock signals can end up in the checking
 list of signals which determines if further evaluation is needed. This will
-heavily degrade the performance of verilated model.
+heavily degrade the performance of a Verilated model.
 
 With --clk <signal-name>, user can specified root clock into the model, then
 Verilator will mark the signal as clocker and propagate the clocker attribute
@@ -513,7 +513,7 @@ breaking deep structures as for msvc as described below.
 
 =item gcc
 
-Tune for Gnu C++, although generated code should work on almost any
+Tune for GNU C++, although generated code should work on almost any
 compliant C++ compiler.  Currently the default.
 
 =item msvc
