@@ -12,9 +12,9 @@ top_filename("t/t_var_rsvd_port.v");
 compile (
 	 fails=>$Self->{v3},
 	 expect=>
-q{%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ common word: 'bool'
+q{%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'bool'
 .*
-%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ reserved word: 'switch'
+%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'switch'
 %Error: Exiting due to.*},
 	 );
 

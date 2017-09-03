@@ -238,7 +238,6 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstConst*) {}
     // Default
     virtual void visit(AstNode* nodep) {
-	nameCheck(nodep);
 	nodep->iterateChildren(*this);
     }
     //---------------------------------------
