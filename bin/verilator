@@ -3878,7 +3878,7 @@ From the sc_main.cpp file, you'd then:
 
     #include "Vour.h"
     #include "Vour_our.h"
-    cout << "clock is " << top->v->clk << endl;
+    cout << "clock is " << top->our->clk << endl;
 
 In this example, clk is a bool you can read or set as any other variable.
 The value of normal signals may be set, though clocks shouldn't be changed
