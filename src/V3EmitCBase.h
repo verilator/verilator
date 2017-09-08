@@ -46,7 +46,6 @@ public:
     void putsDecoration(const string& str) { if (v3Global.opt.decoration()) puts(str); }
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }
     bool optSystemC() { return v3Global.opt.systemC(); }
-    bool optSystemPerl() { return v3Global.opt.systemPerl(); }
     static string symClassName() { return v3Global.opt.prefix()+"__Syms"; }
     static string symClassVar()  { return symClassName()+"* __restrict vlSymsp"; }
     static string symTopAssign() { return v3Global.opt.prefix()+"* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;"; }

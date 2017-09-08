@@ -491,52 +491,6 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
     return var;
 }
 
-string V3Options::getenvSYSTEMPERL() {
-    // Must be careful to set SYSTEMPERL_INCLUDE first else we'd setenv
-    // SYSTEMPERL which would override a DEFENVed SYSTEMPERL_INCLUDE.
-    V3Options::getenvSYSTEMPERL_INCLUDE();
-    return V3Options::getenvSYSTEMPERLGuts();
-}
-
-string V3Options::getenvSYSTEMPERLGuts() {
-    // Get SYSTEMPERL when SYSTEMPERL_INCLUDE has already been tested
-    string var = V3Os::getenvStr("SYSTEMPERL","");
-    if (var == "" && string(DEFENV_SYSTEMPERL) != "") {
-	var = DEFENV_SYSTEMPERL;
-	V3Os::setenvStr("SYSTEMPERL", var, "Hardcoded at build time");
-    }
-    return var;
-}
-
-string V3Options::getenvSYSTEMPERL_INCLUDE() {
-    string var = V3Os::getenvStr("SYSTEMPERL_INCLUDE","");
-    if (var == "") {
-	string sp_src = V3Options::getenvSYSTEMPERLGuts()+"/src";
-	if (V3Options::fileStatNormal(sp_src+"/systemperl.h")) {
- 	    var = sp_src;
-	    V3Os::setenvStr ("SYSTEMPERL_INCLUDE", var, "From $SYSTEMPERL/src");
-	} else if (string(DEFENV_SYSTEMPERL_INCLUDE) != "") {
-	    // Note if SYSTEMPERL is DEFENVed, then SYSTEMPERL_INCLUDE is also DEFENVed
-	    // So we don't need to sweat testing DEFENV_SYSTEMPERL also
-	    var = DEFENV_SYSTEMPERL_INCLUDE;
-	    V3Os::setenvStr("SYSTEMPERL_INCLUDE", var, "Hardcoded at build time");
-	}
-    }
-    // Only correct or check it if we really need the value
-    if (v3Global.opt.usingSystemPerlLibs()) {
-	// We warn about $SYSTEMPERL instead of _INCLUDE since that's more likely
-	// what users will want to set.
-	if (var == "") {
-	    v3fatal("Need $SYSTEMPERL and $SYSTEMPERL_INCLUDE in environment for --sp or --coverage\n"
-		    "Probably System-Perl isn't installed, see http://www.veripool.org/systemperl\n");
-	}
-	else if (var != "" && !V3Options::fileStatNormal(var+"/systemperl.h")) {
-	    v3fatal("Neither $SYSTEMPERL nor $SYSTEMPERL_INCLUDE environment vars to point to System-Perl kit: "<<var<<endl);
-	}
-    }
-    return var;
-}
-
 string V3Options::getenvVERILATOR_ROOT() {
     string var = V3Os::getenvStr("VERILATOR_ROOT","");
     if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
@@ -683,7 +637,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-autoflush", flag/*ref*/) )	{ m_autoflush = flag; }
 	    else if ( onoff   (sw, "-bbox-sys", flag/*ref*/) )	{ m_bboxSys = flag; }
 	    else if ( onoff   (sw, "-bbox-unsup", flag/*ref*/) ) { m_bboxUnsup = flag; }
-	    else if ( !strcmp (sw, "-cc") )			{ m_outFormatOk = true; m_systemC = false; m_systemPerl = false; }
+	    else if ( !strcmp (sw, "-cc") )			{ m_outFormatOk = true; m_systemC = false; }
 	    else if ( onoff   (sw, "-cdc", flag/*ref*/) )	{ m_cdc = flag; }
 	    else if ( onoff   (sw, "-coverage", flag/*ref*/) )	{ coverage(flag); }
 	    else if ( onoff   (sw, "-coverage-line", flag/*ref*/) ){ m_coverageLine = flag; }
@@ -714,9 +668,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
 	    else if ( onoff   (sw, "-relative-includes", flag/*ref*/) )	{ m_relativeIncludes = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
-	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; m_systemPerl = false; }
+	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; }
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
-	    else if ( !strcmp (sw, "-sp-deprecated") )			{ m_outFormatOk = true; m_systemC = true; m_systemPerl = true; } // Undocumented, old
 	    else if ( onoff   (sw, "-stats", flag/*ref*/) )		{ m_stats = flag; }
 	    else if ( onoff   (sw, "-stats-vars", flag/*ref*/) )	{ m_statsVars = flag; m_stats |= flag; }
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
@@ -1179,8 +1132,6 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH<<endl;
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE<<endl;
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR<<endl;
-    cout << "    SYSTEMPERL         = " << DEFENV_SYSTEMPERL<<endl;
-    cout << "    SYSTEMPERL_INCLUDE = " << DEFENV_SYSTEMPERL_INCLUDE<<endl;
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT<<endl;
 
     cout <<endl;
@@ -1190,8 +1141,6 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH","")<<endl;
     cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE","")<<endl;
     cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR","")<<endl;
-    cout << "    SYSTEMPERL         = " << V3Os::getenvStr("SYSTEMPERL","")<<endl;
-    cout << "    SYSTEMPERL_INCLUDE = " << V3Os::getenvStr("SYSTEMPERL_INCLUDE","")<<endl;
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT","")<<endl;
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN","")<<endl;  // wrapper uses this
 }
@@ -1235,7 +1184,6 @@ V3Options::V3Options() {
     m_stats = false;
     m_statsVars = false;
     m_systemC = false;
-    m_systemPerl = false;
     m_trace = false;
     m_traceDups = false;
     m_traceParams = true;

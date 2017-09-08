@@ -28,9 +28,6 @@ $Fork = Forker->new(use_sig_child=>1) if !$Fork;
 $SIG{CHLD} = sub { $Fork->sig_child() if $Fork; };
 $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; };
 
-our $Have_System_Perl;
-eval "use SystemC::Netlist; \$Have_System_Perl=1;";
-
 #======================================================================
 
 #======================================================================
@@ -507,7 +504,6 @@ sub compile_vlt_flags {
 			  @{$param{verilator_flags2}},
 			  @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
-    $self->{sp} = 1 if ($checkflags =~ /-sp\b/);
     $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
@@ -663,7 +659,7 @@ sub compile {
     elsif ($param{vlt}) {
 	my @cmdargs = $self->compile_vlt_flags(%param);
 
-	if ($self->sc_or_sp && !defined $ENV{SYSTEMC} && !defined $ENV{SYSTEMC_INCLUDE}) {
+	if ($self->sc && !defined $ENV{SYSTEMC} && !defined $ENV{SYSTEMC_INCLUDE}) {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
@@ -680,9 +676,6 @@ sub compile {
 	return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
 	if (!$param{fails} && $param{verilator_make_gcc}) {
-	    if ($self->sp) {
-		$self->_sp_preproc(%param);
-	    }
 	    $self->oprint("GCC\n");
 	    $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
 			cmd=>["cd $self->{obj_dir} && ",
@@ -908,18 +901,9 @@ sub v_suffix {
     return $self->{vhdl} ? "vhdl" : "v";
 }
 
-sub sp {
-    my $self = (ref $_[0]? shift : $Self);
-    return $self->{sp};
-}
-
 sub sc {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{sc};
-}
-
-sub sc_or_sp {
-    return sc($_[0]) || sp($_[0]);
 }
 
 #----------------------------------------------------------------------
@@ -1059,13 +1043,11 @@ sub _make_main {
     print $fh "// General headers\n";
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
-    print $fh "#include \"systemperl.h\"\n" if $self->sp;
-    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && !$self->sp;
+    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace};
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
-    print $fh "#include \"SpTraceVcd.h\"\n" if $self->{trace} && $self->sp;
 
     print $fh "$VM_PREFIX * topp;\n";
-    if (!$self->sc_or_sp) {
+    if (!$self->sc) {
 	print $fh "vluint64_t main_time = false;\n";
 	print $fh "double sc_time_stamp () {\n";
 	print $fh "    return main_time;\n";
@@ -1094,7 +1076,7 @@ sub _make_main {
     }
 
     #### Main
-    if ($self->sc_or_sp) {
+    if ($self->sc) {
 	print $fh "extern int sc_main(int argc, char **argv);\n";
 	print $fh "int sc_main(int argc, char **argv) {\n";
 	print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
@@ -1109,11 +1091,7 @@ sub _make_main {
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
     print $fh "    topp = new $VM_PREFIX (\"top\");\n";
     my $set;
-    if ($self->sp) {
-	print $fh "    SP_PIN(topp,fastclk,fastclk);\n" if $self->{inputs}{fastclk};
-	print $fh "    SP_PIN(topp,clk,clk);\n" if $self->{inputs}{clk};
-	$set = "";
-    } elsif ($self->sc) {
+    if ($self->sc) {
 	print $fh "    topp->fastclk(fastclk);\n" if $self->{inputs}{fastclk};
 	print $fh "    topp->clk(clk);\n" if $self->{inputs}{clk};
 	$set = "";
@@ -1126,14 +1104,10 @@ sub _make_main {
 	$fh->print("\n");
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("    Verilated::traceEverOn(true);\n");
-	if ($self->{sp}) {
-	    $fh->print("    SpTraceFile* tfp = new SpTraceFile;\n");
-	} else {
-	    $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n");
-	}
+	$fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n");
 	$fh->print("    topp->trace (tfp, 99);\n");
 	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");
-	if ($self->{trace} && !$self->sc_or_sp) {
+	if ($self->{trace} && !$self->sc) {
 	    $fh->print("	if (tfp) tfp->dump (main_time);\n");
 	}
 	$fh->print("#endif\n");
@@ -1209,11 +1183,10 @@ sub _print_advance_time {
     my $action = shift;
 
     my $set;
-    if ($self->sp) { $set = ""; }
-    elsif ($self->sc) { $set = ""; }
+    if ($self->sc) { $set = ""; }
     else { $set = "topp->"; }
 
-    if ($self->sc_or_sp) {
+    if ($self->sc) {
 	print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
 	print $fh "	sc_start(${time},SC_NS);\n";
 	print $fh "#else\n";
@@ -1222,7 +1195,7 @@ sub _print_advance_time {
     } else {
 	if ($action) {
 	    print $fh "	${set}eval();\n";
-	    if ($self->{trace} && !$self->sc_or_sp) {
+	    if ($self->{trace} && !$self->sc) {
 		$fh->print("#if VM_TRACE\n");
 		$fh->print("	if (tfp) tfp->dump (main_time);\n");
 		$fh->print("#endif //VM_TRACE\n");
@@ -1346,22 +1319,6 @@ sub _make_top_vhdl {
 
     print $fh "end;\n";
     $fh->close();
-}
-
-#######################################################################
-
-sub _sp_preproc {
-    my $self = shift;
-    my %param = (%{$self}, @_);	   # Default arguments are from $self
-
-    $self->oprint("Preproc\n");
-
-    $self->_run(logfile=>"simx.log",
-		fails=>0,
-		cmd=>["cd $self->{obj_dir} ; sp_preproc",
-		      "--preproc",
-		      "$self->{VM_PREFIX}.sp",
-		      ]);
 }
 
 #######################################################################

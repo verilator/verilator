@@ -105,12 +105,6 @@ endif
 CPPFLAGSWALL   = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
 
-ifneq ($(SYSTEMPERL),)	# Intuit SYSTEMPERL_INCLUDE as it's new
- SYSTEMPERL_INCLUDE ?= $(SYSTEMPERL)/src
-#else if set, leave as-is.
-#else if SYSTEMPERL="" don't set _INCLUDE so source will figure it out
-endif
-
 # Allow RPM builds to specify hardcoded data directories
 # To do this:
 ifeq ($(CFG_WITH_DEFENV),yes)
@@ -118,8 +112,6 @@ ifeq ($(CFG_WITH_DEFENV),yes)
  CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_INCLUDE=\"$(SYSTEMC_INCLUDE)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_LIBDIR=\"$(SYSTEMC_LIBDIR)\"
- CPPFLAGS += -DDEFENV_SYSTEMPERL=\"$(SYSTEMPERL)\"
- CPPFLAGS += -DDEFENV_SYSTEMPERL_INCLUDE=\"$(SYSTEMPERL_INCLUDE)\"
  ifeq ($(VERILATOR_ROOT),)	# Use what we're given, or intuit
   CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
  else

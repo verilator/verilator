@@ -46,7 +46,7 @@ using namespace std;
 // Switches
 
 #if VM_TRACE		// Verilator tracing requested
-# define WAVES 1	// Set backward compatibility flag as in systemperl.h
+# define WAVES 1	// Set backward compatibility flag
 #endif
 
 //=========================================================================

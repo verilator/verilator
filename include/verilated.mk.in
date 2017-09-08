@@ -22,7 +22,6 @@ CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 ######################################################################
 # Programs
 
-SP_PREPROC	= sp_preproc
 SP_INCLUDER	= $(VERILATOR_INCLUDER)
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
@@ -93,9 +92,9 @@ VM_CLASSES += $(VM_CLASSES_FAST) $(VM_CLASSES_SLOW)
 VM_SUPPORT += $(VM_SUPPORT_FAST) $(VM_SUPPORT_SLOW)
 
 #######################################################################
-##### SystemC or SystemPerl builds
+##### SystemC builds
 
-ifeq ($(VM_SP_OR_SC),1)
+ifeq ($(VM_SC),1)
   CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC_INCLUDE)
   LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC_LIBDIR)
   SC_LIBS   = -lsystemc
@@ -106,23 +105,9 @@ ifeq ($(VM_SP_OR_SC),1)
 endif
 
 #######################################################################
-##### SystemPerl builds
+##### Stub
 
-ifeq ($(VM_SP),1)
-  CPPFLAGS += -I$(SYSTEMPERL_INCLUDE) -DSYSTEMPERL
-  VPATH    +=   $(SYSTEMPERL_INCLUDE)
-  LIBS   += -lm -lstdc++
-
-  VK_CLASSES_SP = $(addsuffix .sp, $(VM_CLASSES))
-
-  # This rule is called manually by the upper level makefile
-  preproc:
-	 @echo "      SP Preprocess" $(basename $(VM_CLASSES)) ...
-	 $(SP_PREPROC) -M sp_preproc.d --tree $(VM_PREFIX).sp_tree \
-		--preproc $(VK_CLASSES_SP)
-else
-  preproc:
-endif
+preproc:
 
 #######################################################################
 ##### C/H builds

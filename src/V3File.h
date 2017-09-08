@@ -218,18 +218,6 @@ public:
     }
 };
 
-class V3OutSpFile : public V3OutCFile {
-public:
-    explicit V3OutSpFile(const string& filename) : V3OutCFile(filename) {}
-    virtual ~V3OutSpFile() {}
-    virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() {
-	putsForceIncs();
-	puts("#include \"systemperl.h\"\n");
-	puts("#include \"verilated_sc.h\"\n");
-    }
-};
-
 class V3OutVFile : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename) : V3OutFile(filename, V3OutFormatter::LA_VERILOG) {}

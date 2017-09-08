@@ -93,7 +93,6 @@ class V3Options {
     bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
     bool	m_skipIdentical;// main switch: --skip-identical
-    bool	m_systemPerl;	// main switch: --sp: System Perl instead of SystemC (m_systemC also set)
     bool	m_stats;	// main switch: --stats
     bool	m_statsVars;	// main switch: --stats-vars
     bool	m_trace;	// main switch: --trace
@@ -179,8 +178,6 @@ class V3Options {
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
 
-    static string getenvSYSTEMPERLGuts();
-
     V3Options(const V3Options&); ///< N/A, no copy constructor
 
   public:
@@ -212,9 +209,7 @@ class V3Options {
     string bin() const { return m_bin; }
     string flags() const { return m_flags; }
     bool systemC() const { return m_systemC; }
-    bool systemPerl() const { return m_systemPerl; }
-    bool usingSystemCLibs() const { return !lintOnly() && (systemPerl() || systemC()); }
-    bool usingSystemPerlLibs() const { return !lintOnly() && systemPerl(); }
+    bool usingSystemCLibs() const { return !lintOnly() && systemC(); }
     bool savable() const { return m_savable; }
     bool skipIdentical() const { return m_skipIdentical; }
     bool stats() const { return m_stats; }
@@ -319,7 +314,7 @@ class V3Options {
     bool oTable() const { return m_oTable; }
 
     // METHODS (uses above)
-    string traceClassBase() const { return systemPerl() ? "SpTraceVcd" : "VerilatedVcd"; }
+    string traceClassBase() const { return "VerilatedVcd"; }
 
     // METHODS (from main)
     static string version();
@@ -339,8 +334,6 @@ class V3Options {
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
-    static string getenvSYSTEMPERL();
-    static string getenvSYSTEMPERL_INCLUDE();
     static string getenvVERILATOR_ROOT();
 
     // METHODS (file utilities using these options)

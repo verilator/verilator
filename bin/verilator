@@ -911,7 +911,7 @@ developers.
 
 =item --output-split I<bytes>
 
-Enables splitting the output .cpp/.sp files into multiple outputs.  When a
+Enables splitting the output .cpp files into multiple outputs.  When a
 C++ file exceeds the specified number of operations, a new file will be
 created at the next function boundary.  In addition, any slow routines will
 be placed into __Slow files.  This accelerates compilation by as
@@ -923,7 +923,7 @@ one-minute-compile chunks.
 
 =item --output-split-cfuncs I<statements>
 
-Enables splitting functions in the output .cpp/.sp files into multiple
+Enables splitting functions in the output .cpp files into multiple
 functions.  When a generated function exceeds the specified number of
 operations, a new function will be created.  With --output-split, this will
 enable GCC to compile faster, at a small loss in performance that gets
@@ -933,7 +933,7 @@ function.
 
 =item --output-split-ctrace I<statements>
 
-Enables splitting trace functions in the output .cpp/.sp files into
+Enables splitting trace functions in the output .cpp files into
 multiple functions.  Defaults to same setting as --output-split-cfuncs.
 
 =item -P
@@ -1430,8 +1430,8 @@ This is an example similar to the above, but using SystemC.
           Verilated::commandArgs(argc, argv);
           sc_clock clk ("clk",10, 0.5, 3, true);
           Vour* top;
-          top = new Vour("top");   // SP_CELL (top, Vour);
-          top->clk(clk);           // SP_PIN  (top, clk, clk);
+          top = new Vour("top");
+          top->clk(clk);
           while (!Verilated::gotFinish()) { sc_start(1, SC_NS); }
           delete top;
           exit(0);

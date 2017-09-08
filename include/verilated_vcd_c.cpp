@@ -412,7 +412,7 @@ void VerilatedVcd::dumpHeader () {
     // We detect the spaces in module names to determine hierarchy.  This
     // allows signals to be declared without fixed ordering, which is
     // required as Verilog signals might be separately declared from
-    // "SP_TRACE" signals.
+    // SC module signals.
 
     // Print the signal names
     const char* lastName = "";

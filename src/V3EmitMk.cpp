@@ -90,15 +90,10 @@ public:
 		    if (v3Global.opt.coverage()) {
 			putMakeClassEntry(of, "verilated_cov.cpp");
 		    }
-		    if (v3Global.opt.systemPerl()) {
-			putMakeClassEntry(of, "Sp.cpp");  // Note Sp.cpp includes SpTraceVcdC
-		    }
-		    else {
-			if (v3Global.opt.trace()) {
-			    putMakeClassEntry(of, "verilated_vcd_c.cpp");
-			    if (v3Global.opt.systemC()) {
-				putMakeClassEntry(of, "verilated_vcd_sc.cpp");
-			    }
+		    if (v3Global.opt.trace()) {
+			putMakeClassEntry(of, "verilated_vcd_c.cpp");
+			if (v3Global.opt.systemC()) {
+			    putMakeClassEntry(of, "verilated_vcd_sc.cpp");
 			}
 		    }
 		}
@@ -139,22 +134,16 @@ public:
 	of.puts("PERL = "+V3Options::getenvPERL()+"\n");
 	of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
 	of.puts("VERILATOR_ROOT = "+V3Options::getenvVERILATOR_ROOT()+"\n");
-	of.puts("# Path to SystemPerl kit top (from $SYSTEMPERL)\n");
-	of.puts("SYSTEMPERL = "+V3Options::getenvSYSTEMPERL()+"\n");
-	of.puts("# Path to SystemPerl kit includes (from $SYSTEMPERL_INCLUDE)\n");
-	of.puts("SYSTEMPERL_INCLUDE = "+V3Options::getenvSYSTEMPERL_INCLUDE()+"\n");
 	of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
 	of.puts(string("SYSTEMC_INCLUDE ?= ")+V3Options::getenvSYSTEMC_INCLUDE()+"\n");
 	of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
 	of.puts(string("SYSTEMC_LIBDIR ?= ")+V3Options::getenvSYSTEMC_LIBDIR()+"\n");
 
 	of.puts("\n### Switches...\n");
-	of.puts("# SystemPerl output mode?  0/1 (from --sp)\n");
-	of.puts(string("VM_SP = ")+(v3Global.opt.systemPerl()?"1":"0")+"\n");
 	of.puts("# SystemC output mode?  0/1 (from --sc)\n");
-	of.puts(string("VM_SC = ")+((v3Global.opt.systemC()&&!v3Global.opt.systemPerl())?"1":"0")+"\n");
-	of.puts("# SystemPerl or SystemC output mode?  0/1 (from --sp/--sc)\n");
-	of.puts(string("VM_SP_OR_SC = ")+(v3Global.opt.systemC()?"1":"0")+"\n");
+	of.puts(string("VM_SC = ")+((v3Global.opt.systemC())?"1":"0")+"\n");
+	of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
+	of.puts(string("VM_SP_OR_SC = $(VM_SC)\n"));
 	of.puts("# Deprecated\n");
 	of.puts(string("VM_PCLI = ")+(v3Global.opt.systemC()?"0":"1")+"\n");
 	of.puts("# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");

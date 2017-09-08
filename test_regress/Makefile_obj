@@ -15,7 +15,7 @@
 default: $(VM_PREFIX)
 
 ifneq ($(MAKE_MAIN),0)
-   # Add main to classes rather then SP_SRCS to save a compiler run
+   # Add main to classes rather then SC_SRCS to save a compiler run
    VM_CLASSES += ${VM_PREFIX}__main $(VM_USER_CLASSES) $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW)
 endif
 
@@ -38,7 +38,7 @@ CPPFLAGS += $(CPPFLAGS_ADD)
 #######################################################################
 # Linking final exe
 
-ifeq ($(VM_SP_OR_SC),1)
+ifeq ($(VM_SC),1)
    LIBS += $(SC_LIBS)
 endif
 

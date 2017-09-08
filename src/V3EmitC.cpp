@@ -782,12 +782,7 @@ class EmitCImp : EmitCStmts {
 	    // We should move them to a different stage.
 	    string filename = VL_DEV_NULL;
 	    newCFile(filename, slow, source);
-	    ofp = new V3OutSpFile (filename);
-	}
-	else if (optSystemPerl()) {
-	    string filename = filenameNoExt+".sp";
-	    newCFile(filename, slow, source);
-	    ofp = new V3OutSpFile (filename);
+	    ofp = new V3OutCFile (filename);
 	}
 	else if (optSystemC()) {
 	    string filename = filenameNoExt+(source?".cpp":".h");
@@ -1475,9 +1470,7 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
 
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
-    if (optSystemPerl() && modp->isTop()) {
-	puts("SP_CTOR_IMP("+modClassName(modp)+")");
-    } else if (optSystemC() && modp->isTop()) {
+    if (optSystemC() && modp->isTop()) {
 	puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
     } else {
 	puts("VL_CTOR_IMP("+modClassName(modp)+")");
@@ -1495,7 +1488,6 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     putsDecoration("// Reset structure values\n");
     puts("_ctor_var_reset();\n");
     emitTextSection(AstType::atScCtor);
-    if (optSystemPerl()) puts("SP_AUTO_CTOR;\n");
     puts("}\n");
 }
 
@@ -1514,9 +1506,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
     if (v3Global.opt.coverage() ) {
 	puts("\n// Coverage\n");
 	// Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
-	// This gets around gcc slowness constructing all of the template arguments
-	// SystemPerl 1.301 is much faster, but it's nice to remain back
-	// compatible, and have a common wrapper.
+	// This gets around gcc slowness constructing all of the template arguments.
 	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
 	puts(  	"const char* hierp, const char* pagep, const char* commentp) {\n");
 	puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
@@ -1815,11 +1805,9 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
-    if (!optSystemPerl()) {  // else done for us automatically
-	puts("#ifndef _"+modClassName(modp)+"_H_\n");
-	puts("#define _"+modClassName(modp)+"_H_\n");
-	puts("\n");
-    }
+    puts("#ifndef _"+modClassName(modp)+"_H_\n");
+    puts("#define _"+modClassName(modp)+"_H_\n");
+    puts("\n");
 
     ofp()->putsIntTopInclude();
     if (v3Global.needHeavy()) {
@@ -1863,21 +1851,16 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     } else {
 	puts("VL_MODULE("+modClassName(modp)+") {\n");
     }
-    if (optSystemPerl()) puts("/*AUTOATTR(verilated)*/\n\n");
     ofp()->resetPrivate();
     ofp()->putsPrivate(false);  // public:
 
     // Instantiated modules
-    if (optSystemPerl()) {
-	puts("/*AUTOSUBCELLS*/\n\n");
-    } else {
-	putsDecoration("// CELLS\n");
-	if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
-	if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
-	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	    if (AstCell* cellp=nodep->castCell()) {
-		ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
-	    }
+    putsDecoration("// CELLS\n");
+    if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
+    if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
+    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+	if (AstCell* cellp=nodep->castCell()) {
+	    ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
 	}
     }
 
@@ -1958,7 +1941,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
 	puts("~"+modClassName(modp)+"();\n");
     }
-    if (v3Global.opt.trace() && !optSystemPerl()) {
+    if (v3Global.opt.trace()) {
 	if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
 	puts("void trace (VerilatedVcdC* tfp, int levels, int options=0);\n");
 	if (modp->isTop() && optSystemC()) {
@@ -1968,7 +1951,6 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     puts("\n// USER METHODS\n");
-    if (optSystemPerl()) puts("/*AUTOMETHODS*/\n");
     emitTextSection(AstType::atScInt);
 
     puts("\n// API METHODS\n");
@@ -1995,7 +1977,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     emitIntFuncDecls(modp);
 
-    if (!optSystemPerl() && v3Global.opt.trace()) {
+    if (v3Global.opt.trace()) {
 	ofp()->putsPrivate(false);  // public:
 	puts("static void traceInit ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
 	puts("static void traceFull ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
@@ -2019,18 +2001,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     // finish up h-file
-    if (!optSystemPerl()) {
-	puts("#endif  /*guard*/\n");
-    }
+    puts("#endif  /*guard*/\n");
 }
 
 //----------------------------------------------------------------------
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
-    if (optSystemPerl()) {
-	puts("//############################################################\n");
-	puts("#sp implementation\n");
-    }
     ofp()->printf("#include \"%-20s // For This\n",
 		  (modClassName(modp)+".h\"").c_str());
 
@@ -2040,11 +2016,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     if (v3Global.dpi()) {
 	puts("\n");
 	puts("#include \"verilated_dpi.h\"\n");
-    }
-
-    if (optSystemPerl() && (splitFilenum() || !m_fast)) {
-	puts("\n");
-	puts("SP_MODULE_CONTINUED("+modClassName(modp)+");\n");
     }
 
     emitTextSection(AstType::atScImpHdr);
@@ -2078,13 +2049,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 	}
     }
 
-    if (m_fast && splitFilenum()==0) {
-	if (v3Global.opt.trace() && optSystemPerl() && m_modp->isTop()) {
-	    puts("\n");
-	    puts("\n/*AUTOTRACE(__MODULE__,recurse,activity,exists)*/\n\n");
-	}
-    }
-
     // Blocks
     puts("\n//--------------------\n");
     puts("// Internal Methods\n");
@@ -2102,15 +2066,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
 	UINFO(0,"  Emitting "<<modClassName(modp)<<endl);
     }
 
-    if (optSystemPerl()) {
-	m_ofp = newOutCFile(modp, !m_fast, true);
-
-	if (m_fast) {
-	    puts("#sp interface\n");
-	    emitInt (modp);
-	}
-    }
-    else if (optSystemC()) {
+    if (optSystemC()) {
 	if (m_fast) {
 	    m_ofp = newOutCFile (modp, !m_fast, false/*source*/);
 	    emitInt (modp);
@@ -2175,11 +2131,7 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceHeader() {
 	// Includes
-	if (optSystemPerl()) {
-	    puts("#include \"SpTraceVcd.h\"\n");
-	} else {
-	    puts("#include \"verilated_vcd_c.h\"\n");
-	}
+	puts("#include \"verilated_vcd_c.h\"\n");
 	puts("#include \""+ symClassName() +".h\"\n");
 	puts("\n");
     }
@@ -2188,11 +2140,7 @@ class EmitCTrace : EmitCStmts {
 	puts("\n//======================\n\n");
 
 	puts("void "+topClassName()+"::trace (");
-	if (optSystemPerl()) {
-	    puts("SpTraceFile* tfp, int, int) {\n");
-	} else {
-	    puts("VerilatedVcdC* tfp, int, int) {\n");
-	}
+	puts("VerilatedVcdC* tfp, int, int) {\n");
 	puts(  "tfp->spTrace()->addCallback ("
 	       "&"+topClassName()+"::traceInit"
 	       +", &"+topClassName()+"::traceFull"
@@ -2209,7 +2157,7 @@ class EmitCTrace : EmitCStmts {
 
 	puts("vcdp->scopeEscape(' ');\n");
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
-	puts("vcdp->scopeEscape('.');\n");  // Restore so SystemPerl traced files won't break
+	puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break
 	puts("}\n");
 	splitSizeInc(10);
 

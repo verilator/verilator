@@ -568,8 +568,6 @@ int main(int argc, char** argv, char** env) {
     V3Options::getenvSYSTEMC_ARCH();
     V3Options::getenvSYSTEMC_INCLUDE();
     V3Options::getenvSYSTEMC_LIBDIR();
-    V3Options::getenvSYSTEMPERL();
-    V3Options::getenvSYSTEMPERL_INCLUDE();
 
     V3Error::abortIfErrors();
 
