@@ -9,7 +9,7 @@ module t
    );
 
    integer q;
-   
+
    always @(*)
      if (rst)
        assign q = 0;

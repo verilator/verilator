@@ -20,7 +20,7 @@ mkdir $child_dir;
 	 top_filename => "$Self->{name}_child.v",
 	 verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
 	);
-    
+
     $Self->_run(logfile=>"${child_dir}/vlt_compile.log",
 		cmd=>\@cmdargs);
 

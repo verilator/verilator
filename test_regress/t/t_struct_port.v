@@ -79,6 +79,6 @@ module Test (
    end
 endmodule
 
-// Local Variables:                                                                                                          
-// verilog-typedef-regexp: "_t$"                                                                                             
-// End:                                                                                                                      
+// Local Variables:
+// verilog-typedef-regexp: "_t$"
+// End:

@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Jue Xu.
 
-// bug630 
+// bug630
 
 module t ( clk, out );
    input clk;

@@ -54,6 +54,6 @@ module Test
    // verilator no_inline_module
 
    // Labeled cover
-   cyc_eq_5: cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5"); 
+   cyc_eq_5: cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5");
 
 endmodule

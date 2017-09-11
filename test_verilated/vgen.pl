@@ -13,6 +13,7 @@ use vars qw ($Debug);
 
 our @Orig_ARGV = @ARGV;
 our $Rerun_Args = $0." ".join(' ',@Orig_ARGV);
+$Rerun_Args =~ s/\s+$//;
 
 use vars qw (@Blocks
 	     %Vars

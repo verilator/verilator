@@ -603,7 +603,7 @@ public:
 	puts(nodep->hiername());
 	puts(nodep->varp()->name());
     }
-    void emitCvtPackStr(AstNode* nodep) { 
+    void emitCvtPackStr(AstNode* nodep) {
 	if (AstConst* constp = nodep->castConst()) {
 	    putbs("string(");
 	    putsQuoted(constp->num().toString());

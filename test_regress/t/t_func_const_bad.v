@@ -15,7 +15,7 @@ module t;
 
    // Speced Illegal: void
 
-   // Speced Illegal: dotted 
+   // Speced Illegal: dotted
    localparam EIGHT = 8;
    localparam B2 = f_bad_dotted(2);
    function integer f_bad_dotted(input [31:0] a);

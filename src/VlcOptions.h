@@ -74,7 +74,7 @@ public:
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
-    
+
     // METHODS (from main)
     static string version();
 };

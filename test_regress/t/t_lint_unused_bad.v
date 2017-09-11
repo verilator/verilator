@@ -21,7 +21,7 @@ module sub;
    assign udrb2[15] = 0;
    assign udrb2[12] = 0;
    assign udrb2[10] = 0;
-   
+
    wire       unu3;  // Totally unused
 
    wire [3:0] mixed;  // [3] unused & undr, [2] unused, [1] undr, [0] ok

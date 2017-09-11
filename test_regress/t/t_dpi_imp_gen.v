@@ -29,5 +29,5 @@ module t (/*AUTOARG*/
       $write("*-* All Finished *-*\n");
       $finish;
    end
-   
+
 endmodule

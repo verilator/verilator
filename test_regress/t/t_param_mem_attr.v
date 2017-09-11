@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
    );
    input clk;
    wire [71:0] ctrl;
-   wire [7:0] cl;                       // this line is added 
+   wire [7:0] cl;                       // this line is added
 
    memory #(.words(72)) i_memory (.clk (clk));
 

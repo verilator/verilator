@@ -242,7 +242,7 @@ struct OrderVarFanoutCmp {
 };
 
 //######################################################################
-// The class is used for propagating the clocker attribute for further 
+// The class is used for propagating the clocker attribute for further
 // avoiding marking clock signals as circular.
 // Transformation:
 //    while (newClockerMarked)
@@ -251,7 +251,7 @@ struct OrderVarFanoutCmp {
 //                mark LHS as clocker as well.
 //                newClockerMarked = true;
 //
-// In addition it also check whether clock and data signals are mixed, and 
+// In addition it also check whether clock and data signals are mixed, and
 // produce a CLKDATA warning if so.
 //
 class OrderClkMarkVisitor : public AstNVisitor {

@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
 
    wire signed [7:0] sgn_wide;
    wire [7:0] 	     unsgn_wide;
-   
+
    // The instantiation will Z extend, not sign extend
    // verilator lint_off WIDTH
    sub sub (.clk,

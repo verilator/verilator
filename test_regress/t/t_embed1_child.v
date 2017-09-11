@@ -20,7 +20,7 @@ module t_embed1_child (/*AUTOARG*/
    output 	  did_init_out;
 
    input 	  is_ref;
-   
+
    reg did_init; initial did_init = 0;
    initial begin
       did_init = 1;

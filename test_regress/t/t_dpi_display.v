@@ -26,10 +26,10 @@ module t ();
       $dpii_display("constant_value");
 
       a = $c("10");  // Don't optimize away "a"
-      $display     ("one10=%x ",a);  // Check single arg
-      $dpii_display("one10=%x ",a);
-      $display     ("Mod=%m 16=%d 10=%x ",a,a); // Check multiarg
-      $dpii_display("Mod=%m 16=%d 10=%x ",a,a);
+      $display     ("one10=%x",a);  // Check single arg
+      $dpii_display("one10=%x",a);
+      $display     ("Mod=%m 16=%d 10=%x",a,a); // Check multiarg
+      $dpii_display("Mod=%m 16=%d 10=%x",a,a);
 
       $write("*-* All Finished *-*\n");
       $finish;

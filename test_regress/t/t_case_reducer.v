@@ -73,7 +73,7 @@ module Test
 	     // Outputs
    output wire [6:0] out
    );
-  
+
    wire [6:0] 	     clz_a;
    wire [6:0] 	     clz_b;
 
@@ -89,10 +89,10 @@ module Test
      .data_i      (operand_b),
      .out      (clz_b));
 
-   assign out     = clz_a - clz_b;  
+   assign out     = clz_a - clz_b;
 `ifdef TEST_VERBOSE
-   always @(posedge clk) 
-     $display("Out(%x) =  clz_a(%x) - clz_b(%x)", out, clz_a, clz_b);  
+   always @(posedge clk)
+     $display("Out(%x) =  clz_a(%x) - clz_b(%x)", out, clz_a, clz_b);
 `endif
 
 endmodule
@@ -231,7 +231,7 @@ module clz(
       8'b0000_0000   : clz_byte0 = 3'b111;
       default        : clz_byte0 = 3'bxxx;
     endcase
-    
+
   always @*
     case (data_i)
       `def_1xxx_xxxx : clz_byte1 = 3'b000;

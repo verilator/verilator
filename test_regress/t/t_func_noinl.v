@@ -89,12 +89,12 @@ module Test (/*AUTOARG*/
 
 	 for (i = 0; i < 32; i = i + 1)
 	   if (var2[i]) begin
-	      product1 = { {31*2+1-32{1'b0}}, var1} << i; 
+	      product1 = { {31*2+1-32{1'b0}}, var1} << i;
 	      product2 = product2 ^ product1;
 	   end
 	 no_inline_function = 0;
 
-	 for (i= 0; i < 31; i = i + 1 ) 
+	 for (i= 0; i < 31; i = i + 1 )
 	   no_inline_function[i+1] = no_inline_function[i] ^ product2[i] ^ var1[i];
       end
    endfunction

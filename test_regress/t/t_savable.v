@@ -73,7 +73,7 @@ module sub (/*AUTOARG*/
 	 if (vec[2][1] !== 32'h0201) $stop;
 	 if (vec[2][2] !== 32'h0202) $stop;
 	 if (r != 1.234) $stop;
-	 $display("%s",s); 
+	 $display("%s",s);
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

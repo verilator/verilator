@@ -1133,7 +1133,7 @@ void GateVisitor::dedupe() {
 
 
 //######################################################################
-// Recurse through the graph, try to merge assigns 
+// Recurse through the graph, try to merge assigns
 
 class GateMergeAssignsGraphVisitor : public GateGraphBaseVisitor {
 private:
@@ -1145,7 +1145,7 @@ private:
     V3Double0        m_numMergedAssigns;	// Statistic tracking
 
 
-    // assemble two Sel into one if possible 
+    // assemble two Sel into one if possible
     AstSel* merge(AstSel* pre, AstSel* cur) {
 	AstVarRef* preVarRefp = pre->fromp()->castVarRef();
 	AstVarRef* curVarRefp = cur->fromp()->castVarRef();
@@ -1201,7 +1201,7 @@ private:
 			    // update the graph
 			    {
 				// delete all inedges to lvertexp
-				if (!lvertexp->inEmpty()) { 
+				if (!lvertexp->inEmpty()) {
 				    for (V3GraphEdge* ledgep = lvertexp->inBeginp(); ledgep; ) {
 					V3GraphEdge* oedgep = ledgep;
 					ledgep = ledgep->inNextp();

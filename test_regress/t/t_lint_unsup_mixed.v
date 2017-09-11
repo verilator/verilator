@@ -11,13 +11,13 @@ module t
    );
 
    integer q;
-   
+
    // bug1120
    always @ (a or posedge clk)
      begin
 	if (a)
           q = 0;
-	else 
+	else
           q = q + 1;
      end
 

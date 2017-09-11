@@ -38,7 +38,7 @@ module t (/*AUTOARG*/
    assign clk_final = clk_3[0];
 
    // the following two assignment triggers the CLKDATA warning
-   // because on LHS there are a mix of signals both CLOCK and 
+   // because on LHS there are a mix of signals both CLOCK and
    // DATA
    /* verilator lint_off CLKDATA */
    assign res8  = {clk_3, 1'b0, clk_4};
@@ -46,7 +46,7 @@ module t (/*AUTOARG*/
    /* verilator lint_on CLKDATA */
 
 
-   initial 
+   initial
        count = 0;
 
 

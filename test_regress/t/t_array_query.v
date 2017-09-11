@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
    wire  a = clk;
    wire  b = 1'b0;
    reg   c;
-   
+
    array_test array_test_i (/*AUTOINST*/
 			    // Inputs
 			    .clk		(clk));
@@ -46,12 +46,12 @@ module array_test
    integer   l;
    integer   r;
    integer   s;
-   
+
    always @(posedge clk) begin
       l = $left (a);
       r = $right (a);
       s = $size (a);
-      
+
 `ifdef TEST_VERBOSE
       $write ("$left (a) = %d, $right (a) = %d, $size (a) = %d\n", l, r, s);
 `endif

@@ -29,7 +29,7 @@ module m1
    input d,
    output wire [1:0] q
    );
-   
+
    m2 m2 (/*AUTOINST*/
 	  // Outputs
 	  .q				(q[1:0]),
@@ -47,7 +47,7 @@ module m2
    output reg [1:0] q
    // verilator lint_on UNOPT
    );
-   
+
    always @* begin
       q[1] = d;
    end

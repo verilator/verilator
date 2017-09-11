@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
    function int f_no_au ();
       automatic int st = 2; st++; return st;
    endfunction
-   
+
    function static int f_st_no ();
       int st = 2; st++; return st;
    endfunction
@@ -39,7 +39,7 @@ module t (/*AUTOARG*/
    function automatic int f_au_au ();
       automatic int st = 2; st++; return st;
    endfunction
- 
+
    initial begin
       if (f_no_no() != 3) $stop;
       if (f_no_no() !=   4) $stop;

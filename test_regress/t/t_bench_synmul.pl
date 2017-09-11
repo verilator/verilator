@@ -11,7 +11,7 @@ top_filename("t/t_math_synmul.v");
 
 $Self->{cycles} = $Self->{benchmark}||0;
 $Self->{cycles} = 100 if $Self->{cycles}<100;
-	      
+
 $Self->{sim_time} = $Self->{cycles}*100;
 
 compile (

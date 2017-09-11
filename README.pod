@@ -51,7 +51,7 @@ output (not Verilator itself) compiles under MSVC++ 2008 and newer.
 
 =head1 INSTALLATION
 
-For more details see 
+For more details see
 L<http://www.veripool.org/projects/verilator/wiki/Installing>.
 
 If you will be modifying Verilator, you should use the "git" method as it

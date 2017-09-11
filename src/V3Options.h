@@ -145,7 +145,7 @@ class V3Options {
     bool	m_oCombine;	// main switch: -Ob: common icode packing
     bool	m_oConst;	// main switch: -Oc: constant folding
     bool	m_oDedupe;	// main switch: -Od: logic deduplication
-    bool	m_oAssemble;	// main switch: -Om: assign assemble 
+    bool	m_oAssemble;	// main switch: -Om: assign assemble
     bool	m_oExpand;	// main switch: -Ox: expansion of C macros
     bool	m_oFlopGater;	// main switch: -Of: flop gater detection
     bool	m_oGate;	// main switch: -Og: gate wire elimination

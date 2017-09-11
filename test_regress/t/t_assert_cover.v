@@ -41,7 +41,7 @@ module Test
    );
 
    // Simple cover
-   cover property (@(posedge clk) cyc==3); 
+   cover property (@(posedge clk) cyc==3);
 
    // With statement, in generate
    generate if (1) begin
@@ -51,16 +51,16 @@ module Test
 
    // Labeled cover
    cyc_eq_5:
-     cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5"); 
+     cover property (@(posedge clk) cyc==5) $display("*COVER: Cyc==5");
 
    // Using default clock
    default clocking @(posedge clk); endclocking
-   cover property (cyc==6) $display("*COVER: Cyc==6"); 
+   cover property (cyc==6) $display("*COVER: Cyc==6");
 
    // Disable statement
    // Note () after disable are required
    cover property (@(posedge clk) disable iff (toggle) cyc==8)
-     $display("*COVER: Cyc==8"); 
+     $display("*COVER: Cyc==8");
    cover property (@(posedge clk) disable iff (!toggle) cyc==8)
      $stop;
 
@@ -86,7 +86,7 @@ module Test
 	disable iff (!toggle)
 	cyc==5;
    endproperty
-   cover property (C1) $display("*COVER: Cyc==5"); 
+   cover property (C1) $display("*COVER: Cyc==5");
 
    // Using covergroup
    // Note a covergroup is really inheritance of a special system "covergroup" class.

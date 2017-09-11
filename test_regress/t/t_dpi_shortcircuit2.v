@@ -51,7 +51,7 @@ module t (/*AUTOARG*/);
       for (i=0; i<64; i++) begin
 	 if (i[0])
 	   j = 0;
-	 else 
+	 else
 	   j = {31'b0, dpii_inc1(0)};
 	 k = k + j;
       end

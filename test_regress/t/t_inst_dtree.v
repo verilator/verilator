@@ -8,7 +8,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   
+
 `ifdef INLINE_A //verilator inline_module
 `else  //verilator no_inline_module
 `endif

@@ -111,8 +111,8 @@ private:
     AstVarScope*	m_vscp;		// Original (non-change) variable we're change-detecting
     AstVarScope*	m_newvscp;	// New (change detect) variable we're change-detecting
     AstNode*		m_varEqnp;	// Original var's equation to get var value
-    AstNode*		m_newLvEqnp;	// New var's equation to read value 
-    AstNode*		m_newRvEqnp;	// New var's equation to set value 
+    AstNode*		m_newLvEqnp;	// New var's equation to read value
+    AstNode*		m_newRvEqnp;	// New var's equation to set value
     uint32_t		m_detects;	// # detects created
 
     // CONSTANTS
@@ -278,7 +278,7 @@ private:
 	}
     }
     virtual void visit(AstNodeMath* nodep) {
-	// Short-circuit 
+	// Short-circuit
     }
     //--------------------
     // Default: Just iterate

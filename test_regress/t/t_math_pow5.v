@@ -26,7 +26,7 @@ module t (/*AUTOARG*/
       qs = 68'she_12345678_9abcdef0 ** 68'sh5_6789abcd_ef012345;
       if (qs != 68'h0) $stop;
    end
-   
+
    reg [67:0] left;
    reg [67:0] right;
 

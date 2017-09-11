@@ -79,7 +79,7 @@ module st3_testbench (/*AUTOARG*/
    logic [47:0]     selected_out;
    integer 	    i;
 
-  
+
    initial begin
       decrementA = 1'b0;
       dual_countA = 1'b0;
@@ -121,7 +121,7 @@ module st3_testbench (/*AUTOARG*/
 	.decrementB                      (decrementB),
 	.dual_countB                     (dual_countB),
 	.cntB_en                         (cntB_en));
-  
+
 
    // Logic to print outputs and then finish.
    always @(posedge clk) begin
@@ -161,7 +161,7 @@ module simple_test_3
 
    // Outputs
    output logic [47:0] selected_out);
-   
+
    // Declarations
    logic [3:0] 	       cntA_reg;       // Registered version of cntA
    logic [3:0] 	       cntB_reg;       // Registered version of cntA
@@ -178,7 +178,7 @@ module simple_test_3
 	.cntA_en			(cntA_en),
 	.clk				(clk),
 	.rst				(rst));
-   
+
    counterB
      counterB_inst
        (/*AUTOINST*/
@@ -190,57 +190,57 @@ module simple_test_3
 	.cntB_en			(cntB_en),
 	.clk				(clk),
 	.rst				(rst));
-   
+
    simple_test_3a
      sta
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntA_reg),
 	.selected_out          (selected_out[7:0]));
-   
+
    simple_test_3b
      stb
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntA_reg),
 	.selected_out          (selected_out[15:8]));
-   
+
    simple_test_3c
      stc
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntB_reg),
 	.selected_out          (selected_out[23:16]));
-   
+
    simple_test_3d
      std
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntB_reg),
 	.selected_out          (selected_out[31:24]));
-   
+
    simple_test_3e
      ste
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntB_reg),
 	.selected_out          (selected_out[39:32]));
-   
+
    simple_test_3f
      stf
        (.wide_input_bus        (wide_input_bus),
 	.selector              (cntB_reg),
 	.selected_out          (selected_out[47:40]));
 
-  
+
 endmodule // simple_test_3
 
 
-module counterA 
+module counterA
   (output logic [3:0]          cntA_reg, // Registered version of cntA
    input logic decrementA,               // 0=Up-counting, 1=down-counting
    input logic dual_countA,              // Advance counter by 2 steps at a time
    input logic cntA_en,                  // Enable Counter A
    input logic clk,                      // Clock
    input logic rst);                     // Synchronous reset
-     
-            
-                   
+
+
+
    logic [3:0] cntA;                     // combinational count variable.
 
    // Counter A
@@ -261,17 +261,17 @@ module counterA
         if (cntA_en) begin
            if (decrementA)
              if (dual_countA)
-               //cntA = cntA - 2; 
+               //cntA = cntA - 2;
                cntA -= 2;
              else
-               //cntA = cntA - 1; 
+               //cntA = cntA - 1;
                cntA--;
            else
              if (dual_countA)
                //cntA = cntA + 2;
                cntA += 2;
              else
-               //cntA = cntA + 1; 
+               //cntA = cntA + 1;
                cntA++;
         end // if (cntA_en)
      end
@@ -287,8 +287,8 @@ module counterB
    input logic rst);                     // Synchronous reset
 
    // Counter B - tried to write sequential only, but ended up without
-   // SystemVerilog.  
-  
+   // SystemVerilog.
+
    always_ff @(posedge clk) begin
       if (rst)
         cntB_reg <= 0;
@@ -309,7 +309,7 @@ module counterB
         end
    end // always_ff @
 endmodule
-  
+
 
 // A multiplexor in terms of look-up
 module simple_test_3a
@@ -327,11 +327,11 @@ module simple_test_3a
                      wide_input_bus[selector*8+2],
                      wide_input_bus[selector*8+1],
                      wide_input_bus[selector*8]};
-   
+
 endmodule // simple_test_3a
 
 
-// A multiplexer in terms of standard case      
+// A multiplexer in terms of standard case
 module simple_test_3b
   (input logic [8*16-1:0] wide_input_bus,
    input logic [3:0]  selector,
@@ -357,7 +357,7 @@ module simple_test_3b
         4'he: selected_out = wide_input_bus[119:112];
         4'hf: selected_out = wide_input_bus[127:120];
       endcase // case (selector)
-      
+
    end
 
 endmodule // simple_test_3b
@@ -371,7 +371,7 @@ module simple_test_3c
 
 
    always_comb begin
-      unique case (selector) 
+      unique case (selector)
         4'h0: selected_out = wide_input_bus[  7:  0];
         4'h1: selected_out = wide_input_bus[ 15:  8];
         4'h2: selected_out = wide_input_bus[ 23: 16];
@@ -389,7 +389,7 @@ module simple_test_3c
         4'he: selected_out = wide_input_bus[119:112];
         4'hf: selected_out = wide_input_bus[127:120];
       endcase // case (selector)
-      
+
    end
 
 endmodule // simple_test_3c
@@ -420,7 +420,7 @@ module simple_test_3d
       else if (selector == 4'he) selected_out = wide_input_bus[119:112];
       else if (selector == 4'hf) selected_out = wide_input_bus[127:120];
    end
-   
+
 endmodule // simple_test_3d
 
 
@@ -440,7 +440,7 @@ module simple_test_3e
         selector[3]: selected_out = wide_input_bus[ 71: 64]; // Bit 3 has lowest priority
         default:     selected_out = wide_input_bus[127:120]; // for selector = 0.
       endcase // case (selector)
-      
+
    end
 
 endmodule // simple_test_3e
@@ -456,7 +456,7 @@ module simple_test_3f
    output logic [7:0] selected_out);
 
 
-   always_comb begin      
+   always_comb begin
 /* -----\/----- EXCLUDED -----\/-----
       if ( selector[3:0] inside { 4'b?00?, 4'b1100})      // Matching 0000, 0001, 1000, 1100, 1001
 	// if ( selector[3:2] inside { 2'b?0, selector[1:0]})

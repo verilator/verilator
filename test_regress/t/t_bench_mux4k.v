@@ -27,7 +27,7 @@ module t (/*AUTOARG*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [`DATA_WIDTH-1:0] datao;		// From mux4096 of mux4096.v
    // End of automatics
-   
+
    reg [`DATA_WIDTH*`MUX1_SIZE*`MUX2_SIZE-1:0] datai;
    reg [`ADDR_WIDTH-1:0] 		       addr;
 
@@ -130,7 +130,7 @@ module mux4096_1bit
       .C(F),
       .datai(data0),
       .datao(datao));
-   
+
 endmodule
 
 module mux64
@@ -147,12 +147,12 @@ module mux64
    wire [63:0] colSelC = { {16{C[3]}}, {16{C[2]}}, {16{C[1]}}, {16{C[0]}}};
 
    wire [MUX_SIZE-1:0] data_bus;
-   
+
    // Note each of these becomes a separate wire.
    //.colSelA(colSelA[MUX_SIZE-1:0]),
    //.colSelB(colSelB[MUX_SIZE-1:0]),
    //.colSelC(colSelC[MUX_SIZE-1:0]),
-   
+
    drv drv[MUX_SIZE-1:0]
      (.colSelA(colSelA[MUX_SIZE-1:0]),
       .colSelB(colSelB[MUX_SIZE-1:0]),

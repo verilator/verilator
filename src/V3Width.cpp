@@ -2181,7 +2181,7 @@ private:
 		// TODO Simple dtype checking, should be a more general check
 		AstNodeArrayDType* exprArrayp = exprDTypep->skipRefp()->castUnpackArrayDType();
 		AstNodeArrayDType* modArrayp = modDTypep->skipRefp()->castUnpackArrayDType();
-		if (exprArrayp && modArrayp && exprArrayp->subDTypep()->skipRefp()->castIfaceRefDType() 
+		if (exprArrayp && modArrayp && exprArrayp->subDTypep()->skipRefp()->castIfaceRefDType()
 		    && exprArrayp->declRange().elements() != modArrayp->declRange().elements()) {
 		    int exprSize = exprArrayp->declRange().elements();
 		    int modSize = modArrayp->declRange().elements();
@@ -3555,7 +3555,7 @@ private:
 	}
 	return patmap;
     }
-    
+
 
     //----------------------------------------------------------------------
     // METHODS - special type detection
@@ -3599,7 +3599,7 @@ private:
 	}
 	m_vup = saveVup;
     }
-    void userIterateAndNext(AstNode* nodep, WidthVP* vup) {	
+    void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
 	if (!nodep) return;
 	WidthVP* saveVup = m_vup;
 	{

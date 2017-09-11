@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
    // Four different test cases for out of bounds
    //	=
    //	<=
-   //   Continuous assigns 
+   //   Continuous assigns
    //	Output pin interconnect (also covers cont assigns)
    // Each with both bit selects and array selects
 

@@ -76,7 +76,7 @@ module Test( output logic o,
       integer  k;
 
       rc_d[1] <= rc;
-      
+
       for( k=2; k<RATIO+1; k++ ) begin
          rc_d[k] <= rc_d[k-1];
       end

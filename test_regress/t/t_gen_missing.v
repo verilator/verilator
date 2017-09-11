@@ -22,7 +22,7 @@ module foobar
      FOO_TYPE = 1
      )
     (
-    input wire[FOO_NUM-1:0] foo, 
+    input wire[FOO_NUM-1:0] foo,
     output wire[FOO_NUM-1:0] bar);
 
 
@@ -51,7 +51,7 @@ endmodule
 module foo0(input wire x, output wire y);
 
    assign y = ~x;
-   
+
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;

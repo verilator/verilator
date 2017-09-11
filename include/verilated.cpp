@@ -1454,7 +1454,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 VerilatedVar* VerilatedScope::varFind(const char* namep) const {
     if (VL_LIKELY(m_varsp)) {
 	VerilatedVarNameMap::iterator it = m_varsp->find(namep);
-	if (VL_LIKELY(it != m_varsp->end())) {	
+	if (VL_LIKELY(it != m_varsp->end())) {
 	    return &(it->second);
 	}
     }

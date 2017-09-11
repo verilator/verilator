@@ -15,9 +15,9 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUP, with different value: barney 
+'%Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUP, with different value: barney
 %Warning-REDEFMACRO: Use .* to disable this message.
-%Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: fred 
+%Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: fred
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUPP, with different value: .*
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: .*
 %Error: Exiting due to.*',

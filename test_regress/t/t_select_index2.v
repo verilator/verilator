@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    wire [3:0] en;
    wire       sel;
    wire       a;
-   
+
    // bug675
    generate
       genvar  g_k;
@@ -32,5 +32,5 @@ module t (/*AUTOARG*/
            end
         end
    endgenerate
-   
+
 endmodule

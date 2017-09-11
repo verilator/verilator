@@ -33,5 +33,5 @@ module t (/*AUTOARG*/
    always @(negedge clk) begin
       out2[15:8] <= d0;
    end
-   
+
 endmodule

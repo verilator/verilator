@@ -14,16 +14,16 @@ compile (
 execute (
 	 check_finished=>1,
 	 expect=>quotemeta(
-q{dpii_display_call: 
-dpii_display_call: c
-dpii_display_call: co
-dpii_display_call: cons
-dpii_display_call: constant
-dpii_display_call: constant_value
-one10=0000000a 
-dpii_display_call: one10=0000000a 
-Mod=top.t 16=         10 10=0000000a 
-dpii_display_call: Mod=top.t 16=         10 10=0000000a 
+q{dpii_display_call: ''
+dpii_display_call: 'c'
+dpii_display_call: 'co'
+dpii_display_call: 'cons'
+dpii_display_call: 'constant'
+dpii_display_call: 'constant_value'
+one10=0000000a
+dpii_display_call: 'one10=0000000a'
+Mod=top.t 16=         10 10=0000000a
+dpii_display_call: 'Mod=top.t 16=         10 10=0000000a'
 *-* All Finished *-*
 }),
      );

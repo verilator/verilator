@@ -204,7 +204,7 @@ void VerilatedRestore::fill() {
     for (vluint8_t* sp=m_cp; sp < m_endp;) *rp++ = *sp++;  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp; // Reset buffer
-    // Read into buffer starting at m_endp 
+    // Read into buffer starting at m_endp
     while (1) {
 	ssize_t remaining = (m_bufp+bufferSize() - m_endp);
 	if (remaining==0) break;

@@ -10,7 +10,7 @@ module t (/*AUTOARG*/);
    parameter [200:0] SMALLH = 8'habc;  // One to many digits
    parameter [200:0] SMALLO = 6'o1234;  // One to many digits
    parameter [200:0] SMALLB = 3'b1111;  // One to many digits
-   
+
    // We'll allow this though; no reason to be cruel
    parameter [200:0] OKH = 8'h000000001;
 

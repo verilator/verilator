@@ -43,7 +43,7 @@ module t (/*AUTOARG*/
       `checkh($increment(array_unpk), 1);
       `checkh($size (array_unpk), 2);
    end
-   
+
    // event counter
    always @ (posedge clk) begin
       cnt <= cnt + 1;
@@ -165,5 +165,5 @@ module t (/*AUTOARG*/
 	 end
       end
    end
-   
+
 endmodule

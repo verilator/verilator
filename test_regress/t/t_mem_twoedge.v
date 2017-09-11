@@ -113,5 +113,5 @@ module Test (/*AUTOARG*/
    end
 
    assign out = {mem[3],mem[2],mem[1],mem[0]};
-   
+
 endmodule

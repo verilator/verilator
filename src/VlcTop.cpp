@@ -208,7 +208,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 	    v3error("Can't read "<<filename);
 	    return;
 	}
-	
+
 	ofstream os (outfilename.c_str());
 	if (!os) {
 	    v3fatal("Can't write "<<outfilename);

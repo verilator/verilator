@@ -5,7 +5,7 @@ module t (clk);
    input clk;
 
    wire  A;
-   
+
    pullup p1(A);
    pulldown p2(A);
 

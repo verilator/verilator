@@ -82,7 +82,7 @@ module Test (/*AUTOARG*/
    input [127:0] in;
    output logic [127:0] o1;
    output logic [127:0] o2;
-   
+
    always_comb begin: b_test
       logic [127:0] tmpp;
       logic [127:0] tmp;

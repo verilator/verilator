@@ -49,7 +49,7 @@ module t (/*AUTOARG*/
       if (((1.5)/(1.25)) != 1.2) $stop;
       //
       if (((1.5)==(2)) != 1'b0) $stop;  // note 2 becomes real 2.0
-      if (((1.5)!=(2)) != 1'b1) $stop; 
+      if (((1.5)!=(2)) != 1'b1) $stop;
       if (((1.5)> (2)) != 1'b0) $stop;
       if (((1.5)>=(2)) != 1'b0) $stop;
       if (((1.5)< (2)) != 1'b1) $stop;
@@ -124,7 +124,7 @@ module t (/*AUTOARG*/
 	 //
 	 r = $itor(cyc);
 	 if ((r==50.0) != (cyc==50)) $stop;
-	 if ((r!=50.0) != (cyc!=50)) $stop; 
+	 if ((r!=50.0) != (cyc!=50)) $stop;
 	 if ((r> 50.0) != (cyc> 50)) $stop;
 	 if ((r>=50.0) != (cyc>=50)) $stop;
 	 if ((r< 50.0) != (cyc< 50)) $stop;

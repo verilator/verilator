@@ -60,7 +60,7 @@ private:
     // STATE, for passing down one level of hierarchy (may need save/restore)
     AstCell*	m_aboveCellp;	// Cell that instantiates this module
     AstScope*	m_aboveScopep;	// Scope that instantiates this scope
-    
+
     PackageScopeMap	m_packageScopes;	// Scopes for each package
     VarScopeMap		m_varScopes;		// Varscopes created for each scope and var
     VarRefScopeSet	m_varRefScopes;		// Varrefs-in-scopes needing fixup when donw
@@ -265,7 +265,7 @@ private:
 	    // the var's referenced package etc might not be created yet.
 	    // So push to a list and post-correct
 	    m_varRefScopes.insert(make_pair(nodep, m_scopep));
-	} 
+	}
    }
     virtual void visit(AstScopeName* nodep) {
 	// If there's a %m in the display text, we add a special node that will contain the name()

@@ -11,7 +11,7 @@ compile (
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["--exe","$Self->{t_dir}/$Self->{name}.cpp"],
-    vcs_flags2 => ['-assert'],	
+    vcs_flags2 => ['-assert'],
     );
 
 execute (

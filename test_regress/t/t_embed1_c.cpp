@@ -64,7 +64,7 @@ Vt_embed1_child* __get_modelp() {
 	    vl_fatal(__FILE__,__LINE__,__FILE__,"svPutUserData failed");
 	}
     }
-    return (Vt_embed1_child*)(__modelp); 
+    return (Vt_embed1_child*)(__modelp);
 }
 
 void t_embed_child_initial() {

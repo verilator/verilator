@@ -709,7 +709,7 @@ Start GDB, then C<start> with the remaining arguments.
   Temporary breakpoint 1, main (argc=13, argv=0xbfffefa4, env=0xbfffefdc)
       at ../Verilator.cpp:615
   615         ios::sync_with_stdio();
-  (gdb) 
+  (gdb)
 
 You can then continue execution with breakpoints as required.
 

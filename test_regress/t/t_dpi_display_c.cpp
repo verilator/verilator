@@ -38,5 +38,5 @@ extern "C" {
 //======================================================================
 
 void dpii_display_call(const char* c) {
-    VL_PRINTF("dpii_display_call: %s\n", c);
+    VL_PRINTF("dpii_display_call: '%s'\n", c);
 }

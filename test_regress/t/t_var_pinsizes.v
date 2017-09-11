@@ -25,7 +25,6 @@ module t (/*AUTOARG*/
    input [512:0] i513;
    input 	 i1a2 [1:0];
    input [93:0]  i94a3 [2:0];
-   
 
    output 	  o1;
    output [7:0]   o8;

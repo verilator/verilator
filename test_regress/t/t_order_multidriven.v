@@ -6,7 +6,7 @@
 //With MULTI_CLK defined shows bug, without it is hidden
 `define MULTI_CLK
 
-//bug634 
+//bug634
 
 module t (
     input                   i_clk_wr,

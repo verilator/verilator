@@ -127,7 +127,7 @@ public:
 	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
 	} else {
-	    pkgp = symp->nodep()->castPackage(); 
+	    pkgp = symp->nodep()->castPackage();
 	}
 	return pkgp;
     }

@@ -79,7 +79,7 @@ module t (/*AUTOARG*/
 	 $finish;
       end
    end
-   
+
 endmodule // t
 
 
@@ -89,5 +89,5 @@ module sub
     output wire       bitout);
 
    assign bitout = (^ twobits) ^ (^ allbits);
-  
+
 endmodule // sub

@@ -26,7 +26,7 @@ module t (/*AUTOARG*/
    // End of automatics
 
    reg_1r1w #(.WIDTH(32), .DEPTH(256), .ADRWID(8))
-   sub 
+   sub
      (/*AUTOINST*/
       // Outputs
       .data_out				(data_out[31:0]),

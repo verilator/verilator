@@ -5,7 +5,7 @@
 
 module t_case_huge_sub3 (/*AUTOARG*/
    // Outputs
-   outr, 
+   outr,
    // Inputs
    clk, index
    );

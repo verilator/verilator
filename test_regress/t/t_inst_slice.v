@@ -63,7 +63,7 @@ module Test
    output logic [1:0] o [3:0],
    //but this works
    //logic [N-1:0] o
-   input 	[1:0] i);   
+   input 	[1:0] i);
 
    parameter N = 4;
 

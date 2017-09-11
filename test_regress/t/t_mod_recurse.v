@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
 
    wire         valid;
    wire [3-1:0] value;
-   
+
    PriorityChoice #(.OCODEWIDTH(3))
    pe (.out(valid), .outN(value[2:0]), .tripline(tripline));
 
@@ -62,7 +62,7 @@ module PriorityChoice (out, outN, tripline);
    parameter OCODEWIDTH = 1;
    localparam CODEWIDTH=OCODEWIDTH-1;
    localparam SCODEWIDTH= (CODEWIDTH<1) ? 1 : CODEWIDTH;
-   
+
    output reg             out;
    output reg [OCODEWIDTH-1:0] outN;
    input wire [(1<<OCODEWIDTH)-1:0] tripline;
@@ -70,12 +70,12 @@ module PriorityChoice (out, outN, tripline);
    wire [SCODEWIDTH-1:0] 	    leftN;
    wire 			    right;
    wire [SCODEWIDTH-1:0] 	    rightN;
-   
+
    generate
       if(OCODEWIDTH==1) begin
 	 assign left = tripline[1];
 	 assign right = tripline[0];
-	 
+
 	 always @(*) begin
 	    out  <= left || right ;
 	    if(right) begin outN <= {1'b0}; end

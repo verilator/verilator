@@ -38,7 +38,7 @@ extern "C" int mon_check();
    reg [31:0] 	   text_word    /*verilator public_flat_rw @(posedge clk) */;
    reg [63:0] 	   text_long    /*verilator public_flat_rw @(posedge clk) */;
    reg [511:0] 	   text         /*verilator public_flat_rw @(posedge clk) */;
-   
+
    integer 	  status;
 
    sub sub();

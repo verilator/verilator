@@ -5,13 +5,13 @@ module t (clk);
    input clk;
 
    wire  A;
-   
+
    pullup p1(A);
 
    child child(/*AUTOINST*/
 	       // Inouts
 	       .A			(A));
-   
+
 endmodule
 
 module child(inout A);

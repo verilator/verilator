@@ -162,7 +162,7 @@ private:
 	// Bye
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
-    
+
     virtual void visit(AstIf* nodep) {
 	if (nodep->user1SetOnce()) return;
 	if (nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -177,12 +177,12 @@ private:
 
 		// Recurse into the true case.
 		ifp->ifsp()->iterateAndNext(*this);
-		
+
 		// If the last else is not an else if, recurse into that too.
 		if (ifp->elsesp() && !nextifp) {
 		    ifp->elsesp()->iterateAndNext(*this);
 		}
-		
+
 		// Build a bitmask of the true predicates
 	        AstNode* predp = ifp->condp()->cloneTree(false);
 	        if (propp) {
@@ -195,13 +195,13 @@ private:
 		if (ifp->elsesp() && !nextifp) {
 		    hasDefaultElse = true;
 		}
-		
+
 		ifp = nextifp;
 	    } while (ifp);
 
 	    AstNode *newifp = nodep->cloneTree(false);
 	    bool allow_none = nodep->unique0Pragma();
-	    
+
 	    // Note: if this ends with an 'else', then we don't need to validate that one of the
 	    // predicates evaluates to true.
 	    AstNode* ohot = ((allow_none || hasDefaultElse)

@@ -22,8 +22,8 @@ module t_embed1_wrap (/*AUTOARG*/
    input [123:0]	wide_in;
    input		is_ref;
    // End of automatics
-   
-`ifdef verilator   
+
+`ifdef verilator
    // Import $t_embed_child__initial etc as a DPI function
 `endif
 

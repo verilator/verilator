@@ -52,9 +52,9 @@ module t;
 	       "a"+nine, "a"+nine);
       // verilator lint_on WIDTH
 
-      $display("[%0t] %%v=%v %%0v=%0v  %%v=%v %%0v=%0v  %%v=%v %%0v=%0v", $time,
+      $display("[%0t] %%v=%v %%0v=%0v  %%v=%v %%0v=%0v  %%v=%v %%0v=%0v <", $time,
 	       nine, nine, quad, quad, wide, wide);
-      $display("[%0t] %%V=%V %%0V=%0V  %%V=%V %%0V=%0V  %%V=%V %%0V=%0V", $time,
+      $display("[%0t] %%V=%V %%0V=%0V  %%V=%V %%0V=%0V  %%V=%V %%0V=%0V <", $time,
 	       nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%p=%p %%0p=%0p  %%p=%p %%0p=%0p  %%p=%p %%0p=%0p", $time,
 	       nine, nine, quad, quad, wide, wide);

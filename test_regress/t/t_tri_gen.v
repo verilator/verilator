@@ -36,8 +36,8 @@ module updown #(parameter UP=0)
    endgenerate
 endmodule
 
-module t_up (inout tri1 z); 
+module t_up (inout tri1 z);
 endmodule
 
-module t_down (inout tri0 z); 
+module t_down (inout tri0 z);
 endmodule

@@ -446,7 +446,7 @@ bool V3Number::displayedFmtLegal(char format) {
     case 's': return true;
     case 't': return true;
     case 'u': return true; // Packed 2-state
-    case 'v': return true; // Strength 
+    case 'v': return true; // Strength
     case 'x': return true;
     case 'z': return true; // Packed 4-state
     case '@': return true; // Packed string

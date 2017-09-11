@@ -5,7 +5,7 @@
 //
 
 // change these two parameters to see the speed differences
-`define DATA_WIDTH 8 
+`define DATA_WIDTH 8
 `define REP_COUNT4 `DATA_WIDTH/4
 `define REP_COUNT2 `DATA_WIDTH/2
 
@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
    input clk;
    reg [3:0] count4 = 0;
    reg [1:0] count2 = 0;
- 
+
    reg [`DATA_WIDTH-1:0] a = {`REP_COUNT4{4'b0000}};
    reg [`DATA_WIDTH-1:0] b = {`REP_COUNT4{4'b1111}};
    reg [`DATA_WIDTH-1:0] c = {`REP_COUNT4{4'b1111}};

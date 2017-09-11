@@ -41,7 +41,7 @@ Testing:
 	* // verilator debug in code so can see only tree affecting those nodes
 
 Usability:
-	* Detect and pre-remove most UNOPTFLATs (4.000) 
+	* Detect and pre-remove most UNOPTFLATs (4.000)
 	* Better reporting of unopt problems, including what lines of code
 	* Report more errors (all of them?) before exiting [Eugene Weber]
 	* Auto-create scons config files

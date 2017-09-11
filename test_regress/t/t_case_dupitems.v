@@ -71,7 +71,7 @@ module Test (/*AUTOARG*/
    output reg [1:0] out;
    always @* begin
       // bug99: Internal Error: ../V3Ast.cpp:495: New node already linked?
-      case (in[1:0]) 
+      case (in[1:0])
 	2'd0, 2'd1, 2'd2, 2'd3: begin
 	   out = in;
 	end

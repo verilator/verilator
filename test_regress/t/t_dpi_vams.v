@@ -15,12 +15,12 @@ module t (/*AUTOARG*/
 
    input in;
    wreal in;
-   output out; 
-   wreal out; 
+   output out;
+   wreal out;
 
    import "DPI-C" context function void dpii_call(input real in, output real out);
 
-   initial begin 
+   initial begin
       dpii_call(in,out);
       $finish;
    end

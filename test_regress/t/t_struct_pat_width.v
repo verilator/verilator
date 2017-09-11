@@ -30,7 +30,7 @@ module t (clk);
       if (param._bar != 3) $stop;
       if (param != 6'b110011) $stop;
       if (meh != 6) $stop;
-      
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

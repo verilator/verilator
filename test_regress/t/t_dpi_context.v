@@ -45,7 +45,7 @@ module sub (input integer inst);
       result = dpic_save(23+inst);
       if (result==0) $stop;
    endtask
-   
+
    task test2;
       if (dpic_restore() != 23+inst) $stop;
    endtask

@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
       //Bit zero is always enabled
       priority_mask[0]=1'b0;
    end
-   
+
 endmodule
 
 // Local Variables:

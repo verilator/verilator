@@ -20,14 +20,14 @@ module t (/*AUTOARG*/
    reg 	 combo_nblk;
 
    always @(posedge clk) begin
-      sync_blk = 1'b1; 
+      sync_blk = 1'b1;
       sync_blk2 = 1'b1;   // Only warn once per block
-      sync_nblk <= 1'b1; 
+      sync_nblk <= 1'b1;
    end
 
    always @* begin
-      combo_blk = 1'b1; 
-      combo_nblk <= 1'b1; 
+      combo_blk = 1'b1;
+      combo_nblk <= 1'b1;
    end
 
    always @(posedge clk) begin

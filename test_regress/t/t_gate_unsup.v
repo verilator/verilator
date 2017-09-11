@@ -17,7 +17,7 @@ module t (/*AUTOARG*/);
    rpmos     (rp0, d, en);
 
    rtran     (rt0, d);
-   tran      (tr0, d); 
+   tran      (tr0, d);
 
    rtranif0  (r00, d, en);
    rtranif1  (r10, d, en);

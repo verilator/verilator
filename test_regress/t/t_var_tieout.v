@@ -2,7 +2,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2010 by Wilson Snyder.
 
-// bug291 
+// bug291
 module t (/*AUTOARG*/
    // Inputs
    clk

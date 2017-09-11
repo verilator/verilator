@@ -34,7 +34,7 @@ module t (/*AUTOARG*/
    p::package_type_t vp;
 
    t2 t2 ();
-   
+
    initial begin
       if (unit_plusone(1) !== 2) $stop;
       if ($unit::unit_plusone(1) !== 2) $stop;

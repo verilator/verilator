@@ -45,7 +45,7 @@ module sub (/*AUTOARG*/
             if (DIFFERENTIAL)
               assign pad_io_l = sig_l_r;
          end
-      end 
+      end
    endgenerate
 
 endmodule

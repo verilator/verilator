@@ -36,7 +36,7 @@
 /// Verilator range
 
 // See also V3Ast::VNumRange
-class VerilatedRange { 
+class VerilatedRange {
     int		m_left;
     int		m_right;
 protected:

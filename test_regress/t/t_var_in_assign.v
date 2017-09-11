@@ -49,7 +49,7 @@ module t (/*AUTOARG*/
    function integer assignin(input integer i);
       i = 2;
       assignin = i;
-   endfunction 
+   endfunction
 
 endmodule
 

@@ -13,47 +13,20 @@ my $Debug;
 ### Must trim output before and after our file list
 my %files = %{get_manifest_files($root)};
 
-my $all_files = `cd $root && find . -type f -print`;
-foreach my $file (split /\s+/,$all_files) {
-    next if $file eq '';
-    $file =~ s!^\./!!;
-    $files{$file} |= 2;
-}
-
-my %file_regexps;
-my $skip = file_contents("$root/MANIFEST.SKIP");
 foreach my $file (sort keys %files) {
-    foreach my $skip (split /\s+/,$skip) {
-	if ($file =~ /$skip/) {
-	    $files{$file} |= 4;
-	    $file_regexps{$file} = $skip;
-	}
-    }
-}
-
-my %warns;
-foreach my $file (sort keys %files) {
-    my $tar = $files{$file}&1;
-    my $dir = $files{$file}&2;
-    my $skip = $files{$file}&4;
-
-    print +(($tar ? "TAR ":"    ")
-	    .($dir ? "DIR ":"    ")
-	    .($skip ? "SKIP ":"     ")
-	    ."  $file\n") if $Debug;
-
-    if ($dir && !$tar && !$skip) {
-	$warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
-    } elsif (!$dir && $tar && !$skip) {
-	$warns{$file} = "File in manifest, but not directory: $file";
-    } elsif ($dir && $tar && $skip) {
-	$warns{$file} = "File in manifest and also MANIFEST.SKIP, too general skip regexp '$file_regexps{$file}'?: $file";
+    my $contents = file_contents("$root/$file");
+    if ($file =~ /\.out$/) {
+	# Ignore golden files
+    } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
+	# Ignore binrary files
+    } elsif ($contents =~ /[ \t]\n/) {
+	$warns{$file} = "File contains trailing whitespace: $file";
     }
 }
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
-    $Self->error("Files mismatch with manifest: ",join(' ',sort keys %warns));
+    $Self->error("Files have whitespace errors: ",join(' ',sort keys %warns));
     foreach my $file (sort keys %warns) {
 	$Self->error($warns{$file});
     }

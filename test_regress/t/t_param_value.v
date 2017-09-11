@@ -32,13 +32,13 @@ module t (/*AUTOARG*/);
    // bullet 2
    localparam [63:0] B_UNSIGNED = SIGNED;
    `ASSERT($bits(B_UNSIGNED)==64 && B_UNSIGNED > 0);
-   
+
    // bullet 3
    localparam signed C_SIGNED = UNSIGNED;
    `ASSERT($bits(C_SIGNED)==64 && C_SIGNED < 0);
 
    localparam unsigned C_UNSIGNED = SIGNED;
-   `ASSERT($bits(C_UNSIGNED)==64 && C_UNSIGNED > 0); 
+   `ASSERT($bits(C_UNSIGNED)==64 && C_UNSIGNED > 0);
 
    // bullet 4
    // verilator lint_off WIDTH
@@ -48,12 +48,12 @@ module t (/*AUTOARG*/);
 
    // verilator lint_off WIDTH
    localparam unsigned [59:0] D_UNSIGNED = SIGNED;
-   `ASSERT($bits(D_UNSIGNED)==60 && D_UNSIGNED > 0); 
+   `ASSERT($bits(D_UNSIGNED)==60 && D_UNSIGNED > 0);
    // verilator lint_on WIDTH
-  
+
    // bullet 6
    localparam UNSIZED = 23;
-   `ASSERT($bits(UNSIZED)>=32); 
+   `ASSERT($bits(UNSIZED)>=32);
 
    initial begin
       $write("*-* All Finished *-*\n");

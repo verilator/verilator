@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2011 by Wilson Snyder.
 //
-// bug354 
+// bug354
 
 typedef logic [5:0]  data_t;
 

@@ -110,5 +110,5 @@ module t (/*AUTOARG*/
 	 $finish;
       end
    end
-      
+
 endmodule
