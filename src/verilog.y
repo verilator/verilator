@@ -1547,7 +1547,7 @@ enum_name_declaration<nodep>:	// ==IEEE: enum_name_declaration
 
 enumNameRangeE<nodep>:		// IEEE: second part of enum_name_declaration
 		/* empty */				{ $$ = NULL; }
-	|	'[' intnumAsConst ']'			{ $$ = new AstRange($1,new AstConst($1,0), $2); }
+	|	'[' intnumAsConst ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstConst($1, $2->toSInt()-1)); }
 	|	'[' intnumAsConst ':' intnumAsConst ']'	{ $$ = new AstRange($1,$2,$4); }
 	;
 
@@ -1556,7 +1556,7 @@ enumNameStartE<nodep>:		// IEEE: third part of enum_name_declaration
 	|	'=' constExpr				{ $$ = $2; }
 	;
 
-intnumAsConst<nodep>:
+intnumAsConst<constp>:
 		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	;
 

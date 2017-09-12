@@ -19,6 +19,7 @@ module t (/*AUTOARG*/);
 	  e3=3,
 	  e5=FIVE,
 	  e10_[2] = 10,
+	  e12,
 	  e20_[5:7] = 25,
 	  e20_z,
 	  e30_[7:5] = 30,
@@ -44,6 +45,7 @@ module t (/*AUTOARG*/);
       if (e5 !== 5) $stop;
       if (e10_0 !== 10) $stop;
       if (e10_1 !== 11) $stop;
+      if (e12 !== 12) $stop;
       if (e20_5 !== 25) $stop;
       if (e20_6 !== 26) $stop;
       if (e20_7 !== 27) $stop;
