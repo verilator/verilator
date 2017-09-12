@@ -369,7 +369,7 @@ sub new {
 	iv_run_flags => [],
 	# VCS
 	vcs => 0,
-	vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -I +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
+	vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
 	vcs_flags2 => [],  # Overridden in some sim files
 	vcs_run_flags => [split(/\s+/,"+vcs+lic_wait")],
 	# NC
