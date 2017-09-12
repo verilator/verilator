@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.911 devel
 
+***   Fix ordering of arrayed cell wide connections, bug1202 partial. [Mike Popoloski]
+
 ****  Fix enum ranges without colons, bug1204. [Mike Popoloski]
 
 

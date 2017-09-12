@@ -127,15 +127,18 @@ public:
 	setOp2p(new AstConst(fl,range.hi())); setOp3p(new AstConst(fl,range.lo()));
     }
     ASTNODE_NODE_FUNCS(Range)
-    AstNode* msbp() const { return op2p(); }	// op2 = Msb expression
-    AstNode* lsbp() const { return op3p(); }	// op3 = Lsb expression
+    AstNode* msbp() const { return op2p(); }  // op2 = Msb expression
+    AstNode* lsbp() const { return op3p(); }  // op3 = Lsb expression
     AstNode* leftp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
     AstNode* rightp() const { return littleEndian()?msbp():lsbp(); }
-    int	     msbConst()	const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
-    int	     lsbConst()	const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
-    int	     elementsConst() const { return (msbConst()>lsbConst()) ? msbConst()-lsbConst()+1 : lsbConst()-msbConst()+1; }
-    bool     littleEndian() const { return m_littleEndian; }
-    void     littleEndian(bool flag) { m_littleEndian=flag; }
+    int msbConst() const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
+    int lsbConst() const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
+    int elementsConst() const { return (msbConst()>lsbConst()) ? msbConst()-lsbConst()+1 : lsbConst()-msbConst()+1; }
+    int leftConst() const { AstConst* constp=leftp()->castConst(); return (constp?constp->toSInt():0); }
+    int rightConst() const { AstConst* constp=rightp()->castConst(); return (constp?constp->toSInt():0); }
+    int leftToRightInc() const { return littleEndian()?1:-1; }
+    bool littleEndian() const { return m_littleEndian; }
+    void littleEndian(bool flag) { m_littleEndian=flag; }
     virtual void dump(ostream& str);
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }

@@ -218,8 +218,7 @@ class InstDeVisitor : public AstNVisitor {
 private:
     // STATE
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
-    int		m_instNum;	// Current instantiation number
-    int		m_instLsb;	// Current instantiation number
+    int		m_instSelNum; // Current instantiation count 0..N-1
     InstDeModVarVisitor  m_deModVars;	// State of variables for current cell module
 
     typedef map<string,AstVar*> VarNameMap;
@@ -278,8 +277,10 @@ private:
 		&& ifaceVarp->dtypep()->castUnpackArrayDType()->subDTypep()->castIfaceRefDType();
 
 	    // Make all of the required clones
-	    m_instLsb = m_cellRangep->lsbConst();
-	    for (m_instNum = m_instLsb; m_instNum<=m_cellRangep->msbConst(); m_instNum++) {
+	    for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
+		m_instSelNum = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
+		int instNum = m_cellRangep->lsbConst() + i;
+
 		AstCell* newp = nodep->cloneTree(false);
 		nodep->addNextHere(newp);
 		// Remove ranging and fix name
@@ -287,8 +288,8 @@ private:
 		// Somewhat illogically, we need to rename the orignal name of the cell too.
 		// as that is the name users expect for dotting
 		// The spec says we add [x], but that won't work in C...
-		newp->name(newp->name()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
-		newp->origName(newp->origName()+"__BRA__"+cvtToStr(m_instNum)+"__KET__");
+		newp->name(newp->name()+"__BRA__"+cvtToStr(instNum)+"__KET__");
+		newp->origName(newp->origName()+"__BRA__"+cvtToStr(instNum)+"__KET__");
 		UINFO(8,"    CELL loop  "<<newp<<endl);
 
 		// If this AstCell is actually an interface instantiation, also clone the IfaceRef
@@ -302,8 +303,8 @@ private:
 		    arrdtype->addNextHere(ifaceRefp);
 		    ifaceRefp->cellp(newp);
 		    ifaceRefp->cellName(newp->name());
-		    varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(m_instNum) + "__KET__");
-		    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(m_instNum) + "__KET__");
+		    varNewp->name(varNewp->name() + "__BRA__" + cvtToStr(instNum) + "__KET__");
+		    varNewp->origName(varNewp->origName() + "__BRA__" + cvtToStr(instNum) + "__KET__");
 		    varNewp->dtypep(ifaceRefp);
 		    newp->addNextHere(varNewp);
 		    if (debug()==9) { varNewp->dumpTree(cout, "newintf: "); cout << endl; }
@@ -343,7 +344,7 @@ private:
 		// Connection to array, where array dimensions match the instant dimension
 		AstNode* exprp = nodep->exprp()->unlinkFrBack();
 		exprp = new AstArraySel (exprp->fileline(), exprp,
-					 (m_instNum-m_instLsb));
+					 m_instSelNum);
 		nodep->exprp(exprp);
 	    } else if (expwidth == pinwidth) {
 		// NOP: Arrayed instants: widths match so connect to each instance
@@ -358,7 +359,7 @@ private:
 		    // Note spec allows more complicated matches such as slices and such
 		}
 		exprp = new AstSel (exprp->fileline(), exprp,
-				    pinwidth*(m_instNum-m_instLsb),
+				    pinwidth*m_instSelNum,
 				    pinwidth);
 		nodep->exprp(exprp);
 	    } else {
@@ -457,8 +458,7 @@ public:
     // CONSTUCTORS
     explicit InstDeVisitor(AstNetlist* nodep) {
 	m_cellRangep=NULL;
-	m_instNum=0;
-	m_instLsb=0;
+	m_instSelNum=0;
 	//
 	nodep->accept(*this);
     }
