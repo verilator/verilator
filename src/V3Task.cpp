@@ -35,6 +35,7 @@
 #include <map>
 
 #include "V3Global.h"
+#include "V3Const.h"
 #include "V3Task.h"
 #include "V3Inst.h"
 #include "V3Ast.h"
@@ -1260,11 +1261,20 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 			       <<"' in function call to "<<nodep->taskp()->prettyTypeName());
 		newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
 	    } else if (!portp->valuep()->castConst()) {
-		// Problem otherwise is we might have a varref, task call, or something else that only
-		// makes sense in the domain of the function, not the callee.
-		nodep->v3error("Unsupported: Non-constant default value in missing argument '"<<portp->prettyName()
-			       <<"' in function call to "<<nodep->taskp()->prettyTypeName());
-		newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+		// The default value for this port might be a constant
+		// expression that hasn't been folded yet. Try folding it
+		// now; we don't have much to lose if it fails.
+		newvaluep = V3Const::constifyParamsEdit(portp->valuep());
+		if (!newvaluep->castConst()) {
+		    // Problem otherwise is we might have a varref, task call, or something else that only
+		    // makes sense in the domain of the function, not the callee.
+		    nodep->v3error("Unsupported: Non-constant default value in missing argument '"<<portp->prettyName()
+				   <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+		    newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+		}
+		else {
+		    newvaluep = newvaluep->cloneTree(true);
+		}
 	    } else {
 		newvaluep = portp->valuep()->cloneTree(true);
 	    }
