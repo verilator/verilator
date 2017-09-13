@@ -539,7 +539,8 @@ private:
 	    int width = nodep->elementsConst();
 	    if (width > (1<<28)) nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"<<hex<<width);
 	    // Note width() not set on range; use elementsConst()
-	    if (nodep->littleEndian() && !nodep->backp()->castUnpackArrayDType()) {
+	    if (nodep->littleEndian() && !nodep->backp()->castUnpackArrayDType()
+		&& !nodep->backp()->castCell()) {  // For cells we warn in V3Inst
 		nodep->v3warn(LITENDIAN,"Little bit endian vector: MSB < LSB of bit range: "<<nodep->lsbConst()<<":"<<nodep->msbConst());
 	    }
 	}

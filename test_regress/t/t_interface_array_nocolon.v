@@ -21,7 +21,12 @@ module t ();
 
    wire [2:0] X = 3'b110;
 
-   // Should not cause LITENDIAN warning?
+   // Should not cause LITENDIAN warning, as no harm in array selections.
+   // verilator lint_on LITENDIAN
+   foo_intf foo1 [N] (.x(1'b1));
+   foo_subm sub1 [N] (.x(1'b1));
+
+   // Will cause LITENDIAN warning?
    // verilator lint_off LITENDIAN
    foo_intf foos [N] (.x(X));
    foo_intf fool [1:3] (.x(X));

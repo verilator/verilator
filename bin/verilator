@@ -3205,6 +3205,11 @@ Warns that a packed vector is declared with little endian bit numbering
 and little numbering is now thus often due to simple oversight instead of
 intent.
 
+Also warns that a cell is declared with little endian range (i.e. [0:7] or
+[7]) and is connected to a N-wide signal. Based on IEEE the bits will
+likely be backwards from what you expect (i.e. cell [0] will connect to
+signal bit [N-1] not bit [0]).
+
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
