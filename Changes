@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix enum ranges without colons, bug1204. [Mike Popoloski]
 
+****  Fix GCC noreturn compile error, bug1209. [Mike Popoloski]
+
 
 * Verilator 3.910 2017-09-07
 

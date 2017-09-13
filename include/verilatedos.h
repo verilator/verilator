@@ -46,6 +46,7 @@
 # define VL_FUNC  __func__
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)
 # define VL_UNLIKELY(x)	__builtin_expect(!!(x), 0)
+# define VL_UNREACHABLE __builtin_unreachable();
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p),0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p),1)
 #elif defined(_MSC_VER)
@@ -57,6 +58,7 @@
 # define VL_FUNC  __FUNCTION__
 # define VL_LIKELY(x)	(!!(x))
 # define VL_UNLIKELY(x)	(!!(x))
+# define VL_UNREACHABLE
 # define VL_PREFETCH_RD(p)
 # define VL_PREFETCH_RW(p)
 #else
@@ -68,6 +70,7 @@
 # define VL_FUNC "__func__"		///< Name of current function for error macros
 # define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true than false
 # define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false than true
+# define VL_UNREACHABLE			///< Point that may never be reached
 # define VL_PREFETCH_RD(p)		///< Prefetch data with read intent
 # define VL_PREFETCH_RW(p)		///< Prefetch data with read/write intent
 #endif

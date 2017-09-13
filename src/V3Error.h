@@ -254,8 +254,7 @@ class V3Error {
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
 inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
-inline void v3errorEndFatal(ostringstream& sstr) VL_ATTR_NORETURN;
-inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); assert(0); }
+inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); assert(0); VL_UNREACHABLE }
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions

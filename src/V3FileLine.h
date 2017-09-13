@@ -161,11 +161,13 @@ public:
 
     // OPERATORS
     void v3errorEnd(ostringstream& str);
-    void v3errorEndFatal(ostringstream& str) VL_ATTR_NORETURN;
+    void v3errorEndFatal(ostringstream& str);
     string warnMore() const;
     inline bool operator==(FileLine rhs) const {
 	return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno && m_warnOn==rhs.m_warnOn);
     }
+private:
+    void v3errorEndFatalGuts(ostringstream& str);
 };
 ostream& operator<<(ostream& os, FileLine* fileline);
 
