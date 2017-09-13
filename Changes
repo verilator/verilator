@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.911 devel
 
+***   Support or/and/xor array intrinsic methods, bug1210. [Mike Popoloski]
+
 ***   Fix ordering of arrayed cell wide connections, bug1202 partial. [Mike Popoloski]
 
 ****  Fix LITENDIAN warning on arrayed cells, bug1202. [Mike Popoloski]

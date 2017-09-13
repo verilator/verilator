@@ -2894,6 +2894,11 @@ parenE:
 //				// IEEE: built_in_method_call
 //				//   method_call_root not needed, part of expr resolution
 //				// What's left is below array_methodNoRoot
+array_methodNoRoot<nodep>:
+		yOR					{ $$ = new AstFuncRef($1, "or", NULL); }
+	|	yAND					{ $$ = new AstFuncRef($1, "and", NULL); }
+	|	yXOR					{ $$ = new AstFuncRef($1, "xor", NULL); }
+	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
 		yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
@@ -3040,7 +3045,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// method_call
 	|	~l~expr '.' function_subroutine_callNoMethod	{ $$ = new AstDot($2,$1,$3); }
 	//			// method_call:array_method requires a '.'
-	//UNSUP	~l~expr '.' array_methodNoRoot		{ UNSUP }
+	|	~l~expr '.' array_methodNoRoot		{ $$ = new AstDot($2,$1,$3); }
 	//
 	//			// IEEE: let_expression
 	//			// see funcRef

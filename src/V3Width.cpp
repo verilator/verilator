@@ -1536,6 +1536,45 @@ private:
 		nodep->v3error("Unknown built-in enum method '"<<nodep->fromp()->prettyTypeName()<<"'");
 	    }
 	}
+	else if (AstUnpackArrayDType* arrayType = fromDtp->castUnpackArrayDType()) {
+	    enum {
+		UNKNOWN = 0,
+		ARRAY_OR,
+		ARRAY_AND,
+		ARRAY_XOR
+	    } methodId;
+
+	    methodId = UNKNOWN;
+	    if      (nodep->name() == "or")  methodId = ARRAY_OR;
+	    else if (nodep->name() == "and") methodId = ARRAY_AND;
+	    else if (nodep->name() == "xor") methodId = ARRAY_XOR;
+
+	    if (methodId) {
+		if (nodep->pinsp()) nodep->v3error("Arguments passed to array method, but it does not take arguments");
+
+		FileLine* fl = nodep->fileline();
+		AstNode* newp = NULL;
+		for (int i = 0; i < arrayType->elementsConst(); ++i) {
+		    AstNode* arrayRef = nodep->fromp()->cloneTree(false);
+		    AstNode* selector = new AstArraySel(fl, arrayRef, i);
+		    if (!newp)
+			newp = selector;
+		    else {
+			switch (methodId) {
+			    case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
+			    case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
+			    case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
+			    default: nodep->v3fatalSrc("bad case");
+			}
+		    }
+		}
+		nodep->replaceWith(newp);
+		nodep->deleteTree(); VL_DANGLING(nodep);
+	    }
+	    else {
+		nodep->v3error("Unknown built-in array method '"<<nodep->fromp()->prettyTypeName()<<"'");
+	    }
+	}
 	else {
 	    nodep->v3error("Unsupported: Member call on non-enum object '"
 			   <<nodep->fromp()->prettyTypeName()<<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
