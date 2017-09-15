@@ -1036,7 +1036,7 @@ int V3ParseImp::lexToken() {
     if (token == yaID__LEX) {
 	VSymEnt* foundp;
 	if (VSymEnt* look_underp = SYMP->nextId()) {
-	    if (debugFlex()) { cout<<"   lexToken: next id lookup forced under "<<look_underp<<endl; }
+	    UINFO(7,"   lexToken: next id lookup forced under "<<look_underp<<endl);
 	    foundp = look_underp->findIdFallback(*(yylval.strp));
 	    // "consume" it.  Must set again if want another token under temp scope
 	    SYMP->nextId(NULL);
