@@ -863,7 +863,7 @@ port<nodep>:			// ==IEEE: port
 			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
 			  $$->addNextNull(VARDONEP($$,$4,$5)); }
-	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig rangeListE sigAttrListE
+	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
 			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }

@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix constant function default parameters, bug1211. [Mike Popoloski]
 
+****  Fix non-colon array of interface modports, bug1212. [Mike Popoloski]
+
 
 * Verilator 3.910 2017-09-07
 
