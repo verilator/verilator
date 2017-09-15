@@ -453,7 +453,7 @@ private:
 		    DfaVertex* fromvertexp = static_cast<DfaVertex*>(edgep->fromp());
 		    if (fromvertexp != vertexp
 			&& !fromvertexp->user()) {
-			workps.push(static_cast<DfaVertex*>(fromvertexp));
+			workps.push(fromvertexp);
 			fromvertexp->user(1);
 		    }
 		}

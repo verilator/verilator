@@ -409,8 +409,8 @@ public:
     void	rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(VSignedState signst) {
 	// Note NOSIGN does NOT change the state; this is required by the parser
-	if (signst==signedst_UNSIGNED) numeric(VSignedState(signst));
-	else if (signst==signedst_SIGNED) numeric(VSignedState(signst));
+	if (signst==signedst_UNSIGNED) numeric(signst);
+	else if (signst==signedst_SIGNED) numeric(signst);
     }
     // METHODS
     virtual AstBasicDType* basicp() const { return (AstBasicDType*)this; }  // (Slow) recurse down to find basic data type
@@ -1797,7 +1797,7 @@ public:
     }}
     virtual bool same(AstNode* samep) const {
 	return (m_packagep==samep->castPackageRef()->m_packagep); }
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_packagep)); }
+    virtual V3Hash sameHash() const { return V3Hash(m_packagep); }
     virtual void dump(ostream& str=cout);
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
@@ -1919,7 +1919,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(SenItem)
     virtual void dump(ostream& str);
-    virtual V3Hash sameHash() const { return V3Hash(V3Hash(edgeType())); }
+    virtual V3Hash sameHash() const { return V3Hash(edgeType()); }
     virtual bool same(AstNode* samep) const {
 	return edgeType()==samep->castSenItem()->edgeType(); }
     AstEdgeType edgeType()	const { return m_edgeType; }		// * = Posedge/negedge

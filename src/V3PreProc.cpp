@@ -1310,7 +1310,8 @@ int V3PreProcImp::getStateToken() {
 		    goto next_tok;
 		}
 	    }
-	    fatalSrc("Bad case\n");
+	    fatalSrc("Bad case\n");  // FALLTHRU
+	    goto next_tok;  // but not really, above fatal catches it, but if add goto, static analysis complains
 	}
 	case VP_ERROR: {
 	    statePush(ps_ERRORNAME);

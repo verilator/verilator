@@ -799,7 +799,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-Mdir") && (i+1)<argc ) {
 		shift; m_makeDir = argv[i];
-		addIncDirFallback (string (m_makeDir));	 // Need to find generated files there too
+		addIncDirFallback (m_makeDir);	 // Need to find generated files there too
 	    }
 	    else if ( !strcmp (sw, "-o") && (i+1)<argc ) {
 		shift; m_exeName = argv[i];
