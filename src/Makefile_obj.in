@@ -64,6 +64,8 @@ LDFLAGS += @LDFLAGS@
 EXEEXT = @EXEEXT@
 CFG_CXXFLAGS_SRC = @CFG_CXXFLAGS_SRC@
 CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
+# Compiler flags that turn on extra warnings
+CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 
 #### End of system configuration section. ####
 
@@ -97,7 +99,7 @@ CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 CPPFLAGS += $(COPT)
 CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
-CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_SRC) -Werror
+CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
 #CPPFLAGS += -pedantic-errors
 else
 CPPFLAGS += $(CFG_CXXFLAGS_SRC)

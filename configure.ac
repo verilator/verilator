@@ -140,15 +140,22 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
     CXXFLAGS="$ACO_SAVE_CXXFLAGS"
    ])# _MY_CXX_CHECK_OPT
 
-# Flags for compiling Verilator internals including parser
+# Flags for compiling Verilator internals including parser, and Verilated files
+# These turn on extra warnings and are only used with 'configure --enable-ccwarn'
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wextra)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wlogical-op)
+AC_SUBST(CFG_CXXFLAGS_WEXTRA)
+
+# Flags for compiling Verilator internals including parser always
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-delete-null-pointer-checks)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
-# Flags for compiling Verilator parser (in addition to above CFG_CXXFLAGS_SRC)
+# Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-char-subscripts)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-null-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-parentheses-equality)
@@ -170,6 +177,7 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-uninitialized)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-but-set-variable)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-variable)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.
