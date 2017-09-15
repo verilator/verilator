@@ -251,7 +251,7 @@ public:
 	// Outbound are cutable, as we may need to evaluate multiple times
 
 	{
-	    V3GraphTestVertex* n	= new V3GraphTestVertex(gp,"c=a|b|i");
+	    n = new V3GraphTestVertex(gp,"c=a|b|i");
 	    new V3GraphEdge(gp, n, c, 1, true);
 	    new V3GraphEdge(gp, a, n, 1, false);
 	    new V3GraphEdge(gp, b, n, 1, false);

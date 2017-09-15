@@ -568,24 +568,24 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	    //UINFO(4,"   Parse  Paren="<<paren<<"  Arg="<<numArgs<<"  token='"<<token<<"'  Parse="<<cp<<endl);
 	    if (!quote && paren==1) {
 		if (*cp==')' || *cp==',') {
-		    string value;
-		    if (haveDefault) { value=token; } else { argName=token; }
+		    string valueDef;
+		    if (haveDefault) { valueDef=token; } else { argName=token; }
 		    argName = trimWhitespace(argName,true);
-		    UINFO(4,"    Got Arg="<<numArgs<<"  argName='"<<argName<<"'  default='"<<value<<"'"<<endl);
+		    UINFO(4,"    Got Arg="<<numArgs<<"  argName='"<<argName<<"'  default='"<<valueDef<<"'"<<endl);
 		    // Parse it
 		    if (argName!="") {
 			if (refp->args().size() > numArgs) {
 			    // A call `def( a ) must be equivelent to `def(a ), so trimWhitespace
 			    // At one point we didn't trim trailing whitespace, but this confuses `"
 			    string arg = trimWhitespace(refp->args()[numArgs], true);
-			    if (arg != "") value = arg;
+			    if (arg != "") valueDef = arg;
 			} else if (!haveDefault) {
 			    error("Define missing argument '"+argName+"' for: "+refp->name()+"\n");
 			    return " `"+refp->name()+" ";
 			}
 			numArgs++;
 		    }
-		    argValueByName[argName] = value;
+		    argValueByName[argName] = valueDef;
 		    // Prepare for next
 		    argName = "";
 		    token = "";

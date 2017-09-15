@@ -608,21 +608,22 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
 
 int V3OutFormatter::endLevels (const char *strg) {
     int levels=m_indentLevel;
-    const char* cp=strg;
-    while (isspace(*cp)) cp++;
-    switch (*cp) {
-    case '\n':  // Newlines.. No need for whitespace before it
-	return (0);
-    case '#':	// Preproc directive
-	return (0);
-    }
     {
-	// label/public/private:  Deindent by 2 spaces
-	const char* mp=cp;
-	for (; isalnum(*mp); mp++) ;
-	if (mp[0]==':' && mp[1]!=':') return (levels-m_blockIndent/2);
+	const char* cp=strg;
+	while (isspace(*cp)) cp++;
+	switch (*cp) {
+	case '\n':  // Newlines.. No need for whitespace before it
+	    return (0);
+	case '#':	// Preproc directive
+	    return (0);
+	}
+	{
+	    // label/public/private:  Deindent by 2 spaces
+	    const char* mp=cp;
+	    for (; isalnum(*mp); mp++) ;
+	    if (mp[0]==':' && mp[1]!=':') return (levels-m_blockIndent/2);
+	}
     }
-
     // We want "} else {" to be one level to the left of normal
     for (const char* cp=strg; *cp; cp++) {
 	switch (*cp) {

@@ -1726,7 +1726,7 @@ static inline WDataOutP VL_SHIFTRS_WWW(int obits,int lbits,int rbits,WDataOutP o
 	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
 	    int lmsw = VL_WORDS_I(obits)-1;
 	    IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
-	    for (int i=0; i <= lmsw; ++i) owp[i] = sign;
+	    for (int j=0; j <= lmsw; ++j) owp[j] = sign;
 	    owp[lmsw] &= VL_MASK_I(lbits);
 	    return owp;
 	}

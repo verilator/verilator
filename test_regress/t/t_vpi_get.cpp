@@ -88,7 +88,7 @@ unsigned int main_time = false;
 
 static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int scalar, int type) {
     s_vpi_value value = {
-      vpiIntVal
+	vpiIntVal, .value = {.integer = 0}
     };
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);

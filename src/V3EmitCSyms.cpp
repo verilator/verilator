@@ -112,8 +112,8 @@ class EmitCSyms : EmitCBaseVisitor {
 	// We didn'e have all m_scopes loaded when we encountered variables, so expand them now
 	// It would be less code if each module inserted its own variables.
 	// Someday.  For now public isn't common.
-	for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-	    AstScope* scopep = it->first;  AstNodeModule* smodp = it->second;
+	for (vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end(); ++itsc) {
+	    AstScope* scopep = itsc->first;  AstNodeModule* smodp = itsc->second;
 	    for (vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end(); ++it) {
 		AstNodeModule* modp = it->first;
 		AstVar* varp = it->second;
@@ -124,10 +124,10 @@ class EmitCSyms : EmitCBaseVisitor {
 		    string scpName;
 		    string varBase;
 		    if (whole.substr(0,10) == "__DOT__TOP") whole.replace(0,10,"");
-		    string::size_type pos = whole.rfind("__DOT__");
-		    if (pos != string::npos) {
-			scpName = whole.substr(0,pos);
-			varBase = whole.substr(pos+strlen("__DOT__"));
+		    string::size_type dpos = whole.rfind("__DOT__");
+		    if (dpos != string::npos) {
+			scpName = whole.substr(0,dpos);
+			varBase = whole.substr(dpos+strlen("__DOT__"));
 		    } else {
 			varBase = whole;
 		    }

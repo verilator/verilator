@@ -257,11 +257,11 @@ private:
 	    // Find epsilon closure of this nfa node, and destinations to work list
 	    for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp(); nfaEdgep; nfaEdgep=nfaEdgep->outNextp()) {
 		DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
-		DfaVertex* nfaStatep = static_cast<DfaVertex*>(nfaEdgep->top());
+		DfaVertex* ecNfaStatep = static_cast<DfaVertex*>(nfaEdgep->top());
 		//UINFO(9,"   Consider "<<nfaEdgep->top()<<" EP "<<cNfaEdgep->epsilon()<<endl);
 		if (cNfaEdgep->epsilon()
-		    && unseenNfaThisStep(nfaStatep)) {  // Not processed?
-		    workps.push_back(nfaStatep);
+		    && unseenNfaThisStep(ecNfaStatep)) {  // Not processed?
+		    workps.push_back(ecNfaStatep);
 		}
 	    }
 	}

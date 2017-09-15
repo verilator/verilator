@@ -147,10 +147,12 @@ int main(int argc, char** argv, char** env) {
 	top.opt.addReadFile("vlt_coverage.pl");
     }
 
-    const VlStringSet& readFiles = top.opt.readFiles();
-    for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
-	string filename = *it;
-	top.readCoverage(filename);
+    {
+	const VlStringSet& readFiles = top.opt.readFiles();
+	for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
+	    string filename = *it;
+	    top.readCoverage(filename);
+	}
     }
 
     if (debug() >= 9) {

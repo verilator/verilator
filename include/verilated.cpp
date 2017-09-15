@@ -706,10 +706,10 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		    _vl_vsss_skipspace(fp,floc,fromp,fstr);
 		    _vl_vsss_read(fp,floc,fromp,fstr, tmp, NULL);
 		    if (!tmp[0]) goto done;
-		    int pos = ((int)strlen(tmp))-1;
+		    int lpos = ((int)strlen(tmp))-1;
 		    int lsb = 0;
-		    for (int i=0; i<obits && pos>=0; --pos) {
-			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[pos]); lsb+=8;
+		    for (int i=0; i<obits && lpos>=0; --lpos) {
+			_vl_vsss_setbit(owp,obits,lsb, 8, tmp[lpos]); lsb+=8;
 		    }
 		    break;
 		}
@@ -1186,9 +1186,9 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const string& ld, WDataOutP rwp) {
     VL_ZERO_RESET_W(rbits, rwp);
     switch (tolower(fmt)) {
     case 'd':
-	vlsint64_t ld;
-	sscanf(dp,"%30" VL_PRI64 "d",&ld);
-	VL_SET_WQ(rwp,ld);
+	vlsint64_t lld;
+	sscanf(dp,"%30" VL_PRI64 "d",&lld);
+	VL_SET_WQ(rwp,lld);
 	break;
     case 'b':
 	_vl_vsss_based(rwp,rbits, 1, dp, 0, (int)strlen(dp));

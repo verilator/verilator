@@ -17,8 +17,6 @@
 
 #include "Vtop.h"		// Top level header, generated from verilog
 
-Vtop *top;
-
 int sc_main(int argc, char* argv[]) {
     Verilated::commandArgs(argc, argv);
     Verilated::randReset(2);

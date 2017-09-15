@@ -338,8 +338,8 @@ private:
 	    if (vscp->user1() == 0) {
 		UINFO(4,"  Dead "<<vscp<<endl);
 		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
-		for (AssignMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
-		    AstNodeAssign* assp = it->second;
+		for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
+		    AstNodeAssign* assp = itr->second;
 		    UINFO(4,"	 Dead assign "<<assp<<endl);
 		    assp->dtypep()->user1Inc(-1);
 		    assp->unlinkFrBack()->deleteTree(); VL_DANGLING(assp);

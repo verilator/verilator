@@ -395,7 +395,7 @@ int _mon_check_string() {
       CHECK_RESULT_NZ(vh1);
 
       s_vpi_value v;
-      s_vpi_time t = { vpiSimTime, 0, 0};
+      s_vpi_time t = { vpiSimTime, 0, 0, 0.0};
       s_vpi_error_info e;
 
       v.format = vpiStringVal;
