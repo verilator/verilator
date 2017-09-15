@@ -1097,7 +1097,7 @@ int V3PreProcImp::getStateToken() {
 		// Value of building argument is data before the lower defref
 		// we'll append it when we push the argument.
 		break;
-	    } else if (tok==VP_SYMBOL || tok==VP_STRING || VP_TEXT || VP_WHITE) {
+	    } else if (tok==VP_SYMBOL || tok==VP_STRING || tok==VP_TEXT || tok==VP_WHITE) {
 		string rtn; rtn.assign(yyourtext(),yyourleng());
 		refp->nextarg(refp->nextarg()+rtn);
 		goto next_tok;

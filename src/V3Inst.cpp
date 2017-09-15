@@ -530,8 +530,7 @@ public:
 		   && connBasicp->width() == pinBasicp->width()
 		   && connBasicp->lsb() == pinBasicp->lsb()
 		   && !connectRefp->varp()->isSc()	// Need the signal as a 'shell' to convert types
-		   && connBasicp->width() == pinVarp->width()
-		   && 1) {
+		   && connBasicp->width() == pinVarp->width()) {
 	    // Done. One to one interconnect won't need a temporary variable.
 	} else if (!alwaysCvt && !forTristate && pinp->exprp()->castConst()) {
 	    // Done. Constant.

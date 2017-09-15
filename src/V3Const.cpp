@@ -305,8 +305,7 @@ private:
 	return (nodep->lsbp()->castConst()
 		&& nodep->widthp()->castConst()
 		&& nodep->lsbConst()==0
-		&& (int)nodep->widthConst()==nodep->fromp()->width()
-		&& 1);
+		&& (int)nodep->widthConst()==nodep->fromp()->width());
     }
     bool operandSelExtend(AstSel* nodep) {
 	// A pattern created by []'s after offsets have been removed
