@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix non-colon array of interface modports, bug1212. [Mike Popoloski]
 
+****  Fix .name connections on interfaces, bug1214. [Mike Popoloski]
+
 
 * Verilator 3.910 2017-09-07
 

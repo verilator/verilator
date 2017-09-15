@@ -15,6 +15,8 @@ module t (/*AUTOARG*/
 
    counter_ansi c1 (.clk, .*);
 
+   counter_ansi c2 (.clk, .c_data);
+
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin

@@ -2102,8 +2102,8 @@ cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
 		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
-	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
-	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
+	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
@@ -2123,8 +2123,8 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
 		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
-	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
-	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstVarRef($1,*$2,false)); $$->svImplicit(true);}
+	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
+	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($1,PINNUMINC(),*$2,$4); }
