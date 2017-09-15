@@ -2002,6 +2002,8 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
 		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
+	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
