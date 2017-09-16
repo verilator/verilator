@@ -716,6 +716,7 @@ void AstNode::deleteTree() {
 
 #ifdef VL_LEAK_CHECKS
 void* AstNode::operator new(size_t size) {
+    // Optimization note: Aligning to cache line is a loss, due to lost packing
     AstNode* objp = static_cast<AstNode*>(::operator new(size));
     V3Broken::addNewed(objp);
     return objp;
@@ -734,6 +735,7 @@ void AstNode::operator delete(void* objp, size_t size) {
 
 void AstNode::iterateChildren(AstNVisitor& v) {
     // This is a very hot function
+    // Optimization note: Grabbing m_op#p->m_nextp is a net loss
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
     ASTNODE_PREFETCH(m_op3p);
@@ -766,11 +768,13 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 #ifdef VL_DEBUG  // Otherwise too hot of a function for debug
     if (VL_UNLIKELY(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
 #endif
+    if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {   // effectively: if (!this) return;  // Callers rely on this
+	if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
 	AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
-	ASTNODE_PREFETCH(nodep->m_nextp);
 	// Desirable check, but many places where multiple iterations are OK
 	//if (VL_UNLIKELY(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
+	// Optimization note: Doing PREFETCH_RW on m_iterpp is a net even
 	// cppcheck-suppress nullPointer
 	niterp->m_iterpp = &niterp;
 	niterp->accept(v);
