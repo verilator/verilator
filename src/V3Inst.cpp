@@ -203,7 +203,7 @@ public:
 public:
     // CONSTUCTORS
     explicit InstDeModVarVisitor() {}
-    void accept(AstNodeModule* nodep) {
+    void main(AstNodeModule* nodep) {
 	UINFO(8,"  dmMODULE    "<<nodep<<endl);
 	m_modVarNameMap.clear();
 	nodep->accept(*this);
@@ -266,7 +266,7 @@ private:
 	UINFO(4,"  CELL   "<<nodep<<endl);
 	// Find submodule vars
 	if (!nodep->modp()) nodep->v3fatalSrc("Unlinked");
-	m_deModVars.accept(nodep->modp());
+	m_deModVars.main(nodep->modp());
 	//
 	if (nodep->rangep()) {
 	    m_cellRangep = nodep->rangep();

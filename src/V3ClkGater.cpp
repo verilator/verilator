@@ -879,7 +879,7 @@ class GaterVisitor : public GaterBaseVisitor {
 
 public:
     // CONSTUCTORS
-    explicit GaterVisitor(AstNode* nodep) {
+    explicit GaterVisitor(AstNetlist* nodep) {
 	// AstAlways visitor does the real work, so most zeroing needs to be in clear()
 	clear();
 	nodep->accept(*this);
