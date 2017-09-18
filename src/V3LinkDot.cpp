@@ -161,7 +161,7 @@ public:
 	if (!diddump && v3Global.opt.dumpTree()) {
 	    diddump = true;
 	    dump("linkdot-preerr",true);
-	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr.tree"));
+	    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr"));
 	}
     }
 
@@ -2258,21 +2258,21 @@ public:
 int V3LinkDot::debug() { return LinkDotState::debug(); }
 
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
-    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot"));
     LinkDotState state (rootp, step);
     LinkDotFindVisitor visitor(rootp,&state);
-    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find"));
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
 	// Initial link stage, resolve parameters
 	LinkDotParamVisitor visitors(rootp,&state);
-	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
+	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param"));
     }
     else if (step == LDS_ARRAYED) {}
     else if (step == LDS_SCOPED) {
 	// Well after the initial link when we're ready to operate on the flat design,
 	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);
-	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
+	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped"));
     }
     else v3fatalSrc("Bad case");
     state.dump();

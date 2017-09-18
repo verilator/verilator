@@ -1645,7 +1645,7 @@ void OrderVisitor::process() {
     // Dump data
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (0 && debug()) {
-	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order.tree";
+	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order";
 	const VL_UNIQUE_PTR<ofstream> logp (V3File::new_ofstream(dfilename));
 	if (logp->fail()) v3fatalSrc("Can't write "<<dfilename);
 	m_graph.dump(*logp);
@@ -1660,5 +1660,5 @@ void V3Order::orderAll(AstNetlist* nodep) {
     OrderClkMarkVisitor markVisitor(nodep);
     OrderVisitor visitor;
     visitor.main(nodep);
-    V3Global::dumpCheckGlobalTree("order.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

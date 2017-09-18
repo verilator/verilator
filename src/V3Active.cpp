@@ -438,5 +438,5 @@ public:
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ActiveVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("active.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("active", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

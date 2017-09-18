@@ -15,12 +15,12 @@ $Self->{cycles} = 100 if $Self->{cycles}<100;
 $Self->{sim_time} = $Self->{cycles}*100;
 
 compile (
-    v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}"],
+    v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles} --stats"],
     );
 
 execute (
-	 check_finished=>1,
-     );
+    check_finished=>1,
+    );
 
 ok(1);
 1;

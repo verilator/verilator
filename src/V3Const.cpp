@@ -2408,14 +2408,14 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
     (void)visitor.mainAcceptEdit(nodep);
-    V3Global::dumpCheckGlobalTree("const.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (ConstVisitor::PROC_CPP);
     (void)visitor.mainAcceptEdit(nodep);
-    V3Global::dumpCheckGlobalTree("const_cpp.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
@@ -2431,7 +2431,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (ConstVisitor::PROC_LIVE);
     (void)visitor.mainAcceptEdit(nodep);
-    V3Global::dumpCheckGlobalTree("const.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
@@ -2439,7 +2439,7 @@ void V3Const::constifyAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
     (void)visitor.mainAcceptEdit(nodep);
-    V3Global::dumpCheckGlobalTree("const.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {

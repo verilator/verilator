@@ -188,5 +188,5 @@ public:
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     CastVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("cast.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

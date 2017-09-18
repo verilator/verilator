@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support module port parameters without defaults, bug 1213. [Mike Popoloski]
 
+****  Add performance information to --stats file.
+
 ****  Fix LITENDIAN warning on arrayed cells, bug1202. [Mike Popoloski]
 
 ****  Fix enum ranges without colons, bug1204. [Mike Popoloski]

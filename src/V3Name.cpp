@@ -149,5 +149,5 @@ public:
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     NameVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("name.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

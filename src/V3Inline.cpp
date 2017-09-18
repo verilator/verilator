@@ -587,5 +587,5 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
 	    modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
 	}
     }
-    V3Global::dumpCheckGlobalTree("inline.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

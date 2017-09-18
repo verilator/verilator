@@ -979,7 +979,7 @@ void AstNode::dumpTreeGdb() {  // For GDB only
     dumpTree(cout);
 }
 void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only
-    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree",98);
+    string filename = filenamep ? filenamep : v3Global.debugFilename("debug",98);
     v3Global.rootp()->dumpTreeFile(filename);
 }
 

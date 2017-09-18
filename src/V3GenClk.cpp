@@ -228,5 +228,5 @@ public:
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     GenClkReadVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("genclk.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

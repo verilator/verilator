@@ -40,7 +40,7 @@ if (!-r "$root/.git") {
 	$hit = 1 if $line =~ /\bstdio\.h/;
 	$hit = 1 if $line =~ /\bstdlib\.h/;
 	$hit = 1 if $line =~ /\bstring\.h/;
-	$hit = 1 if $line =~ /\btime\.h/;
+	$hit = 1 if $line =~ /\btime\.h/ && $line !~ m!sys/time.h!;
 	next if !$hit;
 	print "$line\n";
 	$names{$1} = 1 if $line =~ /^([^:]+)/;

@@ -1325,5 +1325,5 @@ public:
 void V3Tristate::tristateAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     TristateVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("tristate.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("tristate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

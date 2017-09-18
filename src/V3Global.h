@@ -97,7 +97,7 @@ public:
     // METHODS
     void readFiles();
     void checkTree();
-    static void dumpCheckGlobalTree(const string& filename, int newNumber=0, bool doDump=true);
+    static void dumpCheckGlobalTree(const string& stagename, int newNumber=0, bool doDump=true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }

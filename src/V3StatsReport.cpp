@@ -30,6 +30,7 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3Os.h"
 
 //######################################################################
 // Stats dumping
@@ -75,9 +76,6 @@ class StatsReport {
     }
 
     void stars() {
-	os<<"Global Statistics:\n";
-	os<<endl;
-
 	// Find all stages
 	size_t maxWidth = 0;
 	typedef multimap<string,const V3Statistic*> ByName;
@@ -92,8 +90,23 @@ class StatsReport {
 	}
 
 	// Print organized by stage
+	os<<"Global Statistics:\n";
+	os<<endl;
 	for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
 	    const V3Statistic* repp = it->second;
+	    if (repp->perf()) continue;
+	    os<<"  "<<left<<setw(maxWidth)<<repp->name();
+	    repp->dump(os);
+	    os<<endl;
+	}
+	os<<endl;
+
+	// Print organized by stage
+	os<<"Peformance Statistics:\n";
+	os<<endl;
+	for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
+	    const V3Statistic* repp = it->second;
+	    if (!repp->perf()) continue;
 	    os<<"  "<<left<<setw(maxWidth)<<repp->name();
 	    repp->dump(os);
 	    os<<endl;
@@ -193,7 +206,11 @@ StatsReport::StatColl	StatsReport::s_allStats;
 // V3Statstic class
 
 void V3Statistic::dump (ofstream& os) const {
-    os<<"  "<<right<<fixed<<setprecision(0)<<setw(9)<<count();
+    if (perf()) {
+	os<<"  "<<right<<fixed<<setprecision(6)<<setw(9)<<count();
+    } else {
+	os<<"  "<<right<<fixed<<setprecision(0)<<setw(9)<<count();
+    }
 }
 
 //######################################################################
@@ -201,6 +218,23 @@ void V3Statistic::dump (ofstream& os) const {
 
 void V3Stats::addStat(const V3Statistic& stat) {
     StatsReport::addStat(stat);
+}
+
+void V3Stats::statsStage(const string& name) {
+    static double lastWallTime = -1;
+    static int fileNumber = 0;
+
+    char digits[100]; sprintf(digits, "%03d", ++fileNumber);
+    const string digitName = string(digits)+"_"+name;
+
+    double wallTime = V3Os::timeUsecs() / 1.0e6;
+    if (lastWallTime<0) lastWallTime = wallTime;
+    double wallTimeDelta = wallTime - lastWallTime;
+    lastWallTime = wallTime;
+    V3Stats::addStatPerf("Stage, Elapsed time (sec), "+digitName, wallTimeDelta);
+
+    double memory = V3Os::memUsageBytes()/1024.0/1024.0;
+    V3Stats::addStatPerf("Stage, Memory (MB), "+digitName, memory);
 }
 
 void V3Stats::statsReport() {

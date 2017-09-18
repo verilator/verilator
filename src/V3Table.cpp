@@ -466,5 +466,5 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     TableVisitor visitor (nodep);
-    V3Global::dumpCheckGlobalTree("table.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

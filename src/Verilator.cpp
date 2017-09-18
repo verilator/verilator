@@ -144,8 +144,9 @@ void V3Global::readFiles() {
     }
 }
 
-void V3Global::dumpCheckGlobalTree(const string& filename, int newNumber, bool doDump) {
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(filename, newNumber), false, doDump);
+void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename+".tree", newNumber), false, doDump);
+    if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
 }
 
 //######################################################################
@@ -603,7 +604,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final.tree", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
     V3Error::abortIfWarnings();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()

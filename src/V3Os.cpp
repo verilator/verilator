@@ -22,6 +22,7 @@
 #include "verilatedos.h"
 #include <cstdarg>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -185,4 +186,37 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 	}
 	closedir(dirp);
     }
+}
+
+//######################################################################
+// METHODS (performance)
+
+uint64_t V3Os::timeUsecs() {
+#if defined(_WIN32) || defined(__MINGW32__)
+    return 0;
+#else
+    timeval tv;
+    if (gettimeofday(&tv, NULL) < 0) return 0;
+    return static_cast<uint64_t>(tv.tv_sec)*1000000 + tv.tv_usec;
+#endif
+}
+
+uint64_t V3Os::memUsageBytes() {
+#if defined(_WIN32) || defined(__MINGW32__)
+    return 0;
+#else
+    // Highly unportable. Sorry
+    const char* statmFilename = "/proc/self/statm";
+    FILE* fp = fopen(statmFilename,"r");
+    if (!fp) {
+	return 0;
+    }
+    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
+    if (7 != fscanf(fp, "%" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %"
+		    VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d",
+		    &size, &resident, &share, &text, &lib, &data, &dt)) {
+	return 0;
+    }
+    return (text + data) * getpagesize();
+#endif
 }

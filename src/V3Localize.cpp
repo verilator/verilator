@@ -250,5 +250,5 @@ void V3Localize::localizeAll(AstNetlist* nodep) {
     LocalizeVisitor visitor (nodep);
     // Fix up hiernames
     LocalizeDehierVisitor dvisitor (nodep);
-    V3Global::dumpCheckGlobalTree("localize.tree", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
