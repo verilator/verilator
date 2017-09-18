@@ -66,12 +66,16 @@ public:
 	}
 	if (iter!=s_nodes.end()) s_nodes.erase(iter);
     }
+#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
+    // GCC 4.4.* compiler warning bug, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39390
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
     static void addNewed(const AstNode* nodep) {
 	// Called by operator new on any node - only if VL_LEAK_CHECKS
 	if (debug()>=9) cout<<"-nodeNew:  "<<(void*)(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
-	    ((AstNode*)(nodep))->v3fatalSrc("Newing AstNode object that is already allocated");
+	    nodep->v3fatalSrc("Newing AstNode object that is already allocated");
 	}
 	if (iter == s_nodes.end()) {
 	    int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
