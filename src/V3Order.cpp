@@ -465,9 +465,6 @@ private:
     OrderLogicVertex*	m_activeSenVxp;	// Sensitivity vertex
     deque<OrderUser*>	m_orderUserps;	// All created OrderUser's for later deletion.
     // STATE... for inside process
-    OrderLoopId			m_loopIdMax;	// Maximum BeginLoop id number assigned
-    vector<OrderLoopEndVertex*> m_pmlLoopEndps;	// processInsLoop: End vertex for each color
-    vector<OrderLoopBeginVertex*> m_pomLoopMoveps;// processMoveLoop: Loops next nodes are under
     AstCFunc*			m_pomNewFuncp;	// Current function being created
     int				m_pomNewStmts;	// Statements in function being created
     V3Graph			m_pomGraph;	// Graph of logic elements to move
@@ -565,10 +562,6 @@ private:
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
     void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
-    void processMoveLoopPush(OrderLoopBeginVertex* beginp);
-    void processMoveLoopPop(OrderLoopBeginVertex* beginp);
-    void processMoveLoopStmt(AstNode* newSubnodep);
-    OrderLoopId processMoveLoopCurrent();
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3Inc();
@@ -1016,7 +1009,6 @@ public:
 	m_activeSenVxp = NULL;
 	m_logicVxp = NULL;
 	m_pomNewFuncp = NULL;
-	m_loopIdMax = LOOPID_FIRST;
 	m_pomNewStmts = 0;
 	if (debug()) m_graph.debug(5); // 3 is default if global debug; we want acyc debugging
     }
@@ -1518,7 +1510,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    scopep->addActivep(m_pomNewFuncp);
 	    // Where will we be adding the call?
 	    AstActive* callunderp = new AstActive(nodep->fileline(), name, domainp);
-	    processMoveLoopStmt(callunderp);
+	    m_scopetopp->addActivep(callunderp);
 	    // Add a top call to it
 	    AstCCall* callp = new AstCCall(nodep->fileline(), m_pomNewFuncp);
 	    callp->argTypes("vlSymsp");
@@ -1541,40 +1533,6 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	}
     }
     processMoveDoneOne (vertexp);
-}
-
-inline void OrderVisitor::processMoveLoopPush(OrderLoopBeginVertex* beginp) {
-    UINFO(6,"      LoopPush  "<<beginp<<endl);
-    m_pomLoopMoveps.push_back(beginp);
-}
-
-inline void OrderVisitor::processMoveLoopPop(OrderLoopBeginVertex* beginp) {
-    UINFO(6,"      LoopPop   "<<beginp<<endl);
-    if (m_pomLoopMoveps.empty()) beginp->nodep()->v3fatalSrc("processMoveLoopPop with no push'ed loops");
-    OrderLoopBeginVertex* topBeginp = m_pomLoopMoveps.back();
-    if (topBeginp != beginp) beginp->nodep()->v3fatalSrc("processMoveLoopPop had different vertex then one expected, got="<<topBeginp<<" exp="<<beginp<<endl);
-    m_pomLoopMoveps.pop_back();
-}
-
-inline void OrderVisitor::processMoveLoopStmt(AstNode* newSubnodep) {
-    if (m_pomLoopMoveps.empty()) {
-	// Not in any loops, statements go into main body
-	m_scopetopp->addActivep(newSubnodep);
-    } else {
-	// In a loop, put statements under appropriate loop body
-	OrderLoopBeginVertex* topBeginp = m_pomLoopMoveps.back();
-	topBeginp->untilp()->addBodysp(newSubnodep);
-    }
-}
-
-inline OrderLoopId OrderVisitor::processMoveLoopCurrent() {
-    // Return loopID we're currently processing
-    if (m_pomLoopMoveps.empty()) {
-	return LOOPID_NOTLOOPED;
-    } else {
-	OrderLoopBeginVertex* topBeginp = m_pomLoopMoveps.back();
-	return topBeginp->loopId();  // Not inLoop, the begin is in the upper subloop.
-    }
 }
 
 inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {	// Check the domScope is on ready list, add if not
