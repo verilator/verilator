@@ -75,7 +75,7 @@ TGT = ../../verilator_bin
 #################
 ifeq ($(VL_DEBUG),)
 # Optimize
-COPT = -O
+COPT = -O2
 else
 # Debug
 COPT = -ggdb -DVL_DEBUG
