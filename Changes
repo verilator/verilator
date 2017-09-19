@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add performance information to --stats file.
 
+****  Simplify VL_CONST_W macro generation for faster compiles.
+
 ****  Fix LITENDIAN warning on arrayed cells, bug1202. [Mike Popoloski]
 
 ****  Fix enum ranges without colons, bug1204. [Mike Popoloski]

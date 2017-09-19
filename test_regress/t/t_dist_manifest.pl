@@ -68,7 +68,7 @@ sub get_manifest_files {
     my $manifest_files = `cd $root && make dist-file-list`;
     $manifest_files =~ s!.*begin-dist-file-list:!!sg;
     $manifest_files =~ s!end-dist-file-list:.*$!!sg;
-    print "MF $manifest_files\n";
+    print "MF $manifest_files\n" if $Self->{verbose};
     my %files;
     foreach my $file (split /\s+/,$manifest_files) {
 	next if $file eq '';

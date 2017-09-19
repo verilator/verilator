@@ -1895,63 +1895,96 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
 // Constification
 
 // VL_CONST_W_#X(int obits, WDataOutP owp, IData data0, .... IData data(#-1))
-// Sets wide vector words to specified constant words, zeros upper data.
-
+// Sets wide vector words to specified constant words.
+// These macros are used when o might represent more words then are given as constants,
+// hence all upper words must be zeroed.
 // If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
 #define _END(obits,wordsSet) \
     for(int i=(wordsSet);i<VL_WORDS_I(obits);++i) o[i] = (IData)0x0; \
     return o
 
-#define VL_HAVE_CONST_W_1X
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o,
 				      IData d0) {
     o[0]=d0;
     _END(obits,1);  }
-#define VL_HAVE_CONST_W_2X
 static inline WDataOutP VL_CONST_W_2X(int obits, WDataOutP o,
 				      IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;
     _END(obits,2);  }
-#define VL_HAVE_CONST_W_3X
 static inline WDataOutP VL_CONST_W_3X(int obits, WDataOutP o,
 				      IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;
     _END(obits,3);  }
-#define VL_HAVE_CONST_W_4X
 static inline WDataOutP VL_CONST_W_4X(int obits, WDataOutP o,
 				      IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;
     _END(obits,4);  }
-#define VL_HAVE_CONST_W_5X
 static inline WDataOutP VL_CONST_W_5X(int obits, WDataOutP o,
 				      IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;
     _END(obits,5);  }
-#define VL_HAVE_CONST_W_6X
 static inline WDataOutP VL_CONST_W_6X(int obits, WDataOutP o,
 				      IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;
     _END(obits,6);  }
-#define VL_HAVE_CONST_W_7X
 static inline WDataOutP VL_CONST_W_7X(int obits, WDataOutP o,
 				      IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;
     _END(obits,7);  }
-#define VL_HAVE_CONST_W_8X
 static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
 				      IData d7,IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
     _END(obits,8);  }
-#define VL_HAVE_CONST_W_9X
-static inline WDataOutP VL_CONST_W_9X(int obits, WDataOutP o,
-				      IData d8,
-				      IData d7,IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
+//
+static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
+					IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;
+    _END(obits,1);  }
+static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
+					IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;
+    _END(obits,2);  }
+static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
+					IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;  o[2]=d2;
+    _END(obits,3);  }
+static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
+					IData d3,IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;
+    _END(obits,4);  }
+static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
+					IData d4,IData d3,IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;
+    _END(obits,5);  }
+static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
+					IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;
+    _END(obits,6);  }
+static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
+					IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;
+    _END(obits,7);  }
+static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
+					IData d7,IData d6,IData d5,IData d4,IData d3,IData d2,IData d1,IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
     o[0]=d0;  o[1]=d1;  o[2]=d2;  o[3]=d3;  o[4]=d4;  o[5]=d5;  o[6]=d6;  o[7]=d7;
-    o[8]=d8;
-    _END(obits,9);  }
+    _END(obits,8);  }
 
 #undef _END
+
+// Partial constant, lower words of vector wider than 8*32, starting at bit number lsb
+static inline void VL_CONSTLO_W_8X(int lsb, WDataOutP obase,
+				   IData d7, IData d6, IData d5, IData d4, IData d3, IData d2, IData d1, IData d0) {
+    WDataOutP o = obase + VL_WORDS_I(lsb);
+    o[0]=d0; o[1]=d1; o[2]=d2; o[3]=d3; o[4]=d4; o[5]=d5; o[6]=d6; o[7]=d7; }
 
 //======================================================================
 

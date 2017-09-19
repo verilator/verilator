@@ -36,6 +36,8 @@
 
 #define VL_VALUE_STRING_MAX_WIDTH 8192	// We use a static char array in VL_VALUE_STRING
 
+#define EMITC_NUM_CONSTW	8	// Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
+
 //######################################################################
 // Emit statements and math operators
 
@@ -629,24 +631,64 @@ public:
 	    putsQuoted(nodep->num().toString());
 	    puts(")");
 	} else if (nodep->isWide()) {
-	    putbs("VL_CONST_W_");
-	    puts(cvtToStr(VL_WORDS_I(nodep->num().widthMin())));
-	    puts("X(");
-	    puts(cvtToStr(nodep->widthMin()));
-	    puts(",");
-	    if (!assigntop) {
-		puts(assignString);
-	    } else if (assigntop->castVarRef()) {
-		puts(assigntop->hiername());
-		puts(assigntop->varp()->name());
-	    } else {
-		assigntop->iterateAndNext(*this);
+	    int upWidth = nodep->num().widthMin();
+	    int chunks = 0;
+	    if (upWidth > EMITC_NUM_CONSTW*VL_WORDSIZE) {
+		// Output e.g. 8 words in groups of e.g. 8
+		chunks = (upWidth-1) / (EMITC_NUM_CONSTW*VL_WORDSIZE);
+		upWidth %= (EMITC_NUM_CONSTW*VL_WORDSIZE);
+		if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW*VL_WORDSIZE);
 	    }
-	    for (int word=VL_WORDS_I(nodep->num().widthMin())-1; word>0; word--) {
-		// Only 32 bits - llx + long long here just to appease CPP format warning
-		ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word)));
+	    {	// Upper e.g. 8 words
+		if (chunks) {
+		    putbs("VL_CONSTHI_W_");
+		    puts(cvtToStr(VL_WORDS_I(upWidth)));
+		    puts("X(");
+		    puts(cvtToStr(nodep->widthMin()));
+		    puts(",");
+		    puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+		} else {
+		    putbs("VL_CONST_W_");
+		    puts(cvtToStr(VL_WORDS_I(upWidth)));
+		    puts("X(");
+		    puts(cvtToStr(nodep->widthMin()));
+		}
+		puts(",");
+		if (!assigntop) {
+		    puts(assignString);
+		} else if (assigntop->castVarRef()) {
+		    puts(assigntop->hiername());
+		    puts(assigntop->varp()->name());
+		} else {
+		    assigntop->iterateAndNext(*this);
+		}
+		for (int word=VL_WORDS_I(upWidth)-1; word>=0; word--) {
+		    // Only 32 bits - llx + long long here just to appease CPP format warning
+		    ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word+chunks*EMITC_NUM_CONSTW)));
+		}
+		puts(")");
 	    }
-	    ofp()->printf(",0x%08" VL_PRI64 "x)", (vluint64_t)(nodep->num().dataWord(0)));
+	    for (chunks--; chunks >= 0; chunks--) {
+		puts(";\n");
+		putbs("VL_CONSTLO_W_");
+		puts(cvtToStr(EMITC_NUM_CONSTW));
+		puts("X(");
+		puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+		puts(",");
+		if (!assigntop) {
+		    puts(assignString);
+		} else if (assigntop->castVarRef()) {
+		    puts(assigntop->hiername());
+		    puts(assigntop->varp()->name());
+		} else {
+		    assigntop->iterateAndNext(*this);
+		}
+		for (int word=EMITC_NUM_CONSTW-1; word>=0; word--) {
+		    // Only 32 bits - llx + long long here just to appease CPP format warning
+		    ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word+chunks*EMITC_NUM_CONSTW)));
+		}
+		puts(")");
+	    }
 	} else if (nodep->isDouble()) {
 	    if (int(nodep->num().toDouble()) == nodep->num().toDouble()
 		&& nodep->num().toDouble() < 1000
