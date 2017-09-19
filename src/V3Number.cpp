@@ -139,6 +139,7 @@ V3Number::V3Number (FileLine* fileline, const char* sourcep) {
 		    this->opAdd(product,addend);
 		    if (product.bitsValue(width(), 4)) {  // Overflowed
 			m_fileline->v3error("Too many digits for "<<width()<<" bit number: "<<sourcep);
+			if (!m_sized) m_fileline->v3error("As that number was unsized ('d...) it is limited to 32 bits (IEEE 2012 5.7.1)");
 			while (*(cp+1)) cp++;  // Skip ahead so don't get multiple warnings
 		    }
 		}
