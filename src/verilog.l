@@ -109,6 +109,14 @@ void V3ParseImp::verilatorCmtBad(const char* textp) {
 
 void yyerror(const char* errmsg) {
     PARSEP->fileline()->v3error(errmsg);
+    static const char* colonmsg = "syntax error, unexpected ::, ";
+    //tokens;
+    if (0==strncmp(errmsg, colonmsg, strlen(colonmsg))
+	&& PARSEP->prevBisonVal().token == yaID__ETC
+	&& PARSEP->curBisonVal().token == yP_COLONCOLON) {
+	PARSEP->fileline()->v3error("Perhaps '"+*PARSEP->prevBisonVal().strp
+				    +"' is a package which needs to be predeclared? (IEEE 2012 26.3)");
+    }
 }
 
 void yyerrorf(const char* format, ...) {
@@ -994,14 +1002,14 @@ double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp)
     return d;
 }
 
-int V3ParseImp::lexToken() {
+void V3ParseImp::lexToken() {
     // called from lexToBison, has a "this"
     // Fetch next token from prefetch or real lexer
     int token;
     if (m_ahead) {
 	// We prefetched an extra token, give it back
 	m_ahead = false;
-	token = m_aheadToken;
+	token = m_aheadVal.token;
 	yylval = m_aheadVal;
     } else {
 	// Parse new token
@@ -1017,8 +1025,8 @@ int V3ParseImp::lexToken() {
 	V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
 	int nexttok = yylexReadTok();
 	m_ahead = true;
-	m_aheadToken = nexttok;
 	m_aheadVal = yylval;
+	m_aheadVal.token = nexttok;
 	yylval = curValue;
 	// Now potentially munge the current token
 	if (token == yCONST__LEX) {
@@ -1060,21 +1068,25 @@ int V3ParseImp::lexToken() {
 	    token = yaID__ETC;
 	}
     }
-    return token;
+    yylval.token = token;
+    // effectively returns yylval
 }
 
 int V3ParseImp::lexToBison() {
     // Called as global since bison doesn't have our pointer
-    int tok = lexToken();
+    lexToken();  // sets yylval
+    m_prevBisonVal = m_curBisonVal;
+    m_curBisonVal = yylval;
+
     //yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex()>=6 || debugBison()>=6) {
 	cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
-	    <<"} lexToBison  TOKEN="<<tok<<" "<<tokenName(tok);
-	if (tok == yaID__ETC || tok == yaID__LEX || tok == yaID__aTYPE) {
+	    <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
+	if (yylval.token == yaID__ETC || yylval.token == yaID__LEX || yylval.token == yaID__aTYPE) {
 	    cout<<"   strp='"<<*(yylval.strp)<<"'";
 	}
 	cout<<endl;
     }
-    return tok;
+    return yylval.token;
 }
 

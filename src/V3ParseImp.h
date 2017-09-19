@@ -42,11 +42,13 @@ typedef enum { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY } V3UniqState
 typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 
 //============================================================================
+// Parser YYSType, e.g. for parser's yylval
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
 struct V3ParseBisonYYSType {
     FileLine*	fl;
     AstNode*	scp;	// Symbol table scope for future lookups
+    int		token;	// Read token, aka tok
     union {
 	V3Number*	nump;
 	string*		strp;
@@ -107,9 +109,10 @@ class V3ParseImp {
     int		m_lastVerilogState;	// Last LEX state in `begin_keywords
 
     int		m_prevLexToken;		// previous parsed token (for lexer)
-    bool	m_ahead;		// aheadToken is valid
-    int		m_aheadToken;		// Token we read ahead
-    V3ParseBisonYYSType m_aheadVal;	// aheadToken's value
+    bool	m_ahead;		// aheadval is valid
+    V3ParseBisonYYSType m_aheadVal;	// ahead token value
+    V3ParseBisonYYSType m_curBisonVal;	// current token for error reporting
+    V3ParseBisonYYSType m_prevBisonVal;	// previous token for error reporting
 
     deque<string*> m_stringps;		// Created strings for later cleanup
     deque<V3Number*> m_numberps;	// Created numbers for later cleanup
@@ -194,6 +197,8 @@ public:
     static int stateVerilogRecent();	// Parser -> lexer communication
     int	prevLexToken() { return m_prevLexToken; } // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
+    const V3ParseBisonYYSType curBisonVal() const { return m_curBisonVal; }
+    const V3ParseBisonYYSType prevBisonVal() const { return m_prevBisonVal; }
 
     //==== Symbol tables
     V3ParseSym* symp() { return m_symp; }
@@ -210,7 +215,8 @@ public:
 	m_lastVerilogState = stateVerilogRecent();
 	m_prevLexToken = 0;
 	m_ahead = false;
-	m_aheadToken = 0;
+	m_curBisonVal.token = 0;
+	m_prevBisonVal.token = 0;
 	// m_aheadVal not used as m_ahead = false
     }
     ~V3ParseImp();
@@ -227,7 +233,7 @@ public:
 private:
     void lexFile(const string& modname);
     int yylexReadTok();
-    int lexToken(); // Internal; called from lexToBison
+    void lexToken(); // Internal; called from lexToBison
 };
 
 #endif // Guard
