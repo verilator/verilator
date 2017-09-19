@@ -182,7 +182,9 @@ sub run {
             warn "%Error: $command\n";
         }
         if ($status & 127) {
-            if (($status & 127) == 8 || ($status & 127) == 11) { # SIGFPA or SIGSEGV
+            if (($status & 127) == 4 # SIGILL
+		|| ($status & 127) == 8 # SIGFPA
+		|| ($status & 127) == 11) { # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;

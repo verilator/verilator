@@ -308,7 +308,7 @@ WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lw
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POW_WWW(obits,lbits,rbits,owp,lwp,rhsw);
 }
-QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp) {
+QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs==0)) return 0;
     QData power = lhs;
