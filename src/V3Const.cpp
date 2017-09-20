@@ -341,6 +341,33 @@ private:
 	replaceWChild(nodep, bip); VL_DANGLING(nodep);
 	return true;
     }
+    bool operandSelShiftLower(AstSel* nodep) {
+	// AND({a}, SHIFTR({b}, {c})) is often shorthand in C for Verilog {b}[{c} :+ {a}]
+	// becomes thought other optimizations
+	// SEL(SHIFTR({a},{b}),{lsb},{width}) -> SEL({a},{lsb+b},{width})
+	AstShiftR* shiftp = nodep->fromp()->castShiftR();
+	if (!(m_doV
+	      && shiftp
+	      && shiftp->rhsp()->castConst()
+	      && nodep->lsbp()->castConst()
+	      && nodep->widthp()->castConst()
+		)) return false;
+	AstNode* ap = shiftp->lhsp();
+	AstConst* bp = shiftp->rhsp()->castConst();
+	AstConst* lp = nodep->lsbp()->castConst();
+	if (bp->isWide() || bp->num().isFourState() || bp->num().isNegative()
+	    || lp->isWide() || lp->num().isFourState() || lp->num().isNegative()) return false;
+	int newLsb = lp->toSInt() + bp->toSInt();
+	if (newLsb + nodep->widthConst() > ap->width()) return false;
+	//
+	UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
+	if (debug()>=9) nodep->dumpTree(cout,"SEL(SH)-in:");
+	AstSel* newp = new AstSel(nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst());
+	newp->dtypeFrom(nodep);
+	if (debug()>=9) newp->dumpTree(cout,"SEL(SH)-ou:");
+	nodep->replaceWith(newp); VL_DANGLING(nodep);
+	return true;
+    }
 
     bool operandBiExtendConst(AstNodeBiop* nodep) {
 	// Loop unrolling favors standalone compares
@@ -2252,6 +2279,7 @@ private:
     TREEOPV("AstSel{$fromp.castSub, operandSelBiLower(nodep)}",	"DONE");
     TREEOPV("AstSel{$fromp.castXnor,operandSelBiLower(nodep)}",	"DONE");
     TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}",	"DONE");
+    TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",	"DONE");
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");

@@ -28,6 +28,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix wide array indices causing compile error.
 
+****  Better optimize Shift-And constructs.
+
 
 * Verilator 3.910 2017-09-07
 
