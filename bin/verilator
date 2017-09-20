@@ -351,7 +351,8 @@ descriptions in the next sections for more information.
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --vpi                       Enable VPI compiles
-     -Werror-<message>          Convert warning to error
+     -Wall                      Enable all style warnings
+     -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
      -Wno-lint                  Disable all lint warnings
@@ -1200,8 +1201,9 @@ Enable use of VPI and linking against the verilated_vpi.cpp files.
 
 =item -Wall
 
-Enable all warnings, including code style warnings that are normally
-disabled by default.
+Enable all code style warnings, including code style warnings that are
+normally disabled by default. Equivelent to "-Wwarn-lint -Wwarn-style".
+Excludes some specialty warnings, i.e. IMPERFECTSCH.
 
 =item -Werror-I<message>
 
@@ -3156,8 +3158,8 @@ correctly.
 
 Warns that the scheduling of the model is not absolutely perfect, and some
 manual code edits may result in faster performance.  This warning defaults
-to off, and must be turned on explicitly before the top module statement is
-processed.
+to off, is not part of -Wall, and must be turned on explicitly before the
+top module statement is processed.
 
 =item IMPLICIT
 
