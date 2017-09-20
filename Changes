@@ -26,6 +26,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix .name connections on interfaces, bug1214. [Mike Popoloski]
 
+****  Fix wide array indices causing compile error.
+
 
 * Verilator 3.910 2017-09-07
 

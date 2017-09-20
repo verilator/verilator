@@ -135,7 +135,7 @@ private:
 	//   ARRAYSEL(*here*, ...)   (No wides can be in any argument but first, so we don't check which arg is wide)
 	//   ASSIGN(x, SEL*HERE*(ARRAYSEL()...)   (m_assignLhs==true handles this.)
 	//UINFO(9, "   Check: "<<nodep<<endl);
-	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user1()?"Y":"N")<<" IW "<<(nodep->isWide()?"Y":"N")<<endl);
+	//UINFO(9, "     Detail stmtp="<<(m_stmtp?"Y":"N")<<" U="<<(nodep->user1()?"Y":"N")<<" IW="<<(nodep->isWide()?"Y":"N")<<endl);
 	if (m_stmtp
 	    && !nodep->user1()) {	// Not already done
 	    if (nodep->isWide()) {
@@ -321,13 +321,17 @@ private:
     }
     // Operators
     virtual void visit(AstNodeTermop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep); }
+	nodep->iterateChildren(*this); checkNode(nodep);
+    }
     virtual void visit(AstNodeUniop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep); }
+	nodep->iterateChildren(*this); checkNode(nodep);
+    }
     virtual void visit(AstNodeBiop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep); }
+	nodep->iterateChildren(*this); checkNode(nodep);
+    }
     virtual void visit(AstUCFunc* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep); }
+	nodep->iterateChildren(*this); checkNode(nodep);
+    }
     virtual void visit(AstSel* nodep) {
 	nodep->fromp()->iterateAndNext(*this);
 	{   // Only the 'from' is part of the assignment LHS
@@ -337,9 +341,21 @@ private:
 	    nodep->widthp()->iterateAndNext(*this);
 	    m_assignLhs = prevAssign;
 	}
-	checkNode(nodep); }
+	checkNode(nodep);
+    }
+    virtual void visit(AstArraySel* nodep) {
+	nodep->fromp()->iterateAndNext(*this);
+	{   // Only the 'from' is part of the assignment LHS
+	    bool prevAssign = m_assignLhs;
+	    m_assignLhs = false;
+	    nodep->bitp()->iterateAndNext(*this);
+	    m_assignLhs = prevAssign;
+	}
+	checkNode(nodep);
+    }
     virtual void visit(AstConst* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep); }
+	nodep->iterateChildren(*this); checkNode(nodep);
+    }
     virtual void visit(AstNodeCond* nodep) {
 	nodep->iterateChildren(*this);
 	if (nodep->expr1p()->isWide()
