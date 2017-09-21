@@ -561,7 +561,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	bool quote = false;
 	bool haveDefault = false;
 	// Note there's a leading ( and trailing ), so parens==1 is the base parsing level
-	string params = refp->params();  // Must keep in scope
+	string params = refp->params();  // Must keep str in scope to get pointer
 	const char* cp=params.c_str();
 	if (*cp == '(') cp++;
 	for (; *cp; cp++) {
@@ -1265,7 +1265,7 @@ int V3PreProcImp::getStateToken() {
 		error("Recursive `define substitution: `"+name);
 		goto next_tok;
 	    }
-	    // substitute
+	    // Substitute
 	    if (!defExists(name)) {   // Not found, return original string as-is
 		m_defDepth = 0;
 		UINFO(4,"Defref `"<<name<<" => not_defined"<<endl);
