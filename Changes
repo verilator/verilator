@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support or/and/xor array intrinsic methods, bug1210. [Mike Popoloski]
 
+***   Support package export, bug1217. [Usuario Eda]
+
 ***   Fix ordering of arrayed cell wide connections, bug1202 partial. [Mike Popoloski]
 
 ****  Support module port parameters without defaults, bug 1213. [Mike Popoloski]

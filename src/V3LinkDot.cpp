@@ -1017,6 +1017,24 @@ class LinkDotFindVisitor : public AstNVisitor {
 	UINFO(9,"    Link Done: "<<nodep<<endl);
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
+    virtual void visit(AstPackageExport* nodep) {
+	UINFO(9,"  Link: "<<nodep<<endl);
+	VSymEnt* srcp = m_statep->getNodeSym(nodep->packagep());
+	if (nodep->name()!="*") {
+	    VSymEnt* impp = srcp->findIdFlat(nodep->name());
+	    if (!impp) {
+		nodep->v3error("Export object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
+	    }
+	}
+	m_curSymp->exportFromPackage(m_statep->symsp(), srcp, nodep->name());
+	UINFO(9,"    Link Done: "<<nodep<<endl);
+	// No longer needed, but can't delete until any multi-instantiated modules are expanded
+    }
+    virtual void visit(AstPackageExportStarStar* nodep) {
+	UINFO(2,"  Link: "<<nodep<<endl);
+	m_curSymp->exportStarStar(m_statep->symsp());
+	// No longer needed, but can't delete until any multi-instantiated modules are expanded
+    }
 
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
@@ -2212,6 +2230,16 @@ private:
 	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstPackageImport* nodep) {
+	// No longer needed
+	checkNoDot(nodep);
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+    }
+    virtual void visit(AstPackageExport* nodep) {
+	// No longer needed
+	checkNoDot(nodep);
+	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+    }
+    virtual void visit(AstPackageExportStarStar* nodep) {
 	// No longer needed
 	checkNoDot(nodep);
 	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);

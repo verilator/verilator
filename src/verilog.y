@@ -707,7 +707,7 @@ package_itemList<nodep>:	// IEEE: { package_item }
 package_item<nodep>:		// ==IEEE: package_item
 		package_or_generate_item_declaration	{ $$ = $1; }
 	//UNSUP	anonymous_program			{ $$ = $1; }
-	//UNSUP	package_export_declaration		{ $$ = $1; }
+	|	package_export_declaration		{ $$ = $1; }
 	|	timeunits_declaration			{ $$ = $1; }
 	;
 
@@ -746,12 +746,28 @@ package_import_itemList<nodep>:
 package_import_item<nodep>:	// ==IEEE: package_import_item
 		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
 			{ $$ = new AstPackageImport($<fl>1, $<scp>1->castPackage(), *$3);
-			  SYMP->import($<scp>1,*$3); }
+			  SYMP->importItem($<scp>1,*$3); }
 	;
 
 package_import_itemObj<strp>:	// IEEE: part of package_import_item
 		idAny					{ $<fl>$=$<fl>1; $$=$1; }
 	|	'*'					{ $<fl>$=$<fl>1; static string star="*"; $$=&star; }
+	;
+
+package_export_declaration<nodep>: // IEEE: package_export_declaration
+		yEXPORT '*' yP_COLONCOLON '*' ';'	{ $$ = new AstPackageExportStarStar($<fl>1); SYMP->exportStarStar($<scp>1); }
+	|	yEXPORT package_export_itemList ';'	{ $$ = $2; }
+	;
+
+package_export_itemList<nodep>:
+		package_export_item			{ $$ = $1; }
+	|	package_export_itemList ',' package_export_item { $$ = $1->addNextNull($3); }
+	;
+
+package_export_item<nodep>:	// ==IEEE: package_export_item
+		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
+			{ $$ = new AstPackageExport($<fl>1, $<scp>1->castPackage(), *$3);
+			  SYMP->exportItem($<scp>1,*$3); }
 	;
 
 //**********************************************************************

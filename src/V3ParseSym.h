@@ -122,7 +122,7 @@ public:
 	if (foundp) return foundp->nodep();
 	else return NULL;
     }
-    void import(AstNode* packagep, const string& id_or_star) {
+    void importItem(AstNode* packagep, const string& id_or_star) {
 	// Import from package::id_or_star to this
 	VSymEnt* symp = getTable(packagep);
 	if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
@@ -132,6 +132,19 @@ public:
 	// Walk old sym table and reinsert into current table
 	// We let V3LinkDot report the error instead of us
 	symCurrentp()->importFromPackage(&m_syms, symp, id_or_star);
+    }
+    void exportItem(AstNode* packagep, const string& id_or_star) {
+	// Export from this the remote package::id_or_star
+	VSymEnt* symp = getTable(packagep);
+	if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+	    packagep->v3fatalSrc("Export package not found");
+	    return;
+	}
+	symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
+    }
+    void exportStarStar(AstNode* packagep) {
+	// Export *::* from remote packages
+	symCurrentp()->exportStarStar(&m_syms);
     }
 public:
     // CREATORS

@@ -41,6 +41,7 @@ class VSymEnt;
 // Symbol table
 
 typedef set<VSymEnt*> VSymMap;
+typedef set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt {
     // Symbol table that can have a "superior" table for resolving upper references
@@ -65,7 +66,7 @@ private:
     static inline int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
-    void dumpIterate(ostream& os, VSymMap& doneSymsr, const string& indent, int numLevels, const string& searchName) {
+    void dumpIterate(ostream& os, VSymConstMap& doneSymsr, const string& indent, int numLevels, const string& searchName) const {
 	os<<indent<<"+ "<<left<<setw(30)<<(searchName==""?"\"\"":searchName)<<setw(0)<<right;
 	os<<"  se"<<(void*)(this)<<setw(0);
 	os<<"  fallb=se"<<(void*)(m_fallbackp);
@@ -82,8 +83,8 @@ public:
 	    }
 	}
     }
-    void dump(ostream& os, const string& indent="", int numLevels=1) {
-	VSymMap doneSyms;
+    void dump(ostream& os, const string& indent="", int numLevels=1) const {
+	VSymConstMap doneSyms;
 	dumpIterate(os, doneSyms, indent, numLevels, "TOP");
     }
 
@@ -153,35 +154,55 @@ public:
 	return NULL;
     }
 private:
-    bool importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
+    void importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
 	if (srcp->exported()
 	    && !findIdFlat(name)) {  // Don't insert over existing entry
 	    VSymEnt* symp = new VSymEnt(graphp, srcp);
 	    symp->exported(false);  // Can't reimport an import without an export
 	    symp->imported(true);
 	    reinsert(name, symp);
-	    return true;
-	} else {
-	    return false;
+	}
+    }
+    void exportOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {
+	if (srcp->exported()) {
+	    if (VSymEnt* symp = findIdFlat(name)) {  // Should already exist in current table
+		if (!symp->exported()) symp->exported(true);
+	    }
 	}
     }
 public:
-    bool importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
+    void importFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
 	// Import tokens from source symbol table into this symbol table
-	// Returns true if successful
-	bool any = false;
 	if (id_or_star != "*") {
 	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
-	    if (it != m_idNameMap.end()) {
+	    if (it != srcp->m_idNameMap.end()) {
 		importOneSymbol(graphp, it->first, it->second);
 	    }
-	    any = true;  // Legal, though perhaps lint questionable to import nothing
 	} else {
 	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
-		if (importOneSymbol(graphp, it->first, it->second)) any = true;
+		importOneSymbol(graphp, it->first, it->second);
 	    }
 	}
-	return any;
+    }
+    void exportFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
+	// Export tokens from source symbol table into this symbol table
+	if (id_or_star != "*") {
+	    IdNameMap::const_iterator it = srcp->m_idNameMap.find(id_or_star);
+	    if (it != srcp->m_idNameMap.end()) {
+		exportOneSymbol(graphp, it->first, it->second);
+	    }
+	} else {
+	    for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
+		exportOneSymbol(graphp, it->first, it->second);
+	    }
+	}
+    }
+    void exportStarStar(VSymGraph* graphp) {
+	// Export *:*: Export all tokens from imported packages
+	for (IdNameMap::const_iterator it=m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
+	    VSymEnt* symp = it->second;
+	    if (!symp->exported()) symp->exported(true);
+	}
     }
     void importFromIface(VSymGraph* graphp, const VSymEnt* srcp, bool onlyUnmodportable = false) {
 	// Import interface tokens from source symbol table into this symbol table, recursively
@@ -239,7 +260,7 @@ public:
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug
     void dump(ostream& os, const string& indent="") {
-	VSymMap doneSyms;
+	VSymConstMap doneSyms;
 	os<<"SymEnt Dump:\n";
 	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
 	bool first = true;

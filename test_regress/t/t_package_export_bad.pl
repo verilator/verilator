@@ -16,7 +16,12 @@ compile (
     make_top_shell => 0,
     make_main => 0,
     expect=>
-'%Error: t/t_package_export.v:\d+: Can\'t find definition of variable: PARAM2
+'%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
+%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
+%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
+%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
+%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
+%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
 %Error: Exiting due to.*',
     );
 

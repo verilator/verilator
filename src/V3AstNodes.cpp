@@ -891,6 +891,10 @@ void AstNodeModule::dump(ostream& str) {
     if (inLibrary()) str<<" [LIB]";
     if (dead()) str<<" [DEAD]";
 }
+void AstPackageExport::dump(ostream& str) {
+    this->AstNode::dump(str);
+    str<<" -> "<<packagep();
+}
 void AstPackageImport::dump(ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<packagep();

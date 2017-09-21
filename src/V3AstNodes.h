@@ -1508,6 +1508,31 @@ public:
     virtual string verilogKwd() const { return "primitive"; }
 };
 
+class AstPackageExportStarStar : public AstNode {
+    // A package export *::* declaration
+public:
+    AstPackageExportStarStar(FileLine* fl)
+	: AstNode (fl) {}
+    ASTNODE_NODE_FUNCS(PackageExportStarStar)
+};
+
+class AstPackageExport : public AstNode {
+private:
+    // A package export declaration
+    string	m_name;
+    AstPackage*	m_packagep;	// Package hierarchy
+public:
+    AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
+	: AstNode (fl), m_name(name), m_packagep(packagep) {}
+    ASTNODE_NODE_FUNCS(PackageExport)
+    virtual const char* broken() const { BROKEN_RTN(!m_packagep || !m_packagep->brokeExists()); return NULL; }
+    virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep(); }
+    virtual void dump(ostream& str);
+    virtual string name() const { return m_name; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep=nodep; }
+};
+
 class AstPackageImport : public AstNode {
 private:
     // A package import declaration
