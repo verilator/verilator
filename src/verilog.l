@@ -114,8 +114,11 @@ void yyerror(const char* errmsg) {
     if (0==strncmp(errmsg, colonmsg, strlen(colonmsg))
 	&& PARSEP->prevBisonVal().token == yaID__ETC
 	&& PARSEP->curBisonVal().token == yP_COLONCOLON) {
-	PARSEP->fileline()->v3error("Perhaps '"+*PARSEP->prevBisonVal().strp
-				    +"' is a package which needs to be predeclared? (IEEE 2012 26.3)");
+	static int warned = false;
+	if (!warned++) {
+	    PARSEP->fileline()->v3error("Perhaps '"+*PARSEP->prevBisonVal().strp
+					+"' is a package which needs to be predeclared? (IEEE 2012 26.3)");
+	}
     }
 }
 

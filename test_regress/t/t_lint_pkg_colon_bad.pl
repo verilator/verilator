@@ -19,7 +19,6 @@ compile (
 qq{%Error: t/t_lint_pkg_colon_bad.v:6: syntax error, unexpected ::, expecting ')' or ','
 %Error: t/t_lint_pkg_colon_bad.v:6: Perhaps 'mispkg' is a package which needs to be predeclared? (IEEE 2012 26.3)
 %Error: t/t_lint_pkg_colon_bad.v:7: syntax error, unexpected ::, expecting ',' or ';'
-%Error: t/t_lint_pkg_colon_bad.v:7: Perhaps 'mispkgb' is a package which needs to be predeclared? (IEEE 2012 26.3)
 }).'%Error: Exiting due to.*'
     );
 
