@@ -1393,22 +1393,67 @@ private:
 	}
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
-
-    void replaceSelReplicate(AstSel* nodep) {
-	// SEL(REPLICATE(a,b),1,bit) => SEL(a,1,bit)
+    bool operandSelReplicate(AstSel* nodep) {
+	// SEL(REPLICATE(from,rep),lsb,width) => SEL(from,0,width) as long as SEL's width <= b's width
 	AstReplicate* repp = nodep->fromp()->castReplicate();
-	AstNode* fromp = repp->lhsp()->unlinkFrBack();
-	AstConst* lsbp = nodep->lsbp()->castConst();
-	AstNode* widthp = nodep->widthp()->unlinkFrBack();
+	AstNode* fromp = repp->lhsp();
+	AstConst* lsbp = nodep->lsbp()->castConst(); if (!lsbp) return false;
+	AstNode* widthp = nodep->widthp(); if (!widthp->castConst()) return false;
 	if (!fromp->width()) nodep->v3fatalSrc("Not widthed");
+	if ((lsbp->toUInt() / fromp->width())
+	    != ((lsbp->toUInt()+nodep->width()-1) / fromp->width())) return false;
+	//
+	fromp->unlinkFrBack();
+	widthp->unlinkFrBack();
 	AstSel* newp = new AstSel(nodep->fileline(),
 				  fromp,
 				  new AstConst(lsbp->fileline(), lsbp->toUInt() % fromp->width()),
 				  widthp);
 	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+	return true;
     }
-
+    bool operandRepRep(AstReplicate* nodep) {
+	// REPLICATE(REPLICATE2(from2,cnt2),cnt1) => REPLICATE(from2,(cnt1+cnt2))
+	AstReplicate* rep2p = nodep->lhsp()->castReplicate();
+	AstNode* from2p = rep2p->lhsp();
+	AstConst* cnt1p = nodep->rhsp()->castConst(); if (!cnt1p) return false;
+	AstConst* cnt2p = rep2p->rhsp()->castConst(); if (!cnt2p) return false;
+	//
+	from2p->unlinkFrBack();
+	cnt1p->unlinkFrBack();
+	cnt2p->unlinkFrBack();
+	AstReplicate* newp = new AstReplicate(nodep->fileline(),
+					      from2p, cnt1p->toUInt()*cnt2p->toUInt());
+	newp->dtypeFrom(nodep);
+	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+	return true;
+    }
+    bool operandConcatSame(AstConcat* nodep) {
+	// CONCAT(fromp,fromp) -> REPLICATE(fromp,1+1)
+	// CONCAT(REP(fromp,cnt1),fromp) -> REPLICATE(fromp,cnt1+1)
+	// CONCAT(fromp,REP(fromp,cnt1)) -> REPLICATE(fromp,1+cnt1)
+	// CONCAT(REP(fromp,cnt1),REP(fromp,cnt2)) -> REPLICATE(fromp,cnt1+cnt2)
+	AstNode* from1p = nodep->lhsp(); uint32_t cnt1 = 1;
+	AstNode* from2p = nodep->rhsp(); uint32_t cnt2 = 1;
+	if (from1p->castReplicate()) {
+	    AstConst* cnt1p = from1p->castReplicate()->rhsp()->castConst(); if (!cnt1p) return false;
+	    from1p = from1p->castReplicate()->lhsp();
+	    cnt1 = cnt1p->toUInt();
+	}
+	if (from2p->castReplicate()) {
+	    AstConst* cnt2p = from2p->castReplicate()->rhsp()->castConst(); if (!cnt2p) return false;
+	    from2p = from2p->castReplicate()->lhsp();
+	    cnt2 = cnt2p->toUInt();
+	}
+	if (!operandsSame(from1p,from2p)) return false;
+	//
+	from1p->unlinkFrBack();
+	AstReplicate* newp = new AstReplicate(nodep->fileline(), from1p, cnt1+cnt2);
+	newp->dtypeFrom(nodep);
+	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+	return true;
+    }
     void replaceSelIntoBiop(AstSel* nodep) {
 	// SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
 	AstNodeBiop* fromp = nodep->fromp()->unlinkFrBack()->castNodeBiop();
@@ -2268,6 +2313,8 @@ private:
     TREEOPV("AstExtendS{$lhsp.castExtendS}",		"replaceExtend(nodep, nodep->lhsp()->castExtendS()->lhsp())");
     TREEOPV("AstReplicate{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}",	"replaceWLhs(nodep)");  // {1{lhs}}->lhs
     TREEOPV("AstReplicateN{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
+    TREEOPV("AstReplicate{$lhsp.castReplicate, operandRepRep(nodep)}", "DONE");  // {2{3{lhs}}}->{6{lhs}}
+    TREEOPV("AstConcat{operandConcatSame(nodep)}", "DONE");  // {a,a}->{2{a}}, {a,2{a}}->{3{a}, etc
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
     TREEOPV("AstSel{operandSelExtend(nodep)}",	"DONE");
@@ -2282,7 +2329,7 @@ private:
     TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",	"DONE");
     TREEOPC("AstSel{$fromp.castConst, $lsbp.castConst, $widthp.castConst, }",	"replaceConst(nodep)");
     TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $widthp.castConst, }",	"replaceSelConcat(nodep)");
-    TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.isOne, }",	"replaceSelReplicate(nodep)");
+    TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, $widthp.castConst, operandSelReplicate(nodep) }",	"DONE");
     // V3Tristate requires selects below BufIf1.
     // Also do additional operators that are bit-independent, but only definite
     // win if bit select is a constant (otherwise we may need to compute bit index several times)

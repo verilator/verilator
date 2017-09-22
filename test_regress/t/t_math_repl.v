@@ -14,13 +14,13 @@ module t (/*AUTOARG*/
    reg [63:0] rf;
    reg [63:0] rf2;
    reg [63:0] biu;
-   reg	      okidoki;
+   reg	      b;
 
    always @* begin
-      rf[63:32] = biu[63:32] & {32{okidoki}};
-      rf[31:0]  = {32{okidoki}};
+      rf[63:32] = biu[63:32] & {32{b}};
+      rf[31:0]  = {32{b}};
       rf2 = rf;
-      rf2[31:0]  = ~{32{okidoki}};
+      rf2[31:0]  = ~{32{b}};
    end
 
    reg  [31:0] src1, src0, sr, mask;
@@ -49,15 +49,18 @@ module t (/*AUTOARG*/
 		  sl_mask[27], sl_mask[28], sl_mask[29],
                   sl_mask[30], sl_mask[31]};
 
+   wire [95:0]  widerep = {2{({2{({2{ {b,b}, {b,{2{b}}}, {{2{b}},b}, {2{({2{b}})}} }})}})}};
+   wire [1:0] 	w = {2{b}};
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-	 $write("%x %x %x %x %x\n", rf, rf2, dualasr, sl_mask, sr_mask);
+	 $write("cyc=%0d d=%x %x %x %x %x %x\n", cyc, b, rf, rf2, dualasr, sl_mask, sr_mask);
 `endif
 	 if (cyc==1) begin
 	    biu <= 64'h12451282_abadee00;
-	    okidoki <= 1'b0;
+	    b <= 1'b0;
 	    src1 <= 32'h00000001;
 	    src0 <= 32'h9a4f1235;
 	    sr   <= 32'h0f19f567;
@@ -65,7 +68,7 @@ module t (/*AUTOARG*/
 	 end
 	 if (cyc==2) begin
 	    biu <= 64'h12453382_abad8801;
-	    okidoki <= 1'b1;
+	    b <= 1'b1;
 	    if (rf != 64'h0) $stop;
 	    if (rf2 != 64'h00000000ffffffff) $stop;
 	    src1 <= 32'h0010000f;
@@ -75,10 +78,11 @@ module t (/*AUTOARG*/
 	    if (dualasr != 32'h8f1f7060) $stop;
 	    if (sl_mask != 32'hfffffffe) $stop;
 	    if (sr_mask != 32'h7fffffff) $stop;
+	    if (widerep != '0) $stop;
 	 end
 	 if (cyc==3) begin
 	    biu <= 64'h12422382_77ad8802;
-	    okidoki <= 1'b1;
+	    b <= 1'b1;
 	    if (rf != 64'h12453382ffffffff) $stop;
 	    if (rf2 != 64'h1245338200000000) $stop;
 	    src1 <= 32'h0000000f;
@@ -88,6 +92,7 @@ module t (/*AUTOARG*/
 	    if (dualasr != 32'h0000ffff) $stop;
 	    if (sl_mask != 32'hffff8000) $stop;
 	    if (sr_mask != 32'h0001ffff) $stop;
+	    if (widerep != '1) $stop;
 	 end
 	 if (cyc==4) begin
 	    if (rf != 64'h12422382ffffffff) $stop;
@@ -96,6 +101,7 @@ module t (/*AUTOARG*/
 	    if (sl_mask != 32'hffff8000) $stop;
 	    if (sr_mask != 32'h0001ffff) $stop;
 	    $write("*-* All Finished *-*\n");
+	    if (widerep != '1) $stop;
 	    $finish;
 	 end
       end
