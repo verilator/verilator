@@ -437,9 +437,9 @@ private:
 	    if (m_inSenItem) varscp->user2(true);
 	    else if (m_activep && m_activep->hasClocked() && !nodep->lvalue()) {
 		if (varscp->user2()) {
-		    if (!vvertexp->rstSyncNodep()) vvertexp->rstSyncNodep(nodep);
-		} else {
 		    if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
+		} else {
+		    if (!vvertexp->rstSyncNodep()) vvertexp->rstSyncNodep(nodep);
 		}
 	    }
 	    // We use weight of one; if we ref the var more than once, when we simplify,
