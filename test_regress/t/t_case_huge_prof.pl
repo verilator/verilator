@@ -32,11 +32,11 @@ $gmon_path = $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
 $gmon_path or $Self->error("Profiler did not create a gmon.out");
 (my $gmon_base = $gmon_path) =~ s!.*[/\\]!!;
 
-$Self->_run(cmd=>["cd $Self->{obj_dir} && gprof $Self->{VM_PREFIX} $gmon_base > gprof.out"],
-	    check_finished=>0);
+$Self->run(cmd=>["cd $Self->{obj_dir} && gprof $Self->{VM_PREFIX} $gmon_base > gprof.out"],
+           check_finished=>0);
 
-$Self->_run(cmd=>["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.out > cfuncs.out"],
-	    check_finished=>0);
+$Self->run(cmd=>["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.out > cfuncs.out"],
+           check_finished=>0);
 
 file_grep ("$Self->{obj_dir}/cfuncs.out", qr/Overall summary by/);
 

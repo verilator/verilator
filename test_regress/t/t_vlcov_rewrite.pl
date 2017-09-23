@@ -14,12 +14,12 @@ foreach my $basename ("t_vlcov_data_a.dat",
 		      "t_vlcov_data_c.dat",
 		      "t_vlcov_data_d.dat",
     ) {
-    $Self->_run(cmd=>["../bin/verilator_coverage",
-		      "t/${basename}",
-		      "--write", "$Self->{obj_dir}/${basename}"
-		],
-		tee=>0,
-	);
+    $Self->run(cmd=>["../bin/verilator_coverage",
+                     "t/${basename}",
+                     "--write", "$Self->{obj_dir}/${basename}"
+               ],
+               tee=>0,
+        );
     ok(files_identical("$Self->{obj_dir}/${basename}", "t/${basename}"));
 }
 1;

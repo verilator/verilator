@@ -908,6 +908,10 @@ sub sc {
 
 #----------------------------------------------------------------------
 
+sub run {
+    my $self = (ref $_[0]? shift : $Self);
+    $self->_run(@_);
+}
 sub _run {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (tee=>1,

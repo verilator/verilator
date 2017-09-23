@@ -28,10 +28,10 @@ if ($Self->{nc}) {
 	$fh->printf("report_html -both -instance * > $Self->{obj_dir}/${name}__nccover.html\n");
 	$fh->close;
     }
-    $Self->_run (logfile=>"$Self->{obj_dir}/${name}__nccover.log",
-		      tee=>0,
-		      cmd=>[($ENV{VERILATOR_ICCR}||'iccr'),
-			    "-test ${name} ${cf}"]);
+    $Self->run(logfile=>"$Self->{obj_dir}/${name}__nccover.log",
+               tee=>0,
+               cmd=>[($ENV{VERILATOR_ICCR}||'iccr'),
+                     "-test ${name} ${cf}"]);
 }
 
 file_grep ($Self->{run_log_filename}, qr/COVER: Cyc==4/);

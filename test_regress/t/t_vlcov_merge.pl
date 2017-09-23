@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-$Self->_run(cmd=>["../bin/verilator_coverage",
-		  "--write", "$Self->{obj_dir}/coverage.dat",
-		  "t/t_vlcov_data_a.dat",
-		  "t/t_vlcov_data_b.dat",
-		  "t/t_vlcov_data_c.dat",
-		  "t/t_vlcov_data_d.dat",
-	    ],
+$Self->run(cmd=>["../bin/verilator_coverage",
+                 "--write", "$Self->{obj_dir}/coverage.dat",
+                 "t/t_vlcov_data_a.dat",
+                 "t/t_vlcov_data_b.dat",
+                 "t/t_vlcov_data_c.dat",
+                 "t/t_vlcov_data_d.dat",
+           ],
     );
 ok(files_identical("$Self->{obj_dir}/coverage.dat", "t/$Self->{name}.out"));
 1;

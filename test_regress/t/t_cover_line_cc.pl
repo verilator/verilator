@@ -10,20 +10,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_cover_line.v");
 
 compile (
-	 verilator_flags2 => ['--cc --coverage-line'],
-	 );
+    verilator_flags2 => ['--cc --coverage-line'],
+    );
 
 execute (
-	 check_finished=>1,
-	 );
+    check_finished=>1,
+    );
 
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
-$Self->_run(cmd=>["../bin/verilator_coverage",
-		  "--annotate", "$Self->{obj_dir}/annotated",
-		  "$Self->{obj_dir}/coverage.dat",
-	    ],
+$Self->run(cmd=>["../bin/verilator_coverage",
+                 "--annotate", "$Self->{obj_dir}/annotated",
+                 "$Self->{obj_dir}/coverage.dat",
+           ],
     );
 
 ok(files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out"));
