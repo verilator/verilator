@@ -2,6 +2,9 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 3.913 devel
+
+
 * Verilator 3.912 2017-09-23
 
 **    Verilated headers no longer "use namespace std;"
