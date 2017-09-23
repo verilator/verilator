@@ -22,6 +22,7 @@ configure
 dddrun*
 doxygen-doc
 gdbrun*
+gmon.out
 internals.txt
 verilator.txt
 verilator_bin*
