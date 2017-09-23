@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.913 devel
 
+****  The internal test_verilated test directory is moved to be part of test_regress.
+
 
 * Verilator 3.912 2017-09-23
 

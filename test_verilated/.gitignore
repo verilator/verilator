@@ -1,8 +1,0 @@
-*.old
-obj_dir
-vgen.v
-simv*
-*.key
-csrc
-*.log
-INCA_libs

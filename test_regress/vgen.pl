@@ -200,6 +200,7 @@ foreach my $op (keys %ops2) {
 my  $opt_seed=5;
 our $Opt_NumOps = 30;
 our $Opt_Depth = 4;
+our $Opt_Output;
 our $Opt_Signed = 1;
 our $Opt_Raise;
 our $Opt_BlockStmts = 2;
@@ -211,6 +212,7 @@ if (! GetOptions (
 		  "depth=i"	=> \$Opt_Depth,
 		  "blockstmts=i"=> \$Opt_BlockStmts,
 		  "numops=i"	=> \$Opt_NumOps,
+		  "o=s"		=> \$Opt_Output,
 		  "raise=i"	=> \$Opt_Raise,
 		  "seed=i"	=> \$opt_seed,
 		  "signed!"	=> \$Opt_Signed,
@@ -229,7 +231,8 @@ srand($opt_seed);
 init();
 selftest();
 gentest();
-write_output_v("vgen.v");
+$Opt_Output or die "%Error: Need -o option,";
+write_output_v($Opt_Output);
 
 #----------------------------------------------------------------------
 
@@ -468,10 +471,9 @@ sub write_output_v {
     my $fh = IO::File->new($filename, "w") or die("%Error: $! $filename,\n");
     print $fh "// Created by: $Rerun_Args\n";
 
-    print $fh "module vgen (clk, check, done);\n";
+    print $fh "module vgen (clk);\n";
     print $fh "   input clk;\n";
-    print $fh "   input check;\n";
-    print $fh "   output done;\n";
+    print $fh "   reg check; initial check = '0;\n";
     print $fh '   initial $write("\n*** Vgen.v starting, seed = ',$opt_seed,'\n");',"\n";
 
     print $fh "   // verilator lint_off UNSIGNED\n";
@@ -519,21 +521,27 @@ sub write_output_v {
 	}
     }
 
-    print $fh  "\n";
-    print $fh "   reg done; initial done=1'b0;\n";
-    print $fh "   reg ddone; initial ddone=1'b0;\n";
+    print $fh "\n";
+    print $fh "   parameter [31:0] CYCLES /*verilator public*/ = $cycles;\n";
+    print $fh "\n";
+    print $fh "   integer cyc; initial cyc = 0;\n";
     print $fh "   always @(posedge clk) begin\n";
-    print $fh "      if (check) begin\n";
-    print $fh "         done <= 1'b1;\n";
+    print $fh "`ifdef TEST_VERBOSE\n";
+    print $fh '      $write("[%0t] cyc=%0d check=%d\n", $time, cyc, check);',"\n";
+    print $fh "`endif\n";
+    print $fh "      cyc <= cyc + 1;\n";
+    print $fh "      if (cyc < CYCLES) begin\n";
+    print $fh "         check <= 1'b0;\n";
     print $fh "      end\n";
-    print $fh "      if (done && !ddone) begin\n";
-    print $fh "         ddone <= 1'b1;\n";
-    print $fh '         $write("*-* All Finished *-*\n");',"\n";
+    print $fh "      else if (cyc >= CYCLES) begin\n";
+    print $fh "         check <= 1'b1;\n";
+    print $fh "         if (cyc >= (CYCLES+10)) begin\n";
+    print $fh '             $write("*-* All Finished *-*\n");',"\n";
+    print $fh '             $finish;',"\n";
+    print $fh "         end\n";
     print $fh "      end\n";
     print $fh "   end\n";
 
-    print $fh "\n";
-    print $fh "   parameter [31:0] CYCLES /*verilator public*/ = $cycles;\n";
     print $fh "endmodule\n";
 
     $fh->close();
@@ -978,7 +986,7 @@ vgen.pl - Generate random verilog code
 
 =head1 SYNOPSIS
 
-  vgen.pl
+  vgen.pl -o vgen.v
 
 =head1 DESCRIPTION
 
@@ -1008,6 +1016,10 @@ down to a NOP.
 =item --numops
 
 Number of operations to create.
+
+=item -o I<filename>
+
+Specify output filename.
 
 =item --raise
 
@@ -1044,6 +1056,6 @@ Wilson Snyder <wsnyder@wsnyder.org>
 
 ######################################################################
 ### Local Variables:
-### compile-command: "./vgen.pl --depth=10 --blockstmts=10"
-### compile-command: "make "
+### compile-command: "./vgen.pl --depth=10 --blockstmts=10 -o obj_dir/vgen.v"
+### compile-command: "v4make test_regress/t/t_vgen.pl "
 ### End:

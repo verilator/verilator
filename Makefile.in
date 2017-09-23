@@ -101,7 +101,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 SHELL = /bin/sh
 
-SUBDIRS = src test_verilated test_c test_sc test_regress
+SUBDIRS = src test_c test_sc test_regress
 
 INFOS = README README.html README.pdf internals.txt internals.html \
         internals.pdf verilator.txt verilator.html verilator.pdf \
@@ -129,7 +129,6 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	src/*.pl src/*.pod \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
-	test_verilated/vgen*.pl \
 	test_regress/t/t*/*.sv* \
 	test_regress/t/t*/*.v* \
 	test_regress/t/t*/*/*.sv* \
@@ -187,7 +186,7 @@ msg_test: all_nomsg
 
 .PHONY:test
 ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
-test: test_c test_sc test_verilated test_regress
+test: test_c test_sc test_regress
 else
 test: test_c test_sc
 endif
@@ -204,8 +203,6 @@ test_sc: all_nomsg
 	@(cd test_sc && $(MAKE))
 test_sc_debug: all_nomsg
 	@(cd test_sc && $(MAKE) test_debug)
-test_verilated: all_nomsg
-	@(cd test_verilated && $(MAKE))
 test_regress: all_nomsg
 	@(cd test_regress && $(MAKE))
 
@@ -468,6 +465,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 	rm -f *.tex
+	rm -rf test_verilated/obj_dir
 
 distclean maintainer-clean::
 	rm -f Makefile config.status config.cache config.log TAGS
