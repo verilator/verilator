@@ -226,7 +226,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
 	arg += "float";
     } else if (strtype) {
 	if (isInOnly()) arg += "const ";
-	arg += "string";
+	arg += "std::string";
     } else if (widthMin() <= 8) {
 	arg += "CData";
     } else if (widthMin() <= 16) {

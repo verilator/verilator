@@ -49,7 +49,7 @@
 //=============================================================================
 // Global
 
-vector<VerilatedVcd*>	VerilatedVcd::s_vcdVecp;	///< List of all created traces
+VerilatedVcd::VcdVec VerilatedVcd::s_vcdVecp;  ///< List of all created traces
 
 //=============================================================================
 // VerilatedVcdCallInfo
@@ -79,7 +79,7 @@ protected:
 //=============================================================================
 // VerilatedVcdFile
 
-bool VerilatedVcdFile::open(const string& name) {
+bool VerilatedVcdFile::open(const std::string& name) {
     m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK, 0666);
     return (m_fd>=0);
 }
@@ -150,7 +150,7 @@ void VerilatedVcd::openNext (bool incFilename) {
     closePrev(); // Close existing
     if (incFilename) {
 	// Find _0000.{ext} in filename
-	string name = m_filename;
+	std::string name = m_filename;
 	size_t pos=name.rfind(".");
 	if (pos>8 && 0==strncmp("_cat",name.c_str()+pos-8,4)
 	    && isdigit(name.c_str()[pos-4])
@@ -205,18 +205,18 @@ void VerilatedVcd::makeNameMap() {
     // This comes from user instantiations with no name - IE Vtop("").
     bool nullScope = false;
     for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
-	const string& hiername = it->first;
+	const std::string& hiername = it->first;
 	if (hiername.size() >= 1 && hiername[0] == '\t') nullScope=true;
     }
     if (nullScope) {
 	NameMap* newmapp = new NameMap;
 	for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
-	    const string& hiername = it->first;
-	    const string& decl     = it->second;
-	    string newname = string("top");
+	    const std::string& hiername = it->first;
+	    const std::string& decl     = it->second;
+	    std::string newname = std::string("top");
 	    if (hiername[0] != '\t') newname += ' ';
 	    newname += hiername;
-	    newmapp->insert(make_pair(newname,decl));
+	    newmapp->insert(std::make_pair(newname,decl));
 	}
 	deleteNameMap();
 	m_namemapp = newmapp;
@@ -234,7 +234,7 @@ VerilatedVcd::~VerilatedVcd() {
     deleteNameMap();
     if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
     // Remove from list of traces
-    vector<VerilatedVcd*>::iterator pos = find(s_vcdVecp.begin(), s_vcdVecp.end(), this);
+    VcdVec::iterator pos = find(s_vcdVecp.begin(), s_vcdVecp.end(), this);
     if (pos != s_vcdVecp.end()) { s_vcdVecp.erase(pos); }
 }
 
@@ -326,7 +326,7 @@ void VerilatedVcd::bufferFlush () {
 	} else if (got < 0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
-		string msg = (string)"VerilatedVcd::bufferFlush: "+strerror(errno);
+		std::string msg = (std::string)"VerilatedVcd::bufferFlush: "+strerror(errno);
 		vl_fatal("",0,"",msg.c_str());
 		closeErr();
 		break;
@@ -369,7 +369,7 @@ double VerilatedVcd::timescaleToDouble (const char* unitp) {
     return value;
 }
 
-string VerilatedVcd::doubleToTimescale (double value) {
+std::string VerilatedVcd::doubleToTimescale (double value) {
     const char* suffixp = "s";
     if	    (value>=1e0)   { suffixp="s"; value *= 1e0; }
     else if (value>=1e-3 ) { suffixp="ms"; value *= 1e3; }
@@ -398,7 +398,7 @@ void VerilatedVcd::dumpHeader () {
     printStr("$date "); printStr(ctime(&time_str)); printStr(" $end\n");
 
     printStr("$timescale ");
-    const string& timeResStr = doubleToTimescale(m_timeRes);
+    const std::string& timeResStr = doubleToTimescale(m_timeRes);
     printStr(timeResStr.c_str());
     printStr(" $end\n");
 
@@ -417,8 +417,8 @@ void VerilatedVcd::dumpHeader () {
     // Print the signal names
     const char* lastName = "";
     for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
-	const string& hiernamestr = it->first;
-	const string& decl = it->second;
+	const std::string& hiernamestr = it->first;
+	const std::string& decl = it->second;
 
 	// Determine difference between the old and new names
 	const char* hiername = hiernamestr.c_str();
@@ -472,7 +472,7 @@ void VerilatedVcd::dumpHeader () {
     deleteNameMap();
 }
 
-void VerilatedVcd::module (const string& name) {
+void VerilatedVcd::module (const std::string& name) {
     m_modName = name;
 }
 
@@ -485,7 +485,7 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
     if (tri) codesNeeded *= 2;   // Space in change array for __en signals
 
     // Make sure array is large enough
-    m_nextCode = max(nextCode(), code+codesNeeded);
+    m_nextCode = std::max(nextCode(), code+codesNeeded);
     if (m_sigs.capacity() <= m_nextCode) {
 	m_sigs.reserve(m_nextCode*2);	// Power-of-2 allocation speeds things up
     }
@@ -503,10 +503,10 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
     // Tab separates final scope from signal name
     // Tab sorts before spaces, so signals nicely will print before scopes
     // Note the hiername may be nothing, if so we'll add "\t{name}"
-    string nameasstr = name;
+    std::string nameasstr = name;
     if (m_modName!="") { nameasstr = m_modName+m_scopeEscape+nameasstr; }  // Optional ->module prefix
-    string hiername;
-    string basename;
+    std::string hiername;
+    std::string basename;
     for (const char* cp=nameasstr.c_str(); *cp; cp++) {
 	if (isScopeEscape(*cp)) {
 	    // Ahh, we've just read a scope, not a basename
@@ -520,7 +520,7 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
     hiername += "\t"+basename;
 
     // Print reference
-    string decl = "$var ";
+    std::string decl = "$var ";
     if (m_evcd) decl += "port"; else decl += wirep;  // usually "wire"
     char buf [1000];
     sprintf(buf, " %2d ", bits);
@@ -543,7 +543,7 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
 	decl += buf;
     }
     decl += " $end\n";
-    m_namemapp->insert(make_pair(hiername,decl));
+    m_namemapp->insert(std::make_pair(hiername,decl));
 }
 
 void VerilatedVcd::declBit      (vluint32_t code, const char* name, int arraynum)
@@ -596,7 +596,7 @@ void VerilatedVcd::addCallback (
     void* userthis)
 {
     if (VL_UNLIKELY(isOpen())) {
-	string msg = (string)"Internal: "+__FILE__+"::"+__FUNCTION__+" called with already open file";
+	std::string msg = (std::string)"Internal: "+__FILE__+"::"+__FUNCTION__+" called with already open file";
 	vl_fatal(__FILE__,__LINE__,"",msg.c_str());
     }
     VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, nextCode());

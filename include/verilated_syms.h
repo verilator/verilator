@@ -91,13 +91,14 @@ struct VerilatedCStrCmp {
 };
 
 class VerilatedScopeNameMap
-    : public map<const char*, const VerilatedScope*, VerilatedCStrCmp> {
+    : public std::map<const char*, const VerilatedScope*, VerilatedCStrCmp> {
 public:
     VerilatedScopeNameMap() {}
     ~VerilatedScopeNameMap() {}
 };
 
-class VerilatedVarNameMap : public map<const char*, VerilatedVar, VerilatedCStrCmp> {
+class VerilatedVarNameMap
+    : public std::map<const char*, VerilatedVar, VerilatedCStrCmp> {
 public:
     VerilatedVarNameMap() {}
     ~VerilatedVarNameMap() {}

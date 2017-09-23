@@ -27,7 +27,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-using namespace std;
 
 //=============================================================================
 /// Conditionally compile coverage code
@@ -75,7 +74,7 @@ using namespace std;
 /// Convert VL_COVER_INSERT value arguments to strings
 
 template< class T> std::string vlCovCvtToStr (const T& t) {
-    ostringstream os; os<<t; return os.str();
+    std::ostringstream os; os<<t; return os.str();
 }
 
 //=============================================================================
@@ -115,7 +114,7 @@ public:
 			  ,A(20),D(21),D(22),D(23),D(24),D(25),D(26),D(27),D(28),D(29));
     // Backward compatibility for Verilator
     static void _insertp (A(0), A(1),  K(2),int val2,  K(3),int val3,
-			  K(4),const string& val4,  A(5),A(6));
+			  K(4),const std::string& val4,  A(5),A(6));
 
 #undef K
 #undef A

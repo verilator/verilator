@@ -47,9 +47,9 @@ class VerilatedImp {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
 
     // TYPES
-    typedef vector<string> ArgVec;
-    typedef map<pair<const void*,void*>,void*> UserMap;
-    typedef map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
+    typedef std::vector<std::string> ArgVec;
+    typedef std::map<std::pair<const void*,void*>,void*> UserMap;
+    typedef std::map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
 
     // MEMBERS
     static VerilatedImp	s_s;		///< Static Singleton; One and only static this
@@ -65,8 +65,8 @@ class VerilatedImp {
     int			m_exportNext;	///< Next export funcnum
 
     // File I/O
-    vector<FILE*>	m_fdps;		///< File descriptors
-    deque<IData>	m_fdFree;	///< List of free descriptors (SLOW - FOPEN/CLOSE only)
+    std::vector<FILE*>	m_fdps;		///< File descriptors
+    std::deque<IData>	m_fdFree;	///< List of free descriptors (SLOW - FOPEN/CLOSE only)
 
 public: // But only for verilated*.cpp
     // CONSTRUCTORS
@@ -100,7 +100,7 @@ public: // But only for verilated*.cpp
 	for (int i=0; i<argc; ++i) s_s.m_argVec.push_back(argv[i]);
 	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
     }
-    static string argPlusMatch(const char* prefixp) {
+    static std::string argPlusMatch(const char* prefixp) {
 	// Note prefixp does not include the leading "+"
 	size_t len = strlen(prefixp);
 	if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
@@ -122,13 +122,13 @@ public: // But only for verilated*.cpp
     // There's often many more scopes than userdata's and thus having a ~48byte
     // per map overhead * N scopes would take much more space and cache thrashing.
     static inline void userInsert(const void* scopep, void* userKey, void* userData) {
-	UserMap::iterator it=s_s.m_userMap.find(make_pair(scopep,userKey));
+	UserMap::iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
 	if (it != s_s.m_userMap.end()) it->second = userData;
 	// When we support VL_THREADs, we need a lock around this insert, as it's runtime
-	else s_s.m_userMap.insert(it, make_pair(make_pair(scopep,userKey),userData));
+	else s_s.m_userMap.insert(it, std::make_pair(std::make_pair(scopep,userKey),userData));
     }
     static inline void* userFind(const void* scopep, void* userKey) {
-	UserMap::iterator it=s_s.m_userMap.find(make_pair(scopep,userKey));
+	UserMap::iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
 	if (VL_LIKELY(it != s_s.m_userMap.end())) return it->second;
 	else return NULL;
     }
@@ -159,7 +159,7 @@ public: // But only for verilated*.cpp
 	// Slow ok - called once/scope at construction
 	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it == s_s.m_nameMap.end()) {
-	    s_s.m_nameMap.insert(it, make_pair(scopep->name(),scopep));
+	    s_s.m_nameMap.insert(it, std::make_pair(scopep->name(),scopep));
 	}
     }
     static inline const VerilatedScope* scopeFind(const char* namep) {
@@ -198,7 +198,7 @@ public: // But only for verilated*.cpp
 	// Slow ok - called once/function at creation
 	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
 	if (it == s_s.m_exportMap.end()) {
-	    s_s.m_exportMap.insert(it, make_pair(namep, s_s.m_exportNext++));
+	    s_s.m_exportMap.insert(it, std::make_pair(namep, s_s.m_exportNext++));
 	    return s_s.m_exportNext++;
 	} else {
 	    return it->second;
@@ -207,8 +207,8 @@ public: // But only for verilated*.cpp
     static int exportFind(const char* namep) {
 	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
-	string msg = (string("%Error: Testbench C called ")+namep
-		      +" but no such DPI export function name exists in ANY model");
+	std::string msg = (std::string("%Error: Testbench C called ")+namep
+			   +" but no such DPI export function name exists in ANY model");
 	vl_fatal("unknown",0,"", msg.c_str());
 	return -1;
     }

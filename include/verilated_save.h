@@ -25,7 +25,6 @@
 #include "verilatedos.h"
 
 #include <string>
-using namespace std;
 
 //=============================================================================
 // VerilatedSerialBase - internal base class for common code between VerilatedSerialize and VerilatedDeserialize
@@ -37,7 +36,7 @@ protected:
     vluint8_t*		m_cp;		///< Current pointer into m_bufp buffer
     vluint8_t*		m_bufp;		///< Output buffer
     bool 		m_isOpen;	///< True indicates open file/stream
-    string		m_filename;
+    std::string		m_filename;
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
     inline static size_t bufferInsertSize() { return 16*1024; }
@@ -58,7 +57,7 @@ public:
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
-    string filename() const { return m_filename; }
+    std::string filename() const { return m_filename; }
     virtual void close() { flush(); }
     virtual void flush() {}
 };
@@ -150,7 +149,7 @@ public:
     virtual ~VerilatedSave() { close(); }
     // METHODS
     void open(const char* filenamep);	///< Open the file; call isOpen() to see if errors
-    void open(const string& filename) { open(filename.c_str()); }
+    void open(const std::string& filename) { open(filename.c_str()); }
     virtual void close();
     virtual void flush();
 };
@@ -169,7 +168,7 @@ public:
 
     // METHODS
     void open(const char* filenamep);	///< Open the file; call isOpen() to see if errors
-    void open(const string& filename) { open(filename.c_str()); }
+    void open(const std::string& filename) { open(filename.c_str()); }
     virtual void close();
     virtual void flush() {}
     virtual void fill();
@@ -219,12 +218,12 @@ inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   float& rhs) {
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   string& rhs) {
+inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   std::string& rhs) {
     vluint32_t len=rhs.length();
     os<<len;
     return os.write(rhs.data(), len);
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, string& rhs) {
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& rhs) {
     vluint32_t len=0;
     os>>len;
     rhs.resize(len);

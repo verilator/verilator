@@ -215,8 +215,8 @@ public:
     virtual const VerilatedRange* rangep() const { return &get_range(); }
     virtual const char* name() { return m_varp->name(); }
     virtual const char* fullname() {
-	VL_STATIC_OR_THREAD string out;
-	out = string(m_scopep->name())+"."+name();
+	VL_STATIC_OR_THREAD std::string out;
+	out = std::string(m_scopep->name())+"."+name();
 	return out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
@@ -243,9 +243,9 @@ public:
     virtual  vluint32_t size() const { return varp()->range().elements(); }
     virtual const VerilatedRange* rangep() const { return &(varp()->range()); }
     virtual const char* fullname() {
-	VL_STATIC_OR_THREAD string out;
+	VL_STATIC_OR_THREAD std::string out;
 	char num[20]; sprintf(num,"%d",m_index);
-	out = string(scopep()->name())+"."+name()+"["+num+"]";
+	out = std::string(scopep()->name())+"."+name()+"["+num+"]";
 	return out.c_str();
     }
 };
@@ -301,8 +301,8 @@ public:
 
 struct VerilatedVpiTimedCbsCmp {
     /// Ordering sets keyed by time, then callback descriptor
-    bool operator() (const pair<QData,VerilatedVpioCb*>& a,
-		     const pair<QData,VerilatedVpioCb*>& b) const {
+    bool operator() (const std::pair<QData,VerilatedVpioCb*>& a,
+		     const std::pair<QData,VerilatedVpioCb*>& b) const {
 	if (a.first < b.first) return 1;
 	if (a.first > b.first) return 0;
 	return a.second < b.second;
@@ -313,8 +313,8 @@ class VerilatedVpiError;
 
 class VerilatedVpi {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime+1 };	// Maxium callback reason
-    typedef list<VerilatedVpioCb*> VpioCbList;
-    typedef set<pair<QData,VerilatedVpioCb*>,VerilatedVpiTimedCbsCmp > VpioTimedCbs;
+    typedef std::list<VerilatedVpioCb*> VpioCbList;
+    typedef std::set<std::pair<QData,VerilatedVpioCb*>,VerilatedVpiTimedCbsCmp > VpioTimedCbs;
 
     struct product_info {
 	PLI_BYTE8* product;
@@ -339,7 +339,7 @@ public:
 	s_s.m_cbObjLists[vop->reason()].push_back(vop);
     }
     static void cbTimedAdd(VerilatedVpioCb* vop) {
-	s_s.m_timedCbs.insert(make_pair(vop->time(), vop));
+	s_s.m_timedCbs.insert(std::make_pair(vop->time(), vop));
     }
     static void cbReasonRemove(VerilatedVpioCb* cbp) {
 	VpioCbList& cbObjList = s_s.m_cbObjLists[cbp->reason()];
@@ -350,7 +350,7 @@ public:
 	}
     }
     static void cbTimedRemove(VerilatedVpioCb* cbp) {
-	VpioTimedCbs::iterator it=s_s.m_timedCbs.find(make_pair(cbp->time(),cbp));
+	VpioTimedCbs::iterator it=s_s.m_timedCbs.find(std::make_pair(cbp->time(),cbp));
 	if (VL_LIKELY(it != s_s.m_timedCbs.end())) {
 	    s_s.m_timedCbs.erase(it);
 	}
@@ -389,7 +389,8 @@ public:
     }
     static void callValueCbs() {
 	VpioCbList& cbObjList = s_s.m_cbObjLists[cbValueChange];
-        set<VerilatedVpioVar*> update; // set of objects to update after callbacks
+	typedef std::set<VerilatedVpioVar*> VpioVarSet;
+	VpioVarSet update; // set of objects to update after callbacks
 	for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
 	    if (VL_UNLIKELY(!*it)) { // Deleted earlier, cleanup
 		it = cbObjList.erase(it);
@@ -411,7 +412,7 @@ public:
 		}
 	    }
 	}
-	for (set<VerilatedVpioVar*>::iterator it=update.begin(); it!=update.end(); ++it) {
+	for (VpioVarSet::iterator it=update.begin(); it!=update.end(); ++it) {
 	    memcpy((*it)->prevDatap(), (*it)->varDatap(), (*it)->entSize());
 	}
     }
@@ -462,8 +463,8 @@ public:
 	m_errorInfo.level = level;
         return this;
     }
-    void setMessage(string file, PLI_INT32 line, string message, ...) {
-	static VL_THREAD string filehold;
+    void setMessage(std::string file, PLI_INT32 line, std::string message, ...) {
+	static VL_THREAD std::string filehold;
         _VL_VPI_ERROR_SET;
         m_errorInfo.state = vpiPLI;
 	filehold = file;

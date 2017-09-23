@@ -90,9 +90,9 @@ public:
 class VerilatedCovImp : VerilatedCovImpBase {
 private:
     // TYPES
-    typedef map<string,int> ValueIndexMap;
-    typedef map<int,string> IndexValueMap;
-    typedef deque<VerilatedCovImpItem*> ItemList;
+    typedef std::map<std::string,int> ValueIndexMap;
+    typedef std::map<int,std::string> IndexValueMap;
+    typedef std::deque<VerilatedCovImpItem*> ItemList;
 
 private:
     // MEMBERS
@@ -119,18 +119,18 @@ public:
 
 private:
     // PRIVATE METHODS
-    int valueIndex(const string& value) {
+    int valueIndex(const std::string& value) {
 	static int nextIndex = KEY_UNDEF+1;
 	ValueIndexMap::iterator iter = m_valueIndexes.find(value);
 	if (iter != m_valueIndexes.end()) return iter->second;
 	nextIndex++;  assert(nextIndex>0);
-	m_valueIndexes.insert(make_pair(value, nextIndex));
-	m_indexValues.insert(make_pair(nextIndex, value));
+	m_valueIndexes.insert(std::make_pair(value, nextIndex));
+	m_indexValues.insert(std::make_pair(nextIndex, value));
 	return nextIndex;
     }
-    string dequote(const string& text) {
+    std::string dequote(const std::string& text) {
 	// Quote any special characters
-	string rtn;
+	std::string rtn;
 	for (const char* pos = text.c_str(); *pos; ++pos) {
 	    if (!isprint(*pos) || *pos=='%' || *pos=='"') {
 		char hex[10]; sprintf(hex,"%%%02X",pos[0]);
@@ -141,7 +141,7 @@ private:
 	}
 	return rtn;
     }
-    bool legalKey(const string& key) {
+    bool legalKey(const std::string& key) {
 	// Because we compress long keys to a single letter, and
 	// don't want applications to either get confused if they use
 	// a letter differently, nor want them to rely on our compression...
@@ -150,17 +150,17 @@ private:
 	if (key.length()==2 && isdigit(key[1])) return false;
 	return true;
     }
-    string keyValueFormatter (const string& key, const string& value) {
-	string name;
+    std::string keyValueFormatter (const std::string& key, const std::string& value) {
+	std::string name;
 	if (key.length()==1 && isalpha(key[0])) {
-	    name += string("\001")+key;
+	    name += std::string("\001")+key;
 	} else {
-	    name += string("\001")+dequote(key);
+	    name += std::string("\001")+dequote(key);
 	}
-	name += string("\002")+dequote(value);
+	name += std::string("\002")+dequote(value);
 	return name;
     }
-    string combineHier (const string& old, const string& add) {
+    std::string combineHier (const std::string& old, const std::string& add) {
 	// (foo.a.x, foo.b.x) => foo.*.x
 	// (foo.a.x, foo.b.y) => foo.*
 	// (foo.a.x, foo.b)   => foo.*
@@ -178,7 +178,7 @@ private:
 
 	// We used to backup and split on only .'s but it seems better to be verbose
 	// and not assume . is the separator
-	string prefix = string(a,apre-a);
+	std::string prefix = std::string(a,apre-a);
 
 	// Scan backward to last mismatch
 	const char* apost = a+strlen(a)-1;
@@ -187,19 +187,19 @@ private:
 	       && apost>apre && bpost>bpre) { apost--; bpost--; }
 
 	// Forward to . so we have a whole word
-	string suffix = *bpost ? string(bpost+1) : "";
+	std::string suffix = *bpost ? std::string(bpost+1) : "";
 
-	string out = prefix+"*"+suffix;
+	std::string out = prefix+"*"+suffix;
 
 	//cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add<<"\nch o="<<out<<endl;
 	return out;
     }
-    bool itemMatchesString(VerilatedCovImpItem* itemp, const string& match) {
+    bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match) {
 	for (int i=0; i<MAX_KEYS; ++i) {
 	    if (itemp->m_keys[i] != KEY_UNDEF) {
 		// We don't compare keys, only values
-		string val = m_indexValues[itemp->m_vals[i]];
-		if (string::npos != val.find(match)) {  // Found
+		std::string val = m_indexValues[itemp->m_vals[i]];
+		if (std::string::npos != val.find(match)) {  // Found
 		    return true;
 		}
 	    }
@@ -263,18 +263,18 @@ public:
 	assert(m_insertp);
 	// First two key/vals are filename
 	ckeyps[0]="filename";	valps[0]=m_insertFilenamep;
-	string linestr = vlCovCvtToStr(m_insertLineno);
+	std::string linestr = vlCovCvtToStr(m_insertLineno);
 	ckeyps[1]="lineno";	valps[1]=linestr.c_str();
 	// Default page if not specified
 	const char* fnstartp = m_insertFilenamep;
 	while (const char* foundp = strchr(fnstartp,'/')) fnstartp=foundp+1;
 	const char* fnendp = fnstartp;
 	while (*fnendp && *fnendp!='.') fnendp++;
-	string page_default = "sp_user/"+string(fnstartp,fnendp-fnstartp);
+	std::string page_default = "sp_user/"+std::string(fnstartp,fnendp-fnstartp);
 	ckeyps[2]="page";	valps[2]=page_default.c_str();
 
 	// Keys -> strings
-	string keys[MAX_KEYS];
+	std::string keys[MAX_KEYS];
 	for (int i=0; i<MAX_KEYS; ++i) {
 	    if (ckeyps[i] && ckeyps[i][0]) {
 		keys[i] = ckeyps[i];
@@ -294,15 +294,15 @@ public:
 	// Insert the values
 	int addKeynum=0;
 	for (int i=0; i<MAX_KEYS; ++i) {
-	    const string key = keys[i];
+	    const std::string key = keys[i];
 	    if (keys[i]!="") {
-		const string val = valps[i];
+		const std::string val = valps[i];
 		//cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
 		m_insertp->m_keys[addKeynum] = valueIndex(key);
 		m_insertp->m_vals[addKeynum] = valueIndex(val);
 		addKeynum++;
 		if (!legalKey(key)) {
-		    string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
+		    std::string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
 		    vl_fatal("",0,"",msg.c_str());
 		}
 	    }
@@ -318,27 +318,27 @@ public:
 #endif
 	selftest();
 
-	ofstream os (filename);
+	std::ofstream os (filename);
 	if (os.fail()) {
-	    string msg = (string)"%Error: Can't write '"+filename+"'";
+	    std::string msg = (std::string)"%Error: Can't write '"+filename+"'";
 	    vl_fatal("",0,"",msg.c_str());
 	    return;
 	}
 	os << "# SystemC::Coverage-3\n";
 
 	// Build list of events; totalize if collapsing hierarchy
-	typedef map<string,pair<string,vluint64_t> >	EventMap;
-	EventMap	eventCounts;
+	typedef std::map<std::string,std::pair<std::string,vluint64_t> > EventMap;
+	EventMap eventCounts;
 	for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
 	    VerilatedCovImpItem* itemp = *(it);
-	    string name;
-	    string hier;
+	    std::string name;
+	    std::string hier;
 	    bool per_instance = false;
 
 	    for (int i=0; i<MAX_KEYS; ++i) {
 		if (itemp->m_keys[i] != KEY_UNDEF) {
-		    string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
-		    string val = m_indexValues[itemp->m_vals[i]];
+		    std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
+		    std::string val = m_indexValues[itemp->m_vals[i]];
 		    if (key == VL_CIK_PER_INSTANCE) {
 			if (val != "0") per_instance = true;
 		    }
@@ -363,21 +363,21 @@ public:
 	    // Find or insert the named event
 	    EventMap::iterator cit = eventCounts.find(name);
 	    if (cit != eventCounts.end()) {
-		const string& oldhier = cit->second.first;
+		const std::string& oldhier = cit->second.first;
 		cit->second.second += itemp->count();
 		cit->second.first  = combineHier(oldhier, hier);
 	    } else {
-		eventCounts.insert(make_pair(name, make_pair(hier,itemp->count())));
+		eventCounts.insert(std::make_pair(name, make_pair(hier,itemp->count())));
 	    }
 	}
 
 	// Output body
 	for (EventMap::iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
-	    os<<"C '"<<dec;
+	    os<<"C '"<<std::dec;
 	    os<<it->first;
 	    if (it->second.first != "") os<<keyValueFormatter(VL_CIK_HIER,it->second.first);
 	    os<<"' "<<it->second.second;
-	    os<<endl;
+	    os<<std::endl;
 	}
     }
 };
@@ -441,9 +441,9 @@ void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
 }
 // Backward compatibility for Verilator
 void VerilatedCov::_insertp (A(0), A(1),  K(2),int val2,  K(3),int val3,
-			     K(4),const string& val4,  A(5),A(6)) {
-    string val2str = vlCovCvtToStr(val2);
-    string val3str = vlCovCvtToStr(val3);
+			     K(4),const std::string& val4,  A(5),A(6)) {
+    std::string val2str = vlCovCvtToStr(val2);
+    std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0),C(1),
 	     key2,val2str.c_str(),  key3,val3str.c_str(),  key4, val4.c_str(),
 	     C(5),C(6),N(7),N(8),N(9),

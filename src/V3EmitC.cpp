@@ -607,7 +607,7 @@ public:
     }
     void emitCvtPackStr(AstNode* nodep) {
 	if (AstConst* constp = nodep->castConst()) {
-	    putbs("string(");
+	    putbs("std::string(");
 	    putsQuoted(constp->num().toString());
 	    puts(")");
 	} else {
@@ -627,7 +627,7 @@ public:
 	if (nodep->num().isFourState()) {
 	    nodep->v3error("Unsupported: 4-state numbers in this context");
 	} else if (nodep->num().isString()) {
-	    putbs("string(");
+	    putbs("std::string(");
 	    putsQuoted(nodep->num().toString());
 	    puts(")");
 	} else if (nodep->isWide()) {
@@ -1558,8 +1558,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	puts(	"  \"filename\",filenamep,");
 	puts(	"  \"lineno\",lineno,");
 	puts(	"  \"column\",column,\n");
-	//puts(	"\"hier\",string(__VlSymsp->name())+hierp,");  // Need to move hier into scopes and back out if do this
-	puts(	"\"hier\",string(name())+hierp,");
+	//puts(	"\"hier\",std::string(__VlSymsp->name())+hierp,");  // Need to move hier into scopes and back out if do this
+	puts(	"\"hier\",std::string(name())+hierp,");
 	puts(	"  \"page\",pagep,");
 	puts(	"  \"comment\",commentp);\n");
 	puts("}\n");

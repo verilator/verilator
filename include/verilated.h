@@ -40,7 +40,6 @@
 // <iostream> avoided to reduce compile time
 // <map> avoided and instead in verilated_heavy.h to reduce compile time
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
-using namespace std;
 
 //=============================================================================
 // Switches

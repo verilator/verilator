@@ -28,7 +28,6 @@
 #include <string>
 #include <vector>
 #include <map>
-using namespace std;
 
 class VerilatedVcd;
 class VerilatedVcdCallInfo;
@@ -45,7 +44,7 @@ public:
     // METHODS
     VerilatedVcdFile() : m_fd(0) {}
     virtual ~VerilatedVcdFile() {}
-    virtual bool open(const string& name);
+    virtual bool open(const std::string& name);
     virtual void close();
     virtual ssize_t write(const char* bufp, ssize_t len);
 };
@@ -80,13 +79,13 @@ private:
     bool		m_fileNewed;	///< m_filep needs destruction
     bool 		m_isOpen;	///< True indicates open file
     bool		m_evcd;		///< True for evcd format
-    string		m_filename;	///< Filename we're writing to (if open)
+    std::string		m_filename;	///< Filename we're writing to (if open)
     vluint64_t		m_rolloverMB;	///< MB of file size to rollover at
     char		m_scopeEscape;	///< Character to separate scope components
     int			m_modDepth;	///< Depth of module hierarchy
     bool		m_fullDump;	///< True indicates dump ignoring if changed
     vluint32_t		m_nextCode;	///< Next code number to assign
-    string		m_modName;	///< Module name being traced now
+    std::string		m_modName;	///< Module name being traced now
     double		m_timeRes;	///< Time resolution (ns/ms etc)
     double		m_timeUnit;	///< Time units (ns/ms etc)
     vluint64_t		m_timeLastDump;	///< Last time we did a dump
@@ -98,11 +97,12 @@ private:
     vluint64_t		m_wroteBytes;	///< Number of bytes written to this file
 
     vluint32_t*			m_sigs_oldvalp;	///< Pointer to old signal values
-    vector<VerilatedVcdSig>	m_sigs;		///< Pointer to signal information
-    vector<VerilatedVcdCallInfo*>	m_callbacks;	///< Routines to perform dumping
-    typedef map<string,string>	NameMap;
-    NameMap*			m_namemapp;	///< List of names for the header
-    static vector<VerilatedVcd*>	s_vcdVecp;	///< List of all created traces
+    std::vector<VerilatedVcdSig>	m_sigs;		///< Pointer to signal information
+    std::vector<VerilatedVcdCallInfo*>	m_callbacks;	///< Routines to perform dumping
+    typedef std::map<std::string,std::string>	NameMap;
+    NameMap*		m_namemapp;	///< List of names for the header
+    typedef std::vector<VerilatedVcd*> VcdVec;
+    static VcdVec	s_vcdVecp;	///< List of all created traces
 
     void bufferResize(vluint64_t minsize);
     void bufferFlush();
@@ -136,8 +136,8 @@ private:
 	if (code>=(94))       *m_writep++ = ((char)((code/94)%94+33));
 	*m_writep++ = ((char)((code)%94+33));
     }
-    static string stringCode (vluint32_t code) {
-	string out;
+    static std::string stringCode (vluint32_t code) {
+	std::string out;
 	if (code>=(94*94*94)) out += ((char)((code/94/94/94)%94+33));
 	if (code>=(94*94))    out += ((char)((code/94/94)%94+33));
 	if (code>=(94))       out += ((char)((code/94)%94+33));
@@ -175,13 +175,13 @@ public:
     void close ();			///< Close the file
 
     void set_time_unit (const char* unit); ///< Set time units (s/ms, defaults to ns)
-    void set_time_unit (const string& unit) { set_time_unit(unit.c_str()); }
+    void set_time_unit (const std::string& unit) { set_time_unit(unit.c_str()); }
 
     void set_time_resolution (const char* unit); ///< Set time resolution (s/ms, defaults to ns)
-    void set_time_resolution (const string& unit) { set_time_resolution(unit.c_str()); }
+    void set_time_resolution (const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     double timescaleToDouble (const char* unitp);
-    string doubleToTimescale (double value);
+    std::string doubleToTimescale (double value);
 
     /// Inside dumping routines, called each cycle to make the dump
     void dump     (vluint64_t timeui);
@@ -194,7 +194,7 @@ public:
 		      void* userthis);
 
     /// Inside dumping routines, declare a module
-    void module (const string& name);
+    void module (const std::string& name);
     /// Inside dumping routines, declare a signal
     void declBit      (vluint32_t code, const char* name, int arraynum);
     void declBus      (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
@@ -433,11 +433,11 @@ public:
     /// Set time units (s/ms, defaults to ns)
     /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
     void set_time_unit (const char* unit) { m_sptrace.set_time_unit(unit); }
-    void set_time_unit (const string& unit) { set_time_unit(unit.c_str()); }
+    void set_time_unit (const std::string& unit) { set_time_unit(unit.c_str()); }
     /// Set time resolution (s/ms, defaults to ns)
     /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
     void set_time_resolution (const char* unit) { m_sptrace.set_time_resolution(unit); }
-    void set_time_resolution (const string& unit) { set_time_resolution(unit.c_str()); }
+    void set_time_resolution (const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     /// Internal class access
     inline VerilatedVcd* spTrace () { return &m_sptrace; };

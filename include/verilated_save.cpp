@@ -60,8 +60,8 @@ bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t siz
 
 VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict datap, size_t size) {
     if (VL_UNLIKELY(readDiffers(datap,size))) {
-	string fn = filename();
-	string msg = (string)"Can't deserialize save-restore file as was made from different model";
+	std::string fn = filename();
+	std::string msg = (std::string)"Can't deserialize save-restore file as was made from different model";
 	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
@@ -81,8 +81,8 @@ void VerilatedSerialize::header() {
 void VerilatedDeserialize::header() {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
-	string fn = filename();
-	string msg = (string)"Can't deserialize; file has wrong header signature";
+	std::string fn = filename();
+	std::string msg = (std::string)"Can't deserialize; file has wrong header signature";
 	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
@@ -98,8 +98,8 @@ void VerilatedSerialize::trailer() {
 void VerilatedDeserialize::trailer() {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
-	string fn = filename();
-	string msg = (string)"Can't deserialize; file has wrong end-of-file signature";
+	std::string fn = filename();
+	std::string msg = (std::string)"Can't deserialize; file has wrong end-of-file signature";
 	vl_fatal(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
@@ -187,7 +187,7 @@ void VerilatedSave::flush() {
 	} else if (got < 0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
-		string msg = string(__FUNCTION__)+": "+strerror(errno);
+		std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
 		vl_fatal("",0,"",msg.c_str());
 		close();
 		break;
@@ -215,7 +215,7 @@ void VerilatedRestore::fill() {
 	} else if (got < 0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
-		string msg = string(__FUNCTION__)+": "+strerror(errno);
+		std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
 		vl_fatal("",0,"",msg.c_str());
 		close();
 		break;

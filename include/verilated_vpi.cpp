@@ -386,7 +386,7 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) {
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got),(exp))) { \
-        string msg = string("%Error: ") \
+	std::string msg = std::string("%Error: ")   \
              + "GOT = '"+((got)?(got):"<null>")+"'" \
              + "  EXP = '"+((exp)?(exp):"<null>")+"'"; \
         vl_fatal(__FILE__,__LINE__,"",msg.c_str()); \
@@ -502,9 +502,9 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
     const VerilatedVar* varp;
     const VerilatedScope* scopep;
-    string scopeAndName = namep;
+    std::string scopeAndName = namep;
     if (voScopep) {
-	scopeAndName = string(voScopep->fullname()) + "." + namep;
+	scopeAndName = std::string(voScopep->fullname()) + "." + namep;
 	namep = (PLI_BYTE8*)scopeAndName.c_str();
     }
     {
@@ -514,11 +514,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
 	    return (new VerilatedVpioScope(scopep))->castVpiHandle();
 	}
 	const char* baseNamep = scopeAndName.c_str();
-	string scopename;
+	std::string scopename;
 	const char* dotp = strrchr(namep, '.');
 	if (VL_LIKELY(dotp)) {
 	    baseNamep = dotp+1;
-	    scopename = string(namep,dotp-namep);
+	    scopename = std::string(namep,dotp-namep);
 	}
 	scopep = Verilated::scopeFind(scopename.c_str());
 	if (!scopep) return NULL;

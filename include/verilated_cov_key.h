@@ -25,7 +25,6 @@
 #include "verilatedos.h"
 
 #include <string>
-using namespace std;
 
 //=============================================================================
 // Data used to edit below file, using vlcovgen
@@ -105,7 +104,7 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 
 class VerilatedCovKey {
 public:
-    static string shortKey(const string& key) {
+    static std::string shortKey(const std::string& key) {
 	// VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
 	if (key == "col0") return VL_CIK_COL0;
 	if (key == "col0_name") return VL_CIK_COL0_NAME;

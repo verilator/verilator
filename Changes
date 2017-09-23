@@ -4,6 +4,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.911 devel
 
+**    Verilated headers no longer "use namespace std;"
+      User's code without "std::" prefixes may need "use namespace std;" to compile.
+
 ***   Support or/and/xor array intrinsic methods, bug1210. [Mike Popoloski]
 
 ***   Support package export, bug1217. [Usuario Eda]
