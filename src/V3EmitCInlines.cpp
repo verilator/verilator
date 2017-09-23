@@ -82,7 +82,7 @@ void EmitCInlines::emitInt() {
     // Placeholder - v3Global.needHInlines(true) currently not used
 
     puts("//======================\n\n");
-    puts("#endif  /*guard*/\n");
+    puts("#endif // guard\n");
 }
 
 //######################################################################

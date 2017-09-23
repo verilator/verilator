@@ -1728,7 +1728,7 @@ void EmitCImp::emitSensitives() {
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
-    puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp; // Setup global symbol table\n");
+    puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) _eval_initial_loop(vlSymsp);\n");
@@ -1738,14 +1738,16 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     putsDecoration("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts("int __VclockLoop = 0;\n");
-    puts("QData __Vchange=1;\n");
+    puts("QData __Vchange = 1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
     puts(    "VL_DEBUG_IF(VL_PRINTF(\" Clock loop\\n\"););\n");
-    puts(    "vlSymsp->__Vm_activity = true;\n");
+    if (v3Global.opt.trace()) {
+	puts("vlSymsp->__Vm_activity = true;\n");
+    }
     puts(    "_eval(vlSymsp);\n");
     puts(    "__Vchange = _change_request(vlSymsp);\n");
-    puts(    "if (++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-	     +") vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
+    puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
+	     +")) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
     puts("}\n");
     puts("}\n");
     splitSizeInc(10);
@@ -1754,15 +1756,17 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::_eval_initial_loop("+EmitCBaseVisitor::symClassVar()+") {\n");
     puts("vlSymsp->__Vm_didInit = true;\n");
     puts("_eval_initial(vlSymsp);\n");
-    puts(    "vlSymsp->__Vm_activity = true;\n");
+    if (v3Global.opt.trace()) {
+	puts("vlSymsp->__Vm_activity = true;\n");
+    }
     puts(    "int __VclockLoop = 0;\n");
-    puts(    "QData __Vchange=1;\n");
+    puts(    "QData __Vchange = 1;\n");
     puts(    "while (VL_LIKELY(__Vchange)) {\n");
     puts(        "_eval_settle(vlSymsp);\n");
     puts(        "_eval(vlSymsp);\n");
     puts(	 "__Vchange = _change_request(vlSymsp);\n");
-    puts(        "if (++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-		 +") vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
+    puts(        "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
+		 +")) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
     puts(    "}\n");
     puts("}\n");
     splitSizeInc(10);
@@ -1839,7 +1843,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
 	    ofp()->putsPrivate(funcp->declPrivate());
 	    if (funcp->isStatic()) puts("static ");
-	    puts(funcp->rtnTypeVoid()); puts("\t");
+	    puts(funcp->rtnTypeVoid()); puts(" ");
 	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
 	}
     }
@@ -1871,8 +1875,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	// do this before including our main .h file so that any references to
 	// types defined in svdpi.h are available
 	puts("#include \""+ topClassName() +"__Dpi.h\"\n");
-	puts("\n");
     }
+    puts("\n");
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");
@@ -1896,13 +1900,17 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->resetPrivate();
     ofp()->putsPrivate(false);  // public:
 
-    // Instantiated modules
-    putsDecoration("// CELLS\n");
-    if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
-    if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
-    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCell* cellp=nodep->castCell()) {
-	    ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
+    {  // Instantiated cells
+	bool did = false;
+	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+	    if (AstCell* cellp=nodep->castCell()) {
+		if (!did++) {
+		    putsDecoration("// CELLS\n");
+		    if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
+		    if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
+		}
+		ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
+	    }
 	}
     }
 
@@ -1924,11 +1932,11 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n// INTERNAL VARIABLES\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
-    puts(symClassName()+"*\t__VlSymsp;\t\t// Symbol table\n");
+    puts(symClassName()+"* __VlSymsp;  // Symbol table\n");
     ofp()->putsPrivate(false);  // public:
     if (modp->isTop()) {
 	if (v3Global.opt.inhibitSim()) {
-	    puts("bool\t__Vm_inhibitSim;\t///< Set true to disable evaluation of module\n");
+	    puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
 	}
     }
     emitCoverageDecl(modp);	// may flip public/private
@@ -1963,8 +1971,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->resetPrivate();
     // We don't need a private copy constructor, as VerilatedModule has one for us.
     ofp()->putsPrivate(true);
-    puts(modClassName(modp)+"& operator= (const "+modClassName(modp)+"&);\t///< Copying not allowed\n");
-    puts(modClassName(modp)+"(const "+modClassName(modp)+"&);\t///< Copying not allowed\n");
+    puts(modClassName(modp)+"& operator= (const "+modClassName(modp)+"&);  ///< Copying not allowed\n");
+    puts(modClassName(modp)+"(const "+modClassName(modp)+"&);  ///< Copying not allowed\n");
 
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
@@ -1992,7 +2000,6 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	}
     }
 
-    puts("\n// USER METHODS\n");
     emitTextSection(AstType::atScInt);
 
     puts("\n// API METHODS\n");
@@ -2004,7 +2011,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	if (!optSystemC()) puts("/// Simulation complete, run final blocks.  Application must call on completion.\n");
 	puts("void final();\n");
 	if (v3Global.opt.inhibitSim()) {
-	    puts("void inhibitSim(bool flag) { __Vm_inhibitSim=flag; }\t///< Set true to disable evaluation of module\n");
+	    puts("void inhibitSim(bool flag) { __Vm_inhibitSim=flag; }  ///< Set true to disable evaluation of module\n");
 	}
     }
 
@@ -2037,13 +2044,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {
-	puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "+modClassName(modp)+"& rhs) {rhs.__Vserialize(os); return os;}\n");
-	puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "+modClassName(modp)+"& rhs) {rhs.__Vdeserialize(os); return os;}\n");
+	puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "+modClassName(modp)+"& rhs) { rhs.__Vserialize(os); return os; }\n");
+	puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "+modClassName(modp)+"& rhs) { rhs.__Vdeserialize(os); return os; }\n");
 	puts("\n");
     }
 
     // finish up h-file
-    puts("#endif  /*guard*/\n");
+    puts("#endif // guard\n");
 }
 
 //----------------------------------------------------------------------
@@ -2059,6 +2066,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 	puts("\n");
 	puts("#include \"verilated_dpi.h\"\n");
     }
+    puts("\n");
 
     emitTextSection(AstType::atScImpHdr);
 
@@ -2194,7 +2202,7 @@ class EmitCTrace : EmitCStmts {
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	putsDecoration("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
 	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 
 	puts("vcdp->scopeEscape(' ');\n");
@@ -2207,7 +2215,7 @@ class EmitCTrace : EmitCStmts {
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	putsDecoration("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
 	puts("t->traceFullThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
 	splitSizeInc(10);
@@ -2222,7 +2230,7 @@ class EmitCTrace : EmitCStmts {
 	     +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
 	putsDecoration("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
-	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp; // Setup global symbol table\n");
+	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
 	puts("if (vlSymsp->getClearActivity()) {\n");
 	puts("t->traceChgThis (vlSymsp, vcdp, code);\n");
 	puts("}\n");
@@ -2366,7 +2374,7 @@ class EmitCTrace : EmitCStmts {
 	    puts("int c=code;\n");
 	    puts("if (0 && vcdp && c) {}  // Prevent unused\n");
 	    if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
-		puts("vcdp->module(vlSymsp->name()); // Setup signal names\n");
+		puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_FULL) {
 	    } else if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB) {

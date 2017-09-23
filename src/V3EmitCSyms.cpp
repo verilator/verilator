@@ -303,8 +303,10 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// LOCAL STATE\n");
     puts("const char* __Vm_namep;\n");	// Must be before subcells, as constructor order needed before _vlCoverInsert.
-    puts("bool\t__Vm_activity;\t\t///< Used by trace routines to determine change occurred\n");
-    puts("bool\t__Vm_didInit;\n");
+    if (v3Global.opt.trace()) {
+	puts("bool __Vm_activity;  ///< Used by trace routines to determine change occurred\n");
+    }
+    puts("bool __Vm_didInit;\n");
 
     puts("\n// SUBCELL STATE\n");
     for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
@@ -319,14 +321,17 @@ void EmitCSyms::emitSymHdr() {
 	}
     }
 
-    puts("\n// COVERAGE\n");
     if (m_coverBins) {
-	puts("uint32_t\t__Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
+	puts("\n// COVERAGE\n");
+	puts("uint32_t __Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
     }
 
-    puts("\n// SCOPE NAMES\n");
-    for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
+    {  // Scope names
+	bool did = false;
+	for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
+	    if (!did++) puts("\n// SCOPE NAMES\n");
+	    puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
+	}
     }
 
     puts("\n// CREATORS\n");
@@ -335,7 +340,9 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
-    puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r;}\n");
+    if (v3Global.opt.trace()) {
+	puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r; }\n");
+    }
     if (v3Global.opt.savable() ) {
 	puts("void __Vserialize(VerilatedSerialize& os);\n");
 	puts("void __Vdeserialize(VerilatedDeserialize& os);\n");
@@ -343,7 +350,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n");
     puts("} VL_ATTR_ALIGNED(64);\n");
     puts("\n");
-    puts("#endif  /*guard*/\n");
+    puts("#endif // guard\n");
 }
 
 void EmitCSyms::emitSymImp() {
@@ -369,7 +376,9 @@ void EmitCSyms::emitSymImp() {
     puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
     puts("\t// Setup locals\n");
     puts("\t: __Vm_namep(namep)\n");	// No leak, as we get destroyed when the top is destroyed
-    puts("\t, __Vm_activity(false)\n");
+    if (v3Global.opt.trace()) {
+	puts("\t, __Vm_activity(false)\n");
+    }
     puts("\t, __Vm_didInit(false)\n");
     puts("\t// Setup submodule names\n");
     char comma=',';
@@ -420,11 +429,14 @@ void EmitCSyms::emitSymImp() {
 	}
     }
 
-    puts("// Setup scope names\n");
-    for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
-	putsQuoted(it->second.m_prettyName);
-	puts(");\n");
+    {  // Setup scope names
+	bool did = false;
+	for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
+	    if (!did++) puts("// Setup scope names\n");
+	    puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
+	    putsQuoted(it->second.m_prettyName);
+	    puts(");\n");
+	}
     }
 
     if (v3Global.dpi()) {
@@ -512,7 +524,9 @@ void EmitCSyms::emitSymImp() {
 	    puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
 	    puts(   "// LOCAL STATE\n");
 	    // __Vm_namep presumably already correct
-	    puts(   "os"+op+"__Vm_activity;\n");
+	    if (v3Global.opt.trace()) {
+		puts(   "os"+op+"__Vm_activity;\n");
+	    }
 	    puts(   "os"+op+"__Vm_didInit;\n");
 	    puts(   "// SUBCELL STATE\n");
 	    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
