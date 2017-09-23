@@ -410,6 +410,18 @@ V3LangCode V3Options::fileLanguage(const string &filename) {
 //######################################################################
 // Environment
 
+string V3Options::getenvBuiltins(const string& var) {
+    if (var == "PERL") return getenvPERL();
+    else if (var == "SYSTEMC") return getenvSYSTEMC();
+    else if (var == "SYSTEMC_ARCH") return getenvSYSTEMC_ARCH();
+    else if (var == "SYSTEMC_INCLUDE") return getenvSYSTEMC_INCLUDE();
+    else if (var == "SYSTEMC_LIBDIR") return getenvSYSTEMC_LIBDIR();
+    else if (var == "VERILATOR_ROOT") return getenvVERILATOR_ROOT();
+    else {
+	return V3Os::getenvStr(var,"");
+    }
+}
+
 string V3Options::getenvPERL() {
     return V3Os::getenvStr("PERL","perl");
 }
@@ -761,6 +773,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strncmp (sw, "-G", strlen("-G"))) {
 		addParameter(string (sw+strlen("-G")), false);
+	    }
+	    else if ( !strcmp (sw, "-getenv") && (i+1)<argc ) {
+		shift;
+		cout<<V3Options::getenvBuiltins(argv[i])<<endl;
+		exit(0);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
 		addIncDirUser(parseFileArg(optdir, string (sw+strlen("-I"))));

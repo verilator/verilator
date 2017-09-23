@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.913 devel
 
+***   Add --getenv option.
+
 ****  The internal test_verilated test directory is moved to be part of test_regress.
 
 

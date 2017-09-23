@@ -286,6 +286,7 @@ descriptions in the next sections for more information.
      -G<name>=<value>           Overwrite toplevel parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
+    --getenv <var>              Get environment variable with defaults
     --help                      Display this help
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
@@ -762,6 +763,14 @@ backtrace on exit, then exit GDB immediately.  Without --debug or if GDB
 doesn't seem to work, this flag is ignored.  Intended for easy creation of
 backtraces by users; otherwise see the --gdb flag.
 
+=item --getenv I<variable>
+
+If the variable is declared in the environment, print it and exit
+immediately. Otherwise, if it's built into Verilator (e.g. VERILATOR_ROOT),
+print that and exit immediately. Otherwise, print a newline and exit
+immediately. This can be useful in makefiles. See also -V, and the various
+*.mk files.
+
 =item --help
 
 Displays this message and program version and exits.
@@ -1181,7 +1190,7 @@ Setting it to "" disables matching.
 =item -V
 
 Shows the verbose version, including configuration information compiled
-into Verilator.  (Similar to perl -V.)
+into Verilator.  (Similar to perl -V.)  See also --getenv.
 
 =item -v I<filename>
 
@@ -1409,8 +1418,8 @@ And we get as output
 
 Really, you're better off writing a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps; to
-aid this Verilator can create a makefile dependency file.  See the test_c
-directory in the distribution for an example.
+aid this Verilator can create a makefile dependency file.  See the examples
+directory in the distribution.
 
 
 =head1 EXAMPLE SYSTEMC EXECUTION
@@ -1487,7 +1496,7 @@ And we get the same output as the C++ example:
 
 Really, you're better off using a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
-the test_sc directory in the distribution for an example.
+the examples directory in the distribution.
 
 
 =head1 BENCHMARKING & OPTIMIZATION
