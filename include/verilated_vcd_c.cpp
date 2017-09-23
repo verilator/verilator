@@ -47,11 +47,6 @@
 #endif
 
 //=============================================================================
-// Global
-
-VerilatedVcd::VcdVec VerilatedVcd::s_vcdVecp;  ///< List of all created traces
-
-//=============================================================================
 // VerilatedVcdCallInfo
 /// Internal callback routines for each module being traced.
 ////
@@ -121,7 +116,7 @@ void VerilatedVcd::open (const char* filename) {
 
     // Set member variables
     m_filename = filename;
-    s_vcdVecp.push_back(this);
+    singleton().s_vcdVecp.push_back(this);
 
     // SPDIFF_OFF
     // Set callback so an early exit will flush us
@@ -234,8 +229,8 @@ VerilatedVcd::~VerilatedVcd() {
     deleteNameMap();
     if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
     // Remove from list of traces
-    VcdVec::iterator pos = find(s_vcdVecp.begin(), s_vcdVecp.end(), this);
-    if (pos != s_vcdVecp.end()) { s_vcdVecp.erase(pos); }
+    VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), this);
+    if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
 }
 
 void VerilatedVcd::closePrev () {
@@ -647,8 +642,8 @@ void VerilatedVcd::dumpDone () {
 // Static members
 
 void VerilatedVcd::flush_all() {
-    for (vluint32_t ent = 0; ent< s_vcdVecp.size(); ent++) {
-	VerilatedVcd* vcdp = s_vcdVecp[ent];
+    for (vluint32_t ent = 0; ent< singleton().s_vcdVecp.size(); ent++) {
+	VerilatedVcd* vcdp = singleton().s_vcdVecp[ent];
 	vcdp->flush();
     }
 }

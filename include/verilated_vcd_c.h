@@ -101,8 +101,12 @@ private:
     std::vector<VerilatedVcdCallInfo*>	m_callbacks;	///< Routines to perform dumping
     typedef std::map<std::string,std::string>	NameMap;
     NameMap*		m_namemapp;	///< List of names for the header
+
     typedef std::vector<VerilatedVcd*> VcdVec;
-    static VcdVec	s_vcdVecp;	///< List of all created traces
+    struct Singleton {
+	VcdVec		s_vcdVecp;	///< List of all created traces
+    };
+    static Singleton& singleton() { static Singleton s;	return s; }
 
     void bufferResize(vluint64_t minsize);
     void bufferFlush();
