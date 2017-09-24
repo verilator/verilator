@@ -1,0 +1,62 @@
+# -*- Makefile -*-
+#######################################################################
+#
+# DESCRIPTION: Verilator Example: Makefile for inside object directory
+#
+# This is executed in the object directory, and called by ../Makefile
+#
+# Copyright 2003-2017 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+#
+#######################################################################
+
+default: Vtop
+
+# Include the rules made by Verilator
+include Vtop.mk
+
+#######################################################################
+# Compile flags
+
+# Override some default compile flags
+CPPFLAGS += -MMD -MP
+CPPFLAGS += -DVL_DEBUG=1
+# SystemC isn't too clean
+CPPFLAGS += -Wno-deprecated
+# Turn on some more flags (when configured appropriately)
+ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+CPPFLAGS += -DVL_THREADED=1
+CPPFLAGS += -W -Werror -Wall
+endif
+
+# If you build your own rules from scratch, note you need to include
+# SystemC as follows (Vtop.mk file includes verilated.mk with these
+# already).
+# CPPFLAGS += $(SYSTEMC_CXX_FLAGS) -I$(SYSTEMC_INCLUDE)
+# LDFLAGS  += $(SYSTEMC_CXX_FLAGS) -L$(SYSTEMC_LIBDIR)
+
+# See the benchmarking section of bin/verilator.
+# Support class optimizations.  This includes the tracing and symbol table.
+# SystemC takes minutes to optimize, thus it is off by default.
+OPT_SLOW =
+# Fast path optimizations.  Most time is spent in these classes.
+OPT_FAST = -O2 -fstrict-aliasing
+#OPT_FAST = -O
+#OPT_FAST =
+
+#######################################################################
+# Linking final exe -- presumes have a sim_main.cpp
+
+# Special compile rule
+sim_main.o: sim_main.cpp $(VM_PREFIX).h
+
+######################################################################
+######################################################################
+# Automatically understand dependencies
+
+DEPS := $(wildcard *.d)
+ifneq ($(DEPS),)
+include $(DEPS)
+endif

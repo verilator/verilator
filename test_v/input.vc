@@ -1,5 +1,0 @@
-
-+librescan +libext+.v
- -y ../test_v
- +incdir+../test_v
- +incdir+../include

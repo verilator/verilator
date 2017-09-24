@@ -1,8 +1,6 @@
-*.old
 *.dmp
 *.log
 *.csrc
 *.vcd
 obj_*
 logs
-project

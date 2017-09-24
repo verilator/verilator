@@ -3,4 +3,4 @@
 *.csrc
 *.vcd
 obj_*
-project
+logs

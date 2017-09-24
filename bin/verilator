@@ -1369,7 +1369,7 @@ We'll compile this example into C++.
     cat <<EOF >sim_main.cpp
       #include "Vour.h"
       #include "verilated.h"
-      int main(int argc, char **argv, char **env) {
+      int main(int argc, char** argv, char** env) {
           Verilated::commandArgs(argc, argv);
           Vour* top = new Vour;
           while (!Verilated::gotFinish()) { top->eval(); }
@@ -1982,7 +1982,7 @@ accesses the above signal "readme" would be:
           printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
       }
 
-      int main(int argc, char **argv, char **env) {
+      int main(int argc, char** argv, char** env) {
           Verilated::commandArgs(argc, argv);
           Vour* top = new Vour;
           Verilated::internalsDump();  // See scopes to help debug
@@ -3680,7 +3680,7 @@ trace file if you want all data to land in the same output file.
 
     #include "verilated_vcd_c.h"
     ...
-    int main(int argc, char **argv, char **env) {
+    int main(int argc, char** argv, char** env) {
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdC* tfp = new VerilatedVcdC;
@@ -3693,6 +3693,8 @@ trace file if you want all data to land in the same output file.
         }
         tfp->close();
     }
+
+Also see the examples/tracing_cc directory in the distribution.
 
 =item How do I generate waveforms (traces) in SystemC?
 
@@ -3716,7 +3718,7 @@ trace file if you want all data to land in the same output file.
 
     #include "verilated_vcd_sc.h"
     ...
-    int main(int argc, char **argv, char **env) {
+    int main(int argc, char** argv, char** env) {
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdSc* tfp = new VerilatedVcdSc;
@@ -3728,11 +3730,13 @@ trace file if you want all data to land in the same output file.
         tfp->close();
     }
 
+Also see the examples/tracing_cc directory in the distribution.
+
 =item How do I view waveforms (traces)?
 
 Verilator makes standard VCD (Value Change Dump) files.  They are viewable
-with the public domain Dinotrace or GtkWave programs, or any of the many
-commercial offerings.
+with the public domain GtkWave (recommended) or Dinotrace (legacy)
+programs, or any of the many commercial offerings.
 
 =item How do I reduce the size of large waveform (trace) files?
 

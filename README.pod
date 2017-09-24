@@ -169,6 +169,9 @@ have the verilator binary directory in your PATH (this should already be
 true if using the default configure), and make sure VERILATOR_ROOT is not
 set.
 
+You may now wish to consult the examples directory. Type C<make> inside any
+example directory to run the example.
+
 =back
 
 =head1 USAGE DOCUMENTATION
@@ -190,9 +193,10 @@ The directories in the kit after de-taring are as follows:
     include/verilated.v         => Stub defines for linting
     include/verilated.mk        => Common makefile
     src/                        => Translator source code
-    test_v                      => Example Verilog code for other test dirs
-    test_c                      => Example Verilog->C++ conversion
-    test_sc                     => Example Verilog->SystemC conversion
+    examples/hello_world_c      => Example simple Verilog->C++ conversion
+    examples/hello_world_sc     => Example simple Verilog->SystemC conversion
+    examples/tracing_c          => Example Verilog->C++ with tracing
+    examples/tracing_sc         => Example Verilog->SystemC with tracing
     test_regress                => Internal tests
 
 =head1 LIMITATIONS
