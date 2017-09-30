@@ -329,7 +329,10 @@ void EmitCSyms::emitSymHdr() {
     {  // Scope names
 	bool did = false;
 	for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	    if (!did++) puts("\n// SCOPE NAMES\n");
+	    if (!did) {
+	        did = true;
+	        puts("\n// SCOPE NAMES\n");
+	    }
 	    puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
 	}
     }
@@ -432,7 +435,10 @@ void EmitCSyms::emitSymImp() {
     {  // Setup scope names
 	bool did = false;
 	for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-	    if (!did++) puts("// Setup scope names\n");
+	    if (!did) {
+		did = true;
+		puts("// Setup scope names\n");
+	    }
 	    puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
 	    putsQuoted(it->second.m_prettyName);
 	    puts(");\n");

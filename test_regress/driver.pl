@@ -1002,13 +1002,14 @@ sub _run {
 	    if ($param{expect}) {
 		# Compare
 		my $quoted = quotemeta ($param{expect});
-		my $bad = ($wholefile ne $param{expect}
-			   && $wholefile !~ /$param{expect}/ms
-			   && $wholefile !~ /$quoted/ms);
-		if ($bad) {
+                my $ok = ($wholefile eq $param{expect}
+			  || _try_regex($wholefile, $param{expect}) == 1
+			  || $wholefile =~ /$quoted/ms);
+		if (!$ok) {
 		    #print "**BAD  $self->{name} $param{logfile} MT $moretry  $try\n";
 		    next if $moretry;
 		    $self->error("Mismatch in output from $param{cmd}[0]\n");
+		    $self->error("Might be error in regexp format\n") if $ok<1;
 		    print "GOT:\n";
 		    print $wholefile;
 		    print "ENDGOT\n";
@@ -1024,6 +1025,24 @@ sub _run {
 
 #######################################################################
 # Little utilities
+
+sub _try_regex {
+    # Try to eval a regexp
+    # Returns:
+    #  1 if $text ~= /$regex/ms
+    #  0 if no match
+    # -1 if $regex is invalid, doesn't compile
+    my ($text, $regex) = @_;
+    my $result;
+    {
+        local $@;
+        eval {
+            $result = ($text =~ /$regex/ms);
+        };
+        $result = -1 if $@;
+    }
+    return $result;
+}
 
 sub _make_main {
     my $self = shift;

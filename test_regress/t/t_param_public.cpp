@@ -16,7 +16,7 @@ int main (int argc, char *argv[]) {
     Verilated::debug(0);
 
     // Make sure public tag worked
-    if (Vt_param_public_p::INPACK) {}
+    if (Vt_param_public_p::INPACK == Vt_param_public_p::INPACK) {}
 
     for (int i = 0; i < 10; i++) {
 	topp->eval();

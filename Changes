@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  The internal test_verilated test directory is moved to be part of test_regress.
 
+****  Fix Ubuntu 17.10 issues, bug1223 partial. [John Coiner]
+
 
 * Verilator 3.912 2017-09-23
 

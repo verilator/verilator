@@ -1904,7 +1904,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	bool did = false;
 	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	    if (AstCell* cellp=nodep->castCell()) {
-		if (!did++) {
+		if (!did) {
+		    did = true;
 		    putsDecoration("// CELLS\n");
 		    if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
 		    if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
