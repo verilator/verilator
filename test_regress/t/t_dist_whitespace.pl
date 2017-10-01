@@ -20,7 +20,18 @@ foreach my $file (sort keys %files) {
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
 	# Ignore binrary files
     } elsif ($contents =~ /[ \t]\n/) {
-	$warns{$file} = "File contains trailing whitespace: $file";
+        my @lines = split(/\n/, $contents);
+        my $line_no = 0;
+        foreach my $line (@lines) {
+            $line_no++;
+            # Trim trailing carriage-return (ascii 0xd) and form feed (0xc),
+            # as we expect a few of those
+            $line =~ s/[\x{d}\x{c}]//g;
+            if ($line =~ /\s$/) {
+                $warns{$file} = "Trailing whitespace at $file:$line_no";
+                $warns{$file} .= " (last character is ASCII " . ord(substr($line, -1, 1)) . ")";
+            }
+        }
     }
 }
 
