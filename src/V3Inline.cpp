@@ -53,21 +53,33 @@ private:
     // NODE STATE
     // Output
     //  AstNodeModule::user1()	// OUTPUT: bool. User request to inline this module
-    // Entire netlist (can be cleared after this visit completes)
+    // Internal state (can be cleared after this visit completes)
     //  AstNodeModule::user2()	// CIL_*. Allowed to automatically inline module
     //  AstNodeModule::user3()	// int. Number of cells referencing this module
-    AstUser1InUse	m_inuser1;
+    //  AstNodeModule::user4()  // int. Statements in module
     AstUser2InUse	m_inuser2;
     AstUser3InUse	m_inuser3;
+    AstUser4InUse       m_inuser4;
 
-    enum {CIL_NOTHARD=0,	// For user2, inline not supported
-	  CIL_NOTSOFT,		// For user2, don't inline unless user overrides
-	  CIL_MAYBE};		// For user2, might inline
+    // For the user2 field:
+    enum {CIL_NOTHARD=0, // Inline not supported
+          CIL_NOTSOFT,   // Don't inline unless user overrides
+          CIL_MAYBE,     // Might inline
+          CIL_USER};     // Pragma suggests inlining
 
     // STATE
-    AstNodeModule*	m_modp;		// Flattened cell's containing module
-    int			m_stmtCnt;	// Statements in module
+    AstNodeModule*      m_modp;         // Current module
     V3Double0		m_statUnsup;	// Statistic tracking
+
+    typedef vector<AstNodeModule*> ModVec;
+    ModVec m_allMods;   // All modules, in top-down order.
+
+    // Within the context of a given module, LocalInstanceMap maps
+    // from child modules to the count of each child's local instantiations.
+    typedef map<AstNodeModule*, int> LocalInstanceMap;
+
+    // We keep a LocalInstanceMap for each module in the design
+    map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
     static int debug() {
@@ -92,39 +104,23 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-	m_stmtCnt = 0;
 	m_modp = nodep;
+        m_allMods.push_back(nodep);
 	m_modp->user2(CIL_MAYBE);
+        m_modp->user4(0); // statement count
 	if (m_modp->castIface()) {
 	    // Inlining an interface means we no longer have a cell handle to resolve to.
 	    // If inlining moves post-scope this can perhaps be relaxed.
 	    cantInline("modIface",true);
 	}
 	if (m_modp->modPublic()) cantInline("modPublic",false);
-	//
+
 	nodep->iterateChildren(*this);
-	//
-	bool userinline = nodep->user1();
-	int allowed = nodep->user2();
-	int refs = nodep->user3();
-	// Should we automatically inline this module?
-	// inlineMult = 2000 by default.  If a mod*#instances is < this # nodes, can inline it
-	bool doit = ((allowed == CIL_NOTSOFT || allowed == CIL_MAYBE)
-		     && (userinline
-			 || ((allowed == CIL_MAYBE)
-			     && (refs==1
-				 || m_stmtCnt < INLINE_MODS_SMALLER
-				 || v3Global.opt.inlineMult() < 1
-				 || refs*m_stmtCnt < v3Global.opt.inlineMult()))));
-	// Packages aren't really "under" anything so they confuse this algorithm
-	if (nodep->castPackage()) doit = false;
-	UINFO(4, " Inline="<<doit<<" Possible="<<allowed<<" Usr="<<userinline<<" Refs="<<refs<<" Stmts="<<m_stmtCnt
-	      <<"  "<<nodep<<endl);
-	nodep->user1(doit);
 	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep) {
-	nodep->modp()->user3Inc();
+        nodep->modp()->user3Inc();  // Inc refs
+        m_instances[m_modp][nodep->modp()]++;
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstPragma* nodep) {
@@ -132,8 +128,9 @@ private:
 	    //UINFO(0,"PRAG MARK "<<m_modp<<endl);
 	    if (!m_modp) {
 		nodep->v3error("Inline pragma not under a module");
-	    } else {
-		m_modp->user1(1);
+            } else if (m_modp->user2() == CIL_MAYBE
+                       || m_modp->user2() == CIL_NOTSOFT) {
+                m_modp->user2(CIL_USER);
 	    }
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
 	} else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
@@ -156,30 +153,71 @@ private:
 	if (!nodep->packagep()) nodep->taskp(NULL);
 	nodep->iterateChildren(*this);
     }
-    // Nop's to speed up the loop
     virtual void visit(AstAlways* nodep) {
 	nodep->iterateChildren(*this);
-	m_stmtCnt++;
+        m_modp->user4Inc(); // statement count
     }
     virtual void visit(AstNodeAssign* nodep) {
 	// Don't count assignments, as they'll likely flatten out
 	// Still need to iterate though to nullify VarXRefs
-	int oldcnt = m_stmtCnt;
+        int oldcnt = m_modp->user4();
 	nodep->iterateChildren(*this);
-	m_stmtCnt = oldcnt;
+        m_modp->user4(oldcnt);
+    }
+    virtual void visit(AstNetlist* nodep) {
+        // Build user2, user3, and user4 for all modules.
+        // Also build m_allMods and m_instances.
+        nodep->iterateChildren(*this);
+
+        // Iterate through all modules in bottom-up order.
+        // Make a final inlining decision for each.
+        for (ModVec::reverse_iterator it=m_allMods.rbegin(); it!=m_allMods.rend(); ++it) {
+            AstNodeModule* modp = *it;
+
+            // If we're going to inline some modules into this one,
+            // update user4 (statement count) to reflect that:
+            int statements = modp->user4();
+            LocalInstanceMap& localsr = m_instances[modp];
+            for (LocalInstanceMap::iterator it = localsr.begin(); it != localsr.end(); ++it) {
+                AstNodeModule* childp = it->first;
+                if (childp->user1()) {  // inlining child
+                    statements += (childp->user4() * it->second);
+                }
+            }
+            modp->user4(statements);
+
+            int allowed = modp->user2();
+            int refs = modp->user3();
+
+            // Should we automatically inline this module?
+            // inlineMult = 2000 by default.
+            // If a mod*#refs is < this # nodes, can inline it
+            bool doit = ((allowed == CIL_USER)
+                         || ((allowed == CIL_MAYBE)
+                             && (refs==1
+                                 || statements < INLINE_MODS_SMALLER
+                                 || v3Global.opt.inlineMult() < 1
+                                 || refs*statements < v3Global.opt.inlineMult())));
+            // Packages aren't really "under" anything so they confuse this algorithm
+            if (modp->castPackage()) doit = false;
+            UINFO(4, " Inline="<<doit<<" Possible="<<allowed
+                  <<" Refs="<<refs<<" Stmts="<<statements<<"  "<<modp<<endl);
+            modp->user1(doit);
+        }
     }
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
-	m_stmtCnt++;
+        if (m_modp) {
+            m_modp->user4Inc();  // Inc statement count
+	}
     }
 
 public:
     // CONSTUCTORS
     explicit InlineMarkVisitor(AstNode* nodep) {
 	m_modp = NULL;
-	m_stmtCnt = 0;
 	nodep->accept(*this);
     }
     virtual ~InlineMarkVisitor() {
@@ -187,6 +225,7 @@ public:
 	// Done with these, are not outputs
 	AstNode::user2ClearTree();
 	AstNode::user3ClearTree();
+        AstNode::user4ClearTree();
     }
 };
 
@@ -443,11 +482,13 @@ private:
     //   AstVar::user3()	// bool    Don't alias the user2, keep it as signal
     //   AstCell::user4		// AstCell* of the created clone
 
-    AstUser4InUse	m_inuser4;
+    AstUser2InUse       m_inuser2;
+    AstUser3InUse       m_inuser3;
+    AstUser4InUse       m_inuser4;
     AstUser5InUse	m_inuser5;
 
     // STATE
-    AstNodeModule*	m_modp;		// Current module
+    AstNodeModule*      m_modp;         // Current module
     V3Double0		m_statCells;	// Statistic tracking
 
     static int debug() {
@@ -575,8 +616,15 @@ public:
 
 void V3Inline::inlineAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    InlineMarkVisitor mvisitor (nodep);
-    InlineVisitor visitor (nodep);
+    AstUser1InUse m_inuser1; // output of InlineMarkVisitor,
+                             // input to InlineVisitor.
+    {
+        // Scoped to clean up temp userN's
+        InlineMarkVisitor mvisitor (nodep);
+    }
+    {
+        InlineVisitor visitor (nodep);
+    }
     // Remove all modules that were inlined
     // V3Dead will also clean them up, but if we have debug on, it's a good
     // idea to avoid dumping the hugely exploded tree.
