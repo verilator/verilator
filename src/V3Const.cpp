@@ -369,11 +369,11 @@ private:
 	return true;
     }
 
-    bool operandBiExtendConst(AstNodeBiop* nodep) {
+    bool operandBiExtendConstShrink(AstNodeBiop* nodep) {
 	// Loop unrolling favors standalone compares
 	// EQ(const{width32}, EXTEND(xx{width3})) -> EQ(const{3}, xx{3})
-	// Beware that the constant must have zero bits (+ 1 if signed) or compare
-	// would be incorrect
+	// The constant must have zero bits (+ 1 if signed) or compare
+	// would be incorrect. See also operandBiExtendConst
 	AstExtend* extendp = nodep->rhsp()->castExtend();
 	if (!extendp) return false;
 	AstNode* smallerp = extendp->lhsp();
@@ -393,6 +393,19 @@ private:
 	nodep->lhsp(new AstConst(constp->fileline(), num));
 	constp->deleteTree(); VL_DANGLING(constp);
 	if (debug()>=9) nodep->dumpTree(cout,"BI(EXTEND)-ou:");
+	return true;
+    }
+    bool operandBiExtendConstOver(AstNodeBiop* nodep) {
+	// EQ(const{width32}, EXTEND(xx{width3})) -> constant
+	// When the constant has non-zero bits above the extend it's a constant.
+	// Avoids compiler warning
+	AstExtend* extendp = nodep->rhsp()->castExtend();
+	if (!extendp) return false;
+	AstNode* smallerp = extendp->lhsp();
+	int subsize = smallerp->width();
+	AstConst* constp = nodep->lhsp()->castConst();
+	if (!constp) return false;
+	if (constp->num().isBitsZero(constp->width()-1, subsize)) return false;
 	return true;
     }
 
@@ -2216,12 +2229,18 @@ private:
     TREEOP ("AstShiftR{operandShiftShift(nodep)}",	"replaceShiftShift(nodep)");
     TREEOP ("AstWordSel{operandWordOOB(nodep)}",	"replaceZero(nodep)");
     // Compress out EXTENDs to appease loop unroller
-    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
-    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
-    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
-    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
-    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
-    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConst(nodep)}",	"DONE");
+    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",	"DONE");
+    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceZero(nodep)");
+    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceNum(nodep,1)");
+    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceNum(nodep,1)");
+    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceNum(nodep,1)");
+    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceZero(nodep)");
+    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",	"replaceZero(nodep)");
     // Identical operands on both sides
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon

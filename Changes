@@ -13,6 +13,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix Ubuntu 17.10 issues, bug1223 partial. [John Coiner]
 
+****  Fix compiler warning when WIDTH warning ignored on large compare.
+
 
 * Verilator 3.912 2017-09-23
 
