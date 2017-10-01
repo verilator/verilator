@@ -102,22 +102,27 @@ public:
 void V3CCtors::cctorsAll() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
-	// Process each module in turn
-	V3CCtorsVisitor var_reset (modp, "_ctor_var_reset");
-	V3CCtorsVisitor configure_coverage (modp, "_configure_coverage",
-					    EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first",
-					    "if (0 && vlSymsp && first) {} // Prevent unused\n");
-
-	for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-	    AstVar* varp = np->castVar();
-	    if (varp) var_reset.add(new AstCReset(varp->fileline(), new AstVarRef(varp->fileline(), varp, true)));
-	    AstCoverDecl* coverp = np->castCoverDecl();
-	    if (coverp) {
-		AstNode* backp = coverp->backp();
-		coverp->unlinkFrBack();
-		configure_coverage.add(coverp);
-		np = backp;
-	    }
-	}
+        // Process each module in turn
+        {
+            V3CCtorsVisitor var_reset (modp, "_ctor_var_reset");
+            for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
+                if (AstVar* varp = np->castVar()) {
+                    var_reset.add(new AstCReset(varp->fileline(), new AstVarRef(varp->fileline(), varp, true)));
+                }
+            }
+        }
+        if (v3Global.opt.coverage()) {
+            V3CCtorsVisitor configure_coverage
+                (modp, "_configure_coverage", EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first",
+                 "if (0 && vlSymsp && first) {} // Prevent unused\n");
+            for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
+                if (AstCoverDecl* coverp = np->castCoverDecl()) {
+                    AstNode* backp = coverp->backp();
+                    coverp->unlinkFrBack();
+                    configure_coverage.add(coverp);
+                    np = backp;
+                }
+            }
+        }
     }
 }
