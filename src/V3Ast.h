@@ -1258,7 +1258,7 @@ public:
 
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);
-    bool	gateTree() { return gateTreeIter(); }  // Is tree gateOptimizable?
+    bool	gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
     bool	sameGateTree(AstNode* node2p);	// Does tree of this == node2p?, not allowing non-isGateOptimizable
     void	deleteTree();	// Always deletes the next link
