@@ -744,7 +744,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	// Delete the parameters from the cell; they're not relevant any longer.
 	if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
 	UINFO(8,"     Done with "<<nodep<<endl);
-	//if (debug()>=10) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out"));
+	//if (debug()>=10) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
     }
 
     // Now remember to process the child module at the end of the module
