@@ -19,6 +19,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix compiler warning when WIDTH warning ignored on large compare.
 
+****  Fix memory leak in VerilatedVcd dumps, bug1222 partial. [Shareef Jalloq]
+
+
 
 * Verilator 3.912 2017-09-23
 

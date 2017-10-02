@@ -67,6 +67,7 @@ protected:
 			  VerilatedVcdCallback_t changecb,
 			  void* ut, vluint32_t code)
 	: m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {};
+    ~VerilatedVcdCallInfo() {}
 };
 
 //=============================================================================
@@ -228,6 +229,10 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_sigs_oldvalp) { delete[] m_sigs_oldvalp; m_sigs_oldvalp=NULL; }
     deleteNameMap();
     if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
+    for (CallbackVec::iterator it=m_callbacks.begin(); it!=m_callbacks.end(); ++it) {
+	delete (*it);
+    }
+    m_callbacks.clear();
     // Remove from list of traces
     VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), this);
     if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }

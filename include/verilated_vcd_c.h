@@ -96,10 +96,12 @@ private:
     vluint64_t		m_wrChunkSize;	///< Output buffer size
     vluint64_t		m_wroteBytes;	///< Number of bytes written to this file
 
-    vluint32_t*			m_sigs_oldvalp;	///< Pointer to old signal values
-    std::vector<VerilatedVcdSig>	m_sigs;		///< Pointer to signal information
-    std::vector<VerilatedVcdCallInfo*>	m_callbacks;	///< Routines to perform dumping
-    typedef std::map<std::string,std::string>	NameMap;
+    vluint32_t*		m_sigs_oldvalp;	///< Pointer to old signal values
+    typedef std::vector<VerilatedVcdSig>  SigVec;
+    SigVec		m_sigs;		///< Pointer to signal information
+    typedef std::vector<VerilatedVcdCallInfo*>  CallbackVec;
+    CallbackVec		m_callbacks;	///< Routines to perform dumping
+    typedef std::map<std::string,std::string>  NameMap;
     NameMap*		m_namemapp;	///< List of names for the header
 
     typedef std::vector<VerilatedVcd*> VcdVec;
