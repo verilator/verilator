@@ -927,8 +927,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		}
 		else {
 		    string msg = sw+strlen("-Wwarn-");
-		    if (!(FileLine::globalWarnOff(msg, false))) {
-			fl->v3fatal("Unknown warning specified: "<<sw);
+		    V3ErrorCode code (msg.c_str());
+		    if (code == V3ErrorCode::EC_ERROR) {
+			if (!isFuture(msg)) {
+			    fl->v3fatal("Unknown warning specified: "<<sw);
+			}
+		    } else {
+			FileLine::globalWarnOff(code, false);
+			V3Error::pretendError(code, false);
 		    }
 		}
 	    }
