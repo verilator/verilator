@@ -359,7 +359,8 @@ descriptions in the next sections for more information.
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
      -Wno-fatal                 Disable fatal exit on warnings
-    --x-assign <mode>           Initially assign Xs to this value
+    --x-assign <mode>           Assign non-initial Xs to this value
+    --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
      -y <dir>                   Directory to search for modules
 
@@ -428,9 +429,6 @@ C<+1364-1995ext+> etc. specify both the syntax I<and> semantics to be used.
 =item --assert
 
 Enable all assertions.
-
-See also --x-assign and --x-initial-edge; setting "--x-assign unique"
-and/or "--x-initial-edge" may be desirable.
 
 =item --autoflush
 
@@ -1307,7 +1305,30 @@ enable rerunning with that same seed so you can reproduce bugs.
 B<Note.> This option applies only to variables which are explicitly assigned
 to X in the Verilog source code. Initial values of clocks are set to 0 unless
 --x-initial-edge is specified. Initial values of all other state holding
-variables are set as though --x-assign unique had been specified.
+variables are controlled with --x-initial.
+
+=item --x-initial 0
+
+=item --x-initial fast
+
+=item --x-initial unique (default)
+
+Controls the two-state value that is used to initialize variables that are
+not otherwise initialized.
+
+--x-initial=0, initializes all otherwise uninitialized variables to zero.
+
+--x-initial=unique, the default, initializes variables using a function,
+which determines the value to use each initialization. This gives greatest
+flexibility and allows finding reset bugs.  See L</"Unknown states">
+
+--x-initial=fast, is best for performance, and initializes all variables to
+a state Verilator determines is optimal.  This may allow further code
+optimizations, but will likely hide any code bugs relating to missing
+resets.
+
+B<Note.> This option applies only to initial values of variables. Initial
+values of clocks are set to 0 unless --x-initial-edge is specified.
 
 =item --x-initial-edge
 
@@ -1502,9 +1523,10 @@ the examples directory in the distribution.
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 --x-assign=fast
---noassert" flags.  The -O3 flag will require longer compile times, and
---x-assign=fast may increase the risk of reset bugs in trade for
-performance; see the above documentation for these flags.
+--x-initial=fast --noassert" flags.  The -O3 flag will require longer
+compile times, and --x-assign=fast --x-initial=fast may increase the risk
+of reset bugs in trade for performance; see the above documentation for
+these flags.
 
 Minor Verilog code changes can also give big wins.  You should not have any
 UNOPTFLAT warnings from Verilator.  Fixing these warnings can result in
@@ -2647,24 +2669,25 @@ value (see the --x-assign switch.)  Thus if the value is actually used, the
 random value should cause downstream errors.  Integers also randomize, even
 though the Verilog 2001 specification says they initialize to zero.
 
-All variables are randomly initialized using a function.  By running
-several random simulation runs you can determine that reset is working
-correctly.  On the first run, the function initializes variables to zero.
-On the second, have it initialize variables to one.  On the third and
-following runs have it initialize them randomly.  If the results match,
-reset works.  (Note this is what the hardware will really do.)  In
-practice, just setting all variables to one at startup finds most problems.
+All variables, depending on --x-initial setting, are typically randomly
+initialized using a function.  By running several random simulation runs
+you can determine that reset is working correctly.  On the first run, the
+function initializes variables to zero.  On the second, have it initialize
+variables to one.  On the third and following runs have it initialize them
+randomly.  If the results match, reset works.  (Note this is what the
+hardware will really do.)  In practice, just setting all variables to one
+at startup finds most problems (since typically control signals are
+active-high).
 
-B<Note.> --x-assign applies to variables explicitly initialized or assigned to
-X. Uninitialized clocks are initialized to zero, while all other state holding
-variables are initialized to a random value.
-
-Event driven simulators will generally trigger an edge on a transition from X
-to 1 (C<posedge>) or X to 0 (C<negedge>). However, by default, since clocks
-are initialized to zero, Verilator will not trigger an initial negedge. Some
-code (particularly for reset) may rely on X->0 triggering an edge. Verilator
-provides a switch (see --x-initial-edge) to enable this behavior. Comparing
-runs with and without this switch will find such problems.
+--x-assign applies to variables explicitly initialized or assigned to
+X. Uninitialized clocks are initialized to zero, while all other state
+holding variables are initialized to a random value.  Event driven
+simulators will generally trigger an edge on a transition from X to 1
+(C<posedge>) or X to 0 (C<negedge>). However, by default, since clocks are
+initialized to zero, Verilator will not trigger an initial negedge. Some
+code (particularly for reset) may rely on X->0 triggering an edge. The
+--x-initial-edge switch enables this behavior. Comparing runs with and
+without this switch will find such problems.
 
 
 =head2 Tri/Inout

@@ -864,6 +864,9 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 	// optimizing away this assignment, etc.
 	consumerp = V3Const::constifyEdit(consumerp);
 	if (debug()>=5) consumerp->dumpTree(cout,"\telimUseDne: ");
+	// Some previous input edges may have disappeared, perhaps all of them.
+	// If we remove the edges we can further optimize
+	// See e.g t_var_overzero.v.
     }
 }
 

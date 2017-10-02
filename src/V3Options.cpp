@@ -993,6 +993,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		    fl->v3fatal("Unknown setting for --x-assign: "<<argv[i]);
 		}
 	    }
+	    else if ( !strcmp (sw, "-x-initial") && (i+1)<argc) {
+		shift;
+		if (!strcmp (argv[i], "0")) { m_xInitial="0"; }
+		else if (!strcmp (argv[i], "fast")) { m_xInitial="fast"; }
+		else if (!strcmp (argv[i], "unique")) { m_xInitial="unique"; }
+		else {
+		    fl->v3fatal("Unknown setting for --x-initial: "<<argv[i]);
+		}
+	    }
 	    else if ( !strcmp (sw, "-y") && (i+1)<argc ) {
 		shift; addIncDirUser (parseFileArg(optdir,string (argv[i])));
 	    }

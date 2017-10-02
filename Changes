@@ -7,7 +7,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 **    Added new examples/ directory with appropriate examples. This replaces the
       old test_c and test_sc directories.
 
-***   Add --getenv option.
+***   Add --getenv option for simplifying Makefiles.
+
+***   Add --x-initial option for specifying initial value assignment behavior.
 
 ****  The internal test_verilated test directory is moved to be part of test_regress.
 

@@ -1464,7 +1464,8 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 	}
 	bool zeroit = (varp->attrFileDescr() // Zero it out, so we don't core dump if never call $fopen
 		       || (varp->basicp() && varp->basicp()->isZeroInit())
-		       || (varp->name().size()>=1 && varp->name()[0]=='_' && v3Global.opt.underlineZero()));
+		       || (varp->name().size()>=1 && varp->name()[0]=='_' && v3Global.opt.underlineZero())
+		       || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
 	if (varp->isWide()) {
 	    // DOCUMENT: We randomize everything.  If the user wants a _var to be zero,
 	    // there should be a initial statement.  (Different from verilator2.)
