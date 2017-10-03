@@ -1693,9 +1693,12 @@ private:
 		    // But might be same name with different scopes
 		    if (litemp->varrefp()->varScopep() < ritemp->varrefp()->varScopep()) return true;
 		    if (litemp->varrefp()->varScopep() > ritemp->varrefp()->varScopep()) return false;
+		    // Or rarely, different data types
+		    if (litemp->varrefp()->dtypep() < ritemp->varrefp()->dtypep()) return true;
+		    if (litemp->varrefp()->dtypep() > ritemp->varrefp()->dtypep()) return false;
 		}
 		// Sort by edge, AFTER variable, as we want multiple edges for same var adjacent
-		// note the SenTree optimizer requires this order (more general firsst, less general last)
+		// note the SenTree optimizer requires this order (more general first, less general last)
 		if (litemp->edgeType() < ritemp->edgeType()) return true;
 		if (litemp->edgeType() > ritemp->edgeType()) return false;
 	    }
