@@ -1906,7 +1906,7 @@ private:
 	    }
 	    else if (0	// Disabled, as vpm assertions are faster without due to short-circuiting
 		     && operandIfIf(nodep)) {
-		UINFO(0,"IF({a}) IF({b}) => IF({a} && {b})"<<endl);
+		UINFO(9,"IF({a}) IF({b}) => IF({a} && {b})"<<endl);
 		AstNodeIf* lowerIfp = nodep->ifsp()->castNodeIf();
 		AstNode* condp = nodep->condp()->unlinkFrBack();
 		AstNode* lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
@@ -1922,6 +1922,49 @@ private:
 	}
     }
 
+    virtual void visit(AstDisplay* nodep) {
+        // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
+        nodep->iterateChildren(*this);
+        if (stmtDisplayDisplay(nodep)) return;
+    }
+    bool stmtDisplayDisplay(AstDisplay* nodep) {
+        // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
+        if (!m_modp) return false;  // Don't optimize under single statement
+        if (!nodep->backp()) return false;
+        AstDisplay* prevp = nodep->backp()->castDisplay();
+        if (!prevp) return false;
+        if (!((prevp->displayType() == nodep->displayType())
+              || (prevp->displayType() == AstDisplayType::DT_WRITE
+                  && nodep->displayType() == AstDisplayType::DT_DISPLAY)
+              || (prevp->displayType() == AstDisplayType::DT_DISPLAY
+                  && nodep->displayType() == AstDisplayType::DT_WRITE)))
+            return false;
+        if ((prevp->filep() && !nodep->filep())
+            || (!prevp->filep() && nodep->filep())
+            || !prevp->filep()->sameTree(nodep->filep())) return false;
+        if (!prevp->fmtp() || prevp->fmtp()->nextp()
+            || !nodep->fmtp() || nodep->fmtp()->nextp()) return false;
+        AstSFormatF* pformatp = prevp->fmtp();
+        if (!pformatp || pformatp->exprsp() || pformatp->scopeNamep()) return false;
+        AstSFormatF* nformatp = nodep->fmtp();
+        if (!nformatp || nformatp->exprsp() || nformatp->scopeNamep()) return false;
+        //
+        UINFO(9,"DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))"<<endl);
+        // Convert DT_DISPLAY to DT_WRITE as may allow later optimizations
+        if (prevp->displayType() == AstDisplayType::DT_DISPLAY) {
+            prevp->displayType(AstDisplayType::DT_WRITE);
+            pformatp->text(pformatp->text()+"\n");
+        }
+        // We can't replace prev() as the edit tracking iterators will get confused.
+        // So instead we edit the prev note itself.
+        if (prevp->addNewline()) pformatp->text(pformatp->text()+"\n");
+        pformatp->text(pformatp->text()+nformatp->text());
+        if (!prevp->addNewline() && nodep->addNewline()) {
+            pformatp->text(pformatp->text()+"\n");
+        }
+        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        return true;
+    }
     virtual void visit(AstSFormatF* nodep) {
 	// Substitute constants into displays.  The main point of this is to
 	// simplify assertion methodologies which call functions with display's.
@@ -1960,7 +2003,7 @@ private:
 				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
 				// fmt = out w/ replace % with %% as it must be literal.
 				fmt = VString::quotePercent(out);
-				argp->unlinkFrBack()->deleteTree();
+				argp->unlinkFrBack()->deleteTree(); VL_DANGLING(argp);
 			    }
 			    argp=nextp;
 			}

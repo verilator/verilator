@@ -166,7 +166,7 @@ private:
 		    }
 		}
 		// Not really any way the user could do this, and we'd need to come up with some return value
-		//newfuncp->addStmtsp(new AstDisplay (newfuncp->fileline(), AstDisplayType::DT_DISPLAY,
+		//newfuncp->addStmtsp(new AstDisplay (newfuncp->fileline(), AstDisplayType::DT_WARNING,
 		//				      string("%%Error: ")+name+"() called with bad scope", NULL));
 		//newfuncp->addStmtsp(new AstStop (newfuncp->fileline()));
 		if (debug()>=9) newfuncp->dumpTree(cout,"   newfunc: ");
