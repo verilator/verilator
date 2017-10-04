@@ -77,7 +77,6 @@ private:
     //  AstVarScope::user4p()	-> AstAlwaysPost*.  Post block for this variable
     //  AstVarScope::user5()	-> VarUsage. Tracks delayed vs non-delayed usage
     //  AstVar::user2()		-> bool.  Set true if already made warning
-    //  AstVar::user4()		-> int.   Vector number, for assignment creation
     //  AstVarRef::user2()	-> bool.  Set true if already processed
     //  AstAlwaysPost::user2()	-> ActActive*.  Points to activity block of signal (valid when AstAlwaysPost::user4p is valid)
     //  AstAlwaysPost::user4()	-> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
@@ -102,7 +101,8 @@ private:
     typedef std::map<pair<AstNodeModule*,string>,AstVar*> VarMap;
     VarMap		m_modVarMap;	// Table of new var names created under module
     V3Double0		m_statSharedSet;// Statistic tracking
-
+    typedef std::map<AstVarScope*,int> ScopeVecMap;
+    ScopeVecMap m_scopeVecMap; // Next var number for each scope
 
     // METHODS
     static int debug() {
@@ -211,7 +211,7 @@ private:
 	if (!varrefp->varScopep()) varrefp->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	varrefp->unlinkFrBack();
 	AstVar* oldvarp = varrefp->varp();
-	int modVecNum = oldvarp->user4();  oldvarp->user4(modVecNum+1);
+	int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
 	//
 	deque<AstNode*> dimreadps;		// Read value for each dimension of assignment
 	for (unsigned dimension=0; dimension<dimvalp.size(); dimension++) {

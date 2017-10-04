@@ -22,7 +22,7 @@
 //	    VAR(BLOCKTEMP...
 //	       if only referenced in a CFUNC, make it local to that CFUNC
 //	    VAR(others
-//	       if non-public, set before used, and in signle CFUNC, make it local
+//	       if non-public, set before used, and in single CFUNC, make it local
 //
 //*************************************************************************
 

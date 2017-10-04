@@ -21,6 +21,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix memory leak in VerilatedVcd dumps, bug1222 partial. [Shareef Jalloq]
 
+****  Fix unnecessary Vdly variables, bug1224 partial. [John Coiner]
 
 
 * Verilator 3.912 2017-09-23
