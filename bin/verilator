@@ -328,6 +328,7 @@ descriptions in the next sections for more information.
     --public                    Debugging; see docs
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --relative-includes         Resolve includes relative to current file
+    --no-relative-cfuncs        Disallow 'this->' in generated functions
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
@@ -879,6 +880,22 @@ change the ultimate model's performance, but may in some cases.
 =item --no-pins64
 
 Backward compatible alias for "--pins-bv 33".
+
+=item --no-relative-cfuncs
+
+Disable 'this->' references in generated functions, and instead Verilator
+will generate absolute references starting from 'vlTOPp->'.  This prevents
+V3Combine from merging functions from multiple instances of the same
+module, so it can grow the instruction stream.
+
+This is a work around for old compilers. Don't set this if your C++
+compiler supports __restrict__ properly, as GCC 4.5.x and newer do.  For
+older compilers, test if this switch gives you better performance or not.
+
+Compilers which don't honor __restrict__ will suspect that 'this->'
+references and 'vlTOPp->' references may alias, and may write slow code
+with extra loads and stores to handle the (imaginary) aliasing. Using only
+'vlTOPp->' references allows these old compilers to produce tight code.
 
 =item --no-skip-identical
 

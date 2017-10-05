@@ -88,8 +88,9 @@ class V3Options {
     bool	m_pinsUint8;	// main switch: --pins-uint8
     bool	m_profileCFuncs;// main switch: --profile-cfuncs
     bool	m_public;	// main switch: --public
-    bool	m_reportUnoptflat; // main switch: --report-unoptflat
+    bool	m_relativeCFuncs; // main switch: --relative-cfuncs
     bool	m_relativeIncludes; // main switch: --relative-includes
+    bool	m_reportUnoptflat; // main switch: --report-unoptflat
     bool	m_savable;	// main switch: --savable
     bool	m_systemC;	// main switch: --sc: System C instead of simple C++
     bool	m_skipIdentical;// main switch: --skip-identical
@@ -244,6 +245,7 @@ class V3Options {
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
+    bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }

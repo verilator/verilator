@@ -53,7 +53,8 @@ private:
     // STATE
     AstNodeModule*	m_modp;		// Current module
     AstScope*		m_scopep;	// Current scope
-    bool		m_needThis;	// Add thisp to function
+    bool		m_modSingleton; // m_modp is only instanced once
+    bool		m_needThis;	// Make function non-static
     FuncMmap		m_modFuncs;	// Name of public functions added
 
     // METHODS
@@ -63,41 +64,91 @@ private:
 	return level;
     }
 
-    string descopedName(AstScope* scopep, bool& hierThisr, AstVar* varp=NULL) {
+    static bool modIsSingleton(AstNodeModule* modp) {
+        // True iff there's exactly one instance of this module in the design.
+        int instances = 0;
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+            if (stmtp->castScope()) {
+                if (++instances > 1) { return false; }
+            }
+        }
+        return (instances == 1);
+    }
+
+    // Construct the best prefix to reference an object in 'scopep'
+    // from a CFunc in 'm_scopep'. Result may be relative
+    // ("this->[...]") or absolute ("vlTOPp->[...]").
+    //
+    // Using relative references allows V3Combine'ing
+    // code across multiple instances of the same module.
+    //
+    // Sets 'hierThisr' true if the object is local to this scope
+    // (and could be made into a function-local later in V3Localize),
+    // false if the object is in another scope.
+    string descopedName(const AstScope* scopep, bool& hierThisr,
+                        const AstVar* varp=NULL) {
 	UASSERT(scopep, "Var/Func not scoped\n");
-	hierThisr = true;
+	hierThisr = (scopep == m_scopep);
+
+        // It's possible to disable relative references. This is a concession
+        // to older compilers (gcc < 4.5.x) that don't understand __restrict__
+        // well and emit extra ld/st to guard against pointer aliasing
+        // when this-> and vlTOPp-> are mixed in the same function.
+        //
+        // "vlTOPp" is declared "restrict" so better compilers understand
+        // that it won't alias with "this".
+        bool relativeRefOk = v3Global.opt.relativeCFuncs();
+
+        // Use absolute refs in top-scoped routines, keep them static.
+        // The DPI callback registration depends on representing top-level
+        // static routines as plain function pointers. That breaks if those
+        // become true OO routines.
+        //
+        // V3Combine wouldn't likely be able to combine top-level
+        // routines anyway, so there's no harm in keeping these static.
+        if (m_modp->isTop()) {
+            relativeRefOk = false;
+        }
+
+        // Use absolute refs if this scope is the only instance of the module.
+        // Saves a bit of overhead on passing the 'this' pointer, and there's no
+        // need to be nice to V3Combine when we have only a single instance.
+        // The risk that this prevents combining identical logic from differently-
+        // named but identical modules seems low.
+        if (m_modSingleton) {
+            relativeRefOk = false;
+        }
+
 	if (varp && varp->isFuncLocal()) {
+            hierThisr = true;
 	    return "";  // Relative to function, not in this
-	} else if (scopep == m_scopep && m_modp->isTop()) {
-	    //return "";  // Reference to scope we're in, no need to HIER-> it
-	    return "vlTOPp->";
-	} else if (scopep == m_scopep && !m_modp->isTop()
-		   && 0) {	// We no longer thisp-> as still get ambiguation problems
-	    m_needThis = true;
-	    return "thisp->";  // this-> but with restricted aliasing
-	} else if (scopep->aboveScopep() && scopep->aboveScopep()==m_scopep
-		   && 0  // DISABLED: GCC considers the pointers ambiguous, so goes ld/store crazy
-	    ) {
-	    // Reference to scope of cell directly under this module, can just "cell->"
-	    string name = scopep->name();
-	    string::size_type pos;
-	    if ((pos = name.rfind(".")) != string::npos) {
-		name.erase(0,pos+1);
-	    }
-	    hierThisr = false;
-	    return name+"->";
-	} else {
-	    // Reference to something else, use global variable
-	    UINFO(8,"      Descope "<<scopep<<endl);
-	    UINFO(8,"           to "<<scopep->name()<<endl);
-	    UINFO(8,"        under "<<m_scopep->name()<<endl);
-	    hierThisr = false;
-	    if (!scopep->aboveScopep()) { // Top
-		return "vlTOPp->";	// == "vlSymsp->TOPp->", but GCC would suspect aliases
-	    } else {
-		return scopep->nameVlSym()+".";
-	    }
-	}
+        } else if (relativeRefOk && scopep == m_scopep) {
+            m_needThis = true;
+            return "this->";
+        } else if (relativeRefOk && scopep->aboveScopep()
+                   && scopep->aboveScopep()==m_scopep) {
+            // Reference to scope of cell directly under this module, can just "cell->"
+            string name = scopep->name();
+            string::size_type pos;
+            if ((pos = name.rfind(".")) != string::npos) {
+                name.erase(0,pos+1);
+            }
+            m_needThis = true;
+            return name+"->";
+        } else {
+            // Reference to something elsewhere, or relative refences
+            // are disabled. Use global variable
+            UINFO(8,"      Descope "<<scopep<<endl);
+            UINFO(8,"           to "<<scopep->name()<<endl);
+            UINFO(8,"        under "<<m_scopep->name()<<endl);
+            if (!scopep->aboveScopep()) { // Top
+                // We could also return "vlSymsp->TOPp->" here, but GCC would
+                // suspect aliases.
+                return "vlTOPp->";
+            } else {
+                return scopep->nameVlSym()+".";
+            }
+        }
     }
 
     void makePublicFuncWrappers() {
@@ -182,6 +233,7 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_modFuncs.clear();
+        m_modSingleton = modIsSingleton(m_modp);
 	nodep->iterateChildren(*this);
 	makePublicFuncWrappers();
 	m_modp = NULL;
@@ -222,11 +274,7 @@ private:
 	    nodep->iterateChildren(*this);
 	    nodep->user1(true);
 	    if (m_needThis) {
-		nodep->v3fatalSrc("old code");
-		// Really we should have more node types for backend optimization of this stuff
-		string text = v3Global.opt.modPrefix() + "_" + m_modp->name()
-		    +"* thisp = &("+m_scopep->nameVlSym()+");\n";
-		nodep->addInitsp(new AstCStmt(nodep->fileline(), text));
+                nodep->isStatic(false);
 	    }
 	    // If it's under a scope, move it up to the top
 	    if (m_scopep) {
@@ -248,11 +296,12 @@ private:
     }
 public:
     // CONSTRUCTORS
-    explicit DescopeVisitor(AstNetlist* nodep) {
-	m_modp = NULL;
-	m_scopep = NULL;
-	m_needThis = false;
-	nodep->accept(*this);
+    explicit DescopeVisitor(AstNetlist* nodep)
+        : m_modp(NULL),
+          m_scopep(NULL),
+          m_modSingleton(false),
+          m_needThis(false) {
+        nodep->accept(*this);
     }
     virtual ~DescopeVisitor() {}
 };

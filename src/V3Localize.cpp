@@ -84,7 +84,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
 	VarFlags flags (nodep->varp());
 	if (flags.m_done) {
-	    nodep->hiername("");	// Remove thisp->
+	    nodep->hiername("");	// Remove this->
 	    nodep->hierThis(true);
 	}
     }

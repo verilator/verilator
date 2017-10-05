@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --x-initial option for specifying initial value assignment behavior.
 
+***   Add --no-relative-cfuncs and related default optimization, bug1224. [John Coiner]
+
 ****  The internal test_verilated test directory is moved to be part of test_regress.
 
 ****  Fix over-aggressive inlining, bug1223. [John Coiner]

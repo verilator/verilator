@@ -677,8 +677,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )	{ m_profileCFuncs = flag; }
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
             else if ( !strncmp(sw, "-pvalue+", strlen("-pvalue+")))	{ addParameter(string(sw+strlen("-pvalue+")), false); }
-	    else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )	{ m_reportUnoptflat = flag; }
+            else if ( onoff   (sw, "-relative-cfuncs", flag/*ref*/) )   { m_relativeCFuncs = flag; }
 	    else if ( onoff   (sw, "-relative-includes", flag/*ref*/) )	{ m_relativeIncludes = flag; }
+            else if ( onoff   (sw, "-report-unoptflat", flag/*ref*/) )  { m_reportUnoptflat = flag; }
 	    else if ( onoff   (sw, "-savable", flag/*ref*/) )		{ m_savable = flag; }
 	    else if ( !strcmp (sw, "-sc") )				{ m_outFormatOk = true; m_systemC = true; }
 	    else if ( onoff   (sw, "-skip-identical", flag/*ref*/) )	{ m_skipIdentical = flag; }
@@ -1209,8 +1210,9 @@ V3Options::V3Options() {
     m_preprocOnly = false;
     m_preprocNoLine = false;
     m_public = false;
-    m_reportUnoptflat = false;
+    m_relativeCFuncs = true;
     m_relativeIncludes = false;
+    m_reportUnoptflat = false;
     m_savable = false;
     m_skipIdentical = true;
     m_stats = false;

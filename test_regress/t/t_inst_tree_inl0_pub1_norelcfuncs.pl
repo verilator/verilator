@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# Copyright 2003 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+
+top_filename("t/t_inst_tree.v");
+
+compile (
+	 verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats', '--norelative-cfuncs'],
+	 );
+
+if ($Self->{vlt}) {
+    # Fewer optimizations than t_inst_tree_inl0_pub1 which allows
+    # relative CFuncs:
+    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 16);
+
+    # Should not find any 'this->' except some 'this->__VlSymsp'
+    my @files = `ls $Self->{obj_dir}/*.cpp`;
+    foreach my $file (@files) {
+        chomp $file;
+        my $text = file_contents($file);
+        $text =~ s/this->__VlSymsp//g;
+        if ($text =~ m/this->/) {
+            $Self->error("$file has unexpected this-> refs when --norelative-cfuncs");
+        }
+    }
+}
+
+execute (
+	 check_finished=>1,
+	 expect=>
+'\] (%m|.*t\.ps): Clocked
+',
+     );
+
+ok(1);
+1;
