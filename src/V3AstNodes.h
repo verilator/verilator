@@ -2183,6 +2183,8 @@ public:
     AstCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
     ASTNODE_NODE_FUNCS(Cond)
+    virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) {
+	return new AstCond(this->fileline(), condp, expr1p, expr2p); }
 };
 
 class AstCondBound : public AstNodeCond {
@@ -2193,6 +2195,8 @@ public:
     AstCondBound(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
 	: AstNodeCond(fl, condp, expr1p, expr2p) {}
     ASTNODE_NODE_FUNCS(CondBound)
+    virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) {
+	return new AstCondBound(this->fileline(), condp, expr1p, expr2p); }
 };
 
 class AstCoverDecl : public AstNodeStmt {

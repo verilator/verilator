@@ -195,7 +195,7 @@ private:
 	    arrayselp = lhsp->castArraySel();
 	}
 	if (!arrayselp) nodep->v3fatalSrc("No arraysel under bitsel?");
-	if (arrayselp->length()!=1) nodep->v3fatalSrc("ArraySel with length!=1 should have been removed in V3Slice");
+	if (arrayselp->dtypep()->skipRefp()->castUnpackArrayDType()) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
 
 	UINFO(4,"AssignDlyArray: "<<nodep<<endl);
 	//

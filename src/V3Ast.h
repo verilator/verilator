@@ -1458,6 +1458,7 @@ public:
     virtual bool sizeMattersLhs() { return false; } virtual bool sizeMattersRhs() { return false; }
     virtual bool sizeMattersThs() { return false; }
     virtual int instrCount()	const { return instrCountBranch(); }
+    virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
 
 class AstNodePreSel : public AstNode {
