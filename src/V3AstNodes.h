@@ -790,7 +790,7 @@ public:
     virtual bool cleanOut() { return true; }
     virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return true;}
     virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
-    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isGateOptimizable() const { return true; }  // esp for V3Const::ifSameAssign
     virtual bool isPredictOptimizable() const { return false; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }

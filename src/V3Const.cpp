@@ -485,11 +485,7 @@ private:
 	if (!ifp   || ifp->nextp()) return false;  // Must be SINGLE statement
 	if (!elsep || elsep->nextp()) return false;
 	if (ifp->type() != elsep->type()) return false;  // Can't mix an assigndly and an assign
-	AstVarRef* ifvarp = ifp->lhsp()->castVarRef();
-	AstVarRef* elsevarp = elsep->lhsp()->castVarRef();
-	if (!ifvarp || !elsevarp) return false;
-	if (ifvarp->isWide()) return false;  // Would need temporaries, so not worth it
-	if (!ifvarp->sameGateTree(elsevarp)) return false;
+	if (!ifp->lhsp()->sameGateTree(elsep->lhsp())) return false;
 	if (!ifp->rhsp()->gateTree()) return false;
 	if (!elsep->rhsp()->gateTree()) return false;
 	return true;
