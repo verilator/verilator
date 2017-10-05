@@ -13,11 +13,9 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
-%Error: t/t_mem_slice_bad.v:\d+: Unsupported: Slices in a non-delayed assignment with the same Var on both sides
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments must have the same unpacked dimensions
+'%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 9 versus 8
+%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 4 versus 3
+%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 9 versus 8
 %Error: Exiting due to.*',
     );
 

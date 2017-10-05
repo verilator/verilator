@@ -305,8 +305,6 @@ private:
 	    } else {
 		// TODO when unpacked arrays fully supported probably need new data type here
 		AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
-		newp->start(lsb);
-		newp->length((msb - lsb) + 1);
 		nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	    }
 	}

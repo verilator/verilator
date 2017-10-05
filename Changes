@@ -23,6 +23,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix unnecessary Vdly variables, bug1224 partial. [John Coiner]
 
+****  Fix conditional slices and add related optimizations.
+
 
 * Verilator 3.912 2017-09-23
 

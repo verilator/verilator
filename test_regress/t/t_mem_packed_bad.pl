@@ -13,8 +13,8 @@ compile (
 	 verilator_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_mem_packed_bad.v:\d+: Unsupported: Assignment between unpacked arrays of different dimensions
-%Error: Exiting due to.*',
+q{%Error: t/t_mem_packed_bad.v:\d+: CONST '28'h0' unexpected in assignment to unpacked array
+%Error: Exiting due to.*},
     );
 
 ok(1);

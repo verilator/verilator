@@ -766,8 +766,6 @@ class AstArraySel : public AstNodeSel {
     // Parents: math|stmt
     // Children: varref|arraysel, math
 private:
-    unsigned m_start;
-    unsigned m_length;
     void init(AstNode* fromp) {
 	if (fromp && fromp->dtypep()->skipRefp()->castNodeArrayDType()) {
 	    // Strip off array to find what array references
@@ -776,11 +774,11 @@ private:
     }
 public:
     AstArraySel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-	:AstNodeSel(fl, fromp, bitp), m_start(0), m_length(1) {
+	:AstNodeSel(fl, fromp, bitp) {
 	init(fromp);
     }
     AstArraySel(FileLine* fl, AstNode* fromp, int bit)
-	:AstNodeSel(fl, fromp, new AstConst(fl,bit)), m_start(0), m_length(1) {
+	:AstNodeSel(fl, fromp, new AstConst(fl,bit)) {
 	init(fromp);
     }
     ASTNODE_NODE_FUNCS(ArraySel)
@@ -797,13 +795,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
-    unsigned length() const { return m_length; }
-    void     length(unsigned length) { m_length = length; }
-    void     start(unsigned start) { m_start = start; }
-    unsigned start() const { return m_start; }
     // Special operators
     static AstNode* baseFromp(AstNode* nodep);	///< What is the base variable (or const) this dereferences?
-    virtual void dump(ostream& str);
 };
 
 class AstWordSel : public AstNodeSel {

@@ -35,11 +35,15 @@ module t (/*AUTOARG*/
       array_3[2] = 4'b0100;
       array_3[3] = 4'b0100;
 
-      // Comparisons only compare elements 0
       array_1_ne_array_2 = array_1 != array_2;  // 0
       array_1_eq_array_2 = array_1 == array_2;  // 0
       array_1_ne_array_3 = array_1 != array_3;  // 1
       array_1_eq_array_3 = array_1 == array_3;  // 1
+
+      //Not legal: array_rxor  = ^ array_1;
+      //Not legal: array_rxnor = ^~ array_1;
+      //Not legal: array_ror   = | array_1;
+      //Not legal: array_rand  = & array_1;
 
 `ifdef TEST_VERBOSE
       $write("array_1_ne_array2==%0d\n", array_1_ne_array_2);
