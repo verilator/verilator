@@ -102,6 +102,15 @@ void V3ParseImp::verilatorCmtBad(const char* textp) {
     }
 }
 
+void V3ParseImp::tag(const char* text) {
+    if (m_tagNodep) {
+	string tmp = text + strlen("/*verilator tag ");
+	string::size_type pos;
+	if ((pos=tmp.rfind("*/")) != string::npos) { tmp.erase(pos); }
+        m_tagNodep->tag(tmp);
+    }
+}
+
 // See V3Read.cpp
 //void V3ParseImp::statePop() { yy_pop_state(); }
 
@@ -702,6 +711,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator lint_on"[^*]*"*/"	{PARSEP->verilatorCmtLint(yytext, false); }
   "/*verilator lint_restore*/"		{PARSEP->verilatorCmtLintRestore(); }
   "/*verilator lint_save*/"		{PARSEP->verilatorCmtLintSave(); }
+  "/*verilator tag"[^*]*"*/"            {PARSEP->tag(yytext); }
 
   "/**/"				{ }
   "/*"[^*]+"*/"				{PARSEP->verilatorCmtBad(yytext); }

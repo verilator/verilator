@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<!-- DESCRIPTION: Verilator output: XML representation of netlist -->
+<verilator_xml>
+  <files>
+    <file id="a" filename="AstRoot" language="1800-2012"/>
+    <file id="b" filename="COMMAND_LINE" language="1800-2012"/>
+    <file id="c" filename="INTERNAL_VERILATOR_DEFINE" language="1800-2012"/>
+    <file id="d" filename="input.vc" language="1800-2012"/>
+    <file id="e" filename="t/t_xml_tag.v" language="1800-2012"/>
+  </files>
+  <netlist>
+    <module fl="e6" name="m">
+      <var fl="e8" name="clk_ip" tag="clk_ip"/>
+      <var fl="e9" name="rst_ip"/>
+      <var fl="e10" name="foo_op" tag="foo_op"/>
+      <typedef fl="e14" name="my_struct"/>
+      <var fl="e23" name="this_struct"/>
+    </module>
+    <typetable fl="a0">
+      <basicDType  fl="e8" name="logic"/>
+      <structdtype fl="e14">
+	<memberdtype fl="e15" name="clk" tag="this is clk"/>
+	<memberdtype fl="e16" name="k"/>
+	<memberdtype fl="e17" name="enable" tag="enable"/>
+	<memberdtype fl="e18" name="data" tag="data"/>
+      </structdtype>
+      <basicDType  fl="e15" name="logic"/>
+      <basicDType  fl="e16" name="logic"/>
+      <basicDType  fl="e17" name="logic"/>
+      <basicDType  fl="e18" name="logic"/>
+      <refdtype fl="e23" name="my_struct"/>
+    </typetable>
+  </netlist>
+</verilator_xml>

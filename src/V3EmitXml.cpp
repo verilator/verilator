@@ -68,6 +68,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	puts("<"+tag+" "+nodep->fileline()->xml());
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
+	if (nodep->tag()!="") { puts(" tag="); putsQuoted(nodep->tag()); }
     }
     void outputChildrenEnd(AstNode* nodep, string tag) {
 	if (tag=="") tag = VString::downcase(nodep->typeName());

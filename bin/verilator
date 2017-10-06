@@ -2574,6 +2574,12 @@ indicate the function or task should pass all remaining arguments through
 $sformatf.  This allows creation of DPI functions with $display like
 behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 
+=item /*verilator tag <text...>*/
+
+Attached after a variable or structure member to indicate opaque (to
+Verilator) text that should be passed through to the XML output as a tag,
+for use by downstream applications.
+
 =item /*verilator tracing_off*/
 
 Disable waveform tracing for all future signals that are declared in this

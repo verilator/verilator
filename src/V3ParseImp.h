@@ -119,6 +119,8 @@ class V3ParseImp {
     deque<FileLine>  m_lintState;	// Current lint state for save/restore
     deque<string> m_ppBuffers;		// Preprocessor->lex buffer of characters to process
 
+    string m_tag;                       // Contents (if any) of current verilator tag
+    AstNode* m_tagNodep;                // Points to the node to set to m_tag or NULL to not set.
 public:
     // Note these are an exception to using the filename as the debug type
     static int debugBison() {
@@ -143,6 +145,10 @@ public:
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
     void verilatorCmtBad(const char* text);
+    void tag(const char* text);
+    void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
+    AstNode* tagNodep() const { return m_tagNodep;}
+
     static double parseDouble(const char* text, size_t length, bool* successp = NULL);
     void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState=state; }
     bool popBeginKeywords() { if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
@@ -218,6 +224,7 @@ public:
 	m_curBisonVal.token = 0;
 	m_prevBisonVal.token = 0;
 	// m_aheadVal not used as m_ahead = false
+        m_tagNodep = NULL;
     }
     ~V3ParseImp();
     void parserClear();

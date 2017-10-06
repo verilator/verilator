@@ -610,6 +610,7 @@ class AstMemberDType : public AstNodeDType {
 private:
     AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
     string	m_name;		// Name of variable
+    string	m_tag;		// Holds the string of the verilator tag -- used in XML output.
     int		m_lsb;		// Within this level's packed struct, the LSB of the first bit of the member
     //UNSUP: int m_randType;	// Randomization type (IEEE)
 public:
@@ -650,6 +651,8 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); } // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     // METHODS
     virtual void name(const string& name) { m_name = name; }
+    virtual void tag(const string& text) { m_tag = text;}
+    virtual string tag() const { return m_tag; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb=lsb; }
 };
@@ -978,6 +981,7 @@ class AstVar : public AstNode {
 private:
     string	m_name;		// Name of variable
     string	m_origName;	// Original name before dot addition
+    string      m_tag;          // Holds the string of the verilator tag -- used in XML output.
     AstVarType	m_varType;	// Type of variable
     bool	m_input:1;	// Input or inout
     bool	m_output:1;	// Output or inout
@@ -1118,6 +1122,8 @@ public:
     void trace(bool flag) { m_trace=flag; }
     // METHODS
     virtual void name(const string& name) { m_name = name; }
+    virtual void tag(const string& text) { m_tag = text;}
+    virtual string tag() const { return m_tag; }
     virtual string directionName() const { return (isInout() ? "inout" : isInput() ? "input"
 						   : isOutput() ? "output" : varType().ascii()); }
     bool	isInput() const { return m_input; }

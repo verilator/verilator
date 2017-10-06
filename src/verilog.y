@@ -1425,7 +1425,9 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	//			// At present we allow only packed structures/unions.  So this is different from variable_decl_assignment
 		id variable_dimensionListE
 			{ if ($2) $2->v3error("Unsupported: Unpacked array in packed struct/union");
-			  $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(), GRAMMARP->m_memDTypep->cloneTree(true)); }
+			  $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(), GRAMMARP->m_memDTypep->cloneTree(true));
+                          PARSEP->tagNodep($$);
+                          }
 	|	id variable_dimensionListE '=' variable_declExpr
 			{ $4->v3error("Unsupported: Initial values in struct/union members."); }
 	|	idSVKwd					{ $$ = NULL; }
@@ -3874,6 +3876,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;
+    PARSEP->tagNodep(GRAMMARP->m_varAttrp);
     return nodep;
 }
 

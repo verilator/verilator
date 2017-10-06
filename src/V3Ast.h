@@ -1087,6 +1087,8 @@ public:
     // ACCESSORS
     virtual string name() const { return ""; }
     virtual void name(const string& name) { this->v3fatalSrc("name() called on object without name() method"); }
+    virtual void tag(const string& text) {}
+    virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
     string 	shortName() const;	// Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);	// Name with dots removed
