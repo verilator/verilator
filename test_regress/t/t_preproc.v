@@ -530,6 +530,83 @@ module t;
        $display("%s%s",a,`"b``c``\n`")
    initial `BUG915("a1",b2,c3);
 endmodule
+
+//======================================================================
+//bug1225
+
+`define X_ITEM(SUB,UNIT) `X_STRING(SUB``UNIT)
+`define X_STRING(A) `"A`"
+$display(`X_ITEM(RAM,0));
+$display(`X_ITEM(CPU,));
+
+`define EMPTY
+`define EMPTYP(foo)
+`define SOME some
+`define SOMEP(foo) foo
+
+`define XXE_FAMILY XXE_```EMPTY
+XXE_FAMILY = `XXE_FAMILY
+`define XXE_```EMPTY
+`ifdef XXE_
+     $display("XXE_ is defined");
+`endif
+
+`define XYE_FAMILY XYE_```EMPTYP(foo)
+XYE_FAMILY = `XYE_FAMILY
+`define XYE_```EMPTYP(foo)
+`ifdef XYE_
+     $display("XYE_ is defined");
+`endif
+
+`define XXS_FAMILY XXS_```SOME
+XXS_FAMILY = `XXS_FAMILY
+`define XXS_```SOME
+`ifdef XXS_some
+     $display("XXS_some is defined");
+`endif
+
+`define XYS_FAMILY XYS_```SOMEP(foo)
+XYS_FAMILY = `XYS_FAMILY
+`define XYS_```SOMEP(foo)
+`ifdef XYS_foo
+     $display("XYS_foo is defined");
+`endif
+
+//====
+
+`ifdef NEVER
+ `define NXE_FAMILY NXE_```EMPTY
+NXE_FAMILY = `NXE_FAMILY
+ `define NXE_```EMPTY
+ `ifdef NXE_
+     $display("NXE_ is defined");
+ `endif
+
+ `define NYE_FAMILY NYE_```EMPTYP(foo)
+NYE_FAMILY = `NYE_FAMILY
+ `define NYE_```EMPTYP(foo)
+ `ifdef NYE_
+     $display("NYE_ is defined");
+ `endif
+
+ `define NXS_FAMILY NXS_```SOME
+NXS_FAMILY = `NXS_FAMILY
+ `define NXS_```SOME
+ `ifdef NXS_some
+     $display("NXS_some is defined");
+ `endif
+
+ `define NYS_FAMILY NYS_```SOMEP(foo)
+NYS_FAMILY = `NYS_FAMILY
+ `define NYS_```SOMEP(foo)
+ `ifdef NYS_foo
+     $display("NYS_foo is defined");
+ `endif
+
+ `include `EMPTY
+
+`endif // NEVER
+
 //======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these

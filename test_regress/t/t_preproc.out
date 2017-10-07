@@ -800,6 +800,98 @@ module t;
 `line 531 "t/t_preproc.v" 0
        $display("%s%s","a1","b2c3\n");
 endmodule
+
+`line 534 "t/t_preproc.v" 0
+ 
+ 
+
+`line 537 "t/t_preproc.v" 0
+ 
+ 
+$display("RAM0");
+$display("CPU");
+
+`line 542 "t/t_preproc.v" 0
+ 
+ 
+ 
+ 
+
+`line 547 "t/t_preproc.v" 0
+ 
+XXE_FAMILY = XXE_
+ 
+ 
+     $display("XXE_ is defined");
+
+
+`line 554 "t/t_preproc.v" 0
+ 
+XYE_FAMILY = XYE_
+ 
+ 
+     $display("XYE_ is defined");
+
+
+`line 561 "t/t_preproc.v" 0
+ 
+XXS_FAMILY = XXS_some
+ 
+ 
+     $display("XXS_some is defined");
+
+
+`line 568 "t/t_preproc.v" 0
+ 
+XYS_FAMILY = XYS_foo
+ 
+ 
+     $display("XYS_foo is defined");
+
+
+`line 575 "t/t_preproc.v" 0
+ 
+
+`line 577 "t/t_preproc.v" 0
+ 
+  
+  
+  
+  
+     
+ 
+
+`line 585 "t/t_preproc.v" 0
+  
+  
+  
+  
+     
+ 
+
+`line 592 "t/t_preproc.v" 0
+  
+  
+  
+  
+     
+ 
+
+`line 599 "t/t_preproc.v" 0
+  
+  
+  
+  
+     
+ 
+
+`line 606 "t/t_preproc.v" 0
+  
+
+`line 608 "t/t_preproc.v" 0
+  
+
+`line 610 "t/t_preproc.v" 0
  
  
    
@@ -820,4 +912,4 @@ predef 1 1
 predef 2 2
  
 
-`line 553 "t/t_preproc.v" 2
+`line 630 "t/t_preproc.v" 2

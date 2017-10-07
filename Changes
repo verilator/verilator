@@ -29,6 +29,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix conditional slices and add related optimizations.
 
+****  Fix `` expansion of empty `defines, bug1225. [Odd Magne Reitan]
+
 
 * Verilator 3.912 2017-09-23
 
