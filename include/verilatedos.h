@@ -96,7 +96,7 @@
 #endif
 
 // This is not necessarily the same as #UL, depending on what the IData typedef is.
-#define VL_UL(c) ((IData)(c##UL))	///< Add appropriate suffix to 32-bit constant
+#define VL_UL(c) (static_cast<IData>(c##UL))	///< Add appropriate suffix to 32-bit constant
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
 # define VL_DANGLING(v)

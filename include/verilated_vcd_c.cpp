@@ -326,7 +326,7 @@ void VerilatedVcd::bufferFlush () {
 	} else if (got < 0) {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
-		std::string msg = (std::string)"VerilatedVcd::bufferFlush: "+strerror(errno);
+		std::string msg = std::string("VerilatedVcd::bufferFlush: ")+strerror(errno);
 		vl_fatal("",0,"",msg.c_str());
 		closeErr();
 		break;
@@ -571,7 +571,7 @@ void VerilatedVcd::declDouble   (vluint32_t code, const char* name, int arraynum
 
 void VerilatedVcd::fullDouble (vluint32_t code, const double newval) {
     // cppcheck-suppress invalidPointerCast
-    (*((double*)&m_sigs_oldvalp[code])) = newval;
+    (*(reinterpret_cast<double*>(&m_sigs_oldvalp[code]))) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(m_writep, "r%.16g", newval);
     m_writep += strlen(m_writep);
@@ -580,9 +580,9 @@ void VerilatedVcd::fullDouble (vluint32_t code, const double newval) {
 }
 void VerilatedVcd::fullFloat (vluint32_t code, const float newval) {
     // cppcheck-suppress invalidPointerCast
-    (*((float*)&m_sigs_oldvalp[code])) = newval;
+    (*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
-    sprintf(m_writep, "r%.16g", (double)newval);
+    sprintf(m_writep, "r%.16g", static_cast<double>(newval));
     m_writep += strlen(m_writep);
     *m_writep++=' '; printCode(code); *m_writep++='\n';
     bufferCheck();
@@ -596,7 +596,7 @@ void VerilatedVcd::addCallback (
     void* userthis)
 {
     if (VL_UNLIKELY(isOpen())) {
-	std::string msg = (std::string)"Internal: "+__FILE__+"::"+__FUNCTION__+" called with already open file";
+	std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
 	vl_fatal(__FILE__,__LINE__,"",msg.c_str());
     }
     VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, nextCode());

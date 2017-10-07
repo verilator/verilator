@@ -238,7 +238,7 @@ public: // But only for verilated*.cpp
 	    // Need to create more space in m_fdps and m_fdFree
 	    size_t start = s_s.m_fdps.size();
 	    s_s.m_fdps.resize(start*2);
-	    for (size_t i=start; i<start*2; ++i) s_s.m_fdFree.push_back((IData)i);
+	    for (size_t i=start; i<start*2; ++i) s_s.m_fdFree.push_back(static_cast<IData>(i));
 	}
 	IData idx = s_s.m_fdFree.back(); s_s.m_fdFree.pop_back();
 	s_s.m_fdps[idx] = fp;

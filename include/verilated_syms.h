@@ -71,7 +71,7 @@ public:
     ~VerilatedVar() {}
     void* datap() const { return m_datap; }
     VerilatedVarType vltype() const { return m_vltype; }
-    VerilatedVarFlags vldir() const { return (VerilatedVarFlags)((int)m_vlflags & VLVF_MASK_DIR); }
+    VerilatedVarFlags vldir() const { return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR); }
     vluint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     const VerilatedRange& range() const { return m_range; }

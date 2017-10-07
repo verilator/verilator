@@ -137,17 +137,17 @@ private:
     // cppcheck-suppress functionConst
     void dumpDone ();
     inline void printCode (vluint32_t code) {
-	if (code>=(94*94*94)) *m_writep++ = ((char)((code/94/94/94)%94+33));
-	if (code>=(94*94))    *m_writep++ = ((char)((code/94/94)%94+33));
-	if (code>=(94))       *m_writep++ = ((char)((code/94)%94+33));
-	*m_writep++ = ((char)((code)%94+33));
+	if (code>=(94*94*94)) *m_writep++ = static_cast<char>((code/94/94/94)%94+33);
+	if (code>=(94*94))    *m_writep++ = static_cast<char>((code/94/94)%94+33);
+	if (code>=(94))       *m_writep++ = static_cast<char>((code/94)%94+33);
+	*m_writep++ = static_cast<char>((code)%94+33);
     }
     static std::string stringCode (vluint32_t code) {
 	std::string out;
-	if (code>=(94*94*94)) out += ((char)((code/94/94/94)%94+33));
-	if (code>=(94*94))    out += ((char)((code/94/94)%94+33));
-	if (code>=(94))       out += ((char)((code/94)%94+33));
-	return out + ((char)((code)%94+33));
+	if (code>=(94*94*94)) out += static_cast<char>((code/94/94/94)%94+33);
+	if (code>=(94*94))    out += static_cast<char>((code/94/94)%94+33);
+	if (code>=(94))       out += static_cast<char>((code/94)%94+33);
+	return out + static_cast<char>((code)%94+33);
     }
 
     VerilatedVcd(const VerilatedVcd& );	///< N/A, no copy constructor
@@ -192,7 +192,7 @@ public:
     /// Inside dumping routines, called each cycle to make the dump
     void dump     (vluint64_t timeui);
     /// Call dump with a absolute unscaled time in seconds
-    void dumpSeconds (double secs) { dump((vluint64_t)(secs * m_timeRes)); }
+    void dumpSeconds (double secs) { dump(static_cast<vluint64_t>(secs * m_timeRes)); }
 
     /// Inside dumping routines, declare callbacks for tracings
     void addCallback (VerilatedVcdCallback_t init, VerilatedVcdCallback_t full,
@@ -218,7 +218,7 @@ public:
     void fullBit (vluint32_t code, const vluint32_t newval) {
 	// Note the &1, so we don't require clean input -- makes more common no change case faster
 	m_sigs_oldvalp[code] = newval;
-	*m_writep++=('0'+(char)(newval&1)); printCode(code); *m_writep++='\n';
+	*m_writep++=('0'+static_cast<char>(newval&1)); printCode(code); *m_writep++='\n';
 	bufferCheck();
     }
     void fullBus (vluint32_t code, const vluint32_t newval, int bits) {
@@ -231,7 +231,7 @@ public:
 	bufferCheck();
     }
     void fullQuad (vluint32_t code, const vluint64_t newval, int bits) {
-	(*((vluint64_t*)&m_sigs_oldvalp[code])) = newval;
+	(*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
 	*m_writep++='b';
 	for (int bit=bits-1; bit>=0; --bit) {
 	    *m_writep++=((newval&(1ULL<<bit))?'1':'0');
@@ -270,8 +270,8 @@ public:
 	bufferCheck();
     }
     void fullTriQuad (vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
-	(*((vluint64_t*)&m_sigs_oldvalp[code])) = newval;
-	(*((vluint64_t*)&m_sigs_oldvalp[code+1])) = newtri;
+	(*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
+	(*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) = newtri;
 	*m_writep++='b';
 	for (int bit=bits-1; bit>=0; --bit) {
 	    *m_writep++ = "01zz"[((newval >> bit)&1ULL)
@@ -335,7 +335,7 @@ public:
 	}
     }
     inline void chgQuad (vluint32_t code, const vluint64_t newval, int bits) {
-	vluint64_t diff = (*((vluint64_t*)&m_sigs_oldvalp[code])) ^ newval;
+	vluint64_t diff = (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval;
 	if (VL_UNLIKELY(diff)) {
 	    if (VL_UNLIKELY(bits==64 || (diff & ((1ULL<<bits)-1) ))) {
 		fullQuad(code, newval, bits);
@@ -370,8 +370,8 @@ public:
 	}
     }
     inline void chgTriQuad (vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
-	vluint64_t diff = ( ((*((vluint64_t*)&m_sigs_oldvalp[code])) ^ newval)
-			  | ((*((vluint64_t*)&m_sigs_oldvalp[code+1])) ^ newtri));
+	vluint64_t diff = ( ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval)
+			    | ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) ^ newtri));
 	if (VL_UNLIKELY(diff)) {
 	    if (VL_UNLIKELY(bits==64 || (diff & ((1ULL<<bits)-1) ))) {
 		fullTriQuad(code, newval, newtri, bits);
@@ -389,13 +389,13 @@ public:
     }
     inline void chgDouble (vluint32_t code, const double newval) {
 	// cppcheck-suppress invalidPointerCast
-	if (VL_UNLIKELY((*((double*)&m_sigs_oldvalp[code])) != newval)) {
+	if (VL_UNLIKELY((*(reinterpret_cast<double*>(&m_sigs_oldvalp[code]))) != newval)) {
 	    fullDouble (code, newval);
 	}
     }
     inline void chgFloat (vluint32_t code, const float newval) {
 	// cppcheck-suppress invalidPointerCast
-	if (VL_UNLIKELY((*((float*)&m_sigs_oldvalp[code])) != newval)) {
+	if (VL_UNLIKELY((*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) != newval)) {
 	    fullFloat (code, newval);
 	}
     }
@@ -433,9 +433,9 @@ public:
     void dump (vluint64_t timeui) { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce
     /// conversion warnings.  It's better to use a vluint64_t time instead.
-    void dump (double timestamp) { dump((vluint64_t)timestamp); }
-    void dump (vluint32_t timestamp) { dump((vluint64_t)timestamp); }
-    void dump (int timestamp) { dump((vluint64_t)timestamp); }
+    void dump (double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    void dump (vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    void dump (int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     /// Set time units (s/ms, defaults to ns)
     /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
     void set_time_unit (const char* unit) { m_sptrace.set_time_unit(unit); }

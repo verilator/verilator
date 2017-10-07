@@ -320,7 +320,7 @@ public:
 
 	std::ofstream os (filename);
 	if (os.fail()) {
-	    std::string msg = (std::string)"%Error: Can't write '"+filename+"'";
+	    std::string msg = std::string("%Error: Can't write '")+filename+"'";
 	    vl_fatal("",0,"",msg.c_str());
 	    return;
 	}

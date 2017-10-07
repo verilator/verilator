@@ -286,7 +286,7 @@ public:
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv);
-    static void commandArgs(int argc, char** argv) { commandArgs(argc,(const char**)argv); }
+    static void commandArgs(int argc, char** argv) { commandArgs(argc, const_cast<const char**>(argv)); }
     static void commandArgsAdd(int argc, const char** argv);
     static CommandArgValues* getCommandArgs() {return &s_args;}
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
@@ -404,10 +404,10 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 
 /// Create two 32-bit words from quadword
 /// WData is always at least 2 words; does not clean upper bits
-#define VL_SET_WQ(owp,data)	{ owp[0]=(IData)(data); owp[1]=(IData)((data)>>VL_WORDSIZE); }
-#define VL_SET_WI(owp,data)	{ owp[0]=(IData)(data); owp[1]=0; }
-#define VL_SET_QW(lwp)		( ((QData)(lwp[0])) | ((QData)(lwp[1])<<((QData)(VL_WORDSIZE)) ))
-#define _VL_SET_QII(ld,rd)      ( ((QData)(ld)<<VL_ULL(32)) | (QData)(rd) )
+#define VL_SET_WQ(owp,data)	{ owp[0]=static_cast<IData>(data); owp[1]=static_cast<IData>((data)>>VL_WORDSIZE); }
+#define VL_SET_WI(owp,data)	{ owp[0]=static_cast<IData>(data); owp[1]=0; }
+#define VL_SET_QW(lwp)		( (static_cast<QData>(lwp[0])) | (static_cast<QData>(lwp[1])<<(static_cast<QData>(VL_WORDSIZE)) ))
+#define _VL_SET_QII(ld,rd)      ( (static_cast<QData>(ld)<<VL_ULL(32)) | static_cast<QData>(rd) )
 
 /// Return FILE* from IData
 extern FILE*  VL_CVT_I_FP(IData lhs);
@@ -422,11 +422,11 @@ static inline double VL_CVT_D_Q(QData lhs) { union { double d; QData q; } u; u.q
 /// Return QData from double (bits, not numerically)
 static inline QData  VL_CVT_Q_D(double lhs) { union { double d; QData q; } u; u.d=lhs; return u.q; }
 /// Return double from QData (numeric)
-static inline double VL_ITOR_D_I(IData lhs) { return ((double)((vlsint32_t)(lhs))); }
+static inline double VL_ITOR_D_I(IData lhs) { return static_cast<double>(static_cast<vlsint32_t>(lhs)); }
 /// Return QData from double (numeric)
-static inline IData  VL_RTOI_I_D(double lhs) { return ((vlsint32_t)(VL_TRUNC(lhs))); }
+static inline IData  VL_RTOI_I_D(double lhs) { return static_cast<vlsint32_t>(VL_TRUNC(lhs)); }
 /// Return QData from double (numeric)
-static inline IData  VL_RTOIROUND_I_D(double lhs) { return ((vlsint32_t)(VL_ROUND(lhs))); }
+static inline IData  VL_RTOIROUND_I_D(double lhs) { return static_cast<vlsint32_t>(VL_ROUND(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -455,13 +455,13 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 
 /// Return current simulation time
 #if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION>20011000)
-# define VL_TIME_I() ((IData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q() ((QData)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-# define VL_TIME_D() ((double)(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_I() (static_cast<IData>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q() (static_cast<QData>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
+# define VL_TIME_D() (static_cast<double>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
 #else
-# define VL_TIME_I() ((IData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q() ((QData)(sc_time_stamp()*VL_TIME_MULTIPLIER))
-# define VL_TIME_D() ((double)(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_I() (static_cast<IData>(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_Q() (static_cast<QData>(sc_time_stamp()*VL_TIME_MULTIPLIER))
+# define VL_TIME_D() (static_cast<double>(sc_time_stamp()*VL_TIME_MULTIPLIER))
 extern double sc_time_stamp();
 #endif
 
@@ -581,8 +581,8 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
     od = (svar.read().get_word(0)) & VL_MASK_I(obits); \
 }
 #define VL_ASSIGN_QSW(obits,od,svar) { \
-    od = (((QData)svar.read().get_word(1))<<VL_WORDSIZE | svar.read().get_word(0)) \
-	& VL_MASK_Q(obits); \
+    od = ((static_cast<QData>(svar.read().get_word(1)))<<VL_WORDSIZE | svar.read().get_word(0)) \
+         & VL_MASK_Q(obits); \
 }
 #define VL_ASSIGN_WSW(obits,owp,svar) { \
     int words = VL_WORDS_I(obits); \
@@ -616,8 +616,8 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
 }
 #define VL_ASSIGN_SWQ(obits,svar,rd) { \
     sc_bv<obits> _bvtemp; \
-    _bvtemp.set_word(0,(IData)(rd));	 \
-    _bvtemp.set_word(1,(IData)((rd)>>VL_WORDSIZE));	\
+    _bvtemp.set_word(0, static_cast<IData>(rd));	 \
+    _bvtemp.set_word(1, static_cast<IData>((rd)>>VL_WORDSIZE));	\
     svar.write(_bvtemp); \
 }
 #define VL_ASSIGN_SWW(obits,svar,rwp) { \
@@ -648,7 +648,7 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) {
 // Right must be clean because otherwise size increase would pick up bad bits
 // EMIT_RULE: VL_EXTEND:  oclean=clean; rclean==clean;
 #define VL_EXTEND_II(obits,lbits,lhs) ((lhs))
-#define VL_EXTEND_QI(obits,lbits,lhs) ((QData)(lhs))
+#define VL_EXTEND_QI(obits,lbits,lhs) (static_cast<QData>(lhs))
 #define VL_EXTEND_QQ(obits,lbits,lhs) ((lhs))
 
 static inline WDataOutP VL_EXTEND_WI(int obits, int, WDataOutP owp, IData ld) {
@@ -768,7 +768,7 @@ static inline IData VL_REDXOR_64(QData r) {
     return __builtin_parityll(r);
 #else
     r=(r^(r>>1)); r=(r^(r>>2)); r=(r^(r>>4)); r=(r^(r>>8)); r=(r^(r>>16)); r=(r^(r>>32));
-    return (IData)r;
+    return static_cast<IData>(r);
 #endif
 }
 static inline IData VL_REDXOR_W(int words, WDataInP lwp) {
@@ -787,7 +787,7 @@ static inline IData VL_COUNTONES_I(IData lhs) {
     return r;
 }
 static inline IData VL_COUNTONES_Q(QData lhs) {
-    return VL_COUNTONES_I((IData)lhs) + VL_COUNTONES_I((IData)(lhs>>32));
+    return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs>>32));
 }
 static inline IData VL_COUNTONES_W(int words, WDataInP lwp) {
     IData r = 0;
@@ -1024,7 +1024,7 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) {
 static inline WDataOutP VL_ADD_W(int words, WDataOutP owp,WDataInP lwp,WDataInP rwp){
     QData carry = 0;
     for (int i=0; i<words; ++i) {
-	carry = carry + (QData)(lwp[i]) + (QData)(rwp[i]);
+	carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(rwp[i]);
 	owp[i] = (carry & VL_ULL(0xffffffff));
 	carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
     }
@@ -1034,7 +1034,7 @@ static inline WDataOutP VL_ADD_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
 static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP rwp){
     QData carry = 0;
     for (int i=0; i<words; ++i) {
-	carry = carry + (QData)(lwp[i]) + (QData)(IData)(~rwp[i]);
+	carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(static_cast<IData>(~rwp[i]));
 	if (i==0) carry++;  // Negation of temp2
 	owp[i] = (carry & VL_ULL(0xffffffff));
 	carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -1051,7 +1051,7 @@ static inline QData  VL_NEGATE_Q(QData data) { return -data; }
 static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp,WDataInP lwp){
     QData carry = 0;
     for (int i=0; i<words; ++i) {
-	carry = carry + (QData)(IData)(~lwp[i]);
+	carry = carry + static_cast<QData>(static_cast<IData>(~lwp[i]));
 	if (i==0) carry++;  // Negation of temp2
 	owp[i] = (carry & VL_ULL(0xffffffff));
 	carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -1063,9 +1063,9 @@ static inline WDataOutP VL_MUL_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
     for (int i=0; i<words; ++i) owp[i] = 0;
     for (int lword=0; lword<words; ++lword) {
 	for (int rword=0; rword<words; ++rword) {
-	    QData mul = (QData)(lwp[lword]) * (QData)(rwp[rword]);
+	    QData mul = static_cast<QData>(lwp[lword]) * static_cast<QData>(rwp[rword]);
 	    for (int qword=lword+rword; qword<words; ++qword) {
-		mul += (QData)(owp[qword]);
+		mul += static_cast<QData>(owp[qword]);
 		owp[qword] = (mul & VL_ULL(0xffffffff));
 		mul = (mul >> VL_ULL(32)) & VL_ULL(0xffffffff);
 	    }
@@ -1111,7 +1111,7 @@ static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lw
     if ((lneg ^ rneg) & 1) {      // Negate output  (not using NEGATE, as owp==lwp)
 	QData carry = 0;
 	for (int i=0; i<words; ++i) {
-	    carry = carry + (QData)(IData)(~owp[i]);
+	    carry = carry + static_cast<QData>(static_cast<IData>(~owp[i]));
 	    if (i==0) carry++;  // Negation of temp2
 	    owp[i] = (carry & VL_ULL(0xffffffff));
 	    carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -1357,7 +1357,7 @@ static inline void _VL_INSERT_WQ(int obits, WDataOutP owp, QData ld, int hbit, i
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
 // RHS MUST BE CLEAN CONSTANT.
 #define VL_REPLICATE_IOI(obits,lbits,rbits, ld, rep) (-(ld))  // Iff lbits==1
-#define VL_REPLICATE_QOI(obits,lbits,rbits, ld, rep) (-((QData)ld))  // Iff lbits==1
+#define VL_REPLICATE_QOI(obits,lbits,rbits, ld, rep) (-(static_cast<QData>(ld)))  // Iff lbits==1
 
 static inline IData VL_REPLICATE_III(int, int lbits, int, IData ld, IData rep) {
     IData returndata = ld;
@@ -1371,7 +1371,7 @@ static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) {
     QData returndata = ld;
     for (unsigned i=1; i < rep; ++i){
 	returndata = returndata << lbits;
-	returndata |= (QData)ld;
+	returndata |= static_cast<QData>(ld);
     }
     return (returndata);
 }
@@ -1497,7 +1497,7 @@ static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) {
 static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WDataInP lwp, IData rd) {
     VL_ZERO_W(lbits, owp);
     // Slice size should never exceed the lhs width
-    int ssize = (rd < (IData)lbits) ? rd : ((IData)lbits);
+    int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart=0; istart<lbits; istart+=rd) {
 	int ostart=lbits-rd-istart;
         ostart = ostart > 0 ? ostart : 0;
@@ -1515,11 +1515,11 @@ static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WData
 // Thus we specify inputs must be clean, so we don't need to clean the output.
 // Note the bit shifts are always constants, so the adds in these constify out.
 // Casts required, as args may be 8 bit entities, and need to shift to appropriate output size
-#define VL_CONCAT_III(obits,lbits,rbits,ld,rd)   ((IData)(ld)<<(rbits) | (IData)(rd))
-#define VL_CONCAT_QII(obits,lbits,rbits,ld,rd)   ((QData)(ld)<<(rbits) | (QData)(rd))
-#define VL_CONCAT_QIQ(obits,lbits,rbits,ld,rd)   ((QData)(ld)<<(rbits) | (QData)(rd))
-#define VL_CONCAT_QQI(obits,lbits,rbits,ld,rd)   ((QData)(ld)<<(rbits) | (QData)(rd))
-#define VL_CONCAT_QQQ(obits,lbits,rbits,ld,rd)   ((QData)(ld)<<(rbits) | (QData)(rd))
+#define VL_CONCAT_III(obits,lbits,rbits,ld,rd)   (static_cast<IData>(ld)<<(rbits) | static_cast<IData>(rd))
+#define VL_CONCAT_QII(obits,lbits,rbits,ld,rd)   (static_cast<QData>(ld)<<(rbits) | static_cast<QData>(rd))
+#define VL_CONCAT_QIQ(obits,lbits,rbits,ld,rd)   (static_cast<QData>(ld)<<(rbits) | static_cast<QData>(rd))
+#define VL_CONCAT_QQI(obits,lbits,rbits,ld,rd)   (static_cast<QData>(ld)<<(rbits) | static_cast<QData>(rd))
+#define VL_CONCAT_QQQ(obits,lbits,rbits,ld,rd)   (static_cast<QData>(ld)<<(rbits) | static_cast<QData>(rd))
 
 static inline WDataOutP VL_CONCAT_WII(int obits,int lbits,int rbits,WDataOutP owp,IData ld,IData rd) {
     owp[0] = rd;
@@ -1597,7 +1597,7 @@ static inline void _VL_SHIFTL_INPLACE_W(int obits,WDataOutP iowp,IData rd/*1 or 
 static inline WDataOutP VL_SHIFTL_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);
-    if (rd >= (IData)obits) {  // rd may be huge with MSB set
+    if (rd >= static_cast<IData>(obits)) {  // rd may be huge with MSB set
 	for (int i=0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
     } else if (bit_shift==0) {  // Aligned word shift (<<0,<<32,<<64 etc)
 	for (int i=0; i < word_shift; ++i) owp[i] = 0;
@@ -1631,7 +1631,7 @@ static inline IData VL_SHIFTL_IIW(int obits,int,int rbits,IData lhs, WDataInP rw
 static inline WDataOutP VL_SHIFTR_WWI(int obits,int,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);  // Maybe 0
     int bit_shift = VL_BITBIT_I(rd);
-    if (rd >= (IData)obits) {  // rd may be huge with MSB set
+    if (rd >= static_cast<IData>(obits)) {  // rd may be huge with MSB set
 	for (int i=0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
     } else if (bit_shift==0) {  // Aligned word shift (>>0,>>32,>>64 etc)
 	int copy_words = (VL_WORDS_I(obits)-word_shift);
@@ -1686,14 +1686,14 @@ static inline QData VL_SHIFTRS_QQI(int obits, int lbits, int, QData lhs, IData r
     return (lhs >> rhs) | (sign & VL_CLEAN_QQ(obits,obits,signext));
 }
 static inline IData VL_SHIFTRS_IQI(int obits, int lbits, int rbits, QData lhs, IData rhs) {
-    return (IData)(VL_SHIFTRS_QQI(obits, lbits, rbits, lhs, rhs));
+    return static_cast<IData>(VL_SHIFTRS_QQI(obits, lbits, rbits, lhs, rhs));
 }
 static inline WDataOutP VL_SHIFTRS_WWI(int obits,int lbits,int,WDataOutP owp,WDataInP lwp, IData rd) {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);
     int lmsw = VL_WORDS_I(obits)-1;
     IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
-    if (rd >= (IData)obits) {  // Shifting past end, sign in all of lbits
+    if (rd >= static_cast<IData>(obits)) {  // Shifting past end, sign in all of lbits
 	for (int i=0; i <= lmsw; ++i) owp[i] = sign;
 	owp[lmsw] &= VL_MASK_I(lbits);
     } else if (bit_shift==0) {  // Aligned word shift (>>0,>>32,>>64 etc)
@@ -1766,11 +1766,11 @@ static inline QData VL_SHIFTRS_QQQ(int obits,int lbits,int rbits,QData lhs, QDat
 #define VL_BITSEL_IIII(obits,lbits,rbits,zbits,lhs,rhs) ((lhs)>>(rhs))
 #define VL_BITSEL_QIII(obits,lbits,rbits,zbits,lhs,rhs) ((lhs)>>(rhs))
 #define VL_BITSEL_QQII(obits,lbits,rbits,zbits,lhs,rhs) ((lhs)>>(rhs))
-#define VL_BITSEL_IQII(obits,lbits,rbits,zbits,lhs,rhs) ((IData)((lhs)>>(rhs)))
+#define VL_BITSEL_IQII(obits,lbits,rbits,zbits,lhs,rhs) (static_cast<IData>((lhs)>>(rhs)))
 
 static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData rd) {
     int word = VL_BITWORD_I(rd);
-    if (VL_UNLIKELY(rd>(IData)lbits)) {
+    if (VL_UNLIKELY(rd > static_cast<IData>(lbits))) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
 	// We return all 1's as that's more likely to find bugs (?) than 0's.
     } else {
@@ -1782,13 +1782,13 @@ static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData
 // <msb> & <lsb> MUST BE CLEAN (currently constant)
 #define VL_SEL_IIII(obits,lbits,rbits,tbits,lhs,lsb,width) ((lhs)>>(lsb))
 #define VL_SEL_QQII(obits,lbits,rbits,tbits,lhs,lsb,width) ((lhs)>>(lsb))
-#define VL_SEL_IQII(obits,lbits,rbits,tbits,lhs,lsb,width) ((IData)((lhs)>>(lsb)))
+#define VL_SEL_IQII(obits,lbits,rbits,tbits,lhs,lsb,width) (static_cast<IData>((lhs)>>(lsb)))
 
 static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP lwp, IData lsb, IData width) {
     int msb = lsb+width-1;
     if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
-    } else if (VL_BITWORD_I(msb)==VL_BITWORD_I((int)lsb)) {
+    } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
 	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
     } else {
 	// 32 bit extraction may span two words
@@ -1802,9 +1802,9 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP lwp, IData ls
     int msb = lsb+width-1;
     if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
-    } else if (VL_BITWORD_I(msb)==VL_BITWORD_I((int)lsb)) {
+    } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
 	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
-    } else if (VL_BITWORD_I(msb)==1+VL_BITWORD_I((int)lsb)) {
+    } else if (VL_BITWORD_I(msb)==1+VL_BITWORD_I(static_cast<int>(lsb))) {
 	int nbitsfromlow = 32-VL_BITBIT_I(lsb);
 	QData hi = (lwp[VL_BITWORD_I(msb)]);
 	QData lo = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
@@ -1837,7 +1837,7 @@ static inline WDataOutP VL_SEL_WWII(int obits,int lbits,int,int,WDataOutP owp,WD
 	for (int i=0; i<words; ++i) {
 	    owp[i] = lwp[i+word_shift]>>loffset;
 	    int upperword = i+word_shift+1;
-	    if (upperword <= (int)VL_BITWORD_I(msb)) {
+	    if (upperword <= static_cast<int>(VL_BITWORD_I(msb))) {
 		owp[i] |= lwp[upperword]<< nbitsfromlow;
 	    }
 	}
@@ -1900,7 +1900,7 @@ static inline WDataOutP VL_COND_WIWW(int obits, int, int, int,
 // If changing the number of functions here, also change EMITCINLINES_NUM_CONSTW
 
 #define _END(obits,wordsSet) \
-    for(int i=(wordsSet);i<VL_WORDS_I(obits);++i) o[i] = (IData)0x0; \
+    for(int i=(wordsSet);i<VL_WORDS_I(obits);++i) o[i] = 0; \
     return o
 
 static inline WDataOutP VL_CONST_W_1X(int obits, WDataOutP o,
