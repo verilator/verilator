@@ -43,7 +43,7 @@ AC_ARG_ENABLE([ccwarn],
                 x)   CFG_WITH_CCWARN=no ;;
                 *)   CFG_WITH_CCWARN=yes ;;
                esac]
-	      )
+              )
 AC_SUBST(CFG_WITH_CCWARN)
 AC_MSG_RESULT($CFG_WITH_CCWARN)
 
@@ -61,7 +61,7 @@ AC_ARG_ENABLE([longtests],
                 x)   CFG_WITH_LONGTESTS=no ;;
                 *)   CFG_WITH_LONGTESTS=yes ;;
                esac]
-	      )
+              )
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
@@ -79,10 +79,10 @@ AC_PROG_INSTALL
 AC_LANG_PUSH(C++)
 AC_MSG_CHECKING([that C++ compiler can compile simple program])
 AC_RUN_IFELSE(
-           [AC_LANG_SOURCE([int main() { return 0; }])],
-           AC_MSG_RESULT(yes),
-           AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
-	   AC_MSG_RESULT(yes))
+   [AC_LANG_SOURCE([int main() { return 0; }])],
+    AC_MSG_RESULT(yes),
+    AC_MSG_RESULT(no);AC_MSG_ERROR([a working C++ compiler is required]),
+    AC_MSG_RESULT(yes))
 
 AC_PATH_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
@@ -106,39 +106,55 @@ AC_TYPE_SIZE_T
 # Checks for compiler characteristics.
 AC_C_INLINE
 
-AC_DEFUN([_MY_CXX_CHECK_OPT],
-   [# _MY_CXX_CHECK_OPT(flag) -- Check if compiler supports specific options
+AC_DEFUN([_MY_CXX_CHECK_FLAG],
+   [# _MY_CXX_CHECK_FLAG(flag) -- Check if compiler supports specific options
+    # Set $_my_result appropriately
     ACO_SAVE_CXXFLAGS="$CXXFLAGS"
     # -Werror needed otherwise unknown -Wno-div-by-zero won't report problems
-    CXXFLAGS="$CXXFLAGS $2 -Werror"
-    AC_MSG_CHECKING([whether $CXX accepts $2])
+    CXXFLAGS="$CXXFLAGS $1 -Werror"
+    AC_MSG_CHECKING([whether $CXX accepts $1])
     AC_COMPILE_IFELSE(
          [AC_LANG_PROGRAM([],[])],
-	 [_my_result=yes
-	  if test -s conftest.err; then
-	    if grep -e "$2" conftest.err >/dev/null; then
-	      _my_result=no
-	    fi
-	  fi],
-	 [_my_result=no])
+         [_my_result=yes
+          if test -s conftest.err; then
+            if grep -e "$1" conftest.err >/dev/null; then
+              _my_result=no
+            fi
+          fi],
+         [_my_result=no])
     # GCC is annoying, trying to be helpful, it postpones unknown -Wno-
     # options if there's no error We want to see them regardless, so try
     # forcing an error and see if we get a gcc warning
     AC_COMPILE_IFELSE(
          [AC_LANG_PROGRAM([[an_error "intentional-error-for-test.h"
-	                  ]],[])],
+                          ]],[])],
          [], # Ignore ok exit
          [if test -s conftest.err; then
-            if grep -e "$2" conftest.err >/dev/null; then
+            if grep -e "$1" conftest.err >/dev/null; then
               _my_result=no
             fi
           fi])
     AC_MSG_RESULT($_my_result)
+    CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+   ])
+
+AC_DEFUN([_MY_CXX_CHECK_SET],
+   [# _MY_CXX_CHECK_SET(variable,flag) -- Check if compiler supports specific options
+    # If it does, set variable to flag
+    _MY_CXX_CHECK_FLAG($2)
     if test "$_my_result" = "yes" ; then
        $1="$$1 $2"
     fi
-    CXXFLAGS="$ACO_SAVE_CXXFLAGS"
-   ])# _MY_CXX_CHECK_OPT
+   ])
+
+AC_DEFUN([_MY_CXX_CHECK_OPT],
+   [# _MY_CXX_CHECK_OPT(flag) -- Check if compiler supports specific options
+    # If it does, append flag to variable
+    _MY_CXX_CHECK_FLAG($2)
+    if test "$_my_result" = "yes" ; then
+       $1="$$1 $2"
+    fi
+   ])
 
 # Flags for compiling Verilator internals including parser, and Verilated files
 # These turn on extra warnings and are only used with 'configure --enable-ccwarn'
