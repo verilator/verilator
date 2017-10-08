@@ -140,10 +140,12 @@ AC_DEFUN([_MY_CXX_CHECK_FLAG],
 
 AC_DEFUN([_MY_CXX_CHECK_SET],
    [# _MY_CXX_CHECK_SET(variable,flag) -- Check if compiler supports specific options
-    # If it does, set variable to flag
-    _MY_CXX_CHECK_FLAG($2)
-    if test "$_my_result" = "yes" ; then
-       $1="$$1 $2"
+    # If it does, set variable to flag, only if not previously set
+    if test "$$1" = ""; then
+       _MY_CXX_CHECK_FLAG($2)
+       if test "$_my_result" = "yes" ; then
+          $1="$2"
+       fi
     fi
    ])
 
@@ -155,6 +157,28 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
        $1="$$1 $2"
     fi
    ])
+
+# Flag to select newest language standard supported
+# Macros work such that first option that passes is the one we take
+# gnu++14 is the newest that Verilator supports
+# std++03 is the oldest that Verilator supports
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++03)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++11)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++03)
+AC_SUBST(CFG_CXXFLAGS_STD_NEWEST)
+# And likewise oldest standard (same list above, backwards)
+# This is used for internal testing
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=std++03)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=std++11)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=std++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++03)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++11)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++14)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_OLDEST,-std=gnu++17)
+AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 
 # Flags for compiling Verilator internals including parser, and Verilated files
 # These turn on extra warnings and are only used with 'configure --enable-ccwarn'

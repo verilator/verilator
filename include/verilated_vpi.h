@@ -215,7 +215,7 @@ public:
     virtual const VerilatedRange* rangep() const { return &get_range(); }
     virtual const char* name() { return m_varp->name(); }
     virtual const char* fullname() {
-	VL_STATIC_OR_THREAD std::string out;
+	static VL_THREAD_LOCAL std::string out;
 	out = std::string(m_scopep->name())+"."+name();
 	return out.c_str();
     }
@@ -243,7 +243,7 @@ public:
     virtual  vluint32_t size() const { return varp()->range().elements(); }
     virtual const VerilatedRange* rangep() const { return &(varp()->range()); }
     virtual const char* fullname() {
-	VL_STATIC_OR_THREAD std::string out;
+	static VL_THREAD_LOCAL std::string out;
 	char num[20]; sprintf(num,"%d",m_index);
 	out = std::string(scopep()->name())+"."+name()+"["+num+"]";
 	return out.c_str();
@@ -464,7 +464,7 @@ public:
         return this;
     }
     void setMessage(std::string file, PLI_INT32 line, std::string message, ...) {
-	static VL_THREAD std::string filehold;
+	static VL_THREAD_LOCAL std::string filehold;
         _VL_VPI_ERROR_SET;
         m_errorInfo.state = vpiPLI;
 	filehold = file;

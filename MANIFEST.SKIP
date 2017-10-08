@@ -39,5 +39,6 @@ nodist/
 /vc_hdrs.h$
 /csrc/
 doxygen-doc/.*
+obj_dir/.*
 TAGS
 .*~

@@ -721,9 +721,9 @@ void vpi_put_delays(vpiHandle object, p_vpi_delay delay_p) {
 // value processing
 
 void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
-    static VL_THREAD char outStr[1+VL_MULS_MAX_WORDS*32]; // Maximum required size is for binary string, one byte per bit plus null termination
+    static VL_THREAD_LOCAL char outStr[1+VL_MULS_MAX_WORDS*32]; // Maximum required size is for binary string, one byte per bit plus null termination
     // cppcheck-suppress variableScope
-    static VL_THREAD int outStrSz = sizeof(outStr)-1;
+    static VL_THREAD_LOCAL int outStrSz = sizeof(outStr)-1;
     VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  vpi_get_value %p\n",object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!value_p)) return;
@@ -733,7 +733,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	if (value_p->format == vpiVectorVal) {
 	    // Vector pointer must come from our memory pool
 	    // It only needs to persist until the next vpi_get_value
-	    static VL_THREAD t_vpi_vecval out[VL_MULS_MAX_WORDS*2];
+	    static VL_THREAD_LOCAL t_vpi_vecval out[VL_MULS_MAX_WORDS*2];
 	    value_p->value.vector = out;
 	    switch (vop->varp()->vltype()) {
 	    case VLVT_UINT8:
@@ -884,7 +884,6 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 		}
 		for (i=0; i<chars; ++i) {
 		    char val = (datap[i>>1]>>((i&1)<<2))&15;
-                    static char hex[] = "0123456789abcdef";
                     if (i==(chars-1)) {
 			// most signifcant char, mask off non existant bits when vector
                         // size is not a multiple of 4
@@ -894,7 +893,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                             val &= (1<<rem)-1;
 			}
 		    }
-		    outStr[chars-i-1] = hex[static_cast<int>(val)];
+		    outStr[chars-i-1] = "0123456789abcdef"[static_cast<int>(val)];
 		}
 		outStr[i]=0; // NULL terminate
 		return;

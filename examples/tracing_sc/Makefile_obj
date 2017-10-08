@@ -27,7 +27,6 @@ CPPFLAGS += -DVL_DEBUG=1
 CPPFLAGS += -Wno-deprecated
 # Turn on some more flags (when configured appropriately)
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
-CPPFLAGS += -DVL_THREADED=1
 CPPFLAGS += -W -Werror -Wall
 endif
 

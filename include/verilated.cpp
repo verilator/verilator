@@ -37,9 +37,9 @@ VerilatedVoidCb Verilated::s_flushCb = NULL;
 
 // Keep below together in one cache line
 Verilated::Serialized Verilated::s_s;
-VL_THREAD const VerilatedScope* Verilated::t_dpiScopep = NULL;
-VL_THREAD const char* Verilated::t_dpiFilename = "";
-VL_THREAD int Verilated::t_dpiLineno = 0;
+VL_THREAD_LOCAL const VerilatedScope* Verilated::t_dpiScopep = NULL;
+VL_THREAD_LOCAL const char* Verilated::t_dpiFilename = "";
+VL_THREAD_LOCAL int Verilated::t_dpiLineno = 0;
 struct Verilated::CommandArgValues Verilated::s_args = {0, NULL};
 
 VerilatedImp  VerilatedImp::s_s;
@@ -372,8 +372,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) {
     // Note uses a single buffer internally; presumes only one usage per printf
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
-    static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
-    static VL_THREAD char tmpf[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD_LOCAL char tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD_LOCAL char tmpf[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -657,7 +657,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
-    static VL_THREAD char tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD_LOCAL char tmp[VL_VALUE_STRING_MAX_WIDTH];
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
@@ -881,7 +881,7 @@ void VL_FCLOSE_I(IData fdi) {
 }
 
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -892,7 +892,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) {
 }
 
 void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -903,7 +903,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) {
 }
 
 void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -914,7 +914,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) {
 }
 
 void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -925,7 +925,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) {
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -945,7 +945,7 @@ void VL_SFORMAT_X(int obits_ignored, std::string &output, const char* formatp, .
 }
 
 std::string VL_SFORMATF_NX(const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -956,7 +956,7 @@ std::string VL_SFORMATF_NX(const char* formatp, ...) {
 }
 
 void VL_WRITEF(const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
     va_start(ap,formatp);
@@ -968,7 +968,7 @@ void VL_WRITEF(const char* formatp, ...) {
 }
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) {
-    VL_STATIC_OR_THREAD std::string output;  // static only for speed
+    static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return;
@@ -1247,7 +1247,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) {
 
 const char* vl_mc_scan_plusargs(const char* prefixp) {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
-    static VL_THREAD char outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match == "") return NULL;
     strncpy(outstr, match.c_str()+strlen(prefixp)+1, // +1 to skip the "+"
 	    VL_VALUE_STRING_MAX_WIDTH);
@@ -1315,7 +1315,7 @@ void Verilated::commandArgs(int argc, const char** argv) {
 
 const char* Verilated::commandArgsPlusMatch(const char* prefixp) {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
-    static VL_THREAD char outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match == "") return "";
     strncpy(outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH);
     outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';

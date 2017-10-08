@@ -234,9 +234,9 @@ class Verilated {
 	Serialized();
     } s_s;
 
-    static VL_THREAD const VerilatedScope* t_dpiScopep;	///< DPI context scope
-    static VL_THREAD const char*	t_dpiFilename;	///< DPI context filename
-    static VL_THREAD int		t_dpiLineno;	///< DPI context line number
+    static VL_THREAD_LOCAL const VerilatedScope* t_dpiScopep;	///< DPI context scope
+    static VL_THREAD_LOCAL const char*	t_dpiFilename;	///< DPI context filename
+    static VL_THREAD_LOCAL int		t_dpiLineno;	///< DPI context line number
 
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments

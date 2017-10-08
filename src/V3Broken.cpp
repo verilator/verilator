@@ -31,7 +31,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <algorithm>
-#include <map>
+#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3Broken.h"
@@ -47,7 +47,7 @@ class BrokenTable : public AstNVisitor {
 private:
     // MEMBERS
     //   For each node, we keep if it exists or not.
-    typedef map<const AstNode*,int> NodeMap;
+    typedef VL_UNORDERED_MAP<const AstNode*,int> NodeMap;  // Performance matters (when --debug)
     static NodeMap s_nodes;	// Set of all nodes that exist
     // BITMASK
     enum { FLAG_ALLOCATED	= 0x01 };	// new() and not delete()ed

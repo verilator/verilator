@@ -77,17 +77,18 @@
 
 #ifdef VL_THREADED
 # ifdef __GNUC__
-#  define VL_THREAD	__thread	///< Storage class for thread-local storage
+#  if (__cplusplus < 201103L) && !defined(VL_THREADED_NO_C11_WARNING)
+#    error "VL_THREADED support plans to move to C++-11 and later only; use newer --std to be ready"
+#  endif
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
 # endif
-# define VL_STATIC_OR_THREAD		///< Static if unthreaded, as some strings can be faster
-//					///< if non-dynamic and can't do "static VL_THREAD string"
+# define VL_THREAD_LOCAL thread_local	///< Use new C++ static local thread
 #else
-# define VL_THREAD			///< Storage class for thread-local storage
-# define VL_STATIC_OR_THREAD static	///< Static if unthreaded, as some strings can be faster
-//					///< if non-dynamic and can't do "static VL_THREAD string"
+# define VL_THREAD_LOCAL		///< Use new C++ static local thread
 #endif
+#define VL_THREAD			///< Deprecated
+#define VL_STATIC_OR_THREAD static	///< Deprecated
 
 #ifdef _MSC_VER
 # define VL_ULL(c) (c##ui64)	///< Add appropriate suffix to 64-bit constant
@@ -109,9 +110,14 @@
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 # define VL_HAS_UNIQUE_PTR
-# define VL_UNIQUE_PTR unique_ptr
+# define VL_HAS_UNORDERED_MAP
+# define VL_UNIQUE_PTR std::unique_ptr
+# define VL_UNORDERED_MAP std::unordered_map
+# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 #else
-# define VL_UNIQUE_PTR auto_ptr
+# define VL_UNIQUE_PTR std::auto_ptr
+# define VL_UNORDERED_MAP std::map
+# define VL_INCLUDE_UNORDERED_MAP <map>
 #endif
 
 //=========================================================================
