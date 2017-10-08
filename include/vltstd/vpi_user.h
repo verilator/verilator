@@ -105,10 +105,12 @@ typedef unsigned char    PLI_UBYTE8;
 
 /* object is defined imported by the application */
 
+#undef XXTERN
 #define XXTERN PLI_EXTERN PLI_DLLISPEC
 
 /* object is exported by the application */
 
+#undef EETERN
 #define EETERN PLI_EXTERN PLI_DLLESPEC
 #endif
 

@@ -30,7 +30,9 @@
 
 // On MSVC++ we need svdpi.h to declare exports, not imports
 #define DPI_PROTOTYPES
+#undef XXTERN
 #define XXTERN DPI_EXTERN DPI_DLLESPEC
+#undef EETERN
 #define EETERN DPI_EXTERN DPI_DLLESPEC
 
 #include "vltstd/svdpi.h"
