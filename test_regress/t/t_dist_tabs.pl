@@ -8,7 +8,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 my $root = "..";
-my $Debug;
 
 if (!-r "$root/.git") {
     $Self->skip("Not in a git repository");
@@ -18,16 +17,30 @@ if (!-r "$root/.git") {
     my $prefix;
     my $summary;
     {
-        my $status = `cd $root && git ls-files -o --exclude-standard`;
-        print "ST $status\n" if $Debug;
-        foreach my $file (sort split /\n/, $status) {
-            next if $file =~ /nodist/;
-            if (_has_tabs("$root/$file")) {
-                $warns{$file} = "File not in git or .gitignore (with tabs): $file";
-                $summary = "Files untracked in git or .gitignore (with tabs):"
-            } else {
-                $warns{$file} = "File not in git or .gitignore: $file";
-                $summary ||= "Files untracked in git or .gitignore:"
+        my $diff = `cd $root && git diff HEAD`;
+        #print "DS $diff\n" if $Debug;
+        my $file;
+        my $atab;
+        my $btab;
+        foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
+            if ($line =~ m!^\+\+\+ b/(.*)!) {
+                if ($file && !$atab && $btab) {
+                    $summary = "File modifications adds new tabs (please untabify the patch):";
+                    $warns{$file} = "File modification adds new tabs (please untabify the patch): $file";
+                }
+                # Next
+                $file = $1;
+                $atab = 0;
+                $btab = 0;
+                print " File $file\n" if $Self->{verbose};
+            }
+            elsif ($line =~ m!^[- ].*\t!) {
+                print "  Had tabs\n" if $Self->{verbose} && !$atab;
+                $atab = 1;
+            }
+            elsif ($line =~ m!^\+.*\t!) {
+                print "  Inserts tabs\n" if $Self->{verbose} && !$btab;
+                $btab = 1;
             }
         }
     }
