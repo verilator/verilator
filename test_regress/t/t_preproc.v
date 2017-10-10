@@ -607,6 +607,10 @@ NYS_FAMILY = `NYS_FAMILY
 
 `endif // NEVER
 
+//bug1227
+`define INSTANCE(NAME) (.mySig (myInterface.``NAME),
+`INSTANCE(pa5)
+
 //======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these

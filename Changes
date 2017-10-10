@@ -31,7 +31,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix conditional slices and add related optimizations.
 
-****  Fix `` expansion of empty `defines, bug1225. [Odd Magne Reitan]
+****  Fix `` expansion of `defines, bug1225, bug1227, bug1228. [Odd Magne Reitan]
 
 ****  Fix -E duplicating output, bug1226. [Odd Magne Reitan]
 

@@ -894,6 +894,11 @@ XYS_FAMILY = XYS_foo
 `line 610 "t/t_preproc.v" 0
  
  
+(.mySig (myInterface.pa5),
+
+`line 614 "t/t_preproc.v" 0
+ 
+ 
    
 predef 0 0
 predef 1 1
@@ -912,4 +917,4 @@ predef 1 1
 predef 2 2
  
 
-`line 630 "t/t_preproc.v" 2
+`line 634 "t/t_preproc.v" 2
