@@ -16,10 +16,10 @@
 /// \file
 /// \brief Verilator: String include for all Verilated C files
 ///
-///	This file is included automatically by Verilator at the top of
-///	all C++ files it generates.  It is used when strings or other
-///	heavyweight types are required; these contents are not part of
-///	verilated.h to save compile time when such types aren't used.
+///     This file is included automatically by Verilator at the top of
+///     all C++ files it generates.  It is used when strings or other
+///     heavyweight types are required; these contents are not part of
+///     verilated.h to save compile time when such types aren't used.
 ///
 /// Code available from: http://www.veripool.org/verilator
 ///

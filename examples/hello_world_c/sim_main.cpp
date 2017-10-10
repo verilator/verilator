@@ -26,8 +26,8 @@ int main(int argc, char** argv, char** env) {
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
 
-	// Evaluate model
-	top->eval();
+        // Evaluate model
+        top->eval();
     }
 
     // Final model cleanup

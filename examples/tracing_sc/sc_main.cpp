@@ -99,21 +99,21 @@ int sc_main(int argc, char* argv[]) {
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
 #if VM_TRACE
-	// Flush the wave files each cycle so we can immediately see the output
-	// Don't do this in "real" programs, do it in an abort() handler instead
-	if (tfp) tfp->flush();
-	// Apply inputs
-	if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
-	    reset_l = !1;	// Assert reset
-	} else if (VL_TIME_Q() > 1) {
-	    reset_l = !0;	// Deassert reset
-	}
+        // Flush the wave files each cycle so we can immediately see the output
+        // Don't do this in "real" programs, do it in an abort() handler instead
+        if (tfp) tfp->flush();
+        // Apply inputs
+        if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
+            reset_l = !1;       // Assert reset
+        } else if (VL_TIME_Q() > 1) {
+            reset_l = !0;       // Deassert reset
+        }
 #endif
-	// Simulate 1ns
+        // Simulate 1ns
 #if (SYSTEMC_VERSION>=20070314)
-	sc_start(1,SC_NS);
+        sc_start(1,SC_NS);
 #else
-	sc_start(1);
+        sc_start(1);
 #endif
     }
 

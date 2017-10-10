@@ -63,33 +63,33 @@ int main(int argc, char** argv, char** env) {
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-	main_time++;  // Time passes...
+        main_time++;  // Time passes...
 
-	// Toggle clocks and such
-	top->fastclk = !top->fastclk;
-	if ((main_time % 10) == 3) {
-	    top->clk = 1;
-	}
-	if ((main_time % 10) == 8) {
-	    top->clk = 0;
-	}
-	if (main_time > 1 && main_time < 10) {
-	    top->reset_l = !1;  // Assert reset
-	} else {
-	    top->reset_l = !0;  // Deassert reset
-	}
+        // Toggle clocks and such
+        top->fastclk = !top->fastclk;
+        if ((main_time % 10) == 3) {
+            top->clk = 1;
+        }
+        if ((main_time % 10) == 8) {
+            top->clk = 0;
+        }
+        if (main_time > 1 && main_time < 10) {
+            top->reset_l = !1;  // Assert reset
+        } else {
+            top->reset_l = !0;  // Deassert reset
+        }
 
-	// Assign some other inputs
-	top->in_quad += 0x12;
+        // Assign some other inputs
+        top->in_quad += 0x12;
 
-	// Evaluate model
-	top->eval();
+        // Evaluate model
+        top->eval();
 
-    	// Read outputs
-	VL_PRINTF ("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-		   " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
-		   main_time, top->clk, top->reset_l, top->in_quad,
-		   top->out_quad, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
+        // Read outputs
+        VL_PRINTF ("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
+                   " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
+                   main_time, top->clk, top->reset_l, top->in_quad,
+                   top->out_quad, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }
 
     // Final model cleanup

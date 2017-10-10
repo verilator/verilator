@@ -16,9 +16,9 @@
 /// \file
 /// \brief Verilator: Common include for all Verilated C files that use DPI
 ///
-///	This file is included automatically by Verilator at the top of
-///	all C++ files it generates where DPI is used.  It contains
-///	DPI interface functions required by the Verilated code.
+///     This file is included automatically by Verilator at the top of
+///     all C++ files it generates where DPI is used.  It contains
+///     DPI interface functions required by the Verilated code.
 ///
 /// Code available from: http://www.veripool.org/verilator
 ///
