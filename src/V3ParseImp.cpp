@@ -154,6 +154,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     // Parse it
     if (!v3Global.opt.preprocOnly()) {
 	lexFile (modfilename);
+    } else {
+	m_ppBuffers.clear();
     }
 }
 
@@ -183,5 +185,5 @@ void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrar
     m_impp->parseFile(fileline, modname, inLibrary, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
-    impp->ppPushText(text);
+    if (text != "") impp->ppPushText(text);
 }
