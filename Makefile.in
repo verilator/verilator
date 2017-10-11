@@ -209,7 +209,7 @@ test_regress: all_nomsg
 
 examples: all_nomsg
 	for p in examples/* ; do \
-	  $(MAKE) -C $$p ; \
+	  VERILATOR_ROOT=`pwd` $(MAKE) -C $$p ; \
 	done
 
 info: $(INFOS)
