@@ -27,31 +27,30 @@
 #include <string>
 
 //=============================================================================
-// VerilatedSerialBase - internal base class for common code between VerilatedSerialize and VerilatedDeserialize
+// VerilatedSerialize - convert structures to a stream representation
 
-class VerilatedSerialBase {
+class VerilatedSerialize {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
     vluint8_t*		m_cp;		///< Current pointer into m_bufp buffer
     vluint8_t*		m_bufp;		///< Output buffer
     bool 		m_isOpen;	///< True indicates open file/stream
-    std::string		m_filename;
+    std::string		m_filename;	///< Filename, for error messages
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
     inline static size_t bufferInsertSize() { return 16*1024; }
 
+    void header();
+    void trailer();
+public:
     // CREATORS
-    VerilatedSerialBase() {
+    VerilatedSerialize() {
 	m_isOpen = false;
 	m_bufp = new vluint8_t [bufferSize()];
 	m_cp = m_bufp;
     }
-private:
-    VerilatedSerialBase(const VerilatedSerialBase& );	///< N/A, no copy constructor
-public:
-    // CREATORS
-    virtual ~VerilatedSerialBase() {
+    virtual ~VerilatedSerialize() {
 	close();
 	if (m_bufp) { delete m_bufp; m_bufp=NULL; }
     }
@@ -60,30 +59,6 @@ public:
     std::string filename() const { return m_filename; }
     virtual void close() { flush(); }
     virtual void flush() {}
-};
-
-//=============================================================================
-// VerilatedSerialize - convert structures to a stream representation
-
-class VerilatedSerialize : public VerilatedSerialBase {
-protected:
-    virtual void close() { flush(); }
-    virtual void flush() {}
-    void header();
-    void trailer();
-public:
-    // CREATORS
-    VerilatedSerialize() {}
-    virtual ~VerilatedSerialize() { close(); }
-    // METHODS
-    VerilatedSerialize& bufferCheck() {
-	// Flush the write buffer if there's not enough space left for new information
-	// We only call this once per vector, so we need enough slop for a very wide "b###" line
-	if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
-	    flush();
-	}
-	return *this;  // For function chaining
-    }
     inline VerilatedSerialize& write (const void* __restrict datap, size_t size) {
 	const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
 	while (size) {
@@ -95,22 +70,54 @@ public:
 	}
 	return *this;  // For function chaining
     }
+private:
+    VerilatedSerialize(const VerilatedSerialize& );	///< N/A, no copy constructor
+    VerilatedSerialize& bufferCheck() {
+	// Flush the write buffer if there's not enough space left for new information
+	// We only call this once per vector, so we need enough slop for a very wide "b###" line
+	if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
+	    flush();
+	}
+	return *this;  // For function chaining
+    }
 };
 
 //=============================================================================
 // VerilatedDeserial - load structures from a stream representation
 
-class VerilatedDeserialize : public VerilatedSerialBase {
+class VerilatedDeserialize {
 protected:
+    // MEMBERS
+    // For speed, keep m_cp as the first member of this structure
+    vluint8_t*		m_cp;		///< Current pointer into m_bufp buffer
+    vluint8_t*		m_bufp;		///< Output buffer
     vluint8_t*		m_endp;		///< Last valid byte in m_bufp buffer
+    bool 		m_isOpen;	///< True indicates open file/stream
+    std::string		m_filename;	///< Filename, for error messages
+
+    inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
+    inline static size_t bufferInsertSize() { return 16*1024; }
+
     virtual void fill() = 0;
     void header();
     void trailer();
 public:
     // CREATORS
-    VerilatedDeserialize() { m_endp = NULL; }
-    virtual ~VerilatedDeserialize() { close(); }
+    VerilatedDeserialize() {
+	m_isOpen = false;
+	m_bufp = new vluint8_t [bufferSize()];
+	m_cp = m_bufp;
+	m_endp = NULL;
+    }
+    virtual ~VerilatedDeserialize() {
+	close();
+	if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+    }
     // METHODS
+    bool isOpen() const { return m_isOpen; }
+    std::string filename() const { return m_filename; }
+    virtual void close() { flush(); }
+    virtual void flush() {}
     inline VerilatedDeserialize& read (void* __restrict datap, size_t size) {
 	vluint8_t* __restrict dp = (vluint8_t* __restrict)datap;
 	while (size) {
@@ -126,6 +133,8 @@ public:
     bool readDiffers (const void* __restrict datap, size_t size);
     VerilatedDeserialize& readAssert (const void* __restrict datap, size_t size);
     VerilatedDeserialize& readAssert (vluint64_t data) { return readAssert(&data, sizeof(data)); }
+private:
+    VerilatedDeserialize(const VerilatedDeserialize& );	///< N/A, no copy constructor
     VerilatedDeserialize& bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line

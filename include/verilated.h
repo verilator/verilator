@@ -441,7 +441,7 @@ static inline IData  VL_EXTENDSIGN_I(int lbits, IData lhs) { return (-((lhs)&(VL
 static inline QData  VL_EXTENDSIGN_Q(int lbits, QData lhs) { return (-((lhs)&(VL_ULL(1)<<(lbits-1)))); }
 
 // Debugging prints
-void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
+extern void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 
 //=========================================================================
 // Pli macros
