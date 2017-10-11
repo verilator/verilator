@@ -817,7 +817,7 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
 
 void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp) {
     // Convert C string to Verilog format
-    int bytes = VL_BYTES_I(obits);
+    size_t bytes = VL_BYTES_I(obits);
     char* op = reinterpret_cast<char*>(destp);
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
     size_t i;

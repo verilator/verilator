@@ -74,7 +74,7 @@ public:
 	cout<<"  Covered,     Rank,  RankPts,  Filename"<<endl;
     }
     void dump(bool bucketsToo) {
-	if (testrun() || computrons()) {
+	if (testrun() || computrons()!=0.0) {
 	    cout<<"  "<<setw(8)<<setfill('0')<<testrun()
 		<<",  "<<setw(7)<<setfill(' ')<<computrons()<<",";
 	}

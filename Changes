@@ -35,6 +35,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix -E duplicating output, bug1226. [Odd Magne Reitan]
 
+****  Fix float-conversion warning, bug1229. [Robert Henry]
+
 
 * Verilator 3.912 2017-09-23
 

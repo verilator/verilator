@@ -217,11 +217,12 @@ public:
 	V3Stats::addStat(m_stage, "Vars, unpacked arrayed", m_statVarArray);
 	V3Stats::addStat(m_stage, "Vars, clock attribute", m_statVarClock);
 	V3Stats::addStat(m_stage, "Var space, non-arrays, bytes", m_statVarBytes);
-	if (m_statVarScpBytes) {
+	if (m_statVarScpBytes!=0.0) {
 	    V3Stats::addStat(m_stage, "Var space, scoped, bytes", m_statVarScpBytes);
 	}
 	for (unsigned i=0; i<m_statVarWidths.size(); i++) {
-	    if (double count = double(m_statVarWidths.at(i))) {
+	    double count = double(m_statVarWidths.at(i));
+	    if (count != 0.0) {
 		if (v3Global.opt.statsVars()) {
 		    NameMap& nameMapr = m_statVarWidthNames.at(i);
 		    for (NameMap::iterator it=nameMapr.begin(); it!=nameMapr.end(); ++it) {
@@ -236,20 +237,23 @@ public:
 	}
 	// Node types
 	for (int type=0; type<AstType::_ENUM_END; type++) {
-	    if (double count = double(m_statTypeCount.at(type))) {
+	    double count = double(m_statTypeCount.at(type));
+	    if (count != 0.0) {
 		V3Stats::addStat(m_stage, string("Node count, ")+AstType(type).ascii(), count);
 	    }
 	}
 	for (int type=0; type<AstType::_ENUM_END; type++) {
 	    for (int type2=0; type2<AstType::_ENUM_END; type2++) {
-		if (double count = double(m_statAbove[type][type2])) {
+		double count = double(m_statAbove[type][type2]);
+		if (count != 0.0) {
 		    V3Stats::addStat(m_stage, string("Node pairs, ")+AstType(type).ascii()+"_"+AstType(type2).ascii(), count);
 		}
 	    }
 	}
 	// Branch pred
 	for (int type=0; type<AstBranchPred::_ENUM_END; type++) {
-	    if (double count = double(m_statPred[type])) {
+	    double count = double(m_statPred[type]);
+	    if (count != 0.0) {
 		V3Stats::addStat(m_stage, string("Branch prediction, ")+AstBranchPred(type).ascii(), count);
 	    }
 	}

@@ -104,7 +104,7 @@ long long	dpii_f_longint (long long i)	{ return ~i; }
 void*		dpii_f_chandle (void* i)	{ return i; }
 const char*	dpii_f_string  (const char* i)	{ return i; }
 double		dpii_f_real    (double i)	{ return i+1.5; }
-float		dpii_f_shortreal(float i)	{ return i+1.5; }
+float		dpii_f_shortreal(float i)	{ return i+1.5f; }
 
 void dpii_v_bit	(unsigned char i, unsigned char *o)	{ *o = VL_MASK_I(1) & ~i; }
 void dpii_v_int (int i, int *o)				{ *o = ~i; }
@@ -117,7 +117,7 @@ void dpii_v_ulong (unsigned long long i, unsigned long long *o)	{ *o = ~i; }
 void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
 void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
-void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5; }
+void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5f; }
 
 void dpii_v_struct (const svBitVecVal* i, svBitVecVal* o) {
     o[0] = ~i[0];

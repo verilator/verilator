@@ -121,7 +121,7 @@ uint32_t V3GraphVertex::outHash() const {
 ostream& operator<<(ostream& os, V3GraphVertex* vertexp) {
     os<<"  VERTEX="<<vertexp->name();
     if (vertexp->rank()) os<<" r"<<vertexp->rank();
-    if (vertexp->fanout()) os<<" f"<<vertexp->fanout();
+    if (vertexp->fanout()!=0.0) os<<" f"<<vertexp->fanout();
     if (vertexp->color()) os<<" c"<<vertexp->color();
     return os;
 }
@@ -327,7 +327,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) {
 	     <<"\t[fontsize=8 "
 	     <<"label=\""<<(vertexp->name()!="" ? vertexp->name() : "\\N");
 	if (vertexp->rank()) *logp<<" r"<<vertexp->rank();
-	if (vertexp->fanout()) *logp<<" f"<<vertexp->fanout();
+	if (vertexp->fanout()!=0.0) *logp<<" f"<<vertexp->fanout();
 	if (vertexp->color()) *logp<<"\\n c"<<vertexp->color();
 	*logp<<"\"";
 	*logp<<", color="<<vertexp->dotColor();

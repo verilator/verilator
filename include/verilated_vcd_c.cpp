@@ -354,7 +354,7 @@ void VerilatedVcd::set_time_resolution (const char* unitp) {
 double VerilatedVcd::timescaleToDouble (const char* unitp) {
     char* endp;
     double value = strtod(unitp, &endp);
-    if (!value) value=1;  // On error so we allow just "ns" to return 1e-9.
+    if (value==0.0 && endp==unitp) value=1;  // On error so we allow just "ns" to return 1e-9.
     unitp=endp;
     while (*unitp && isspace(*unitp)) unitp++;
     switch (*unitp) {

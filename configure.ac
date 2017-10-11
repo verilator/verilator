@@ -183,6 +183,7 @@ AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 # Flags for compiling Verilator internals including parser, and Verilated files
 # These turn on extra warnings and are only used with 'configure --enable-ccwarn'
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wextra)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wfloat-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wlogical-op)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 
