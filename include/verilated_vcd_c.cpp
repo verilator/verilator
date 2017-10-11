@@ -200,13 +200,13 @@ void VerilatedVcd::makeNameMap() {
     // If no scope was specified, prefix everything with a "top"
     // This comes from user instantiations with no name - IE Vtop("").
     bool nullScope = false;
-    for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
+    for (NameMap::const_iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
 	const std::string& hiername = it->first;
 	if (hiername.size() >= 1 && hiername[0] == '\t') nullScope=true;
     }
     if (nullScope) {
 	NameMap* newmapp = new NameMap;
-	for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
+	for (NameMap::const_iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
 	    const std::string& hiername = it->first;
 	    const std::string& decl     = it->second;
 	    std::string newname = std::string("top");
@@ -229,7 +229,7 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_sigs_oldvalp) { delete[] m_sigs_oldvalp; m_sigs_oldvalp=NULL; }
     deleteNameMap();
     if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
-    for (CallbackVec::iterator it=m_callbacks.begin(); it!=m_callbacks.end(); ++it) {
+    for (CallbackVec::const_iterator it=m_callbacks.begin(); it!=m_callbacks.end(); ++it) {
 	delete (*it);
     }
     m_callbacks.clear();
@@ -416,7 +416,7 @@ void VerilatedVcd::dumpHeader () {
 
     // Print the signal names
     const char* lastName = "";
-    for (NameMap::iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
+    for (NameMap::const_iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
 	const std::string& hiernamestr = it->first;
 	const std::string& decl = it->second;
 

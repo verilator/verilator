@@ -80,7 +80,7 @@ public: // But only for verilated*.cpp
     static void internalsDump() {
 	VL_PRINTF("internalsDump:\n");
 	VL_PRINTF("  Argv:");
-	for (ArgVec::iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
+	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
 	    VL_PRINTF(" %s",it->c_str());
 	}
 	VL_PRINTF("\n");
@@ -109,7 +109,7 @@ public: // But only for verilated*.cpp
 		     "%Error: Verilog called $test$plusargs or $value$plusargs without"
 		     " testbench C first calling Verilated::commandArgs(argc,argv).");
 	}
-	for (ArgVec::iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
+	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
 	    if ((*it)[0]=='+') {
 		if (0==strncmp(prefixp, it->c_str()+1, len)) return *it;
 	    }
@@ -128,7 +128,7 @@ public: // But only for verilated*.cpp
 	else s_s.m_userMap.insert(it, std::make_pair(std::make_pair(scopep,userKey),userData));
     }
     static inline void* userFind(const void* scopep, void* userKey) {
-	UserMap::iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
+	UserMap::const_iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
 	if (VL_LIKELY(it != s_s.m_userMap.end())) return it->second;
 	else return NULL;
     }
@@ -146,7 +146,7 @@ private:
     }
     static void userDump() {
 	bool first = true;
-	for (UserMap::iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ++it) {
+	for (UserMap::const_iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ++it) {
 	    if (first) { VL_PRINTF("  userDump:\n"); first=false; }
 	    VL_PRINTF("    DPI_USER_DATA scope %p key %p: %p\n",
 		      it->first.first, it->first.second, it->second);
@@ -163,7 +163,7 @@ public: // But only for verilated*.cpp
 	}
     }
     static inline const VerilatedScope* scopeFind(const char* namep) {
-	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(namep);
+	VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_nameMap.end())) return it->second;
 	else return NULL;
     }
@@ -175,7 +175,7 @@ public: // But only for verilated*.cpp
     }
     static void scopesDump() {
 	VL_PRINTF("  scopesDump:\n");
-	for (VerilatedScopeNameMap::iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
+	for (VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
 	    scopep->scopeDump();
 	}
@@ -205,7 +205,7 @@ public: // But only for verilated*.cpp
 	}
     }
     static int exportFind(const char* namep) {
-	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
+	ExportNameMap::const_iterator it=s_s.m_exportMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
 	std::string msg = (std::string("%Error: Testbench C called ")+namep
 			   +" but no such DPI export function name exists in ANY model");
@@ -214,14 +214,14 @@ public: // But only for verilated*.cpp
     }
     static const char* exportName(int funcnum) {
 	// Slowpath; find name for given export; errors only so no map to reverse-map it
-	for (ExportNameMap::iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
+	for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
 	    if (it->second == funcnum) return it->first;
 	}
 	return "*UNKNOWN*";
     }
     static void exportsDump() {
 	bool first = true;
-	for (ExportNameMap::iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
+	for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
 	    if (first) { VL_PRINTF("  exportDump:\n"); first=false; }
 	    VL_PRINTF("    DPI_EXPORT_NAME %05d: %s\n", it->second, it->first);
 	}

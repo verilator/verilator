@@ -252,7 +252,7 @@ public:
 
 class VerilatedVpioVarIter : public VerilatedVpio {
     const VerilatedScope*	m_scopep;
-    VerilatedVarNameMap::iterator m_it;
+    VerilatedVarNameMap::const_iterator m_it;
     bool m_started;
 public:
     explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
@@ -368,7 +368,7 @@ public:
 	}
     }
     static QData cbNextDeadline() {
-	VpioTimedCbs::iterator it=s_s.m_timedCbs.begin();
+	VpioTimedCbs::const_iterator it=s_s.m_timedCbs.begin();
 	if (VL_LIKELY(it!=s_s.m_timedCbs.end())) {
 	    return it->first;
 	} else {
@@ -412,7 +412,7 @@ public:
 		}
 	    }
 	}
-	for (VpioVarSet::iterator it=update.begin(); it!=update.end(); ++it) {
+	for (VpioVarSet::const_iterator it=update.begin(); it!=update.end(); ++it) {
 	    memcpy((*it)->prevDatap(), (*it)->varDatap(), (*it)->entSize());
 	}
     }

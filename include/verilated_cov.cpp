@@ -221,7 +221,7 @@ private:
 public:
     // PUBLIC METHODS
     void clear() {
-	for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
 	    VerilatedCovImpItem* itemp = *(it);
 	    delete itemp;
 	}
@@ -244,7 +244,7 @@ public:
 	}
     }
     void zero() {
-	for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
 	    (*it)->zero();
 	}
     }
@@ -372,7 +372,7 @@ public:
 	}
 
 	// Output body
-	for (EventMap::iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
+	for (EventMap::const_iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
 	    os<<"C '"<<std::dec;
 	    os<<it->first;
 	    if (it->second.first != "") os<<keyValueFormatter(VL_CIK_HIER,it->second.first);
