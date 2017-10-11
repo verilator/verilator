@@ -95,7 +95,7 @@ enum Determ {
     ASSIGN		// Assignment-like where sign comes from RHS only
 };
 ostream& operator<<(ostream& str, const Determ& rhs) {
-    static const char* s_det[] = {"SELF","CNTX","ASSN"};
+    static const char* const s_det[] = {"SELF","CNTX","ASSN"};
     return str<<s_det[rhs];
 }
 

@@ -82,7 +82,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "UNSIGNED","SIGNED","NOSIGN"
 	};
 	return names[m_e];
@@ -203,14 +203,14 @@ public:
 	return AstEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-edge", "ANY", "BOTH", "POS", "NEG", "HIGH", "LOW",
 	    "COMBO","INITIAL","SETTLE","NEVER"
 	};
 	return names[m_e];
     };
     const char* verilogKwd() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-edge", "[any]", "edge", "posedge", "negedge", "[high]","[low]",
 	    "*","[initial]","[settle]","[never]"
 	};
@@ -270,7 +270,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-AT",
 	    "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
 	    "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
@@ -315,7 +315,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-unk",
 	    "bit", "byte", "chandle", "int", "integer", "logic", "longint",
 	    "real", "shortint", "shortreal", "time",
@@ -328,7 +328,7 @@ public:
 	return names[m_e];
     };
     const char* dpiType() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-unk",
 	    "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
 	    "double", "short int", "float", "long long",
@@ -446,7 +446,7 @@ public:
     explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
 	    "VAR","INPUT","OUTPUT","INOUT",
 	    "SUPPLY0","SUPPLY1","WIRE","WREAL","IMPLICITWIRE",
@@ -489,7 +489,7 @@ public:
 	else return m_e;
     }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "","VL_LIKELY","VL_UNLIKELY"};
 	return names[m_e]; }
   };
@@ -522,7 +522,7 @@ public:
 	else return m_e;
     }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "","clker","non_clker"};
 	return names[m_e]; }
   };
@@ -548,7 +548,7 @@ public:
     explicit inline VAlwaysKwd (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "always","always_ff","always_latch","always_comb"};
 	return names[m_e]; }
   };
@@ -598,7 +598,7 @@ public:
     bool addNewline() const { return m_e!=DT_WRITE; }
     bool needScopeTracking() const { return m_e!=DT_DISPLAY && m_e!=DT_WRITE; }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "display","write","info","error","warning","fatal"};
 	return names[m_e]; }
   };
@@ -621,7 +621,7 @@ public:
     explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {}
     operator en () const { return m_e; }
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "","TEXT","PREDOT"};
 	return names[m_e]; }
   };

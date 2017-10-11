@@ -1482,7 +1482,7 @@ private:
 	    m_unresolved = false; m_unlinkedScope = NULL;
 	}
 	string ascii() const {
-	    static const char* names[] = { "NONE","PACKAGE","SCOPE","FINAL","MEMBER" };
+	    static const char* const names[] = { "NONE","PACKAGE","SCOPE","FINAL","MEMBER" };
 	    ostringstream sstr;
 	    sstr<<"ds="<<names[m_dotPos];
 	    sstr<<"  dse"<<(void*)m_dotSymp;

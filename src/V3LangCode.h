@@ -46,7 +46,7 @@ public:
 	_ENUM_END
     };
     const char* ascii() const {
-	const char* names[] = {
+	const char* const names[] = {
 	    // These must match the `begin_keywords values.
 	    " ERROR",
 	    "1364-1995",

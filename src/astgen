@@ -272,7 +272,7 @@ sub write_types {
     printf $fh "\t_ENUM_END\n";
     printf $fh "    };\n";
     printf $fh "    const char* ascii() const {\n";
-    printf $fh "	const char* names[] = {\n";
+    printf $fh "	const char* const names[] = {\n";
     foreach my $type (sort (keys %Classes)) {
 	next if $type =~ /^Node/;
 	print $fh "\t\"", uc $type, "\",\n";

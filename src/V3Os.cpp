@@ -206,7 +206,7 @@ uint64_t V3Os::memUsageBytes() {
     return 0;
 #else
     // Highly unportable. Sorry
-    const char* statmFilename = "/proc/self/statm";
+    const char* const statmFilename = "/proc/self/statm";
     FILE* fp = fopen(statmFilename,"r");
     if (!fp) {
 	return 0;

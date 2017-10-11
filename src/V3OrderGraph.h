@@ -91,7 +91,7 @@ struct OrderVEdgeType {
 	_ENUM_END
     };
     const char* ascii() const {
-	static const char* names[] = {
+	static const char* const names[] = {
 	    "%E-vedge", "VERTEX_INPUTS", "VERTEX_SETTLE", "VERTEX_LOGIC",
 	    "VERTEX_VARSTD", "VERTEX_VARPRE", "VERTEX_VARPOST",
 	    "VERTEX_VARPORD", "VERTEX_VARSETTLE", "VERTEX_LOOPBEGIN",

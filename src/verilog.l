@@ -118,7 +118,7 @@ void V3ParseImp::tag(const char* text) {
 
 void yyerror(const char* errmsg) {
     PARSEP->fileline()->v3error(errmsg);
-    static const char* colonmsg = "syntax error, unexpected ::, ";
+    static const char* const colonmsg = "syntax error, unexpected ::, ";
     //tokens;
     if (0==strncmp(errmsg, colonmsg, strlen(colonmsg))
 	&& PARSEP->prevBisonVal().token == yaID__ETC

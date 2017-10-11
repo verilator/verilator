@@ -40,8 +40,8 @@
 #endif
 
 // CONSTANTS
-static const char* VLTSAVE_HEADER_STR = "verilatorsave01\n";	///< Value of first bytes of each file
-static const char* VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last bytes of each file
+static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";	///< Value of first bytes of each file
+static const char* const VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last bytes of each file
 
 //=============================================================================
 //=============================================================================
