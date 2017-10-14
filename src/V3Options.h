@@ -36,7 +36,6 @@
 
 class V3OptionsImp;
 class FileLine;
-struct stat;
 
 typedef vector<string> V3StringList;
 typedef set<string> V3StringSet;

@@ -34,6 +34,14 @@
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
+#ifdef st_mtime // Linux 2.6
+# define VL_STAT_CTIME_NSEC(stat) ((stat).st_ctim.tv_nsec) // Nanoseconds
+# define VL_STAT_MTIME_NSEC(stat) ((stat).st_mtim.tv_nsec) // Nanoseconds
+#else
+# define VL_STAT_CTIME_NSEC(stat) (0)
+# define VL_STAT_MTIME_NSEC(stat) (0)
+#endif
+
 #ifdef INFILTER_PIPE
 # include <sys/wait.h>
 #endif
@@ -62,6 +70,7 @@ class V3FileDependImp {
     public:
 	DependFile(const string& filename, bool target)
 	    : m_target(target), m_filename(filename) {
+	    m_stat.st_ctime = 0;
 	    m_stat.st_mtime = 0;
 	}
 	~DependFile() {}
@@ -69,7 +78,10 @@ class V3FileDependImp {
 	bool target() const { return m_target; }
 	off_t size() const { return m_stat.st_size; }
 	ino_t ino() const { return m_stat.st_ino; }
-	time_t mtime() const { return m_stat.st_mtime; }
+	time_t cstime() const { return m_stat.st_ctime; } // Seconds
+	time_t cnstime() const { return VL_STAT_CTIME_NSEC(m_stat); } // Nanoseconds
+	time_t mstime() const { return m_stat.st_mtime; } // Seconds
+	time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); } // Nanoseconds
 	void loadStats() {
 	    if (!m_stat.st_mtime) {
 		string fn = filename();
@@ -178,7 +190,10 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 	*ofp<<(iter->target()?"T":"S")<<" ";
 	*ofp<<" "<<setw(8)<<showSize;
 	*ofp<<" "<<setw(8)<<showIno;
-	*ofp<<" "<<setw(11)<<iter->mtime();
+	*ofp<<" "<<setw(11)<<iter->cstime();
+	*ofp<<" "<<setw(11)<<iter->cnstime();
+	*ofp<<" "<<setw(11)<<iter->mstime();
+	*ofp<<" "<<setw(11)<<iter->mnstime();
 	*ofp<<" \""<<iter->filename()<<"\"";
 	*ofp<<endl;
     }
@@ -209,31 +224,42 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	off_t  chkSize;  *ifp>>chkSize;
 	ino_t  chkIno;   *ifp>>chkIno;
 	if (ifp->eof()) break;  // Needed to read final whitespace before found eof
-	time_t chkMtime; *ifp>>chkMtime;
+	time_t chkCstime; *ifp>>chkCstime;
+	time_t chkCnstime; *ifp>>chkCnstime;
+	time_t chkMstime; *ifp>>chkMstime;
+	time_t chkMnstime; *ifp>>chkMnstime;
 	char   quote;    *ifp>>quote;
 	string chkFilename; getline(*ifp, chkFilename, '"');
-	//UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" mt="<<chkMtime<<" fn = "<<chkFilename<<endl);
 
+	V3Options::fileNfsFlush(chkFilename);
 	struct stat chkStat;
 	int err = stat(chkFilename.c_str(), &chkStat);
 	if (err!=0) {
 	    UINFO(2,"   --check-times failed: missing "<<chkFilename<<endl);
 	    return false;
 	}
-	if (filename != chkFilename) {  // See above; we were writing it at the time...
+	//UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" ct="<<chkCstime<<"."<<chkCnstime<<" mt="<<chkMstime<<"."<<chkMnstime<<" fn = "<<chkFilename<<endl);
+	//UINFO(9," nowSt  s="<<chkStat.st_size<<" mt="<<chkStat.st_mtime<<" ct="<<chkStat.st_ctime<<" fn = "<<chkFilename<<endl);
+	if (filename != chkFilename) {  // Other then the .dat file itself, as we were writing it at the time...
 	    // We'd like this rule:
 	    //if (!(chkStat.st_size == chkSize
-	    //      && chkStat.st_mtime == chkMtime) {
+	    //      && chkStat.st_mtime == chkMstime) {
 	    // However NFS messes us up, as there might be some data outstanding when
 	    // we determined the original size.  For safety, we know the creation time
 	    // must be within a few second window... call it 20 sec.
 	    if (!(chkStat.st_size >= chkSize
 		  && chkStat.st_ino == chkIno
-		  && chkStat.st_mtime >= chkMtime
-		  && chkStat.st_mtime <= (chkMtime + 20))) {
+		  && chkStat.st_ctime == chkCstime
+		  && VL_STAT_CTIME_NSEC(chkStat) == chkCnstime
+		  && chkStat.st_mtime <= (chkMstime + 20)
+		  // Not comparing chkMnstime
+		    )) {
 		UINFO(2,"   --check-times failed: out-of-date "<<chkFilename
 		      <<"; "<<chkStat.st_size<<"=?"<<chkSize
-		      <<" "<<chkStat.st_mtime<<"=?"<<chkMtime<<endl);
+		      <<" "<<chkStat.st_ctime<<"."<<VL_STAT_CTIME_NSEC(chkStat)
+		      <<"=?"<<chkCstime<<"."<<chkCnstime
+		      <<" "<<chkStat.st_mtime<<"."<<VL_STAT_MTIME_NSEC(chkStat)
+		      <<"=?"<<chkMstime<<"."<<chkMnstime<<endl);
 		return false;
 	    }
 	}
