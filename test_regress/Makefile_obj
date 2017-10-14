@@ -38,9 +38,10 @@ CPPFLAGS += $(CPPFLAGS_ADD)
 ifeq ($(CFG_WITH_LONGTESTS),yes)
   ifeq ($(DRIVER_STD),newest)
     CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
-  endif
-  ifeq ($(DRIVER_STD),oldest)
+  else ifeq ($(DRIVER_STD),oldest)
     CPPFLAGS += $(CFG_CXXFLAGS_STD_OLDEST)
+  else ifneq ($(findstring VL_THREADED,$(CPPFLAGS)),)
+    CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
   endif
 endif
 
