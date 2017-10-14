@@ -47,6 +47,34 @@
 #endif
 
 //=============================================================================
+// VerilatedVcdImp
+/// Base class to hold some static state
+/// This is an internally used class
+
+class VerilatedVcdSingleton {
+private:
+    typedef std::vector<VerilatedVcd*> VcdVec;
+    struct Singleton {
+	VcdVec		s_vcdVecp;	///< List of all created traces
+    };
+    static Singleton& singleton() { static Singleton s;	return s; }
+public:
+    static void pushVcd(VerilatedVcd* vcdp) {
+	singleton().s_vcdVecp.push_back(vcdp);
+    }
+    static void removeVcd(const VerilatedVcd* vcdp) {
+	VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), vcdp);
+	if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
+    }
+    static void flush_all() {
+	for (VcdVec::const_iterator it=singleton().s_vcdVecp.begin(); it!=singleton().s_vcdVecp.end(); ++it) {
+	    VerilatedVcd* vcdp = *it;
+	    vcdp->flush();
+	}
+    }
+};
+
+//=============================================================================
 // VerilatedVcdCallInfo
 /// Internal callback routines for each module being traced.
 ////
@@ -117,7 +145,7 @@ void VerilatedVcd::open (const char* filename) {
 
     // Set member variables
     m_filename = filename;
-    singleton().s_vcdVecp.push_back(this);
+    VerilatedVcdSingleton::pushVcd(this);
 
     // SPDIFF_OFF
     // Set callback so an early exit will flush us
@@ -233,9 +261,7 @@ VerilatedVcd::~VerilatedVcd() {
 	delete (*it);
     }
     m_callbacks.clear();
-    // Remove from list of traces
-    VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), this);
-    if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
+    VerilatedVcdSingleton::removeVcd(this);
 }
 
 void VerilatedVcd::closePrev () {
@@ -647,10 +673,7 @@ void VerilatedVcd::dumpDone () {
 // Static members
 
 void VerilatedVcd::flush_all() {
-    for (vluint32_t ent = 0; ent< singleton().s_vcdVecp.size(); ent++) {
-	VerilatedVcd* vcdp = singleton().s_vcdVecp[ent];
-	vcdp->flush();
-    }
+    VerilatedVcdSingleton::flush_all();
 }
 
 //======================================================================
