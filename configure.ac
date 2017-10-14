@@ -111,10 +111,11 @@ AC_DEFUN([_MY_CXX_CHECK_FLAG],
     # Set $_my_result appropriately
     ACO_SAVE_CXXFLAGS="$CXXFLAGS"
     # -Werror needed otherwise unknown -Wno-div-by-zero won't report problems
+    # new/delete is needed to find -faligned-new link problem on Darwin
     CXXFLAGS="$CXXFLAGS $1 -Werror"
     AC_MSG_CHECKING([whether $CXX accepts $1])
-    AC_COMPILE_IFELSE(
-         [AC_LANG_PROGRAM([],[])],
+    AC_LINK_IFELSE(
+         [AC_LANG_PROGRAM([], [[int* a=new int; delete a; ]])],
          [_my_result=yes
           if test -s conftest.err; then
             if grep -e "$1" conftest.err >/dev/null; then
@@ -223,7 +224,7 @@ AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
-    [AC_DEFINE([HAVE_STAT_NSEC],[1],[Define if struct stat has st_mtim.tv_nsec.])],
+    [AC_DEFINE([HAVE_STAT_NSEC],[1],[Defined if struct stat has st_mtim.tv_nsec])],
     [], [#include <sys/stat.h>])
 
 # Checks for system services
