@@ -106,6 +106,10 @@ AC_TYPE_SIZE_T
 # Checks for compiler characteristics.
 AC_C_INLINE
 
+AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM([], [[int* a=new int; delete a; ]])],
+     [], [AC_MSG_ERROR([$CXX does not seem to successfully compile a simple C++ program])])
+
 AC_DEFUN([_MY_CXX_CHECK_FLAG],
    [# _MY_CXX_CHECK_FLAG(flag) -- Check if compiler supports specific options
     # Set $_my_result appropriately
