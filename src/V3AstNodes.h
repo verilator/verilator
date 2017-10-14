@@ -1510,6 +1510,7 @@ public:
 class AstPackageExportStarStar : public AstNode {
     // A package export *::* declaration
 public:
+    // cppcheck-suppress noExplicitConstructor
     AstPackageExportStarStar(FileLine* fl)
 	: AstNode (fl) {}
     ASTNODE_NODE_FUNCS(PackageExportStarStar)

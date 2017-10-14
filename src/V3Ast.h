@@ -734,6 +734,7 @@ class VNUser {
 public:
     VNUser() {}
     // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VNUser(int i) { m_u.up = 0; m_u.ui = i; }
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() {}

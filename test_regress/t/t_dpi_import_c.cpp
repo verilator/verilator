@@ -123,8 +123,6 @@ void dpii_v_struct (const svBitVecVal* i, svBitVecVal* o) {
     o[0] = ~i[0];
     o[1] = ~i[1];
     o[2] = ~i[2];
-    o[3] = ~i[3];
-    o[4] = ~i[4];
 }
 void dpii_v_substruct (const svBitVecVal* i, int* o) {
     // To be most like other tools, this should automagically take the substruct_t

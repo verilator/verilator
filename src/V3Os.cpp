@@ -215,8 +215,10 @@ uint64_t V3Os::memUsageBytes() {
     if (7 != fscanf(fp, "%" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %"
 		    VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d",
 		    &size, &resident, &share, &text, &lib, &data, &dt)) {
+	fclose(fp);
 	return 0;
     }
+    fclose(fp);
     return (text + data) * getpagesize();
 #endif
 }

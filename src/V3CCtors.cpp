@@ -95,6 +95,8 @@ public:
 	m_modp->addStmtp(m_tlFuncp);
     }
     ~V3CCtorsVisitor() {}
+private:
+    explicit V3CCtorsVisitor(const V3CCtorsVisitor&);  ///< N/A, no copy constructor
 };
 
 //######################################################################
