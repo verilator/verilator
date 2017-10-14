@@ -6,7 +6,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[3.913 devel])
+AC_INIT([Verilator],[3.914 2017-10-14])
 # When releasing, also update header of Changes file
 # and commit using "devel release" or "Version bump" message
 

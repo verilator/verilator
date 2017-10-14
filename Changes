@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 3.913 devel
+* Verilator 3.913 2017-10-14
 
 **    Added new examples/ directory with appropriate examples. This replaces the
       old test_c and test_sc directories.
