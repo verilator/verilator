@@ -34,7 +34,7 @@
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
-#ifdef st_mtime // Linux 2.6
+#ifdef HAVE_STAT_NSEC // i.e. Linux 2.6, from configure
 # define VL_STAT_CTIME_NSEC(stat) ((stat).st_ctim.tv_nsec) // Nanoseconds
 # define VL_STAT_MTIME_NSEC(stat) ((stat).st_mtim.tv_nsec) // Nanoseconds
 #else

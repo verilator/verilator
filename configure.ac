@@ -222,6 +222,9 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
 # Checks for library functions.
+AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
+    [AC_DEFINE([HAVE_STAT_NSEC],[1],[Define if struct stat has st_mtim.tv_nsec.])],
+    [], [#include <sys/stat.h>])
 
 # Checks for system services
 

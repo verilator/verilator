@@ -69,7 +69,12 @@
 using namespace std;
 
 //**********************************************************************
+//**** Configure-discovered library options
+
+// Define if struct stat has st_mtim.tv_nsec (from configure)
+#undef HAVE_STAT_NSEC
+
+//**********************************************************************
 //**** OS and compiler specifics
 
 #include "verilatedos.h"
-

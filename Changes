@@ -37,6 +37,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix float-conversion warning, bug1229. [Robert Henry]
 
+****  Fix MacOS portability, bug1230. [Jeff Bush]
+
 
 * Verilator 3.912 2017-09-23
 
