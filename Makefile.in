@@ -116,7 +116,11 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	*.in *.ac \
 	Changes TODO \
 	MANIFEST.SKIP \
-	bin/* \
+	bin/verilator \
+	bin/verilator_coverage \
+	bin/verilator_difftree \
+	bin/verilator_includer \
+	bin/verilator_profcfunc \
 	doxygen-mainpage doxygen.config veripool-logo.png \
 	install-sh configure mkinstalldirs *.pod \
 	include/*.[chv]* \
@@ -156,9 +160,9 @@ INST_PROJ_FILES = \
 	include/vltstd/*.[chv]* \
 
 INST_PROJ_BIN_FILES = \
-	verilator_bin \
-	verilator_bin_dbg \
-	verilator_coverage_bin_dbg \
+	bin/verilator_bin \
+	bin/verilator_bin_dbg \
+	bin/verilator_coverage_bin_dbg \
 
 DISTFILES := $(DISTFILES_INC)
 
@@ -209,7 +213,7 @@ test_regress: all_nomsg
 
 examples: all_nomsg
 	for p in examples/* ; do \
-	  VERILATOR_ROOT=`pwd` $(MAKE) -C $$p ; \
+	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` ; \
 	done
 
 info: $(INFOS)
@@ -291,9 +295,9 @@ installbin:
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
-	( $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
-	( $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
-	( $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
@@ -360,8 +364,8 @@ INST_PROJ_CVS = cp_if_cvs_diff
 
 install-project: dist
 	@echo "Install-project to $(DIRPROJECT)"
-	strip verilator_bin*
-	strip verilator_coverage_bin*
+	strip bin/verilator_bin*
+	strip bin/verilator_coverage_bin*
 	$(MAKE) install-project-quick
 	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
@@ -384,8 +388,8 @@ endif
 
 install-cadtools: dist
 	@echo "Install-project to $(CAD_DIR)"
-	strip verilator_bin*
-	strip verilator_coverage_bin*
+	strip bin/verilator_bin*
+	strip bin/verilator_coverage_bin*
 	$(MAKE) install-cadtools-quick
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
@@ -428,7 +432,10 @@ cppcheck: $(CPPCHECK_DEP)
 ftp: info
 
 install-msg:
-	@echo "Installed!"
+	@echo
+	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
+	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
+	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
 	@echo
 	@echo "For documentation see 'man verilator' or 'verilator --help'"
 	@echo "For forums and to report bugs see http://www.veripool.org/verilator"
@@ -476,6 +483,7 @@ clean mostlyclean distclean maintainer-clean::
 distclean maintainer-clean::
 	rm -f Makefile config.status config.cache config.log TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
+	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
 
 TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
