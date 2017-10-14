@@ -163,7 +163,7 @@ class SliceVisitor : public AstNVisitor {
 	    UINFO(9, "  Bi-Eq/Neq expansion "<<nodep<<endl);
 	    if (AstUnpackArrayDType* adtypep = fromDtp->castUnpackArrayDType()) {
 		AstNodeBiop* logp = NULL;
-		for (int index = 0; index <= adtypep->rangep()->elementsConst(); ++index) {
+		for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
 		    // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
 		    AstNodeBiop* clonep = nodep->cloneType
 			(new AstArraySel(nodep->fileline(),
