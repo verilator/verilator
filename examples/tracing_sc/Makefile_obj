@@ -26,8 +26,10 @@ CPPFLAGS += -DVL_DEBUG=1
 # SystemC isn't too clean
 CPPFLAGS += -Wno-deprecated
 # Turn on some more flags (when configured appropriately)
+# For testing inside Verilator, "configure --enable-ccwarn" will do this
+# automatically; otherwise you may want this unconditionally enabled
 ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
-CPPFLAGS += -W -Werror -Wall
+USER_CPPFLAGS_WALL += -W -Werror -Wall
 endif
 
 # If you build your own rules from scratch, note you need to include
