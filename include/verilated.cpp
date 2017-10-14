@@ -194,9 +194,9 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
 	vluint64_t k = 0;
 	for (int j = uw-1; j >= 0; --j) {
-	    vluint64_t unw64 = ((k<<VL_ULL(32)) + (vluint64_t)(lwp[j]));
-	    owp[j] = unw64 / (vluint64_t)(rwp[0]);
-	    k      = unw64 - (vluint64_t)(owp[j])*(vluint64_t)(rwp[0]);
+	    vluint64_t unw64 = ((k<<VL_ULL(32)) + static_cast<vluint64_t>(lwp[j]));
+	    owp[j] = unw64 / static_cast<vluint64_t>(rwp[0]);
+	    k      = unw64 - static_cast<vluint64_t>(owp[j])*static_cast<vluint64_t>(rwp[0]);
 	}
 	if (is_modulus) {
 	    owp[0] = k;
@@ -233,9 +233,9 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
 	// Estimate
-	vluint64_t unw64 = ((vluint64_t)(un[j+vw])<<VL_ULL(32) | (vluint64_t)(un[j+vw-1]));
-	vluint64_t qhat = unw64 / (vluint64_t)(vn[vw-1]);
-	vluint64_t rhat = unw64 - qhat*(vluint64_t)(vn[vw-1]);
+	vluint64_t unw64 = (static_cast<vluint64_t>(un[j+vw])<<VL_ULL(32) | static_cast<vluint64_t>(un[j+vw-1]));
+	vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw-1]);
+	vluint64_t rhat = unw64 - qhat*static_cast<vluint64_t>(vn[vw-1]);
 
       again:
 	if (qhat >= VL_ULL(0x100000000)
@@ -262,7 +262,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
 	    owp[j]--;
 	    k = 0;
 	    for (int i=0; i<vw; ++i) {
-		t = (vluint64_t)(un[i+j]) + (vluint64_t)(vn[i]) + k;
+		t = static_cast<vluint64_t>(un[i+j]) + static_cast<vluint64_t>(vn[i]) + k;
 		un[i+j] = t;
 		k = t >> VL_ULL(32);
 	    }

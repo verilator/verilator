@@ -737,15 +737,15 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    value_p->value.vector = out;
 	    switch (vop->varp()->vltype()) {
 	    case VLVT_UINT8:
-		out[0].aval = *((CData*)(vop->varDatap()));
+		out[0].aval = *(reinterpret_cast<CData*>(vop->varDatap()));
 		out[0].bval = 0;
 		return;
 	    case VLVT_UINT16:
-		out[0].aval = *((SData*)(vop->varDatap()));
+		out[0].aval = *(reinterpret_cast<SData*>(vop->varDatap()));
 		out[0].bval = 0;
 		return;
 	    case VLVT_UINT32:
-		out[0].aval = *((IData*)(vop->varDatap()));
+		out[0].aval = *(reinterpret_cast<IData*>(vop->varDatap()));
 		out[0].bval = 0;
 		return;
 	    case VLVT_WDATA: {
@@ -753,7 +753,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 		if (VL_UNLIKELY(words >= VL_MULS_MAX_WORDS)) {
 		    vl_fatal(__FILE__,__LINE__,"", "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
 		}
-		WDataInP datap = ((IData*)(vop->varDatap()));
+		WDataInP datap = (reinterpret_cast<IData*>(vop->varDatap()));
 		for (int i=0; i<words; ++i) {
 		    out[i].aval = datap[i];
 		    out[i].bval = 0;
@@ -761,10 +761,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 		return;
 	    }
 	    case VLVT_UINT64: {
-		QData data = *((QData*)(vop->varDatap()));
-		out[1].aval = (IData)(data>>VL_ULL(32));
+		QData data = *(reinterpret_cast<QData*>(vop->varDatap()));
+		out[1].aval = static_cast<IData>(data>>VL_ULL(32));
 		out[1].bval = 0;
-		out[0].aval = (IData)(data);
+		out[0].aval = static_cast<IData>(data);
 		out[0].bval = 0;
 		return;
 	    }
@@ -783,7 +783,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT64:
 	    case VLVT_WDATA: {
 		int bits = vop->varp()->range().elements();
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		int i;
 		if (bits > outStrSz) {
 		  // limit maximum size of output to size of buffer to prevent overrun.
@@ -813,7 +813,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_WDATA: {
 		int chars = (vop->varp()->range().elements()+2)/3;
 		int bytes = VL_BYTES_I(vop->varp()->range().elements());
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		int i;
 		if (chars > outStrSz) {
 		    // limit maximum size of output to size of buffer to prevent overrun.
@@ -855,10 +855,14 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    value_p->value.str = outStr;
 	    switch (vop->varp()->vltype()) {
 	    // outStrSz does not include NULL termination so add one
-	    case VLVT_UINT8 : VL_SNPRINTF(outStr, outStrSz+1, "%hhu", (unsigned char )*((CData*)(vop->varDatap()))); return;
-	    case VLVT_UINT16: VL_SNPRINTF(outStr, outStrSz+1, "%hu",  (unsigned short)*((SData*)(vop->varDatap()))); return;
-	    case VLVT_UINT32: VL_SNPRINTF(outStr, outStrSz+1, "%u",   (unsigned int  )*((IData*)(vop->varDatap()))); return;
-	    case VLVT_UINT64: VL_SNPRINTF(outStr, outStrSz+1, "%llu",  (unsigned long long)*((QData*)(vop->varDatap()))); return;
+	    case VLVT_UINT8 : VL_SNPRINTF(outStr, outStrSz+1, "%hhu",
+					  static_cast<unsigned char>(*(reinterpret_cast<CData*>(vop->varDatap())))); return;
+	    case VLVT_UINT16: VL_SNPRINTF(outStr, outStrSz+1, "%hu",
+					  static_cast<unsigned short>(*(reinterpret_cast<SData*>(vop->varDatap())))); return;
+	    case VLVT_UINT32: VL_SNPRINTF(outStr, outStrSz+1, "%u",
+					  static_cast<unsigned int>(*(reinterpret_cast<IData*>(vop->varDatap())))); return;
+	    case VLVT_UINT64: VL_SNPRINTF(outStr, outStrSz+1, "%llu",
+					  static_cast<unsigned long long>(*(reinterpret_cast<QData*>(vop->varDatap())))); return;
 	    default:
                 strcpy(outStr, "-1");
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
@@ -874,7 +878,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT64:
 	    case VLVT_WDATA: {
 		int chars = (vop->varp()->range().elements()+3)>>2;
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		int i;
 		if (chars > outStrSz) {
 		  // limit maximum size of output to size of buffer to prevent overrun.
@@ -912,7 +916,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT64:
 	    case VLVT_WDATA: {
 		int bytes = VL_BYTES_I(vop->varp()->range().elements());
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		int i;
 		if (bytes > outStrSz) {
 		  // limit maximum size of output to size of buffer to prevent overrun.
@@ -937,13 +941,13 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	} else if (value_p->format == vpiIntVal) {
 	    switch (vop->varp()->vltype()) {
 	    case VLVT_UINT8:
-		value_p->value.integer = *((CData*)(vop->varDatap()));
+		value_p->value.integer = *(reinterpret_cast<CData*>(vop->varDatap()));
 		return;
 	    case VLVT_UINT16:
-		value_p->value.integer = *((SData*)(vop->varDatap()));
+		value_p->value.integer = *(reinterpret_cast<SData*>(vop->varDatap()));
 		return;
 	    case VLVT_UINT32:
-		value_p->value.integer = *((IData*)(vop->varDatap()));
+		value_p->value.integer = *(reinterpret_cast<IData*>(vop->varDatap()));
 		return;
 	    case VLVT_WDATA: // FALLTHRU
 	    case VLVT_UINT64: // FALLTHRU
@@ -994,17 +998,17 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    if (VL_UNLIKELY(!value_p->value.vector)) return NULL;
 	    switch (vop->varp()->vltype()) {
 	    case VLVT_UINT8:
-		*((CData*)(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
+		*(reinterpret_cast<CData*>(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
 		return object;
 	    case VLVT_UINT16:
-		*((SData*)(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
+		*(reinterpret_cast<SData*>(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
 		return object;
 	    case VLVT_UINT32:
-		*((IData*)(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
+		*(reinterpret_cast<IData*>(vop->varDatap())) = value_p->value.vector[0].aval & vop->mask();
 		return object;
 	    case VLVT_WDATA: {
 		int words = VL_WORDS_I(vop->varp()->range().elements());
-		WDataOutP datap = ((IData*)(vop->varDatap()));
+		WDataOutP datap = (reinterpret_cast<IData*>(vop->varDatap()));
 		for (int i=0; i<words; ++i) {
 		    datap[i] = value_p->value.vector[i].aval;
                     if (i==(words-1)) {
@@ -1014,7 +1018,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 		return object;
 	    }
 	    case VLVT_UINT64: {
-		*((QData*)(vop->varDatap())) = _VL_SET_QII(
+		*(reinterpret_cast<QData*>(vop->varDatap())) = _VL_SET_QII(
 		    value_p->value.vector[1].aval & vop->mask(),
 		    value_p->value.vector[0].aval);
 		return object;
@@ -1034,7 +1038,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    case VLVT_WDATA: {
 		int bits = vop->varp()->range().elements();
 		int len	 = strlen(value_p->value.str);
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		for (int i=0; i<bits; ++i) {
                     char set = (i < len)?(value_p->value.str[len-i-1]=='1'):0;
                     // zero bits 7:1 of byte when assigning to bit 0, else
@@ -1062,7 +1066,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 		int chars = (vop->varp()->range().elements()+2)/3;
 		int bytes = VL_BYTES_I(vop->varp()->range().elements());
 		int len	 = strlen(value_p->value.str);
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 div_t idx;
                 datap[0] = 0; // reset zero'th byte
 		for (int i=0; i<chars; ++i) {
@@ -1127,10 +1131,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 				VL_FUNC, remainder, value_p->value.str, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
 	    }
 	    switch (vop->varp()->vltype()) {
-	    case VLVT_UINT8 : *((CData*)(vop->varDatap())) = val & vop->mask(); break;
-	    case VLVT_UINT16: *((SData*)(vop->varDatap())) = val & vop->mask(); break;
-	    case VLVT_UINT32: *((IData*)(vop->varDatap())) = val & vop->mask(); break;
-	    case VLVT_UINT64: *((QData*)(vop->varDatap())) = val; ((IData*)(vop->varDatap()))[1] &= vop->mask(); break;
+	    case VLVT_UINT8 : *(reinterpret_cast<CData*>(vop->varDatap())) = val & vop->mask(); break;
+	    case VLVT_UINT16: *(reinterpret_cast<SData*>(vop->varDatap())) = val & vop->mask(); break;
+	    case VLVT_UINT32: *(reinterpret_cast<IData*>(vop->varDatap())) = val & vop->mask(); break;
+	    case VLVT_UINT64: *(reinterpret_cast<QData*>(vop->varDatap())) = val;
+		(reinterpret_cast<IData*>(vop->varDatap()))[1] &= vop->mask(); break;
 	    case VLVT_WDATA:
 	    default:
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
@@ -1146,7 +1151,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    case VLVT_UINT64:
 	    case VLVT_WDATA: {
 		int chars = (vop->varp()->range().elements()+3)>>2;
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 char* val = value_p->value.str;
                 // skip hex ident if one is detected at the start of the string
                 if (val[0] == '0' && (val[1] == 'x' || val[1] == 'X')) {
@@ -1194,7 +1199,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    case VLVT_WDATA: {
 		int bytes = VL_BYTES_I(vop->varp()->range().elements());
 		int len	  = strlen(value_p->value.str);
-		CData* datap = ((CData*)(vop->varDatap()));
+		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
 		for (int i=0; i<bytes; ++i) {
 		    datap[i] = (i < len)?value_p->value.str[len-i-1]:0; // prepend with 0 values before placing string the least signifcant bytes
 		}
@@ -1208,13 +1213,13 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	} else if (value_p->format == vpiIntVal) {
 	    switch (vop->varp()->vltype()) {
 	    case VLVT_UINT8:
-		*((CData*)(vop->varDatap())) = vop->mask() & value_p->value.integer;
+		*(reinterpret_cast<CData*>(vop->varDatap())) = vop->mask() & value_p->value.integer;
 		return object;
 	    case VLVT_UINT16:
-		*((SData*)(vop->varDatap())) = vop->mask() & value_p->value.integer;
+		*(reinterpret_cast<SData*>(vop->varDatap())) = vop->mask() & value_p->value.integer;
 		return object;
 	    case VLVT_UINT32:
-		*((IData*)(vop->varDatap())) = vop->mask() & value_p->value.integer;
+		*(reinterpret_cast<IData*>(vop->varDatap())) = vop->mask() & value_p->value.integer;
 		return object;
 	    case VLVT_WDATA: // FALLTHRU
 	    case VLVT_UINT64: // FALLTHRU

@@ -83,7 +83,7 @@ public:
 	    return newp+8;
 	} else {
 	    // +8: 8 bytes for next
-	    vluint8_t* newp = (vluint8_t*)(::operator new(chunk+8));
+	    vluint8_t* newp = reinterpret_cast<vluint8_t*>(::operator new(chunk+8));
 	    return newp+8;
 	}
     }
@@ -94,7 +94,7 @@ public:
     }
     // MEMBERS
     static inline VerilatedVpio* castp(vpiHandle h) { return dynamic_cast<VerilatedVpio*>((VerilatedVpio*)h); }
-    inline vpiHandle castVpiHandle() { return (vpiHandle)(this); }
+    inline vpiHandle castVpiHandle() { return reinterpret_cast<vpiHandle>(this); }
     // ACCESSORS
     virtual const char* name() const { return "<null>"; }
     virtual const char* fullname() const { return "<null>"; }
@@ -287,7 +287,9 @@ public:
     virtual ~VerilatedVpioMemoryWordIter() {}
     static inline VerilatedVpioMemoryWordIter* castp(vpiHandle h) { return dynamic_cast<VerilatedVpioMemoryWordIter*>((VerilatedVpio*)h); }
     virtual vluint32_t type() const { return vpiIterator; }
-    void iterationInc() { if (!(m_done = (m_iteration == m_varp->array().left()))) m_iteration+=m_direction; }
+    void iterationInc() {
+	if (!(m_done = (m_iteration == m_varp->array().left()))) m_iteration+=m_direction;
+    }
     virtual vpiHandle dovpi_scan() {
 	vpiHandle result;
 	if (m_done) return 0;
