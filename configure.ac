@@ -107,7 +107,7 @@ AC_TYPE_SIZE_T
 AC_C_INLINE
 
 AC_LINK_IFELSE(
-     [AC_LANG_PROGRAM([], [[int* a=new int; delete a; ]])],
+     [AC_LANG_PROGRAM([#include <new>], [[int* a=new int; delete a; ]])],
      [], [AC_MSG_ERROR([$CXX does not seem to successfully compile a simple C++ program])])
 
 AC_DEFUN([_MY_CXX_CHECK_FLAG],
@@ -119,7 +119,7 @@ AC_DEFUN([_MY_CXX_CHECK_FLAG],
     CXXFLAGS="$CXXFLAGS $1 -Werror"
     AC_MSG_CHECKING([whether $CXX accepts $1])
     AC_LINK_IFELSE(
-         [AC_LANG_PROGRAM([], [[int* a=new int; delete a; ]])],
+         [AC_LANG_PROGRAM([#include <new>], [[int* a=new int; delete a; ]])],
          [_my_result=yes
           if test -s conftest.err; then
             if grep -e "$1" conftest.err >/dev/null; then
