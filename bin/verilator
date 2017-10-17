@@ -2349,7 +2349,7 @@ Verilator configuration commands.
 
 Switch back to processing Verilog code after a `systemc_... mode switch.
 The Verilog code returns to the last language mode specified with
-`begin_keywords, or SystemVerilog if none were specified.
+`begin_keywords, or SystemVerilog if none was specified.
 
 =item /*verilator clock_enable*/
 

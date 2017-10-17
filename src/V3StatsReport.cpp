@@ -102,7 +102,7 @@ class StatsReport {
 	os<<endl;
 
 	// Print organized by stage
-	os<<"Peformance Statistics:\n";
+	os<<"Performance Statistics:\n";
 	os<<endl;
 	for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
 	    const V3Statistic* repp = it->second;
